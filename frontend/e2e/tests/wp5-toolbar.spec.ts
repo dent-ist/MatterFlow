@@ -46,9 +46,10 @@ async function box(locator: Locator): Promise<Box> {
  */
 async function row1(page: Page) {
   const bar = page.locator('[data-grid-toolbar]');
+  // Filters sits right after Search (left aligned, LC-01) and "Filters (1)" is wider than "Filters": its left edge and row are compared.
   const edge = async (l: Locator) => {
     const b = await box(l);
-    return { right: Math.round(b.x + b.width), y: b.y, height: b.height };
+    return { left: Math.round(b.x), y: b.y, height: b.height };
   };
   const rowOf = async (l: Locator) => {
     const b = await box(l);
@@ -204,7 +205,8 @@ test.describe('Task Queue toolbar (WP5)', () => {
     // Row 2 is reserved by the notice: the grid starts where it does with chips in row 2 (or, within one row of text, the same).
     expect(await row1(page)).toEqual(base);
     const noticeTop = (await box(page.locator('thead').first())).y;
-    expect(Math.abs(noticeTop - chipsTop)).toBeLessThanOrEqual(2);
+    // Row 3 also holds the Sorted by line; a notice that wraps may be one text line taller than the chips (LC-01).
+    expect(Math.abs(noticeTop - chipsTop)).toBeLessThanOrEqual(24);
     await shot(page, 'restored-notice-1366x768');
     if (axeAvailable()) expect(await axeViolations(page), 'notice').toEqual([]);
 

@@ -63,8 +63,8 @@ test.describe('Pager (#237)', () => {
     await expect(button(page, 'Previous')).toBeDisabled();
     await expect(button(page, 'Next')).toBeEnabled();
     await expect(button(page, 'Last')).toBeEnabled();
-    // The "Sorted by" note stays in the footer.
-    await expect(pager(page).locator('[data-sort-note]')).toContainText('Sorted by');
+    // The "Sorted by" line is at the right end of row 3 of the toolbar since LC-01 (it left the footer).
+    await expect(page.locator('[data-toolbar-row2] [data-sort-note]')).toContainText('Sorted by');
     await shot(page, 'page1-of-3-1366x768');
 
     await button(page, 'Next').click();

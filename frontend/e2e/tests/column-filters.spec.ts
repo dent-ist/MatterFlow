@@ -263,6 +263,11 @@ test.describe('Column filters on the Assets screen', () => {
     await expect(names(page)).toHaveCount(3);
     expect(await axeViolations(page)).toEqual([]); // row open, filtered
 
+    // A chip needs a filter other than the Search text (that one is in the box): Disposition All.
+    await page.goto(`/assets?name=${token}&status=all`);
+    await expect(names(page)).toHaveCount(3);
+    await expect(page.getByRole('list', { name: 'Active filters' })).toBeVisible();
+    expect(await axeViolations(page)).toEqual([]); // row open, chips
     await toggle(page).click();
     await expect(page.getByRole('list', { name: 'Active filters' })).toBeVisible();
     expect(await axeViolations(page)).toEqual([]); // row closed, chips

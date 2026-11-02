@@ -135,7 +135,7 @@ let nextId = 0;
     }
     /* The grid's own header band separates row 3 from the grid. */
     .lt--row3 {
-      min-height: 32px;
+      min-height: 28px;
       margin-bottom: var(--mf-s1);
     }
     .lt__chips {

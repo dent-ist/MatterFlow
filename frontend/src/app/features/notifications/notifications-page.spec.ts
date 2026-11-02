@@ -78,8 +78,10 @@ describe('NotificationsPage', () => {
       root(harness).querySelectorAll('nav[aria-label="Pagination"] button'),
     ).map((b) => b.textContent?.trim());
     expect(names).toEqual(['50', 'First', 'Previous', 'Next', 'Last']);
-    root(harness)
-      .querySelector<HTMLButtonElement>('nav[aria-label="Pagination"] button:last-of-type')!
+    Array.from(
+      root(harness).querySelectorAll<HTMLButtonElement>('nav[aria-label="Pagination"] button'),
+    )
+      .find((b) => b.textContent?.trim() === 'Last')!
       .click();
     await harness.fixture.whenStable();
     await new Promise((r) => setTimeout(r));

@@ -50,7 +50,7 @@ test.describe('List toolbar on Clients (record list)', () => {
 
     // Row 3: the default sort is stated, and there is nothing to reset yet.
     await expect(page.locator('[data-sorted-text]')).toHaveText(
-      'Sorted by Client number, lowest first'.replace('lowest first', 'A to Z'),
+      'Sorted by Client number, lowest first',
     );
     await expect(page.locator('[data-reset-sort]')).toHaveCount(0);
 

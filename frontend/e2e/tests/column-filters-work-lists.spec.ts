@@ -128,7 +128,8 @@ test.describe('Column filters on the work lists', () => {
       await expect(page).toHaveURL(/status=NEW/);
       await queue.expectListed(open.title);
       await queue.expectNotListed(done.title);
-      await expect(toggle(page)).toHaveText(/\(1\)/);
+      // The Search text is not counted on the button (LC-01), and the open statuses are the default: nothing to count.
+      await expect(toggle(page)).toHaveText(/^\s*Filters\s*$/);
 
       // A link with a filter and no status means every status, as such links always did; the cell says so and the chip takes it back.
       await page.goto(`/tasks?q=${token}`);
@@ -231,7 +232,10 @@ test.describe('Column filters on the work lists', () => {
       await chip.getByRole('button', { name: /^Show column/ }).click();
       await expect(page.getByRole('columnheader', { name: 'Client' })).toBeVisible();
       await expect(text(page, 'Client')).toHaveValue(world.client.name);
-      await expect(chips(page)).toHaveCount(0); // the row shows it now
+      // The row shows it now; the chip stays (chips show with the row open, LC-01) and no longer says "hidden column".
+      await expect(chips(page).locator('li', { hasText: 'Client:' })).not.toContainText(
+        '(hidden column)',
+      );
 
       await page.goto(`/tasks?q=${token}&updatedFrom=2000-01-01`);
       await queue.expectListed(touched.title);

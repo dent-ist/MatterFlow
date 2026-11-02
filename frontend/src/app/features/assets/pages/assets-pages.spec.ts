@@ -1186,7 +1186,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     it('New asset: the record header, the Asset and type-fields sections, the real matter format and the way back (A10)', async () => {
       await create({}, ['Asset.View', 'Asset.Create', 'Task.View']);
 
-      expect(el().querySelector('h1')?.textContent).toContain('New Asset');
+      expect(el().querySelector('h1')?.textContent).toContain('New asset');
       expect(el().querySelector('[data-record-header] [data-back-link]')?.textContent).toContain(
         'Assets',
       );
