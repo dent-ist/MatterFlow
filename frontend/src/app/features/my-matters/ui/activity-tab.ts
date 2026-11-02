@@ -54,7 +54,7 @@ const PAGE_SIZE = 25;
           >
           <button
             type="button"
-            class="b"
+            class="mf-btn"
             data-mark-read
             [attr.aria-disabled]="unreadCount() === 0 || marking() ? true : null"
             (click)="markRead()"
@@ -235,23 +235,6 @@ const PAGE_SIZE = 25;
       min-height: 32px;
       font-size: var(--mf-fs-sm);
     }
-    .b {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      min-height: 32px;
-      padding: 0 var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-      cursor: pointer;
-    }
-    .b[aria-disabled='true'] {
-      color: var(--mf-text-muted);
-      cursor: not-allowed;
-    }
     .kc {
       padding: var(--mf-s2) var(--mf-s4) var(--mf-s3);
       border-bottom: 1px solid var(--mf-border);
@@ -406,7 +389,7 @@ const PAGE_SIZE = 25;
         display: block;
       }
       .lnk,
-      .b {
+      .mf-btn {
         min-height: 44px;
       }
     }

@@ -126,7 +126,7 @@ export function statusCodes(status: StatusFilter): string[] {
         <div class="tools">
           <button
             type="button"
-            class="fbtn"
+            class="mf-btn fbtn"
             data-filter-toggle
             aria-controls="mm-col-filters"
             [attr.aria-expanded]="filterOpen()"
@@ -470,20 +470,6 @@ export function statusCodes(status: StatusFilter): string[] {
     .urg[aria-pressed='true'] {
       color: var(--mf-text);
       font-weight: 700;
-    }
-    .fbtn {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      height: var(--mf-ctl-h-sm);
-      padding: 0 var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-      font-size: var(--mf-fs-sm);
-      cursor: pointer;
     }
     .fbtn[aria-expanded='true'] {
       border-color: var(--mf-primary);

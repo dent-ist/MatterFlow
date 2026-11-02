@@ -97,7 +97,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
         <div class="nav" role="group" aria-label="Month">
           <button
             type="button"
-            class="b"
+            class="mf-btn"
             data-prev
             [attr.aria-label]="'Previous month, ' + titleOf(previous())"
             (click)="monthChange.emit(previous())"
@@ -106,7 +106,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
           </button>
           <button
             type="button"
-            class="b"
+            class="mf-btn"
             data-today
             [disabled]="isCurrent()"
             (click)="monthChange.emit(null)"
@@ -115,7 +115,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
           </button>
           <button
             type="button"
-            class="b"
+            class="mf-btn"
             data-next
             [attr.aria-label]="'Next month, ' + titleOf(next())"
             (click)="monthChange.emit(next())"
@@ -139,7 +139,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
           />
           <button
             type="button"
-            class="b primary"
+            class="mf-btn mf-btn--primary"
             data-add-event
             [attr.aria-disabled]="canManage() ? null : true"
             [attr.title]="
@@ -377,35 +377,6 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
       margin: 0;
       font-size: var(--mf-fs-lg);
       font-weight: 700;
-    }
-    .b {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      min-height: 36px;
-      padding: 0 var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .b:disabled,
-    .b[aria-disabled='true'] {
-      color: var(--mf-text-muted);
-      cursor: not-allowed;
-    }
-    .b.primary {
-      background: var(--mf-primary);
-      border-color: var(--mf-primary);
-      color: var(--mf-primary-contrast);
-    }
-    .b.primary[aria-disabled='true'] {
-      background: var(--mf-surface-alt);
-      border-color: var(--mf-border-strong);
-      color: var(--mf-text-muted);
     }
     .legend {
       display: flex;
@@ -666,9 +637,6 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
         overflow: hidden;
         clip-path: inset(50%);
       }
-      .b {
-        min-height: 44px;
-      }
       .day {
         min-height: 64px;
       }
@@ -677,7 +645,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
         margin-left: 0;
         flex-wrap: wrap;
       }
-      .acts .b {
+      .acts .mf-btn {
         flex: 1;
         justify-content: center;
       }
