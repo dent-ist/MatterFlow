@@ -150,6 +150,35 @@ td.mf-col-actions {
   background: var(--mf-primary);
 }
 
+/* Shared resizable grids (shared/ui/resizable-columns.ts, MD-21): the same handle as above on any table with `mfResizable`. Once a column has a
+   chosen or stored width the table runs a fixed layout with explicit widths; cells never grow their column, long text is cut with an ellipsis. */
+.mf-rz thead th:has(> .mf-resize) {
+  position: relative;
+  overflow: visible;
+}
+
+.mf-rz--fixed {
+  table-layout: fixed;
+  min-width: 100%;
+}
+
+.mf-rz--fixed td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mf-resize:focus-visible {
+  outline: 2px solid var(--mf-focus, var(--mf-primary));
+  outline-offset: -2px;
+  border-radius: 2px;
+}
+
+.mf-resize:focus-visible::after {
+  width: 3px;
+  margin-left: -1.5px;
+  background: var(--mf-primary);
+}
+
 /* No selection while dragging. On the body only (not on every element): the pointer is captured by the handle, which shows col-resize. */
 body.wt-resizing {
   cursor: col-resize;

@@ -21,20 +21,20 @@ import {
   customFieldsProblems,
   splitFormErrors,
 } from '../../../shared/ui/custom-fields';
-import { SlidePanel } from '../../../shared/ui/slide-panel';
+import { FormDialog } from '../../../shared/ui/form-dialog';
 import { TextField } from '../../../shared/ui/text-field';
 
 /**
- * Create or edit a Project in the shared side panel (MD-01 and MD-05, epic #1001). The Matter is fixed (the panel is opened from a Matter page or
+ * Create or edit a Project in the shared form dialog (MD-01 and MD-05, epic #1001; a pop-up since MD-22). The Matter is fixed (the panel is opened from a Matter page or
  * from a project that already has one); it shows as the panel's subtitle. Leave `project` empty to create. After a save the panel closes and
  * `saved` carries the project, so the page refreshes its list (no navigation away from the page).
  */
 @Component({
   selector: 'mf-project-panel',
-  imports: [SlidePanel, TextField, CustomFieldsEditor],
+  imports: [FormDialog, TextField, CustomFieldsEditor],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <mf-slide-panel
+    <mf-form-dialog
       [title]="project() ? 'Edit project' : 'New project'"
       [subtitle]="matterLabel()"
       [primaryLabel]="project() ? 'Save changes' : 'Create project'"
@@ -78,7 +78,7 @@ import { TextField } from '../../../shared/ui/text-field';
           (touched)="customTouched.set(true)"
         />
       </form>
-    </mf-slide-panel>
+    </mf-form-dialog>
   `,
   styles: `
     .pp__form {

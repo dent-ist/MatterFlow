@@ -11,7 +11,7 @@ import {
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { GridFrame } from '../../../shared/ui/grid-frame';
-import { SlidePanel } from '../../../shared/ui/slide-panel';
+import { FormDialog } from '../../../shared/ui/form-dialog';
 import { TextField } from '../../../shared/ui/text-field';
 
 /**
@@ -21,7 +21,7 @@ import { TextField } from '../../../shared/ui/text-field';
  */
 @Component({
   selector: 'mf-note-tags-page',
-  imports: [Button, ConfirmDialog, Dropdown, GridFrame, SlidePanel, TextField],
+  imports: [Button, ConfirmDialog, Dropdown, GridFrame, FormDialog, TextField],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   styleUrl: '../../../shared/ui/page.scss',
@@ -108,7 +108,7 @@ import { TextField } from '../../../shared/ui/text-field';
         </table>
       </mf-grid-frame>
     }
-    <mf-slide-panel
+    <mf-form-dialog
       [title]="editing() ? 'Edit tag' : 'New tag'"
       [primaryLabel]="editing() ? 'Save tag' : 'Create tag'"
       [busy]="busy()"
@@ -134,7 +134,7 @@ import { TextField } from '../../../shared/ui/text-field';
           (valueChange)="colour.set($event)"
         />
       }
-    </mf-slide-panel>
+    </mf-form-dialog>
     <mf-confirm-dialog
       title="Delete this tag?"
       confirmLabel="Delete tag"

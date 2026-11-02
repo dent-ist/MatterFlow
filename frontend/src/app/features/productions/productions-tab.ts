@@ -31,6 +31,7 @@ import { GridFrame } from '../../shared/ui/grid-frame';
 import { Pager } from '../../shared/ui/pager';
 import { SearchBox } from '../../shared/ui/search-box';
 import { Segmented } from '../../shared/ui/segmented';
+import { FormDialog } from '../../shared/ui/form-dialog';
 import { SlidePanel } from '../../shared/ui/slide-panel';
 import { TextField } from '../../shared/ui/text-field';
 import {
@@ -137,6 +138,7 @@ const emptySpec = (): SpecDraft => ({
     SearchBox,
     Segmented,
     SlidePanel,
+    FormDialog,
     TextField,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -331,7 +333,7 @@ const emptySpec = (): SpecDraft => ({
         <span class="pt__spacer"></span>
         @if (view() === 'productions' && canEdit()) {
           <p-button
-            label="New production"
+            label="New Production"
             icon="pi pi-plus"
             size="small"
             data-new-production
@@ -340,7 +342,7 @@ const emptySpec = (): SpecDraft => ({
         }
         @if (view() === 'specs' && canEditSpecs()) {
           <p-button
-            label="New spec"
+            label="New Spec"
             icon="pi pi-plus"
             size="small"
             data-new-spec
@@ -637,7 +639,7 @@ const emptySpec = (): SpecDraft => ({
     </mf-slide-panel>
 
     <!-- New or edit production -->
-    <mf-slide-panel
+    <mf-form-dialog
       [title]="draftId() ? 'Edit production' : 'New production'"
       size="large"
       [primaryLabel]="draftId() ? 'Save production' : 'Create production'"
@@ -749,7 +751,7 @@ const emptySpec = (): SpecDraft => ({
           />
         </form>
       }
-    </mf-slide-panel>
+    </mf-form-dialog>
 
     <!-- A spec -->
     <mf-slide-panel
@@ -860,7 +862,7 @@ const emptySpec = (): SpecDraft => ({
     </mf-slide-panel>
 
     <!-- New, edit or duplicate spec -->
-    <mf-slide-panel
+    <mf-form-dialog
       [title]="specFormTitle()"
       subtitle="A spec is the agreed format of productions: what you deliver and how."
       size="large"
@@ -1018,7 +1020,7 @@ const emptySpec = (): SpecDraft => ({
           />
         </form>
       }
-    </mf-slide-panel>
+    </mf-form-dialog>
 
     <mf-confirm-dialog
       title="Delete this production?"

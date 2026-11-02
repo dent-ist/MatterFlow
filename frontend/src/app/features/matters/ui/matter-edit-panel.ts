@@ -23,23 +23,23 @@ import {
   customFieldsProblems,
   splitFormErrors,
 } from '../../../shared/ui/custom-fields';
-import { SlidePanel } from '../../../shared/ui/slide-panel';
+import { FormDialog } from '../../../shared/ui/form-dialog';
 import { numberProblem } from '../../../shared/ui/number-input';
 import { TextField } from '../../../shared/ui/text-field';
 import { AI_OPTIONS } from './matter-ai';
 
 /**
- * Edit a Matter in the shared side panel (MD-03, #1004; owner decision AQ.2): the name, the sensitive flag, the AI allowed setting and the custom fields.
+ * Edit a Matter in the shared form dialog (MD-03, #1004; MD-22 #1026 replaced the side panel by the pop-up): the name, the sensitive flag, the AI allowed setting and the custom fields.
  * Status is read-only here (Set inactive / Set active is in More actions, with the open-task rule) and so are the client and the numbers. Marking a matter
  * sensitive can end the editor's own access: the server answers 409 `SENSITIVE_CONFIRMATION_REQUIRED`, the panel says so and the next Save confirms.
  * After a save the panel closes and `saved` carries the matter; after a confirmed loss of access `lostAccess` fires instead (the page would answer "not found").
  */
 @Component({
   selector: 'mf-matter-edit-panel',
-  imports: [SlidePanel, TextField, CustomFieldsEditor],
+  imports: [FormDialog, TextField, CustomFieldsEditor],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <mf-slide-panel
+    <mf-form-dialog
       title="Edit matter"
       [subtitle]="matter().matterRef"
       size="large"
@@ -173,7 +173,7 @@ import { AI_OPTIONS } from './matter-ai';
           }
         }
       </form>
-    </mf-slide-panel>
+    </mf-form-dialog>
   `,
   styles: `
     .mep__form {

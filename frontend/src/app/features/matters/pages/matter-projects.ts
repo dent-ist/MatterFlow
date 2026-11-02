@@ -94,7 +94,7 @@ import { groupProjects } from './matter-project-groups';
         No projects in this matter yet.
         <p-button
           *mfHasPermission="'Project.Create'"
-          label="New project"
+          label="New Project"
           icon="pi pi-plus"
           severity="secondary"
           data-empty-new-project

@@ -43,10 +43,10 @@ import { ServerListPage } from './list-query';
 import { Pager } from './pager';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = ['name', 'type', 'size', 'externalReference', 'status'] as const;
+const COLUMNS = ['type', 'name', 'size', 'externalReference', 'status'] as const;
 
 /**
- * The Assets tab of a Matter (UX S08, S06): the same inline column filters as the Assets screen (Name, Type, External reference, Status
+ * The Assets tab of a Matter (UX S08, S06; Type first, then Name, MD-25): the same inline column filters as the Assets screen (Name, Type, External reference, Status
  * with Active by default; `name`, `typeId`, `extref`, `status` in the URL; the Disposition and the Size of each asset are columns, PM v2 #883), all server-side, with sorting and paging, for the 200 to 300
  * assets a Matter can hold. Creating an asset starts from here with the Matter prefilled and locked.
  */
@@ -80,20 +80,20 @@ const COLUMNS = ['name', 'type', 'size', 'externalReference', 'status'] as const
           <thead>
             <tr>
               <th
-                mfSort="displayName"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Name
-              </th>
-              <th
                 mfSort="assetType"
                 [sort]="sort()"
                 [defaultSort]="defaultSort"
                 (sorted)="setSort($event)"
               >
                 Type
+              </th>
+              <th
+                mfSort="displayName"
+                [sort]="sort()"
+                [defaultSort]="defaultSort"
+                (sorted)="setSort($event)"
+              >
+                Name
               </th>
               <th
                 class="pg-num"
@@ -141,7 +141,7 @@ const COLUMNS = ['name', 'type', 'size', 'externalReference', 'status'] as const
             <p-button
               mfEmptyAction
               *mfHasPermission="'Asset.Create'"
-              label="New asset"
+              label="New Asset"
               icon="pi pi-plus"
               severity="secondary"
               data-empty-new-asset
@@ -149,14 +149,6 @@ const COLUMNS = ['name', 'type', 'size', 'externalReference', 'status'] as const
             />
             @for (a of rows(); track a.assetId) {
               <tr>
-                <td>
-                  <a
-                    class="pg-link pg-name"
-                    [routerLink]="['/assets', a.assetId]"
-                    [title]="a.displayName"
-                    >{{ a.displayName }}</a
-                  >
-                </td>
                 <td>
                   <span class="ma-type">
                     <mf-asset-type-chip
@@ -169,6 +161,14 @@ const COLUMNS = ['name', 'type', 'size', 'externalReference', 'status'] as const
                     />
                     {{ a.assetTypeName }}
                   </span>
+                </td>
+                <td>
+                  <a
+                    class="pg-link pg-name"
+                    [routerLink]="['/assets', a.assetId]"
+                    [title]="a.displayName"
+                    >{{ a.displayName }}</a
+                  >
                 </td>
                 <td class="pg-num ma-size" data-size>
                   @if (sizeText(a); as size) {
@@ -246,7 +246,6 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
 
   /** One definition per filter: the Assets screen's, without the Matter (it is fixed here). */
   private readonly defs = computed((): FilterDef[] => [
-    { key: 'name', label: 'Name', column: 'name', type: 'text' },
     {
       key: 'typeId',
       label: 'Type',
@@ -255,6 +254,7 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
       emptyLabel: 'All types',
       options: this.typeOptions(),
     },
+    { key: 'name', label: 'Name', column: 'name', type: 'text' },
     { key: 'extref', label: 'External reference', column: 'externalReference', type: 'text' },
     {
       key: 'status',

@@ -362,7 +362,7 @@ const HIST_WIDTH_KEY = 'mf.notes.histw';
           @if (canEdit()) {
             <span class="nt__newgroup">
               <p-button
-                label="New note"
+                label="New Note"
                 icon="pi pi-plus"
                 size="small"
                 data-new-note

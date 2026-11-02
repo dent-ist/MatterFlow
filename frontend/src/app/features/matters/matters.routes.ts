@@ -1,8 +1,9 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router, Routes } from '@angular/router';
 import { permissionGuard } from '../../core/auth/guards';
 import { unsavedChangesGuard } from '../../shared/guards/unsaved-changes.guard';
 
-/** Matters (UX S06). `new` is matched before `:matterId`. */
+/** Matters (UX S06). `new` is matched before `:matterId`; it opens the New matter dialog of the list (MD-22). */
 export const MATTERS_ROUTES: Routes = [
   {
     path: '',
@@ -11,11 +12,17 @@ export const MATTERS_ROUTES: Routes = [
     loadComponent: () => import('./pages/matters-list-page').then((m) => m.MattersListPage),
   },
   {
+    // MD-22 (#1026): creating a matter is a pop-up dialog on the list; the old address (Client pages, bookmarks) opens it there.
     path: 'new',
-    title: 'New matter',
-    canActivate: [permissionGuard('Matter.Create')],
-    canDeactivate: [unsavedChangesGuard],
-    loadComponent: () => import('./pages/matter-form-page').then((m) => m.MatterFormPage),
+    redirectTo: ({ queryParams }) => {
+      const client = Number(queryParams['clientId']);
+      return inject(Router).createUrlTree(['/matters'], {
+        queryParams: {
+          newMatter: 1,
+          newClient: Number.isInteger(client) && client > 0 ? client : null,
+        },
+      });
+    },
   },
   {
     path: ':matterId/edit',

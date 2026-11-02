@@ -48,7 +48,7 @@ import { BULK_MAX, BulkMode, BulkTarget, BulkTasksDialog } from './bulk-tasks-di
 import { SummaryStrip } from './summary-strip';
 import { TaskSelectList, isBulkEditable } from './task-select-list';
 import { ColumnAction } from './column-menu-items';
-import { ColumnWidthMap } from './column-widths';
+import { ColumnWidthMap, pxToRem } from './column-widths';
 import { TaskTable } from './task-table';
 import { WorkWidths } from './work-widths';
 import { DUE_SOON_DAYS } from './work-vocabulary';
@@ -56,8 +56,38 @@ import { DUE_SOON_DAYS } from './work-vocabulary';
 const PAGE_SIZE = 25;
 /** The choice that takes the ticked tasks out of their project. */
 const NO_PROJECT = 'none';
-const MATTER_COLUMNS = ['ref', 'title', 'project', 'priority', 'assignee', 'due', 'status'];
-const PROJECT_COLUMNS = ['ref', 'title', 'priority', 'assignee', 'due', 'status'];
+const MATTER_COLUMNS = [
+  'ref',
+  'title',
+  'typeChip',
+  'project',
+  'priority',
+  'assignee',
+  'due',
+  'status',
+  'steps',
+];
+const PROJECT_COLUMNS = [
+  'ref',
+  'title',
+  'typeChip',
+  'priority',
+  'assignee',
+  'due',
+  'status',
+  'steps',
+];
+/**
+ * Default widths of this grid (px): the Type and Progress columns (MD-24) come on top of the old set, so a 1366 px window (1098 px box, 200 px for the
+ * Title) still holds every column; a width the person changed wins.
+ */
+const DEFAULT_WIDTHS_PX: Readonly<Record<string, number>> = {
+  typeChip: 64,
+  project: 116,
+  assignee: 124,
+  status: 116,
+  steps: 88,
+};
 
 /** The query parameters of this grid's filters; the Matter page drops them when another tab is chosen. */
 export const SCOPED_TASK_PARAMS: readonly string[] = [
@@ -409,9 +439,10 @@ export class ScopedTasks {
   private readonly widthScope = computed(() =>
     this.projectId() === null ? 'matterTasks' : 'projectTasks',
   );
-  protected readonly colWidths = computed<ColumnWidthMap>(() =>
-    this.widthStore.widths(this.widthScope(), this.auth.profile()?.userId ?? null),
-  );
+  protected readonly colWidths = computed<ColumnWidthMap>(() => ({
+    ...Object.fromEntries(Object.entries(DEFAULT_WIDTHS_PX).map(([k, px]) => [k, pxToRem(px)])),
+    ...this.widthStore.widths(this.widthScope(), this.auth.profile()?.userId ?? null),
+  }));
   protected readonly caption = computed(() =>
     this.projectId() === null ? 'Tasks of this matter' : 'Tasks of this project',
   );

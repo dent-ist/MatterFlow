@@ -32,6 +32,8 @@ import { AuthStore } from '../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { mfDate } from '../../core/time/time';
 import { TaskTypeBadge } from '../task-type/task-type-badge';
+import { TaskTypeChip } from '../ui/task-type-chip';
+import { Tip } from '../ui/tip';
 import { DueCell } from './due-cell';
 import { MfDatePipe } from '../pipes/mf-date.pipe';
 import { MatterCell, MatterNameCell } from './matter-cell';
@@ -89,6 +91,8 @@ const LONG_PRESS_MS = 500;
   imports: [
     Dropdown,
     TaskTypeBadge,
+    TaskTypeChip,
+    Tip,
     RouterLink,
     RowLink,
     MatterCell,
@@ -306,6 +310,7 @@ const LONG_PRESS_MS = 500;
                           <mf-task-type-badge
                             #tt
                             class="wt-typeicon"
+                            [class.wt-typeicon--off]="hideContext()"
                             [iconKey]="row.taskTypeIconKey"
                             [colourKey]="row.taskTypeColourKey"
                             [name]="row.taskTypeName"
@@ -373,6 +378,39 @@ const LONG_PRESS_MS = 500;
                           <span class="wt-clip" [attr.title]="row.projectName">{{
                             row.projectName ?? '-'
                           }}</span>
+                        }
+                      }
+                      @case ('typeChip') {
+                        <mf-task-type-chip
+                          [iconKey]="row.taskTypeIconKey"
+                          [colourKey]="row.taskTypeColourKey"
+                          [typeId]="row.taskTypeId"
+                          [name]="row.taskTypeName"
+                          data-type-chip
+                        />
+                      }
+                      @case ('steps') {
+                        @if (row.workflow.stepsTotal > 0) {
+                          <span
+                            class="wt-stepbar"
+                            role="progressbar"
+                            tabindex="0"
+                            data-step-bar
+                            aria-valuemin="0"
+                            [attr.aria-valuemax]="row.workflow.stepsTotal"
+                            [attr.aria-valuenow]="row.workflow.stepsResolved"
+                            [attr.aria-valuetext]="stepsText(row)"
+                            [attr.aria-label]="stepsText(row)"
+                            [mfTip]="stepsText(row)"
+                            ><span
+                              class="wt-stepbar__fill"
+                              [style.width.%]="
+                                (100 * row.workflow.stepsResolved) / row.workflow.stepsTotal
+                              "
+                            ></span
+                          ></span>
+                        } @else {
+                          <span class="wt-muted" aria-label="No workflow steps">-</span>
                         }
                       }
                       @case ('type') {
@@ -470,15 +508,11 @@ const LONG_PRESS_MS = 500;
                           } @else {
                             <mf-status-badge [code]="row.status" [label]="row.statusLabel" />
                           }
-                          @if (hideContext() && row.workflow.stepsTotal > 0) {
-                            <!-- On a Matter's or Project's grid the workflow progress sits under the status (MD-04), so no column has to give way for it. -->
-                            <span class="wt-steps" data-steps [attr.title]="progressTitle(row)"
-                              >{{ row.workflow.stepsResolved }} of
-                              {{ row.workflow.stepsTotal }} steps</span
-                            >
-                          }
+                          <!-- A Matter's or Project's grid shows the status chip only (MD-24): the progress is its own column, the hold reason is the tooltip. -->
                           @if (
-                            row.status === 'ON_HOLD' && (row.holdReason || row.onHoldReasonName)
+                            !hideContext() &&
+                            row.status === 'ON_HOLD' &&
+                            (row.holdReason || row.onHoldReasonName)
                           ) {
                             <mf-hold-note
                               [holdReason]="row.holdReason"
@@ -1202,6 +1236,11 @@ export class TaskTable {
   /** The tooltip of a title (also its accessible description): the whole title, which the cell may cut with an ellipsis. */
   protected titleTip(row: TaskQueueRow): string {
     return row.title;
+  }
+
+  /** "2 of 5 steps": the tooltip and the accessible name of the progress bar. */
+  protected stepsText(row: TaskQueueRow): string {
+    return `${row.workflow.stepsResolved} of ${row.workflow.stepsTotal} steps`;
   }
 
   protected progressTitle(row: TaskQueueRow): string {
