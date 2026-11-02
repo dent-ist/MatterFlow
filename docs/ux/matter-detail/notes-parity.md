@@ -2,7 +2,7 @@
 
 Source of truth: `docs/ux/mockups/notes-mockup-r3.html` (design option A, the one the README recommends) with its README section "Notes mockup, revision 3", and the Notes tab of the matter-detail mockup round 3 (`docs/ux/mockups/matter-detail/index.html`, branch `matter-detail-mockups`) where the owner's later decisions are already drawn. Owner decisions in `docs/requirements/decisions-addendum.md` section AQ (items 9 and 10) and the owner's later calls of 2026-11-02 win over the mockup when they conflict.
 
-**Result: 127 lines done (D), 16 different on purpose (P), 0 open (O).**
+**Result: 126 lines done (D), 17 different on purpose (P), 0 open (O).**
 
 Legend: **D** = done (built as in the mockup), **P** = different on purpose (the reason is in the line), **O** = open (not done, reason given). The result column is filled in at the end of the work. Screenshots: `docs/ux/matter-detail/notes-parity/` (`<state>-mockup-<size>.png` next to `<state>-app-<size>.png`; sizes 1366 and 375).
 
@@ -162,7 +162,7 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 
 | # | Mockup | Result |
 |---|---|---|
-| K1 | Templates view (view switch): intro line "A template is a ready-made note: title, tags and body. Placeholders such as {{date}} {{matter}} {{author}} are filled when it is used." + "New template" button | D |
+| K1 | Templates view (view switch): intro line "A template is a ready-made note: title, tags and body. Placeholders such as {{date}} {{matter}} {{author}} are filled when it is used." + "New template" button | P: owner request 2026-11-02 (#1048): the help line stays as plain information, but there is no "New template" button; a template is created from a note with More actions > Save as template; the empty state says so |
 | K2 | List rows: icon tile, name, description + first words, scope chip (Firm-wide blue / This matter grey), tags, "Used N times"; per row Use, Edit, Duplicate, Delete (small buttons) | P: owner request 2026-11-02 (#1047): template rows look like note rows and have no Use, Edit, Duplicate or Delete buttons |
 | K3 | Template read panel: header "Templates / name", Use (primary), Edit, Duplicate, Delete; body with placeholders highlighted; info line "Highlighted placeholders are replaced when the template is used. Title when used: ..." | P: owner request #1047: a template opens in the same note panel as a note (read mode, a "Template" badge, Edit, delete icon, Cancel left and Save right); no Use or Duplicate; lock and history do not exist for templates |
 | K4 | Permissions: using or changing a matter template needs Matter Note Edit; firm-wide templates are changed only by an administrator; a reader sees the list, actions disabled with the reason (tooltip + name + toast) | D |
@@ -263,3 +263,4 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 13. **Full width (owner request 2026-11-02, #1036).** The mockup caps the expanded note at 940 px and centres it. Edit mode now uses the whole width of the note panel (tag bar, toolbar and text box), with the rail on the right. Read mode used the same 940 px cap; it now also fills the width, but running text (paragraphs, lists, quotes, headings) keeps a readable line of about 110 characters, left aligned, while tables, the title and the chips use the full width.
 14. **No Board view (owner request 2026-11-02, #1046).** The mockup's Board view (one column per tag) was removed; the views are By tag, Latest and Templates.
 15. **Templates are note items (owner request 2026-11-02, #1047).** The mockup's Templates view has Use, Edit, Duplicate and Delete buttons on every row and a separate template editor; built as plain rows that open in the note panel. Duplicate is dropped.
+16. **No New template button (owner request 2026-11-02, #1048).** Templates are created from a note (Save as template); the Templates view only lists, opens, edits and deletes existing ones.

@@ -406,6 +406,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await page.getByRole('button', { name: 'Templates', exact: true }).click();
     const row = page.locator('[data-template-list] li', { hasText: name });
     await expect(row).toContainText('This matter');
+    await expect(page.getByRole('button', { name: 'New Template' })).toHaveCount(0);
     await expect(row.getByRole('button')).toHaveCount(1); // no Use, Edit, Duplicate or Delete on the row
     await row.getByRole('button').click();
     await expect(page.locator('[data-template-badge]')).toHaveText('Template');
@@ -535,7 +536,8 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
       await page.locator('[data-note-cancel]').click();
       if (width < 760) await page.locator('[data-note-close]').click();
       await page.getByRole('button', { name: 'Templates', exact: true }).click();
-      await expect(page.locator('[data-template-new]')).toBeVisible();
+      await expect(page.locator('[data-template-list], .nt__thead').first()).toBeVisible();
+      await expect(page.locator('[data-template-new]')).toHaveCount(0);
       expect(await axeViolations(page, '[data-notes-tab]')).toEqual([]);
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
