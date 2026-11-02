@@ -63,14 +63,16 @@ let nextId = 0;
             (searchChange)="filters().set(def.key, $event, { replace: true })"
           />
         }
-        <mf-filters-toggle
-          class="lt__filters"
-          [controls]="filters().sheetMode() ? '' : controls()"
-          [open]="filters().toggleOpen()"
-          [count]="filters().badgeCount()"
-          [sheet]="filters().sheetMode()"
-          (toggled)="filters().toggle()"
-        />
+        @if (hasFilters()) {
+          <mf-filters-toggle
+            class="lt__filters"
+            [controls]="filters().sheetMode() ? '' : controls()"
+            [open]="filters().toggleOpen()"
+            [count]="filters().badgeCount()"
+            [sheet]="filters().sheetMode()"
+            (toggled)="filters().toggle()"
+          />
+        }
         @if (filters().moreDefs().length > 0) {
           <mf-more-filters class="lt__other" [filters]="filters()" />
         }
@@ -219,9 +221,17 @@ export class ListToolbar extends FocusFilter {
   readonly searchLabel = input('Search');
   /** Rows are selected: the `[mfBulk]` bar replaces row 2. */
   readonly bulkActive = input(false);
+  /** The Sorted by line always has row 3 to itself: for a page whose row 2 is full (the Task Queue's quick-view chips). */
+  readonly sortedBelow = input(false);
   /** A chip on a hidden column asks for the column back (the page owns the column chooser). */
   readonly showColumn = output<string>();
 
+  /** The Filters button is offered only when there is something to filter besides the Search text. */
+  protected readonly hasFilters = computed(() =>
+    this.filters()
+      .defs()
+      .some((d) => !d.search && !d.noControl),
+  );
   protected readonly searchId = `mf-list-search-${nextId++}`;
   protected readonly searchDef = computed(() =>
     this.filters()
@@ -230,6 +240,6 @@ export class ListToolbar extends FocusFilter {
   );
   protected readonly rowThree = computed(() => {
     const f = this.filters();
-    return f.restored() || f.chips().length > 0 || f.activeCount() > 0;
+    return this.sortedBelow() || f.restored() || f.chips().length > 0 || f.activeCount() > 0;
   });
 }

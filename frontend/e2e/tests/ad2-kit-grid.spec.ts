@@ -189,27 +189,19 @@ test.describe('the 44 px grid contract (#543)', () => {
     expect(css.mutedColor).not.toBe(css.textColor);
   });
 
-  test('optional columns leave by window width (data-drop) and the actions column never does', async ({
+  test('LC-09: no column leaves by window width (data-drop is only a marker) and the actions column stays', async ({
     page,
   }) => {
-    const cases: { width: number; num: boolean; date: boolean; note: boolean }[] = [
-      { width: 1920, num: true, date: true, note: true },
-      { width: 1366, num: true, date: true, note: true },
-      { width: 1279, num: true, date: true, note: false },
-      { width: 1024, num: false, date: true, note: false },
-      { width: 899, num: false, date: false, note: false },
-      { width: 375, num: false, date: false, note: false },
-    ];
-    for (const c of cases) {
-      await page.setViewportSize({ width: c.width, height: 800 });
+    for (const width of [1920, 1366, 1279, 1024, 899, 375]) {
+      await page.setViewportSize({ width, height: 800 });
       await load(page);
-      const what = `at ${c.width}`;
-      expect(await visible(page, 'th.mf-cell-num'), `Assets ${what}`).toBe(c.num);
+      const what = `at ${width}`;
+      expect(await visible(page, 'th.mf-cell-num'), `Assets ${what}`).toBe(true);
       expect(await visible(page, 'tr[data-r="short"] .mf-cell-num'), `Assets cell ${what}`).toBe(
-        c.num,
+        true,
       );
-      expect(await visible(page, 'th.mf-cell-date'), `Updated ${what}`).toBe(c.date);
-      expect(await visible(page, 'th.mf-cell-muted'), `Note ${what}`).toBe(c.note);
+      expect(await visible(page, 'th.mf-cell-date'), `Updated ${what}`).toBe(true);
+      expect(await visible(page, 'th.mf-cell-muted'), `Note ${what}`).toBe(true);
       expect(await visible(page, 'th.mf-cell-actions'), `Actions ${what}`).toBe(true);
       expect(await visible(page, 'th.mf-cell-name'), `Name ${what}`).toBe(true);
       await noSideScroll(page, what);

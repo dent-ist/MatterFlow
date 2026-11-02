@@ -297,7 +297,7 @@ describe('StepsListPage', () => {
 });
 
 describe('StepsListPage narrow window (#356)', () => {
-  it('leaves the Description column out below 1600 px and shows the number of workflows as the link', async () => {
+  it('keeps the Description column at 1024 px (LC-09: no column leaves by width) and shows the number of workflows as the link', async () => {
     viewport(1024);
     const api = {
       listStepDefinitions: vi
@@ -310,10 +310,10 @@ describe('StepsListPage narrow window (#356)', () => {
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
     expect(Array.from(el.querySelectorAll('thead th')).map((th) => th.textContent!.trim())).toEqual(
-      ['Title', 'Used in', 'Inputs', 'Status', 'Actions'],
+      ['Title', 'Description', 'Tags', 'Used in', 'Inputs', 'Status', 'Actions'],
     );
     const row = el.querySelector('tbody tr[data-row="Deduplicate"]')!;
-    expect(row.querySelectorAll('td')).toHaveLength(5);
+    expect(row.querySelectorAll('td')).toHaveLength(7);
     expect(row.querySelector('a.pg-name')!.getAttribute('title')).toBe('Deduplicate');
     const used = row.querySelector('[data-used-in-link]')!;
     expect(used.textContent!.trim()).toBe('2');
@@ -365,7 +365,7 @@ describe('StepsListPage phone cards and narrow columns (#375)', () => {
     expect(cards[1].textContent).toContain('Not used in a workflow');
   });
 
-  it('leaves the Tags column out below 1180 px, and shows two tags and "+n more" from there', async () => {
+  it('keeps the Tags column at 700 px (LC-09), and shows two tags and "+n more"', async () => {
     const api = {
       listStepDefinitions: list([summary({ tags: ['a', 'b', 'c'] })]),
       listStepTags: vi.fn().mockReturnValue(ok([])),
@@ -378,7 +378,15 @@ describe('StepsListPage phone cards and narrow columns (#375)', () => {
       Array.from(f.nativeElement.querySelectorAll('thead th')).map((th) =>
         (th as HTMLElement).textContent!.trim(),
       );
-    expect(heads(fixture)).toEqual(['Title', 'Used in', 'Status', 'Actions']);
+    expect(heads(fixture)).toEqual([
+      'Title',
+      'Description',
+      'Tags',
+      'Used in',
+      'Inputs',
+      'Status',
+      'Actions',
+    ]);
     fixture.destroy();
 
     viewport(1920);
@@ -400,7 +408,7 @@ describe('StepsListPage phone cards and narrow columns (#375)', () => {
 });
 
 describe('StepsListPage Inputs column (#378)', () => {
-  it('says Draft (a neutral badge with the field count as its tooltip), Published or None, from 1024 px', async () => {
+  it('says Draft (a neutral badge with the field count as its tooltip), Published or None', async () => {
     viewport(1366);
     const api = {
       listStepDefinitions: vi.fn().mockReturnValue(
@@ -438,7 +446,7 @@ describe('StepsListPage Inputs column (#378)', () => {
     viewport(900);
     const narrow = TestBed.createComponent(StepsListPage);
     await settle(narrow);
-    expect(narrow.nativeElement.querySelector('[data-inputs]')).toBeNull();
+    expect(narrow.nativeElement.querySelector('[data-inputs]')).not.toBeNull(); // LC-09: no column leaves by width
   });
 
   it('adds an "Inputs in draft" line to the card of a step whose inputs are a draft', async () => {

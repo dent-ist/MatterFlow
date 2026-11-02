@@ -346,7 +346,7 @@ test.describe('Fixed-header screens at 1366x768', () => {
     expect(top).toBeGreaterThan(500);
     // A DOM click, so Playwright does not scroll the grid before it leaves.
     await region
-      .locator('[data-task] a')
+      .locator('[data-task] a.wt-title')
       .nth(14)
       .evaluate((el) => (el as HTMLElement).click());
     await expect(page).toHaveURL(/\/tasks\/\d+/);

@@ -39,7 +39,7 @@ import { Pager } from '../../../shared/ui/pager';
 import { phoneCards } from '../../../shared/ui/record-card-list';
 import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { rowActions } from '../../../shared/ui/row-actions';
-import { viewportAtLeast } from '../../../shared/ui/viewport';
+import { COLUMN_ROOM } from '../../../shared/ui/viewport';
 import { AdminTabCounts } from '../admin-tabs';
 import { ADMIN_LIST, AdminListLeave } from '../list-return';
 import { AdminShellFilters } from '../task-types/shell-filters';
@@ -54,9 +54,6 @@ const COLUMN_SPEC: Record<Column, AdminColumn> = {
   status: { cls: 'mf-cell-badge', bone: '4rem' },
   actions: { cls: 'mf-cell-actions', bone: '1.5rem' },
 };
-
-/** The Roles and Last run columns leave below this window width (the kit's column-drop rule); the name, category and status stay. */
-const ROOM = 1000;
 
 /**
  * Admin: the Reports tab of the Reports page (issue #712): every report, inactive ones included, in category and report order, on the admin list
@@ -247,7 +244,7 @@ export class ReportsListTab extends LocalListPage<ReportListItemResponse> {
   protected readonly listId = ADMIN_LIST.reports.id;
   protected readonly leave = inject(AdminListLeave);
   protected readonly phone = phoneCards();
-  protected readonly roomy = viewportAtLeast(ROOM);
+  protected readonly roomy = COLUMN_ROOM;
   protected readonly defaultSort = 'category';
 
   protected readonly categories = signal<ReportCategoryResponse[]>([]);

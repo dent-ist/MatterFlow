@@ -64,9 +64,9 @@ test.describe('Assets list contract (WP-AS3)', () => {
       'descending',
     );
 
-    // It leaves below 900 px.
+    // LC-09: it stays at 768 px (the frame scrolls sideways).
     await page.setViewportSize({ width: 768, height: 1024 });
-    await expect(page.getByRole('columnheader', { name: 'Linked tasks' })).toHaveCount(0);
+    await expect(page.getByRole('columnheader', { name: 'Linked tasks' })).toHaveCount(1);
 
     const viewer = await personas.create({ label: 'assetonly', permissions: ['Asset.View'] });
     const plain = await asUser(viewer.username);
@@ -89,10 +89,9 @@ test.describe('Assets list contract (WP-AS3)', () => {
       await expect(page.locator('#asset-filter-row')).toBeVisible();
       const toggle = page.getByRole('button', { name: /^Filters/ });
       await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-      expect(await toggle.evaluate((e) => !!e.closest('[data-page-header], mf-page-header'))).toBe(
-        true,
-      );
-      await expect(toggle).toContainText('(1)');
+      expect(await toggle.evaluate((e) => !!e.closest('mf-list-toolbar'))).toBe(true);
+      // The Name filter is the Search box now (not counted on the Filters button).
+      await expect(page.getByPlaceholder('Search assets')).toHaveValue(token);
       await expect(page.getByRole('button', { name: 'Clear filters' }).first()).toBeVisible();
       await noHorizontalScroll(page);
     }
@@ -154,7 +153,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
     await seed.asset(world.matter, `Zeta ${token}`);
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/assets?name=${token}`);
-    const header = page.getByRole('columnheader', { name: 'Matter number' });
+    const header = page.getByRole('columnheader', { name: 'CM Number' });
     await header.getByRole('button').click();
     await expect(page).toHaveURL(/sort=matter(&|$)/);
     await expect(header).toHaveAttribute('aria-sort', 'ascending');
@@ -167,7 +166,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
     await expect(header).toHaveAttribute('aria-sort', 'descending');
   });
 
-  test('phone: one card per asset instead of the table, no sideways scroll; 768 drops columns instead of scrolling (#502)', async ({
+  test('phone: one card per asset instead of the table, no sideways scroll; 768 keeps every column and the grid frame scrolls sideways (LC-09)', async ({
     page,
     seed,
   }) => {
@@ -200,8 +199,10 @@ test.describe('Assets list contract (WP-AS3)', () => {
     await page.goto(`/assets?name=${token}`);
     await expect(page.locator('tbody tr[data-asset-id]')).toHaveCount(2);
     const wrap = page.locator('mf-grid-frame .mf-scroll').first();
-    expect(await wrap.evaluate((e) => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(0);
-    await expect(page.getByRole('columnheader', { name: 'External reference' })).toHaveCount(0);
+    // LC-09: no column is dropped by width; the frame scrolls sideways and the page does not.
+    expect(await wrap.evaluate((e) => e.scrollWidth - e.clientWidth)).toBeGreaterThan(0);
+    await noHorizontalScroll(page);
+    await expect(page.getByRole('columnheader', { name: 'External reference' })).toBeVisible();
     await shot(page, 'as3-768');
   });
 

@@ -267,36 +267,46 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
     await axeClean(page, 'no Matter.View');
   });
 
-  test('the narrow-box rule: Matter Name drops out first, Matter Number never does, and the Title keeps 200 px', async ({
+  test('LC-09: no width drops a column; Matter Name, Project, Progress and the Matter Number stay, the grid frame scrolls sideways and the Title keeps its 160 px', async ({
     seed,
     asUser,
   }) => {
     const w = await world(seed, 'mc-narrow', 1);
     const page = await asUser(w.me.username);
-    // 1366 px: the box is 1098 px and the Task Queue default needs more: Matter Name, Project and Progress drop.
+    const scrolls = () =>
+      page.evaluate(() => {
+        const r = document.querySelector<HTMLElement>('.wt-wrap');
+        return !!r && r.scrollWidth > r.clientWidth;
+      });
+    // 1366 px: the standard order needs more than the box; every chosen column stays and the frame scrolls.
     await page.setViewportSize({ width: 1366, height: 768 });
     await new TaskQueuePage(page).open(`?q=${w.tag}`);
     await expect(page.locator('[data-task]').first()).toBeVisible();
-    // The standard order (LC-03); Matter Name, Project and Progress drop first, then nothing else: Type (112 px) and CM Number stay.
-    expect(await headers(page)).toEqual([
-      'Ref',
-      'Type',
-      'Title',
-      'CM Number',
-      'Priority',
-      'Assignee',
-      'Due',
-      'Status',
-    ]);
-    expect(await width(page, 'title')).toBeGreaterThanOrEqual(200);
+    expect(await headers(page)).toEqual(
+      expect.arrayContaining([
+        'Ref',
+        'Type',
+        'Title',
+        'CM Number',
+        'Matter Name',
+        'Project',
+        'Progress',
+        'Priority',
+        'Assignee',
+        'Due',
+        'Status',
+      ]),
+    );
+    expect(await width(page, 'title')).toBeGreaterThanOrEqual(160);
+    expect(await scrolls()).toBe(true);
+    expect(await noPageScroll(page)).toBe(true);
     await shot(page, 'task-queue-narrow-1366x768');
-    // 1440 px: the box is 1172 px; the standard order (Type, Project, Progress too) holds Matter Name only from about 1600 px, so it still drops here.
     await page.setViewportSize({ width: 1440, height: 900 });
     await expect(th(page, 'matter')).toBeVisible();
-    await expect(th(page, 'matterName')).toHaveCount(0);
-    expect(await width(page, 'title')).toBeGreaterThanOrEqual(200);
+    await expect(th(page, 'matterName')).toBeVisible();
+    expect(await width(page, 'title')).toBeGreaterThanOrEqual(160);
     await shot(page, 'task-queue-1440x900');
-    // My Work at 1366 keeps Workflow progress (it was there before) and drops Matter Name.
+    // My Work at 1366 keeps every column too.
     await page.setViewportSize({ width: 1366, height: 768 });
     const mw = new MyWorkPage(page);
     await mw.open();
@@ -304,10 +314,10 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
     const keys = await headers(page);
     expect(keys).toContain('CM Number');
     expect(keys).toContain('Progress');
-    expect(keys).not.toContain('Matter Name');
-    expect(await width(page, 'title')).toBeGreaterThanOrEqual(200);
+    expect(keys).toContain('Matter Name');
+    expect(await width(page, 'title')).toBeGreaterThanOrEqual(160);
     await axeClean(page, 'narrow My Work');
-    // 768 px: the Matter Number is still there, whatever the grid does with the rest.
+    // 768 px: the Matter Number is there, the page does not scroll sideways.
     await page.setViewportSize({ width: 768, height: 1024 });
     await new TaskQueuePage(page).open(`?q=${w.tag}`);
     await expect(th(page, 'matter')).toBeVisible();
@@ -489,7 +499,7 @@ test.describe('Columns panel, header menu, resize and fit for Matter Name (#348)
   }) => {
     const w = await world(seed, 'mc-panel', 2);
     const page = await asUser(w.me.username);
-    // Wide enough for the whole standard order with a 360 px Matter Name (the narrow-box rule would drop the column otherwise, and there would be nothing to fit).
+    // Wide enough for the whole standard order with a 360 px Matter Name (so nothing scrolls).
     await page.setViewportSize({ width: 2400, height: 1200 });
     const queue = new TaskQueuePage(page);
     await queue.open(`?q=${w.tag}`);
@@ -524,7 +534,7 @@ test.describe('Columns panel, header menu, resize and fit for Matter Name (#348)
     const row = page.locator('[data-width-row="matterName"]');
     const field = row.locator('[data-width-input]');
     await expect(field).toHaveValue('160');
-    await expect(page.locator('[data-width-row="matter"] [data-width-input]')).toHaveValue('144');
+    await expect(page.locator('[data-width-row="matter"] [data-width-input]')).toHaveValue('142');
     await row.getByRole('button', { name: 'Widen Matter Name' }).click();
     await expect(field).toHaveValue('168');
     await expect.poll(() => width(page, 'matterName')).toBe(168);

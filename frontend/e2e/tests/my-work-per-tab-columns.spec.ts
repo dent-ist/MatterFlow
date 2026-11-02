@@ -74,12 +74,14 @@ test.describe('My Work per-tab columns', () => {
     const myWork = new MyWorkPage(page);
     await myWork.open();
     await expect(page.locator('[data-task]')).toHaveCount(14);
-    // 1366 px: the narrow-box rule drops Matter Name and Project (LC-03 standard order, Progress last); Type, Progress and the Title keep their room.
+    // 1366 px: every column of the standard order stays (LC-09), the frame scrolls sideways.
     expect(await headers(page)).toEqual([
       'Ref',
       'Type',
       'Title',
       'CM Number',
+      'Matter Name',
+      'Project',
       'Priority',
       'Due',
       'Status',
@@ -92,6 +94,8 @@ test.describe('My Work per-tab columns', () => {
       'Type',
       'Title',
       'CM Number',
+      'Matter Name',
+      'Project',
       'Priority',
       'Due',
       'Status',

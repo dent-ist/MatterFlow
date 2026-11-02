@@ -173,7 +173,8 @@ test.describe('Fit to content (#205)', () => {
     const page = await asUser('ke\\kekim');
     await page.setViewportSize({ width: 1366, height: 768 });
     await openQueue(page, tag, 1);
-    // Make Status wide first with the menu-free route: the drag handle.
+    // Make Status wide first with the menu-free route: the drag handle (at 1366 the grid scrolls sideways, LC-09: bring the handle into view).
+    await handle(page, 'status').scrollIntoViewIfNeeded();
     const box = (await handle(page, 'status').boundingBox())!;
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();
@@ -405,7 +406,7 @@ test.describe('Column header menu (#207)', () => {
     await item(page, 'hide').click();
     await expect(th(page, 'matter')).toHaveCount(0);
     await expect(note(page)).toHaveText('CM Number column hidden');
-    await expect(sortButton(page, 'priority')).toBeFocused();
+    await expect(sortButton(page, 'matterName')).toBeFocused();
     await page.getByRole('button', { name: 'Columns', exact: true }).click();
     await expect(page.getByRole('checkbox', { name: 'CM Number' })).not.toBeChecked();
     await page.keyboard.press('Escape');

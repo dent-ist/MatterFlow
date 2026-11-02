@@ -306,7 +306,8 @@ test.describe('Open in Task Queue', () => {
       await page.setViewportSize({ width: w, height: h });
       await myWork.open('?view=active');
       const open = page.getByRole('link', { name: 'Open in Task Queue' });
-      if (w >= 1366) {
+      if (w >= 768) {
+        // LC-09: the controls stay in the toolbar from 768 px (the grid scrolls sideways instead of moving them into the sheet).
         await expect(open).toBeVisible();
         await expect(open).toHaveAttribute('href', /^\/tasks\?.*assignee=\d+/);
         await expect(open).toHaveAttribute('href', /status=NEW/);
@@ -323,7 +324,7 @@ test.describe('Open in Task Queue', () => {
         await expect(page.getByRole('heading', { name: 'Task Queue', level: 1 })).toBeVisible();
       }
       await shot(page, `m10-toolbar-${w}x${h}`);
-      if (w >= 1366 && axeAvailable())
+      if (w >= 768 && axeAvailable())
         expect(await axeViolations(page), `toolbar at ${w}`).toEqual([]);
     }
   });

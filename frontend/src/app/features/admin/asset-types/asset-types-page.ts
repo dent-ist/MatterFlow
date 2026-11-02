@@ -36,7 +36,7 @@ import { Pager } from '../../../shared/ui/pager';
 import { phoneCards } from '../../../shared/ui/record-card-list';
 import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { rowActions } from '../../../shared/ui/row-actions';
-import { viewportAtLeast } from '../../../shared/ui/viewport';
+import { COLUMN_ROOM } from '../../../shared/ui/viewport';
 import { FilterChips } from '../../../shared/ui/filter-chips';
 import { WorkStripItem } from '../../../shared/work-queue/work-strip';
 import {
@@ -64,9 +64,6 @@ const COLUMN_SPEC: Record<Column, AdminColumn> = {
   status: { cls: 'mf-cell-badge', bone: '4rem' },
   actions: { cls: 'mf-cell-actions', bone: '1.5rem' },
 };
-
-/** The Assets column leaves below this window width (the kit's column-drop rule); the Fields cell is the point of the list and stays. */
-const ASSETS_ROOM = 900;
 
 /** The most asset types one request returns; the list is loaded whole (a firm has a handful), page after page when there are more. */
 const LOAD_PAGE_SIZE = 100;
@@ -305,7 +302,7 @@ export class AssetTypesPage extends LocalListPage<AssetTypeResponse> {
   protected readonly listId = ADMIN_LIST.assetTypes.id;
   protected readonly leave = inject(AdminListLeave);
   protected readonly phone = phoneCards();
-  private readonly assetsRoom = viewportAtLeast(ASSETS_ROOM);
+  private readonly assetsRoom = COLUMN_ROOM;
   protected readonly defaultSort = 'sortOrder';
 
   protected readonly canManage = computed(() => this.auth.has('AssetType.Manage'));
