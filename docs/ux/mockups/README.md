@@ -118,6 +118,86 @@ Tiles are 96 px tall everywhere on desktop. At 1366: A 232 px wide (3 tiles plus
 5. The sentence under the title (Recommended) is computed; keep it, or leave the subtitle as the date only?
 6. Pod Lead sees Team capacity instead of Clients on Summary. Should Directors also get a team strip, or is the Users tab enough?
 
+> Superseded by Dashboard mockup v3 (below), which applies the owner's answers of 2026-11-02 to design A. The Recommended design described here is no longer the direction.
+
+---
+
+# Dashboard mockup v3 (`dashboard-mockup-v3.html`)
+
+Issue #997 (TH-15). This applies the owner's answers of 2026-11-02 (comment on #997) to design A of v2. It is a new standalone file (copy of v2 design A, then changed); `dashboard-mockup.html` (v1) and `dashboard-mockup-v2.html` are untouched. Mock data is the same as v1 and v2 (4 clients, 8 matters, 60 tasks, 8 people, today = Thu 2026-10-29). Open by double-clicking; nothing is built in the app yet.
+Deep links: `dashboard-mockup-v3.html#role=pod&tab=users&state=live&client=nw&matter=m2041&list=hold&without=ViewUsers` (`role` director, pod, tech; `state` live, empty, loading, stale; `list` unassigned, overdue, hold; `without` takes a comma list of `Dashboard.*` permission suffixes to remove from the role, for example `ViewUsers` or `View`).
+Screenshots: `screenshots/dashboard-v3-*.png` (each role at 1366x768 and 375x812, plus 1920 and 768, every tab, the three lists, the dropdown, the mockup panel, a role without `ViewUsers` and without `View`, empty, loading, stale, task drawer).
+Check script: `node docs/ux/mockups/dashboard-mockup-v3-contrast.js` (global `playwright`; contrast, page-fit and console errors; same method as the Notes scripts).
+
+## What changed against v2
+- **One design.** Only design A (compact tiles) is left. The "Recommended" design, the Design switch, the five tiles, the Clients health card, the computed sentence and the Project Manager role are gone.
+- **Three tiles: Unassigned, Overdue, On hold.** They are the switch for one list below them. ASAP, Due in 2 days, the radar card (ASAP, On hold, Open, Completed) and the Show dropdown are gone. Hints: "Oldest 13 days", "Worst 12 days overdue", "Longest 66 days". A zero turns teal ("All clear"), except On hold, which stays slate.
+- **No "due soon" on the Summary, in any form.** No tile, no list, no 2 / 7 day switch, no amber "Today / Tomorrow / In 2 days" in rows (a date is a plain date, overdue is red "N days overdue"), no due-soon rule in the matter wording, and not in the sentences, the Team capacity lines or the task drawer. It remains in one place on purpose, see question 1.
+- **Wording is the app's own.** "Overdue work" (red) and "Watch" (amber), never Late, At risk or On track. v2's "N days late" became "N days overdue" everywhere (rows, notifications).
+- **Subtitle under the title is the date only** ("Thursday, October 29, 2026"). Title is 19 px with the small icon chip, as My Matters.
+- **Roles are Director, Pod Lead and Technician** (the seeded Data Technician and Data Scientist, who share one permission set). Project Manager is removed.
+- **Team capacity** (the old "team strip") stays on Summary, in the right column above "What changed", and only for people who hold `Dashboard.ViewUsers`. No new permission.
+- **Permission rule is visible.** The Mockup toolbox (top bar, dashed button) has "View as" and, under it, the eight `Dashboard.*` permissions of that role as check boxes, a line "This view shows: ...", and the rule in words. Untick one and the page changes: without `ViewUsers` the Users tab and the Team capacity block disappear, without `ViewCoverage` the Coverage view disappears, without `ViewSummary` (but with `ViewUnassigned`) Summary becomes the queue only, without `View` the menu item disappears and the page says you have no access. The role button says "(edited)" and offers "Reset to the seeded ...".
+- **My Matters style.** Fixed page: the document never scrolls on desktop (768 wide or more and 561 tall or more); the task list, "What changed", Team capacity, Swimlane lanes, Breakdowns, Trends and Users scroll inside their frames and every frame ends 16 px above the window bottom. Below that size the page scrolls and the tiles stay three across. Every choice is the `mf-dropdown` look (rounded list, light blue chosen row, check at the right before the count, search only for the long Matter and Person lists, Esc closes and returns focus). Client, then Matter, Period and Task type sit in one row under the tabs, labels inside the buttons. Matters are grouped by client in the Matter list.
+- **Theme.** The colours are the tokens of `docs/ux/tokens.css` (red `#B42318` text on `#FDECEA`, violet, slate, and so on; the v2 palette was close but not the same), focus ring 2 px `--mf-focus`, input borders `--mf-border-strong`, navy navigation `#1A3556`. No thick coloured left or top borders; the selected tile is a 2 px ring plus a chevron.
+- **Dates.** The numeric `MM/DD hh:mm AM/PM` rule belongs to the new My Matters, so it is not applied here. The Dashboard keeps today's behaviour: readable short dates ("Fri, Oct 30", "Done Oct 28"), relative words ("Today 08:24", "Yesterday 16:39"), "N days overdue".
+- **No new shortcuts** (#420). The only keys are the ones already in v2 plus the standard widget keys inside the dropdown (arrows, Home, End, Enter, Esc).
+
+## How each owner decision was applied
+| # | Decision (comment on #997, 2026-11-02) | In the mockup |
+|---|---|---|
+| 1 | Tiles: Unassigned, Overdue, On hold only, no ASAP tile | Three tiles in that order for every role; ASAP tasks still show a blue "ASAP, no date" and an ASAP priority in the lists |
+| 2 | Project Manager has no Dashboard | Not in "View as"; the toolbox says why (seeded role has no `Dashboard.View`, script 38). Roles shown are Director, Pod Lead, Technician |
+| 3 | No Due soon list or tile, no 2 / 7 day switch | Removed from tiles, lists, rows, rules, sentences, Team capacity, drawer. Kept only on the Users tab, because the real Users tab already shows it (question 1) |
+| 4 | Keep "Overdue work / Watch" | The only place matter state is shown is the Client and Matter dropdowns: "Overdue work" or "Watch" under the name, nothing for a matter that is fine. Rule below |
+| 5 | Title sentence: date only by default | Subtitle is the date only; nothing computed |
+| 6 | Team strip by permission `Dashboard.ViewUsers`, no new permission | Team capacity card on Summary appears only when the role holds it (Director, Pod Lead); toolbox shows the rule |
+| 7 | Design A | Compact tiles, one switched list, "What changed" on the right |
+
+**Matter wording rule (my proposal, please confirm).** Overdue work = 2 or more overdue tasks, or any task 10 or more days overdue. Watch = 1 overdue task, or a task unassigned for 7 days or more. A client is as healthy as its worst matter. v1 also counted "due soon"; that part is dropped. v1's third word "On track" is not used (you listed it among the words to drop), so a healthy matter or client simply shows no word.
+
+## Per-role view
+| | Director | Pod Lead | Technician (Data Technician, Data Scientist) |
+|---|---|---|---|
+| Permissions | all 8 `Dashboard.*` | View, ViewSummary, ViewSwimlane, ViewUsers, ViewCoverage | View, ViewUnassigned |
+| Tabs | Summary, Breakdowns, Trends, Swimlane, Users | Summary, Swimlane, Users | none (one page, no tab row) |
+| Summary | 3 tiles, switched list, Team capacity, What changed. Opens on Overdue | same; opens on Unassigned | the Unassigned queue only, "Assign to me" on each row, no tiles, no filters |
+| Users tab | Workload and Coverage | Workload and Coverage | not shown |
+| Project Manager | not listed: no Dashboard by default, works from My Matters | | |
+
+## Measurements (Playwright, Chromium)
+- `dashboard-mockup-v3-contrast.js`: 100 role, tab, list, state and overlay views at 1366x768, 1920x1080, 768x1024 and 375x812 (dropdowns, drawer, notifications and the mockup panel included): 0 text contrast failures (4.5:1, 3:1 for large text), 0 console errors.
+- Fit: at 1366x768 and 1920x1080 and at 768x1024 the document height equals the window height in every view (`scrollHeight <= innerHeight`), no sideways scroll at any of the four sizes. At 1366x768 the Summary list frame shows about 7 rows and scrolls.
+- Keyboard checked by script: Enter opens a dropdown, arrows move, Enter chooses and focus returns to the button, Esc closes and returns focus; ticking and unticking permissions rebuilds tabs and tiles.
+
+## Remaining questions
+1. **Users tab still shows "Due soon".** The real Users tab already has a Due soon column (table), a Due soon number on each card and a "N due soon" line in `users-model.ts`, so by your rule I kept those numbers exactly as they are (open, not ASAP, due within 2 days) and did not touch them. For consistency with "no due soon", should the column and the card number go too? It is one column and one number; the API `dueSoon` field can stay.
+2. **Client and Matter filters vs Pod scope.** The real Dashboard has a Pod scope control (All pods, My pods, one pod) and a Period control; it has no Client or Matter filter. v2 replaced Pod scope with Client > Matter, and v3 kept that. For a Pod Lead who oversees a team, is Pod scope the right filter instead of, or next to, Client and Matter? Client and Matter need new backend parameters (see the estimate).
+3. **"What changed" needs a new data source.** Today's Dashboard has no activity feed. The feed (created, completed, assigned, due date moved) needs a new endpoint with the sensitive-matter rule. Keep it, or drop it from the build and give its space to Team capacity?
+4. **Matter wording rule** (above): confirm the thresholds, and confirm that a healthy matter shows no word instead of a third word.
+5. **ASAP visibility.** Overdue excludes ASAP tasks (it does today: "Excludes ASAP tasks"), and ASAP has no tile any more, so an ASAP task with no owner is only visible in Unassigned and one with an owner is only visible in Swimlane and Breakdowns. Acceptable?
+6. **Default list.** Tile order is the same for everyone (Unassigned, Overdue, On hold). The page opens on Overdue for a Director and on Unassigned for a Pod Lead. Confirm.
+7. **Subtitle format.** I used the readable full date ("Thursday, October 29, 2026") because the numeric format is a My Matters rule. Use `10/29` instead?
+8. **On hold list** replaces the Priority column with "On hold because" (the app already has that column). Fine?
+9. **Tree.** My Matters B has a Browse tree for Client and Matter. I used the dropdowns only (one row, matters grouped by client). Add the tree on the Dashboard, or are the dropdowns enough?
+
+## Build estimate for TH-15 (#997), agent-hours, on the real app
+The issue said 10.0 h for the v2 design. For v3, with the real code (`dashboard-page.ts`, `stat-tile`, `task-list-panel`, `dash-users-tab`, `DashboardService`) in mind:
+
+| Work | Hours |
+|---|---|
+| Summary: three compact tiles that switch one list (remove the Overview block, ASAP, Due soon, Open, Completed and Created tiles from Summary, keep the data for Trends), keep the inline assignment in the Unassigned list | 3.0 |
+| Fixed-page frames: list frame, Breakdowns, Trends, Users scroll inside frames; header with icon and date; the Summary right column | 2.5 |
+| Team capacity block on Summary, gated by `Dashboard.ViewUsers` (reuses `/dashboard/workload`; Summary calls it only when permitted); On hold list with "On hold because" | 2.5 |
+| Contract text: `Dashboard.ViewSummary` description (no due soon list), `permissions.json`, `architecture.md`, role editor wording; no new permission | 0.5 |
+| Tests: update unit and e2e specs that expect the old tiles and lists, axe at four sizes, screenshots | 3.5 |
+| **Core build** | **12.0** |
+| Optional A: "What changed" feed (new endpoint, sensitive-matter rule, OpenAPI and nswag, panel) | +3.0 |
+| Optional B: Client > Matter filters and Overdue work / Watch markers (backend parameters on summary, swimlane, workload, coverage; health read per matter; dropdowns; OpenAPI and nswag; tests) | +4.5 |
+| **With both options (the mockup as drawn)** | **19.5** |
+
+Estimates are for one agent working alone, with the existing `mf-dropdown`, `mf-fixed-page`, `mf-grid-frame` and `mf-stat-tile`; they assume questions 1 to 3 are answered before the build starts. Nothing in the backend changes for the core build, so no OpenAPI or schema script is needed there.
+
 
 ---
 
