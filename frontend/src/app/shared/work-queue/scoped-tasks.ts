@@ -74,11 +74,13 @@ const NO_PROJECT = 'none';
  * Title) still holds every column; a width the person changed wins.
  */
 const DEFAULT_WIDTHS_PX: Readonly<Record<string, number>> = {
-  typeChip: 150,
-  project: 132,
-  assignee: 124,
+  typeChip: 120,
+  project: 116,
+  priority: 104,
+  assignee: 112,
+  due: 120,
   status: 116,
-  steps: 88,
+  steps: 80,
 };
 
 /** The query parameters of this grid's filters; the Matter page drops them when another tab is chosen. */
@@ -433,14 +435,14 @@ export class ScopedTasks {
     () => this.projectId() === null && (this.projectCount() ?? 1) > 0,
   );
   /**
-   * The columns this grid may have (MD-28/MD-29): the default order is Ref, Type, Title, Priority, Assignee, Due, Status, Progress. Project is
-   * available in the Columns menu (a Matter that has projects) and sits right after Title when it is added; Ref is pinned first and Title cannot be hidden.
+   * The columns this grid may have (MD-28/MD-29): the default order is Ref, Type, Title, Project, Priority, Assignee, Due, Status, Progress. Project is
+   * shown for a Matter that has projects (a Matter without any has nothing to choose, so the column is left out) and can be hidden in the Columns menu; Ref is pinned first and Title cannot be hidden.
    */
   protected readonly gridDefs = computed((): GridColumnDef[] => [
     { key: 'ref', label: 'Ref', locked: true, pinned: true },
     { key: 'typeChip', label: 'Type' },
     { key: 'title', label: 'Title', locked: true },
-    ...(this.withProject() ? [{ key: 'project', label: 'Project', defaultHidden: true }] : []),
+    ...(this.withProject() ? [{ key: 'project', label: 'Project' }] : []),
     { key: 'priority', label: 'Priority' },
     { key: 'assignee', label: 'Assignee' },
     { key: 'due', label: 'Due' },
