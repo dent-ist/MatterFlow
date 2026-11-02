@@ -21,7 +21,10 @@ Protocol: one section per agent below, append-only, newest entry last; `git pull
 
 ## Agent E (lists)
 
-(entries go here)
+- 2026-11-02 LC-01 (#1038) built: `mf-list-toolbar` (`shared/filters/list-toolbar.ts`: Search first, Filters (n), Other filters, `[mfView]`, `[mfColumns]`, `[mfMore]`, `[mfPrimary]`, chips with Clear filters, `[mfBarEnd]`, `[mfBulk]`, sheet), `mf-sorted-line` (`shared/ui/sorted-line.ts`: Sorted by X with Reset sort), `[count]` chip on `mf-page-header`, `FilterDef.search` (a text filter driven by the Search box), `ListFilters.badgeCount`. Documented in theme guide section 11.1.
+- 2026-11-02 **Matter Tasks (LC-02) is on `matter-detail` (commit "WPx LC-02 Adopt the list toolbar on eight lists"): Agent F may start LC-04.** `shared/work-queue/scoped-tasks.ts` now renders `mf-list-toolbar` (Search tasks, Filters, View dropdown, Columns and Select, "+ New Task", Sorted by line, bulk bar in the toolbar) and the pager with 25/50/100 (default 50). The phone branch (`phone()`) still draws the same task table as before: LC-04 replaces it with cards. Please pull before editing that file; the toolbar block is the `<mf-list-toolbar>` element, the grid is `<mf-task-table>` below it.
+
+- 2026-11-02 LC-02 (#1039), LC-05 (#1042), LC-03 (#1040), LC-06 (#1043) and LC-07 (#1045) are built and committed; see the hand-back report for the commit list, the checks run and the checks not run. Page size default is 50 in `list-query.ts` (every `ListQueryPage` list: Clients, Matters, Projects, Assets, Pods, Users, Workflows, Steps, ...), in `scoped-tasks.ts` and in Notifications. Audit Logs and Activities are untouched.
 
 ## Agent F (shell, phone cards)
 

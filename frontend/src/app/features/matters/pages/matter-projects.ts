@@ -23,7 +23,7 @@ import { groupProjects } from './matter-project-groups';
  * there is one), Open tasks and Overdue (left out without Task.View) and Status. Active projects come first in natural order; Archived
  * projects are one collapsed group row, "Archived (7)", below them (a 36 px button row, `aria-expanded`, Enter and Space toggle it; the
  * state is kept for this visit only, and the group starts open when every project is archived). Rows are 44 px. The empty tab keeps its
- * New project action. New project itself lives in the page header's overflow.
+ * New project action. New Project is a button above the grid and an entry of the page header's New menu.
  */
 @Component({
   selector: 'mf-matter-projects',
@@ -40,6 +40,11 @@ import { groupProjects } from './matter-project-groups';
   host: { class: 'mf-fill' },
   styleUrl: '../../../shared/ui/page.scss',
   styles: `
+    .mp-bar {
+      display: flex;
+      justify-content: flex-end;
+      margin: 0 0 var(--mf-s2);
+    }
     .mp-name {
       width: 100%;
       min-width: 14rem;
@@ -85,6 +90,15 @@ import { groupProjects } from './matter-project-groups';
         />
       </div>
     } @else {
+      <!-- A tab has no H1: its primary action ends the row above the grid (LC-07, #1045), as "New Task" does on the Tasks tab. The header's New menu keeps its Project entry. -->
+      <div class="mp-bar" *mfHasPermission="'Project.Create'">
+        <p-button
+          label="New Project"
+          icon="pi pi-plus"
+          data-new-project
+          (onClick)="newProject.emit()"
+        />
+      </div>
       <mf-grid-frame scrollLabel="Projects list">
         <table class="pg-table tt" data-matter-projects>
           <caption class="pg-sr">

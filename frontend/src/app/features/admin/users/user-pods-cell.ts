@@ -238,10 +238,30 @@ let nextId = 0;
     :host(.upc--one) .upc-trigger {
       max-width: 100%;
     }
-    :host(.upc--one) .upc-chip {
+    /* The chips give way to the cell, they never spill into the next column (LC-07, #1045: the primary chip with its Primary tag was wider than the cell and
+       painted over Availability at 1366 px): the chip shrinks (its pod name gets the ellipsis), the star, the tag and "+N" keep their size. */
+    :host(.upc--one) .upc-value,
+    :host(.upc--one) .upc-static {
+      max-width: 100%;
+    }
+    :host(.upc--one) .upc-chips {
       min-width: 0;
+      max-width: 100%;
+    }
+    :host(.upc--one) .upc-chip {
+      flex: 0 1 auto;
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+    }
+    :host(.upc--one) .upc-chip--more,
+    :host(.upc--one) .upc-chip .pi,
+    :host(.upc--one) .upc-tag {
+      flex: none;
     }
     :host(.upc--one) .upc-name {
+      flex: 0 1 auto;
+      min-width: 0;
       overflow: hidden;
       max-width: 8.5rem;
       text-overflow: ellipsis;
