@@ -160,23 +160,26 @@ test.describe('WP1: dialogs, popovers, shortcut list', () => {
       await columnsButton(mine).click();
       await expect(columnsPanel(mine)).toBeVisible();
       if (size.width > 480) {
-        await sortInfo.click();
-        await expect(columnsPanel(mine)).toHaveCount(0);
-        await expect(mine.locator('[data-sort-rule]')).toBeVisible();
-        await mine.keyboard.press('Escape');
-        await expect(mine.locator('[data-sort-rule]')).toHaveCount(0);
-        await columnsButton(mine).click();
-        await expect(columnsPanel(mine)).toBeVisible();
-      } else {
-        // On a phone the Columns sheet covers the toolbar below the tabs (the needs-attention strip pushes it down), so the sort info cannot
-        // be reached while it is open. The replacement is checked the other way round: Done, open the sort info, and the Columns button
-        // (above the sheet) replaces it.
+        // The Sorted by line is row 3 of the toolbar, under the Columns button (LC-01): the open panel covers its info button, so the panel is closed
+        // first (Done), the sort info opens, and the Columns button (above it) replaces the sort info.
         await mine.locator('[data-columns-close]').click();
         await expect(columnsPanel(mine)).toHaveCount(0);
         await sortInfo.click();
         await expect(mine.locator('[data-sort-rule]')).toBeVisible();
+        await mine.keyboard.press('Escape');
+        await expect(mine.locator('[data-sort-rule]')).toHaveCount(0);
+        await sortInfo.click();
+        await expect(mine.locator('[data-sort-rule]')).toBeVisible();
         await columnsButton(mine).click();
         await expect(mine.locator('[data-sort-rule]')).toHaveCount(0);
+        await expect(columnsPanel(mine)).toBeVisible();
+      } else {
+        // On a phone the Sorted by line is not shown in its default state (the Sort by select of the Filters sheet names the order, LC-01), so
+        // there is no sort info to open: Done closes the panel and the Columns button opens it again.
+        await mine.locator('[data-columns-close]').click();
+        await expect(columnsPanel(mine)).toHaveCount(0);
+        await expect(sortInfo).toBeHidden();
+        await columnsButton(mine).click();
         await expect(columnsPanel(mine)).toBeVisible();
       }
       // At 375 the panel is a bottom sheet over the button: Done closes it; wider, the button toggles.

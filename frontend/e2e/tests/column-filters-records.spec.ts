@@ -12,6 +12,9 @@ import { filterDropdown } from '../support/dropdown';
 const toggle = (page: Page) => page.getByRole('button', { name: /^Filters/ });
 const text = (page: Page, column: string) =>
   page.getByRole('textbox', { name: `Filter by ${column}` });
+/** The toolbar's Search box of Clients, Matters and Projects: it is the Name text filter since LC-01 (same `name` parameter). */
+const search = (page: Page) =>
+  page.getByRole('searchbox', { name: /^Search (clients|matters|projects)/ });
 const select = (page: Page, column: string) => filterDropdown(page, column);
 const grid = (page: Page, name: string) =>
   page.getByRole('region', { name: `${name}, scrollable` });
@@ -30,23 +33,23 @@ test.describe('Column filters on the record lists', () => {
       await page.goto('/clients');
       const rows = grid(page, 'Clients list').locator('tbody tr');
       await expect(rows.first()).toBeVisible();
-      // No standalone search box or status select, the row is open (WP8 #270), nothing is counted.
-      await expect(page.getByRole('searchbox')).toHaveCount(0);
+      // The Search box is always there (LC-01), no standalone status select, the row is open (WP8 #270), nothing is counted.
       await expect(page.locator('#client-search, #client-status')).toHaveCount(0);
-      await expect(text(page, 'Name')).toBeVisible();
+      await expect(search(page)).toBeVisible();
+      await expect(text(page, 'Name')).toHaveCount(0);
       await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true');
       await expect(select(page, 'Status')).toHaveAttribute('data-value', 'active');
       await expect(toggle(page)).toHaveText(/^\s*Filters\s*$/); // Active is a default: no count
 
-      await text(page, 'Name').fill(token);
+      await search(page).fill(token);
       await expect(page).toHaveURL(new RegExp(`name=${token}`));
       await expect(rows).toHaveCount(2);
       await expect(page.locator('[data-filter-live]')).toHaveText(/^\s*2 clients\u200b?\s*$/);
-      await text(page, 'Name').fill(`alpha ${token}`); // case-insensitive
+      await search(page).fill(`alpha ${token}`); // case-insensitive
       await expect(rows).toHaveCount(1);
       await expect(rows.first()).toContainText(a.clientNumber);
 
-      await text(page, 'Name').fill('');
+      await search(page).fill('');
       await text(page, 'Client number').fill(b.clientNumber);
       await expect(page).toHaveURL(/clientNumber=/);
       await expect(rows.filter({ hasText: `Beta ${token}` })).toHaveCount(1);
@@ -63,13 +66,12 @@ test.describe('Column filters on the record lists', () => {
         'No clients match these filters',
       );
       await expect(region.locator('thead th').first()).toBeVisible();
-      await expect(text(page, 'Name')).toBeVisible(); // opened by the address
+      await expect(search(page)).toHaveValue(/-nothing$/); // the Search box shows it
       await expect(page.locator('mf-pager')).toHaveCount(0);
 
-      // Row closed: the same filter is a chip.
+      // Row closed: the search text is still in the box (it is not a chip).
       await toggle(page).click();
-      const chips = page.getByRole('list', { name: 'Active filters' });
-      await expect(chips).toContainText('Name:');
+      await expect(search(page)).toHaveValue(/-nothing$/);
       await region.getByRole('button', { name: 'Clear filters' }).click();
       await expect(page).not.toHaveURL(/name=/);
       await expect(region.locator('tbody tr').first()).toBeVisible();
@@ -116,13 +118,16 @@ test.describe('Column filters on the record lists', () => {
       await expect(page.locator('table.pg-table')).toHaveCount(0);
       await toggle(page).click();
       await expect(sheet(page)).toBeVisible();
-      for (const column of ['Client number', 'Name', 'Status']) {
+      for (const column of ['Client number', 'Status']) {
         await expect(sheet(page).getByLabel(`Filter by ${column}`)).toBeVisible();
       }
-      await sheet(page).getByLabel('Filter by Name').fill(`phone ${token}`);
+      // Search stays in the toolbar on a phone; the sheet has no Name field (LC-01).
+      await expect(sheet(page).getByLabel('Filter by Name')).toHaveCount(0);
+      await expect(search(page)).toBeVisible();
+      await search(page).fill(`phone ${token}`);
       await expect(page).toHaveURL(/name=phone/);
       await sheet(page).getByRole('button', { name: 'Show 1 result' }).click();
-      await expect(page.getByRole('list', { name: 'Active filters' })).toContainText('Name:');
+      await expect(search(page)).toHaveValue(`phone ${token}`);
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
       );
@@ -154,7 +159,7 @@ test.describe('Column filters on the record lists', () => {
       const { alpha, merger, audit } = await seedMatters(seed, token);
       await page.goto(`/matters?name=${token}`);
       const rows = grid(page, 'Matters list').locator('tbody tr');
-      await expect(page.getByRole('searchbox')).toHaveCount(0);
+      await expect(search(page)).toHaveValue(token);
       await expect(rows).toHaveCount(3);
 
       await text(page, 'Client').fill(`alpha ${token}`);
@@ -200,7 +205,7 @@ test.describe('Column filters on the record lists', () => {
       });
       await expect(chip).toBeVisible();
       await toggle(page).click();
-      await text(page, 'Name').fill(`merger ${token}`);
+      await search(page).fill(`merger ${token}`);
       await expect(rows).toHaveCount(1);
       await chip.click();
       await expect(page).not.toHaveURL(/clientId=/);
@@ -405,25 +410,28 @@ test.describe('Column filters on the record lists', () => {
     ] as const) {
       await page.goto(url);
       await expect(grid(page, region).locator('tbody tr').first()).toBeVisible();
+      // Clients, Matters and Projects have the Search box (LC-01); the Client's Matters grid and the Matter's Assets tab keep the Name cell of the row.
+      const name = ['/clients', '/matters', '/projects'].includes(url)
+        ? search(page)
+        : text(page, 'Name');
       if (openByDefault) {
         expect(await axeViolations(page), `${url} open`).toEqual([]);
         await toggle(page).click(); // closed
-        await expect(text(page, 'Name')).toHaveCount(0);
         expect(await axeViolations(page), `${url} closed`).toEqual([]);
         await toggle(page).click();
       } else {
         expect(await axeViolations(page), `${url} closed`).toEqual([]);
         await toggle(page).click();
       }
-      await expect(text(page, 'Name')).toBeVisible();
+      await expect(name).toBeVisible();
       expect(await axeViolations(page), `${url} open`).toEqual([]);
-      await text(page, 'Name').fill(token);
-      await text(page, 'Name').press('Enter');
+      await name.fill(token);
+      await name.press('Enter');
       await expect(page).toHaveURL(/name=/);
       await expect(grid(page, region).locator('tbody tr').first()).toBeVisible();
       expect(await axeViolations(page), `${url} filtered`).toEqual([]);
-      await text(page, 'Name').fill(`${token}-nothing`);
-      await text(page, 'Name').press('Enter');
+      await name.fill(`${token}-nothing`);
+      await name.press('Enter');
       await expect(grid(page, region).locator('td[data-empty="filtered"]')).toBeVisible();
       expect(await axeViolations(page), `${url} empty`).toEqual([]);
     }

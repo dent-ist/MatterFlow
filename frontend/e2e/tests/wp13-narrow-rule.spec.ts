@@ -175,7 +175,8 @@ test.describe('Narrow rule (#201)', () => {
     const g = await grid(page);
     expect(g.client).toBe(1098);
     expect(g.scroll).toBeLessThanOrEqual(g.client);
-    expect(g.title).toBeGreaterThanOrEqual(300);
+    // The standard order (Type too, LC-03) leaves the Title about 206 px at this width.
+    expect(g.title).toBeGreaterThanOrEqual(200);
     expect(g.hint).toBe(false);
     await shot(page, 'task-queue-box-1098');
 
@@ -234,7 +235,7 @@ test.describe('Narrow rule (#201)', () => {
     }
     await page.getByRole('button', { name: 'Columns', exact: true }).click();
     await expect(page.getByRole('checkbox', { name: 'Client' })).toBeChecked();
-    await expect(page.getByRole('checkbox', { name: 'Task type' })).toBeChecked();
+    await expect(page.getByRole('checkbox', { name: 'Type', exact: true })).toBeChecked();
     await shot(page, 'task-queue-extra-columns-1366x768');
   });
 });

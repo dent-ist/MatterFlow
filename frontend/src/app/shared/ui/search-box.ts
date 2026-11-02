@@ -219,6 +219,8 @@ export class SearchBox {
   readonly hintOnFocus = input(false);
   /** Draws a decorative search icon at the left inside the box (the look of the global search). */
   readonly leadingIcon = input(false);
+  /** The 32 px control of a toolbar (the height of the buttons beside it) instead of the 40 px field. */
+  readonly compact = input(false);
   protected readonly focused = signal(false);
 
   /** The text to search for (trimmed, empty when cleared). Emitted live, on Enter and on clear; never twice for the same text. */
