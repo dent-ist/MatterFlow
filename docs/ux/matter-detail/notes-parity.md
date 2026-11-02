@@ -2,7 +2,7 @@
 
 Source of truth: `docs/ux/mockups/notes-mockup-r3.html` (design option A, the one the README recommends) with its README section "Notes mockup, revision 3", and the Notes tab of the matter-detail mockup round 3 (`docs/ux/mockups/matter-detail/index.html`, branch `matter-detail-mockups`) where the owner's later decisions are already drawn. Owner decisions in `docs/requirements/decisions-addendum.md` section AQ (items 9 and 10) and the owner's later calls of 2026-11-02 win over the mockup when they conflict.
 
-**Result: 131 lines done (D), 12 different on purpose (P), 0 open (O).**
+**Result: 130 lines done (D), 13 different on purpose (P), 0 open (O).**
 
 Legend: **D** = done (built as in the mockup), **P** = different on purpose (the reason is in the line), **O** = open (not done, reason given). The result column is filled in at the end of the work. Screenshots: `docs/ux/matter-detail/notes-parity/` (`<state>-mockup-<size>.png` next to `<state>-app-<size>.png`; sizes 1366 and 375).
 
@@ -28,7 +28,7 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 | B3 | Pill "Read only" (eye icon, blue) when the person lacks Matter Note Edit, title "You can read notes on this matter. Adding and editing needs the Matter Note Edit permission." | D |
 | B4 | Search box with magnifier, placeholder "Search title and text", aria-label "Search notes by title and text", clear (x) button when text is typed; matches highlighted with `mark` in title and preview; preview shows the hit with a leading ellipsis when the hit is far in | D (mark in title and preview; the shared search box with its own clear; the far-hit ellipsis is not drawn: the preview is the server snippet)  |
 | B5 | Tag filter dropdown (tag icon, "Tags" prefix, value "All" or first name + "+n"), multi-select popover with search, colour dot, name, note count, check, Clear / Done, entries "Untagged" and "Locked" (with counts) | D (multi-select with search, counts, Untagged, Locked; tags and Locked combine) |
-| B6 | View switch (segmented, `aria-pressed`): By tag, Latest first, Board, Templates; labels shrink to icons when the card is narrower than 1000 px | D (labels fall back to icons under 1120/1000 px of card width) |
+| B6 | View switch (segmented, `aria-pressed`): By tag, Latest first, Templates (the Board view was removed on the owner's request, #1046); labels shrink to icons when the card is narrower than 1000 px | D (labels fall back to icons under 1120/1000 px of card width) |
 | B7 | Collapse all / Expand all groups icon button (only in By tag view) | D |
 | B8 | Sort dropdown (not in Templates): Newest (updated), Oldest, A to Z, Created; pinned notes always stay on top | D (Newest, Oldest, A to Z, Created; pinned stay on top) |
 | B9 | "New note" split button: main part makes a blank note (edit mode), the caret opens "Blank note" / "From template..." (hidden for people without Matter Note Edit) | P: "New Note" (Title Case, theme guide section 9, MD-26) and the caret are two adjacent buttons from the shared button system instead of one joined split button |
@@ -44,7 +44,7 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 | C4 | Chips inside a group: the group's tag with a ring ("here"), then "also in" and the other tags; in Latest view all tags; no tags shows "No tags" | D |
 | C5 | Selected row has the blue background and `aria-current`; hover has a light background; focus ring inside the row | D |
 | C6 | Latest first view: one flat list, every note once | D |
-| C7 | Board view: one column per tag (272 px, chip + count header), cards with title, preview, "also in" chips, avatar + first name + date; horizontal scroll inside the frame | D |
+| C7 | Board view: one column per tag, cards with title, preview, "also in" chips | P: removed on the owner's request 2026-11-02 (#1046); a stored Board preference falls back to By tag |
 | C8 | Pinned notes stay on top inside each group; pinning does not change "updated by" | D |
 | C9 | Tag chip = rounded pill with dot and name, colours from the palette, 24 px high, ellipsis for long names | D |
 | C10 | Skeleton rows while loading ("Loading notes" for screen readers) | D |
@@ -256,8 +256,9 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 
 ## Screenshots
 
-`notes-parity/<state>-mockup-<size>.png` next to `notes-parity/<state>-app-<size>.png`, sizes `1366` (1366x768) and `375` (375x812). States: `list` (a note open, By tag), `edit`, `slash` (the menu), `templates`, `empty`, `tags` (tag picker), `locked`, `discard`, `link` (link dialog), `history`, `newmenu`, `filter`, `board`.
+`notes-parity/<state>-mockup-<size>.png` next to `notes-parity/<state>-app-<size>.png`, sizes `1366` (1366x768) and `375` (375x812). States: `list` (a note open, By tag), `edit`, `slash` (the menu), `templates`, `empty`, `tags` (tag picker), `locked`, `discard`, `link` (link dialog), `history`, `newmenu`, `filter`.
 
 11. **Side panels (owner request 2026-11-02, #1035).** The mockup shows Referenced items below the note and History as a column that collapses to a labelled rail; built as a right rail with History and References icons, one panel open at a time.
 12. **Tag colours and initials (2026-11-02).** Every tag is always drawn with a palette colour (a tag saved without one gets one from its id, the admin form has no neutral choice), and avatar initials come from one shared helper (`DOMAIN\\user`, addresses, single names).
 13. **Full width (owner request 2026-11-02, #1036).** The mockup caps the expanded note at 940 px and centres it. Edit mode now uses the whole width of the note panel (tag bar, toolbar and text box), with the rail on the right. Read mode used the same 940 px cap; it now also fills the width, but running text (paragraphs, lists, quotes, headings) keeps a readable line of about 110 characters, left aligned, while tables, the title and the chips use the full width.
+14. **No Board view (owner request 2026-11-02, #1046).** The mockup's Board view (one column per tag) was removed; the views are By tag, Latest and Templates.

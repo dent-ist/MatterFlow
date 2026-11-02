@@ -70,7 +70,7 @@ import {
 
 type PanelKind =
   'none' | 'tags' | 'history' | 'refs' | 'templates' | 'save-template' | 'template-edit';
-type NoteView = 'tag' | 'latest' | 'board' | 'templates';
+type NoteView = 'tag' | 'latest' | 'templates';
 type TagRow = NoteTagResponse & { noteTagId: number };
 
 const SPLIT_KEY = 'mf.notes.split';
@@ -102,7 +102,7 @@ interface RefChip {
 
 /**
  * The Notes tab of a Matter (epic #1001; MD-13 to MD-15 and MD-27 / #1031; the design is notes-mockup-r3, parity checklist docs/ux/matter-detail/notes-parity.md,
- * owner decisions AQ.9 and AQ.10): one card with a header row (count, search, tag filter, view switch By tag / Latest / Board / Templates, sort, New note), the notes
+ * owner decisions AQ.9 and AQ.10): one card with a header row (count, search, tag filter, view switch By tag / Latest / Templates, sort, New note), the notes
  * of the matter on the left (grouped by tag, pinned first, with a resizable splitter) and the open note on the right. A note opens in READ mode with an Edit button;
  * Edit shows the toolbar and replaces the buttons by Cancel (left) and Save (right); New starts in edit mode. The title is the first line of the text. Tags (firm-wide,
  * chosen from the list an administrator keeps), history (a column, a rail or a side panel) and the template forms open in the shared side panel; a locked note is read
@@ -293,7 +293,7 @@ interface RefChip {
             [style.width.px]="stacked() || !showPanel() ? null : listWidth()"
             data-notes-list
           >
-            <div class="nt__scroll" [class.nt__scroll--board]="view() === 'board'" tabindex="-1">
+            <div class="nt__scroll" tabindex="-1">
               @if (listError()) {
                 <p class="nt__error" role="alert" data-notes-error>
                   <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>{{ listError() }}
@@ -502,79 +502,6 @@ interface RefChip {
                     />
                   }
                 </ul>
-              } @else {
-                <div class="nt__board" role="list" aria-label="Tag board" data-notes-board>
-                  @for (g of groups(); track g.id) {
-                    <div class="nt__col" role="listitem" [attr.data-group]="g.id">
-                      <h3>
-                        @if (g.tag; as t) {
-                          <mf-note-tag [name]="t.name" [colourKey]="t.colourKey" />
-                          @if (!t.isActive) {
-                            <span class="nt__inactive">inactive</span>
-                          }
-                        } @else {
-                          <span class="nt__pill">Untagged</span>
-                        }
-                        <span class="nt__grow"></span>
-                        <span class="nt__cnt" [attr.aria-label]="g.notes.length + ' notes'">{{
-                          g.notes.length
-                        }}</span>
-                      </h3>
-                      <ul>
-                        @for (n of g.notes; track n.noteId) {
-                          <li>
-                            <button
-                              type="button"
-                              class="nt__card"
-                              data-note-item
-                              [class.is-twin]="twinId() === n.noteId && n.tags.length > 1"
-                              [attr.aria-current]="isOpen(n.noteId)"
-                              (mouseenter)="twinId.set(n.noteId)"
-                              (mouseleave)="twinId.set(null)"
-                              (focus)="twinId.set(n.noteId)"
-                              (blur)="twinId.set(null)"
-                              (click)="open(n.noteId, $event.detail === 0)"
-                            >
-                              <span class="nt__tt">
-                                @if (n.isPinned) {
-                                  <i class="pi pi-thumbtack" aria-hidden="true"></i
-                                  ><span class="mf-sr-only">Pinned. </span>
-                                }
-                                @if (n.isLocked) {
-                                  <i class="pi pi-lock" aria-hidden="true"></i
-                                  ><span class="mf-sr-only">Locked. </span>
-                                }
-                                <span class="nt__ti">{{ n.title }}</span>
-                              </span>
-                              <span class="nt__pv">{{ n.snippet }}</span>
-                              @if (otherTags(n, g.id).length) {
-                                <span class="nt__tags"
-                                  ><span class="nt__also">also in</span>
-                                  @for (t of otherTags(n, g.id); track t.noteTagId) {
-                                    <mf-note-tag [name]="t.name" [colourKey]="t.colourKey" />
-                                  }
-                                </span>
-                              }
-                              <span class="nt__meta">
-                                <span
-                                  class="nt__av nt__av--sm"
-                                  aria-hidden="true"
-                                  [style.background]="av(n.updatedByName).bg"
-                                  [style.color]="av(n.updatedByName).fg"
-                                  >{{ initials(n.updatedByName) }}</span
-                                >
-                                <span
-                                  >{{ firstName(n.updatedByName) }} &middot;
-                                  {{ n.updatedAtUtc | mfNum }}</span
-                                >
-                              </span>
-                            </button>
-                          </li>
-                        }
-                      </ul>
-                    </div>
-                  }
-                </div>
               }
             </div>
           </div>
@@ -1808,7 +1735,6 @@ export class NotesTab {
   protected readonly views: { id: NoteView; label: string; short: string; icon: string }[] = [
     { id: 'tag', label: 'By tag', short: 'By tag', icon: 'pi-align-left' },
     { id: 'latest', label: 'Latest first', short: 'Latest', icon: 'pi-list' },
-    { id: 'board', label: 'Board', short: 'Board', icon: 'pi-objects-column' },
     { id: 'templates', label: 'Templates', short: 'Templates', icon: 'pi-clone' },
   ];
   protected readonly sortItems: DropdownItem[] = [
@@ -2218,10 +2144,6 @@ export class NotesTab {
 
   protected initials(name: string | null | undefined): string {
     return initialsOf(name);
-  }
-
-  protected firstName(name: string | null | undefined): string {
-    return (name ?? 'Someone').split(/\s+/)[0];
   }
 
   protected tagNames(n: NoteResponse): string {
@@ -3222,7 +3144,7 @@ export class NotesTab {
   private readView(): NoteView {
     try {
       const v = localStorage.getItem(VIEW_KEY);
-      return v === 'latest' || v === 'board' || v === 'tag' ? v : 'tag';
+      return v === 'latest' || v === 'tag' ? v : 'tag';
     } catch {
       return 'tag';
     }
