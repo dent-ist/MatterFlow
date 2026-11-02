@@ -19,7 +19,7 @@ async function openMenuIfPhone(page: Page): Promise<void> {
 test.describe('Navigation panel colour and version (#939, #940)', () => {
   test.setTimeout(300_000);
 
-  test('own background, selected item a filled pill (no thick border), bigger icons, version at the foot, axe clean, at every width', async ({
+  test('own background, selected item a filled row with 6 px corners (no thick border), bigger icons, version at the foot, axe clean, at every width', async ({
     page,
   }) => {
     expect(axeAvailable(), 'set E2E_AXE_PATH to axe.min.js').toBe(true);
@@ -51,7 +51,7 @@ test.describe('Navigation panel colour and version (#939, #940)', () => {
       });
       expect(marks.weight, 'semi-bold').toBeGreaterThanOrEqual(600);
       expect(marks.bg, 'filled').toBe('rgb(255, 255, 255)');
-      expect(marks.radius, 'rounded').toBeGreaterThanOrEqual(10);
+      expect(marks.radius, '6 px corners (SH-01, #1044)').toBe(6);
       expect(marks.left, 'no thick left border').toBe('0px');
       expect(marks.shadowInset, 'no inset bar').toBe(false);
       expect(marks.icon, 'icon size').toBe(

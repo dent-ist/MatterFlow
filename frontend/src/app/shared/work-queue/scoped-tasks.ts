@@ -32,6 +32,7 @@ import { FilterDef, FilterOption } from '../filters/filter-def';
 import { ListToolbar } from '../filters/list-toolbar';
 import { SortedLine } from '../ui/sorted-line';
 import { SORT_LABELS } from './sort-note';
+import { PhoneSort, SortChoice, SortOption } from './phone-sort';
 import { ListFilters } from '../filters/list-filters';
 import { LoadState } from '../ui/data-table';
 import { PageFooter } from '../ui/page-footer';
@@ -130,6 +131,7 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
     TaskSelectList,
     TaskTable,
     ListToolbar,
+    PhoneSort,
     SortedLine,
     GridColumns,
   ],
@@ -198,7 +200,7 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
         }
         @if (canBulk()) {
           <button
-            mfColumns
+            mfMore
             type="button"
             class="mf-btn"
             data-select-mode
@@ -219,6 +221,15 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
             (onClick)="create()"
           />
         }
+        <!-- Cards have no column headers: the Sort select is in the Filters sheet on a phone (LC-04, #1041). -->
+        <mf-phone-sort
+          mfSheetSort
+          [sort]="sort()"
+          [dir]="dir()"
+          [options]="phoneSorts"
+          [defaultOrder]="defaultOrderRule"
+          (sortPick)="pickSort($event)"
+        />
         <mf-sorted-line
           mfBarEnd
           [field]="sort()"
@@ -313,6 +324,7 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
           [projectChoices]="rowProjectChoices()"
           (projectPick)="pickRowProject($event)"
           [origin]="projectId() === null ? 'matter' : 'project'"
+          [phoneCards]="true"
           [rowList]="rowList()"
           [state]="state()"
           [filters]="filters"
@@ -395,6 +407,20 @@ export class ScopedTasks {
   protected readonly defaultOrderRule =
     'Default order: Priority, then ASAP first, then due date, then oldest';
   protected readonly phone = phoneCards();
+  /** The sorts the Matter Tasks columns offer (the same values as the header clicks), for the phone's Sort select. */
+  protected readonly phoneSorts: readonly SortOption[] = [
+    'priority',
+    'due',
+    'created',
+    'number',
+    'status',
+    'title',
+    'assignee',
+  ].map((value) => ({
+    value,
+    label: SORT_LABELS[value] ?? value,
+    descFirst: value === 'created',
+  }));
 
   // --- bulk change (epic #667, #699) ---------------------------------------------------------------------------------------------
   /** Selection mode: the grid becomes a list with a checkbox per open task. */
@@ -880,6 +906,18 @@ export class ScopedTasks {
       this.page.set(1);
       void this.load();
     }
+  }
+
+  /** The phone's Sort select: a field and a direction like a header click, or null for the default order. */
+  protected pickSort(choice: SortChoice | null): void {
+    if (!choice) {
+      this.resetSort();
+      return;
+    }
+    this.sort.set(choice.field);
+    this.dir.set(choice.dir);
+    this.page.set(1);
+    void this.load();
   }
 
   protected sortBy(field: string): void {

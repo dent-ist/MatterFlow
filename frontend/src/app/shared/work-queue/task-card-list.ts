@@ -172,36 +172,54 @@ export function initialsOf(name: string): string {
                       >{{ row.title }}</a
                     >
                   </h2>
-                  <p
-                    class="tc-sub"
-                    data-card-matter
-                    [attr.title]="row.clientName + ' · ' + row.matterName"
-                  >
-                    <span class="tc-client">{{ row.clientName }}</span>
-                    <span aria-hidden="true"> · </span><span class="mf-sr-only">, </span>
-                    <mf-matter-ref
-                      [value]="row.matterRef"
-                      [link]="
-                        matterLink() && row.matterCanOpen !== false
-                          ? ['/matters', row.matterId]
-                          : null
-                      "
-                      [copy]="false"
-                    />
-                    @if (row.matterIsSensitive) {
-                      <i
-                        class="pi pi-exclamation-triangle tc-sensitive"
-                        role="img"
-                        aria-label="Sensitive matter"
-                      ></i>
-                    }
-                    @if (!assigneeShown()) {
-                      <ng-container
-                        [ngTemplateOutlet]="num"
-                        [ngTemplateOutletContext]="{ $implicit: row }"
+                  @if (!hideContext()) {
+                    <p
+                      class="tc-sub"
+                      data-card-matter
+                      [attr.title]="row.clientName + ' · ' + row.matterName"
+                    >
+                      <span class="tc-client">{{ row.clientName }}</span>
+                      <span aria-hidden="true"> · </span><span class="mf-sr-only">, </span>
+                      <mf-matter-ref
+                        [value]="row.matterRef"
+                        [link]="
+                          matterLink() && row.matterCanOpen !== false
+                            ? ['/matters', row.matterId]
+                            : null
+                        "
+                        [copy]="false"
                       />
-                    }
-                  </p>
+                      @if (row.matterIsSensitive) {
+                        <i
+                          class="pi pi-exclamation-triangle tc-sensitive"
+                          role="img"
+                          aria-label="Sensitive matter"
+                        ></i>
+                      }
+                      @if (!assigneeShown()) {
+                        <ng-container
+                          [ngTemplateOutlet]="num"
+                          [ngTemplateOutletContext]="{ $implicit: row }"
+                        />
+                      }
+                    </p>
+                  }
+                  @if (shows('steps') && row.workflow.stepsTotal > 0) {
+                    <p class="tc-prog" data-col="steps" data-card-progress>
+                      <span class="tc-prog__bar" aria-hidden="true"
+                        ><span
+                          class="tc-prog__fill"
+                          [style.width.%]="
+                            (100 * row.workflow.stepsResolved) / row.workflow.stepsTotal
+                          "
+                        ></span
+                      ></span>
+                      <span class="tc-prog__text"
+                        >Progress: {{ row.workflow.stepsResolved }} of
+                        {{ row.workflow.stepsTotal }} steps</span
+                      >
+                    </p>
+                  }
                   <div class="tc-chips" data-card-chips>
                     @if (shows('priority')) {
                       <span class="tc-chip" data-col="priority">
@@ -338,6 +356,8 @@ export class TaskCardList {
   /** The projected `[empty-action]` content of the table, as a template. */
   readonly emptyAction = input<TemplateRef<unknown> | null>(null);
   readonly assignLink = input(false);
+  /** A Matter's or Project's own list: the Client and Matter line is left out (it is the page you are on); Progress shows where the tab has it. */
+  readonly hideContext = input(false);
   /** No inline editors (the table's `readOnly`). */
   readonly readOnly = input(false);
   /** Quiet badges (see the table). */

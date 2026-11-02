@@ -393,3 +393,10 @@
   color: var(--mf-text-muted);
   font-size: 12px;
 }
+
+// MD-34: the fields of a template in the note panel
+.nt__tfields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--mf-s2) var(--mf-s3);
+}

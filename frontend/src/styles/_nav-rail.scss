@@ -16,8 +16,8 @@
   }
 
   .mf-nav :is(a, .mf-nav-morebtn) {
-    /* !important: the shell component's own rule (pill) is more specific than this global sheet. */
-    border-radius: 10px !important;
+    /* !important: the shell component's own rule is more specific than this global sheet. The same 6 px as the full panel (SH-01, #1044). */
+    border-radius: var(--mf-nav-item-radius) !important;
   }
 
   .mf-nav a > .mf-badge {

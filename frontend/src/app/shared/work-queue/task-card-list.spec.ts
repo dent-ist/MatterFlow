@@ -86,6 +86,22 @@ describe('TaskCardList', () => {
     );
   });
 
+  it("a Matter's own list leaves out the client and matter line and shows the Progress in words (LC-04, #1041)", async () => {
+    const row = aRow();
+    await create([row], [...DEFAULT, 'steps'], { hideContext: true });
+    expect(el().querySelector('[data-card-matter]')).toBeNull();
+    const text = el().querySelector('[data-card-progress]')!.textContent!.replace(/\s+/g, ' ');
+    expect(text).toContain(
+      `Progress: ${row.workflow.stepsResolved} of ${row.workflow.stepsTotal} steps`,
+    );
+  });
+
+  it('shows the client and matter line and no Progress by default', async () => {
+    await create([aRow()], [...DEFAULT]);
+    expect(el().querySelector('[data-card-matter]')).not.toBeNull();
+    expect(el().querySelector('[data-card-progress]')).toBeNull();
+  });
+
   it('marks a sensitive matter with a labelled icon', async () => {
     await create([aRow({ matterIsSensitive: true })], DEFAULT);
     expect(el().querySelector('[aria-label="Sensitive matter"]')).not.toBeNull();
