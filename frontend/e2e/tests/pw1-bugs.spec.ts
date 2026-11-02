@@ -242,7 +242,7 @@ test.describe('Pod Work first release', () => {
         const l = await box(link);
         expect(l.x, 'link starts inside the grid').toBeGreaterThanOrEqual(grid.x);
         expect(l.x + l.width, 'link ends inside the grid').toBeLessThanOrEqual(grid.x + grid.width);
-        await expect(page.getByRole('columnheader', { name: /Matter Number/ })).toHaveCount(0);
+        await expect(page.getByRole('columnheader', { name: /CM Number/ })).toHaveCount(0);
         await expect(page.getByRole('columnheader', { name: /Assignee/ })).toBeVisible();
         expect(await pageSideScroll(page)).toBeLessThanOrEqual(0);
         if (width === 768) {
@@ -262,7 +262,7 @@ test.describe('Pod Work first release', () => {
       const pw = new PodWorkPage(page);
       await page.setViewportSize({ width: 900, height: 1024 });
       await page.goto(`/pods/work?podId=${fx.busy.podId}`);
-      await expect(page.getByRole('columnheader', { name: /Matter Number/ })).toBeVisible();
+      await expect(page.getByRole('columnheader', { name: /CM Number/ })).toBeVisible();
       await expect(pw.assignToMe(fx.busy.unassignedNumbers[0])).toBeVisible();
       await expect(page.getByRole('row', { name: /TSK-/ }).first()).toContainText('Unassigned');
 
@@ -283,11 +283,11 @@ test.describe('Pod Work first release', () => {
       await page.goto(`/pods/work?podId=${fx.busy.podId}`);
       await expect(page.getByRole('columnheader', { name: /Assignee/ })).toBeVisible();
       await page.getByRole('button', { name: 'Columns', exact: true }).click();
-      await page.getByRole('checkbox', { name: /Matter Number/ }).check();
+      await page.getByRole('checkbox', { name: /CM Number/ }).check();
       await page.keyboard.press('Escape');
-      await expect(page.getByRole('columnheader', { name: /Matter Number/ })).toBeVisible();
+      await expect(page.getByRole('columnheader', { name: /CM Number/ })).toBeVisible();
       await page.reload();
-      await expect(page.getByRole('columnheader', { name: /Matter Number/ })).toBeVisible();
+      await expect(page.getByRole('columnheader', { name: /CM Number/ })).toBeVisible();
     });
 
     test('Assign to me works with the keyboard from 768 px, and a read-only person has no link', async ({

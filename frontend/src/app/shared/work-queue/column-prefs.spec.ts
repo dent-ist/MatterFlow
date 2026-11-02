@@ -55,30 +55,34 @@ describe('work table preferences', () => {
 
   it('gives each scope its default and falls back to the page default for a tab without one', () => {
     expect(defaultColumns('taskQueue')).toEqual(normalizeColumns(DEFAULT_COLUMNS['taskQueue']!));
-    // #198: Matter is in every default set again (two-line cell, #197).
+    // LC-03: the standard order without Assignee (My Work lists the person's own tasks), Progress last.
     const active = [
       'ref',
+      'type',
       'title',
       'matter',
       'matterName',
-      'progress',
+      'project',
       'priority',
       'due',
       'status',
+      'progress',
     ];
     expect(defaultColumns('myWork.active')).toEqual(normalizeColumns(active));
     expect(defaultColumns('myWork.dueSoon')).toEqual(normalizeColumns(active));
     // C2: finished work has no progress, priority or due date by default.
     expect(defaultColumns('myWork.closed')).toEqual(
-      normalizeColumns(['ref', 'title', 'matter', 'matterName', 'closed', 'status']),
+      normalizeColumns(['ref', 'type', 'title', 'matter', 'matterName', 'closed', 'status']),
     );
     // B1, B3: where did the work I handed off go.
     expect(defaultColumns('myWork.createdByMe')).toEqual(
       normalizeColumns([
         'ref',
+        'type',
         'title',
         'matter',
         'matterName',
+        'project',
         'priority',
         'assignee',
         'due',
@@ -180,17 +184,25 @@ describe('work table preferences', () => {
       }
     });
 
-    it('drops a stored set equal to the old default, so the new default (with Matter Name) applies', () => {
+    it('keeps a stored set that equals an older default: the standard order of LC-03 changes the defaults only, a remembered choice is never rewritten', () => {
       saveColumns('taskQueue', 1, OLD_QUEUE);
       saveColumns('podWork.all', 1, OLD_QUEUE);
       saveColumns('myWork.active', 1, OLD_MY_WORK);
       saveColumns('myWork.closed', 1, ['ref', 'title', 'matter', 'closed', 'status']);
-      expect(loadColumns('taskQueue', 1)).toEqual(defaultColumns('taskQueue'));
-      expect(loadColumns('taskQueue', 1)).toContain('matterName');
-      expect(loadColumns('podWork.all', 1)).toContain('matterName');
-      expect(loadColumns('myWork.active', 1)).toContain('matterName');
-      expect(loadColumns('myWork.closed', 1)).toContain('matterName');
-      expect(stored('taskQueue', 1)).toBeNull();
+      expect(loadColumns('taskQueue', 1)).toEqual(normalizeColumns(OLD_QUEUE));
+      expect(loadColumns('podWork.all', 1)).toEqual(normalizeColumns(OLD_QUEUE));
+      expect(loadColumns('myWork.active', 1)).toEqual(normalizeColumns(OLD_MY_WORK));
+      expect(loadColumns('myWork.closed', 1)).toEqual(
+        normalizeColumns(['ref', 'title', 'matter', 'closed', 'status']),
+      );
+      expect(stored('taskQueue', 1)).not.toBeNull();
+    });
+
+    it('gives a person who never chose the new standard default, Matter Name included', () => {
+      for (const sc of ['taskQueue', 'podWork.all', 'myWork.active', 'myWork.closed']) {
+        expect(loadColumns(sc, 9)).toEqual(defaultColumns(sc));
+        expect(loadColumns(sc, 9)).toContain('matterName');
+      }
     });
 
     it('leaves a customised set alone, once: the column is added by the user afterwards', () => {
@@ -219,14 +231,15 @@ describe('work table preferences', () => {
     it('inserts Matter after Title in a My Work set without it, once', () => {
       saveColumns('myWork.active', 1, ['ref', 'title', 'progress', 'priority', 'due', 'status']);
       saveColumns('myWork.createdByMe', 1, ['ref', 'title', 'assignee']);
+      // The registry order puts Progress last (LC-03).
       expect(loadColumns('myWork.active', 1)).toEqual([
         'ref',
         'title',
         'matter',
-        'progress',
         'priority',
         'due',
         'status',
+        'progress',
       ]);
       expect(stored('myWork.createdByMe', 1)).toEqual(['ref', 'title', 'matter', 'assignee']);
       expect(columnsNoticePending('my-work', 1)).toBe(true);

@@ -21,7 +21,7 @@ export const SORT_LABELS: Readonly<Record<string, string>> = {
   completed: 'Closed',
   closed: 'Closed',
   title: 'Title',
-  matter: 'Matter Number',
+  matter: 'CM Number',
   matterName: 'Matter Name',
   updated: 'Updated',
   age: 'Age',

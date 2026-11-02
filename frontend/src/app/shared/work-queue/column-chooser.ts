@@ -23,10 +23,10 @@ import { WorkWidths } from './work-widths';
 
 /** The panel's groups (#230): what a column is for. The table keeps the canonical `WORK_COLUMNS` order. */
 const GROUPS: readonly { label: string; keys: readonly string[] }[] = [
-  { label: 'Task', keys: ['ref', 'title', 'type', 'workflow', 'progress'] },
-  { label: 'Where', keys: ['matter', 'matterName', 'client', 'project'] },
+  { label: 'Task', keys: ['ref', 'type', 'title', 'workflow', 'progress'] },
+  { label: 'Where', keys: ['matter', 'matterName', 'project', 'client'] },
   { label: 'Who', keys: ['assignee', 'pod', 'creator', 'requestor'] },
-  { label: 'When', keys: ['due', 'created', 'updated', 'closed', 'age'] },
+  { label: 'When', keys: ['due', 'closed', 'age', 'created', 'updated'] },
   { label: 'State', keys: ['priority', 'status', 'onHoldReason'] },
 ];
 

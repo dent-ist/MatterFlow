@@ -425,9 +425,19 @@ const LONG_PRESS_MS = 500;
                         }
                       }
                       @case ('type') {
-                        <span class="wt-clip" [attr.title]="row.taskTypeName">{{
-                          row.taskTypeName
-                        }}</span>
+                        <!-- The same chip and name as the Matter grid's Type (LC-03: one Type column on every task list). -->
+                        <span class="wt-typecell">
+                          <mf-task-type-chip
+                            [iconKey]="row.taskTypeIconKey"
+                            [colourKey]="row.taskTypeColourKey"
+                            [typeId]="row.taskTypeId"
+                            [decorative]="true"
+                            data-type-chip
+                          />
+                          <span class="wt-clip" data-type-name [attr.title]="row.taskTypeName">{{
+                            row.taskTypeName
+                          }}</span>
+                        </span>
                       }
                       @case ('workflow') {
                         <span class="wt-clip" [attr.title]="row.workflowName">{{

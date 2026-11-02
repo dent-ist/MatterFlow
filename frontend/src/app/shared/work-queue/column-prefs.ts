@@ -26,6 +26,8 @@ export interface ColumnDef {
 }
 
 export const WORK_COLUMNS: readonly ColumnDef[] = [
+  // The standard task column order (LC-03, decision AR 5 to 7), one for every task list: Ref, Type, Title, [CM Number, Matter Name on global lists], Project,
+  // Priority, Assignee, Due, Status, Progress. The registry order IS the order of every table and of the Columns menu; a page's default set only decides what is shown.
   // 112 and not the review's 96 (measured, PM ruling): the pause marker, a four-digit number (TSK-1008) and the New dot need 109 px.
   {
     key: 'ref',
@@ -36,6 +38,11 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     minWidth: 80,
     maxWidth: 120,
   },
+  // The task type as the coloured chip of My Matters with the type's name beside it (MD-29, #1033; every task list since LC-03). The storage key stays `type`, so
+  // stored columns, widths and the Task type filter survive the rename (it was "Task type", a name only).
+  { key: 'type', label: 'Type', width: 112, minWidth: 96, maxWidth: 260, autoHide: true },
+  // The same chip and name in a Matter's or Project's grid (own key: its stored choice is `grid-prefs`, never in a chooser or a default set, MD-24 #1028).
+  { key: 'typeChip', label: 'Type', width: 150, minWidth: 96, maxWidth: 260, scopedOnly: true },
   {
     key: 'title',
     label: 'Title',
@@ -47,13 +54,11 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     fill: true,
     resizable: false,
   },
-  // MD-24 (#1028), a Matter's or Project's grid only (never in a chooser or a default set): the task type as the coloured chip of My Matters (32 px) with the type's name beside it (MD-29).
-  { key: 'typeChip', label: 'Type', width: 150, minWidth: 96, maxWidth: 260, scopedOnly: true },
-  // The reference only (one line); the storage key stays `matter` so stored columns, widths and sorts survive the rename (#348). 144 and not
-  // the 160 of the two-line cell: the reference needs about 120 px and the room goes to Matter Name (measured, see docs/ux/task-queue-review).
+  // The reference only (one line); the storage key stays `matter` so stored columns, widths and sorts survive the rename (#348). Named CM Number everywhere (decision AR 5).
+  // 144 and not the 160 of the two-line cell: the reference needs about 120 px and the room goes to Matter Name (measured, see docs/ux/task-queue-review).
   {
     key: 'matter',
-    label: 'Matter Number',
+    label: 'CM Number',
     sortField: 'matter',
     width: 144,
     minWidth: 112,
@@ -80,16 +85,7 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     autoHide: true,
   },
   { key: 'project', label: 'Project', width: 140, minWidth: 96, maxWidth: 280, autoHide: true },
-  { key: 'type', label: 'Task type', width: 140, minWidth: 96, maxWidth: 280, autoHide: true },
   { key: 'workflow', label: 'Workflow', width: 150, minWidth: 96, maxWidth: 280, autoHide: true },
-  {
-    key: 'progress',
-    label: 'Workflow progress',
-    width: 160,
-    minWidth: 120,
-    maxWidth: 320,
-    autoHide: true,
-  },
   // The Priority trigger (badge, label, chevron) is 106 px until #202 moves the chevron inside; it may spill 2 px into the cell padding (`_tables.scss`).
   {
     key: 'priority',
@@ -112,7 +108,18 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
   { key: 'requestor', label: 'Requestor', width: 140, minWidth: 96, maxWidth: 280, autoHide: true },
   // Due: 120 px is the least that holds "Overdue 120d" with its icon (PM ruling on #200).
   { key: 'due', label: 'Due', sortField: 'due', width: 136, minWidth: 120, maxWidth: 200 },
+  // The Closed tab shows the day a task closed IN PLACE OF Due (directly before Status).
+  { key: 'closed', label: 'Closed', sortField: 'closed', width: 104, minWidth: 88, maxWidth: 160 },
   { key: 'status', label: 'Status', sortField: 'status', width: 140, minWidth: 112, maxWidth: 200 },
+  // Progress is the one name of the workflow progress (it was "Workflow progress"): "2 of 5 done, current step" here, a thin bar in a Matter's grid (`steps`).
+  {
+    key: 'progress',
+    label: 'Progress',
+    width: 160,
+    minWidth: 120,
+    maxWidth: 320,
+    autoHide: true,
+  },
   // MD-24 (#1028), a Matter's or Project's grid only: a thin bar of the resolved workflow steps ("2 of 5 steps" is its tooltip and accessible name).
   { key: 'steps', label: 'Progress', width: 104, minWidth: 72, maxWidth: 240, scopedOnly: true },
   // PM v2 (#877): the structured reason of a hold and its age; in the chooser only, the first to drop out of a narrow box.
@@ -125,7 +132,6 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     maxWidth: 280,
     autoHide: true,
   },
-  { key: 'closed', label: 'Closed', sortField: 'closed', width: 104, minWidth: 88, maxWidth: 160 },
   {
     key: 'age',
     label: 'Age',
@@ -181,32 +187,38 @@ export function columnScope(page: WorkPage, tab: string | null): ColumnScope {
   return `${base}.${TAB_SCOPE[tab] ?? tab}`;
 }
 
-// Chosen to fit a 1280 px screen without sideways scrolling (UXR-09). Project is empty for most tasks and Task type repeats what the
-// title says, so both live in the column chooser; so do Age, Pod (Task Queue and My Work) and Workflow progress (Pod Work).
+// The standard order of every task list (LC-03): Ref, Type, Title, CM Number, Matter Name, Project, Priority, Assignee, Due, Status, Progress. A narrow box drops
+// what does not fit, in `NARROW_DROP_ORDER` (Matter Name first), so a 1366 px window shows the columns it has room for, in this order. Client, Task workflow,
+// Pod, Creator, Requestor, Age, the dates and the hold reason live in the column chooser.
 const QUEUE_DEFAULT = [
   'ref',
+  'type',
   'title',
   'matter',
   'matterName',
+  'project',
   'priority',
   'assignee',
   'due',
   'status',
+  'progress',
 ];
 /** What the Task Queue and Pod Work showed before Matter Name (#348): a stored set equal to it was never customised. */
 const QUEUE_BEFORE_NAME = ['ref', 'title', 'matter', 'priority', 'assignee', 'due', 'status'];
 /** What My Work showed before X1 and WP6b: a stored set equal to it was never customised. */
 const MY_WORK_LEGACY = ['ref', 'title', 'matter', 'priority', 'progress', 'due', 'status'];
-/** Active and Due soon and overdue: Matter is back (WP6b #174 had dropped it, so stored sets without it are migrated) (#198), now a two-line cell (reference over name, #197). */
+/** Active and Due soon and overdue: the standard order without Assignee (the list is already the person's own). */
 const MY_WORK_DEFAULT = [
   'ref',
+  'type',
   'title',
   'matter',
   'matterName',
+  'project',
   'priority',
-  'progress',
   'due',
   'status',
+  'progress',
 ];
 
 /**
@@ -218,13 +230,15 @@ export const DEFAULT_COLUMNS: Readonly<Record<string, readonly string[]>> = {
   myWork: MY_WORK_DEFAULT,
   podWork: QUEUE_DEFAULT,
   // Closed (C2): finished work has no progress and no urgency; the date it closed (C1) and the outcome matter. Priority and Due are in the chooser.
-  'myWork.closed': ['ref', 'title', 'matter', 'matterName', 'closed', 'status'],
+  'myWork.closed': ['ref', 'type', 'title', 'matter', 'matterName', 'closed', 'status'],
   // Created by me (B1, B3): where did the work I handed off go: who has it, how urgent, when due, what state, how old.
   'myWork.createdByMe': [
     'ref',
+    'type',
     'title',
     'matter',
     'matterName',
+    'project',
     'priority',
     'assignee',
     'due',

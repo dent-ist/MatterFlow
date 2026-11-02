@@ -133,13 +133,16 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
     await expect(page.locator('[data-task]').first()).toBeVisible();
     expect(await headers(page)).toEqual([
       'Ref',
+      'Type',
       'Title',
-      'Matter Number',
+      'CM Number',
       'Matter Name',
+      'Project',
       'Priority',
       'Assignee',
       'Due',
       'Status',
+      'Progress',
     ]);
     // The number cell holds the reference and nothing else; the name is in its own column (link with Matter.View, tooltip = the name).
     const row = page.locator(`[data-task="${w.tasks[0].taskNumber}"]`);
@@ -158,13 +161,15 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
     await mw.open();
     const active = [
       'Ref',
+      'Type',
       'Title',
-      'Matter Number',
+      'CM Number',
       'Matter Name',
-      'Workflow progress',
+      'Project',
       'Priority',
       'Due',
       'Status',
+      'Progress',
     ];
     await expect(page.locator('[data-task]').first()).toBeVisible();
     expect(await headers(page)).toEqual(active);
@@ -176,9 +181,11 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
     await expect(page.locator('[data-task]').first()).toBeVisible();
     expect(await headers(page)).toEqual([
       'Ref',
+      'Type',
       'Title',
-      'Matter Number',
+      'CM Number',
       'Matter Name',
+      'Project',
       'Priority',
       'Assignee',
       'Due',
@@ -191,11 +198,12 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
       await expect(page.locator('[data-task]').first()).toBeVisible();
       expect(await headers(page)).toEqual([
         'Ref',
+        'Type',
         'Title',
-        'Matter Number',
+        'CM Number',
         'Matter Name',
-        'Status',
         'Closed',
+        'Status',
       ]);
       await shot(page, 'my-work-closed-1920x1080');
     }
@@ -207,13 +215,16 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
     await expect(page.locator('[data-task]').first()).toBeVisible();
     expect(await headers(page)).toEqual([
       'Ref',
+      'Type',
       'Title',
-      'Matter Number',
+      'CM Number',
       'Matter Name',
+      'Project',
       'Priority',
       'Assignee',
       'Due',
       'Status',
+      'Progress',
     ]);
     await shot(page, 'pod-work-1920x1080');
 
@@ -262,14 +273,16 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
   }) => {
     const w = await world(seed, 'mc-narrow', 1);
     const page = await asUser(w.me.username);
-    // 1366 px: the box is 1098 px, the Task Queue default needs 1140: Matter Name drops, nothing else.
+    // 1366 px: the box is 1098 px and the Task Queue default needs more: Matter Name, Project and Progress drop.
     await page.setViewportSize({ width: 1366, height: 768 });
     await new TaskQueuePage(page).open(`?q=${w.tag}`);
     await expect(page.locator('[data-task]').first()).toBeVisible();
+    // The standard order (LC-03); Matter Name, Project and Progress drop first, then nothing else: Type (112 px) and CM Number stay.
     expect(await headers(page)).toEqual([
       'Ref',
+      'Type',
       'Title',
-      'Matter Number',
+      'CM Number',
       'Priority',
       'Assignee',
       'Due',
@@ -288,8 +301,8 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
     await mw.open();
     await expect(page.locator('[data-task]').first()).toBeVisible();
     const keys = await headers(page);
-    expect(keys).toContain('Matter Number');
-    expect(keys).toContain('Workflow progress');
+    expect(keys).toContain('CM Number');
+    expect(keys).toContain('Progress');
     expect(keys).not.toContain('Matter Name');
     expect(await width(page, 'title')).toBeGreaterThanOrEqual(200);
     await axeClean(page, 'narrow My Work');
@@ -359,7 +372,7 @@ test.describe('Sorting by Matter Name (#348)', () => {
     await sortButton(page, 'matter').click();
     await expect(page).toHaveURL(/sort=matter(&|$)/);
     await expect(th(page, 'matter')).toHaveAttribute('aria-sort', 'ascending');
-    await expect(page.locator('[data-sort-note]')).toContainText('Sorted by Matter Number');
+    await expect(page.locator('[data-sort-note]')).toContainText('Sorted by CM Number');
     await expect.poll(async () => (await columnText(page, 'matterName'))[0]).toBe(zebra);
     const refs = await page.locator('[data-task] td[data-col="matter"]').allTextContents();
     expect(refs.map((r) => r.trim())).toEqual([...refs.map((r) => r.trim())].sort());
@@ -423,7 +436,7 @@ test.describe('Migration of stored column choices (#348)', () => {
     await new TaskQueuePage(a).open(`?q=${w.tag}`);
     await expect(a.locator('[data-task]').first()).toBeVisible();
     await expect(th(a, 'matterName')).toBeVisible();
-    expect((await headers(a)).slice(2, 4)).toEqual(['Matter Number', 'Matter Name']);
+    expect((await headers(a)).slice(3, 5)).toEqual(['CM Number', 'Matter Name']);
     await new MyWorkPage(a).open();
     await expect(th(a, 'matterName')).toBeVisible();
     // Another tab of the same page is untouched by the other scope: it shows its default (with Matter Name).
@@ -446,7 +459,7 @@ test.describe('Migration of stored column choices (#348)', () => {
     expect(await headers(b)).toEqual([
       'Ref',
       'Title',
-      'Matter Number',
+      'CM Number',
       'Client',
       'Priority',
       'Assignee',
@@ -481,13 +494,13 @@ test.describe('Columns panel, header menu, resize and fit for Matter Name (#348)
     await page.keyboard.press('Enter');
     const panel = page.locator('[data-columns-panel]');
     await expect(panel).toBeVisible();
-    // The Where group: Matter Number, Matter Name, Client, Project in that order.
+    // The Where group: CM Number, Matter Name, Project, Client in the registry order (LC-03).
     const where = panel.getByRole('group', { name: 'Where' });
     await expect(where.locator('label')).toHaveText([
-      /Matter Number/,
+      /CM Number/,
       /Matter Name/,
-      /Client/,
       /Project/,
+      /Client/,
     ]);
     await shot(page, 'columns-panel-1920x1080');
     const check = panel.getByLabel('Matter Name', { exact: true });
@@ -596,10 +609,10 @@ test.describe('Columns panel, header menu, resize and fit for Matter Name (#348)
     await page.setViewportSize({ width: 1920, height: 1080 });
     await new TaskQueuePage(page).open(`?q=${w.tag}`);
     await expect(page.locator('[data-task]')).toHaveCount(3);
-    await expect(page.getByLabel('Filter by Matter Number')).toBeVisible();
+    await expect(page.getByLabel('Filter by CM Number')).toBeVisible();
     await expect(page.getByLabel('Filter by Matter Name')).toHaveCount(0);
-    await page.getByLabel('Filter by Matter Number').fill(String(w.matters[1].matterRef));
-    await page.getByLabel('Filter by Matter Number').press('Enter');
+    await page.getByLabel('Filter by CM Number').fill(String(w.matters[1].matterRef));
+    await page.getByLabel('Filter by CM Number').press('Enter');
     await expect(page.locator('[data-task]')).toHaveCount(1);
     await expect(columnsButton(page)).toBeVisible();
   });
@@ -640,7 +653,7 @@ test.describe('Compact density and print (#348)', () => {
     await page.emulateMedia({ media: 'print' });
     await expect(page.locator('table.wt')).toBeVisible();
     const printed = await headers(page);
-    expect(printed).toContain('Matter Number');
+    expect(printed).toContain('CM Number');
     const tableWidth = await page
       .locator('table.wt')
       .evaluate((t) => t.getBoundingClientRect().width);

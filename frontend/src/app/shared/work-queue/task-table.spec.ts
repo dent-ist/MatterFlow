@@ -88,12 +88,12 @@ describe('TaskTable', () => {
     expect(f.nativeElement.querySelector('td[data-col="matterName"] .mn')).not.toBeNull();
   });
 
-  it('labels the columns Matter Number and Matter Name (#348)', async () => {
+  it('labels the columns CM Number and Matter Name (#348, LC-03)', async () => {
     await create([aRow()], ['ref', 'title', 'matter', 'matterName']);
     const heads = Array.from(el().querySelectorAll('thead tr:first-child th')).map((th) =>
       th.textContent?.trim(),
     );
-    expect(heads).toEqual(['Ref', 'Title', 'Matter Number', 'Matter Name']);
+    expect(heads).toEqual(['Ref', 'Title', 'CM Number', 'Matter Name']);
   });
 
   it('marks a sensitive matter with an icon that has a text alternative', async () => {

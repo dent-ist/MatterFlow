@@ -163,7 +163,7 @@ test.describe('My Work sorts, Closed column and column sets', () => {
 
     await expect(col('progress')).toBeVisible();
     await columns.click();
-    await page.getByLabel('Workflow progress', { exact: true }).uncheck();
+    await page.getByLabel('Progress', { exact: true }).uncheck();
     await expect(col('progress')).toHaveCount(0);
     if (axeAvailable()) expect(await axeViolations(page), 'chooser open at 1366').toEqual([]);
     await columns.click();

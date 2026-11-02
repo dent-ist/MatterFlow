@@ -105,7 +105,7 @@ const COLUMNS = ['type', 'name', 'size', 'externalReference', 'status'] as const
               >
                 Size
               </th>
-              <th scope="col">External reference</th>
+              <th scope="col">External Reference</th>
               <th
                 mfSort="disposition"
                 [sort]="sort()"
@@ -255,7 +255,7 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
       options: this.typeOptions(),
     },
     { key: 'name', label: 'Name', column: 'name', type: 'text' },
-    { key: 'extref', label: 'External reference', column: 'externalReference', type: 'text' },
+    { key: 'extref', label: 'External Reference', column: 'externalReference', type: 'text' },
     {
       key: 'status',
       label: 'Disposition',

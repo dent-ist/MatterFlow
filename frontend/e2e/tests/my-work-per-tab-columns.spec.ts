@@ -74,26 +74,26 @@ test.describe('My Work per-tab columns', () => {
     const myWork = new MyWorkPage(page);
     await myWork.open();
     await expect(page.locator('[data-task]')).toHaveCount(14);
-    // 1366 px: the narrow-box rule drops Matter Name (#348) so that Workflow progress and the Title keep their room.
+    // 1366 px: the narrow-box rule drops Matter Name, Project and Type (LC-03 standard order, Progress last) so that Progress and the Title keep their room.
     expect(await headers(page)).toEqual([
       'Ref',
       'Title',
-      'Matter Number',
-      'Workflow progress',
+      'CM Number',
       'Priority',
       'Due',
       'Status',
+      'Progress',
     ]);
     // Same set on Due soon and overdue.
     await myWork.tab(/^Due soon and overdue/).click();
     expect(await headers(page)).toEqual([
       'Ref',
       'Title',
-      'Matter Number',
-      'Workflow progress',
+      'CM Number',
       'Priority',
       'Due',
       'Status',
+      'Progress',
     ]);
     await myWork.open('?view=active');
 
@@ -160,14 +160,16 @@ test.describe('My Work per-tab columns', () => {
     );
     const myWork = new MyWorkPage(page);
     await myWork.open();
-    expect(await headers(page)).toEqual(['Ref', 'Title', 'Matter Number', 'Client', 'Status']);
+    expect(await headers(page)).toEqual(['Ref', 'Title', 'CM Number', 'Client', 'Status']);
     await expect(page.locator('[data-columns-notice]')).toBeVisible();
     await myWork.tab(/^Created by me/).click();
     expect(await headers(page)).toEqual([
       'Ref',
+      'Type',
       'Title',
-      'Matter Number',
+      'CM Number',
       'Matter Name',
+      'Project',
       'Priority',
       'Assignee',
       'Due',
@@ -179,7 +181,7 @@ test.describe('My Work per-tab columns', () => {
     await expect(page.locator('[data-columns-notice]')).toHaveCount(0);
     await page.reload();
     await expect(page.locator('[data-columns-notice]')).toHaveCount(0);
-    expect(await headers(page)).toEqual(['Ref', 'Title', 'Matter Number', 'Client', 'Status']);
+    expect(await headers(page)).toEqual(['Ref', 'Title', 'CM Number', 'Client', 'Status']);
     await expect(page.locator('[data-task]').first().locator('[data-sub-ref]')).toHaveCount(0);
   });
 
@@ -217,16 +219,16 @@ test.describe('My Work per-tab columns', () => {
     const myWork = new MyWorkPage(page);
     await myWork.open('?view=createdByMe');
     await myWork.search(tag);
-    // 1366 px: the narrow-box rule drops Matter Name (#348), Age keeps its room.
+    // 1366 px: the narrow-box rule drops Matter Name, Age and Project (LC-03: the standard order has more columns than the box holds).
     expect(await headers(page)).toEqual([
       'Ref',
+      'Type',
       'Title',
-      'Matter Number',
+      'CM Number',
       'Priority',
       'Assignee',
       'Due',
       'Status',
-      'Age',
     ]);
     // Open by default: the closed task is not here, the Status filter says Open without a chip, and the tab count follows the grid.
     await expect(page.locator('[data-task]')).toHaveCount(2);
@@ -355,11 +357,12 @@ test.describe('My Work per-tab columns', () => {
     await expect(page.locator('[data-task]')).toHaveCount(1);
     expect(await headers(page)).toEqual([
       'Ref',
+      'Type',
       'Title',
-      'Matter Number',
+      'CM Number',
       'Matter Name',
-      'Status',
       'Closed',
+      'Status',
     ]);
     await expect(page.locator('.pi-bolt')).toHaveCount(0);
     await shot(page, 'c2-closed-1366x768');

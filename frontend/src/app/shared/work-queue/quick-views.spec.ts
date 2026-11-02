@@ -248,8 +248,8 @@ describe('QuickViews', () => {
         'matter',
         'priority',
         'assignee',
-        'status',
         'closed',
+        'status',
       ]);
       expect(own).toEqual(copy);
       expect(overlayColumns(own, 'overdue')).toEqual(own);
