@@ -94,7 +94,7 @@ test.describe('Task Types rows and columns (#371)', () => {
     await expect(long).toHaveAttribute('title', /.+/);
   });
 
-  test('the columns drop in a fixed order: Open tasks below 1440, Workflows below 1280, Request form below 1180, Target below 1000', async ({
+  test('the columns drop in a fixed order: Open tasks below 1366, Workflows below 1200, Request form below 1100, Target below 1000', async ({
     page,
   }) => {
     const all = [
@@ -112,12 +112,13 @@ test.describe('Task Types rows and columns (#371)', () => {
     const noForm = noWorkflows.filter((h) => h !== 'Request form');
     const expected: [number, string[]][] = [
       [1920, all],
-      [1440, all],
-      [1366, noTasks],
+      [1366, all],
+      [1365, noTasks],
       [1280, noTasks],
-      [1200, noWorkflows],
-      [1180, noWorkflows],
-      [1100, noForm],
+      [1200, noTasks],
+      [1199, noWorkflows],
+      [1100, noWorkflows],
+      [1099, noForm],
       [1000, noForm],
       [900, noForm.filter((h) => h !== 'Target (days)')],
       [768, ['Name', 'Default workflow', 'Status', 'Actions']],

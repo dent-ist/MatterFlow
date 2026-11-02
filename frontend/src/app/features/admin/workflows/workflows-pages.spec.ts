@@ -703,7 +703,7 @@ describe('WorkflowsListPage phone cards and narrow columns (#375)', () => {
     );
   });
 
-  it('drops the optional columns in a fixed order as the window narrows: Last published below 1280 px, Task types below 1100 px, Steps below 900 px', async () => {
+  it('drops the optional columns in a fixed order as the window narrows: Last published below 1366 px, Task types below 1200 px, Steps below 900 px', async () => {
     const heads = (f: ComponentFixture<WorkflowsListPage>) =>
       Array.from(f.nativeElement.querySelectorAll('thead tr:first-child th')).map((th) =>
         (th as HTMLElement).textContent!.trim(),

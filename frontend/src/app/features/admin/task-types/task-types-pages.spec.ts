@@ -197,7 +197,7 @@ describe('TaskTypesPage phone cards and narrow columns (#374)', () => {
     );
   });
 
-  it('drops the optional columns in a fixed order as the window narrows: Workflows below 1280 px, Request form below 1180 px, Target below 1000 px', async () => {
+  it('drops the optional columns in a fixed order as the window narrows: Workflows below 1200 px, Request form below 1100 px, Target below 1000 px', async () => {
     const heads = (f: ComponentFixture<TaskTypesPage>) =>
       Array.from(f.nativeElement.querySelectorAll('thead tr:first-child th')).map((th) =>
         (th as HTMLElement).textContent!.trim(),
@@ -217,7 +217,7 @@ describe('TaskTypesPage phone cards and narrow columns (#374)', () => {
     ]);
     fixture.destroy();
     TestBed.resetTestingModule();
-    fixture = await open(1200);
+    fixture = await open(1150);
     expect(heads(fixture)).toEqual([
       'Name',
       'Default workflow',
@@ -228,7 +228,7 @@ describe('TaskTypesPage phone cards and narrow columns (#374)', () => {
     ]);
     fixture.destroy();
     TestBed.resetTestingModule();
-    fixture = await open(1300);
+    fixture = await open(1250);
     expect(heads(fixture)).toEqual([
       'Name',
       'Default workflow',

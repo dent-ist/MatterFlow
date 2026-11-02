@@ -161,7 +161,7 @@ test.describe('Workflows columns (#376, #377)', () => {
     expect(bare.workflow.workflowDefinitionId).toBeGreaterThan(0);
   });
 
-  test('the columns drop in a fixed order: Last published below 1366, Task types below 1180, Steps below 900; phone cards say the facts; permissions', async ({
+  test('the columns drop in a fixed order: Last published below 1366, Task types below 1200, Steps below 900; phone cards say the facts; permissions', async ({
     page,
     seed,
     asUser,
@@ -172,7 +172,7 @@ test.describe('Workflows columns (#376, #377)', () => {
       [1366, all],
       [1280, all.filter((h) => h !== 'Last published')],
       [1200, all.filter((h) => h !== 'Last published')],
-      [1180, all.filter((h) => h !== 'Last published')],
+      [1180, ['Name', 'Versions', 'Steps', 'Status', 'Actions']],
       [1100, ['Name', 'Versions', 'Steps', 'Status', 'Actions']],
       [1000, ['Name', 'Versions', 'Steps', 'Status', 'Actions']],
       [900, ['Name', 'Versions', 'Steps', 'Status', 'Actions']],
