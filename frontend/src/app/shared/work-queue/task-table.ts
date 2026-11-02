@@ -34,6 +34,7 @@ import { mfDate } from '../../core/time/time';
 import { TaskTypeBadge } from '../task-type/task-type-badge';
 import { TaskTypeChip } from '../ui/task-type-chip';
 import { Tip } from '../ui/tip';
+import { ColumnMove, ReorderColumns } from '../ui/reorder-columns';
 import { DueCell } from './due-cell';
 import { MfDatePipe } from '../pipes/mf-date.pipe';
 import { MatterCell, MatterNameCell } from './matter-cell';
@@ -93,6 +94,7 @@ const LONG_PRESS_MS = 500;
     TaskTypeBadge,
     TaskTypeChip,
     Tip,
+    ReorderColumns,
     RouterLink,
     RowLink,
     MatterCell,
@@ -159,6 +161,8 @@ const LONG_PRESS_MS = 500;
       } @else {
         <table
           class="wt"
+          mfReorder
+          (columnMove)="columnMoved.emit($event)"
           [class.wt--compact]="density() === 'compact'"
           [class.wt--narrow]="narrow()"
           [class.wt--scroll]="overflowing()"
@@ -189,6 +193,7 @@ const LONG_PRESS_MS = 500;
                   scope="col"
                   [attr.aria-sort]="ariaSort(col)"
                   [attr.data-col]="col.key"
+                  [attr.data-no-reorder]="reorderable() && col.key !== 'ref' ? null : ''"
                   [attr.tabindex]="!col.sortField && menuOn() ? 0 : null"
                   [attr.data-col-focus]="!col.sortField && menuOn() ? '' : null"
                   (keydown)="headerKey($event, col)"
@@ -381,13 +386,19 @@ const LONG_PRESS_MS = 500;
                         }
                       }
                       @case ('typeChip') {
-                        <mf-task-type-chip
-                          [iconKey]="row.taskTypeIconKey"
-                          [colourKey]="row.taskTypeColourKey"
-                          [typeId]="row.taskTypeId"
-                          [name]="row.taskTypeName"
-                          data-type-chip
-                        />
+                        <!-- The My Matters chip with the type's name beside it (MD-29, #1033). -->
+                        <span class="wt-typecell">
+                          <mf-task-type-chip
+                            [iconKey]="row.taskTypeIconKey"
+                            [colourKey]="row.taskTypeColourKey"
+                            [typeId]="row.taskTypeId"
+                            [decorative]="true"
+                            data-type-chip
+                          />
+                          <span class="wt-clip" data-type-name [attr.title]="row.taskTypeName">{{
+                            row.taskTypeName
+                          }}</span>
+                        </span>
                       }
                       @case ('steps') {
                         @if (row.workflow.stepsTotal > 0) {
@@ -650,6 +661,8 @@ export class TaskTable {
   readonly rows = input.required<readonly TaskQueueRow[]>();
   /** Keys of the columns to show, in table order. */
   readonly columns = input.required<readonly string[]>();
+  /** True: the columns come in the order of `columns` (the person's order, MD-28) and headers can be dragged; false: the canonical order of `WORK_COLUMNS`. */
+  readonly reorderable = input(false);
   /**
    * Column widths set by the user (the resize package, #203 to #207): a sparse map of column key to width in rem. A column without an
    * entry has its `ColumnDef.width`; entries are clamped to the column's min and max; the Title takes the rest (see `column-widths.ts`).
@@ -823,6 +836,8 @@ export class TaskTable {
 
   readonly sortChange = output<string>();
   /** A drag on a header edge ended with a new width (#204): the page stores it (`WorkWidths`). `defaultRem` is the default in force. */
+  /** A header was dragged to a new place (the grid keeps the order, shared/ui/grid-prefs.ts). */
+  readonly columnMoved = output<ColumnMove>();
   readonly columnResized = output<{ key: string; rem: number; defaultRem?: number }>();
   /** What the column menu asks of the page (#207): sort one way, hide a column, forget a stored width. Widths go through `columnResized`. */
   readonly columnAction = output<ColumnAction>();
@@ -922,8 +937,15 @@ export class TaskTable {
         (c.locked || wanted.has(c.key)) &&
         !(hide && (c.key === 'matter' || c.key === 'matterName' || c.key === 'client')),
     );
-    const dropped = narrowDrops(wide, this.boxWidth(), this.rootPx(), this.effectiveWidths());
-    return wide.filter((c) => !dropped.has(c.key));
+    const order = this.columns();
+    const placed = this.reorderable()
+      ? [...wide].sort((a, b) => {
+          const rank = (c: ColumnDef): number => (c.key === 'ref' ? -1 : order.indexOf(c.key));
+          return rank(a) - rank(b);
+        })
+      : wide;
+    const dropped = narrowDrops(placed, this.boxWidth(), this.rootPx(), this.effectiveWidths());
+    return placed.filter((c) => !dropped.has(c.key));
   });
 
   /**

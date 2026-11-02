@@ -4,6 +4,7 @@
   --mf-bg: #f5f6f8; /* app background */
   --mf-surface: #ffffff; /* cards, tables */
   --mf-surface-alt: #eef0f4; /* table header, zebra hover */
+  --mf-row-hover: #eaf0fb; /* the row under the pointer in every grid (MD-28); text 4.5:1 and links checked on it, never the only signal of selection or focus */
   --mf-border: #c9ced8; /* 1.7:1 decorative borders only */
   --mf-border-strong: #6b7280; /* 4.8:1 input borders (WCAG 1.4.11 >=3:1) */
   --mf-text: #1b1f27; /* 16.0:1 */
@@ -351,6 +352,7 @@
 /* Dark-theme values of the navigation panel (MM-43, MM-58): a deeper navy. Contrast on #101F33: text 14.6:1, muted 9.3:1, hover text on #1F3A5C
    10.2:1, focus ring #FFC15A 10.3:1; the selected pill stays white with #17324F text (13.1:1). */
 :root[data-theme="dark"] {
+  --mf-row-hover: #243247;
   --mf-nav-bg: #101f33;
   --mf-nav-hover-bg: #1f3a5c;
   --mf-nav-border: #2e4768;

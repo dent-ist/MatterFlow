@@ -39,6 +39,10 @@ describe('ScopedTasks', () => {
   const el = (): HTMLElement => fixture.nativeElement;
   const text = (e: Element | null): string => (e?.textContent ?? '').replace(/\s+/g, ' ').trim();
 
+  /** The person added the Project column in the Columns menu (it is not in the default set, MD-29). */
+  let withProject = false;
+  afterEach(() => (withProject = false));
+
   async function create(
     permissions: Permission[],
     inputs: Record<string, unknown> = {},
@@ -75,6 +79,24 @@ describe('ScopedTasks', () => {
     });
     navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true) as never;
     await TestBed.inject(AuthStore).ensureLoaded();
+    if (withProject) {
+      const user = TestBed.inject(AuthStore).profile()?.userId ?? 'anon';
+      const shown = [
+        'ref',
+        'typeChip',
+        'title',
+        'project',
+        'priority',
+        'assignee',
+        'due',
+        'status',
+        'steps',
+      ];
+      localStorage.setItem(
+        `mf.grid.v1.matterTasks.${user}`,
+        JSON.stringify({ v: 1, o: [], s: shown }),
+      );
+    }
     fixture = TestBed.createComponent(ScopedTasks);
     fixture.componentRef.setInput('matterId', 7);
     for (const [k, v] of Object.entries(inputs)) fixture.componentRef.setInput(k, v);
@@ -108,6 +130,7 @@ describe('ScopedTasks', () => {
   });
 
   it('a row has a Project dropdown with Task.Edit and projects; choosing one links the task (MD-05)', async () => {
+    withProject = true;
     await create(['Task.View', 'Task.Edit'], {
       projectOptions: [
         { value: '3', label: 'Wave 1' },
@@ -218,17 +241,48 @@ describe('ScopedTasks', () => {
     expect(opened).toHaveBeenCalledWith(9);
   });
 
-  it('shows the Project column only for a matter that has projects', async () => {
+  it('offers the Project column only for a matter that has projects, and not in the default set (MD-29)', async () => {
+    withProject = true; // even a stored choice cannot show it for a matter without projects
     await create(['Task.View'], { projectCount: 0 });
     expect(el().querySelector('th[data-col=project], [data-col=project]')).toBeNull();
-    expect(text(el().querySelector('thead'))).not.toContain('Project');
+    expect(el().querySelector('[data-grid-columns]')).not.toBeNull();
+    el().querySelector<HTMLButtonElement>('[data-grid-columns]')!.click();
+    fixture.detectChanges();
+    expect(el().querySelector('[data-grid-columns-panel] [data-column=project]')).toBeNull();
 
     TestBed.resetTestingModule();
+    withProject = false;
+    await create(['Task.View'], { projectCount: 2 });
+    expect(text(el().querySelector('thead'))).not.toContain('Project'); // default: Ref, Type, Title, Priority, Assignee, Due, Status, Progress
+    el().querySelector<HTMLButtonElement>('[data-grid-columns]')!.click();
+    fixture.detectChanges();
+    expect(el().querySelector('[data-grid-columns-panel] [data-column=project]')).not.toBeNull();
+
+    TestBed.resetTestingModule();
+    withProject = true;
     await create(['Task.View'], { projectCount: 2 });
     expect(text(el().querySelector('thead'))).toContain('Project');
   });
 
+  it('has the default column order Ref, Type, Title, Priority, Assignee, Due, Status, Progress, with the type name beside the chip (MD-29)', async () => {
+    await create(['Task.View']);
+    const heads = Array.from(el().querySelectorAll('thead tr:first-child th')).map((h) => text(h));
+    expect(heads).toEqual([
+      'Ref',
+      'Type',
+      'Title',
+      'Priority',
+      'Assignee',
+      'Due',
+      'Status',
+      'Progress',
+    ]);
+    expect(el().querySelector('[data-type-chip]')).not.toBeNull();
+    expect(text(el().querySelector('[data-type-name]'))).not.toBe('');
+  });
+
   it('draws the project name on one line with a tooltip, a link with Project.View', async () => {
+    withProject = true;
     await create(['Task.View', 'Project.View'], { projectCount: 2 });
     const cell = el().querySelector('mf-project-cell')!;
     expect(text(cell)).toBe('Wave 1');

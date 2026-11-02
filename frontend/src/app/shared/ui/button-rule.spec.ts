@@ -22,6 +22,7 @@ const FILES = [
   'features/notes/notes-tab.ts',
   'shared/ui/matter-assets.ts',
   'shared/ui/form-dialog.ts',
+  'shared/ui/grid-columns.ts',
   'shared/ui/slide-panel.ts',
   'shared/work-queue/scoped-tasks.ts',
 ];

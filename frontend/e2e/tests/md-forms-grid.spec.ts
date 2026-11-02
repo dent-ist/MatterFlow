@@ -182,3 +182,98 @@ test.describe('Matter detail tabs: Summary, Projects, Assets, Productions, butto
     await axeClean(page, 'productions tab');
   });
 });
+
+test.describe('Shared grid: Columns menu, reorder and row hover (MD-28, MD-29)', () => {
+  test('Tasks tab: move Due left by keyboard, hide Progress, add Project, reload keeps it, Reset restores', async ({
+    page,
+    seed,
+  }) => {
+    const world = await seed.world();
+    await seed.project(world.matter, 'Wave 1');
+    await seed.task(world, { dueDate: '2099-01-01' });
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto(`/matters/${world.matter.matterId}?tab=tasks`);
+    const heads = async () =>
+      (await page.locator('mf-task-table thead tr:first-child th').allTextContents()).map((t) =>
+        t.trim(),
+      );
+    await expect(page.locator('mf-task-table tbody tr[data-task]').first()).toBeVisible();
+    expect(await heads()).not.toContain('Project');
+
+    await page.locator('[data-grid-columns]').click();
+    const panel = page.locator('[data-grid-columns-panel]');
+    await panel.locator('[data-move="due:left"]').focus();
+    await page.keyboard.press('Enter');
+    await expect(panel.locator('[data-move="due:left"]')).toBeFocused();
+    await panel.locator('[data-column="steps"]').uncheck();
+    await panel.locator('[data-column="project"]').check();
+    await page.keyboard.press('Escape');
+    const after = await heads();
+    expect(after).not.toContain('Progress');
+    expect(after).toContain('Project');
+    expect(after.indexOf('Due')).toBeLessThan(after.indexOf('Assignee'));
+    await shot(page, 'tasks-columns-1366x768');
+
+    await page.reload();
+    await expect(page.locator('mf-task-table tbody tr[data-task]').first()).toBeVisible();
+    expect(await heads()).toEqual(after);
+
+    await page.locator('[data-grid-columns]').click();
+    await page.locator('[data-grid-columns-reset]').click();
+    await page.keyboard.press('Escape');
+    expect(await heads()).toEqual([
+      'Ref',
+      'Type',
+      'Title',
+      'Priority',
+      'Assignee',
+      'Due',
+      'Status',
+      'Progress',
+    ]);
+    await axeClean(page, 'tasks tab with the Columns menu');
+  });
+
+  test('the row under the pointer changes colour with the hover token', async ({ page, seed }) => {
+    const world = await seed.world();
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto(`/matters?name=${encodeURIComponent(world.matter.name)}&status=all`);
+    const cell = page.locator('tbody tr td.ml-name').first();
+    await expect(cell).toBeVisible();
+    const bg = () => cell.evaluate((c) => getComputedStyle(c).backgroundColor);
+    const before = await bg();
+    await cell.hover();
+    const hovered = await bg();
+    expect(hovered).not.toBe(before);
+    const token = await page.evaluate(() => {
+      const d = document.createElement('div');
+      d.style.background = 'var(--mf-row-hover)';
+      document.body.appendChild(d);
+      const c = getComputedStyle(d).backgroundColor;
+      d.remove();
+      return c;
+    });
+    expect(hovered).toBe(token);
+  });
+
+  test('Matters list: Client moves left of Name with the Columns menu and survives a reload', async ({
+    page,
+    seed,
+  }) => {
+    const world = await seed.world();
+    await page.setViewportSize({ width: 1366, height: 768 });
+    const url = `/matters?name=${encodeURIComponent(world.matter.name)}&status=all`;
+    await page.goto(url);
+    const heads = async () =>
+      (await page.locator('thead tr:first-child th').allTextContents()).map((t) => t.trim());
+    await expect(page.locator('tbody tr').first()).toBeVisible();
+    await page.locator('[data-grid-columns]').click();
+    await page.locator('[data-move="client:left"]').click();
+    await page.keyboard.press('Escape');
+    expect((await heads()).slice(0, 3)).toEqual(['CM Number', 'Client', 'Name']);
+    await page.reload();
+    await expect(page.locator('tbody tr').first()).toBeVisible();
+    expect((await heads()).slice(0, 3)).toEqual(['CM Number', 'Client', 'Name']);
+    await axeClean(page, 'matters list after a reorder');
+  });
+});

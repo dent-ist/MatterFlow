@@ -40,9 +40,9 @@ test.describe('PM v2 page fixes: Matters list columns (#881)', () => {
     expect(wide).toBeLessThanOrEqual(0);
     await expect(page.locator('thead th', { hasText: 'On hold' })).toHaveCount(0);
 
-    await page.locator('[data-matter-columns]').click();
+    await page.locator('[data-grid-columns]').click();
     for (const key of ['onHold', 'atRisk', 'dataSize', 'pending']) {
-      await page.locator(`[data-matter-columns-panel] [data-column="${key}"]`).check();
+      await page.locator(`[data-grid-columns-panel] [data-column="${key}"]`).check();
     }
     await page.keyboard.press('Escape');
     const rowA = page.locator('tbody tr', { hasText: d.matterA.matterRef });
@@ -73,6 +73,6 @@ test.describe('PM v2 page fixes: Matters list columns (#881)', () => {
     await plain.setViewportSize({ width: 1366, height: 768 });
     await plain.goto('/matters');
     await expect(plain.locator('tbody tr').first()).toBeVisible();
-    await expect(plain.locator('[data-matter-columns]')).toHaveCount(0);
+    await expect(plain.locator('[data-grid-columns]')).toHaveCount(0);
   });
 });

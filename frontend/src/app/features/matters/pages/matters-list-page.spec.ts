@@ -52,7 +52,6 @@ describe('MattersListPage', () => {
     columns: string[] = [],
   ) {
     localStorage.clear();
-    if (columns.length > 0) localStorage.setItem('mf.matters.columns', JSON.stringify(columns));
     const counts = {
       assets: 19,
       active: 16,
@@ -110,6 +109,24 @@ describe('MattersListPage', () => {
     });
     navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true) as never;
     await TestBed.inject(AuthStore).ensureLoaded();
+    if (columns.length > 0) {
+      // The Columns menu choice of this person (MD-28): the default columns plus the extras asked for.
+      const user = TestBed.inject(AuthStore).profile()?.userId;
+      const base = [
+        'matterRef',
+        'name',
+        'client',
+        'primaryManager',
+        'secondaryManager',
+        'openTasks',
+        'overdue',
+        'status',
+      ];
+      localStorage.setItem(
+        `mf.grid.v1.matters.${user ?? 'anon'}`,
+        JSON.stringify({ v: 1, o: [], s: [...base, ...columns] }),
+      );
+    }
     query.set(params);
     const fixture = TestBed.createComponent(MattersListPage);
     await settle(fixture);
@@ -143,12 +160,12 @@ describe('MattersListPage', () => {
     expect(heads()).not.toContain('On hold');
     expect(myMatters.getMyMattersData).not.toHaveBeenCalled();
 
-    (plain.nativeElement.querySelector('[data-matter-columns]') as HTMLButtonElement).click();
+    (plain.nativeElement.querySelector('[data-grid-columns]') as HTMLButtonElement).click();
     plain.detectChanges();
     const root: HTMLElement = plain.nativeElement;
     const boxes = Array.from(
-      root.querySelectorAll<HTMLInputElement>('[data-matter-columns-panel] input'),
-    );
+      root.querySelectorAll<HTMLInputElement>('[data-grid-columns-panel] input'),
+    ).filter((b) => ['onHold', 'atRisk', 'dataSize', 'pending'].includes(b.dataset['column']!));
     expect(boxes.map((b) => b.getAttribute('data-column'))).toEqual([
       'onHold',
       'atRisk',
@@ -159,7 +176,13 @@ describe('MattersListPage', () => {
     boxes[0].dispatchEvent(new Event('change'));
     await settle(plain);
     expect(heads()).toContain('On hold');
-    expect(JSON.parse(localStorage.getItem('mf.matters.columns')!)).toEqual(['onHold']);
+    const stored = JSON.parse(
+      localStorage.getItem(
+        `mf.grid.v1.matters.${TestBed.inject(AuthStore).profile()?.userId ?? 'anon'}`,
+      )!,
+    );
+    expect(stored.s).toContain('onHold');
+    expect(stored.s).not.toContain('atRisk');
   });
 
   it('shows the counts of the chosen columns, and the size and pending count from the Data API', async () => {
@@ -187,13 +210,13 @@ describe('MattersListPage', () => {
   it('leaves out the columns a permission hides: no On hold without Task.View, no Data size without Asset.View', async () => {
     // Asset.View and Task.View without the right to manage matters: the Data API would answer 403, so those two columns are not offered either.
     const noManage = await create(['Matter.View', 'Task.View', 'Asset.View'], {}, [aMatter()]);
-    (noManage.nativeElement.querySelector('[data-matter-columns]') as HTMLButtonElement).click();
+    (noManage.nativeElement.querySelector('[data-grid-columns]') as HTMLButtonElement).click();
     noManage.detectChanges();
     const offered: HTMLElement = noManage.nativeElement;
     expect(
-      Array.from(offered.querySelectorAll('[data-matter-columns-panel] input')).map((b) =>
-        b.getAttribute('data-column'),
-      ),
+      Array.from(offered.querySelectorAll('[data-grid-columns-panel] input'))
+        .map((b) => b.getAttribute('data-column'))
+        .filter((k) => ['onHold', 'atRisk', 'dataSize', 'pending'].includes(k!)),
     ).toEqual(['onHold', 'atRisk']);
     TestBed.resetTestingModule();
     const fixture = await create(
@@ -202,7 +225,7 @@ describe('MattersListPage', () => {
       [aMatter()],
       ['onHold', 'atRisk', 'dataSize', 'pending'],
     );
-    expect(fixture.nativeElement.querySelector('[data-matter-columns]')).toBeNull();
+    // The Columns menu itself stays (base columns can be hidden), but no extra column is offered or drawn.
     expect(fixture.nativeElement.querySelector('[data-col-head]')).toBeNull();
     expect(myMatters.getMyMattersData).not.toHaveBeenCalled();
   });
@@ -415,6 +438,39 @@ describe('MattersListPage', () => {
     expect(labels).toContain('Resize Name column');
     expect(labels).toContain('Resize Primary PM column');
     expect(labels).toContain('Resize Secondary PM column');
+  });
+
+  it('reorders and hides columns from the shared Columns menu, remembers it per person, and resets (MD-28, #1032)', async () => {
+    const fixture = await create(['Matter.View', 'Client.View', 'Task.View']);
+    const el: HTMLElement = fixture.nativeElement;
+    const heads = () =>
+      Array.from(el.querySelectorAll('thead tr:first-child th')).map((h) => h.textContent!.trim());
+    expect(heads().slice(0, 3)).toEqual(['CM Number', 'Name', 'Client']);
+    el.querySelector<HTMLButtonElement>('[data-grid-columns]')!.click();
+    fixture.detectChanges();
+    // Client moves left of Name by the keyboard-reachable button.
+    el.querySelector<HTMLButtonElement>('[data-move="client:left"]')!.click();
+    await settle(fixture);
+    expect(heads().slice(0, 3)).toEqual(['CM Number', 'Client', 'Name']);
+    const key = `mf.grid.v1.matters.${TestBed.inject(AuthStore).profile()?.userId ?? 'anon'}`;
+    expect(JSON.parse(localStorage.getItem(key)!).o.slice(0, 3)).toEqual([
+      'matterRef',
+      'client',
+      'name',
+    ]);
+    // Hide Overdue; Name cannot be hidden.
+    const box = (k: string) =>
+      el.querySelector<HTMLInputElement>(`[data-grid-columns-panel] [data-column="${k}"]`)!;
+    expect(box('name').disabled).toBe(true);
+    box('overdue').checked = false;
+    box('overdue').dispatchEvent(new Event('change'));
+    await settle(fixture);
+    expect(heads()).not.toContain('Overdue');
+    el.querySelector<HTMLButtonElement>('[data-grid-columns-reset]')!.click();
+    await settle(fixture);
+    expect(heads().slice(0, 3)).toEqual(['CM Number', 'Name', 'Client']);
+    expect(heads()).toContain('Overdue');
+    expect(localStorage.getItem(key)).toBeNull();
   });
 
   describe('Open tasks and Overdue (WP9, #266, #268)', () => {

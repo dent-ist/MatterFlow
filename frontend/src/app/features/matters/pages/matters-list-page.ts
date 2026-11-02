@@ -63,13 +63,26 @@ import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { ResizableColumns } from '../../../shared/ui/resizable-columns';
 import { MatterManagersDialog, ManagerTarget } from '../ui/matter-managers-dialog';
 import { MatterCreateDialog } from '../ui/matter-create-dialog';
+import { GridColumns } from '../../../shared/ui/grid-columns';
 import {
-  MatterColumnsMenu,
-  MatterExtraColumn,
-  MatterExtraColumnChoice,
-  loadExtraColumns,
-  saveExtraColumns,
-} from '../ui/matter-columns-menu';
+  GridColumnDef,
+  GridPrefs,
+  clearGridPrefs,
+  gridPrefsKey,
+  loadGridPrefs,
+  moveBefore,
+  saveGridPrefs,
+  shownKeys,
+} from '../../../shared/ui/grid-prefs';
+import { ColumnMove, ReorderColumns } from '../../../shared/ui/reorder-columns';
+
+/** The optional columns of the Matters list (PM v2, #881): not shown until added in the Columns menu. */
+type MatterExtraColumn = 'onHold' | 'atRisk' | 'dataSize' | 'pending';
+interface MatterExtraColumnChoice {
+  readonly key: MatterExtraColumn;
+  readonly label: string;
+}
+const EXTRA_KEYS: readonly string[] = ['onHold', 'atRisk', 'dataSize', 'pending'];
 import { assetsParams, sizeText } from '../../my-matters/data-model';
 
 /** Below this width the Client column (the least informative one) leaves the table (#266). */
@@ -136,9 +149,10 @@ const BONES: Record<string, string> = {
     CopyButton,
     RowLink,
     ResizableColumns,
+    ReorderColumns,
+    GridColumns,
     MatterManagersDialog,
     MatterCreateDialog,
-    MatterColumnsMenu,
     ScopeSwitch,
     ActionMenu,
     AddCommentDialog,
@@ -216,12 +230,13 @@ const BONES: Record<string, string> = {
           [canAll]="scope.canAll()"
           (scopeChange)="scope.set($event)"
         />
-        @if (!phone() && extraChoices().length > 0) {
-          <mf-matter-columns-menu
+        @if (!phone()) {
+          <mf-grid-columns
             mfActions
-            [choices]="extraChoices()"
-            [selected]="extras()"
-            (changed)="setExtras($event)"
+            [defs]="gridDefs()"
+            [prefs]="prefs()"
+            (prefsChange)="setPrefs($event)"
+            (resetColumns)="resetPrefs()"
           />
         }
         @if (canAssign() && !phone()) {
@@ -390,14 +405,19 @@ const BONES: Record<string, string> = {
         } @else {
           <mf-grid-frame scrollLabel="Matters list" #scroll>
             <div class="mf-scroll">
-              <table class="pg-table tt" mfResizable="matters">
+              <table
+                class="pg-table tt"
+                mfResizable="matters"
+                mfReorder
+                (columnMove)="onColumnMove($event)"
+              >
                 <caption class="pg-sr">
                   Matters
                 </caption>
                 <thead>
                   <tr>
                     @if (selecting()) {
-                      <th scope="col" class="ml-selcol" data-no-resize>
+                      <th scope="col" class="ml-selcol" data-no-resize data-no-reorder>
                         <input
                           type="checkbox"
                           aria-label="Select all matters on this page"
@@ -408,91 +428,121 @@ const BONES: Record<string, string> = {
                         />
                       </th>
                     }
-                    <th
-                      mfSort="matterRef"
-                      [sort]="sort()"
-                      [defaultSort]="defaultSort"
-                      (sorted)="setSort($event)"
-                    >
-                      CM Number
-                    </th>
-                    <th
-                      mfSort="name"
-                      [sort]="sort()"
-                      [defaultSort]="defaultSort"
-                      (sorted)="setSort($event)"
-                    >
-                      Name
-                    </th>
-                    @if (showClient()) {
-                      <th
-                        mfSort="clientNumber"
-                        [sort]="sort()"
-                        [defaultSort]="defaultSort"
-                        (sorted)="setSort($event)"
-                      >
-                        Client
-                      </th>
+                    @for (key of dataColumns(); track key) {
+                      @switch (key) {
+                        @case ('matterRef') {
+                          <th
+                            data-col="matterRef"
+                            mfSort="matterRef"
+                            [sort]="sort()"
+                            [defaultSort]="defaultSort"
+                            (sorted)="setSort($event)"
+                          >
+                            CM Number
+                          </th>
+                        }
+                        @case ('name') {
+                          <th
+                            data-col="name"
+                            mfSort="name"
+                            [sort]="sort()"
+                            [defaultSort]="defaultSort"
+                            (sorted)="setSort($event)"
+                          >
+                            Name
+                          </th>
+                        }
+                        @case ('client') {
+                          <th
+                            data-col="client"
+                            mfSort="clientNumber"
+                            [sort]="sort()"
+                            [defaultSort]="defaultSort"
+                            (sorted)="setSort($event)"
+                          >
+                            Client
+                          </th>
+                        }
+                        @case ('primaryManager') {
+                          <th
+                            data-col="primaryManager"
+                            mfSort="primaryManager"
+                            [sort]="sort()"
+                            [defaultSort]="defaultSort"
+                            (sorted)="setSort($event)"
+                          >
+                            Primary PM
+                          </th>
+                        }
+                        @case ('secondaryManager') {
+                          <th
+                            data-col="secondaryManager"
+                            mfSort="secondaryManager"
+                            [sort]="sort()"
+                            [defaultSort]="defaultSort"
+                            (sorted)="setSort($event)"
+                          >
+                            Secondary PM
+                          </th>
+                        }
+                        @case ('openTasks') {
+                          <th
+                            data-col="openTasks"
+                            class="pg-num"
+                            mfSort="openTasks"
+                            [firstDesc]="true"
+                            [sort]="sort()"
+                            [defaultSort]="defaultSort"
+                            (sorted)="setSort($event)"
+                          >
+                            Open tasks
+                          </th>
+                        }
+                        @case ('overdue') {
+                          <th
+                            data-col="overdue"
+                            class="pg-num"
+                            mfSort="overdue"
+                            [firstDesc]="true"
+                            [sort]="sort()"
+                            [defaultSort]="defaultSort"
+                            (sorted)="setSort($event)"
+                          >
+                            Overdue
+                          </th>
+                        }
+                        @case ('onHold') {
+                          <th scope="col" class="pg-num" data-col="onHold" data-col-head="onHold">
+                            On hold
+                          </th>
+                        }
+                        @case ('atRisk') {
+                          <th scope="col" class="pg-num" data-col="atRisk" data-col-head="atRisk">
+                            At risk
+                          </th>
+                        }
+                        @case ('dataSize') {
+                          <th
+                            scope="col"
+                            class="pg-num"
+                            data-col="dataSize"
+                            data-col-head="dataSize"
+                          >
+                            Data size
+                          </th>
+                        }
+                        @case ('pending') {
+                          <th scope="col" class="pg-num" data-col="pending" data-col-head="pending">
+                            Pending disposition
+                          </th>
+                        }
+                        @case ('status') {
+                          <th scope="col" data-col="status">Status</th>
+                        }
+                      }
                     }
-                    @if (showPrimary()) {
-                      <th
-                        mfSort="primaryManager"
-                        [sort]="sort()"
-                        [defaultSort]="defaultSort"
-                        (sorted)="setSort($event)"
-                      >
-                        Primary PM
-                      </th>
-                    }
-                    @if (showSecondary()) {
-                      <th
-                        mfSort="secondaryManager"
-                        [sort]="sort()"
-                        [defaultSort]="defaultSort"
-                        (sorted)="setSort($event)"
-                      >
-                        Secondary PM
-                      </th>
-                    }
-                    @if (counts()) {
-                      <th
-                        class="pg-num"
-                        mfSort="openTasks"
-                        [firstDesc]="true"
-                        [sort]="sort()"
-                        [defaultSort]="defaultSort"
-                        (sorted)="setSort($event)"
-                      >
-                        Open tasks
-                      </th>
-                      <th
-                        class="pg-num"
-                        mfSort="overdue"
-                        [firstDesc]="true"
-                        [sort]="sort()"
-                        [defaultSort]="defaultSort"
-                        (sorted)="setSort($event)"
-                      >
-                        Overdue
-                      </th>
-                    }
-                    @if (showExtra('onHold')) {
-                      <th scope="col" class="pg-num" data-col-head="onHold">On hold</th>
-                    }
-                    @if (showExtra('atRisk')) {
-                      <th scope="col" class="pg-num" data-col-head="atRisk">At risk</th>
-                    }
-                    @if (showExtra('dataSize')) {
-                      <th scope="col" class="pg-num" data-col-head="dataSize">Data size</th>
-                    }
-                    @if (showExtra('pending')) {
-                      <th scope="col" class="pg-num" data-col-head="pending">
-                        Pending disposition
-                      </th>
-                    }
-                    <th scope="col">Status</th>
                     @if (tableActions()) {
-                      <th scope="col" class="ml-actions" data-no-resize>
+                      <th scope="col" class="ml-actions" data-no-resize data-no-reorder>
                         <span class="pg-sr">Actions</span>
                       </th>
                     }
@@ -551,134 +601,148 @@ const BONES: Record<string, string> = {
                           />
                         </td>
                       }
-                      <td class="ml-ref">
-                        <mf-matter-ref [value]="m.matterRef" [rowStop]="true" />
-                      </td>
-                      <td class="ml-name">
-                        <div class="pg-namecell ml-namecell">
-                          <a
-                            class="pg-link pg-name"
-                            [routerLink]="['/matters', m.matterId]"
-                            mfRowLink="matters"
-                            [rowKey]="m.matterId"
-                            [title]="m.name"
-                            >{{ m.name }}</a
-                          >
-                          @if (m.isSensitive) {
-                            <mf-sensitive-badge [compact]="true" />
+                      @for (key of dataColumns(); track key) {
+                        @switch (key) {
+                          @case ('matterRef') {
+                            <td class="ml-ref">
+                              <mf-matter-ref [value]="m.matterRef" [rowStop]="true" />
+                            </td>
                           }
-                        </div>
-                      </td>
-                      @if (showClient()) {
-                        <td class="ml-client">
-                          @if (clientLink()) {
-                            <a
-                              class="pg-link pg-name"
-                              [routerLink]="['/clients', m.clientId]"
-                              [title]="m.clientNumber + ' ' + m.clientName"
-                              ><span class="pg-mono">{{ m.clientNumber }}</span>
-                              {{ m.clientName }}</a
-                            >
-                          } @else {
-                            <span class="pg-name" [title]="m.clientNumber + ' ' + m.clientName"
-                              ><span class="pg-mono">{{ m.clientNumber }}</span>
-                              {{ m.clientName }}</span
-                            >
+                          @case ('name') {
+                            <td class="ml-name">
+                              <div class="pg-namecell ml-namecell">
+                                <a
+                                  class="pg-link pg-name"
+                                  [routerLink]="['/matters', m.matterId]"
+                                  mfRowLink="matters"
+                                  [rowKey]="m.matterId"
+                                  [title]="m.name"
+                                  >{{ m.name }}</a
+                                >
+                                @if (m.isSensitive) {
+                                  <mf-sensitive-badge [compact]="true" />
+                                }
+                              </div>
+                            </td>
                           }
-                        </td>
-                      }
-                      @if (showPrimary()) {
-                        <td class="ml-pm" data-primary-manager>
-                          {{ m.primaryManager?.displayName }}
-                        </td>
-                      }
-                      @if (showSecondary()) {
-                        <td class="ml-pm" data-secondary-manager>
-                          {{ m.secondaryManager?.displayName }}
-                        </td>
-                      }
-                      @if (counts()) {
-                        <td class="pg-num">
-                          <mf-task-count
-                            kind="open"
-                            scope="matter"
-                            [recordId]="m.matterId"
-                            [name]="m.name"
-                            [count]="m.openTaskCount ?? 0"
-                          />
-                        </td>
-                        <td class="pg-num">
-                          <mf-task-count
-                            kind="overdue"
-                            scope="matter"
-                            [recordId]="m.matterId"
-                            [name]="m.name"
-                            [count]="m.overdueTaskCount ?? 0"
-                          />
-                        </td>
-                      }
-                      @if (showExtra('onHold')) {
-                        <td class="pg-num ml-fact" data-cell="onHold">
-                          @if ((m.onHoldTaskCount ?? 0) > 0) {
-                            <a
-                              routerLink="/tasks"
-                              [queryParams]="{ matter: m.matterId, status: ['ON_HOLD'] }"
-                              [attr.aria-label]="m.onHoldTaskCount + ' on hold in ' + m.name"
-                              >{{ m.onHoldTaskCount }}</a
-                            >
-                          } @else {
-                            <span class="ml-muted" aria-label="0 on hold">0</span>
+                          @case ('client') {
+                            <td class="ml-client">
+                              @if (clientLink()) {
+                                <a
+                                  class="pg-link pg-name"
+                                  [routerLink]="['/clients', m.clientId]"
+                                  [title]="m.clientNumber + ' ' + m.clientName"
+                                  ><span class="pg-mono">{{ m.clientNumber }}</span>
+                                  {{ m.clientName }}</a
+                                >
+                              } @else {
+                                <span class="pg-name" [title]="m.clientNumber + ' ' + m.clientName"
+                                  ><span class="pg-mono">{{ m.clientNumber }}</span>
+                                  {{ m.clientName }}</span
+                                >
+                              }
+                            </td>
                           }
-                        </td>
-                      }
-                      @if (showExtra('atRisk')) {
-                        <td class="pg-num ml-fact" data-cell="atRisk">
-                          @if ((m.atRiskTaskCount ?? 0) > 0) {
-                            <a
-                              routerLink="/tasks"
-                              [queryParams]="{
-                                matter: m.matterId,
-                                status: ['NEW', 'IN_PROGRESS'],
-                                atRisk: 'true',
-                              }"
-                              [attr.aria-label]="m.atRiskTaskCount + ' at risk in ' + m.name"
-                              >{{ m.atRiskTaskCount }}</a
-                            >
-                          } @else {
-                            <span class="ml-muted" aria-label="0 at risk">0</span>
+                          @case ('primaryManager') {
+                            <td class="ml-pm" data-primary-manager>
+                              {{ m.primaryManager?.displayName }}
+                            </td>
                           }
-                        </td>
-                      }
-                      @if (showExtra('dataSize')) {
-                        <td class="pg-num ml-fact" data-cell="dataSize">
-                          {{ dataSize(m.matterId) }}
-                        </td>
-                      }
-                      @if (showExtra('pending')) {
-                        <td class="pg-num ml-fact" data-cell="pending">
-                          @if (dataRow(m.matterId); as d) {
-                            @if (d.counts.pendingDisposition > 0) {
-                              <a
-                                routerLink="/assets"
-                                [queryParams]="pendingParams(d)"
-                                [attr.aria-label]="
-                                  d.counts.pendingDisposition + ' pending disposition in ' + m.name
-                                "
-                                >{{ d.counts.pendingDisposition }}</a
-                              >
-                            } @else {
-                              <span class="ml-muted" aria-label="0 pending disposition">0</span>
-                            }
-                          } @else {
-                            <span class="ml-muted" [attr.title]="dataNote()">{{
-                              dataReady() ? '0' : '–'
-                            }}</span>
+                          @case ('secondaryManager') {
+                            <td class="ml-pm" data-secondary-manager>
+                              {{ m.secondaryManager?.displayName }}
+                            </td>
                           }
-                        </td>
+                          @case ('openTasks') {
+                            <td class="pg-num">
+                              <mf-task-count
+                                kind="open"
+                                scope="matter"
+                                [recordId]="m.matterId"
+                                [name]="m.name"
+                                [count]="m.openTaskCount ?? 0"
+                              />
+                            </td>
+                          }
+                          @case ('overdue') {
+                            <td class="pg-num">
+                              <mf-task-count
+                                kind="overdue"
+                                scope="matter"
+                                [recordId]="m.matterId"
+                                [name]="m.name"
+                                [count]="m.overdueTaskCount ?? 0"
+                              />
+                            </td>
+                          }
+                          @case ('onHold') {
+                            <td class="pg-num ml-fact" data-cell="onHold">
+                              @if ((m.onHoldTaskCount ?? 0) > 0) {
+                                <a
+                                  routerLink="/tasks"
+                                  [queryParams]="{ matter: m.matterId, status: ['ON_HOLD'] }"
+                                  [attr.aria-label]="m.onHoldTaskCount + ' on hold in ' + m.name"
+                                  >{{ m.onHoldTaskCount }}</a
+                                >
+                              } @else {
+                                <span class="ml-muted" aria-label="0 on hold">0</span>
+                              }
+                            </td>
+                          }
+                          @case ('atRisk') {
+                            <td class="pg-num ml-fact" data-cell="atRisk">
+                              @if ((m.atRiskTaskCount ?? 0) > 0) {
+                                <a
+                                  routerLink="/tasks"
+                                  [queryParams]="{
+                                    matter: m.matterId,
+                                    status: ['NEW', 'IN_PROGRESS'],
+                                    atRisk: 'true',
+                                  }"
+                                  [attr.aria-label]="m.atRiskTaskCount + ' at risk in ' + m.name"
+                                  >{{ m.atRiskTaskCount }}</a
+                                >
+                              } @else {
+                                <span class="ml-muted" aria-label="0 at risk">0</span>
+                              }
+                            </td>
+                          }
+                          @case ('dataSize') {
+                            <td class="pg-num ml-fact" data-cell="dataSize">
+                              {{ dataSize(m.matterId) }}
+                            </td>
+                          }
+                          @case ('pending') {
+                            <td class="pg-num ml-fact" data-cell="pending">
+                              @if (dataRow(m.matterId); as d) {
+                                @if (d.counts.pendingDisposition > 0) {
+                                  <a
+                                    routerLink="/assets"
+                                    [queryParams]="pendingParams(d)"
+                                    [attr.aria-label]="
+                                      d.counts.pendingDisposition +
+                                      ' pending disposition in ' +
+                                      m.name
+                                    "
+                                    >{{ d.counts.pendingDisposition }}</a
+                                  >
+                                } @else {
+                                  <span class="ml-muted" aria-label="0 pending disposition">0</span>
+                                }
+                              } @else {
+                                <span class="ml-muted" [attr.title]="dataNote()">{{
+                                  dataReady() ? '0' : '–'
+                                }}</span>
+                              }
+                            </td>
+                          }
+                          @case ('status') {
+                            <td>
+                              <mf-active-badge [active]="m.isActive" />
+                            </td>
+                          }
+                        }
                       }
-                      <td>
-                        <mf-active-badge [active]="m.isActive" />
-                      </td>
                       @if (tableActions()) {
                         <td class="ml-actions" data-row-actions>
                           <mf-action-menu
@@ -780,14 +844,68 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
       this.auth.has('Task.View') &&
       (this.auth.has('Matter.BeManager') || this.auth.has('Matter.AssignManagers')),
   );
-  protected readonly extras = signal<readonly MatterExtraColumn[]>(
-    loadExtraColumns(['onHold', 'atRisk', 'dataSize', 'pending']),
-  );
-  /** The columns shown now: the chosen ones the viewer may have, never on a phone (cards) . */
-  private readonly shownExtras = computed(() => {
-    const allowed = new Set(this.extraChoices().map((c) => c.key));
-    return this.phone() ? [] : this.extras().filter((k) => allowed.has(k));
+  /** The columns shown now, in the person's order: the Columns menu choice, then the width rules (a narrow window drops Client and the PMs, a phone has cards). */
+  protected readonly dataColumns = computed((): string[] => {
+    const narrow = new Set<string>([
+      ...(this.showClient() ? [] : ['client']),
+      ...(this.showPrimary() ? [] : ['primaryManager']),
+      ...(this.showSecondary() ? [] : ['secondaryManager']),
+    ]);
+    return shownKeys(this.gridDefs(), this.prefs()).filter(
+      (k) => !narrow.has(k) && !(this.phone() && EXTRA_KEYS.includes(k)),
+    );
   });
+  private readonly shownExtras = computed(() =>
+    this.dataColumns().filter((k): k is MatterExtraColumn => EXTRA_KEYS.includes(k)),
+  );
+  /** The columns this person may have, in the default order; the Columns menu, the order and the visibility all start from it (MD-28). */
+  protected readonly gridDefs = computed((): GridColumnDef[] => {
+    const extra = new Map(this.extraChoices().map((c) => [c.key as string, c.label]));
+    return [
+      { key: 'matterRef', label: 'CM Number', locked: true },
+      { key: 'name', label: 'Name', locked: true },
+      { key: 'client', label: 'Client' },
+      { key: 'primaryManager', label: 'Primary PM' },
+      { key: 'secondaryManager', label: 'Secondary PM' },
+      ...(this.counts()
+        ? [
+            { key: 'openTasks', label: 'Open tasks' },
+            { key: 'overdue', label: 'Overdue' },
+          ]
+        : []),
+      ...EXTRA_KEYS.filter((k) => extra.has(k)).map((k) => ({
+        key: k,
+        label: extra.get(k)!,
+        defaultHidden: true,
+      })),
+      { key: 'status', label: 'Status' },
+    ];
+  });
+  private readonly prefsKey = computed(() => gridPrefsKey('matters', this.auth.profile()?.userId));
+  protected readonly prefs = signal<GridPrefs>(
+    loadGridPrefs(gridPrefsKey('matters', this.auth.profile()?.userId)),
+  );
+
+  protected setPrefs(next: GridPrefs): void {
+    this.prefs.set(next);
+    saveGridPrefs(this.prefsKey(), next);
+  }
+
+  protected resetPrefs(): void {
+    this.prefs.set({ order: [], visible: null });
+    clearGridPrefs(this.prefsKey());
+  }
+
+  /** A header was dragged to a new place. */
+  protected onColumnMove(move: ColumnMove): void {
+    const defs = this.gridDefs();
+    const prefs = this.prefs();
+    // The drop target may be a column that is hidden by width: the visible neighbour in the order is what the person pointed at.
+    this.setPrefs({
+      order: moveBefore(defs, prefs, move.key, move.beforeKey),
+      visible: prefs.visible,
+    });
+  }
   /** The Data API's rows by matter (the sizes and pending counts of the page; loaded only while one of the two columns is shown). */
   private readonly dataRows = signal<ReadonlyMap<number, AssetDataMatterRow>>(new Map());
   protected readonly dataReady = signal(false);
@@ -832,15 +950,6 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
   protected readonly emptyText = computed(() =>
     this.scope.mine() ? 'You do not manage any matter yet.' : '',
   );
-  protected showExtra(key: MatterExtraColumn): boolean {
-    return this.shownExtras().includes(key);
-  }
-
-  protected setExtras(columns: readonly MatterExtraColumn[]): void {
-    this.extras.set(columns);
-    saveExtraColumns(columns);
-  }
-
   protected dataRow(matterId: number): AssetDataMatterRow | undefined {
     return this.dataRows().get(matterId);
   }
@@ -915,14 +1024,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
   /** The columns of the grid, in order; the keys the filter definitions point at. */
   protected readonly columns = computed(() => [
     ...(this.selecting() ? ['select'] : []),
-    'matterRef',
-    'name',
-    ...(this.showClient() ? ['client'] : []),
-    ...(this.showPrimary() ? ['primaryManager'] : []),
-    ...(this.showSecondary() ? ['secondaryManager'] : []),
-    ...(this.counts() ? ['openTasks', 'overdue'] : []),
-    ...this.shownExtras(),
-    'status',
+    ...this.dataColumns(),
     ...(this.tableActions() ? ['actions'] : []),
   ]);
   protected readonly skeleton = computed(() => this.columns().map((key) => BONES[key]));

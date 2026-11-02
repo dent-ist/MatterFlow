@@ -25,6 +25,21 @@ test('Tasks tab at 1366x768: columns fit and the cells show what they should', a
   });
   expect(overflow, 'the Tasks table scrolls sideways').toBeLessThanOrEqual(1);
 
+  // Default order (MD-29): Ref, Type, Title, Priority, Assignee, Due, Status, Progress; Project is in the Columns menu.
+  const order = (await page.locator('mf-task-table thead tr:first-child th').allTextContents()).map(
+    (t) => t.trim(),
+  );
+  expect(order).toEqual([
+    'Ref',
+    'Type',
+    'Title',
+    'Priority',
+    'Assignee',
+    'Due',
+    'Status',
+    'Progress',
+  ]);
+
   // Every header is fully visible (not cut by the cell).
   const clippedHeaders = await page.evaluate(() =>
     Array.from(document.querySelectorAll('mf-task-table thead th'))
@@ -35,7 +50,8 @@ test('Tasks tab at 1366x768: columns fit and the cells show what they should', a
 
   const first = rows.first();
   await expect(first.locator('[data-type-chip]')).toBeVisible();
-  // The chip is the My Matters chip: 32 px.
+  // The chip is the My Matters chip (32 px) with the type's name beside it (MD-29).
+  await expect(first.locator('[data-type-name]')).not.toHaveText('');
   const chip = await first.locator('[data-type-chip] .chip').boundingBox();
   expect(chip!.width).toBeGreaterThanOrEqual(31);
   await expect(page.locator('mf-task-table thead th', { hasText: /^\s*Type\s*$/ })).toBeVisible();

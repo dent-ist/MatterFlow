@@ -302,3 +302,31 @@ Every button in the app, the Matter detail tabs included, is drawn by the shared
 - **Guard.** `src/app/shared/ui/button-rule.spec.ts` fails when a component under `features/` or `shared/` that belongs to a Matter detail tab (matter detail page, summary, projects, assets, productions, notes, scoped tasks) styles a button itself or uses `size="small"` on a `p-button`.
 
 **My Matters (owner decision 2026-11-02, #1030):** My Matters no longer has its own button paint. Its "+ New" menu button, Filter, scope Browse and Clear, the calendar Previous/Today/Next/Add event, Mark all as read, the tree icon buttons and the Metrics Work/Assets toggle are `mf-btn` variants (`mf-btn--primary`, `mf-btn--text`, `mf-btn--icon`, and the shared `mf-seg` toggle with `mfSegmented`). One look and one 32 px size across the app. Still local by design: in-text links (`.lnk`), the sort buttons inside column headers, calendar day cells, and the pressed/selected state tint of the tree icon buttons. `button-rule.spec.ts` now covers every file in `features/my-matters/ui`, `tabs` and `panels`.
+
+## 10. The shared grid: resize, reorder, filter, Columns menu, row hover (epic #1001, MD-28, #1032)
+
+One set of small blocks in `frontend/src/app/shared/ui`, used together. A page opts in to each part it needs; every part works on its own.
+
+| Part | File | What it does |
+| --- | --- | --- |
+| Column model and storage | `grid-prefs.ts` | `GridColumnDef` (`key`, `label`, `locked`, `defaultHidden`, `pinned`), `GridPrefs` (`order`, `visible`), pure `shownKeys`, `orderedKeys`, `moveKey`, `moveBefore`, `withVisible`, and the guarded storage `mf.grid.v1.<grid>.<userId\|anon>` |
+| Resize | `resizable-columns.ts` (`table[mfResizable="<grid>"]`) | drag, focus the handle and use Left/Right (Shift: big step), Home, Enter or double-click to fit; widths in `mf.col-widths.v1.<grid>.<userId>`; the table is frozen at its measured widths before the first change (no layout shift) |
+| Reorder | `reorder-columns.ts` (`table[mfReorder] (columnMove)`) | drag a header (drop on its left or right half); it only reports `{key, beforeKey}`, the page keeps the order |
+| Columns menu | `grid-columns.ts` (`<mf-grid-columns [defs] [prefs] (prefsChange) (resetColumns)>`) | show/hide per column (locked ones cannot be hidden), "Move X left / right" buttons per shown column (the keyboard way to reorder, with a live-region announcement), "Reset to default" (order and visibility; widths stay) |
+| Filter | `filters/column-filter-row` (`mfColumnFilterRow`) | unchanged: the inline filter row under the header, same look everywhere |
+| Row hover | token `--mf-row-hover` | `.pg-table tbody tr:hover > td` and `.wt tbody tr:hover > td`; text, muted text and links on it are checked in `check-theme-contrast.mjs`; hover is never the only signal of selection or focus (those keep their own marks) |
+
+How to adopt it on a list page (the Matters list is the example, `features/matters/pages/matters-list-page.ts`; the Matter Tasks tab is `shared/work-queue/scoped-tasks.ts`):
+
+1. Describe the columns once: `gridDefs = computed<GridColumnDef[]>(...)` in the default order. Leave out what a permission hides. Mark Ref/Name/Title `locked`; mark a column that must stay first `pinned`; mark optional ones `defaultHidden`.
+2. Keep `prefs = signal(loadGridPrefs(gridPrefsKey('<grid>', userId)))`; `setPrefs` saves with `saveGridPrefs`; reset calls `clearGridPrefs`. `dataColumns = computed(() => shownKeys(defs, prefs))`, then apply the page's own width rules (a narrow window drops a column) on top.
+3. Draw the header and the cells from `dataColumns()` with `@for` and `@switch` (one `@case` per column), so the order is whatever the person chose. Give every `th` a `data-col="<key>"`; give selection and action cells `data-no-resize data-no-reorder`.
+4. Put `mfResizable="<grid>"`, `mfReorder` and `(columnMove)="onMove($event)"` on the `<table>`; in `onMove` call `moveBefore(defs, prefs, e.key, e.beforeKey)` and `setPrefs`.
+5. Add `<mf-grid-columns>` to the page actions (hide it on a phone, where the list is cards).
+6. Add a unit spec (order, hide, reset, per-user key) and a targeted e2e (keyboard move, reload keeps it).
+
+Work tables (Task Queue, My Work, Pod Work, the Matter and Project Tasks tabs) use `mf-task-table`, which has its own column-based resize (`shared/work-queue/column-resize.ts`) and the same `mfReorder`; the Tasks tabs take their columns from `grid-prefs` (`reorderable` input), the Task Queue pages keep their older chooser.
+
+**Where the Matter Tasks tab stands (MD-29, #1033):** default order Ref, Type (chip and the type's name), Title, Priority, Assignee, Due, Status, Progress. **Project is not in the default set**; it is in the Columns menu (a Matter that has projects) and, once added, sits right after Title. Ref is pinned first, Title cannot be hidden.
+
+**Pages that should adopt it later (not converted; estimates in agent-hours):** Clients list 2.5, Projects list 2.5, Assets list 3, Matter Projects tab 2, Matter Assets tab 2, Matter Activities 2, Users 3, Roles 2.5, Pods 2.5, admin lookups (Task Types, Asset Types, Labels, Custom Fields, Workflows) 2 each, Audit Logs 3, Reports lists 3; unifying the Task Queue / My Work / Pod Work chooser and resize with this set (one Columns menu instead of the chooser panel, one resize store) 10.

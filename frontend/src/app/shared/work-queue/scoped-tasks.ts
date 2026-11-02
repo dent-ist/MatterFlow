@@ -34,6 +34,19 @@ import { ListFilters } from '../filters/list-filters';
 import { LoadState } from '../ui/data-table';
 import { PageFooter } from '../ui/page-footer';
 import { phoneCards } from '../ui/record-card-list';
+import { GridColumns } from '../ui/grid-columns';
+import {
+  DEFAULT_GRID_PREFS,
+  GridColumnDef,
+  GridPrefs,
+  clearGridPrefs,
+  gridPrefsKey,
+  loadGridPrefs,
+  moveBefore,
+  saveGridPrefs,
+  shownKeys,
+} from '../ui/grid-prefs';
+import { ColumnMove } from '../ui/reorder-columns';
 import { Pager } from '../ui/pager';
 import { QueueChoices, mergeOptions } from './queue-choices';
 import { OPEN_STATUSES, dateDaysAgo, parseQueueState, queueArgs } from './queue-filters';
@@ -56,33 +69,12 @@ import { DUE_SOON_DAYS } from './work-vocabulary';
 const PAGE_SIZE = 25;
 /** The choice that takes the ticked tasks out of their project. */
 const NO_PROJECT = 'none';
-const MATTER_COLUMNS = [
-  'ref',
-  'title',
-  'typeChip',
-  'project',
-  'priority',
-  'assignee',
-  'due',
-  'status',
-  'steps',
-];
-const PROJECT_COLUMNS = [
-  'ref',
-  'title',
-  'typeChip',
-  'priority',
-  'assignee',
-  'due',
-  'status',
-  'steps',
-];
 /**
  * Default widths of this grid (px): the Type and Progress columns (MD-24) come on top of the old set, so a 1366 px window (1098 px box, 200 px for the
  * Title) still holds every column; a width the person changed wins.
  */
 const DEFAULT_WIDTHS_PX: Readonly<Record<string, number>> = {
-  typeChip: 64,
+  typeChip: 150,
   project: 132,
   assignee: 124,
   status: 116,
@@ -132,6 +124,7 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
     TaskSelectList,
     TaskTable,
     FiltersBar,
+    GridColumns,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -191,6 +184,15 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
             data-create-task
             [disabled]="!canCreate()"
             (onClick)="create()"
+          />
+        }
+        @if (!phone()) {
+          <mf-grid-columns
+            mfBarStart
+            [defs]="gridDefs()"
+            [prefs]="prefs()"
+            (prefsChange)="setPrefs($event)"
+            (resetColumns)="resetPrefs()"
           />
         }
         @if (canBulk()) {
@@ -285,6 +287,8 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
         <mf-task-table
           [rows]="rows()"
           [columns]="columns()"
+          [reorderable]="true"
+          (columnMoved)="onColumnMoved($event)"
           [caption]="caption()"
           [hideContext]="true"
           [projectChoices]="rowProjectChoices()"
@@ -428,13 +432,44 @@ export class ScopedTasks {
   private readonly withProject = computed(
     () => this.projectId() === null && (this.projectCount() ?? 1) > 0,
   );
-  protected readonly columns = computed(() =>
-    this.projectId() !== null
-      ? PROJECT_COLUMNS
-      : this.withProject()
-        ? MATTER_COLUMNS
-        : PROJECT_COLUMNS,
+  /**
+   * The columns this grid may have (MD-28/MD-29): the default order is Ref, Type, Title, Priority, Assignee, Due, Status, Progress. Project is
+   * available in the Columns menu (a Matter that has projects) and sits right after Title when it is added; Ref is pinned first and Title cannot be hidden.
+   */
+  protected readonly gridDefs = computed((): GridColumnDef[] => [
+    { key: 'ref', label: 'Ref', locked: true, pinned: true },
+    { key: 'typeChip', label: 'Type' },
+    { key: 'title', label: 'Title', locked: true },
+    ...(this.withProject() ? [{ key: 'project', label: 'Project', defaultHidden: true }] : []),
+    { key: 'priority', label: 'Priority' },
+    { key: 'assignee', label: 'Assignee' },
+    { key: 'due', label: 'Due' },
+    { key: 'status', label: 'Status' },
+    { key: 'steps', label: 'Progress' },
+  ]);
+  protected readonly prefs = signal<GridPrefs>(DEFAULT_GRID_PREFS);
+  private readonly prefsKey = computed(() =>
+    gridPrefsKey(this.widthScope(), this.auth.profile()?.userId),
   );
+  protected readonly columns = computed(() => shownKeys(this.gridDefs(), this.prefs()));
+
+  protected setPrefs(next: GridPrefs): void {
+    this.prefs.set(next);
+    saveGridPrefs(this.prefsKey(), next);
+  }
+
+  protected resetPrefs(): void {
+    this.prefs.set(DEFAULT_GRID_PREFS);
+    clearGridPrefs(this.prefsKey());
+  }
+
+  /** A header was dragged: the column lands before the one it was dropped on. */
+  protected onColumnMoved(move: ColumnMove): void {
+    this.setPrefs({
+      order: moveBefore(this.gridDefs(), this.prefs(), move.key, move.beforeKey),
+      visible: this.prefs().visible,
+    });
+  }
   /** Where the widths of this grid are remembered (#203): one scope for every Matter's Tasks tab, one for every Project's list. */
   private readonly widthScope = computed(() =>
     this.projectId() === null ? 'matterTasks' : 'projectTasks',
@@ -580,6 +615,11 @@ export class ScopedTasks {
   private requestId = 0;
 
   constructor() {
+    // The person's order and visibility of this grid (per user and grid; read again when the user or the grid changes).
+    effect(() => {
+      const key = this.prefsKey();
+      untracked(() => this.prefs.set(loadGridPrefs(key)));
+    });
     // Selection mode on request: from another page's quick action (router state, never the address) and from the page this tab is on.
     if (typeof history !== 'undefined' && history.state?.['selectTasks'] === true) {
       untracked(() => this.selecting.set(this.canBulk()));

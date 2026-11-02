@@ -292,3 +292,17 @@ body.wt-resizing {
     -webkit-line-clamp: 1;
   }
 }
+
+/* Row hover in every grid (MD-28): one token, contrast checked (check-theme-contrast.mjs). Selection and focus keep their own signals. */
+.wt tbody tr:not(.wt-group):hover > td {
+  background: var(--mf-row-hover);
+}
+
+/* Drop marker while a header is dragged to a new place (shared/ui/reorder-columns.ts, MD-28): a 3 px bar on the side the column will land. */
+th.mf-drop-start {
+  box-shadow: inset 3px 0 0 var(--mf-primary);
+}
+
+th.mf-drop-end {
+  box-shadow: inset -3px 0 0 var(--mf-primary);
+}

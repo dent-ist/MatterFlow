@@ -47,9 +47,8 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     fill: true,
     resizable: false,
   },
-  // MD-24 (#1028), a Matter's or Project's grid only (never in a chooser or a default set): the task type as the coloured chip of My Matters (32 px, name as the
-  // tooltip and the accessible name).
-  { key: 'typeChip', label: 'Type', width: 72, minWidth: 56, maxWidth: 160, scopedOnly: true },
+  // MD-24 (#1028), a Matter's or Project's grid only (never in a chooser or a default set): the task type as the coloured chip of My Matters (32 px) with the type's name beside it (MD-29).
+  { key: 'typeChip', label: 'Type', width: 150, minWidth: 96, maxWidth: 260, scopedOnly: true },
   // The reference only (one line); the storage key stays `matter` so stored columns, widths and sorts survive the rename (#348). 144 and not
   // the 160 of the two-line cell: the reference needs about 120 px and the room goes to Matter Name (measured, see docs/ux/task-queue-review).
   {

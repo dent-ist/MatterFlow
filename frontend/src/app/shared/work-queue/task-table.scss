@@ -292,3 +292,11 @@ th:not([aria-sort]) .wt-sort .pi {
 .wt-near > :first-child {
   margin: 0;
 }
+
+/* The Type column of a Matter's or Project's grid (MD-29): the chip and the type's name beside it, the name cut with an ellipsis. */
+.wt-typecell {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s2);
+  min-width: 0;
+}
