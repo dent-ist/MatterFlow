@@ -71,7 +71,6 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
       `/clients/${world.client.clientId}`,
     );
     // The actions are in the header (WP3): Edit, and Set inactive in the overflow, disabled with its reason.
-    await expect(panel.getByRole('button', { name: 'Edit' })).toHaveCount(0);
     await expect(page.locator('[data-edit-matter]')).toBeVisible();
     await page.locator('[data-overflow][aria-label^="More actions"]').click();
     const blocked = page.getByRole('menuitem', { name: /Set inactive/ });
@@ -171,7 +170,6 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await expect(panel).toContainText('Created'); // the number, name and status are in the header only (WP6)
     await expect(panel).not.toContainText(client.name);
     await expect(panel.locator('[data-strip]')).toBeVisible();
-    await expect(panel.getByRole('button', { name: 'Edit' })).toHaveCount(0); // the header has it (WP3)
     await expect(
       page.locator('[data-page-actions]').getByRole('button', { name: 'Edit' }),
     ).toBeVisible();

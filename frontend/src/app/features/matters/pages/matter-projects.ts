@@ -8,7 +8,6 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { ProjectResponse } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -30,7 +29,6 @@ import { groupProjects } from './matter-project-groups';
   selector: 'mf-matter-projects',
   imports: [
     NgTemplateOutlet,
-    RouterLink,
     Button,
     HasPermissionDirective,
     ActiveBadge,
@@ -173,7 +171,7 @@ import { groupProjects } from './matter-project-groups';
             <a
               class="pg-link pg-name"
               data-project-name
-              [routerLink]="['/projects', p.projectId]"
+              [attr.href]="'/projects/' + p.projectId"
               (click)="open($event, p)"
               mfRowLink="matter-projects"
               [rowKey]="p.projectId"
