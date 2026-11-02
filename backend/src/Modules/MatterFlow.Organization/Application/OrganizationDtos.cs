@@ -1,6 +1,6 @@
-using MatterFlow.Organization.Contracts;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
+using MatterFlow.Organization.Contracts;
 
 namespace MatterFlow.Organization.Application;
 

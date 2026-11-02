@@ -471,7 +471,7 @@ export class MatterDetailPage {
     if (this.canAddEvent()) {
       list.push({
         id: 'new-event',
-        label: 'Event',
+        label: 'Calendar event',
         icon: 'pi-calendar-plus',
         run: () => this.openEventPanel(),
       });
