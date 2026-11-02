@@ -69,17 +69,17 @@ export const LABEL_TAB_TEXT: Record<LabelsTab, string> = {
       @if (current() === 'priorities' && canManagePriorities()) {
         <p-button
           mfPrimary
-          label="New priority"
+          label="New Priority"
           icon="pi pi-plus"
           data-new
           (onClick)="newPriority()"
         />
       }
       @if (current() === 'on-hold-reasons' && canManageReasons()) {
-        <p-button mfPrimary label="New reason" icon="pi pi-plus" data-new (onClick)="newReason()" />
+        <p-button mfPrimary label="New Reason" icon="pi pi-plus" data-new (onClick)="newReason()" />
       }
       @if (current() === 'note-tags') {
-        <p-button mfPrimary label="New tag" icon="pi pi-plus" data-new (onClick)="newTag()" />
+        <p-button mfPrimary label="New Tag" icon="pi pi-plus" data-new (onClick)="newTag()" />
       }
       @switch (current()) {
         @case ('priorities') {

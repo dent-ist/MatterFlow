@@ -63,8 +63,8 @@ test.describe('Pager (#237)', () => {
     await expect(button(page, 'Previous')).toBeDisabled();
     await expect(button(page, 'Next')).toBeEnabled();
     await expect(button(page, 'Last')).toBeEnabled();
-    // The "Sorted by" note stays in the footer.
-    await expect(pager(page).locator('[data-sort-note]')).toContainText('Sorted by');
+    // The "Sorted by" line is at the right end of row 3 of the toolbar since LC-01 (it left the footer).
+    await expect(page.locator('[data-toolbar-row2] [data-sort-note]')).toContainText('Sorted by');
     await shot(page, 'page1-of-3-1366x768');
 
     await button(page, 'Next').click();
@@ -210,21 +210,18 @@ test.describe('Microcopy (#228, #229)', () => {
       await page.setViewportSize({ width: w, height: h });
       await new TaskQueuePage(page).open(`?matter=${matterId}`);
       const row = page.locator('tr[data-filter-row]');
-      await expect(row.locator('input[data-filter="q"]')).toHaveAttribute(
-        'placeholder',
-        'Title or ref',
-      );
-      await expect(row.locator('input[data-filter="q"]')).toHaveAttribute(
-        'aria-label',
-        'Filter by Title or Ref',
-      );
+      // Title or Ref is the toolbar's Search box (LC-01): no cell of the filter row.
+      await expect(row.locator('input[data-filter="q"]')).toHaveCount(0);
+      await expect(
+        page.getByRole('searchbox', { name: 'Search tasks', exact: true }),
+      ).toHaveAttribute('placeholder', 'Search tasks');
       await expect(row.locator('input[data-filter="matterText"]')).toHaveAttribute(
         'placeholder',
-        'Matter Number', // the column is Matter Number since #348
+        'CM Number', // the column is CM Number since LC-03
       );
       await expect(row.locator('input[data-filter="matterText"]')).toHaveAttribute(
         'aria-label',
-        'Filter by Matter Number',
+        'Filter by CM Number',
       );
       await expect(page.getByRole('button', { name: 'Other filters' })).toBeVisible();
       await expect(page.getByText('More filters')).toHaveCount(0);

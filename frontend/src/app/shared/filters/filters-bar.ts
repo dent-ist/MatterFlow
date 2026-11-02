@@ -1,26 +1,11 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  HostListener,
-  Injector,
-  DestroyRef,
-  afterNextRender,
-  computed,
-  effect,
-  inject,
-  input,
-  output,
-  signal,
-} from '@angular/core';
-import { Router } from '@angular/router';
-import { KeyboardShortcuts } from '../layout/keyboard-shortcuts';
-import { FOCUS_FILTER_SHORTCUT, ShortcutRegistry, isShortcut } from '../layout/shortcut-registry';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { FiltersToggle } from '../ui/column-filters';
 import { FilterChips, FilterNotice } from './filter-chips';
 import { FilterControl } from './filter-control';
 import { FilterDef, isActive } from './filter-def';
 import { FilterPopover } from './filter-popover';
 import { FilterSheet } from './filter-sheet';
+import { FocusFilter } from './focus-filter';
 import { ListFilters } from './list-filters';
 
 let nextId = 0;
@@ -294,8 +279,7 @@ export class MoreFilters {
     }
   `,
 })
-export class FiltersBar {
-  readonly filters = input.required<ListFilters>();
+export class FiltersBar extends FocusFilter {
   /** Id of the filter row (the Filters button's `aria-controls`). */
   readonly controls = input('');
   /** Legacy parameters that Clear filters drops too. */
@@ -335,62 +319,4 @@ export class FiltersBar {
     const chips = f.rowVisible() ? f.hiddenChips() : f.chips();
     return f.restored() || chips.length > 0 || f.activeCount() > 0 || this.endActive();
   });
-
-  private readonly injector = inject(Injector);
-  private readonly router = inject(Router);
-  private readonly shortcuts = inject(KeyboardShortcuts);
-
-  /** Whether `/` works here: the screen has a text filter with a control. */
-  private readonly hasTextFilter = computed(() =>
-    this.filters()
-      .defs()
-      .some((d) => d.type === 'text' && !d.noControl && !d.disabledReason?.()),
-  );
-
-  constructor() {
-    // The `?` help lists `/` only while a screen that has it is open: under "Work lists" on the three work lists, else as the page's own.
-    const registry = inject(ShortcutRegistry);
-    let unregister: (() => void) | null = null;
-    effect(() => {
-      unregister?.();
-      unregister = null;
-      if (!this.hasTextFilter()) return;
-      const path = this.router.url.split(/[?#]/)[0];
-      const workList = ['/tasks', '/my-work', '/pods/work'].includes(path);
-      unregister = registry.register({
-        ...FOCUS_FILTER_SHORTCUT,
-        keys: [...FOCUS_FILTER_SHORTCUT.keys],
-        group: workList ? 'work-lists' : 'page',
-        does: workList ? 'Focus the Title or Ref filter' : 'Focus the first text filter',
-      });
-    });
-    inject(DestroyRef).onDestroy(() => unregister?.());
-  }
-
-  /**
-   * `/` opens the row (or the sheet) if it is closed and focuses the first text filter, unless the user is typing somewhere. Only on
-   * screens that have a text filter.
-   */
-  @HostListener('document:keydown', ['$event'])
-  protected onSlash(event: KeyboardEvent): void {
-    if (!isShortcut('focus-filter', event) || event.defaultPrevented) return;
-    // A single-key shortcut: it stays quiet when the person switched the keyboard shortcuts off (WCAG 2.1.4, #181).
-    if (!this.shortcuts.enabled()) return;
-    const target = event.target as HTMLElement | null;
-    if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
-    if (target?.isContentEditable || target?.closest?.('[role="dialog"]')) return;
-    const f = this.filters();
-    if (!f.defs().some((d) => d.type === 'text' && !d.noControl && !d.disabledReason?.())) return;
-    event.preventDefault();
-    f.reveal();
-    afterNextRender(
-      () =>
-        document
-          .querySelector<HTMLElement>(
-            '[data-filter-row] .cf__input, [data-filter-sheet] .cf__input',
-          )
-          ?.focus(),
-      { injector: this.injector },
-    );
-  }
 }

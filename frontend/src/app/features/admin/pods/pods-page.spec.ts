@@ -71,6 +71,12 @@ describe('PodsPage', () => {
     await settle();
   }
 
+  /** "New Pod" is a button of the Users page header (LC-06): the page offers the same entry point to it. */
+  async function openNew(): Promise<void> {
+    await fixture.componentInstance.newPod();
+    await settle();
+  }
+
   async function type(sel: string, value: string, wait = 0): Promise<void> {
     const input = q<HTMLInputElement | HTMLTextAreaElement>(sel);
     input.value = value;
@@ -245,7 +251,8 @@ describe('PodsPage', () => {
     expect(text('[data-pod="1"]')).toContain('2');
     expect(text('[data-pod="1"]')).toContain('Active');
     expect(text('[data-pod="2"]')).toContain('Inactive');
-    expect(el().textContent).toContain('New pod');
+    // "New Pod" is a button of the Users page header (LC-06), not of the tab body.
+    expect(el().textContent).not.toContain('New pod');
     expect(el().textContent).toContain('Pod leads are a role');
   });
 
@@ -356,15 +363,15 @@ describe('PodsPage', () => {
 
   it('lists active pods first and sends the URL state (name, status, page size, sort) to the API', async () => {
     await create('Pod.View', 'Pod.Manage');
-    expect(api.listPods).toHaveBeenCalledWith(undefined, undefined, true, 1, 25, undefined);
+    expect(api.listPods).toHaveBeenCalledWith(undefined, undefined, true, 1, 50, undefined);
     // And one row of the other side of the default Active status, for the "n inactive hidden" hint.
     expect(api.listPods).toHaveBeenCalledWith(undefined, undefined, false, 1, 1);
 
     query.set({ name: ' alp ', status: 'inactive' });
-    fixture.componentRef.setInput('size', '50');
+    fixture.componentRef.setInput('size', '25');
     fixture.componentRef.setInput('sort', '-memberCount');
     await settle();
-    expect(api.listPods).toHaveBeenLastCalledWith(undefined, 'alp', false, 1, 50, '-memberCount');
+    expect(api.listPods).toHaveBeenLastCalledWith(undefined, 'alp', false, 1, 25, '-memberCount');
 
     query.set({ status: 'all' });
     await settle();
@@ -373,7 +380,7 @@ describe('PodsPage', () => {
       'alp',
       undefined,
       1,
-      50,
+      25,
       '-memberCount',
     );
   });
@@ -436,7 +443,7 @@ describe('PodsPage', () => {
 
   it('requires a name, then creates the pod and opens it for member management', async () => {
     await create('Pod.View', 'Pod.Manage', 'Pod.ManageMembers');
-    await click('p-button');
+    await openNew();
 
     expect(text('label[for="pod-name"]')).toBe('Name (required)'); // "(required)", not an asterisk
     expect(q('#pod-name').classList).toContain('mf-control');
@@ -475,7 +482,7 @@ describe('PodsPage', () => {
       ),
     );
     await create('Pod.View', 'Pod.Manage');
-    await click('p-button');
+    await openNew();
     await type('input[data-name]', 'Pod A');
 
     await click('.pods__actions p-button');

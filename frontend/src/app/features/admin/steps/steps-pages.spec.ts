@@ -154,7 +154,7 @@ describe('StepsListPage', () => {
       undefined,
       true,
       1,
-      25,
+      50,
     );
   });
 
@@ -196,7 +196,7 @@ describe('StepsListPage', () => {
       undefined,
       undefined,
       2,
-      25,
+      50,
     ]);
     // A link with filters opens the row with the values in it and counts them (status All is a change from the default).
     const el: HTMLElement = fixture.nativeElement;
@@ -813,7 +813,7 @@ describe('StepsListPage tags', () => {
       undefined, // Match all is the default and is not sent
       true,
       1,
-      25,
+      50,
     ]);
   });
 
@@ -838,7 +838,7 @@ describe('StepsListPage tags', () => {
       undefined,
       true,
       1,
-      25,
+      50,
     ]);
 
     query.set({ tags: 'Relativity' });
@@ -853,7 +853,7 @@ describe('StepsListPage tags', () => {
       'any',
       true,
       1,
-      25,
+      50,
     ]);
     const el: HTMLElement = fixture.nativeElement;
     expect(ddSelect(el, 'Filter by Tag match').value).toBe('any');
@@ -881,7 +881,7 @@ describe('StepsListPage tags', () => {
       undefined,
       true,
       1,
-      25,
+      50,
     ]);
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector('td[data-empty="filtered"]')).not.toBeNull();

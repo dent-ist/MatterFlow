@@ -400,7 +400,7 @@ test.describe('My Work links, filters and copy', () => {
     fail = true;
     await page
       .locator('tr[data-filter-row]')
-      .getByRole('textbox', { name: 'Filter by Title or Ref' })
+      .getByRole('searchbox', { name: 'Search tasks', exact: true })
       .fill('x');
     await page.keyboard.press('Enter');
     await expect(error).toBeVisible();

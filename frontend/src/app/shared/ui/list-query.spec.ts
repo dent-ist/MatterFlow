@@ -3,7 +3,13 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ApiError } from '../../core/http/api-error';
-import { LocalListPage, PAGE_SIZES, ServerListPage, parsePageSize } from './list-query';
+import {
+  DEFAULT_PAGE_SIZE,
+  LocalListPage,
+  PAGE_SIZES,
+  ServerListPage,
+  parsePageSize,
+} from './list-query';
 
 interface Row {
   name: string;
@@ -73,8 +79,11 @@ describe('list URL state', () => {
   it('only accepts the offered page sizes', () => {
     expect(PAGE_SIZES).toEqual([25, 50, 100]);
     expect(parsePageSize('50')).toBe(50);
-    expect(parsePageSize('7')).toBe(25);
-    expect(parsePageSize(undefined)).toBe(25);
+    expect(parsePageSize('25')).toBe(25);
+    // The default is 50 rows on every list (LC-05, decision AR 10).
+    expect(parsePageSize('7')).toBe(50);
+    expect(parsePageSize(undefined)).toBe(50);
+    expect(DEFAULT_PAGE_SIZE).toBe(50);
   });
 
   describe('LocalListPage', () => {

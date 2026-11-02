@@ -504,7 +504,7 @@ test.describe('Round 4: queues, wording and accessibility', () => {
     await expect(page.getByRole('button', { name: /^Filters/ })).toHaveText(
       /^\s*Filters\s*\(2\)\s*$/,
     );
-    await expect(page.getByRole('textbox', { name: 'Filter by Title or Ref' })).toHaveValue(
+    await expect(page.getByRole('searchbox', { name: 'Search tasks', exact: true })).toHaveValue(
       task.taskNumber,
     );
     // The column is on screen, so the filter is in the row and there is no chip for it.

@@ -48,6 +48,9 @@ describe('ClientsListPage', () => {
 
   const control = <T extends HTMLElement>(el: HTMLElement, name: string): T =>
     el.querySelector<T>(`[aria-label^="Filter by ${name}"]`)!;
+  /** The toolbar's Search box: it drives the `name` filter (LC-01). */
+  const search = (el: HTMLElement): HTMLInputElement =>
+    el.querySelector<HTMLInputElement>('[data-list-search] input')!;
 
   it('lists clients with the padded number prominently and a link to the detail page', async () => {
     const fixture = await create();
@@ -68,7 +71,7 @@ describe('ClientsListPage', () => {
       undefined,
       undefined,
       1,
-      25,
+      50,
       undefined,
     );
   });
@@ -77,13 +80,17 @@ describe('ClientsListPage', () => {
     const fixture = await create();
     const el: HTMLElement = fixture.nativeElement;
 
-    expect(el.querySelector('#client-search, #client-status, mf-search-box')).toBeNull();
-    // Open by default (WP8 #270): no click needed, and no toolbar row for the lone Filters button (it is in the page header).
+    expect(el.querySelector('#client-search, #client-status')).toBeNull();
+    // Open by default (WP8 #270): no click needed. Search is always visible and first in the list toolbar, Filters right after it (LC-01);
+    // the title row has the count chip and "New Client".
     expect(el.querySelector('[data-filter-row]')).not.toBeNull();
-    expect(el.querySelector('[data-grid-toolbar]')).toBeNull();
-    expect(el.querySelector('mf-page-header [data-filters-toggle]')).not.toBeNull();
+    expect(el.querySelector('mf-list-toolbar [data-list-search] input')).not.toBeNull();
+    expect(el.querySelector('mf-page-header [data-filters-toggle]')).toBeNull();
+    expect(el.querySelector('mf-list-toolbar [data-filters-toggle]')).not.toBeNull();
+    expect(el.querySelector('mf-page-header [data-list-count]')?.textContent).toContain('1');
     expect(control<HTMLInputElement>(el, 'Client number')).not.toBeNull();
-    expect(control<HTMLInputElement>(el, 'Name')).not.toBeNull();
+    // Name is the Search box, not a cell of the filter row.
+    expect(control<HTMLInputElement>(el, 'Name')).toBeNull();
     // Active is the default: shown, not counted, not chipped, no Clear filters.
     expect(ddSelect(el, 'Filter by Status').value).toBe('active');
     expect(el.querySelector('[data-filter-count]')).toBeNull();
@@ -95,18 +102,18 @@ describe('ClientsListPage', () => {
     const fixture = await create(['Client.View'], { name: 'acme', status: 'inactive' });
     const el: HTMLElement = fixture.nativeElement;
 
-    // Open: the inputs show the values, no chips, exactly one Clear filters (in the header), the counter counts what was changed.
-    expect(el.querySelector('[data-filter-chips]')).toBeNull();
+    // Open: the chips and exactly one Clear filters show with the row open too (LC-01). The Search text (name) is in the box, not a chip, and the
+    // button counts what the row and chips hold (the status).
+    expect(el.querySelectorAll('[data-chip]').length).toBe(1);
     expect(el.querySelectorAll('[data-clear-filters]').length).toBe(1);
-    expect(el.querySelector('mf-page-header [data-clear-filters]')).not.toBeNull();
-    expect(el.querySelector('[data-filter-count]')?.textContent).toBe('(2)');
+    expect(el.querySelector('mf-list-toolbar [data-clear-filters]')).not.toBeNull();
+    expect(el.querySelector('[data-filter-count]')?.textContent).toBe('(1)');
 
     el.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
     await settle(fixture);
     expect(el.querySelector('[data-filter-row]')).toBeNull();
-    expect(el.querySelectorAll('[data-chip]').length).toBe(2);
+    expect(el.querySelectorAll('[data-chip]').length).toBe(1);
     expect(el.querySelectorAll('[data-clear-filters]').length).toBe(1);
-    expect(el.querySelector('mf-filters-bar [data-clear-filters]')).not.toBeNull();
     const key = Object.keys(localStorage).find((k) => k.startsWith('mf.clients.filters.open'))!;
     expect(localStorage.getItem(key)).toBe('0');
   });
@@ -215,21 +222,22 @@ describe('ClientsListPage', () => {
       undefined,
       undefined,
       2,
-      25,
+      50,
       '-name',
     );
     // A deep link with filters opens the row and shows the values and the count (status All is a change from the default).
     const el: HTMLElement = fixture.nativeElement;
     expect(control<HTMLInputElement>(el, 'Client number').value).toBe('343');
-    expect(control<HTMLInputElement>(el, 'Name').value).toBe('acme');
-    expect(el.querySelector('[data-filter-count]')?.textContent).toBe('(3)');
+    expect(search(el).value).toBe('acme');
+    // The Search text is not counted on the button: the number and the status.
+    expect(el.querySelector('[data-filter-count]')?.textContent).toBe('(2)');
   });
 
   it('writes filter and sort changes back to the URL and resets the page', async () => {
     const fixture = await create(['Client.View'], { page: '3' });
     const el: HTMLElement = fixture.nativeElement;
 
-    const name = control<HTMLInputElement>(el, 'Name');
+    const name = search(el);
     name.value = ' acme ';
     name.dispatchEvent(new Event('input'));
     name.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
@@ -271,7 +279,7 @@ describe('ClientsListPage', () => {
     fixture.componentRef.setInput('sort', 'name'); // forces a reload
     await settle(fixture);
     expect(el.querySelector('[data-empty=none]')?.textContent).toContain('No clients yet');
-    expect(buttonByLabel(el.querySelector('[data-empty=none]')!, 'New client')).toBeDefined();
+    expect(buttonByLabel(el.querySelector('[data-empty=none]')!, 'New Client')).toBeDefined();
     expect(el.querySelector('thead th')).not.toBeNull();
 
     query.set({ name: 'zzz' });
@@ -305,7 +313,7 @@ describe('ClientsListPage', () => {
   it('hides New client without Client.Create', async () => {
     const fixture = await create(['Client.View']);
 
-    expect(buttonByLabel(fixture.nativeElement, 'New client')).toBeUndefined();
+    expect(buttonByLabel(fixture.nativeElement, 'New Client')).toBeUndefined();
   });
 
   describe('Open tasks and Overdue (WP9, #266, #268)', () => {

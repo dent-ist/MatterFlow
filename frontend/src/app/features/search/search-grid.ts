@@ -74,7 +74,7 @@ export const SEARCH_COLUMNS: Record<SearchType | 'mixed', readonly Column[]> = {
   asset: [
     { kind: 'name', heading: 'Name', bone: '16rem' },
     { kind: 'assetType', heading: 'Type', bone: '6rem' },
-    { kind: 'matterNumber', heading: 'Matter number', bone: '6rem' },
+    { kind: 'matterNumber', heading: 'CM Number', bone: '6rem' },
     { kind: 'size', heading: 'Size', bone: '4rem', cls: 'sg-size' },
     { kind: 'disposition', heading: 'Disposition', bone: '5rem' },
   ],

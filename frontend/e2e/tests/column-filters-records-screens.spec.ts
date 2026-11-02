@@ -47,7 +47,7 @@ test.describe('column filters records screenshots', () => {
     await page.goto('/clients');
     await expect(first('Clients list')).toBeVisible();
     // Since WP8 (#270) the row is open by default on the four record lists; the Matter's Assets tab keeps it closed.
-    await expect(page.getByRole('textbox', { name: 'Filter by Name' })).toBeVisible();
+    await expect(page.getByRole('searchbox', { name: 'Search clients' })).toBeVisible();
     await shot(page, 'clients-filters-open');
     await toggle.click();
     await shot(page, 'clients-filters-closed');
@@ -100,7 +100,7 @@ test.describe('column filters records screenshots', () => {
     await page.getByRole('button', { name: /^Filters/ }).click();
     await expect(page.getByRole('dialog', { name: 'Filters' })).toBeVisible();
     await shot(page, 'clients-sheet');
-    await page.getByRole('dialog', { name: 'Filters' }).getByLabel('Filter by Name').fill('Bulk');
+    await page.getByRole('searchbox', { name: 'Search clients' }).fill('Bulk');
     await page.waitForTimeout(600);
     await shot(page, 'clients-sheet-filtered');
     await page.goto(`/matters/${matterId}?tab=assets`);

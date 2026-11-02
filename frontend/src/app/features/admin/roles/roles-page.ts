@@ -186,7 +186,8 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
     }
   }
 
-  protected startNew(): void {
+  /** "+ New Role" lives in the page header (LC-06): the Users page calls this. */
+  startNew(): void {
     this.roleTab.set('permissions');
     this.selected.set(null);
     this.editing.set(true);

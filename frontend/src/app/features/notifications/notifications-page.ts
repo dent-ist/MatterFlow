@@ -32,13 +32,15 @@ import {
 } from './notification-text';
 
 const PAGE_SIZES = [25, 50, 100] as const;
+/** Rows per page when the address says nothing (LC-05): 50, like every list. */
+const DEFAULT_PAGE_SIZE = 50;
 
 type Filter = 'all' | 'unread';
 
 /**
  * The Notifications page (NT-D4, #748, README 4.4): all of the person's notifications for objects they may still view, an All / Unread
  * toggle, paging, "Mark all as read". Filter, page and page size live in the address (`?filter=unread&page=2&pageSize=50`). Rows are links
- * to the task or matter; opening one marks it read. Below 640 px the rows are cards and the pager is Previous / Next.
+ * to the task or matter; opening one marks it read. Below 640 px the rows are cards and the pager is Previous / Next; from 640 px it also has First and Last (LC-05).
  */
 @Component({
   selector: 'mf-notifications-page',
@@ -226,7 +228,6 @@ type Filter = 'all' | 'unread';
             [pageSize]="pageSize()"
             [total]="total()"
             [pageSizes]="sizes"
-            [edges]="false"
             (pageChange)="setPage($event)"
             (pageSizeChange)="setPageSize($event)"
           />
@@ -369,7 +370,7 @@ export class NotificationsPage {
   });
   protected readonly pageSize = computed(() => {
     const n = Number.parseInt(this.params().get('pageSize') ?? '', 10);
-    return (PAGE_SIZES as readonly number[]).includes(n) ? n : PAGE_SIZES[0];
+    return (PAGE_SIZES as readonly number[]).includes(n) ? n : DEFAULT_PAGE_SIZE;
   });
 
   /** The All / Unread toggle as the shared chips; the Unread chip keeps its "(n)" in the word (a capped count such as 99+ is text). */
@@ -437,7 +438,7 @@ export class NotificationsPage {
   }
 
   protected setPageSize(size: number): void {
-    void this.navigate({ pageSize: size === PAGE_SIZES[0] ? null : size, page: null });
+    void this.navigate({ pageSize: size === DEFAULT_PAGE_SIZE ? null : size, page: null });
   }
 
   private navigate(queryParams: Record<string, string | number | null>): Promise<boolean> {

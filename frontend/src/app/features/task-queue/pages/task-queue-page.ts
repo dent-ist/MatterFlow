@@ -20,7 +20,9 @@ import {
 } from '../../../api/generated/api-client';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { FilterOption } from '../../../shared/filters/filter-def';
-import { FiltersBar } from '../../../shared/filters/filters-bar';
+import { ListToolbar } from '../../../shared/filters/list-toolbar';
+import { SortedLine } from '../../../shared/ui/sorted-line';
+import { OptionsMenu } from '../../../shared/ui/options-menu';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import {
   QUEUE_FILTER_PARAMS,
@@ -62,7 +64,7 @@ import {
   taskQueueArgs,
   toQueryParams,
 } from '../../../shared/work-queue/queue-filters';
-import { SortNote } from '../../../shared/work-queue/sort-note';
+import { SORT_LABELS } from '../../../shared/work-queue/sort-note';
 import { PhoneSort } from '../../../shared/work-queue/phone-sort';
 import { WorkList } from '../../../shared/work-queue/work-list';
 import { WorkViewControls } from '../../../shared/work-queue/work-view-controls';
@@ -79,25 +81,26 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
   selector: 'mf-task-queue-page',
   imports: [
     ExportMenu,
+    OptionsMenu,
     ViewsMenu,
     ColumnsNotice,
     FixedPage,
     PageHeader,
     Button,
     HasPermissionDirective,
-    FiltersBar,
+    ListToolbar,
+    SortedLine,
     PhoneSort,
     QuickViews,
     WorkList,
     WorkViewControls,
-    SortNote,
     ScopeSwitch,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/work-queue/work-page.scss',
   template: `
     <mf-fixed-page>
-      <mf-page-header heading="Task Queue">
+      <mf-page-header heading="Task Queue" [count]="loadState() === 'ready' ? total() : null">
         <mf-scope-switch
           mfActions
           [scope]="scope.value()"
@@ -106,18 +109,13 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
           announceAll="Showing all tasks"
           (scopeChange)="scope.set($event)"
         />
-        <mf-views-menu
+        <p-button
           mfActions
-          surface="task-queue"
-          [capture]="captureSavedView"
-          [apply]="showSavedView"
-        />
-        <mf-export-menu
-          mfActions
-          fileName="task-queue"
-          [run]="exportRun"
-          [disabled]="loadState() !== 'ready' || total() === 0"
-          reason="There is nothing to export."
+          *mfHasPermission="'Task.Create'"
+          label="New Task"
+          icon="pi pi-plus"
+          data-new-task
+          (onClick)="go('/tasks/new')"
         />
         @if (scopeText()) {
           <span mfDescription class="sl-line" data-scope-line>{{ scopeText() }}</span>
@@ -132,21 +130,21 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
         />
       }
 
-      <mf-filters-bar
+      <mf-list-toolbar
         [filters]="filters"
         controls="work-filter-row"
-        [stacked]="true"
-        [endActive]="!!state().sort"
+        searchLabel="Search tasks"
         (showColumn)="showColumn($event)"
       >
         <mf-quick-views
-          mfBarStart
+          mfView
           [filters]="state().filters"
           [context]="viewContext()"
           [counts]="viewCounts()"
           (viewSelect)="applyView($event)"
         />
         <mf-work-view-controls
+          mfColumns
           [sort]="state().sort"
           [dir]="state().dir"
           [sortNote]="false"
@@ -161,24 +159,42 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
           [widthUser]="userId()"
           (densityChange)="setDensity($event)"
         />
+        <mf-options-menu
+          mfMore
+          label="Task Queue"
+          text=""
+          icon="pi-ellipsis-h"
+          triggerName="More options: saved views and export"
+        >
+          <mf-views-menu
+            surface="task-queue"
+            [capture]="captureSavedView"
+            [apply]="showSavedView"
+          />
+          <mf-export-menu
+            [inline]="true"
+            fileName="task-queue"
+            [run]="exportRun"
+            [disabled]="loadState() !== 'ready' || total() === 0"
+            reason="There is nothing to export."
+          />
+        </mf-options-menu>
+        <mf-sorted-line
+          mfBarEnd
+          [field]="state().sort"
+          [dir]="state().dir"
+          [labels]="sortLabels"
+          defaultText="Priority, most urgent first"
+          [rule]="defaultOrderRule"
+          (resetSort)="resetSort()"
+        />
         <mf-phone-sort
           mfSheetSort
           [sort]="state().sort"
           [dir]="state().dir"
           (sortPick)="pickSort($event)"
         />
-        @if (state().sort) {
-          <button
-            mfBarEnd
-            type="button"
-            class="mf-btn mf-btn--text"
-            data-reset-sort
-            (click)="resetSort()"
-          >
-            Reset sort
-          </button>
-        }
-      </mf-filters-bar>
+      </mf-list-toolbar>
       <mf-work-list
         from="task-queue"
         [rows]="rows()"
@@ -209,7 +225,6 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
         (columnResized)="onColumnResized($event)"
         (columnAction)="onColumnAction($event)"
       >
-        <mf-sort-note foot-note [sort]="state().sort" [dir]="state().dir" />
         @if (empty().createTask) {
           <p-button
             empty-action
@@ -224,6 +239,9 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
   `,
 })
 export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
+  protected readonly sortLabels = SORT_LABELS;
+  protected readonly defaultOrderRule =
+    'Default order: Priority, then ASAP first, then due date, then oldest';
   private readonly api = inject(TaskQueueClient);
   private readonly podsApi = inject(PodsClient);
   private readonly navigator = inject(Router);
@@ -482,10 +500,6 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
   protected readonly finishedOnly = computed(
     () => !this.overlayNote() && isFinishedOnly(this.state().filters.status),
   );
-
-  protected go(path: string): void {
-    void this.navigator.navigateByUrl(path);
-  }
 
   private async loadPods(): Promise<void> {
     const choices = await loadPodChoices(this.podsApi, this.auth.has('Pod.View'));

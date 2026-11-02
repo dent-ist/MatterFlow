@@ -74,7 +74,7 @@ describe('Assets set-up page (Asset Types, Asset Link Roles)', () => {
   it('has Filters and New asset type in the header and one line of description', async () => {
     await open('/admin/asset-types', 'AssetType.Manage');
     const header = el().querySelector('mf-page-header')!;
-    expect(header.querySelector('[data-new]')!.textContent).toContain('New asset type');
+    expect(header.querySelector('[data-new]')!.textContent).toContain('New Asset Type');
     expect(header.querySelector('[data-filters-toggle]')).not.toBeNull();
     expect(header.textContent).toContain('Each type has its own fields.');
     // The list has no New button of its own.
@@ -93,7 +93,7 @@ describe('Assets set-up page (Asset Types, Asset Link Roles)', () => {
     // The primary action of the tab is New link role, not New asset type.
     expect(el().querySelector('mf-page-header [data-new]')).toBeNull();
     expect(el().querySelector('mf-page-header [data-new-role]')!.textContent).toContain(
-      'New link role',
+      'New Link Role',
     );
 
     tabs()[0].click();

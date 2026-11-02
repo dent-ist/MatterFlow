@@ -244,8 +244,15 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
       [crumbs]="crumbs"
       description="Count, add up or average the data of your assets, then draw it. Your saved reports are yours alone."
     >
-      <button mfActions type="button" class="mf-btn" data-new-report (click)="startNew()">
-        New report
+      <button
+        mfActions
+        type="button"
+        class="mf-btn mf-btn--primary"
+        data-new-report
+        (click)="startNew()"
+      >
+        <i class="pi pi-plus" aria-hidden="true"></i>
+        New Report
       </button>
     </mf-page-header>
 

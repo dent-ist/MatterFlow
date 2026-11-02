@@ -207,7 +207,7 @@ export class MmNewMenu {
     const all: Item[] = [
       {
         key: 'task',
-        label: 'New task',
+        label: 'New Task',
         icon: 'pi-check-square',
         hint: `A task${where || ' on one of your matters'}`,
         reason: !this.auth.has('Task.Create')
@@ -216,7 +216,7 @@ export class MmNewMenu {
       },
       {
         key: 'event',
-        label: 'New calendar item',
+        label: 'New Calendar Item',
         icon: 'pi-calendar-plus',
         hint: `A hearing, deposition or deadline${where}`,
         reason:
@@ -226,7 +226,7 @@ export class MmNewMenu {
       },
       {
         key: 'asset',
-        label: 'New asset',
+        label: 'New Asset',
         icon: 'pi-box',
         hint: `An asset${where || ' on one of your matters'}`,
         reason: !this.auth.has('Asset.Create')
@@ -235,7 +235,7 @@ export class MmNewMenu {
       },
       {
         key: 'project',
-        label: 'New project',
+        label: 'New Project',
         icon: 'pi-folder',
         hint: `A project needs a matter${where ? where.replace(' for', ': ') : ''}`,
         reason: !this.auth.has('Project.Create')

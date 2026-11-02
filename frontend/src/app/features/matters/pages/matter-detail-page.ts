@@ -171,7 +171,6 @@ type Tab = MatterTabKey;
                   <mf-scoped-tasks
                     [matterId]="m.matterId"
                     [canCreate]="m.isActive"
-                    [showCreate]="false"
                     [projectOptions]="projectOptions()"
                     [projectCount]="m.projectCount"
                     [startSelecting]="selectTick()"

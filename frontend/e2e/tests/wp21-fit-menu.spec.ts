@@ -280,7 +280,7 @@ test.describe('Column header menu (#207)', () => {
     await page.keyboard.press('Shift+F10');
     await item(page, 'fit').focus();
     await page.keyboard.press('Enter');
-    await expect(note(page)).toContainText('Matter Number column');
+    await expect(note(page)).toContainText('CM Number column');
     expect(await clippedCells(page, 'matter')).toEqual([]);
     expect(Math.round(await width(page, 'matter'))).toBeGreaterThanOrEqual(112);
     expect(Math.round(await width(page, 'matter'))).toBeLessThan(160);
@@ -404,17 +404,17 @@ test.describe('Column header menu (#207)', () => {
     await page.keyboard.press('Shift+F10');
     await item(page, 'hide').click();
     await expect(th(page, 'matter')).toHaveCount(0);
-    await expect(note(page)).toHaveText('Matter Number column hidden');
+    await expect(note(page)).toHaveText('CM Number column hidden');
     await expect(sortButton(page, 'priority')).toBeFocused();
     await page.getByRole('button', { name: 'Columns', exact: true }).click();
-    await expect(page.getByRole('checkbox', { name: 'Matter Number' })).not.toBeChecked();
+    await expect(page.getByRole('checkbox', { name: 'CM Number' })).not.toBeChecked();
     await page.keyboard.press('Escape');
 
     // The sort click, the column filter inputs and the drag handle are untouched.
     await sortButton(page, 'status').click();
     await expect(th(page, 'status')).toHaveAttribute('aria-sort', /ascending|descending/);
     await expect(menu(page)).toHaveCount(0);
-    const filter = page.getByRole('textbox', { name: 'Filter by Title or Ref' });
+    const filter = page.getByRole('searchbox', { name: 'Search tasks', exact: true });
     await expect(filter).toHaveValue(tag);
     await filter.focus();
     await page.keyboard.press('Shift+F10');

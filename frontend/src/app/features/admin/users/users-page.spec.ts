@@ -213,11 +213,13 @@ describe('UsersPage', () => {
       await chooseStatus('all');
       const select = ddSelect(document.body, 'Rows per page');
       expect(Array.from(select.options).map((o) => o.value)).toEqual(['25', '50', '100']);
-      select.value = '50';
+      // The default is 50 (LC-05): it is not written into the address, the other two are.
+      expect(select.value).toBe('50');
+      select.value = '25';
       select.dispatchEvent(new Event('change'));
       await settle();
-      expect(url()).toContain('size=50');
-      select.value = '25';
+      expect(url()).toContain('size=25');
+      select.value = '50';
       select.dispatchEvent(new Event('change'));
       await settle();
       expect(url()).not.toContain('size=');
@@ -379,7 +381,7 @@ describe('UsersPage', () => {
       registeredFrom: '2026-10-01',
       registeredTo: '2026-10-31',
       page: 1,
-      pageSize: 25,
+      pageSize: 50,
     });
     // The link opens the row with the values in it; the status is the pressed segment.
     expect(pressed()).toBe('all');

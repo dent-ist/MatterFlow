@@ -236,7 +236,7 @@ test.describe('Keyboard: skip link, rows and sequences (#181)', () => {
 
     // In a text field the keys are text.
     await new MyWorkPage(page).open();
-    const filter = page.getByRole('textbox', { name: 'Filter by Title or Ref' });
+    const filter = page.getByRole('searchbox', { name: 'Search tasks', exact: true });
     await filter.focus();
     await page.keyboard.type('gt');
     await expect(filter).toHaveValue('gt');

@@ -196,7 +196,7 @@ describe('ReportsListTab (#712)', () => {
     it('says there are no reports yet, with the way to add one', async () => {
       await create(['Report.Manage'], {}, []);
       expect(el().textContent).toContain(
-        'No reports yet. Use New report above to add the first one.',
+        'No reports yet. Use New Report above to add the first one.',
       );
     });
 

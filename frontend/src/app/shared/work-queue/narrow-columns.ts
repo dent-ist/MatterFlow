@@ -22,11 +22,12 @@ export const NARROW_DROP_ORDER: readonly string[] = [
   'age',
   'project',
   'workflow',
+  // Progress (a wide text cell) goes before Type (a 112 px chip): with both in the standard order, a 1366 px window keeps the Type (LC-03).
+  'progress',
   'type',
   'pod',
   'requestor',
   'creator',
-  'progress',
   'client',
 ];
 

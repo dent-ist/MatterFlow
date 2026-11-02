@@ -89,6 +89,8 @@ export class ListFilters {
   readonly values: Signal<FilterValues>;
   /** Number of active filters: a default is not counted; a disabled (tab-owned) filter is not counted either. */
   readonly activeCount: Signal<number>;
+  /** The number on the Filters button: the active filters without the one the toolbar's Search box shows (`FilterDef.search`). */
+  readonly badgeCount: Signal<number>;
   /** One chip per active value. */
   readonly chips: Signal<readonly FilterChip[]>;
   /** The chips of filters on hidden columns (or without a column): they stay visible whatever the row does. */
@@ -158,12 +160,18 @@ export class ListFilters {
       return this.defs().filter((d) => counted(d) && isActive(d, v[d.key] ?? defaultValue(d)))
         .length;
     });
+    this.badgeCount = computed(() => {
+      const v = this.values();
+      return this.defs().filter(
+        (d) => counted(d) && !d.search && isActive(d, v[d.key] ?? defaultValue(d)),
+      ).length;
+    });
     this.chips = computed(() => {
       const v = this.values();
       const today = todayInZone(this.clock.now(), this.zone);
       const cols = this.visible();
       return this.defs()
-        .filter(counted)
+        .filter((d) => counted(d) && !d.search)
         .flatMap((d) =>
           buildChips(
             d,
@@ -181,6 +189,7 @@ export class ListFilters {
       return this.defs().filter(
         (d) =>
           !d.noControl &&
+          !d.search &&
           !d.disabledReason?.() &&
           (!d.column || (!!cols && !cols.includes(d.column))),
       );
@@ -209,7 +218,7 @@ export class ListFilters {
     // A link that carries filters (or a change from none to some) shows them in the row. Removing chips never re-opens a closed row.
     let before = 0;
     effect(() => {
-      const count = this.activeCount();
+      const count = this.badgeCount();
       untracked(() => {
         if (count > 0 && before === 0) this.open.set(true);
         before = count;

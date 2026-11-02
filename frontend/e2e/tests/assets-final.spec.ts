@@ -296,7 +296,7 @@ test.describe('Assets final verification (#517)', () => {
     await page.goto(`/assets?name=${token}`);
     await expect(page.locator('tbody tr[data-asset-id]').first()).toBeVisible();
     await goOffline(page, true);
-    await page.getByRole('textbox', { name: 'Filter by Name' }).fill(`${token} 1`);
+    await page.getByRole('searchbox', { name: 'Search assets' }).fill(`${token} 1`);
     await expect(page.locator('[data-error]')).toContainText("Couldn't load assets");
     await shot(page, 'final-state-offline');
     await goOffline(page, false);

@@ -239,12 +239,6 @@
       Pods group people for work. Pod leads are a role: assign the Pod Lead role on the
       <a routerLink="/admin/users" class="pods__link">Users</a> tab.
     </p>
-    <p-button
-      *mfHasPermission="'Pod.Manage'"
-      label="New pod"
-      icon="pi pi-plus"
-      (onClick)="newPod()"
-    />
   </div>
 
   <mf-filters-bar
@@ -327,7 +321,7 @@
             <p-button
               mfEmptyAction
               *mfHasPermission="'Pod.Manage'"
-              label="New pod"
+              label="New Pod"
               icon="pi pi-plus"
               (onClick)="newPod()"
             />

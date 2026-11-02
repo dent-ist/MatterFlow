@@ -8,6 +8,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
+import { Button } from 'primeng/button';
+import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { firstValueFrom } from 'rxjs';
 import { PodsClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -57,7 +59,7 @@ export const USERS_TABS: readonly AdminTab[] = [
  */
 @Component({
   selector: 'mf-users-roles-page',
-  imports: [AdminListShell, UsersPage, RolesPage, PodsPage],
+  imports: [AdminListShell, Button, HasPermissionDirective, UsersPage, RolesPage, PodsPage],
   providers: [AdminShellFilters, AdminTabCounts],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -74,6 +76,25 @@ export const USERS_TABS: readonly AdminTab[] = [
       [bare]="editingPod()"
       (tabChange)="select($event)"
     >
+      @if (current() === 'roles') {
+        <p-button
+          mfPrimary
+          label="New Role"
+          icon="pi pi-plus"
+          data-new-role
+          (onClick)="roles()?.startNew()"
+        />
+      }
+      @if (current() === 'pods') {
+        <p-button
+          mfPrimary
+          *mfHasPermission="'Pod.Manage'"
+          label="New Pod"
+          icon="pi pi-plus"
+          data-new-pod
+          (onClick)="pods()?.newPod()"
+        />
+      }
       @if (current() === 'users') {
         <mf-users-page />
       } @else if (current() === 'roles') {
@@ -99,8 +120,8 @@ export class UsersRolesPage implements HasUnsavedChanges {
   private readonly identityApi = inject(IdentityAdminApi);
   private readonly podsApi = inject(PodsClient);
   private readonly can = (permission: string) => this.auth.has(permission);
-  private readonly roles = viewChild<RolesPage>('roles');
-  private readonly pods = viewChild<PodsPage>('pods');
+  protected readonly roles = viewChild<RolesPage>('roles');
+  protected readonly pods = viewChild<PodsPage>('pods');
 
   /** The `:tab` path segment (`users`, `roles` or `pods`). */
   readonly tab = input<string>();

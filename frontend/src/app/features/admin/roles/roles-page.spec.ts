@@ -58,7 +58,9 @@ describe('RolesPage', () => {
     );
 
   async function press(label: string): Promise<void> {
-    button(label)!.click();
+    // "New role" lives in the Users page header (LC-06): the page offers the same entry point to it.
+    if (label === 'New role') fixture.componentInstance.startNew();
+    else button(label)!.click();
     await settle();
   }
 

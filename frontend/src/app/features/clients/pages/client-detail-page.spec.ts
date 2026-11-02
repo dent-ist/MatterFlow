@@ -97,7 +97,7 @@ describe('ClientDetailPage', () => {
       undefined,
       undefined,
       1,
-      25,
+      50,
       undefined,
     );
     const ref = el().querySelector('mf-client-matters tbody .mf-ref');
@@ -124,7 +124,7 @@ describe('ClientDetailPage', () => {
 
     await openTab('matters');
     expect(tab('Matters').getAttribute('aria-selected')).toBe('true');
-    expect(matters.listMatters.mock.calls.some((c) => c[15] === 25)).toBe(true); // the grid loads when its tab opens
+    expect(matters.listMatters.mock.calls.some((c) => c[15] === 50)).toBe(true); // the grid loads when its tab opens
     for (const key of [undefined, 'details', 'nonsense']) {
       await openTab(key);
       expect(tab('Overview').getAttribute('aria-selected')).toBe('true');
@@ -255,7 +255,7 @@ describe('ClientDetailPage', () => {
       undefined,
       undefined,
       2,
-      25,
+      50,
       '-name',
     );
   });
@@ -283,7 +283,7 @@ describe('ClientDetailPage', () => {
     expect(buttonByLabel(el(), 'Activity')).toBeUndefined();
     expect(el().querySelector('[data-page-actions] button')).toBeNull(); // no empty "..." either
     expect(el().querySelector('[data-overflow]')).toBeNull();
-    expect(buttonByLabel(el(), 'New matter')).toBeUndefined();
+    expect(buttonByLabel(el(), 'New Matter')).toBeUndefined();
     expect(matters.listMatters).not.toHaveBeenCalled();
     expect(clients.getClientSummary).not.toHaveBeenCalled(); // no Task.View: no numbers asked for
   });
@@ -302,7 +302,7 @@ describe('ClientDetailPage', () => {
     await create(['Client.View', 'Matter.View', 'Matter.Create'], 'matters');
 
     expect(buttonByLabel(el(), 'Create matter')).toBeUndefined();
-    buttonByLabel(el(), 'New matter')!.click();
+    buttonByLabel(el(), 'New Matter')!.click();
     expect(navigateByUrl).toHaveBeenCalledWith('/matters/new?clientId=1');
   });
 

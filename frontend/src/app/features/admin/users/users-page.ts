@@ -48,7 +48,7 @@ import { Badge } from '../../../shared/ui/badge';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { parsePage } from '../../../shared/ui/list-helpers';
-import { PAGE_SIZES, parsePageSize } from '../../../shared/ui/list-query';
+import { DEFAULT_PAGE_SIZE, PAGE_SIZES, parsePageSize } from '../../../shared/ui/list-query';
 import { SortHeader } from '../../../shared/ui/data-table';
 import { parseSortExpression } from '../../../shared/ui/record-sort';
 import { PhoneSort, SortChoice, SortOption } from '../../../shared/work-queue/phone-sort';
@@ -428,7 +428,7 @@ export class UsersPage implements OnInit {
   }
 
   protected setPageSize(size: number): void {
-    this.navigate({ size: size === PAGE_SIZES[0] ? null : size, page: null });
+    this.navigate({ size: size === DEFAULT_PAGE_SIZE ? null : size, page: null });
   }
 
   protected goTo(page: number): void {

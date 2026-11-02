@@ -59,12 +59,12 @@ import { ReportsListTab } from './reports-list-tab';
       (tabChange)="select($event)"
     >
       @if (current() === 'reports') {
-        <p-button mfPrimary label="New report" icon="pi pi-plus" data-new (onClick)="newReport()" />
+        <p-button mfPrimary label="New Report" icon="pi pi-plus" data-new (onClick)="newReport()" />
       }
       @if (current() === 'categories') {
         <p-button
           mfPrimary
-          label="New category"
+          label="New Category"
           icon="pi pi-plus"
           data-new-category
           (onClick)="newCategory()"

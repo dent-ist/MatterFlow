@@ -71,6 +71,25 @@ describe('NotificationsPage', () => {
     );
   });
 
+  it('pages 50 at a time with First, Previous, Next and Last (LC-05)', async () => {
+    const { harness } = await open('/notifications', 130);
+    expect(client['listNotifications']).toHaveBeenCalledWith('all', 1, 50);
+    const names = Array.from(
+      root(harness).querySelectorAll('nav[aria-label="Pagination"] button'),
+    ).map((b) => b.textContent?.trim());
+    expect(names).toEqual(['50', 'First', 'Previous', 'Next', 'Last']);
+    Array.from(
+      root(harness).querySelectorAll<HTMLButtonElement>('nav[aria-label="Pagination"] button'),
+    )
+      .find((b) => b.textContent?.trim() === 'Last')!
+      .click();
+    await harness.fixture.whenStable();
+    await new Promise((r) => setTimeout(r));
+    harness.detectChanges();
+    await harness.fixture.whenStable();
+    expect(TestBed.inject(Router).url).toBe('/notifications?page=3');
+  });
+
   it('lists rows as links and marks the opened one read; read rows are not bold', async () => {
     const { harness } = await open('/notifications');
     const rows = root(harness).querySelectorAll<HTMLAnchorElement>('[data-notification-item]');
@@ -87,7 +106,7 @@ describe('NotificationsPage', () => {
     root(harness).querySelector<HTMLButtonElement>('[data-key=unread]')!.click();
     await harness.fixture.whenStable();
     expect(TestBed.inject(Router).url).toBe('/notifications?filter=unread');
-    expect(client['listNotifications']).toHaveBeenLastCalledWith('unread', 1, 25);
+    expect(client['listNotifications']).toHaveBeenLastCalledWith('unread', 1, 50);
   });
 
   it('shows the empty states', async () => {

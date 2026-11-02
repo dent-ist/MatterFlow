@@ -123,7 +123,7 @@ const BONES: Record<string, string> = {
           <span mfEmptyAction *mfHasPermission="'Matter.Create'">
             @if (clientActive()) {
               <button type="button" class="mf-btn" data-empty-new-matter (click)="newMatter()">
-                New matter
+                New Matter
               </button>
             } @else {
               <span class="cm-reason">{{ INACTIVE_REASON }}</span>
@@ -258,7 +258,7 @@ const BONES: Record<string, string> = {
                       data-empty-new-matter
                       (click)="newMatter()"
                     >
-                      New matter
+                      New Matter
                     </button>
                   } @else {
                     <span class="cm-reason">{{ INACTIVE_REASON }}</span>

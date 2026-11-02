@@ -26,6 +26,12 @@ const KINDS: Readonly<Record<string, SortKind>> = {
   name: 'text',
   number: 'number',
   matter: 'number',
+  matterRef: 'number',
+  clientNumber: 'number',
+  openTasks: 'count',
+  overdue: 'count',
+  size: 'count',
+  linkedTaskCount: 'count',
 };
 
 const WORDS: Readonly<Record<SortKind, { asc: string; desc: string }>> = {

@@ -8,8 +8,11 @@ import { uid } from '../support/seed';
  * closed, the sheet below 768 px, the print line, keyboard behaviour, the live region and axe in every state.
  */
 test.describe('Column filters on the Assets screen', () => {
+  // Name is the toolbar's Search box since LC-01 (the same `name` parameter); the other columns have their cell in the filter row.
   const filter = (page: Page, column: string) =>
-    page.getByRole('textbox', { name: `Filter by ${column}` });
+    column === 'Name'
+      ? page.getByRole('searchbox', { name: 'Search assets' })
+      : page.getByRole('textbox', { name: `Filter by ${column}` });
   const toggle = (page: Page) => page.getByRole('button', { name: /^Filters/ });
   // A table row above 640 px, a card (a list named Assets, one name link per item) on a phone.
   const names = (page: Page) =>
@@ -42,24 +45,25 @@ test.describe('Column filters on the Assets screen', () => {
     const token = uid();
     await seedSet(seed, token);
     await page.goto(`/assets?name=${token}&status=all`);
-    // A link that carries filters opens the row; the row shows the values, so no chips repeat them.
+    // A link that carries filters opens the row. The Search box shows the name text (no chip, not counted on the button); the chips show the other
+    // filters whether the row is open or closed (LC-01).
     await expect(filter(page, 'Name')).toHaveValue(token);
-    await expect(page.locator('[data-filter-chips]')).toHaveCount(0);
+    const chips = page.getByRole('list', { name: 'Active filters' });
+    await expect(chips.getByRole('listitem')).toHaveCount(1);
+    await expect(chips).toContainText('Disposition: All');
 
     await setRow(page, false);
-    await expect(filter(page, 'Name')).toHaveCount(0);
-    const chips = page.getByRole('list', { name: 'Active filters' });
-    await expect(chips.getByRole('listitem')).toHaveCount(2);
-    await expect(chips).toContainText(`Name: ${token}`);
-    await expect(chips).toContainText('Disposition: All');
+    await expect(filter(page, 'Name')).toHaveValue(token);
+    await expect(chips.getByRole('listitem')).toHaveCount(1);
 
     await page.getByRole('button', { name: 'Remove filter Disposition: All' }).click();
     await expect(page).not.toHaveURL(/status=/);
-    await expect(chips.getByRole('listitem')).toHaveCount(1);
+    await expect(page.locator('[data-filter-chips]')).toHaveCount(0);
     await expect(names(page)).toHaveText([`Alpha ${token}`, `Beta ${token}`, `Gamma ${token}`]);
 
-    await page.getByRole('button', { name: `Remove filter Name: ${token}` }).click();
-    await expect(page.locator('[data-filter-chips]')).toHaveCount(0);
+    // The search text still counts as an active filter for Clear filters.
+    await page.getByRole('button', { name: 'Clear filters' }).click();
+    await expect(filter(page, 'Name')).toHaveValue('');
     await expect(page.getByRole('button', { name: 'Clear filters' })).toHaveCount(0);
   });
 
@@ -110,11 +114,10 @@ test.describe('Column filters on the Assets screen', () => {
     }
     const at = (label: string) => order.findIndex((o) => o.includes(label));
     expect(at('Name')).toBeGreaterThanOrEqual(0);
-    expect(at('Filter by Name')).toBeGreaterThan(at('Type'));
-    expect(at('Filter by Type')).toBeGreaterThan(at('Filter by Name'));
+    expect(at('Filter by Type')).toBeGreaterThan(at('Name'));
     expect(at('Filter by Matter')).toBeGreaterThan(at('Filter by Type'));
-    expect(at('Filter by External reference')).toBeGreaterThan(at('Filter by Matter'));
-    expect(at('Filter by Disposition')).toBeGreaterThan(at('Filter by External reference'));
+    expect(at('Filter by External Reference')).toBeGreaterThan(at('Filter by Matter'));
+    expect(at('Filter by Disposition')).toBeGreaterThan(at('Filter by External Reference'));
 
     // Enter applies a half-typed value at once; Esc clears the filled box and keeps focus there.
     await filter(page, 'Name').fill(`gamma ${token}`);
@@ -155,31 +158,34 @@ test.describe('Column filters on the Assets screen', () => {
     await toggle(page).click();
     await expect(sheet(page)).toBeVisible();
     await expect(page.locator('tr.mf-filter-row')).toHaveCount(0);
-    for (const column of ['Name', 'Matter', 'External reference']) {
+    for (const column of ['Matter', 'External Reference']) {
       await expect(sheet(page).getByLabel(`Filter by ${column}`)).toBeVisible();
     }
+    // Search stays in the toolbar on a phone; the sheet has no Name field.
+    await expect(sheet(page).getByLabel('Filter by Name')).toHaveCount(0);
+    await expect(filter(page, 'Name')).toBeVisible();
     await expect(sheet(page).getByLabel(/^Filter by (Status|Disposition)/)).toBeVisible();
     // Type is a multi-select: its checkbox group sits in the sheet.
     await expect(sheet(page).locator('.ms-group')).toBeVisible();
     // 44 px targets.
-    const box = (await sheet(page).getByLabel('Filter by Name').boundingBox())!;
+    const box = (await sheet(page).getByLabel('Filter by Matter').boundingBox())!;
     expect(box.height).toBeGreaterThanOrEqual(43);
 
     // Changes apply live; the footer says how many results.
-    await sheet(page).getByLabel('Filter by Name').fill(`alpha ${token}`);
-    await expect(page).toHaveURL(/name=alpha/);
-    await expect(sheet(page).getByRole('button', { name: 'Show 1 result' })).toBeVisible();
+    await sheet(page).getByLabel('Filter by Matter').fill(`CF Matter ${token}`);
+    await expect(page).toHaveURL(/matter=CF/);
+    await expect(sheet(page).getByRole('button', { name: 'Show 3 results' })).toBeVisible();
 
     // Esc clears the filled box first, a second Esc closes the sheet and focus returns to the Filters button.
-    await sheet(page).getByLabel('Filter by Name').press('Escape');
-    await expect(sheet(page).getByLabel('Filter by Name')).toHaveValue('');
-    await sheet(page).getByLabel('Filter by Name').fill(`alpha ${token}`);
-    await expect(names(page)).toHaveText([`Alpha ${token}`]);
-    await sheet(page).getByRole('button', { name: 'Show 1 result' }).click();
+    await sheet(page).getByLabel('Filter by Matter').press('Escape');
+    await expect(sheet(page).getByLabel('Filter by Matter')).toHaveValue('');
+    await sheet(page).getByLabel('Filter by Matter').fill(`CF Matter ${token}`);
+    await expect(names(page)).toHaveCount(3);
+    await sheet(page).getByRole('button', { name: 'Show 3 results' }).click();
     await expect(sheet(page)).toHaveCount(0);
     await expect(toggle(page)).toBeFocused();
     await expect(page.getByRole('list', { name: 'Active filters' })).toContainText(
-      `Name: alpha ${token}`,
+      `Matter: CF Matter ${token}`,
     );
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -189,7 +195,7 @@ test.describe('Column filters on the Assets screen', () => {
     // Clear filters from the sheet.
     await toggle(page).click();
     await sheet(page).getByRole('button', { name: 'Clear filters' }).click();
-    await expect(page).not.toHaveURL(/name=/);
+    await expect(page).not.toHaveURL(/matter=/);
     await page.keyboard.press('Escape');
     await expect(sheet(page)).toHaveCount(0);
   });
@@ -257,6 +263,11 @@ test.describe('Column filters on the Assets screen', () => {
     await expect(names(page)).toHaveCount(3);
     expect(await axeViolations(page)).toEqual([]); // row open, filtered
 
+    // A chip needs a filter other than the Search text (that one is in the box): Disposition All.
+    await page.goto(`/assets?name=${token}&status=all`);
+    await expect(names(page)).toHaveCount(3);
+    await expect(page.getByRole('list', { name: 'Active filters' })).toBeVisible();
+    expect(await axeViolations(page)).toEqual([]); // row open, chips
     await toggle(page).click();
     await expect(page.getByRole('list', { name: 'Active filters' })).toBeVisible();
     expect(await axeViolations(page)).toEqual([]); // row closed, chips

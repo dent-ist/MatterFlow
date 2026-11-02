@@ -88,6 +88,19 @@ describe('Users page tabs (Users, Roles, Pods)', () => {
     expect(router.url).toBe('/admin/roles');
   });
 
+  it('puts New Role and New Pod in the page header of their tab, never in the tab body (LC-06)', async () => {
+    await open('/admin/roles', 'User.View', 'Role.Manage', 'Pod.Manage', 'Pod.View');
+    const inHeader = (sel: string) => el().querySelector(`[data-page-actions] ${sel}`);
+    expect(inHeader('[data-new-role]')).not.toBeNull();
+    expect(el().querySelector('mf-roles-page [data-new-role]')).toBeNull();
+    expect(inHeader('[data-new-role] button')?.textContent?.trim()).toBe('New Role');
+
+    await harness.navigateByUrl('/admin/pods');
+    await settle();
+    expect(inHeader('[data-new-pod] button')?.textContent?.trim()).toBe('New Pod');
+    expect(inHeader('[data-new-role]')).toBeNull();
+  });
+
   it('shows the number of active records in each tab name and keeps it quiet', async () => {
     await open('/admin/users', 'User.View', 'Role.Manage', 'Pod.Manage');
     // Users: people waiting or active (the Inactive segment is not counted); Roles: the roles; Pods: the active pods.

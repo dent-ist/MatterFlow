@@ -46,9 +46,10 @@ async function box(locator: Locator): Promise<Box> {
  */
 async function row1(page: Page) {
   const bar = page.locator('[data-grid-toolbar]');
+  // Filters sits right after Search (left aligned, LC-01) and "Filters (1)" is wider than "Filters": its left edge and row are compared.
   const edge = async (l: Locator) => {
     const b = await box(l);
-    return { right: Math.round(b.x + b.width), y: b.y, height: b.height };
+    return { left: Math.round(b.x), y: b.y, height: b.height };
   };
   const rowOf = async (l: Locator) => {
     const b = await box(l);
@@ -68,23 +69,29 @@ async function row1(page: Page) {
 const viewKey = (userId: number) => `mf.work-view.v1.queue.${userId}`;
 
 test.describe('Task Queue toolbar (WP5)', () => {
-  test('#216: row 1 is one line of at most 40 px and does not move in any state', async ({
+  test('#216 (LC-01): row 2 is one line that does not move in any state: Search, Filters, Other filters, quick views, Columns, "..."; row 3 holds the chips and the Sorted by line', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const queue = new TaskQueuePage(page);
     await queue.open();
-    await expect(page.locator('[data-toolbar-row2]')).toHaveCount(0);
+    // Row 3 is always there: it says how the list is sorted, the default order included.
+    await expect(page.locator('[data-toolbar-row2]')).toHaveCount(1);
     const base = await row1(page);
-    expect(base.bar.height).toBeLessThanOrEqual(40);
-    // The views, then the buttons, left to right on one line.
+    expect(base.bar.height).toBeLessThanOrEqual(48);
+    // Left to right on one line: Search, Filters, Other filters, the views, then Columns and the "..." menu at the right end.
+    const search = await box(page.getByRole('searchbox', { name: 'Search tasks', exact: true }));
+    const filters = await box(page.locator('[data-filters-toggle]'));
+    const other = await box(page.locator('[data-more-filters]'));
     const views0 = await box(page.getByRole('toolbar', { name: 'Quick views' }));
     const columns = await box(page.getByRole('button', { name: /^Columns/ }));
-    const more = await box(page.locator('[data-more-filters]'));
+    const menu = await box(page.locator('[data-options-trigger]'));
+    expect(search.x + search.width).toBeLessThan(filters.x + 1);
+    expect(filters.x + filters.width).toBeLessThan(other.x + 1);
+    expect(other.x + other.width).toBeLessThan(views0.x + 1);
     expect(views0.x + views0.width).toBeLessThan(columns.x);
-    expect(columns.x + columns.width).toBeLessThan(more.x);
-    expect(more.x + more.width).toBeLessThan(base.filters.right);
-    for (const part of [base.views, base.columns, base.more, base.filters]) {
+    expect(columns.x + columns.width).toBeLessThan(menu.x + 1);
+    for (const part of [base.views, base.columns, base.more]) {
       expect(Math.abs(part.y + part.height / 2 - (base.bar.y + base.bar.height / 2))).toBeLessThan(
         base.bar.height / 2,
       );
@@ -92,26 +99,26 @@ test.describe('Task Queue toolbar (WP5)', () => {
     await expect(page.locator('[data-sort-note]').first()).toContainText(
       'Sorted by Priority, most urgent first (default order)',
     );
-    await expect(page.locator('.mf-pager [data-sort-note]')).toHaveCount(1);
-    await expect(page.locator('[data-grid-toolbar] [data-sort-note]')).toHaveCount(0);
+    await expect(page.locator('[data-toolbar-row2] [data-sort-note]')).toHaveCount(1);
+    await expect(page.locator('.mf-pager [data-sort-note]')).toHaveCount(0);
+    await expect(page.locator('[data-reset-sort]')).toHaveCount(0);
     const gridTop = (await box(page.locator('thead').first())).y;
     await shot(page, 'default-1366x768');
 
-    // Sorted: Reset sort appears in row 2, row 1 stays, the header keeps its arrow and aria-sort.
+    // Sorted: Reset sort appears in row 3, row 2 stays, the header keeps its arrow and aria-sort.
     await page.locator('thead th[data-col="due"] button').click();
-    await expect(page.locator('[data-toolbar-row2]')).toBeVisible();
     await expect(page.locator('[data-toolbar-row2] [data-reset-sort]')).toBeVisible();
-    await expect(page.locator('.mf-pager [data-sort-note]')).toContainText('Sorted by Due date');
+    await expect(page.locator('[data-toolbar-row2] [data-sort-note]')).toContainText(
+      'Sorted by Due date',
+    );
     await expect(page.locator('thead th[data-col="due"]')).toHaveAttribute(
       'aria-sort',
       /ascending|descending/,
     );
     expect(await row1(page)).toEqual(base);
-    const row2 = await box(page.locator('[data-toolbar-row2]'));
-    expect(row2.y).toBeGreaterThanOrEqual(base.bar.y + base.bar.height);
     await shot(page, 'sorted-due-1366x768');
 
-    // A chip as well: still row 1 in the same place, Clear filters on the left in row 2, Reset sort on the right.
+    // A chip as well: still the same row 2, Clear filters on the left in row 3, Reset sort on the right.
     await page.goto('/tasks?overdue=true&status=NEW&sort=due&dir=asc');
     await expect(page.locator('[data-toolbar-row2] [data-filter-chips]')).toBeVisible();
     await expect(page.locator('[data-toolbar-row2] [data-clear-filters]')).toBeVisible();
@@ -121,10 +128,11 @@ test.describe('Task Queue toolbar (WP5)', () => {
     expect(clear.x).toBeLessThan(reset.x);
     await shot(page, 'chip-reset-sort-1366x768');
 
-    // Reset sort removes only itself; with no chip and no sort row 2 is gone and the grid is back where it was.
+    // Reset sort removes only itself; with no chip and no sort the line still says how the list is sorted and the grid is where it was.
     await page.locator('[data-reset-sort]').click();
     await page.locator('[data-clear-filters]').click();
-    await expect(page.locator('[data-toolbar-row2]')).toHaveCount(0);
+    await expect(page.locator('[data-toolbar-row2]')).toHaveCount(1);
+    await expect(page.locator('[data-reset-sort]')).toHaveCount(0);
     expect(await row1(page)).toEqual(base);
     expect((await box(page.locator('thead').first())).y).toBeCloseTo(gridTop, 0);
   });
@@ -140,7 +148,7 @@ test.describe('Task Queue toolbar (WP5)', () => {
       const queue = new TaskQueuePage(page);
       await queue.open();
       const base = await row1(page);
-      expect(base.bar.height, `row 1 at ${w}`).toBeLessThanOrEqual(40);
+      expect(base.bar.height, `row 2 at ${w}`).toBeLessThanOrEqual(48);
       await page.locator('thead th[data-col="priority"] button').click();
       await expect(page.locator('[data-reset-sort]')).toBeVisible();
       expect(await row1(page), `row 1 moved at ${w}`).toEqual(base);
@@ -152,13 +160,13 @@ test.describe('Task Queue toolbar (WP5)', () => {
     await page.setViewportSize({ width: 1000, height: 768 });
     const queue = new TaskQueuePage(page);
     await queue.open();
-    // No overlap and the order of the DOM: views, Columns, Other filters, Filters.
-    const views = await box(page.getByRole('toolbar', { name: 'Quick views' }));
+    // No overlap and the order of the DOM: Search, Filters, Other filters, views, Columns.
     const parts = [
-      views,
-      await box(page.getByRole('button', { name: /^Columns/ })),
-      await box(page.locator('[data-more-filters]')),
+      await box(page.getByRole('searchbox', { name: 'Search tasks', exact: true })),
       await box(page.locator('[data-filters-toggle]')),
+      await box(page.locator('[data-more-filters]')),
+      await box(page.getByRole('toolbar', { name: 'Quick views' })),
+      await box(page.getByRole('button', { name: /^Columns/ })),
     ];
     for (let i = 1; i < parts.length; i++) {
       const a = parts[i - 1];
@@ -197,7 +205,8 @@ test.describe('Task Queue toolbar (WP5)', () => {
     // Row 2 is reserved by the notice: the grid starts where it does with chips in row 2 (or, within one row of text, the same).
     expect(await row1(page)).toEqual(base);
     const noticeTop = (await box(page.locator('thead').first())).y;
-    expect(Math.abs(noticeTop - chipsTop)).toBeLessThanOrEqual(2);
+    // Row 3 also holds the Sorted by line; a notice that wraps may be one text line taller than the chips (LC-01).
+    expect(Math.abs(noticeTop - chipsTop)).toBeLessThanOrEqual(24);
     await shot(page, 'restored-notice-1366x768');
     if (axeAvailable()) expect(await axeViolations(page), 'notice').toEqual([]);
 
@@ -236,7 +245,7 @@ test.describe('Task Queue toolbar (WP5)', () => {
     await myWork.tab(/Active/).click();
     await expect(page.locator('[data-restored-notice]')).toHaveCount(0);
     // My Work keeps its own sorted-by note in the toolbar.
-    await expect(page.locator('[data-grid-toolbar] [data-sort-note]')).toBeVisible();
+    await expect(page.locator('[data-toolbar-row2] [data-sort-note]')).toBeVisible();
   });
 
   test('axe: the toolbar in its states has no violations at four sizes', async ({ page, seed }) => {

@@ -31,7 +31,7 @@ export class WorkListPage {
 
   /** The Title or Ref column filter (the filter row is open by default on the work lists). */
   get titleFilter(): Locator {
-    return this.page.getByRole('textbox', { name: 'Filter by Title or Ref' });
+    return this.page.getByRole('searchbox', { name: 'Search tasks', exact: true });
   }
 
   /** Filters by title or reference so the row of interest is on the first page whatever else is in the shared database. */

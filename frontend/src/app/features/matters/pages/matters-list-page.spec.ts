@@ -240,15 +240,24 @@ describe('MattersListPage', () => {
 
   const control = <T extends HTMLElement>(el: HTMLElement, name: string): T =>
     el.querySelector<T>(`[aria-label^="Filter by ${name}"]`)!;
+  /** The toolbar's Search box: it drives the `name` filter (LC-01). */
+  const search = (el: HTMLElement): HTMLInputElement =>
+    el.querySelector<HTMLInputElement>('[data-list-search] input')!;
 
   it('has column filters instead of a search box; Sensitive is a select after Status, no Other filters; Active is shown, not counted', async () => {
     const fixture = await create();
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.querySelector('#matter-search, #matter-status, mf-search-box')).toBeNull();
+    expect(el.querySelector('#matter-search, #matter-status')).toBeNull();
+    // Search is the first zone of the list toolbar, Columns and Select are in it (not in the page header), the title row has the count chip (LC-01, LC-02).
+    expect(el.querySelector('mf-list-toolbar [data-list-search] input')).not.toBeNull();
+    expect(
+      el.querySelector('mf-page-header [data-filters-toggle], mf-page-header mf-grid-columns'),
+    ).toBeNull();
+    expect(el.querySelector('mf-list-toolbar mf-grid-columns')).not.toBeNull();
     expect(el.querySelector('[data-filter-row]')).not.toBeNull(); // open by default (WP8 #270)
 
     expect(control<HTMLInputElement>(el, 'CM Number')).not.toBeNull();
-    expect(control<HTMLInputElement>(el, 'Name')).not.toBeNull();
+    expect(control<HTMLInputElement>(el, 'Name')).toBeNull(); // the Search box
     expect(control<HTMLInputElement>(el, 'Client')).not.toBeNull();
     expect(ddSelect(el, 'Filter by Status').value).toBe('active');
     const sensitive = ddSelect(el, 'Filter by Sensitive');
@@ -301,7 +310,7 @@ describe('MattersListPage', () => {
       undefined,
       undefined,
       3,
-      25,
+      50,
       '-name',
     );
     const el: HTMLElement = fixture.nativeElement;
@@ -309,9 +318,10 @@ describe('MattersListPage', () => {
       'Client: 00343 Acme Corp',
     );
     expect(control<HTMLInputElement>(el, 'Client').value).toBe('acme');
-    // The row is open: the inputs show the values, the only chip is the one for the link-only client.
-    expect(el.querySelector('[data-chip="isSensitive"]')).toBeNull();
+    // The chips show with the row open too (LC-01); the Search text (merger) is in the box and makes no chip.
     expect(ddSelect(el, 'Filter by Sensitive').value).toBe('true');
+    expect(el.querySelector('[data-chip="isSensitive"]')?.textContent).toContain('Sensitive: Yes');
+    expect(el.querySelector('[data-chip="name"]')).toBeNull();
     el.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
     await settle(fixture);
     expect(el.querySelector('[data-chip="isSensitive"]')?.textContent).toContain('Sensitive: Yes');
@@ -342,7 +352,7 @@ describe('MattersListPage', () => {
       undefined,
       undefined,
       1,
-      25,
+      50,
       'name',
     );
     expect(api.listMatters).toHaveBeenCalledWith(
@@ -379,7 +389,7 @@ describe('MattersListPage', () => {
     const fixture = await create(['Matter.View'], { clientId: '1' });
     const el: HTMLElement = fixture.nativeElement;
 
-    const name = control<HTMLInputElement>(el, 'Name');
+    const name = search(el);
     name.value = 'merger';
     name.dispatchEvent(new Event('input'));
     name.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
@@ -413,12 +423,12 @@ describe('MattersListPage', () => {
   it('hides New matter without Matter.Create', async () => {
     const fixture = await create(['Matter.View']);
 
-    expect(buttonByLabel(fixture.nativeElement, 'New matter')).toBeUndefined();
+    expect(buttonByLabel(fixture.nativeElement, 'New Matter')).toBeUndefined();
   });
 
   it('opens New matter as a pop-up dialog on the list instead of navigating (MD-22, #1026)', async () => {
     const fixture = await create(['Matter.View', 'Matter.Create']);
-    buttonByLabel(fixture.nativeElement, 'New matter')!.click();
+    buttonByLabel(fixture.nativeElement, 'New Matter')!.click();
     await settle(fixture);
 
     const dialog = document.body.querySelector('.mf-formdlg');

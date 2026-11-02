@@ -49,7 +49,8 @@ test.describe('My Work sorts, Closed column and column sets', () => {
     }
 
     const page = await asUser(me.username);
-    await page.setViewportSize({ width: 1366, height: 768 });
+    // 1920: the narrow-box rule would drop the added Age column at 1366 (the standard order has more columns, LC-03).
+    await page.setViewportSize({ width: 1920, height: 1080 });
     const myWork = new MyWorkPage(page);
     await myWork.open();
     await myWork.search(tag);
@@ -163,7 +164,7 @@ test.describe('My Work sorts, Closed column and column sets', () => {
 
     await expect(col('progress')).toBeVisible();
     await columns.click();
-    await page.getByLabel('Workflow progress', { exact: true }).uncheck();
+    await page.getByLabel('Progress', { exact: true }).uncheck();
     await expect(col('progress')).toHaveCount(0);
     if (axeAvailable()) expect(await axeViolations(page), 'chooser open at 1366').toEqual([]);
     await columns.click();

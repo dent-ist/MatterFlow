@@ -392,8 +392,11 @@ describe('PodWorkPage', () => {
     expect(document.activeElement!.closest('[data-task]')).not.toBeNull();
   });
 
+  /** A filter control of the row; `q` (Title or Ref) is the toolbar's Search box since LC-01. */
   const control = (el: HTMLElement, key: string) =>
-    el.querySelector<HTMLElement>(`tr[data-filter-row] [data-filter="${key}"]`);
+    key === 'q'
+      ? el.querySelector<HTMLElement>('[data-list-search] input')
+      : el.querySelector<HTMLElement>(`tr[data-filter-row] [data-filter="${key}"]`);
 
   it('never filters by Pod because the Pod selector already does', async () => {
     const el = await open('/pods/work?podId=5&pod=7');
@@ -578,7 +581,7 @@ describe('PodWorkPage', () => {
     it('leaves Matter Number out of the default columns from 640 to 899 px and puts the link in view', async () => {
       windowOf(768);
       const el = await open('/pods/work?podId=5');
-      expect(headers(el).join('|')).not.toContain('Matter Number');
+      expect(headers(el).join('|')).not.toContain('CM Number');
       expect(headers(el).join('|')).toContain('Assignee');
       expect(el.querySelector('.pw-linkonly')).not.toBeNull();
       expect(link(el)).not.toBeNull();
@@ -587,13 +590,13 @@ describe('PodWorkPage', () => {
     it("keeps today's columns from 900 px, on the other tabs, and below 640 px", async () => {
       windowOf(1366);
       let el = await open('/pods/work?podId=5');
-      expect(headers(el).join('|')).toContain('Matter Number');
+      expect(headers(el).join('|')).toContain('CM Number');
       expect(el.querySelector('.pw-linkonly')).toBeNull();
 
       TestBed.resetTestingModule();
       windowOf(768);
       el = await open('/pods/work?podId=5&view=all');
-      expect(headers(el).join('|')).toContain('Matter Number');
+      expect(headers(el).join('|')).toContain('CM Number');
       expect(el.querySelector('.pw-linkonly')).toBeNull();
     });
 
@@ -607,7 +610,7 @@ describe('PodWorkPage', () => {
         'status',
       ]);
       const el = await open('/pods/work?podId=5');
-      expect(headers(el).join('|')).toContain('Matter Number');
+      expect(headers(el).join('|')).toContain('CM Number');
     });
   });
 

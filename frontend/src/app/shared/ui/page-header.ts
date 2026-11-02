@@ -81,12 +81,19 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
         </nav>
       }
       <div class="ph__row">
-        <h1 class="ph__title" data-page-title>
-          @if (iconClass(); as ic) {
-            <i class="ph__icon" [class]="ic" aria-hidden="true" data-page-icon></i>
+        <div class="ph__head">
+          <h1 class="ph__title" data-page-title>
+            @if (iconClass(); as ic) {
+              <i class="ph__icon" [class]="ic" aria-hidden="true" data-page-icon></i>
+            }
+            <ng-content select="[mfTitle]">{{ heading() }}</ng-content>
+          </h1>
+          @if (count() !== null) {
+            <span class="ph__count" data-list-count
+              ><span class="mf-sr-only">Total: </span>{{ countText() }}</span
+            >
           }
-          <ng-content select="[mfTitle]">{{ heading() }}</ng-content>
-        </h1>
+        </div>
         <div class="ph__actions" data-page-actions>
           <ng-content select="[mfActions]" />
         </div>
@@ -166,6 +173,26 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
       background: var(--mf-border);
       opacity: 0.55;
       vertical-align: baseline;
+    }
+    /* The title and, on a list, its count chip (LC-01): one flex row, so the chip sits on the title's line. */
+    .ph__head {
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s2);
+      min-width: 0;
+    }
+    .ph__count {
+      flex: none;
+      min-width: 1.5rem;
+      padding: 0 var(--mf-s2);
+      border: 1px solid var(--mf-border);
+      border-radius: 999px;
+      background: var(--mf-surface-alt);
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+      font-weight: 600;
+      line-height: 1.5rem;
+      text-align: center;
     }
     .ph__row {
       display: flex;
@@ -271,7 +298,7 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
       :host(.ph--compact) .ph__row {
         display: contents;
       }
-      :host(.ph--compact) .ph__title {
+      :host(.ph--compact) .ph__head {
         grid-column: 1;
         grid-row: 2;
       }
@@ -300,6 +327,9 @@ export class PageHeader {
    * (the one in the left navigation, see `section-icons.ts`); an empty string shows none.
    */
   readonly icon = input<string | null>(null);
+  /** A list page: the total after the filters as a small chip after the title (null while loading, so the chip is left out). */
+  readonly count = input<number | null>(null);
+  protected readonly countText = computed(() => (this.count() ?? 0).toLocaleString('en-US'));
 
   protected readonly crumbMax = CRUMB_MAX;
   protected cut(label: string): string {

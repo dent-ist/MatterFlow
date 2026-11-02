@@ -135,7 +135,7 @@ export function statusCodes(status: StatusFilter): string[] {
             (click)="toggleFilters()"
           >
             <i class="pi pi-filter" aria-hidden="true"></i>
-            <span>Filter</span>
+            <span>Filters</span>
             @if (activeCount() > 0) {
               <span class="bdg" data-filter-count
                 >{{ activeCount() }}<span class="sr"> active</span></span

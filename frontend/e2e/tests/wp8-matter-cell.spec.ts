@@ -9,7 +9,7 @@ import { Seeder, uid } from '../support/seed';
 /**
  * Matter cell and default columns (TQ-WP8, #197, #198, #348): the Matter Number cell is the reference only (one line), the Matter Name
  * column shows the name (one line, ellipsis, tooltip, shown without Matter.View), the Client column is one line, and a Task Queue user who
- * removed Matter keeps that choice with a one-time notice that offers "Add Matter Number column". Own users and tagged data only. Screenshots go to E2E_SCREENSHOTS when it is set
+ * removed Matter keeps that choice with a one-time notice that offers "Add CM Number column". Own users and tagged data only. Screenshots go to E2E_SCREENSHOTS when it is set
  * (docs/ux/task-queue-review/fixes/wp-matter).
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
@@ -150,7 +150,7 @@ test.describe('Matter Number and Matter Name cells (#197, #348)', () => {
 });
 
 test.describe('Matter column default and notice (#198)', () => {
-  test('a Task Queue user who removed Matter keeps the choice; the notice offers Add Matter Number column once', async ({
+  test('a Task Queue user who removed Matter keeps the choice; the notice offers Add CM Number column once', async ({
     seed,
     asUser,
   }) => {
@@ -199,7 +199,7 @@ test.describe('Matter column default and notice (#198)', () => {
     await expect(page.locator('th[data-col="client"]')).toHaveCount(0);
     await expect(page.locator('[data-columns-notice]')).toHaveCount(0);
     await page.getByRole('button', { name: 'Columns', exact: true }).click();
-    await page.getByLabel('Matter Number', { exact: true }).uncheck();
+    await page.getByLabel('CM Number', { exact: true }).uncheck();
     await expect(page.locator('th[data-col="matter"]')).toHaveCount(0);
     await page.getByRole('button', { name: /Reset columns/ }).click();
     await expect(page.locator('th[data-col="matter"]')).toBeVisible();

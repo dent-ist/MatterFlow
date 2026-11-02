@@ -315,7 +315,7 @@ const LONG_PRESS_MS = 500;
                           <mf-task-type-badge
                             #tt
                             class="wt-typeicon"
-                            [class.wt-typeicon--off]="hideContext()"
+                            [class.wt-typeicon--off]="hideContext() || typeColumn()"
                             [iconKey]="row.taskTypeIconKey"
                             [colourKey]="row.taskTypeColourKey"
                             [name]="row.taskTypeName"
@@ -425,9 +425,20 @@ const LONG_PRESS_MS = 500;
                         }
                       }
                       @case ('type') {
-                        <span class="wt-clip" [attr.title]="row.taskTypeName">{{
-                          row.taskTypeName
-                        }}</span>
+                        <!-- The same chip and name as the Matter grid's Type (LC-03: one Type column on every task list); a compact row takes the 24 px chip. -->
+                        <span class="wt-typecell">
+                          <mf-task-type-chip
+                            [size]="density() === 'compact' ? 'sm' : 'md'"
+                            [iconKey]="row.taskTypeIconKey"
+                            [colourKey]="row.taskTypeColourKey"
+                            [typeId]="row.taskTypeId"
+                            [decorative]="true"
+                            data-type-chip
+                          />
+                          <span class="wt-clip" data-type-name [attr.title]="row.taskTypeName">{{
+                            row.taskTypeName
+                          }}</span>
+                        </span>
                       }
                       @case ('workflow') {
                         <span class="wt-clip" [attr.title]="row.workflowName">{{
@@ -929,6 +940,10 @@ export class TaskTable {
    * columns flagged `autoHide` drop out, least important first; the rest scrolls sideways with a sticky Ref. Unknown width (0, before the
    * first measure or in tests) shows everything.
    */
+  /** The Type column (chip and name) is shown: the small badge before the title would say it twice, so it is not drawn (LC-03). */
+  protected readonly typeColumn = computed(() =>
+    this.shownColumns().some((c) => c.key === 'type' || c.key === 'typeChip'),
+  );
   protected readonly shownColumns = computed<ColumnDef[]>(() => {
     const wanted = new Set(this.columns());
     const hide = this.hideContext();

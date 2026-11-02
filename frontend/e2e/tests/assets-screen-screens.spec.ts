@@ -54,8 +54,9 @@ test.describe('assets screen screenshots', () => {
       await expect(rows.first()).toBeVisible();
       await shot(page, 'assets-list', size);
 
+      // Search is always visible (LC-01); the filter row (or the sheet below 640 px) holds the other filters.
+      await expect(page.getByRole('searchbox', { name: 'Search assets' })).toBeVisible();
       if (size.w < 640) await page.getByRole('button', { name: /^Filters/ }).click();
-      await expect(page.getByRole('textbox', { name: 'Filter by Name' })).toBeVisible();
       await shot(page, 'assets-filters-shown', size);
 
       await page.goto('/assets?name=Bulk%20asset&matter=Bulk&status=all');

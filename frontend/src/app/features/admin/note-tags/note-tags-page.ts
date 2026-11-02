@@ -45,7 +45,7 @@ import { TextField } from '../../../shared/ui/text-field';
         {{ error() }} <button type="button" (click)="load()">Try again</button>
       </p>
     } @else if (loaded() && tags().length === 0) {
-      <p class="pg-reason" data-note-tags-empty>No tags yet. Use New tag.</p>
+      <p class="pg-reason" data-note-tags-empty>No tags yet. Use New Tag.</p>
     } @else {
       <mf-grid-frame scrollLabel="Notes tags">
         <table class="pg-table" data-note-tags-table>

@@ -11,12 +11,12 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
     <div class="cn" role="status" data-columns-notice>
       <i class="pi pi-info-circle" aria-hidden="true"></i>
       <p class="cn-text">
-        The client and matter line under task titles is gone. Matter Number shows the reference and
+        The client and matter line under task titles is gone. CM Number shows the reference and
         Matter Name has its own column. Client is in Columns.
       </p>
       @if (offerMatter()) {
         <button type="button" class="mf-btn" data-add-matter (click)="addMatter.emit()">
-          Add Matter Number column
+          Add CM Number column
         </button>
       }
       <button type="button" class="mf-btn cn-close" data-dismiss-notice (click)="dismiss.emit()">

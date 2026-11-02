@@ -27,8 +27,8 @@ import { StatusChip } from '../../../shared/ui/status-chip';
 import { GridFrame } from '../../../shared/ui/grid-frame';
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { FilterDef, FilterOption } from '../../../shared/filters/filter-def';
-import { FiltersBar } from '../../../shared/filters/filters-bar';
-import { ListFiltersButton } from '../../../shared/filters/list-filters-button';
+import { ListToolbar } from '../../../shared/filters/list-toolbar';
+import { SortedLine, sortLabelsOf } from '../../../shared/ui/sorted-line';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { AdminCardList, AdminCardSpec } from '../../../shared/ui/admin-card-spec';
 import { AdminColumn } from '../../../shared/ui/admin-list-state';
@@ -65,8 +65,8 @@ import {
 /** The columns of the grid, in order; the keys the filter definitions point at. */
 const COLUMNS = [
   'select',
-  'name',
   'type',
+  'name',
   'matter',
   'size',
   'linkedTasks',
@@ -101,8 +101,8 @@ type Column = (typeof COLUMNS)[number];
     Pager,
     MatterRef,
     SortHeader,
-    FiltersBar,
-    ListFiltersButton,
+    ListToolbar,
+    SortedLine,
     ColumnFilterRow,
     AdminCardList,
     RecordSort,
@@ -219,7 +219,7 @@ type Column = (typeof COLUMNS)[number];
   host: { '(window:resize)': 'onResize()' },
   template: `
     <mf-fixed-page>
-      <mf-page-header heading="Assets">
+      <mf-page-header heading="Assets" [count]="state() === 'ready' ? total() : null">
         <mf-scope-switch
           mfActions
           [scope]="scope.value()"
@@ -239,34 +239,30 @@ type Column = (typeof COLUMNS)[number];
           *mfHasPermission="'Asset.View'"
           >Build a report</a
         >
-        <mf-list-filters-button
-          mfActions
-          [filters]="filters"
-          controls="asset-filter-row"
-          [clearAlso]="['q']"
-        />
         <p-button
           mfActions
           *mfHasPermission="'Asset.Create'"
-          label="New asset"
+          label="New Asset"
           icon="pi pi-plus"
           (onClick)="go(newAssetUrl())"
         />
       </mf-page-header>
 
-      <!-- The Filters button and Clear filters are in the page header; this draws the sheet they open below 640 px and the chips. -->
-      <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']">
-        <mf-record-sort
-          mfSheetSort
-          [options]="sortOptions()"
+      <mf-list-toolbar
+        [filters]="filters"
+        controls="asset-filter-row"
+        searchLabel="Search assets"
+        [clearAlso]="['q']"
+        [bulkActive]="canChange() && selected().size > 0"
+      >
+        <mf-sorted-line
+          mfBarEnd
           [sort]="sort()"
-          defaultSort="displayName"
-          (sorted)="pickSort($event)"
+          [defaultSort]="defaultSort"
+          [labels]="sortLabels()"
+          (resetSort)="pickSort(null)"
         />
-      </mf-filters-bar>
-
-      @if (canChange() && selected().size > 0) {
-        <div class="as-bulk" role="region" aria-label="Selected assets" data-bulk-bar>
+        <div mfBulk class="as-bulk" role="region" aria-label="Selected assets" data-bulk-bar>
           <span class="as-bulk__count" role="status" data-bulk-count
             >{{ selected().size }} {{ selected().size === 1 ? 'asset' : 'assets' }} selected</span
           >
@@ -287,7 +283,15 @@ type Column = (typeof COLUMNS)[number];
             Clear selection
           </button>
         </div>
-      }
+        <mf-record-sort
+          mfSheetSort
+          [options]="sortOptions()"
+          [sort]="sort()"
+          defaultSort="displayName"
+          (sorted)="pickSort($event)"
+        />
+      </mf-list-toolbar>
+
       <mf-asset-disposition-dialog
         [targets]="targets()"
         [canEdit]="auth.has('Asset.Edit')"
@@ -350,6 +354,14 @@ type Column = (typeof COLUMNS)[number];
                       </th>
                     }
                     <th
+                      mfSort="assetType"
+                      [sort]="sort()"
+                      [defaultSort]="defaultSort"
+                      (sorted)="setSort($event)"
+                    >
+                      Type
+                    </th>
+                    <th
                       class="mf-cell-name"
                       mfSort="displayName"
                       [sort]="sort()"
@@ -359,21 +371,13 @@ type Column = (typeof COLUMNS)[number];
                       Name
                     </th>
                     <th
-                      mfSort="assetType"
-                      [sort]="sort()"
-                      [defaultSort]="defaultSort"
-                      (sorted)="setSort($event)"
-                    >
-                      Type
-                    </th>
-                    <th
                       class="as-matter"
                       mfSort="matter"
                       [sort]="sort()"
                       [defaultSort]="defaultSort"
                       (sorted)="setSort($event)"
                     >
-                      Matter number
+                      CM Number
                     </th>
                     <th
                       class="mf-cell-num as-size"
@@ -396,11 +400,11 @@ type Column = (typeof COLUMNS)[number];
                         [attr.data-drop]="drop.linkedTasks"
                         (sorted)="setSort($event)"
                       >
-                        <span title="Open of all linked tasks">Linked tasks</span>
+                        <span title="Open of all linked tasks">Linked Tasks</span>
                       </th>
                     }
                     <th class="as-refcell" scope="col" [attr.data-drop]="drop.externalReference">
-                      External reference
+                      External Reference
                     </th>
                     <th
                       class="as-disposition"
@@ -464,17 +468,6 @@ type Column = (typeof COLUMNS)[number];
                           />
                         </td>
                       }
-                      <td class="mf-cell-name">
-                        <a
-                          class="mf-name"
-                          [routerLink]="['/assets', a.assetId]"
-                          mfRowLink="assets"
-                          [rowKey]="a.assetId"
-                          [attr.title]="a.displayName"
-                          [attr.data-asset-name]="a.assetId"
-                          >{{ a.displayName }}</a
-                        >
-                      </td>
                       <td class="as-type" [attr.title]="a.assetTypeName">
                         <span class="as-tycell"
                           ><mf-asset-type-chip
@@ -485,6 +478,17 @@ type Column = (typeof COLUMNS)[number];
                             [typeId]="a.assetTypeId"
                             [name]="a.assetTypeName"
                           /><span class="as-tyname">{{ a.assetTypeName }}</span></span
+                        >
+                      </td>
+                      <td class="mf-cell-name">
+                        <a
+                          class="mf-name"
+                          [routerLink]="['/assets', a.assetId]"
+                          mfRowLink="assets"
+                          [rowKey]="a.assetId"
+                          [attr.title]="a.displayName"
+                          [attr.data-asset-name]="a.assetId"
+                          >{{ a.displayName }}</a
                         >
                       </td>
                       <td class="as-matter" [attr.title]="a.matterName" data-matter>
@@ -600,6 +604,7 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
   private readonly scroll = viewChild('scroll', { read: ElementRef });
 
   protected readonly defaultSort = 'displayName';
+  protected readonly sortLabels = computed(() => sortLabelsOf(this.sortOptions()));
 
   /** "My matters / All" (epic #758): people who can be a project manager open the list on the matters they manage, with a remembered switch. */
   protected readonly scope = new PageScope('assets', () => !this.filters.isDeepLink());
@@ -634,8 +639,8 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
   );
   protected readonly columnSpec = computed<AdminColumn[]>(() => [
     ...(this.canChange() ? [{ cls: 'as-check', bone: '1rem' }] : []),
-    { cls: 'mf-cell-name', bone: '14rem' },
     { cls: 'as-type', bone: '7rem' },
+    { cls: 'mf-cell-name', bone: '14rem' },
     { cls: 'as-matter', bone: '6rem' },
     { cls: 'mf-cell-num as-size', bone: '4rem', drop: this.drop.size },
     ...(this.tasksShown()
@@ -661,11 +666,11 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
   protected readonly sortOptions = computed((): SortOption[] => [
     { value: 'displayName', label: 'Name' },
     { value: 'assetType', label: 'Type' },
-    { value: 'matter', label: 'Matter number' },
+    { value: 'matter', label: 'CM Number' },
     { value: 'size', label: 'Size', descFirst: true },
     { value: 'disposition', label: 'Disposition' },
     ...(this.tasksShown()
-      ? [{ value: 'linkedTaskCount', label: 'Linked tasks', descFirst: true }]
+      ? [{ value: 'linkedTaskCount', label: 'Linked Tasks', descFirst: true }]
       : []),
   ]);
   /**
@@ -743,7 +748,7 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
 
   /** One definition per filter: the row, the sheet, the chips, the count, the URL and the API arguments all come from it. */
   private readonly defs = computed((): FilterDef[] => [
-    { key: 'name', label: 'Name', column: 'name', type: 'text' },
+    { key: 'name', label: 'Name', column: 'name', type: 'text', search: true },
     {
       key: 'typeId',
       label: 'Type',
@@ -753,7 +758,7 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
       options: this.typeOptions(),
     },
     { key: 'matter', label: 'Matter', column: 'matter', type: 'text' },
-    { key: 'extref', label: 'External reference', column: 'externalReference', type: 'text' },
+    { key: 'extref', label: 'External Reference', column: 'externalReference', type: 'text' },
     {
       key: 'status',
       label: 'Disposition',

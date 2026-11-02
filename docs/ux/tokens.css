@@ -107,13 +107,13 @@
   --mf-col-project-w: 140px;
   --mf-col-project-min: 96px;
   --mf-col-project-max: 280px;
-  --mf-col-type-w: 140px;
+  --mf-col-type-w: 112px;
   --mf-col-type-min: 96px;
-  --mf-col-type-max: 280px;
+  --mf-col-type-max: 260px;
   --mf-col-workflow-w: 150px;
   --mf-col-workflow-min: 96px;
   --mf-col-workflow-max: 280px;
-  --mf-col-progress-w: 160px;
+  --mf-col-progress-w: 120px;
   --mf-col-progress-min: 120px;
   --mf-col-progress-max: 320px;
   --mf-col-priority-w: 112px;

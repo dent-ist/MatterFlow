@@ -89,7 +89,7 @@ export class ColumnFilterRow {
     const out: Cell[] = [];
     const cols = this.columns();
     for (let i = 0; i < cols.length; i++) {
-      const own = defs.filter((d) => d.column === cols[i] && !d.noControl);
+      const own = defs.filter((d) => d.column === cols[i] && !d.noControl && !d.search);
       const span = Math.max(1, ...own.map((d) => Math.min(d.span ?? 1, cols.length - i)));
       out.push({ column: cols[i], span, beside: own.some((d) => d.beside), defs: own });
       i += span - 1;

@@ -8,7 +8,12 @@ import { Crumb, PageHeader, RecordTitle } from './page-header';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [PageHeader, RecordTitle],
   template: `
-    <mf-page-header heading="Clients" description="All your clients." [crumbs]="crumbs()">
+    <mf-page-header
+      heading="Clients"
+      description="All your clients."
+      [crumbs]="crumbs()"
+      [count]="count()"
+    >
       <button mfActions type="button" data-secondary>Export</button>
       @if (showPrimary()) {
         <button mfActions type="button" data-primary>New client</button>
@@ -24,6 +29,7 @@ import { Crumb, PageHeader, RecordTitle } from './page-header';
 class Host {
   readonly crumbs = signal<Crumb[]>([]);
   readonly showPrimary = signal(true);
+  readonly count = signal<number | null>(null);
 }
 
 describe('mf-page-header', () => {
@@ -43,6 +49,18 @@ describe('mf-page-header', () => {
     expect(h.querySelector('[data-page-description]')!.textContent!.trim()).toBe(
       'All your clients.',
     );
+  });
+
+  it('shows the total of a list as a chip after the title, outside the heading, and leaves it out while unknown', async () => {
+    const { el, host, fixture } = await render();
+    const h = header(el, 0);
+    expect(h.querySelector('[data-list-count]')).toBeNull();
+    host.count.set(1204);
+    await fixture.whenStable();
+    const chip = h.querySelector('[data-list-count]')!;
+    expect(chip.textContent).toContain('1,204');
+    expect(h.querySelector('h1')!.textContent!.trim()).toBe('Clients');
+    expect(chip.previousElementSibling).toBe(h.querySelector('h1'));
   });
 
   it('puts the actions on the title row, in the order given (primary last)', async () => {
