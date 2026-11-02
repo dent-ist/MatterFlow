@@ -261,7 +261,7 @@ let nextId = 0;
     }
     :host(.upc--one) .upc-name {
       flex: 0 1 auto;
-      min-width: 0;
+      min-width: 2.25rem;
       overflow: hidden;
       max-width: 8.5rem;
       text-overflow: ellipsis;
