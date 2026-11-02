@@ -262,6 +262,10 @@ Where things live now, so the next page does not repeat the discoveries:
 - **Logo rule.** The bundled default mark has a white-on-navy variant (`public/logo-light.svg`, next to `favicon.svg`); the panel uses it from 640 px up (a `<picture>` with a `min-width: 640px` source), the white top bar on a phone uses the normal one. An uploaded logo cannot be recoloured, so it is always shown on a light tile (`--mf-surface`, 6 px radius, 4 px padding, `.mf-logo__pic--tile`) with the name in white next to it; the same rule is in `docs/ux/app-settings`. The tile is a panel-only look: on a phone the uploaded logo sits on the white bar as before.
 - **Kept.** Fixed-page layout (the page never scrolls on desktop), the short-window rule (the menu scrolls inside itself, the version line is pinned; it now also has the old header height), print (panel and bar hidden), skip link first, no keyboard shortcut added.
 
+### 7.7 My Matters scope (MM-20, #1053)
+
+The Client and Matters tree (`mf-mm-tree-panel`) is the only control that chooses a client or matter on My Matters; the chosen scope is `mf-mm-scope-chip` beside the page title (pill, surface colour, a named x, ellipsis plus tooltip). Where the tree is not docked (under 1100 px) the Scope button opens it. Details in `docs/ux/my-matters-calm/README.md`.
+
 ## 8. Date and time format of the new My Matters (UI-23, issue #974)
 
 One helper owns it: `frontend/src/app/shared/ui/numeric-date.ts` (constant `NUMERIC_DATE`, pattern `MM/DD hh:mm AM/PM`). Change it there and every date of the page follows.
