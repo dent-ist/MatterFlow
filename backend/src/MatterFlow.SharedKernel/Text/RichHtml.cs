@@ -41,6 +41,9 @@ public static partial class RichHtml
 
     private static readonly string[] AllowedSchemes = ["http", "https", "mailto"];
 
+    /// <summary>Extra link scheme of the Note profile: <c>onenote:https://...</c> opens a OneNote page (the notes mockup r3 link dialog).</summary>
+    private const string OneNoteScheme = "onenote";
+
     /// <summary>Elements whose content is code or markup, never text to keep.</summary>
     private static readonly string[] DroppedWithContent =
         ["script", "style", "template", "noscript", "iframe", "object", "embed", "svg", "math", "frame", "frameset", "applet", "textarea", "select", "title", "xmp", "noembed", "noframes"];
@@ -177,11 +180,13 @@ public static partial class RichHtml
         sanitizer.UriAttributes.Add("href");
         foreach (var scheme in AllowedSchemes)
             sanitizer.AllowedSchemes.Add(scheme);
+        if (note)
+            sanitizer.AllowedSchemes.Add(OneNoteScheme);
 
         sanitizer.PostProcessNode += (_, e) =>
         {
             if (e.Node is AngleSharp.Dom.IElement element)
-                ApplyElementPolicy(element);
+                ApplyElementPolicy(element, note);
         };
 
         var cleaned = sanitizer.Sanitize(StripDroppedElements(html, profile));
@@ -193,7 +198,7 @@ public static partial class RichHtml
     /// <c>colspan</c>/<c>rowspan</c> (integers 1-100) on cells, <c>scope</c> on header cells. Anything else is removed, and a value that does not
     /// fit is removed, never repaired into something else.
     /// </summary>
-    private static void ApplyElementPolicy(AngleSharp.Dom.IElement element)
+    private static void ApplyElementPolicy(AngleSharp.Dom.IElement element, bool note)
     {
         var tag = element.LocalName;
         foreach (var attribute in element.Attributes.ToList())
@@ -214,7 +219,7 @@ public static partial class RichHtml
         {
             case "a":
                 var href = element.GetAttribute("href");
-                if (href is null || !IsSafeLink(href))
+                if (href is null || !IsSafeLink(href, note))
                 {
                     element.RemoveAttribute("href");
                     element.RemoveAttribute("rel");
@@ -327,12 +332,17 @@ public static partial class RichHtml
 
     private static bool IsBlank(string html) => ToPlainText(html).Length == 0;
 
-    /// <summary>Absolute http, https or mailto URLs only; relative and protocol-relative links are not allowed.</summary>
-    private static bool IsSafeLink(string href)
+    /// <summary>Absolute http, https or mailto URLs only (and <c>onenote:https://</c> in a note); relative and protocol-relative links are not allowed.</summary>
+    private static bool IsSafeLink(string href, bool note)
     {
         var value = href.Trim();
         if (value.Length == 0 || value.Length > 2000 || value.Any(c => char.IsControl(c) || IsBidiControl(c) || c is '<' or '>' or '"' or '`'))
             return false;
+
+        // Notes may link to a OneNote page: `onenote:` followed by an https address (and nothing else), the form OneNote's "copy link" gives.
+        if (note && value.StartsWith(OneNoteScheme + ":", StringComparison.OrdinalIgnoreCase))
+            return IsSafeLink(value[(OneNoteScheme.Length + 1)..], note: false)
+                && value[(OneNoteScheme.Length + 1)..].StartsWith("https://", StringComparison.OrdinalIgnoreCase);
 
         // Links with credentials (https://google.com@evil.com) read as another site: not kept as links (SEC2-12).
         return Uri.TryCreate(value, UriKind.Absolute, out var uri)

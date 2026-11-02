@@ -132,14 +132,22 @@ export function dayHeading(iso: string, now: Date): string {
   return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${d.getFullYear()}`;
 }
 
-/** The splitter between the list and the note: 220 to 520 px, 340 by default. */
-export const SPLIT_MIN = 220;
-export const SPLIT_MAX = 520;
-export const SPLIT_DEFAULT = 340;
+/** The splitter between the list and the note (mockup: 380 px by default, 260 px at least; the note keeps 420 px at least). Keys move it by 16 px. */
+export const SPLIT_MIN = 260;
+export const SPLIT_MAX = 640;
+export const SPLIT_DEFAULT = 380;
+export const SPLIT_STEP = 16;
+export const NOTE_MIN_WIDTH = 420;
 
-export function clampSplit(width: number): number {
+/** `max` is what the card leaves for the list while the note keeps its 420 px (SPLIT_MAX when the card width is not known). */
+export function clampSplit(width: number, max: number = SPLIT_MAX): number {
   if (!Number.isFinite(width)) return SPLIT_DEFAULT;
-  return Math.min(SPLIT_MAX, Math.max(SPLIT_MIN, Math.round(width)));
+  return Math.min(Math.max(SPLIT_MIN, max), Math.max(SPLIT_MIN, Math.round(width)));
+}
+
+/** The list width the card allows: its width minus the note's minimum, never above SPLIT_MAX. */
+export function splitLimit(cardWidth: number): number {
+  return Math.min(SPLIT_MAX, Math.max(SPLIT_MIN + SPLIT_STEP, cardWidth - NOTE_MIN_WIDTH));
 }
 
 /** The text of the first line of an html body, for the unsaved title shown while typing (the server derives the real one). */
@@ -157,4 +165,100 @@ export function titleOfHtml(html: string): string {
     if (t) return t.slice(0, 300);
   }
   return '';
+}
+
+/**
+ * The title of a note is the first line of its text. In read mode the page shows that line as the heading (with the byline and the tags under it), so the text
+ * under it starts after it. Returns the html without the first block when that block is a paragraph or a heading whose text is the title, otherwise the html
+ * unchanged (a note that starts with a list or a table keeps all its text; the heading is then drawn above it as well).
+ */
+export function withoutTitleBlock(html: string, title: string): { rest: string; split: boolean } {
+  if (typeof document === 'undefined' || !html) return { rest: html, split: false };
+  const box = document.createElement('div');
+  box.innerHTML = html;
+  const first = box.firstElementChild;
+  if (!first || !/^(P|H1|H2|H3)$/.test(first.tagName)) return { rest: html, split: false };
+  const text = (first.textContent ?? '').replace(/\s+/g, ' ').trim();
+  if (!text || text.slice(0, 300) !== title.replace(/\s+/g, ' ').trim().slice(0, 300))
+    return { rest: html, split: false };
+  first.remove();
+  return { rest: box.innerHTML, split: true };
+}
+
+/** The colour keys a person's avatar can take (the task type palette), chosen from the name so a person keeps the same colour. */
+const AVATAR_KEYS = [
+  'blue',
+  'violet',
+  'teal',
+  'rose',
+  'amber',
+  'green',
+  'orange',
+  'indigo',
+] as const;
+
+export function avatarKey(name: string | null | undefined): string {
+  let h = 0;
+  for (const c of name ?? '') h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return AVATAR_KEYS[h % AVATAR_KEYS.length];
+}
+
+export function initialsOf(name: string | null | undefined): string {
+  const parts = (name ?? '').split(/[\s\\]+/).filter(Boolean);
+  return (
+    parts.length > 1 ? parts[0][0] + parts[1][0] : (parts[0] ?? '?').slice(0, 2)
+  ).toUpperCase();
+}
+
+export type NoteSort = 'updated' | 'oldest' | 'title' | 'created';
+
+export interface SortableNote {
+  isPinned: boolean;
+  title: string;
+  updatedAtUtc: string;
+}
+
+/** Pinned notes first, then the chosen order (newest update, oldest update, A to Z; "created" is the list as the server sends it for that sort). */
+export function sortNotes<T extends SortableNote>(notes: readonly T[], sort: NoteSort): T[] {
+  const order = (a: T, b: T): number =>
+    sort === 'created'
+      ? 0
+      : sort === 'title'
+        ? a.title.localeCompare(b.title)
+        : sort === 'oldest'
+          ? a.updatedAtUtc.localeCompare(b.updatedAtUtc)
+          : b.updatedAtUtc.localeCompare(a.updatedAtUtc);
+  return [...notes].sort((a, b) => (a.isPinned === b.isPinned ? order(a, b) : a.isPinned ? -1 : 1));
+}
+
+export interface NoteTagLike {
+  noteTagId: number;
+  name: string;
+  isActive: boolean;
+}
+
+export interface NoteGroup<N, T> {
+  /** The tag id as text, or `_none` for the notes without a tag. */
+  id: string;
+  tag: T | null;
+  notes: N[];
+}
+
+/** One group per tag that has notes (alphabetical by tag name), then "Untagged". A note with several tags is in each of its groups. */
+export function groupByTag<
+  N extends { tags: readonly { noteTagId: number }[] },
+  T extends NoteTagLike,
+>(notes: readonly N[], tags: readonly T[], only: readonly string[] = []): NoteGroup<N, T>[] {
+  const out: NoteGroup<N, T>[] = [];
+  const byName = [...tags].sort((a, b) => a.name.localeCompare(b.name));
+  for (const t of byName) {
+    if (only.length && !only.includes(String(t.noteTagId))) continue;
+    const list = notes.filter((n) => n.tags.some((x) => x.noteTagId === t.noteTagId));
+    if (list.length) out.push({ id: String(t.noteTagId), tag: t, notes: list });
+  }
+  if (!only.length || only.includes('_none')) {
+    const list = notes.filter((n) => n.tags.length === 0);
+    if (list.length) out.push({ id: '_none', tag: null, notes: list });
+  }
+  return out;
 }

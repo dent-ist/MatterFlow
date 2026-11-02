@@ -1,0 +1,323 @@
+import { Page } from '@playwright/test';
+import { axeAvailable, axeViolations } from '../support/axe';
+import { expect, test } from '../support/fixtures';
+import { uid } from '../support/seed';
+
+/**
+ * The Notes tab against the approved mockup (MD-27, #1031; docs/ux/matter-detail/notes-parity.md): one card with the header row, notes grouped by tag, a splitter,
+ * read mode with an Edit button, edit mode with Cancel left and Save right, the toolbar, the slash menu with the owner's five commands, the tags side panel,
+ * the Templates view, the history column, the lock, and axe at the two reference sizes. Typing triggers (/ @ #) and the menu keys are widget keys, not
+ * shortcuts (#420).
+ */
+const html = (title: string, body = '') => `<h1>${title}</h1><p>${body || `${title} body text.`}</p>`;
+
+async function world(seed: import('../support/seed').Seeder) {
+  const client = await seed.client({ name: `Notes Client ${uid()}` });
+  const matter = await seed.matter({ client, name: `Notes Matter ${uid()}` });
+  const tagA = await seed.admin.post('/api/v1/note-tags', { name: `Privilege ${uid()}`, colourKey: 'red' });
+  const tagB = await seed.admin.post('/api/v1/note-tags', { name: `Hosting ${uid()}`, colourKey: 'teal' });
+  const note = async (title: string, tagIds: number[] = []) =>
+    seed.admin.post('/api/v1/notes', { matterId: matter.matterId, bodyHtml: html(title), tagIds });
+  return { client, matter, tagA, tagB, note };
+}
+
+const open = async (page: Page, matterId: number) => {
+  await page.goto(`/matters/${matterId}?tab=notes`);
+  await expect(page.locator('[data-notes-tab]')).toBeVisible();
+};
+
+test.describe('Notes tab matches the mockup (MD-27)', () => {
+  test('the card, the header row, groups by tag with a twin note, and no page scroll', async ({
+    page,
+    seed,
+  }) => {
+    const w = await world(seed);
+    await w.note(`Two tags ${uid()}`, [w.tagA.noteTagId, w.tagB.noteTagId]);
+    await w.note(`No tag ${uid()}`);
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await open(page, w.matter.matterId);
+    const head = page.locator('[data-notes-head]');
+    await expect(head.locator('h2')).toHaveText('Notes');
+    await expect(page.locator('[data-notes-count]')).toHaveText('2');
+    await expect(head.getByRole('searchbox')).toBeVisible();
+    await expect(head.getByRole('button', { name: /Filter by tag or lock/ })).toBeVisible();
+    for (const v of ['By tag', 'Latest first', 'Board', 'Templates'])
+      await expect(head.getByRole('button', { name: v, exact: true })).toBeVisible();
+    await expect(page.locator('[data-new-note]')).toBeVisible();
+    // one group per tag, the twin note is in both, and Untagged comes last
+    await expect(page.locator('[data-group]')).toHaveCount(3);
+    await expect(page.locator('[data-group]').last()).toContainText('Untagged');
+    await expect(page.locator('[data-note-item]')).toHaveCount(4);
+    // nothing scrolls on desktop
+    expect(
+      await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight),
+    ).toBeLessThanOrEqual(0);
+    // the group can be collapsed and expanded again
+    const first = page.locator('[data-group]').first();
+    await first.locator('h3 button').click();
+    await expect(first.locator('h3 button')).toHaveAttribute('aria-expanded', 'false');
+    await page.locator('[data-toggle-all]').click();
+    await expect(page.locator('[data-group] h3 button[aria-expanded="true"]').first()).toBeVisible();
+  });
+
+  test('a note opens in read mode; Edit shows Cancel left and Save right; Save returns to read mode', async ({
+    page,
+    seed,
+  }) => {
+    const w = await world(seed);
+    const title = `Read first ${uid()}`;
+    await w.note(title, [w.tagA.noteTagId]);
+    await open(page, w.matter.matterId);
+    await page.locator('[data-note-item]').first().click();
+    await expect(page.locator('[data-note-title]')).toContainText(title);
+    await expect(page.locator('[data-note-byline]')).toContainText('Last updated by');
+    await expect(page.locator('[data-editor-toolbar]')).toHaveCount(0);
+    await page.locator('[data-note-edit]').click();
+    await expect(page.locator('[data-editor-toolbar]')).toBeVisible();
+    const cancel = await page.locator('[data-note-cancel]').boundingBox();
+    const save = await page.locator('[data-note-save]').boundingBox();
+    expect(cancel!.x).toBeLessThan(save!.x);
+    await expect(page.locator('[data-note-state]')).toContainText('No changes');
+    await page.locator('.ProseMirror').click();
+    await page.keyboard.press('Control+End');
+    await page.keyboard.type(' More words.');
+    await expect(page.locator('[data-note-state]')).toContainText('Unsaved changes');
+    await page.locator('[data-note-save]').click();
+    await expect(page.locator('[data-editor-toolbar]')).toHaveCount(0);
+    await expect(page.locator('[data-note-title]')).toContainText(title);
+  });
+
+  test('Cancel with unsaved changes asks before discarding', async ({ page, seed }) => {
+    const w = await world(seed);
+    await w.note(`Discard ${uid()}`);
+    await open(page, w.matter.matterId);
+    await page.locator('[data-note-item]').first().click();
+    await page.locator('[data-note-edit]').click();
+    await page.locator('.ProseMirror').click();
+    await page.keyboard.type('x');
+    await page.locator('[data-note-cancel]').click();
+    const dialog = page.getByRole('dialog', { name: 'Discard unsaved changes?' });
+    await expect(dialog).toContainText('If you leave now they are lost.');
+    await dialog.getByRole('button', { name: 'Keep editing' }).click();
+    await expect(page.locator('[data-editor-toolbar]')).toBeVisible();
+    await page.locator('[data-note-cancel]').click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Discard changes' }).click();
+    await expect(page.locator('[data-editor-toolbar]')).toHaveCount(0);
+  });
+
+  test('the toolbar: style, B I U, lists, quote, link dialog, 3 by 3 table with tools, clear, undo', async ({
+    page,
+    seed,
+  }) => {
+    const w = await world(seed);
+    await open(page, w.matter.matterId);
+    await page.locator('[data-new-note]').click();
+    const bar = page.locator('[data-editor-toolbar]');
+    for (const name of [
+      'Text style: Paragraph',
+      'Bold',
+      'Italic',
+      'Underline',
+      'Bulleted list',
+      'Numbered list',
+      'Quote',
+      'Link',
+      'Insert table, 3 by 3',
+      'Mention a person',
+      'Reference an asset',
+      'Clear formatting',
+      'Undo',
+      'Redo',
+    ])
+      await expect(bar.getByRole('button', { name })).toBeVisible();
+    await page.locator('.ProseMirror').click();
+    await page.keyboard.type('Title line');
+    await page.keyboard.press('Enter');
+    await bar.getByRole('button', { name: 'Insert table, 3 by 3' }).click();
+    await expect(page.locator('.ProseMirror table tr')).toHaveCount(3);
+    await expect(page.locator('.ProseMirror table th')).toHaveCount(3);
+    const tools = page.locator('[data-table-tools]');
+    await expect(tools).toBeVisible();
+    await tools.getByRole('button', { name: 'Add row below' }).click();
+    await expect(page.locator('.ProseMirror table tr')).toHaveCount(4);
+    await tools.getByRole('button', { name: 'Delete table' }).click();
+    await expect(page.locator('.ProseMirror table')).toHaveCount(0);
+    // the link dialog: https or onenote:https only
+    await page.keyboard.type('word');
+    await bar.getByRole('button', { name: 'Link' }).click();
+    const dlg = page.getByRole('dialog', { name: 'Add a link' });
+    await dlg.getByLabel('Address').fill('ftp://nope');
+    await dlg.getByRole('button', { name: 'Apply' }).click();
+    await expect(dlg).toContainText('Enter an address that starts with https:// or onenote:https://');
+    await dlg.getByLabel('Address').fill('onenote:https://example.test/notebooks/x');
+    await dlg.getByLabel('Text to show').fill('Notebook');
+    await dlg.getByRole('button', { name: 'Apply' }).click();
+    await expect(page.locator('.ProseMirror a[href^="onenote:https://"]')).toHaveText('Notebook');
+    await bar.getByRole('button', { name: 'Undo' }).click();
+    await expect(page.locator('.ProseMirror a')).toHaveCount(0);
+  });
+
+  test('the slash menu: five commands, two levels, Esc closes the menu only', async ({
+    page,
+    seed,
+  }) => {
+    const w = await world(seed);
+    await seed.asset(w.matter, `Slash asset ${uid()}`);
+    await open(page, w.matter.matterId);
+    await page.locator('[data-new-note]').click();
+    await page.locator('.ProseMirror').click();
+    await page.keyboard.type('Title');
+    await page.keyboard.press('Enter');
+    await page.keyboard.type('/');
+    const menu = page.locator('[data-suggest-menu]');
+    await expect(menu).toBeVisible();
+    await expect(menu.getByRole('option')).toHaveCount(5);
+    for (const c of ['/asset', '/mention', '/project', '/matter', '/note'])
+      await expect(menu).toContainText(c);
+    await expect(menu).not.toContainText('/assets');
+    await expect(menu).not.toContainText('/template');
+    await page.keyboard.type('as');
+    await expect(menu.getByRole('option')).toHaveCount(1);
+    await page.keyboard.press('Enter');
+    await expect(menu).toContainText('Asset');
+    await expect(menu.getByRole('option').first()).toContainText('Slash asset');
+    await page.keyboard.press('Backspace');
+    await expect(menu).toContainText('/asset');
+    await page.keyboard.press('Escape');
+    await expect(menu).toHaveCount(0);
+    await expect(page.locator('[data-editor-toolbar]')).toBeVisible();
+  });
+
+  test('tags: a side panel picks up to five, chips show in the editor, Add tag opens the panel', async ({
+    page,
+    seed,
+  }) => {
+    const w = await world(seed);
+    await w.note(`Tagged ${uid()}`);
+    await open(page, w.matter.matterId);
+    await page.locator('[data-note-item]').first().click();
+    await page.locator('[data-note-edit]').click();
+    await page.locator('[data-note-tags]').click();
+    const panel = page.locator('[data-tags-panel]');
+    await expect(panel).toContainText('0 of 5 selected');
+    await panel.getByRole('checkbox').first().click();
+    await expect(panel).toContainText('1 of 5 selected');
+    await page.getByRole('button', { name: 'Done' }).click();
+    await expect(page.locator('[data-note-tag-chips] mf-note-tag')).toHaveCount(1);
+    await page.getByRole('button', { name: /^Remove tag/ }).click();
+    await expect(page.locator('[data-note-tag-chips] mf-note-tag')).toHaveCount(0);
+  });
+
+  test('lock: badge, disabled Edit with the reason, pin still works, unlock', async ({
+    page,
+    seed,
+  }) => {
+    const w = await world(seed);
+    const n = await w.note(`Lockable ${uid()}`);
+    await open(page, w.matter.matterId);
+    await page.locator('[data-note-item]').first().click();
+    await page.locator('[data-note-lock]').click();
+    await expect(page.locator('[data-note-lock-badge]')).toContainText('Locked by');
+    await expect(page.locator('[data-note-edit]')).toHaveAttribute('aria-disabled', 'true');
+    await expect(page.locator('[data-note-delete]')).toHaveAttribute('aria-disabled', 'true');
+    await page.locator('[data-note-pin]').click();
+    await expect(page.locator('[data-note-pin]')).toHaveAttribute('aria-pressed', 'true');
+    await page.locator('[data-note-unlock]').click();
+    await expect(page.locator('[data-note-lock-badge]')).toHaveCount(0);
+    expect(n.noteId).toBeGreaterThan(0);
+  });
+
+  test('history column at 1366 wide: grouped by day, collapses to a rail', async ({ page, seed }) => {
+    const w = await world(seed);
+    await w.note(`History ${uid()}`);
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await open(page, w.matter.matterId);
+    await page.locator('[data-note-item]').first().click();
+    const col = page.locator('[data-history-rail-open]');
+    await expect(col).toContainText('History');
+    await expect(col).toContainText('Today');
+    await expect(col).toContainText('created this note');
+    await expect(col).toContainText('History shows who and when only.');
+    await page.locator('[data-history-rail]').click();
+    await expect(col.locator('.nt__hlist')).toBeHidden();
+    await expect(page.locator('[data-history-rail]')).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('templates view: list with Use, Edit, Duplicate, Delete; Use opens a new note filled in', async ({
+    page,
+    seed,
+  }) => {
+    const w = await world(seed);
+    const name = `Tpl ${uid()}`;
+    await seed.admin.post('/api/v1/note-templates', {
+      scope: 'MATTER',
+      matterId: w.matter.matterId,
+      name,
+      description: 'A test template',
+      titleTemplate: 'Log {{date}}',
+      bodyHtml: '<p>By {{author}} about {{custodian}}</p>',
+      tagIds: [],
+    });
+    await open(page, w.matter.matterId);
+    await page.getByRole('button', { name: 'Templates', exact: true }).click();
+    const row = page.locator('[data-template-list] li', { hasText: name });
+    await expect(row).toContainText('This matter');
+    await expect(row.getByRole('button', { name: 'Use' })).toBeVisible();
+    await expect(row.getByRole('button', { name: 'Edit' })).toBeVisible();
+    await expect(row.getByRole('button', { name: 'Duplicate' })).toBeVisible();
+    await expect(row.getByRole('button', { name: 'Delete' })).toBeVisible();
+    await row.getByRole('button', { name: 'Use' }).click();
+    await expect(page.locator('[data-editor-toolbar]')).toBeVisible();
+    await expect(page.locator('.ProseMirror')).toContainText('{{custodian}}');
+    await expect(page.locator('.ProseMirror')).not.toContainText('{{author}}');
+  });
+
+  test('the empty state and the New note menu', async ({ page, seed }) => {
+    const w = await world(seed);
+    await open(page, w.matter.matterId);
+    const empty = page.locator('[data-notes-empty]');
+    await expect(empty).toContainText('No notes on this matter yet');
+    await expect(empty.getByRole('button', { name: 'Add the first note' })).toBeVisible();
+    await page.locator('[data-new-menu]').click();
+    await expect(page.getByRole('menuitem', { name: 'Blank note' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'From template...' })).toBeVisible();
+  });
+
+  test('the AI button says it is not available on a matter that does not allow AI', async ({
+    page,
+    seed,
+  }) => {
+    const w = await world(seed);
+    await w.note(`AI ${uid()}`);
+    await open(page, w.matter.matterId);
+    await page.locator('[data-note-item]').first().click();
+    await expect(page.locator('[data-note-head]')).toContainText("AI can't be used on this matter");
+  });
+
+  for (const [width, height] of [
+    [1366, 768],
+    [375, 812],
+  ] as const) {
+    test(`axe is clean and nothing scrolls sideways at ${width}x${height}`, async ({
+      page,
+      seed,
+    }) => {
+      test.skip(!axeAvailable(), 'axe-core is not installed');
+      const w = await world(seed);
+      await w.note(`Axe ${uid()}`, [w.tagA.noteTagId]);
+      await page.setViewportSize({ width, height });
+      await open(page, w.matter.matterId);
+      await expect(page.locator('[data-note-item]').first()).toBeVisible();
+      expect(await axeViolations(page, '[data-notes-tab]')).toEqual([]);
+      await page.locator('[data-note-item]').first().click();
+      await expect(page.locator('[data-note-title]')).toBeVisible();
+      expect(await axeViolations(page, '[data-notes-tab]')).toEqual([]);
+      await page.locator('[data-note-edit]').click();
+      await expect(page.locator('[data-editor-toolbar]')).toBeVisible();
+      expect(await axeViolations(page, '[data-notes-tab]')).toEqual([]);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
+      ).toBeLessThanOrEqual(0);
+    });
+  }
+});

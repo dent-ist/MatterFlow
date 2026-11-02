@@ -13,6 +13,8 @@ import {
   afterNextRender,
   viewChild,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -21,8 +23,9 @@ import {
   MattersClient,
   NoteHistoryEntry,
   NoteListItem,
+  NoteReferenceResolution,
   NoteResponse,
-  NoteTagRef,
+  NoteTagResponse,
   NoteTagsClient,
   NoteTemplateResponse,
   NoteTemplatesClient,
@@ -33,42 +36,76 @@ import {
 import { AuthStore } from '../../core/auth/auth.store';
 import { ApiError } from '../../core/http/api-error';
 import { NotificationService } from '../../core/notify/notification.service';
-import { MfDatePipe } from '../../shared/pipes/mf-date.pipe';
+import { taskTypeChipColours } from '../../shared/task-type/task-type-colours';
 import { ConfirmDialog } from '../../shared/ui/confirm-dialog';
 import { ActionMenu, MenuAction } from '../../shared/ui/action-menu';
 import { AiButton, AiComingSoon } from '../../shared/ui/ai/ai-assist';
 import { DropdownItem, Dropdown } from '../../shared/ui/dropdown';
+import { NumericDatePipe } from '../../shared/ui/numeric-date';
 import { SearchBox } from '../../shared/ui/search-box';
 import { SlidePanel } from '../../shared/ui/slide-panel';
 import { TextField } from '../../shared/ui/text-field';
-import { EmbedContent, NoteEditor, RefKind, SuggestItem } from './note-editor';
+import { EmbedContent, NoteEditor, RefInfo, RefKind, SuggestItem } from './note-editor';
+import { NoteTagChip } from './note-tag-chip';
 import {
+  NoteSort,
   SPLIT_DEFAULT,
-  SPLIT_MAX,
   SPLIT_MIN,
+  SPLIT_STEP,
+  avatarKey,
   clampSplit,
   dayHeading,
+  groupByTag,
+  initialsOf,
   lockUi,
   noteHistoryText,
   openPlaceholders,
   placeholderValues,
   resolvePlaceholders,
+  sortNotes,
+  splitLimit,
   titleOfHtml,
+  withoutTitleBlock,
 } from './note-ui';
 
 type PanelKind = 'none' | 'tags' | 'history' | 'templates' | 'save-template' | 'template-edit';
+type NoteView = 'tag' | 'latest' | 'board' | 'templates';
+type TagRow = NoteTagResponse & { noteTagId: number };
 
 const SPLIT_KEY = 'mf.notes.split';
 const MAX_TAGS = 5;
 const HIST_OPEN_KEY = 'mf.notes.hist';
 const HIST_WIDTH_KEY = 'mf.notes.histw';
+const VIEW_KEY = 'mf.notes.view';
+const REF_KINDS = ['asset', 'project', 'matter', 'note'] as const;
+const REF_TITLES: Record<string, string> = {
+  asset: 'Assets',
+  project: 'Projects',
+  matter: 'Matters',
+  note: 'Notes',
+};
+const REF_ICONS: Record<string, string> = {
+  asset: 'pi-database',
+  project: 'pi-folder',
+  matter: 'pi-briefcase',
+  note: 'pi-file',
+};
+
+interface RefChip {
+  kind: string;
+  id: number;
+  label: string;
+  state: string;
+  stateText: string;
+}
 
 /**
- * The Notes tab of a Matter (epic #1001, MD-13 to MD-15; mockup notes-mockup-r3, owner decision AQ.9): the notes of the matter on the left (pinned first, then
- * last updated; tag, Locked and text filters), the open note on the right, and a draggable, keyboard-operable splitter between them. A note opens in
- * READ mode with an Edit button; Edit shows the toolbar and replaces it by Cancel and Save; New starts in edit mode. The title is the first line of the text.
- * Tags (firm-wide, chosen from the list an administrator keeps), history and templates open in the shared side panel; a locked note is read only for
- * everybody and shows why. The server sanitises the text and applies the sensitive-matter rule and the lock; this component follows the permissions
+ * The Notes tab of a Matter (epic #1001; MD-13 to MD-15 and MD-27 / #1031; the design is notes-mockup-r3, parity checklist docs/ux/matter-detail/notes-parity.md,
+ * owner decisions AQ.9 and AQ.10): one card with a header row (count, search, tag filter, view switch By tag / Latest / Board / Templates, sort, New note), the notes
+ * of the matter on the left (grouped by tag, pinned first, with a resizable splitter) and the open note on the right. A note opens in READ mode with an Edit button;
+ * Edit shows the toolbar and replaces the buttons by Cancel (left) and Save (right); New starts in edit mode. The title is the first line of the text. Tags (firm-wide,
+ * chosen from the list an administrator keeps), history (a column, a rail or a side panel) and the template forms open in the shared side panel; a locked note is read
+ * only for everybody and says why. The server sanitises the text and applies the sensitive-matter rule and the lock; this component follows the permissions
  * `MatterNote.Edit` and `MatterNote.Delete` only to hide or disable buttons.
  */
 @Component({
@@ -79,612 +116,1270 @@ const HIST_WIDTH_KEY = 'mf.notes.histw';
     AiComingSoon,
     Button,
     ConfirmDialog,
-    MfDatePipe,
     Dropdown,
+    NgTemplateOutlet,
     NoteEditor,
+    NoteTagChip,
+    NumericDatePipe,
     SearchBox,
     SlidePanel,
     TextField,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'mf-fill' },
-  styleUrl: '../../shared/ui/page.scss',
-  styles: `
-    .nt {
-      display: flex;
-      min-height: 0;
-      height: 100%;
-      gap: 0;
-    }
-    .nt__list {
-      display: flex;
-      flex-direction: column;
-      flex: none;
-      min-width: 0;
-      min-height: 0;
-      gap: var(--mf-s2);
-    }
-    .nt__bar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--mf-s2);
-    }
-    .nt__items {
-      flex: 1 1 auto;
-      min-height: 0;
-      margin: 0;
-      padding: 0;
-      overflow-y: auto;
-      list-style: none;
-    }
-    .nt__item {
-      display: block;
-      width: 100%;
-      padding: var(--mf-s2) var(--mf-s3);
-      border: 0;
-      border-bottom: 1px solid var(--mf-border);
-      background: transparent;
-      color: var(--mf-text);
-      font: inherit;
-      text-align: start;
-      cursor: pointer;
-    }
-    .nt__item:hover {
-      background: var(--mf-surface-2, var(--mf-sem-neutral-bg));
-    }
-    .nt__item[aria-current='true'] {
-      background: var(--mf-sem-info-bg, var(--mf-sem-neutral-bg));
-    }
-    .nt__title {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s1);
-      font-weight: 600;
-    }
-    .nt__snip {
-      display: block;
-      overflow: hidden;
-      color: var(--mf-text-muted);
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .nt__meta {
-      display: block;
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-    }
-    .nt__split {
-      flex: none;
-      width: 8px;
-      margin: 0 var(--mf-s1);
-      border-radius: var(--mf-radius-pill);
-      background: var(--mf-border);
-      cursor: col-resize;
-      touch-action: none;
-    }
-    .nt__split:hover,
-    .nt__split:focus-visible {
-      background: var(--mf-primary);
-    }
-    .nt__pane {
-      display: flex;
-      flex: 1 1 0;
-      flex-direction: column;
-      min-width: 0;
-      min-height: 0;
-      gap: var(--mf-s2);
-    }
-    .nt__head {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--mf-s2);
-    }
-    .nt__spacer {
-      flex: 1 1 auto;
-    }
-    .nt__byline {
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-    }
-    .nt__tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--mf-s1);
-      align-items: center;
-    }
-    .nt__chip {
-      display: inline-flex;
-      align-items: center;
-      padding: 0 var(--mf-s2);
-      border-radius: var(--mf-radius-pill);
-      background: var(--mf-sem-neutral-bg);
-      color: var(--mf-sem-neutral-fg);
-      font-size: var(--mf-fs-sm);
-      font-weight: 600;
-    }
-    .nt__banner {
-      padding: var(--mf-s2) var(--mf-s3);
-      border: 1px solid var(--mf-sem-risk-solid);
-      border-radius: var(--mf-radius-md);
-      background: var(--mf-sem-risk-bg);
-      color: var(--mf-sem-risk-fg);
-    }
-    .nt__banner--info {
-      border-color: var(--mf-border-strong);
-      background: var(--mf-surface-2, var(--mf-sem-neutral-bg));
-      color: var(--mf-text);
-    }
-    .nt__newgroup {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
-    }
-    .nt__body {
-      display: flex;
-      flex: 1 1 auto;
-      min-height: 0;
-    }
-    .nt__body > .nt__editor {
-      flex: 1 1 0;
-      min-width: 0;
-    }
-    .nt__hist {
-      display: flex;
-      flex: none;
-      flex-direction: column;
-      min-height: 0;
-      gap: var(--mf-s1);
-    }
-    .nt__histscroll {
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow-y: auto;
-    }
-    .nt__rail {
-      display: flex;
-      flex: none;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--mf-s2);
-      width: 46px;
-      padding: var(--mf-s2) 0;
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-md);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      cursor: pointer;
-    }
-    .nt__x {
-      border: 0;
-      background: transparent;
-      color: var(--mf-text-muted);
-      cursor: pointer;
-    }
-    .nt__tplbody {
-      height: 22rem;
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-md);
-      padding: var(--mf-s2);
-    }
-    .nt__fieldset {
-      margin: 0;
-      padding: 0;
-      border: 0;
-    }
-    .nt__editor {
-      flex: 1 1 auto;
-      min-height: 0;
-    }
-    .nt__dirty {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--mf-sem-risk-solid);
-    }
-    .nt__empty {
-      padding: var(--mf-s4);
-      color: var(--mf-text-muted);
-    }
-    .nt__panel-list {
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-    .nt__panel-list li {
-      padding: var(--mf-s2) 0;
-      border-bottom: 1px solid var(--mf-border);
-      overflow-wrap: anywhere;
-    }
-    .nt__day {
-      margin: var(--mf-s3) 0 var(--mf-s1);
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-      font-weight: 600;
-    }
-    .nt__check {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      padding: var(--mf-s1) 0;
-    }
-    .nt__actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--mf-s2);
-    }
-    @media (max-width: 760px) {
-      .nt {
-        flex-direction: column;
-      }
-      .nt__list {
-        width: 100% !important;
-        max-height: 40%;
-      }
-      .nt__split {
-        display: none;
-      }
-    }
-  `,
+  host: { class: 'mf-fill', '(keydown)': 'onKey($event)' },
+  styleUrl: './notes-tab.scss',
   template: `
-    <section class="nt" aria-label="Notes" data-notes-tab>
-      <div class="nt__list" [style.width.px]="split()" data-notes-list>
-        <div class="nt__bar">
-          <mf-search-box
-            inputId="nt-search"
-            label="Search notes"
-            [hideLabel]="true"
-            [leadingIcon]="true"
-            placeholder="Search notes"
-            [value]="query()"
-            (searchChange)="onSearch($event)"
-          />
+    <section
+      class="nt"
+      #card
+      aria-label="Notes"
+      data-notes-tab
+      [class.nt--stacked]="stacked()"
+      [class.nt--wide]="wide()"
+      [class.nt--hide-head]="wide() && !stacked()"
+      [class.nt--tight]="cardWidth() > 0 && cardWidth() <= 1120"
+      [class.nt--tighter]="cardWidth() > 0 && cardWidth() <= 1000"
+    >
+      <!-- header row: one line -->
+      <div class="nt__head" data-notes-head>
+        <h2>Notes</h2>
+        <span class="nt__cnt" aria-label="Number of notes" data-notes-count>{{
+          totalCount()
+        }}</span>
+        @if (sensitive()) {
+          <span
+            class="nt__pill"
+            title="Sensitive matter: only people who can open this matter can read its notes."
+            data-notes-sensitive
+            ><i class="pi pi-lock" aria-hidden="true"></i>Sensitive</span
+          >
+        }
+        @if (!canEdit()) {
+          <span
+            class="nt__pill nt__pill--info"
+            title="You can read notes on this matter. Adding and editing needs the Matter Note Edit permission."
+            data-notes-readonly
+            ><i class="pi pi-eye" aria-hidden="true"></i>Read only</span
+          >
+        }
+        <mf-search-box
+          class="nt__search"
+          inputId="nt-search"
+          [label]="view() === 'templates' ? 'Search templates' : 'Search notes by title and text'"
+          [hideLabel]="true"
+          [leadingIcon]="true"
+          [placeholder]="view() === 'templates' ? 'Search templates' : 'Search title and text'"
+          [value]="query()"
+          (searchChange)="onSearch($event)"
+        />
+        @if (view() !== 'templates') {
           <mf-dropdown
             buttonId="nt-tag"
-            label="Tag"
-            prefix="Tag: "
+            label="Filter by tag or lock"
+            prefix="Tags "
+            icon="pi-tag"
             size="sm"
+            placeholder="All"
+            [multi]="true"
+            [search]="true"
+            searchLabel="Search tags"
             [items]="tagFilterItems()"
-            [value]="tagFilter()"
-            (valueChange)="onTag($event)"
+            [(values)]="filterValues"
           />
-          <mf-dropdown
-            buttonId="nt-locked"
-            label="Locked"
-            prefix="Show: "
-            size="sm"
-            [items]="lockedItems"
-            [value]="lockedFilter()"
-            (valueChange)="onLocked($event)"
-          />
-          @if (canEdit()) {
-            <span class="nt__newgroup">
-              <p-button
-                label="New note"
-                icon="pi pi-plus"
-                size="small"
-                data-new-note
-                (onClick)="newNote()"
-              />
-              <mf-action-menu label="New note options" [floating]="true" [items]="newItems" />
-            </span>
+        }
+        <div class="nt__seg" role="group" aria-label="Notes view" data-notes-views>
+          @for (v of views; track v.id) {
+            <button
+              type="button"
+              [attr.data-view]="v.id"
+              [attr.aria-pressed]="view() === v.id"
+              [attr.aria-label]="v.label"
+              [title]="v.label"
+              (click)="setView(v.id)"
+            >
+              <i class="pi" [class]="v.icon" aria-hidden="true"></i
+              ><span class="nt__lbl">{{ v.short }}</span>
+            </button>
           }
         </div>
-        @if (listError()) {
-          <p class="pg-reason" role="alert">
-            {{ listError() }} <button type="button" (click)="loadList()">Try again</button>
-          </p>
-        } @else if (loaded() && items().length === 0) {
-          <p class="nt__empty" data-notes-empty>
-            {{ query() || tagFilter() || lockedFilter() ? 'No notes match.' : 'No notes yet.' }}
-          </p>
+        @if (view() === 'tag') {
+          <button
+            type="button"
+            class="nt__ib nt__ib--bord"
+            data-toggle-all
+            [attr.aria-label]="anyOpen() ? 'Collapse all groups' : 'Expand all groups'"
+            [title]="anyOpen() ? 'Collapse all groups' : 'Expand all groups'"
+            (click)="toggleAll()"
+          >
+            <i
+              class="pi"
+              [class]="anyOpen() ? 'pi-angle-double-up' : 'pi-angle-double-down'"
+              aria-hidden="true"
+            ></i>
+          </button>
         }
-        <ul class="nt__items" aria-label="Notes of this matter">
-          @for (n of items(); track n.noteId) {
-            <li>
-              <button
-                type="button"
-                class="nt__item"
-                data-note-item
-                [attr.aria-current]="isOpen(n.noteId)"
-                (click)="open(n.noteId)"
-              >
-                <span class="nt__title">
-                  @if (n.isPinned) {
-                    <i class="pi pi-bookmark-fill" aria-hidden="true"></i
-                    ><span class="mf-sr-only">Pinned. </span>
-                  }
-                  @if (n.isLocked) {
-                    <i class="pi pi-lock" aria-hidden="true"></i
-                    ><span class="mf-sr-only">Locked. </span>
-                  }
-                  {{ n.title }}
-                </span>
-                @if (n.snippet) {
-                  <span class="nt__snip">{{ n.snippet }}</span>
-                }
-                @if (n.tags.length > 0) {
-                  <span class="nt__tags">
-                    @for (t of n.tags; track t.noteTagId) {
-                      <span class="nt__chip">{{ t.name }}</span>
-                    }
-                  </span>
-                }
-                <span class="nt__meta"
-                  >{{ n.updatedByName ?? 'Someone' }} on
-                  {{ n.updatedAtUtc | mfDate: 'datetime' }}</span
-                >
-              </button>
-            </li>
-          }
-        </ul>
+        @if (view() !== 'templates') {
+          <mf-dropdown
+            buttonId="nt-sort"
+            label="Sort"
+            prefix="Sort "
+            icon="pi-sort-alt"
+            size="sm"
+            [items]="sortItems"
+            [neutralValue]="null"
+            [(value)]="sortValue"
+          />
+        }
+        @if (canEdit()) {
+          <span class="nt__split-btn">
+            <button type="button" class="nt__btn nt__btn--p" data-new-note (click)="newNote()">
+              <i class="pi pi-plus" aria-hidden="true"></i><span>New note</span>
+            </button>
+            <button
+              type="button"
+              class="nt__btn nt__btn--p nt__btn--caret"
+              data-new-menu
+              aria-haspopup="menu"
+              [attr.aria-expanded]="newMenuOpen()"
+              aria-label="New note: choose blank or from a template"
+              (click)="newMenuOpen.set(!newMenuOpen())"
+            >
+              <i class="pi pi-angle-down" aria-hidden="true"></i>
+            </button>
+            @if (newMenuOpen()) {
+              <ul class="nt__menu" role="menu" aria-label="New note" data-new-menu-list>
+                <li role="none">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    data-new-blank
+                    (click)="newMenuPick('blank')"
+                  >
+                    <i class="pi pi-file" aria-hidden="true"></i>Blank note
+                  </button>
+                </li>
+                <li role="none">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    data-new-template
+                    (click)="newMenuPick('template')"
+                  >
+                    <i class="pi pi-clone" aria-hidden="true"></i>From template...
+                  </button>
+                </li>
+              </ul>
+            }
+          </span>
+        }
       </div>
 
-      <div
-        class="nt__split"
-        role="separator"
-        aria-orientation="vertical"
-        aria-label="Resize the notes list"
-        tabindex="0"
-        [attr.aria-valuenow]="split()"
-        [attr.aria-valuemin]="splitMin"
-        [attr.aria-valuemax]="splitMax"
-        data-notes-splitter
-        (pointerdown)="dragStart($event)"
-        (keydown)="splitKey($event)"
-      ></div>
-
-      <div class="nt__pane" #pane data-note-pane>
-        @if (draft(); as d) {
-          <div class="nt__head">
-            <h2 class="pg-sr">Note</h2>
-            <mf-ai-button [allowed]="aiAllowed()" (pressed)="aiPanel.set(true)" />
-            @if (editing()) {
-              <p-button
-                label="Cancel"
-                severity="secondary"
-                size="small"
-                data-note-cancel
-                (onClick)="cancel()"
-              />
-              @if (dirty()) {
-                <span class="nt__dirty" role="img" aria-label="Unsaved changes"></span>
-              }
-              <span class="nt__spacer"></span>
-              <p-button
-                label="Tags"
-                icon="pi pi-tag"
-                severity="secondary"
-                size="small"
-                data-note-tags
-                (onClick)="panel.set('tags')"
-              />
-              <p-button
-                label="Save"
-                icon="pi pi-check"
-                size="small"
-                [disabled]="busy()"
-                data-note-save
-                (onClick)="save()"
-              />
-            } @else if (note(); as n) {
-              <span class="nt__byline" data-note-byline>
-                Last updated by {{ n.updatedByName ?? 'someone' }} ·
-                {{ n.updatedAtUtc | mfDate: 'datetime' }}
-              </span>
-              <span class="nt__spacer"></span>
-              <p-button
-                label="Edit"
-                icon="pi pi-pencil"
-                size="small"
-                data-note-edit
-                [disabled]="!lock().canEdit"
-                [title]="lock().editReason"
-                (onClick)="edit()"
-              />
-              @if (canEdit()) {
-                <p-button
-                  [label]="n.isPinned ? 'Unpin' : 'Pin'"
-                  icon="pi pi-bookmark"
-                  severity="secondary"
-                  size="small"
-                  data-note-pin
-                  (onClick)="togglePin()"
-                />
-                @if (n.isLocked) {
-                  <p-button
-                    label="Unlock"
-                    icon="pi pi-lock-open"
-                    severity="secondary"
-                    size="small"
-                    data-note-unlock
-                    [disabled]="!lock().canUnlock"
-                    [title]="lock().unlockReason"
-                    (onClick)="unlock()"
-                  />
-                } @else {
-                  <p-button
-                    label="Lock"
-                    icon="pi pi-lock"
-                    severity="secondary"
-                    size="small"
-                    data-note-lock
-                    (onClick)="lockNote()"
-                  />
-                }
-              }
-              <p-button
-                label="History"
-                icon="pi pi-history"
-                severity="secondary"
-                size="small"
-                data-note-history
-                (onClick)="historyButton()"
-              />
-              @if (canEdit()) {
-                <p-button
-                  label="Save as template"
-                  icon="pi pi-clone"
-                  severity="secondary"
-                  size="small"
-                  data-note-save-template
-                  (onClick)="openSaveTemplate()"
-                />
-              }
-              @if (canDelete()) {
-                <p-button
-                  label="Delete"
-                  icon="pi pi-trash"
-                  severity="danger"
-                  [outlined]="true"
-                  size="small"
-                  data-note-delete
-                  [disabled]="n.isLocked"
-                  [title]="n.isLocked ? lock().editReason : ''"
-                  (onClick)="confirmDelete.set(true)"
-                />
-              }
-            }
-          </div>
-          @if (!editing() && note(); as n) {
-            @if (n.isLocked) {
-              <p class="nt__banner nt__banner--info" role="status" data-note-locked>
-                <i class="pi pi-lock" aria-hidden="true"></i> Locked by
-                {{ n.lockedByName ?? 'someone' }}
-                @if (n.lockedAtUtc) {
-                  · {{ n.lockedAtUtc | mfDate: 'datetime' }}
-                }
-                . It is read only for everybody until it is unlocked.
-              </p>
-            }
-          }
-          @if (lockedWhileEditing()) {
-            <div class="nt__banner" role="alert" data-note-locked-warning>
-              This note was locked by {{ lockedWhileEditing() }}; your changes cannot be saved.
-              <span class="nt__actions">
-                <p-button
-                  label="Copy my text"
-                  size="small"
-                  severity="secondary"
-                  (onClick)="copyMine()"
-                />
-                <p-button
-                  label="Close"
-                  size="small"
-                  severity="secondary"
-                  data-note-locked-close
-                  (onClick)="closeLockedWarning()"
-                />
-              </span>
-            </div>
-          }
-          @if (saveError()) {
-            <p class="nt__banner" role="alert" data-note-error>{{ saveError() }}</p>
-          }
-          <div class="nt__tags" aria-label="Tags" data-note-tag-chips>
-            @for (t of draftTags(); track t.noteTagId) {
-              <span class="nt__chip">{{ t.name }}</span>
-            } @empty {
-              @if (editing()) {
-                <span class="nt__byline">No tags. Use Tags to add some.</span>
-              }
-            }
-          </div>
-          <div class="nt__body">
-            <div class="nt__editor">
-              @defer (on immediate) {
-                <mf-note-editor
-                  #editor
-                  [html]="d.html"
-                  [contentKey]="d.key"
-                  [editable]="editing()"
-                  [source]="source"
-                  [embedSource]="embedSource"
-                  (changed)="onChanged($event)"
-                  (ready)="onEditorReady()"
-                />
-              } @placeholder {
-                <p class="nt__empty" role="status">Loading the editor...</p>
-              }
-            </div>
-            @if (wide() && note()) {
-              @if (histOpen()) {
-                <div
-                  class="nt__split nt__split--hist"
-                  role="separator"
-                  aria-orientation="vertical"
-                  aria-label="Resize the history"
-                  tabindex="0"
-                  [attr.aria-valuenow]="histWidth()"
-                  [attr.aria-valuemin]="splitMin"
-                  [attr.aria-valuemax]="splitMax"
-                  data-history-splitter
-                  (pointerdown)="dragStartHist($event)"
-                  (keydown)="histKey($event)"
-                ></div>
-                <aside
-                  class="nt__hist"
-                  [style.width.px]="histWidth()"
-                  aria-label="History"
-                  data-history-rail-open
-                >
-                  <div class="nt__head">
-                    <h3 class="nt__day">History ({{ history().length }})</h3>
-                    <span class="nt__spacer"></span>
+      <div class="nt__body">
+        <!-- the list -->
+        @if (showList()) {
+          <div class="nt__list" [style.width.px]="stacked() ? null : listWidth()" data-notes-list>
+            <div class="nt__scroll" [class.nt__scroll--board]="view() === 'board'" tabindex="-1">
+              @if (listError()) {
+                <p class="nt__error" role="alert" data-notes-error>
+                  <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>{{ listError() }}
+                  <button type="button" class="nt__btn nt__btn--sm" (click)="loadList()">
+                    Try again
+                  </button>
+                </p>
+              } @else if (!loaded()) {
+                <div class="nt__skel" aria-busy="true" role="status" data-notes-loading>
+                  <span class="mf-sr-only">Loading notes</span>
+                  @for (w of skeleton; track $index) {
+                    <div [style.width]="w"></div>
+                  }
+                </div>
+              } @else if (view() === 'templates') {
+                <div class="nt__thead">
+                  <span
+                    >A template is a ready-made note: title, tags and body. Placeholders such as
+                    <span class="nt__tok">{{ '{{date}}' }}</span>
+                    <span class="nt__tok">{{ '{{matter}}' }}</span>
+                    <span class="nt__tok">{{ '{{author}}' }}</span> are filled when it is
+                    used.</span
+                  >
+                  @if (canEdit()) {
                     <button
                       type="button"
-                      class="nt__x"
-                      aria-label="Collapse the history"
-                      (click)="setHist(false)"
+                      class="nt__btn nt__btn--sm"
+                      data-template-new
+                      (click)="editTemplate(null)"
                     >
-                      <i class="pi pi-angle-double-right" aria-hidden="true"></i>
+                      <i class="pi pi-plus" aria-hidden="true"></i>New template
                     </button>
+                  }
+                </div>
+                @if (shownTemplates().length) {
+                  <ul class="nt__nl" data-template-list>
+                    @for (t of shownTemplates(); track t.noteTemplateId) {
+                      <li class="nt__tpl">
+                        <button
+                          type="button"
+                          class="nt__row"
+                          data-template-item
+                          [attr.aria-current]="
+                            selTemplate()?.noteTemplateId === t.noteTemplateId ? 'true' : null
+                          "
+                          (click)="openTemplate(t)"
+                        >
+                          <span class="nt__tile" aria-hidden="true"
+                            ><i class="pi pi-clone"></i
+                          ></span>
+                          <span>
+                            <span class="nt__tt"
+                              ><span class="nt__ti">{{ t.name }}</span></span
+                            >
+                            <span class="nt__pv"
+                              >{{ t.description }}
+                              <span class="nt__plain">{{ preview(t.bodyHtml) }}</span></span
+                            >
+                            <span class="nt__tags">
+                              <span class="nt__pill" [class.nt__pill--info]="t.scope === 'FIRM'">
+                                <i
+                                  class="pi"
+                                  [class]="t.scope === 'FIRM' ? 'pi-users' : 'pi-briefcase'"
+                                  aria-hidden="true"
+                                ></i>
+                                {{ t.scope === 'FIRM' ? 'Firm-wide' : 'This matter' }}
+                              </span>
+                              @for (g of t.tags; track g.noteTagId) {
+                                <mf-note-tag [name]="g.name" [colourKey]="g.colourKey" />
+                              }
+                              <span class="nt__plain">Used {{ t.usedCount }} times</span>
+                            </span>
+                          </span>
+                        </button>
+                        <span class="nt__tacts">
+                          <button
+                            type="button"
+                            class="nt__btn nt__btn--sm"
+                            data-template-use
+                            [attr.aria-disabled]="!canEdit() || null"
+                            [title]="canEdit() ? '' : useReason"
+                            (click)="onTemplateAction($event, canEdit() ? '' : useReason, 'use', t)"
+                          >
+                            <i class="pi pi-plus" aria-hidden="true"></i>Use
+                          </button>
+                          <button
+                            type="button"
+                            class="nt__btn nt__btn--sm"
+                            data-template-edit
+                            [attr.aria-disabled]="tplReason(t) ? 'true' : null"
+                            [title]="tplReason(t)"
+                            (click)="onTemplateAction($event, tplReason(t), 'edit', t)"
+                          >
+                            <i class="pi pi-pencil" aria-hidden="true"></i>Edit
+                          </button>
+                          <button
+                            type="button"
+                            class="nt__btn nt__btn--sm"
+                            [attr.aria-disabled]="!canEdit() || null"
+                            [title]="canEdit() ? '' : useReason"
+                            (click)="onTemplateAction($event, canEdit() ? '' : useReason, 'dup', t)"
+                          >
+                            <i class="pi pi-copy" aria-hidden="true"></i>Duplicate
+                          </button>
+                          <button
+                            type="button"
+                            class="nt__btn nt__btn--sm"
+                            [attr.aria-disabled]="tplReason(t) ? 'true' : null"
+                            [title]="tplReason(t)"
+                            (click)="onTemplateAction($event, tplReason(t), 'del', t)"
+                          >
+                            <i class="pi pi-trash" aria-hidden="true"></i>Delete
+                          </button>
+                        </span>
+                      </li>
+                    }
+                  </ul>
+                } @else {
+                  <div class="nt__empty">
+                    <span class="nt__eic"><i class="pi pi-search" aria-hidden="true"></i></span>
+                    <h3>No templates {{ query() ? 'match' : 'yet' }}</h3>
+                    <p>
+                      {{
+                        query()
+                          ? 'Try other words.'
+                          : 'Open a note and use More actions, Save as template.'
+                      }}
+                    </p>
                   </div>
-                  <div class="nt__histscroll" data-note-history-list>
-                    @for (g of historyGroups(); track g.day) {
-                      <h3 class="nt__day">{{ g.day }}</h3>
-                      <ul class="nt__panel-list">
-                        @for (h of g.entries; track h.auditEventId) {
+                }
+              } @else if (totalCount() === 0 && !query() && !filterValues().length) {
+                <div class="nt__empty" data-notes-empty>
+                  <span class="nt__eic"><i class="pi pi-file" aria-hidden="true"></i></span>
+                  <h3>No notes on this matter yet</h3>
+                  <p>
+                    Notes keep what the team knows in one place: decisions, call summaries,
+                    protocols, tables and links. Group them with tags and everyone sees the latest
+                    version.
+                  </p>
+                  @if (canEdit()) {
+                    <button type="button" class="nt__btn nt__btn--p" (click)="newNote()">
+                      <i class="pi pi-plus" aria-hidden="true"></i>Add the first note
+                    </button>
+                  } @else {
+                    <p>Nobody has added a note yet. People who can edit this matter can add one.</p>
+                  }
+                </div>
+              } @else if (items().length === 0) {
+                <div class="nt__empty" data-notes-nomatch>
+                  <span class="nt__eic"><i class="pi pi-search" aria-hidden="true"></i></span>
+                  <h3>No notes match</h3>
+                  <p>
+                    Nothing matches
+                    {{ query() ? '“' + query() + '”' : 'the chosen tags' }}. Try other words or
+                    remove a filter.
+                  </p>
+                  <button type="button" class="nt__btn" (click)="clearFilters()">
+                    Clear search and filters
+                  </button>
+                </div>
+              } @else if (view() === 'tag') {
+                @for (g of groups(); track g.id) {
+                  <section
+                    class="nt__grp"
+                    [class.is-closed]="collapsed()[g.id]"
+                    [attr.data-group]="g.id"
+                  >
+                    <h3>
+                      <button
+                        type="button"
+                        [attr.aria-expanded]="!collapsed()[g.id]"
+                        [attr.aria-controls]="'nt-g-' + g.id"
+                        (click)="toggleGroup(g.id)"
+                      >
+                        <i class="pi pi-chevron-down nt__chev" aria-hidden="true"></i>
+                        @if (g.tag; as t) {
+                          <mf-note-tag [name]="t.name" [colourKey]="t.colourKey" />
+                          @if (!t.isActive) {
+                            <span class="nt__inactive">inactive</span>
+                          }
+                        } @else {
+                          <span class="nt__pill"
+                            ><i class="pi pi-minus" aria-hidden="true"></i>Untagged</span
+                          >
+                        }
+                        <span class="nt__grow"></span>
+                        <span class="nt__cnt" [attr.aria-label]="g.notes.length + ' notes'">{{
+                          g.notes.length
+                        }}</span>
+                      </button>
+                    </h3>
+                    <ul class="nt__nl" [id]="'nt-g-' + g.id">
+                      @for (n of g.notes; track n.noteId) {
+                        <ng-container
+                          [ngTemplateOutlet]="row"
+                          [ngTemplateOutletContext]="{ $implicit: n, gid: g.id }"
+                        />
+                      }
+                    </ul>
+                  </section>
+                }
+              } @else if (view() === 'latest') {
+                <ul class="nt__nl">
+                  @for (n of sorted(); track n.noteId) {
+                    <ng-container
+                      [ngTemplateOutlet]="row"
+                      [ngTemplateOutletContext]="{ $implicit: n, gid: '' }"
+                    />
+                  }
+                </ul>
+              } @else {
+                <div class="nt__board" role="list" aria-label="Tag board" data-notes-board>
+                  @for (g of groups(); track g.id) {
+                    <div class="nt__col" role="listitem" [attr.data-group]="g.id">
+                      <h3>
+                        @if (g.tag; as t) {
+                          <mf-note-tag [name]="t.name" [colourKey]="t.colourKey" />
+                          @if (!t.isActive) {
+                            <span class="nt__inactive">inactive</span>
+                          }
+                        } @else {
+                          <span class="nt__pill">Untagged</span>
+                        }
+                        <span class="nt__grow"></span>
+                        <span class="nt__cnt" [attr.aria-label]="g.notes.length + ' notes'">{{
+                          g.notes.length
+                        }}</span>
+                      </h3>
+                      <ul>
+                        @for (n of g.notes; track n.noteId) {
                           <li>
-                            <b>{{ h.actorName ?? 'Someone' }}</b> {{ historyText(h) }}
-                            <span class="nt__meta">{{ h.occurredAtUtc | mfDate: 'datetime' }}</span>
+                            <button
+                              type="button"
+                              class="nt__card"
+                              data-note-item
+                              [class.is-twin]="twinId() === n.noteId && n.tags.length > 1"
+                              [attr.aria-current]="isOpen(n.noteId)"
+                              (mouseenter)="twinId.set(n.noteId)"
+                              (mouseleave)="twinId.set(null)"
+                              (focus)="twinId.set(n.noteId)"
+                              (blur)="twinId.set(null)"
+                              (click)="open(n.noteId, $event.detail === 0)"
+                            >
+                              <span class="nt__tt">
+                                @if (n.isPinned) {
+                                  <i class="pi pi-thumbtack" aria-hidden="true"></i
+                                  ><span class="mf-sr-only">Pinned. </span>
+                                }
+                                @if (n.isLocked) {
+                                  <i class="pi pi-lock" aria-hidden="true"></i
+                                  ><span class="mf-sr-only">Locked. </span>
+                                }
+                                <span class="nt__ti">{{ n.title }}</span>
+                              </span>
+                              <span class="nt__pv">{{ n.snippet }}</span>
+                              @if (otherTags(n, g.id).length) {
+                                <span class="nt__tags"
+                                  ><span class="nt__also">also in</span>
+                                  @for (t of otherTags(n, g.id); track t.noteTagId) {
+                                    <mf-note-tag [name]="t.name" [colourKey]="t.colourKey" />
+                                  }
+                                </span>
+                              }
+                              <span class="nt__meta">
+                                <span
+                                  class="nt__av nt__av--sm"
+                                  aria-hidden="true"
+                                  [style.background]="av(n.updatedByName).bg"
+                                  [style.color]="av(n.updatedByName).fg"
+                                  >{{ initials(n.updatedByName) }}</span
+                                >
+                                <span
+                                  >{{ firstName(n.updatedByName) }} &middot;
+                                  {{ n.updatedAtUtc | mfNum }}</span
+                                >
+                              </span>
+                            </button>
                           </li>
                         }
                       </ul>
-                    } @empty {
-                      <p class="nt__byline">No history yet.</p>
-                    }
-                  </div>
-                </aside>
-              } @else {
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        @if (showList() && !stacked()) {
+          <div
+            class="nt__split"
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize the note list"
+            tabindex="0"
+            [class.is-drag]="dragging()"
+            [attr.aria-valuenow]="listWidth()"
+            [attr.aria-valuemin]="splitMin"
+            [attr.aria-valuemax]="splitMaxNow()"
+            [attr.aria-valuetext]="'Note list ' + listWidth() + ' pixels wide'"
+            data-notes-splitter
+            (pointerdown)="dragStart($event)"
+            (dblclick)="splitReset()"
+            (keydown)="splitKey($event)"
+          >
+            <span class="nt__grip"></span>
+          </div>
+        }
+
+        <!-- the note (or template) panel -->
+        @if (showPanel()) {
+          <div class="nt__panel" #pane data-note-pane role="region" aria-label="Note">
+            @if (selTemplate(); as t) {
+              <header class="nt__ph">
+                <span class="nt__crumb"
+                  >Templates / <b>{{ t.name }}</b></span
+                >
                 <button
                   type="button"
-                  class="nt__rail"
-                  data-history-rail
-                  [attr.aria-label]="'Open the history, ' + history().length + ' entries'"
-                  (click)="setHist(true)"
+                  class="nt__btn nt__btn--sm nt__btn--p"
+                  [attr.aria-disabled]="!canEdit() || null"
+                  [title]="canEdit() ? '' : useReason"
+                  (click)="onTemplateAction($event, canEdit() ? '' : useReason, 'use', t)"
                 >
-                  <i class="pi pi-history" aria-hidden="true"></i>
-                  <span>{{ history().length }}</span>
+                  <i class="pi pi-plus" aria-hidden="true"></i>Use
                 </button>
+                <button
+                  type="button"
+                  class="nt__btn nt__btn--sm"
+                  [attr.aria-disabled]="tplReason(t) ? 'true' : null"
+                  [title]="tplReason(t)"
+                  (click)="onTemplateAction($event, tplReason(t), 'edit', t)"
+                >
+                  <i class="pi pi-pencil" aria-hidden="true"></i>Edit
+                </button>
+                <button
+                  type="button"
+                  class="nt__btn nt__btn--sm"
+                  [attr.aria-disabled]="!canEdit() || null"
+                  [title]="canEdit() ? '' : useReason"
+                  (click)="onTemplateAction($event, canEdit() ? '' : useReason, 'dup', t)"
+                >
+                  <i class="pi pi-copy" aria-hidden="true"></i>Duplicate
+                </button>
+                <button
+                  type="button"
+                  class="nt__btn nt__btn--sm"
+                  [attr.aria-disabled]="tplReason(t) ? 'true' : null"
+                  [title]="tplReason(t)"
+                  (click)="onTemplateAction($event, tplReason(t), 'del', t)"
+                >
+                  <i class="pi pi-trash" aria-hidden="true"></i>Delete
+                </button>
+                <button
+                  type="button"
+                  class="nt__ib"
+                  aria-label="Close template"
+                  title="Close"
+                  (click)="closePanel()"
+                >
+                  <i class="pi pi-times" aria-hidden="true"></i>
+                </button>
+              </header>
+              <div class="nt__pbody">
+                <div class="nt__pmain">
+                  <div class="nt__pscroll">
+                    <h2 class="nt__ptitle" tabindex="-1" #ptitle>{{ t.name }}</h2>
+                    <p class="nt__upd">
+                      Used {{ t.usedCount }} times &middot; last changed by
+                      <b>{{ t.updatedByName ?? 'someone' }}</b> &middot;
+                      {{ t.updatedAtUtc | mfNum }}
+                    </p>
+                    <div class="nt__tags">
+                      <span class="nt__pill" [class.nt__pill--info]="t.scope === 'FIRM'">
+                        {{ t.scope === 'FIRM' ? 'Firm-wide' : 'This matter' }}
+                      </span>
+                      @for (g of t.tags; track g.noteTagId) {
+                        <mf-note-tag [name]="g.name" [colourKey]="g.colourKey" />
+                      }
+                    </div>
+                    @if (t.description) {
+                      <p class="nt__byline">{{ t.description }}</p>
+                    }
+                    <p class="nt__banner nt__banner--slim">
+                      <i class="pi pi-info-circle" aria-hidden="true"></i>
+                      <span
+                        >Highlighted placeholders are replaced when the template is used. Title when
+                        used: <b>{{ t.titleTemplate || '(the first line of the text)' }}</b></span
+                      >
+                    </p>
+                    @defer (on immediate) {
+                      <mf-note-editor
+                        [html]="t.bodyHtml"
+                        [contentKey]="'tpl:' + t.noteTemplateId + ':' + t.rowVersion"
+                        [editable]="false"
+                        [highlightTokens]="true"
+                      />
+                    }
+                  </div>
+                </div>
+              </div>
+            } @else if (draft(); as d) {
+              <!-- the header: read mode and edit mode -->
+              @if (editing()) {
+                <header class="nt__ph" data-note-head>
+                  <button
+                    type="button"
+                    class="nt__btn nt__btn--sm"
+                    data-note-cancel
+                    (click)="cancel()"
+                  >
+                    Cancel
+                  </button>
+                  <span class="nt__crumb"
+                    ><b>{{ note() ? 'Edit note' : 'New note' }}</b></span
+                  >
+                  <span class="nt__state" [class.is-dirty]="dirty()" id="nt-state" data-note-state>
+                    <i aria-hidden="true"></i
+                    ><span>{{ dirty() ? 'Unsaved changes' : 'No changes' }}</span>
+                  </span>
+                  <span class="nt__grow"></span>
+                  <mf-ai-button [allowed]="aiAllowed()" (pressed)="aiPanel.set(true)" />
+                  @if (note(); as n) {
+                    <ng-container
+                      [ngTemplateOutlet]="deleteBtn"
+                      [ngTemplateOutletContext]="{ $implicit: n }"
+                    />
+                  }
+                  <button
+                    type="button"
+                    class="nt__btn nt__btn--sm nt__btn--p"
+                    data-note-save
+                    [attr.aria-disabled]="saveBlocked() ? 'true' : null"
+                    [title]="
+                      saveBlocked()
+                        ? 'Locked by ' + lockedWhileEditing() + '; your changes cannot be saved'
+                        : ''
+                    "
+                    (click)="onSaveClick()"
+                  >
+                    Save
+                  </button>
+                  @if (!stacked()) {
+                    <button
+                      type="button"
+                      class="nt__ib"
+                      data-note-wide
+                      [attr.aria-pressed]="wide()"
+                      [attr.aria-label]="
+                        wide() ? 'Show the list again' : 'Expand to the full width'
+                      "
+                      [title]="wide() ? 'Show list' : 'Full width'"
+                      (click)="wide.set(!wide())"
+                    >
+                      <i
+                        class="pi"
+                        [class]="wide() ? 'pi-window-minimize' : 'pi-window-maximize'"
+                        aria-hidden="true"
+                      ></i>
+                    </button>
+                  }
+                </header>
+              } @else if (note(); as n) {
+                <header class="nt__ph" data-note-head>
+                  <span class="nt__crumb"
+                    >Notes / <b>{{ n.title }}</b></span
+                  >
+                  <mf-ai-button [allowed]="aiAllowed()" (pressed)="aiPanel.set(true)" />
+                  @if (canEdit()) {
+                    <button
+                      type="button"
+                      class="nt__btn nt__btn--sm"
+                      data-note-edit
+                      [attr.aria-disabled]="!lock().canEdit ? 'true' : null"
+                      [title]="
+                        n.isLocked ? 'Locked by ' + (n.lockedByName ?? 'someone') : 'Edit this note'
+                      "
+                      [attr.aria-label]="
+                        n.isLocked
+                          ? 'Edit, not available: locked by ' + (n.lockedByName ?? 'someone')
+                          : 'Edit'
+                      "
+                      (click)="onEditClick($event)"
+                    >
+                      <i class="pi pi-pencil" aria-hidden="true"></i>Edit
+                    </button>
+                    <button
+                      type="button"
+                      class="nt__ib"
+                      data-note-pin
+                      aria-label="Pin note"
+                      [attr.aria-pressed]="n.isPinned"
+                      [title]="n.isPinned ? 'Unpin note' : 'Pin note'"
+                      (click)="togglePin()"
+                    >
+                      <i class="pi pi-thumbtack" aria-hidden="true"></i>
+                    </button>
+                    @if (n.isLocked) {
+                      <button
+                        type="button"
+                        class="nt__ib"
+                        data-note-unlock
+                        aria-label="Unlock note"
+                        [attr.aria-disabled]="!lock().canUnlock ? 'true' : null"
+                        [title]="lock().canUnlock ? 'Unlock note' : unlockReason(n)"
+                        (click)="onUnlockClick($event)"
+                      >
+                        <i class="pi pi-lock-open" aria-hidden="true"></i>
+                      </button>
+                    } @else {
+                      <button
+                        type="button"
+                        class="nt__ib"
+                        data-note-lock
+                        aria-label="Lock note"
+                        title="Lock note"
+                        (click)="lockNote()"
+                      >
+                        <i class="pi pi-lock" aria-hidden="true"></i>
+                      </button>
+                    }
+                    <ng-container
+                      [ngTemplateOutlet]="deleteBtn"
+                      [ngTemplateOutletContext]="{ $implicit: n }"
+                    />
+                    <mf-action-menu label="More actions" [floating]="true" [items]="moreItems" />
+                  }
+                  @if (!stacked() && !wide()) {
+                    <button
+                      type="button"
+                      class="nt__ib"
+                      data-split-reset
+                      aria-label="Reset list width"
+                      title="Reset list width"
+                      (click)="splitReset()"
+                    >
+                      <i class="pi pi-replay" aria-hidden="true"></i>
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    class="nt__ib"
+                    data-note-history
+                    aria-label="History"
+                    title="History"
+                    (click)="historyButton()"
+                  >
+                    <i class="pi pi-history" aria-hidden="true"></i>
+                  </button>
+                  @if (!stacked()) {
+                    <button
+                      type="button"
+                      class="nt__ib"
+                      data-note-wide
+                      [attr.aria-pressed]="wide()"
+                      [attr.aria-label]="
+                        wide() ? 'Show the list again' : 'Expand to the full width'
+                      "
+                      [title]="wide() ? 'Show list' : 'Full width'"
+                      (click)="wide.set(!wide())"
+                    >
+                      <i
+                        class="pi"
+                        [class]="wide() ? 'pi-window-minimize' : 'pi-window-maximize'"
+                        aria-hidden="true"
+                      ></i>
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    class="nt__ib"
+                    data-note-close
+                    aria-label="Close note"
+                    title="Close note"
+                    (click)="closePanel()"
+                  >
+                    <i class="pi pi-times" aria-hidden="true"></i>
+                  </button>
+                </header>
               }
+
+              <div class="nt__pbody" #pbody>
+                @if (editing()) {
+                  <div class="nt__pedit" data-note-edit-area>
+                    @if (lockedWhileEditing()) {
+                      <div
+                        class="nt__banner nt__banner--warn"
+                        role="alert"
+                        data-note-locked-warning
+                      >
+                        <i class="pi pi-lock" aria-hidden="true"></i>
+                        <div>
+                          <b
+                            >This note was locked by {{ lockedWhileEditing() }}; your changes cannot
+                            be saved.</b
+                          >
+                          Nobody can edit a locked note until {{ lockedWhileEditing() }} or an
+                          administrator unlocks it. Copy your text first if you want to keep it.
+                          <div class="nt__bb">
+                            <button type="button" class="nt__btn nt__btn--sm" (click)="copyMine()">
+                              <i class="pi pi-copy" aria-hidden="true"></i>Copy my text
+                            </button>
+                            <button
+                              type="button"
+                              class="nt__btn nt__btn--sm"
+                              data-note-locked-close
+                              (click)="closeLockedWarning()"
+                            >
+                              Close
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                    @if (conflict(); as c) {
+                      <div
+                        class="nt__banner"
+                        [class.nt__banner--warn]="!keepMine()"
+                        role="alert"
+                        data-note-conflict
+                      >
+                        <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+                        <div>
+                          @if (keepMine()) {
+                            <b>You are keeping your version.</b> Saving replaces what
+                            {{ c.who }} saved at {{ c.at | mfNum }}. Their change stays in the
+                            history.
+                          } @else {
+                            <b
+                              >{{ c.who }} saved this note at {{ c.at | mfNum }} while you were
+                              editing.</b
+                            >
+                            You can load their version (your unsaved changes are lost) or keep yours
+                            (their version is replaced when you save).
+                          }
+                          <div class="nt__bb">
+                            <button
+                              type="button"
+                              class="nt__btn nt__btn--sm"
+                              data-note-reload
+                              (click)="reloadTheirs()"
+                            >
+                              <i class="pi pi-refresh" aria-hidden="true"></i>Reload their version
+                            </button>
+                            @if (!keepMine()) {
+                              <button
+                                type="button"
+                                class="nt__btn nt__btn--sm"
+                                data-note-keep
+                                (click)="keepMine.set(true)"
+                              >
+                                Keep mine
+                              </button>
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    }
+                    @if (saveError()) {
+                      <p class="nt__banner nt__banner--warn" role="alert" data-note-error>
+                        <i class="pi pi-exclamation-triangle" aria-hidden="true"></i
+                        >{{ saveError() }}
+                      </p>
+                    }
+                    @if (tplBanner().length) {
+                      <div class="nt__banner nt__banner--slim" role="status" data-template-tags>
+                        <i class="pi pi-info-circle" aria-hidden="true"></i>
+                        <span>Template tags:</span>
+                        @for (t of tplBanner(); track t.noteTagId) {
+                          <mf-note-tag [name]="t.name" [colourKey]="t.colourKey" />
+                        }
+                        <span class="nt__grow"></span>
+                        <button type="button" class="nt__btn nt__btn--sm" (click)="applyTplTags()">
+                          Apply tags
+                        </button>
+                        <button
+                          type="button"
+                          class="nt__btn nt__btn--sm"
+                          (click)="tplBanner.set([])"
+                        >
+                          No thanks
+                        </button>
+                      </div>
+                    }
+                    <div
+                      class="nt__erow"
+                      role="group"
+                      aria-label="Tags, optional, up to 5"
+                      data-note-tag-chips
+                    >
+                      <span class="nt__tl"><i class="pi pi-tag" aria-hidden="true"></i>Tags</span>
+                      @for (t of selectedTags(); track t.noteTagId) {
+                        <mf-note-tag
+                          [name]="t.name"
+                          [colourKey]="t.colourKey"
+                          [inactive]="!t.isActive"
+                          [removable]="true"
+                          (removed)="removeTag(t.noteTagId)"
+                        />
+                      }
+                      <button
+                        type="button"
+                        class="nt__add"
+                        data-note-tags
+                        #addTag
+                        (click)="panel.set('tags')"
+                      >
+                        <i class="pi pi-plus" aria-hidden="true"></i
+                        >{{ selectedTags().length ? 'Add' : 'Add tag' }}
+                      </button>
+                    </div>
+                    @defer (on immediate) {
+                      <mf-note-editor
+                        #editor
+                        [html]="d.html"
+                        [contentKey]="d.key"
+                        [editable]="true"
+                        [source]="source"
+                        [embedSource]="embedSource"
+                        (changed)="onChanged($event)"
+                        (notice)="notify.info($event)"
+                        (ready)="onEditorReady()"
+                      />
+                    } @placeholder {
+                      <p class="nt__byline" role="status">Loading the editor...</p>
+                    }
+                  </div>
+                } @else if (note(); as n) {
+                  <div class="nt__pmain">
+                    <div class="nt__pscroll">
+                      <h2 class="nt__ptitle" tabindex="-1" #ptitle data-note-title>
+                        @if (n.isPinned) {
+                          <i class="pi pi-thumbtack" aria-hidden="true"></i
+                          ><span class="mf-sr-only">Pinned. </span>
+                        }
+                        {{ n.title }}
+                      </h2>
+                      <p class="nt__upd" data-note-byline>
+                        Last updated by <b>{{ n.updatedByName ?? 'someone' }}</b> &middot;
+                        {{ n.updatedAtUtc | mfNum }}
+                      </p>
+                      <div class="nt__tags" data-note-tag-chips>
+                        <span class="mf-sr-only">Tags: </span>
+                        @for (t of n.tags; track t.noteTagId) {
+                          <mf-note-tag
+                            [name]="t.name"
+                            [colourKey]="t.colourKey"
+                            [inactive]="!t.isActive"
+                          />
+                        } @empty {
+                          <span class="nt__byline">No tags</span>
+                        }
+                        @if (n.isLocked) {
+                          <span class="nt__pill nt__pill--lock" data-note-lock-badge>
+                            <i class="pi pi-lock" aria-hidden="true"></i>Locked by
+                            {{ n.lockedByName ?? 'someone' }}
+                            @if (n.lockedAtUtc) {
+                              &middot; {{ n.lockedAtUtc | mfNum }}
+                            }
+                          </span>
+                        }
+                      </div>
+                      @if (!canEdit()) {
+                        <p class="nt__banner">
+                          <i class="pi pi-eye" aria-hidden="true"></i>
+                          <span
+                            >You can read this note. Editing needs the Matter Note Edit
+                            permission.</span
+                          >
+                        </p>
+                      }
+                      @if (n.isLocked && canEdit()) {
+                        <p class="nt__banner" role="status" data-note-locked>
+                          <i class="pi pi-lock" aria-hidden="true"></i>
+                          <span
+                            >This note is locked: it is read only for everybody (pinning still
+                            works).
+                            {{
+                              lock().canUnlock
+                                ? 'You can unlock it.'
+                                : 'Only ' +
+                                  (n.lockedByName ?? 'the person who locked it') +
+                                  ' or an administrator can unlock it.'
+                            }}</span
+                          >
+                        </p>
+                      }
+                      @defer (on immediate) {
+                        <mf-note-editor
+                          [html]="d.html"
+                          [contentKey]="d.key"
+                          [editable]="false"
+                          [embedSource]="embedSource"
+                          [refInfo]="refInfo()"
+                          (refOpen)="openRef($event)"
+                        />
+                      } @placeholder {
+                        <p class="nt__byline" role="status">Loading the note...</p>
+                      }
+                      @if (refChips().length) {
+                        <section class="nt__refs" aria-labelledby="nt-refh" data-note-refs>
+                          <h3 id="nt-refh">
+                            Referenced items <span class="nt__cnt">{{ refChips().length }}</span>
+                          </h3>
+                          @for (k of refKinds; track k) {
+                            @if (refsOf(k).length) {
+                              <div class="nt__refgrp">
+                                <h4>
+                                  {{ refTitles[k] }}
+                                  <span class="nt__cnt">{{ refsOf(k).length }}</span>
+                                </h4>
+                                <div class="nt__refchips">
+                                  @for (r of refsOf(k); track r.id) {
+                                    @if (r.state === 'Removed' || r.state === 'Restricted') {
+                                      <span class="nt__refchip is-gone">
+                                        <i class="pi pi-info-circle" aria-hidden="true"></i
+                                        >{{ r.state }} {{ k }}</span
+                                      >
+                                    } @else {
+                                      <button
+                                        type="button"
+                                        class="nt__refchip"
+                                        [attr.aria-label]="r.label + ', opens in a new window'"
+                                        (click)="openRef({ kind: k, id: r.id })"
+                                      >
+                                        <i class="pi" [class]="refIcons[k]" aria-hidden="true"></i
+                                        >{{ r.label }}
+                                        @if (r.stateText) {
+                                          <span class="nt__st">{{ r.stateText }}</span>
+                                        }
+                                      </button>
+                                    }
+                                  }
+                                </div>
+                              </div>
+                            }
+                          }
+                        </section>
+                      }
+                    </div>
+                  </div>
+                }
+
+                <!-- history: a column (a rail when collapsed) when the note area is 820 px wide -->
+                @if (note() && histWide()) {
+                  @if (histOpen()) {
+                    <div
+                      class="nt__split nt__split--hist"
+                      role="separator"
+                      aria-orientation="vertical"
+                      aria-label="Resize the history panel"
+                      tabindex="0"
+                      [class.is-drag]="dragging()"
+                      [attr.aria-valuenow]="histWidth()"
+                      [attr.aria-valuemin]="splitMin"
+                      [attr.aria-valuemax]="histMax"
+                      [attr.aria-valuetext]="'History panel ' + histWidth() + ' pixels wide'"
+                      data-history-splitter
+                      (pointerdown)="dragStartHist($event)"
+                      (dblclick)="histReset()"
+                      (keydown)="histKey($event)"
+                    >
+                      <span class="nt__grip"></span>
+                    </div>
+                  }
+                  <aside
+                    class="nt__phist"
+                    [class.is-min]="!histOpen()"
+                    [style.--hw]="histWidth() + 'px'"
+                    aria-label="History"
+                    data-history-rail-open
+                  >
+                    <div class="nt__hh">
+                      <h3 id="nt-hh3">
+                        History <span class="nt__cnt">{{ history().length }}</span>
+                      </h3>
+                      <button
+                        type="button"
+                        class="nt__ib"
+                        data-history-rail
+                        [attr.aria-expanded]="histOpen()"
+                        [attr.aria-label]="
+                          (histOpen() ? 'Collapse' : 'Expand') + ' the history panel'
+                        "
+                        [title]="(histOpen() ? 'Collapse' : 'Expand') + ' history'"
+                        (click)="setHist(!histOpen())"
+                      >
+                        <i
+                          class="pi"
+                          [class]="histOpen() ? 'pi-angle-double-right' : 'pi-angle-double-left'"
+                          aria-hidden="true"
+                        ></i>
+                      </button>
+                    </div>
+                    @if (!histOpen()) {
+                      <div class="nt__hmin">
+                        <span class="nt__cnt">{{ history().length }}</span>
+                        <span class="nt__vt">History</span>
+                      </div>
+                    }
+                    <div
+                      class="nt__hlist"
+                      tabindex="0"
+                      role="region"
+                      aria-labelledby="nt-hh3"
+                      data-note-history-list
+                    >
+                      <ng-container [ngTemplateOutlet]="historyBody" />
+                    </div>
+                    <p class="nt__hnote">
+                      History shows who and when only. There are no versions, no comparison and no
+                      restore.
+                    </p>
+                  </aside>
+                }
+              </div>
             }
           </div>
-        } @else {
-          <p class="nt__empty" data-note-none>
-            {{
-              loaded() && items().length === 0
-                ? 'Create the first note of this matter.'
-                : 'Choose a note to read it.'
-            }}
-          </p>
+        } @else if (!stacked()) {
+          <div class="nt__panel" data-note-pane>
+            <div class="nt__empty" data-note-none>
+              <span class="nt__eic"><i class="pi pi-file" aria-hidden="true"></i></span>
+              <h3>
+                {{
+                  view() === 'templates'
+                    ? 'Select a template to read it'
+                    : 'Select a note to read it'
+                }}
+              </h3>
+              <p>The note opens here. People who can edit the matter see an Edit button.</p>
+            </div>
+          </div>
         }
       </div>
     </section>
 
-    <!-- Tags: the firm-wide list; people only pick -->
+    <!-- one note row, used by the By tag and Latest views -->
+    <ng-template #row let-n let-gid="gid">
+      <li>
+        <button
+          type="button"
+          class="nt__row"
+          data-note-item
+          [class.is-twin]="twinId() === n.noteId && n.tags.length > 1 && gid !== ''"
+          [attr.aria-current]="isOpen(n.noteId)"
+          (mouseenter)="twinId.set(n.noteId)"
+          (mouseleave)="twinId.set(null)"
+          (focus)="twinId.set(n.noteId)"
+          (blur)="twinId.set(null)"
+          (click)="open(n.noteId, $event.detail === 0)"
+        >
+          <span
+            class="nt__av"
+            aria-hidden="true"
+            [style.background]="av(n.updatedByName).bg"
+            [style.color]="av(n.updatedByName).fg"
+            >{{ initials(n.updatedByName) }}</span
+          >
+          <span>
+            <span class="nt__tt">
+              @if (n.isPinned) {
+                <i class="pi pi-thumbtack" aria-hidden="true"></i
+                ><span class="mf-sr-only">Pinned. </span>
+              }
+              @if (n.isLocked) {
+                <i class="pi pi-lock" aria-hidden="true"></i
+                ><span class="mf-sr-only">Locked. </span>
+              }
+              <span class="nt__ti">
+                @for (s of marks(n.title); track $index) {
+                  @if (s.hit) {
+                    <mark>{{ s.t }}</mark>
+                  } @else {
+                    {{ s.t }}
+                  }
+                }
+              </span>
+            </span>
+            <span class="nt__pv">
+              @for (s of marks(n.snippet); track $index) {
+                @if (s.hit) {
+                  <mark>{{ s.t }}</mark>
+                } @else {
+                  {{ s.t }}
+                }
+              }
+            </span>
+            <span class="nt__tags">
+              <span class="mf-sr-only">Tags: </span>
+              @if (n.tags.length === 0) {
+                <span class="nt__plain">No tags</span>
+              } @else if (gid !== '' && gid !== '_none') {
+                @for (t of n.tags; track t.noteTagId) {
+                  @if ('' + t.noteTagId === gid) {
+                    <mf-note-tag [name]="t.name" [colourKey]="t.colourKey" [here]="true" />
+                  }
+                }
+                @if (otherTags(n, gid).length) {
+                  <span class="nt__also">also in</span>
+                  @for (t of otherTags(n, gid); track t.noteTagId) {
+                    <mf-note-tag [name]="t.name" [colourKey]="t.colourKey" />
+                  }
+                }
+              } @else {
+                @for (t of n.tags; track t.noteTagId) {
+                  <mf-note-tag [name]="t.name" [colourKey]="t.colourKey" />
+                }
+              }
+            </span>
+            <span class="nt__meta">
+              <span class="mf-sr-only">Author. </span>
+              <span
+                >Updated by <b>{{ n.updatedByName ?? 'someone' }}</b> &middot;
+                {{ n.updatedAtUtc | mfNum }}</span
+              >
+            </span>
+          </span>
+        </button>
+      </li>
+    </ng-template>
+
+    <!-- the delete icon: red, or disabled with its reason -->
+    <ng-template #deleteBtn let-n>
+      @if (canDelete()) {
+        @if (n.isLocked) {
+          <button
+            type="button"
+            class="nt__ib"
+            data-note-delete
+            aria-disabled="true"
+            [attr.aria-label]="
+              'Delete note, not available. Locked by ' +
+              (n.lockedByName ?? 'someone') +
+              ': unlock it before deleting'
+            "
+            [title]="'Locked by ' + (n.lockedByName ?? 'someone') + ': unlock it before deleting'"
+            (click)="
+              notify.info(
+                'Locked by ' + (n.lockedByName ?? 'someone') + ': unlock it before deleting'
+              )
+            "
+          >
+            <i class="pi pi-trash" aria-hidden="true"></i>
+          </button>
+        } @else {
+          <button
+            type="button"
+            class="nt__ib nt__ib--red"
+            data-note-delete
+            aria-label="Delete note"
+            title="Delete note"
+            (click)="confirmDelete.set(true)"
+          >
+            <i class="pi pi-trash" aria-hidden="true"></i>
+          </button>
+        }
+      } @else {
+        <button
+          type="button"
+          class="nt__ib"
+          data-note-delete
+          aria-disabled="true"
+          aria-label="Delete note, not available. Delete needs the Matter Note Delete permission"
+          title="Delete needs the Matter Note Delete permission"
+          (click)="notify.info('Delete needs the Matter Note Delete permission')"
+        >
+          <i class="pi pi-trash" aria-hidden="true"></i>
+        </button>
+      }
+    </ng-template>
+
+    <ng-template #historyBody>
+      @for (g of historyGroups(); track g.day) {
+        <section>
+          <h4>{{ g.day }}</h4>
+          <ol>
+            @for (h of g.entries; track h.auditEventId) {
+              <li>
+                <span
+                  class="nt__av nt__av--sm"
+                  aria-hidden="true"
+                  [style.background]="av(h.actorName).bg"
+                  [style.color]="av(h.actorName).fg"
+                  >{{ initials(h.actorName) }}</span
+                >
+                <span
+                  ><b>{{ h.actorName ?? 'Someone' }}</b> {{ historyText(h) }}
+                  <span class="nt__when"
+                    >{{ h.occurredAtUtc | mfNum }} &middot; {{ relative(h.occurredAtUtc) }}</span
+                  ></span
+                >
+              </li>
+            }
+          </ol>
+        </section>
+      } @empty {
+        <p class="nt__byline">No history yet.</p>
+      }
+    </ng-template>
+
+    <!-- Tags: the firm-wide list; people only pick (owner decision: a side panel) -->
     <mf-slide-panel
       title="Tags"
       subtitle="Up to five per note. Tags are kept by an administrator."
@@ -694,25 +1389,58 @@ const HIST_WIDTH_KEY = 'mf.notes.histw';
       (visibleChange)="!$event && panel.set('none')"
       (submitted)="panel.set('none')"
     >
-      @for (t of allTags(); track t.noteTagId) {
-        <label class="nt__check">
-          <input
-            type="checkbox"
-            [checked]="hasTag(t.noteTagId)"
-            [disabled]="!editing() || (!hasTag(t.noteTagId) && selectedTags().length >= maxTags)"
-            (change)="toggleTag(t)"
-          />
-          <span class="nt__chip">{{ t.name }}</span>
-        </label>
-      } @empty {
-        <p class="nt__byline">No tags exist yet. An administrator creates them under Labels.</p>
-      }
-      @if (!editing()) {
-        <p class="nt__byline">Press Edit to change the tags of this note.</p>
-      }
+      <div data-tags-panel>
+        <mf-text-field
+          inputId="nt-tag-search"
+          label="Search tags"
+          [maxLength]="40"
+          [(value)]="tagQuery"
+        />
+        <div role="group" aria-label="Tags" class="nt__taglist">
+          @for (t of pickableTags(); track t.noteTagId) {
+            <button
+              type="button"
+              class="nt__tagopt"
+              role="checkbox"
+              [attr.aria-checked]="hasTag(t.noteTagId)"
+              [disabled]="!editing() || (!hasTag(t.noteTagId) && selectedTags().length >= maxTags)"
+              (click)="toggleTag(t)"
+            >
+              <mf-note-tag [name]="t.name" [colourKey]="t.colourKey" [inactive]="!t.isActive" />
+              <span class="nt__grow"></span>
+              <span class="nt__n">{{ t.visibleNoteCount }}</span>
+              <i class="pi nt__tick" [class.pi-check]="hasTag(t.noteTagId)" aria-hidden="true"></i>
+            </button>
+          } @empty {
+            <p class="nt__byline">
+              {{
+                tagQuery()
+                  ? 'No tag with that name'
+                  : 'No tags exist yet. An administrator creates them under Labels, Notes tags.'
+              }}
+            </p>
+          }
+        </div>
+        <p class="nt__byline" aria-live="polite" data-tag-count>
+          {{ selectedTags().length }} of {{ maxTags }} selected{{
+            selectedTags().length >= maxTags ? '. Maximum of 5 tags reached' : ''
+          }}
+        </p>
+        @if (!editing()) {
+          <p class="nt__byline">Press Edit to change the tags of this note.</p>
+        }
+        <p class="nt__byline">
+          Missing a tag?
+          {{
+            isAdmin()
+              ? 'Create one under Labels, Notes tags.'
+              : 'Ask an administrator (Labels, Notes tags). Users can only pick.'
+          }}
+        </p>
+      </div>
     </mf-slide-panel>
 
-    <!-- History -->
+    <!-- History as a side panel when the note area is narrow -->
     <mf-slide-panel
       title="History"
       subtitle="Who did what and when. No versions."
@@ -721,80 +1449,46 @@ const HIST_WIDTH_KEY = 'mf.notes.histw';
       [showFooter]="false"
       (submitted)="panel.set('none')"
     >
-      <div data-note-history-list>
-        @for (g of historyGroups(); track g.day) {
-          <h3 class="nt__day">{{ g.day }}</h3>
-          <ul class="nt__panel-list">
-            @for (h of g.entries; track h.auditEventId) {
-              <li>
-                <b>{{ h.actorName ?? 'Someone' }}</b> {{ historyText(h) }}
-                <span class="nt__meta">{{ h.occurredAtUtc | mfDate: 'datetime' }}</span>
-              </li>
-            }
-          </ul>
-        } @empty {
-          <p class="nt__byline">No history yet.</p>
-        }
+      <div class="nt__hlist" data-note-history-list>
+        <ng-container [ngTemplateOutlet]="historyBody" />
       </div>
+      <p class="nt__hnote">
+        History shows who and when only. There are no versions, no comparison and no restore.
+      </p>
     </mf-slide-panel>
 
-    <!-- Templates -->
+    <!-- New note from a template: one card per template -->
     <mf-slide-panel
-      title="Templates"
-      subtitle="Using a template copies it into a new note."
+      title="New note from a template"
+      subtitle="Pick a layout. The note opens with its title, tags and body; placeholders are filled in."
       size="large"
       [visible]="panel() === 'templates'"
       (visibleChange)="!$event && panel.set('none')"
       [showFooter]="false"
       (submitted)="panel.set('none')"
     >
-      <p-button
-        label="New template"
-        icon="pi pi-plus"
-        size="small"
-        severity="secondary"
-        data-template-new
-        (onClick)="editTemplate(null)"
-      />
-      <ul class="nt__panel-list" data-template-list>
+      <div class="nt__tchoose" data-template-list>
         @for (t of templates(); track t.noteTemplateId) {
-          <li>
-            <b>{{ t.name }}</b>
-            <span class="nt__chip">{{ t.scope === 'FIRM' ? 'Firm-wide' : 'This matter' }}</span>
-            @if (t.description) {
-              <span class="nt__meta">{{ t.description }}</span>
-            }
-            <span class="nt__meta">Used {{ t.usedCount }} times</span>
-            <span class="nt__actions">
-              <p-button label="Use" size="small" data-template-use (onClick)="useTemplate(t)" />
-              <p-button
-                label="Duplicate"
-                size="small"
-                severity="secondary"
-                (onClick)="duplicateTemplate(t)"
-              />
-              @if (t.canEdit) {
-                <p-button
-                  label="Edit"
-                  size="small"
-                  severity="secondary"
-                  data-template-edit
-                  (onClick)="editTemplate(t)"
-                />
-                <p-button
-                  label="Delete"
-                  size="small"
-                  severity="danger"
-                  [outlined]="true"
-                  (onClick)="deleteTemplate(t)"
-                />
-              }
+          <button type="button" class="nt__tcard" data-template-use (click)="useTemplate(t)">
+            <span class="nt__tile" aria-hidden="true"><i class="pi pi-clone"></i></span>
+            <span>
+              <b>{{ t.name }}</b>
+              <small>{{ t.description }}</small>
+              <small>{{ preview(t.bodyHtml) }}</small>
             </span>
-          </li>
+            <span class="nt__tags">
+              <span class="nt__pill" [class.nt__pill--info]="t.scope === 'FIRM'">{{
+                t.scope === 'FIRM' ? 'Firm-wide' : 'This matter'
+              }}</span>
+              <small>Used {{ t.usedCount }} times</small>
+            </span>
+          </button>
         } @empty {
-          <li class="nt__byline">No templates yet. Open a note and use Save as template.</li>
+          <p class="nt__byline">
+            No templates yet. Open a note and use More actions, Save as template.
+          </p>
         }
-      </ul>
+      </div>
     </mf-slide-panel>
 
     <mf-slide-panel
@@ -804,7 +1498,7 @@ const HIST_WIDTH_KEY = 'mf.notes.histw';
       [busy]="busy()"
       [error]="tplError()"
       [visible]="panel() === 'template-edit'"
-      (visibleChange)="!$event && panel.set('templates')"
+      (visibleChange)="!$event && panel.set('none')"
       (submitted)="saveTemplateEdit()"
     >
       @if (panel() === 'template-edit') {
@@ -829,15 +1523,31 @@ const HIST_WIDTH_KEY = 'mf.notes.histw';
             [maxLength]="300"
             [(value)]="tplTitle"
           />
-          @if (!tplEditing() && isAdmin()) {
-            <label class="nt__check"
-              ><input
-                type="checkbox"
-                [checked]="tplFirm()"
-                (change)="tplFirm.set($any($event.target).checked)"
-              />
-              Firm-wide (everyone can use it)</label
-            >
+          @if (!tplEditing()) {
+            <fieldset class="nt__fieldset">
+              <legend class="nt__byline">Who can use it</legend>
+              <label class="nt__check"
+                ><input
+                  type="radio"
+                  name="te-scope"
+                  [checked]="!tplFirm()"
+                  (change)="tplFirm.set(false)"
+                />
+                <span><b>This matter</b> People who may edit notes on this matter</span></label
+              >
+              <label class="nt__check"
+                ><input
+                  type="radio"
+                  name="te-scope"
+                  [disabled]="!isAdmin()"
+                  [checked]="tplFirm()"
+                  (change)="tplFirm.set(true)"
+                />
+                <span
+                  ><b>Firm-wide</b> {{ isAdmin() ? 'Every matter' : 'Administrator only' }}</span
+                ></label
+              >
+            </fieldset>
           }
           <fieldset class="nt__fieldset">
             <legend class="nt__byline">Tags the template offers (up to five)</legend>
@@ -848,10 +1558,21 @@ const HIST_WIDTH_KEY = 'mf.notes.histw';
                   [checked]="tplTagIds().includes(t.noteTagId)"
                   (change)="toggleTplTag(t.noteTagId)"
                 />
-                <span class="nt__chip">{{ t.name }}</span>
+                <mf-note-tag [name]="t.name" [colourKey]="t.colourKey" />
               </label>
             }
           </fieldset>
+          <p class="nt__banner nt__banner--slim">
+            <i class="pi pi-info-circle" aria-hidden="true"></i>
+            <span
+              >Type placeholders such as <span class="nt__tok">{{ '{{date}}' }}</span>,
+              <span class="nt__tok">{{ '{{matter}}' }}</span>,
+              <span class="nt__tok">{{ '{{author}}' }}</span>; they are highlighted here and filled
+              when the template is used. Other placeholders (for example
+              <span class="nt__tok">{{ '{{custodian}}' }}</span>) stay for the person to fill
+              in.</span
+            >
+          </p>
           <span class="nt__byline" id="te-body-label">Text</span>
           <div class="nt__tplbody">
             @defer (on immediate) {
@@ -860,10 +1581,11 @@ const HIST_WIDTH_KEY = 'mf.notes.histw';
                 [contentKey]="tplKey()"
                 [editable]="true"
                 [source]="null"
+                [highlightTokens]="true"
                 (changed)="tplHtml.set($event)"
               />
             } @placeholder {
-              <p class="nt__empty" role="status">Loading the editor...</p>
+              <p class="nt__byline" role="status">Loading the editor...</p>
             }
           </div>
         </div>
@@ -883,7 +1605,7 @@ const HIST_WIDTH_KEY = 'mf.notes.histw';
         <div class="nt__panel-form">
           <mf-text-field
             inputId="tpl-name"
-            label="Name"
+            label="Template name"
             [required]="true"
             [maxLength]="100"
             [(value)]="tplName"
@@ -891,27 +1613,49 @@ const HIST_WIDTH_KEY = 'mf.notes.histw';
           <mf-text-field
             inputId="tpl-desc"
             label="Description"
+            help="What is it for?"
             [maxLength]="160"
             [(value)]="tplDescription"
           />
-          @if (isAdmin()) {
+          <fieldset class="nt__fieldset">
+            <legend class="nt__byline">Who can use it</legend>
             <label class="nt__check"
               ><input
-                type="checkbox"
-                [checked]="tplFirm()"
-                (change)="tplFirm.set($any($event.target).checked)"
+                type="radio"
+                name="sat-scope"
+                [checked]="!tplFirm()"
+                (change)="tplFirm.set(false)"
               />
-              Firm-wide (everyone can use it)</label
+              <span><b>This matter</b> People who may edit notes on this matter</span></label
             >
-          }
+            <label class="nt__check"
+              ><input
+                type="radio"
+                name="sat-scope"
+                [disabled]="!isAdmin()"
+                [checked]="tplFirm()"
+                (change)="tplFirm.set(true)"
+              />
+              <span
+                ><b>Firm-wide</b> {{ isAdmin() ? 'Every matter' : 'Administrator only' }}</span
+              ></label
+            >
+          </fieldset>
           <label class="nt__check"
             ><input
               type="checkbox"
               [checked]="tplTags()"
               (change)="tplTags.set($any($event.target).checked)"
             />
-            Include the tags of this note</label
+            <span
+              ><b>Include the tags</b>
+              {{ note()?.tags?.length ? tagNames(note()!) : 'This note has none' }}</span
+            ></label
           >
+          <p class="nt__byline">
+            References to people, assets, projects, matters and notes are kept. Add placeholders
+            such as {{ '{{date}}' }} in the template editor afterwards.
+          </p>
         </div>
       }
     </mf-slide-panel>
@@ -926,18 +1670,37 @@ const HIST_WIDTH_KEY = 'mf.notes.histw';
       (confirmed)="deleteNote()"
     >
       <p>
-        {{ note()?.title }} will be deleted for good. The history keeps a line that it was deleted.
+        <b>{{ note()?.title }}</b> is removed for everyone who can see this matter{{
+          deleteTagText()
+        }}.
+      </p>
+      <p>It cannot be undone from this screen. The deletion is written to the audit log.</p>
+    </mf-confirm-dialog>
+    <mf-confirm-dialog
+      title="Delete this template?"
+      confirmLabel="Delete template"
+      [danger]="true"
+      [(visible)]="confirmDeleteTpl"
+      (confirmed)="deleteTemplate()"
+    >
+      <p>
+        <b>{{ tplToDelete()?.name }}</b> is removed from the template list{{
+          tplToDelete()?.scope === 'FIRM' ? ' for the whole firm' : ''
+        }}. Notes already made from it are not changed.
       </p>
     </mf-confirm-dialog>
     <mf-confirm-dialog
-      title="Discard your changes?"
+      title="Discard unsaved changes?"
       confirmLabel="Discard changes"
       cancelLabel="Keep editing"
       [danger]="true"
       [(visible)]="confirmDiscard"
       (confirmed)="proceedDiscard()"
     >
-      <p>The changes to this note have not been saved.</p>
+      <p>
+        You have unsaved changes to <b>{{ draftTitle() || 'a new note' }}</b
+        >. If you leave now they are lost.
+      </p>
     </mf-confirm-dialog>
   `,
 })
@@ -950,12 +1713,18 @@ export class NotesTab {
   private readonly mattersApi = inject(MattersClient);
   private readonly usersApi = inject(UsersLookupClient);
   private readonly auth = inject(AuthStore);
-  private readonly notify = inject(NotificationService);
+  private readonly router = inject(Router);
+  protected readonly notify = inject(NotificationService);
   private readonly editorRef = viewChild<NoteEditor>('editor');
+  private readonly cardRef = viewChild<ElementRef<HTMLElement>>('card');
+  private readonly titleRef = viewChild<ElementRef<HTMLElement>>('ptitle');
+  private readonly addTagRef = viewChild<ElementRef<HTMLElement>>('addTag');
 
   /** The matter whose notes are shown, and its reference and name for the template placeholder `{{matter}}`. */
   readonly matterId = input.required<number>();
   readonly matterLabel = input('');
+  /** The matter is sensitive: the header says so. */
+  readonly sensitive = input(false);
   /** A note was created or deleted: the page refreshes the tab number. */
   readonly changed = output<void>();
   /** The matter's AI allowed setting: it decides whether the AI button is on or says "AI can't be used on this matter" (MD-16). */
@@ -970,43 +1739,159 @@ export class NotesTab {
   >(null);
 
   protected readonly splitMin = SPLIT_MIN;
-  protected readonly splitMax = SPLIT_MAX;
+  protected readonly histMax = 480;
   protected readonly maxTags = MAX_TAGS;
+  protected readonly refKinds = REF_KINDS;
+  protected readonly refTitles = REF_TITLES;
+  protected readonly refIcons = REF_ICONS;
   protected readonly historyText = noteHistoryText;
-  protected readonly lockedItems: DropdownItem[] = [
-    { value: '', label: 'All notes' },
-    { value: 'true', label: 'Locked' },
-    { value: 'false', label: 'Not locked' },
+  protected readonly skeleton = ['46%', '92%', '70%', '46%', '92%', '70%', '46%'];
+  protected readonly useReason = 'Using a template needs the Matter Note Edit permission';
+  protected readonly views: { id: NoteView; label: string; short: string; icon: string }[] = [
+    { id: 'tag', label: 'By tag', short: 'By tag', icon: 'pi-align-left' },
+    { id: 'latest', label: 'Latest first', short: 'Latest', icon: 'pi-list' },
+    { id: 'board', label: 'Board', short: 'Board', icon: 'pi-objects-column' },
+    { id: 'templates', label: 'Templates', short: 'Templates', icon: 'pi-clone' },
+  ];
+  protected readonly sortItems: DropdownItem[] = [
+    { value: 'updated', label: 'Newest' },
+    { value: 'oldest', label: 'Oldest' },
+    { value: 'title', label: 'A to Z' },
+    { value: 'created', label: 'Created' },
   ];
 
-  protected readonly items = signal<NoteListItem[]>([]);
+  // ---- the list
+  protected readonly allNotes = signal<NoteListItem[]>([]);
+  protected readonly totalCount = signal(0);
   protected readonly loaded = signal(false);
   protected readonly listError = signal('');
   protected readonly query = signal('');
-  protected readonly tagFilter = signal('');
-  protected readonly lockedFilter = signal('');
-  protected readonly allTags = signal<NoteTagRef[]>([]);
-  protected readonly split = signal(this.readSplit());
+  protected readonly view = signal<NoteView>(this.readView());
+  protected readonly sortValue = signal<string>('updated');
+  protected readonly filterValues = signal<readonly string[]>([]);
+  protected readonly collapsed = signal<Record<string, boolean>>({});
+  protected readonly twinId = signal<number | null>(null);
+  protected readonly allTags = signal<TagRow[]>([]);
+  protected readonly tagQuery = signal('');
+  protected readonly newMenuOpen = signal(false);
 
+  private readonly tagValues = computed(() => this.filterValues().filter((v) => v !== '_locked'));
+  private readonly onlyLocked = computed(() => this.filterValues().includes('_locked'));
+  /** The notes after the tag and Locked filters (the text search was done by the server). */
+  protected readonly items = computed(() => {
+    const tags = this.tagValues();
+    const locked = this.onlyLocked();
+    return this.allNotes().filter(
+      (n) =>
+        (tags.length === 0 ||
+          tags.some((t) =>
+            t === '_none' ? n.tags.length === 0 : n.tags.some((x) => String(x.noteTagId) === t),
+          )) &&
+        (!locked || n.isLocked),
+    );
+  });
+  protected readonly sorted = computed(() => sortNotes(this.items(), this.sortValue() as NoteSort));
+  protected readonly groups = computed(() =>
+    groupByTag(this.sorted(), this.allTags(), this.tagValues()),
+  );
+  protected readonly anyOpen = computed(() => this.groups().some((g) => !this.collapsed()[g.id]));
+  protected readonly tagFilterItems = computed<DropdownItem[]>(() => {
+    const all = this.allNotes();
+    const withTags = this.allTags()
+      .filter((t) => all.some((n) => n.tags.some((x) => x.noteTagId === t.noteTagId)))
+      .map((t) => ({
+        value: String(t.noteTagId),
+        label: t.name,
+        count: all.filter((n) => n.tags.some((x) => x.noteTagId === t.noteTagId)).length,
+      }));
+    return [
+      ...withTags,
+      { value: '_none', label: 'Untagged', count: all.filter((n) => n.tags.length === 0).length },
+      { value: '_locked', label: 'Locked', count: all.filter((n) => n.isLocked).length },
+    ];
+  });
+
+  // ---- layout: one card, the list, a splitter and the panel
+  protected readonly cardWidth = signal(0);
+  protected readonly split = signal(this.readSplit());
+  protected readonly dragging = signal(false);
+  protected readonly wide = signal(false);
+  protected readonly stacked = computed(() => this.cardWidth() > 0 && this.cardWidth() < 760);
+  protected readonly splitMaxNow = computed(() =>
+    splitLimit(this.cardWidth() || SPLIT_DEFAULT + 420),
+  );
+  protected readonly listWidth = computed(() => clampSplit(this.split(), this.splitMaxNow()));
+  protected readonly showPanel = computed(
+    () => this.draft() !== null || this.selTemplate() !== null,
+  );
+  protected readonly showList = computed(
+    () => !(this.stacked() && this.showPanel()) && !(this.wide() && this.showPanel()),
+  );
+
+  // ---- the open note
   protected readonly note = signal<NoteResponse | null>(null);
-  /** What the right-hand side shows: the html to start the editor from, and a key that says "this is a different note". */
+  /** What the right-hand side shows: the html to start the editor from, and a key that says "this is a different note or mode". */
   protected readonly draft = signal<{ html: string; key: string } | null>(null);
   protected readonly editing = signal(false);
-  protected readonly selectedTags = signal<NoteTagRef[]>([]);
+  protected readonly selectedTags = signal<
+    { noteTagId: number; name: string; colourKey?: string | null; isActive: boolean }[]
+  >([]);
   private readonly currentHtml = signal('');
   private readonly startedHtml = signal('');
   private readonly startedTags = signal('');
   protected readonly busy = signal(false);
   protected readonly saveError = signal('');
   protected readonly lockedWhileEditing = signal('');
+  protected readonly conflict = signal<{ who: string; at: string } | null>(null);
+  protected readonly keepMine = signal(false);
+  protected readonly tplBanner = signal<NoteTemplateResponse['tags']>([]);
   protected readonly panel = signal<PanelKind>('none');
   protected readonly aiPanel = signal(false);
+  protected readonly refInfo = signal<Record<string, RefInfo>>({});
+  protected readonly refChips = signal<RefChip[]>([]);
   private readonly paneRef = viewChild<ElementRef<HTMLElement>>('pane');
   /** The note area is wide enough (820 px) for the history column; narrower, History opens in the side panel. */
   protected readonly paneWidth = signal(0);
-  protected readonly wide = computed(() => this.paneWidth() >= 820);
+  protected readonly histWide = computed(() => this.paneWidth() >= 820);
   protected readonly histOpen = signal(this.readNumber(HIST_OPEN_KEY, 1) === 1);
-  protected readonly histWidth = signal(clampSplit(this.readNumber(HIST_WIDTH_KEY, 300)));
+  protected readonly histWidth = signal(this.readHistWidth());
+
+  protected readonly moreItems: MenuAction[] = [
+    {
+      id: 'sat',
+      label: 'Save as template...',
+      icon: 'pi-clone',
+      run: () => this.openSaveTemplate(),
+    },
+  ];
+
+  // ---- templates
+  protected readonly templates = signal<NoteTemplateResponse[]>([]);
+  protected readonly selTemplate = signal<NoteTemplateResponse | null>(null);
+  protected readonly shownTemplates = computed(() => {
+    const q = this.query().toLowerCase();
+    return this.templates().filter(
+      (t) => !q || `${t.name} ${t.description ?? ''}`.toLowerCase().includes(q),
+    );
+  });
+  protected readonly tplEditing = signal<NoteTemplateResponse | null>(null);
+  protected tplTitle = signal('');
+  protected readonly tplTagIds = signal<number[]>([]);
+  protected readonly tplHtml = signal('');
+  protected readonly tplKey = signal('');
+  protected readonly tplToDelete = signal<NoteTemplateResponse | null>(null);
+  protected readonly confirmDeleteTpl = signal(false);
+  protected tplName = signal('');
+  protected tplDescription = signal('');
+  protected readonly tplFirm = signal(false);
+  protected readonly tplTags = signal(true);
+  protected readonly tplError = signal('');
+
+  protected readonly history = signal<NoteHistoryEntry[]>([]);
+  protected readonly confirmDelete = signal(false);
+  protected readonly confirmDiscard = signal(false);
+  private pendingAfterDiscard: (() => void) | null = null;
+
   protected readonly newItems: MenuAction[] = [
     { id: 'blank', label: 'Blank note', icon: 'pi-file', run: () => this.newNote() },
     {
@@ -1016,22 +1901,6 @@ export class NotesTab {
       run: () => void this.openTemplates(),
     },
   ];
-  protected readonly tplEditing = signal<NoteTemplateResponse | null>(null);
-  protected tplTitle = signal('');
-  protected readonly tplTagIds = signal<number[]>([]);
-  protected readonly tplHtml = signal('');
-  protected readonly tplKey = signal('');
-  protected readonly history = signal<NoteHistoryEntry[]>([]);
-  protected readonly templates = signal<NoteTemplateResponse[]>([]);
-  protected readonly confirmDelete = signal(false);
-  protected readonly confirmDiscard = signal(false);
-  private pendingAfterDiscard: (() => void) | null = null;
-
-  protected tplName = signal('');
-  protected tplDescription = signal('');
-  protected readonly tplFirm = signal(false);
-  protected readonly tplTags = signal(true);
-  protected readonly tplError = signal('');
 
   protected readonly canEdit = computed(() => this.auth.has('MatterNote.Edit'));
   protected readonly canDelete = computed(() => this.auth.has('MatterNote.Delete'));
@@ -1050,13 +1919,16 @@ export class NotesTab {
       this.editing() &&
       (this.currentHtml() !== this.startedHtml() || this.tagKey() !== this.startedTags()),
   );
-  protected readonly draftTags = computed<NoteTagRef[]>(() =>
-    this.editing() ? this.selectedTags() : (this.note()?.tags ?? []),
-  );
-  protected readonly tagFilterItems = computed<DropdownItem[]>(() => [
-    { value: '', label: 'All tags' },
-    ...this.allTags().map((t) => ({ value: String(t.noteTagId), label: t.name })),
-  ]);
+  protected readonly saveBlocked = computed(() => this.lockedWhileEditing() !== '');
+  protected readonly draftTitle = computed(() => titleOfHtml(this.currentHtml()));
+  /** The tags a person can pick: the active ones, plus an inactive one the note already has (it stays visible and can be removed). */
+  protected readonly pickableTags = computed(() => {
+    const q = this.tagQuery().trim().toLowerCase();
+    const own = new Set(this.selectedTags().map((t) => t.noteTagId));
+    return this.allTags().filter(
+      (t) => (t.isActive || own.has(t.noteTagId)) && (!q || t.name.toLowerCase().includes(q)),
+    );
+  });
   protected readonly historyGroups = computed(() => {
     const now = new Date();
     const groups: { day: string; entries: NoteHistoryEntry[] }[] = [];
@@ -1067,6 +1939,13 @@ export class NotesTab {
       else groups.push({ day, entries: [e] });
     }
     return groups;
+  });
+  protected readonly deleteTagText = computed(() => {
+    const names = (this.note()?.tags ?? []).map((t) => t.name);
+    if (names.length === 0) return '';
+    return names.length > 1
+      ? `, and from all ${names.length} tag groups it appears in (${names.join(', ')})`
+      : `, and from its tag group (${names[0]})`;
   });
 
   /** The menu of `@`, `#` and the slash commands searches the API for the open note's matter. */
@@ -1150,6 +2029,7 @@ export class NotesTab {
               kind: kind === 'embed' ? ('embed' as const) : ('note' as const),
               id: n.noteId,
               label: n.title,
+              sub: `Updated ${n.updatedByName ?? 'someone'}`,
             }));
         }
       }
@@ -1177,27 +2057,68 @@ export class NotesTab {
   };
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.stopDrag());
+    inject(DestroyRef).onDestroy(() => {
+      this.stopDrag();
+      this.stopWatch?.();
+      this.paneObserver?.disconnect();
+    });
     afterNextRender(() => {
+      const watchers: ResizeObserver[] = [];
+      if (typeof ResizeObserver === 'undefined') return;
+      const card = this.cardRef()?.nativeElement;
+      if (card) {
+        const w = new ResizeObserver(() => this.cardWidth.set(card.clientWidth));
+        w.observe(card);
+        this.cardWidth.set(card.clientWidth);
+        watchers.push(w);
+      }
+      this.stopWatch = () => watchers.forEach((w) => w.disconnect());
+    });
+    // The note area is measured whenever its element appears (a note is opened).
+    effect(() => {
       const el = this.paneRef()?.nativeElement;
-      if (!el || typeof ResizeObserver === 'undefined') return;
-      const watch = new ResizeObserver(() => this.paneWidth.set(el.clientWidth));
-      watch.observe(el);
-      this.paneWidth.set(el.clientWidth);
-      this.stopWatch = () => watch.disconnect();
+      untracked(() => {
+        this.paneObserver?.disconnect();
+        this.paneObserver = null;
+        if (!el || typeof ResizeObserver === 'undefined') return;
+        const w = new ResizeObserver(() => this.paneWidth.set(el.clientWidth));
+        w.observe(el);
+        this.paneWidth.set(el.clientWidth);
+        this.paneObserver = w;
+      });
     });
     effect(() => {
       this.matterId();
       this.query();
-      this.tagFilter();
-      this.lockedFilter();
+      this.sortValue();
       untracked(() => void this.loadList());
     });
     effect(() => {
       this.matterId();
-      untracked(() => void this.loadTags());
+      untracked(() => {
+        void this.loadTags();
+        if (this.view() === 'templates') void this.loadTemplates();
+      });
     });
+    // Unsaved changes: the browser asks before the page is left or reloaded.
+    const unload = (e: BeforeUnloadEvent) => {
+      if (this.dirty()) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', unload);
+    inject(DestroyRef).onDestroy(() => window.removeEventListener('beforeunload', unload));
+    // The closing click of the "New note" menu.
+    const close = (e: Event) => {
+      if (this.newMenuOpen() && !(e.target as HTMLElement).closest('.nt__split-btn'))
+        this.newMenuOpen.set(false);
+    };
+    document.addEventListener('click', close);
+    inject(DestroyRef).onDestroy(() => document.removeEventListener('click', close));
   }
+
+  private paneObserver: ResizeObserver | null = null;
 
   protected tagKey(): string {
     return this.selectedTags()
@@ -1214,35 +2135,137 @@ export class NotesTab {
     return this.selectedTags().some((t) => t.noteTagId === id);
   }
 
+  protected otherTags(n: NoteListItem, gid: string) {
+    return n.tags.filter((t) => String(t.noteTagId) !== gid);
+  }
+
+  protected av(name: string | null | undefined): { bg: string; fg: string } {
+    return taskTypeChipColours(avatarKey(name));
+  }
+
+  protected initials(name: string | null | undefined): string {
+    return initialsOf(name);
+  }
+
+  protected firstName(name: string | null | undefined): string {
+    return (name ?? 'Someone').split(/\s+/)[0];
+  }
+
+  protected tagNames(n: NoteResponse): string {
+    return n.tags.map((t) => t.name).join(', ');
+  }
+
+  protected preview(html: string): string {
+    return titleOfHtml(html)
+      ? html
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 150)
+      : '';
+  }
+
+  /** "10 min ago", "3 hours ago", "yesterday", "4 days ago" for the history. */
+  protected relative(iso: string): string {
+    const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return `${m} min ago`;
+    const h = Math.round(m / 60);
+    if (h < 24) return `${h} ${h === 1 ? 'hour' : 'hours'} ago`;
+    const d = Math.round(h / 24);
+    return d <= 1 ? 'yesterday' : `${d} days ago`;
+  }
+
+  /** The text split into plain and highlighted parts (the search words show with a mark). */
+  protected marks(text: string | null | undefined): { t: string; hit: boolean }[] {
+    const s = text ?? '';
+    const q = this.query().trim().toLowerCase();
+    if (!q) return [{ t: s, hit: false }];
+    const out: { t: string; hit: boolean }[] = [];
+    const low = s.toLowerCase();
+    let at = 0;
+    for (let i = low.indexOf(q); i >= 0; i = low.indexOf(q, at)) {
+      if (i > at) out.push({ t: s.slice(at, i), hit: false });
+      out.push({ t: s.slice(i, i + q.length), hit: true });
+      at = i + q.length;
+    }
+    if (at < s.length) out.push({ t: s.slice(at), hit: false });
+    return out;
+  }
+
+  protected unlockReason(n: NoteResponse): string {
+    return `Only ${n.lockedByName ?? 'the person who locked it'} or an administrator can unlock this note`;
+  }
+
+  protected refsOf(kind: string): RefChip[] {
+    return this.refChips().filter((r) => r.kind === kind);
+  }
+
+  protected tplReason(t: NoteTemplateResponse): string {
+    if (t.canEdit && this.canEdit()) return '';
+    return t.scope === 'FIRM'
+      ? 'Firm-wide templates are changed by an administrator'
+      : 'Changing a matter template needs the Matter Note Edit permission';
+  }
+
   // ---------------------------------------------------------------- list
 
   protected onSearch(value: string): void {
     this.query.set(value.trim());
   }
 
-  protected onTag(value: string): void {
-    this.tagFilter.set(value);
+  protected setView(v: NoteView): void {
+    if (this.view() === v) return;
+    this.guard(() => {
+      this.view.set(v);
+      this.writeText(VIEW_KEY, v);
+      this.selTemplate.set(null);
+      this.twinId.set(null);
+      if (v === 'templates') void this.loadTemplates();
+    });
   }
 
-  protected onLocked(value: string): void {
-    this.lockedFilter.set(value);
+  protected toggleGroup(id: string): void {
+    this.collapsed.update((c) => ({ ...c, [id]: !c[id] }));
+  }
+
+  protected toggleAll(): void {
+    const open = this.anyOpen();
+    this.collapsed.set(Object.fromEntries(this.groups().map((g) => [g.id, open])));
+  }
+
+  protected clearFilters(): void {
+    this.filterValues.set([]);
+    this.query.set('');
+  }
+
+  protected newMenuPick(what: 'blank' | 'template'): void {
+    this.newMenuOpen.set(false);
+    if (what === 'blank') this.newNote();
+    else void this.openTemplates();
   }
 
   protected async loadList(): Promise<void> {
     try {
-      const tag = this.tagFilter();
-      const locked = this.lockedFilter();
-      const result = await firstValueFrom(
-        this.notesApi.listNotes(
-          this.matterId(),
-          tag ? [Number(tag)] : undefined,
-          locked === '' ? undefined : locked === 'true',
-          this.query() || undefined,
-          1,
-          100,
-        ),
-      );
-      this.items.set(result.items);
+      const sort = this.sortValue() === 'created' ? 'createdAt' : undefined;
+      const all: NoteListItem[] = [];
+      for (let page = 1; page <= 10; page += 1) {
+        const r = await firstValueFrom(
+          this.notesApi.listNotes(
+            this.matterId(),
+            undefined,
+            undefined,
+            this.query() || undefined,
+            page,
+            100,
+            sort,
+          ),
+        );
+        all.push(...r.items);
+        if (all.length >= r.total || r.items.length === 0) break;
+      }
+      this.allNotes.set(all);
+      if (!this.query()) this.totalCount.set(all.length);
       this.listError.set('');
       this.changed.emit();
     } catch {
@@ -1254,15 +2277,7 @@ export class NotesTab {
 
   private async loadTags(): Promise<void> {
     try {
-      const tags = await firstValueFrom(this.tagsApi.listNoteTags(false));
-      this.allTags.set(
-        tags.map((t) => ({
-          noteTagId: t.noteTagId,
-          name: t.name,
-          colourKey: t.colourKey,
-          isActive: t.isActive,
-        })),
-      );
+      this.allTags.set(await firstValueFrom(this.tagsApi.listNoteTags(false)));
     } catch {
       this.allTags.set([]);
     }
@@ -1280,15 +2295,17 @@ export class NotesTab {
     }
   }
 
-  protected open(id: number): void {
+  protected open(id: number, byKeyboard = false): void {
     if (this.note()?.noteId === id && !this.editing()) return;
-    this.guard(() => void this.openNow(id));
+    this.guard(() => void this.openNow(id, byKeyboard));
   }
 
-  private async openNow(id: number): Promise<void> {
+  private async openNow(id: number, focusTitle = false): Promise<void> {
     try {
       const n = await firstValueFrom(this.notesApi.getNote(id));
+      this.selTemplate.set(null);
       this.showNote(n);
+      if (focusTitle || this.stacked()) this.focusTitle();
     } catch (e) {
       this.notify.error(
         e instanceof ApiError && e.status === 404
@@ -1299,40 +2316,120 @@ export class NotesTab {
     }
   }
 
+  private focusTitle(): void {
+    setTimeout(() => this.titleRef()?.nativeElement.focus(), 60);
+  }
+
   private showNote(n: NoteResponse): void {
+    const split = withoutTitleBlock(n.bodyHtml, n.title);
     this.note.set(n);
     this.editing.set(false);
+    this.wide.set(false);
     this.saveError.set('');
     this.lockedWhileEditing.set('');
+    this.conflict.set(null);
+    this.keepMine.set(false);
+    this.tplBanner.set([]);
     this.currentHtml.set(n.bodyHtml);
     this.startedHtml.set(n.bodyHtml);
     this.selectedTags.set([...n.tags]);
     this.startedTags.set(this.tagKey());
-    this.draft.set({ html: n.bodyHtml, key: `${n.noteId}:${n.rowVersion}` });
+    this.draft.set({ html: split.rest, key: `${n.noteId}:${n.rowVersion}:read` });
     void this.loadHistory(n.noteId);
+    void this.resolveRefs(n);
+  }
+
+  /** What the reader may do with each reference of the note: the chips and the "Referenced items" list follow the answer (Removed, Restricted, state tags). */
+  private async resolveRefs(n: NoteResponse): Promise<void> {
+    const refs = (n.references ?? []).filter((r) => r.kind !== 'user');
+    if (refs.length === 0) {
+      this.refInfo.set({});
+      this.refChips.set([]);
+      return;
+    }
+    try {
+      const r = await firstValueFrom(
+        this.notesApi.resolveNoteReferences({ matterId: n.matterId, references: refs }),
+      );
+      const info: Record<string, RefInfo> = {};
+      const chips: RefChip[] = [];
+      const seen = new Set<string>();
+      for (const x of r.items as NoteReferenceResolution[]) {
+        const kind = x.kind === 'embed' ? 'note' : x.kind;
+        const key = `${kind}:${x.id}`;
+        const stateText = x.state === 'Inactive' ? (x.detail ?? 'inactive').toLowerCase() : '';
+        info[`${x.kind}:${x.id}`] = { state: x.state, stateText };
+        if (seen.has(key) || !(REF_KINDS as readonly string[]).includes(kind)) continue;
+        seen.add(key);
+        chips.push({ kind, id: x.id, label: x.label ?? '', state: x.state, stateText });
+      }
+      if (this.note()?.noteId === n.noteId) {
+        this.refInfo.set(info);
+        this.refChips.set(chips);
+      }
+    } catch {
+      this.refInfo.set({});
+      this.refChips.set([]);
+    }
+  }
+
+  /** A chip or "Open note": an asset, project or matter opens in a new window; another note of the matter opens here. */
+  protected openRef(e: { kind: string; id: number }): void {
+    if (e.kind === 'note' || e.kind === 'embed') {
+      this.open(e.id, true);
+      return;
+    }
+    const base = e.kind === 'asset' ? '/assets' : e.kind === 'project' ? '/projects' : '/matters';
+    window.open(
+      this.router.serializeUrl(this.router.createUrlTree([base, e.id])),
+      '_blank',
+      'noopener',
+    );
   }
 
   protected newNote(): void {
-    this.guard(() => this.startNew('', []));
+    this.guard(() => {
+      this.selTemplate.set(null);
+      this.startNew('', []);
+    });
   }
 
-  private startNew(html: string, tags: NoteTagRef[]): void {
+  private startNew(html: string, tags: NoteTemplateResponse['tags']): void {
     this.note.set(null);
     this.saveError.set('');
     this.lockedWhileEditing.set('');
+    this.conflict.set(null);
+    this.keepMine.set(false);
     this.currentHtml.set(html);
     this.startedHtml.set('');
-    this.selectedTags.set(tags);
+    this.selectedTags.set(tags.map((t) => ({ ...t })));
     this.startedTags.set('');
+    this.history.set([]);
+    this.refChips.set([]);
     this.draft.set({ html, key: `new:${Date.now()}` });
     this.editing.set(true);
+    this.wide.set(!this.stacked());
+  }
+
+  protected onEditClick(ev: Event): void {
+    if (!this.lock().canEdit) {
+      ev.preventDefault();
+      const n = this.note();
+      this.notify.info(`Locked by ${n?.lockedByName ?? 'someone'}`);
+      return;
+    }
+    this.edit();
   }
 
   protected edit(): void {
-    if (!this.lock().canEdit) return;
-    this.startedHtml.set(this.currentHtml());
+    const n = this.note();
+    if (!n || !this.lock().canEdit) return;
+    this.startedHtml.set(n.bodyHtml);
+    this.currentHtml.set(n.bodyHtml);
+    this.draft.set({ html: n.bodyHtml, key: `${n.noteId}:${n.rowVersion}:edit` });
     this.editing.set(true);
     this.saveError.set('');
+    this.wide.set(!this.stacked());
   }
 
   protected onEditorReady(): void {
@@ -1355,12 +2452,24 @@ export class NotesTab {
   /** Back to the saved note in read mode, or to an empty pane when it was a new note. */
   private restore(): void {
     const n = this.note();
+    this.wide.set(false);
     if (n) {
       this.showNote(n);
+      this.focusTitle();
     } else {
       this.editing.set(false);
       this.draft.set(null);
     }
+  }
+
+  protected closePanel(): void {
+    this.guard(() => {
+      this.note.set(null);
+      this.draft.set(null);
+      this.selTemplate.set(null);
+      this.editing.set(false);
+      this.wide.set(false);
+    });
   }
 
   /** The answer "Discard changes" of the confirmation: drop the edits, then do what was waiting (cancel, open another note, new note). */
@@ -1373,8 +2482,20 @@ export class NotesTab {
     go?.();
   }
 
+  protected onSaveClick(): void {
+    if (this.saveBlocked()) {
+      this.notify.info(`Locked by ${this.lockedWhileEditing()}; your changes cannot be saved`);
+      return;
+    }
+    void this.save();
+  }
+
   protected async save(): Promise<void> {
     const html = this.editorRef()?.getHtml() ?? this.currentHtml();
+    if (html.length > 100_000) {
+      this.notify.warn('The note is too large (limit 100 KB of formatted text).');
+      return;
+    }
     const check = await this.beforeSave()?.(html);
     if (check && !check.proceed) return;
     this.busy.set(true);
@@ -1387,27 +2508,30 @@ export class NotesTab {
             this.notesApi.updateNote(n.noteId, {
               bodyHtml: html,
               tagIds,
-              rowVersion: n.rowVersion,
-            } as never),
+              ackWarnings: check?.ackWarnings,
+              ackWarningReasons: check?.reasons,
+              rowVersion: this.keepMine()
+                ? ((await this.latestRowVersion(n.noteId)) ?? n.rowVersion)
+                : n.rowVersion,
+            }),
           )
         : await firstValueFrom(
             this.notesApi.createNote({
               matterId: this.matterId(),
               bodyHtml: html,
               tagIds,
-            } as never),
+            }),
           );
-      this.notify.success(n ? 'Note saved' : 'Note created');
+      this.notify.success('Note saved');
       this.showNote(saved);
+      this.focusTitle();
       await this.loadList();
     } catch (e) {
       if (e instanceof ApiError && e.code === 'NOTE_LOCKED') {
         const who = (e.problem?.meta?.['lockedByName'] as string | undefined) ?? 'someone';
         this.lockedWhileEditing.set(who);
       } else if (e instanceof ApiError && e.code === 'CONCURRENCY_CONFLICT') {
-        this.saveError.set(
-          'Someone else changed this note while you were editing. Copy your text, reopen the note and add your changes again.',
-        );
+        await this.showConflict();
       } else if (e instanceof ApiError && e.hasFieldErrors) {
         this.saveError.set(Object.values(e.problem?.errors ?? {})[0]?.[0]?.message ?? e.message);
       } else {
@@ -1420,10 +2544,44 @@ export class NotesTab {
     }
   }
 
-  protected async copyMine(): Promise<void> {
-    const text = titleOfHtml(this.currentHtml()) ? this.currentHtml().replace(/<[^>]+>/g, ' ') : '';
+  private async latestRowVersion(id: number): Promise<string | null> {
     try {
-      await navigator.clipboard.writeText(text.replace(/\s+/g, ' ').trim());
+      return (await firstValueFrom(this.notesApi.getNote(id))).rowVersion;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Someone saved the note while it was open here: say who and when, and offer "Reload their version" and "Keep mine". */
+  private async showConflict(): Promise<void> {
+    const n = this.note();
+    if (!n) return;
+    try {
+      const latest = await firstValueFrom(this.notesApi.getNote(n.noteId));
+      this.conflict.set({
+        who: latest.updatedByName ?? 'Someone',
+        at: latest.updatedAtUtc,
+      });
+    } catch {
+      this.saveError.set('Someone else changed this note while you were editing.');
+    }
+  }
+
+  protected async reloadTheirs(): Promise<void> {
+    const n = this.note();
+    if (!n) return;
+    this.editing.set(false);
+    this.currentHtml.set(this.startedHtml());
+    await this.openNow(n.noteId, true);
+    this.notify.info('Loaded their version');
+  }
+
+  protected async copyMine(): Promise<void> {
+    const text = this.currentHtml()
+      .replace(/<\/(p|h[1-6]|li|tr)>/gi, '\n')
+      .replace(/<[^>]+>/g, ' ');
+    try {
+      await navigator.clipboard.writeText(text.replace(/[ \t]+/g, ' ').trim());
       this.notify.success('Your text was copied');
     } catch {
       this.notify.warn('Copying is not allowed here. Select your text and copy it by hand.');
@@ -1433,10 +2591,14 @@ export class NotesTab {
   protected closeLockedWarning(): void {
     this.lockedWhileEditing.set('');
     const n = this.note();
-    if (n) void this.openNow(n.noteId);
+    this.editing.set(false);
+    this.currentHtml.set(this.startedHtml());
+    if (n) void this.openNow(n.noteId, true);
   }
 
-  protected toggleTag(tag: NoteTagRef): void {
+  // ---------------------------------------------------------------- tags
+
+  protected toggleTag(tag: TagRow): void {
     if (!this.editing()) return;
     this.selectedTags.update((list) =>
       list.some((t) => t.noteTagId === tag.noteTagId)
@@ -1447,37 +2609,66 @@ export class NotesTab {
     );
   }
 
+  protected removeTag(id: number): void {
+    this.selectedTags.update((l) => l.filter((t) => t.noteTagId !== id));
+    setTimeout(() => this.addTagRef()?.nativeElement.focus(), 30);
+  }
+
+  protected applyTplTags(): void {
+    for (const t of this.tplBanner()) {
+      if (this.selectedTags().length < MAX_TAGS && !this.hasTag(t.noteTagId))
+        this.selectedTags.update((l) => [...l, { ...t }]);
+    }
+    this.tplBanner.set([]);
+  }
+
   // ---------------------------------------------------------------- pin, lock, delete
+
+  protected onUnlockClick(ev: Event): void {
+    const n = this.note();
+    if (!n) return;
+    if (!this.lock().canUnlock) {
+      ev.preventDefault();
+      this.notify.info(this.unlockReason(n));
+      return;
+    }
+    void this.unlock();
+  }
 
   protected async togglePin(): Promise<void> {
     const n = this.note();
     if (!n) return;
-    await this.change(() =>
-      firstValueFrom(
-        this.notesApi.setNotePinned(n.noteId, { pinned: !n.isPinned, rowVersion: n.rowVersion }),
-      ),
+    await this.change(
+      () =>
+        firstValueFrom(
+          this.notesApi.setNotePinned(n.noteId, { pinned: !n.isPinned, rowVersion: n.rowVersion }),
+        ),
+      n.isPinned ? 'Unpinned' : 'Pinned to the top of its groups',
     );
   }
 
   protected async lockNote(): Promise<void> {
     const n = this.note();
     if (n)
-      await this.change(() =>
-        firstValueFrom(this.notesApi.lockNote(n.noteId, { rowVersion: n.rowVersion })),
+      await this.change(
+        () => firstValueFrom(this.notesApi.lockNote(n.noteId, { rowVersion: n.rowVersion })),
+        'Note locked: it is read only for everybody',
       );
   }
 
   protected async unlock(): Promise<void> {
     const n = this.note();
     if (n)
-      await this.change(() =>
-        firstValueFrom(this.notesApi.unlockNote(n.noteId, { rowVersion: n.rowVersion })),
+      await this.change(
+        () => firstValueFrom(this.notesApi.unlockNote(n.noteId, { rowVersion: n.rowVersion })),
+        'Note unlocked',
       );
   }
 
-  private async change(call: () => Promise<NoteResponse>): Promise<void> {
+  private async change(call: () => Promise<NoteResponse>, done: string): Promise<void> {
     try {
       this.showNote(await call());
+      this.notify.info(done);
       await this.loadList();
     } catch (e) {
       this.notify.error(e instanceof ApiError ? e.message : 'That did not work. Try again.');
@@ -1495,8 +2686,14 @@ export class NotesTab {
       this.confirmDelete.set(false);
       this.note.set(null);
       this.draft.set(null);
+      this.editing.set(false);
+      this.wide.set(false);
       this.notify.success('Note deleted');
       await this.loadList();
+      setTimeout(
+        () => (document.querySelector('[data-new-note]') as HTMLElement | null)?.focus(),
+        60,
+      );
     } catch (e) {
       this.confirmDelete.set(false);
       this.notify.error(e instanceof ApiError ? e.message : 'The note could not be deleted.');
@@ -1505,7 +2702,7 @@ export class NotesTab {
     }
   }
 
-  // ---------------------------------------------------------------- history, templates
+  // ---------------------------------------------------------------- history
 
   private async loadHistory(id: number): Promise<void> {
     try {
@@ -1516,7 +2713,7 @@ export class NotesTab {
   }
 
   protected historyButton(): void {
-    if (this.wide()) this.setHist(!this.histOpen());
+    if (this.histWide()) this.setHist(!this.histOpen());
     else void this.openHistory();
   }
 
@@ -1529,7 +2726,8 @@ export class NotesTab {
     event.preventDefault();
     const startX = event.clientX;
     const startWidth = this.histWidth();
-    this.dragMove = (e) => this.histWidth.set(clampSplit(startWidth - (e.clientX - startX)));
+    this.dragging.set(true);
+    this.dragMove = (e) => this.histWidth.set(this.clampHist(startWidth - (e.clientX - startX)));
     this.dragEnd = () => {
       this.stopDrag();
       this.writeNumber(HIST_WIDTH_KEY, this.histWidth());
@@ -1540,51 +2738,45 @@ export class NotesTab {
 
   /** The history splitter has the same keys as the list splitter; the column is on the right, so ArrowLeft makes it wider. */
   protected histKey(e: KeyboardEvent): void {
-    const step = e.shiftKey ? 100 : 20;
     const next =
       e.key === 'ArrowLeft'
-        ? this.histWidth() + step
+        ? this.histWidth() + SPLIT_STEP
         : e.key === 'ArrowRight'
-          ? this.histWidth() - step
+          ? this.histWidth() - SPLIT_STEP
           : e.key === 'Home'
             ? SPLIT_MIN
             : e.key === 'End'
-              ? SPLIT_MAX
+              ? this.histMax
               : null;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      this.histReset();
+      return;
+    }
     if (next === null) return;
     e.preventDefault();
-    this.histWidth.set(clampSplit(next));
+    this.histWidth.set(this.clampHist(next));
     this.writeNumber(HIST_WIDTH_KEY, this.histWidth());
   }
 
-  private readNumber(key: string, fallback: number): number {
-    try {
-      const v = Number(localStorage.getItem(key));
-      return localStorage.getItem(key) === null || !Number.isFinite(v) ? fallback : v;
-    } catch {
-      return fallback;
-    }
+  protected histReset(): void {
+    this.histWidth.set(300);
+    this.writeNumber(HIST_WIDTH_KEY, 300);
+    this.notify.info('Width reset to the default');
   }
 
-  private writeNumber(key: string, value: number): void {
-    try {
-      localStorage.setItem(key, String(value));
-    } catch {
-      // Remembering is a convenience.
-    }
+  private clampHist(w: number): number {
+    return Math.min(this.histMax, Math.max(SPLIT_MIN, Math.round(w)));
   }
 
   protected async openHistory(): Promise<void> {
     const n = this.note();
     if (!n) return;
     this.panel.set('history');
-    try {
-      this.history.set((await firstValueFrom(this.notesApi.getNoteHistory(n.noteId))).items);
-    } catch {
-      this.history.set([]);
-      this.notify.error('The history could not be loaded.');
-    }
+    await this.loadHistory(n.noteId);
   }
+
+  // ---------------------------------------------------------------- templates
 
   protected async openTemplates(): Promise<void> {
     this.panel.set('templates');
@@ -1602,6 +2794,37 @@ export class NotesTab {
     }
   }
 
+  /** Opens a template in the panel (the Templates view). */
+  protected openTemplate(t: NoteTemplateResponse): void {
+    this.guard(() => {
+      this.note.set(null);
+      this.draft.set(null);
+      this.editing.set(false);
+      this.selTemplate.set(t);
+    });
+  }
+
+  /** A template button: a disabled one says why instead of doing something. */
+  protected onTemplateAction(
+    ev: Event,
+    reason: string,
+    what: 'use' | 'edit' | 'dup' | 'del',
+    t: NoteTemplateResponse,
+  ): void {
+    ev.stopPropagation();
+    if (reason) {
+      this.notify.info(reason);
+      return;
+    }
+    if (what === 'use') this.useTemplate(t);
+    else if (what === 'edit') this.editTemplate(t);
+    else if (what === 'dup') void this.duplicateTemplate(t);
+    else {
+      this.tplToDelete.set(t);
+      this.confirmDeleteTpl.set(true);
+    }
+  }
+
   /** Copies the template into a new note: the placeholders {{date}}, {{time}}, {{matter}} and {{author}} are filled in; others stay for the person. */
   protected useTemplate(t: NoteTemplateResponse): void {
     this.guard(async () => {
@@ -1611,10 +2834,10 @@ export class NotesTab {
         : '';
       const html = title + resolvePlaceholders(t.bodyHtml, values);
       this.panel.set('none');
-      this.startNew(
-        html,
-        t.tags.filter((x) => x.isActive),
-      );
+      this.selTemplate.set(null);
+      this.startNew(html, []);
+      const offer = t.tags.filter((x) => x.isActive);
+      this.tplBanner.set(offer);
       try {
         await firstValueFrom(this.templatesApi.useNoteTemplate(t.noteTemplateId));
       } catch {
@@ -1660,26 +2883,31 @@ export class NotesTab {
         bodyHtml: this.tplHtml(),
         tagIds: this.tplTagIds(),
       };
+      let saved: NoteTemplateResponse;
       if (t) {
-        await firstValueFrom(
+        saved = await firstValueFrom(
           this.templatesApi.updateNoteTemplate(t.noteTemplateId, {
             ...common,
             rowVersion: t.rowVersion,
-          } as never),
+          }),
         );
       } else {
         const firm = this.tplFirm() && this.isAdmin();
-        await firstValueFrom(
+        saved = await firstValueFrom(
           this.templatesApi.createNoteTemplate({
             ...common,
             scope: firm ? 'FIRM' : 'MATTER',
             matterId: firm ? undefined : this.matterId(),
-          } as never),
+          }),
         );
       }
       this.notify.success('Template saved');
-      this.panel.set('templates');
+      this.panel.set('none');
       await this.loadTemplates();
+      if (this.view() === 'templates')
+        this.selTemplate.set(
+          this.templates().find((x) => x.noteTemplateId === saved.noteTemplateId) ?? null,
+        );
     } catch (e) {
       this.tplError.set(e instanceof ApiError ? e.message : 'The template could not be saved.');
     } finally {
@@ -1695,17 +2923,24 @@ export class NotesTab {
           keepFirmScope: false,
         }),
       );
+      this.notify.success('Template duplicated');
       await this.loadTemplates();
     } catch (e) {
       this.notify.error(e instanceof ApiError ? e.message : 'The template could not be copied.');
     }
   }
 
-  protected async deleteTemplate(t: NoteTemplateResponse): Promise<void> {
+  protected async deleteTemplate(): Promise<void> {
+    const t = this.tplToDelete();
+    if (!t) return;
     try {
       await firstValueFrom(this.templatesApi.deleteNoteTemplate(t.noteTemplateId, t.rowVersion));
+      this.confirmDeleteTpl.set(false);
+      if (this.selTemplate()?.noteTemplateId === t.noteTemplateId) this.selTemplate.set(null);
+      this.notify.success('Template deleted');
       await this.loadTemplates();
     } catch (e) {
+      this.confirmDeleteTpl.set(false);
       this.notify.error(e instanceof ApiError ? e.message : 'The template could not be deleted.');
     }
   }
@@ -1730,18 +2965,21 @@ export class NotesTab {
     }
     this.busy.set(true);
     try {
+      const firm = this.tplFirm() && this.isAdmin();
       await firstValueFrom(
         this.templatesApi.createNoteTemplate({
-          scope: this.tplFirm() && this.isAdmin() ? 'FIRM' : 'MATTER',
-          matterId: this.tplFirm() && this.isAdmin() ? undefined : this.matterId(),
+          scope: firm ? 'FIRM' : 'MATTER',
+          matterId: firm ? undefined : this.matterId(),
           name: this.tplName().trim(),
           description: this.tplDescription().trim() || undefined,
           bodyHtml: n.bodyHtml,
           tagIds: this.tplTags() ? n.tags.filter((t) => t.isActive).map((t) => t.noteTagId) : [],
-        } as never),
+        }),
       );
       this.panel.set('none');
-      this.notify.success('Template saved');
+      this.notify.success(
+        `Template "${this.tplName().trim()}" saved; find it under Templates or with New note, From template`,
+      );
     } catch (e) {
       this.tplError.set(e instanceof ApiError ? e.message : 'The template could not be saved.');
     } finally {
@@ -1749,7 +2987,25 @@ export class NotesTab {
     }
   }
 
-  // ---------------------------------------------------------------- splitter
+  // ---------------------------------------------------------------- keys and splitter
+
+  /** Escape closes an open note on a narrow screen (a dialog or a menu takes it first); a menu of the editor stops it itself. */
+  protected onKey(e: KeyboardEvent): void {
+    if (e.key === 'Escape' && this.newMenuOpen()) {
+      e.preventDefault();
+      this.newMenuOpen.set(false);
+      return;
+    }
+    if (
+      e.key === 'Escape' &&
+      this.stacked() &&
+      this.showPanel() &&
+      !e.defaultPrevented &&
+      !(e.target as HTMLElement).closest('.ne__menu, .ne__dlg')
+    ) {
+      this.closePanel();
+    }
+  }
 
   private stopWatch: (() => void) | null = null;
   private dragMove: ((e: PointerEvent) => void) | null = null;
@@ -1758,8 +3014,10 @@ export class NotesTab {
   protected dragStart(event: PointerEvent): void {
     event.preventDefault();
     const startX = event.clientX;
-    const startWidth = this.split();
-    this.dragMove = (e) => this.split.set(clampSplit(startWidth + e.clientX - startX));
+    const startWidth = this.listWidth();
+    this.dragging.set(true);
+    this.dragMove = (e) =>
+      this.split.set(clampSplit(startWidth + e.clientX - startX, this.splitMaxNow()));
     this.dragEnd = () => {
       this.stopDrag();
       this.saveSplit();
@@ -1769,31 +3027,41 @@ export class NotesTab {
   }
 
   private stopDrag(): void {
-    this.stopWatch?.();
-    this.stopWatch = null;
+    this.dragging.set(false);
     if (this.dragMove) window.removeEventListener('pointermove', this.dragMove);
     if (this.dragEnd) window.removeEventListener('pointerup', this.dragEnd);
     this.dragMove = null;
     this.dragEnd = null;
   }
 
-  /** Arrow keys move the splitter by 20 px (100 px with Shift); Home and End go to the limits. Keys of the widget, not app shortcuts (#420). */
+  /** Left and Right move the splitter by 16 px; Home and End go to the limits, Enter (or a double click) resets it. Keys of the widget, not app shortcuts (#420). */
   protected splitKey(e: KeyboardEvent): void {
-    const step = e.shiftKey ? 100 : 20;
+    const cur = this.listWidth();
     const next =
       e.key === 'ArrowLeft'
-        ? this.split() - step
+        ? cur - SPLIT_STEP
         : e.key === 'ArrowRight'
-          ? this.split() + step
+          ? cur + SPLIT_STEP
           : e.key === 'Home'
             ? SPLIT_MIN
             : e.key === 'End'
-              ? SPLIT_MAX
+              ? this.splitMaxNow()
               : null;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      this.splitReset();
+      return;
+    }
     if (next === null) return;
     e.preventDefault();
-    this.split.set(clampSplit(next));
+    this.split.set(clampSplit(next, this.splitMaxNow()));
     this.saveSplit();
+  }
+
+  protected splitReset(): void {
+    this.split.set(SPLIT_DEFAULT);
+    this.saveSplit();
+    this.notify.info('Width reset to the default');
   }
 
   private readSplit(): number {
@@ -1809,6 +3077,40 @@ export class NotesTab {
       localStorage.setItem(SPLIT_KEY, String(this.split()));
     } catch {
       // Remembering the width is a convenience.
+    }
+  }
+
+  private readHistWidth(): number {
+    return Math.min(this.histMax, Math.max(SPLIT_MIN, this.readNumber(HIST_WIDTH_KEY, 300)));
+  }
+
+  private readView(): NoteView {
+    try {
+      const v = localStorage.getItem(VIEW_KEY);
+      return v === 'latest' || v === 'board' || v === 'tag' ? v : 'tag';
+    } catch {
+      return 'tag';
+    }
+  }
+
+  private readNumber(key: string, fallback: number): number {
+    try {
+      const v = Number(localStorage.getItem(key));
+      return localStorage.getItem(key) === null || !Number.isFinite(v) ? fallback : v;
+    } catch {
+      return fallback;
+    }
+  }
+
+  private writeNumber(key: string, value: number): void {
+    this.writeText(key, String(value));
+  }
+
+  private writeText(key: string, value: string): void {
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      // Remembering is a convenience.
     }
   }
 }
