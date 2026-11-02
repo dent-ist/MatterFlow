@@ -14,6 +14,7 @@ import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import {
   AssetsClient,
+  MatterAiAllowed,
   MattersClient,
   NoteHistoryEntry,
   NoteListItem,
@@ -31,6 +32,7 @@ import { ApiError } from '../../core/http/api-error';
 import { NotificationService } from '../../core/notify/notification.service';
 import { MfDatePipe } from '../../shared/pipes/mf-date.pipe';
 import { ConfirmDialog } from '../../shared/ui/confirm-dialog';
+import { AiButton, AiComingSoon } from '../../shared/ui/ai/ai-assist';
 import { DropdownItem, Dropdown } from '../../shared/ui/dropdown';
 import { SearchBox } from '../../shared/ui/search-box';
 import { SlidePanel } from '../../shared/ui/slide-panel';
@@ -66,6 +68,8 @@ const MAX_TAGS = 5;
 @Component({
   selector: 'mf-notes-tab',
   imports: [
+    AiButton,
+    AiComingSoon,
     Button,
     ConfirmDialog,
     MfDatePipe,
@@ -377,6 +381,8 @@ const MAX_TAGS = 5;
         @if (draft(); as d) {
           <div class="nt__head">
             <h2 class="pg-sr">Note</h2>
+            <mf-ai-button [allowed]="aiAllowed()" (pressed)="aiPanel.set(true)" />
+            <mf-ai-button [allowed]="aiAllowed()" (pressed)="aiPanel.set(true)" />
             @if (editing()) {
               <p-button
                 label="Cancel"
@@ -703,6 +709,7 @@ const MAX_TAGS = 5;
       }
     </mf-slide-panel>
 
+    <mf-ai-coming-soon [(visible)]="aiPanel" />
     <mf-confirm-dialog
       title="Delete this note?"
       confirmLabel="Delete note"
@@ -742,6 +749,8 @@ export class NotesTab {
   /** The matter whose notes are shown, and its reference and name for the template placeholder `{{matter}}`. */
   readonly matterId = input.required<number>();
   readonly matterLabel = input('');
+  /** The matter's AI allowed setting: it decides whether the AI button is on or says "AI can't be used on this matter" (MD-16). */
+  readonly aiAllowed = input<MatterAiAllowed | null | undefined>(MatterAiAllowed.No);
   /**
    * The seam for the AI policy check of MD-16 (flag off in release 1, so nothing is passed today): called before a note is saved. `proceed: false` stops the save
    * (the person chose Edit in the warning dialog); `ackWarnings` and `reasons` are sent with the save and written to the note history ("saved after an AI warning").
@@ -782,6 +791,7 @@ export class NotesTab {
   protected readonly saveError = signal('');
   protected readonly lockedWhileEditing = signal('');
   protected readonly panel = signal<PanelKind>('none');
+  protected readonly aiPanel = signal(false);
   protected readonly history = signal<NoteHistoryEntry[]>([]);
   protected readonly templates = signal<NoteTemplateResponse[]>([]);
   protected readonly confirmDelete = signal(false);

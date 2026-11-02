@@ -205,6 +205,7 @@ type Tab = MatterTabKey;
                   <mf-notes-tab
                     [matterId]="m.matterId"
                     [matterLabel]="m.matterRef + ' ' + m.name"
+                    [aiAllowed]="m.aiAllowed"
                   />
                 }
                 @case ('activities') {
