@@ -11,7 +11,6 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { Router } from '@angular/router';
 import type { ServerFieldError } from 'form-engine';
 import { firstValueFrom } from 'rxjs';
 import { MatterAiAllowed, MatterResponse, MattersClient } from '../../../api/generated/api-client';
@@ -25,6 +24,7 @@ import {
   splitFormErrors,
 } from '../../../shared/ui/custom-fields';
 import { SlidePanel } from '../../../shared/ui/slide-panel';
+import { numberProblem } from '../../../shared/ui/number-input';
 import { TextField } from '../../../shared/ui/text-field';
 import { AI_OPTIONS } from './matter-ai';
 
@@ -127,16 +127,50 @@ import { AI_OPTIONS } from './matter-ai';
         />
 
         @if (canChangeNumber()) {
-          <p class="mep__ro">
-            <button
-              type="button"
-              class="mf-btn mf-btn--text"
-              data-change-number
-              (click)="changeNumber()"
-            >
-              Change matter number
-            </button>
-          </p>
+          @if (changingNumber()) {
+            <div class="mep__number" data-number-section>
+              <mf-text-field
+                inputId="matter-new-number"
+                label="New matter number (1 to 5 digits)"
+                [maxLength]="16"
+                [error]="numberError()"
+                [(value)]="newNumber"
+              />
+              <p class="mep__ro">
+                Changing the number changes the combined reference {{ matter().matterRef }}
+                everywhere.
+              </p>
+              <span class="mep__row">
+                <button
+                  type="button"
+                  class="mf-btn"
+                  data-number-cancel
+                  (click)="changingNumber.set(false)"
+                >
+                  Keep the number
+                </button>
+                <button
+                  type="button"
+                  class="mf-btn mf-btn--primary"
+                  data-number-apply
+                  (click)="applyNumber()"
+                >
+                  Change number
+                </button>
+              </span>
+            </div>
+          } @else {
+            <p class="mep__ro">
+              <button
+                type="button"
+                class="mf-btn mf-btn--text"
+                data-change-number
+                (click)="changingNumber.set(true)"
+              >
+                Change matter number
+              </button>
+            </p>
+          }
         }
       </form>
     </mf-slide-panel>
@@ -150,6 +184,15 @@ import { AI_OPTIONS } from './matter-ai';
     .mep__ro {
       margin: 0;
       color: var(--mf-text-muted);
+    }
+    .mep__number {
+      display: flex;
+      flex-direction: column;
+      gap: var(--mf-s2);
+    }
+    .mep__row {
+      display: flex;
+      justify-content: space-between;
     }
     .mep__summary {
       margin-bottom: var(--mf-s3);
@@ -168,7 +211,6 @@ export class MatterEditPanel {
   readonly lostAccess = output<void>();
 
   private readonly api = inject(MattersClient);
-  private readonly router = inject(Router);
   private readonly notify = inject(NotificationService);
   private readonly auth = inject(AuthStore);
   private readonly customEditor = viewChild(CustomFieldsEditor);
@@ -223,13 +265,40 @@ export class MatterEditPanel {
         this.submitted.set(false);
         this.error.set('');
         this.lossAsked = false;
+        this.changingNumber.set(false);
+        this.newNumber.set('');
+        this.numberError.set(null);
       });
     });
   }
 
-  protected changeNumber(): void {
-    this.visible.set(false);
-    void this.router.navigateByUrl('/matters/' + this.matter().matterId + '/edit');
+  protected readonly changingNumber = signal(false);
+  protected readonly newNumber = signal('');
+  protected readonly numberError = signal<string | null>(null);
+
+  /** Changes the matter number (Matter.EditNumber) from the panel; the answer replaces the matter on the page and the panel closes. */
+  protected async applyNumber(): Promise<void> {
+    const problem = numberProblem(this.newNumber(), 'matter number');
+    this.numberError.set(problem);
+    if (problem) return;
+    this.busy.set(true);
+    try {
+      const m = this.matter();
+      const updated = await firstValueFrom(
+        this.api.changeMatterNumber(m.matterId, {
+          number: this.newNumber().trim(),
+          rowVersion: m.rowVersion,
+        }),
+      );
+      this.notify.success(`Matter number changed to ${updated.matterRef}`);
+      this.visible.set(false);
+      this.saved.emit(updated);
+    } catch (err) {
+      const e = serverFormErrors(err);
+      this.numberError.set(e.fields['number'] ?? e.summary[0] ?? "The number couldn't be changed.");
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   protected async save(): Promise<void> {

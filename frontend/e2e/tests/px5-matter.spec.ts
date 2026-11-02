@@ -5,189 +5,11 @@ import { inDays, mmWorld } from '../support/my-matters-fixtures';
 import { pmFixtures } from '../support/pm-fixtures';
 import { SIZES, noHorizontalScroll, shot } from '../support/screens';
 import { toasts } from '../support/toasts';
-import { openMatterDetails } from '../support/matter-details';
 
 /**
  * The matter record Overview, enriched, and the quick actions per matter (epic #758, WP-PX5: #782 and #783), against the real API. Each test builds
  * the matters and tasks it needs in a world of its own (`mmWorld`), so the numbers are written down here and not read back.
  */
-const section = (page: Page, key: string) => page.locator(`[data-section="${key}"]`);
-const FORBIDDEN =
-  /no project manager|without a (project )?manager|not managed|unmanaged|needs? a (project )?manager|missing (project )?manager|assign a (project )?manager|warning/i;
-
-test.describe('Matter Overview: the matter at a glance', () => {
-  test('health in words, tasks by status, next deadlines, who works on it, linked assets, recent activity; every count equals its list', async ({
-    seed,
-    personas,
-    asUser,
-  }) => {
-    const w = await mmWorld(seed, personas, 'ov');
-    const away = await personas.create({
-      label: 'ov-away',
-      roles: ['Data Technician'],
-      displayName: 'Away Technician',
-    });
-    await seed.outOfOffice(away.userId);
-    const m = await w.matter('Alpha');
-    await w.task(m, { dueDate: '2000-01-01', title: 'Late filing', assignedUserId: away.userId });
-    await w.task(m, { dueDate: inDays(3), title: 'Soon filing', assignedUserId: away.userId });
-    await w.task(m, { dueDate: inDays(9), title: 'Later filing' });
-    await w.task(m, { title: 'Nobody holds this' });
-    await seed.asset(m, 'Custodian laptop');
-    const page = await asUser(w.pm.username);
-    await page.goto(`/matters/${m.matterId}`);
-
-    const health = section(page, 'health');
-    await expect(health.locator('[data-flag]')).toContainText('Red');
-    await expect(health.locator('[data-reasons]')).toContainText('1 task is overdue');
-    await expect(health.locator('[data-reasons]')).toContainText('nobody assigned');
-
-    const status = section(page, 'status');
-    await expect(status.locator('a').first()).toContainText('2'); // New: the two nobody holds yet
-    await status.locator('a').first().click();
-    await expect(page).toHaveURL(/\/tasks\?/);
-    await expect(page.locator('[data-range]').first()).toContainText('of 2');
-    await page.goBack();
-
-    const deadlines = section(page, 'deadlines');
-    await expect(deadlines.locator('[data-deadline]')).toHaveCount(2); // the overdue one is not a deadline
-    await expect(deadlines.locator('[data-deadline]').first()).toContainText('Soon filing');
-
-    const people = section(page, 'people');
-    await expect(people.locator('[data-person]', { hasText: 'Away Technician' })).toContainText(
-      '2 open, 1 overdue',
-    );
-    await expect(people.locator('[data-away]')).toContainText(/^Away/);
-    await expect(people.locator('[data-unassigned]')).toContainText(
-      '2 open tasks have nobody assigned',
-    );
-
-    const assets = section(page, 'assets');
-    await expect(assets).toContainText('Linked assets (1)');
-    await expect(assets).toContainText('Custodian laptop');
-    await assets.locator('[data-open-assets]').click();
-    await expect(page).toHaveURL(/tab=assets/);
-    await page.goBack();
-
-    await expect(section(page, 'activity').locator('[data-event]').first()).toBeVisible();
-    // The Project Manager role has no Audit.View: no link to the drawer. A Director opens it.
-    await expect(section(page, 'activity').locator('[data-open-activity]')).toHaveCount(0);
-    const director = await asUser((await personas.named('director')).username);
-    await director.goto(`/matters/${m.matterId}`);
-    await director.locator('[data-section="activity"] [data-open-activity]').click();
-    await expect(director.getByRole('dialog', { name: /Activity/ })).toBeVisible();
-  });
-
-  test('the first screen carries Health, Tasks by status, Next deadlines and who is working on it, and Recent activity is within a scroll (#816)', async ({
-    seed,
-    personas,
-    asUser,
-  }) => {
-    test.setTimeout(120_000);
-    const w = await mmWorld(seed, personas, 'first');
-    const away = await personas.create({
-      label: 'first-away',
-      roles: ['Data Technician'],
-      displayName: 'First Technician',
-    });
-    const m = await w.matter('Alpha');
-    for (const [title, due, who] of [
-      ['Late filing', '2000-01-01', away.userId],
-      ['Soon filing', inDays(3), away.userId],
-      ['Next filing', inDays(5), undefined],
-      ['Later filing', inDays(9), undefined],
-      ['Far filing', inDays(20), undefined],
-      ['Nobody holds this', undefined, undefined],
-    ] as const) {
-      await w.task(m, { title, ...(due ? { dueDate: due } : {}), assignedUserId: who });
-    }
-    await seed.asset(m, 'Custodian laptop');
-    const page = await asUser(w.pm.username);
-
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(`/matters/${m.matterId}`);
-    await expect(section(page, 'activity')).toBeVisible();
-    const health = (await section(page, 'health').boundingBox())!;
-    expect(health.y, 'Health starts in the first screen at 375x812').toBeLessThan(812 - 120);
-    // One strip only: the header's.
-    await expect(page.locator('[data-strip]')).toHaveCount(1);
-
-    await page.setViewportSize({ width: 1366, height: 768 });
-    await page.goto(`/matters/${m.matterId}`);
-    await expect(section(page, 'activity')).toBeVisible();
-    const top = async (key: string) => (await section(page, key).boundingBox())!.y;
-    const tops = Object.fromEntries(
-      await Promise.all(
-        ['health', 'status', 'deadlines', 'people', 'assets', 'activity'].map(
-          async (k) => [k, Math.round(await top(k))] as const,
-        ),
-      ),
-    );
-    console.log(`MATTER_FIRST_SCREEN 1366x768 ${JSON.stringify(tops)}`);
-    for (const key of ['health', 'status', 'deadlines', 'people']) {
-      expect(tops[key], `${key} is in the first screen at 1366x768`).toBeLessThan(768);
-    }
-    expect(
-      tops['activity'],
-      'Recent activity starts within 150 px of the fold',
-    ).toBeLessThanOrEqual(768 + 150);
-  });
-
-  test('a matter with no manager is normal: nothing warns, nothing is red for it; the details list and the tabs are still there', async ({
-    seed,
-    personas,
-    asUser,
-  }) => {
-    const w = await mmWorld(seed, personas, 'nomgr');
-    const none = await w.matter('Orphan', null, null);
-    await w.task(none, {
-      dueDate: inDays(30),
-      title: 'Quiet work',
-      assignedUserId: w.other.userId,
-    });
-    const page = await asUser(w.pm.username);
-    await page.goto(`/matters/${none.matterId}`);
-    await expect(section(page, 'health')).toBeVisible();
-    await expect(section(page, 'health').locator('[data-flag]')).toContainText('Green');
-    expect(await page.locator('main').innerText()).not.toMatch(FORBIDDEN);
-    await openMatterDetails(page); // the details list is behind the Details disclosure (PM v2, #882)
-    await expect(page.locator('[data-matter-overview] .pg-dl')).toBeVisible();
-    await expect(page.getByRole('tab')).toHaveText([/Overview/, /Tasks/, /Projects/, /Assets/]);
-  });
-
-  test('sections appear only for what the person may use, and nothing is asked for without Task.View and Asset.View', async ({
-    seed,
-    personas,
-    asUser,
-  }) => {
-    const w = await mmWorld(seed, personas, 'perm');
-    const m = await w.matter('Alpha');
-    await w.task(m, { dueDate: inDays(3) });
-    await seed.asset(m, 'Custodian laptop');
-    const noAssets = await personas.create({
-      label: 'ov-noasset',
-      permissions: ['Client.View', 'Matter.View', 'Task.View', 'Project.View'],
-    });
-    let page = await asUser(noAssets.username);
-    await page.goto(`/matters/${m.matterId}`);
-    await expect(section(page, 'status')).toBeVisible();
-    await expect(section(page, 'assets')).toHaveCount(0);
-
-    const noTasks = await personas.create({
-      label: 'ov-notask',
-      permissions: ['Client.View', 'Matter.View', 'Project.View'],
-    });
-    page = await asUser(noTasks.username);
-    const asked: string[] = [];
-    page.on('request', (r) => {
-      if (r.url().includes('/overview')) asked.push(r.url());
-    });
-    await page.goto(`/matters/${m.matterId}`);
-    await expect(page.locator('[data-matter-overview] .pg-dl')).toBeVisible();
-    await expect(page.locator('[data-section]')).toHaveCount(0);
-    expect(asked).toEqual([]);
-  });
-});
 
 test.describe('Quick actions per matter', () => {
   test("the matter header: bulk (the Tasks tab in selection mode), add comment on a chosen open task, open the matter's tasks", async ({
@@ -201,7 +23,7 @@ test.describe('Quick actions per matter', () => {
     const second = await w.task(m, { title: 'Second open task' });
     const page = await asUser(w.pm.username);
     await page.goto(`/matters/${m.matterId}`);
-    await page.locator('mf-record-header [data-overflow]').click();
+    await page.locator('mf-matter-header [data-overflow][aria-label^="More actions"]').click();
     await expect(page.locator('[role=menuitem]')).toContainText([
       /Bulk re-assign/,
       /Add comment/,
@@ -221,14 +43,14 @@ test.describe('Quick actions per matter', () => {
 
     // Bulk: the Tasks tab opens in selection mode.
     await page.goto(`/matters/${m.matterId}`);
-    await page.locator('mf-record-header [data-overflow]').click();
+    await page.locator('mf-matter-header [data-overflow][aria-label^="More actions"]').click();
     await page.locator('[data-action=bulk-tasks]').click();
     await expect(page).toHaveURL(/tab=tasks/);
     await expect(page.locator('[data-selection-bar]')).toBeVisible();
     await page.goto(`/matters/${m.matterId}`);
 
     // Open the matter's tasks: the Task Queue filtered to the matter, all of its tasks.
-    await page.locator('mf-record-header [data-overflow]').click();
+    await page.locator('mf-matter-header [data-overflow][aria-label^="More actions"]').click();
     await page.locator('[data-action=open-tasks]').click();
     await expect(page).toHaveURL(new RegExp(`/tasks\\?matter=${m.matterId}`));
     await expect(page.locator('[data-range]').first()).toContainText('of 2');
@@ -307,7 +129,7 @@ test.describe('Quick actions per matter', () => {
     for (const size of SIZES) {
       await page.setViewportSize(size);
       await page.goto(`/matters/${m.matterId}`);
-      await expect(section(page, 'activity')).toBeVisible();
+      await expect(page.locator('[data-summary-details]')).toBeVisible();
       await page.waitForLoadState('networkidle');
       expect(await axeViolations(page), `overview at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);

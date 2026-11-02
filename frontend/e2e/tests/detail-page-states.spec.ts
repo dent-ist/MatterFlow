@@ -262,10 +262,13 @@ test.describe('Detail pages: loading skeleton (#247)', () => {
       }
       if (kind === 'matter') {
         await expect(skeleton.locator('[role=tab]')).toHaveText([
-          'Overview',
+          'Summary',
           'Tasks (--)',
           'Projects (--)',
           'Assets (--)',
+          'Productions',
+          'Notes',
+          'Activities',
         ]);
       }
       await shot(page, `${kind}-loading`);
@@ -330,7 +333,7 @@ test.describe('Detail pages: document title (#248)', () => {
     const record = `${matter.matterRef} ${matter.name}`;
     const short = record.slice(0, 60).trimEnd() + '…';
     for (const [tab, label] of [
-      [undefined, 'Overview'],
+      [undefined, 'Summary'],
       ['tasks', 'Tasks'],
       ['projects', 'Projects'],
       ['assets', 'Assets'],

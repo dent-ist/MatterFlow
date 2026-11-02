@@ -44,6 +44,7 @@ describe('MatterDetailPage', () => {
     setMatterActive: ReturnType<typeof vi.fn>;
     getMatterSummary: ReturnType<typeof vi.fn>;
     setMatterManagers: ReturnType<typeof vi.fn>;
+    changeMatterNumber: ReturnType<typeof vi.fn>;
   };
   let projects: { listProjects: ReturnType<typeof vi.fn> };
   let assets: {
@@ -63,6 +64,7 @@ describe('MatterDetailPage', () => {
     matters = {
       getMatter: vi.fn().mockReturnValue(ok(matter)),
       setMatterActive: vi.fn().mockReturnValue(ok(aMatter({ isActive: false }))),
+      changeMatterNumber: vi.fn().mockReturnValue(ok(aMatter({ matterRef: '00343-00099' }))),
       setMatterManagers: vi
         .fn()
         .mockReturnValue(
@@ -463,6 +465,25 @@ describe('MatterDetailPage', () => {
     expect(navigateByUrl).not.toHaveBeenCalled();
   });
 
+  it('changes the matter number inside the edit panel (Matter.EditNumber)', async () => {
+    await create(['Matter.View', 'Matter.Edit', 'Matter.EditNumber']);
+    el().querySelector<HTMLButtonElement>('[data-edit-matter]')!.click();
+    await settle(fixture);
+    const panel = document.body.querySelector('.mf-slide')!;
+    panel.querySelector<HTMLButtonElement>('[data-change-number]')!.click();
+    await settle(fixture);
+    const input = panel.querySelector<HTMLInputElement>('#matter-new-number')!;
+    input.value = '99';
+    input.dispatchEvent(new Event('input'));
+    panel.querySelector<HTMLButtonElement>('[data-number-apply]')!.click();
+    await settle(fixture);
+    expect(matters.changeMatterNumber).toHaveBeenCalledWith(7, {
+      number: '99',
+      rowVersion: 'BBBB',
+    });
+    expect(el().querySelector('[data-crumb-current]')!.textContent).toContain('00343-00099');
+  });
+
   it('shows the project managers in the details with a space before the bracket', async () => {
     await create(
       ['Matter.View', 'Matter.AssignManagers', 'Task.View'],
@@ -504,7 +525,7 @@ describe('MatterDetailPage', () => {
     expect(tab('Activities')).toBeDefined();
     await openTab('activity');
     expect(tab('Activities').getAttribute('aria-selected')).toBe('true');
-    expect(el().querySelector('[data-activities-tab] mf-entity-activity')).not.toBeNull();
+    expect(el().querySelector('mf-matter-activities')).not.toBeNull();
 
     TestBed.resetTestingModule();
     await create(['Matter.View']);

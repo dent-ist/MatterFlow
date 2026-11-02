@@ -659,8 +659,7 @@ test.describe('WP3: Sensitive note (#256)', () => {
         'aria-describedby',
         noteId!,
       );
-      // The Details block (a disclosure on the Overview since #882) keeps its own row.
-      await page.locator('[data-details-toggle]').click();
+      // The Summary's details list keeps its own row.
       await expect(page.locator('[data-sensitive-value]')).toContainText('Restricted access');
       await noSidewaysScroll(page);
       await axeClean(page, `sensitive matter at ${w}x${h}`);

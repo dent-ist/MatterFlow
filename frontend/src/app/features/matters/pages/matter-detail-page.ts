@@ -22,7 +22,6 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
-import { EntityActivity } from '../../../shared/ui/entity-activity';
 import { MenuAction } from '../../../shared/ui/action-menu';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { MatterAssets } from '../../../shared/ui/matter-assets';
@@ -38,6 +37,7 @@ import { MatterTabKey, matterTabFromParam, visibleMatterTabs } from '../ui/matte
 import { ProjectPanel } from '../../projects/ui/project-panel';
 import { ProjectTasksPanel } from '../../projects/ui/project-tasks-panel';
 import { MatterEditPanel } from '../ui/matter-edit-panel';
+import { MatterActivities } from '../ui/matter-activities';
 import { MatterSummary } from '../ui/matter-summary';
 import { MatterNextEvents } from '../ui/matter-next-events';
 import { MatterEventPanel } from '../ui/matter-event-panel';
@@ -67,7 +67,7 @@ type Tab = MatterTabKey;
     MatterHeader,
     ProjectPanel,
     ProjectTasksPanel,
-    EntityActivity,
+    MatterActivities,
     RecordState,
     RecordSkeleton,
     RouterLink,
@@ -209,9 +209,7 @@ type Tab = MatterTabKey;
                   />
                 }
                 @case ('activities') {
-                  <div class="mf-scroll-area" mfScrollArea="Matter activities" data-activities-tab>
-                    <mf-entity-activity objectType="Matter" [objectId]="m.matterId" />
-                  </div>
+                  <mf-matter-activities [matterId]="m.matterId" data-activities-tab />
                 }
                 @case ('assets') {
                   @if (canSeeAssets()) {

@@ -62,10 +62,12 @@ interface World {
 
 const projectsUrl = (m: Json) => `/matters/${m.matterId}?tab=projects`;
 const assetsUrl = (m: Json) => `/matters/${m.matterId}?tab=assets`;
+/** The tab texts without the tabs of the later features (Productions, Notes) and Activities, which this spec does not cover. */
 const tabTexts = async (page: Page) =>
-  (await page.getByRole('tab').allTextContents()).map((t) => t.replace(/\s+/g, ' ').trim());
-const ready = (page: Page) =>
-  expect(page.locator('[data-record-header] h1 [data-name]')).toBeVisible();
+  (await page.getByRole('tab').allTextContents())
+    .map((t) => t.replace(/\s+/g, ' ').trim())
+    .filter((t) => !/^(Productions|Notes|Activities)/.test(t));
+const ready = (page: Page) => expect(page.locator('[data-matter-header] h1')).toBeVisible();
 const projectNames = (page: Page) =>
   page
     .locator('[data-matter-projects] [data-project-name]')
@@ -156,12 +158,7 @@ test.describe('WP10 matter tabs', () => {
       await page.setViewportSize({ width: 1366, height: 768 });
       await page.goto(projectsUrl(w.big));
       await ready(page);
-      expect(await tabTexts(page)).toEqual([
-        'Overview',
-        'Tasks (4)',
-        'Projects (40)',
-        'Assets (0)',
-      ]);
+      expect(await tabTexts(page)).toEqual(['Summary', 'Tasks (4)', 'Projects (40)', 'Assets (0)']);
       const table = page.locator('[data-matter-projects]');
       await expect(table.locator('thead th')).toHaveText([
         'Name',
@@ -319,7 +316,7 @@ test.describe('WP10 matter tabs', () => {
       await page.goto(assetsUrl(w.assets));
       await ready(page);
       // 6 assets, 5 shown (Active is the default Status) and the pager says why.
-      expect(await tabTexts(page)).toEqual(['Overview', 'Tasks (0)', 'Projects (0)', 'Assets (6)']);
+      expect(await tabTexts(page)).toEqual(['Summary', 'Tasks (0)', 'Projects (0)', 'Assets (6)']);
       const rows = page.locator('mf-matter-assets tbody tr:not(.gb-state)');
       await expect(rows).toHaveCount(5);
       await expect(page.locator('mf-matter-assets [data-hidden], mf-pager')).toContainText(
@@ -341,7 +338,7 @@ test.describe('WP10 matter tabs', () => {
       await shot(page, 'matter-assets');
 
       await page.locator('[data-overflow]').click();
-      await page.getByRole('menuitem', { name: 'New asset' }).click();
+      await page.getByRole('menuitem', { name: 'Asset' }).click();
       await expect(page).toHaveURL(new RegExp(`/assets/new\\?matterId=${w.assets.matterId}`));
     });
 
@@ -372,7 +369,7 @@ test.describe('WP10 matter tabs', () => {
       });
       await page.goto(projectsUrl(w.big));
       await ready(page);
-      expect(await tabTexts(page)).toEqual(['Overview', 'Tasks', 'Projects (40)']);
+      expect(await tabTexts(page)).toEqual(['Summary', 'Tasks', 'Projects (40)']);
       await expect(page.locator('[data-matter-projects] thead th')).toHaveText(['Name', 'Status']);
       await expect(page.locator('[data-count]')).toHaveCount(0);
       expect(await projectNames(page)).toHaveLength(33);
@@ -380,7 +377,7 @@ test.describe('WP10 matter tabs', () => {
       // A bookmark to the Assets tab lands on the Overview.
       await page.goto(assetsUrl(w.assets));
       await ready(page);
-      await expect(page.getByRole('tab', { name: /^Overview/ })).toHaveAttribute(
+      await expect(page.getByRole('tab', { name: /^Summary/ })).toHaveAttribute(
         'aria-selected',
         'true',
       );
@@ -400,13 +397,13 @@ test.describe('WP10 matter tabs', () => {
       });
       await page.goto(assetsUrl(w.empty));
       await ready(page);
-      expect(await tabTexts(page)).toEqual(['Overview', 'Tasks (0)', 'Assets (0)']);
+      expect(await tabTexts(page)).toEqual(['Summary', 'Tasks (0)', 'Assets (0)']);
       await expect(page.locator('mf-matter-assets [data-empty=none]')).toBeVisible();
       await expect(page.locator('[data-empty-new-asset]')).toHaveCount(0);
       await expect(page.getByRole('button', { name: 'New asset' })).toHaveCount(0);
       await page.goto(projectsUrl(w.big));
       await ready(page);
-      await expect(page.getByRole('tab', { name: /^Overview/ })).toHaveAttribute(
+      await expect(page.getByRole('tab', { name: /^Summary/ })).toHaveAttribute(
         'aria-selected',
         'true',
       );
@@ -423,7 +420,7 @@ test.describe('WP10 matter tabs', () => {
       await page.goto(assetsUrl(w.assets));
       await ready(page);
       await page.locator('[data-overflow]').click();
-      await expect(page.getByRole('menuitem', { name: 'New asset' })).toBeVisible();
+      await expect(page.getByRole('menuitem', { name: 'Asset' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'New asset' })).toHaveCount(0);
     });
   });
