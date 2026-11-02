@@ -475,7 +475,7 @@ test.describe('#433 one action per row', () => {
     const sheet = page.getByRole('dialog').last();
     const select = labelledDropdown(sheet, 'Sort by');
     await expect(select).toBeVisible();
-    expect(await select.locator('option').allTextContents()).toEqual([
+    expect((await select.optionTexts()).map((t) => t.trim())).toEqual([
       'Waiting people first (default order)',
       'Name',
       'Last seen',

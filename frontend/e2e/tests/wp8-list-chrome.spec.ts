@@ -267,7 +267,7 @@ test.describe('WP8 list chrome', () => {
             await expect(page.locator('[data-filter-row]')).toHaveCount(0);
             await expect(toggle(page)).toHaveAttribute('aria-haspopup', 'dialog');
           }
-          if (list.name !== 'client-matters' && width >= 640) {
+          if (list.name !== 'client-matters' && width >= 640 && !sheetByDesign) {
             // The lone button sits in the page header: no toolbar row above the grid (a phone shows the chips of the filter in the URL).
             await expect(page.locator('[data-grid-toolbar]')).toHaveCount(0);
             await expect(page.locator('[data-page-actions] [data-filters-toggle]')).toHaveCount(1);

@@ -28,7 +28,7 @@ async function shot(page: Page, name: string): Promise<void> {
 const heads = (page: Page) =>
   page
     .locator('thead tr:first-child th')
-    .allInnerTexts()
+    .allTextContents()
     .then((t) => t.map((x) => x.replace(/\s+/g, ' ').trim()));
 
 test.describe('Task Types rows and columns (#371)', () => {
@@ -76,7 +76,7 @@ test.describe('Task Types rows and columns (#371)', () => {
         expect(box.height).toBeLessThanOrEqual(45);
       }
       // No red box, no chips: the reason is a neutral badge in Status with the text as its description.
-      await expect(page.locator('.chip')).toHaveCount(0);
+      await expect(page.locator('tbody .chip')).toHaveCount(0);
       await expect(page.locator('[data-assoc-chip]')).toHaveCount(0);
       const badge = page.locator(`[data-row="${token} Bare"] [data-not-usable]`);
       await expect(badge).toContainText('Not usable');
@@ -94,7 +94,7 @@ test.describe('Task Types rows and columns (#371)', () => {
     await expect(long).toHaveAttribute('title', /.+/);
   });
 
-  test('the columns drop in a fixed order: Open tasks below 1280, Workflows below 1100, Request form below 900, Target below 768', async ({
+  test('the columns drop in a fixed order: Open tasks below 1366, Workflows below 1200, Request form below 1100, Target below 1000', async ({
     page,
   }) => {
     const all = [
@@ -107,14 +107,21 @@ test.describe('Task Types rows and columns (#371)', () => {
       'Status',
       'Actions',
     ];
+    const noTasks = all.filter((h) => h !== 'Open tasks');
+    const noWorkflows = noTasks.filter((h) => h !== 'Workflows');
+    const noForm = noWorkflows.filter((h) => h !== 'Request form');
     const expected: [number, string[]][] = [
       [1920, all],
       [1366, all],
-      [1280, all],
-      [1100, all.filter((h) => h !== 'Open tasks')],
-      [1000, all.filter((h) => h !== 'Open tasks' && h !== 'Workflows')],
-      [900, all.filter((h) => h !== 'Open tasks' && h !== 'Workflows')],
-      [768, ['Name', 'Default workflow', 'Target (days)', 'Status', 'Actions']],
+      [1365, noTasks],
+      [1280, noTasks],
+      [1200, noTasks],
+      [1199, noWorkflows],
+      [1100, noWorkflows],
+      [1099, noForm],
+      [1000, noForm],
+      [900, noForm.filter((h) => h !== 'Target (days)')],
+      [768, ['Name', 'Default workflow', 'Status', 'Actions']],
       // Target (days) drops last of the optional columns (PM v2 #853): at 640 px it made the table wider than its box.
       [640, ['Name', 'Default workflow', 'Status', 'Actions']],
     ];

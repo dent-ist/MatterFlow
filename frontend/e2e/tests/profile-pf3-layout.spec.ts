@@ -166,7 +166,7 @@ test.describe('pf3-columns: two columns from 1100 px, one card style, one width 
         expect(Math.abs(account.width - avail.width)).toBeLessThan(1);
         expect(notes.top).toBeGreaterThanOrEqual(account.bottom - 1);
       }
-      // The same bordered 8 px card for all four sections.
+      // The same bordered card (the theme's 12 px radius) for all four sections.
       for (const sel of [
         '[data-card="availability"]',
         '[data-account-card]',
@@ -179,7 +179,7 @@ test.describe('pf3-columns: two columns from 1100 px, one card style, one width 
             const s = getComputedStyle(el);
             return [s.borderTopWidth, s.borderTopLeftRadius];
           });
-        expect(css, `${sel} at ${size.width}`).toEqual(['1px', '8px']);
+        expect(css, `${sel} at ${size.width}`).toEqual(['1px', '12px']);
       }
       await noHorizontalScroll(me);
       await axeClean(me, `columns at ${size.width}`);

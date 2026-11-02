@@ -77,9 +77,15 @@ test.describe('Pod Work first release', () => {
             size.width,
           );
           expect(sel.width, 'the cap').toBeLessThanOrEqual(22 * 14 + 1);
-          expect(sel.height, 'compact control').toBeLessThanOrEqual(33);
+          expect(
+            sel.height,
+            'compact control (the shared dropdown: 36 px, 44 px below 768)',
+          ).toBeLessThanOrEqual(size.width < 768 ? 44 : 36);
           expect(await pageSideScroll(page)).toBeLessThanOrEqual(0);
-          await expect(pw.podSelect).toHaveAttribute('title', pod.name);
+          await expect(page.locator('mf-dropdown.pw-pod-select')).toHaveAttribute(
+            'title',
+            pod.name,
+          );
         }
         await shot(page, `bug1-long-pod-name-${size.name}`);
         await axeClean(page, `axe at ${size.name}`);
@@ -120,7 +126,15 @@ test.describe('Pod Work first release', () => {
       await page.goto(`/pods/work?podId=${fx.busy.podId}`);
       await expect(pw.podSelect).toBeVisible();
       await pw.podSelect.focus();
+      // The shared dropdown: Down opens the list on the chosen pod, End chooses the last pod with Enter (Home when this one is the last).
       await page.keyboard.press('ArrowDown');
+      await page.keyboard.press('End');
+      await page.keyboard.press('Enter');
+      if (new URL(page.url()).searchParams.get('podId') === String(fx.busy.podId)) {
+        await page.keyboard.press('ArrowDown');
+        await page.keyboard.press('Home');
+        await page.keyboard.press('Enter');
+      }
       await expect
         .poll(() => new URL(page.url()).searchParams.get('podId'))
         .not.toBe(String(fx.busy.podId));

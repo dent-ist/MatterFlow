@@ -34,4 +34,4 @@ Protocol: `README.md` section 8. One section per agent, append-only, newest entr
 
 ## Shared / QA
 
-(no entries yet)
+- 2026-11-02 TH-16 #998 done by the QA agent: verdict READY TO MERGE, full report `qa-report.md` in this folder. Real fixes: ef90da4 (Dashboard row 44 px on a phone), ffe94d3 and 4441c79 (Task Types and Workflows column limits), 57c1953 (focus ring in confirm dialogs); about 30 stale specs updated. Open: #1000, #1022, #1023, #1024; #997 (TH-15) blocked on the owner.

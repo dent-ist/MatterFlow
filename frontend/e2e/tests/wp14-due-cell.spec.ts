@@ -189,7 +189,9 @@ test.describe('Due cell (#209)', () => {
           // Exactly two lines of 18 px with no gap, and the longest text fits 136 px.
           expect(f.l2H).toBe(18);
           expect(f.l2Gap, `${s.key} no gap at ${width}`).toBe(18);
-          expect(f.l2W, `${s.key} line 2 fits 136 px at ${width}`).toBeLessThanOrEqual(136);
+          // The 136 px column is the grid's; a phone card (below 640 px) gives the line the room beside the status chip.
+          if (width >= 640)
+            expect(f.l2W, `${s.key} line 2 fits 136 px at ${width}`).toBeLessThanOrEqual(136);
         } else {
           expect(f.l2, `${s.key} has no line 2`).toBeNull();
         }
@@ -202,7 +204,7 @@ test.describe('Due cell (#209)', () => {
         expect(f.tip).toBeTruthy();
         if (s.key === 'overdue120d') expect(f.sr).toContain('overdue 120 days');
         if (s.key === 'overdue6h') expect(f.sr).toContain('overdue 6 hours');
-        if (s.key === 'today') expect(f.tip).toContain('EDT');
+        if (s.key === 'today') expect(f.tip).toMatch(/ E[SD]T/);
         if (s.key === 'nextYear') expect(f.l1).toMatch(/, \d{4}$/);
         if (s.key === 'later') expect(f.l1).not.toMatch(/\d{4}/);
         // Tone colours reach 4.5:1 against the row.

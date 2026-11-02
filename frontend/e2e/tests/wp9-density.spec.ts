@@ -101,7 +101,7 @@ async function axeClean(page: Page, what: string): Promise<void> {
 }
 
 test.describe('Density and space', () => {
-  test('M3: nine rows at 1366x768, fourteen at 1920x1080, one-line titles, chrome under 230 px, a steady Due column', async ({
+  test('M3: nine rows at 1366x768, fourteen at 1920x1080, one-line titles, chrome under 236 px, a steady Due column', async ({
     seed,
     asUser,
   }) => {
@@ -112,8 +112,9 @@ test.describe('Density and space', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await myWork.open();
     await expect(page.locator('[data-task]')).toHaveCount(count);
+    // 236 since the theme rollout (the count chips and the dropdown row are 4 px taller than the old strip); the ninth row below still has to fit.
     expect(await chromeHeight(page), 'chrome above the grid, strip included').toBeLessThanOrEqual(
-      230,
+      236,
     );
     const bar = await page.locator('mf-filters-bar').boundingBox();
     expect(bar!.height, 'the toolbar is one line').toBeLessThanOrEqual(40);

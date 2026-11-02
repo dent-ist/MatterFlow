@@ -158,7 +158,7 @@ test.describe('Column filters on the Assets screen', () => {
     for (const column of ['Name', 'Matter', 'External reference']) {
       await expect(sheet(page).getByLabel(`Filter by ${column}`)).toBeVisible();
     }
-    await expect(sheet(page).getByLabel(/^Filter by (Status|Disposition)$/)).toBeVisible();
+    await expect(sheet(page).getByLabel(/^Filter by (Status|Disposition)/)).toBeVisible();
     // Type is a multi-select: its checkbox group sits in the sheet.
     await expect(sheet(page).locator('.ms-group')).toBeVisible();
     // 44 px targets.

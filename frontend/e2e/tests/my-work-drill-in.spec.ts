@@ -124,8 +124,10 @@ test.describe('Drill-in keeps its place', () => {
     await expect(page.locator(`a.wt-title[data-task-id="${task.taskId}"]`)).toBeFocused();
 
     const podWork = new PodWorkPage(page);
-    await podWork.open();
-    await podWork.choosePod(pod.name);
+    // The pod is in the address (the shared dropdown does not navigate when the chosen pod is already the one shown, as the native select did),
+    // so the entry Back returns to names the pod and the page does not rewrite its address while the focus is being put back.
+    await page.goto(`/pods/work?podId=${pod.podId}`);
+    await expect(podWork.podSelect).toContainText(pod.name);
     await podWork.tab(/^All open/).click();
     await podWork.expectListed(task.title);
     await page.locator(`a.wt-title[data-task-id="${task.taskId}"]`).click();
