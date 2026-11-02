@@ -68,6 +68,7 @@
 /* The parts that must stay clickable sit above the stretched link (later in the page and positioned; no z-index, so the inline menus, which are
    fixed inside them, are not held under the pager). */
 .tc-sub,
+.tc-prog,
 .tc-chips,
 .tc-meta,
 .tc mf-hold-note {
@@ -354,4 +355,30 @@
 .tc-plain {
   color: var(--mf-text);
   font-size: var(--mf-fs-sm);
+}
+
+/* Progress of a Matter's or Project's task card (LC-04, #1041): a thin bar and the words "n of m steps"; the words carry the meaning. */
+.tc-prog {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s2);
+  min-height: 24px;
+  margin: 0;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-md);
+}
+
+.tc-prog__bar {
+  flex: none;
+  width: 4.5rem;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--mf-status-progress-bg);
+}
+
+.tc-prog__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--mf-status-progress-fg);
 }

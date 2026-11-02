@@ -8,7 +8,7 @@ Protocol: one section per agent below, append-only, newest entry last; `git pull
 | #1038 | LC-01 | Shared list toolbar and title row | 6.0 | 21.8 | 0 | 0.0 |
 | #1039 | LC-02 | Adopt the toolbar on eight lists | 7.0 | 25.5 | 0 | 0.0 |
 | #1040 | LC-03 | Standard task and asset columns | 3.0 | 10.9 | 0 | 0.0 |
-| #1041 | LC-04 | Matter Tasks cards on a phone | 2.0 | 7.3 | 0 | 0.0 |
+| #1041 | LC-04 | Matter Tasks cards on a phone | 2.0 | 7.3 | 100 | 7.3 |
 | #1042 | LC-05 | Page size 50, Sorted by, First/Last | 1.5 | 5.5 | 0 | 0.0 |
 | #1043 | LC-06 | Filters, + New Task, admin New buttons, Title Case | 1.0 | 3.6 | 0 | 0.0 |
 | #1044 | SH-01 | Shell: radius and full-height navigation panel | 4.0 | 14.5 | 100 | 14.5 |
@@ -29,6 +29,7 @@ Protocol: one section per agent below, append-only, newest entry last; `git pull
 ## Agent F (shell, phone cards)
 
 - 2026-11-02 SH-01 (#1044) done: navy panel runs full height with the logo and name at its top (from 640 px; rail at 640 to 1099 px shows the mark), top bar to its right with the search aligned to the page content, 6 px selection corners with 8 px side margins (token `--mf-nav-item-radius`), white-on-navy `logo-light.svg` for the built-in mark, uploaded logos on a light tile, phone unchanged (logo in the white top bar, drawer). Also fixed a 4 px overshoot of the version line in the rail. New e2e `sh-full-height-panel.spec.ts` and a tile test in `app-settings.spec.ts`; `sh-nav-version` updated to the 6 px radius. Screenshots in `docs/ux/grid-consistency/shots/`. Theme guide 7.6 and `docs/ux/app-settings` updated.
+- 2026-11-02 LC-04 (#1041) done: the Matter Tasks tab (and a Project's task list) is cards under 640 px using the existing `mf-task-card-list` through `mf-task-table [phoneCards]`; the card leaves out the Client and Matter line in a matter's own list (`hideContext`) and shows "Progress: n of m steps" with a thin bar; the whole card opens the task (existing stretched title link). The Sort select is `mf-phone-sort` in the Filters sheet (Priority, Due date, Created, Ref, Status, Title, Assignee); Select (bulk) moved from the Columns slot to the More slot so it stays on a phone, where Columns is hidden. E2E `lc04-matter-task-cards.spec.ts`; `pm4-bulk-tasks` "at most 100" follows the page size 50.
 
 ## Questions
 

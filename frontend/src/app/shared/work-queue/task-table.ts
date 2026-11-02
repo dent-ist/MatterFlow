@@ -143,6 +143,7 @@ const LONG_PRESS_MS = 500;
           [emptyParts]="emptyParts()"
           [emptyAction]="emptyActionTpl()"
           [assignLink]="assignLink()"
+          [hideContext]="hideContext()"
           [readOnly]="readOnly()"
           [quiet]="quiet()"
           [newSince]="newSince()"

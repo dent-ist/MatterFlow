@@ -231,9 +231,10 @@ test.describe('Bulk change in the matter grid', () => {
     const page = await asUser(w.pm.username);
     await openTasks(page, m.matterId);
     await page.locator('[data-select-mode]').click();
-    for (let p = 1; p <= 4; p++) {
+    // 50 rows a page (LC-05, #1042): two pages fill the limit of 100, the third page's first row is refused.
+    for (let p = 1; p <= 2; p++) {
       await page.locator('[data-select-all]').check();
-      await expect(page.locator('[data-selection-count]')).toHaveText(`${p * 25} selected`);
+      await expect(page.locator('[data-selection-count]')).toHaveText(`${p * 50} selected`);
       await page.getByRole('button', { name: 'Next', exact: true }).click();
       await expect(page.locator('[data-page]')).toContainText(`Page ${p + 1} of`);
       // The rows of the next page are there when the select-all box is empty again.
