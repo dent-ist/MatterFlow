@@ -240,6 +240,33 @@ public sealed class AssetService(
         return Result<IReadOnlyList<AssetLookupItem>>.Success(items);
     }
 
+    /// <summary>
+    /// The matter's assets counted per asset type, types with at least one asset only, largest first (the Summary tiles). A matter the caller may not
+    /// see (sensitive-matter rule) is "not found", like one that does not exist.
+    /// </summary>
+    public async Task<Result<IReadOnlyList<AssetTypeCount>>> CountsByTypeAsync(int matterId, CancellationToken ct)
+    {
+        if (!await access.CanSeeMatterAsync(matterId, ct))
+            return AssetSupport.NotFound("Matter");
+
+        var rows = await db.Set<Asset>().AsNoTracking()
+            .Where(a => a.MatterId == matterId)
+            .GroupBy(a => a.AssetTypeId)
+            .Select(g => new { TypeId = g.Key, Active = g.Count(a => a.IsActive), Retired = g.Count(a => !a.IsActive) })
+            .ToListAsync(ct);
+        var ids = rows.Select(r => r.TypeId).ToList();
+        var types = await db.Set<AssetType>().AsNoTracking().Where(t => ids.Contains(t.Id)).ToDictionaryAsync(t => t.Id, ct);
+        IReadOnlyList<AssetTypeCount> list =
+        [
+            .. rows
+                .Where(r => types.ContainsKey(r.TypeId))
+                .OrderByDescending(r => r.Active + r.Retired)
+                .ThenBy(r => types[r.TypeId].Name, StringComparer.OrdinalIgnoreCase)
+                .Select(r => new AssetTypeCount(r.TypeId, types[r.TypeId].Name, types[r.TypeId].IconKey, types[r.TypeId].ColourKey, r.Active, r.Retired)),
+        ];
+        return Result<IReadOnlyList<AssetTypeCount>>.Success(list);
+    }
+
     public async Task<Result<AssetResponse>> GetAsync(int id, CancellationToken ct) => await GetAsync(id, [], ct);
 
     /// <summary>True when the caller may see the asset (mode A); the linked-tasks endpoint gates on it.</summary>

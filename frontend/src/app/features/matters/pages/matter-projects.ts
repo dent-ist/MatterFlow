@@ -174,6 +174,7 @@ import { groupProjects } from './matter-project-groups';
               class="pg-link pg-name"
               data-project-name
               [routerLink]="['/projects', p.projectId]"
+              (click)="open($event, p)"
               mfRowLink="matter-projects"
               [rowKey]="p.projectId"
               [title]="p.name"
@@ -220,6 +221,8 @@ export class MatterProjects {
   readonly total = input(0);
   /** The empty tab's New project button: the page opens the side panel. */
   readonly newProject = output<void>();
+  /** A project row was chosen: the page opens the side panel with the project's linked tasks (a modified click still opens the project page). */
+  readonly openProject = output<ProjectResponse>();
 
   private readonly auth = inject(AuthStore);
 
@@ -254,6 +257,12 @@ export class MatterProjects {
   protected readonly archivedWord = computed(() =>
     this.groups().archived.length === 1 ? ' project' : ' projects',
   );
+
+  protected open(event: MouseEvent, p: ProjectResponse): void {
+    if (event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) return;
+    event.preventDefault();
+    this.openProject.emit(p);
+  }
 
   protected toggleArchived(): void {
     this.chosen.set(!this.archivedOpen());

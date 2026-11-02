@@ -5,6 +5,7 @@ import {
   AssetsClient,
   AuditEventsClient,
   MatterManagersClient,
+  MatterOverviewClient,
   MattersClient,
   ProjectsClient,
   TaskQueueClient,
@@ -44,7 +45,10 @@ describe('MatterDetailPage', () => {
     setMatterManagers: ReturnType<typeof vi.fn>;
   };
   let projects: { listProjects: ReturnType<typeof vi.fn> };
-  let assets: { listAssets: ReturnType<typeof vi.fn> };
+  let assets: {
+    listAssets: ReturnType<typeof vi.fn>;
+    getAssetCountsByType: ReturnType<typeof vi.fn>;
+  };
   let queue: { getTaskQueue: ReturnType<typeof vi.fn> };
   let fixture: ComponentFixture<MatterDetailPage>;
   let query: ReturnType<typeof fakeQuery>;
@@ -78,7 +82,21 @@ describe('MatterDetailPage', () => {
       ),
     };
     projects = { listProjects: vi.fn().mockReturnValue(ok(pageOfProjects(aProject()))) };
-    assets = { listAssets: vi.fn().mockReturnValue(ok(pageOfAssets(anAssetListItem()))) };
+    assets = {
+      listAssets: vi.fn().mockReturnValue(ok(pageOfAssets(anAssetListItem()))),
+      getAssetCountsByType: vi.fn().mockReturnValue(
+        ok([
+          {
+            assetTypeId: 4,
+            assetTypeName: 'Custodian',
+            iconKey: null,
+            colourKey: null,
+            count: 3,
+            retiredCount: 0,
+          },
+        ]),
+      ),
+    };
     queue = { getTaskQueue: vi.fn().mockReturnValue(ok(pageOf([aRow()]))) };
     writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
@@ -104,6 +122,30 @@ describe('MatterDetailPage', () => {
         },
         { provide: ProjectsClient, useValue: projects },
         { provide: AssetsClient, useValue: assets },
+        {
+          provide: MatterOverviewClient,
+          useValue: {
+            getMatterOverview: vi.fn().mockReturnValue(
+              ok({
+                matter: {},
+                activity: [
+                  {
+                    eventId: 1,
+                    occurredAtUtc: '2026-10-14T14:00:00Z',
+                    kind: 'TASK_CREATED',
+                    actorName: 'Ann Lee',
+                    matterId: 7,
+                    matterRef: '00343-00012',
+                    matterName: 'Merger Review',
+                    clientName: 'Acme Corp',
+                    taskTitle: 'Review contract',
+                    isUnread: false,
+                  },
+                ],
+              }),
+            ),
+          },
+        },
         { provide: TaskQueueClient, useValue: queue },
         query.provider,
         ...provideLookups(),
@@ -140,10 +182,8 @@ describe('MatterDetailPage', () => {
       t.textContent!.trim().startsWith(label),
     )!;
 
-  /** The Overview's Details disclosure is closed until opened (PM v2, #882). */
+  /** The Summary shows its details list at once (no disclosure any more, MD-03). */
   async function openDetails(): Promise<void> {
-    const toggle = el().querySelector<HTMLButtonElement>('[data-details-toggle]');
-    if (toggle && toggle.getAttribute('aria-expanded') !== 'true') toggle.click();
     await settle(fixture);
   }
 
@@ -317,7 +357,7 @@ describe('MatterDetailPage', () => {
     expect(lastTab()).toBe('tasks');
   });
 
-  it('shows the Overview as the first tab, in the full-width tab panel, with no side panel and no Activity tab; the title facts are not repeated', async () => {
+  it('shows the Summary as the first tab with the matter details as a plain list: CM number first, only existing fields, custom fields as rows, AI allowed', async () => {
     await create(
       ['Matter.View', 'Audit.View', 'Client.View', 'Task.View'],
       aMatter({ isSensitive: true, modifiedAtUtc: '2026-10-05T12:00:00Z' }),
@@ -326,38 +366,64 @@ describe('MatterDetailPage', () => {
     expect(el().querySelector('aside')).toBeNull();
     const panel = el().querySelector('[role=tabpanel]')!;
     expect(panel.getAttribute('aria-labelledby')).toBe('matter-tab-summary');
-    await openDetails();
-    const overview = panel.querySelector('[data-details-tab]')!;
-    const rows = Array.from(overview.querySelectorAll('dt')).map((t) => t.textContent!.trim());
-    // The reference, the matter number and the name are in the header: not a row again.
-    expect(rows).toEqual(['Client', 'Status', 'Sensitive', 'Created', 'Last changed']);
-    expect(overview.querySelector('dl')!.textContent).not.toContain('00343-00012');
-    expect(overview.querySelector('dl')!.textContent).not.toContain('Merger Review');
-    expect(overview.querySelector('mf-sensitive-badge')).not.toBeNull();
-    expect(overview.querySelector('[data-client-value] a')?.getAttribute('href')).toBe(
-      '/clients/1',
-    );
+    const summary = panel.querySelector('[data-details-tab]')!;
+    const rows = Array.from(summary.querySelectorAll('dt')).map((t) => t.textContent!.trim());
+    expect(rows).toEqual([
+      'CM number',
+      'Client',
+      'Matter number',
+      'Matter name',
+      'Status',
+      'Sensitive',
+      'Project managers',
+      'Created',
+      'Last changed',
+      'AI allowed',
+    ]);
+    expect(summary.querySelector('dl')!.textContent).toContain('00343-00012');
+    expect(summary.querySelector('[data-ai-value]')!.textContent!.trim()).toBe('No');
+    expect(summary.querySelector('mf-sensitive-badge')).not.toBeNull();
+    expect(summary.querySelector('[data-client-value] a')?.getAttribute('href')).toBe('/clients/1');
+    expect(summary.textContent).not.toMatch(/Custom fields/i);
     // Activities is a tab now, no longer a drawer button.
     expect(el().querySelector('mf-tabs')!.textContent).toMatch(/Activities/);
     expect(el().querySelector('[data-page-actions]')!.textContent).not.toContain('Activity');
   });
 
-  it('keeps a compact summary above the Overview and the rest behind a Details disclosure; the primary manager has a space before the bracket (PM v2, #882)', async () => {
+  it('shows the assets by type as tiles that open the Assets tab for the type, and the recent activity (needs Asset.View / Task.View)', async () => {
+    await create(['Matter.View', 'Asset.View', 'Task.View']);
+    const tile = el().querySelector<HTMLAnchorElement>('[data-asset-tile]')!;
+    expect(tile.textContent).toContain('Custodian');
+    expect(tile.textContent).toContain('3');
+    expect(el().querySelector('[data-activity-item]')?.textContent).toContain('Ann Lee');
+
+    TestBed.resetTestingModule();
+    await create(['Matter.View']);
+    expect(el().querySelector('[data-summary-assets]')).toBeNull();
+    expect(el().querySelector('[data-summary-activity]')).toBeNull();
+    expect(assets.getAssetCountsByType).not.toHaveBeenCalled();
+  });
+
+  it('shows one Edit button on the Summary only with Matter.Edit; it opens the side panel without leaving the page', async () => {
+    await create(['Matter.View']);
+    expect(el().querySelector('[data-edit-matter]')).toBeNull();
+
+    TestBed.resetTestingModule();
+    await create(['Matter.View', 'Matter.Edit']);
+    el().querySelector<HTMLButtonElement>('[data-edit-matter]')!.click();
+    await settle(fixture);
+    const panel = document.body.querySelector('.mf-slide')!;
+    expect(panel.textContent).toContain('Edit matter');
+    expect(panel.querySelector('#matter-name')).not.toBeNull();
+    expect(panel.querySelector('[data-ai-allowed]')).not.toBeNull();
+    expect(navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it('shows the project managers in the details with a space before the bracket', async () => {
     await create(
       ['Matter.View', 'Matter.AssignManagers', 'Task.View'],
       aMatter({ primaryManager: { userId: 3, displayName: 'Test User 03', isActive: true } }),
     );
-    const summary = el().querySelector('[data-matter-summary]')!;
-    expect(summary.textContent).toContain('Active');
-    expect(summary.textContent).toContain('Created');
-    const toggle = summary.querySelector<HTMLButtonElement>('[data-details-toggle]')!;
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(el().querySelector('[data-details-block]')).toBeNull();
-    toggle.click();
-    await settle(fixture);
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(el().querySelector('[data-details-block] dl')).not.toBeNull();
-    // "Test User 03 (primary)": the text between the name and the bracket is one space.
     expect(el().querySelector('[data-managers]')!.textContent!.replace(/\s+/g, ' ')).toContain(
       'Test User 03 (primary)',
     );
@@ -529,21 +595,19 @@ describe('MatterDetailPage', () => {
     );
   });
 
-  it('gates the New menu, Edit and the activation entry by permission', async () => {
+  it('gates the New menu and the activation entry by permission; New > Project opens the side panel', async () => {
     await create(['Matter.View']);
     expect(el().querySelector('[data-overflow]')).toBeNull(); // nothing to put in either menu: no empty button
 
     TestBed.resetTestingModule();
     await create(['Matter.View', 'Matter.Edit', 'Project.Create']);
-    await pick('More actions', 'edit');
-    expect(navigateByUrl).toHaveBeenCalledWith('/matters/7/edit');
     // New > Project opens the side panel and leaves the page where it is.
     await pick('Create', 'new-project');
     expect(document.body.querySelector('.mf-slide')?.textContent).toContain('New project');
-    expect(navigateByUrl).toHaveBeenCalledTimes(1);
+    expect(navigateByUrl).not.toHaveBeenCalled();
   });
 
-  it('puts New (Task, Project, Asset) and More actions (Edit, Set inactive) in the header and nothing else', async () => {
+  it('puts New (Task, Project, Asset) and More actions (Set inactive) in the header and nothing else', async () => {
     await create([
       'Matter.View',
       'Matter.Edit',
@@ -571,7 +635,7 @@ describe('MatterDetailPage', () => {
       Array.from(el().querySelectorAll('[role=menuitem]')).map((b) =>
         b.getAttribute('data-action'),
       ),
-    ).toEqual(['edit', 'toggle-active']);
+    ).toEqual(['toggle-active']);
   });
 
   it('shows the Projects tab action in its empty state', async () => {
@@ -864,7 +928,6 @@ describe('MatterDetailPage', () => {
     it('shows Primary and Secondary in the header line; nothing at all when none is set and the viewer cannot assign', async () => {
       await create(['Matter.View'], aMatter({ primaryManager: ann, secondaryManager: bob }));
       const line = el().querySelector('[data-managers]')!;
-      expect(line.textContent).toContain('Project manager:');
       expect(line.querySelector('[data-primary-manager]')?.textContent).toBe('Ann Lee');
       expect(line.textContent).toContain('(primary)');
       expect(line.textContent).toContain('Bob Roe');
@@ -873,8 +936,8 @@ describe('MatterDetailPage', () => {
 
       TestBed.resetTestingModule();
       await create(['Matter.View'], aMatter());
-      expect(el().querySelector('[data-managers]')).toBeNull();
-      expect(el().textContent).not.toMatch(/no project manager|unassigned manager/i);
+      expect(el().querySelector('[data-managers]')!.textContent).toContain('None');
+      expect(el().textContent).not.toMatch(/unassigned manager/i);
     });
 
     it('offers a quiet Add project manager link only with Matter.AssignManagers', async () => {

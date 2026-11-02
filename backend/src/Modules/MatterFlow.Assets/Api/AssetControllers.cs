@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using MatterFlow.Assets.Application;
 using MatterFlow.Assets.Contracts;
 using MatterFlow.Identity.Contracts;
@@ -130,6 +131,13 @@ public class AssetsController(AssetService assets, IEnumerable<IAssetTaskLinkRea
 
         return this.ToActionResult(await assets.ListAsync(query, cancellationToken));
     }
+
+    /// <summary>The Matter's assets counted per asset type (<c>matterId</c> is required), largest type first; types without assets are left out. 404 for a matter the caller may not see.</summary>
+    [HttpGet("counts-by-type", Name = "GetAssetCountsByType")]
+    [Authorize(Policy = AssetPolicies.AssetView)]
+    [ProducesResponseType<IReadOnlyList<AssetTypeCount>>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> CountsByType([FromQuery, Range(1, int.MaxValue)] int matterId, CancellationToken cancellationToken) =>
+        this.ToActionResult(await assets.CountsByTypeAsync(matterId, cancellationToken));
 
     /// <summary>Picker lookup: the Matter's active Assets matching <c>q</c>, ordered by name, at most <c>limit</c> (Matter-scoped by design).</summary>
     [HttpGet("lookup", Name = "LookupAssets")]

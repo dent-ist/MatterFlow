@@ -5,14 +5,14 @@ Protocol: one section per agent below, append-only, newest entry last; rebase be
 | Issue | Code | Title | Hours | Weight % | Done % | Weighted % |
 | --- | --- | --- | --- | --- | --- | --- |
 | (this commit) | MD-00 | Epic, issues, plan, branch | 3.0 | 1.8 | 100 | 1.8 |
-| #1002 | MD-01 | Side panel standard, tab shell, header, fixed layout | 10.0 | 6.1 | 0 | 0.0 |
-| #1003 | MD-02 | Matter AI allowed | 4.0 | 2.4 | 0 | 0.0 |
-| #1004 | MD-03 | Summary tab | 10.0 | 6.1 | 0 | 0.0 |
-| #1005 | MD-04 | Tasks tab | 8.0 | 4.9 | 0 | 0.0 |
-| #1006 | MD-05 | Projects | 11.0 | 6.7 | 0 | 0.0 |
-| #1007 | MD-06 | Assets tab | 6.0 | 3.7 | 0 | 0.0 |
+| #1002 | MD-01 | Side panel standard, tab shell, header, fixed layout | 10.0 | 6.1 | 90 | 5.5 |
+| #1003 | MD-02 | Matter AI allowed | 4.0 | 2.4 | 100 | 2.4 |
+| #1004 | MD-03 | Summary tab | 10.0 | 6.1 | 85 | 5.2 |
+| #1005 | MD-04 | Tasks tab | 8.0 | 4.9 | 50 | 2.5 |
+| #1006 | MD-05 | Projects | 11.0 | 6.7 | 85 | 5.7 |
+| #1007 | MD-06 | Assets tab | 6.0 | 3.7 | 40 | 1.5 |
 | #1008 | MD-07 | Activities tab | 6.0 | 3.7 | 0 | 0.0 |
-| #1009 | MD-08 | Next events and My Matters link | 5.0 | 3.0 | 0 | 0.0 |
+| #1009 | MD-08 | Next events and My Matters link | 5.0 | 3.0 | 90 | 2.7 |
 | #1010 | MD-09 | Production spec backend | 7.0 | 4.3 | 0 | 0.0 |
 | #1011 | MD-10 | Productions backend | 9.0 | 5.5 | 0 | 0.0 |
 | #1012 | MD-11 | Productions tab UI and Specs | 12.0 | 7.3 | 0 | 0.0 |
@@ -20,7 +20,7 @@ Protocol: one section per agent below, append-only, newest entry last; rebase be
 | #1014 | MD-13 | Notes tab UI | 12.0 | 7.3 | 0 | 0.0 |
 | #1015 | MD-14 | Slash commands, @, #, embed | 10.0 | 6.1 | 0 | 0.0 |
 | #1016 | MD-15 | Templates, history, lock | 10.0 | 6.1 | 0 | 0.0 |
-| #1017 | MD-16 | AI placeholder and warning dialog | 5.0 | 3.0 | 0 | 0.0 |
+| #1017 | MD-16 | AI placeholder and warning dialog | 5.0 | 3.0 | 60 | 1.8 |
 | #1018 | MD-17 | Cross-cutting | 10.0 | 6.1 | 0 | 0.0 |
 | #1019 | MD-18 | Final QA and merge | 14.0 | 8.5 | 0 | 0.0 |
 | | | **Total** | **164.0** | **99.9** | | **1.8** |
@@ -39,3 +39,6 @@ Protocol: one section per agent below, append-only, newest entry last; rebase be
 ### Questions (Agent A)
 
 - None yet.
+
+- 2026-11-01 MD-03/04/05/08/16 (A): Summary (`matter-summary.ts`, `matter-edit-panel.ts`), asset counts by type (Assets module `GET /assets/counts-by-type?matterId=`), View dropdown in the Tasks tab (`SummaryStrip variant="dropdown"`), project panels (`projects/ui/project-panel.ts`, `project-tasks-panel.ts`), bulk link/unlink (`POST /matters/{id}/tasks/project`, WorkManagement), Next events + Add event panel (shown with `Matter.BeManager`), AI components (`shared/ui/ai/`: `mf-ai-button`, `mf-ai-coming-soon`, `mf-ai-warning-dialog`, `AI_FLAGS.aiPolicyCheck` = false). Agent B: the Notes toolbar uses `<mf-ai-button [allowed]="matter.aiAllowed" (pressed)=...>` and `<mf-ai-coming-soon>`; on a "Save anyway" write the note history line "Saved after an AI warning".
+- E2E todo for MD-17 (not updated yet, they still target the old header/Overview): wp3-record-header, wp7-matter-overview, wp10-matter-tabs, detail-layout, detail-page-states, px5-matter, pm4-bulk-tasks, sensitive-ui and the `openMatterDetails` helper in e2e/support/matter-details.ts (the Details toggle is gone; the details list is always visible).

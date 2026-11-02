@@ -251,6 +251,7 @@ describe('MatterFormPage', () => {
     });
 
     it('offers the three AI allowed values, defaulting to No, and saves the chosen one (MD-02)', async () => {
+      await create({ matterId: '7' }, ['Matter.View', 'Matter.Edit']);
       const select = el().querySelector<HTMLSelectElement>('[data-ai-allowed]')!;
       expect(Array.from(select.options).map((o) => o.textContent!.trim())).toEqual([
         'No',

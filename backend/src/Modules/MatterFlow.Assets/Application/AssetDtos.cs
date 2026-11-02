@@ -90,6 +90,21 @@ public sealed class UpdateAssetTypeRequest
     public string RowVersion { get; init; } = string.Empty;
 }
 
+/// <summary>How many assets of one type a matter holds (the Summary tiles of the Matter page, MD-03).</summary>
+/// <param name="AssetTypeId">The asset type.</param>
+/// <param name="AssetTypeName">Its name.</param>
+/// <param name="IconKey">Icon key of the type, or null (the client derives a default).</param>
+/// <param name="ColourKey">Colour key of the type, or null.</param>
+/// <param name="Count">Assets of this type in the matter that are active.</param>
+/// <param name="RetiredCount">Retired (inactive) assets of this type in the matter.</param>
+public sealed record AssetTypeCount(
+    [property: Required] int AssetTypeId,
+    [property: Required] string AssetTypeName,
+    string? IconKey,
+    string? ColourKey,
+    [property: Required] int Count,
+    [property: Required] int RetiredCount);
+
 /// <summary>Asset Type list filters.</summary>
 public sealed class AssetTypeListQuery : AssetListQueryBase
 {

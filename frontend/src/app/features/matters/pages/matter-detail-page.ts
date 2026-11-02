@@ -9,7 +9,6 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { NgTemplateOutlet } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
@@ -25,9 +24,6 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { EntityActivity } from '../../../shared/ui/entity-activity';
 import { MenuAction } from '../../../shared/ui/action-menu';
-import { ActiveBadge, SensitiveBadge } from '../../../shared/ui/badge';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
-import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { MatterAssets } from '../../../shared/ui/matter-assets';
 import { SCOPED_TASK_PARAMS, ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
@@ -40,7 +36,11 @@ import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { MatterHeader } from '../ui/matter-header';
 import { MatterTabKey, matterTabFromParam, visibleMatterTabs } from '../ui/matter-tabs';
 import { ProjectPanel } from '../../projects/ui/project-panel';
-import { MatterOverviewSections } from '../ui/matter-overview';
+import { ProjectTasksPanel } from '../../projects/ui/project-tasks-panel';
+import { MatterEditPanel } from '../ui/matter-edit-panel';
+import { MatterSummary } from '../ui/matter-summary';
+import { MatterNextEvents } from '../ui/matter-next-events';
+import { MatterEventPanel } from '../ui/matter-event-panel';
 import { AddCommentDialog } from '../../../shared/matter-actions/add-comment-dialog';
 import { ManagerTarget, MatterManagersDialog } from '../ui/matter-managers-dialog';
 import { MatterProjects } from './matter-projects';
@@ -64,8 +64,8 @@ type Tab = MatterTabKey;
     ScrollArea,
     MatterHeader,
     ProjectPanel,
+    ProjectTasksPanel,
     EntityActivity,
-    ActiveBadge,
     RecordState,
     RecordSkeleton,
     RouterLink,
@@ -73,16 +73,15 @@ type Tab = MatterTabKey;
     HasPermissionDirective,
     ConfirmDialog,
     MatterAssets,
-    SensitiveBadge,
     Tabs,
-    MfDatePipe,
-    CustomFieldsView,
     ScopedTasks,
     MatterProjects,
-    MatterOverviewSections,
+    MatterSummary,
+    MatterNextEvents,
+    MatterEventPanel,
+    MatterEditPanel,
     AddCommentDialog,
     MatterManagersDialog,
-    NgTemplateOutlet,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -126,44 +125,6 @@ type Tab = MatterTabKey;
           @if (matter(); as m) {
             <mf-matter-header [matter]="m" [newItems]="newItems()" [moreItems]="moreItems()" />
 
-            @if (m.primaryManager || m.secondaryManager || canAssign()) {
-              <p data-managers class="md-managers">
-                @if (m.primaryManager || m.secondaryManager) {
-                  Project manager:
-                  @if (m.primaryManager; as p) {
-                    <span data-primary-manager>{{ p.displayName }}</span
-                    >{{ ' ' }}<span class="pg-muted">(primary)</span>
-                  }
-                  @if (m.primaryManager && m.secondaryManager) {
-                    ,
-                  }
-                  @if (m.secondaryManager; as sc) {
-                    <span data-secondary-manager>{{ sc.displayName }}</span
-                    >{{ ' ' }}<span class="pg-muted">(secondary)</span>
-                  }
-                  @if (canAssign()) {
-                    <button
-                      type="button"
-                      class="mf-btn mf-btn--text md-link"
-                      data-change-managers
-                      (click)="managersOpen.set(true)"
-                    >
-                      Change
-                    </button>
-                  }
-                } @else {
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--text md-link"
-                    data-add-managers
-                    (click)="managersOpen.set(true)"
-                  >
-                    Add project manager
-                  </button>
-                }
-              </p>
-            }
-
             @if (!m.isActive) {
               <div class="pg-banner" role="note" data-inactive-banner>
                 This matter is inactive. New tasks can't be created and completed or cancelled tasks
@@ -191,79 +152,27 @@ type Tab = MatterTabKey;
             >
               @switch (current()) {
                 @case ('summary') {
-                  <div class="mf-scroll-area" mfScrollArea="Matter overview" data-details-tab>
-                    <div class="pg-details" data-matter-overview>
-                      <h2 class="pg-sr">Overview</h2>
-                      <div class="md-summary" data-matter-summary>
-                        <mf-active-badge [active]="m.isActive" />
-                        @if (m.isSensitive) {
-                          <mf-sensitive-badge />
-                        }
-                        <span class="pg-muted">Created {{ m.createdAtUtc | mfDate }}</span>
-                        <button
-                          type="button"
-                          class="mf-btn mf-btn--text md-link"
-                          data-details-toggle
-                          aria-controls="matter-details-block"
-                          [attr.aria-expanded]="detailsOpen()"
-                          (click)="detailsOpen.set(!detailsOpen())"
-                        >
-                          Details
-                          <i
-                            [class]="detailsOpen() ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
-                            aria-hidden="true"
-                          ></i>
-                        </button>
-                      </div>
-                      @if (detailsOpen()) {
-                        <div id="matter-details-block" class="md-details" data-details-block>
-                          <ng-container *ngTemplateOutlet="detailsBody" />
-                        </div>
-                      }
-                      <mf-matter-overview
+                  <mf-matter-summary
+                    [matter]="m"
+                    [reload]="reloadTick()"
+                    [canEdit]="canEdit()"
+                    [canAssign]="canAssign()"
+                    [canLinkClient]="canLinkClient()"
+                    [canSeeActivities]="canSeeActivity()"
+                    data-details-tab
+                    (edit)="openEdit()"
+                    (changeManagers)="managersOpen.set(true)"
+                    (openActivities)="select('activities')"
+                  >
+                    @if (canCalendar()) {
+                      <mf-matter-next-events
                         [matterId]="m.matterId"
-                        [reload]="reloadTick()"
-                        [canOpenActivity]="canSeeActivity()"
-                        (openAssets)="select('assets')"
-                        (openActivity)="select('activities')"
+                        [canAdd]="canAddEvent()"
+                        [reload]="eventsTick()"
+                        (addEvent)="openEventPanel()"
                       />
-                      <ng-template #detailsBody>
-                        <dl class="pg-dl">
-                          <dt>Client</dt>
-                          <dd data-client-value>
-                            @if (canLinkClient()) {
-                              <a class="pg-link" [routerLink]="['/clients', m.clientId]"
-                                ><span class="pg-mono">{{ m.clientNumber }}</span>
-                                {{ m.clientName }}</a
-                              >
-                            } @else {
-                              <span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}
-                            }
-                          </dd>
-                          <dt>Status</dt>
-                          <dd><mf-active-badge [active]="m.isActive" /></dd>
-                          <dt>Sensitive</dt>
-                          <dd data-sensitive-value>
-                            @if (m.isSensitive) {
-                              <mf-sensitive-badge /> <span class="pg-muted">Restricted access</span>
-                            } @else {
-                              No
-                            }
-                          </dd>
-                          <dt>Created</dt>
-                          <dd>{{ m.createdAtUtc | mfDate }}</dd>
-                          @if (m.modifiedAtUtc) {
-                            <dt>Last changed</dt>
-                            <dd>{{ m.modifiedAtUtc | mfDate }}</dd>
-                          }
-                        </dl>
-                        <mf-custom-fields-view
-                          [versionId]="m.formVersionId"
-                          [values]="m.formValues ?? {}"
-                        />
-                      </ng-template>
-                    </div>
-                  </div>
+                    }
+                  </mf-matter-summary>
                 }
                 @case ('tasks') {
                   <mf-scoped-tasks
@@ -282,6 +191,7 @@ type Tab = MatterTabKey;
                     [projects]="projects()"
                     [total]="projectsTotal()"
                     (newProject)="openProjectPanel()"
+                    (openProject)="openProjectTasks($event)"
                   />
                 }
                 @case ('productions') {
@@ -323,12 +233,42 @@ type Tab = MatterTabKey;
               />
             }
 
+            @if (projectTasksUsed()) {
+              <mf-project-tasks-panel
+                [matterId]="m.matterId"
+                [matterLabel]="m.matterRef + ' ' + m.name"
+                [project]="projectShown()"
+                [(visible)]="projectTasksOpen"
+                (changed)="projectSaved()"
+                (edit)="editProject($event)"
+              />
+            }
+
             @if (projectPanelUsed()) {
               <mf-project-panel
                 [matterId]="m.matterId"
                 [matterLabel]="m.matterRef + ' ' + m.name"
+                [project]="projectEdited()"
                 [(visible)]="projectPanelOpen"
                 (saved)="projectSaved()"
+              />
+            }
+
+            @if (eventUsed()) {
+              <mf-matter-event-panel
+                [matterId]="m.matterId"
+                [matterLabel]="m.matterRef + ' ' + m.name"
+                [(visible)]="eventOpen"
+                (saved)="eventsTick.update((n) => n + 1)"
+              />
+            }
+
+            @if (editUsed()) {
+              <mf-matter-edit-panel
+                [matter]="m"
+                [(visible)]="editOpen"
+                (saved)="edited($event)"
+                (lostAccess)="go('/matters')"
               />
             }
 
@@ -415,6 +355,30 @@ export class MatterDetailPage {
   protected readonly projects = signal<ProjectResponse[]>([]);
   /** How many projects the matter has, so a list cut at the page maximum says so instead of looking complete. */
   protected readonly projectsTotal = signal(0);
+  protected readonly eventOpen = signal(false);
+  protected readonly eventUsed = signal(false);
+  protected readonly eventsTick = signal(0);
+  /** Next events, the link into My Matters and the Event entry exist only for project managers who can open My Matters (Matter.BeManager; hides the dead link of #976). */
+  protected readonly canCalendar = computed(() => this.auth.has('Matter.BeManager'));
+  /** Add event: a manager of this matter or a holder of Matter.Edit, on an active matter. */
+  protected readonly canAddEvent = computed(() => {
+    const m = this.matter();
+    if (!m || !m.isActive || !this.canCalendar()) return false;
+    const me = this.auth.profile()?.userId;
+    return (
+      this.auth.has('Matter.Edit') ||
+      (me !== undefined && (m.primaryManager?.userId === me || m.secondaryManager?.userId === me))
+    );
+  });
+  protected readonly editOpen = signal(false);
+  protected readonly editUsed = signal(false);
+  protected readonly canEdit = computed(() => this.auth.has('Matter.Edit'));
+  protected readonly projectTasksOpen = signal(false);
+  protected readonly projectTasksUsed = signal(false);
+  /** The project whose linked tasks the side panel shows. */
+  protected readonly projectShown = signal<ProjectResponse | null>(null);
+  /** The project the create/edit panel edits; null creates a new one. */
+  protected readonly projectEdited = signal<ProjectResponse | null>(null);
   protected readonly projectPanelOpen = signal(false);
   /** The project panel exists from the first use on (a closed panel is no markup on the page). */
   protected readonly projectPanelUsed = signal(false);
@@ -451,12 +415,6 @@ export class MatterDetailPage {
   );
   protected readonly toggleOpen = signal(false);
   protected readonly managersOpen = signal(false);
-  /** The "Details" disclosure of the Overview (client, status, sensitivity, dates and the custom fields); closed until opened. */
-  protected readonly detailsOpen = signal(
-    // A viewer who gets none of the overview sections (no Task.View and no Asset.View) sees the details at once: there is nothing else on the tab.
-    !(this.auth.has('Task.View') || this.auth.has('Asset.View')),
-  );
-  /** The quick action "Add comment" (epic #758): the dialog that posts to one of the matter's open tasks. */
   /** Counts the changes that make the Summary's overview reload. */
   protected readonly reloadTick = signal(0);
   protected readonly commentOpen = signal(false);
@@ -510,6 +468,14 @@ export class MatterDetailPage {
         run: () => this.go('/assets/new?matterId=' + m.matterId),
       });
     }
+    if (this.canAddEvent()) {
+      list.push({
+        id: 'new-event',
+        label: 'Event',
+        icon: 'pi-calendar-plus',
+        run: () => this.openEventPanel(),
+      });
+    }
     return list;
   });
 
@@ -518,15 +484,6 @@ export class MatterDetailPage {
     const m = this.matter();
     if (!m) return [];
     const list: MenuAction[] = [];
-    // Interim until MD-03 moves editing into the Summary tab's side panel.
-    if (this.auth.has('Matter.Edit')) {
-      list.push({
-        id: 'edit',
-        label: 'Edit matter',
-        icon: 'pi-pencil',
-        run: () => this.go('/matters/' + m.matterId + '/edit'),
-      });
-    }
     if (this.auth.has('Task.View')) {
       if (this.auth.has('Task.Assign') || this.auth.has('Task.SetPriority')) {
         list.push({
@@ -621,52 +578,98 @@ export class MatterDetailPage {
     });
   }
 
+  protected openEventPanel(): void {
+    this.eventUsed.set(true);
+    this.eventOpen.set(true);
+  }
+
+  protected openEdit(): void {
+    this.editUsed.set(true);
+    this.editOpen.set(true);
+  }
+
+  /** The matter was saved in the panel: show the saved state (the open-task count is not part of the answer, keep ours). */
+  protected edited(updated: MatterResponse): void {
+    this.matter.update((m) => ({ ...updated, openTaskCount: m?.openTaskCount }));
+    this.reloadTick.update((n) => n + 1);
+  }
+
+  protected openProjectTasks(p: ProjectResponse): void {
+    this.projectShown.set(p);
+    this.projectTasksUsed.set(true);
+    this.projectTasksOpen.set(true);
+  }
+
+  protected editProject(p: ProjectResponse): void {
+    this.projectTasksOpen.set(false);
+    this.projectEdited.set(p);
+    this.projectPanelUsed.set(true);
+    this.projectPanelOpen.set(true);
+  }
+
   protected openProjectPanel(): void {
+    this.projectEdited.set(null);
     this.projectPanelUsed.set(true);
     this.projectPanelOpen.set(true);
   }
 
   /** A project was created in the panel: the list and the count come from a fresh load; the page stays where it is. */
   protected projectSaved(): void {
-    void this.load();
+    void this.refresh();
     this.reloadTick.update((n) => n + 1);
+  }
+
+  private fetchAll(id: number) {
+    return Promise.all([
+      firstValueFrom(this.api.getMatter(id)),
+      // The Assets tab's number; a failure only leaves the tab without one.
+      this.auth.has('Asset.View')
+        ? firstValueFrom(this.api.getMatterSummary(id)).catch(() => null)
+        : Promise.resolve(null),
+      this.auth.has('Project.View')
+        ? // One request at the API's page maximum; the Projects tab sorts them itself (natural order).
+          firstValueFrom(
+            this.projectsApi.listProjects(
+              undefined,
+              id,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              1,
+              PROJECTS_PAGE_MAX,
+              'name',
+            ),
+          )
+        : Promise.resolve(null),
+    ]);
+  }
+
+  private apply([matter, summary, projects]: Awaited<
+    ReturnType<MatterDetailPage['fetchAll']>
+  >): void {
+    this.matter.set(matter);
+    this.assetCount.set(summary?.assetCount ?? null);
+    this.projects.set(projects?.items ?? []);
+    this.projectsTotal.set(projects?.total ?? 0);
   }
 
   async load(): Promise<void> {
     const id = Number(this.matterId());
     await this.flow.run(
-      () =>
-        Promise.all([
-          firstValueFrom(this.api.getMatter(id)),
-          // The Assets tab's number; a failure only leaves the tab without one.
-          this.auth.has('Asset.View')
-            ? firstValueFrom(this.api.getMatterSummary(id)).catch(() => null)
-            : Promise.resolve(null),
-          this.auth.has('Project.View')
-            ? // One request at the API's page maximum; the Projects tab sorts them itself (natural order).
-              firstValueFrom(
-                this.projectsApi.listProjects(
-                  undefined,
-                  id,
-                  undefined,
-                  undefined,
-                  undefined,
-                  undefined,
-                  undefined,
-                  1,
-                  PROJECTS_PAGE_MAX,
-                  'name',
-                ),
-              )
-            : Promise.resolve(null),
-        ]),
-      ([matter, summary, projects]) => {
-        this.matter.set(matter);
-        this.assetCount.set(summary?.assetCount ?? null);
-        this.projects.set(projects?.items ?? []);
-        this.projectsTotal.set(projects?.total ?? 0);
-      },
+      () => this.fetchAll(id),
+      (all) => this.apply(all),
     );
+  }
+
+  /** Loads the same data without the page's loading state, so an open side panel stays where it is (after a change made inside a panel). */
+  protected async refresh(): Promise<void> {
+    try {
+      this.apply(await this.fetchAll(Number(this.matterId())));
+    } catch {
+      // The numbers stay as they were; the panel that made the change already told the person what happened.
+    }
   }
 
   protected async toggleActive(): Promise<void> {

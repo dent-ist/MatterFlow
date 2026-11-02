@@ -159,8 +159,15 @@ export class CustomFieldsEditor {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (schema(); as definition) {
-      <section class="cf-view" aria-labelledby="custom-fields-h" data-custom-fields>
-        <h3 id="custom-fields-h" class="cf-title">Custom fields</h3>
+      <section
+        class="cf-view"
+        [class.cf-view--bare]="!heading()"
+        [attr.aria-labelledby]="heading() ? 'custom-fields-h' : null"
+        data-custom-fields
+      >
+        @if (heading()) {
+          <h3 id="custom-fields-h" class="cf-title">Custom fields</h3>
+        }
         <mf-dynamic-form [definition]="definition" [values]="values()" [readOnly]="true" />
       </section>
     }
@@ -168,6 +175,10 @@ export class CustomFieldsEditor {
   styles: `
     .cf-view {
       margin-top: var(--mf-s4);
+    }
+    /* The Matter Summary shows the custom fields as equal rows of the details list: no heading and no extra space above. */
+    .cf-view--bare {
+      margin-top: 0;
     }
     .cf-title {
       margin: 0 0 var(--mf-s2);
@@ -179,6 +190,8 @@ export class CustomFieldsView {
   /** The version the stored values were captured under. */
   readonly versionId = input<number | null | undefined>();
   readonly values = input<Record<string, unknown>>({});
+  /** False draws no "Custom fields" heading (the Matter Summary lists them as ordinary rows). */
+  readonly heading = input(true);
 
   private readonly forms = inject(FormsClient);
   protected readonly schema = signal<FormDefinition | null>(null);
