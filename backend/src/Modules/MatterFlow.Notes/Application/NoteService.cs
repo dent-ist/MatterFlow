@@ -112,7 +112,7 @@ public sealed class NoteService(
             .ToListAsync(ct);
 
         var tags = await access.TagsOfNotesAsync([.. rows.Select(r => r.Id)], ct);
-        var names = await access.NamesAsync(rows.SelectMany(r => new[] { r.LockedByUserId, r.ContentUpdatedByUserId }), ct);
+        var names = await access.NamesAsync(rows.SelectMany(r => new[] { r.LockedByUserId, r.ContentUpdatedByUserId, r.CreatedByUserId }), ct);
         return new PagedResult<NoteListItem>([.. rows.Select(r => ToListItem(r, tags, names))], total, page.Page, page.PageSize);
     }
 
@@ -587,7 +587,9 @@ public sealed class NoteService(
             NoteSupport.Utc(n.LockedAtUtc),
             NoteSupport.Utc(n.ContentUpdatedAtUtc),
             n.ContentUpdatedByUserId,
-            Name(n.ContentUpdatedByUserId));
+            Name(n.ContentUpdatedByUserId),
+            n.CreatedByUserId,
+            Name(n.CreatedByUserId));
     }
 
     private async Task<NoteResponse> ToResponseAsync(Note n, CancellationToken ct)

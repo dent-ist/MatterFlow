@@ -24,6 +24,9 @@ public static partial class RichHtml
     /// The only attributes a reference span of a Note may carry, one per kind of target: <c>data-asset-id</c>, <c>data-project-id</c>, <c>data-matter-id</c>, <c>data-note-id</c>, <c>data-user-id</c> and
     /// <c>data-embed-id</c> (a note shown inline). The value is a positive integer; a span has exactly one such attribute or it is unwrapped to its text.
     /// </summary>
+    /// <summary>The text colours of a note (epic #1001, MD-30): a span carries <c>data-color</c> with one of these keys, mapped to a theme token by the client. Any other value is removed.</summary>
+    public static readonly IReadOnlyList<string> NoteColours = ["red", "orange", "amber", "green", "teal", "blue", "violet", "slate"];
+
     public static readonly IReadOnlyList<string> RefAttributes = ["data-asset-id", "data-project-id", "data-matter-id", "data-note-id", "data-user-id", "data-embed-id"];
 
     /// <summary>Deepest nesting of tables kept; a table nested deeper than this is flattened into paragraphs.</summary>
@@ -172,6 +175,7 @@ public static partial class RichHtml
         {
             foreach (var attribute in RefAttributes)
                 sanitizer.AllowedAttributes.Add(attribute);
+            sanitizer.AllowedAttributes.Add("data-color");
         }
         sanitizer.AllowedAttributes.Add("href");
         sanitizer.AllowedAttributes.Add("colspan");
@@ -208,7 +212,7 @@ public static partial class RichHtml
                 ("a", "href") => true,
                 ("td" or "th", "colspan" or "rowspan") => true,
                 ("th", "scope") => true,
-                ("span", var name) => RefAttributes.Contains(name),
+                ("span", var name) => RefAttributes.Contains(name) || (note && name == "data-color"),
                 _ => false,
             };
             if (!keep)
@@ -407,6 +411,23 @@ public static partial class RichHtml
 
             if (profile == RichHtmlProfile.Note && name == "span")
             {
+                if (!RefAttributes.Any(a => element.HasAttribute(a)) && element.HasAttribute("data-color"))
+                {
+                    var colour = element.GetAttribute("data-color")?.Trim();
+                    if (colour is not null && NoteColours.Contains(colour, StringComparer.Ordinal))
+                    {
+                        output.Append("<span data-color=\"").Append(colour).Append("\">");
+                        hasBlock |= EmitChildren(element, output, depth, profile);
+                        output.Append("</span>");
+                    }
+                    else
+                    {
+                        hasBlock |= EmitChildren(element, output, depth, profile);
+                    }
+
+                    continue;
+                }
+
                 EmitReferenceSpan(element, output);
                 continue;
             }

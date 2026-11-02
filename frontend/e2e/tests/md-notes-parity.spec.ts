@@ -168,7 +168,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await expect(page.locator('.ProseMirror a')).toHaveCount(0);
   });
 
-  test('the slash menu: five commands, two levels, Esc closes the menu only', async ({
+  test('the slash menu: six commands, two levels, Esc closes the menu only', async ({
     page,
     seed,
   }) => {
@@ -182,11 +182,10 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await page.keyboard.type('/');
     const menu = page.locator('[data-suggest-menu]');
     await expect(menu).toBeVisible();
-    await expect(menu.getByRole('option')).toHaveCount(5);
-    for (const c of ['/asset', '/mention', '/project', '/matter', '/note'])
+    await expect(menu.getByRole('option')).toHaveCount(6);
+    for (const c of ['/template', '/asset', '/mention', '/project', '/matter', '/note'])
       await expect(menu).toContainText(c);
     await expect(menu).not.toContainText('/assets');
-    await expect(menu).not.toContainText('/template');
     await page.keyboard.type('as');
     await expect(menu.getByRole('option')).toHaveCount(1);
     await page.keyboard.press('Enter');
@@ -197,6 +196,85 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await page.keyboard.press('Escape');
     await expect(menu).toHaveCount(0);
     await expect(page.locator('[data-editor-toolbar]')).toBeVisible();
+  });
+
+  test('/template lists the templates and inserts the body at the cursor, title untouched', async ({
+    page,
+    seed,
+  }) => {
+    const w = await world(seed);
+    const name = `SlashTpl ${uid()}`;
+    await seed.admin.post('/api/v1/note-templates', {
+      scope: 'MATTER',
+      matterId: w.matter.matterId,
+      name,
+      description: 'Inserted by slash',
+      titleTemplate: 'Slash title',
+      bodyHtml: '<p>Template body for {{matter}}</p>',
+      tagIds: [w.tagA.noteTagId],
+    });
+    await open(page, w.matter.matterId);
+    await page.locator('[data-new-note]').click();
+    await page.locator('.ProseMirror').click();
+    await page.keyboard.type('/template Slash');
+    const menu = page.locator('[data-suggest-menu]');
+    await expect(menu.getByRole('option')).toHaveCount(1);
+    await expect(menu).toContainText('Inserted by slash');
+    await page.keyboard.press('Enter');
+    // an empty note: the title line and the suggested tags come too
+    await expect(page.locator('.ProseMirror h1')).toHaveText('Slash title');
+    await expect(page.locator('.ProseMirror')).toContainText('Template body for');
+    await expect(page.locator('[data-template-tags]')).toContainText('Template tags');
+    // a note with content: inserted at the cursor, the first line stays
+    await page.keyboard.press('Control+End');
+    await page.keyboard.press('Enter');
+    await page.keyboard.type('/template Slash');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.ProseMirror h1')).toHaveCount(1);
+    await expect(page.locator('.ProseMirror p', { hasText: 'Template body for' })).toHaveCount(2);
+  });
+
+  test('text colour: a named palette menu, stored as data-color, shown in read mode', async ({
+    page,
+    seed,
+  }) => {
+    const w = await world(seed);
+    await open(page, w.matter.matterId);
+    await page.locator('[data-new-note]').click();
+    await page.locator('.ProseMirror').click();
+    await page.keyboard.type('Colour title');
+    await page.keyboard.press('Enter');
+    await page.getByRole('button', { name: 'Text colour: Default' }).click();
+    const menu = page.locator('[data-colour-menu]');
+    await expect(menu.getByRole('menuitemradio')).toHaveCount(9);
+    for (const n of [
+      'Default',
+      'Red',
+      'Orange',
+      'Amber',
+      'Green',
+      'Teal',
+      'Blue',
+      'Violet',
+      'Grey',
+    ])
+      await expect(menu.getByRole('menuitemradio', { name: n })).toBeVisible();
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await page.keyboard.type('red words');
+    await expect(page.getByRole('button', { name: 'Text colour: Red' })).toBeVisible();
+    await page.locator('[data-note-save]').click();
+    const span = page.locator('.ProseMirror [data-color="red"]');
+    await expect(span).toHaveText('red words');
+    await expect(span).toHaveCSS('color', 'rgb(180, 35, 24)');
+    const list = await seed.admin.get<{ items: { noteId: number }[] }>(
+      `/api/v1/notes?matterId=${w.matter.matterId}`,
+    );
+    const saved = await seed.admin.get<{ bodyHtml: string }>(
+      `/api/v1/notes/${list.items[0].noteId}`,
+    );
+    expect(saved.bodyHtml).toContain('<span data-color="red">red words</span>');
+    expect(saved.bodyHtml).not.toContain('style=');
   });
 
   test('tags: a side panel picks up to five, chips show in the editor, Add tag opens the panel', async ({

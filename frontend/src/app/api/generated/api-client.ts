@@ -24462,6 +24462,8 @@ export interface NoteListItem {
     updatedAtUtc: string;
     updatedByUserId: number | undefined;
     updatedByName: string | undefined;
+    createdByUserId: number | undefined;
+    createdByName: string | undefined;
 
     [key: string]: any;
 }

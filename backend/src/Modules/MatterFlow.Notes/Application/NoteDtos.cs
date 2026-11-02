@@ -159,7 +159,9 @@ public sealed record NoteListItem(
     DateTime? LockedAtUtc,
     [property: Required] DateTime UpdatedAtUtc,
     int? UpdatedByUserId,
-    string? UpdatedByName);
+    string? UpdatedByName,
+    int? CreatedByUserId,
+    string? CreatedByName);
 
 /// <summary>A reference found in the body.</summary>
 /// <param name="Kind"><c>asset</c>, <c>project</c>, <c>matter</c>, <c>note</c> or <c>user</c>.</param>

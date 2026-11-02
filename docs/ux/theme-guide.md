@@ -303,7 +303,7 @@ Every button in the app, the Matter detail tabs included, is drawn by the shared
 
 **My Matters (owner decision 2026-11-02, #1030):** My Matters no longer has its own button paint. Its "+ New" menu button, Filter, scope Browse and Clear, the calendar Previous/Today/Next/Add event, Mark all as read, the tree icon buttons and the Metrics Work/Assets toggle are `mf-btn` variants (`mf-btn--primary`, `mf-btn--text`, `mf-btn--icon`, and the shared `mf-seg` toggle with `mfSegmented`). One look and one 32 px size across the app. Still local by design: in-text links (`.lnk`), the sort buttons inside column headers, calendar day cells, and the pressed/selected state tint of the tree icon buttons. `button-rule.spec.ts` now covers every file in `features/my-matters/ui`, `tabs` and `panels`.
 
-## 10. The shared grid: resize, reorder, filter, Columns menu, row hover (epic #1001, MD-28, #1032)
+## 11. The shared grid: resize, reorder, filter, Columns menu, row hover (epic #1001, MD-28, #1032)
 
 One set of small blocks in `frontend/src/app/shared/ui`, used together. A page opts in to each part it needs; every part works on its own.
 
@@ -330,3 +330,7 @@ Work tables (Task Queue, My Work, Pod Work, the Matter and Project Tasks tabs) u
 **Where the Matter Tasks tab stands (MD-29, #1033):** default order Ref, Type (chip and the type's name), Title, Priority, Assignee, Due, Status, Progress. **Project is not in the default set**; it is in the Columns menu (a Matter that has projects) and, once added, sits right after Title. Ref is pinned first, Title cannot be hidden.
 
 **Pages that should adopt it later (not converted; estimates in agent-hours):** Clients list 2.5, Projects list 2.5, Assets list 3, Matter Projects tab 2, Matter Assets tab 2, Matter Activities 2, Users 3, Roles 2.5, Pods 2.5, admin lookups (Task Types, Asset Types, Labels, Custom Fields, Workflows) 2 each, Audit Logs 3, Reports lists 3; unifying the Task Queue / My Work / Pod Work chooser and resize with this set (one Columns menu instead of the chooser panel, one resize store) 10.
+
+## 10. Note text colours (epic #1001, MD-30, #1034)
+
+The Notes editor offers a fixed palette of eight text colours plus Default: red, orange, amber, green, teal, blue, violet and slate (grey). They are the tokens `--mf-note-<key>` in `docs/ux/tokens.css`; `scripts/check-theme-contrast.mjs` checks each at 4.5:1 on a card and on the quote tint. A note stores a colour as `<span data-color="red">` (never inline CSS); the server keeps only these eight keys. The page maps the key to the token (`[data-color='red'] { color: var(--mf-note-red) }` in `note-editor-refs.scss`). Colour never carries meaning alone: the menu names every colour, and bold or headings stay available.

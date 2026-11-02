@@ -14,15 +14,55 @@ import {
   viewChild,
 } from '@angular/core';
 import { Dropdown, DropdownItem } from '../../shared/ui/dropdown';
-import { AnyExtension, Editor, Extension, Node } from '@tiptap/core';
+import { AnyExtension, Editor, Extension, Mark, Node } from '@tiptap/core';
 import { Placeholder } from '@tiptap/extensions';
 import { PluginKey } from '@tiptap/pm/state';
 import StarterKit from '@tiptap/starter-kit';
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
 import Suggestion, { SuggestionKeyDownProps, SuggestionProps } from '@tiptap/suggestion';
 
+/** The text colours of a note (the server keeps exactly these keys; the tokens are `--mf-note-<key>`, theme guide section 10). */
+export const NOTE_COLOURS: readonly { key: string; label: string }[] = [
+  { key: 'red', label: 'Red' },
+  { key: 'orange', label: 'Orange' },
+  { key: 'amber', label: 'Amber' },
+  { key: 'green', label: 'Green' },
+  { key: 'teal', label: 'Teal' },
+  { key: 'blue', label: 'Blue' },
+  { key: 'violet', label: 'Violet' },
+  { key: 'slate', label: 'Grey' },
+];
+
+/** Text colour as a mark: stored as `<span data-color="key">`, never as CSS. */
+function colourMark(): Mark {
+  return Mark.create({
+    name: 'noteColour',
+    addAttributes() {
+      return { colour: { default: null } };
+    },
+    parseHTML() {
+      return [
+        {
+          tag: 'span[data-color]',
+          getAttrs: (el: HTMLElement | string) => {
+            if (typeof el === 'string') return false;
+            const c = el.getAttribute('data-color');
+            return NOTE_COLOURS.some((x) => x.key === c) ? { colour: c } : false;
+          },
+        },
+      ];
+    },
+    renderHTML({ mark }) {
+      return ['span', { 'data-color': String(mark.attrs['colour']) }, 0];
+    },
+  });
+}
+
 /** The kinds of thing a note can refer to; `embed` shows another note inline. */
 export type RefKind = 'asset' | 'project' | 'matter' | 'note' | 'user' | 'embed';
+
+/** What the menus search: the kinds a note can refer to, and the firm's note templates (`/template`). */
+export type SuggestKind = RefKind | 'template';
 
 /** The one data attribute each kind carries in the stored html (the server allows exactly these, one per span). */
 export const REF_ATTRIBUTE: Record<RefKind, string> = {
@@ -55,7 +95,7 @@ const REF_ICON: Record<RefKind, string> = {
 };
 
 export interface SuggestItem {
-  kind: RefKind | 'command';
+  kind: SuggestKind | 'command';
   id: number;
   label: string;
   sub?: string;
@@ -65,14 +105,21 @@ export interface SuggestItem {
   icon?: string;
 }
 
-/** The slash commands of the owner's list (no /assets, no /template, no /task). */
+/** The slash commands of the owner's list (owner decision 2026-11-02: /template first; no /assets, no /task). */
 export const SLASH_COMMANDS: readonly {
   command: string;
   label: string;
   sub: string;
-  kind: RefKind;
+  kind: SuggestKind;
   icon: string;
 }[] = [
+  {
+    command: 'template',
+    label: 'Template',
+    sub: 'Insert a ready-made note: its text goes in at the cursor',
+    kind: 'template',
+    icon: 'pi-clone',
+  },
   {
     command: 'asset',
     label: 'Asset',
@@ -111,7 +158,7 @@ export const SLASH_COMMANDS: readonly {
 ];
 
 /** Where the menu gets its rows: the host searches the API. */
-export type SuggestSource = (kind: RefKind, query: string) => Promise<SuggestItem[]>;
+export type SuggestSource = (kind: SuggestKind, query: string) => Promise<SuggestItem[]>;
 
 interface MenuState {
   items: SuggestItem[];
@@ -157,6 +204,7 @@ function baseExtensions(): AnyExtension[] {
     TableRow,
     TableHeader,
     TableCell,
+    colourMark(),
     referenceNode(),
   ];
 }
@@ -386,6 +434,57 @@ export interface RefInfo {
             >
               <u class="ne__glyph">U</u>
             </button>
+            <span class="ne__colour">
+              <button
+                type="button"
+                class="ne__btn"
+                data-text-colour
+                aria-haspopup="menu"
+                [attr.aria-expanded]="colourOpen()"
+                [attr.aria-label]="'Text colour: ' + colourLabel()"
+                [title]="'Text colour: ' + colourLabel()"
+                (mousedown)="$event.preventDefault()"
+                (click)="toggleColour()"
+              >
+                <b class="ne__glyph">A</b>
+                <span class="ne__swatch" [attr.data-color]="currentColour()"></span>
+              </button>
+              @if (colourOpen()) {
+                <ul
+                  class="ne__cmenu"
+                  role="menu"
+                  aria-label="Text colour"
+                  tabindex="-1"
+                  data-colour-menu
+                  (keydown)="colourKey($event)"
+                >
+                  <li role="none">
+                    <button
+                      type="button"
+                      role="menuitemradio"
+                      [attr.aria-checked]="currentColour() === ''"
+                      (mousedown)="$event.preventDefault()"
+                      (click)="setColour('')"
+                    >
+                      <span class="ne__swatch ne__swatch--default"></span>Default
+                    </button>
+                  </li>
+                  @for (c of colours; track c.key) {
+                    <li role="none">
+                      <button
+                        type="button"
+                        role="menuitemradio"
+                        [attr.aria-checked]="currentColour() === c.key"
+                        (mousedown)="$event.preventDefault()"
+                        (click)="setColour(c.key)"
+                      >
+                        <span class="ne__swatch" [attr.data-color]="c.key"></span>{{ c.label }}
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+            </span>
             <span class="ne__sep" role="separator" aria-orientation="vertical"></span>
             <button
               type="button"
@@ -559,7 +658,7 @@ export interface RefInfo {
       <div class="ne__area" #host data-editor-area></div>
       @if (editable()) {
         <p class="ne__hint" data-editor-hint>
-          Type <kbd>/</kbd> for commands (asset, mention, project, matter, note),
+          Type <kbd>/</kbd> for commands (template, asset, mention, project, matter, note),
           <kbd>&#64;</kbd> for people, <kbd>#</kbd> for assets.
         </p>
       }
@@ -712,7 +811,11 @@ export class NoteEditor {
   readonly refOpen = output<{ kind: RefKind; id: number }>();
   /** A short message for the host's live region ("Formatting cleared"). */
   readonly notice = output<string>();
+  /** `/template` picked a template: the host answers with `applyTemplate`. */
+  readonly templateChosen = output<number>();
 
+  protected readonly colours = NOTE_COLOURS;
+  protected readonly colourOpen = signal(false);
   protected readonly menu = signal<MenuState | null>(null);
   protected readonly tick = signal(0);
   protected readonly linkOpen = signal(false);
@@ -771,6 +874,66 @@ export class NoteEditor {
     effect(() => {
       if (this.linkOpen()) queueMicrotask(() => this.linkInputEl()?.nativeElement.focus());
     });
+  }
+
+  protected currentColour(): string {
+    this.tick();
+    return (this.editor?.getAttributes('noteColour')['colour'] as string | undefined) ?? '';
+  }
+
+  protected colourLabel(): string {
+    return NOTE_COLOURS.find((c) => c.key === this.currentColour())?.label ?? 'Default';
+  }
+
+  protected toggleColour(): void {
+    this.colourOpen.update((o) => !o);
+    if (this.colourOpen())
+      setTimeout(() => {
+        const root = this.barEl()?.nativeElement;
+        (
+          root?.querySelector<HTMLElement>('[data-colour-menu] [aria-checked="true"]') ??
+          root?.querySelector<HTMLElement>('[data-colour-menu] button')
+        )?.focus();
+      }, 0);
+  }
+
+  protected setColour(key: string): void {
+    const chain = this.editor?.chain().focus();
+    if (!chain) return;
+    if (key) chain.setMark('noteColour', { colour: key }).run();
+    else chain.unsetMark('noteColour').run();
+    this.colourOpen.set(false);
+    this.notice.emit(
+      key ? `Text colour ${NOTE_COLOURS.find((c) => c.key === key)?.label}` : 'Default text colour',
+    );
+  }
+
+  /** The colour menu: Up and Down move, Home and End jump, Escape closes and the focus goes back to the button. */
+  protected colourKey(ev: KeyboardEvent): void {
+    const items = Array.from(
+      (ev.currentTarget as HTMLElement).querySelectorAll<HTMLElement>('button'),
+    );
+    const i = items.indexOf(document.activeElement as HTMLElement);
+    const to =
+      ev.key === 'ArrowDown'
+        ? (i + 1) % items.length
+        : ev.key === 'ArrowUp'
+          ? (i - 1 + items.length) % items.length
+          : ev.key === 'Home'
+            ? 0
+            : ev.key === 'End'
+              ? items.length - 1
+              : -1;
+    if (to >= 0) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      items[to].focus();
+    } else if (ev.key === 'Escape' || ev.key === 'Tab') {
+      if (ev.key === 'Escape') ev.preventDefault();
+      ev.stopPropagation();
+      this.colourOpen.set(false);
+      this.barEl()?.nativeElement.querySelector<HTMLElement>('[data-text-colour]')?.focus();
+    }
   }
 
   protected readonly styleItems: DropdownItem[] = [
@@ -954,6 +1117,19 @@ export class NoteEditor {
     this.editor?.chain().focus().insertContent(char).run();
   }
 
+  /** True while the text is only the empty first line (a new note), so a template may fill the title line too. */
+  isEmpty(): boolean {
+    return this.editor?.isEmpty ?? true;
+  }
+
+  /** Puts a template's text in: all of it when the note is empty, otherwise at the cursor (the title line is not touched). */
+  applyTemplate(html: string, replaceAll: boolean): void {
+    const chain = this.editor?.chain().focus();
+    if (!chain) return;
+    if (replaceAll) chain.setContent(html, { emitUpdate: true }).run();
+    else chain.insertContent(html).run();
+  }
+
   /** Puts keyboard focus in the text (a new note, or after Edit). */
   focus(): void {
     // The editor loads lazily: when the person has already clicked into the text, the caret stays where they put it.
@@ -1107,6 +1283,12 @@ export class NoteEditor {
           ed.chain().focus().insertContentAt(range, `/${props.command} `).run();
           return;
         }
+        if (props.kind === 'template') {
+          // /template: the typed text goes, the host fills the placeholders and puts the body in (or fills an empty note).
+          ed.chain().focus().deleteRange(range).run();
+          this.templateChosen.emit(props.id);
+          return;
+        }
         const node =
           props.kind === 'embed'
             ? { type: 'noteEmbed', attrs: { refId: props.id, label: props.label } }
@@ -1152,7 +1334,9 @@ export class NoteEditor {
   private withIcon(items: SuggestItem[]): SuggestItem[] {
     return items.map((i) => ({
       ...i,
-      icon: i.icon ?? (i.kind === 'command' ? undefined : REF_ICON[i.kind]),
+      icon:
+        i.icon ??
+        (i.kind === 'command' ? undefined : i.kind === 'template' ? 'pi-clone' : REF_ICON[i.kind]),
     }));
   }
 

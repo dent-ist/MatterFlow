@@ -453,3 +453,13 @@ What the person who runs the system should know. Design `docs/ux/app-settings/RE
 
 **Upgrade.** Script 48 (`48-app-settings.sql`) adds the permission and the table; it changes no existing row. Deploy order: scripts, API, web. Until an administrator saves, nothing looks different. Rollback: reset on the page or by the SQL above.
 
+
+## 17. Matter detail: Productions, Notes and the AI switch (epic #1001)
+
+**Upgrade.** Scripts 51 to 55 add `Matter.AiAllowed` (default 0 = No), the production spec, production and comment tables, and the note, note tag, note link and note template tables; the scripts also add the permissions `Production.View|Edit|Comment`, `ProductionSpec.View|Edit` and `MatterNote.View|Edit|Delete` and grant them to the starter roles by name (a customised role is not changed: grant them in the role editor). Every new table is denied to the report login. No existing row changes. Deploy order: scripts, API, web.
+
+**Notes tags** are firm-wide and kept by people with `StatusLabel.Manage` under Labels, Notes tags. Notes and productions are hidden together with a sensitive matter (404), and their history is the audit trail (Activities tab).
+
+**AI.** The matter field "AI allowed" only switches the AI button of a note on or off; there is no AI function in release 1 (the button opens a "coming soon" panel). The future policy check on save is behind the code switch `aiPolicyCheck` (`frontend/src/app/shared/ui/ai/ai-flags.ts`), which is **off in every environment**; do not turn it on until the check exists.
+
+**Templates in a note.** Typing `/template` in the note editor lists the firm-wide templates and this matter's templates; choosing one puts its text in at the cursor (a new empty note also gets the title line and the suggested tags). Templates are kept in the Templates view of the Notes tab; firm-wide ones are changed by a System Admin only.

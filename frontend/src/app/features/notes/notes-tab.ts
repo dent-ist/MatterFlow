@@ -45,7 +45,7 @@ import { SearchBox } from '../../shared/ui/search-box';
 import { FormDialog } from '../../shared/ui/form-dialog';
 import { SlidePanel } from '../../shared/ui/slide-panel';
 import { TextField } from '../../shared/ui/text-field';
-import { EmbedContent, NoteEditor, RefInfo, RefKind, SuggestItem } from './note-editor';
+import { EmbedContent, NoteEditor, RefInfo, SuggestItem, SuggestKind } from './note-editor';
 import { NoteTagChip } from './note-tag-chip';
 import {
   NoteSort,
@@ -1011,6 +1011,7 @@ interface RefChip {
                         [embedSource]="embedSource"
                         (changed)="onChanged($event)"
                         (notice)="notify.info($event)"
+                        (templateChosen)="onTemplateChosen($event)"
                         (ready)="onEditorReady()"
                       />
                     } @placeholder {
@@ -1230,9 +1231,9 @@ interface RefChip {
           <span
             class="nt__av"
             aria-hidden="true"
-            [style.background]="av(n.updatedByName).bg"
-            [style.color]="av(n.updatedByName).fg"
-            >{{ initials(n.updatedByName) }}</span
+            [style.background]="av(n.createdByName).bg"
+            [style.color]="av(n.createdByName).fg"
+            >{{ initials(n.createdByName) }}</span
           >
           <span>
             <span class="nt__tt">
@@ -1938,10 +1939,27 @@ export class NotesTab {
   });
 
   /** The menu of `@`, `#` and the slash commands searches the API for the open note's matter. */
-  protected readonly source = async (kind: RefKind, q: string): Promise<SuggestItem[]> => {
+  protected readonly source = async (kind: SuggestKind, q: string): Promise<SuggestItem[]> => {
     const matterId = this.matterId();
     try {
       switch (kind) {
+        case 'template': {
+          if (this.templates().length === 0) await this.loadTemplates();
+          const needle = q.toLowerCase();
+          return this.templates()
+            .filter(
+              (t) => !needle || `${t.name} ${t.description ?? ''}`.toLowerCase().includes(needle),
+            )
+            .slice(0, 12)
+            .map((t) => ({
+              kind: 'template' as const,
+              id: t.noteTemplateId,
+              label: t.name,
+              sub: [t.description, t.tags.map((g) => g.name).join(', ')]
+                .filter(Boolean)
+                .join(' \u00b7 '),
+            }));
+        }
         case 'user': {
           const users = await firstValueFrom(this.usersApi.lookupUsers(q, 8));
           return users.map((u) => ({
@@ -2421,6 +2439,31 @@ export class NotesTab {
     this.editing.set(true);
     this.saveError.set('');
     this.wide.set(!this.stacked());
+  }
+
+  /** `/template`: the body goes in at the cursor; in an empty note the title line and the suggested tags come too (as From template does). */
+  protected onTemplateChosen(id: number): void {
+    const t = this.templates().find((x) => x.noteTemplateId === id);
+    const ed = this.editorRef();
+    if (!t || !ed) return;
+    const values = placeholderValues(new Date(), this.matterLabel(), this.auth.displayName());
+    const body = resolvePlaceholders(t.bodyHtml, values);
+    if (ed.isEmpty()) {
+      const title = t.titleTemplate
+        ? `<h1>${resolvePlaceholders(escapeText(t.titleTemplate), values)}</h1>`
+        : '';
+      ed.applyTemplate(title + body, true);
+      this.tplBanner.set(t.tags.filter((x) => x.isActive));
+    } else {
+      ed.applyTemplate(body, false);
+    }
+    void firstValueFrom(this.templatesApi.useNoteTemplate(t.noteTemplateId)).catch(() => undefined);
+    const open = openPlaceholders(body);
+    this.notify.info(
+      open.length > 0
+        ? `Template "${t.name}" inserted. Fill in: ${open.join(', ')}`
+        : `Template "${t.name}" inserted`,
+    );
   }
 
   protected onEditorReady(): void {
