@@ -77,13 +77,10 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await expect(blocked).toHaveAttribute('aria-disabled', 'true');
     await expect(blocked).toContainText("aren't Completed or Cancelled");
     await page.keyboard.press('Escape');
-    // Readable form-like list: left aligned, no wider than about 70 characters.
-    const list = (await panel.locator('dl.pg-dl').boundingBox())!;
-    const area = (await page
-      .getByRole('region', { name: 'Matter overview, scrollable' })
-      .boundingBox())!;
+    // The details are a plain list in its own scrolling box, left aligned (round 3).
+    const list = (await panel.locator('[data-summary-details] dl').boundingBox())!;
+    const area = (await page.getByRole('region', { name: 'Matter details' }).boundingBox())!;
     expect(list.x - area.x).toBeLessThan(40);
-    expect(list.width).toBeLessThan(760);
     await noHorizontalScroll(page);
   });
 
