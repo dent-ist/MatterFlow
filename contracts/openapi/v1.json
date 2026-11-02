@@ -537,6 +537,41 @@
         }
       }
     },
+    "/api/v1/assets/counts-by-type": {
+      "get": {
+        "tags": [
+          "Assets"
+        ],
+        "operationId": "GetAssetCountsByType",
+        "parameters": [
+          {
+            "name": "matterId",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AssetTypeCount"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/assets/lookup": {
       "get": {
         "tags": [
@@ -7550,6 +7585,57 @@
             "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/BulkTasksRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkTasksResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/matters/{matterId}/tasks/project": {
+      "post": {
+        "tags": [
+          "MatterBulkTasks"
+        ],
+        "operationId": "SetMatterTasksProject",
+        "parameters": [
+          {
+            "name": "matterId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetTasksProjectRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetTasksProjectRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetTasksProjectRequest"
               }
             }
           },
@@ -15542,6 +15628,46 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "AssetTypeCount": {
+        "required": [
+          "assetTypeId",
+          "assetTypeName",
+          "iconKey",
+          "colourKey",
+          "count",
+          "retiredCount"
+        ],
+        "type": "object",
+        "properties": {
+          "assetTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "assetTypeName": {
+            "type": "string"
+          },
+          "iconKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "colourKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "retiredCount": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -25639,6 +25765,32 @@
             "maximum": 2147483647,
             "minimum": 1,
             "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SetTasksProjectRequest": {
+        "required": [
+          "taskIds"
+        ],
+        "type": "object",
+        "properties": {
+          "taskIds": {
+            "maxItems": 100,
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          "projectId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": [
+              "null",
+              "integer"
+            ],
             "format": "int32"
           }
         }

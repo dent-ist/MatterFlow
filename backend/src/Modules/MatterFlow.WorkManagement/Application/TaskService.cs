@@ -757,6 +757,48 @@ public sealed class TaskService
         return true;
     }
 
+    /// <summary>
+    /// Puts one task into a project of its matter, or takes it out (<paramref name="projectId"/> null). A task belongs to at most one project, so linking moves it.
+    /// The project must belong to the task's matter and be active (checked by the caller once for the batch); the task must be editable. Audited as the field <c>project</c>.
+    /// </summary>
+    internal async Task<Result<bool>> SetProjectCoreAsync(long taskId, int? projectId, string? oldProjectName, string rowVersion, ProjectSummary? project, CancellationToken ct)
+    {
+        var task = await _tx.LockTaskAsync(taskId, ct);
+        if (task is null)
+            return TaskSupport.NotFound();
+
+        var version = TaskSupport.CheckRowVersion(task.RowVersion, rowVersion);
+        if (version.IsFailure)
+            return Result<bool>.Failure(version.Error!);
+
+        if (TaskEditability.Check(task.Status, TaskOperation.EditDetails) is { } notEditable)
+            return NotEditable(task.Status, notEditable);
+
+        if (task.ProjectId == projectId)
+            return true;
+
+        var old = task.ProjectId is { } oldId ? await _projects.FindAsync(oldId, ct) : null;
+        task.ProjectId = projectId;
+        Touch(task);
+        TaskSupport.TrackOriginalRowVersion(_db, task, rowVersion);
+        _audit.Write(new AuditEntry
+        {
+            EventType = AuditEventTypes.FieldChanged,
+            ObjectType = TaskSupport.TaskObjectType,
+            ObjectId = TaskSupport.Id(task.Id),
+            TaskId = task.Id,
+            MatterId = task.MatterId,
+            FieldKey = "project",
+            OldValue = old?.Name ?? oldProjectName,
+            NewValue = project?.Name,
+        });
+        await _db.SaveChangesAsync(ct);
+        return true;
+    }
+
+    /// <summary>The project of a bulk link: it must exist, be visible, belong to the matter and be active.</summary>
+    internal Task<Result<ProjectSummary>> CheckLinkProjectAsync(int projectId, int matterId, CancellationToken ct) => CheckProjectAsync(projectId, matterId, ct);
+
     // ---- shared pieces
 
     internal static Error NotEditable(TaskStatusCode status, string code) =>

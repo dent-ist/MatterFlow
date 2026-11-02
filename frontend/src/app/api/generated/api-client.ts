@@ -527,6 +527,11 @@ export interface IAssetsClient {
     createAsset(body: CreateAssetRequest): Observable<AssetResponse>;
     /**
      * @param matterId (optional) 
+     * @return OK
+     */
+    getAssetCountsByType(matterId?: number | undefined): Observable<AssetTypeCount[]>;
+    /**
+     * @param matterId (optional) 
      * @param q (optional) 
      * @param includeInactive (optional) 
      * @param limit (optional) 
@@ -790,6 +795,61 @@ export class AssetsClient implements IAssetsClient {
             let result201: any = null;
             result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetResponse;
             return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param matterId (optional) 
+     * @return OK
+     */
+    getAssetCountsByType(matterId?: number | undefined): Observable<AssetTypeCount[]> {
+        let url_ = this.baseUrl + "/api/v1/assets/counts-by-type?";
+        if (matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' cannot be null.");
+        else if (matterId !== undefined)
+            url_ += "matterId=" + encodeURIComponent("" + matterId) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetAssetCountsByType(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetAssetCountsByType(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AssetTypeCount[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AssetTypeCount[]>;
+        }));
+    }
+
+    protected processGetAssetCountsByType(response: HttpResponseBase): Observable<AssetTypeCount[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetTypeCount[];
+            return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -11756,6 +11816,10 @@ export interface IMatterBulkTasksClient {
      * @return OK
      */
     bulkChangeMatterTasks(matterId: number, body: BulkTasksRequest): Observable<BulkTasksResponse>;
+    /**
+     * @return OK
+     */
+    setMatterTasksProject(matterId: number, body: SetTasksProjectRequest): Observable<BulkTasksResponse>;
 }
 
 @Injectable({
@@ -11808,6 +11872,63 @@ export class MatterBulkTasksClient implements IMatterBulkTasksClient {
     }
 
     protected processBulkChangeMatterTasks(response: HttpResponseBase): Observable<BulkTasksResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BulkTasksResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    setMatterTasksProject(matterId: number, body: SetTasksProjectRequest): Observable<BulkTasksResponse> {
+        let url_ = this.baseUrl + "/api/v1/matters/{matterId}/tasks/project";
+        if (matterId === undefined || matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' must be defined.");
+        url_ = url_.replace("{matterId}", encodeURIComponent("" + matterId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSetMatterTasksProject(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSetMatterTasksProject(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<BulkTasksResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<BulkTasksResponse>;
+        }));
+    }
+
+    protected processSetMatterTasksProject(response: HttpResponseBase): Observable<BulkTasksResponse> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -19594,6 +19715,17 @@ export interface AssetTaskLink {
     [key: string]: any;
 }
 
+export interface AssetTypeCount {
+    assetTypeId: number;
+    assetTypeName: string;
+    iconKey: string | undefined;
+    colourKey: string | undefined;
+    count: number;
+    retiredCount: number;
+
+    [key: string]: any;
+}
+
 export interface AssetTypeReindexResponse {
     assetsProcessed: number;
 
@@ -22405,6 +22537,13 @@ export interface SetRoleReportsRequest {
 export interface SetTaskPriorityRequest {
     rowVersion: string;
     priorityId: number;
+
+    [key: string]: any;
+}
+
+export interface SetTasksProjectRequest {
+    taskIds: number[];
+    projectId?: number | undefined;
 
     [key: string]: any;
 }

@@ -24,4 +24,15 @@ public class MatterBulkTasksController(TaskBulkService bulk) : ControllerBase
     [ProducesResponseType<BulkTasksResponse>(StatusCodes.Status200OK, "application/json")]
     public async Task<ActionResult<BulkTasksResponse>> Bulk(int matterId, [FromBody] BulkTasksRequest request, CancellationToken cancellationToken) =>
         (await bulk.ChangeAsync(matterId, request, cancellationToken)).OrThrow();
+
+    /// <summary>
+    /// Links up to 100 tasks of this matter to one of its active projects, or unlinks them (<c>projectId</c> null). A task belongs to at most one project, so linking moves a task
+    /// that is in another project. Needs <c>Task.Edit</c>; only open tasks can change (a closed one is <c>TASK_NOT_EDITABLE</c>); the answer lists every task like the bulk change.
+    /// Each change is audited on the task as the field <c>project</c>.
+    /// </summary>
+    [HttpPost("project", Name = "SetMatterTasksProject")]
+    [Authorize(Policy = "Perm:" + Permissions.Task.Edit)]
+    [ProducesResponseType<BulkTasksResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<ActionResult<BulkTasksResponse>> SetProject(int matterId, [FromBody] SetTasksProjectRequest request, CancellationToken cancellationToken) =>
+        (await bulk.SetProjectAsync(matterId, request, cancellationToken)).OrThrow();
 }

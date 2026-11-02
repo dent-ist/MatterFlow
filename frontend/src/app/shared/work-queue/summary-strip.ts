@@ -19,6 +19,7 @@ import {
 import { AuthStore } from '../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { dateDaysAgo } from './queue-filters';
+import { Dropdown, DropdownItem } from '../ui/dropdown';
 import { recordStripItems } from './record-strip';
 import { ownTabItems } from './scoped-view';
 import { WorkStrip } from './work-strip';
@@ -33,7 +34,7 @@ import { DUE_SOON_DAYS } from './work-vocabulary';
  */
 @Component({
   selector: 'mf-summary-strip',
-  imports: [WorkStrip],
+  imports: [WorkStrip, Dropdown],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'ss' },
   styles: `
@@ -43,13 +44,29 @@ import { DUE_SOON_DAYS } from './work-vocabulary';
   `,
   template: `
     @if (items().length > 0) {
-      <mf-work-strip
-        [label]="kind() === 'matter' ? 'Matter tasks' : 'Project tasks'"
-        [items]="items()"
-        [interactive]="interactive()"
-        [active]="active()"
-        (pick)="pick.emit($event)"
-      />
+      @if (variant() === 'dropdown') {
+        <!-- The View dropdown of the Tasks tab (MD-04): the same views and numbers as the chips, one control. -->
+        <mf-dropdown
+          buttonId="st-view"
+          label="View"
+          prefix="View:"
+          size="sm"
+          [items]="viewItems()"
+          [value]="active() ?? 'open'"
+          (valueChange)="pick.emit($event)"
+          [countOnButton]="true"
+          neutralValue="open"
+          [panelWidth]="240"
+        />
+      } @else {
+        <mf-work-strip
+          [label]="kind() === 'matter' ? 'Matter tasks' : 'Project tasks'"
+          [items]="items()"
+          [interactive]="interactive()"
+          [active]="active()"
+          (pick)="pick.emit($event)"
+        />
+      }
     }
   `,
 })
@@ -57,6 +74,8 @@ export class SummaryStrip {
   readonly kind = input.required<'matter' | 'project'>();
   readonly id = input.required<number>();
   readonly interactive = input(false);
+  /** `dropdown` draws the views as one View dropdown (the Tasks tab); `chips` is the strip. */
+  readonly variant = input<'chips' | 'dropdown'>('chips');
   /** Toggle mode: the pressed item's key. */
   readonly active = input<string | null>(null);
   /** Link mode: the page the own-tab links go to (`/matters/5`). */
@@ -85,6 +104,10 @@ export class SummaryStrip {
     );
     return this.interactive() ? base : ownTabItems(base, this.path());
   });
+
+  protected readonly viewItems = computed<DropdownItem[]>(() =>
+    this.items().map((i) => ({ value: i.key, label: i.label, count: i.count })),
+  );
 
   constructor() {
     effect(() => {

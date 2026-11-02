@@ -108,6 +108,63 @@ public sealed class TaskBulkService(
         return new BulkTasksResponse(correlation.Id, changed, results.Count - changed, results);
     }
 
+    /// <summary>
+    /// Links tasks of one matter to a project of that matter, or unlinks them (needs <c>Task.Edit</c>). Checked as a whole first (matter visible, project valid), then every task is its own transaction like the other bulk changes.
+    /// </summary>
+    public async Task<Result<BulkTasksResponse>> SetProjectAsync(int matterId, SetTasksProjectRequest request, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.TaskIds.Count is < 1 or > BulkTasksRequest.MaxTasks)
+            return Error.Validation("taskIds", "OUT_OF_RANGE", $"Select between 1 and {BulkTasksRequest.MaxTasks} tasks.");
+        if (request.TaskIds.Distinct().Count() != request.TaskIds.Count)
+            return Error.Validation("taskIds", "DUPLICATE", "A task can appear only once.");
+
+        if (!await access.CanSeeMatterAsync(matterId, ct) || await matters.FindAsync(matterId, ct) is null)
+            return Error.NotFound("The matter does not exist.");
+
+        var allowed = permissions.Require(Permissions.Task.Edit);
+        if (allowed.IsFailure)
+            return allowed.Error!;
+
+        ProjectSummary? project = null;
+        if (request.ProjectId is { } projectId)
+        {
+            var checkedProject = await tasks.CheckLinkProjectAsync(projectId, matterId, ct);
+            if (checkedProject.IsFailure)
+                return checkedProject.Error!;
+            project = checkedProject.Value;
+        }
+
+        var ids = request.TaskIds;
+        var known = await access.Visible().Where(t => ids.Contains(t.Id))
+            .Select(t => new { t.Id, t.MatterId, t.RowVersion })
+            .ToDictionaryAsync(t => t.Id, ct);
+
+        var results = new List<BulkTaskResult>(ids.Count);
+        foreach (var id in ids)
+        {
+            if (!known.TryGetValue(id, out var task))
+            {
+                results.Add(new BulkTaskResult(id, false, ErrorCodes.NotFound, "The task does not exist.", []));
+                continue;
+            }
+
+            if (task.MatterId != matterId)
+            {
+                results.Add(new BulkTaskResult(id, false, "NOT_IN_MATTER", "The task belongs to a different matter.", []));
+                continue;
+            }
+
+            var done = await tx.RunAsync(token => tasks.SetProjectCoreAsync(id, request.ProjectId, null, Convert.ToBase64String(task.RowVersion), project, token), ct);
+            results.Add(done.IsFailure
+                ? new BulkTaskResult(id, false, done.Error!.Code, done.Error.Message, [])
+                : new BulkTaskResult(id, true, null, null, []));
+        }
+
+        var changed = results.Count(r => r.Ok);
+        return new BulkTasksResponse(correlation.Id, changed, results.Count - changed, results);
+    }
+
     private async Task<Result<IReadOnlyList<string>>> ChangeOneAsync(long taskId, int? currentPodId, string rowVersion, BulkTasksRequest request, CancellationToken ct)
     {
         IReadOnlyList<string> warnings = [];

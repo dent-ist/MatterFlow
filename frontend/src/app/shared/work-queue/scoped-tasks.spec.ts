@@ -11,6 +11,7 @@ import {
   settle,
   withPermissions,
 } from '../testing/org-testing';
+import { ddChoose, ddOptionTexts, ddValue } from '../../testing/dropdown-testing.spec-util';
 import { ScopedTasks } from './scoped-tasks';
 import {
   aRow,
@@ -76,26 +77,19 @@ describe('ScopedTasks', () => {
   const DUE_FROM = 16;
   const DUE_TO = 17;
 
-  const items = () => Array.from(el().querySelectorAll<HTMLElement>('button[data-strip-item]'));
-
-  it('shows the five strip items in toggle mode above the grid, from the matter summary', async () => {
+  it('shows the five views as one View dropdown above the grid, from the matter summary (MD-04)', async () => {
     await create(['Task.View']);
     expect(matters.getMatterSummary).toHaveBeenCalledWith(7);
-    expect(items().map((b) => text(b))).toEqual([
+    expect(ddOptionTexts(el(), 'View')).toEqual([
       'Open 9',
       'Overdue 3',
       'Due soon 1',
       'ASAP 1',
       'On hold 1',
     ]);
-    // Open is the grid's default and shows as pressed; no other item does.
-    expect(items().map((b) => b.getAttribute('aria-pressed'))).toEqual([
-      'true',
-      'false',
-      'false',
-      'false',
-      'false',
-    ]);
+    // Open is the grid's default and is the chosen value.
+    expect(ddValue(el(), 'View')).toBe('open');
+    expect(el().querySelector('button[data-strip-item]')).toBeNull(); // no chips any more
     const strip = el().querySelector('mf-summary-strip')!;
     const table = el().querySelector('mf-task-table')!;
     expect(strip.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -114,29 +108,23 @@ describe('ScopedTasks', () => {
     expect(el().querySelector('[data-no-access=tasks]')).not.toBeNull();
   });
 
-  it('a click puts the view in the address, a second click and Open take it out; sort and other filters stay', async () => {
+  it('choosing a view puts it in the address and Open takes it out; sort and other filters stay', async () => {
     await create(['Task.View']);
-    items()[1].click();
+    ddChoose(el(), 'View', 'overdue');
     expect(navigate).toHaveBeenLastCalledWith([], {
       queryParams: { view: 'overdue' },
       queryParamsHandling: 'merge',
     });
     query.set({ view: 'overdue' });
     await settle(fixture);
-    expect(items()[1].getAttribute('aria-pressed')).toBe('true');
-    expect(items()[0].getAttribute('aria-pressed')).toBe('false');
-    items()[1].click();
-    expect(navigate).toHaveBeenLastCalledWith([], {
-      queryParams: { view: null },
-      queryParamsHandling: 'merge',
-    });
-    // Another item replaces the pressed one; Open clears.
-    items()[3].click();
+    expect(ddValue(el(), 'View')).toBe('overdue');
+    // Another view replaces the chosen one; Open clears.
+    ddChoose(el(), 'View', 'asap');
     expect(navigate).toHaveBeenLastCalledWith([], {
       queryParams: { view: 'asap' },
       queryParamsHandling: 'merge',
     });
-    items()[0].click();
+    ddChoose(el(), 'View', 'open');
     expect(navigate).toHaveBeenLastCalledWith([], {
       queryParams: { view: null },
       queryParamsHandling: 'merge',
@@ -171,7 +159,7 @@ describe('ScopedTasks', () => {
     await create(['Task.View'], {}, { view: 'nonsense' });
     expect(args()[OVERDUE]).toBeUndefined();
     expect(args()[ASAP]).toBeUndefined();
-    expect(items()[0].getAttribute('aria-pressed')).toBe('true');
+    expect(ddValue(el(), 'View')).toBe('open');
   });
 
   it('says which total it is: a pressed view counts as narrowed for the page tab count', async () => {

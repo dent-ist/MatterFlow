@@ -49,3 +49,18 @@ public sealed record BulkTasksResponse(
     [property: Required] int Changed,
     [property: Required] int Failed,
     [property: Required] IReadOnlyList<BulkTaskResult> Results);
+
+/// <summary>
+/// Puts tasks of one matter into a project of that matter, or takes them out (MD-05, epic #1001). A task belongs to at most one project: linking a task that is
+/// in another project moves it (the answer says so in the audit trail, not as an error). At most <see cref="BulkTasksRequest.MaxTasks"/> tasks.
+/// </summary>
+public sealed class SetTasksProjectRequest
+{
+    /// <summary>The tasks, all of the matter in the route.</summary>
+    [Required, MinLength(1), MaxLength(BulkTasksRequest.MaxTasks)]
+    public List<long> TaskIds { get; init; } = [];
+
+    /// <summary>The project to link to (active, of the same matter), or null to take the tasks out of their project.</summary>
+    [Range(1, int.MaxValue)]
+    public int? ProjectId { get; init; }
+}

@@ -14,7 +14,14 @@ import {
 import { Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
-import { BulkTasksResponse, TaskQueueClient, TaskQueueRow } from '../../api/generated/api-client';
+import {
+  BulkTasksResponse,
+  MatterBulkTasksClient,
+  TaskQueueClient,
+  TaskQueueRow,
+} from '../../api/generated/api-client';
+import { NotificationService } from '../../core/notify/notification.service';
+import { Dropdown, DropdownItem } from '../ui/dropdown';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { LookupStore } from '../../core/lookups/lookup-store';
@@ -47,6 +54,8 @@ import { WorkWidths } from './work-widths';
 import { DUE_SOON_DAYS } from './work-vocabulary';
 
 const PAGE_SIZE = 25;
+/** The choice that takes the ticked tasks out of their project. */
+const NO_PROJECT = 'none';
 const MATTER_COLUMNS = ['ref', 'title', 'project', 'priority', 'assignee', 'due', 'status'];
 const PROJECT_COLUMNS = ['ref', 'title', 'priority', 'assignee', 'due', 'status'];
 
@@ -83,6 +92,7 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
 @Component({
   selector: 'mf-scoped-tasks',
   imports: [
+    Dropdown,
     BulkTasksDialog,
     Button,
     HasPermissionDirective,
@@ -133,6 +143,7 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
         [kind]="projectId() === null ? 'matter' : 'project'"
         [id]="projectId() ?? matterId()"
         [interactive]="true"
+        variant="dropdown"
         [active]="view() ?? 'open'"
         [reload]="stripReload()"
         (pick)="pickView($event)"
@@ -187,6 +198,31 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
               (click)="openBulk('priority')"
             >
               Set priority...
+            </button>
+          }
+          @if (canLinkProject()) {
+            <mf-dropdown
+              buttonId="st-link-project"
+              label="Project"
+              prefix="Link to:"
+              size="sm"
+              placeholder="Choose project"
+              [items]="linkItems()"
+              [value]="linkTarget()"
+              (valueChange)="linkTarget.set($event)"
+              [neutralValue]="null"
+              [panelWidth]="260"
+            />
+            <button
+              type="button"
+              class="mf-btn"
+              data-bulk="link"
+              [attr.aria-disabled]="
+                selected().size === 0 || linkTarget() === '' || linking() ? 'true' : null
+              "
+              (click)="linkSelected()"
+            >
+              {{ linkTarget() === NO_PROJECT ? 'Unlink' : 'Link to project' }}
             </button>
           }
           <button
@@ -285,6 +321,8 @@ export class ScopedTasks {
   protected readonly filterRowId = `scoped-task-filter-${ScopedTasks.nextId++}`;
 
   private readonly api = inject(TaskQueueClient);
+  private readonly bulkApi = inject(MatterBulkTasksClient);
+  private readonly notify = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthStore);
   private readonly lookups = inject(LookupStore);
@@ -310,8 +348,24 @@ export class ScopedTasks {
   protected readonly canAssign = computed(() => this.auth.has('Task.Assign'));
   protected readonly canPrioritise = computed(() => this.auth.has('Task.SetPriority'));
   protected readonly canBulk = computed(
-    () => this.canView() && (this.canAssign() || this.canPrioritise()),
+    () => this.canView() && (this.canAssign() || this.canPrioritise() || this.canLinkProject()),
   );
+  // --- link to a project (MD-05): the ticked tasks move into one project of the matter, or out of their project ---
+  protected readonly NO_PROJECT = NO_PROJECT;
+  protected readonly linkTarget = signal('');
+  protected readonly linking = signal(false);
+  /** Linking needs Task.Edit and a Matter's grid that has projects to link to (a Project's own grid has none). */
+  protected readonly canLinkProject = computed(
+    () =>
+      this.canView() &&
+      this.auth.has('Task.Edit') &&
+      this.projectId() === null &&
+      this.projectOptions().length > 0,
+  );
+  protected readonly linkItems = computed<DropdownItem[]>(() => [
+    ...this.projectOptions().map((o) => ({ value: o.value, label: o.label })),
+    { value: NO_PROJECT, label: 'No project (unlink)' },
+  ]);
   protected readonly targets = computed<BulkTarget[]>(() =>
     [...this.selected()].map(
       (id) => this.picked.get(id) ?? { taskId: id, taskNumber: `Task ${id}`, title: '' },
@@ -609,6 +663,32 @@ export class ScopedTasks {
   protected endSelecting(): void {
     this.selecting.set(false);
     this.clearSelection();
+  }
+
+  protected async linkSelected(): Promise<void> {
+    const target = this.linkTarget();
+    if (this.selected().size === 0 || target === '' || this.linking()) return;
+    this.linking.set(true);
+    try {
+      const answer = await firstValueFrom(
+        this.bulkApi.setMatterTasksProject(this.matterId(), {
+          taskIds: [...this.selected()],
+          projectId: target === NO_PROJECT ? undefined : Number(target),
+        }),
+      );
+      this.bulkFinished(answer);
+      if (answer.failed > 0) {
+        this.notify.warn(`${answer.changed} tasks changed, ${answer.failed} could not be changed.`);
+      } else {
+        this.notify.success(
+          target === NO_PROJECT
+            ? `${answer.changed} tasks unlinked`
+            : `${answer.changed} tasks linked to the project`,
+        );
+      }
+    } finally {
+      this.linking.set(false);
+    }
   }
 
   protected openBulk(mode: BulkMode): void {
