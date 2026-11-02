@@ -290,9 +290,10 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
     ]);
     expect(await width(page, 'title')).toBeGreaterThanOrEqual(200);
     await shot(page, 'task-queue-narrow-1366x768');
-    // 1440 px: the box is 1172 px and holds it with a Title of at least 200 px.
+    // 1440 px: the box is 1172 px; the standard order (Type, Project, Progress too) holds Matter Name only from about 1600 px, so it still drops here.
     await page.setViewportSize({ width: 1440, height: 900 });
-    await expect(th(page, 'matterName')).toBeVisible();
+    await expect(th(page, 'matter')).toBeVisible();
+    await expect(th(page, 'matterName')).toHaveCount(0);
     expect(await width(page, 'title')).toBeGreaterThanOrEqual(200);
     await shot(page, 'task-queue-1440x900');
     // My Work at 1366 keeps Workflow progress (it was there before) and drops Matter Name.
@@ -412,7 +413,7 @@ async function store(page: Page, key: string, columns: string[]): Promise<void> 
 test.describe('Migration of stored column choices (#348)', () => {
   const OLD_QUEUE = ['ref', 'title', 'matter', 'priority', 'assignee', 'due', 'status'];
 
-  test('a stored set equal to the old default gets Matter Name; a customised set is left alone and Matter Name is in the Columns panel', async ({
+  test('a remembered choice is never rewritten (LC-03 changes the defaults only): an old default set stays as it is and Matter Name is in the Columns panel', async ({
     seed,
     asUser,
   }) => {
@@ -420,7 +421,7 @@ test.describe('Migration of stored column choices (#348)', () => {
     const stored = await seed.user(['Data Technician'], 'mc-mig-default');
     const custom = await seed.user(['Data Technician'], 'mc-mig-custom');
 
-    // Never customised: the stored set is the old default (written by an older release).
+    // The stored set is an older default (written by an older release): it is a remembered choice and stays, without Matter Name.
     const a = await asUser(stored.username);
     await a.setViewportSize({ width: 1920, height: 1080 });
     await store(a, `mf.work-columns.v2.taskQueue.${stored.userId}`, OLD_QUEUE);
@@ -435,20 +436,23 @@ test.describe('Migration of stored column choices (#348)', () => {
     ]);
     await new TaskQueuePage(a).open(`?q=${w.tag}`);
     await expect(a.locator('[data-task]').first()).toBeVisible();
-    await expect(th(a, 'matterName')).toBeVisible();
-    expect((await headers(a)).slice(3, 5)).toEqual(['CM Number', 'Matter Name']);
-    await new MyWorkPage(a).open();
-    await expect(th(a, 'matterName')).toBeVisible();
-    // Another tab of the same page is untouched by the other scope: it shows its default (with Matter Name).
+    expect(await headers(a)).toEqual([
+      'Ref',
+      'Title',
+      'CM Number',
+      'Priority',
+      'Assignee',
+      'Due',
+      'Status',
+    ]);
+    // One click away in the Columns panel, and it sticks across a reload.
     await new TaskQueuePage(a).open(`?q=${w.tag}`);
-    await expect(th(a, 'matterName')).toBeVisible();
-    // The migration ran once: taking Matter Name out sticks across a reload.
     await columnsButton(a).click();
-    await a.getByLabel('Matter Name', { exact: true }).uncheck();
-    await expect(th(a, 'matterName')).toHaveCount(0);
+    await a.getByLabel('Matter Name', { exact: true }).check();
+    await expect(th(a, 'matterName')).toBeVisible();
     await a.reload();
     await expect(a.locator('[data-task]').first()).toBeVisible();
-    await expect(th(a, 'matterName')).toHaveCount(0);
+    await expect(th(a, 'matterName')).toBeVisible();
 
     // Customised: Client added to the old default. Nothing changes; the column is one click away.
     const b = await asUser(custom.username);
@@ -485,7 +489,8 @@ test.describe('Columns panel, header menu, resize and fit for Matter Name (#348)
   }) => {
     const w = await world(seed, 'mc-panel', 2);
     const page = await asUser(w.me.username);
-    await page.setViewportSize({ width: 1920, height: 1080 });
+    // Wide enough for the whole standard order with a 360 px Matter Name (the narrow-box rule would drop the column otherwise, and there would be nothing to fit).
+    await page.setViewportSize({ width: 2400, height: 1200 });
     const queue = new TaskQueuePage(page);
     await queue.open(`?q=${w.tag}`);
     await expect(page.locator('[data-task]').first()).toBeVisible();

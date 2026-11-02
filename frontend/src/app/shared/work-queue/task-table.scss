@@ -293,10 +293,17 @@ th:not([aria-sort]) .wt-sort .pi {
   margin: 0;
 }
 
-/* The Type column of a Matter's or Project's grid (MD-29): the chip and the type's name beside it, the name cut with an ellipsis. */
+/* The Type column (MD-29, every task list since LC-03): the chip and the type's name beside it, the name on one line cut with an ellipsis, so a row stays one line tall. */
 .wt-typecell {
   display: flex;
   align-items: center;
   gap: var(--mf-s2);
   min-width: 0;
+}
+
+.wt-typecell .wt-clip {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

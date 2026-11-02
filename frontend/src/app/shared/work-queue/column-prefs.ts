@@ -115,7 +115,7 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
   {
     key: 'progress',
     label: 'Progress',
-    width: 160,
+    width: 120,
     minWidth: 120,
     maxWidth: 320,
     autoHide: true,
