@@ -5,9 +5,11 @@ import {
   Injector,
   afterNextRender,
   computed,
+  effect,
   inject,
   input,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -30,6 +32,7 @@ import {
 import { FilterDef, FilterOption } from '../filters/filter-def';
 import { FiltersBar } from '../filters/filters-bar';
 import { ListFilters } from '../filters/list-filters';
+import { AssetTypeChip } from './asset-type-chip';
 import { StatusChip } from './status-chip';
 import { formatSize } from '../../features/assets/disposition/asset-size';
 import { SortHeader } from './data-table';
@@ -51,6 +54,7 @@ const COLUMNS = ['name', 'type', 'size', 'externalReference', 'status'] as const
   selector: 'mf-matter-assets',
   imports: [
     StatusChip,
+    AssetTypeChip,
     RouterLink,
     Button,
     HasPermissionDirective,
@@ -153,7 +157,19 @@ const COLUMNS = ['name', 'type', 'size', 'externalReference', 'status'] as const
                     >{{ a.displayName }}</a
                   >
                 </td>
-                <td>{{ a.assetTypeName }}</td>
+                <td>
+                  <span class="ma-type">
+                    <mf-asset-type-chip
+                      [iconKey]="typeLook(a.assetTypeId)?.iconKey"
+                      [colourKey]="typeLook(a.assetTypeId)?.colourKey"
+                      [typeId]="a.assetTypeId"
+                      [name]="a.assetTypeName"
+                      [decorative]="true"
+                      size="sm"
+                    />
+                    {{ a.assetTypeName }}
+                  </span>
+                </td>
                 <td class="pg-num ma-size" data-size>
                   @if (sizeText(a); as size) {
                     {{ size }}
@@ -211,9 +227,22 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
   protected readonly columns = COLUMNS;
   protected readonly types = signal<AssetTypeResponse[]>([]);
 
+  /** How many assets of each type the matter holds (the Type dropdown shows them); empty until the counts arrive. */
+  protected readonly typeCounts = signal<ReadonlyMap<number, number>>(new Map());
+
   protected readonly typeOptions = computed<FilterOption[]>(() =>
-    this.types().map((t) => ({ value: String(t.assetTypeId), label: t.name })),
+    this.types().map((t) => ({
+      value: String(t.assetTypeId),
+      label: t.name,
+      ...(this.typeCounts().has(t.assetTypeId)
+        ? { count: this.typeCounts().get(t.assetTypeId) }
+        : {}),
+    })),
   );
+
+  protected typeLook(id: number): AssetTypeResponse | undefined {
+    return this.types().find((t) => t.assetTypeId === id);
+  }
 
   /** One definition per filter: the Assets screen's, without the Matter (it is fixed here). */
   private readonly defs = computed((): FilterDef[] => [
@@ -247,6 +276,10 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
     super();
     registerTableSkip();
     void this.loadTypes();
+    effect(() => {
+      const id = this.matterId();
+      untracked(() => void this.loadCounts(id));
+    });
     // The controls move into the sheet while the grid scrolls sideways.
     afterNextRender(
       () =>
@@ -269,6 +302,15 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
   protected override watch(): void {
     this.matterId();
     super.watch();
+  }
+
+  private async loadCounts(matterId: number): Promise<void> {
+    try {
+      const counts = await firstValueFrom(this.api.getAssetCountsByType(matterId));
+      this.typeCounts.set(new Map(counts.map((c) => [c.assetTypeId, c.count + c.retiredCount])));
+    } catch {
+      // The Type dropdown simply shows no numbers.
+    }
   }
 
   private async loadTypes(): Promise<void> {

@@ -256,6 +256,8 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
           [columns]="columns()"
           [caption]="caption()"
           [hideContext]="true"
+          [projectChoices]="rowProjectChoices()"
+          (projectPick)="pickRowProject($event)"
           [origin]="projectId() === null ? 'matter' : 'project'"
           [rowList]="rowList()"
           [state]="state()"
@@ -361,6 +363,15 @@ export class ScopedTasks {
       this.auth.has('Task.Edit') &&
       this.projectId() === null &&
       this.projectOptions().length > 0,
+  );
+  /** The Project dropdown of a row (needs Task.Edit and a Matter's grid with projects): "No project" first, then the matter's projects. */
+  protected readonly rowProjectChoices = computed<DropdownItem[]>(() =>
+    this.canLinkProject()
+      ? [
+          { value: '', label: 'No project' },
+          ...this.projectOptions().map((o) => ({ value: o.value, label: o.label })),
+        ]
+      : [],
   );
   protected readonly linkItems = computed<DropdownItem[]>(() => [
     ...this.projectOptions().map((o) => ({ value: o.value, label: o.label })),
@@ -663,6 +674,35 @@ export class ScopedTasks {
   protected endSelecting(): void {
     this.selecting.set(false);
     this.clearSelection();
+  }
+
+  /** One row's Project dropdown: the task moves into the project (or out of its project); the row shows the new project at once. */
+  protected async pickRowProject(e: {
+    row: TaskQueueRow;
+    projectId: number | null;
+  }): Promise<void> {
+    if ((e.row.projectId ?? null) === e.projectId) return;
+    try {
+      const answer = await firstValueFrom(
+        this.bulkApi.setMatterTasksProject(this.matterId(), {
+          taskIds: [e.row.taskId],
+          projectId: e.projectId ?? undefined,
+        }),
+      );
+      if (answer.failed > 0) {
+        this.notify.warn(answer.results[0]?.message ?? "The task's project could not be changed.");
+        return;
+      }
+      const name = this.projectOptions().find((o) => o.value === String(e.projectId))?.label;
+      this.replaceRow({
+        ...e.row,
+        projectId: e.projectId ?? undefined,
+        projectName: e.projectId === null ? undefined : name,
+      });
+    } catch {
+      // The HTTP layer already told the person; the row keeps its project (the dropdown shows it again on the next render).
+      this.rows.update((rows) => [...rows]);
+    }
   }
 
   protected async linkSelected(): Promise<void> {

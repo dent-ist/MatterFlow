@@ -1,6 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { MattersClient, ProjectsClient, TaskQueueClient } from '../../api/generated/api-client';
+import {
+  MatterBulkTasksClient,
+  MattersClient,
+  ProjectsClient,
+  TaskQueueClient,
+} from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Permission } from '../../core/auth/permissions';
 import {
@@ -28,6 +33,7 @@ describe('ScopedTasks', () => {
   let matters: { getMatterSummary: ReturnType<typeof vi.fn> };
   let projects: { getProjectSummary: ReturnType<typeof vi.fn> };
   let query: ReturnType<typeof fakeQuery>;
+  let linkApi: { setMatterTasksProject: ReturnType<typeof vi.fn> };
   let navigate: ReturnType<typeof vi.fn>;
   let fixture: ComponentFixture<ScopedTasks>;
   const el = (): HTMLElement => fixture.nativeElement;
@@ -46,6 +52,11 @@ describe('ScopedTasks', () => {
         .fn()
         .mockReturnValue(ok(pageOf([aRow({ projectId: 3, projectName: 'Wave 1' })]))),
     };
+    linkApi = {
+      setMatterTasksProject: vi
+        .fn()
+        .mockReturnValue(ok({ correlationId: 'c', changed: 1, failed: 0, results: [] })),
+    };
     matters = { getMatterSummary: vi.fn().mockReturnValue(ok({ matterId: 7, ...SUMMARY })) };
     projects = { getProjectSummary: vi.fn().mockReturnValue(ok({ projectId: 3, ...SUMMARY })) };
     TestBed.configureTestingModule({
@@ -56,6 +67,7 @@ describe('ScopedTasks', () => {
         { provide: TaskQueueClient, useValue: queue },
         { provide: MattersClient, useValue: matters },
         { provide: ProjectsClient, useValue: projects },
+        { provide: MatterBulkTasksClient, useValue: linkApi },
         ...provideLookups(),
         ...provideQueueChoices(),
         ...provideClock('2026-10-14T15:00:00Z', 'America/Chicago'),
@@ -93,6 +105,28 @@ describe('ScopedTasks', () => {
     const strip = el().querySelector('mf-summary-strip')!;
     const table = el().querySelector('mf-task-table')!;
     expect(strip.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('a row has a Project dropdown with Task.Edit and projects; choosing one links the task (MD-05)', async () => {
+    await create(['Task.View', 'Task.Edit'], {
+      projectOptions: [
+        { value: '3', label: 'Wave 1' },
+        { value: '4', label: 'Wave 2' },
+      ],
+    });
+    expect(ddValue(el().querySelector('tbody')!, 'Project')).toBe('3');
+    ddChoose(el().querySelector('tbody')!, 'Project', '4');
+    await settle(fixture);
+    expect(linkApi.setMatterTasksProject).toHaveBeenCalledWith(7, {
+      taskIds: [1042],
+      projectId: 4,
+    });
+    expect(ddValue(el().querySelector('tbody')!, 'Project')).toBe('4');
+  });
+
+  it('has no row Project dropdown without Task.Edit', async () => {
+    await create(['Task.View'], { projectOptions: [{ value: '3', label: 'Wave 1' }] });
+    expect(el().querySelector('tbody mf-dropdown')).toBeNull();
   });
 
   it('asks a project summary for a project grid', async () => {

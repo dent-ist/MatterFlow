@@ -73,6 +73,7 @@ import { KeyboardShortcuts, isEditable } from '../layout/keyboard-shortcuts';
 import { isShortcut } from '../layout/shortcut-registry';
 import { TaskSkeleton } from './task-skeleton';
 import { PHONE_CARDS_QUERY, TaskCardList } from './task-card-list';
+import { Dropdown, DropdownItem } from '../ui/dropdown';
 
 const NARROW_BELOW = 760;
 /** A touch held this long on a header opens its column menu (PM ruling on #207). */
@@ -86,6 +87,7 @@ const LONG_PRESS_MS = 500;
 @Component({
   selector: 'mf-task-table',
   imports: [
+    Dropdown,
     TaskTypeBadge,
     RouterLink,
     RowLink,
@@ -343,7 +345,25 @@ const LONG_PRESS_MS = 500;
                         }}</span>
                       }
                       @case ('project') {
-                        @if (hideContext()) {
+                        @if (hideContext() && projectChoices().length > 0 && !closed(row)) {
+                          <!-- A Matter's grid (MD-04): the project is a dropdown in the row; the page links or unlinks the task. -->
+                          <mf-dropdown
+                            size="sm"
+                            label="Project"
+                            [attr.data-project-dropdown]="row.taskId"
+                            [items]="projectChoices()"
+                            [value]="
+                              row.projectId === null || row.projectId === undefined
+                                ? ''
+                                : '' + row.projectId
+                            "
+                            (valueChange)="
+                              projectPick.emit({ row, projectId: $event === '' ? null : +$event })
+                            "
+                            [panelWidth]="240"
+                            placeholder="-"
+                          />
+                        } @else if (hideContext()) {
                           <mf-project-cell
                             [name]="row.projectName"
                             [projectId]="row.projectId"
@@ -709,6 +729,12 @@ export class TaskTable {
   }
   /** Hide the Matter and Client columns: on a Matter's or Project's own page the header already says it. */
   readonly hideContext = input(false);
+  /**
+   * The projects a task of this matter can move to (a Matter's Tasks tab, MD-04): with entries, an open task's Project cell is a dropdown with a "No project" row first;
+   * the page decides what a pick does (`projectPick`). Empty (the default) keeps the plain cell.
+   */
+  readonly projectChoices = input<readonly DropdownItem[]>([]);
+  readonly projectPick = output<{ row: TaskQueueRow; projectId: number | null }>();
   /**
    * No inline editors: Status, Priority and Assignee are shown as text and badges. A short list on a page of its own business (the My Matters Overview, issue #929)
    * is for reading and opening a task, so it adds no editing controls to the page.
