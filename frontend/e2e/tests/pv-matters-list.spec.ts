@@ -18,7 +18,8 @@ test.describe('PM v2 page fixes: Matters list columns (#881)', () => {
   }) => {
     const d = await pvWorld(seed, personas, 'pvh1');
     const page = await asUser(d.w.pm.username);
-    await page.setViewportSize({ width: 1366, height: 768 });
+    // 1440 px: the Secondary PM column shows from 1280 px since MD-21 (#1025), so at 1366 the names may take a third line; 1440 keeps the old promise.
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/matters?scope=mine');
     await expect(page.locator('tbody tr')).toHaveCount(2);
     // No truncation of the demo names at 1366: the name link shows all its text (two lines at most), the table does not scroll sideways.
@@ -32,7 +33,7 @@ test.describe('PM v2 page fixes: Matters list columns (#881)', () => {
     ).toBeGreaterThanOrEqual(130);
     expect(
       (await page.locator('tbody td.ml-name').first().boundingBox())!.width,
-    ).toBeGreaterThanOrEqual(200);
+    ).toBeGreaterThanOrEqual(180); // 200 before the Secondary PM column joined at 1280 px (MD-21); the person can widen it
     const wide = await page
       .locator('.mf-scroll')
       .first()
@@ -73,6 +74,11 @@ test.describe('PM v2 page fixes: Matters list columns (#881)', () => {
     await plain.setViewportSize({ width: 1366, height: 768 });
     await plain.goto('/matters');
     await expect(plain.locator('tbody tr').first()).toBeVisible();
-    await expect(plain.locator('[data-grid-columns]')).toHaveCount(0);
+    // The Columns menu is there for everybody now (MD-28), but offers no optional column without the permissions.
+    await plain.locator('[data-grid-columns]').click();
+    await expect(plain.locator('[data-grid-columns-panel] [data-column="onHold"]')).toHaveCount(0);
+    await expect(plain.locator('[data-grid-columns-panel] [data-column="dataSize"]')).toHaveCount(
+      0,
+    );
   });
 });
