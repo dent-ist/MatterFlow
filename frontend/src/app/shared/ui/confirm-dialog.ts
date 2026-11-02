@@ -27,6 +27,10 @@ import { ScrollRegion } from './scroll-region';
       overflow-y: auto;
       overflow-wrap: anywhere;
       white-space: normal;
+      /* The body clips what leaves it, and a full-width field has its 2 px focus ring outside its box: 3 px of room all round (pulled back by the same
+         margin, so nothing moves) keep the ring whole at the left and right edges. */
+      padding: 3px;
+      margin: -3px;
     }
     /* While the action runs the buttons look disabled but stay focusable: a disabled button loses focus and the dialog's focus trap then
        moves it to Cancel (TY-K, #414). The click is ignored while busy. */
