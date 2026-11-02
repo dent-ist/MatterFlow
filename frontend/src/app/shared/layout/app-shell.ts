@@ -23,7 +23,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import { Button } from 'primeng/button';
 import { AuthStore } from '../../core/auth/auth.store';
-import { BrandingService } from '../../core/branding/branding.service';
+import { BUILT_IN_MARK_LIGHT, BrandingService } from '../../core/branding/branding.service';
 import { PendingUsersStore } from '../../core/identity-admin/pending-users.store';
 import { HasPermissionDirective } from '../directives/has-permission.directive';
 import { SEARCH_TYPES } from '../search/search-meta';
@@ -80,6 +80,8 @@ const PHONE_QUERY = '(max-width: 639px)';
 export class AppShell {
   protected readonly auth = inject(AuthStore);
   protected readonly brand = inject(BrandingService);
+  /** The white-on-navy variant of the built-in mark, used on the dark panel (SH-01, #1044). */
+  protected readonly lightMark = BUILT_IN_MARK_LIGHT;
   protected readonly pendingUsers = inject(PendingUsersStore);
   protected readonly versionLabel = versionLabel();
   protected readonly versionName = versionName();

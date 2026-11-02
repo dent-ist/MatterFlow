@@ -201,3 +201,7 @@ No data to migrate. Deploy order: the SQL script first (permission row + table),
 * Q3. Dark mode: show the icon on a neutral light chip in the header when the theme is dark? Recommended: no for now; admins upload an icon that works on both.
 * Q4. Should the header show the name and the icon, or allow hiding the name (icon-only logos)? Recommended: always show the name (accessibility, simplicity).
 * Q5. Keep the browser-tab colour (`theme-color`) fixed? Recommended: yes; colour branding is a later setting.
+
+## Update 2026-11-02 (SH-01, #1044): where the logo shows now
+
+The application name and icon are now at the top of the dark navigation panel (from 640 px up) instead of the white top bar; on a phone they stay in the white top bar. The built-in mark uses a white-on-navy variant on the panel. An uploaded icon cannot be recoloured, so it is always shown on a light tile (surface colour, 6 px radius, 4 px padding) with the name in white next to it, which keeps any image (dark, light or odd-shaped) readable. The "Header" preview on the Settings page is a simplified preview on white. See `docs/ux/theme-guide.md` section 7.6.

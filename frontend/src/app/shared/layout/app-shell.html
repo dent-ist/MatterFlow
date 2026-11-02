@@ -5,73 +5,6 @@
 }
 <a class="mf-skip" href="#mf-main" (click)="skipToMain($event)">Skip to main content</a>
 
-<header class="mf-header" [class.mf-header--search-open]="searchOpen()">
-  <button
-    #menuButton
-    type="button"
-    class="mf-btn mf-btn--icon mf-menu-btn"
-    data-testid="nav-menu-button"
-    aria-label="Menu"
-    aria-controls="mf-nav"
-    [attr.aria-expanded]="menuOpen()"
-    (click)="toggleMenu()"
-  >
-    <i class="pi pi-bars" aria-hidden="true"></i>
-  </button>
-  <a
-    class="mf-logo"
-    routerLink="/"
-    [attr.aria-label]="brand.appName() + ' home'"
-    data-testid="app-logo"
-    ><img
-      class="mf-logo__mark"
-      [src]="brand.markSrc()"
-      alt=""
-      width="28"
-      height="28"
-      (error)="brand.markFailed()"
-    /><span class="mf-logo__name" data-app-name>{{ brand.appName() }}</span></a
-  >
-
-  @if (canSearch()) {
-    <mf-global-search id="mf-search-row" class="mf-search" />
-    <button
-      #searchButton
-      type="button"
-      class="mf-btn mf-btn--icon mf-search-btn"
-      data-testid="search-button"
-      aria-label="Search"
-      aria-controls="mf-search-row"
-      [attr.aria-expanded]="searchOpen()"
-      (click)="toggleSearch()"
-    >
-      <i class="pi pi-search" aria-hidden="true"></i>
-    </button>
-  } @else {
-    <span class="mf-search-spacer"></span>
-  }
-
-  @if (!onCreateTaskPage()) {
-    <p-button
-      *mfHasPermission="'Task.Create'"
-      label="Create task"
-      ariaLabel="Create task"
-      styleClass="mf-create"
-      icon="pi pi-plus"
-      (onClick)="createTask()"
-    />
-  }
-
-  @if (auth.has('Task.View')) {
-    <mf-notification-bell />
-  }
-
-  <mf-user-menu (shortcuts)="toggleHelp()" />
-</header>
-
-<!-- The one banner slot under the header (S13, #611): offline now, the sign-in banner joins it (#612). -->
-<mf-connection-banner />
-
 <!-- Says the new page's title after a navigation (S9a, #624); never moves focus. -->
 <mf-route-announcer />
 
@@ -80,6 +13,81 @@
 }
 
 <div class="mf-body">
+  <div class="mf-col">
+    <header class="mf-header" [class.mf-header--search-open]="searchOpen()">
+      <button
+        #menuButton
+        type="button"
+        class="mf-btn mf-btn--icon mf-menu-btn"
+        data-testid="nav-menu-button"
+        aria-label="Menu"
+        aria-controls="mf-nav"
+        [attr.aria-expanded]="menuOpen()"
+        (click)="toggleMenu()"
+      >
+        <i class="pi pi-bars" aria-hidden="true"></i>
+      </button>
+      <a
+        class="mf-logo"
+        routerLink="/"
+        [attr.aria-label]="brand.appName() + ' home'"
+        data-testid="app-logo"
+        ><picture class="mf-logo__pic" [class.mf-logo__pic--tile]="brand.customMark()">
+          @if (!brand.customMark()) {
+            <source media="(min-width: 640px)" [srcset]="lightMark" />
+          }
+          <img
+            class="mf-logo__mark"
+            [src]="brand.markSrc()"
+            alt=""
+            width="28"
+            height="28"
+            (error)="brand.markFailed()" /></picture
+        ><span class="mf-logo__name" data-app-name>{{ brand.appName() }}</span></a
+      >
+
+      @if (canSearch()) {
+        <mf-global-search id="mf-search-row" class="mf-search" />
+        <button
+          #searchButton
+          type="button"
+          class="mf-btn mf-btn--icon mf-search-btn"
+          data-testid="search-button"
+          aria-label="Search"
+          aria-controls="mf-search-row"
+          [attr.aria-expanded]="searchOpen()"
+          (click)="toggleSearch()"
+        >
+          <i class="pi pi-search" aria-hidden="true"></i>
+        </button>
+      } @else {
+        <span class="mf-search-spacer"></span>
+      }
+
+      @if (!onCreateTaskPage()) {
+        <p-button
+          *mfHasPermission="'Task.Create'"
+          label="Create task"
+          ariaLabel="Create task"
+          styleClass="mf-create"
+          icon="pi pi-plus"
+          (onClick)="createTask()"
+        />
+      }
+
+      @if (auth.has('Task.View')) {
+        <mf-notification-bell />
+      }
+
+      <mf-user-menu (shortcuts)="toggleHelp()" />
+    </header>
+    <!-- The one banner slot under the header (S13, #611): offline now, the sign-in banner joins it (#612). -->
+    <mf-connection-banner />
+
+    <main id="mf-main" #main tabindex="-1" class="mf-main">
+      <router-outlet />
+    </main>
+  </div>
   @if (menuOpen()) {
     <button
       type="button"
@@ -158,8 +166,4 @@
       ><span aria-hidden="true">{{ versionLabel }}</span>
     </p>
   </nav>
-
-  <main id="mf-main" #main tabindex="-1" class="mf-main">
-    <router-outlet />
-  </main>
 </div>

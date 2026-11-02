@@ -11,7 +11,7 @@ Protocol: one section per agent below, append-only, newest entry last; `git pull
 | #1041 | LC-04 | Matter Tasks cards on a phone | 2.0 | 7.3 | 0 | 0.0 |
 | #1042 | LC-05 | Page size 50, Sorted by, First/Last | 1.5 | 5.5 | 0 | 0.0 |
 | #1043 | LC-06 | Filters, + New Task, admin New buttons, Title Case | 1.0 | 3.6 | 0 | 0.0 |
-| #1044 | SH-01 | Shell: radius and full-height navigation panel | 4.0 | 14.5 | 0 | 0.0 |
+| #1044 | SH-01 | Shell: radius and full-height navigation panel | 4.0 | 14.5 | 100 | 14.5 |
 | #1045 | LC-07 | Verify Users Pods chip and Matter Projects New button | 1.0 | 3.6 | 0 | 0.0 |
 | | | **Total** | **27.5** | **100.0** | | **7.3** |
 
@@ -28,7 +28,7 @@ Protocol: one section per agent below, append-only, newest entry last; `git pull
 
 ## Agent F (shell, phone cards)
 
-(entries go here)
+- 2026-11-02 SH-01 (#1044) done: navy panel runs full height with the logo and name at its top (from 640 px; rail at 640 to 1099 px shows the mark), top bar to its right with the search aligned to the page content, 6 px selection corners with 8 px side margins (token `--mf-nav-item-radius`), white-on-navy `logo-light.svg` for the built-in mark, uploaded logos on a light tile, phone unchanged (logo in the white top bar, drawer). Also fixed a 4 px overshoot of the version line in the rail. New e2e `sh-full-height-panel.spec.ts` and a tile test in `app-settings.spec.ts`; `sh-nav-version` updated to the 6 px radius. Screenshots in `docs/ux/grid-consistency/shots/`. Theme guide 7.6 and `docs/ux/app-settings` updated.
 
 ## Questions
 
