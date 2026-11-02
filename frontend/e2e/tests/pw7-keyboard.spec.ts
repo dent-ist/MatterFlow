@@ -86,12 +86,27 @@ test.describe('Pod Work keyboard', () => {
     await page.locator('h1').focus();
     await tabTo(page, pw.podSelect);
     expect(await focusedHasRing(page), 'the select shows where the focus is').toBe(true);
+    // The shared dropdown: Down opens the list on the chosen pod, Home or End moves, Enter chooses and the focus returns to the button.
     await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('End');
+    await page.keyboard.press('Enter');
+    if (new URL(page.url()).searchParams.get('podId') === String(pod.podId)) {
+      await page.keyboard.press('ArrowDown');
+      await page.keyboard.press('Home');
+      await page.keyboard.press('Enter');
+    }
     await expect
       .poll(() => new URL(page.url()).searchParams.get('podId'))
       .not.toBe(String(pod.podId));
     await expect(pw.podSelect).toBeFocused();
-    await page.keyboard.press('ArrowUp');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Home');
+    await page.keyboard.press('Enter');
+    if (new URL(page.url()).searchParams.get('podId') !== String(pod.podId)) {
+      await page.keyboard.press('ArrowDown');
+      await page.keyboard.press('End');
+      await page.keyboard.press('Enter');
+    }
     await expect.poll(() => new URL(page.url()).searchParams.get('podId')).toBe(String(pod.podId));
     await expect(pw.assignToMe(free.taskNumber)).toBeVisible();
 

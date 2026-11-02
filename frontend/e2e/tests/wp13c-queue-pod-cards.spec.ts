@@ -187,7 +187,7 @@ test.describe('WP13c: Task Queue and Pod Work cards', () => {
     // The sort control is the first thing in the sheet, 44 px, naming the default order.
     const select = labelledDropdown(sheet, 'Sort by');
     await expect(select).toHaveAttribute('data-value', '');
-    await expect(select.locator('option').first()).toContainText('(default order)');
+    await expect(select).toContainText('(default order)');
     expect((await select.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await shot(page, 'tq-filters-sheet-375x812');
     await axeClean(page, 'filters sheet with the sort select at 375');

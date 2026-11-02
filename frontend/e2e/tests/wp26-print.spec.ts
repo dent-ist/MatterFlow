@@ -46,7 +46,8 @@ async function pdf(page: Page, name: string, landscape: boolean): Promise<number
   fs.writeFileSync(file, buffer);
   // The header row is printed again at the top of the second sheet (the Assignee header is on no row).
   const second = sheetText(file, 2);
-  if (second !== null) expect(second, `${name}: the header row repeats`).toContain('Assignee');
+  if (second !== null)
+    expect(second.toLowerCase(), `${name}: the header row repeats`).toContain('assignee');
   return sheets(buffer);
 }
 

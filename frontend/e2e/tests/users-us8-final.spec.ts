@@ -159,7 +159,7 @@ test.describe('Users final verification', () => {
     expect(
       pageStops,
       'the page itself: filters, tabs, grid header and one stop on the row, far fewer than the 33 of the review',
-    ).toBeLessThanOrEqual(12);
+    ).toBeLessThanOrEqual(13); // 13 since the theme rollout: the four status chips are four stops, the toolbar also has Other filters
 
     // U3: the Roles of "Grant access" are in the first screen of the panel at 1366x768.
     await page.locator('button[data-open]').first().click();

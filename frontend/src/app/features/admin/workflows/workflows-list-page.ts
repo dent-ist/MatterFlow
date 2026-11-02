@@ -436,11 +436,11 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   protected readonly phone = phoneCards();
   /**
    * The optional columns drop in a fixed order as the window narrows, so the grid never scrolls sideways and the row menu stays in view
-   * (#375): Last published below 1280 px, Task types (the count) below 1100 px, Steps below 900 px; Name, Versions and Status stay.
+   * (#375): Last published below 1366 px, Task types (the count) below 1180 px, Steps below 900 px; Name, Versions and Status stay (1280 and 1100 until the capitals of the theme's heading row made the columns wider).
    */
   private readonly stepsRoom = viewportAtLeast(900);
-  private readonly taskTypesRoom = viewportAtLeast(1100);
-  private readonly publishedRoom = viewportAtLeast(1280);
+  private readonly taskTypesRoom = viewportAtLeast(1180);
+  private readonly publishedRoom = viewportAtLeast(1366);
   protected readonly stepsShown = this.stepsRoom;
   protected readonly taskTypesShown = this.taskTypesRoom;
   protected readonly publishedShown = this.publishedRoom;

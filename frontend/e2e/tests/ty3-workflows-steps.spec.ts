@@ -27,7 +27,7 @@ async function shot(page: Page, name: string): Promise<void> {
 const heads = (page: Page) =>
   page
     .locator('thead tr:first-child th')
-    .allInnerTexts()
+    .allTextContents()
     .then((t) => t.map((x) => x.replace(/\s+/g, ' ').trim()));
 
 test.describe('Workflows columns (#376, #377)', () => {
@@ -161,7 +161,7 @@ test.describe('Workflows columns (#376, #377)', () => {
     expect(bare.workflow.workflowDefinitionId).toBeGreaterThan(0);
   });
 
-  test('the columns drop in a fixed order: Last published below 1280, Task types below 1100, Steps below 900; phone cards say the facts; permissions', async ({
+  test('the columns drop in a fixed order: Last published below 1366, Task types below 1180, Steps below 900; phone cards say the facts; permissions', async ({
     page,
     seed,
     asUser,
@@ -169,9 +169,11 @@ test.describe('Workflows columns (#376, #377)', () => {
     const all = ['Name', 'Versions', 'Steps', 'Task types', 'Last published', 'Status', 'Actions'];
     const expected: [number, string[]][] = [
       [1920, all],
-      [1280, all],
+      [1366, all],
+      [1280, all.filter((h) => h !== 'Last published')],
       [1200, all.filter((h) => h !== 'Last published')],
-      [1100, all.filter((h) => h !== 'Last published')],
+      [1180, all.filter((h) => h !== 'Last published')],
+      [1100, ['Name', 'Versions', 'Steps', 'Status', 'Actions']],
       [1000, ['Name', 'Versions', 'Steps', 'Status', 'Actions']],
       [900, ['Name', 'Versions', 'Steps', 'Status', 'Actions']],
       [768, ['Name', 'Versions', 'Status', 'Actions']],

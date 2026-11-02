@@ -248,7 +248,7 @@ test.describe('Task type, workflow and step cross-links', () => {
     await expect(bare.locator('[data-workflows-link]')).toHaveCount(0);
     // The reason is a neutral badge, not a red box.
     await expect(bare.locator('[data-not-usable]')).toContainText('Not usable');
-    await expect(page.locator('.chip')).toHaveCount(0);
+    await expect(page.locator('tbody .chip')).toHaveCount(0);
   });
 
   test('the number of workflows opens the Workflows tab filtered to the task type, with a removable chip', async ({

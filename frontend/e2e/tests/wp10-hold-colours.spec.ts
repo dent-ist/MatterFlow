@@ -36,6 +36,17 @@ const row = (page: Page, title: string): Locator =>
     has: page.getByRole('link', { name: title, exact: true }),
   });
 
+/** The computed colour of a token (the theme's chips draw from `--mf-status-*`, so the spec reads the token and not a hex). */
+const tokenColor = (page: Page, token: string) =>
+  page.evaluate((t) => {
+    const probe = document.createElement('span');
+    probe.style.color = `var(${t})`;
+    document.body.append(probe);
+    const colour = getComputedStyle(probe).color;
+    probe.remove();
+    return colour;
+  }, token);
+
 const css = (loc: Locator, prop: string) =>
   loc.evaluate((el, p) => getComputedStyle(el).getPropertyValue(p), prop);
 
@@ -102,7 +113,9 @@ test.describe('WP10 hold reason and colours', () => {
         );
         // The pill is the grey one and the title is not dimmed.
         const pill = heldRow.locator('[data-status="ON_HOLD"]');
-        expect(await css(pill, 'background-color')).toBe('rgb(169, 176, 187)');
+        expect(await css(pill, 'background-color')).toBe(
+          await tokenColor(page, '--mf-status-hold-bg'),
+        );
         expect(await css(heldRow.locator('.wt-title'), 'opacity')).toBe('1');
         await expect(pill.locator('.pi-pause-circle')).toHaveCount(1);
 
@@ -171,9 +184,9 @@ test.describe('WP10 hold reason and colours', () => {
     await seed.task(world, { title: `Brand new ${tag}`, assignedPodId: pod.podId });
     await queue.open(`?q=${tag}`);
     const fresh = row(page, `Brand new ${tag}`).locator('[data-status="NEW"]');
-    await expect(fresh.locator('.pi-circle-fill')).toHaveCount(1);
-    expect(await css(fresh, 'background-color')).toBe('rgb(255, 255, 255)');
-    expect(await css(fresh, 'color')).toBe('rgb(55, 65, 81)');
+    await expect(fresh.locator('.pi-circle')).toHaveCount(1);
+    expect(await css(fresh, 'background-color')).toBe(await tokenColor(page, '--mf-status-new-bg'));
+    expect(await css(fresh, 'color')).toBe(await tokenColor(page, '--mf-status-new-fg'));
     await shot(page, 'new-pill-task-queue-1366x768');
 
     const podWork = new PodWorkPage(page);

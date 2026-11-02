@@ -385,7 +385,7 @@ test.describe('WP9 list columns', () => {
       await page.goto(`/clients/${w.client.clientId}?tab=matters`);
       const region = grid(page, 'Matters list');
       await expect(region.locator('tbody tr').first()).toBeVisible();
-      const heads = await region.locator('thead tr:first-child th').allInnerTexts();
+      const heads = await region.locator('thead tr:first-child th').allTextContents();
       expect(heads.map((h) => h.trim())).toEqual([
         'Matter',
         'Name',
@@ -436,7 +436,7 @@ test.describe('WP9 list columns', () => {
         const r = grid(page, region);
         await expect(r.locator('tbody tr').first()).toBeVisible();
         expect(
-          (await r.locator('thead tr:first-child th').allInnerTexts()).map((h) => h.trim()),
+          (await r.locator('thead tr:first-child th').allTextContents()).map((h) => h.trim()),
         ).toEqual([...heads]);
         await expect(page.locator('[data-count]')).toHaveCount(0);
       }

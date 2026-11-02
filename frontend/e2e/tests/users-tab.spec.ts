@@ -134,8 +134,17 @@ test.describe('Users tab: workload', () => {
     expect(await pill.evaluate((el) => getComputedStyle(el).color)).toBe(
       await tokenColor(page, '--mf-pr-critical-fg'),
     );
-    expect(await critical.evaluate((el) => getComputedStyle(el).borderLeftColor)).toBe(
-      await tokenColor(page, '--mf-pr-critical-fg'),
+    // The theme has no coloured left edge: the tone is the pill and the glyph, the border is the same on all four sides.
+    expect(
+      await critical.evaluate((el) => {
+        const s = getComputedStyle(el);
+        return [s.borderLeftColor, s.borderLeftWidth];
+      }),
+    ).toEqual(
+      await critical.evaluate((el) => {
+        const s = getComputedStyle(el);
+        return [s.borderTopColor, s.borderTopWidth];
+      }),
     );
     // The glyph repeats the rank (colour is never the only cue): 4 bars for the most urgent, 1 for the least.
     await expect(critical.locator('[data-glyph]')).toHaveAttribute('data-bars', '4');
