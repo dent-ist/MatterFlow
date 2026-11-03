@@ -50,92 +50,6 @@ async function displayNameOf(admin: Api, userId: number): Promise<string> {
 }
 
 test.describe('My profile: availability and work hours', () => {
-  test('a person sets out of office on the profile, an admin sees the chip, and "I\'m back" in the header ends it', async ({
-    page,
-    asUser,
-    seed,
-    admin,
-  }) => {
-    const { username, userId } = await seed.user(['Data Technician'], 'ooo');
-    const name = await displayNameOf(admin, userId);
-    const me = await asUser(username);
-    const until = inDays(5);
-
-    await me.goto('/profile');
-    await expect(me).toHaveTitle('My profile - MatterFlow');
-    await expect(me.locator('main h1')).toContainText(name);
-    await expect(me.locator('h1 [data-availability-chip]')).toHaveText(/Available|Off hours/);
-
-    await me.getByRole('radio', { name: /Out of office/ }).check();
-    await fillDate(me.locator('#av-until'), until.text);
-    await me.getByLabel('Note (optional)').fill('Covering: Dana Director');
-    await expect(me.locator('[data-note-count]')).toContainText('23 / 200');
-    await expect(me.locator('[data-ooo-summary]')).toContainText(
-      `You will show as out of office from now until ${until.short}`,
-    );
-    await me.getByRole('button', { name: 'Save changes' }).click();
-
-    await expect(me.getByText('Availability saved').first()).toBeVisible();
-    await expect(me.locator('h1 [data-availability-chip]')).toContainText(
-      `Out of office until ${until.short}`,
-    );
-    // The header menu says so too.
-    await expect(me.locator('[data-ooo-label]')).toContainText(
-      `Out of office until ${until.short}`,
-    );
-
-    // The administrator sees the chip in the Users list.
-    await page.goto(`/admin/users?status=active&name=${encodeURIComponent(name)}`);
-    const row = page.locator('tbody tr', { hasText: name });
-    await expect(row.locator('[data-availability-chip]')).toContainText(
-      `Out of office until ${until.short}`,
-    );
-
-    // "I'm back" from the header menu.
-    const menu = await userMenu(me);
-    await expect(menu.getByRole('menuitem')).toHaveText([
-      /My profile/,
-      /I'm back/,
-      /Keyboard shortcuts/,
-    ]);
-    await menu.getByRole('menuitem', { name: "I'm back" }).click();
-    await expect(me.getByText('Welcome back')).toBeVisible();
-    await expect(me.locator('[data-ooo-label]')).toHaveCount(0);
-
-    await page.reload(); // the Name filter is in the address
-    // An active person with nothing to report reads a plain muted "Available" (`data-availability-plain`); "Off hours" is a chip. Which one
-    // shows depends on the time of day the test runs, so either is right.
-    await expect(
-      page
-        .locator('tbody tr', { hasText: name })
-        .locator('[data-availability-chip], [data-availability-plain]'),
-    ).toHaveText(/Available|Off hours/);
-  });
-
-  test('"Set out of office..." in the header menu asks for an until date and a note', async ({
-    asUser,
-    seed,
-  }) => {
-    const { username } = await seed.user(['Data Technician'], 'quick');
-    const me = await asUser(username);
-    const until = inDays(3);
-    await me.goto('/my-work');
-
-    const menu = await userMenu(me);
-    await menu.getByRole('menuitem', { name: 'Set out of office...' }).click();
-    const dialog = me.getByRole('dialog', { name: 'Set out of office' });
-    await fillDate(dialog.locator('#ooo-until'), until.text);
-    await dialog.getByLabel('Note (optional)').fill('Back soon');
-    await expect(dialog.locator('[data-ooo-summary]')).toContainText(`until ${until.short}`);
-    await dialog.getByRole('button', { name: 'Set out of office' }).click();
-
-    await expect(me.locator('[data-ooo-label]')).toContainText(
-      `Out of office until ${until.short}`,
-    );
-    // Focus returns to the menu button that opened the dialog.
-    await expect(me.getByRole('button', { name: /account menu/ })).toBeFocused();
-  });
-
   test('the header menu works with the keyboard', async ({ asUser, seed }) => {
     const { username } = await seed.user(['Data Technician'], 'keys');
     const me = await asUser(username);
@@ -240,72 +154,6 @@ test.describe('My profile: availability and work hours', () => {
     await expect(me).toHaveURL(/\/my-work$/);
   });
 
-  test("an admin edits availability on behalf of a user; the chip, the filter and the user's own profile follow", async ({
-    page,
-    asUser,
-    seed,
-    admin,
-  }) => {
-    const { username, userId } = await seed.user(['Data Technician'], 'behalf');
-    const name = await displayNameOf(admin, userId);
-    const until = inDays(7);
-
-    await page.goto(`/admin/users?status=active&name=${encodeURIComponent(name)}`);
-    const row = page.locator('tbody tr', { hasText: name });
-    await openEditAvailability(row);
-    const dialog = page.getByRole('dialog', { name: `Availability of ${name}` });
-    await expect(dialog.locator('[data-preview]')).toContainText(`${name}'s current status`);
-    await dialog.getByRole('radio', { name: /Out of office/ }).check();
-    await expect(dialog.locator('[data-ooo-summary]')).toContainText(
-      `${name} will show as out of office`,
-    );
-    await fillDate(dialog.locator('#av-until'), until.text);
-    await dialog.getByLabel('Note (optional)').fill('Sick leave cover');
-    await dialog.getByRole('button', { name: 'Save changes' }).click();
-
-    await expect(dialog).toBeHidden();
-    await expect(row.locator('[data-availability-chip]')).toContainText(
-      `Out of office until ${until.short}`,
-    );
-
-    // The availability filter next to the status filter.
-    await page.getByRole('textbox', { name: 'Filter by Name' }).fill('');
-    await filterDropdown(page, 'Availability').selectOption('OUT_OF_OFFICE');
-    await expect(page).toHaveURL(/availability=OUT_OF_OFFICE/);
-    await expect(page.locator('tbody tr', { hasText: name })).toBeVisible();
-    await expect(
-      page.locator('tbody tr [data-availability-chip]:not([data-state=OUT_OF_OFFICE])'),
-    ).toHaveCount(0);
-    await filterDropdown(page, 'Availability').selectOption('AVAILABLE');
-    await expect(page.locator('tbody tr', { hasText: name })).toHaveCount(0);
-
-    // The person sees it on their own profile and in the header, with the note.
-    const me = await asUser(username);
-    await me.goto('/profile');
-    await expect(me.getByRole('radio', { name: /Out of office/ })).toBeChecked();
-    await expect(me.getByLabel('Note (optional)')).toHaveValue('Sick leave cover');
-    await expect(me.locator('[data-ooo-label]')).toBeVisible();
-  });
-
-  test('a second editor gets a conflict message and the latest values, not a silent overwrite', async ({
-    asUser,
-    seed,
-    admin,
-  }) => {
-    const { username, userId } = await seed.user(['Data Technician'], 'conflict');
-    const me = await asUser(username);
-    await me.goto('/profile');
-    await expect(me.getByRole('radio', { name: 'Available' })).toBeChecked();
-
-    await seed.outOfOffice(userId, { note: 'Changed elsewhere' }); // another editor saves first
-    await me.getByLabel('Start time', { exact: true }).fill('07:00');
-    await me.getByRole('button', { name: 'Save changes' }).click();
-    await expect(me.locator('[data-conflict]')).toContainText('your edits were not saved');
-    await expect(me.getByRole('radio', { name: /Out of office/ })).toBeChecked();
-    await expect(me.getByLabel('Note (optional)')).toHaveValue('Changed elsewhere');
-    expect(admin).toBeTruthy();
-  });
-
   test('assignee pickers and menus flag a person who is out of office but still let you choose them', async ({
     page,
     seed,
@@ -368,9 +216,11 @@ test.describe('My profile: accessibility (axe wcag2a, wcag2aa, wcag21aa)', () =>
       await expect(me.locator('h1 [data-availability-chip]')).toBeVisible();
       expect(await axeViolations(me)).toEqual([]);
 
-      await me.getByRole('radio', { name: /Out of office/ }).check();
-      await fillDate(me.locator('#av-until'), inDays(5).text);
-      // No sideways scrolling, even with the out-of-office fields open.
+      // The Add dialog is clean too (epic #1074, CAL-05), and nothing scrolls sideways.
+      await me.getByRole('button', { name: 'Add out of office' }).first().click();
+      await expect(me.getByRole('dialog', { name: 'Add out of office' })).toBeVisible();
+      expect(await axeViolations(me)).toEqual([]);
+      await me.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
       expect(
         await me.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
       ).toBeLessThanOrEqual(0);
@@ -381,7 +231,7 @@ test.describe('My profile: accessibility (axe wcag2a, wcag2aa, wcag21aa)', () =>
 
       await me.getByLabel('End time', { exact: true }).fill('16:00');
       await me.getByRole('button', { name: 'Save changes' }).click();
-      await expect(me.locator('[data-ooo-label]')).toBeVisible();
+      await expect(me.getByText('Availability saved').first()).toBeVisible();
       await me.getByRole('button', { name: /account menu/ }).click();
       await expect(me.getByRole('menu')).toBeVisible();
       expect(await axeViolations(me)).toEqual([]);
@@ -401,119 +251,4 @@ test.describe('My profile: accessibility (axe wcag2a, wcag2aa, wcag21aa)', () =>
       expect(await axeViolations(page)).toEqual([]);
     });
   }
-});
-
-/**
- * Screenshots for docs/ux/profile-availability (not a test: skipped unless E2E_SCREENSHOTS names the output folder):
- *   E2E_SCREENSHOTS=docs/ux/profile-availability frontend/e2e/run-local.sh -g "profile screenshots"
- */
-const OUT = process.env['E2E_SCREENSHOTS'];
-
-test.describe('profile screenshots', () => {
-  test.skip(!OUT, 'set E2E_SCREENSHOTS to the output folder');
-
-  test('capture', async ({ asUser, seed, admin }) => {
-    test.setTimeout(300_000);
-    fs.mkdirSync(OUT!, { recursive: true });
-    const world = await seed.world();
-    const shot = async (p: Page, size: string, file: string, fullPage = true) => {
-      // A sticky action bar would float in the middle of a full-page capture.
-      if (fullPage) {
-        await p.evaluate(() =>
-          document
-            .querySelectorAll<HTMLElement>('.mf-form-actions--sticky')
-            .forEach((e) => (e.style.position = 'static')),
-        );
-      }
-      await p.screenshot({ path: path.join(OUT!, `${size}-${file}.png`), fullPage });
-    };
-    const people = await Promise.all(
-      [
-        ['Priya Out', 'out'],
-        ['Marcus Hours', 'hours'],
-        ['Elena Back', 'back'],
-      ].map(async ([, label]) => seed.user(['Data Technician'], `profshot-${label}`)),
-    );
-    const names = await Promise.all(people.map((p) => displayNameOf(admin, p.userId)));
-    await seed.outOfOffice(people[0].userId, {
-      until: inDays(6).iso,
-      note: 'Covering: Dana Director',
-    });
-    await seed.availability(people[1].userId, {
-      workHours: [1, 2, 3, 4].map((d) => ({ dayOfWeek: d, start: '07:00', end: '15:00' })),
-    });
-
-    for (const size of [
-      { n: '1366x768', w: 1366, h: 768 },
-      { n: '375', w: 375, h: 812 },
-    ]) {
-      await seed.availability(people[2].userId, {});
-      const me = await asUser(people[2].username);
-      await me.setViewportSize({ width: size.w, height: size.h });
-      await me.goto('/profile');
-      await expect(me.locator('h1 [data-availability-chip]')).toBeVisible();
-      await shot(me, size.n, '01-profile-available');
-
-      await me.getByRole('radio', { name: /Out of office/ }).check();
-      await fillDate(me.locator('#av-from'), inDays(1).text);
-      await fillDate(me.locator('#av-until'), inDays(5).text);
-      await me.getByLabel('Note (optional)').fill('Annual leave. Dana Director covers my queue.');
-      await shot(me, size.n, '02-profile-out-of-office');
-
-      await me.getByLabel('End time', { exact: true }).fill('08:00');
-      await me.getByRole('button', { name: 'Save changes' }).click();
-      await expect(me.locator('[data-summary]')).toBeVisible();
-      await shot(me, size.n, '03-profile-validation');
-      await me.getByLabel('End time', { exact: true }).fill('17:00');
-      await fillDate(me.locator('#av-from'), ''); // out of office from now, so the header shows it
-
-      await me.getByRole('button', { name: 'Save changes' }).click();
-      await expect(me.locator('[data-ooo-label]')).toBeVisible();
-      await me.evaluate(() => window.scrollTo(0, 0));
-      await me.getByRole('button', { name: /account menu/ }).click();
-      await shot(me, size.n, '04-header-menu-out-of-office', false);
-      await me.keyboard.press('Escape');
-      await me.getByRole('button', { name: /account menu/ }).click();
-      await me.getByRole('menuitem', { name: "I'm back" }).click();
-      await expect(me.locator('[data-ooo-label]')).toHaveCount(0);
-
-      const quick = await asUser(people[2].username);
-      await quick.setViewportSize({ width: size.w, height: size.h });
-      await quick.goto('/my-work');
-      await quick.getByRole('button', { name: /account menu/ }).click();
-      await quick.getByRole('menuitem', { name: 'Set out of office...' }).click();
-      const dialog = quick.getByRole('dialog', { name: 'Set out of office' });
-      await fillDate(dialog.locator('#ooo-until'), inDays(3).text);
-      await dialog.getByLabel('Note (optional)').fill('Back Thursday');
-      await shot(quick, size.n, '05-set-out-of-office-dialog', false);
-
-      const view = await asUser('ke\\kekim');
-      await view.setViewportSize({ width: size.w, height: size.h });
-      await view.goto('/admin/users?status=active&name=e2e-profshot');
-      await expect(view.locator('tbody tr').first()).toBeVisible();
-      await shot(view, size.n, '06-users-chips', false);
-      // Batch 4 (#79): Availability is a column filter, and the filter row is closed by default.
-      const filters = view.getByRole('button', { name: /^Filters/ });
-      if ((await filters.getAttribute('aria-pressed')) !== 'true') await filters.click();
-      await filterDropdown(view, 'Availability').selectOption('OUT_OF_OFFICE');
-      await shot(view, size.n, '07-users-filter-out-of-office', false);
-
-      // Back to the unfiltered list (at phone width the filters are in a sheet that would cover the rows).
-      await view.goto('/admin/users?status=active&name=e2e-profshot');
-      await expect(view.locator('tbody tr').first()).toBeVisible();
-      await openEditAvailability(view.locator('tbody tr', { hasText: names[1] }));
-      await expect(view.getByRole('dialog').locator('[data-preview-chip]')).toBeVisible();
-      await shot(view, size.n, '08-admin-edit-availability-dialog', false);
-      await view.keyboard.press('Escape');
-
-      const create = await asUser('ke\\kekim');
-      await create.setViewportSize({ width: size.w, height: size.h });
-      const createTask = new CreateTaskPage(create);
-      await createTask.open(`?taskType=${world.taskType.id}`);
-      await createTask.openWhen();
-      await createTask.assignee.fill(names[0]);
-      await expect(create.locator('[data-option-flag]').first()).toBeVisible();
-      await shot(create, size.n, '09-assignee-picker-flag', false);
-    }
-  });
 });

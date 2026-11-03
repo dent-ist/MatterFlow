@@ -1,3 +1,5 @@
+import { provideCalendarFixtures } from '../../../shared/testing/calendar-testing';
+import { inject } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -26,7 +28,6 @@ const PERMS: Permission[] = [
 describe('DashCalendarTab', () => {
   let harness: RouterTestingHarness;
   let host: HTMLElement;
-  let api: CalendarApi;
 
   async function open(
     url = '/dashboard',
@@ -41,12 +42,17 @@ describe('DashCalendarTab', () => {
         { provide: USER_TIME_ZONE, useValue: 'America/New_York' },
         // Tuesday 11/03/2026, as in the approved mockup.
         { provide: Clock, useValue: { now: () => new Date('2026-11-03T15:42:00Z') } },
+        ...provideCalendarFixtures(),
+        {
+          provide: CALENDAR_API,
+          useFactory: () => {
+            const fixture = inject(FixtureCalendarApi);
+            return override ? ({ ...bind(fixture), ...override } as CalendarApi) : fixture;
+          },
+        },
       ],
     });
     await TestBed.inject(AuthStore).ensureLoaded();
-    const fixture = TestBed.inject(FixtureCalendarApi);
-    api = override ? ({ ...bind(fixture), ...override } as CalendarApi) : fixture;
-    TestBed.overrideProvider(CALENDAR_API, { useValue: api });
     harness = await RouterTestingHarness.create();
     const scope = TestBed.inject(DashScope);
     scope.ensureLoaded();
@@ -121,6 +127,7 @@ describe('DashCalendarTab', () => {
     expect(text(q('[data-cal-title]'))).toBe('December 2026');
     expect(url()).toContain('month=2026-12');
     q<HTMLButtonElement>('[data-prev]').click();
+    await settle();
     q<HTMLButtonElement>('[data-prev]').click();
     await settle();
     expect(text(q('[data-cal-title]'))).toBe('October 2026');
@@ -220,7 +227,7 @@ describe('DashCalendarTab', () => {
     ddChoose(host, 'Filter by role', 'Data Scientist');
     await settle();
     expect(url()).toContain('role=1');
-    expect(text(cell('2026-11-03'))).toContain('/6');
+    expect(cell('2026-11-03').getAttribute('title')).toContain('6 in view');
   });
 
   it('an error shows the retry state and Retry reads again', async () => {
@@ -229,7 +236,7 @@ describe('DashCalendarTab', () => {
       days: (from, to, q) =>
         fail
           ? Promise.reject(new ApiError(500, undefined, 'x', undefined, {} as never))
-          : api.days(from, to, q),
+          : TestBed.inject(FixtureCalendarApi).days(from, to, q),
     });
     expect(host.querySelector('[data-dash-state="error"]')).not.toBeNull();
     fail = false;

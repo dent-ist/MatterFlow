@@ -14,10 +14,9 @@ import { AvailabilityForm } from './availability-form';
 
 const profile = (overrides: Partial<UserAvailabilityDto> = {}): UserAvailabilityDto => ({
   userId: 1,
-  status: 'AVAILABLE',
-  from: undefined,
-  until: undefined,
-  note: undefined,
+  absences: [],
+  holidayCalendar: undefined,
+  nextHolidays: [],
   timeZoneId: 'America/New_York',
   effectiveTimeZoneId: 'America/New_York',
   usesDefaultWorkHours: true,
@@ -241,10 +240,6 @@ describe('AvailabilityForm', () => {
     await save();
 
     expect(mine.saveMyAvailability).toHaveBeenCalledWith({
-      status: 'AVAILABLE',
-      from: undefined,
-      until: undefined,
-      note: undefined,
       timeZoneId: 'America/New_York',
       workHours: expect.any(Array),
       rowVersion: 'NEW',
@@ -326,7 +321,6 @@ describe('AvailabilityForm', () => {
     expect(others.saveUserAvailability).toHaveBeenCalledWith(
       9,
       expect.objectContaining({
-        status: 'AVAILABLE',
         timeZoneId: undefined,
         rowVersion: 'NEW',
       }),

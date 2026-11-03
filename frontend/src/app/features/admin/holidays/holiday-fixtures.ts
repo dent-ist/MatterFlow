@@ -360,9 +360,10 @@ export class FixtureHolidayApi implements HolidayApi {
     calendarId: number,
     text: string,
     year: number,
-    yearly: boolean,
     dryRun: boolean,
   ): Promise<ImportResult> {
+    const yearly = false;
+    void year;
     const lines: ImportLine[] = [];
     text.split(/\r?\n/).forEach((raw, i) => {
       if (!raw.trim()) return;
@@ -497,17 +498,6 @@ export class FixtureHolidayApi implements HolidayApi {
       ...this.limits,
       ...structuredClone(value),
       isCustom: value.minCoveragePercent !== 75 || value.podMinimumPercent !== 60,
-      rowVersion: `t${++this.nextId}`,
-    };
-    return this.thresholds();
-  }
-
-  resetThresholds(): Promise<CalendarThresholds> {
-    this.limits = {
-      ...this.limits,
-      minCoveragePercent: 75,
-      podMinimumPercent: 60,
-      isCustom: false,
       rowVersion: `t${++this.nextId}`,
     };
     return this.thresholds();

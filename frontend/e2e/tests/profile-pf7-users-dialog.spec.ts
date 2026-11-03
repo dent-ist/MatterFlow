@@ -77,8 +77,8 @@ test.describe('pf7-users-dialog: Edit availability with the shared form (#589)',
     await expect(dialog.locator('[data-conflict]')).toContainText(
       `${name}'s availability was changed somewhere else`,
     );
-    await expect(dialog.getByRole('radio', { name: /Out of office/ })).toBeChecked();
-    await expect(dialog.getByLabel('Note (optional)')).toHaveValue('Changed elsewhere');
+    // The latest values are shown: the hours the other editor saved are the default again.
+    await expect(dialog.getByLabel('Start time', { exact: true })).toHaveValue('09:00');
     await expect(dialog).toBeVisible();
   });
 });

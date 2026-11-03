@@ -130,7 +130,11 @@ export class UserCalendarField {
     const s = this.state();
     const name = this.own().find((c) => c.calendarId === s?.effectiveCalendarId)?.name;
     if (s?.explicitCalendarId != null) return 'Use the default';
-    if (s?.effectiveSource === 'POD') return `Pod default (${s.podName}: ${name ?? 'none'})`;
+    if (s?.effectiveSource === 'POD') {
+      return s.podName
+        ? `Pod default (${s.podName}: ${name ?? 'none'})`
+        : `Pod default (${name ?? 'none'})`;
+    }
     if (s?.effectiveSource === 'FIRM') return `Firm default (${name ?? 'none'})`;
     return 'No calendar';
   });

@@ -54,14 +54,6 @@ import { ImportResult } from './holiday-contract';
           Dates as MM/DD/YYYY. A range as MM/DD/YYYY - MM/DD/YYYY. Copy from Excel works (a tab
           between date and name).
         </p>
-        <label class="im__c">
-          <input
-            type="checkbox"
-            [checked]="yearly()"
-            (change)="setYearly($any($event.target).checked)"
-          />
-          Repeat every year (single days and ranges)
-        </label>
 
         @if (result(); as r) {
           <div class="im__tw" role="region" aria-label="Check of the pasted lines" tabindex="0">
@@ -133,11 +125,6 @@ import { ImportResult } from './holiday-contract';
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
-    .im__c {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
-    }
     .im__tw {
       max-height: 14rem;
       overflow: auto;
@@ -190,7 +177,6 @@ export class ImportDialog {
   private readonly api = inject(HOLIDAY_API);
   private readonly notify = inject(NotificationService);
   protected readonly text = signal('');
-  protected readonly yearly = signal(false);
   protected readonly result = signal<ImportResult | null>(null);
   protected readonly busy = signal(false);
   protected readonly error = signal('');
@@ -202,7 +188,6 @@ export class ImportDialog {
       if (!this.visible()) return;
       untracked(() => {
         this.text.set('');
-        this.yearly.set(false);
         this.result.set(null);
         this.error.set('');
         this.busy.set(false);
@@ -221,11 +206,6 @@ export class ImportDialog {
     this.timer = setTimeout(() => void this.check(), 250);
   }
 
-  protected setYearly(value: boolean): void {
-    this.yearly.set(value);
-    void this.check();
-  }
-
   private async check(): Promise<void> {
     const id = ++this.seq;
     if (!this.text().trim()) {
@@ -233,13 +213,7 @@ export class ImportDialog {
       return;
     }
     try {
-      const r = await this.api.importLines(
-        this.calendarId(),
-        this.text(),
-        this.year(),
-        this.yearly(),
-        true,
-      );
+      const r = await this.api.importLines(this.calendarId(), this.text(), this.year(), true);
       if (id === this.seq) {
         this.result.set(r);
         this.error.set('');
@@ -253,13 +227,7 @@ export class ImportDialog {
     if (this.busy() || (this.result()?.okCount ?? 0) === 0) return;
     this.busy.set(true);
     try {
-      const r = await this.api.importLines(
-        this.calendarId(),
-        this.text(),
-        this.year(),
-        this.yearly(),
-        false,
-      );
+      const r = await this.api.importLines(this.calendarId(), this.text(), this.year(), false);
       this.notify.success('Holidays imported', `${r.okCount} added to ${this.calendarName()}.`, {
         key: 'holiday-import',
       });

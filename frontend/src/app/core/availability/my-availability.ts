@@ -11,16 +11,12 @@ import type { AbsenceType } from '../../shared/availability/absences/absence-con
 import { AuthStore } from '../auth/auth.store';
 import { AvailabilityLike, NOTE_MAX } from './availability';
 
-/** A save request that repeats a profile unchanged (the PUT replaces the whole profile), for quick actions that change only the status. */
+/** A save request that repeats the stored zone and work hours unchanged (the PUT replaces both); `change` overrides what is edited. */
 export function requestFrom(
   dto: UserAvailabilityDto,
   change: Partial<SaveAvailabilityRequest>,
 ): SaveAvailabilityRequest {
   return {
-    status: dto.status,
-    from: dto.from,
-    until: dto.until,
-    note: dto.note,
     timeZoneId: dto.timeZoneId,
     workHours: dto.usesDefaultWorkHours ? undefined : dto.workHours,
     rowVersion: dto.rowVersion,

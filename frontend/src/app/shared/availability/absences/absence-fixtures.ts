@@ -141,7 +141,7 @@ export class FixtureAbsenceApi implements AbsenceApi {
     if (ignore === null && input.startDate < t) {
       const sickOk = input.type === 'SICK' && input.startDate >= addDays(t, -14);
       if (!sickOk) {
-        throw fixtureError(400, 'ABSENCE_START_IN_PAST', 'The first day cannot be in the past.');
+        throw fixtureError(400, 'ABSENCE_IN_PAST', 'The first day cannot be in the past.');
       }
     }
     const other = this.overlap(userId, input, ignore);

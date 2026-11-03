@@ -12,10 +12,9 @@ import { SetOutOfOfficeDialog } from './set-out-of-office-dialog';
 
 const dto = (overrides: Partial<UserAvailabilityDto> = {}): UserAvailabilityDto => ({
   userId: 1,
-  status: 'AVAILABLE',
-  from: undefined,
-  until: undefined,
-  note: undefined,
+  absences: [],
+  holidayCalendar: undefined,
+  nextHolidays: [],
   timeZoneId: 'America/New_York',
   effectiveTimeZoneId: 'America/New_York',
   usesDefaultWorkHours: false,

@@ -579,7 +579,7 @@ export class AvailabilityForm {
 
     const onBehalfDefaultZone =
       !this.self() && d.timeZoneId == null && this.tz() === d.effectiveTimeZoneId;
-    // The Out of office entries are saved from their own list (CAL-05); the profile PUT repeats the stored status unchanged.
+    // The Out of office entries are saved from their own list (CAL-05); this PUT saves the time zone and the work hours only.
     const request: SaveAvailabilityRequest = requestFrom(d, {
       timeZoneId: onBehalfDefaultZone ? undefined : this.tz(),
       workHours: workHoursForSave(this.week()) ?? undefined,

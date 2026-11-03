@@ -1,3 +1,4 @@
+import { provideCalendarFixtures } from '../../shared/testing/calendar-testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { MyAvailabilityClient, UserAvailabilityClient } from '../../api/generated/api-client';
@@ -44,6 +45,7 @@ describe('ProfilePage', () => {
         ),
         { provide: MyAvailabilityClient, useValue: { getMyAvailability: get } },
         { provide: UserAvailabilityClient, useValue: {} },
+        ...provideCalendarFixtures(),
       ],
     });
     await TestBed.inject(AuthStore).ensureLoaded();

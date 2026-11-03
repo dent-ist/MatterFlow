@@ -274,7 +274,12 @@ export class AbsenceDialog {
   protected readonly endBad = signal(false);
   protected readonly busy = signal(false);
   protected readonly generalError = signal('');
-  protected readonly server = signal<{ dates?: string; start?: string; end?: string }>({});
+  protected readonly server = signal<{
+    dates?: string;
+    start?: string;
+    end?: string;
+    note?: string;
+  }>({});
   protected readonly check = signal<AbsenceCheck | null>(null);
   private baseline = '';
   private checkSeq = 0;
@@ -312,6 +317,7 @@ export class AbsenceDialog {
       ...found,
       startDate: found.startDate ?? this.server().start,
       endDate: found.endDate ?? this.server().end,
+      note: found.note ?? this.server().note,
     };
   });
   protected readonly serverDates = computed(() => this.server().dates ?? null);
@@ -452,11 +458,18 @@ export class AbsenceDialog {
           'This entry was changed somewhere else. Close this window and open it again to see the latest.',
         );
         break;
-      case 'ABSENCE_START_IN_PAST':
+      case 'ABSENCE_IN_PAST':
         this.server.set({ start: err.message });
         break;
       case 'ABSENCE_RANGE_INVALID':
+      case 'ABSENCE_OPEN_ENDED_NOT_TODAY':
         this.server.set({ end: err.message });
+        break;
+      case 'NOTE_TOO_LONG':
+        this.server.set({ note: err.message });
+        break;
+      case 'ABSENCE_READ_ONLY':
+        this.generalError.set('A past entry cannot be changed.');
         break;
       default:
         this.generalError.set(err.message || 'Something went wrong. Try again.');
