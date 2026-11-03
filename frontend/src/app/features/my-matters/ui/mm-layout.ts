@@ -152,15 +152,9 @@ export class MmLayout {
     this.save();
   }
 
-  /** A client or a matter was chosen: the tree goes to its rail unless pinned (or unless it is the only way to choose, below the dock width), and the freed room goes to the side panel. */
+  /** A client or a matter was chosen. The Client and Matters tree stays open (MM-20, #1053: it is how people learn to filter by client and matter); it only gives way to the side panel in `reconcile` when the width cannot hold both, and the person's own Collapse is remembered. */
   chosen(): void {
-    if (this.docked() && this.treeOpen() && !this.treePin()) {
-      const sideWas = this.sideOpen();
-      this.treeOpen.set(false);
-      this.reconcile();
-      if (!sideWas && this.sideOpen())
-        this.announcement.set('The side panel opened in the room the tree freed.');
-    } else this.reconcile();
+    this.reconcile();
   }
 
   private save(): void {

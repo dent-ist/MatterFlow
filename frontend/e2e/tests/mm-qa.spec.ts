@@ -75,7 +75,7 @@ test.describe('My Matters QA: numbers', () => {
 });
 
 test.describe('My Matters QA: names are text, never markup', () => {
-  test('hostile names in the tree, grid, dropdowns, calendar and dialogs run nothing and show as written', async ({
+  test('hostile names in the scope chip, grid, calendar and dialogs run nothing and show as written', async ({
     seed,
     personas,
     asUser,
@@ -119,9 +119,10 @@ test.describe('My Matters QA: names are text, never markup', () => {
     await page.goto('/my-matters');
     await settle(page);
     await expect(page.getByText(`${hostile} task`).first()).toBeVisible();
-    await page.locator('#mm-matter').click();
-    await expect(page.getByRole('option', { name: /<img src=x/ }).first()).toBeVisible();
-    await page.keyboard.press('Escape');
+    // The scope chip shows the hostile names as plain text (MM-20: the dropdowns are gone; one matter has no tree).
+    await page.goto(`/my-matters?matterId=${matter.matterId}`);
+    await expect(page.locator('[data-scope-chip]')).toContainText('<img src=x');
+    await expect(page.locator('[data-scope-chip] img, [data-scope-chip] b')).toHaveCount(0);
     await page.goto(`/my-matters?tab=calendar&month=${inDays(3).slice(0, 7)}`);
     await settle(page);
     await page.locator(`[data-day="${inDays(3)}"]`).click();
@@ -272,7 +273,7 @@ test.describe('My Matters QA: states and focus', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(page.locator('[data-add-event]')).toBeFocused();
     await page.locator('#mm-new-btn').click();
-    await page.getByRole('menuitem', { name: /New calendar item/ }).click();
+    await page.getByRole('menuitem', { name: /New calendar item/i }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.locator('#mm-new-btn')).toBeFocused();

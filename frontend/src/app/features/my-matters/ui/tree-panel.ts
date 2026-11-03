@@ -55,7 +55,7 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
   template: `
     <div class="card">
       <div class="hd">
-        <h2 id="mm-tree-h">Clients and matters</h2>
+        <h2 id="mm-tree-h">Client and Matters</h2>
         @if (!popover()) {
           <button
             type="button"
@@ -100,12 +100,12 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
       </div>
       <div class="tools">
         <label class="srch">
-          <span class="sr">Search clients and matters</span>
+          <span class="sr">Search Client and Matters</span>
           <i class="pi pi-search" aria-hidden="true"></i>
           <input
             type="search"
             data-tree-search
-            placeholder="Search clients and matters"
+            placeholder="Search Client and Matters"
             autocomplete="off"
             [value]="q()"
             (input)="q.set($any($event.target).value)"
@@ -143,7 +143,7 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
             [expanded]="expanded()"
             (expandedChange)="setExpanded($event)"
             [filter]="q()"
-            label="Clients and matters"
+            label="Client and Matters"
             (choose)="onChoose($event)"
           />
         }
@@ -371,14 +371,14 @@ export class MmTreePanel {
   imports: [Tip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="rail" role="group" aria-label="Clients and matters, collapsed">
+    <div class="rail" role="group" aria-label="Client and Matters, collapsed">
       <button
         type="button"
         class="mf-btn mf-btn--icon ib"
         data-tree-expand-rail
-        aria-label="Show the tree of clients and matters"
+        aria-label="Show the Client and Matters tree"
         aria-expanded="false"
-        mfTip="Show tree"
+        mfTip="Show Client and Matters"
         (click)="expand.emit()"
       >
         <i class="pi pi-sitemap" aria-hidden="true"></i>

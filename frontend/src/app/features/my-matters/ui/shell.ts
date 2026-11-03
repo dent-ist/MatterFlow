@@ -35,14 +35,14 @@ import { ScopeSwitch } from '../../../shared/scope/scope-switch';
 import { FocusChip, FocusControl } from '../focus-control';
 import { MyMattersFocus } from '../focus';
 import { MmScopeBar } from './scope-bar';
+import { MmScopeChip } from './scope-chip';
 import { MmTreePanel, MmTreeRail } from './tree-panel';
 
 /**
- * My Matters (epic #953, UI-11): the Project Manager's home, after the mockup `my-matters-v3-b-tree-r2.html`. A 19 px title with its icon; under it the Client and Matter
- * dropdowns, Browse, Clear and "+ New"; then the work area: the docked tree of clients and matters (or its rail) beside the tabs Overview, Calendar, Assets, Metrics and Activity.
- * On a desktop window the page never scrolls: the title, the dropdown row and the tabs stay, and the grids, the calendar and the side panel scroll inside frames that reach the
+ * My Matters (epic #953, UI-11): the Project Manager's home, after the mockup `my-matters-v3-b-tree-r2.html`. A 19 px title with its icon; under it the Scope button (where the tree is not docked), the options menu and "+ New"; the chosen client and matter are a removable chip beside the title (MM-20, #1053); then the work area: the docked tree of clients and matters (or its rail) beside the tabs Overview, Calendar, Assets, Metrics and Activity.
+ * On a desktop window the page never scrolls: the title, the button row and the tabs stay, and the grids, the calendar and the side panel scroll inside frames that reach the
  * bottom (`mf-fixed-page`, `mf-grid-frame`). Up to 768 px the page scrolls as a whole and the lists are cards. Client, Matter, tab and filters live in the address
- * (`MmScopeStore`); the tree and the side panel keep their open states in the browser (`MmLayout`). The tree and the dropdowns choose the same thing, and a choice updates every part
+ * (`MmScopeStore`); the tree and the side panel keep their open states in the browser (`MmLayout`). The Client and Matters tree is the one way to choose a client and matter, and a choice updates every part
  * at once with a polite announcement.
  */
 @Component({
@@ -56,6 +56,7 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
     MmNewMenu,
     MmOverview,
     MmScopeBar,
+    MmScopeChip,
     MmWorkflowBar,
     FocusChip,
     FocusControl,
@@ -96,7 +97,7 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
       line-height: 1.2;
     }
     mf-mm-scope-bar {
-      flex: none;
+      flex: 1 1 auto;
       margin-top: var(--mf-s3);
     }
     .work {
@@ -195,47 +196,46 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
           ><i class="pi pi-clipboard" data-page-icon aria-hidden="true"></i
         ></span>
         <h1>My Matters</h1>
+        <mf-mm-scope-chip [label]="scopeChipLabel()" (clear)="clear()" />
         <mf-mm-workflow-bar [filters]="scope.filters()" [scopeName]="scopeName()" />
+        <mf-mm-scope-bar
+          [tree]="tree.data()"
+          [clientId]="scope.clientId()"
+          [matterId]="scope.matterId()"
+          [docked]="layout.docked()"
+          (pickedClientNode)="pickClientNode($event)"
+          (pickedMatter)="pickMatter($event)"
+        >
+          <mf-options-menu
+            label="My Matters"
+            [wide]="true"
+            [active]="optionsActive()"
+            (opened)="focusList.reset()"
+            data-mm-options
+          >
+            @if (scope.canAll()) {
+              <div data-options-pick>
+                <mf-scope-switch
+                  [scope]="scope.filters().scope"
+                  [canAll]="scope.canAll()"
+                  allLabel="All matters"
+                  description="Mine: the matters you manage as primary or secondary project manager. All matters: every active matter, whoever manages it."
+                  (scopeChange)="setScope($event)"
+                />
+              </div>
+            }
+            <mf-mm-focus #focusList />
+          </mf-options-menu>
+          <mf-mm-new-menu
+            [tab]="scope.tab()"
+            [matterId]="scope.matterId()"
+            [clientId]="scope.clientId()"
+            [tree]="tree.data()"
+            (created)="refresh.update((n) => n + 1)"
+          />
+        </mf-mm-scope-bar>
       </div>
 
-      <mf-mm-scope-bar
-        [tree]="tree.data()"
-        [clientId]="scope.clientId()"
-        [matterId]="scope.matterId()"
-        [docked]="layout.docked()"
-        (pickedClient)="pickClient($event)"
-        (pickedClientNode)="pickClientNode($event)"
-        (pickedMatter)="pickMatter($event)"
-        (clear)="clear()"
-      >
-        <mf-options-menu
-          label="My Matters"
-          [wide]="true"
-          [active]="optionsActive()"
-          (opened)="focusList.reset()"
-          data-mm-options
-        >
-          @if (scope.canAll()) {
-            <div data-options-pick>
-              <mf-scope-switch
-                [scope]="scope.filters().scope"
-                [canAll]="scope.canAll()"
-                allLabel="All matters"
-                description="Mine: the matters you manage as primary or secondary project manager. All matters: every active matter, whoever manages it."
-                (scopeChange)="setScope($event)"
-              />
-            </div>
-          }
-          <mf-mm-focus #focusList />
-        </mf-options-menu>
-        <mf-mm-new-menu
-          [tab]="scope.tab()"
-          [matterId]="scope.matterId()"
-          [clientId]="scope.clientId()"
-          [tree]="tree.data()"
-          (created)="refresh.update((n) => n + 1)"
-        />
-      </mf-mm-scope-bar>
       <mf-mm-focus-chip />
       <div class="sr" role="status" aria-live="polite" data-live>{{ announce() }}</div>
       <div class="sr" role="status" aria-live="polite">{{ layout.announcement() }}</div>
@@ -412,15 +412,25 @@ export class MyMattersPage {
   );
   protected readonly resetKey = computed(() => `${this.scope.clientId()}|${this.scope.matterId()}`);
   protected readonly scopeName = computed(() => {
-    const t = this.tree.data();
-    const c = t?.clients.find((x) => x.clientId === this.scope.clientId());
-    const m = c?.matters.find((x) => x.matterId === this.scope.matterId());
+    const { c, m } = this.chosen();
     return m?.name ?? c?.name ?? 'All your matters';
   });
+  /** The chosen client and matter in the tree (a matter in the address finds its client even when the address carries no client). */
+  private chosen() {
+    const clients = this.tree.data()?.clients ?? [];
+    const matterId = this.scope.matterId();
+    const c = matterId
+      ? clients.find((x) => x.matters.some((y) => y.matterId === matterId))
+      : clients.find((x) => x.clientId === this.scope.clientId());
+    return { c, m: c?.matters.find((x) => x.matterId === matterId) };
+  }
+  /** The chip beside the title: empty while the scope is everything. */
+  protected readonly scopeChipLabel = computed(() => {
+    const label = this.railLabel();
+    return this.scope.clientId() || this.scope.matterId() ? label : '';
+  });
   protected readonly railLabel = computed(() => {
-    const t = this.tree.data();
-    const c = t?.clients.find((x) => x.clientId === this.scope.clientId());
-    const m = c?.matters.find((x) => x.matterId === this.scope.matterId());
+    const { c, m } = this.chosen();
     if (m) return `${c!.name} › ${m.name}`;
     if (c) return `${c.name} › all matters`;
     return 'All clients and matters';
@@ -488,15 +498,6 @@ export class MyMattersPage {
   protected pickClientNode(id: number): void {
     this.scope.setClient(id, null);
     this.layout.chosen();
-  }
-
-  protected pickClient(id: number | null): void {
-    const t = this.tree.data();
-    const matterClient =
-      t?.clients.find((c) => c.matters.some((m) => m.matterId === this.scope.matterId()))
-        ?.clientId ?? null;
-    this.scope.setClient(id, matterClient);
-    if (id !== null) this.layout.chosen();
   }
 
   protected pickMatter(e: { matterId: number | null; clientId: number | null }): void {
