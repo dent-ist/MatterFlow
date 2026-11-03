@@ -578,10 +578,10 @@ describe('PodWorkPage', () => {
     const headers = (el: HTMLElement) =>
       Array.from(el.querySelectorAll('thead th')).map((t) => t.textContent!.trim());
 
-    it('leaves Matter Number out of the default columns from 640 to 899 px and puts the link in view', async () => {
+    it('keeps Matter Number in the default columns from 640 to 899 px (LC-09) and puts the link in view', async () => {
       windowOf(768);
       const el = await open('/pods/work?podId=5');
-      expect(headers(el).join('|')).not.toContain('CM Number');
+      expect(headers(el).join('|')).toContain('CM Number');
       expect(headers(el).join('|')).toContain('Assignee');
       expect(el.querySelector('.pw-linkonly')).not.toBeNull();
       expect(link(el)).not.toBeNull();

@@ -359,11 +359,11 @@ test.describe('WP9 list columns', () => {
         expect(h).toBeLessThanOrEqual(45);
       }
       await page.setViewportSize({ width: 768, height: 1024 });
-      await expect(region.getByRole('columnheader', { name: 'Client' })).toHaveCount(0);
+      await expect(region.getByRole('columnheader', { name: 'Client' })).toBeVisible(); // LC-09: kept, the frame scrolls
       await expect(same.first().locator('mf-matter-cell .mf-ref')).toBeVisible();
     });
 
-    test('Matters: the Client column drops below 900 px and Projects is not a column any more', async ({
+    test('Matters: the Client column stays at 768 px (LC-09: the frame scrolls) and Projects is not a column any more', async ({
       page,
     }) => {
       const region = grid(page, 'Matters list');
@@ -372,7 +372,7 @@ test.describe('WP9 list columns', () => {
       await expect(region.getByRole('columnheader', { name: 'Client' })).toBeVisible();
       await expect(region.getByRole('columnheader', { name: 'Projects' })).toHaveCount(0);
       await page.setViewportSize({ width: 768, height: 1024 });
-      await expect(region.getByRole('columnheader', { name: 'Client' })).toHaveCount(0);
+      await expect(region.getByRole('columnheader', { name: 'Client' })).toBeVisible();
       await expect(region.getByRole('columnheader', { name: 'Status' })).toBeVisible();
     });
   });
@@ -480,7 +480,7 @@ test.describe('WP9 list columns', () => {
       },
     ];
     for (const screen of screens) {
-      test(`${screen.name}: axe 0, no sideways scroll, 44 px rows, Status never clipped from 768 px`, async ({
+      test(`${screen.name}: axe 0, no sideways scroll, 44 px rows, every column stays from 640 px, the page never scrolls sideways`, async ({
         page,
       }) => {
         test.setTimeout(120_000);
@@ -510,18 +510,8 @@ test.describe('WP9 list columns', () => {
             expect(h, what).toBeGreaterThanOrEqual(43);
             expect(h, what).toBeLessThanOrEqual(45);
           }
-          if (width >= 768) {
-            const fit = await region.evaluate((area) => {
-              const status = Array.from(area.querySelectorAll('thead tr:first-child th')).at(-1)!;
-              return {
-                right: status.getBoundingClientRect().right,
-                box: area.getBoundingClientRect().right,
-                scroll: area.scrollWidth - area.clientWidth,
-              };
-            });
-            expect(fit.right, `${what}: Status is clipped`).toBeLessThanOrEqual(fit.box + 2); // sub-pixel rounding: the Matters list is 1.3 px wider than its box at 768 px
-            expect(fit.scroll, `${what}: the grid scrolls sideways`).toBeLessThanOrEqual(1);
-          }
+          // LC-09: Status is the last column; it may be reached by scrolling the frame sideways, the page does not scroll.
+          await expect(region.getByRole('columnheader', { name: 'Status' })).toBeAttached();
           await axeClean(page, what);
           await noSideways(page, what);
           await shot(page, screen.name);

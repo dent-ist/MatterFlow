@@ -89,9 +89,7 @@ test.describe('Column filters on the work lists', () => {
       await expect(page).not.toHaveURL(/matterText=/);
       await queue.expectListed(other.title);
 
-      // Project has no column by default: Other filters offers it.
-      await page.getByRole('button', { name: 'Other filters' }).click();
-      await page.getByRole('button', { name: 'Project', exact: true }).click();
+      // Project is a default column since LC-03: its filter is in the row.
       await text(page, 'Project').fill(`phase ${token}`);
       await expect(page).toHaveURL(/projectText=/);
       await queue.expectListed(withProject.title);

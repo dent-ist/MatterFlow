@@ -115,12 +115,6 @@ type Column = (typeof COLUMNS)[number];
       width: 1%;
       white-space: nowrap;
     }
-    /* A narrow window gives the Type less room, so the grid does not scroll sideways at 640 to 900 px (#502): the type chip leaves, the name stays. */
-    @media (max-width: 899.98px) {
-      .as-tycell mf-asset-type-chip {
-        display: none;
-      }
-    }
     @media (max-width: 899.98px) {
       td.as-type {
         max-width: 9rem;
@@ -216,7 +210,6 @@ type Column = (typeof COLUMNS)[number];
       background: var(--mf-selected-bg);
     }
   `,
-  host: { '(window:resize)': 'onResize()' },
   template: `
     <mf-fixed-page>
       <mf-page-header heading="Assets" [count]="state() === 'ready' ? total() : null">
@@ -414,7 +407,7 @@ type Column = (typeof COLUMNS)[number];
                       (sorted)="setSort($event)"
                     >
                       <!-- The short word below 768 px: the header sets the width of the column and the grid must fit at 640 px. -->
-                      {{ viewport() < drop.select ? 'Status' : 'Disposition' }}
+                      Disposition
                     </th>
                   </tr>
                   @if (filters.rowVisible()) {
@@ -621,7 +614,7 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
   protected readonly emptyText = computed(() =>
     this.scope.mine() ? 'You do not manage any matter yet.' : 'No assets yet.',
   );
-  /** The External reference column leaves below 1280 px and Linked tasks below 900 px (the kit's column-drop rule); the filter row follows. */
+  /** No column leaves by window width (LC-09): the grid frame scrolls sideways; `drop` is a marker only. */
   protected readonly drop = {
     externalReference: 1280,
     linkedTasks: 900,
@@ -633,9 +626,7 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
   protected readonly tasksShown = computed(() => this.auth.has('Task.View'));
   /** People who may change an asset's disposition get a checkbox column and the bulk bar. */
   protected readonly canChange = computed(
-    () =>
-      this.viewport() >= this.drop.select &&
-      (this.auth.has('Asset.Edit') || this.auth.has('Asset.Dispose')),
+    () => this.auth.has('Asset.Edit') || this.auth.has('Asset.Dispose'),
   );
   protected readonly columnSpec = computed<AdminColumn[]>(() => [
     ...(this.canChange() ? [{ cls: 'as-check', bone: '1rem' }] : []),
@@ -649,15 +640,9 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     { cls: 'as-refcell', bone: '12rem', drop: this.drop.externalReference },
     { cls: 'as-disposition', bone: '6rem' },
   ]);
-  /** The window width, for the columns that leave (the same rule as the grid stylesheet: the window, not the box). */
-  protected readonly viewport = signal(typeof window === 'undefined' ? 1920 : window.innerWidth);
   protected readonly visibleColumns = computed<readonly Column[]>(() =>
     COLUMNS.filter(
-      (c) =>
-        !(c === 'select' && !this.canChange()) &&
-        !(c === 'size' && this.viewport() < this.drop.size) &&
-        !(c === 'externalReference' && this.viewport() < this.drop.externalReference) &&
-        !(c === 'linkedTasks' && (!this.tasksShown() || this.viewport() < this.drop.linkedTasks)),
+      (c) => !(c === 'select' && !this.canChange()) && !(c === 'linkedTasks' && !this.tasksShown()),
     ),
   );
   /** Below 640 px the list is cards, not a table (#502). */
@@ -926,9 +911,5 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     const failed = outcome.bulk?.results.filter((r) => !r.ok).map((r) => r.assetId) ?? [];
     this.selected.set(new Set(failed));
     this.load();
-  }
-
-  protected onResize(): void {
-    this.viewport.set(window.innerWidth);
   }
 }

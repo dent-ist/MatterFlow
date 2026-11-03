@@ -13,6 +13,7 @@ const toggle = (page: Page) => page.getByRole('button', { name: /^Filters/ });
 const text = (page: Page, column: string) =>
   page.getByRole('textbox', { name: `Filter by ${column}` });
 /** The toolbar's Search box of Clients, Matters and Projects: it is the Name text filter since LC-01 (same `name` parameter). */
+const assetSearch = (page: Page) => page.getByPlaceholder('Search assets'); // the Matter Assets tab's Search box (LC-08)
 const search = (page: Page) =>
   page.getByRole('searchbox', { name: /^Search (clients|matters|projects)/ });
 const select = (page: Page, column: string) => filterDropdown(page, column);
@@ -329,11 +330,11 @@ test.describe('Column filters on the record lists', () => {
       await expect(text(page, 'Name')).toHaveCount(0);
       await toggle(page).click();
 
-      await text(page, 'Name').fill(`laptop ${token}`);
+      await assetSearch(page).fill(`laptop ${token}`);
       await expect(page).toHaveURL(/name=laptop/);
       await expect(page).toHaveURL(/tab=assets/);
       await expect(rows).toHaveCount(1);
-      await text(page, 'Name').fill('');
+      await assetSearch(page).fill('');
       await text(page, 'External reference').fill('srv');
       await expect(page).toHaveURL(/extref=srv/);
       await expect(rows).toHaveCount(1);
@@ -413,7 +414,9 @@ test.describe('Column filters on the record lists', () => {
       // Clients, Matters and Projects have the Search box (LC-01); the Client's Matters grid and the Matter's Assets tab keep the Name cell of the row.
       const name = ['/clients', '/matters', '/projects'].includes(url)
         ? search(page)
-        : text(page, 'Name');
+        : url.includes('tab=assets')
+          ? assetSearch(page)
+          : text(page, 'Name');
       if (openByDefault) {
         expect(await axeViolations(page), `${url} open`).toEqual([]);
         await toggle(page).click(); // closed

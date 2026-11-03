@@ -44,11 +44,8 @@ import { ScopeSwitch } from '../../../shared/scope/scope-switch';
 import { Pager } from '../../../shared/ui/pager';
 import { TaskCount } from '../../../shared/ui/task-count';
 import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
-import { viewportAtLeast } from '../../../shared/ui/viewport';
+import { COLUMN_ROOM } from '../../../shared/ui/viewport';
 import { MatterCell } from '../../../shared/work-queue/matter-cell';
-
-/** Below this width the Client column (the least informative one) leaves the table (#267). */
-const CLIENT_COLUMN_MIN_PX = 1100;
 
 /** Bone widths of a skeleton row, per column key. */
 const BONES: Record<string, string> = {
@@ -385,7 +382,7 @@ export class ProjectsListPage extends ServerListPage<ProjectResponse> {
   protected readonly auth = inject(AuthStore);
   private readonly scroll = viewChild('scroll', { read: ElementRef });
 
-  private readonly wide = viewportAtLeast(CLIENT_COLUMN_MIN_PX);
+  private readonly wide = COLUMN_ROOM;
 
   /** Below 640 px the list is cards, not a table (WP12). */
   protected readonly phone = phoneCards();

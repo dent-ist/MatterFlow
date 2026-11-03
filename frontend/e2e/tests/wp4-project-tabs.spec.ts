@@ -126,11 +126,15 @@ test.describe('WP4: project tabs at four sizes', () => {
       await expect(page.getByRole('heading', { name: 'Tasks', level: 2 })).toBeAttached();
 
       // The grid fills the width: it is not squeezed beside a panel.
-      const rows = page.locator('.wt-wrap tbody tr');
+      // Under 640 px the list is cards (LC-04), no table.
+      const cards = w < 640;
+      const rows = page.locator('[data-task]');
       await expect(rows).toHaveCount(data.taskCount);
-      const wrap = (await page.locator('.wt-wrap').boundingBox())!;
-      const main = (await page.locator('mf-fixed-page').boundingBox())!;
-      expect(wrap.width, 'grid width vs page').toBeGreaterThan(main.width - 80);
+      if (!cards) {
+        const wrap = (await page.locator('.wt-wrap').boundingBox())!;
+        const main = (await page.locator('mf-fixed-page').boundingBox())!;
+        expect(wrap.width, 'grid width vs page').toBeGreaterThan(main.width - 80);
+      }
 
       const firstRow = (await rows.first().boundingBox())!;
       // The summary strip (WP7, one 28 px line plus its margin) sits above the grid now.
@@ -152,7 +156,7 @@ test.describe('WP4: project tabs at four sizes', () => {
       await expect(body).toContainText('Active');
       await expect(body).not.toContainText(PROJECT_130);
       await expect(body).toContainText(data.world.matter.matterRef);
-      await expect(page.locator('.wt-wrap')).toBeHidden();
+      await expect(page.locator('[data-task]').first()).toBeHidden();
       await noSidewaysScroll(page);
       await axeClean(page, `Details tab at ${w}x${h}`);
       await shot(page, 'details');
@@ -160,7 +164,7 @@ test.describe('WP4: project tabs at four sizes', () => {
       // Back to Tasks: the tab leaves the address.
       await page.getByRole('tab', { name: /^Tasks/ }).click();
       await expect(page).not.toHaveURL(/tab=/);
-      await expect(page.locator('.wt-wrap')).toBeVisible();
+      await expect(page.locator('[data-task]').first()).toBeVisible();
       await noSilentClipping(page, `Tasks again at ${w}`);
     });
   }

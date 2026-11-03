@@ -15,7 +15,6 @@ const KEY = 'mf-mm-ui';
 
 export interface LayoutMemory {
   treePref: 'open' | 'rail' | null;
-  treePin: boolean;
   sidePref: 'open' | 'closed' | null;
 }
 
@@ -29,7 +28,7 @@ function store(): Storage | null {
 
 /**
  * Where the docked tree and the side panel stand (My Matters, epic #953 UI-11 and UI-12). Below about 1510 px the two cannot both be wide and still leave the grid 560 px, so they
- * take turns: opening one collapses the other to its rail and the one used last stays wide. Choosing a matter collapses the tree (unless it is pinned) and the side panel
+ * take turns: opening one collapses the other to its rail and the one used last stays wide. Choosing a matter leaves the tree open (MM-20); it gives way only when the width cannot hold both, and the side panel
  * opens in the room that was freed (unless the person closed it). The states the person chose are remembered in the browser (a convenience; the address does not carry them).
  */
 @Injectable()
@@ -41,7 +40,6 @@ export class MmLayout {
   readonly browsable = signal(true);
 
   readonly treeOpen = signal(true);
-  readonly treePin = signal(false);
   readonly sideOpen = signal(true);
   private treePref: 'open' | 'rail' | null = null;
   private sidePref: 'open' | 'closed' | null = null;
@@ -125,11 +123,6 @@ export class MmLayout {
     this.save();
   }
 
-  setPin(on: boolean): void {
-    this.treePin.set(on);
-    this.save();
-  }
-
   expandSide(): void {
     const treeWas = this.treeWide();
     this.sideOpen.set(true);
@@ -152,22 +145,15 @@ export class MmLayout {
     this.save();
   }
 
-  /** A client or a matter was chosen: the tree goes to its rail unless pinned (or unless it is the only way to choose, below the dock width), and the freed room goes to the side panel. */
+  /** A client or a matter was chosen. The Client and Matters tree stays open (MM-20, #1053: it is how people learn to filter by client and matter); it only gives way to the side panel in `reconcile` when the width cannot hold both, and the person's own Collapse is remembered. */
   chosen(): void {
-    if (this.docked() && this.treeOpen() && !this.treePin()) {
-      const sideWas = this.sideOpen();
-      this.treeOpen.set(false);
-      this.reconcile();
-      if (!sideWas && this.sideOpen())
-        this.announcement.set('The side panel opened in the room the tree freed.');
-    } else this.reconcile();
+    this.reconcile();
   }
 
   private save(): void {
     try {
       const o: LayoutMemory = {
         treePref: this.treePref,
-        treePin: this.treePin(),
         sidePref: this.sidePref,
       };
       store()?.setItem(KEY, JSON.stringify(o));
@@ -183,7 +169,6 @@ export class MmLayout {
       const o = JSON.parse(raw) as Partial<LayoutMemory>;
       this.treePref = o.treePref === 'open' || o.treePref === 'rail' ? o.treePref : null;
       this.sidePref = o.sidePref === 'open' || o.sidePref === 'closed' ? o.sidePref : null;
-      this.treePin.set(o.treePin === true);
       if (this.treePref === 'rail') this.treeOpen.set(false);
       if (this.sidePref === 'closed') this.sideOpen.set(false);
     } catch {

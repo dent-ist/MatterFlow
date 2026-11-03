@@ -125,19 +125,17 @@ test.describe('#432 the grid', () => {
       );
       for (const r of heights) expect(r.h, `row ${r.id}`).toBeLessThanOrEqual(45); // 44 px; the collapsed border adds up to a pixel (as in ad2-kit-grid);
       for (const r of heights) expect(r.h, `row ${r.id}`).toBeGreaterThanOrEqual(43);
-      const wrap = await page.evaluate(() => {
-        const w = document.querySelector<HTMLElement>('.mf-table-wrap')!;
-        return w.scrollWidth <= w.clientWidth + 1;
-      });
-      expect(wrap).toBe(true);
+      // LC-09: every column stays; when they are wider than the frame, the frame scrolls (the page does not).
       expect(await noSideScroll(page)).toBe(true);
-      // Last seen (#437) is the seventh column and has room from 1440 px only.
-      expect(await headers(page)).toEqual(
-        width >= 1440
-          ? ['Name', 'Roles', 'Pods', 'Availability', 'Last seen', 'Status', 'Actions']
-          : ['Name', 'Roles', 'Pods', 'Availability', 'Status', 'Actions'],
-      );
-      await expect(page.locator('[data-scroll-hint]')).toHaveCount(0);
+      expect(await headers(page)).toEqual([
+        'Name',
+        'Roles',
+        'Pods',
+        'Availability',
+        'Last seen',
+        'Status',
+        'Actions',
+      ]);
     });
   }
 
@@ -160,27 +158,21 @@ test.describe('#432 the grid', () => {
 
   // The table is for 640 px and wider; below that the list is cards (users-us5-phone).
   for (const { width, height } of SIZES.filter((size) => size.width >= 640)) {
-    test(`axe 0, no sideways scroll of the page and the columns that fit, at ${width}`, async ({
+    test(`axe 0, no sideways scroll of the page and every column, at ${width}`, async ({
       page,
     }) => {
       test.skip(!axeAvailable(), 'axe-core is not available');
       await openList(page, width, height);
       const shown = await headers(page);
-      if (width >= 1440)
-        expect(shown).toEqual([
-          'Name',
-          'Roles',
-          'Pods',
-          'Availability',
-          'Last seen',
-          'Status',
-          'Actions',
-        ]);
-      else if (width >= 1280)
-        expect(shown).toEqual(['Name', 'Roles', 'Pods', 'Availability', 'Status', 'Actions']);
-      else if (width >= 1100)
-        expect(shown).toEqual(['Name', 'Roles', 'Availability', 'Status', 'Actions']);
-      else expect(shown).toEqual(['Name', 'Availability', 'Status', 'Actions']);
+      expect(shown).toEqual([
+        'Name',
+        'Roles',
+        'Pods',
+        'Availability',
+        'Last seen',
+        'Status',
+        'Actions',
+      ]);
       expect(await noSideScroll(page)).toBe(true);
       expect(await axeClean(page)).toEqual([]);
       await shot(page, 'users-grid', width, height);
@@ -455,12 +447,13 @@ test.describe('#433 one action per row', () => {
   test('#437 the rows per page are 25, 50 or 100 and live in the address', async ({ page }) => {
     await openList(page, 1366, 768);
     const size = labelledDropdown(page, 'Rows per page');
-    await expect(size).toHaveAttribute('data-value', '25');
-    await size.selectOption('50');
-    await expect(page).toHaveURL(/size=50/);
+    // LC-05: 50 is the default (not written to the address).
+    await expect(size).toHaveAttribute('data-value', '50');
+    await size.selectOption('25');
+    await expect(page).toHaveURL(/size=25/);
     await page.reload();
-    await expect(labelledDropdown(page, 'Rows per page')).toHaveAttribute('data-value', '50');
-    await labelledDropdown(page, 'Rows per page').selectOption('25');
+    await expect(labelledDropdown(page, 'Rows per page')).toHaveAttribute('data-value', '25');
+    await labelledDropdown(page, 'Rows per page').selectOption('50');
     await expect(page).not.toHaveURL(/size=/);
   });
 

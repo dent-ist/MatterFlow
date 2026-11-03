@@ -37,8 +37,10 @@ test.describe('My Matters: the page', () => {
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
     await expect(page.getByRole('heading', { name: 'My Matters', level: 1 })).toBeVisible();
-    await expect(page.locator('#mm-client')).toBeVisible();
-    await expect(page.locator('#mm-matter')).toBeVisible();
+    // MM-20 (#1053): no Client / Matter dropdowns; the Client and Matters tree is the way to choose and is open by default.
+    await expect(page.locator('#mm-client')).toHaveCount(0);
+    await expect(page.locator('#mm-matter')).toHaveCount(0);
+    await expect(page.getByRole('tree', { name: 'Client and Matters' })).toBeVisible();
     await expect(page.locator('[data-new-menu]')).toBeVisible();
     await expect(page.getByRole('tab')).toHaveText([
       /Overview/,
@@ -111,17 +113,19 @@ test.describe('My Matters: the page', () => {
     const page = await asUser(w.pm.username);
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/my-matters');
-    const tree = page.getByRole('tree', { name: 'Clients and matters' });
+    const tree = page.getByRole('tree', { name: 'Client and Matters' });
     await expect(tree).toBeVisible();
     await tree.getByRole('treeitem', { name: new RegExp(a.name) }).click();
     await expect(page).toHaveURL(/matterId=\d+/);
     await expect(page).toHaveURL(/clientId=\d+/);
-    await expect(page.locator('#mm-client')).not.toContainText('All clients');
-    await expect(page.locator('#mm-matter')).toContainText(a.name);
-    // The tree went to its rail; the side panel opened in the room.
+    await expect(page.locator('[data-scope-chip]')).toContainText(a.name);
+    // The tree stays open after a choice (MM-20); the person's own collapse puts it on its rail and the chip stays visible.
+    await expect(tree).toBeVisible();
+    await page.getByRole('button', { name: 'Collapse the tree to a thin rail' }).click();
     await expect(page.locator('mf-mm-tree-rail')).toBeVisible();
+    await expect(page.locator('[data-scope-chip]')).toContainText(a.name);
     await page.locator('[data-tree-expand-rail]').click();
-    await expect(page.getByRole('tree', { name: 'Clients and matters' })).toBeVisible();
+    await expect(page.getByRole('tree', { name: 'Client and Matters' })).toBeVisible();
     // Keyboard: Down moves, Home goes to the first item.
     const selected = page.getByRole('treeitem', { selected: true });
     await selected.focus();
@@ -224,8 +228,8 @@ test.describe('My Matters: the page', () => {
   });
 });
 
-test.describe('My Matters: one dropdown style, pin and icons (UI-19)', () => {
-  test('Show, Recent activity kind, Client and Matter are the same listbox dropdown; the pin shows its state; the grid has its icons', async ({
+test.describe('My Matters: one dropdown style and icons (UI-19)', () => {
+  test('Show, Recent activity kind, Client and Matter are the same listbox dropdown; the tree has no pin; the grid has its icons', async ({
     seed,
     personas,
     asUser,
@@ -248,8 +252,6 @@ test.describe('My Matters: one dropdown style, pin and icons (UI-19)', () => {
     for (const [id, name] of [
       ['#mm-show', 'Show'],
       ['#mm-feed-kind', 'Kind of activity'],
-      ['#mm-client', 'Client'],
-      ['#mm-matter', 'Matter'],
     ] as const) {
       await page.locator(id).click();
       const list = page.getByRole('listbox', { name });
@@ -261,14 +263,9 @@ test.describe('My Matters: one dropdown style, pin and icons (UI-19)', () => {
     }
     // The activity kind is ONE dropdown with counts, not a row of chips.
     await expect(page.locator('[data-section=activity] mf-filter-chips')).toHaveCount(0);
-    // The pin: a different icon and aria-pressed, and the words Unpin / Pin.
-    const pin = page.locator('[data-tree-pin]');
-    await expect(pin).toHaveAttribute('aria-pressed', 'false');
-    const before = await pin.locator('svg').getAttribute('class');
-    await pin.click();
-    await expect(pin).toHaveAttribute('aria-pressed', 'true');
-    expect(await pin.locator('svg').getAttribute('class')).not.toBe(before);
-    await expect(pin).toHaveAttribute('aria-label', /Unpin/);
+    // The tree has no pin any more (MM-20): it stays open after a choice and keeps only its collapse-to-rail button.
+    await expect(page.locator('[data-tree-pin]')).toHaveCount(0);
+    await expect(page.locator('[data-tree-collapse]')).toBeVisible();
   });
 });
 
@@ -329,10 +326,10 @@ test.describe('My Matters: review round 3 (UI-21)', () => {
     const page = await asUser(w.pm.username);
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto(`/my-matters?matterId=${a.matterId}`);
-    await expect(page.locator('#mm-matter')).toContainText(a.name);
-    // The tree is on its rail after a choice by address too: open it, pin, then click the client row.
+    await expect(page.locator('[data-scope-chip]')).toContainText(a.name);
+    // The tree is open by address too: click the client row.
     await page.locator('mf-mm-tree-panel, mf-mm-tree-rail').first().waitFor();
-    const tree = page.getByRole('tree', { name: 'Clients and matters' });
+    const tree = page.getByRole('tree', { name: 'Client and Matters' });
     if (!(await tree.count())) await page.locator('[data-tree-expand-rail]').click();
     await expect(page.locator('[role=treeitem][aria-selected=true]')).toHaveCount(1);
     const client = tree
@@ -343,7 +340,7 @@ test.describe('My Matters: review round 3 (UI-21)', () => {
     await expect(page).toHaveURL(/clientId=\d+/);
     await expect(page).not.toHaveURL(/matterId=/);
     void client;
-    await expect(page.locator('#mm-matter')).toContainText('All matters');
+    await expect(page.locator('[data-scope-chip]')).toContainText('all matters');
   });
 
   test('the calendar item dialog: Client before Matter, the type tiles are a 4 x 2 radio group with arrow keys', async ({

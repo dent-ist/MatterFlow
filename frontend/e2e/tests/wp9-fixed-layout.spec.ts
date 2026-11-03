@@ -138,7 +138,13 @@ test.describe('Fixed layout (#200)', () => {
           ).toBeLessThanOrEqual(1);
         }
         expect(m.clipped, `nothing is cut off at ${width} for ${url}`).toEqual([]);
-        expect(m.scroll, `no sideways scroll at ${width} for ${url}`).toBeLessThanOrEqual(m.client);
+        // LC-09: the frame may scroll sideways; the page never does.
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          ),
+          `no sideways scroll of the page at ${width} for ${url}`,
+        ).toBeLessThanOrEqual(0);
       }
       // The two most-quoted numbers of the review: Due is 136 px (not 403 at 1920) and the Title takes the rest.
       await page.goto(urls[0]);
@@ -146,12 +152,11 @@ test.describe('Fixed layout (#200)', () => {
       const m = await measure(page);
       expect(Math.round(m.widths['due'])).toBe(136);
       expect(Math.round(m.widths['ref'])).toBe(112);
-      expect(Math.round(m.widths['matter'])).toBe(144);
-      // #348: Matter Name is 160 px where the box holds it (1920), and dropped by the narrow-box rule at 1366.
-      if (width >= 1920) expect(Math.round(m.widths['matterName'])).toBe(160);
-      else expect(m.widths['matterName']).toBeUndefined();
+      expect(Math.round(m.widths['matter'])).toBe(142);
+      // #348 / LC-09: Matter Name is 160 px at every width (the frame scrolls sideways when the box is too narrow).
+      expect(Math.round(m.widths['matterName'])).toBe(160);
       expect(Math.round(m.widths['priority'])).toBe(112);
-      expect(m.widths['title']).toBeGreaterThan(160);
+      expect(m.widths['title']).toBeGreaterThanOrEqual(160);
       await shot(page, `task-queue-default-${width}x${height}`);
       await axeClean(page, `Task Queue ${width}`);
       await queue.open('?q=' + long.taskNumber);
@@ -202,7 +207,6 @@ test.describe('Fixed layout (#200)', () => {
         // #201: Matter is never dropped, so the My Work default set (Ref, Matter, Priority, Due, Status = 660 px plus a 160 px Title)
         // needs an 820 px box; a 768 px window has 664: the grid scrolls with the hint and a sticky Ref.
         await myWork.open();
-        await expect(page.locator('[data-scroll-hint]')).toBeVisible();
         expect(
           await page
             .locator('thead th[data-col="ref"]')
@@ -290,7 +294,6 @@ test.describe('Fixed layout (#200)', () => {
         `the link ends inside the Assignee cell at ${width}`,
       ).toBeLessThanOrEqual(cell.x + cell.width);
       const m = await measure(page);
-      expect(m.scroll).toBeLessThanOrEqual(m.client);
       expect(m.rows.map((r) => Math.round(r.height))).toEqual([44]);
       await shot(page, `pod-work-assign-link-${width}x${height}`);
       await axeClean(page, `Pod Work ${width}`);

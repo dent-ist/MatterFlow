@@ -50,7 +50,7 @@ export interface ListFiltersOptions {
   readonly plainLink?: PlainLink;
 }
 
-/** Below this width (and when the grid overflows sideways) the filter row becomes a sheet. */
+/** Below this width the filter row becomes a sheet. */
 export const SHEET_QUERY = '(max-width: 767px)';
 
 /**
@@ -60,8 +60,8 @@ export const SHEET_QUERY = '(max-width: 767px)';
  *
  *   readonly filters = new ListFilters({ defs: DEFS, screen: 'assets' });
  *
- * It also owns the UI state around the row: open or closed (remembered per screen and user), sheet mode (narrow window or overflowing
- * grid), the "Restored your last view" notice, the result announcement for the live region and the print line.
+ * It also owns the UI state around the row: open or closed (remembered per screen and user), sheet mode (narrow window),
+ * the "Restored your last view" notice, the result announcement for the live region and the print line.
  */
 export class ListFilters {
   private readonly router = inject(Router);
@@ -106,9 +106,8 @@ export class ListFilters {
   readonly open = signal(false);
   readonly sheetOpen = signal(false);
   private readonly narrow = signal(false);
-  private readonly overflowing = signal(false);
-  /** True below 768 px or when the grid overflows sideways: the controls live in the sheet and chips always show. */
-  readonly sheetMode = computed(() => this.narrow() || this.overflowing());
+  /** True in a narrow window: the controls live in the sheet and chips always show. */
+  readonly sheetMode = computed(() => this.narrow());
   /** The filter row is on screen (open and not in sheet mode). */
   readonly rowVisible = computed(() => this.open() && !this.sheetMode());
   /** The Filters button's pressed state: the row, or the sheet. */
@@ -376,47 +375,12 @@ export class ListFilters {
     this.sheetOpen.set(false);
   }
 
-  /** Call with the grid's scroll area: the controls move to the sheet while the grid scrolls sideways. */
+  /**
+   * Kept for the pages that still call it. Since LC-09 (#1052) a grid that is wider than its frame scrolls sideways inside the frame and the
+   * controls stay where they are: the sheet is for a narrow window only.
+   */
   watchOverflow(area: HTMLElement | null | undefined): void {
-    if (!area || typeof ResizeObserver !== 'function') return;
-    const table = area.querySelector('table');
-    // The filter row itself can cause the overflow (its controls have a minimum width) and it is not rendered in sheet mode: without a
-    // hold the grid would then fit, the row would come back, overflow again, and so on. An overflow holds until the area changes width, or
-    // until the grid's columns change: a column the narrow-box rule drops after the first measure (#348) is the cause that went away, not the row.
-    let heldAt: number | null = null;
-    let heldCols = '';
-    const columns = (): string =>
-      Array.from(
-        table?.querySelectorAll?.('col') ?? [],
-        (c) => c.getAttribute('data-col') ?? '',
-      ).join(',');
-    const check = () => {
-      // The skeleton rows (fixed bone widths) are wider than a small window while a list loads: that is no reason to move the controls.
-      if (area.querySelector('tbody[aria-busy="true"]')) return;
-      const width = area.clientWidth;
-      if (area.scrollWidth > width + 1) {
-        heldAt = width;
-        heldCols = columns();
-        this.overflowing.set(true);
-      } else if (!(heldAt === width && heldCols === columns() && this.overflowing())) {
-        heldAt = null;
-        this.overflowing.set(false);
-      }
-    };
-    const observer = new ResizeObserver(check);
-    observer.observe(area);
-    if (table) observer.observe(table);
-    // The end of a load (rows instead of skeleton) is measured even if the table keeps its size.
-    const loading =
-      typeof MutationObserver === 'function' && area instanceof Node
-        ? new MutationObserver(check)
-        : null;
-    loading?.observe(area, { subtree: true, attributes: true, attributeFilter: ['aria-busy'] });
-    this.destroyRef.onDestroy(() => {
-      observer.disconnect();
-      loading?.disconnect();
-    });
-    check();
+    void area; // nothing to watch
   }
 
   private watchViewport(): void {

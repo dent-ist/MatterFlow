@@ -14,3 +14,9 @@ export function viewportAtLeast(px: number): Signal<boolean> {
   inject(DestroyRef).onDestroy(() => query.removeEventListener('change', update));
   return out;
 }
+
+/**
+ * The room a list column asks of the window (LC-09, #1052, owner decision 2026-11-02): none. No column is dropped because of the window width; a grid
+ * wider than its frame scrolls sideways inside the frame. Pages keep their `...Room` signals so their templates stay as they are; every one is true.
+ */
+export const COLUMN_ROOM: Signal<boolean> = signal(true).asReadonly();

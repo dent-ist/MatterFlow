@@ -526,3 +526,8 @@ Ratchet for the views behind the Overview (measured plus about 5 percent, so lat
 
 `after/pm1-*` and `after/pm3-*` for overview, calendar, breakdown, data, activity and trends at 1366x768, 1920x1080, 768x1024 and 375x812; the Data states `pm1-data-<state>-<size>.png` and `pm3-data-<state>-<size>.png` (default, pick-matters, several-matters, one-matter, pick-types, pick-sizes, size-field, period, bar, pie, info). Findings of the critical look are issues #935 to #938.
 
+
+
+## Update 2026-11-02 (MM-20, #1053): one way to choose a client and matter
+
+Owner decision (option B): the "All clients" and "All matters" dropdowns are removed; the **Client and Matters** tree (renamed from "Clients and matters": heading, tree name, rail, search, tooltips) is the one way to choose. The tree is expanded on a first visit or after a reset, stays open after a choice, and can still be collapsed to its thin rail (the person's own choice is remembered in the browser). The chosen scope is a removable chip beside the title ("Client > Matter" or "Client > all matters", an x that clears it, the whole text as tooltip), also shown while the tree is on its rail. Below 1100 px (no docked tree) one **Scope** button opens the same tree: a panel on a tablet, a bottom sheet on a phone. Addresses (`clientId`, `matterId`), the remembered scope, Active only and the tree search are unchanged. The button row under the title moved into the title row, which gives the content about 50 px.

@@ -43,7 +43,7 @@ import { Pager } from '../../../shared/ui/pager';
 import { phoneCards } from '../../../shared/ui/record-card-list';
 import { AdminCardList, AdminCardSpec, activeCardBadge } from '../../../shared/ui/admin-card-spec';
 import { RecordSort } from '../../../shared/ui/record-sort';
-import { viewportAtLeast } from '../../../shared/ui/viewport';
+import { COLUMN_ROOM } from '../../../shared/ui/viewport';
 import { SortOption } from '../../../shared/work-queue/phone-sort';
 import { stripChips } from '../../../shared/ui/strip-items';
 import { FilterChips } from '../../../shared/ui/filter-chips';
@@ -344,7 +344,7 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
    * The Description column is left out below 1600 px (its filter then sits under "Other filters"): with the Tags and Inputs columns it
    * would make the Title narrower than the Description, and Title is the spring (#356, #378).
    */
-  protected readonly showDescription = viewportAtLeast(1600);
+  protected readonly showDescription = COLUMN_ROOM;
   /** Below 640 px the list is cards, not a table (#375). */
   protected readonly phone = phoneCards();
   /** The phone's Sort by select: the sortable columns (the headers' keys); the count sorts descending first, like its header. */
@@ -354,9 +354,9 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
     { value: 'status', label: 'Status' },
   ];
   /** The Tags column (two chips and "+n") is left out below 1100 px, its filter moving under "Other filters", so the grid fits a 768 px window (#375). */
-  protected readonly showTags = viewportAtLeast(1180);
+  protected readonly showTags = COLUMN_ROOM;
   /** The Inputs column (none, published or a Draft badge) is left out below 1024 px (#378). */
-  protected readonly showInputs = viewportAtLeast(1024);
+  protected readonly showInputs = COLUMN_ROOM;
   protected readonly columns = computed(() =>
     COLUMNS.filter(
       (c) =>

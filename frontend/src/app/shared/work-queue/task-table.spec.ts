@@ -582,28 +582,22 @@ describe('TaskTable', () => {
     expect(link().getAttribute('title')).toBe('Process Smith custodians');
   });
 
-  it('on a narrow box drops the optional columns by the one rule and keeps Ref (BUG-14, #196, #201)', async () => {
+  it('keeps every chosen column on a narrow box: the frame scrolls sideways, nothing is dropped (LC-09)', async () => {
     await create([aRow()], ['ref', 'title', 'priority', 'due', 'status', 'pod', 'age']);
     const keys = () => Array.from(el().querySelectorAll('th')).map((th) => th.textContent?.trim());
     const inner = fixture.componentInstance as unknown as {
       boxWidth: { set(n: number): void };
     };
-    expect(keys()).toEqual(['Ref', 'Title', 'Priority', 'Pod', 'Due', 'Status', 'Age']);
-    // 112 + 112 + 136 + 140 + 140 + 64 = 704 px of columns: 904 px leaves the Title 200 px; below it Age drops first, then Pod.
-    inner.boxWidth.set(904);
-    fixture.detectChanges();
-    expect(keys()).toEqual(['Ref', 'Title', 'Priority', 'Pod', 'Due', 'Status', 'Age']);
-    inner.boxWidth.set(900);
-    fixture.detectChanges();
-    expect(keys()).toEqual(['Ref', 'Title', 'Priority', 'Pod', 'Due', 'Status']);
-    inner.boxWidth.set(760);
-    fixture.detectChanges();
-    expect(keys()).toEqual(['Ref', 'Title', 'Priority', 'Due', 'Status']);
-    expect(el().querySelector('table')!.classList).not.toContain('wt--narrow');
-
+    const all = ['Ref', 'Title', 'Priority', 'Pod', 'Due', 'Status', 'Age'];
+    expect(keys()).toEqual(all);
+    for (const width of [904, 760]) {
+      inner.boxWidth.set(width);
+      fixture.detectChanges();
+      expect(keys(), `${width}`).toEqual(all);
+    }
     inner.boxWidth.set(664);
     fixture.detectChanges();
-    expect(keys()).toEqual(['Ref', 'Title', 'Priority', 'Due', 'Status']);
+    expect(keys()).toEqual(all);
     expect(el().querySelector('table')!.classList).toContain('wt--narrow');
     expect(el().querySelector('[data-sub-task]')).toBeNull();
   });

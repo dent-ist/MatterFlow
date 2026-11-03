@@ -41,7 +41,7 @@ import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { RecordCardDef, RecordCardList, phoneCards } from '../../../shared/ui/record-card-list';
 import { RowActionsMenu, rowActions } from '../../../shared/ui/row-actions';
-import { viewportAtLeast } from '../../../shared/ui/viewport';
+import { COLUMN_ROOM } from '../../../shared/ui/viewport';
 import {
   ACCESS_OBJECT_TYPES,
   AuditGroup,
@@ -65,9 +65,6 @@ import {
 const PAGE_SIZE = 50;
 /** People offered in the Who filter: the first pages of the user list (100 each). */
 const ACTOR_PAGES = 5;
-
-/** The Who column is its own column from this window width; below it the person joins the When cell (#647). */
-const WHO_ROOM = 1100;
 
 /** From this many loaded events the counter suggests narrowing the dates (#653). */
 export const MANY_EVENTS = 1000;
@@ -123,7 +120,7 @@ export class AuditPage {
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
   protected readonly zone = inject(USER_TIME_ZONE);
   protected readonly phone = phoneCards();
-  private readonly whoRoom = viewportAtLeast(WHO_ROOM);
+  private readonly whoRoom = COLUMN_ROOM;
   private requestId = 0;
   /** Set by "Show only this operation": focus moves to the filter chip that now names it (BUG-6). */
   private focusChipPending = false;

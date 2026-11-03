@@ -214,11 +214,12 @@ describe('ClientsListPage', () => {
     fixture.componentRef.setInput('sort', '-name');
     await settle(fixture);
 
+    // Search is the API's `q` (name or number): the typed name goes in the first argument (' acme ' is trimmed by the filter).
     expect(api.listClients).toHaveBeenLastCalledWith(
-      undefined,
+      'acme',
       undefined,
       '343',
-      'acme',
+      undefined,
       undefined,
       undefined,
       2,

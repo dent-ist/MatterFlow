@@ -408,62 +408,11 @@ describe('ListFilters', { timeout: 20_000 }, () => {
 
     afterEach(() => vi.unstubAllGlobals());
 
-    it('holds sheet mode until the grid area changes width, so a row that causes the overflow cannot flap', async () => {
+    it('does not move the controls into the sheet when the grid overflows sideways (LC-09)', async () => {
       vi.stubGlobal('ResizeObserver', FakeObserver);
       const f = await open('/list');
       const area = { scrollWidth: 1300, clientWidth: 1100, querySelector: () => null };
       f.watchOverflow(area as unknown as HTMLElement);
-      expect(f.sheetMode()).toBe(true);
-
-      // In sheet mode the row is not rendered, the grid fits: the hold keeps the sheet while the width is the same.
-      area.scrollWidth = 1100;
-      FakeObserver.last!.callback();
-      expect(f.sheetMode()).toBe(true);
-
-      // A wider area (the window grew) lets the row come back.
-      area.clientWidth = 1300;
-      area.scrollWidth = 1300;
-      FakeObserver.last!.callback();
-      expect(f.sheetMode()).toBe(false);
-    });
-
-    it('lifts the hold when the grid drops a column after the first measure (the narrow-box rule, #348): the row comes back', async () => {
-      vi.stubGlobal('ResizeObserver', FakeObserver);
-      const f = await open('/list');
-      let cols = ['ref', 'title', 'matter', 'matterName'];
-      const table = {
-        querySelectorAll: () => cols.map((c) => ({ getAttribute: () => c })),
-      };
-      const area = {
-        scrollWidth: 1200,
-        clientWidth: 1098,
-        querySelector: (sel: string) => (sel === 'table' ? table : null),
-      };
-      f.watchOverflow(area as unknown as HTMLElement);
-      expect(f.sheetMode()).toBe(true);
-
-      // The table dropped Matter Name: it fits at the same width, so the hold must not keep the sheet.
-      cols = ['ref', 'title', 'matter'];
-      area.scrollWidth = 1098;
-      FakeObserver.last!.callback();
-      expect(f.sheetMode()).toBe(false);
-    });
-
-    it('ignores the loading skeleton (its fixed bone widths overflow a small window) and measures when the rows are there', async () => {
-      vi.stubGlobal('ResizeObserver', FakeObserver);
-      const f = await open('/list');
-      let busy = true;
-      const area = {
-        scrollWidth: 760,
-        clientWidth: 664,
-        querySelector: (sel: string) => (busy && sel.includes('aria-busy') ? {} : null),
-      };
-      f.watchOverflow(area as unknown as HTMLElement);
-      expect(f.sheetMode()).toBe(false); // wider only because of the skeleton
-
-      busy = false;
-      area.scrollWidth = 664;
-      FakeObserver.last!.callback();
       expect(f.sheetMode()).toBe(false);
     });
   });

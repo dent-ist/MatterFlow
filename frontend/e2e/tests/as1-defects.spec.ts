@@ -201,7 +201,7 @@ test.describe('Assets list defects (WP-AS1)', () => {
     await expect(page.getByRole('heading', { level: 1, name: `Raced ${token}` })).toBeVisible();
   });
 
-  test('the Reference column leaves below 1280 px and the filter row follows; axe finds nothing and nothing scrolls sideways at four sizes', async ({
+  test('LC-09: the Reference column stays from 640 px (the frame scrolls sideways); axe finds nothing and the page does not scroll sideways at four sizes', async ({
     page,
     seed,
   }) => {
@@ -211,7 +211,7 @@ test.describe('Assets list defects (WP-AS1)', () => {
     await expect(page.locator('tbody tr[data-asset-id]')).toHaveCount(3);
     await atEverySize(page, 'as1-assets-list', async (size) => {
       await expect(page.getByRole('columnheader', { name: 'External reference' })).toHaveCount(
-        size.width >= 1280 ? 1 : 0,
+        size.width >= 640 ? 1 : 0,
       );
       await expect(
         size.width < 640

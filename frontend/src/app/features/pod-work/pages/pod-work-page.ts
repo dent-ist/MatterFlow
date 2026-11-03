@@ -21,7 +21,7 @@ import {
   TaskQueueRow,
 } from '../../../api/generated/api-client';
 import { PageTitle } from '../../../core/title/page-title';
-import { ColumnScope, loadLastPod, saveLastPod } from '../../../shared/work-queue/column-prefs';
+import { loadLastPod, saveLastPod } from '../../../shared/work-queue/column-prefs';
 import { ColumnWidthMap, pxToRem } from '../../../shared/work-queue/column-widths';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { FilterOption } from '../../../shared/filters/filter-def';
@@ -285,6 +285,7 @@ type TabKey = 'queue' | 'members' | 'all';
               [filters]="filters"
               controls="work-filter-row"
               searchLabel="Search tasks"
+              [sortedBelow]="true"
               (showColumn)="showColumn($event)"
             >
               <mf-work-view-controls
@@ -502,18 +503,6 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
       ? { assignee: pxToRem(PodWorkPage.LINK_ONLY_PX), ...this.colWidths() }
       : this.colWidths(),
   );
-
-  /**
-   * The Unassigned tab in the tablet band leaves Matter Number (and Matter Name) out of the default columns: they stay in the Columns
-   * panel and in the card, and the Assignee cell, the one thing the tab is for, fits in the first view (#550). A column choice the person
-   * made always wins over this default.
-   */
-  protected override defaultsFor(scope: ColumnScope): string[] {
-    const base = super.defaultsFor(scope);
-    return this.tab() === 'queue' && this.tabletBand()
-      ? base.filter((k) => k !== 'matter' && k !== 'matterName')
-      : base;
-  }
 
   /** Tabs (W6, #562): Unassigned (tasks), By member (people with open work) and All open (tasks); the strip opens the rest. */
   protected readonly tabs = computed<WorkTab[]>(() => {

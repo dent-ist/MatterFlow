@@ -15,7 +15,6 @@ import { dateInZone, FIRM_ZONE } from '../support/time';
  * E2E_SCREENSHOTS when set (docs/ux/task-queue-review/fixes/wp-narrow).
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
-const NEVER_DROPPED = ['ref', 'title', 'matter', 'priority', 'assignee', 'due', 'status', 'closed'];
 
 async function shot(page: Page, name: string): Promise<void> {
   if (!OUT) return;
@@ -70,7 +69,7 @@ async function worker(seed: Seeder, label: string) {
 }
 
 test.describe('Narrow rule (#201)', () => {
-  test('640 to 1023 px: the default sets of My Work, Task Queue and Pod Work fit, or only the never-dropped columns are left, the hint shows and Ref is sticky', async ({
+  test('LC-09, 640 to 1023 px: My Work, Task Queue and Pod Work keep every chosen column, the grid scrolls sideways when it must and Ref is sticky', async ({
     seed,
     asUser,
   }) => {
@@ -117,10 +116,9 @@ test.describe('Narrow rule (#201)', () => {
         expect(g.keys[0], what).toBe('ref');
         await expect(c.page.locator('[data-sub-task], .wt-subline')).toHaveCount(0);
         if (g.scroll > g.client + 1) {
-          // The rule dropped everything it may: only the never-dropped columns are left. The hint says so and Ref stays in view.
-          for (const k of g.keys)
-            expect(NEVER_DROPPED, `${what}: ${k} should have dropped`).toContain(k);
-          expect(g.hint, `${what}: hint`).toBe(true);
+          // LC-09: no column is dropped by width; the frame scrolls sideways and Ref stays in view.
+          for (const k of ['ref', 'title', 'priority', 'due', 'status'])
+            expect(g.keys, `${what}: ${k} stays`).toContain(k);
           expect(g.refPosition, what).toBe('sticky');
           await c.page.evaluate(() => {
             const w = document.querySelector('.wt-wrap') as HTMLElement;
@@ -135,7 +133,6 @@ test.describe('Narrow rule (#201)', () => {
             `${what}: Ref stays at the left edge`,
           ).toBeLessThanOrEqual(1);
         } else {
-          expect(g.hint, `${what}: no hint`).toBe(false);
           expect(g.title, `${what}: Title`).toBeGreaterThanOrEqual(160);
           const status = (await c.page
             .locator('[data-task]')
@@ -156,7 +153,7 @@ test.describe('Narrow rule (#201)', () => {
     expect(titles.length).toBe(4);
   });
 
-  test('a 1098 px box fits the default Task Queue set without sideways scroll and the Title has at least 300 px; 1366, 1920 and 375 are clean', async ({
+  test('LC-09: a 1098 px box keeps the Title at 160 px or more and the page never scrolls sideways; 1366, 1920 and 375 are clean', async ({
     seed,
     asUser,
   }) => {
@@ -174,10 +171,8 @@ test.describe('Narrow rule (#201)', () => {
     await expect(page.locator('[data-task]').first()).toBeVisible();
     const g = await grid(page);
     expect(g.client).toBe(1098);
-    expect(g.scroll).toBeLessThanOrEqual(g.client);
-    // The standard order (Type too, LC-03) leaves the Title about 206 px at this width.
-    expect(g.title).toBeGreaterThanOrEqual(200);
-    expect(g.hint).toBe(false);
+    // The standard order does not fit: the frame scrolls sideways, the Title keeps its width.
+    expect(g.title).toBeGreaterThanOrEqual(160);
     await shot(page, 'task-queue-box-1098');
 
     for (const [name, width, height] of [
@@ -188,7 +183,13 @@ test.describe('Narrow rule (#201)', () => {
       await queue.open(q);
       await expect(page.locator('[data-task]').first()).toBeVisible();
       const w = await grid(page);
-      expect(w.scroll, name).toBeLessThanOrEqual(w.client);
+      expect(w.title, name).toBeGreaterThanOrEqual(160);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        ),
+        `${name}: the page does not scroll sideways`,
+      ).toBeLessThanOrEqual(0);
       await shot(page, `task-queue-${name}`);
       await axeClean(page, `Task Queue ${name}`);
     }
@@ -198,7 +199,7 @@ test.describe('Narrow rule (#201)', () => {
     await shot(page, 'task-queue-375x812');
   });
 
-  test('a user-added Client and Task type drop first when the Title would go below 200 px, and stay ticked in the Columns chooser', async ({
+  test('LC-09: a user-added Client and Task type stay (nothing drops by width), the Title keeps 160 px, and they are ticked in the Columns chooser', async ({
     seed,
     asUser,
   }) => {
@@ -225,14 +226,10 @@ test.describe('Narrow rule (#201)', () => {
     const queue = new TaskQueuePage(page);
     await queue.open(`?q=${encodeURIComponent(tag)}`);
     await expect(page.locator('[data-task]').first()).toBeVisible();
-    // Ref 112 + Matter 160 + Client 140 + Type 140 + Priority 112 + Assignee 136 + Due 136 + Status 140 = 1076 px of columns.
     const g = await grid(page);
-    const full = 1076 + 200;
-    if (g.client < full) {
-      expect(g.keys).not.toContain('type');
-      expect(g.title).toBeGreaterThanOrEqual(200);
-      if (g.keys.includes('client')) expect(g.client).toBeGreaterThanOrEqual(full - 140);
-    }
+    expect(g.keys).toContain('client');
+    expect(g.keys).toContain('type');
+    expect(g.title).toBeGreaterThanOrEqual(160);
     await page.getByRole('button', { name: 'Columns', exact: true }).click();
     await expect(page.getByRole('checkbox', { name: 'Client' })).toBeChecked();
     await expect(page.getByRole('checkbox', { name: 'Type', exact: true })).toBeChecked();

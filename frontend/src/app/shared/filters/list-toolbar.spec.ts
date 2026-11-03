@@ -112,6 +112,15 @@ describe('list toolbar', { timeout: 20_000 }, () => {
     expect(m.el.querySelector('[data-reset-sort]')).not.toBeNull();
   });
 
+  it('puts the Sorted by line in row 2 while there is no chip, and in row 3 (with the chips) when there is one', async () => {
+    await mount();
+    expect(m.el.querySelector('[data-toolbar-row2]')).toBeNull();
+    expect(row2().querySelector('[data-sorted-line]')).not.toBeNull();
+    await m.go('/list?priority=1');
+    expect(m.el.querySelector('[data-toolbar-row2] [data-sorted-line]')).not.toBeNull();
+    expect(row2().querySelector('[data-sorted-line]')).toBeNull();
+  });
+
   it('replaces row 2 with the bulk bar while rows are selected', async () => {
     await mount();
     expect(m.el.querySelector('.bulk')).toBeNull();

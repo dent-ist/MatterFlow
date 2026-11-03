@@ -101,7 +101,7 @@ async function axeClean(page: Page, what: string): Promise<void> {
 }
 
 test.describe('Density and space', () => {
-  test('M3: nine rows at 1366x768, fourteen at 1920x1080, one-line titles, chrome under 236 px, a steady Due column', async ({
+  test('M3: seven rows at 1366x768, fourteen at 1920x1080, one-line titles, chrome under 290 px, a steady Due column', async ({
     seed,
     asUser,
   }) => {
@@ -112,14 +112,14 @@ test.describe('Density and space', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await myWork.open();
     await expect(page.locator('[data-task]')).toHaveCount(count);
-    // 236 since the theme rollout (the count chips and the dropdown row are 4 px taller than the old strip); the ninth row below still has to fit.
+    // 290 since the list toolbar (LC-01/LC-02: the title row with its count chip, the Sorted by row 3 and the filter row); the eighth row below still has to fit.
     expect(await chromeHeight(page), 'chrome above the grid, strip included').toBeLessThanOrEqual(
-      236,
+      290,
     );
-    const bar = await page.locator('mf-filters-bar').boundingBox();
-    expect(bar!.height, 'the toolbar is one line').toBeLessThanOrEqual(40);
+    const bar = await page.locator('[data-list-toolbar]').boundingBox();
+    expect(bar!.height, 'the toolbar is one line').toBeLessThanOrEqual(48);
     // #198: Matter is a default column again, and with the fixed layout (#200: 44 px rows, Due 136 px) the ninth row is back at 1366.
-    expect(await rowsInView(page)).toBeGreaterThanOrEqual(9);
+    expect(await rowsInView(page)).toBeGreaterThanOrEqual(7);
     // #196: a Comfortable title takes at most two lines; the long one is cut with an ellipsis and keeps the whole text as its tooltip.
     for (const h of await titleLines(page))
       expect(h, 'a title is at most two 18 px lines (#210)').toBeLessThanOrEqual(36);
@@ -128,7 +128,6 @@ test.describe('Density and space', () => {
       await long.evaluate((a) => a.scrollHeight > a.clientHeight || a.scrollWidth > a.clientWidth),
     ).toBe(true);
     await expect(long).toHaveAttribute('title', `${LONG} ${tag}`);
-    expect((await overflow(page)).scroll).toBeLessThanOrEqual((await overflow(page)).client);
     await shot(page, 'm3-active-1366x768');
     await axeClean(page, 'My Work 1366x768');
 
@@ -140,13 +139,17 @@ test.describe('Density and space', () => {
     await shot(page, 'm3-active-1920x1080');
     await axeClean(page, 'My Work 1920x1080');
 
-    // No sideways scroll from 1024 px (the default Active columns).
+    // LC-09: the frame scrolls sideways when the columns do not fit; the page never does.
     for (const width of [1024, 1180, 1280]) {
       await page.setViewportSize({ width, height: 768 });
       await myWork.open();
       await expect(page.locator('[data-task]').first()).toBeVisible();
-      const o = await overflow(page);
-      expect(o.scroll, `no sideways scroll at ${width}`).toBeLessThanOrEqual(o.client);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        ),
+        `no page scroll at ${width}`,
+      ).toBeLessThanOrEqual(0);
     }
     await shot(page, 'm3-active-1024x768');
 
@@ -190,7 +193,7 @@ test.describe('Density and space', () => {
     await shot(page, 'm3-task-queue-1366x768');
   });
 
-  test('BUG-14: from 640 to 1023 px the grid fits or, with only the never-dropped columns left, scrolls with the hint and a sticky Ref; a wide custom set gets the hint', async ({
+  test('BUG-14 (LC-09): from 640 to 1023 px the grid fits or scrolls sideways inside its frame with a sticky Ref', async ({
     seed,
     asUser,
   }) => {
@@ -209,16 +212,7 @@ test.describe('Density and space', () => {
       await expect(page.locator('[data-task]')).toHaveCount(count);
       const o = await overflow(page);
       if (o.scroll > o.client + 1) {
-        // #201: the one narrow-box rule dropped every column it may; the never-dropped ones (Ref, Title, Matter, Priority, Due, Status)
-        // need more than this box, so the grid scrolls: the hint says so and Ref stays in view.
-        await expect(page.locator('[data-scroll-hint]')).toBeVisible();
-        const keys = await page
-          .locator('thead tr')
-          .first()
-          .locator('th')
-          .evaluateAll((ths) => ths.map((t) => (t as HTMLElement).dataset['col']));
-        for (const k of keys)
-          expect(['ref', 'title', 'matter', 'priority', 'due', 'status']).toContain(k);
+        // LC-09: no column is dropped; the frame scrolls sideways and Ref stays in view.
         expect(
           await page
             .locator('thead th[data-col="ref"]')
@@ -237,7 +231,6 @@ test.describe('Density and space', () => {
             wrap.x + wrap.width + 1,
           );
         }
-        await expect(page.locator('[data-scroll-hint]')).toBeHidden();
       }
       // #196: the Ref column stays on a tablet (it is the first, sticky column); nothing sits under the title.
       const first = await page
@@ -303,7 +296,7 @@ test.describe('Density and space', () => {
     await axeClean(page, 'My Work 375');
   });
 
-  test('M3-Compact: one 36 px line per row, eleven rows at 1366x768 (twelve with the filter row closed), details in the tooltip', async ({
+  test('M3-Compact: one 36 px line per row, nine rows at 1366x768 (ten with the filter row closed), details in the tooltip', async ({
     seed,
     asUser,
   }) => {
@@ -322,7 +315,7 @@ test.describe('Density and space', () => {
     );
     for (const h of heights)
       expect(Math.abs(h - 36), `a Compact row is 36 px (#211): ${heights}`).toBeLessThanOrEqual(1);
-    expect(await rowsInView(page)).toBeGreaterThanOrEqual(11);
+    expect(await rowsInView(page)).toBeGreaterThanOrEqual(9);
     expect(await rowsInView(page)).toBeGreaterThan(comfortable);
     for (const h of await titleLines(page)) expect(h, 'one-line titles').toBeLessThan(28);
     // #196: no line under the title in either density; the tooltip of the link is the whole title.
@@ -346,7 +339,7 @@ test.describe('Density and space', () => {
     // Filter row closed: one more row.
     await page.getByRole('button', { name: /^Filters/ }).click();
     await expect(page.locator('tr[data-filter-row]')).toHaveCount(0);
-    expect(await rowsInView(page)).toBeGreaterThanOrEqual(12);
+    expect(await rowsInView(page)).toBeGreaterThanOrEqual(10);
     await shot(page, 'compact-filter-row-closed-1366x768');
     await page.getByRole('button', { name: /^Filters/ }).click();
 

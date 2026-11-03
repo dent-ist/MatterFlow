@@ -295,12 +295,12 @@ describe('MattersListPage', () => {
     await settle(fixture);
 
     expect(api.listMatters).toHaveBeenLastCalledWith(
-      undefined,
+      'merger',
       1,
       false,
       true,
       '343-12',
-      'merger',
+      undefined,
       'acme',
       undefined,
       undefined,

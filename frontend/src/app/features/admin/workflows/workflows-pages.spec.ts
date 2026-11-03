@@ -703,18 +703,21 @@ describe('WorkflowsListPage phone cards and narrow columns (#375)', () => {
     );
   });
 
-  it('drops the optional columns in a fixed order as the window narrows: Last published below 1366 px, Task types below 1200 px, Steps below 900 px', async () => {
+  it('keeps every column at every window width (LC-09: the frame scrolls sideways instead)', async () => {
     const heads = (f: ComponentFixture<WorkflowsListPage>) =>
       Array.from(f.nativeElement.querySelectorAll('thead tr:first-child th')).map((th) =>
         (th as HTMLElement).textContent!.trim(),
       );
-    const widths: [number, string[]][] = [
-      [768, ['Name', 'Versions', 'Status', 'Actions']],
-      [1000, ['Name', 'Versions', 'Steps', 'Status', 'Actions']],
-      [1200, ['Name', 'Versions', 'Steps', 'Task types', 'Status', 'Actions']],
-      [1366, ['Name', 'Versions', 'Steps', 'Task types', 'Last published', 'Status', 'Actions']],
+    const expected = [
+      'Name',
+      'Versions',
+      'Steps',
+      'Task types',
+      'Last published',
+      'Status',
+      'Actions',
     ];
-    for (const [width, expected] of widths) {
+    for (const width of [768, 1000, 1200, 1366]) {
       viewport(width);
       TestBed.resetTestingModule();
       await setup({ listWorkflows: list() });

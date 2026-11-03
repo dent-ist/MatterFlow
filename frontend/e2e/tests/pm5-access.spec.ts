@@ -63,7 +63,7 @@ const FORBIDDEN_WORDS =
   /no project manager|without a (project )?manager|not managed|unmanaged|needs? a (project )?manager|missing (project )?manager|assign a (project )?manager|warning/i;
 
 test.describe('My Matters: keyboard', () => {
-  test('Tab visits the Client and Matter dropdowns, + New and the rows in reading order, with the keys the app already has', async ({
+  test('Tab visits + New, the Client and Matters tree search and the rows in reading order, with the keys the app already has', async ({
     seed,
     personas,
     asUser,
@@ -79,9 +79,9 @@ test.describe('My Matters: keyboard', () => {
     await expect(page.locator('mf-mm-task-list [data-task]').first()).toBeVisible();
     const stops = await tabStops(page);
     inOrder(stops, [
-      /Client/, // the two dropdowns first: Client, then Matter
-      /Matter/,
-      /^button: New$/, // "+ New" is at the right end of the same row
+      /Options for My Matters/, // the title row: options and "+ New" (the dropdowns are gone, MM-20)
+      /^button: New$/,
+      /Search Client and Matters/, // then the tree
       /Keyboard overdue/,
     ]);
     // Evidence for the review: the stops in order (written once per run to the test output).
@@ -120,10 +120,9 @@ test.describe('My Matters: keyboard', () => {
     await page.goto('/my-matters');
     await expect(page.locator('mf-mm-task-list [data-task]').first()).toBeVisible();
     // Typing in a filter is typing, not a shortcut.
-    await page.locator('#mm-client').click();
-    await page.getByRole('combobox', { name: 'Search clients', exact: true }).fill('mg');
+    await page.locator('[data-tree-search]').fill('mg');
     await expect(page).toHaveURL(/\/my-matters$/);
-    await page.keyboard.press('Escape');
+    await page.locator('[data-tree-search]').fill('');
     await page.locator('main h1').evaluate((h) => {
       h.setAttribute('tabindex', '-1');
       (h as HTMLElement).focus();
@@ -140,7 +139,7 @@ test.describe('My Matters: keyboard', () => {
 });
 
 test.describe('My Matters: axe with the menus open', () => {
-  test('client and matter suggestions, the + New menu, the Show filter and the Browse tree at four sizes', async ({
+  test('the Client and Matters tree or Scope sheet, the + New menu and the Show filter at four sizes', async ({
     seed,
     personas,
     asUser,
@@ -157,16 +156,20 @@ test.describe('My Matters: axe with the menus open', () => {
       await page.setViewportSize(size);
       await expect(page.locator('mf-mm-task-list [data-task]').first()).toBeVisible();
       await page.locator('main h1').scrollIntoViewIfNeeded();
-      await page.locator('#mm-client').click();
-      await page.getByRole('combobox', { name: 'Search clients', exact: true }).fill('E2E');
-      await expect(page.getByRole('listbox', { name: 'Client' })).toBeVisible();
-      expect(await axeViolations(page), `client list at ${size.width}`).toEqual([]);
-      await page.keyboard.press('Escape');
-      await page.locator('#mm-matter').click();
-      await page.getByRole('combobox', { name: 'Search matters', exact: true }).fill('Axe');
-      await expect(page.getByRole('listbox', { name: 'Matter' })).toBeVisible();
-      expect(await axeViolations(page), `matter list at ${size.width}`).toEqual([]);
-      await page.keyboard.press('Escape');
+      // The tree is the one way to choose (MM-20): docked and open, or opened from the Scope button.
+      await page.locator('[data-browse], mf-mm-tree-panel, mf-mm-tree-rail').first().waitFor();
+      const scopeButton = page.locator('[data-browse]');
+      if (await scopeButton.count()) {
+        await scopeButton.click();
+        await expect(page.getByRole('dialog', { name: 'Client and Matters' })).toBeVisible();
+        expect(await axeViolations(page), `Scope sheet at ${size.width}`).toEqual([]);
+        await page.keyboard.press('Escape');
+      } else {
+        if (await page.locator('[data-tree-expand-rail]').count())
+          await page.locator('[data-tree-expand-rail]').click();
+        await expect(page.getByRole('tree', { name: 'Client and Matters' })).toBeVisible();
+        expect(await axeViolations(page), `tree at ${size.width}`).toEqual([]);
+      }
       await page.locator('#mm-show').click();
       await expect(page.getByRole('listbox', { name: 'Show' })).toBeVisible();
       expect(await axeViolations(page), `Show list at ${size.width}`).toEqual([]);
@@ -175,15 +178,6 @@ test.describe('My Matters: axe with the menus open', () => {
       await expect(page.getByRole('menu'), `+ New menu open at ${size.width}`).toBeVisible();
       expect(await axeViolations(page), `+ New menu at ${size.width}`).toEqual([]);
       await page.keyboard.press('Escape');
-      const browse = page.locator('[data-browse]');
-      if (await browse.count()) {
-        await browse.click();
-        await expect(
-          page.getByRole('dialog', { name: 'Browse clients and matters' }),
-        ).toBeVisible();
-        expect(await axeViolations(page), `Browse tree at ${size.width}`).toEqual([]);
-        await page.keyboard.press('Escape');
-      }
     }
   });
 });

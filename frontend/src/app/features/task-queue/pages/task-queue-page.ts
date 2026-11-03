@@ -134,6 +134,7 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
         [filters]="filters"
         controls="work-filter-row"
         searchLabel="Search tasks"
+        [sortedBelow]="true"
         (showColumn)="showColumn($event)"
       >
         <mf-quick-views

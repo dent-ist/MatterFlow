@@ -315,7 +315,7 @@ test.describe('WP10 matter tabs', () => {
   });
 
   test.describe('Assets tab (#274)', () => {
-    test('empty External reference is a dash, New asset is only in the header overflow, the tab says how many', async ({
+    test('empty External reference is a dash, the tab ends its control row with New Asset, the tab says how many', async ({
       page,
     }) => {
       await page.setViewportSize({ width: 1366, height: 768 });
@@ -335,8 +335,8 @@ test.describe('WP10 matter tabs', () => {
       await expect(page.locator('mf-matter-assets tbody tr:not(.gb-state)').first()).toContainText(
         'None',
       );
-      // No New asset button in the tab; the 44 px rows hold.
-      await expect(page.getByRole('button', { name: 'New asset' })).toHaveCount(0);
+      // LC-08: the tab's control row ends with "+ New Asset" (also in the header's New menu); the 44 px rows hold.
+      await expect(page.getByRole('button', { name: 'New asset' })).toHaveCount(1);
       const heights = await rows.evaluateAll((rs) =>
         rs.map((r) => Math.round(r.getBoundingClientRect().height)),
       );
@@ -427,7 +427,8 @@ test.describe('WP10 matter tabs', () => {
       await ready(page);
       await page.locator('[data-overflow]').click();
       await expect(page.getByRole('menuitem', { name: 'Asset' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'New asset' })).toHaveCount(0);
+      // LC-08: and the tab's own "+ New Asset" at the right end of its control row.
+      await expect(page.getByRole('button', { name: 'New asset' })).toHaveCount(1);
     });
   });
 
@@ -455,17 +456,7 @@ test.describe('WP10 matter tabs', () => {
         });
         await axeClean(page, `projects expanded ${what}`);
         await noSideways(page, `projects expanded ${what}`);
-        if (width >= 768) {
-          const fit = await page.locator('[data-matter-projects]').evaluate((t) => {
-            const area = t.closest('.mf-scroll-area, .mf-scroll') as HTMLElement;
-            const status = Array.from(t.querySelectorAll('thead th')).at(-1)!;
-            return {
-              right: status.getBoundingClientRect().right,
-              box: area.getBoundingClientRect().right,
-            };
-          });
-          expect(fit.right, `${what}: Status is clipped`).toBeLessThanOrEqual(fit.box + 1);
-        }
+        // LC-09: Status may be reached by scrolling the frame sideways; the page does not scroll (noSideways above).
 
         await page.goto(assetsUrl(w.assets));
         await ready(page);

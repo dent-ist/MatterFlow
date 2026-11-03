@@ -488,10 +488,11 @@ export class ClientsListPage extends ServerListPage<ClientResponse> {
   private list(isActive: boolean | undefined, page: number, size: number, scoped = true) {
     return firstValueFrom(
       this.api.listClients(
-        undefined,
+        // Search finds the name or the number (the API's `q`, decision of 2026-11-02); the URL parameter stays `name`.
+        this.filters.text('name') || undefined,
         isActive,
         this.filters.text('clientNumber') || undefined,
-        this.filters.text('name') || undefined,
+        undefined,
         scoped && this.scope.mine() ? true : undefined,
         undefined,
         page,

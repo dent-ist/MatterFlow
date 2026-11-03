@@ -52,7 +52,7 @@ import {
   phoneCards,
 } from '../../../shared/ui/record-card-list';
 import { RecordSort } from '../../../shared/ui/record-sort';
-import { viewportAtLeast } from '../../../shared/ui/viewport';
+import { COLUMN_ROOM } from '../../../shared/ui/viewport';
 import { SortOption } from '../../../shared/work-queue/phone-sort';
 import { stripChips } from '../../../shared/ui/strip-items';
 import { FilterChips } from '../../../shared/ui/filter-chips';
@@ -438,9 +438,9 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
    * The optional columns drop in a fixed order as the window narrows, so the grid never scrolls sideways and the row menu stays in view
    * (#375): Last published below 1366 px, Task types (the count) below 1200 px, Steps below 900 px; Name, Versions and Status stay (1280 and 1100 until the capitals of the theme's heading row made the columns wider).
    */
-  private readonly stepsRoom = viewportAtLeast(900);
-  private readonly taskTypesRoom = viewportAtLeast(1200);
-  private readonly publishedRoom = viewportAtLeast(1366);
+  private readonly stepsRoom = COLUMN_ROOM;
+  private readonly taskTypesRoom = COLUMN_ROOM;
+  private readonly publishedRoom = COLUMN_ROOM;
   protected readonly stepsShown = this.stepsRoom;
   protected readonly taskTypesShown = this.taskTypesRoom;
   protected readonly publishedShown = this.publishedRoom;

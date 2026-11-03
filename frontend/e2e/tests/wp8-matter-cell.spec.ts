@@ -79,18 +79,14 @@ test.describe('Matter Number and Matter Name cells (#197, #348)', () => {
           'title',
           `${w.client.name} · ${w.longName}`,
         );
-        // Matter Name needs a 1140 px box (1440 px window): below that the narrow-box rule drops it (#348).
+        // LC-09: Matter Name stays at every width (the frame scrolls sideways).
         const nameCell = longRow.locator('td[data-col="matterName"]');
-        if (width >= 1440) {
-          await expect(nameCell).toContainText('Matter name');
-          await expect(nameCell.locator('a')).toHaveCount(0);
-          await expect(nameCell.locator('.mn')).toHaveAttribute('title', w.longName);
-          const name = nameCell.locator('.mn');
-          expect(await name.evaluate((n) => n.scrollWidth > n.clientWidth), 'ellipsis').toBe(true);
-          expect(await nameCell.evaluate((n) => n.getBoundingClientRect().width)).toBeLessThan(260);
-        } else {
-          await expect(nameCell).toHaveCount(0);
-        }
+        await expect(nameCell).toContainText('Matter name');
+        await expect(nameCell.locator('a')).toHaveCount(0);
+        await expect(nameCell.locator('.mn')).toHaveAttribute('title', w.longName);
+        const name = nameCell.locator('.mn');
+        expect(await name.evaluate((n) => n.scrollWidth > n.clientWidth), 'ellipsis').toBe(true);
+        expect(await nameCell.evaluate((n) => n.getBoundingClientRect().width)).toBeLessThan(260);
         const hl = (await longRow.boundingBox())!.height;
         const hs = (await shortRow.boundingBox())!.height;
         expect(Math.abs(hl - hs), `row height at ${width}`).toBeLessThanOrEqual(1);

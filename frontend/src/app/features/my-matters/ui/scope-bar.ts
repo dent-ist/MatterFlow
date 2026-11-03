@@ -8,49 +8,19 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { MatterTree } from './mm-models';
 import { MmTreePanel } from './tree-panel';
 
 /**
- * The row under the title (`mf-mm-scope-bar`, epic #953 UI-11): the Client and Matter dropdowns, Browse (the tree as a panel where it is not docked), Clear, and the slot at the
- * right for "+ New". The two dropdowns are searchable comboboxes over the same tree data as the tree: picking a matter sets its client; the Matter list narrows to the chosen
- * client; picking a client that does not own the chosen matter drops the matter. With one matter (or none) the tree and Browse are not offered (nothing to browse).
+ * The row under the title (`mf-mm-scope-bar`): the Scope button (the Client and Matters tree as a panel or, on a phone, a sheet, where the tree is not docked) and the slot at the
+ * right for the options menu and "+ New". The client and matter are chosen in the tree only (MM-20, #1053); the chosen scope is the chip beside the title.
  */
 @Component({
   selector: 'mf-mm-scope-bar',
-  imports: [Dropdown, MmTreePanel],
+  imports: [MmTreePanel],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="sel" role="group" aria-label="Client and matter">
-      <div class="dd">
-        <mf-dropdown
-          buttonId="mm-client"
-          label="Client"
-          icon="pi-building"
-          [items]="clientItems()"
-          [value]="clientValue()"
-          (valueChange)="pickClient($event)"
-          [search]="true"
-          searchLabel="Search clients"
-          [limit]="60"
-          [panelWidth]="320"
-        />
-      </div>
-      <div class="dd">
-        <mf-dropdown
-          buttonId="mm-matter"
-          label="Matter"
-          icon="pi-briefcase"
-          [items]="matterItems()"
-          [value]="matterValue()"
-          (valueChange)="pickMatter($event)"
-          [search]="true"
-          searchLabel="Search matters"
-          [limit]="60"
-          [panelWidth]="440"
-        />
-      </div>
+    <div class="sel">
       @if (showBrowse()) {
         <div class="browse">
           <button
@@ -61,13 +31,13 @@ import { MmTreePanel } from './tree-panel';
             [attr.aria-expanded]="browsing()"
             (click)="browsing.set(!browsing())"
           >
-            <i class="pi pi-sitemap" aria-hidden="true"></i><span>Browse</span>
+            <i class="pi pi-sitemap" aria-hidden="true"></i><span>Scope</span>
           </button>
           @if (browsing()) {
             <div
               class="pop"
               role="dialog"
-              aria-label="Browse clients and matters"
+              aria-label="Client and Matters"
               (keydown.escape)="closeBrowse(true)"
             >
               <mf-mm-tree-panel
@@ -81,11 +51,6 @@ import { MmTreePanel } from './tree-panel';
             </div>
           }
         </div>
-      }
-      @if (clientId() || matterId()) {
-        <button type="button" class="mf-btn mf-btn--text" data-clear-scope (click)="clear.emit()">
-          Clear
-        </button>
       }
     </div>
     <div class="new"><ng-content /></div>
@@ -107,13 +72,6 @@ import { MmTreePanel } from './tree-panel';
       flex: 1 1 auto;
       min-width: 0;
     }
-    .dd {
-      flex: 0 1 280px;
-      min-width: 140px;
-    }
-    .dd mf-dropdown {
-      display: block;
-    }
     .browse {
       flex: none;
     }
@@ -133,6 +91,17 @@ import { MmTreePanel } from './tree-panel';
       flex: none;
     }
     @media (max-width: 767.98px) {
+      /* A phone: the tree opens as a sheet from the bottom of the window. */
+      .pop {
+        position: fixed;
+        top: auto;
+        left: var(--mf-s2);
+        right: var(--mf-s2);
+        bottom: var(--mf-s2);
+        width: auto;
+        height: min(80dvh, 560px);
+        z-index: 60;
+      }
       :host {
         flex-direction: column;
         align-items: stretch;
@@ -141,10 +110,6 @@ import { MmTreePanel } from './tree-panel';
         flex-direction: column;
         align-items: stretch;
         flex-wrap: wrap;
-      }
-      .dd {
-        flex: none;
-        width: 100%;
       }
       .mf-btn {
         min-height: 44px;
@@ -166,68 +131,14 @@ export class MmScopeBar {
   readonly matterId = input<number | null>(null);
   /** The docked tree is shown: Browse is not needed. */
   readonly docked = input(false);
-  readonly pickedClient = output<number | null>();
   /** A client row of the Browse tree: always selects the client and clears the matter. */
   readonly pickedClientNode = output<number>();
   readonly pickedMatter = output<{ matterId: number | null; clientId: number | null }>();
-  readonly clear = output<void>();
 
   protected readonly browsing = signal(false);
   protected readonly showBrowse = computed(
     () => !this.docked() && (this.tree()?.matterCount ?? 0) > 1,
   );
-
-  protected readonly clientValue = computed(() => (this.clientId() ? String(this.clientId()) : ''));
-  protected readonly matterValue = computed(() => (this.matterId() ? String(this.matterId()) : ''));
-  protected readonly clientItems = computed<DropdownItem[]>(() => [
-    { value: '', label: 'All clients', count: this.tree()?.matterCount ?? 0 },
-    ...(this.tree()?.clients ?? []).map((c) => ({
-      value: String(c.clientId),
-      label: c.name,
-      count: c.matters.length,
-    })),
-  ]);
-  protected readonly matterItems = computed<DropdownItem[]>(() => {
-    const cid = this.clientId();
-    const rows: DropdownItem[] = [];
-    for (const c of this.tree()?.clients ?? []) {
-      if (cid && c.clientId !== cid) continue;
-      for (const m of c.matters)
-        rows.push({
-          value: String(m.matterId),
-          label: m.name,
-          sub: cid ? m.matterRef : `${c.name} · ${m.matterRef}`,
-          dot: m.isActive ? 'active' : 'quiet',
-          lock: m.isSensitive,
-        });
-    }
-    return [
-      {
-        value: '',
-        label: 'All matters',
-        count: rows.length,
-        sub: cid ? undefined : 'Every matter you manage',
-      },
-      ...rows,
-    ];
-  });
-
-  protected pickClient(v: string): void {
-    const id = v ? Number(v) : null;
-    if (id === this.clientId()) return;
-    this.pickedClient.emit(id);
-  }
-
-  protected pickMatter(v: string): void {
-    const id = v ? Number(v) : null;
-    if (id === this.matterId()) return;
-    if (id === null) {
-      this.pickedMatter.emit({ matterId: null, clientId: this.clientId() });
-      return;
-    }
-    const c = this.tree()?.clients.find((x) => x.matters.some((m) => m.matterId === id));
-    this.pickedMatter.emit({ matterId: id, clientId: c?.clientId ?? null });
-  }
 
   protected chosenClient(id: number): void {
     this.closeBrowse(true);

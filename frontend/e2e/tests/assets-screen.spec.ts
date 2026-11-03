@@ -8,8 +8,11 @@ import { filterDropdown } from '../support/dropdown';
  * inline column filters in a second header row, the Filters toggle above the grid, and a name that is a link to `/assets/:id`.
  */
 test.describe('Assets list: column filters and the record page link', () => {
+  // LC-02: the Name filter is the toolbar's Search box (always there); the other columns keep their filter controls in the grid's filter row.
   const filter = (page: Page, column: string) =>
-    page.getByRole('textbox', { name: `Filter by ${column}` });
+    column === 'Name'
+      ? page.getByPlaceholder('Search assets')
+      : page.getByRole('textbox', { name: `Filter by ${column}` });
   const filtersToggle = (page: Page) => page.getByRole('button', { name: /^Filters/ });
   const nameLink = (page: Page, name: string) => page.getByRole('link', { name, exact: true });
 
@@ -17,7 +20,7 @@ test.describe('Assets list: column filters and the record page link', () => {
     if ((await filtersToggle(page).getAttribute('aria-pressed')) !== 'true') {
       await filtersToggle(page).click();
     }
-    await expect(filter(page, 'Name')).toBeVisible();
+    await expect(filter(page, 'Matter')).toBeVisible();
   }
 
   test('the Filters button in the page header shows the filter row, open on arrival, right under the headers, aligned to the columns, and is remembered', async ({
@@ -32,17 +35,17 @@ test.describe('Assets list: column filters and the record page link', () => {
     await expect(page.getByLabel('Name, type or external reference')).toHaveCount(0);
     await expect(filtersToggle(page)).toHaveAttribute('aria-pressed', 'true');
     await expect(filtersToggle(page)).toHaveAttribute('aria-expanded', 'true');
-    await expect(filter(page, 'Name')).toBeVisible();
+    await expect(filter(page, 'Matter')).toBeVisible();
     const grid = page.getByRole('region', { name: 'Assets list, scrollable' });
     const toggleBox = (await filtersToggle(page).boundingBox())!;
     const gridBox = (await grid.boundingBox())!;
     expect(toggleBox.y + toggleBox.height).toBeLessThanOrEqual(gridBox.y + 1);
 
-    const columns = ['Name', 'Type', 'Matter', 'External reference', 'Disposition'];
+    const columns = ['Type', 'Matter', 'External reference', 'Disposition'];
     const headers = grid.locator('thead tr:first-child th');
     // The admin sees the selection column, Size and Linked tasks (no filter of their own): the cells under them are empty, the other five columns have a control.
     await expect(headers).toHaveCount(8);
-    const position = [1, 2, 3, 6, 7];
+    const position = [1, 3, 6, 7];
     const headerBottom = (await headers.first().boundingBox())!;
     for (let i = 0; i < columns.length; i++) {
       const th = (await headers.nth(position[i]).boundingBox())!;
@@ -63,11 +66,11 @@ test.describe('Assets list: column filters and the record page link', () => {
 
     // The choice is remembered per user, also after a reload.
     await filtersToggle(page).click();
-    await expect(filter(page, 'Name')).toHaveCount(0);
+    await expect(filter(page, 'Matter')).toHaveCount(0);
     await page.reload();
     await expect(filtersToggle(page)).toHaveAttribute('aria-pressed', 'false');
     await filtersToggle(page).click();
-    await expect(filter(page, 'Name')).toBeVisible();
+    await expect(filter(page, 'Matter')).toBeVisible();
   });
 
   test('every column filters on the server, lands in the URL and is cleared from the bar; the empty state keeps headers and filters', async ({
@@ -153,13 +156,15 @@ test.describe('Assets list: column filters and the record page link', () => {
     page,
     seed,
   }) => {
-    const matter = await seed.matter();
-    const asset = await seed.asset(matter, `Linked filter ${uid()}`);
+    const token = uid();
+    const matter = await seed.matter({ name: `Open row ${token}` });
+    const asset = await seed.asset(matter, `Linked filter ${token}`);
     await page.goto('/assets');
     await filtersToggle(page).click(); // open on arrival (#499); close it so the choice is remembered as closed
     await expect(filtersToggle(page)).toHaveAttribute('aria-pressed', 'false');
-    await page.goto(`/assets?name=${encodeURIComponent(asset.displayName)}`);
-    await expect(filter(page, 'Name')).toHaveValue(asset.displayName);
+    // A filter of a column (not the Search box) opens the row.
+    await page.goto(`/assets?matter=${encodeURIComponent(`Open row ${token}`)}`);
+    await expect(filter(page, 'Matter')).toHaveValue(`Open row ${token}`);
     await expect(filtersToggle(page)).toHaveAttribute('aria-pressed', 'true');
     await expect(filtersToggle(page)).toContainText('(1)');
     await expect(nameLink(page, asset.displayName)).toBeVisible();

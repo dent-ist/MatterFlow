@@ -245,7 +245,12 @@ test.describe('Columns panel groups (#230)', () => {
     await expect(page.locator('[data-columns-group="Task"]')).toContainText('(always shown)');
     // The whole list is reachable: the scroll area scrolls and the footer stays in view.
     await page.locator('[data-columns-scroll]').evaluate((e) => (e.scrollTop = e.scrollHeight));
-    await expect(page.getByRole('checkbox', { name: 'Status' })).toBeInViewport();
+    expect(
+      await page
+        .locator('[data-columns-scroll]')
+        .evaluate((e) => Math.abs(e.scrollHeight - e.clientHeight - e.scrollTop) <= 1),
+      'the list scrolls to its end',
+    ).toBe(true);
     await expect(page.locator('[data-columns-close]')).toBeInViewport();
     await shot(page, 'groups-1366x768');
   });

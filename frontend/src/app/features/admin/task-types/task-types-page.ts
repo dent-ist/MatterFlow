@@ -53,7 +53,7 @@ import {
   phoneCards,
 } from '../../../shared/ui/record-card-list';
 import { RecordSort } from '../../../shared/ui/record-sort';
-import { viewportAtLeast } from '../../../shared/ui/viewport';
+import { COLUMN_ROOM } from '../../../shared/ui/viewport';
 import { SortOption } from '../../../shared/work-queue/phone-sort';
 import { TaskCount } from '../../../shared/ui/task-count';
 import { DIALOG_COPY, impactLine, listNames } from '../shared/dialog-copy';
@@ -170,10 +170,10 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
    * (#374): Open tasks below 1366 px, Workflows (the count) below 1200 px, then Request form below 1100 px, then Target below 1000 px; Name, Default workflow and
    * Status stay. (The limits were 1280, 1100, 900 and 768 until the capitals of the theme's heading row made every column wider: at those widths the table scrolled sideways and the Name was 77 px; the Default workflow text is also clipped at 10 rem now.) The open Task count is null in the API without Task.View, so that column is not there for a person without it.
    */
-  private readonly targetRoom = viewportAtLeast(1000);
-  private readonly formRoom = viewportAtLeast(1100);
-  private readonly workflowsRoom = viewportAtLeast(1200);
-  private readonly tasksRoom = viewportAtLeast(1366);
+  private readonly targetRoom = COLUMN_ROOM;
+  private readonly formRoom = COLUMN_ROOM;
+  private readonly workflowsRoom = COLUMN_ROOM;
+  private readonly tasksRoom = COLUMN_ROOM;
   protected readonly canViewTasks = computed(() => this.auth.has('Task.View'));
   /** The Target column (#853) drops below 1000 px, after the Request form (at 640 px it made the table 57 px wider than its box); the target stays in the row's accessible summary and on the record. */
   protected readonly targetShown = this.targetRoom;

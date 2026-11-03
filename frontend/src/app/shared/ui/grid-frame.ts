@@ -43,8 +43,10 @@ import { ScrollArea } from './fixed-page';
       overflow: hidden;
     }
     /* The table every grid in a frame shares: a sticky heading row and a sort button in each heading (the rows are the grid's own). */
+    /* No column is dropped by width (LC-09): below this width the frame scrolls sideways inside itself. */
     :host ::ng-deep .tt {
       width: 100%;
+      min-width: 60rem;
       border-collapse: separate;
       border-spacing: 0;
       font-size: var(--mf-fs-md);

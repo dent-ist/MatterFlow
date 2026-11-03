@@ -52,6 +52,37 @@ export function paintedButtonRules(css: string): string[] {
   return out;
 }
 
+/** Selectors that target a segmented control or a dropdown (LC-08): these are the shared `mfSegmented` and `mf-dropdown`, never painted locally. */
+const CONTROL_SELECTOR =
+  /(^|[\s,>:])(\.p-select\w*|\.p-selectbutton|\.mf-seg\w*|\[mfSegmented\]|mf-dropdown|select\b|\.dd\b)/;
+
+export function paintedControlRules(css: string): string[] {
+  const out: string[] = [];
+  for (const rule of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const selector = rule[1].trim();
+    if (CONTROL_SELECTOR.test(selector) && PAINT.test(rule[2])) out.push(selector);
+  }
+  return out;
+}
+
+describe('segmented control and dropdown rule (LC-08)', () => {
+  it('finds a painted dropdown or segmented control and leaves layout alone', () => {
+    expect(paintedControlRules('.a mf-dropdown { border: 1px solid red; }')).toEqual([
+      '.a mf-dropdown',
+    ]);
+    expect(paintedControlRules('.a .p-select { background: red; }')).toEqual(['.a .p-select']);
+    expect(paintedControlRules('.a mf-dropdown { flex: 1 1 auto; }')).toEqual([]);
+  });
+
+  for (const file of FILES.filter((f) => !f.startsWith('features/my-matters'))) {
+    it(`${file} paints no segmented control or dropdown with local CSS`, () => {
+      const source = readFileSync(join(APP, file), 'utf8');
+      const css = source.match(/styles:\s*`([^`]*)`/s)?.[1] ?? '';
+      expect(paintedControlRules(css)).toEqual([]);
+    });
+  }
+});
+
 describe('button rule (theme guide section 9)', () => {
   it('finds a painted button rule and leaves layout alone', () => {
     expect(paintedButtonRules('.a button { background: red; }')).toEqual(['.a button']);

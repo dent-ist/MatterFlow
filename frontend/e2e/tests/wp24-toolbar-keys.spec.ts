@@ -135,7 +135,8 @@ test.describe('Quick views are one toolbar (#236)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await new TaskQueuePage(page).open();
     await expect(page.locator('[data-task]').first()).toBeVisible();
-    await page.locator('body').click({ position: { x: 5, y: 5 } });
+    // A neutral spot (the top-left corner of the page is the logo link since the full-height navigation panel, SH-01).
+    await page.getByRole('heading', { name: 'Task Queue', level: 1 }).click();
     await page.keyboard.press('?');
     const help = page.locator('[data-shortcut-help]');
     await expect(help).toBeVisible();

@@ -58,7 +58,6 @@ import {
   tableMinRem,
   widthVars,
 } from './column-widths';
-import { narrowDrops } from './narrow-columns';
 import { RESIZE_MIN_VIEWPORT_PX, ResizeSide, resizeSide, startColumnResize } from './column-resize';
 import type { ColumnMenu } from './column-menu';
 import {
@@ -937,9 +936,8 @@ export class TaskTable {
     return this.rows().length > 0 || state === 'loading' ? 'ready' : state;
   });
   /**
-   * Columns in table order. The one narrow-box rule (#201, `narrow-columns.ts`): while the Title would be narrower than 200 px, the
-   * columns flagged `autoHide` drop out, least important first; the rest scrolls sideways with a sticky Ref. Unknown width (0, before the
-   * first measure or in tests) shows everything.
+   * Columns in table order. Every chosen column is shown with its width; a box that is too narrow scrolls sideways inside the grid frame
+   * (the Ref stays pinned). No column is dropped by width (LC-09).
    */
   /** The Type column (chip and name) is shown: the small badge before the title would say it twice, so it is not drawn (LC-03). */
   protected readonly typeColumn = computed(() =>
@@ -960,8 +958,8 @@ export class TaskTable {
           return rank(a) - rank(b);
         })
       : wide;
-    const dropped = narrowDrops(placed, this.boxWidth(), this.rootPx(), this.effectiveWidths());
-    return placed.filter((c) => !dropped.has(c.key));
+    // Every chosen column stays; when they are wider than the box the grid frame scrolls sideways (LC-09, owner decision 2026-11-02).
+    return placed;
   });
 
   /**

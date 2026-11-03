@@ -53,17 +53,13 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   styles: `
-    .ma__head {
+    /* The tab's control row above the frame, like every Matter tab (LC-08, theme guide 11.2): the only control is the Kind dropdown. */
+    .ma__bar {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
-      justify-content: space-between;
       gap: var(--mf-s2);
-      padding: var(--mf-s3);
-    }
-    .ma__title {
-      margin: 0;
-      font-size: var(--mf-fs-lg);
-      font-weight: 700;
+      margin: 0 0 var(--mf-s2);
     }
     .ma__banner {
       margin: 0 var(--mf-s3) var(--mf-s2);
@@ -112,20 +108,20 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
     }
   `,
   template: `
+    <div class="ma__bar">
+      <h2 class="mf-sr-only">Activities</h2>
+      <mf-dropdown
+        buttonId="ma-kind"
+        label="Kind"
+        prefix="Kind:"
+        size="sm"
+        [items]="kindItems"
+        [value]="kind()"
+        (valueChange)="setKind($event)"
+        neutralValue=""
+      />
+    </div>
     <mf-grid-frame scrollLabel="Matter activities">
-      <div frameHead class="ma__head">
-        <h2 class="ma__title">Activities</h2>
-        <mf-dropdown
-          buttonId="ma-kind"
-          label="Kind"
-          prefix="Kind:"
-          size="sm"
-          [items]="kindItems"
-          [value]="kind()"
-          (valueChange)="setKind($event)"
-          neutralValue=""
-        />
-      </div>
       <div frameStatus>
         @if (newCount() > 0) {
           <p class="ma__banner" role="status" data-new-banner>

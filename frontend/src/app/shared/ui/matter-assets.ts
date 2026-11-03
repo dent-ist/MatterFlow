@@ -30,7 +30,8 @@ import {
   type AssetStatusKey,
 } from '../filters/asset-status-filter';
 import { FilterDef, FilterOption } from '../filters/filter-def';
-import { FiltersBar } from '../filters/filters-bar';
+import { ListToolbar } from '../filters/list-toolbar';
+import { SortedLine } from './sorted-line';
 import { ListFilters } from '../filters/list-filters';
 import { AssetTypeChip } from './asset-type-chip';
 import { StatusChip } from './status-chip';
@@ -62,14 +63,35 @@ const COLUMNS = ['type', 'name', 'size', 'externalReference', 'status'] as const
     GridFrame,
     SortHeader,
     GridBody,
-    FiltersBar,
+    ListToolbar,
+    SortedLine,
     ColumnFilterRow,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   styleUrl: './page.scss',
   template: `
-    <mf-filters-bar [filters]="filters" controls="matter-asset-filter-row" />
+    <mf-list-toolbar
+      [filters]="filters"
+      controls="matter-asset-filter-row"
+      searchLabel="Search assets"
+    >
+      <p-button
+        mfPrimary
+        *mfHasPermission="'Asset.Create'"
+        label="New Asset"
+        icon="pi pi-plus"
+        data-new-asset
+        (onClick)="newAsset()"
+      />
+      <mf-sorted-line
+        mfBarEnd
+        [sort]="sort()"
+        [defaultSort]="defaultSort"
+        [labels]="sortLabels"
+        (resetSort)="pickSort(null)"
+      />
+    </mf-list-toolbar>
 
     <mf-grid-frame scrollLabel="Assets list" #scroll>
       <div class="mf-scroll">
@@ -224,6 +246,12 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
   private readonly scroll = viewChild('scroll', { read: ElementRef });
 
   protected readonly defaultSort = 'displayName';
+  protected readonly sortLabels = {
+    displayName: 'Name',
+    assetType: 'Type',
+    size: 'Size',
+    disposition: 'Disposition',
+  };
   protected readonly columns = COLUMNS;
   protected readonly types = signal<AssetTypeResponse[]>([]);
 
@@ -254,7 +282,7 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
       emptyLabel: 'All types',
       options: this.typeOptions(),
     },
-    { key: 'name', label: 'Name', column: 'name', type: 'text' },
+    { key: 'name', label: 'Name', column: 'name', type: 'text', search: true },
     { key: 'extref', label: 'External Reference', column: 'externalReference', type: 'text' },
     {
       key: 'status',
