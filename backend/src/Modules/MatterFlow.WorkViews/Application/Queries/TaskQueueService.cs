@@ -28,7 +28,8 @@ public sealed class TaskQueueService(
     IPodDirectory podDirectory,
     IUserAvailabilityReader availability,
     IManagedMatterScope managed,
-    IMatterVisibility visibility)
+    IMatterVisibility visibility,
+    UnassignedAge unassignedAge)
 {
     public const string ViewActive = "active";
     public const string ViewDueSoon = "dueSoon";
@@ -686,6 +687,7 @@ public sealed class TaskQueueService(
                            DueAtUtc = t.DueAtUtc,
                            DueSortKey = t.DueSortKey,
                            CreatedAtUtc = t.CreatedAtUtc,
+                           UnassignedSinceUtc = t.AssignedUserId == null ? (t.UnassignedAtUtc ?? t.CreatedAtUtc) : null,
                            StatusChangedAtUtc = t.StatusChangedAtUtc,
                            ModifiedAtUtc = t.ModifiedAtUtc,
                            TitleKey = EF.Functions.Collate(t.Title, TitleCollation),
@@ -741,6 +743,7 @@ public sealed class TaskQueueService(
                 DueAtUtc = t.DueAtUtc,
                 CreatedAtUtc = t.CreatedAtUtc,
                 AssignedAtUtc = t.AssignedAtUtc,
+                UnassignedAtUtc = t.UnassignedAtUtc,
                 ModifiedAtUtc = t.ModifiedAtUtc,
                 CompletedAtUtc = t.CompletedAtUtc,
                 StatusChangedAtUtc = t.StatusChangedAtUtc,
@@ -802,6 +805,7 @@ public sealed class TaskQueueService(
         // Mode H: a Task of a sensitive Matter the caller does not see as a whole (an assignee) carries the Matter header only; the screen must not link to it.
         var openableMatterIds = await OpenableMatterIdsAsync(details.Where(d => d.MatterIsSensitive).Select(d => d.MatterId), ct);
 
+        var (gaugeSettings, gaugeZone) = await unassignedAge.LoadAsync(ct);
         var byId = details.ToDictionary(d => d.Id);
         var result = new List<TaskQueueRow>(ids.Count);
         foreach (var id in ids)
@@ -812,6 +816,8 @@ public sealed class TaskQueueService(
             var t = d;
             var code = t.Status.ToCode();
             var (holdReason, holdTruncated) = HoldReason(d.HoldHtml);
+            // Dashboard v4: an open Task with no assigned user shows since when (the unassign time, or the creation time for older rows) and how long in the gauge's minutes (same basis).
+            DateTime? unassignedSince = t.AssignedUserId is null && t.Status.IsOpen() ? DateTime.SpecifyKind(t.UnassignedAtUtc ?? t.CreatedAtUtc, DateTimeKind.Utc) : null;
             result.Add(new TaskQueueRow(
                 t.Id,
                 t.Number,
@@ -855,7 +861,9 @@ public sealed class TaskQueueService(
                 d.TaskTypeColourKey,
                 d.OnHoldReasonId,
                 d.OnHoldReasonName,
-                AtRiskRules.IsAtRisk(t.Status, TaskQueueRules.IsOverdue(t.Status, t.DueDate, t.DueAtUtc, queueClock), t.CreatedAtUtc, d.TaskTypeTargetDays, queueClock.NowUtc)));
+                AtRiskRules.IsAtRisk(t.Status, TaskQueueRules.IsOverdue(t.Status, t.DueDate, t.DueAtUtc, queueClock), t.CreatedAtUtc, d.TaskTypeTargetDays, queueClock.NowUtc),
+                unassignedSince,
+                unassignedSince is { } since ? WorkingTime.Minutes(since, queueClock.NowUtc, gaugeSettings, gaugeZone) : null));
         }
 
         return result;
@@ -922,6 +930,8 @@ public sealed class TaskQueueService(
         public DateTime CreatedAtUtc { get; init; }
 
         public DateTime? AssignedAtUtc { get; init; }
+
+        public DateTime? UnassignedAtUtc { get; init; }
 
         public DateTime? ModifiedAtUtc { get; init; }
 

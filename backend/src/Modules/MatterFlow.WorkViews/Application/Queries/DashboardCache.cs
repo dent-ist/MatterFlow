@@ -13,6 +13,15 @@ public sealed class DashboardOptions
 
     /// <summary>Thresholds of the Users tab (<c>Dashboard:Workload</c>).</summary>
     public WorkloadOptions Workload { get; set; } = new();
+
+    /// <summary>Capacity battery settings (<c>Dashboard:Capacity</c>).</summary>
+    public CapacityOptions Capacity { get; set; } = new();
+}
+
+/// <summary>Settings of the Dashboard capacity battery: how many open Tasks (New or In progress) a person can hold before they are full (default 3).</summary>
+public sealed class CapacityOptions
+{
+    public int SlotsPerPerson { get; set; } = MatterFlow.SharedKernel.Tasks.CapacityRules.DefaultSlotsPerPerson;
 }
 
 /// <summary>

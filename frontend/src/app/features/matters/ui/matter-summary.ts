@@ -16,7 +16,7 @@ import { aiLabel } from './matter-ai';
 /**
  * The Summary tab of the Matter page (MD-03 #1004, redesigned in MD-42 #1060; mockup `docs/ux/mockups/matter-summary`). The page never scrolls on desktop:
  *
- *   Assets by type: equal tiles (a Total tile first with two or more types) that scroll sideways instead of wrapping; each opens the Assets tab for the type  [Asset.View]
+ *   Assets by type: equal tiles, one per type, that scroll sideways instead of wrapping; each opens the Assets tab for the type  [Asset.View]
  *   Details: ONE full-width card that fits its content, sits at the top and scrolls inside itself when it is taller than the room; one Edit button.
  *     Small muted labels over values in a grid of 3 columns (card 1100 px and wider), 2 (700 px and wider) or 1: CM number (one highlighted line), Client, Matter number,
  *     Matter name, Status, Sensitive (only when sensitive), Primary PM, Secondary PM, AI allowed, Created, Last changed, then the custom fields (no heading).
@@ -85,9 +85,6 @@ import { aiLabel } from './matter-ai';
       font-size: var(--mf-fs-lg);
       font-weight: 700;
       font-variant-numeric: tabular-nums;
-    }
-    .ms__total-icon {
-      color: var(--mf-text-muted);
     }
     .ms__empty-assets {
       display: flex;
@@ -169,7 +166,7 @@ import { aiLabel } from './matter-ai';
       margin: 0;
       overflow-wrap: anywhere;
     }
-    /* The CM number: one highlighted line, number and copy button on one baseline. */
+    /* The CM number: one highlighted line, number and copy icon on one baseline. */
     .ms__f--cm dd {
       align-self: start;
       width: fit-content;
@@ -218,20 +215,6 @@ import { aiLabel } from './matter-ai';
           </p>
         } @else if (assetTypes().length > 0) {
           <ul class="ms__tiles">
-            @if (assetTypes().length > 1) {
-              <li>
-                <a
-                  class="ms__tile"
-                  data-asset-tile="total"
-                  [routerLink]="[]"
-                  [queryParams]="{ tab: 'assets' }"
-                >
-                  <i class="pi pi-database ms__total-icon" aria-hidden="true"></i>
-                  <span class="ms__tile-name">Total</span>
-                  <span class="ms__count">{{ assetTotal() }}</span>
-                </a>
-              </li>
-            }
             @for (t of assetTypes(); track t.assetTypeId) {
               <li>
                 <a
@@ -444,9 +427,6 @@ export class MatterSummary {
 
   protected readonly assetTypes = computed(() =>
     (this.assetsLoader.data() ?? []).filter((t) => t.count > 0),
-  );
-  protected readonly assetTotal = computed(() =>
-    this.assetTypes().reduce((sum, t) => sum + t.count, 0),
   );
   protected readonly ai = computed(() => aiLabel(this.matter().aiAllowed));
 

@@ -38,6 +38,8 @@ public static class ConfigurationModule
         services.AddSingleton<AppSettingsCache>();
         services.AddScoped<AppSettingsService>();
         services.AddScoped<BrandingService>();
+        services.AddScoped<DashboardSettingsService>();
+        services.AddScoped<IDashboardSettings>(sp => sp.GetRequiredService<DashboardSettingsService>());
         services.AddBrandingOpenApi();
         services.AddScoped<ConfigurationSeeder>();
         // Forms (architecture 7). Compiled schemas of immutable versions are cached for the life of the process.

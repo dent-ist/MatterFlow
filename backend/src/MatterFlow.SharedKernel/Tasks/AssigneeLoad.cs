@@ -5,7 +5,8 @@ namespace MatterFlow.SharedKernel.Tasks;
 /// <param name="LastAssignedUtc">When a Task was last assigned to the person (the newest assignment time among the Tasks they hold, open or closed); null when they hold none.</param>
 /// <param name="Visible">The same two facts counted over the tasks the caller may see (sensitive-matter rule, epic #788): what a screen may DISPLAY. Null: the same as the true values
 /// (the rule is off). The ranking uses the true values (owner decision Q5: rank by true load, display only what the viewer may see).</param>
-public sealed record AssigneeLoad(int OpenTaskCount, DateTime? LastAssignedUtc, AssigneeLoadDisplay? Visible = null);
+/// <param name="ActiveCount">Dashboard v4 capacity load: the person's open Tasks that are New or In progress (On hold does not count), the TRUE number whatever the visibility rule (a bare integer, decision AS item 12).</param>
+public sealed record AssigneeLoad(int OpenTaskCount, DateTime? LastAssignedUtc, AssigneeLoadDisplay? Visible = null, int ActiveCount = 0);
 
 /// <summary>What a viewer may see of a person's load: open tasks and the last assignment time over the tasks that viewer can see.</summary>
 public sealed record AssigneeLoadDisplay(int OpenTaskCount, DateTime? LastAssignedUtc);

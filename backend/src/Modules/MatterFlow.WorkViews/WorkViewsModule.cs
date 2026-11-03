@@ -18,10 +18,12 @@ public static class WorkViewsModule
         services.AddScoped<TaskQueueExportService>();
         services.AddScoped<DashboardScopeResolver>();
         services.AddScoped<VisibilityStamp>();
+        services.AddScoped<UnassignedAge>();
         services.AddScoped<DashboardService>();
         services.AddScoped<DashboardTrendService>();
         services.AddScoped<SwimlaneService>();
         services.AddScoped<WorkloadService>();
+        services.AddScoped<CapacityService>();
         services.AddScoped<CoverageService>();
         services.AddScoped<MyMattersActivityService>();
         services.AddScoped<MyMattersTaskCountsService>();

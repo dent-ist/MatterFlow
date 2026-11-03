@@ -66,7 +66,7 @@ public class DashboardController(DashboardService dashboard, DashboardTrendServi
 [ApiController]
 [Route("api/v1/dashboard")]
 [MatterFlow.SharedKernel.Visibility.PreparesViewer]
-public class DashboardBoardController(SwimlaneService swimlane, WorkloadService workload, CoverageService coverage) : ControllerBase
+public class DashboardBoardController(SwimlaneService swimlane, WorkloadService workload, CoverageService coverage, CapacityService capacity) : ControllerBase
 {
     /// <summary>
     /// Every open Task plus the Tasks completed or cancelled in the last <c>completedDays</c> days as four lanes (<c>NEW</c>, <c>IN_PROGRESS</c>, <c>ON_HOLD</c>,
@@ -95,6 +95,35 @@ public class DashboardBoardController(SwimlaneService swimlane, WorkloadService 
     {
         FilterParsing.EnsureKnown(Request.Query.Keys, WorkloadQuery.Keys).OrThrow();
         return (await workload.GetAsync(query, cancellationToken)).OrThrow();
+    }
+
+    /// <summary>
+    /// The department capacity battery (Dashboard v4): the workers of the scope (<c>Workflow.Execute</c> holders who are active members of a Pod in the scope), how many can take work now, free slots, used percent and a count per state
+    /// (Available, Occupied, Busy, Overloaded, Out of office, Off hours), plus how many Tasks were assigned in the last hour. Aggregates only; load is the true count of a worker's open Tasks (a bare number, also for hidden Matters). People
+    /// out of office or outside their work hours are not counted as capacity; when nobody can take work now <c>state</c> is <c>AFTER_HOURS</c> and the percentages are null. Needs <c>Dashboard.View</c> and <c>Dashboard.ViewUsers</c>.
+    /// </summary>
+    [HttpGet("capacity", Name = "GetDashboardCapacity")]
+    [Authorize(Policy = "Perm:" + Permissions.Dashboard.View)]
+    [Authorize(Policy = "Perm:" + Permissions.Dashboard.ViewUsers)]
+    [ProducesResponseType<DashboardCapacity>(StatusCodes.Status200OK, "application/json")]
+    public async Task<ActionResult<DashboardCapacity>> GetCapacity([FromQuery] CapacityQuery query, CancellationToken cancellationToken)
+    {
+        FilterParsing.EnsureKnown(Request.Query.Keys, CapacityQuery.Keys).OrThrow();
+        return (await capacity.GetAsync(query, cancellationToken)).OrThrow();
+    }
+
+    /// <summary>
+    /// The People list behind the capacity battery: per worker of the scope the display name, state, load number, the last day out of office (date only) and the Pod names, most loaded first then by name, at most 200.
+    /// Optional <c>q</c> (name fragment) and <c>state</c>. No Task, Matter or note data. Needs <c>Dashboard.View</c> and <c>Dashboard.ViewUsers</c>.
+    /// </summary>
+    [HttpGet("capacity/people", Name = "GetDashboardCapacityPeople")]
+    [Authorize(Policy = "Perm:" + Permissions.Dashboard.View)]
+    [Authorize(Policy = "Perm:" + Permissions.Dashboard.ViewUsers)]
+    [ProducesResponseType<CapacityPerson[]>(StatusCodes.Status200OK, "application/json")]
+    public async Task<ActionResult<IReadOnlyList<CapacityPerson>>> GetCapacityPeople([FromQuery] CapacityPeopleQuery query, CancellationToken cancellationToken)
+    {
+        FilterParsing.EnsureKnown(Request.Query.Keys, CapacityPeopleQuery.Keys).OrThrow();
+        return Ok((await capacity.GetPeopleAsync(query, cancellationToken)).OrThrow());
     }
 
     /// <summary>

@@ -83,6 +83,7 @@ public sealed record DashboardMine([property: Required] int Open, [property: Req
 /// Change since before (S3): <c>OverdueYesterday</c> and <c>OpenYesterday</c> are the same snapshots as the Trends point of yesterday (the end of the viewer's yesterday, no status replay; tile minus this value is the delta), <c>CompletedPrevious</c> and <c>CreatedPrevious</c> the counts of <c>PreviousPeriod</c>.
 /// Each is null (no delta line) when the scope held no Task at that time, and without <c>Dashboard.ViewSummary</c>. <c>Mine</c> (S9) is set only for <c>Dashboard.ViewUnassigned</c> without <c>Dashboard.ViewSummary</c>.
 /// </para>
+/// <c>UnassignedGauge</c> (Dashboard v4) is the age of the oldest unassigned Task and the gauge level; set only with <c>Dashboard.ViewSummary</c>.
 /// The Trends tab reads its series from <c>GET /api/v1/dashboard/trend</c> (<c>Dashboard.ViewTrends</c>). Overdue and the period are evaluated in the viewer's time zone (addendum M). Counts are operational facts, never billing or staff productivity measures.
 /// </summary>
 public sealed record DashboardSummary(
@@ -109,7 +110,8 @@ public sealed record DashboardSummary(
     int? CompletedPrevious = null,
     int? CreatedPrevious = null,
     DashboardPreviousPeriod? PreviousPeriod = null,
-    DashboardMine? Mine = null);
+    DashboardMine? Mine = null,
+    DashboardUnassignedGauge? UnassignedGauge = null);
 
 
 /// <summary>The request of the Trends tab: the period, the Task Types to draw a line for (at most <see cref="DashboardRules.MaxTrendTypes"/>) and optionally one metric.</summary>

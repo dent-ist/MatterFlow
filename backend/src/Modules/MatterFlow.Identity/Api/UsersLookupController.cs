@@ -19,6 +19,8 @@ namespace MatterFlow.Identity.Api;
 /// <param name="LastAssignedUtc">When a Task was last assigned to the person; null when never.</param>
 /// <param name="Suggested">True when the ranking offers the person as a suggestion (available, and within the suggestion limit when <c>suggest=true</c>).</param>
 /// <param name="Reason">Why the person ranks where they do, as a short sentence.</param>
+/// <param name="CapacityState"><c>AVAILABLE</c>, <c>OCCUPIED</c>, <c>BUSY</c>, <c>OVERLOADED</c>, <c>OUT_OF_OFFICE</c> or <c>OFF_HOURS</c>: the Dashboard capacity state, from the load and the availability by the one shared rule.</param>
+/// <param name="Load">Open Tasks that are New or In progress (On hold does not count): the number the capacity state is built from. A bare integer, the true count whatever the sensitive-matter rule (decision AS item 12).</param>
 public sealed record UserLookupItem(
     [property: Required] int UserId,
     [property: Required] string DisplayName,
@@ -26,7 +28,9 @@ public sealed record UserLookupItem(
     [property: Required] int OpenTaskCount,
     DateTime? LastAssignedUtc,
     [property: Required] bool Suggested,
-    [property: Required] string Reason);
+    [property: Required] string Reason,
+    [property: Required] string CapacityState,
+    [property: Required] int Load);
 
 /// <summary>
 /// User lookup for assignee pickers (inline grid picker, Edit task, Create task). Unlike <c>GET /users</c> (User.View, administration data) it only
@@ -88,17 +92,20 @@ public class UsersLookupController(DbContext db, IUserAvailabilityReader availab
 
         if (!ranked)
         {
-            return candidates.Select(c => Item(c, states[c.UserId], suggested: false, reason: string.Empty)).ToArray();
+            return candidates.Select(c => Item(c, states[c.UserId], suggested: false, reason: string.Empty, load)).ToArray();
         }
 
         var order = ranker.Rank(new AssigneeRankingRequest(candidates, podId, taskTypeId, now));
         if (suggest)
             order = order.Where(r => r.Suggestable).ToArray();
         return order.Take(limit)
-            .Select(r => Item(r.Candidate, states[r.Candidate.UserId], r.Suggestable && suggest, r.Reason))
+            .Select(r => Item(r.Candidate, states[r.Candidate.UserId], r.Suggestable && suggest, r.Reason, load))
             .ToArray();
     }
 
-    private static UserLookupItem Item(AssigneeCandidate c, AvailabilityEvaluation state, bool suggested, string reason) =>
-        new(c.UserId, c.DisplayName, UserAvailabilitySummary.From(state), c.ShownOpenTaskCount, c.ShownLastAssignedUtc, suggested, reason);
+    private static UserLookupItem Item(AssigneeCandidate c, AvailabilityEvaluation state, bool suggested, string reason, IReadOnlyDictionary<int, AssigneeLoad> loads)
+    {
+        var active = loads.TryGetValue(c.UserId, out var l) ? l.ActiveCount : 0;
+        return new(c.UserId, c.DisplayName, UserAvailabilitySummary.From(state), c.ShownOpenTaskCount, c.ShownLastAssignedUtc, suggested, reason, CapacityRules.State(active, state.State), active);
+    }
 }

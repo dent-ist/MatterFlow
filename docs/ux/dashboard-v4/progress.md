@@ -21,7 +21,15 @@ Protocol: one section per agent below, append-only, newest entry last; `git pull
 
 ## Agent G (backend)
 
-(no entries yet. Write "client pushed" here when the regenerated OpenAPI and nswag client are on `dev`.)
+- 2026-11-03 **client pushed.** OpenAPI (`contracts/openapi/v1.json`) and the nswag client (`frontend/src/app/api/generated/api-client.ts`) are regenerated and on `dev` with the DTOs and endpoints compiling. Agent H can switch from fixtures. Logic is in place; tests follow.
+  Contract as built, with the DEVIATIONS from plan section 4 (all additive except the notes marked CHANGED):
+  - `GET /dashboard` -> `unassignedGauge` as sketched (`count, oldestSinceUtc, oldestAgeMinutes, ageBasis, level, asOfUtc`); null without Dashboard.ViewSummary.
+  - `GET /task-queue` -> rows have `unassignedSinceUtc` and `unassignedForMinutes` (null unless the task is open and has no assigned user); sort key `unassignedSince` (unassigned tasks first, longest waiting first when ascending).
+  - `GET /dashboard/capacity` (Dashboard.View + ViewUsers, `podScope`). CHANGED per owner decision (a): people out of office or outside work hours are NOT in the denominator. Fields: `asOfUtc, state, workers, presentWorkers, slotsPerPerson, totalSlots, freeSlots, usedPercent, freePercent, canTakeWork, states[6], assignedLastHour`. `workers` = everyone in scope, `presentWorkers` = can take work now, `totalSlots` = presentWorkers x slotsPerPerson. `usedPercent` and `freePercent` are NULLABLE (null unless `state` = `OK`). NEW `state`: `OK` | `AFTER_HOURS` (nobody present, at least one off hours: show a neutral "After hours") | `ALL_OUT` (everybody out of office) | `NO_WORKERS` (empty scope). `states` still lists all six people states (`AVAILABLE, OCCUPIED, BUSY, OVERLOADED, OUT_OF_OFFICE, OFF_HOURS`) and adds up to `workers`. `assignedLastHour` is an int (0 when no workers).
+  - `GET /dashboard/capacity/people` (same permission and scope; `q`, `state`): array of `{userId, displayName, state, load, outUntil, podNames}`; `outUntil` is the LAST day out (date only `yyyy-MM-dd`, null when open-ended); sorted Overloaded, Busy, Occupied, Available, Out of office, Off hours, then name; at most 200. Unknown `state` is 400 `UNKNOWN_STATE`.
+  - `GET /users/lookup` items gain `capacityState` and `load` (New + In progress, true count).
+  - NEW, not in the sketch (needed for the DB-06 settings form): `GET/PUT/DELETE /api/v1/admin/settings/dashboard` (Settings.Manage). GET returns `{gauge, defaults, isCustom, rowVersion, timeZoneId, updatedAtUtc, updatedBy}` with `gauge = {workdayStart:"08:00", workdayEnd:"18:00", workDays:[1..5 ISO], ageBasis:"WORKING"|"CLOCK", levelHours:[1,2,3,4,5], tasksPerLevel:5, countBonusMax:2}`; PUT body `{gauge, rowVersion}` (empty rowVersion when `isCustom` is false), DELETE `?rowVersion=` resets to defaults; 400 on invalid values, 409 on a version conflict. The settings are ONE stored value (key `Dashboard.Gauge`), not seven rows.
+  - Time zone: the firm zone `Firm:TimeZoneId` (appsettings, default America/New_York) is the existing application-level zone, the same one the availability rules use. There is no DB setting for it; `timeZoneId` is shown read-only in the settings view.
 
 ## Agent H (frontend)
 

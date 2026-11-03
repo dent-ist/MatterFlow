@@ -200,3 +200,32 @@ internal sealed class BrandingUploadLimitsAttribute : Attribute, IAsyncResourceF
 
     private sealed class ProblemCarrier : ControllerBase;
 }
+
+/// <summary>
+/// Administration of the Dashboard settings (Administration &gt; Settings &gt; Dashboard, Dashboard v4 #1064): the working day, age basis and level steps of the unassigned gauge. Needs
+/// <c>Settings.Manage</c>. Defaults live in code; a reset deletes the stored value. Writes are audited and use a row version (<c>409</c> when someone changed it meanwhile).
+/// </summary>
+[ApiController]
+[Route("api/v1/admin/settings/dashboard")]
+public class SettingsDashboardController(DashboardSettingsService dashboard) : ControllerBase
+{
+    /// <summary>The gauge settings in force, the defaults and the row version.</summary>
+    [HttpGet(Name = "GetDashboardSettings")]
+    [Authorize(Policy = ConfigurationPolicies.SettingsManage)]
+    [ProducesResponseType<DashboardSettingsAdminView>(StatusCodes.Status200OK, "application/json")]
+    public async Task<ActionResult<DashboardSettingsAdminView>> Get(CancellationToken cancellationToken) => await dashboard.GetAdminAsync(cancellationToken);
+
+    /// <summary>Saves the gauge settings. 400 when the working day, the weekdays or the level steps are not valid, 409 when someone changed them meanwhile.</summary>
+    [HttpPut(Name = "SetDashboardSettings")]
+    [Authorize(Policy = ConfigurationPolicies.SettingsManage)]
+    [ProducesResponseType<DashboardSettingsAdminView>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> Set([FromBody] SetDashboardGaugeRequest request, CancellationToken cancellationToken) =>
+        this.ToActionResult(await dashboard.SaveAsync(request, cancellationToken));
+
+    /// <summary>Resets the gauge settings to the code defaults by deleting the stored value.</summary>
+    [HttpDelete(Name = "ResetDashboardSettings")]
+    [Authorize(Policy = ConfigurationPolicies.SettingsManage)]
+    [ProducesResponseType<DashboardSettingsAdminView>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> Reset([FromQuery] string? rowVersion, CancellationToken cancellationToken) =>
+        this.ToActionResult(await dashboard.ResetAsync(rowVersion, cancellationToken));
+}

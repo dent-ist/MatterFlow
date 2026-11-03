@@ -330,6 +330,7 @@ public sealed class TaskService
             AssignedPodId = request.AssignedPodId,
             AssignedUserId = request.AssignedUserId,
             AssignedAtUtc = request.AssignedUserId is null ? null : now,
+            UnassignedAtUtc = request.AssignedUserId is null ? now : null,
             RequestorName = request.RequestorName.Trim(),
             RequestorEmail = TaskSupport.Clean(request.RequestorEmail),
             RequestedAtUtc = TaskSupport.ToUtc(request.RequestedAtUtc),
@@ -687,7 +688,12 @@ public sealed class TaskService
 
         task.AssignedPodId = request.PodId;
         if (task.AssignedUserId != request.UserId)
-            task.AssignedAtUtc = request.UserId is null ? null : _clock.UtcNow;
+        {
+            var changedAt = _clock.UtcNow;
+            task.AssignedAtUtc = request.UserId is null ? null : changedAt;
+            // Dashboard v4 (script 57): the unassigned clock starts when the user is cleared and stops when someone is assigned. A Pod-only change keeps it.
+            task.UnassignedAtUtc = request.UserId is null ? changedAt : null;
+        }
         task.AssignedUserId = request.UserId;
         if (assignment.AutoStarted)
         {
