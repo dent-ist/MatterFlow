@@ -504,6 +504,20 @@
   --mf-cap-1-fg: var(--mf-heat-2-fg);
   --mf-cap-2-fg: var(--mf-heat-3-fg);
   --mf-cap-3-fg: var(--mf-heat-4-fg);
+  /* DB-12 (#1086): the REMAINING capacity steps of the battery: healthy at 50% and more, then one step each time it falls below 40, 30, 20 and 10 percent (yellow-green, amber, orange,
+     red, dark red). The text inside the battery sits on its own pill in the step colour; the status word and icon say the same, so colour is never the only signal. */
+  --mf-rem-0: #0f766e;
+  --mf-rem-1: #c8d93a;
+  --mf-rem-2: #f5b82e;
+  --mf-rem-3: #f08a24;
+  --mf-rem-4: #c62828;
+  --mf-rem-5: #7f1d1d;
+  --mf-rem-0-fg: #ffffff;
+  --mf-rem-1-fg: #1b1f27;
+  --mf-rem-2-fg: #1b1f27;
+  --mf-rem-3-fg: #1b1f27;
+  --mf-rem-4-fg: #ffffff;
+  --mf-rem-5-fg: #ffffff;
   --mf-wait-0: var(--mf-p-teal-solid);
   --mf-wait-1: var(--mf-p-amber-line);
   --mf-wait-2: var(--mf-p-amber-solid);

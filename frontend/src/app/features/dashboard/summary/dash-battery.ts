@@ -13,14 +13,14 @@ import {
 } from '@angular/core';
 import { Tip } from '../../../shared/ui/tip';
 import { CapacityPerson, DashboardCapacity } from '../../../api/generated/api-client';
-import { BatteryView, batteryView } from './capacity-model';
+import { BatteryView, WORD_ICON, batteryView } from './capacity-model';
 import { DashPeople } from './dash-people';
 import { DashV4Api } from './dash-v4-api';
 
 type BatteryState = 'loading' | 'ready' | 'error';
 
 /**
- * The department capacity battery (epic #1063, DB-05): ONE indicator for everyone who takes work in the scope. The charge is the FREE capacity, the big text says "Capacity used NN%",
+ * The department capacity battery (epic #1063, DB-05): ONE indicator for everyone who takes work in the scope. The charge is the FREE capacity, the percentage REMAINING sits inside the battery next to a bolt,
  * a summary line says "8 of 12 can take work now", a compact legend counts people per state (icon and words, never colour alone), an info button explains the formula, and the People
  * button opens the list of names. After hours or when nobody can take work the API sends no percentage and the battery shows a neutral "After hours" state instead of 100 percent used.
  * It reads `GET /dashboard/capacity` for the page scope and again whenever `refreshKey` changes (the page refreshes, or a task was assigned); the People list is read when the popover opens.
@@ -39,6 +39,12 @@ type BatteryState = 'loading' | 'ready' | 'error';
     >
       <div class="ph">
         <h2 id="db-h"><i class="pi pi-bolt" aria-hidden="true"></i>Team capacity</h2>
+        @if (view()?.word; as word) {
+          <span class="word" [attr.data-level]="view()?.level" data-battery-word>
+            <i class="pi" [class]="icons[word]" aria-hidden="true"></i>
+            {{ word }}
+          </span>
+        }
         <button
           type="button"
           class="mf-btn mf-btn--icon info"
@@ -101,25 +107,26 @@ type BatteryState = 'loading' | 'ready' | 'error';
                 </span>
               </div>
             } @else {
-              <div class="bigrow" [attr.aria-label]="v.ariaLabel" role="group">
-                <span class="big" data-battery-big>{{ v.bigText }}</span>
-                @if (v.word; as word) {
-                  <span class="word" [class]="'word word--' + word.toLowerCase()" data-battery-word>
-                    <i
-                      class="pi"
-                      [class]="word === 'Healthy' ? 'pi-check-circle' : 'pi-exclamation-triangle'"
-                      aria-hidden="true"
-                    ></i>
-                    {{ word }}
-                  </span>
-                }
-              </div>
-              <div class="bat" aria-hidden="true">
-                <div class="shell" [class.shell--neutral]="v.mode === 'after-hours'">
-                  <div class="fill" [style.width.%]="v.charge" data-battery-fill></div>
+              <div
+                class="bat"
+                role="img"
+                data-battery-bar
+                [attr.aria-label]="v.ariaLabel"
+                [mfTip]="v.tooltip + '. ' + v.formula"
+              >
+                <div class="shell" [class.shell--neutral]="v.mode !== 'normal'">
+                  <div
+                    class="fill"
+                    [style.width.%]="v.charge"
+                    [attr.data-level]="v.level"
+                    data-battery-fill
+                  ></div>
                   <span class="tick" style="left: 25%"></span>
                   <span class="tick" style="left: 50%"></span>
                   <span class="tick" style="left: 75%"></span>
+                  <span class="val" [attr.data-level]="v.level" data-battery-big>
+                    <i class="pi pi-bolt" aria-hidden="true"></i>{{ v.bigText }}
+                  </span>
                 </div>
                 <div class="cap"></div>
               </div>
@@ -166,6 +173,7 @@ type BatteryState = 'loading' | 'ready' | 'error';
     }
     .ph {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       gap: var(--mf-s2);
       margin-bottom: var(--mf-s2);
@@ -182,44 +190,41 @@ type BatteryState = 'loading' | 'ready' | 'error';
     .people {
       margin-left: auto;
     }
-    .bigrow {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      margin-bottom: var(--mf-s2);
-    }
-    .big {
-      font-size: 22px;
-      font-weight: 700;
-      line-height: 1.1;
-    }
+    /* The status word beside the title: the colour of the remaining capacity plus the word and the icon, so colour is never the only signal. */
     .word {
       display: inline-flex;
       align-items: center;
       gap: var(--mf-s1);
-      margin-left: auto;
       padding: 2px 10px;
-      border: 1px solid var(--lbd);
       border-radius: 999px;
-      color: var(--lfg);
-      background: var(--lbg);
+      color: var(--mf-rem-fg);
+      background: var(--mf-rem);
       font-size: 12px;
       font-weight: 700;
     }
-    .word--healthy {
-      --lbg: var(--mf-p-teal-bg);
-      --lfg: var(--mf-p-teal-fg);
-      --lbd: var(--mf-p-teal-line);
+    [data-level='0'] {
+      --mf-rem: var(--mf-rem-0);
+      --mf-rem-fg: var(--mf-rem-0-fg);
     }
-    .word--limited {
-      --lbg: var(--mf-p-amber-bg);
-      --lfg: var(--mf-p-amber-fg);
-      --lbd: var(--mf-p-amber-line);
+    [data-level='1'] {
+      --mf-rem: var(--mf-rem-1);
+      --mf-rem-fg: var(--mf-rem-1-fg);
     }
-    .word--low {
-      --lbg: var(--mf-p-red-bg);
-      --lfg: var(--mf-p-red-fg);
-      --lbd: var(--mf-p-red-line);
+    [data-level='2'] {
+      --mf-rem: var(--mf-rem-2);
+      --mf-rem-fg: var(--mf-rem-2-fg);
+    }
+    [data-level='3'] {
+      --mf-rem: var(--mf-rem-3);
+      --mf-rem-fg: var(--mf-rem-3-fg);
+    }
+    [data-level='4'] {
+      --mf-rem: var(--mf-rem-4);
+      --mf-rem-fg: var(--mf-rem-4-fg);
+    }
+    [data-level='5'] {
+      --mf-rem: var(--mf-rem-5);
+      --mf-rem-fg: var(--mf-rem-5-fg);
     }
     .bat {
       display: flex;
@@ -239,15 +244,35 @@ type BatteryState = 'loading' | 'ready' | 'error';
     .fill {
       height: 100%;
       border-radius: var(--mf-radius-sm, 3px);
-      background: var(--mf-cap-3);
+      background: var(--mf-rem);
       transition: width 0.4s ease;
     }
-    .shell--neutral .fill {
+    .shell--neutral {
       background: repeating-linear-gradient(
         45deg,
         var(--mf-p-slate-bg) 0 4px,
         var(--mf-p-slate-line) 4px 7px
       );
+    }
+    /* The number sits on its own pill in the step colour, so its contrast does not depend on how full the battery is. */
+    .val {
+      position: absolute;
+      top: 50%;
+      left: var(--mf-s2);
+      z-index: 1;
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s1);
+      padding: 0 var(--mf-s2);
+      border-radius: 999px;
+      transform: translateY(-50%);
+      color: var(--mf-rem-fg, var(--mf-text));
+      background: var(--mf-rem, var(--mf-surface));
+      border: 1px solid var(--mf-surface);
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 22px;
+      white-space: nowrap;
     }
     .tick {
       position: absolute;
@@ -411,6 +436,7 @@ export class DashBattery {
   /** The last good read, for the page's "updated" text. */
   readonly loaded = output<DashboardCapacity>();
 
+  protected readonly icons = WORD_ICON;
   protected readonly state = signal<BatteryState>('loading');
   protected readonly data = signal<DashboardCapacity | null>(null);
   /** A refresh failed but older figures are still on screen. */

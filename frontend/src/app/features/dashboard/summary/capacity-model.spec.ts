@@ -5,6 +5,7 @@ import {
   batteryView,
   formulaText,
   freeWord,
+  levelOf,
   groupPeople,
   personDetail,
   rateHintText,
@@ -14,12 +15,20 @@ describe('batteryView', () => {
   const people = somePeople(12);
   const summary = capacityOf(people, 3);
 
-  it('says Capacity used NN% with the number the API returned', () => {
+  it('says the REMAINING capacity: the API freePercent is the charge and the number, named Remaining capacity', () => {
     const v = batteryView(summary);
     expect(v.mode).toBe('normal');
-    expect(v.bigText).toBe(`Capacity used ${summary.usedPercent}%`);
+    expect(v.bigText).toBe(`${summary.freePercent}%`);
     expect(v.charge).toBe(summary.freePercent);
-    expect(v.ariaLabel).toContain(`Capacity used ${summary.usedPercent} percent`);
+    expect(v.tooltip).toBe(`Remaining capacity ${summary.freePercent}%`);
+    expect(v.ariaLabel).toContain(`Remaining capacity ${summary.freePercent} percent`);
+    expect(v.ariaLabel).not.toContain('used');
+  });
+
+  it('steps the colour level at 50, 40, 30, 20 and 10 percent', () => {
+    expect([100, 50, 49, 40, 39, 30, 29, 20, 19, 10, 9, 0].map(levelOf)).toEqual([
+      0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5,
+    ]);
   });
 
   it('reads 8 of 12 can take work now with four people out or off', () => {
@@ -52,6 +61,7 @@ describe('batteryView', () => {
     });
     expect(v.mode).toBe('after-hours');
     expect(v.bigText).toBe('After hours');
+    expect(v.level).toBeNull();
     expect(v.bigText).not.toContain('100');
     expect(v.word).toBeNull();
   });
@@ -64,7 +74,8 @@ describe('batteryView', () => {
       ),
     );
     expect(v.mode).toBe('all-out');
-    expect(v.bigText).toBe('Everyone is out of office');
+    expect(v.bigText).toBe('Everyone out');
+    expect(v.tooltip).toBe('Everyone is out of office');
   });
 
   it('shows the empty state for no workers and no rate hint', () => {
@@ -83,11 +94,13 @@ describe('batteryView', () => {
     expect(batteryView({ ...summary, assignedLastHour: undefined }).rateHint).toBeNull();
   });
 
-  it('names Healthy, Limited and Low by free capacity', () => {
+  it('names Healthy, Watch, Low and Critical by remaining capacity', () => {
     expect(freeWord(50)).toBe('Healthy');
-    expect(freeWord(49)).toBe('Limited');
-    expect(freeWord(25)).toBe('Limited');
-    expect(freeWord(24)).toBe('Low');
+    expect(freeWord(49)).toBe('Watch');
+    expect(freeWord(30)).toBe('Watch');
+    expect(freeWord(29)).toBe('Low');
+    expect(freeWord(10)).toBe('Low');
+    expect(freeWord(9)).toBe('Critical');
   });
 
   it('takes the slots per person into the formula', () => {

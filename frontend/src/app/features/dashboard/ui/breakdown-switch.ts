@@ -40,6 +40,8 @@ const VIEWS: readonly { mode: BreakdownMode; label: string; icon: string }[] = [
     }
     .mf-btn {
       gap: var(--mf-s1);
+      min-width: 2.25rem;
+      justify-content: center;
       padding-inline: var(--mf-s2);
       font-size: var(--mf-fs-sm);
     }

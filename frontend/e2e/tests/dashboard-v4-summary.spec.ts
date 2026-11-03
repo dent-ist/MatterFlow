@@ -163,7 +163,7 @@ test.describe('Summary v4', () => {
     ).toBeVisible();
   });
 
-  test('the battery says Capacity used, People opens a searchable dialog and Escape returns focus', async ({
+  test('the battery shows the remaining capacity inside it, People opens a searchable dialog and Escape returns focus', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
@@ -171,7 +171,7 @@ test.describe('Summary v4', () => {
     const battery = page.locator('[data-battery]');
     await expect(battery).toBeVisible();
     await expect(battery.locator('[data-battery-big]')).toHaveText(
-      /Capacity used \d+%|After hours|Everyone is out of office|No one takes work yet/,
+      /\d+%|After hours|Everyone out|No workers/,
     );
     const people = battery.getByRole('button', { name: 'People' });
     if (await people.count()) {

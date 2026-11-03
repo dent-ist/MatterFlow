@@ -255,7 +255,7 @@ const PRIORITY_ICONS: Record<string, string> = {
         }
         @container bd (min-width: 700px) and (max-width: 999.98px) {
           .grid {
-            grid-template-rows: auto minmax(12rem, 1fr);
+            grid-template-rows: auto minmax(24rem, 1fr);
           }
         }
         @container bd (min-width: 1000px) {

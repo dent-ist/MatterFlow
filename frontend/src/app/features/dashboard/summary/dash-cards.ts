@@ -1,3 +1,4 @@
+import { Tip } from '../../../shared/ui/tip';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -61,6 +62,7 @@ const CARDS: readonly CardSpec[] = [
  */
 @Component({
   selector: 'mf-dash-cards',
+  imports: [Tip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="cards" role="group" aria-label="Needs attention" data-dash-cards>
@@ -74,6 +76,7 @@ const CARDS: readonly CardSpec[] = [
           [attr.tabindex]="tabStop() === c.key ? 0 : -1"
           [attr.data-card]="c.key"
           [attr.aria-label]="nameOf(c)"
+          [mfTip]="hintOf(c)"
           (click)="toggle(c.key)"
           (keydown)="onKey($event, c.key)"
         >
@@ -83,7 +86,6 @@ const CARDS: readonly CardSpec[] = [
           <span class="txt" aria-hidden="true">
             <span class="n" data-card-count>{{ countOf(c.key) }}</span>
             <span class="l">{{ c.label }}</span>
-            <span class="h">{{ countOf(c.key) === 0 ? 'Nothing here' : c.hint }}</span>
           </span>
           <span class="chk" aria-hidden="true"><i class="pi pi-check"></i></span>
         </button>
@@ -95,9 +97,11 @@ const CARDS: readonly CardSpec[] = [
       display: block;
       flex: none;
     }
+    /* Three cards of one width, sized to their content with some air, left aligned under the tab names; the explanation is a tooltip (hover and keyboard focus). */
     .cards {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(11rem, 14rem));
+      justify-content: start;
       gap: var(--mf-s3);
     }
     .card {
@@ -106,7 +110,7 @@ const CARDS: readonly CardSpec[] = [
       align-items: center;
       gap: var(--mf-s3);
       width: 100%;
-      min-height: 72px;
+      min-height: 64px;
       padding: var(--mf-s2) var(--mf-s4);
       text-align: left;
       color: var(--mf-text);
@@ -160,14 +164,6 @@ const CARDS: readonly CardSpec[] = [
       font-weight: 600;
       line-height: 1.2;
     }
-    .h {
-      overflow: hidden;
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs, 12px);
-      line-height: 1.25;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
     .chk {
       position: absolute;
       top: var(--mf-s2);
@@ -192,13 +188,10 @@ const CARDS: readonly CardSpec[] = [
     .card.zero .ci {
       background: var(--mf-p-teal-solid);
     }
-    .card.zero .h {
-      color: var(--mf-p-teal-fg);
-      font-weight: 600;
-    }
-    /* A phone: the three cards stay in one compact row (counts and names; the hint line is dropped). */
+    /* A phone: the three cards stay in one compact row. */
     @media (max-width: 767.98px) {
       .cards {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: var(--mf-s2);
       }
       .card {
@@ -213,9 +206,6 @@ const CARDS: readonly CardSpec[] = [
       }
       .n {
         font-size: 22px;
-      }
-      .h {
-        display: none;
       }
       .chk {
         top: 4px;
@@ -258,6 +248,12 @@ export class DashCards {
     return this.counts()[key];
   }
 
+  /** The tooltip: the explanation, or "Nothing here" at zero. */
+  protected hintOf(c: CardSpec): string {
+    return this.countOf(c.key) === 0 ? 'Nothing here' : c.hint;
+  }
+
+  /** The name carries the explanation too, so a screen reader hears it without hovering. */
   protected nameOf(c: CardSpec): string {
     const n = this.countOf(c.key);
     return `${c.label}, ${n} ${n === 1 ? 'task' : 'tasks'}. ${c.hint}`;

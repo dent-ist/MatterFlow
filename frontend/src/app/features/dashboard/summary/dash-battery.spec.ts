@@ -37,10 +37,15 @@ describe('DashBattery (DB-05)', () => {
     fixture.detectChanges();
   }
 
-  it('says Capacity used NN% with the API number, 8 of 12 can take work now, and a legend that adds up to 12', () => {
+  it('shows the remaining percentage inside the battery with the API number, 8 of 12 can take work now, and a legend that adds up to 12', () => {
     const summary = capacityOf(somePeople(12), 3);
     create(summary);
-    expect(text('[data-battery-big]')).toBe(`Capacity used ${summary.usedPercent}%`);
+    expect(text('[data-battery-big]')).toBe(`${summary.freePercent}%`);
+    expect(el().querySelector('[data-battery-bar]')!.getAttribute('aria-label')).toContain(
+      `Remaining capacity ${summary.freePercent} percent`,
+    );
+    expect(el().textContent).not.toContain('Capacity used');
+    expect(text('[data-battery-word]')).toMatch(/Healthy|Watch|Low|Critical/);
     expect(text('[data-battery-summary]')).toBe('8 of 12 can take work now');
     const counts = Array.from(el().querySelectorAll('[data-battery-legend] li b')).map((b) =>
       Number(b.textContent),

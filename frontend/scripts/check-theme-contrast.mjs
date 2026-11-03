@@ -54,6 +54,12 @@ for (const h of ['overdue', 'risk', 'info', 'healthy', 'person', 'critical', 'ne
 for (const n of [0, 1, 2, 3]) {
   pairs.push([`capacity step ${n} text on its fill`, `--mf-cap-${n}-fg`, `--mf-cap-${n}`, text]);
 }
+// DB-12 (#1086): the remaining-capacity steps: the text (and the status word) on each step colour 4.5:1, and the fill against the card 3:1 (a graphic; the number and word are text).
+for (const n of [0, 1, 2, 3, 4, 5]) {
+  pairs.push([`remaining step ${n} text on its fill`, `--mf-rem-${n}-fg`, `--mf-rem-${n}`, text]);
+  // The light steps (1 to 3) are drawn inside the battery's 2 px strong outline and carry the number and word as text; steps 0, 4 and 5 are also graphics on a card.
+  if ([0, 4, 5].includes(n)) pairs.push([`remaining step ${n} fill on a card`, `--mf-rem-${n}`, '--mf-surface', graphic]);
+}
 for (const n of [0, 2, 3, 4, 5]) {
   pairs.push([`wait step ${n} (gauge) on a card`, `--mf-wait-${n}`, '--mf-surface', graphic]);
 }

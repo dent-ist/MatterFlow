@@ -33,7 +33,10 @@ describe('DashCards (decision AS item 1)', () => {
     create();
     expect(card('overdue').querySelector('[data-card-count]')?.textContent).toBe('12');
     expect(card('onHold').classList.contains('zero')).toBe(true);
-    expect(card('onHold').textContent).toContain('Nothing here');
+    // The explanation is not visible text: it is the tooltip and part of the accessible name.
+    expect(card('onHold').textContent).not.toContain('Nothing here');
+    expect(card('overdue').textContent).not.toContain('Excludes ASAP');
+    expect(card('overdue').getAttribute('aria-label')).toContain('Excludes ASAP tasks');
     expect(card('overdue').getAttribute('aria-label')).toContain('12 tasks');
   });
 

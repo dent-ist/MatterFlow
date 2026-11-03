@@ -12,7 +12,7 @@ export { STATE_META };
 /** The formula, in the words of the issue; the slots per person comes from the response. Out of office and off hours people are left out of the people counted. */
 export function formulaText(slotsPerPerson: number): string {
   return (
-    `Free capacity = free slots / (${slotsPerPerson} x people who are at work now). ` +
+    `Remaining capacity = free slots / (${slotsPerPerson} x people who are at work now). ` +
     `A slot is free when the person has fewer than ${slotsPerPerson} open tasks. ` +
     'On hold tasks do not count. People who are out of office or outside their work hours have no free slots and are not counted.'
   );
@@ -36,16 +36,22 @@ export interface LegendItem {
   count: number;
 }
 
+export type CapacityWord = 'Healthy' | 'Watch' | 'Low' | 'Critical';
+
 export interface BatteryView {
   mode: BatteryMode;
-  /** 0 to 100: how full the battery is drawn (the FREE capacity). */
+  /** 0 to 100: how full the battery is drawn (the REMAINING capacity, the API's freePercent). */
   charge: number;
-  /** `Capacity used 33%`, `After hours`, or `No one takes work yet`. */
+  /** The text inside the battery: `62%`, or the state word (`After hours`, `Everyone out`, `No workers`). */
   bigText: string;
+  /** 0 (healthy) to 5 (darkest red): the colour step of the remaining capacity, null without a percentage. */
+  level: number | null;
+  /** `Remaining capacity 62%`: the tooltip's first line (the state word in the neutral states). */
+  tooltip: string;
   /** `8 of 12 can take work now`. */
   summaryLine: string;
-  /** Healthy, Limited, Low (by free capacity), or null when there is no percentage. */
-  word: 'Healthy' | 'Limited' | 'Low' | null;
+  /** Healthy (50% and more), Watch (30 to 49), Low (10 to 29), Critical (under 10), or null when there is no percentage. */
+  word: CapacityWord | null;
   rateHint: string | null;
   legend: LegendItem[];
   formula: string;
@@ -53,8 +59,38 @@ export interface BatteryView {
   ariaLabel: string;
 }
 
-export function freeWord(freePercent: number): 'Healthy' | 'Limited' | 'Low' {
-  return freePercent >= 50 ? 'Healthy' : freePercent >= 25 ? 'Limited' : 'Low';
+/** The word of the remaining capacity: the chip beside the title says it, so the colour is never the only signal. */
+export function freeWord(freePercent: number): CapacityWord {
+  return freePercent >= 50
+    ? 'Healthy'
+    : freePercent >= 30
+      ? 'Watch'
+      : freePercent >= 10
+        ? 'Low'
+        : 'Critical';
+}
+
+/** The icon of each word (it changes with the level). */
+export const WORD_ICON: Record<CapacityWord, string> = {
+  Healthy: 'pi-check-circle',
+  Watch: 'pi-eye',
+  Low: 'pi-exclamation-triangle',
+  Critical: 'pi-times-circle',
+};
+
+/** The colour step: 0 at 50% and more, then one step each time the remaining capacity falls below 40, 30, 20 and 10 percent. */
+export function levelOf(freePercent: number): number {
+  return freePercent >= 50
+    ? 0
+    : freePercent >= 40
+      ? 1
+      : freePercent >= 30
+        ? 2
+        : freePercent >= 20
+          ? 3
+          : freePercent >= 10
+            ? 4
+            : 5;
 }
 
 export function rateHintText(assignedLastHour: number | null | undefined): string | null {
@@ -77,13 +113,15 @@ export function batteryView(c: DashboardCapacity): BatteryView {
     return {
       mode: 'empty',
       charge: 0,
-      bigText: 'No one takes work yet',
+      bigText: 'No workers',
+      level: null,
+      tooltip: 'No workers in this scope',
       summaryLine: 'No one in this scope takes work yet.',
       word: null,
       rateHint: null,
       legend,
       formula,
-      ariaLabel: 'Capacity. No one in this scope takes work yet.',
+      ariaLabel: 'Remaining capacity. No one in this scope takes work yet.',
     };
   }
   const summaryLine = `${c.canTakeWork} of ${c.workers} can take work now`;
@@ -91,13 +129,15 @@ export function batteryView(c: DashboardCapacity): BatteryView {
     return {
       mode: 'all-out',
       charge: 0,
-      bigText: 'Everyone is out of office',
+      bigText: 'Everyone out',
+      level: null,
+      tooltip: 'Everyone is out of office',
       summaryLine,
       word: null,
       rateHint,
       legend,
       formula,
-      ariaLabel: `Capacity. Everyone is out of office. ${summaryLine}.`,
+      ariaLabel: `Remaining capacity. Everyone is out of office. ${summaryLine}.`,
     };
   }
   if (c.state === 'AFTER_HOURS' || c.usedPercent === null || c.usedPercent === undefined) {
@@ -105,26 +145,29 @@ export function batteryView(c: DashboardCapacity): BatteryView {
       mode: 'after-hours',
       charge: 0,
       bigText: 'After hours',
+      level: null,
+      tooltip: 'After hours',
       summaryLine: `${summaryLine}. Nobody is taking new work right now.`,
       word: null,
       rateHint,
       legend,
       formula,
-      ariaLabel: `Capacity. After hours. ${summaryLine}.`,
+      ariaLabel: `Remaining capacity. After hours. ${summaryLine}.`,
     };
   }
-  const used = c.usedPercent as number;
-  const free = c.freePercent ?? 100 - used;
+  const free = c.freePercent ?? 100 - (c.usedPercent as number);
   return {
     mode: 'normal',
     charge: Math.max(0, Math.min(100, free)),
-    bigText: `Capacity used ${used}%`,
+    bigText: `${free}%`,
+    level: levelOf(free),
+    tooltip: `Remaining capacity ${free}%`,
     summaryLine,
     word: freeWord(free),
     rateHint,
     legend,
     formula,
-    ariaLabel: `Capacity used ${used} percent. ${summaryLine}. ${freeWord(free)} free capacity.`,
+    ariaLabel: `Remaining capacity ${free} percent. ${summaryLine}. ${freeWord(free)}.`,
   };
 }
 

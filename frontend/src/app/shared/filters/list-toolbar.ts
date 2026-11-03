@@ -169,7 +169,7 @@ let nextId = 0;
     }
     .lt__sorted {
       display: inline-flex;
-      flex: 0 1 auto;
+      flex: 1 1 6rem;
       min-width: 0;
       overflow: hidden;
     }
