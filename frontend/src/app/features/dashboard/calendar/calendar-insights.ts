@@ -242,9 +242,9 @@ export function riskSentence(risk: CalSummary['risk']): string {
       clip-path: inset(50%);
       white-space: nowrap;
     }
-    @media (max-width: 767.98px) {
+    /* A phone, or a window under 700 px high: the forecast folds into a disclosure so the grid keeps the room. */
+    @media (max-width: 767.98px), (max-height: 700px) {
       .fc__h {
-        min-height: 44px;
         cursor: pointer;
       }
       .fc__chev {
@@ -255,6 +255,14 @@ export function riskSentence(risk: CalSummary['risk']): string {
       }
       .fc__tiles {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .fc {
+        align-self: flex-start;
+      }
+    }
+    @media (max-width: 767.98px) {
+      .fc__h {
+        min-height: 44px;
       }
       .risk {
         flex-wrap: wrap;

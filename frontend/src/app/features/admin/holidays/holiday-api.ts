@@ -1,5 +1,6 @@
 import { Injectable, InjectionToken, inject } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
+import { QuietRequests } from '../../../core/http/interceptors';
 import {
   CalendarSettingsAdminView,
   HolidayCalendarDto,
@@ -122,9 +123,15 @@ export class HttpHolidayApi implements HolidayApi {
   private readonly limits = inject(SettingsCalendarClient);
   private readonly users = inject(UserHolidayCalendarClient);
   private readonly availability = inject(UserAvailabilityClient);
+  private readonly quiet = inject(QuietRequests);
+
+  /** The screens show the server's message inline (under the field, in the dialog): no toast as well. */
+  private q<T>(call: Observable<T>): Promise<T> {
+    return this.quiet.run(() => firstValueFrom(call));
+  }
 
   async calendars(): Promise<HolidayCalendar[]> {
-    return (await firstValueFrom(this.calendarsClient.listHolidayCalendars())).map(calendar);
+    return (await this.q(this.calendarsClient.listHolidayCalendars())).map(calendar);
   }
 
   async saveCalendar(calendarId: number | null, input: CalendarInput): Promise<HolidayCalendar> {
@@ -137,7 +144,7 @@ export class HttpHolidayApi implements HolidayApi {
       rowVersion: input.rowVersion,
     };
     return calendar(
-      await firstValueFrom(
+      await this.q(
         calendarId === null
           ? this.calendarsClient.createHolidayCalendar(body)
           : this.calendarsClient.updateHolidayCalendar(calendarId, body),
@@ -146,11 +153,11 @@ export class HttpHolidayApi implements HolidayApi {
   }
 
   async deleteCalendar(calendarId: number, rowVersion: string): Promise<void> {
-    await firstValueFrom(this.calendarsClient.deleteHolidayCalendar(calendarId, rowVersion));
+    await this.q(this.calendarsClient.deleteHolidayCalendar(calendarId, rowVersion));
   }
 
   async holidays(calendarId: number): Promise<Holiday[]> {
-    return (await firstValueFrom(this.calendarsClient.listHolidays(calendarId))).map(holiday);
+    return (await this.q(this.calendarsClient.listHolidays(calendarId))).map(holiday);
   }
 
   async saveHoliday(
@@ -159,7 +166,7 @@ export class HttpHolidayApi implements HolidayApi {
     input: HolidayInput,
   ): Promise<Holiday> {
     return holiday(
-      await firstValueFrom(
+      await this.q(
         holidayId === null
           ? this.calendarsClient.createHoliday(calendarId, holidayBody(input))
           : this.calendarsClient.updateHoliday(calendarId, holidayId, holidayBody(input)),
@@ -168,13 +175,11 @@ export class HttpHolidayApi implements HolidayApi {
   }
 
   async deleteHoliday(calendarId: number, holidayId: number, rowVersion: string): Promise<void> {
-    await firstValueFrom(this.calendarsClient.deleteHoliday(calendarId, holidayId, rowVersion));
+    await this.q(this.calendarsClient.deleteHoliday(calendarId, holidayId, rowVersion));
   }
 
   async preview(calendarId: number, year: number): Promise<PreviewRow[]> {
-    const rows = await firstValueFrom(
-      this.calendarsClient.previewHolidayCalendar(calendarId, year),
-    );
+    const rows = await this.q(this.calendarsClient.previewHolidayCalendar(calendarId, year));
     return rows.map((r) => ({
       date: r.date,
       endDate: r.endDate ?? null,
@@ -190,7 +195,7 @@ export class HttpHolidayApi implements HolidayApi {
     dryRun: boolean,
   ): Promise<ImportResult> {
     // A real import saves every good line in one transaction (the dry run already showed the bad ones).
-    const r = await firstValueFrom(
+    const r = await this.q(
       this.calendarsClient.importHolidays(
         calendarId,
         { text, year },
@@ -213,7 +218,7 @@ export class HttpHolidayApi implements HolidayApi {
   }
 
   async defaults(): Promise<HolidayDefaults> {
-    const s = await firstValueFrom(this.settings.getHolidaySettings());
+    const s = await this.q(this.settings.getHolidaySettings());
     return {
       firmCalendarId: s.firmCalendarId ?? null,
       podDefaults: s.podDefaults.map((p) => ({ podId: p.podId, calendarId: p.calendarId ?? null })),
@@ -223,12 +228,12 @@ export class HttpHolidayApi implements HolidayApi {
 
   /** The pods the defaults can be set for: the server lists them with the defaults. */
   async pods(): Promise<PodRef[]> {
-    const s = await firstValueFrom(this.settings.getHolidaySettings());
+    const s = await this.q(this.settings.getHolidaySettings());
     return s.podDefaults.map((p) => ({ podId: p.podId, name: p.podName ?? `Pod ${p.podId}` }));
   }
 
   async saveDefaults(value: HolidayDefaults): Promise<HolidayDefaults> {
-    const s = await firstValueFrom(
+    const s = await this.q(
       this.settings.setHolidaySettings({
         firmCalendarId: value.firmCalendarId ?? undefined,
         podDefaults: value.podDefaults.map((p) => ({
@@ -247,7 +252,7 @@ export class HttpHolidayApi implements HolidayApi {
   }
 
   async userCalendar(userId: number): Promise<UserCalendar> {
-    const a = await firstValueFrom(this.availability.getUserAvailability(userId));
+    const a = await this.q(this.availability.getUserAvailability(userId));
     const c = a.holidayCalendar;
     return {
       explicitCalendarId: c?.source === 'PERSON' ? c.calendarId : null,
@@ -258,7 +263,7 @@ export class HttpHolidayApi implements HolidayApi {
   }
 
   async setUserCalendar(userId: number, calendarId: number | null): Promise<UserCalendar> {
-    await firstValueFrom(
+    await this.q(
       this.users.setUserHolidayCalendar(userId, { calendarId: calendarId ?? undefined }),
     );
     return this.userCalendar(userId);
@@ -279,7 +284,7 @@ export class HttpHolidayApi implements HolidayApi {
   }
 
   async thresholds(): Promise<CalendarThresholds> {
-    return this.thresholdsOf(await firstValueFrom(this.limits.getCalendarSettings()));
+    return this.thresholdsOf(await this.q(this.limits.getCalendarSettings()));
   }
 
   async saveThresholds(
@@ -289,7 +294,7 @@ export class HttpHolidayApi implements HolidayApi {
     >,
   ): Promise<CalendarThresholds> {
     return this.thresholdsOf(
-      await firstValueFrom(
+      await this.q(
         this.limits.setCalendarSettings({
           minCoveragePercent: value.minCoveragePercent,
           podMinimumPercent: value.podMinimumPercent,

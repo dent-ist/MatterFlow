@@ -214,7 +214,13 @@ export function validateThresholds(
     }
     .th__p {
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
       gap: var(--mf-s1);
+    }
+    .th__p input {
+      box-sizing: border-box;
+      width: 100%;
+      min-width: 0;
     }
     .th__bar {
       display: flex;

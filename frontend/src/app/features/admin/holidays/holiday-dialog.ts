@@ -357,6 +357,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
     }
     .hd__f {
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
       gap: var(--mf-s1);
       min-width: 0;
       margin: 0;

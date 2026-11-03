@@ -44,9 +44,16 @@ describe('validateAbsence', () => {
     note: null,
   };
 
-  it('accepts a clean future entry and an open-ended one', () => {
+  it('accepts a clean future entry; an open end only when the entry starts today', () => {
     expect(validateAbsence(base, ctx, false)).toEqual({});
-    expect(validateAbsence({ ...base, endDate: null }, ctx, false)).toEqual({});
+    expect(validateAbsence({ ...base, startDate: ctx.today, endDate: null }, ctx, false)).toEqual(
+      {},
+    );
+    expect(validateAbsence({ ...base, endDate: null }, ctx, false).endDate).toContain(
+      'starts today',
+    );
+    // A running open-ended entry can be saved again as it is.
+    expect(validateAbsence({ ...base, endDate: null }, ctx, true)).toEqual({});
   });
   it('needs a first day', () => {
     expect(validateAbsence({ ...base, startDate: '' }, ctx, false).startDate).toBeTruthy();

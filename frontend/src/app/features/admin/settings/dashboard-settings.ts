@@ -333,8 +333,14 @@ import {
     }
     .ds__lv {
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
       gap: var(--mf-s1);
       width: 6rem;
+    }
+    .ds__lv .mf-field__input {
+      box-sizing: border-box;
+      width: 100%;
+      min-width: 0;
     }
     .ds__actions {
       display: flex;
