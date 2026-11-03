@@ -442,26 +442,6 @@ const LONG_PRESS_MS = 500;
                           }}</span>
                         </span>
                       }
-                      @case ('typeIcon') {
-                        <!-- Dashboard Summary (decision AS item 2): the coloured icon only; the type's name is the tooltip (hover and keyboard focus) and the accessible name. -->
-                        <span
-                          class="wt-typeonly"
-                          tabindex="0"
-                          role="img"
-                          data-type-icon-only
-                          [attr.aria-label]="'Task type: ' + row.taskTypeName"
-                          [mfTip]="row.taskTypeName"
-                        >
-                          <mf-task-type-chip
-                            [size]="density() === 'compact' ? 'sm' : 'md'"
-                            [iconKey]="row.taskTypeIconKey"
-                            [colourKey]="row.taskTypeColourKey"
-                            [typeId]="row.taskTypeId"
-                            [decorative]="true"
-                            data-type-chip
-                          />
-                        </span>
-                      }
                       @case ('unassignedFor') {
                         @if (unassignedMinutes(row); as minutes) {
                           <span
@@ -514,18 +494,14 @@ const LONG_PRESS_MS = 500;
                       }
                       @case ('assignee') {
                         @if (dash() && !row.assignedUser && editable('assignee', row)) {
-                          <!-- Dashboard Summary (decision AS item 4): the word and the Assign control that opens the people picker (state and load of each person). -->
-                          <span class="wt-assign" data-dash-assign>
-                            <span class="wt-unassigned">Unassigned</span>
-                            <mf-row-edit
-                              field="assignee"
-                              emptyLabel="Assign"
-                              [row]="row"
-                              [showStates]="true"
-                              conflictMessage="This task was changed by someone else. The row was reloaded."
-                              (rowChange)="rowChange.emit($event)"
-                            />
-                          </span>
+                          <!-- Dashboard Summary: "Unassigned" with the chevron is the one control, like an assigned row; it opens the people picker (state and load of each person). -->
+                          <mf-row-edit
+                            field="assignee"
+                            [row]="row"
+                            [showStates]="true"
+                            conflictMessage="This task was changed by someone else. The row was reloaded."
+                            (rowChange)="rowChange.emit($event)"
+                          />
                         } @else if (editable('assignee', row)) {
                           <mf-row-edit
                             field="assignee"
@@ -1006,9 +982,7 @@ export class TaskTable {
    */
   /** The Type column (chip and name) is shown: the small badge before the title would say it twice, so it is not drawn (LC-03). */
   protected readonly typeColumn = computed(() =>
-    this.shownColumns().some(
-      (c) => c.key === 'type' || c.key === 'typeChip' || c.key === 'typeIcon',
-    ),
+    this.shownColumns().some((c) => c.key === 'type' || c.key === 'typeChip'),
   );
   protected readonly shownColumns = computed<ColumnDef[]>(() => {
     const wanted = new Set(this.columns());

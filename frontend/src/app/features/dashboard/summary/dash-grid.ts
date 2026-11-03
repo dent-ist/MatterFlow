@@ -90,7 +90,7 @@ const OWNED_BY_CARD: Record<CardKey, readonly string[]> = {
  * The task grid of the Dashboard Summary (epic #1063, DB-03): the shared list standard (theme guide 11.1) over the Task Queue endpoint. The base query is the card's (`Overdue`,
  * `Unassigned`, `On hold`: the server's own query for that count, scope included) or the scope's open tasks when no card is on; Search and Filters narrow it further and never change
  * the cards' counts. Standard column order (Ref, Type, Title, CM Number, Matter Name, Project, Priority, Assignee, Due, Status, Progress), 50 rows a page, the frame scrolls sideways
- * with Ref pinned. The Type column is the icon only, Due shows `+9d` on one line, an unassigned task's Assignee cell has the Assign control, and while the Unassigned card is on an
+ * with Ref pinned. The Type column is the standard chip and name, Due shows `+9d` on one line, an unassigned task's Assignee cell is "Unassigned" with a chevron (the one control), and while the Unassigned card is on an
  * extra "Unassigned for" column shows and the grid sorts longest waiting first. An assignment is reported (`assigned`) so the page can refresh the cards, the gauge and the battery.
  */
 @Component({
@@ -116,53 +116,34 @@ const OWNED_BY_CARD: Record<CardKey, readonly string[]> = {
       border: 1px solid var(--mf-border-soft);
       border-radius: var(--mf-radius-xl);
     }
-    .ghd {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      padding: var(--mf-s3) var(--mf-s3) 0;
-    }
     h2 {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
+      position: absolute;
+      width: 1px;
+      height: 1px;
       margin: 0;
-      font-size: 16px;
-      font-weight: 600;
-    }
-    .cnt {
-      padding: 0 9px;
-      border-radius: 999px;
-      background: var(--mf-surface-alt);
-      font-size: 13px;
-      font-weight: 600;
-      line-height: 22px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
     .body {
       display: flex;
       min-height: 0;
       flex: 1 1 auto;
       flex-direction: column;
-      padding: 0 var(--mf-s3) var(--mf-s2);
+      padding: var(--mf-s3) var(--mf-s3) var(--mf-s2);
     }
   `,
   template: `
     <section class="frame" data-dash-grid aria-labelledby="dg-title">
-      <div class="ghd">
-        <h2 id="dg-title">
-          {{ heading() }}
-          @if (state() === 'ready') {
-            <span class="cnt" data-list-count>{{ total() }}</span>
-          }
-        </h2>
-      </div>
+      <!-- No title row (DB-09): the toolbar is the first row. The heading stays for screen readers and the total is the footer's "Showing 1-50 of N"; the hidden count keeps the figure for assistive tools and specs. -->
+      <h2 id="dg-title">
+        {{ heading() }}
+        @if (state() === 'ready') {
+          <span data-list-count>{{ total() }}</span>
+        }
+      </h2>
       <div class="body">
-        <mf-list-toolbar
-          [filters]="filters"
-          [controls]="filterRowId"
-          searchLabel="Search tasks"
-          [sortedBelow]="true"
-        >
+        <mf-list-toolbar [filters]="filters" [controls]="filterRowId" searchLabel="Search tasks">
           @if (!phone()) {
             <mf-grid-columns
               mfColumns
@@ -282,7 +263,7 @@ export class DashGrid {
   /** The standard task column order (decision AR 5 to 7). Ref is pinned first and Title cannot be hidden. */
   protected readonly gridDefs = computed((): GridColumnDef[] => [
     { key: 'ref', label: 'Ref', locked: true, pinned: true },
-    { key: 'typeIcon', label: 'Type' },
+    { key: 'type', label: 'Type' },
     { key: 'title', label: 'Title', locked: true },
     { key: 'matter', label: 'CM Number' },
     { key: 'matterName', label: 'Matter Name' },

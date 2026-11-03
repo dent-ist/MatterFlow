@@ -77,11 +77,11 @@ let nextId = 0;
           <mf-more-filters class="lt__other" [filters]="filters()" />
         }
         <ng-content select="[mfView]" />
+        @if (!rowThree()) {
+          <!-- No chips and no notice: the Sorted by line sits in row 2 between Filters and Columns, left aligned and as wide as it needs (it truncates, the sentence is its tooltip), so the list keeps its rows (DB-09). -->
+          <span class="lt__sorted"><ng-container [ngTemplateOutlet]="sortedLine" /></span>
+        }
         <span class="lt__tail">
-          @if (!rowThree()) {
-            <!-- No chips and no notice: the Sorted by line takes row 2 (before Columns), so the list keeps its rows (decision of 2026-11-02). -->
-            <span class="lt__end"><ng-container [ngTemplateOutlet]="sortedLine" /></span>
-          }
           <span class="lt__cols"><ng-content select="[mfColumns]" /></span>
           <ng-content select="[mfMore]" />
           <ng-content select="[mfPrimary]" />
@@ -166,6 +166,15 @@ let nextId = 0;
     }
     .lt__end {
       margin-left: auto;
+    }
+    .lt__sorted {
+      display: inline-flex;
+      flex: 0 1 auto;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .lt__sorted:empty {
+      display: none;
     }
     /* A phone: Search and Filters (the sheet holds every filter and the Sort select); Columns and Other filters are not offered. */
     @media (width < 640px) {

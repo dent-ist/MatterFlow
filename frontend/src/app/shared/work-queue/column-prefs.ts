@@ -127,7 +127,6 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     maxWidth: 280,
   },
   // Dashboard Summary only (epic #1063, decision AS item 2): the task type as its coloured icon alone, the name as tooltip and accessible name. Never in a chooser or a default set.
-  { key: 'typeIcon', label: 'Type', width: 64, minWidth: 48, maxWidth: 96, scopedOnly: true },
   // Dashboard Summary only (epic #1063): how long an unassigned task has waited; shown while the Unassigned card is on. Never in a chooser or a default set.
   {
     key: 'unassignedFor',

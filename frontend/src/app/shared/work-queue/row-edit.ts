@@ -258,6 +258,8 @@ export class RowEdit {
       case 'assignee': {
         if (this.triggerIcon()) return `Reassign ${r.taskNumber}`;
         const user = r.assignedUser;
+        // The Dashboard's picker (states shown): the cell is the one control, named by what it shows and what it does.
+        if (!user && this.showStates()) return 'Unassigned: assign this task';
         if (!user && this.emptyLabel() !== 'Unassigned') {
           // Starts with the visible text (WCAG 2.5.3) and carries the task number.
           return `${this.emptyLabel()} ${r.taskNumber}`;
