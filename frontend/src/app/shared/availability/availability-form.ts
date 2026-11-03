@@ -12,7 +12,6 @@ import {
   viewChild,
 } from '@angular/core';
 import { Button } from 'primeng/button';
-import { DateInput } from 'form-engine';
 import { firstValueFrom } from 'rxjs';
 import {
   MyAvailabilityClient,
@@ -20,39 +19,29 @@ import {
   UserAvailabilityClient,
   UserAvailabilityDto,
 } from '../../api/generated/api-client';
-import {
-  AvailabilityDisplay,
-  NOTE_MAX,
-  availabilityDisplay,
-} from '../../core/availability/availability';
+import { AvailabilityDisplay, availabilityDisplay } from '../../core/availability/availability';
 import {
   DayHours,
   WEEK_DAYS,
   defaultWeek,
   hasUniformHours,
   isTime,
-  outOfOfficeSummary,
-  previewDisplay,
   timeZoneList,
-  validateRange,
   validateWeek,
   weekFromServer,
   workHoursForSave,
 } from '../../core/availability/availability-edit';
-import { MyAvailability } from '../../core/availability/my-availability';
+import { MyAvailability, requestFrom } from '../../core/availability/my-availability';
 import { AuthStore } from '../../core/auth/auth.store';
 import { ApiError } from '../../core/http/api-error';
 import { QuietRequests } from '../../core/http/interceptors';
 import { NotificationService } from '../../core/notify/notification.service';
 import { Clock, USER_TIME_ZONE, browserTimeZoneOrNull } from '../../core/time/clock';
-import { calendarDayInZone } from '../../core/time/time';
 import { Badge } from '../ui/badge';
 import { TimeZoneSelect } from './time-zone-select';
 import { WorkHoursCompact } from './work-hours-compact';
 
 export type LoadState = 'loading' | 'ready' | 'error';
-type Status = 'AVAILABLE' | 'OUT_OF_OFFICE';
-
 interface Problem {
   /** Id of the control to focus. */
   id: string;
@@ -60,14 +49,14 @@ interface Problem {
 }
 
 /**
- * Availability and work hours of one person (epic #68): status (Available / Out of office) with optional dates and note, the weekly
+ * Work hours and time zone of one person (epic #68; the Out of office list moved to `absences/`, epic #1074 CAL-05): the weekly
  * work hours and the time zone. The same form is the "My profile" screen (own availability, `userId` unset) and the admin's "Edit
  * availability" dialog (`userId` set; needs User.Manage). Live validation, an error summary, a preview of the current status, rowVersion
  * conflict handling and a success toast; the host asks `dirty()` before leaving.
  */
 @Component({
   selector: 'mf-availability-form',
-  imports: [Button, DateInput, Badge, WorkHoursCompact, TimeZoneSelect],
+  imports: [Button, Badge, WorkHoursCompact, TimeZoneSelect],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './availability-form.scss',
   template: `
@@ -142,137 +131,6 @@ interface Problem {
             }}</span>
           </p>
         }
-
-        <section class="av-card" data-card="availability">
-          <fieldset class="av-set" data-status-set>
-            <legend>
-              @if (mode() === 'page') {
-                <h2 class="av-card__title">Availability</h2>
-              } @else {
-                Status
-              }
-            </legend>
-            @if (mode() === 'page') {
-              <p class="av-card__desc" data-card-description>
-                Tell colleagues when you are out of office and set the hours you usually work.
-              </p>
-            }
-            <label class="av-radio">
-              <input
-                type="radio"
-                name="av-status"
-                value="AVAILABLE"
-                data-status-available
-                [checked]="status() === 'AVAILABLE'"
-                (change)="setStatus('AVAILABLE')"
-              />
-              <span>
-                Available
-                <span class="av-help"
-                  >Shown as available during work hours, and as off hours outside them.</span
-                >
-              </span>
-            </label>
-            <label class="av-radio">
-              <input
-                type="radio"
-                name="av-status"
-                value="OUT_OF_OFFICE"
-                data-status-ooo
-                [checked]="status() === 'OUT_OF_OFFICE'"
-                (change)="setStatus('OUT_OF_OFFICE')"
-              />
-              <span>
-                Out of office
-                <span class="av-help">Shown as out of office. Work can still be assigned.</span>
-              </span>
-            </label>
-
-            @if (status() === 'OUT_OF_OFFICE') {
-              <div class="av-ooo" data-ooo-fields>
-                <div class="av-dates">
-                  <div class="av-field">
-                    <label class="av-label" for="av-from">From (optional)</label>
-                    <mf-date-input
-                      inputId="av-from"
-                      [showHint]="false"
-                      describedBy="av-dates-help"
-                      label="From date"
-                      [isoValue]="from()"
-                      [invalid]="!!fromError()"
-                      (isoChange)="from.set($event)"
-                      (textInvalid)="fromBad.set($event)"
-                    />
-                  </div>
-                  <div class="av-field">
-                    <label class="av-label" for="av-until">Until (optional)</label>
-                    <mf-date-input
-                      inputId="av-until"
-                      [showHint]="false"
-                      describedBy="av-dates-help"
-                      label="Until date"
-                      [isoValue]="until()"
-                      [invalid]="!!untilError()"
-                      (isoChange)="until.set($event)"
-                      (textInvalid)="untilBad.set($event)"
-                    />
-                    @if (untilProblem(); as e) {
-                      <p class="av-error" role="alert" data-until-error>
-                        <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ e }}
-                      </p>
-                    }
-                  </div>
-                </div>
-                <p class="av-help" id="av-dates-help" data-dates-help>
-                  Type a date such as Oct 12, 2026 or 10/12/2026, or use the calendar. Leave From
-                  empty to start now. Leave Until empty to stay out of office until
-                  {{ self() ? 'you set yourself' : 'they are set' }} available again.
-                </p>
-
-                <div class="av-field">
-                  <label class="av-label" for="av-note">Note (optional)</label>
-                  <textarea
-                    id="av-note"
-                    class="mf-control av-note"
-                    rows="2"
-                    autocomplete="off"
-                    [attr.maxlength]="noteMax"
-                    [attr.aria-describedby]="'av-note-count av-note-help'"
-                    [attr.aria-invalid]="noteProblem() ? 'true' : null"
-                    [value]="note()"
-                    (input)="note.set($any($event.target).value)"
-                  ></textarea>
-                  <p class="av-help" id="av-note-help">
-                    Shown to colleagues next to the status, for example who covers for you.
-                  </p>
-                  <p class="av-count" id="av-note-count" data-note-count>
-                    <span [class.av-count--full]="note().length >= noteMax">{{
-                      note().length
-                    }}</span>
-                    /
-                    {{ noteMax }}
-                  </p>
-                  @if (noteProblem(); as e) {
-                    <p class="av-error" role="alert">{{ e }}</p>
-                  }
-                </div>
-
-                <p class="av-sentence" role="status" data-ooo-summary>{{ sentence() }}</p>
-              </div>
-            }
-
-            @if (mode() === 'page' && dirty()) {
-              <p class="av-preview-inline" data-preview>
-                <span class="av-preview__label">Preview of your changes:</span>
-                @if (preview(); as p) {
-                  <mf-badge [tone]="p.tone" [icon]="p.icon" data-preview-chip>{{
-                    p.label
-                  }}</mf-badge>
-                }
-              </p>
-            }
-          </fieldset>
-        </section>
 
         <section class="av-card" data-card="work-hours">
           <fieldset class="av-set" data-hours-set>
@@ -453,15 +311,8 @@ export class AvailabilityForm {
   private readonly summaryEl = viewChild<ElementRef<HTMLElement>>('summary');
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  protected readonly noteMax = NOTE_MAX;
   protected readonly state = signal<LoadState>('loading');
   protected readonly dto = signal<UserAvailabilityDto | null>(null);
-  protected readonly status = signal<Status>('AVAILABLE');
-  protected readonly from = signal<string | null>(null);
-  protected readonly until = signal<string | null>(null);
-  protected readonly fromBad = signal(false);
-  protected readonly untilBad = signal(false);
-  protected readonly note = signal('');
   protected readonly week = signal<DayHours[]>(defaultWeek());
   /** The per-day grid is open (#535): on request, and by itself for a week whose working days differ. */
   protected readonly showGrid = signal(false);
@@ -477,8 +328,6 @@ export class AvailabilityForm {
   /** Show the error summary: after a failed save, and while the problems are being fixed. */
   protected readonly showSummary = signal(false);
   protected readonly server = signal<{
-    until?: string;
-    note?: string;
     tz?: string;
     general?: string;
   }>({});
@@ -507,19 +356,6 @@ export class AvailabilityForm {
     return this.server().tz ?? null;
   });
 
-  private readonly range = computed(() =>
-    this.status() === 'OUT_OF_OFFICE' ? validateRange(this.from(), this.until(), this.note()) : {},
-  );
-  protected readonly fromError = computed(
-    () => this.range().from ?? (this.fromBad() ? 'bad' : null),
-  );
-  protected readonly untilProblem = computed(
-    () => this.range().until ?? this.server().until ?? null,
-  );
-  protected readonly untilError = computed(
-    () => this.untilProblem() ?? (this.untilBad() ? 'bad' : null),
-  );
-  protected readonly noteProblem = computed(() => this.range().note ?? this.server().note ?? null);
   private readonly weekProblems = computed(() => validateWeek(this.week()));
   /** The compact control has one pair of times, so it has one problem (the grid names the day). */
   protected readonly hoursProblem = computed<string | null>(() => {
@@ -532,13 +368,6 @@ export class AvailabilityForm {
 
   protected readonly problems = computed<Problem[]>(() => {
     const list: Problem[] = [];
-    if (this.status() === 'OUT_OF_OFFICE') {
-      if (this.fromBad()) list.push({ id: 'av-from', message: 'Enter a valid From date.' });
-      else if (this.range().from) list.push({ id: 'av-from', message: this.range().from! });
-      if (this.untilBad()) list.push({ id: 'av-until', message: 'Enter a valid Until date.' });
-      else if (this.untilProblem()) list.push({ id: 'av-until', message: this.untilProblem()! });
-      if (this.noteProblem()) list.push({ id: 'av-note', message: this.noteProblem()! });
-    }
     if (this.showGrid()) {
       for (const [day, message] of Object.entries(this.weekProblems())) {
         list.push({ id: `av-day-${day}-start`, message });
@@ -553,15 +382,6 @@ export class AvailabilityForm {
     return list;
   });
 
-  protected readonly sentence = computed(() => {
-    const today = calendarDayInZone(this.clock.now(), this.zoneForDates());
-    return outOfOfficeSummary(this.from(), this.until(), {
-      self: this.self(),
-      name: this.name(),
-      today,
-    });
-  });
-
   protected readonly dirty = computed(
     () => this.state() === 'ready' && this.signature() !== this.baseline(),
   );
@@ -569,23 +389,10 @@ export class AvailabilityForm {
   protected readonly preview = computed<AvailabilityDisplay | null>(() => {
     const d = this.dto();
     if (!d) return null;
-    const now = this.clock.now();
-    if (!this.dirty()) {
-      return availabilityDisplay(
-        { state: d.current.state, outUntil: d.current.outUntilUtc, note: d.current.note },
-        this.viewerZone,
-        now,
-      );
-    }
-    return previewDisplay(
-      {
-        status: this.status(),
-        from: this.from(),
-        until: this.until(),
-        timeZone: this.zones().includes(this.tz()) ? this.tz() : d.effectiveTimeZoneId,
-        week: this.week(),
-      },
-      now,
+    return availabilityDisplay(
+      { state: d.current.state, outUntil: d.current.outUntilUtc, note: d.current.note },
+      this.viewerZone,
+      this.clock.now(),
     );
   });
 
@@ -628,12 +435,6 @@ export class AvailabilityForm {
     if (!latest) return;
     this.apply(latest);
     this.announcement.set('Showing your latest availability.');
-    // After the new values are drawn, so the radio that is checked by then is the one that gets focus.
-    setTimeout(() =>
-      this.host.nativeElement
-        .querySelector<HTMLElement>('input[name="av-status"]:checked')
-        ?.focus(),
-    );
   }
 
   /** True while there are edits that are not saved. */
@@ -651,21 +452,9 @@ export class AvailabilityForm {
     return this.weekProblems()[day] ?? null;
   }
 
-  private zoneForDates(): string {
-    return this.zones().includes(this.tz()) ? this.tz() : this.viewerZone;
-  }
-
-  /** What identifies the edits: the dates and the note only count while out of office (Available clears them). */
+  /** What identifies the edits: the time zone and the work hours. */
   private signature(): string {
-    const ooo = this.status() === 'OUT_OF_OFFICE';
-    return JSON.stringify([
-      this.status(),
-      ooo ? this.from() : null,
-      ooo ? this.until() : null,
-      ooo ? this.note().trim() : '',
-      this.tz(),
-      workHoursForSave(this.week()),
-    ]);
+    return JSON.stringify([this.tz(), workHoursForSave(this.week())]);
   }
 
   async load(): Promise<void> {
@@ -693,12 +482,6 @@ export class AvailabilityForm {
   /** Puts a profile from the server into the form. */
   private apply(d: UserAvailabilityDto): void {
     this.dto.set(d);
-    this.status.set(d.status === 'OUT_OF_OFFICE' ? 'OUT_OF_OFFICE' : 'AVAILABLE');
-    this.from.set(d.from ?? null);
-    this.until.set(d.until ?? null);
-    this.fromBad.set(false);
-    this.untilBad.set(false);
-    this.note.set(d.note ?? '');
     const week = d.usesDefaultWorkHours ? defaultWeek() : weekFromServer(d.workHours);
     this.week.set(week);
     // A week whose days differ is never collapsed: the grid opens by itself (#535).
@@ -712,11 +495,6 @@ export class AvailabilityForm {
     this.showSummary.set(false);
     this.baseline.set(this.signature());
     this.stale.set(null);
-  }
-
-  protected setStatus(value: Status): void {
-    this.status.set(value);
-    this.server.set({});
   }
 
   protected setDay(day: number, patch: Partial<DayHours>): void {
@@ -799,18 +577,13 @@ export class AvailabilityForm {
       return;
     }
 
-    const ooo = this.status() === 'OUT_OF_OFFICE';
     const onBehalfDefaultZone =
       !this.self() && d.timeZoneId == null && this.tz() === d.effectiveTimeZoneId;
-    const request: SaveAvailabilityRequest = {
-      status: this.status(),
-      from: ooo ? (this.from() ?? undefined) : undefined,
-      until: ooo ? (this.until() ?? undefined) : undefined,
-      note: ooo ? this.note().trim() || undefined : undefined,
+    // The Out of office entries are saved from their own list (CAL-05); this PUT saves the time zone and the work hours only.
+    const request: SaveAvailabilityRequest = requestFrom(d, {
       timeZoneId: onBehalfDefaultZone ? undefined : this.tz(),
       workHours: workHoursForSave(this.week()) ?? undefined,
-      rowVersion: d.rowVersion,
-    };
+    });
 
     this.busy.set(true);
     try {
@@ -843,12 +616,6 @@ export class AvailabilityForm {
         await this.load();
         this.conflict.set(true);
         return;
-      case 'OOO_RANGE_INVALID':
-        this.server.set({ until: message });
-        break;
-      case 'NOTE_TOO_LONG':
-        this.server.set({ note: message });
-        break;
       case 'TIMEZONE_UNKNOWN':
         this.server.set({ tz: message });
         break;

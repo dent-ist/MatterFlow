@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 /** The Dashboard places that show a silhouette while their first read is on its way (P8, #96). */
 export type DashSkeletonKind =
-  'summary' | 'breakdowns' | 'trends' | 'swimlane' | 'lane' | 'users' | 'coverage';
+  'summary' | 'breakdowns' | 'trends' | 'swimlane' | 'lane' | 'users' | 'coverage' | 'calendar';
 
 /**
  * The loading silhouette of a Dashboard tab (P8, #96): the shape of what will be there, not eight identical blocks. Summary is two tile
@@ -117,6 +117,14 @@ export type DashSkeletonKind =
             }
           </div>
         }
+        @case ('calendar') {
+          <span class="bone bone--cap"></span>
+          <div class="cal-grid">
+            @for (n of days35; track n) {
+              <span class="bone bone--day"></span>
+            }
+          </div>
+        }
         @case ('coverage') {
           <div class="rows">
             @for (n of five; track n) {
@@ -168,6 +176,16 @@ export type DashSkeletonKind =
       .frame {
         animation: none;
       }
+    }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: var(--mf-s1);
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+    .bone--day {
+      min-height: 56px;
     }
     .bone--h {
       width: 7rem;
@@ -497,4 +515,5 @@ export class DashSkeleton {
   protected readonly four = [1, 2, 3, 4];
   protected readonly five = [1, 2, 3, 4, 5];
   protected readonly tiles = Array.from({ length: 24 }, (_, i) => i);
+  protected readonly days35 = Array.from({ length: 35 }, (_, i) => i);
 }

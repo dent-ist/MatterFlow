@@ -1,3 +1,4 @@
+import { provideCalendarFixtures } from '../../../shared/testing/calendar-testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Title } from '@angular/platform-browser';
@@ -88,6 +89,7 @@ describe('SettingsPage: Administration > Settings > Branding (epic #850, BR-05)'
         provideRouter([{ path: '**', children: [] }]),
         provideFakeMe(new FakeMeApi(withPermissions('Settings.Manage'))),
         { provide: SettingsBrandingClient, useValue: api },
+        ...provideCalendarFixtures(),
       ],
     });
     await TestBed.inject(AuthStore).ensureLoaded();
@@ -141,7 +143,7 @@ describe('SettingsPage: Administration > Settings > Branding (epic #850, BR-05)'
     const tabs = Array.from(el().querySelectorAll('[role="tab"]')).map((t) =>
       t.textContent?.trim(),
     );
-    expect(tabs).toEqual(['Branding', 'Dashboard']);
+    expect(tabs).toEqual(['Branding', 'Dashboard', 'Holidays']);
     expect(el().querySelector('[role="tab"][aria-selected="true"]')?.textContent?.trim()).toBe(
       'Branding',
     );

@@ -1,3 +1,4 @@
+import { provideCalendarFixtures } from '../../../shared/testing/calendar-testing';
 import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -65,6 +66,7 @@ describe('UsersPage', () => {
       providers: [
         provideRouter([{ path: '**', children: [] }]),
         { provide: USER_TIME_ZONE, useValue: 'America/New_York' },
+        ...provideCalendarFixtures(),
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         InMemoryIdentityAdminApi,
         { provide: IdentityAdminApi, useExisting: InMemoryIdentityAdminApi },

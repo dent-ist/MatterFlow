@@ -11,7 +11,14 @@ import {
 } from './dashboard-period';
 
 /** The tabs of the Dashboard, in display order. The value is the `?tab=` query parameter. */
-export const DASHBOARD_TABS = ['summary', 'breakdowns', 'trends', 'swimlane', 'users'] as const;
+export const DASHBOARD_TABS = [
+  'summary',
+  'breakdowns',
+  'trends',
+  'swimlane',
+  'users',
+  'calendar',
+] as const;
 export type DashboardTab = (typeof DASHBOARD_TABS)[number];
 
 /**
@@ -25,6 +32,8 @@ export const DASHBOARD_TAB_PERMISSIONS: Record<DashboardTab, readonly Permission
   trends: ['Dashboard.ViewTrends'],
   swimlane: ['Dashboard.ViewSwimlane'],
   users: ['Dashboard.ViewUsers'],
+  // Dashboard Calendar (epic #1074): the Director and the Pod Lead; the server limits a Pod Lead to the pods they lead.
+  calendar: ['Dashboard.ViewCalendar'],
 };
 
 export const DASHBOARD_TAB_LABELS: Record<DashboardTab, string> = {
@@ -33,6 +42,7 @@ export const DASHBOARD_TAB_LABELS: Record<DashboardTab, string> = {
   trends: 'Trends',
   swimlane: 'Swimlane',
   users: 'Users',
+  calendar: 'Calendar',
 };
 
 /** The tabs that read the shared summary request (the others read their own endpoint). */

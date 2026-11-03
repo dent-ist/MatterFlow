@@ -1,6 +1,7 @@
 import { NotificationService } from '../../core/notify/notification.service';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
+import { ABSENCE_API } from '../availability/absences/absence-api';
 import { MyAvailabilityClient, UserAvailabilityDto } from '../../api/generated/api-client';
 import { FakeMeApi, profileOf, provideFakeMe } from '../../core/auth/auth-testing';
 import { AuthStore } from '../../core/auth/auth.store';
@@ -11,10 +12,9 @@ import { UserMenu } from './user-menu';
 
 const dto = (overrides: Partial<UserAvailabilityDto> = {}): UserAvailabilityDto => ({
   userId: 1,
-  status: 'AVAILABLE',
-  from: undefined,
-  until: undefined,
-  note: undefined,
+  absences: [],
+  holidayCalendar: undefined,
+  nextHolidays: [],
   timeZoneId: 'America/New_York',
   effectiveTimeZoneId: 'America/New_York',
   usesDefaultWorkHours: true,
@@ -36,6 +36,8 @@ describe('UserMenu (header user area)', () => {
     getMyAvailability: ReturnType<typeof vi.fn>;
     saveMyAvailability: ReturnType<typeof vi.fn>;
   };
+  // The Out of office entries (epic #1074): "I'm back" ends the current one.
+  let absences: { list: ReturnType<typeof vi.fn>; back: ReturnType<typeof vi.fn> };
 
   async function create(
     permissions: Permission[],
@@ -46,9 +48,14 @@ describe('UserMenu (header user area)', () => {
       getMyAvailability: vi.fn().mockReturnValue(ok(current)),
       saveMyAvailability: vi.fn(),
     };
+    absences = {
+      list: vi.fn().mockResolvedValue([{ absenceId: 7, state: 'NOW' }]),
+      back: vi.fn().mockResolvedValue(undefined),
+    };
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
+        { provide: ABSENCE_API, useValue: absences },
         provideFakeMe(
           new FakeMeApi(
             profileOf({ displayName: 'Kim Admin', permissions, roles: ['Test'], ...who }),
@@ -145,7 +152,6 @@ describe('UserMenu (header user area)', () => {
 
   it('shows an out-of-office label next to the name and "I\'m back" instead of "Set out of office"', async () => {
     const out = dto({
-      status: 'OUT_OF_OFFICE',
       current: {
         state: 'OUT_OF_OFFICE',
         outUntilUtc: new Date(Date.now() + 3 * 86_400_000).toISOString(),
@@ -166,7 +172,6 @@ describe('UserMenu (header user area)', () => {
   describe('identity row and phone dot (#580, #578)', () => {
     const outDto = () =>
       dto({
-        status: 'OUT_OF_OFFICE',
         current: {
           state: 'OUT_OF_OFFICE',
           outUntilUtc: new Date(Date.now() + 3 * 86_400_000).toISOString(),
@@ -225,11 +230,8 @@ describe('UserMenu (header user area)', () => {
     });
   });
 
-  it('"I\'m back" saves Available keeping the hours and zone, then the label goes away', async () => {
+  it('"I\'m back" ends the current entry, then the label goes away', async () => {
     const out = dto({
-      status: 'OUT_OF_OFFICE',
-      until: '2026-12-31',
-      note: 'Away',
       current: {
         state: 'OUT_OF_OFFICE',
         outUntilUtc: '2027-01-01T05:00:00Z',
@@ -238,22 +240,17 @@ describe('UserMenu (header user area)', () => {
       },
     });
     const fixture = await create(['Task.View'], out);
-    client.saveMyAvailability.mockReturnValue(ok(dto({ rowVersion: 'V2' })));
+    // After the entry ended the header reads the profile again: Available.
+    client.getMyAvailability.mockReturnValue(ok(dto({ rowVersion: 'V2' })));
     const success = vi.spyOn(TestBed.inject(NotificationService), 'success');
     trigger(fixture).click();
     await settle(fixture);
     fixture.nativeElement.querySelector('[data-menu-item=back]').click();
     await settle(fixture);
 
-    expect(client.saveMyAvailability).toHaveBeenCalledWith({
-      status: 'AVAILABLE',
-      from: undefined,
-      until: undefined,
-      note: undefined,
-      timeZoneId: 'America/New_York',
-      workHours: undefined,
-      rowVersion: 'V1',
-    });
+    // The first call loads the Out of office module with a dynamic import: wait for the call.
+    await vi.waitFor(() => expect(absences.back).toHaveBeenCalledWith(expect.any(Number), 7));
+    await settle(fixture);
     expect(fixture.nativeElement.querySelector('[data-ooo-label]')).toBeNull();
     // #525: the toast carries the shared availability key, so a later one replaces it.
     expect(success).toHaveBeenCalledWith('Welcome back', expect.any(String), {

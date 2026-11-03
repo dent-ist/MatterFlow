@@ -70,6 +70,8 @@ export const STUB_SCENARIOS: Record<string, MeProfile & { label: string }> = {
       'Pod.Manage',
       'Pod.ManageMembers',
       ...DASHBOARD_ALL,
+      // Dashboard Calendar (epic #1074): entering Out of office for others (the starter Director holds it).
+      'User.ManageAvailability',
       'Audit.View',
     ],
     isSystemAdmin: false,
@@ -91,6 +93,10 @@ export const STUB_SCENARIOS: Record<string, MeProfile & { label: string }> = {
       'Dashboard.ViewSwimlane',
       'Dashboard.ViewUsers',
       'Dashboard.ViewCoverage',
+      // Dashboard Calendar (epic #1074): the starter Pod Lead sees the calendar of their pods, the reasons, and enters absences for their members.
+      'Dashboard.ViewCalendar',
+      'Dashboard.ViewAbsenceReasons',
+      'User.ManageAvailability',
     ],
     isSystemAdmin: false,
     hasWork: true,

@@ -22,10 +22,20 @@ export interface StepSpec {
   tags?: string[];
 }
 
-/** A user's availability profile (the `PUT /users/{id}/availability` body without the row version). */
+/** A user's availability profile: the work hours and time zone, and an optional Out of office entry that the seeder creates for it. */
+/** Today in a zone as `yyyy-MM-dd`. */
+export function dayInZone(zone: string): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: zone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
 export interface AvailabilitySpec {
   status?: 'AVAILABLE' | 'OUT_OF_OFFICE';
-  /** First day out of office, `yyyy-MM-dd` in the user's zone; omit for "from now". */
+  /** First day out of office, `yyyy-MM-dd` in the user's zone; omit for today. */
   from?: string | null;
   /** Last day out of office; omit for "until the user sets Available again". */
   until?: string | null;
@@ -179,23 +189,39 @@ export class Seeder {
   }
 
   /**
-   * Sets a user's availability and work hours as the admin (on behalf, `User.Manage`), reading the current row version first so it can be
-   * called repeatedly for the same user. Everything not given is reset (Available, default hours, firm zone).
+   * Sets a user's work hours and time zone as the admin (on behalf, `User.Manage`), reading the current row version first so it can be called repeatedly for the
+   * same user. Everything not given is reset (default hours, firm zone), and so are the Out of office entries that are running or coming (epic #1074: they are
+   * entries of their own now, `/users/{id}/absences`); `status: 'OUT_OF_OFFICE'` then creates one entry, starting `from` (default today in the user's zone) and ending
+   * `until` (a start in the future without `until` is a one-day entry, the API accepts an open end only when the entry starts today).
    */
   async availability(userId: number, spec: AvailabilitySpec = {}): Promise<Json> {
     const current = await this.admin.get<Json>(`/api/v1/users/${userId}/availability`);
-    return this.admin.put(`/api/v1/users/${userId}/availability`, {
-      status: spec.status ?? 'AVAILABLE',
-      from: spec.from ?? null,
-      until: spec.until ?? null,
-      note: spec.note ?? null,
+    await this.admin.put(`/api/v1/users/${userId}/availability`, {
       timeZoneId: spec.timeZoneId ?? null,
       workHours: spec.workHours ?? null,
       rowVersion: current.rowVersion,
     });
+    const entries = await this.admin.get<Json[]>(`/api/v1/users/${userId}/absences`);
+    for (const e of entries) {
+      await this.admin.raw(
+        'DELETE',
+        `/api/v1/users/${userId}/absences/${e.absenceId}?rowVersion=${encodeURIComponent(e.rowVersion)}`,
+      );
+    }
+    if (spec.status === 'OUT_OF_OFFICE') {
+      const today = dayInZone(spec.timeZoneId ?? 'America/New_York');
+      const start = spec.from ?? today;
+      await this.admin.post(`/api/v1/users/${userId}/absences`, {
+        type: 'OTHER',
+        startDate: start,
+        endDate: spec.until ?? (start === today ? null : start),
+        note: spec.note ?? null,
+      });
+    }
+    return this.admin.get(`/api/v1/users/${userId}/availability`);
   }
 
-  /** Marks a user out of office (no dates: until set Available again). */
+  /** Marks a user out of office (an entry from today with no end, or the dates given). */
   outOfOffice(
     userId: number,
     opts: { from?: string; until?: string; note?: string; timeZoneId?: string } = {},
