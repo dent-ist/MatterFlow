@@ -94,10 +94,13 @@ public sealed record HolidaySettingsDto(
     [property: Required] IReadOnlyList<PodHolidayDefaultDto> PodDefaults,
     [property: Required] string RowVersion);
 
+/// <summary>The default calendar to set for one pod (null clears it).</summary>
+public sealed record PodHolidayDefaultRequest(int PodId, int? CalendarId);
+
 /// <summary>Body to change the firm calendar and the defaults of the listed pods (pods not listed stay as they are).</summary>
 public sealed record SaveHolidaySettingsRequest(
     int? FirmCalendarId,
-    [Required] IReadOnlyList<PodHolidayDefaultDto> PodDefaults,
+    [Required] IReadOnlyList<PodHolidayDefaultRequest> PodDefaults,
     [Required(AllowEmptyStrings = true)] string RowVersion);
 
 /// <summary>Body to assign a holiday calendar to a person (null = the default of their pod, then the firm).</summary>

@@ -27282,6 +27282,13 @@ export interface PodHolidayDefaultDto {
     [key: string]: any;
 }
 
+export interface PodHolidayDefaultRequest {
+    podId: number;
+    calendarId: number | undefined;
+
+    [key: string]: any;
+}
+
 export interface PodMemberCandidate {
     userId: number;
     displayName: string;
@@ -27940,7 +27947,7 @@ export interface SaveHolidayRequest {
 
 export interface SaveHolidaySettingsRequest {
     firmCalendarId: number | undefined;
-    podDefaults: PodHolidayDefaultDto[];
+    podDefaults: PodHolidayDefaultRequest[];
     rowVersion: string;
 
     [key: string]: any;

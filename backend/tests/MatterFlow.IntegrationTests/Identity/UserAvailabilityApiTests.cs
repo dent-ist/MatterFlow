@@ -163,7 +163,7 @@ public sealed class UserAvailabilityApiTests(SqlServerFixture sql) : IAsyncLifet
         var body = Body("NEW", zone: "America/Denver");
 
         (await As(@"KE\director").PutAsJsonAsync($"/api/v1/users/{target}/availability", body)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
-        (await As(@"KE\director").GetAsync($"/api/v1/users/{target}/availability")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await As(@"KE\director").GetAsync($"/api/v1/users/{target}/availability")).StatusCode.ShouldBe(HttpStatusCode.OK); // the starter Director may read it (User.ManageAvailability, all pods)
         (await As(@"KE\scientist").PutAsJsonAsync($"/api/v1/users/{target}/availability", body)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
 
         var response = await As(DatabaseApiFactory.AdminAccount).PutAsJsonAsync($"/api/v1/users/{target}/availability", body);

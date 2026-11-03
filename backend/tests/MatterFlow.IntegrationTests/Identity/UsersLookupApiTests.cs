@@ -49,7 +49,7 @@ public sealed class UsersLookupApiTests(SqlServerFixture sql) : IAsyncLifetime
         var found = await JsonAsync(await As(@"KE\scientist").GetAsync("/api/v1/users/lookup?q=tariq"));
         var item = found.EnumerateArray().Single();
         item.GetProperty("displayName").GetString().ShouldBe(@"KE\tariq");
-        item.EnumerateObject().Select(p => p.Name).Order().ShouldBe(["availability", "displayName", "lastAssignedUtc", "openTaskCount", "reason", "suggested", "userId"]); // no email, account name or roles
+        item.EnumerateObject().Select(p => p.Name).Order().ShouldBe(["availability", "capacityState", "displayName", "lastAssignedUtc", "load", "openTaskCount", "reason", "suggested", "userId"]); // no email, account name or roles
 
         (await JsonAsync(await As(@"KE\scientist").GetAsync("/api/v1/users/lookup")))
             .EnumerateArray().Select(u => u.GetProperty("userId").GetInt32()).ShouldNotContain(leaver);

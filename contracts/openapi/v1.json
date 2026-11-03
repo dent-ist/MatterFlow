@@ -28950,6 +28950,26 @@
           }
         }
       },
+      "PodHolidayDefaultRequest": {
+        "required": [
+          "podId",
+          "calendarId"
+        ],
+        "type": "object",
+        "properties": {
+          "podId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "calendarId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "PodMemberCandidate": {
         "required": [
           "userId",
@@ -31504,7 +31524,7 @@
           "podDefaults": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/PodHolidayDefaultDto"
+              "$ref": "#/components/schemas/PodHolidayDefaultRequest"
             }
           },
           "rowVersion": {
