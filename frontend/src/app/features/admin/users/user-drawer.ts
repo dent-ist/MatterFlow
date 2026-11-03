@@ -39,6 +39,7 @@ import { ScrollRegion } from '../../../shared/ui/scroll-region';
 import { impactLine } from '../shared/dialog-copy';
 import { availabilityShown } from './user-availability';
 import { permissionsOfRoles, summarizePermissions } from './user-access';
+import { UserCalendarField } from '../holidays/user-calendar-field';
 import { PodsChange, UserPodsCell } from './user-pods-cell';
 
 /**
@@ -84,6 +85,7 @@ export function readOnlyReason(canManage: boolean, canEditPods: boolean): string
     ConfirmDialog,
     ScrollRegion,
     MfDatePipe,
+    UserCalendarField,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './user-drawer.html',

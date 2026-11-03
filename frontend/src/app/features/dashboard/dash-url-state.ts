@@ -1,4 +1,5 @@
 import { ParamMap, Params } from '@angular/router';
+import { CAL_PARAMS } from './calendar/calendar-model';
 import { DashboardTab, isDashboardTab } from './dashboard-prefs';
 import { USERS_AVAILABILITY_PARAM, USERS_VIEW_PARAM } from './dashboard-links';
 import { DEFAULT_PERIOD_KEY, periodFromParams } from './dashboard-period';
@@ -35,6 +36,7 @@ export const DASH_TAB_PARAMS: Record<DashboardTab, readonly string[]> = {
     'lane',
   ],
   users: [USERS_AVAILABILITY_PARAM, 'uq', 'uload', 'uprio', USERS_VIEW_PARAM, 'cov', 'unopod'],
+  calendar: [...CAL_PARAMS],
 };
 
 /**
@@ -56,6 +58,7 @@ export const DASH_DEFAULTS: Record<DashboardTab, Readonly<Record<string, string>
     lane: laneParam(DEFAULT_LANE),
   },
   users: { [USERS_VIEW_PARAM]: 'workload', [USERS_AVAILABILITY_PARAM]: 'all', cov: 'type' },
+  calendar: { cal: 'month' },
 };
 
 /** What `canonicalParams` needs to know about the scope: whether the person may use a value, and which one is their default (not written). */

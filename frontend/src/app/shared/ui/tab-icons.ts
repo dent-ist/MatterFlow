@@ -72,6 +72,8 @@ export const TAB_ICONS: Readonly<Record<string, string>> = {
   branding: 'pi-palette',
   // Settings > Dashboard (epic #1063): the gauge's working hours.
   dashboard: 'pi-gauge',
+  // Settings > Holidays (epic #1074): the flag of the holiday chips.
+  holidays: 'pi-flag',
   priorities: 'pi-flag',
   'status-labels': 'pi-tag',
   'on-hold-reasons': 'pi-pause',

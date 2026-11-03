@@ -78,6 +78,7 @@ import { CardKey, isCardKey } from '../summary/dash-cards';
 import { DashSwimlaneTab } from '../ui/dash-swimlane-tab';
 import { DashTab, DashTabs, panelId, tabId } from '../ui/dash-tabs';
 import { DashUsersTab } from '../ui/dash-users-tab';
+import { DashCalendarTab } from '../calendar/calendar-tab';
 import { DashTaskList, PanelEmptyState, PanelState } from '../ui/task-list-panel';
 import { DashTechnicianBar } from '../ui/dash-technician-bar';
 import { DashTrendsTab } from '../ui/dash-trends-tab';
@@ -144,6 +145,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
     NgTemplateOutlet,
     DashSwimlaneTab,
     DashUsersTab,
+    DashCalendarTab,
     PeriodControl,
     ScopeControl,
     DashTechnicianBar,
@@ -382,6 +384,22 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                 <mf-dash-users-tab />
               } @placeholder {
                 <mf-dash-skeleton kind="users" label="Loading team workload" />
+              }
+            </div>
+          }
+          @case ('calendar') {
+            <!-- Dashboard Calendar (epic #1074): its own endpoints, never the shared summary; a lazy chunk. -->
+            <div
+              class="panel mf-fill"
+              [attr.role]="panelRole()"
+              data-tabpanel="calendar"
+              [id]="panelId()"
+              [attr.aria-labelledby]="labelledBy()"
+            >
+              @defer (on immediate) {
+                <mf-dash-calendar-tab />
+              } @placeholder {
+                <mf-dash-skeleton kind="calendar" label="Loading the calendar" />
               }
             </div>
           }
@@ -638,6 +656,8 @@ export class DashboardPage implements OnInit {
   protected readonly swimlane = viewChild(DashSwimlaneTab);
   /** The Users tab, when it is on screen: its refresh icon sits in the tab row too. */
   protected readonly users = viewChild(DashUsersTab);
+  /** The Calendar tab, when it is on screen: the Refresh icon of the tab row acts on it. */
+  protected readonly calendar = viewChild(DashCalendarTab);
   protected readonly refreshFailed = signal(false);
   /** Polite live region: what the last refresh or inline assignment did, for screen readers. */
   protected readonly live = signal('');
@@ -714,6 +734,7 @@ export class DashboardPage implements OnInit {
     const tab = this.activeTab();
     if (tab === 'users')
       return this.queryParams().get('view') === 'coverage' ? 'coverage' : 'users';
+    if (tab === 'calendar') return 'calendar';
     return tab === 'breakdowns' || tab === 'trends' || tab === 'swimlane' ? tab : 'summary';
   });
   /** Swimlane and Users draw toolbars above their content: the silhouette of a tab that is not mounted yet (the Scope is unknown) draws them too. */
@@ -785,6 +806,8 @@ export class DashboardPage implements OnInit {
         return this.swimlane()?.refreshing() ?? false;
       case 'users':
         return this.users()?.refreshing() ?? false;
+      case 'calendar':
+        return this.calendar()?.refreshing() ?? false;
       default:
         return this.refreshing();
     }
@@ -797,7 +820,9 @@ export class DashboardPage implements OnInit {
         ? this.swimlane()?.updated()
         : tab === 'users'
           ? this.users()?.updated()
-          : this.updated();
+          : tab === 'calendar'
+            ? this.calendar()?.updated()
+            : this.updated();
     return at ? `Refresh. Updated ${at}. Refreshes itself every 5 minutes.` : 'Refresh';
   });
   /** The last successful read of the tab shown (epoch ms), for the age text (P6). */
@@ -807,6 +832,8 @@ export class DashboardPage implements OnInit {
         return this.swimlane()?.lastOkAt() ?? null;
       case 'users':
         return this.users()?.lastOkAt() ?? null;
+      case 'calendar':
+        return this.calendar()?.lastOkAt() ?? null;
       default:
         return this.summaryOkAt();
     }
@@ -818,6 +845,8 @@ export class DashboardPage implements OnInit {
         return this.swimlane()?.refreshFailed() ?? false;
       case 'users':
         return this.users()?.failed() ?? false;
+      case 'calendar':
+        return this.calendar()?.failed() ?? false;
       default:
         return this.refreshFailed();
     }
@@ -870,6 +899,7 @@ export class DashboardPage implements OnInit {
     return (
       tab === 'swimlane' ||
       tab === 'users' ||
+      tab === 'calendar' ||
       tab === 'trends' ||
       (tab === 'summary' && this.fullSummary())
     );
@@ -1089,6 +1119,7 @@ export class DashboardPage implements OnInit {
     const tab = this.activeTab();
     if (tab === 'swimlane') this.swimlane()?.refresh();
     else if (tab === 'users') this.users()?.refresh();
+    else if (tab === 'calendar') this.calendar()?.refresh();
     else this.refresh();
   }
 

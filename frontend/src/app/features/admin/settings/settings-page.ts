@@ -24,6 +24,8 @@ import { Tabs, MfTab } from '../../../shared/ui/tabs';
 import { tabIcon } from '../../../shared/ui/tab-icons';
 import { TextField } from '../../../shared/ui/text-field';
 import { DashboardSettings } from './dashboard-settings';
+import { CalendarThresholdsForm } from '../holidays/thresholds-form';
+import { HolidaysAdmin } from '../holidays/holidays-admin';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -34,6 +36,8 @@ export const BRANDING_SAVED_TEXT = 'Saved. Other users see it the next time they
 const TABS: readonly MfTab[] = [
   { key: 'branding', label: 'Branding', icon: tabIcon('branding') },
   { key: 'dashboard', label: 'Dashboard', icon: tabIcon('dashboard') },
+  // Holiday calendars by Category (epic #1074, CAL-06).
+  { key: 'holidays', label: 'Holidays', icon: tabIcon('holidays') },
 ];
 
 /** The built-in header mark, shown for "reset" and while no custom icon exists. */
@@ -66,7 +70,17 @@ export function brandingOf(view: BrandingAdminView): Branding {
  */
 @Component({
   selector: 'mf-settings-page',
-  imports: [Button, DashboardSettings, ErrorReference, MfDatePipe, PageHeader, Tabs, TextField],
+  imports: [
+    Button,
+    CalendarThresholdsForm,
+    DashboardSettings,
+    ErrorReference,
+    HolidaysAdmin,
+    MfDatePipe,
+    PageHeader,
+    Tabs,
+    TextField,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
@@ -81,7 +95,11 @@ export function brandingOf(view: BrandingAdminView): Branding {
         label="Settings sections"
         idPrefix="settings"
         data-settings-tabs
-        (tabChange)="tab.set($event === 'dashboard' ? 'dashboard' : 'branding')"
+        (tabChange)="
+          tab.set(
+            $event === 'dashboard' ? 'dashboard' : $event === 'holidays' ? 'holidays' : 'branding'
+          )
+        "
       />
     </mf-page-header>
 
@@ -89,6 +107,9 @@ export function brandingOf(view: BrandingAdminView): Branding {
       @if (tab() === 'dashboard') {
         <!-- Dashboard v4 (epic #1063, DB-06): the working hours and levels of the unassigned gauge. -->
         <mf-dashboard-settings />
+        <mf-calendar-thresholds />
+      } @else if (tab() === 'holidays') {
+        <mf-holidays-admin />
       } @else if (state() === 'loading') {
         <div class="pg-state" role="status" aria-busy="true">Loading...</div>
       } @else if (state() === 'error') {
@@ -433,7 +454,7 @@ export class SettingsPage implements OnInit, HasUnsavedChanges {
 
   protected readonly crumbs = [{ label: 'Administration' }, { label: 'Settings' }];
   protected readonly tabs = TABS;
-  protected readonly tab = signal<'branding' | 'dashboard'>('branding');
+  protected readonly tab = signal<'branding' | 'dashboard' | 'holidays'>('branding');
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly view = signal<BrandingAdminView | null>(null);

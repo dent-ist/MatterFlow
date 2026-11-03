@@ -294,6 +294,8 @@
                 <p class="ud-note" data-availability-note>
                   Availability is saved in its own dialog.
                 </p>
+                <!-- Dashboard Calendar (epic #1074): the person's holiday calendar. -->
+                <mf-user-calendar-field [userId]="u.userId" [canManage]="canManage()" />
               </div>
             </section>
 

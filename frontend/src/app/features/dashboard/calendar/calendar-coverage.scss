@@ -1,0 +1,97 @@
+/*
+ * The coverage traffic light of the Dashboard Calendar (epic #1074): one set of custom properties per level, from the proposed `--mf-cov-*` alias tokens
+ * (docs/ux/tokens.css). `--cb` is the tint, `--cf` the text and icon colour on it (4.5:1), `--cs` the solid for bars and dots (3:1). Included by every Calendar component.
+ */
+.cv-good {
+  --cb: var(--mf-cov-good-bg);
+  --cf: var(--mf-cov-good-fg);
+  --cs: var(--mf-cov-good-solid);
+}
+.cv-watch {
+  --cb: var(--mf-cov-watch-bg);
+  --cf: var(--mf-cov-watch-fg);
+  --cs: var(--mf-cov-watch-solid);
+}
+.cv-low {
+  --cb: var(--mf-cov-low-bg);
+  --cf: var(--mf-cov-low-fg);
+  --cs: var(--mf-cov-low-solid);
+}
+.cv-crit {
+  --cb: var(--mf-cov-crit-bg);
+  --cf: var(--mf-cov-crit-fg);
+  --cs: var(--mf-cov-crit-solid);
+}
+.cv-none {
+  --cb: var(--mf-cov-none-bg);
+  --cf: var(--mf-cov-none-fg);
+  --cs: var(--mf-sem-neutral-solid);
+}
+
+/* Holiday chips: the category colour is an admin-chosen key; the tag tokens carry the tint, the text and the dot. */
+.hc-slate,
+.hc-neutral {
+  --hb: var(--mf-tag-slate-bg);
+  --hf: var(--mf-tag-slate-fg);
+}
+.hc-blue {
+  --hb: var(--mf-tag-blue-bg);
+  --hf: var(--mf-tag-blue-fg);
+}
+.hc-teal {
+  --hb: var(--mf-tag-teal-bg);
+  --hf: var(--mf-tag-teal-fg);
+}
+.hc-green {
+  --hb: var(--mf-tag-green-bg);
+  --hf: var(--mf-tag-green-fg);
+}
+.hc-amber {
+  --hb: var(--mf-tag-amber-bg);
+  --hf: var(--mf-tag-amber-fg);
+}
+.hc-orange {
+  --hb: var(--mf-tag-orange-bg);
+  --hf: var(--mf-tag-orange-fg);
+}
+.hc-rose {
+  --hb: var(--mf-tag-rose-bg);
+  --hf: var(--mf-tag-rose-fg);
+}
+.hc-violet {
+  --hb: var(--mf-tag-violet-bg);
+  --hf: var(--mf-tag-violet-fg);
+}
+.hc-indigo {
+  --hb: var(--mf-tag-indigo-bg);
+  --hf: var(--mf-tag-indigo-fg);
+}
+.hc-red {
+  --hb: var(--mf-tag-red-bg, var(--mf-sem-overdue-bg));
+  --hf: var(--mf-tag-red-fg, var(--mf-sem-overdue-fg));
+}
+.hchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 100%;
+  min-width: 0;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: var(--mf-radius-pill);
+  background: var(--hb, var(--mf-tag-slate-bg));
+  color: var(--hf, var(--mf-tag-slate-fg));
+  font-size: var(--mf-fs-xs);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+.hchip > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hchip .pi {
+  flex: none;
+  font-size: 0.7rem;
+}
