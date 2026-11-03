@@ -25,6 +25,12 @@ import { NotificationService } from '../../core/notify/notification.service';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { calendarDayInZone } from '../../core/time/time';
 import { DialogFocus } from '../ui/dialog-focus';
+import {
+  ABSENCE_TYPES,
+  ABSENCE_TYPE_LABELS,
+  AbsenceType,
+  isAbsenceType,
+} from './absences/absence-contract';
 
 /**
  * "Set out of office..." from the header menu: an until date (optional) and a note (optional), out of office from now. Everything else
@@ -54,8 +60,22 @@ import { DialogFocus } from '../ui/dialog-focus';
           <p class="ooo__error" role="alert">{{ error() }}</p>
         }
         <p class="ooo__help">
-          You will show as out of office from now. Work can still be assigned to you.
+          You will show as out of office from today. Work can still be assigned to you.
         </p>
+        <div class="ooo__field">
+          <label class="ooo__label" for="ooo-type">Type</label>
+          <select
+            id="ooo-type"
+            class="mf-control mf-control--fill"
+            data-ooo-type
+            [value]="type()"
+            (change)="setType($any($event.target).value)"
+          >
+            @for (t of types; track t) {
+              <option [value]="t" [selected]="t === type()">{{ typeLabels[t] }}</option>
+            }
+          </select>
+        </div>
         <div class="ooo__field">
           <label class="ooo__label" for="ooo-until" id="ooo-until-label">Until (optional)</label>
           <div class="ooo__chips" role="group" aria-labelledby="ooo-until-label" data-ooo-presets>
@@ -200,6 +220,16 @@ export class SetOutOfOfficeDialog {
   );
   private readonly today = computed(() => calendarDayInZone(this.clock.now(), this.zone()));
 
+  private readonly todayIso = computed(() => {
+    const t = this.today();
+    return `${t.year}-${String(t.month).padStart(2, '0')}-${String(t.day).padStart(2, '0')}`;
+  });
+  protected readonly types = ABSENCE_TYPES;
+  protected readonly typeLabels = ABSENCE_TYPE_LABELS;
+  protected readonly type = signal<AbsenceType>('VACATION');
+  protected setType(value: string): void {
+    if (isAbsenceType(value)) this.type.set(value);
+  }
   protected readonly presets = UNTIL_PRESETS;
   /** The quick choice that filled Until; cleared as soon as the date is typed or changed. */
   private readonly preset = signal<UntilPresetId | null>(null);
@@ -270,6 +300,7 @@ export class SetOutOfOfficeDialog {
     this.visible.set(value);
     if (value) {
       this.until.set(null);
+      this.type.set('VACATION');
       this.preset.set(null);
       this.untilBad.set(false);
       void this.store.ensureLoaded();
@@ -283,7 +314,7 @@ export class SetOutOfOfficeDialog {
     this.busy.set(true);
     this.error.set('');
     try {
-      await this.store.setOutOfOffice(this.until(), this.note());
+      await this.store.setOutOfOffice(this.until(), this.note(), this.todayIso(), this.type());
       this.notify.success(
         'You are out of office',
         'Use "I\'m back" in your name menu when you return.',

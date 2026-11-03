@@ -7,6 +7,8 @@ import type {
   SaveAvailabilityRequest,
   UserAvailabilityDto,
 } from '../../api/generated/api-client';
+import type { AbsenceType } from '../../shared/availability/absences/absence-contract';
+import { AuthStore } from '../auth/auth.store';
 import { AvailabilityLike, NOTE_MAX } from './availability';
 
 /** A save request that repeats a profile unchanged (the PUT replaces the whole profile), for quick actions that change only the status. */
@@ -72,37 +74,44 @@ export class MyAvailability {
     this.profile.set(profile);
   }
 
-  /** "I'm back": Available again, keeping the work hours and the time zone. Throws the API error. */
-  async setAvailable(): Promise<UserAvailabilityDto> {
-    const latest = await firstValueFrom((await this.client()).getMyAvailability());
-    const saved = await firstValueFrom(
-      (await this.client()).saveMyAvailability(
-        requestFrom(latest, {
-          status: 'AVAILABLE',
-          from: undefined,
-          until: undefined,
-          note: undefined,
-        }),
-      ),
-    );
-    this.set(saved);
-    return saved;
+  /** The Out of office API, loaded when first needed (the header is on every page; the fixtures and the client are not). */
+  private async absences() {
+    const { ABSENCE_API } = await import('../../shared/availability/absences/absence-api');
+    return this.injector.get(ABSENCE_API);
   }
 
-  /** "Set out of office...": out of office from now until the end of `until` (`yyyy-MM-dd`, or open-ended), with an optional note. */
-  async setOutOfOffice(until: string | null, note: string): Promise<UserAvailabilityDto> {
-    const latest = await firstValueFrom((await this.client()).getMyAvailability());
-    const saved = await firstValueFrom(
-      (await this.client()).saveMyAvailability(
-        requestFrom(latest, {
-          status: 'OUT_OF_OFFICE',
-          from: undefined,
-          until: until ?? undefined,
-          note: note.trim().slice(0, NOTE_MAX) || undefined,
-        }),
-      ),
-    );
-    this.set(saved);
-    return saved;
+  private userId(): number {
+    return this.injector.get(AuthStore).profile()?.userId ?? 0;
+  }
+
+  /**
+   * "I'm back" (epic #1074, CAL-05): the current entry ends yesterday (an entry that starts today is removed). Throws the API error. The header reads the
+   * profile again afterwards.
+   */
+  async setAvailable(): Promise<void> {
+    const api = await this.absences();
+    const current = (await api.list(this.userId(), false)).find((e) => e.state === 'NOW');
+    if (current) await api.back(this.userId(), current.absenceId);
+    await this.refresh();
+  }
+
+  /**
+   * "Set out of office..." from the header menu: a new entry that starts today and ends on `until` (`yyyy-MM-dd`, or open-ended), with an optional note.
+   * Throws the API error (an overlap names the other entry).
+   */
+  async setOutOfOffice(
+    until: string | null,
+    note: string,
+    startDate: string,
+    type: AbsenceType = 'VACATION',
+  ): Promise<void> {
+    const api = await this.absences();
+    await api.create(this.userId(), {
+      type,
+      startDate,
+      endDate: until,
+      note: note.trim().slice(0, NOTE_MAX) || null,
+    });
+    await this.refresh();
   }
 }

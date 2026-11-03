@@ -65,6 +65,9 @@ export const PERMISSIONS = [
   'Dashboard.ViewSwimlane',
   'Dashboard.ViewUsers',
   'Dashboard.ViewCoverage',
+  'Dashboard.ViewCalendar',
+  'Dashboard.ViewAbsenceReasons',
+  'User.ManageAvailability',
   'Report.Manage',
   'Report.Assign',
   'Report.Run',
@@ -85,4 +88,5 @@ export const DASHBOARD_TAB_PERMISSION_CODES = [
   'Dashboard.ViewTrends',
   'Dashboard.ViewSwimlane',
   'Dashboard.ViewUsers',
+  'Dashboard.ViewCalendar',
 ] as const satisfies readonly Permission[];

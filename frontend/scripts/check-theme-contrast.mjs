@@ -57,6 +57,14 @@ for (const n of [0, 1, 2, 3]) {
 for (const n of [0, 2, 3, 4, 5]) {
   pairs.push([`wait step ${n} (gauge) on a card`, `--mf-wait-${n}`, '--mf-surface', graphic]);
 }
+// Calendar coverage (epic #1074): the traffic light of a day; text on its tint 4.5:1, the solid (icon, bar, dot) on the tint and on a card 3:1.
+for (const c of ['good', 'watch', 'low', 'crit']) {
+  pairs.push([`coverage ${c} text on its tint`, `--mf-cov-${c}-fg`, `--mf-cov-${c}-bg`, text]);
+  pairs.push([`coverage ${c} text on a card`, `--mf-cov-${c}-fg`, '--mf-surface', text]);
+  pairs.push([`coverage ${c} solid on its tint`, `--mf-cov-${c}-solid`, `--mf-cov-${c}-bg`, graphic]);
+  pairs.push([`coverage ${c} solid on a card`, `--mf-cov-${c}-solid`, '--mf-surface', graphic]);
+}
+pairs.push(['coverage closed text on its tint', '--mf-cov-none-fg', '--mf-cov-none-bg', text]);
 // Note tag chips (MD-36, #1049): text on the tint 4.5:1, the dot on the tint 3:1.
 for (const c of ['slate', 'blue', 'teal', 'green', 'amber', 'orange', 'red', 'rose', 'violet', 'indigo', 'neutral']) {
   pairs.push([`tag ${c} text on its tint`, `--mf-tag-${c}-fg`, `--mf-tag-${c}-bg`, text]);

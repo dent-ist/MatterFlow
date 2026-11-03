@@ -4,7 +4,6 @@ import { MyAvailabilityClient, UserAvailabilityClient } from '../../api/generate
 import { FakeMeApi, profileOf, provideFakeMe } from '../../core/auth/auth-testing';
 import { AuthStore } from '../../core/auth/auth.store';
 import { MeProfile } from '../../core/auth/me.models';
-import { MyAvailability } from '../../core/availability/my-availability';
 import { iconForPath } from '../../shared/layout/section-icons';
 import { apiError, ok, settle } from '../../shared/testing/org-testing';
 import { PROFILE_ROUTES } from './profile.routes';
@@ -62,8 +61,9 @@ describe('ProfilePage', () => {
     expect(PROFILE_ROUTES[0].title).toBe('My profile');
     expect(iconForPath('/profile')).toBe('pi pi-user-edit');
     expect(root.querySelector('mf-availability-form fieldset legend')?.textContent).toContain(
-      'Availability',
+      'Work hours',
     );
+    expect(root.querySelector('mf-absence-list [data-absence-list]')).not.toBeNull();
     expect(root.querySelector('mf-account-card')).not.toBeNull();
     expect(root.querySelectorAll('h1').length).toBe(1);
   });
@@ -75,7 +75,7 @@ describe('ProfilePage', () => {
     expect(text(root, '[data-page-description]')).toBe('Data Technician, Pod Lead \u00b7 Main Pod');
     const actions = root.querySelectorAll('[data-page-actions] button');
     expect(actions.length).toBe(1);
-    expect(actions[0].textContent).toContain('Set out of office...');
+    expect(actions[0].textContent).toContain('Add out of office');
   });
 
   it('with no display name the header shows the Windows account', async () => {
@@ -83,20 +83,19 @@ describe('ProfilePage', () => {
     expect(text(root, 'h1')).toContain('KE\\kekim');
   });
 
-  it("the primary action flips to the I'm back action while out of office", async () => {
+  it('lists the out of office entries (several, grouped) and the holiday card beside them', async () => {
+    const { root } = await create();
+    await new Promise((r) => setTimeout(r));
+    expect(root.querySelectorAll('[data-absence]').length).toBeGreaterThanOrEqual(2);
+    expect(root.querySelector('[data-group="upcoming"]')).not.toBeNull();
+    expect(root.querySelector('[data-holiday-calendar]')?.textContent).toContain('US Holiday');
+  });
+
+  it('the header button opens the Add dialog', async () => {
     const { fixture, root } = await create();
-    TestBed.inject(MyAvailability).set(
-      dto({
-        status: 'OUT_OF_OFFICE',
-        rowVersion: 'V2',
-        current: { state: 'OUT_OF_OFFICE' },
-      }) as never,
-    );
+    root.querySelector<HTMLButtonElement>('[data-primary-action] button')!.click();
     await settle(fixture);
-    expect(root.querySelector('[data-primary-action] button')?.textContent).toContain("I'm back");
-    expect(root.querySelector('h1 [data-availability-chip]')?.textContent).toContain(
-      'Out of office',
-    );
+    expect(document.querySelector('[data-absence-dialog]')).not.toBeNull();
   });
 
   it('shows the skeleton while loading and the page when it is ready (P14)', async () => {

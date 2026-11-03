@@ -82,11 +82,6 @@ describe('AvailabilityForm', () => {
     await settle(fixture);
   }
 
-  async function choose(selector: string): Promise<void> {
-    q<HTMLInputElement>(selector).click();
-    await settle(fixture);
-  }
-
   async function type(selector: string, value: string): Promise<void> {
     const input = q<HTMLInputElement>(selector);
     input.value = value;
@@ -102,10 +97,10 @@ describe('AvailabilityForm', () => {
 
   afterEach(() => TestBed.resetTestingModule());
 
-  it('opens on Available with the default Mon-Fri 9-5 week and the saved time zone, nothing to save yet', async () => {
+  it('opens on the default Mon-Fri 9-5 week and the saved time zone, nothing to save yet', async () => {
     await create();
-    expect(q<HTMLInputElement>('[data-status-available]').checked).toBe(true);
-    expect(el().querySelector('[data-ooo-fields]')).toBeNull();
+    // The Out of office list is not part of this form any more (epic #1074, CAL-05).
+    expect(el().querySelector('[data-status-set]')).toBeNull();
     const on = [...el().querySelectorAll('[data-day-toggle]')].map((b) =>
       b.getAttribute('aria-pressed'),
     );
@@ -121,50 +116,6 @@ describe('AvailabilityForm', () => {
     await create({ initial: profile({ timeZoneId: undefined, effectiveTimeZoneId: 'UTC' }) });
     const browser = Intl.DateTimeFormat().resolvedOptions().timeZone;
     expect(ddSelect(el()).value).toBe(browser);
-  });
-
-  it('shows the dates, note and the summary sentence for Out of office', async () => {
-    await create();
-    await choose('[data-status-ooo]');
-    expect(q('[data-ooo-summary]').textContent).toContain(
-      'You will show as out of office from now, until you set yourself available again.',
-    );
-
-    await type('#av-from', 'Oct 16, 2026');
-    await type('#av-until', 'Oct 20, 2026');
-    expect(q('[data-ooo-summary]').textContent!.trim()).toBe(
-      'You will show as out of office from Oct 16 until Oct 20 and as available again on Oct 21.',
-    );
-  });
-
-  it('writes one date-format hint under the From and Until pair, not one under each field (#428)', async () => {
-    await create();
-    await choose('[data-status-ooo]');
-    expect(el().querySelectorAll('.di__hint').length).toBe(0);
-    const help = q('[data-dates-help]');
-    expect(help.textContent).toContain('Type a date such as Oct 12, 2026');
-    expect(q('#av-from').getAttribute('aria-describedby')).toBe(help.id);
-    expect(q('#av-until').getAttribute('aria-describedby')).toBe(help.id);
-  });
-
-  it('counts the note against 200 characters', async () => {
-    await create();
-    await choose('[data-status-ooo]');
-    await type('#av-note', 'Back soon');
-    expect(q('[data-note-count]').textContent!.replace(/\s+/g, ' ').trim()).toBe('9 / 200');
-    expect(q('#av-note').getAttribute('maxlength')).toBe('200');
-  });
-
-  it('blocks saving with an error summary when Until is before From', async () => {
-    await create();
-    await choose('[data-status-ooo]');
-    await type('#av-from', 'Oct 20, 2026');
-    await type('#av-until', 'Oct 16, 2026');
-    expect(q('[data-until-error]').textContent).toContain('Until must be on or after From.');
-
-    await save();
-    expect(mine.saveMyAvailability).not.toHaveBeenCalled();
-    expect(q('[data-summary]').textContent).toContain('Until must be on or after From.');
   });
 
   const openGrid = async (): Promise<void> => {
@@ -279,32 +230,23 @@ describe('AvailabilityForm', () => {
     expect(mine.saveMyAvailability).not.toHaveBeenCalled();
   });
 
-  it('saves out of office with dates, note, zone and the default hours as null, then shows the saved state', async () => {
+  it('saves zone and hours and repeats the stored status unchanged, then shows the saved state', async () => {
     await create();
-    const saved = profile({
-      status: 'OUT_OF_OFFICE',
-      from: '2026-10-16',
-      until: '2026-10-20',
-      note: 'Back Oct 21',
-      rowVersion: 'V1',
-    });
+    const saved = profile({ rowVersion: 'V1' });
     mine.saveMyAvailability.mockReturnValue(ok(saved));
     const emitted: UserAvailabilityDto[] = [];
     fixture.componentInstance.saved.subscribe((d) => emitted.push(d));
 
-    await choose('[data-status-ooo]');
-    await type('#av-from', 'Oct 16, 2026');
-    await type('#av-until', 'Oct 20, 2026');
-    await type('#av-note', 'Back Oct 21');
+    await type('#av-hours-start', '08:30');
     await save();
 
     expect(mine.saveMyAvailability).toHaveBeenCalledWith({
-      status: 'OUT_OF_OFFICE',
-      from: '2026-10-16',
-      until: '2026-10-20',
-      note: 'Back Oct 21',
+      status: 'AVAILABLE',
+      from: undefined,
+      until: undefined,
+      note: undefined,
       timeZoneId: 'America/New_York',
-      workHours: undefined,
+      workHours: expect.any(Array),
       rowVersion: 'NEW',
     });
     expect(emitted).toEqual([saved]);
@@ -353,16 +295,15 @@ describe('AvailabilityForm', () => {
     expect(q<HTMLInputElement>('#av-hours-start').value).toBe('09:00');
   });
 
-  it('maps server validation codes to the field and the summary', async () => {
+  it('maps a server time zone refusal to the field and the summary', async () => {
     await create();
     mine.saveMyAvailability.mockReturnValue(
-      apiError(400, { code: 'OOO_RANGE_INVALID', status: 400, detail: 'Until is before From.' }),
+      apiError(400, { code: 'TIMEZONE_UNKNOWN', status: 400, detail: 'Unknown zone.' }),
     );
-    await choose('[data-status-ooo]');
-    await type('#av-until', 'Oct 20, 2026');
+    await type('#av-hours-start', '08:30');
     await save();
-    expect(q('[data-until-error]').textContent).toContain('Until is before From.');
-    expect(q('[data-summary]').textContent).toContain('Until is before From.');
+    expect(q('[data-tz-error]').textContent).toContain('Unknown zone.');
+    expect(q('[data-summary]').textContent).toContain('Unknown zone.');
   });
 
   it('edits someone else (admin): their name in the copy, the firm zone kept, saved through the user endpoint', async () => {
@@ -380,15 +321,12 @@ describe('AvailabilityForm', () => {
     expect(ddSelect(el()).value).toBe('America/Chicago');
 
     others.saveUserAvailability.mockReturnValue(ok(profile({ userId: 9, rowVersion: 'V1' })));
-    await choose('[data-status-ooo]');
-    expect(q('[data-ooo-summary]').textContent).toContain(
-      'Dana Director will show as out of office from now, until they are set available again.',
-    );
+    await type('#av-hours-start', '08:30');
     await save();
     expect(others.saveUserAvailability).toHaveBeenCalledWith(
       9,
       expect.objectContaining({
-        status: 'OUT_OF_OFFICE',
+        status: 'AVAILABLE',
         timeZoneId: undefined,
         rowVersion: 'NEW',
       }),
@@ -396,81 +334,45 @@ describe('AvailabilityForm', () => {
     expect(mine.saveMyAvailability).not.toHaveBeenCalled();
   });
 
-  it('page: the preview sits under the Status choice and shows only while there are edits (P12)', async () => {
-    await create();
-    expect(el().querySelector('[data-preview]')).toBeNull();
-    await choose('[data-status-ooo]');
-    await type('#av-until', 'Oct 20, 2026');
-    const preview = q('[data-preview]');
-    expect(preview.textContent).toContain('Preview of your changes:');
-    expect(q('[data-preview-chip]').textContent!.trim()).toBe('Out of office until Oct 20');
-    expect(q('[data-status-set]').contains(preview)).toBe(true);
-    q('[data-actions] button:not([data-save] button)').click();
-    await settle(fixture);
-    expect(el().querySelector('[data-preview]')).toBeNull();
-  });
-
   it('dialog: the current status line stays (there is no page header there)', async () => {
     await create({ userId: 9, mode: 'dialog' });
     expect(q('[data-preview-chip]').textContent!.trim()).toBe('Available');
-    await choose('[data-status-ooo]');
-    await type('#av-until', 'Oct 20, 2026');
-    expect(q('[data-preview-chip]').textContent!.trim()).toBe('Out of office until Oct 20');
   });
 
-  it('page: Availability and Work hours are cards with their own heading, and the first has the description (P2)', async () => {
+  it('page: Work hours is a card with its own heading (P2)', async () => {
     await create();
     const cards = Array.from(el().querySelectorAll('.av-card'));
-    expect(cards.map((c) => c.querySelector('h2')?.textContent?.trim())).toEqual([
-      'Availability',
-      'Work hours',
-    ]);
-    expect(q('[data-card-description]').textContent).toContain(
-      'Tell colleagues when you are out of office',
-    );
+    expect(cards.map((c) => c.querySelector('h2')?.textContent?.trim())).toEqual(['Work hours']);
   });
 
   it('page: the action bar says No unsaved changes while clean and Unsaved changes otherwise (P8)', async () => {
     await create();
     expect(q('[data-actions-state]').textContent!.trim()).toBe('No unsaved changes');
     expect(q('[data-actions-state]').getAttribute('role')).toBe('status');
-    await choose('[data-status-ooo]');
+    await type('#av-hours-start', '08:30');
     expect(q('[data-actions-state]').textContent!.trim()).toBe('Unsaved changes');
   });
 
   describe('follows the header menu (BUG-1)', () => {
     const outFromMenu = (): UserAvailabilityDto =>
-      profile({
-        status: 'OUT_OF_OFFICE',
-        until: '2026-10-20',
-        note: 'Covering: Dana',
-        rowVersion: 'V2',
-        current: {
-          state: 'OUT_OF_OFFICE',
-          outUntilUtc: '2026-10-21T04:00:00Z',
-          note: 'Covering: Dana',
-          nextWorkStartUtc: undefined,
-        },
-      });
+      profile({ timeZoneId: 'America/Chicago', rowVersion: 'V2' });
 
     it('a clean form takes the values the menu saved, announces it politely and has nothing to save', async () => {
       await create();
       TestBed.inject(MyAvailability).set(outFromMenu());
       await settle(fixture);
-      expect(q<HTMLInputElement>('[data-status-ooo]').checked).toBe(true);
-      expect(q<HTMLTextAreaElement>('#av-note').value).toBe('Covering: Dana');
-      expect(el().querySelector('[data-preview]')).toBeNull();
+      expect(ddSelect(el()).value).toBe('America/Chicago');
       expect(q('[data-updated-note]').textContent).toContain('Your availability was updated.');
       expect(q('[data-updated-note]').getAttribute('aria-live')).toBe('polite');
       expect(saveButton().disabled).toBe(true);
       expect(el().querySelector('[data-stale]')).toBeNull();
     });
 
-    it("I'm back from the menu puts a form that shows Out of office back to Available", async () => {
+    it('a newer copy from the menu replaces an older one', async () => {
       await create({ initial: outFromMenu() });
       TestBed.inject(MyAvailability).set(profile({ rowVersion: 'V3' }));
       await settle(fixture);
-      expect(q<HTMLInputElement>('[data-status-available]').checked).toBe(true);
+      expect(ddSelect(el()).value).toBe('America/New_York');
       expect(saveButton().disabled).toBe(true);
     });
 
@@ -481,13 +383,13 @@ describe('AvailabilityForm', () => {
       await settle(fixture);
       expect(q('[data-stale]').textContent).toContain('changed somewhere else');
       expect(q<HTMLInputElement>('#av-hours-start').value).toBe('08:30');
-      expect(q<HTMLInputElement>('[data-status-available]').checked).toBe(true);
+      expect(ddSelect(el()).value).toBe('America/New_York');
       expect(mine.saveMyAvailability).not.toHaveBeenCalled();
 
       q<HTMLButtonElement>('[data-load-latest] button').click();
       await settle(fixture);
       expect(el().querySelector('[data-stale]')).toBeNull();
-      expect(q<HTMLInputElement>('[data-status-ooo]').checked).toBe(true);
+      expect(ddSelect(el()).value).toBe('America/Chicago');
       expect(q<HTMLInputElement>('#av-hours-start').value).toBe('09:00');
       expect(q('[data-updated-note]').textContent).toContain('latest availability');
     });
@@ -514,7 +416,7 @@ describe('AvailabilityForm', () => {
       TestBed.inject(MyAvailability).set(outFromMenu());
       await settle(fixture);
       await type('#av-hours-start', '09:00');
-      expect(q<HTMLInputElement>('[data-status-ooo]').checked).toBe(true);
+      expect(ddSelect(el()).value).toBe('America/Chicago');
       expect(el().querySelector('[data-stale]')).toBeNull();
     });
 
@@ -531,7 +433,7 @@ describe('AvailabilityForm', () => {
       await create({ userId: 9 });
       TestBed.inject(MyAvailability).set(outFromMenu());
       await settle(fixture);
-      expect(q<HTMLInputElement>('[data-status-available]').checked).toBe(true);
+      expect(ddSelect(el()).value).toBe('America/New_York');
     });
   });
 });

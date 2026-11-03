@@ -286,6 +286,23 @@
   --mf-sem-neutral-bg: var(--mf-p-slate-bg);
   --mf-sem-neutral-solid: var(--mf-p-slate-solid);
   --mf-sem-neutral-line: var(--mf-p-slate-line);
+  /* Calendar coverage (epic #1074, decision AT): the traffic light of a day, an alias over the semantic hues so a theme editor changes one place.
+     Good = healthy, Watch = risk, Low = critical (orange), Critical = overdue (red); a closed or non-working day is neutral. Colour is never the
+     only signal: every cell also prints the level word and an icon. */
+  --mf-cov-good-bg: var(--mf-sem-healthy-bg);
+  --mf-cov-good-fg: var(--mf-sem-healthy-fg);
+  --mf-cov-good-solid: var(--mf-sem-healthy-solid);
+  --mf-cov-watch-bg: var(--mf-sem-risk-bg);
+  --mf-cov-watch-fg: var(--mf-sem-risk-fg);
+  --mf-cov-watch-solid: var(--mf-sem-risk-solid);
+  --mf-cov-low-bg: var(--mf-sem-critical-bg);
+  --mf-cov-low-fg: var(--mf-sem-critical-fg);
+  --mf-cov-low-solid: var(--mf-sem-critical-solid);
+  --mf-cov-crit-bg: var(--mf-sem-overdue-bg);
+  --mf-cov-crit-fg: var(--mf-sem-overdue-fg);
+  --mf-cov-crit-solid: var(--mf-sem-overdue-solid);
+  --mf-cov-none-bg: var(--mf-surface-alt);
+  --mf-cov-none-fg: var(--mf-sem-neutral-fg);
   --mf-border-soft: #d5d9e1; /* hairlines inside cards (decorative) */
   --mf-border-mid: #c0c6d1; /* control and chip outlines that are not the only cue */
 

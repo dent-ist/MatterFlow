@@ -15,12 +15,11 @@ import { AccountCard } from './account-card';
 import { NotificationPreferences } from './notification-preferences';
 import { AuthStore } from '../../core/auth/auth.store';
 import { MyAvailability } from '../../core/availability/my-availability';
-import { ApiError } from '../../core/http/api-error';
-import { NotificationService } from '../../core/notify/notification.service';
 import { PageTitle } from '../../core/title/page-title';
 import { AvailabilityChip } from '../../shared/availability/availability-chip';
 import { AvailabilityForm, LoadState } from '../../shared/availability/availability-form';
-import { SetOutOfOfficeDialog } from '../../shared/availability/set-out-of-office-dialog';
+import { AbsenceList } from '../../shared/availability/absences/absence-list';
+import { HolidayCard } from '../../shared/availability/absences/holiday-card';
 import { HasUnsavedChanges } from '../../shared/guards/unsaved-changes.guard';
 import { PageHeader, RecordTitle } from '../../shared/ui/page-header';
 import { RecordSkeleton } from '../../shared/ui/record-skeleton';
@@ -46,7 +45,8 @@ import { RecordState, recordStateTitle } from '../../shared/ui/record-state';
     NotificationPreferences,
     RecordSkeleton,
     RecordState,
-    SetOutOfOfficeDialog,
+    AbsenceList,
+    HolidayCard,
     Button,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -70,10 +70,10 @@ import { RecordState, recordStateTitle } from '../../shared/ui/record-state';
         @if (mine.profile() && canAct()) {
           <p-button
             mfActions
-            [label]="primaryLabel()"
-            [loading]="backBusy()"
+            label="Add out of office"
+            icon="pi pi-plus"
             data-primary-action
-            (onClick)="primary()"
+            (onClick)="list()?.openAdd()"
           />
         }
       </mf-page-header>
@@ -83,39 +83,39 @@ import { RecordState, recordStateTitle } from '../../shared/ui/record-state';
     }
     <div class="pp" [class.pp--off]="shown() !== 'ready'" data-profile-grid>
       <div class="pp__col pp__col--main">
+        @if (userId(); as id) {
+          <mf-absence-list [userId]="id" [displayName]="name()" (changed)="mine.refresh()" />
+        }
         <mf-availability-form (loadState)="onLoadState($event)" />
       </div>
       <div class="pp__col pp__col--side">
+        @if (userId(); as id) {
+          <mf-holiday-card [userId]="id" />
+        }
         <mf-account-card />
         <mf-notification-preferences />
       </div>
     </div>
-    <mf-set-out-of-office-dialog />
     <p class="mf-sr-only" role="status" aria-live="polite" data-page-live>{{ live() }}</p>
   `,
 })
 export class ProfilePage implements HasUnsavedChanges {
   protected readonly mine = inject(MyAvailability);
   private readonly auth = inject(AuthStore);
-  private readonly notify = inject(NotificationService);
   private readonly pageTitle = inject(PageTitle);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly form = viewChild(AvailabilityForm);
-  private readonly dialog = viewChild(SetOutOfOfficeDialog);
+  protected readonly list = viewChild(AbsenceList);
+  protected readonly userId = computed(() => this.auth.profile()?.userId ?? null);
 
   /** What the page shows: the skeleton until the form has loaded, then the page, or the record state when the load failed. */
   protected readonly shown = signal<LoadState>('loading');
   protected readonly retrying = signal(false);
-  protected readonly backBusy = signal(false);
   protected readonly live = signal('');
 
   /** The page is only reachable with Task.View, and so is availability; kept explicit so the action never shows without the right. */
   protected readonly canAct = computed(() => this.auth.has('Task.View'));
-
-  protected readonly primaryLabel = computed(() =>
-    this.mine.isOut() ? "I'm back" : 'Set out of office...',
-  );
 
   /** The display name, or the Windows account when the person has none. */
   protected readonly name = computed(() => {
@@ -164,25 +164,5 @@ export class ProfilePage implements HasUnsavedChanges {
     const heading = this.host.nativeElement.querySelector<HTMLElement>('[data-page-title]');
     heading?.setAttribute('tabindex', '-1');
     heading?.focus();
-  }
-
-  /** "Set out of office..." opens the dialog of the header menu; "I'm back" is the same quick action as the menu's. */
-  protected async primary(): Promise<void> {
-    if (!this.mine.isOut()) {
-      this.dialog()?.open();
-      return;
-    }
-    this.backBusy.set(true);
-    try {
-      await this.mine.setAvailable();
-      this.notify.success('Welcome back', 'You show as available again.', { key: 'availability' });
-    } catch (err) {
-      this.notify.error(
-        'We could not update your status',
-        err instanceof ApiError ? err.message : 'Try again.',
-      );
-    } finally {
-      this.backBusy.set(false);
-    }
   }
 }

@@ -1,10 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { MyAvailabilityClient, UserAvailabilityDto } from '../../api/generated/api-client';
+import { FakeMeApi, provideFakeMe, withPermissions } from '../../core/auth/auth-testing';
+import { AuthStore } from '../../core/auth/auth.store';
 import { MyAvailability } from '../../core/availability/my-availability';
 import { NotificationService } from '../../core/notify/notification.service';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { ok, settle } from '../testing/org-testing';
+import { ABSENCE_API } from './absences/absence-api';
 import { SetOutOfOfficeDialog } from './set-out-of-office-dialog';
 
 const dto = (overrides: Partial<UserAvailabilityDto> = {}): UserAvailabilityDto => ({
@@ -36,34 +39,29 @@ describe('SetOutOfOfficeDialog', () => {
   async function open() {
     const client = {
       getMyAvailability: vi.fn().mockReturnValue(ok(dto())),
-      saveMyAvailability: vi.fn().mockReturnValue(
-        ok(
-          dto({
-            status: 'OUT_OF_OFFICE',
-            until: '2026-10-20',
-            rowVersion: 'V2',
-            current: {
-              state: 'OUT_OF_OFFICE',
-              outUntilUtc: '2026-10-21T04:00:00Z',
-              note: 'Covering: Dana',
-              nextWorkStartUtc: undefined,
-            },
-          }),
-        ),
-      ),
+      saveMyAvailability: vi.fn(),
+    };
+    // The Out of office API (epic #1074): the header quick action creates an entry that starts today.
+    const api = {
+      create: vi.fn().mockResolvedValue({}),
+      list: vi.fn().mockResolvedValue([]),
+      back: vi.fn().mockResolvedValue(undefined),
     };
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{ path: 'profile', children: [] }]),
+        provideFakeMe(new FakeMeApi(withPermissions('Task.View'))),
         { provide: MyAvailabilityClient, useValue: client },
+        { provide: ABSENCE_API, useValue: api },
         { provide: USER_TIME_ZONE, useValue: 'America/New_York' },
         { provide: Clock, useValue: { now: () => NOW } },
       ],
     });
+    await TestBed.inject(AuthStore).ensureLoaded();
     const fixture = TestBed.createComponent(SetOutOfOfficeDialog);
     fixture.componentRef.setInput('visible', true);
     await settle(fixture);
-    return { fixture, client };
+    return { fixture, client, api };
   }
 
   const q = <T extends HTMLElement>(sel: string): T => document.querySelector<T>(sel)!;
@@ -108,28 +106,25 @@ describe('SetOutOfOfficeDialog', () => {
     ).toBe(true);
   });
 
-  it('saves out of office from now, keeping the work hours and time zone', async () => {
-    const { fixture, client } = await open();
+  it('creates an entry that starts today', async () => {
+    const { fixture, api } = await open();
     const success = vi.spyOn(TestBed.inject(NotificationService), 'success');
     await type(fixture, '#ooo-until', 'Oct 20, 2026');
     await type(fixture, '#ooo-note', 'Covering: Dana');
     q<HTMLButtonElement>('[data-ooo-confirm] button, button[data-ooo-confirm]').click();
     // The first save loads the API client module with a dynamic import (MyAvailability.client), which a fixed number of timer ticks does not
     // always outlast on a busy machine: wait for the call instead of for a moment.
-    await vi.waitFor(() => expect(client.saveMyAvailability).toHaveBeenCalled());
+    await vi.waitFor(() => expect(api.create).toHaveBeenCalled());
     await settle(fixture);
 
-    expect(client.saveMyAvailability).toHaveBeenCalledWith({
-      status: 'OUT_OF_OFFICE',
-      from: undefined,
-      until: '2026-10-20',
+    // The entry starts today (Oct 15 in the profile zone), ends on the chosen day and has the type that was chosen (Vacation by default).
+    expect(api.create).toHaveBeenCalledWith(expect.any(Number), {
+      type: 'VACATION',
+      startDate: '2026-10-15',
+      endDate: '2026-10-20',
       note: 'Covering: Dana',
-      timeZoneId: 'America/New_York',
-      workHours: [{ dayOfWeek: 1, start: '08:00', end: '12:00' }],
-      rowVersion: 'V1',
     });
     await vi.waitFor(() => expect(fixture.componentInstance.visible()).toBe(false));
-    expect(TestBed.inject(MyAvailability).isOut()).toBe(true);
     // #525: the toast carries the shared availability key, so "I'm back" replaces it.
     expect(success).toHaveBeenCalledWith('You are out of office', expect.any(String), {
       key: 'availability',
@@ -192,7 +187,7 @@ describe('SetOutOfOfficeDialog', () => {
     });
 
     it('saves the chosen date, and the chips are a labelled group of real buttons', async () => {
-      const { fixture, client } = await open();
+      const { fixture, api } = await open();
       const group = q('[data-ooo-presets]');
       expect(group.getAttribute('role')).toBe('group');
       expect(group.getAttribute('aria-labelledby')).toBe('ooo-until-label');
@@ -206,9 +201,10 @@ describe('SetOutOfOfficeDialog', () => {
       chip('monday').click();
       await settle(fixture);
       q<HTMLButtonElement>('[data-ooo-confirm] button, button[data-ooo-confirm]').click();
-      await vi.waitFor(() => expect(client.saveMyAvailability).toHaveBeenCalled());
-      expect(client.saveMyAvailability).toHaveBeenCalledWith(
-        expect.objectContaining({ until: '2026-10-19' }),
+      await vi.waitFor(() => expect(api.create).toHaveBeenCalled());
+      expect(api.create).toHaveBeenCalledWith(
+        expect.any(Number),
+        expect.objectContaining({ endDate: '2026-10-19' }),
       );
     });
 
