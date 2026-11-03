@@ -465,3 +465,48 @@ The Notes editor offers a fixed palette of eight text colours plus Default: red,
 The Notes editor offers a fixed palette of eight text colours plus Default: red, orange, amber, green, teal, blue, violet and slate (grey). They are the tokens `--mf-note-<key>` in `docs/ux/tokens.css`; `scripts/check-theme-contrast.mjs` checks each at 4.5:1 on a card and on the quote tint. A note stores a colour as `<span data-color="red">` (never inline CSS); the server keeps only these eight keys. The page maps the key to the token (`[data-color='red'] { color: var(--mf-note-red) }` in `note-editor-colours.scss`). Colour never carries meaning alone: the menu names every colour, and bold or headings stay available.
 
 **The one matter form (MD-43, #1061).** "+ New Matter" and Edit (Summary) open the same component, `mf-matter-form-dialog`. Field order: Client, Matter number, CM Number, Matter name, Sensitive matter, AI allowed, custom fields. **CM Number is a read-only preview** (client number, a dash, matter number; updates live; never typed). In Edit, Client and Matter number sit in the same places but are locked: the Matter number unlocks after a short confirmation ("Change the matter number?", primary "Unlock the matter number") and only for holders of `Matter.EditNumber`; a changed number is confirmed again on Save with the exact result ("The CM Number changes from A to B. It is used in references everywhere. Continue?", primary "Change CM Number"); the Client stays locked because the API has no way to move a matter to another client. The "Total" tile of the asset strip was removed in the same change.
+
+## 12. Dashboard Calendar (epic #1074, decision AT; mockup `docs/ux/mockups/dashboard-calendar/` on branch `calendar-mockup`; plan `docs/ux/calendar/plan.md`)
+
+What the Calendar adds to the theme, and the rules a later change must keep. The screens are `features/dashboard/calendar/` (Month, Week, the day panel, the insights), `shared/availability/absences/` (the Out of office list and dialog on the Profile) and `features/admin/holidays/` (Settings > Holidays, the thresholds, the person's calendar field).
+
+### 12.1 Coverage tokens
+
+A day is coloured by the level the server computes (GOOD, WATCH, LOW, CRITICAL, CLOSED, NON_WORKING). The colours are the proposed alias tokens `--mf-cov-<good|watch|low|crit>-<bg|fg|solid>` and `--mf-cov-none-<bg|fg>` in `docs/ux/tokens.css`, built **only** from the existing semantic hues: Good is healthy (teal), Watch is risk (amber), Low is critical (deep orange), Critical is overdue (red); Closed and Non-working are neutral. The blue capacity ramp (`--mf-cap-*`) stays for load and is never used for coverage. Every pairing is in `scripts/check-theme-contrast.mjs` (text 4.5:1 on its tint and on a card, the solid 3:1):
+
+| Pairing | Foreground | Background | Ratio | Needs |
+| --- | --- | --- | --- | --- |
+| coverage good text on its tint | `--mf-cov-good-fg` #0b6b5f | `--mf-cov-good-bg` #ddf3ef | 5.5:1 | 4.5:1 |
+| coverage good text on a card | `--mf-cov-good-fg` #0b6b5f | `--mf-surface` #ffffff | 6.4:1 | 4.5:1 |
+| coverage good solid on its tint | `--mf-cov-good-solid` #0f766e | `--mf-cov-good-bg` #ddf3ef | 4.7:1 | 3:1 |
+| coverage good solid on a card | `--mf-cov-good-solid` #0f766e | `--mf-surface` #ffffff | 5.5:1 | 3:1 |
+| coverage watch text on its tint | `--mf-cov-watch-fg` #8a4b00 | `--mf-cov-watch-bg` #fff4db | 6.2:1 | 4.5:1 |
+| coverage watch text on a card | `--mf-cov-watch-fg` #8a4b00 | `--mf-surface` #ffffff | 6.8:1 | 4.5:1 |
+| coverage watch solid on its tint | `--mf-cov-watch-solid` #b45309 | `--mf-cov-watch-bg` #fff4db | 4.6:1 | 3:1 |
+| coverage watch solid on a card | `--mf-cov-watch-solid` #b45309 | `--mf-surface` #ffffff | 5.0:1 | 3:1 |
+| coverage low text on its tint | `--mf-cov-low-fg` #9a3a06 | `--mf-cov-low-bg` #fdebdc | 6.1:1 | 4.5:1 |
+| coverage low text on a card | `--mf-cov-low-fg` #9a3a06 | `--mf-surface` #ffffff | 7.0:1 | 4.5:1 |
+| coverage low solid on its tint | `--mf-cov-low-solid` #c2410c | `--mf-cov-low-bg` #fdebdc | 4.5:1 | 3:1 |
+| coverage low solid on a card | `--mf-cov-low-solid` #c2410c | `--mf-surface` #ffffff | 5.2:1 | 3:1 |
+| coverage crit text on its tint | `--mf-cov-crit-fg` #b42318 | `--mf-cov-crit-bg` #fdecea | 5.7:1 | 4.5:1 |
+| coverage crit text on a card | `--mf-cov-crit-fg` #b42318 | `--mf-surface` #ffffff | 6.6:1 | 4.5:1 |
+| coverage crit solid on its tint | `--mf-cov-crit-solid` #c62828 | `--mf-cov-crit-bg` #fdecea | 4.9:1 | 3:1 |
+| coverage crit solid on a card | `--mf-cov-crit-solid` #c62828 | `--mf-surface` #ffffff | 5.6:1 | 3:1 |
+| coverage closed text on its tint | `--mf-cov-none-fg` #475569 | `--mf-cov-none-bg` #eef0f4 | 6.6:1 | 4.5:1 |
+
+**Colour is never the only signal.** Each cell prints the level as an icon and a word (Good with a check, Watch with a triangle, Low with an exclamation, Critical with a ban, Closed with a flag, Non-working with a moon), "available of expected" in words ("6 of 6 expected"; "6/6" in a narrow cell by a container query) and how many are out. Weekends and non-working days are muted, today is a filled number, the selected day an outlined cell. The accessible name of a day carries the date, "today", the level word, the numbers and the holiday names; the tooltip adds the total in view and the holiday and non-working counts.
+
+Holiday category colours are the note-tag palette (`--mf-tag-<colour>-bg|fg`), always with the flag icon and the category and name; the admin picks the colour key. Absence types are a word, a glyph (sun, heart, book, users, ellipsis) and a semantic hue (info, critical, healthy, person, neutral).
+
+### 12.2 Tab, page and panel
+
+- The tab is the shared `mf-tabs` strip with the icon `pi-calendar` from `shared/ui/tab-icons.ts` (key `calendar`), after Users, shown with `Dashboard.ViewCalendar`; a link without the permission shows the usual "not available for your role" note. Settings > Holidays uses `pi-flag` (key `holidays`).
+- The Pod filter is the page-wide Scope of the Dashboard header (All pods, My pods, one pod; the default is the server's). The tab adds a Role filter, Month and Week, and "Add out of office" (`User.ManageAvailability`). The state is in the address: `cal`, `month`, `week`, `day`, `role` with the page's `pod`; defaults are not written. Previous, Today and Next and the arrow keys inside the grid follow My Matters; no new shortcut (#420).
+- **Fixed page**: from 768 x 561 the document never scrolls; the grid, the week table and the panel scroll inside themselves. Below it (and on a phone) the page scrolls.
+- The day panel is read-only (section 6): docked from 1024 px (340 px, 300 px up to 1099 px), a slide-over from 768 to 1023 px, a bottom sheet under 768 px (Close, Escape, a click outside; focus goes to Close when it opens as a sheet). It shows the date, holidays by category, four counts, coverage by pod (level icon and word, a bar with the minimum marked), then AVAILABLE and UNAVAILABLE, each grouped by Role in the server's order and sorted by workload as the server returns them (Available: lightest first; Unavailable: heaviest first). A row has the name, the pod, the open-task count as a bare number and a state chip; an unavailable person has the reason, "back MM/DD" and, only when the server sent it, the type of absence. A note or a task title is never in the panel.
+- Dates follow section 8 (`MM/DD`, with the year when it is not the current one); headings and aria text spell the month.
+- Dialogs are `mf-form-dialog` (Add and Edit out of office, calendar, holiday, import; Cancel left, primary right, "Discard changes?") and `mf-confirm-dialog` (delete); a phone gets them full screen.
+
+### 12.3 States
+
+Loading shows a skeleton of the grid; an error shows `mf-dash-state` with Retry; no people shows "No people to plan yet"; a role with nobody shows "Clear filters"; a failed refresh keeps the figures and shows the stale banner. The Profile list, the holiday screens and the threshold form have their own loading, empty and error lines, each with Retry.

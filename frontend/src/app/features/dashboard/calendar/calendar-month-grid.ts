@@ -78,7 +78,7 @@ export const levelClass = (level: CalDay['level']): string => `cv-${LEVELS[level
                 <span class="top">
                   <span class="num">{{ c.num }}</span>
                   @if (c.day && c.inMonth && !c.muted && lv(c); as l) {
-                    <span class="lv" aria-hidden="true"
+                    <span class="lv" [class.lv--good]="c.day.level === 'GOOD'" aria-hidden="true"
                       ><i class="pi" [class]="l.icon"></i><span class="lw">{{ l.word }}</span></span
                     >
                   }
@@ -136,7 +136,7 @@ export const levelClass = (level: CalDay['level']): string => `cv-${LEVELS[level
     }
     .cgrid {
       display: grid;
-      grid-auto-rows: minmax(var(--mf-cal-row, 72px), 1fr);
+      grid-auto-rows: minmax(var(--mf-cal-row, 64px), 1fr);
       flex: 1 1 0;
       min-height: 0;
       overflow: auto;
@@ -144,7 +144,7 @@ export const levelClass = (level: CalDay['level']): string => `cv-${LEVELS[level
     .wk {
       display: grid;
       grid-template-columns: repeat(7, minmax(0, 1fr));
-      min-height: var(--mf-cal-row, 72px);
+      min-height: var(--mf-cal-row, 64px);
     }
     .cell {
       min-width: 0;
@@ -257,11 +257,14 @@ export const levelClass = (level: CalDay['level']): string => `cv-${LEVELS[level
       .cnt .short {
         display: block;
       }
-      .lw {
+      .lv--good .lw {
         display: none;
       }
     }
     @container (max-width: 90px) {
+      .lw {
+        display: none;
+      }
       .out,
       .more {
         display: none;
@@ -278,6 +281,7 @@ export const levelClass = (level: CalDay['level']): string => `cv-${LEVELS[level
         flex: none;
       }
       .cgrid {
+        flex: none;
         overflow: visible;
         grid-auto-rows: minmax(64px, auto);
       }

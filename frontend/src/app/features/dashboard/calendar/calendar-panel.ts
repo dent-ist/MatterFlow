@@ -137,15 +137,8 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
               <p class="lvl" [class]="'lvl ' + cls(p.level)" data-panel-level>
                 <i class="pi" [class]="LEVELS[p.level].icon" aria-hidden="true"></i>
                 <span
-                  ><b>Coverage {{ LEVELS[p.level].word }}</b>
-                  @if (p.counts.expected > 0) {
-                    : {{ p.counts.available }} of {{ p.counts.expected }} expected people are in ({{
-                      pct(p)
-                    }}%).
-                  } @else {
-                    : {{ LEVELS[p.level].hint }}.
-                  }
-                </span>
+                  ><b>Coverage {{ LEVELS[p.level].word }}:</b> {{ levelText(p) }}</span
+                >
               </p>
 
               @if (p.pods.length > 0) {
@@ -697,6 +690,11 @@ export class CalPanel {
   protected cls = (level: CoverageLevel): string => levelClass(level);
   protected pct = (p: DayPanel): number =>
     p.counts.expected > 0 ? Math.round((p.counts.available / p.counts.expected) * 100) : 0;
+  protected levelText(p: DayPanel): string {
+    return p.counts.expected > 0
+      ? `${p.counts.available} of ${p.counts.expected} expected people are in (${this.pct(p)}%).`
+      : `${LEVELS[p.level].hint}.`;
+  }
   protected share = (n: number, of: number): number => (of > 0 ? Math.min(100, (n / of) * 100) : 0);
   protected cap = (p: DayPerson) => STATE_META[loadState(p.load)];
   protected reasonText(p: DayPerson): string {

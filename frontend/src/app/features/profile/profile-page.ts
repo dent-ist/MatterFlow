@@ -10,7 +10,6 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { Button } from 'primeng/button';
 import { AccountCard } from './account-card';
 import { NotificationPreferences } from './notification-preferences';
 import { AuthStore } from '../../core/auth/auth.store';
@@ -47,7 +46,6 @@ import { RecordState, recordStateTitle } from '../../shared/ui/record-state';
     RecordState,
     AbsenceList,
     HolidayCard,
-    Button,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './profile-page.scss',
@@ -67,15 +65,6 @@ import { RecordState, recordStateTitle } from '../../shared/ui/record-state';
             <mf-availability-chip [availability]="mine.current()" />
           }
         </mf-record-title>
-        @if (mine.profile() && canAct()) {
-          <p-button
-            mfActions
-            label="Add out of office"
-            icon="pi pi-plus"
-            data-primary-action
-            (onClick)="list()?.openAdd()"
-          />
-        }
       </mf-page-header>
     }
     @if (shown() === 'loading') {
@@ -106,16 +95,12 @@ export class ProfilePage implements HasUnsavedChanges {
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly form = viewChild(AvailabilityForm);
-  protected readonly list = viewChild(AbsenceList);
   protected readonly userId = computed(() => this.auth.profile()?.userId ?? null);
 
   /** What the page shows: the skeleton until the form has loaded, then the page, or the record state when the load failed. */
   protected readonly shown = signal<LoadState>('loading');
   protected readonly retrying = signal(false);
   protected readonly live = signal('');
-
-  /** The page is only reachable with Task.View, and so is availability; kept explicit so the action never shows without the right. */
-  protected readonly canAct = computed(() => this.auth.has('Task.View'));
 
   /** The display name, or the Windows account when the person has none. */
   protected readonly name = computed(() => {

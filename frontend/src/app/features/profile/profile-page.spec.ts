@@ -70,14 +70,13 @@ describe('ProfilePage', () => {
     expect(root.querySelectorAll('h1').length).toBe(1);
   });
 
-  it('the header names the person, gives roles and primary Pod, the chip and ONE primary action (P11)', async () => {
+  it('the header names the person, gives roles and primary Pod and the chip (P11)', async () => {
     const { root } = await create();
     expect(text(root, 'h1')).toContain('Kim Admin');
     expect(root.querySelector('h1 [data-availability-chip]')?.textContent).toContain('Available');
     expect(text(root, '[data-page-description]')).toBe('Data Technician, Pod Lead \u00b7 Main Pod');
-    const actions = root.querySelectorAll('[data-page-actions] button');
-    expect(actions.length).toBe(1);
-    expect(actions[0].textContent).toContain('Add out of office');
+    // The Out of office list has its own Add button; the header carries no action.
+    expect(root.querySelectorAll('[data-page-actions] button').length).toBe(0);
   });
 
   it('with no display name the header shows the Windows account', async () => {
@@ -93,9 +92,9 @@ describe('ProfilePage', () => {
     expect(root.querySelector('[data-holiday-calendar]')?.textContent).toContain('US Holiday');
   });
 
-  it('the header button opens the Add dialog', async () => {
+  it('the Add button of the list opens the Add dialog', async () => {
     const { fixture, root } = await create();
-    root.querySelector<HTMLButtonElement>('[data-primary-action] button')!.click();
+    root.querySelector<HTMLButtonElement>('[data-add-absence]')!.click();
     await settle(fixture);
     expect(document.querySelector('[data-absence-dialog]')).not.toBeNull();
   });

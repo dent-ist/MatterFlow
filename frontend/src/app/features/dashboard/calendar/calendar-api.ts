@@ -1,5 +1,6 @@
 import { Injectable, InjectionToken, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { QuietRequests } from '../../../core/http/interceptors';
 import {
   CalendarDay,
   CalendarDayCell,
@@ -104,10 +105,14 @@ export function toPanel(d: CalendarDay): DayPanel {
 @Injectable({ providedIn: 'root' })
 export class HttpCalendarApi implements CalendarApi {
   private readonly client = inject(DashboardCalendarClient);
+  /** The Calendar shows its failures inline (error state, stale banner, Retry): no toast as well. */
+  private readonly quiet = inject(QuietRequests);
 
   async days(from: string, to: string, q: CalQuery): Promise<CalDays> {
-    const r = await firstValueFrom(
-      this.client.getDashboardCalendarDays(from, to, q.podScope, q.role ?? undefined),
+    const r = await this.quiet.runInline(() =>
+      firstValueFrom(
+        this.client.getDashboardCalendarDays(from, to, q.podScope, q.role ?? undefined),
+      ),
     );
     return {
       asOfUtc: r.asOfUtc,
@@ -120,15 +125,15 @@ export class HttpCalendarApi implements CalendarApi {
 
   async day(date: string, q: CalQuery): Promise<DayPanel> {
     return toPanel(
-      await firstValueFrom(
-        this.client.getDashboardCalendarDay(date, q.podScope, q.role ?? undefined),
+      await this.quiet.runInline(() =>
+        firstValueFrom(this.client.getDashboardCalendarDay(date, q.podScope, q.role ?? undefined)),
       ),
     );
   }
 
   async summary(q: CalQuery): Promise<CalSummary> {
-    const r = await firstValueFrom(
-      this.client.getDashboardCalendarSummary(q.podScope, q.role ?? undefined),
+    const r = await this.quiet.runInline(() =>
+      firstValueFrom(this.client.getDashboardCalendarSummary(q.podScope, q.role ?? undefined)),
     );
     return {
       thresholds: { ...r.thresholds },

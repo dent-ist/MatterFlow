@@ -444,7 +444,8 @@ const ALL_ROLES = '';
         inset: 0 0 0 auto;
         z-index: 20;
         width: min(340px, 92%);
-        filter: drop-shadow(var(--mf-shadow-pop));
+        box-shadow: var(--mf-shadow-pop);
+        border-radius: var(--mf-radius-xl);
       }
       .pc__scrim {
         position: fixed;
@@ -500,7 +501,8 @@ const ALL_ROLES = '';
         z-index: 60;
         width: auto;
         height: min(78dvh, 640px);
-        filter: drop-shadow(var(--mf-shadow-pop));
+        box-shadow: var(--mf-shadow-pop);
+        border-radius: var(--mf-radius-xl);
       }
       .pc__scrim {
         position: fixed;
@@ -605,7 +607,10 @@ export class DashCalendarTab {
     if (this.closed()) return null;
     const named = this.address().day;
     if (named) return named;
-    return this.docked() && this.fixed() ? this.today() : null;
+    // Open by default on a desktop (Month and Week) when today is in the view.
+    return this.docked() && this.fixed() && this.range().dates.includes(this.today())
+      ? this.today()
+      : null;
   });
 
   protected readonly emptyKind = computed<'none' | 'filtered' | null>(() => {
