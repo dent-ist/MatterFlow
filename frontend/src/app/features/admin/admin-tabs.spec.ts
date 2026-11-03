@@ -68,12 +68,18 @@ describe('admin tab model (#545)', () => {
   it('builds mf-tabs items for the allowed tabs only, with "--" for an unknown count and the number spoken as active', () => {
     const can = has('Priority.Manage', 'StatusLabel.Manage');
     expect(adminTabItems(TABS, can)).toEqual([
-      { key: 'priorities', label: 'Priorities' },
-      { key: 'status-labels', label: 'Status labels' },
+      { key: 'priorities', label: 'Priorities', icon: 'pi-flag' },
+      { key: 'status-labels', label: 'Status labels', icon: 'pi-tag' },
     ]);
     expect(adminTabItems(TABS, can, { priorities: 12, 'status-labels': null })).toEqual([
-      { key: 'priorities', label: 'Priorities', count: 12, name: 'Priorities, 12 active' },
-      { key: 'status-labels', label: 'Status labels', count: '--' },
+      {
+        key: 'priorities',
+        label: 'Priorities',
+        icon: 'pi-flag',
+        count: 12,
+        name: 'Priorities, 12 active',
+      },
+      { key: 'status-labels', label: 'Status labels', icon: 'pi-tag', count: '--' },
     ]);
     // A zero is a real answer and is shown.
     expect(adminTabItems(TABS, can, { priorities: 0 })[0]).toMatchObject({ count: 0 });

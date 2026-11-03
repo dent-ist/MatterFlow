@@ -395,6 +395,32 @@ The seven tabs of a Matter (Summary, Tasks, Projects, Assets, Productions, Notes
 
 A new Matter tab uses `mf-list-toolbar` (record or work list) or the row above with the same order; it does not invent a header of its own.
 
+### 11.3 Tab strips: one component, an icon on every tab (epic #1037, LC-10 #1058)
+
+Every tab strip in the app is the shared `mf-tabs` (`shared/ui/tabs.ts`): one height, spacing, selected style (2 px primary underline), hover and focus style, count in brackets, small number badge, and the same overflow behaviour (the strip scrolls sideways with an edge fade and chevron on a narrow screen, the selected tab is brought into view). `mf-work-tabs` (My Work, Pod Work), the Dashboard strip (`mf-dash-tabs`) and the Swimlane lane switcher are thin wrappers around it; none draws its own `role="tab"`.
+
+**An icon on every tab.** `MfTab.icon` is required, so a tab without an icon does not compile. Icons are PrimeIcons classes from one registry, `shared/ui/tab-icons.ts` (`tabIcon(key or label)`): the same concept has the same icon wherever it shows. The icon is decorative (`aria-hidden`), the label (with the count) is the accessible name, and the selected tab is never shown by colour alone (underline and bold).
+
+| Concept | Icon | Where |
+| --- | --- | --- |
+| Summary, Overview | `pi-home` | Matter, Client, Task type, Workflow, Asset type, My Matters |
+| Details | `pi-info-circle` | Project, Asset, Step, Report |
+| Tasks, Linked tasks | `pi-check-square` | Matter, Project, Asset, Client, search results |
+| Projects / Assets | `pi-folder` / `pi-database` | Matter, Task, My Matters, search, Asset type |
+| Matters / Clients | `pi-briefcase` / `pi-building` | Client page, search |
+| Productions / Notes | `pi-send` / `pi-file-edit` | Matter |
+| Activity, Activities, History | `pi-history` | Matter, Asset, Report, My Matters |
+| Comments | `pi-comments` | Task |
+| Workflow, Workflows | `pi-sitemap` | Task, Task type |
+| Steps / Used by / Versions | `pi-list` / `pi-link` / `pi-clone` | Workflow, Step |
+| Calendar / Metrics | `pi-calendar` / `pi-chart-bar` | My Matters |
+| Dashboard: Breakdowns, Trends, Swimlane, Users | `pi-chart-pie`, `pi-chart-line`, `pi-table`, `pi-user` | Dashboard |
+| My Work and Pod Work views | Active `pi-bolt`, Due soon `pi-clock`, Closed `pi-check-circle`, Created by me `pi-user-edit`, Unassigned `pi-inbox`, By member `pi-users`, All open `pi-list` | My Work, Pod Work |
+| Admin: Users, Roles, Pods; Labels; Task types, Workflows, Steps; Reports | `pi-user`, `pi-shield`, `pi-users`; `pi-flag`, `pi-tag`, `pi-pause`, `pi-hashtag`; `pi-tags`, `pi-sitemap`, `pi-list`; `pi-file`, `pi-folder-open`, `pi-play`, `pi-share-alt`, `pi-heart` | Administration |
+| Settings: Branding | `pi-palette` | Settings |
+
+A new tab adds its concept to `TAB_ICONS` first. The guard `shared/ui/tab-icons.spec.ts` fails when an entry is not a PrimeIcons class, when a file draws its own `role="tab"`, or when a file that uses `mf-tabs` builds tabs without an icon.
+
 ## 10. Note text colours (epic #1001, MD-30, #1034)
 
 The Notes editor offers a fixed palette of eight text colours plus Default: red, orange, amber, green, teal, blue, violet and slate (grey). They are the tokens `--mf-note-<key>` in `docs/ux/tokens.css`; `scripts/check-theme-contrast.mjs` checks each at 4.5:1 on a card and on the quote tint. A note stores a colour as `<span data-color="red">` (never inline CSS); the server keeps only these eight keys. The page maps the key to the token (`[data-color='red'] { color: var(--mf-note-red) }` in `note-editor-refs.scss`). Colour never carries meaning alone: the menu names every colour, and bold or headings stay available.

@@ -229,23 +229,16 @@ describe('WorkTabs', () => {
     expect(buttons()[0].getAttribute('aria-controls')).toBe('x-panel');
   });
 
-  it('mutes zero counts and bolds only the counts that ask for it while above zero', () => {
+  it('shows every count in brackets in the shared strip style (LC-10: one count style)', () => {
     fixture.componentRef.setInput('tabs', [
       { key: 'a', label: 'Active', count: 7 },
       { key: 'b', label: 'Due Soon', count: 0 },
-      { key: 'c', label: 'Done', count: 4 },
-      { key: 'd', label: 'Mine', count: 0 },
     ]);
     fixture.detectChanges();
     const counts = Array.from(
       (fixture.nativeElement as HTMLElement).querySelectorAll('.count'),
-    ).map((c) => [c.classList.contains('count--strong'), c.classList.contains('count--zero')]);
-    expect(counts).toEqual([
-      [true, false],
-      [false, true],
-      [false, false],
-      [false, true],
-    ]);
+    ).map((c) => c.textContent);
+    expect(counts).toEqual(['(7)', '(0)']);
   });
 
   it('selects on click and moves with the arrow keys, Home and End', () => {
@@ -257,7 +250,7 @@ describe('WorkTabs', () => {
     buttons()[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'End' }));
     buttons()[2].dispatchEvent(new KeyboardEvent('keydown', { key: 'Home' }));
     buttons()[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'x' }));
-    expect(emitted).toEqual(['b', 'b', 'c', 'c', 'a']);
+    expect(emitted).toEqual(['b', 'b', 'c', 'c']); // Home on the selected first tab changes nothing
   });
 });
 

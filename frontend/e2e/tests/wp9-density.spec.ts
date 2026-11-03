@@ -394,7 +394,7 @@ test.describe('Density and space', () => {
     await expect(body.locator('[data-loading]')).toHaveText(/Loading tasks/);
     // The headers and the filter row stay; the tab counts are reserved as (--).
     await expect(page.locator('thead tr[data-filter-row]')).toBeVisible();
-    await expect(myWork.tab(/^Active/).locator('[data-count-pending]')).toHaveText('(--)');
+    await expect(myWork.tab(/^Active/).locator('.count')).toHaveText('(--)');
     const titleBefore = (await page.locator('thead th[data-col="title"]').boundingBox())!.width;
     const tabBefore = (await myWork.tab(/^Due soon/).boundingBox())!;
     const rowH = (await body.locator('tr[data-skeleton]').first().boundingBox())!.height;

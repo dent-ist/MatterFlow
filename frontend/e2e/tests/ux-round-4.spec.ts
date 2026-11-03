@@ -568,7 +568,7 @@ test.describe('Round 4: queues, wording and accessibility', () => {
 
   test('UXR4-21: the zero count of a My Work tab has at least 4.5:1 contrast', async ({ page }) => {
     await page.goto('/my-work');
-    const zero = page.locator('.count--zero').first();
+    const zero = page.locator('mf-tabs .count', { hasText: '(0)' }).first();
     await expect(zero).toBeVisible();
     const colors = await zero.evaluate((el) => {
       const walk = (node: Element | null): string => {

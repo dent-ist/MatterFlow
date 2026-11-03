@@ -19,6 +19,13 @@ class Host {
   retried = 0;
 }
 
+const noIcon = (tabs: object[]) =>
+  tabs.map((t) => {
+    const copy: Record<string, unknown> = { ...t };
+    delete copy['icon'];
+    return copy;
+  });
+
 describe('mf-record-skeleton (#247, #615)', () => {
   it('adds "Still loading... Retry" after 8 seconds and Retry is the page\'s own request again', async () => {
     vi.useFakeTimers();
@@ -132,7 +139,7 @@ describe('mf-record-skeleton (#247, #615)', () => {
   });
 
   it('builds the tab strips the pages use, so the labels cannot drift', () => {
-    expect(recordTabs('client', { matters: 63 })).toEqual([
+    expect(noIcon(recordTabs('client', { matters: 63 }))).toEqual([
       { key: 'details', label: 'Overview' },
       { key: 'matters', label: 'Matters', count: 63 },
     ]);

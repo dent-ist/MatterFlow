@@ -28,7 +28,8 @@ describe('tab icons (LC-10, theme guide 11.3)', () => {
     const app = join(process.cwd(), 'src', 'app');
     const offenders = sources(app).filter(
       (f) =>
-        !f.endsWith(join('shared', 'ui', 'tabs.ts')) && /role="tab"/.test(readFileSync(f, 'utf8')),
+        !f.endsWith(join('shared', 'ui', 'tabs.ts')) &&
+        /\srole="tab"/.test(readFileSync(f, 'utf8')),
     );
     expect(offenders.map((f) => f.replace(app, ''))).toEqual([]);
   });

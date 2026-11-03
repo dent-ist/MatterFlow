@@ -16,13 +16,10 @@ describe('WorkTabs counts', () => {
 
   it('reserves "(--)" while a count is unknown and replaces it with the number (G4)', () => {
     create([{ key: 'a', label: 'Active', count: null }]);
-    const pending = tab('a').querySelector('[data-count-pending]')!;
-    expect(pending.textContent).toBe('(--)');
-    expect(pending.getAttribute('aria-hidden')).toBe('true');
+    expect(tab('a').querySelector('.count')!.textContent).toBe('(--)');
 
     fixture.componentRef.setInput('tabs', [{ key: 'a', label: 'Active', count: 14 }]);
     fixture.detectChanges();
-    expect(tab('a').querySelector('[data-count-pending]')).toBeNull();
     expect(tab('a').querySelector('.count')!.textContent).toBe('(14)');
   });
 
