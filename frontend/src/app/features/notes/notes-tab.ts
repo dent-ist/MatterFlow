@@ -38,7 +38,7 @@ import { NotificationService } from '../../core/notify/notification.service';
 import { taskTypeChipColours } from '../../shared/task-type/task-type-colours';
 import { ConfirmDialog } from '../../shared/ui/confirm-dialog';
 import { AiButton, AiComingSoon } from '../../shared/ui/ai/ai-assist';
-import { DropdownItem, Dropdown } from '../../shared/ui/dropdown';
+import { DropdownItem } from '../../shared/ui/dropdown';
 import { NumericDatePipe } from '../../shared/ui/numeric-date';
 import { SearchBox } from '../../shared/ui/search-box';
 import { FormDialog } from '../../shared/ui/form-dialog';
@@ -113,7 +113,6 @@ interface RefChip {
     AiButton,
     AiComingSoon,
     ConfirmDialog,
-    Dropdown,
     FormDialog,
     NgTemplateOutlet,
     NoteEditor,
@@ -130,6 +129,7 @@ interface RefChip {
     './notes-tab.scss',
     './notes-tab-views.scss',
     './notes-tab-panel.scss',
+    './notes-tab-tpl.scss',
     './notes-tab-misc.scss',
   ],
   template: `
@@ -345,45 +345,50 @@ interface RefChip {
                 </div>
                 @if (shownTemplates().length) {
                   <ul class="nt__nl" data-template-list>
-                    @for (t of shownTemplates(); track t.noteTemplateId) {
-                      <li class="nt__tpl">
-                        <button
-                          type="button"
-                          class="nt__row"
-                          data-template-item
-                          [attr.aria-current]="
-                            selTemplate()?.noteTemplateId === t.noteTemplateId ? 'true' : null
-                          "
-                          (click)="openTemplate(t)"
-                        >
-                          <span class="nt__tile" aria-hidden="true"
-                            ><i class="pi pi-clone"></i
-                          ></span>
-                          <span>
-                            <span class="nt__tt"
-                              ><span class="nt__ti">{{ t.name }}</span></span
-                            >
-                            <span class="nt__pv"
-                              >{{ t.description }}
-                              <span class="nt__plain">{{ preview(t.bodyHtml) }}</span></span
-                            >
-                            <span class="nt__tags">
-                              <span class="nt__pill" [class.nt__pill--info]="t.scope === 'FIRM'">
-                                <i
-                                  class="pi"
-                                  [class]="t.scope === 'FIRM' ? 'pi-users' : 'pi-briefcase'"
-                                  aria-hidden="true"
-                                ></i>
-                                {{ t.scope === 'FIRM' ? 'Firm-wide' : 'This matter' }}
-                              </span>
-                              @for (g of t.tags; track g.noteTagId) {
-                                <mf-note-tag [name]="g.name" [colourKey]="g.colourKey" />
-                              }
-                              <span class="nt__plain">Used {{ t.usedCount }} times</span>
-                            </span>
-                          </span>
-                        </button>
+                    @for (grp of templateGroups(); track grp.scope) {
+                      <li class="nt__grp" data-template-group>
+                        {{ grp.label }}
                       </li>
+                      @for (t of grp.items; track t.noteTemplateId) {
+                        <li class="nt__tpl">
+                          <button
+                            type="button"
+                            class="nt__row"
+                            data-template-item
+                            [attr.aria-current]="
+                              selTemplate()?.noteTemplateId === t.noteTemplateId ? 'true' : null
+                            "
+                            (click)="openTemplate(t)"
+                          >
+                            <span class="nt__tile" aria-hidden="true"
+                              ><i class="pi pi-clone"></i
+                            ></span>
+                            <span>
+                              <span class="nt__tt"
+                                ><span class="nt__ti">{{ t.name }}</span></span
+                              >
+                              <span class="nt__pv"
+                                >{{ t.description }}
+                                <span class="nt__plain">{{ preview(t.bodyHtml) }}</span></span
+                              >
+                              <span class="nt__tags">
+                                <span
+                                  class="nt__pill"
+                                  [class.nt__pill--info]="t.scope === 'SYSTEM'"
+                                  data-template-level
+                                >
+                                  <i class="pi" [class]="levelIcon(t.scope)" aria-hidden="true"></i>
+                                  {{ levelLabel(t.scope) }}
+                                </span>
+                                @for (g of t.tags; track g.noteTagId) {
+                                  <mf-note-tag [name]="g.name" [colourKey]="g.colourKey" />
+                                }
+                                <span class="nt__plain">Used {{ t.usedCount }} times</span>
+                              </span>
+                            </span>
+                          </button>
+                        </li>
+                      }
                     }
                   </ul>
                 } @else {
@@ -565,38 +570,94 @@ interface RefChip {
                         [maxLength]="160"
                         [(value)]="tplDescription"
                       />
-                      <mf-text-field
-                        inputId="te-title"
-                        label="Title when used"
-                        help="The first line of the new note. May use {{ '{{date}}' }}, {{ '{{matter}}' }}, {{ '{{author}}' }}, {{ '{{time}}' }}"
-                        [maxLength]="300"
-                        [(value)]="tplTitle"
-                      />
-                    </div>
-                    <fieldset class="nt__fieldset nt__erow">
-                      <legend class="nt__byline">Tags the template offers (up to five)</legend>
-                      @for (g of allTags(); track g.noteTagId) {
-                        <label class="nt__check">
-                          <input
-                            type="checkbox"
-                            [checked]="tplTagIds().includes(g.noteTagId)"
-                            (change)="toggleTplTag(g.noteTagId)"
-                          />
-                          <mf-note-tag [name]="g.name" [colourKey]="g.colourKey" />
-                        </label>
-                      }
-                    </fieldset>
-                    <p class="nt__banner nt__banner--slim">
-                      <i class="pi pi-info-circle" aria-hidden="true"></i>
-                      <span
-                        >Type placeholders such as <span class="nt__tok">{{ '{{date}}' }}</span>,
-                        <span class="nt__tok">{{ '{{matter}}' }}</span>,
-                        <span class="nt__tok">{{ '{{author}}' }}</span>; they are filled when the
-                        template is used. Other placeholders (for example
-                        <span class="nt__tok">{{ '{{custodian}}' }}</span>) stay for the person to
-                        fill in.</span
+                      <div
+                        class="nt__tagpick"
+                        data-template-tagpick
+                        (focusout)="onTplTagsFocusOut($event)"
                       >
-                    </p>
+                        <span class="nt__fl" id="te-tags-l">Tags (up to five)</span>
+                        <button
+                          type="button"
+                          class="nt__erow nt__tagbtn"
+                          aria-haspopup="listbox"
+                          aria-labelledby="te-tags-l"
+                          [attr.aria-expanded]="tplTagsOpen()"
+                          data-template-tags-button
+                          (click)="tplTagsOpen.set(!tplTagsOpen())"
+                          (keydown.escape)="tplTagsOpen.set(false)"
+                        >
+                          @for (g of tplTagChips(); track g.noteTagId) {
+                            <mf-note-tag [name]="g.name" [colourKey]="g.colourKey" />
+                          } @empty {
+                            <span class="nt__plain">None chosen</span>
+                          }
+                          <i class="pi pi-chevron-down nt__caret" aria-hidden="true"></i>
+                        </button>
+                        @if (tplTagsOpen()) {
+                          <div
+                            class="nt__tagmenu"
+                            role="group"
+                            aria-label="Tags the template offers"
+                          >
+                            @for (g of allTags(); track g.noteTagId) {
+                              <label class="nt__check">
+                                <input
+                                  type="checkbox"
+                                  [checked]="tplTagIds().includes(g.noteTagId)"
+                                  [disabled]="
+                                    !tplTagIds().includes(g.noteTagId) && tplTagIds().length >= 5
+                                  "
+                                  (change)="toggleTplTag(g.noteTagId)"
+                                  (keydown.escape)="tplTagsOpen.set(false)"
+                                />
+                                <mf-note-tag [name]="g.name" [colourKey]="g.colourKey" />
+                              </label>
+                            }
+                          </div>
+                        }
+                      </div>
+                      <div class="nt__fl nt__lvl">
+                        <label for="te-level" id="te-level-l">Level</label>
+                        <select
+                          id="te-level"
+                          aria-labelledby="te-level-l"
+                          class="nt__select"
+                          data-template-level-select
+                          [value]="tplLevel()"
+                          (change)="tplLevel.set($any($event.target).value)"
+                        >
+                          <option value="MATTER">Matter Level ({{ matterLabel() }})</option>
+                          @if (clientId() && (canClientLevel() || tplLevel() === 'CLIENT')) {
+                            <option value="CLIENT" [disabled]="!canClientLevel()">
+                              Client Level ({{ clientName() }})
+                            </option>
+                          }
+                          @if (isAdmin() || tplLevel() === 'SYSTEM') {
+                            <option value="SYSTEM" [disabled]="!isAdmin()">
+                              System Level (every matter)
+                            </option>
+                          }
+                        </select>
+                      </div>
+                    </div>
+                    <div class="nt__edhint">
+                      <button
+                        type="button"
+                        class="mf-btn mf-btn--icon"
+                        aria-label="About placeholders"
+                        title="Type placeholders such as {{ '{{date}}' }}, {{ '{{matter}}' }}, {{ '{{author}}' }}; they are filled when the template is used. Other placeholders stay for the person to fill in. The first line of the text becomes the title of the new note."
+                        aria-describedby="te-ph-help"
+                        data-template-help
+                      >
+                        <i class="pi pi-info-circle" aria-hidden="true"></i>
+                      </button>
+                      <span class="mf-sr-only" id="te-ph-help"
+                        >Type placeholders such as {{ '{{date}}' }}, {{ '{{matter}}' }},
+                        {{ '{{author}}' }}; they are filled when the template is used. Other
+                        placeholders, for example {{ '{{custodian}}' }}, stay for the person to fill
+                        in. The first line of the text becomes the title of the new note.</span
+                      >
+                    </div>
                     @defer (on immediate) {
                       <mf-note-editor
                         [html]="tplHtml()"
@@ -653,9 +714,17 @@ interface RefChip {
                         {{ t.updatedAtUtc | mfNum }}
                       </p>
                       <div class="nt__tags">
-                        <span class="nt__pill" [class.nt__pill--info]="t.scope === 'FIRM'">
-                          {{ t.scope === 'FIRM' ? 'Firm-wide' : 'This matter' }}
+                        <span
+                          class="nt__pill"
+                          [class.nt__pill--info]="t.scope === 'SYSTEM'"
+                          data-template-level
+                        >
+                          <i class="pi" [class]="levelIcon(t.scope)" aria-hidden="true"></i>
+                          {{ levelLabel(t.scope) }}
                         </span>
+                        @if (t.targetName) {
+                          <span class="nt__plain">{{ t.targetName }}</span>
+                        }
                         @for (g of t.tags; track g.noteTagId) {
                           <mf-note-tag [name]="g.name" [colourKey]="g.colourKey" />
                         }
@@ -667,8 +736,8 @@ interface RefChip {
                         <i class="pi pi-info-circle" aria-hidden="true"></i>
                         <span
                           >Highlighted placeholders are replaced when the template is used (with
-                          /template or New Note, From template). Title when used:
-                          <b>{{ t.titleTemplate || '(the first line of the text)' }}</b></span
+                          /template). The first line of the text becomes the title of the new
+                          note.</span
                         >
                       </p>
                       @defer (on immediate) {
@@ -1584,26 +1653,43 @@ interface RefChip {
             [(value)]="tplDescription"
           />
           <fieldset class="nt__fieldset">
-            <legend class="nt__byline">Who can use it</legend>
+            <legend class="nt__byline">Level (who can use it)</legend>
             <label class="nt__check"
               ><input
                 type="radio"
                 name="sat-scope"
-                [checked]="!tplFirm()"
-                (change)="tplFirm.set(false)"
+                [checked]="tplLevel() === 'MATTER'"
+                (change)="tplLevel.set('MATTER')"
               />
-              <span><b>This matter</b> People who may edit notes on this matter</span></label
+              <span><b>Matter Level</b> This matter only</span></label
+            >
+            <label class="nt__check"
+              ><input
+                type="radio"
+                name="sat-scope"
+                [disabled]="!clientId() || !canClientLevel()"
+                [checked]="tplLevel() === 'CLIENT'"
+                (change)="tplLevel.set('CLIENT')"
+              />
+              <span
+                ><b>Client Level</b>
+                {{
+                  canClientLevel()
+                    ? 'Every matter of ' + clientName()
+                    : 'Needs the permission to edit clients'
+                }}</span
+              ></label
             >
             <label class="nt__check"
               ><input
                 type="radio"
                 name="sat-scope"
                 [disabled]="!isAdmin()"
-                [checked]="tplFirm()"
-                (change)="tplFirm.set(true)"
+                [checked]="tplLevel() === 'SYSTEM'"
+                (change)="tplLevel.set('SYSTEM')"
               />
               <span
-                ><b>Firm-wide</b> {{ isAdmin() ? 'Every matter' : 'Administrator only' }}</span
+                ><b>System Level</b> {{ isAdmin() ? 'Every matter' : 'Administrator only' }}</span
               ></label
             >
           </fieldset>
@@ -1651,7 +1737,11 @@ interface RefChip {
     >
       <p>
         <b>{{ tplToDelete()?.name }}</b> is removed from the template list{{
-          tplToDelete()?.scope === 'FIRM' ? ' for the whole firm' : ''
+          tplToDelete()?.scope === 'SYSTEM'
+            ? ' for every matter'
+            : tplToDelete()?.scope === 'CLIENT'
+              ? ' for every matter of the client'
+              : ''
         }}. Notes already made from it are not changed.
       </p>
     </mf-confirm-dialog>
@@ -1690,6 +1780,9 @@ export class NotesTab {
   /** The matter whose notes are shown, and its reference and name for the template placeholder `{{matter}}`. */
   readonly matterId = input.required<number>();
   readonly matterLabel = input('');
+  /** The matter's client, for Client Level templates. */
+  readonly clientId = input<number | undefined>(undefined);
+  readonly clientName = input('');
   /** The matter is sensitive: the header says so. */
   readonly sensitive = input(false);
   /** A note was created or deleted: the page refreshes the tab number. */
@@ -1840,7 +1933,6 @@ export class NotesTab {
     );
   });
   protected readonly tplEditing = signal<NoteTemplateResponse | null>(null);
-  protected tplTitle = signal('');
   protected readonly tplTagIds = signal<number[]>([]);
   protected readonly tplHtml = signal('');
   protected readonly tplKey = signal('');
@@ -1853,10 +1945,9 @@ export class NotesTab {
     return JSON.stringify([
       this.tplName(),
       this.tplDescription(),
-      this.tplTitle(),
       this.tplHtml(),
       this.tplTagIds(),
-      this.tplFirm(),
+      this.tplLevel(),
     ]);
   }
   protected readonly tplDirty = computed(
@@ -1864,7 +1955,8 @@ export class NotesTab {
   );
   protected tplName = signal('');
   protected tplDescription = signal('');
-  protected readonly tplFirm = signal(false);
+  protected readonly tplLevel = signal<'MATTER' | 'CLIENT' | 'SYSTEM'>('MATTER');
+  protected readonly tplTagsOpen = signal(false);
   protected readonly tplTags = signal(true);
   protected readonly tplError = signal('');
 
@@ -1876,6 +1968,39 @@ export class NotesTab {
   protected readonly canEdit = computed(() => this.auth.has('MatterNote.Edit'));
   protected readonly canDelete = computed(() => this.auth.has('MatterNote.Delete'));
   protected readonly isAdmin = computed(() => this.auth.isSystemAdmin());
+  protected readonly canClientLevel = computed(
+    () => this.auth.isSystemAdmin() || this.auth.has('Client.Edit'),
+  );
+  protected readonly tplTagChips = computed(() =>
+    this.allTags().filter((g) => this.tplTagIds().includes(g.noteTagId)),
+  );
+  /** Templates grouped by level, nearest first: Matter, Client, System. */
+  protected readonly templateGroups = computed(() =>
+    (['MATTER', 'CLIENT', 'SYSTEM'] as const)
+      .map((scope) => ({
+        scope,
+        label: this.levelLabel(scope),
+        items: this.shownTemplates().filter((t) => t.scope === scope),
+      }))
+      .filter((g) => g.items.length > 0),
+  );
+
+  protected levelLabel(scope: string): string {
+    return scope === 'SYSTEM'
+      ? 'System Level'
+      : scope === 'CLIENT'
+        ? 'Client Level'
+        : 'Matter Level';
+  }
+
+  protected levelIcon(scope: string): string {
+    return scope === 'SYSTEM' ? 'pi-globe' : scope === 'CLIENT' ? 'pi-users' : 'pi-briefcase';
+  }
+
+  protected onTplTagsFocusOut(e: FocusEvent): void {
+    const host = e.currentTarget as HTMLElement;
+    if (!host.contains(e.relatedTarget as Node | null)) this.tplTagsOpen.set(false);
+  }
   protected readonly lock = computed(() => {
     const n = this.note();
     return lockUi(
@@ -2201,9 +2326,10 @@ export class NotesTab {
 
   protected tplReason(t: NoteTemplateResponse): string {
     if (t.canEdit && this.canEdit()) return '';
-    return t.scope === 'FIRM'
-      ? 'Firm-wide templates are changed by an administrator'
-      : 'Changing a matter template needs the Matter Note Edit permission';
+    if (t.scope === 'SYSTEM') return 'System Level templates are changed by an administrator';
+    if (t.scope === 'CLIENT')
+      return 'Client Level templates are changed by people who may edit clients';
+    return 'Changing a matter template needs the Matter Note Edit permission';
   }
 
   // ---------------------------------------------------------------- list
@@ -2551,10 +2677,7 @@ export class NotesTab {
     const values = placeholderValues(new Date(), this.matterLabel(), this.auth.displayName());
     const body = resolvePlaceholders(t.bodyHtml, values);
     if (ed.isEmpty()) {
-      const title = t.titleTemplate
-        ? `<h1>${resolvePlaceholders(escapeText(t.titleTemplate), values)}</h1>`
-        : '';
-      ed.applyTemplate(title + body, true);
+      ed.applyTemplate(body, true);
       this.tplBanner.set(t.tags.filter((x) => x.isActive));
     } else {
       ed.applyTemplate(body, false);
@@ -2994,11 +3117,11 @@ export class NotesTab {
     this.tplEditing.set(t);
     this.tplName.set(t?.name ?? '');
     this.tplDescription.set(t?.description ?? '');
-    this.tplTitle.set(t?.titleTemplate ?? '');
     this.tplTagIds.set(t ? t.tags.map((x) => x.noteTagId) : []);
     this.tplHtml.set(t?.bodyHtml ?? '');
     this.tplKey.set(`${t?.noteTemplateId ?? 'new'}:${Date.now()}`);
-    this.tplFirm.set(false);
+    this.tplLevel.set((t?.scope as 'MATTER' | 'CLIENT' | 'SYSTEM' | undefined) ?? 'MATTER');
+    this.tplTagsOpen.set(false);
     this.tplError.set('');
     this.tplStart.set(this.tplSnapshot());
     this.tplEditMode.set(true);
@@ -3033,14 +3156,25 @@ export class NotesTab {
       const common = {
         name: this.tplName().trim(),
         description: this.tplDescription().trim() || undefined,
-        titleTemplate: this.tplTitle().trim() || undefined,
+        // "Title when used" is no longer edited; a stored value is passed through unchanged (MD-41; the column is for later cleanup)
+        titleTemplate: t?.titleTemplate ?? undefined,
         bodyHtml: this.tplHtml(),
         tagIds: this.tplTagIds(),
       };
       if (!t) return;
+      const level = this.tplLevel();
+      const moved =
+        level !== t.scope
+          ? {
+              scope: level,
+              matterId: level === 'MATTER' ? this.matterId() : undefined,
+              clientId: level === 'CLIENT' ? this.clientId() : undefined,
+            }
+          : {};
       const saved = await firstValueFrom(
         this.templatesApi.updateNoteTemplate(t.noteTemplateId, {
           ...common,
+          ...moved,
           rowVersion: t.rowVersion,
         }),
       );
@@ -3077,7 +3211,7 @@ export class NotesTab {
     if (!n) return;
     this.tplName.set(n.title);
     this.tplDescription.set('');
-    this.tplFirm.set(false);
+    this.tplLevel.set('MATTER');
     this.tplTags.set(true);
     this.tplError.set('');
     this.panel.set('save-template');
@@ -3092,11 +3226,12 @@ export class NotesTab {
     }
     this.busy.set(true);
     try {
-      const firm = this.tplFirm() && this.isAdmin();
+      const level = this.tplLevel();
       await firstValueFrom(
         this.templatesApi.createNoteTemplate({
-          scope: firm ? 'FIRM' : 'MATTER',
-          matterId: firm ? undefined : this.matterId(),
+          scope: level,
+          matterId: level === 'MATTER' ? this.matterId() : undefined,
+          clientId: level === 'CLIENT' ? this.clientId() : undefined,
           name: this.tplName().trim(),
           description: this.tplDescription().trim() || undefined,
           bodyHtml: n.bodyHtml,
@@ -3245,8 +3380,4 @@ export class NotesTab {
       // Remembering is a convenience.
     }
   }
-}
-
-function escapeText(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

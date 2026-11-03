@@ -91,7 +91,7 @@ public static class SensitiveAccessCatalog
         ["GET api/v1/notes/{noteId:int}"] = new(AccessKind.Gated, IdKind.Note, "resource by id of one matter: hidden = 404 like a missing id (epic #1001)", ["api/v1/notes/{note}"]),
         ["GET api/v1/notes/{noteId:int}/history"] = new(AccessKind.Gated, IdKind.Note, "resource by id of one matter: hidden = 404 like a missing id (epic #1001)", ["api/v1/notes/{note}/history"]),
         ["GET api/v1/note-templates"] = new(AccessKind.Gated, IdKind.Matter, "matter-scoped list or count: a hidden matter answers 404 like a missing matter (epic #1001)", ["api/v1/note-templates?matterId={matter}"]),
-        ["GET api/v1/note-templates/{templateId:int}"] = new(AccessKind.Gated, IdKind.None, "firm-wide template: no matter data; a matter template of a hidden matter answers 404 like a missing id (epic #1001; the Notes API tests walk it)", []),
+        ["GET api/v1/note-templates/{templateId:int}"] = new(AccessKind.Gated, IdKind.None, "System Level template: no matter data; a Matter Level template of a hidden matter, or a Client Level template of a client with no visible matter, answers 404 like a missing id (epic #1001; the Notes API tests walk it)", []),
         ["GET api/v1/note-tags"] = new(AccessKind.Aggregate, IdKind.None, "firm-wide tag names and colours; the note count covers notes of visible matters only (epic #1001)", ["api/v1/note-tags?includeInactive=true"]),
         ["POST api/v1/note-tags"] = new(AccessKind.Neutral, IdKind.None, "firm-wide tag administration (StatusLabel.Manage): no matter data (epic #1001)", []),
         ["PUT api/v1/note-tags/{tagId:int}"] = new(AccessKind.Neutral, IdKind.None, "firm-wide tag administration (StatusLabel.Manage): no matter data (epic #1001)", []),

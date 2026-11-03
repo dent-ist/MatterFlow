@@ -62,7 +62,8 @@ internal sealed class NoteTemplateConfiguration : IEntityTypeConfiguration<NoteT
         b.Property(x => x.TitleTemplate).HasMaxLength(300);
         b.Property(x => x.BodyHtml).IsRequired();
         b.HasIndex(x => new { x.MatterId, x.Name }).IsUnique().HasFilter("[MatterId] IS NOT NULL").HasDatabaseName(NoteSupport.MatterTemplateNameUnique);
-        b.HasIndex(x => x.Name).IsUnique().HasFilter("[ScopeCode] = 'FIRM'").HasDatabaseName(NoteSupport.FirmTemplateNameUnique);
+        b.HasIndex(x => x.Name).IsUnique().HasFilter("[ScopeCode] = 'SYSTEM'").HasDatabaseName(NoteSupport.SystemTemplateNameUnique);
+        b.HasIndex(x => new { x.ClientId, x.Name }).IsUnique().HasFilter("[ClientId] IS NOT NULL").HasDatabaseName(NoteSupport.ClientTemplateNameUnique);
     }
 }
 

@@ -16,6 +16,12 @@ internal sealed class MatterDirectory(DbContext db) : IMatterDirectory
         return row is null ? null : ToSummary(row);
     }
 
+    public async Task<IReadOnlyList<int>> MatterIdsOfClientAsync(int clientId, CancellationToken cancellationToken = default) =>
+        await db.Set<Matter>().AsNoTracking().Where(m => m.ClientId == clientId).Select(m => m.Id).ToListAsync(cancellationToken);
+
+    public async Task<string?> ClientNameAsync(int clientId, CancellationToken cancellationToken = default) =>
+        await db.Set<Client>().AsNoTracking().Where(c => c.Id == clientId).Select(c => c.Name).FirstOrDefaultAsync(cancellationToken);
+
     public async Task<IReadOnlyDictionary<int, MatterSummary>> FindManyAsync(IReadOnlyCollection<int> matterIds, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(matterIds);

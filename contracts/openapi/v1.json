@@ -19762,6 +19762,13 @@
             ],
             "format": "int32"
           },
+          "clientId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
           "name": {
             "maxLength": 100,
             "minLength": 1,
@@ -21313,7 +21320,7 @@
               "string"
             ]
           },
-          "keepFirmScope": {
+          "keepLevel": {
             "type": "boolean"
           }
         }
@@ -25381,6 +25388,8 @@
           "noteTemplateId",
           "scope",
           "matterId",
+          "clientId",
+          "targetName",
           "name",
           "description",
           "titleTemplate",
@@ -25408,6 +25417,19 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "clientId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "targetName": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "name": {
             "type": "string"
@@ -32373,6 +32395,28 @@
         "properties": {
           "rowVersion": {
             "type": "string"
+          },
+          "scope": {
+            "maxLength": 6,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "matterId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "clientId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           },
           "name": {
             "maxLength": 100,

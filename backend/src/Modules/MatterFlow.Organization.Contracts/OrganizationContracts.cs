@@ -47,6 +47,12 @@ public interface IMatterDirectory
     /// <summary>The Matter with the given id, or null.</summary>
     Task<MatterSummary?> FindAsync(int matterId, CancellationToken cancellationToken = default);
 
+    /// <summary>The ids of every Matter of the Client (Client Level note templates are visible when the caller sees at least one of them). The default knows none; the Organization module overrides it.</summary>
+    Task<IReadOnlyList<int>> MatterIdsOfClientAsync(int clientId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<int>>([]);
+
+    /// <summary>The name of the Client, or null. The default knows none; the Organization module overrides it.</summary>
+    Task<string?> ClientNameAsync(int clientId, CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
+
     /// <summary>
     /// The Matters with the given ids that exist, keyed by id, in ONE statement whatever the number of ids (a list page names its matters with it instead of one lookup per row).
     /// The default asks one by one; the Organization module overrides it.

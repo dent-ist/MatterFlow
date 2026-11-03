@@ -32,6 +32,19 @@ public sealed class NoteAccess(IMatterVisibility visibility, IMatterDirectory ma
         return visible ? await db.Set<T>().SingleOrDefaultAsync(where, ct) : null;
     }
 
+    /// <summary>True when the caller may see at least one of the matters (a Client Level template is visible through any matter of its client).</summary>
+    public async Task<bool> AnyVisibleAsync(IReadOnlyCollection<int> matterIds, CancellationToken ct)
+    {
+        foreach (var chunk in matterIds.Chunk(500))
+        {
+            var ids = chunk.ToList();
+            if (await visibility.VisibleMatters().AnyAsync(r => ids.Contains(r.MatterId), ct))
+                return true;
+        }
+
+        return false;
+    }
+
     public Task<bool> CanSeeMatterAsync(int matterId, CancellationToken ct) => visibility.CanSeeMatterAsync(matterId, ct);
 
     /// <summary>Display names of the given users (history keeps the names of inactive users).</summary>

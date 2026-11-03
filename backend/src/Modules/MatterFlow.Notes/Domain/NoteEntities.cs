@@ -75,16 +75,25 @@ public class NoteLink
 /// <summary>Scope of a <see cref="NoteTemplate"/>.</summary>
 public static class TemplateScope
 {
-    public const string Firm = "FIRM";
+    /// <summary>System Level: every matter (was "firm-wide").</summary>
+    public const string System = "SYSTEM";
+
+    /// <summary>Client Level: every matter of one client.</summary>
+    public const string Client = "CLIENT";
+
+    /// <summary>Matter Level: one matter.</summary>
     public const string Matter = "MATTER";
 }
 
-/// <summary>A starting text for a note, for the whole firm (administrators) or one matter. Using it copies it: no link is kept.</summary>
+/// <summary>A starting text for a note at System Level (administrators), Client Level (Client.Edit holders) or Matter Level. Using it copies it: no link is kept.</summary>
 public class NoteTemplate : AuditedEntity<int>
 {
     public string ScopeCode { get; set; } = TemplateScope.Matter;
 
     public int? MatterId { get; set; }
+
+    /// <summary>Set for a Client Level template.</summary>
+    public int? ClientId { get; set; }
 
     public string Name { get; set; } = string.Empty;
 

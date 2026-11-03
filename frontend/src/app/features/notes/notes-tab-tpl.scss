@@ -1,0 +1,86 @@
+// MD-39 / MD-41: template levels and the compact template edit row
+.nt__grp {
+  padding: 6px 12px 2px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mf-text-muted);
+}
+
+.nt__fl {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mf-text);
+}
+
+.nt__select {
+  min-height: 36px;
+  padding: 4px 8px;
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius-lg, 8px);
+  background: var(--mf-surface);
+  color: var(--mf-text);
+  font: inherit;
+  font-weight: 400;
+}
+
+.nt__tagpick {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nt__tagbtn {
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+  color: var(--mf-text);
+
+  .nt__caret {
+    margin-left: auto;
+    font-size: 12px;
+  }
+}
+
+.nt__tagmenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 100%;
+  max-height: 240px;
+  overflow: auto;
+  margin-top: 2px;
+  padding: 8px;
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius-lg, 8px);
+  background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-pop, 0 6px 18px rgb(0 0 0 / 18%));
+}
+
+.nt__edhint {
+  display: flex;
+  justify-content: flex-end;
+
+  // wide: the info icon sits in the empty right end of the editor toolbar and takes no height of its own
+  @media (min-width: 720px) {
+    position: relative;
+    z-index: 2;
+    height: 0;
+    margin-top: -8px;
+
+    .mf-btn {
+      position: absolute;
+      top: 14px;
+      right: 8px;
+    }
+  }
+}
