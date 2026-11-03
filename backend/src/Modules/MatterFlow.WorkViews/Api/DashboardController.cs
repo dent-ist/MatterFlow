@@ -66,7 +66,7 @@ public class DashboardController(DashboardService dashboard, DashboardTrendServi
 [ApiController]
 [Route("api/v1/dashboard")]
 [MatterFlow.SharedKernel.Visibility.PreparesViewer]
-public class DashboardBoardController(SwimlaneService swimlane, WorkloadService workload, CoverageService coverage, CapacityService capacity) : ControllerBase
+public class DashboardBoardController(SwimlaneService swimlane, WorkloadService workload, CoverageService coverage, CapacityService capacity, UserHistoryService history, SkillsService skills) : ControllerBase
 {
     /// <summary>
     /// Every open Task plus the Tasks completed or cancelled in the last <c>completedDays</c> days as four lanes (<c>NEW</c>, <c>IN_PROGRESS</c>, <c>ON_HOLD</c>,
@@ -124,6 +124,37 @@ public class DashboardBoardController(SwimlaneService swimlane, WorkloadService 
     {
         FilterParsing.EnsureKnown(Request.Query.Keys, CapacityPeopleQuery.Keys).OrThrow();
         return Ok((await capacity.GetPeopleAsync(query, cancellationToken)).OrThrow());
+    }
+
+    /// <summary>
+    /// One person's history for the user drawer: per task type the Tasks completed in the window (<c>months</c> 3 or 12, default 12), the person's median duration (Started to Completed, <c>durationUnit</c> in
+    /// <c>durationBasis</c> working or clock time) next to the firm median of the same type and window and their ratio, each median only from a sample of 5 (else null with the sample size), the last 12 calendar months
+    /// of completions and the on-time rate. Cancelled Tasks never count. Aggregates only; Tasks of hidden Matters are left out like everywhere. With a Pod scope the person must belong to it, else 404.
+    /// Needs <c>Dashboard.View</c> and <c>Dashboard.ViewUsers</c>.
+    /// </summary>
+    [HttpGet("users/{userId:int}/history", Name = "GetDashboardUserHistory")]
+    [Authorize(Policy = "Perm:" + Permissions.Dashboard.View)]
+    [Authorize(Policy = "Perm:" + Permissions.Dashboard.ViewUsers)]
+    [ProducesResponseType<UserHistory>(StatusCodes.Status200OK, "application/json")]
+    public async Task<ActionResult<UserHistory>> GetUserHistory(int userId, [FromQuery] UserHistoryQuery query, CancellationToken cancellationToken)
+    {
+        FilterParsing.EnsureKnown(Request.Query.Keys, UserHistoryQuery.Keys).OrThrow();
+        return (await history.GetAsync(userId, query, cancellationToken)).OrThrow();
+    }
+
+    /// <summary>
+    /// The Skills matrix: the workers of the scope (<c>Workflow.Execute</c> holders who are active members of a Pod in the scope, as in the capacity battery) by task type, with the Tasks each completed in the last 3 and 12 months
+    /// (non-zero cells only), each person's capacity state and load, and per type how many people are experienced (5 or more in 12 months) with <c>isThin</c> set for 0 to 2. Alphabetical, no ranking.
+    /// Needs <c>Dashboard.View</c> and <c>Dashboard.ViewUsers</c>.
+    /// </summary>
+    [HttpGet("users/skills", Name = "GetDashboardSkills")]
+    [Authorize(Policy = "Perm:" + Permissions.Dashboard.View)]
+    [Authorize(Policy = "Perm:" + Permissions.Dashboard.ViewUsers)]
+    [ProducesResponseType<SkillsMatrix>(StatusCodes.Status200OK, "application/json")]
+    public async Task<ActionResult<SkillsMatrix>> GetSkills([FromQuery] SkillsQuery query, CancellationToken cancellationToken)
+    {
+        FilterParsing.EnsureKnown(Request.Query.Keys, SkillsQuery.Keys).OrThrow();
+        return (await skills.GetAsync(query, cancellationToken)).OrThrow();
     }
 
     /// <summary>

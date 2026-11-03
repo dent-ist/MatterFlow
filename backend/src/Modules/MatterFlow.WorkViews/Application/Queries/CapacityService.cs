@@ -101,7 +101,7 @@ public sealed class CapacityService(DbContext db, IClock clock, IUserAvailabilit
 {
     public const int MaxPeople = 200;
 
-    private sealed record Worker(int UserId, string DisplayName, string State, int Load, bool OnHoliday);
+    internal sealed record Worker(int UserId, string DisplayName, string State, int Load, bool OnHoliday);
 
     public async Task<Result<DashboardCapacity>> GetAsync(CapacityQuery query, CancellationToken ct)
     {
@@ -211,7 +211,7 @@ public sealed class CapacityService(DbContext db, IClock clock, IUserAvailabilit
     /// The workers of the scope with their state: active users holding Workflow.Execute (through an active role, the way the workload board joins roles; the System Admin role holds every permission) who are active members of
     /// an active Pod of the scope. Their load is the count of their open Tasks that are New or In progress, over every Task in the database.
     /// </summary>
-    private async Task<List<Worker>> ReadWorkersAsync(DashboardScope scope, DateTime now, CancellationToken ct)
+    internal async Task<List<Worker>> ReadWorkersAsync(DashboardScope scope, DateTime now, CancellationToken ct)
     {
         var members = db.Set<PodMember>().AsNoTracking().Where(m => m.Pod.IsActive);
         if (!scope.IsAll)
