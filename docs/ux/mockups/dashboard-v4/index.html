@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LPT Hub - Dashboard mockup v4</title>
+<style>
+:root{
+  /* Tokens inlined from docs/ux/tokens.css (neutrals, feedback, palette, semantic). Names kept (--mf-*). */
+  --mf-bg:#f5f6f8;--mf-surface:#fff;--mf-surface-alt:#eef0f4;--mf-row-hover:#eaf0fb;--mf-border:#c9ced8;--mf-border-strong:#6b7280;
+  --mf-text:#1b1f27;--mf-text-muted:#4b5563;--mf-primary:#1f4e9c;--mf-primary-hover:#173c79;--mf-link:#1f4e9c;--mf-focus:#b45309;--mf-selected-bg:#e3ecfa;
+  --mf-nav-bg:#1a3556;--mf-nav-text:#eaf1fa;--mf-nav-text-muted:#b4c3d8;--mf-nav-hover-bg:#2b4b75;--mf-nav-focus:#ffc15a;
+  --mf-danger:#b42318;--mf-danger-bg:#fdecea;
+  --mf-p-red-fg:#b42318;--mf-p-red-bg:#fdecea;--mf-p-red-solid:#c62828;--mf-p-red-line:#f4c7c2;
+  --mf-p-amber-fg:#8a4b00;--mf-p-amber-bg:#fff4db;--mf-p-amber-solid:#b45309;--mf-p-amber-line:#f1d9a0;
+  --mf-p-blue-fg:#1f4e9c;--mf-p-blue-bg:#e3ecfa;--mf-p-blue-solid:#1f4e9c;--mf-p-blue-line:#c3d5f2;
+  --mf-p-teal-fg:#0b6b5f;--mf-p-teal-bg:#ddf3ef;--mf-p-teal-solid:#0f766e;--mf-p-teal-line:#b5e0d9;
+  --mf-p-violet-fg:#5b3fa6;--mf-p-violet-bg:#efeafb;--mf-p-violet-solid:#6d4bc2;--mf-p-violet-line:#d6cbf1;
+  --mf-p-orange-fg:#9a3a06;--mf-p-orange-bg:#fdebdc;--mf-p-orange-solid:#c2410c;--mf-p-orange-line:#f5cdae;
+  --mf-p-slate-fg:#475569;--mf-p-slate-bg:#eef1f5;--mf-p-slate-solid:#475569;--mf-p-slate-line:#cbd2dc;
+  --mf-tag-red-fg:#7a1b12;--mf-border-soft:#d5d9e1;
+  --mf-font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  /* PROPOSED new tokens (capacity ramp, light = free, dark = loaded; derived from existing blue). Not in the app yet. */
+  --mf-cap-0:color-mix(in srgb,var(--mf-p-blue-solid) 12%,#fff);
+  --mf-cap-1:color-mix(in srgb,var(--mf-p-blue-solid) 32%,#fff);
+  --mf-cap-2:color-mix(in srgb,var(--mf-p-blue-solid) 55%,#fff);
+  --mf-cap-3:var(--mf-primary-hover);
+  /* PROPOSED unassigned-wait ramp, level 0 to 5 */
+  --mf-wait-0:var(--mf-p-teal-solid);--mf-wait-1:var(--mf-p-amber-line);--mf-wait-2:var(--mf-p-amber-solid);
+  --mf-wait-3:var(--mf-p-orange-solid);--mf-wait-4:var(--mf-p-red-solid);--mf-wait-5:var(--mf-tag-red-fg);
+  --gut:24px;--rc:340px;--pop:0 12px 32px rgba(16,24,40,.18),0 2px 6px rgba(16,24,40,.1);
+}
+@media (max-width:1100px){:root{--rc:300px}}
+@media (max-width:767px){:root{--gut:16px}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--mf-bg);color:var(--mf-text);font:14px/1.45 var(--mf-font);-webkit-font-smoothing:antialiased}
+button,select,input{font:inherit;color:inherit}button{cursor:pointer}
+h1,h2,h3,p{margin:0}
+svg.i{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+svg.i.s{width:15px;height:15px}svg.i.xs{width:13px;height:13px}
+:focus-visible{outline:2px solid var(--mf-focus);outline-offset:2px;border-radius:6px}
+.side :focus-visible,.top .mkb:focus-visible{outline-color:var(--mf-nav-focus)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;left:8px;top:-60px;background:#fff;padding:10px 14px;border-radius:8px;z-index:200;font-weight:600}.skip:focus{top:8px}
+/* tones */
+.t-red{--tone:var(--mf-p-red-solid);--tbg:var(--mf-p-red-bg);--tink:var(--mf-p-red-fg);--tbd:var(--mf-p-red-line)}
+.t-amber{--tone:var(--mf-p-amber-solid);--tbg:var(--mf-p-amber-bg);--tink:var(--mf-p-amber-fg);--tbd:var(--mf-p-amber-line)}
+.t-blue{--tone:var(--mf-p-blue-solid);--tbg:var(--mf-p-blue-bg);--tink:var(--mf-p-blue-fg);--tbd:var(--mf-p-blue-line)}
+.t-teal{--tone:var(--mf-p-teal-solid);--tbg:var(--mf-p-teal-bg);--tink:var(--mf-p-teal-fg);--tbd:var(--mf-p-teal-line)}
+.t-violet{--tone:var(--mf-p-violet-solid);--tbg:var(--mf-p-violet-bg);--tink:var(--mf-p-violet-fg);--tbd:var(--mf-p-violet-line)}
+.t-orange{--tone:var(--mf-p-orange-solid);--tbg:var(--mf-p-orange-bg);--tink:var(--mf-p-orange-fg);--tbd:var(--mf-p-orange-line)}
+.t-slate{--tone:var(--mf-p-slate-solid);--tbg:var(--mf-p-slate-bg);--tink:var(--mf-p-slate-fg);--tbd:var(--mf-p-slate-line)}
+.pill{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:999px;background:var(--tbg);color:var(--tink);font-weight:600;font-size:12px;white-space:nowrap;border:1px solid var(--tbd)}
+.pill svg.i{width:12px;height:12px}
+/* buttons (theme rule: secondary = white outline, primary = filled, text = link, icon) */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 12px;border-radius:6px;border:1px solid var(--mf-border-strong);background:#fff;font-weight:600;white-space:nowrap}
+.btn:hover{background:var(--mf-bg)}.btn.on{background:var(--mf-selected-bg);border-color:var(--mf-primary);color:var(--mf-primary)}
+.btn.pri{background:var(--mf-primary);border-color:var(--mf-primary);color:#fff}
+.btn.txt{border-color:transparent;background:none;color:var(--mf-link);font-weight:400;padding:0 8px}.btn.txt:hover{background:var(--mf-p-blue-bg)}
+.btn.ico{width:32px;padding:0}
+.btn[disabled]{color:#6b7280;border-color:var(--mf-border);cursor:not-allowed}
+.badge{background:var(--mf-primary);color:#fff;border-radius:999px;min-width:18px;height:18px;padding:0 5px;font-size:12px;display:inline-grid;place-items:center}
+/* shell */
+.shell{display:grid;grid-template-columns:220px minmax(0,1fr);min-height:100vh}
+.side{background:var(--mf-nav-bg);color:var(--mf-nav-text);position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;padding:0 10px 10px;z-index:60}
+.brand{display:flex;align-items:center;gap:10px;height:56px;color:#fff;font-weight:700;font-size:18px;padding:0 6px;flex:none}
+.brand b{width:30px;height:30px;border-radius:8px;background:#1d4e89;box-shadow:0 0 0 1px rgba(255,255,255,.25);display:grid;place-items:center;font-size:14px}
+.nav{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:12px;height:36px;padding:0 12px;border-radius:6px;color:var(--mf-nav-text);text-decoration:none}
+.nav a:hover{background:var(--mf-nav-hover-bg)}
+.nav a[aria-current=page]{background:#fff;color:#17324f;font-weight:700}
+.ver{margin-top:auto;padding:10px 12px 0;font-size:13px;color:var(--mf-nav-text-muted)}
+.scrim{display:none}
+.col{min-width:0;display:flex;flex-direction:column;min-height:100vh}
+.top{position:sticky;top:0;z-index:40;background:#fff;border-bottom:1px solid var(--mf-border);height:56px;display:flex;align-items:center;gap:12px;padding:0 var(--gut);flex:none}
+.burger{display:none}
+.gs{position:relative;flex:1 1 auto;max-width:460px}
+.gs input{width:100%;height:34px;border:1px solid var(--mf-border-strong);border-radius:6px;padding:0 10px 0 34px;background:#fff}
+.gs svg{position:absolute;left:10px;top:8px;color:var(--mf-text-muted)}
+.spacer{flex:1 1 0}
+.mkb{display:inline-flex;gap:6px;align-items:center;height:34px;padding:0 12px;border-radius:6px;border:1px dashed var(--mf-primary);background:#fff;color:var(--mf-primary);font-weight:600}
+.av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:12px;background:var(--mf-p-slate-bg);color:var(--mf-p-slate-fg);flex:none}
+/* fixed page */
+main{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;padding:14px var(--gut) 16px}
+.page{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:12px}
+.hrow{display:flex;align-items:center;gap:12px;flex:none}
+.ttl{display:flex;align-items:center;gap:10px}
+.ttl .chip{width:30px;height:30px;border-radius:8px;background:var(--mf-primary);color:#fff;display:grid;place-items:center}
+.ttl h1{font-size:19px;font-weight:600;line-height:1.2}
+.ttl small{display:block;color:var(--mf-text-muted);font-size:13px}
+.hr{margin-left:auto;display:flex;align-items:center;gap:10px;color:var(--mf-text-muted);font-size:13px}
+.trow{display:flex;align-items:flex-end;gap:12px;flex:none;border-bottom:1px solid var(--mf-border)}
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1 1 auto;min-width:0}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;height:38px;padding:0 14px;font-weight:400;color:var(--mf-text-muted);white-space:nowrap;display:inline-flex;gap:7px;align-items:center}
+.tabs button:hover{color:var(--mf-text)}
+.tabs button[aria-selected=true]{color:var(--mf-primary);border-bottom-color:var(--mf-primary);font-weight:700}
+.scope{display:flex;align-items:center;gap:8px;padding-bottom:4px;flex:none;font-size:13px;color:var(--mf-text-muted)}
+.dd{position:relative}
+.dd select{appearance:none;-webkit-appearance:none;height:32px;border:1px solid var(--mf-border-strong);border-radius:6px;background:#fff;padding:0 30px 0 10px;font-weight:600;max-width:200px}
+.dd svg{position:absolute;right:9px;top:8px;pointer-events:none;color:var(--mf-text-muted)}
+/* cards */
+.cards{display:grid;grid-template-columns:repeat(var(--nc,4),minmax(0,1fr));gap:12px;flex:none}
+.card{display:flex;gap:12px;align-items:center;text-align:left;background:#fff;border:1px solid var(--mf-border-soft);border-radius:12px;padding:10px 14px;min-height:72px;position:relative;width:100%}
+.card:hover{background:var(--mf-row-hover)}
+.card .ci{width:38px;height:38px;border-radius:10px;background:var(--tone);color:#fff;display:grid;place-items:center;flex:none}
+.card .n{font-size:28px;font-weight:700;line-height:1;color:var(--mf-text)}
+.card .l{font-weight:600;line-height:1.2}
+.card .h{font-size:12px;color:var(--mf-text-muted);line-height:1.25}
+.card .chk{position:absolute;right:10px;top:8px;width:20px;height:20px;border-radius:50%;background:var(--tone);color:#fff;display:none;place-items:center}
+.card[aria-pressed=true]{background:var(--tbg);box-shadow:0 0 0 2px var(--tone);border-color:transparent}
+.card[aria-pressed=true] .chk{display:grid}
+.card.zero .ci{background:var(--mf-p-teal-solid)}
+.card.zero .h{color:var(--mf-p-teal-fg);font-weight:600}
+/* body */
+.body{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) var(--rc);gap:12px}
+.body.one{grid-template-columns:minmax(0,1fr)}
+.frame{position:relative;background:#fff;border:1px solid var(--mf-border-soft);border-radius:12px;display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden}
+.ghd{display:flex;align-items:center;gap:8px;padding:10px 12px 8px;flex-wrap:wrap}
+.ghd h2{font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px;margin-right:4px}
+.cnt{background:var(--mf-surface-alt);border-radius:999px;padding:0 9px;font-size:13px;font-weight:600;line-height:22px}
+.sbox{position:relative;width:190px;max-width:100%}
+.sbox input{width:100%;height:32px;border:1px solid var(--mf-border-strong);border-radius:6px;padding:0 26px 0 30px;background:#fff}
+.sbox svg{position:absolute;left:9px;top:8px;color:var(--mf-text-muted)}
+.sbox .x{position:absolute;right:2px;top:2px;width:28px;height:28px;border:0;background:none;display:grid;place-items:center}
+.sp{flex:1 1 0}
+.sorted{font-size:13px;color:var(--mf-text-muted);min-width:0;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fchips{display:flex;gap:6px;align-items:center;padding:0 12px 8px;flex-wrap:wrap}
+.fchip{display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 4px 0 10px;border-radius:999px;background:var(--mf-selected-bg);color:var(--mf-primary);font-size:13px;font-weight:600;border:1px solid var(--mf-p-blue-line)}
+.fchip button{border:0;background:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:inherit;padding:0}
+.fchip button:hover{background:#fff}
+.frow{display:flex;gap:8px;flex-wrap:wrap;padding:0 12px 8px}
+.frow label{font-size:13px;color:var(--mf-text-muted);display:flex;align-items:center;gap:6px}
+.scroll{position:relative;flex:1 1 auto;min-height:0;overflow:auto;border-top:1px solid var(--mf-border-soft)}
+table.tt{border-collapse:separate;border-spacing:0;min-width:100%;width:max-content}
+.tt th{position:sticky;top:0;z-index:3;background:var(--mf-surface-alt);text-align:left;font-size:13px;font-weight:700;height:40px;padding:0 10px;white-space:nowrap;border-bottom:1px solid var(--mf-border)}
+.tt th button{background:none;border:0;padding:0;font-weight:700;display:inline-flex;gap:4px;align-items:center;height:32px}
+.tt td{height:44px;padding:2px 10px;border-bottom:1px solid var(--mf-border-soft);vertical-align:middle;white-space:nowrap;background:#fff}
+.tt tbody tr:hover td{background:var(--mf-row-hover)}
+.tt .pin{position:sticky;left:0;z-index:2;border-right:1px solid var(--mf-border-soft)}
+.tt th.pin{z-index:4}
+.tt .ttl2{min-width:230px;max-width:340px;white-space:normal;line-height:1.25}
+.ref{font-family:Consolas,"Cascadia Mono",monospace;color:var(--mf-link);font-size:13px}
+.sub{display:block;font-size:12px;color:var(--mf-text-muted)}
+.od{color:var(--mf-danger);font-weight:600}
+.prog{display:inline-flex;align-items:center;gap:6px}
+.prog i{display:block;width:56px;height:6px;border-radius:3px;background:var(--mf-surface-alt);overflow:hidden}
+.prog i b{display:block;height:100%;background:var(--mf-p-blue-solid)}
+.pg{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--mf-border-soft);flex-wrap:wrap;font-size:13px;color:var(--mf-text-muted);flex:none}
+.pg .btn{height:28px;padding:0 8px;font-size:13px}
+.pg select{height:28px;border:1px solid var(--mf-border-strong);border-radius:6px;background:#fff}
+.msg{padding:28px 16px;text-align:center;color:var(--mf-text-muted)}
+.msg b{display:block;color:var(--mf-text);font-size:15px;margin-bottom:4px}
+.tcards{display:none}
+/* right column */
+.rcol{position:relative;display:flex;flex-direction:column;gap:12px;min-height:0;overflow:auto;padding:2px}
+.panel{background:#fff;border:1px solid var(--mf-border-soft);border-radius:12px;padding:12px 14px;flex:none}
+.panel h2{white-space:nowrap;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+.panel .ph{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.panel .ph .btn{margin-left:auto}
+.big{font-size:34px;font-weight:700;line-height:1}
+.bigrow{display:flex;align-items:flex-end;gap:10px;margin-bottom:10px}
+.bigrow small{display:block;color:var(--mf-text-muted);font-size:12px;line-height:1.3}
+.state-w{margin-left:auto}
+/* battery */
+.bat{display:flex;align-items:stretch}
+.shellb{flex:1 1 auto;min-width:0;border:2px solid var(--mf-border-strong);border-radius:10px;padding:5px;background:#fff}
+.cap{width:6px;margin:12px 0;background:var(--mf-border-strong);border-radius:0 4px 4px 0;flex:none}
+.cells{display:flex;flex-wrap:wrap;gap:3px}
+.cells.bars{flex-wrap:nowrap}
+.cell{border:0;border-radius:4px;display:grid;place-items:center;font-weight:700;font-size:12px;padding:0;position:relative;flex:none;color:var(--mf-text)}
+.cells.bars .cell{flex:1 1 0;min-width:0;max-width:64px;height:72px;align-content:center;gap:2px;font-size:18px}
+.cells.bars .cell small{font-size:12px;font-weight:600;line-height:1}
+.cells.sq .cell{width:var(--s);height:var(--s);font-size:11px;border-radius:3px;align-content:center;gap:1px}
+.cells.sq .cell small{font-size:10px;font-weight:600;line-height:1}
+.cells.sq.big .cell{font-size:15px}
+.c-av{background:var(--mf-cap-0)}.c-oc{background:var(--mf-cap-1)}.c-bu{background:var(--mf-cap-2)}
+.c-ov{background:var(--mf-cap-3);color:#fff}
+.c-out{background:repeating-linear-gradient(45deg,var(--mf-p-slate-bg) 0 4px,var(--mf-p-slate-line) 4px 7px);color:var(--mf-p-slate-fg)}
+.c-off{background:#fff;color:var(--mf-p-slate-fg);box-shadow:inset 0 0 0 2px var(--mf-p-slate-solid)}
+.c-off{box-shadow:none;border:2px dashed var(--mf-p-slate-solid)}
+.cell:hover{outline:2px solid var(--mf-text);outline-offset:1px}
+.cell[aria-pressed=true]{outline:3px solid var(--mf-focus);outline-offset:1px}
+.legend{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin-top:10px}
+.lg{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:6px;align-items:center;border:1px solid var(--mf-border-soft);background:#fff;border-radius:8px;padding:4px 8px;text-align:left;font-size:12px;line-height:1.2}
+.lg:hover{background:var(--mf-row-hover)}
+.lg[aria-pressed=true]{background:var(--mf-selected-bg);box-shadow:0 0 0 2px var(--mf-primary);border-color:transparent}
+.lg .sw{width:16px;height:16px;border-radius:3px}
+.lg b{font-size:17px;line-height:1.1}
+.lg span.t{grid-column:1/-1;color:var(--mf-text-muted)}
+.fine{font-size:12px;color:var(--mf-text-muted);margin-top:8px}
+details.how{margin-top:8px;font-size:12px;color:var(--mf-text-muted)}
+details.how summary{cursor:pointer;color:var(--mf-link)}
+details.how ul{margin:6px 0 0;padding-left:18px}
+/* gauge */
+.lvl{white-space:nowrap;display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-weight:700;font-size:13px;background:var(--lbg,#fff);color:var(--lfg,#000);border:1px solid var(--lbd,transparent);position:relative}
+.lvl.pulse::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:2px solid var(--lbd);opacity:0;animation:pl 2.4s ease-out infinite}
+@keyframes pl{0%{opacity:.7;transform:scale(.96)}100%{opacity:0;transform:scale(1.12)}}
+@media (prefers-reduced-motion:reduce){.lvl.pulse::after{animation:none;opacity:0}}
+.rm .lvl.pulse::after{animation:none;opacity:0}
+.L-1{--lbg:var(--mf-p-teal-bg);--lfg:var(--mf-p-teal-fg);--lbd:var(--mf-p-teal-line)}
+.L0{--lbg:var(--mf-p-slate-bg);--lfg:var(--mf-p-slate-fg);--lbd:var(--mf-p-slate-line)}
+.L1{--lbg:var(--mf-p-amber-bg);--lfg:var(--mf-p-amber-fg);--lbd:var(--mf-p-amber-line)}
+.L2{--lbg:var(--mf-p-amber-bg);--lfg:var(--mf-p-amber-fg);--lbd:var(--mf-p-amber-solid)}
+.L3{--lbg:var(--mf-p-orange-bg);--lfg:var(--mf-p-orange-fg);--lbd:var(--mf-p-orange-solid)}
+.L4{--lbg:var(--mf-p-red-bg);--lfg:var(--mf-p-red-fg);--lbd:var(--mf-p-red-solid)}
+.L5{--lbg:var(--mf-p-red-fg);--lfg:#fff;--lbd:var(--mf-tag-red-fg)}
+.gbtn{display:block;width:100%;background:none;border:0;padding:0;text-align:center}
+.gcount{font-size:26px;font-weight:700;line-height:1;display:block}
+.gstats{display:flex;justify-content:center;gap:28px;margin-top:6px;text-align:center}
+.gstats small{font-size:12px;color:var(--mf-text-muted)}
+.gtxt{margin-top:6px;display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center}
+.gdo{font-size:13px;color:var(--mf-text);text-align:center;margin-top:6px}
+.lamps{display:flex;gap:6px;justify-content:center;background:var(--mf-text);padding:8px 10px;border-radius:999px;width:max-content;margin:0 auto}
+.lamp{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;border:2px solid #6b7280;color:#fff;background:#2b303a}
+.lamp.on{border-color:#fff;color:#fff}
+.lamp.cur{box-shadow:0 0 0 3px #fff}
+.tube{display:flex;align-items:center;gap:0;margin:6px auto 0;max-width:260px}
+.bulb{width:34px;height:34px;border-radius:50%;background:var(--bf);color:#fff;display:grid;place-items:center;flex:none;margin-right:-6px;z-index:1;border:2px solid var(--mf-border-strong)}
+.tb{flex:1;height:18px;border:2px solid var(--mf-border-strong);border-radius:0 9px 9px 0;background:#fff;overflow:hidden}
+.tb i{display:block;height:100%;background:var(--bf)}
+.ticks{display:flex;justify-content:space-between;max-width:228px;margin:2px 0 0 auto;font-size:11px;color:var(--mf-text-muted);padding:0 2px 0 6px}
+/* popovers */
+.pop{position:absolute;background:#fff;border:1px solid var(--mf-border);border-radius:12px;box-shadow:var(--pop);z-index:70;padding:8px}
+#tip{position:fixed;z-index:300;background:var(--mf-text);color:#fff;border-radius:6px;padding:6px 9px;font-size:12px;max-width:260px;pointer-events:none;display:none;line-height:1.35}
+.mock{position:relative}
+.mpanel{right:0;top:42px;width:340px;max-height:calc(100vh - 70px);overflow:auto;font-size:13px}
+.mpanel fieldset{border:1px solid var(--mf-border-soft);border-radius:8px;margin:0 0 8px;padding:6px 10px 8px}
+.mpanel legend{font-weight:700;padding:0 4px}
+.mpanel label{display:flex;gap:8px;align-items:flex-start;padding:2px 0}
+.mpanel small{color:var(--mf-text-muted);display:block}
+.mpanel .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.mpanel input[type=number]{width:60px;height:28px;border:1px solid var(--mf-border-strong);border-radius:6px}
+.people{position:absolute;right:14px;top:44px;width:min(380px,calc(100vw - 32px));max-height:330px;overflow:auto;z-index:60}
+.people table{width:100%;border-collapse:collapse;font-size:13px}
+.people td,.people th{padding:5px 6px;text-align:left;border-bottom:1px solid var(--mf-border-soft)}
+.people button.rowb{background:none;border:0;padding:0;text-align:left;color:var(--mf-link)}
+.alert{display:flex;gap:10px;align-items:center;background:var(--mf-p-amber-bg);color:var(--mf-p-amber-fg);border:1px solid var(--mf-p-amber-line);border-radius:8px;padding:6px 12px;font-size:13px;flex:none}
+.err{background:var(--mf-danger-bg);color:var(--mf-danger);border-color:var(--mf-p-red-line)}
+.sk{background:linear-gradient(90deg,var(--mf-surface-alt),#f8f9fb,var(--mf-surface-alt));background-size:200% 100%;border-radius:6px;animation:sh 1.4s linear infinite}
+@keyframes sh{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.sk{animation:none}}
+.rm .sk{animation:none}
+.note{background:var(--mf-p-blue-bg);color:var(--mf-p-blue-fg);border:1px solid var(--mf-p-blue-line);border-radius:8px;padding:8px 12px;font-size:13px}
+/* responsive */
+@media (max-width:1023px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .side{position:fixed;left:-260px;top:0;width:240px;transition:left .15s}
+  .side.open{left:0}.scrim.open{display:block;position:fixed;inset:0;background:rgba(16,24,40,.45);z-index:55}
+  .burger{display:inline-flex}.gs{display:none}
+}
+@media (max-width:767px),(max-height:560px){
+  .col{min-height:0}
+  main{overflow:visible}
+  .page{flex:none}
+  .body{display:flex;flex-direction:column}
+  .rcol{order:-1;overflow:visible}
+  .frame{overflow:visible}
+  .scroll{overflow:visible;border-top:0}
+  .hrow,.trow{flex-wrap:wrap}
+}
+@media (max-width:767px){
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .card{padding:8px 10px;gap:8px;min-height:64px}.card .n{font-size:24px}.card .ci{width:32px;height:32px}
+  .scope{padding-bottom:0}
+  .trow{align-items:center}
+  .tabs{flex-basis:100%}
+  table.tt{display:none}.tcards{display:block}
+  .tc{padding:10px 12px;border-bottom:1px solid var(--mf-border-soft);display:grid;gap:4px}
+  .tc .r1{display:flex;gap:8px;align-items:center}
+  .sbox{width:100%}
+  .cols-btn,.sorted{display:none}
+  .mpanel{position:fixed;left:8px;right:8px;top:60px;width:auto}
+  .legend{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .hr .upd{display:none}
+}
+@media (min-width:768px) and (min-height:561px){
+  html,body{height:100%}
+  .shell{height:100vh;min-height:0;overflow:hidden}
+  .col{height:100vh;min-height:0}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<div class="shell">
+  <aside class="side" id="side" aria-label="Main navigation">
+    <div class="brand"><b aria-hidden="true">L</b><span>LPT Hub</span></div>
+    <ul class="nav" id="nav"></ul>
+    <div class="ver">v0.1.1</div>
+  </aside>
+  <div class="scrim" id="scrim" data-act="nav-close"></div>
+  <div class="col">
+    <header class="top" id="top"></header>
+    <main id="main" tabindex="-1"><div class="page" id="page"></div></main>
+  </div>
+</div>
+<div id="tip" role="tooltip"></div>
+<p class="sr" id="live" role="status" aria-live="polite"></p>
+<script>
+(()=>{
+'use strict';
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const P={home:'M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z',pie:'M21 12A9 9 0 1 1 12 3v9z M15 3.5A9 9 0 0 1 20.5 9H15z',line:'M3 3v18h18 M7 15l4-5 3 3 5-7',table:'M3 4h18v16H3z M3 10h18 M9 4v16 M15 4v16',user:'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21a8 8 0 0 1 16 0',users:'M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M2 21a7 7 0 0 1 14 0 M16 4.5a4 4 0 0 1 0 7 M18 14a7 7 0 0 1 4 7',userMinus:'M10 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M2 21a8 8 0 0 1 16 0 M16 8h6',alert:'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 7v6 M12 16.5v.5',pause:'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M10 9v6 M14 9v6',bolt:'M13 2L4 14h7l-1 8 9-12h-7z',search:'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M21 21l-4.3-4.3',filter:'M3 5h18l-7 8v6l-4 2v-8z',cols:'M3 4h18v16H3z M9 4v16 M15 4v16',x:'M6 6l12 12 M18 6L6 18',check:'M5 12l5 5 9-10',refresh:'M20 11a8 8 0 0 0-14-4L4 9 M4 4v5h5 M4 13a8 8 0 0 0 14 4l2-2 M20 20v-5h-5',info:'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 11v6 M12 7.5v.5',moon:'M20 14A8 8 0 1 1 10 4a6 6 0 0 0 10 10z',ban:'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M5.6 5.6l12.8 12.8',clock:'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 7v5l3 2',chev:'M6 9l6 6 6-6',up:'M6 15l6-6 6 6',down:'M6 9l6 6 6-6',sliders:'M4 6h10 M18 6h2 M4 12h4 M12 12h8 M4 18h12 M14 4v4 M8 10v4 M16 16v4',menu:'M4 6h16 M4 12h16 M4 18h16',battery:'M3 7h15v10H3z M21 10v4',gauge:'M4 18a8 8 0 1 1 16 0 M12 18l4-5',flame:'M12 22c4 0 7-3 7-7 0-4-3-6-4-10-3 2-6 5-6 8 0 1 1 2 1 2-2-1-3-3-3-4-2 2-3 4-3 6 0 3 3 5 8 5z',thermo:'M10 14V5a2 2 0 1 1 4 0v9a4 4 0 1 1-4 0z',inbox:'M3 13h5l1 3h6l1-3h5 M3 13l3-8h12l3 8v6H3z',sq:'M4 4h16v16H4z M8 12l3 3 5-6',brief:'M3 7h18v13H3z M9 7V4h6v3',bldg:'M5 21V4h9v17 M14 9h5v12 M8 8h3 M8 12h3 M8 16h3 M3 21h18',shield:'M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z',doc:'M6 3h9l4 4v14H6z M14 3v5h5',bell:'M6 16V11a6 6 0 0 1 12 0v5l2 2H4z M10 21h4',plus:'M12 5v14 M5 12h14',dots:'M5 12h.01 M12 12h.01 M19 12h.01'};
+const ic=(n,c='')=>`<svg class="i ${c}" viewBox="0 0 24 24" aria-hidden="true">${P[n].split(' M').map((d,i)=>`<path d="${i?'M':''}${d}"/>`).join('')}</svg>`;
+
+/* ---------- data ---------- */
+function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const R=rng(20261103);
+const NOW0=new Date(2026,10,3,10,42); // Tue 11/03/2026 10:42 AM, firm time
+const H=3600e3;
+const TYPES=[['Collection','blue'],['Processing','violet'],['Review','teal'],['QC','amber'],['Production','slate'],['Search','orange']];
+const MATTERS=[['2026-0412','Northwind v. Halvorsen',0],['2026-0388','Calder Pharma Subpoena',0],['2025-1190','Atlas Freight Antitrust',0],['2026-0501','Meridian Merger Review',1],['2026-0277','Okafor Employment',0],['2025-0934','Harbor Bank Inquiry',1],['2026-0455','Summit Energy Arbitration',0],['2026-0519','Vance Holdings Internal',0]];
+const PROJ=['Wave 1 review','Wave 2 review','Custodian set A','Load file build','Privilege pass','Rolling production','ESI intake'];
+const TITLES=['Load file QC, volume 3','Interview prep, custodian R. Alvarez','Privilege log first pass','Search term report v2','Process mobile extracts','Redaction check, batch 14','Produce volume 2 to opposing counsel','Validate hash values','Review second-level queue','Collect shared drive, Finance','Deduplicate across custodians','Build review set, Q3 emails','TIFF conversion exceptions','Chat export normalisation','Prepare clawback notice'];
+const PODS=['Review','Processing','Production','QC'];
+const NAMES=['Priya Nair','Marcus Oyelaran','Dana Whitfield','Lena Okoro','Tomas Reyes','Hana Sato','Ivan Petrov','Grace Liu','Omar Haddad','Sofia Marin','Ben Carter','Nia Brooks','Alex Kim','Rosa Diaz','Jonas Weber','Mei Tanaka','Carlos Vega','Aisha Khan','Leo Fischer','Zoe Adams','Kofi Mensah','Ana Costa','Ravi Patel','Ella Novak','Sam Okafor','Yuki Mori','Diego Ruiz','Amara Eze','Noah Berg','Isla Reid','Hugo Lang','Maya Singh','Theo Park','Lucia Rossi','Eli Stone','Fatima Noor','Owen Hale','Chloe Ward','Anil Rao','June Park'];
+const LOADS=[1,2,0,3,1,1,2,0,1,2,3,1,0,2,1,1,2,0,1,3,2,1,0,1,2,1,3,0,1,2,1,2,0,1,1,3,2,1,0,2];
+const OOO=new Set([5,16,27,38]), PTW=new Set([7,20,33]);
+const WORKERS=NAMES.map((n,i)=>({id:'w'+i,name:n,pod:i%4,ini:n.split(' ').map(x=>x[0]).join(''),ooo:OOO.has(i)?(['11/05','11/06','11/09','11/04'][i%4]):null,pt:PTW.has(i),load:LOADS[i],hold:i%6===2?1:0}));
+const EXTRAS=[['Dana Whitfield (Director)',11],['Marcus Hale (PM)',9],['Elena Vogt (PM)',8],['Rob Ito (PM)',7]].map((e,i)=>({id:'x'+i,name:e[0],pod:-1,ini:e[0].split(' ').map(x=>x[0]).join(''),extra:true,load:e[1],hold:i%2}));
+const PRIOS=['ASAP','Critical','High','Normal','Low'];
+let TID=1100;
+function mkTask(o){const m=MATTERS[Math.floor(R()*MATTERS.length)],t=TYPES[Math.floor(R()*TYPES.length)];
+  const p=o.prio||(()=>{const r=R();return r<.08?'ASAP':r<.2?'Critical':r<.45?'High':r<.85?'Normal':'Low'})();
+  let due=null;if(p!=='ASAP'){const r=R();due=new Date(NOW0.getTime()+(r<.16?-(1+Math.floor(R()*12))*24*H+8*H*R():(R()*18)*24*H));due.setMinutes(Math.round(due.getMinutes()/15)*15,0,0);}
+  const tk={id:'t'+(++TID),ref:'TSK-'+TID,type:t,title:TITLES[Math.floor(R()*TITLES.length)],cm:m[0],matter:m[1],sens:!!m[2],proj:PROJ[Math.floor(R()*PROJ.length)],prio:p,due,
+    who:o.who||null,pod:o.pod,status:o.status||(R()<.6?'In progress':'New'),created:o.created||new Date(NOW0.getTime()-(20+R()*400)*H),holdDays:o.status==='On hold'?2+Math.floor(R()*40):0,step:1+Math.floor(R()*4),steps:5};
+  return tk;}
+const BASE=[];
+WORKERS.forEach(w=>{for(let k=0;k<w.load;k++)BASE.push(mkTask({who:w.id,pod:w.pod,status:undefined}));if(w.hold)BASE.push(mkTask({who:w.id,pod:w.pod,status:'On hold'}));});
+EXTRAS.forEach(w=>{for(let k=0;k<w.load;k++)BASE.push(mkTask({who:w.id,pod:Math.floor(R()*4)}));if(w.hold)BASE.push(mkTask({who:w.id,pod:1,status:'On hold'}));});
+BASE.forEach(t=>{if(t.status==='In progress'||t.status==='New'){}});
+const UN={ none:[], fresh:[.4,.7], mixed:[.3,.8,1.4,1.9,2.2,16.8], pile:[.2,.5,.9,1.3,1.8,2.2,2.6,3.1,3.6,4.4,5.1,17.5,19,21,23.4,26.2] };
+function unTasks(sc){return (UN[sc]||[]).map((h,i)=>mkTask({who:null,pod:i%4,status:'New',created:new Date(NOW0.getTime()-h*H),prio:i===1?'High':i===3&&sc!=='fresh'?'Critical':undefined}));}
+let UNCACHE={};
+const PERMS=['View','ViewSummary','ViewUnassigned','ViewBreakdowns','ViewTrends','ViewSwimlane','ViewUsers','ViewCoverage'];
+const ROLES={director:{n:'Director / Manager',p:PERMS.slice(),d:'Seeded Director: every Dashboard permission. Scope: all pods.'},pod:{n:'Pod Lead',p:['View','ViewSummary','ViewSwimlane','ViewUsers','ViewCoverage'],d:'Seeded Pod Lead: Summary, Swimlane, Users, Coverage. Scope: own pods by default.'},tech:{n:'Technician',p:['View','ViewUnassigned'],d:'Data Technician / Data Scientist: the unassigned queue only.'}};
+const TABS=[['summary','Summary','home'],['breakdowns','Breakdowns','pie'],['trends','Trends','line'],['swimlane','Swimlane','table'],['users','Users','user']];
+const TABP={summary:['ViewSummary','ViewUnassigned'],breakdowns:['ViewBreakdowns'],trends:['ViewTrends'],swimlane:['ViewSwimlane'],users:['ViewUsers']};
+const WSTATE={av:['Available','0 tasks'],oc:['Occupied','1 task'],bu:['Busy','2 tasks'],ov:['Overloaded','3 or more tasks'],off:['Off hours','outside work hours'],out:['Out of office','away']};
+const WORDER=['av','oc','bu','ov','off','out'];
+const LVLN=['Normal','Warning','Elevated','High','Severe','Critical'];
+const COLS=[['ref','Ref',1],['type','Type'],['title','Title',1],['cm','CM Number'],['matter','Matter Name'],['proj','Project'],['prio','Priority'],['asg','Assignee'],['due','Due'],['age','Unassigned for',0,1],['status','Status'],['prog','Progress']];
+
+/* ---------- state ---------- */
+const S={role:'director',perm:null,tab:'summary',n:12,rule:'pod',un:'mixed',gauge:'A',cards:4,state:'live',card:null,wf:null,q:'',fopen:false,fprio:'',ftype:'',fstat:'',sort:null,dir:'asc',page:1,size:50,colsOpen:false,hid:{age:1},scope:null,adv:0,hours:'work',perN:5,cap:2,sens:true,hold:false,mock:false,people:false,rm:false,nav:false};
+S.perm=new Set(ROLES.director.p);if(innerWidth<768)S.size=25;
+function parseHash(){const h=new URLSearchParams(location.hash.slice(1));
+  const g=k=>h.get(k);
+  if(g('role')&&ROLES[g('role')]){S.role=g('role');S.perm=new Set(ROLES[S.role].p);S.scope=null;}
+  if(g('without'))g('without').split(',').forEach(x=>S.perm.delete(x));
+  if(g('tab'))S.tab=g('tab');
+  if(g('n')!=null)S.n=+g('n');if(g('rule'))S.rule=g('rule');if(g('un'))S.un=g('un');if(g('gauge'))S.gauge=g('gauge');
+  if(g('cards'))S.cards=+g('cards');if(g('state'))S.state=g('state');if(g('card'))S.card=g('card');if(g('adv'))S.adv=+g('adv');
+  if(g('hours'))S.hours=g('hours');if(g('sens'))S.sens=g('sens')==='1';if(g('mock'))S.mock=g('mock')==='1';if(g('people'))S.people=g('people')==='1';
+  if(g('rm'))S.rm=g('rm')==='1';if(g('scope'))S.scope=g('scope');if(g('hold'))S.hold=g('hold')==='1';if(g('wf'))S.wf=g('wf').includes(':')?{k:g('wf').split(':')[0],v:g('wf').split(':')[1]}:null;
+  if(g('q'))S.q=g('q');if(g('cols'))g('cols').split(',').forEach(c=>S.hid[c]=0);if(g('page'))S.page=+g('page');
+}
+const can=p=>S.perm.has(p);
+const hasTab=t=>can('View')&&TABP[t].some(can);
+const full=()=>can('View')&&can('ViewSummary');
+const queueOnly=()=>can('View')&&!can('ViewSummary')&&can('ViewUnassigned');
+/* ---------- time ---------- */
+const now=()=>new Date(NOW0.getTime()+S.adv*H);
+const p2=n=>String(n).padStart(2,'0');
+const hm=d=>{let h=d.getHours();const a=h>=12?'PM':'AM';h=h%12||12;return p2(h)+':'+p2(d.getMinutes())+' '+a};
+const fdate=d=>p2(d.getMonth()+1)+'/'+p2(d.getDate());
+const fdt=d=>fdate(d)+' '+hm(d);
+function workMs(a,b){ // weekdays 8:00 AM to 6:00 PM firm time
+  if(b<=a)return 0;let tot=0;const d=new Date(a.getFullYear(),a.getMonth(),a.getDate());
+  for(;d<b;d.setDate(d.getDate()+1)){const dow=d.getDay();if(dow===0||dow===6)continue;
+    const s=new Date(d.getFullYear(),d.getMonth(),d.getDate(),8),e=new Date(d.getFullYear(),d.getMonth(),d.getDate(),18);
+    const lo=Math.max(s,a),hi=Math.min(e,b);if(hi>lo)tot+=hi-lo;}
+  return tot;}
+const ageMs=t=>S.hours==='work'?workMs(t.created,now()):now()-t.created;
+function fage(ms){const m=Math.max(0,Math.round(ms/60000));if(m<60)return m+' m';const h=Math.floor(m/60);if(h<24)return h+' h '+p2(m%60)+' m';return Math.floor(h/24)+' d '+(h%24)+' h';}
+/* ---------- derived ---------- */
+function unassigned(){const k=S.un;if(!UNCACHE[k])UNCACHE[k]=unTasks(k);return S.state==='empty'?[]:UNCACHE[k];}
+function allTasks(){
+  let list=S.state==='empty'?[]:BASE.concat(unassigned());
+  if(!S.sens)list=list.filter(t=>!t.sens);
+  const sc=scopePods();
+  if(sc)list=list.filter(t=>sc.includes(t.pod));
+  return list;}
+function scopeOpts(){
+  if(S.role==='pod')return [['mine','My pods (Review, QC)'],['p0','Review'],['p3','QC']];
+  return [['all','All pods'],['mine','My pods'],['p0','Review'],['p1','Processing'],['p2','Production'],['p3','QC']];}
+function curScope(){return S.scope||(S.role==='pod'?'mine':'all');}
+function scopePods(){const s=curScope();if(s==='all')return null;if(s==='mine')return S.role==='pod'?[0,3]:[0];return [+s.slice(1)];}
+const isOpen=t=>true;
+const isUn=t=>!t.who, isOd=t=>t.status!=='On hold'&&t.prio!=='ASAP'&&t.due&&t.due<now(), isHold=t=>t.status==='On hold', isAsap=t=>t.prio==='ASAP';
+const CARD={unassigned:isUn,overdue:isOd,hold:isHold,asap:isAsap};
+function workers(){
+  const sc=scopePods(), mins=now().getHours()*60+now().getMinutes();
+  let ws=WORKERS.slice(0,S.n);
+  if(S.rule==='exec'&&S.n>0)ws=ws.concat(EXTRAS);
+  if(sc)ws=ws.filter(w=>sc.includes(w.pod));
+  const tasks=(S.state==='empty'?[]:BASE).filter(t=>S.sens||!t.sens);
+  return ws.map(w=>{
+    const own=tasks.filter(t=>t.who===w.id&&(S.hold||t.status!=='On hold'));
+    const load=own.length;
+    const [s0,e0]=w.pt?[690,1230]:[510,1050];
+    let st=load===0?'av':load===1?'oc':load===2?'bu':'ov';
+    let note='';
+    if(w.ooo){st='out';note='Out of office until '+w.ooo;}
+    else if(mins<s0||mins>=e0){st='off';note=(mins<s0?'Starts ':'Left at ')+(mins<s0?hm(new Date(2026,10,3,Math.floor(s0/60),s0%60)):hm(new Date(2026,10,3,Math.floor(e0/60),e0%60)))+(w.pt?' (Pacific office)':'');}
+    return {...w,load,st,note,pods:w.pod<0?'No pod':PODS[w.pod]};});}
+function gauge(){
+  const us=allTasks().filter(isUn);
+  const n=us.length;let oldest=0;us.forEach(t=>{oldest=Math.max(oldest,ageMs(t))});
+  const h=oldest/H;const al=h<1?0:h<2?1:h<3?2:h<4?3:h<5?4:5;
+  const bonus=Math.min(S.cap,Math.floor(n/Math.max(1,S.perN)));
+  const lvl=n===0?-1:Math.min(5,al+bonus);
+  return {n,oldest,al,bonus,lvl};}
+const DO=['Nothing is waiting for an owner.','New work is arriving. Assign it within the hour.','Waiting over an hour. Assign it soon.','Two hours without an owner. Assign it now.','Three hours. Assign it now, or ask a pod lead to take it.','Four hours. Escalate: clear the oldest first and ask the team for help.','Five hours or more. Escalate to the Director and clear the oldest first.'];
+/* ---------- filtering and sorting ---------- */
+function gridRows(){
+  let rows=allTasks();const ws=workers();
+  if(S.card)rows=rows.filter(CARD[S.card]);
+  if(S.wf){const set=new Set(ws.filter(w=>S.wf.k==='w'?w.id===S.wf.v:w.st===S.wf.v).map(w=>w.id));rows=rows.filter(t=>t.who&&set.has(t.who));}
+  if(queueOnly())rows=rows.filter(isUn);
+  if(S.q){const q=S.q.toLowerCase();rows=rows.filter(t=>(t.ref+' '+t.title+' '+t.matter+' '+t.cm+' '+t.proj).toLowerCase().includes(q));}
+  if(S.fprio)rows=rows.filter(t=>t.prio===S.fprio);if(S.ftype)rows=rows.filter(t=>t.type[0]===S.ftype);if(S.fstat)rows=rows.filter(t=>t.status===S.fstat);
+  return rows;}
+const PR={ASAP:0,Critical:1,High:2,Normal:3,Low:4};
+function sortKey(){if(S.sort)return [S.sort,S.dir];if(S.card==='unassigned'||queueOnly())return ['age','desc'];return ['att','asc'];}
+function sorted(rows){const [k,d]=sortKey();const f={att:t=>[isOd(t)?0:1,PR[t.prio],t.due?+t.due:9e15],ref:t=>t.ref,type:t=>t.type[0],title:t=>t.title.toLowerCase(),cm:t=>t.cm,matter:t=>t.matter,proj:t=>t.proj,prio:t=>PR[t.prio],asg:t=>(t.who?nameOf(t.who):''),due:t=>t.due?+t.due:9e15,age:t=>-ageMs(t),status:t=>t.status,prog:t=>t.step}[k];
+  const cmp=(a,b)=>{const x=f(a),y=f(b);const xa=Array.isArray(x)?x:[x],ya=Array.isArray(y)?y:[y];for(let i=0;i<xa.length;i++){if(xa[i]<ya[i])return -1;if(xa[i]>ya[i])return 1}return 0};
+  const out=rows.slice().sort(cmp);if(k==='age'){if(d==='asc')out.reverse();return out;}return d==='desc'&&k!=='att'?out.reverse():out;}
+const nameOf=id=>{const w=WORKERS.find(x=>x.id===id)||EXTRAS.find(x=>x.id===id);return w?w.name:'?'};
+const sortLabel=()=>{const [k,d]=sortKey();const m={att:'Urgency',age:'Unassigned for, longest first',ref:'Ref',type:'Type',title:'Title',cm:'CM Number',matter:'Matter Name',proj:'Project',prio:'Priority',asg:'Assignee',due:'Due',status:'Status',prog:'Progress'};
+  if(k==='att')return 'Urgency';if(k==='age')return 'Unassigned for, '+(d==='desc'?'longest':'shortest')+' first';return m[k]+', '+(d==='asc'?'A to Z':'Z to A');};
+
+/* ---------- render ---------- */
+let prevLvl=null,first=true;
+function render(){
+  const act=document.activeElement&&document.activeElement.dataset?document.activeElement.dataset.k:null;
+  const sc=$('.scroll');const st=sc?[sc.scrollTop,sc.scrollLeft]:null;const rc=$('.rcol');const rt=rc?rc.scrollTop:0;
+  document.documentElement.classList.toggle('rm',S.rm);
+  renderTop();renderNav();
+  $('#page').innerHTML=pageHtml();
+  if(st&&$('.scroll')&&!S._resetScroll){$('.scroll').scrollTop=st[0];$('.scroll').scrollLeft=st[1]}
+  if(rc&&$('.rcol'))$('.rcol').scrollTop=rt;S._resetScroll=false;
+  if(act){const el=document.querySelector('[data-k="'+act+'"]');if(el)el.focus({preventScroll:true});}
+  const g=full()&&S.tab==='summary'?gauge():null;
+  if(g){if(!first&&prevLvl!==null&&g.lvl!==prevLvl)$('#live').textContent='Unassigned wait level is now '+(g.lvl<0?'clear':g.lvl+' of 5, '+LVLN[g.lvl])+'. '+g.n+' unassigned.';prevLvl=g.lvl;}
+  first=false;
+}
+function renderNav(){const items=[['Dashboard','home',1],['My Work','sq'],['My Matters','brief'],['Task Queue','inbox'],['Pod Work','users'],['Matters','brief'],['Clients','bldg'],['Reports','doc'],['Administration','shield']];
+  $('#nav').innerHTML=items.map(i=>`<li><a href="#" ${i[2]?'aria-current="page"':''}>${ic(i[1])}${i[0]}</a></li>`).join('');
+  $('#side').classList.toggle('open',S.nav);$('#scrim').classList.toggle('open',S.nav);}
+function radio(key,val,label,sub,cur){return `<label><input type="radio" name="${key}" data-k="r-${key}-${val}" data-act="set" data-key="${key}" data-val="${val}" ${String(cur)===String(val)?'checked':''}><span>${label}${sub?`<small>${sub}</small>`:''}</span></label>`}
+function renderTop(){
+  const R_=ROLES[S.role];const edited=PERMS.some(p=>can(p)!==R_.p.includes(p));
+  $('#top').innerHTML=`<button class="btn ico burger" data-act="nav-toggle" aria-label="Open navigation" data-k="burger">${ic('menu')}</button>
+  <div class="gs"><span class="sr">Search</span><input type="search" placeholder="Search tasks, matters, clients" aria-label="Global search">${ic('search','s')}</div><span class="spacer"></span>
+  <div class="mock"><button class="mkb" data-act="mock" data-k="mock" aria-expanded="${S.mock}" aria-controls="mpanel">${ic('sliders','s')}Mockup &middot; ${R_.n}${edited?' (edited)':''}</button>${S.mock?mockPanel():''}</div>
+  <span class="av" title="Signed in as the role chosen in Mockup" aria-label="Signed in as ${R_.n}">${S.role==='tech'?'TT':S.role==='pod'?'PL':'DR'}</span>`;}
+function mockPanel(){
+  const R_=ROLES[S.role];
+  const sel=(k,opts,cur)=>opts.map(o=>radio(k,o[0],o[1],o[2],cur)).join('');
+  const chk=PERMS.map(p=>`<label><input type="checkbox" data-k="p-${p}" data-act="perm" data-val="${p}" ${can(p)?'checked':''}><span>Dashboard.${p}</span></label>`).join('');
+  const shows=[];if(!can('View'))shows.push('No Dashboard menu item: "You do not have access"');else{
+    shows.push('Tabs: '+(TABS.filter(t=>hasTab(t[0])).map(t=>t[1]).join(', ')||'none'));
+    shows.push(full()?'Cards + task grid (ViewSummary)':queueOnly()?'Unassigned queue only (ViewUnassigned)':'no Summary content');
+    shows.push(full()&&can('ViewUsers')?'Team capacity battery (ViewUsers)':'no battery (needs ViewUsers)');
+    shows.push(full()?'Unassigned wait gauge (ViewSummary)':'no gauge (needs ViewSummary)');}
+  return `<div class="pop mpanel" id="mpanel" role="group" aria-label="Mockup controls">
+  <fieldset><legend>View as</legend>${sel('role',[['director','Director / Manager','All 8 Dashboard permissions'],['pod','Pod Lead','View, Summary, Swimlane, Users, Coverage'],['tech','Technician','View, Unassigned only: queue, no cards, no battery']],S.role)}
+  <small>${R_.d}</small></fieldset>
+  <fieldset><legend>Permissions of this view</legend>${chk}<p class="note" style="margin-top:6px">${shows.join('. ')}.</p>${PERMS.some(p=>can(p)!==R_.p.includes(p))?`<button class="btn txt" data-act="role-reset">Reset to the seeded role</button>`:''}</fieldset>
+  <fieldset><legend>Workers in the battery</legend><div class="row">${[3,12,40,0].map(n=>`<button class="btn ${S.n===n?'on':''}" data-act="set" data-key="n" data-val="${n}" aria-pressed="${S.n===n}">${n===0?'None':n}</button>`).join('')}</div>
+  ${sel('rule',[['pod','Workflow.Execute and member of a pod (recommended)','Managers and PMs also hold Workflow.Execute'],['exec','Workflow.Execute only (as asked)','adds 4 managers and PMs as workers']],S.rule)}
+  <label><input type="checkbox" data-k="t-hold" data-act="tog" data-key="hold" ${S.hold?'checked':''}><span>Count On hold tasks as load<small>Default off: on hold means waiting on someone else</small></span></label></fieldset>
+  <fieldset><legend>Unassigned tasks</legend>${sel('un',[['none','None (calm)'],['fresh','2 new, oldest 24 min'],['mixed','6 tasks, oldest 2 h 48 m of working time'],['pile','16 tasks, oldest 12 h of working time (several from yesterday)']],S.un)}
+  <div class="row" style="margin-top:4px">Move the clock: ${[1,2,4].map(h=>`<button class="btn" data-act="adv" data-val="${h}">+${h} h</button>`).join('')}<button class="btn txt" data-act="adv" data-val="0">Now</button></div><small>Clock is ${hm(now())}${S.adv?' (+'+S.adv+' h)':''}</small>
+  ${sel('hours',[['work','Age counts working hours (8 AM to 6 PM, Mon to Fri) (recommended)'],['clock','Age counts clock hours']],S.hours)}
+  <div class="row">Every <input type="number" min="1" max="20" value="${S.perN}" data-act="num" data-key="perN" aria-label="Tasks per extra level"> tasks adds a level, at most <input type="number" min="0" max="5" value="${S.cap}" data-act="num" data-key="cap" aria-label="Maximum extra levels"></div></fieldset>
+  <fieldset><legend>Gauge style</legend>${sel('gauge',[['A','A Pressure gauge (recommended)'],['B','B Signal lamps'],['C','C Thermometer / boiling']],S.gauge)}</fieldset>
+  <fieldset><legend>Cards</legend>${sel('cards',[['4','4 cards (what the owner sees today, with ASAP)'],['3','3 cards (v3 decision, no ASAP)']],S.cards)}</fieldset>
+  <fieldset><legend>States and other</legend>${sel('state',[['live','Data'],['loading','Loading'],['error','Error'],['stale','Refresh failed'],['empty','No open tasks']],S.state)}
+  <label><input type="checkbox" data-k="t-sens" data-act="tog" data-key="sens" ${S.sens?'checked':''}><span>Viewer may see sensitive matters<small>Off: tasks of 2 sensitive matters vanish from grid, cards, battery and gauge</small></span></label>
+  <label><input type="checkbox" data-k="t-rm" data-act="tog" data-key="rm" ${S.rm?'checked':''}><span>Preview reduced motion</span></label></fieldset>
+  <button class="btn" data-act="mock" style="width:100%">Close</button></div>`;}
+function pageHtml(){
+  if(!can('View'))return `<div class="msg"><b>You do not have access to the Dashboard.</b>Ask an administrator to add Dashboard.View to your role.</div>`;
+  const tabs=TABS.filter(t=>hasTab(t[0]));
+  if(!tabs.length)return headHtml()+`<p class="note">No Dashboard tab is turned on for your role.</p>`;
+  if(!hasTab(S.tab))S.tab=tabs[0][0];
+  const showTabs=!queueOnly();
+  let out=headHtml();
+  if(showTabs)out+=`<div class="trow"><div class="tabs" role="tablist" aria-label="Dashboard">${tabs.map(t=>`<button role="tab" aria-selected="${t[0]===S.tab}" data-act="tab" data-val="${t[0]}" data-k="tab-${t[0]}">${ic(t[2],'s')}${t[1]}</button>`).join('')}</div>
+    <div class="scope"><span aria-hidden="true">Scope</span><span class="dd"><select data-act="scope" aria-label="Scope" data-k="scope">${scopeOpts().map(o=>`<option value="${o[0]}" ${curScope()===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>${ic('chev','s')}</span></div></div>`;
+  if(S.state==='stale')out+=`<div class="alert" role="status">${ic('alert','s')}Could not refresh. Showing data from ${hm(new Date(NOW0.getTime()-5*60000))}.<button class="btn txt" data-act="set" data-key="state" data-val="live">Try again</button></div>`;
+  if(S.tab!=='summary'&&showTabs){return out+`<div class="panel"><p class="note">${TABS.find(t=>t[0]===S.tab)[1]} tab: unchanged by this request. The Scope dropdown applies to every tab. Switch back to Summary.</p></div>`;}
+  if(S.state==='error')return out+`<div class="frame"><div class="msg" role="alert"><b>The dashboard could not be loaded.</b>Check your connection and try again.<div style="margin-top:10px"><button class="btn" data-act="set" data-key="state" data-val="live" data-k="retry">${ic('refresh','s')}Retry</button></div></div></div>`;
+  if(S.state==='loading')return out+skeleton();
+  const ws=full()&&can('ViewUsers');
+  if(full())out+=cardsHtml();
+  out+=`<div class="body ${full()?'':'one'}">${gridHtml()}${full()?`<div class="rcol" aria-label="Capacity and unassigned wait">${can('ViewUsers')?batteryHtml():`<div class="panel"><div class="ph"><h2>${ic('battery')}Team capacity</h2></div><p class="fine" style="margin:0">Hidden: needs Dashboard.ViewUsers because it lists people.</p></div>`}${gaugeHtml()}</div>`:''}</div>`;
+  return out;}
+function headHtml(){const t=queueOnly()?'Unassigned work':'Dashboard';
+  return `<div class="hrow"><div class="ttl"><span class="chip">${ic('home')}</span><div><h1>${t}</h1><small>Tuesday, November 3, 2026</small></div></div>
+  <div class="hr"><span class="upd">Updated ${hm(S.state==='stale'?new Date(NOW0.getTime()-5*60000):now())}</span><button class="btn" data-act="refresh" data-k="refresh">${ic('refresh','s')}Refresh</button></div></div>`;}
+function skeleton(){return `<div class="cards" aria-busy="true">${Array(S.cards).fill('<div class="card sk" style="height:72px"></div>').join('')}</div><div class="body"><div class="frame" aria-busy="true" role="status"><span class="sr">Loading the dashboard</span><div class="sk" style="height:34px;margin:12px"></div>${Array(6).fill('<div class="sk" style="height:30px;margin:8px 12px"></div>').join('')}</div><div class="rcol"><div class="sk" style="height:250px;border-radius:12px"></div><div class="sk" style="height:200px;border-radius:12px"></div></div></div>`;}
+function cardsHtml(){
+  const rows=allTasks();const a=rows.filter(isUn),o=rows.filter(isOd),h=rows.filter(isHold),s=rows.filter(isAsap);
+  const g=gauge();
+  const worst=o.length?Math.max(...o.map(t=>Math.floor((now()-t.due)/(24*H)))):0, longest=h.length?Math.max(...h.map(t=>t.holdDays)):0;
+  const defs=[['unassigned','Unassigned','userMinus','violet',a.length,a.length?'Oldest '+fage(g.oldest):'All clear'],['overdue','Overdue','alert','red',o.length,o.length?'Worst '+Math.max(1,worst)+' days overdue':'All clear'],['hold','On hold','pause','slate',h.length,h.length?'Longest '+longest+' days':'None on hold'],['asap','ASAP open','bolt','blue',s.length,'No due date']].slice(0,S.cards===3?3:4);
+  return `<div class="cards" role="group" aria-label="Needs attention. Choose one to filter the task list." style="--nc:${defs.length}" data-cards>${defs.map(d=>`<button type="button" class="card t-${d[3]} ${d[4]===0&&d[0]!=='asap'?'zero':''}" aria-pressed="${S.card===d[0]}" data-act="card" data-val="${d[0]}" data-k="card-${d[0]}"><span class="ci">${ic(d[2])}</span><span><span class="n">${d[4]}</span> <span class="l">${d[1]}</span><span class="h" style="display:block">${d[5]}</span></span><span class="chk">${ic('check','xs')}</span></button>`).join('')}</div>`;}
+function pill(t,txt,icon){return `<span class="pill t-${t}">${icon?ic(icon):''}${txt}</span>`}
+function dueCell(t){if(!t.due)return pill('blue','ASAP, no date','bolt');
+  const od=isOd(t);const d=Math.floor((now()-t.due)/(24*H));const left=t.due-now();
+  return `<span class="${od?'od':''}">${fdt(t.due)}</span><span class="sub ${od?'od':''}">${od?(d<1?'Overdue today':d+' day'+(d>1?'s':'')+' overdue'):left<24*H?'Due in '+Math.max(1,Math.round(left/H))+' h':'In '+Math.round(left/(24*H))+' days'}</span>`;}
+function stCell(t){const c=t.status==='In progress'?'blue':t.status==='On hold'?'slate':'slate';return pill(c,t.status,t.status==='On hold'?'pause':'')+(t.status==='On hold'?`<span class="sub">${t.holdDays} days, waiting on client</span>`:'');}
+function cell(k,t){switch(k){
+  case 'ref':return `<a class="ref" href="#" tabindex="-1">${t.ref}</a>`;
+  case 'type':return pill(t.type[1],t.type[0]);
+  case 'title':return esc(t.title);
+  case 'cm':return `<span class="ref" style="color:var(--mf-text)">${t.cm}</span>`;
+  case 'matter':return esc(t.matter)+(t.sens?` <span class="sr">sensitive</span>`:'');
+  case 'proj':return esc(t.proj);
+  case 'prio':return pill(t.prio==='Critical'?'red':t.prio==='High'?'orange':t.prio==='ASAP'?'blue':'slate',t.prio);
+  case 'asg':return t.who?esc(nameOf(t.who)):pill('violet','Unassigned','userMinus');
+  case 'due':return dueCell(t);
+  case 'age':return t.who?'<span class="sub">-</span>':`<b>${fage(ageMs(t))}</b><span class="sub" title="Created ${fdt(t.created)}">since ${fdt(t.created)}</span>`;
+  case 'status':return stCell(t);
+  case 'prog':return t.status==='New'?'<span class="sub">Not started</span>':`<span class="prog"><i><b style="width:${t.step/t.steps*100}%"></b></i>${t.step} of ${t.steps}</span>`;}}
+function visCols(){return COLS.filter(c=>{if(c[0]==='age')return S.card==='unassigned'||queueOnly()||S.hid.age===0;if(S.hid[c[0]]&&!c[2])return false;if(queueOnly()&&c[0]==='asg')return false;return true;});}
+function gridHtml(){
+  const rows=sorted(gridRows());const total=rows.length;const pages=Math.max(1,Math.ceil(total/S.size));if(S.page>pages)S.page=pages;
+  const [sk,sd]=sortKey();
+  const filtN=[S.fprio,S.ftype,S.fstat].filter(Boolean).length;
+  return `<section class="frame" aria-label="Tasks"><div class="ghd"><h2>${ic('sq')}${queueOnly()?'Unassigned tasks':'Tasks'} <span class="cnt" data-cnt aria-label="${total} tasks">${total}</span></h2>
+   <div class="sbox"><span class="sr">Search tasks</span><input type="search" id="q" placeholder="Search tasks" value="${esc(S.q)}" autocomplete="off" data-act="q">${ic('search','s')}${S.q?`<button class="x" data-act="qclear" aria-label="Clear search">${ic('x','xs')}</button>`:''}</div>
+   <button class="btn ${filtN?'on':''}" data-act="fopen" aria-expanded="${S.fopen}" data-k="fopen">${ic('filter','s')}Filters${filtN?` <span class="badge">${filtN}<span class="sr"> active</span></span>`:''}</button>
+   <span class="sp"></span><span class="sorted">Sorted by ${sortLabel()}${S.sort?` <button class="btn txt" data-act="sortreset" data-k="sortreset">Reset sort</button>`:''}</span>
+   <span class="cols-btn" style="position:relative"><button class="btn" data-act="cols" aria-expanded="${S.colsOpen}" data-k="cols">${ic('cols','s')}Columns</button>${S.colsOpen?colsMenu():''}</span></div>
+   ${S.fopen?`<div class="frow" role="group" aria-label="Column filters">${fsel('fprio','Priority',['ASAP','Critical','High','Normal','Low'],S.fprio)}${fsel('ftype','Type',TYPES.map(t=>t[0]),S.ftype)}${fsel('fstat','Status',['New','In progress','On hold'],S.fstat)}</div>`:''}
+   ${chipsHtml()}
+   <div class="scroll" role="region" tabindex="0" aria-label="Task list, scrollable" data-scroll>${tableHtml(rows,sk,sd)}</div>
+   ${pagerHtml(total,pages)}</section>`;}
+function fsel(k,l,opts,cur){return `<label>${l}<span class="dd"><select data-act="fsel" data-key="${k}"><option value="">Any</option>${opts.map(o=>`<option ${cur===o?'selected':''}>${o}</option>`).join('')}</select>${ic('chev','s')}</span></label>`}
+function colsMenu(){return `<div class="pop" style="right:0;top:36px;width:230px" role="group" aria-label="Columns">${COLS.map(c=>`<label style="display:flex;gap:8px;padding:3px 4px"><input type="checkbox" data-act="col" data-val="${c[0]}" ${c[2]?'checked disabled':(c[0]==='age'?(S.hid.age===0?'checked':''):(!S.hid[c[0]]?'checked':''))}>${c[1]}${c[2]?' <small>(locked)</small>':''}${c[0]==='age'?' <small>(shows with Unassigned)</small>':''}</label>`).join('')}<button class="btn txt" data-act="colsreset">Reset to default</button></div>`;}
+function chipsHtml(){const ch=[];
+  if(S.card)ch.push(['card','Needs attention: '+{unassigned:'Unassigned',overdue:'Overdue',hold:'On hold',asap:'ASAP open'}[S.card]]);
+  if(S.wf){const w=S.wf.k==='w'?nameOf(S.wf.v):WSTATE[S.wf.v][0];ch.push(['wf','Capacity: '+w])}
+  if(S.fprio)ch.push(['fprio','Priority: '+S.fprio]);if(S.ftype)ch.push(['ftype','Type: '+S.ftype]);if(S.fstat)ch.push(['fstat','Status: '+S.fstat]);
+  if(!ch.length&&!S.q)return '';
+  return `<div class="fchips" data-active-filters>${ch.map(c=>`<span class="fchip">${esc(c[1])}<button data-act="rm" data-val="${c[0]}" aria-label="Remove filter: ${esc(c[1])}">${ic('x','xs')}</button></span>`).join('')}<button class="btn txt" data-act="clearall" data-k="clearall">Clear filters</button></div>`;}
+function tableHtml(rows,sk,sd){
+  const cols=visCols();const from=(S.page-1)*S.size, view=rows.slice(from,from+S.size);
+  if(!rows.length){const any=S.card||S.wf||S.q||S.fprio||S.ftype||S.fstat;
+    return any?`<div class="msg" data-empty><b>No tasks match.</b>Change or clear the filters.<div style="margin-top:8px"><button class="btn" data-act="clearall">Clear filters</button></div></div>`:`<div class="msg" data-empty><b>No open tasks in this scope.</b>Nothing is waiting, overdue or on hold.</div>`;}
+  const arrow=k=>sk===k?ic(sd==='asc'?'up':'down','xs'):'';
+  const sortable={ref:'ref',type:'type',title:'title',cm:'cm',matter:'matter',proj:'proj',prio:'prio',asg:'asg',due:'due',age:'age',status:'status',prog:'prog'};
+  const th=cols.map(c=>`<th scope="col" class="${c[0]==='ref'?'pin':''}" aria-sort="${sk===c[0]?(sd==='asc'?'ascending':'descending'):'none'}"><button data-act="sort" data-val="${c[0]}" data-k="sort-${c[0]}">${c[1]}${arrow(c[0])}</button></th>`).join('');
+  const tb=view.map(t=>`<tr>${cols.map(c=>`<td class="${c[0]==='ref'?'pin':''} ${c[0]==='title'?'ttl2':''}">${cell(c[0],t)}</td>`).join('')}</tr>`).join('');
+  const cards=view.map(t=>`<div class="tc"><div class="r1"><a class="ref" href="#">${t.ref}</a>${pill(t.type[1],t.type[0])}<span style="margin-left:auto">${stCell(t).split('<span class="sub">')[0]}</span></div><div><b>${esc(t.title)}</b></div><div class="sub">${esc(t.matter)}</div><div class="r1" style="flex-wrap:wrap">${cell('asg',t)}${cell('prio',t)}<span>${t.due?fdt(t.due):'ASAP'}</span>${t.who?'':`<b>${fage(ageMs(t))} unassigned</b>`}</div></div>`).join('');
+  return `<table class="tt" aria-busy="false"><caption class="sr">Tasks</caption><thead><tr>${th}</tr></thead><tbody>${tb}</tbody></table><div class="tcards">${cards}</div>`;}
+function pagerHtml(total,pages){const a=total?(S.page-1)*S.size+1:0,b=Math.min(total,S.page*S.size);
+  return `<div class="pg"><label>Rows per page <select data-act="size">${[25,50,100].map(n=>`<option ${n===S.size?'selected':''}>${n}</option>`).join('')}</select></label><span>Showing ${a}-${b} of ${total}</span><span>Page ${S.page} of ${pages}</span><span style="margin-left:auto;display:flex;gap:4px">${[['First',1],['Previous',S.page-1],['Next',S.page+1],['Last',pages]].map(p=>`<button class="btn" data-act="page" data-val="${p[1]}" ${(p[1]<1||p[1]>pages||p[1]===S.page)?'disabled':''}>${p[0]}</button>`).join('')}</span></div>`;}
+/* battery */
+function batteryHtml(){
+  const ws=workers();
+  const head=`<div class="ph"><h2>${ic('battery')}Team capacity</h2>${ws.length?`<button class="btn" data-act="people" aria-expanded="${S.people}" data-k="people">${ic('users','s')}People</button>`:''}</div>`;
+  if(!ws.length)return `<div class="panel" style="position:relative">${head}<div class="msg" style="padding:16px 4px"><b>No workers in this scope.</b>${S.n===0?'No one holds Workflow.Execute and belongs to a pod yet. Add the permission to a role and people to a pod in Administration.':'No pod member in this scope.'}<div style="margin-top:8px"><a class="btn" href="#">Open Pods</a></div></div></div>`;
+  const cnt={};WORDER.forEach(k=>cnt[k]=0);ws.forEach(w=>cnt[w.st]++);
+  const slots=3*ws.length;const free=ws.reduce((a,w)=>a+(w.st==='out'||w.st==='off'?0:Math.max(0,3-w.load)),0);
+  const pct=Math.round(free/slots*100);const can_=ws.filter(w=>w.st!=='out'&&w.st!=='off'&&w.load<3).length;
+  const lv=pct>=50?['Healthy','teal','check']:pct>=25?['Limited','amber','alert']:['Low','red','alert'];
+  const sorted_=ws.slice().sort((a,b)=>WORDER.indexOf(a.st)-WORDER.indexOf(b.st)||a.name.localeCompare(b.name));
+  const N=ws.length;const bars=N<=8;
+  const cols=N<=12?6:N<=24?8:N<=48?13:16;const s=Math.floor((S.cardW-52-(cols-1)*3)/cols);
+  const cell_=w=>{const tip=`${w.name}, ${w.pods}: ${WSTATE[w.st][0]}${w.st==='out'||w.st==='off'?'. '+w.note:''}. ${w.load} open task${w.load===1?'':'s'}`;
+    const glyph=w.st==='out'?ic('ban','xs'):w.st==='off'?ic('moon','xs'):null;
+    const num=glyph||(w.st==='ov'&&!bars?'3+':(w.load>=3?'3+':w.load));
+    const inner=(bars||s>=28)?`${glyph||`<span>${w.load>=3?'3+':w.load}</span>`}<small>${w.ini}</small>`:num;
+    return `<button class="cell c-${w.st}" data-tip="${esc(tip)}" aria-label="${esc(tip)}" aria-pressed="${!!S.wf&&S.wf.k==='w'&&S.wf.v===w.id}" data-act="worker" data-val="${w.id}" data-k="w-${w.id}">${inner}</button>`;};
+  const legend=WORDER.filter(k=>cnt[k]||k!=='off').map(k=>`<button class="lg" data-act="wstate" data-val="${k}" aria-pressed="${!!S.wf&&S.wf.k==='s'&&S.wf.v===k}" data-k="ws-${k}"><span class="sw c-${k}" aria-hidden="true"></span><b>${cnt[k]}</b><span class="t">${k==='out'?'Out of office':k==='off'?'Off hours':WSTATE[k][0]}</span></button>`).join('');
+  return `<div class="panel" style="position:relative" data-battery>${head}
+   <div class="bigrow"><span class="big">${pct}%</span><small>free capacity<br>${can_} of ${N} people can take work now</small><span class="pill t-${lv[1]} state-w">${ic(lv[2])}${lv[0]}</span></div>
+   <div class="bat"><div class="shellb"><div class="cells ${bars?'bars':'sq'} ${s>=28?'big':''}" style="--s:${s}px" role="group" aria-label="Capacity, one cell per person, lightest is most free">${sorted_.map(cell_).join('')}</div></div><div class="cap" aria-hidden="true"></div></div>
+   <div class="legend" role="group" aria-label="Filter the task list by capacity state">${legend}</div>
+      <details class="how"><summary>As of ${hm(now())}. How it is counted</summary><ul><li>Cell number = open tasks. Each person has 3 slots; free capacity = free slots / all slots.</li><li>Worker: holds Workflow.Execute${S.rule==='pod'?' and belongs to a pod':''}.</li><li>0 tasks Available, 1 Occupied, 2 Busy, 3 or more Overloaded${S.hold?'':' (On hold tasks not counted)'}.</li><li>Out of office or outside work hours: hatched or dashed, adds no free capacity.</li></ul></details>
+   ${S.people?peopleHtml(ws):''}</div>`;}
+function peopleHtml(ws){return `<div class="pop people" role="dialog" aria-label="People in the battery"><div style="display:flex;align-items:center;margin-bottom:4px"><b>People (${ws.length})</b><button class="btn ico" style="margin-left:auto" data-act="people" aria-label="Close people list" data-k="peopleclose">${ic('x','s')}</button></div><table><thead><tr><th>Name</th><th>State</th><th>Tasks</th></tr></thead><tbody>${ws.slice().sort((a,b)=>WORDER.indexOf(b.st)-WORDER.indexOf(a.st)||a.name.localeCompare(b.name)).map(w=>`<tr><td><button class="rowb" data-act="worker" data-val="${w.id}">${esc(w.name)}</button><span class="sub">${w.pods}${w.note?' - '+esc(w.note):''}</span></td><td>${WSTATE[w.st][0]}</td><td>${w.load}</td></tr>`).join('')}</tbody></table></div>`;}
+/* gauge */
+function arc(cx,cy,r,a0,a1){const f=a=>[cx+r*Math.cos(a*Math.PI/180),cy+r*Math.sin(a*Math.PI/180)];const [x0,y0]=f(a0),[x1,y1]=f(a1);return `M${x0.toFixed(1)} ${y0.toFixed(1)} A${r} ${r} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`;}
+function gaugeHtml(){
+  const g=gauge();const L=g.lvl;const clsL='L'+L;
+  const badge=`<span class="lvl ${clsL} ${L>=4?'pulse':''}" style="margin-left:auto">${L<0?ic('check','s')+'All clear':ic(L>=4?'flame':'alert','s')+(L===0?'Normal':'Level '+L+' <span aria-hidden="true">&middot;</span><span class="sr"> of 5, </span> '+LVLN[L])}</span>`;
+  const title=`<div class="ph"><h2>${ic('gauge')}Unassigned wait</h2>${badge}</div>`;
+  const colour=['var(--mf-wait-0)','var(--mf-wait-1)','var(--mf-wait-2)','var(--mf-wait-3)','var(--mf-wait-4)','var(--mf-wait-5)'];
+  let vis='';
+  if(S.gauge==='A'){
+    const segs=[0,1,2,3,4,5].map(i=>{const a0=180+i*30+1.5,a1=180+(i+1)*30-1.5;const on=L>=0&&i<=L;
+      return `<path d="${arc(130,122,96,a0,a1)}" stroke="${colour[i]}" stroke-width="20" fill="none" opacity="${L<0?.35:on?1:.28}"/>`;}).join('');
+    const nums=[0,1,2,3,4,5].map(i=>{const a=(180+i*30+15)*Math.PI/180;return `<text x="${(130+118*Math.cos(a)).toFixed(1)}" y="${(126+118*Math.sin(a)).toFixed(1)}" text-anchor="middle" font-size="11" fill="#4b5563">${i}</text>`}).join('');
+    const na=(L<0?180+3:180+L*30+15)*Math.PI/180;
+    vis=`<svg viewBox="0 0 260 134" width="100%" style="max-width:215px;display:block;margin:0 auto" role="img" aria-label="Gauge, ${L<0?'clear':'level '+L+' of 5'}">${segs}${nums}<line x1="130" y1="122" x2="${(130+80*Math.cos(na)).toFixed(1)}" y2="${(122+80*Math.sin(na)).toFixed(1)}" stroke="#1b1f27" stroke-width="4" stroke-linecap="round"/><circle cx="130" cy="122" r="7" fill="#1b1f27"/></svg>`;
+  } else if(S.gauge==='B'){
+    vis=`<div class="lamps" role="img" aria-label="Signal lamps, ${L<0?'none lit':'level '+L}">${[0,1,2,3,4,5].map(i=>`<span class="lamp ${L>=0&&i<=L?'on':''} ${i===L?'cur':''}" style="${L>=0&&i<=L?`background:${colour[i]};${i===1?'color:#1b1f27':''}`:''}">${i}</span>`).join('')}</div>`;
+  } else {
+    const w=L<0?4:Math.max(8,(L+1)/6*100);
+    vis=`<div class="tube" style="--bf:${L<0?colour[0]:colour[L]}"><span class="bulb">${ic(L>=4?'flame':'thermo')}</span><div class="tb"><i style="width:${w}%"></i></div></div><div class="ticks" aria-hidden="true"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>`;
+  }
+  const stats=`<div class="gstats"><div><span class="gcount">${g.n}</span><small>unassigned</small></div><div><span class="gcount">${g.n?fage(g.oldest):'-'}</span><small>oldest${S.hours==='work'?', working time':''}</small></div></div>`;
+  const why=g.bonus>0?`<span class="fine" style="display:block;text-align:center;margin-top:2px">Oldest age gives level ${g.al}; ${g.n} waiting add ${g.bonus}.</span>`:'';
+  return `<div class="panel" data-gauge data-level="${L}">${title}${vis}${stats}<p class="gdo">${DO[L+1]}</p>${why}
+   ${g.n?`<button class="btn" style="width:100%;margin-top:8px" data-act="gauge-go" data-k="gauge-go">${ic('userMinus','s')}Show them, longest waiting first</button>`:''}</div>`;}
+
+/* ---------- events ---------- */
+function setCard(v){S.card=S.card===v?null:v;if(S.card==='unassigned'||S.card===null)S.sort=null;if(S.card)S.wf=S.card==='unassigned'?null:S.wf;S.page=1;S._resetScroll=true;
+  const ca=document.querySelector('[data-cards]');if(S.card)$('#live').textContent='Filtered to '+{unassigned:'Unassigned',overdue:'Overdue',hold:'On hold',asap:'ASAP open'}[S.card]+': '+gridRows().length+' tasks.';else $('#live').textContent='Filter cleared.';}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');
+  if(!b){if(S.colsOpen||S.people){/* click outside */const inside=e.target.closest('.pop');if(!inside){S.colsOpen=false;S.people=false;render();}}return;}
+  const a=b.dataset.act,v=b.dataset.val;
+  if(['q','fsel','scope','size','num'].includes(a)||b.tagName==='SELECT'||b.type==='number')return;
+  if(b.type==='radio'||b.type==='checkbox')return;
+  switch(a){
+    case 'tab':S.tab=v;break;
+    case 'card':setCard(v);break;
+    case 'clearall':S.card=null;S.wf=null;S.q='';S.fprio=S.ftype=S.fstat='';S.sort=null;S.page=1;break;
+    case 'rm':if(v==='card'){S.card=null;S.sort=null}else if(v==='wf')S.wf=null;else S[v]='';S.page=1;break;
+    case 'worker':S.wf=(S.wf&&S.wf.k==='w'&&S.wf.v===v)?null:{k:'w',v};if(S.wf&&S.card==='unassigned')S.card=null;S.page=1;S._resetScroll=true;S.people=false;break;
+    case 'wstate':S.wf=(S.wf&&S.wf.k==='s'&&S.wf.v===v)?null:{k:'s',v};if(S.wf&&S.card==='unassigned')S.card=null;S.page=1;S._resetScroll=true;break;
+    case 'gauge-go':S.card='unassigned';S.wf=null;S.sort=null;S.page=1;S._resetScroll=true;break;
+    case 'sort':S.sort=v;S.dir=(sortKey()[0]===v&&sortKey()[1]==='asc')?'desc':'asc';if(S.sort===sortKeyPrev&&false){}S.page=1;break;
+    case 'sortreset':S.sort=null;break;
+    case 'page':S.page=+v;S._resetScroll=true;break;
+    case 'fopen':S.fopen=!S.fopen;break;
+    case 'cols':S.colsOpen=!S.colsOpen;break;
+    case 'col':S.hid[v]=(v==='age')?(S.hid.age===0?1:0):(S.hid[v]?0:1);break;
+    case 'colsreset':S.hid={age:1};break;
+    case 'people':S.people=!S.people;break;
+    case 'qclear':S.q='';break;
+    case 'mock':S.mock=!S.mock;break;
+    case 'role-reset':S.perm=new Set(ROLES[S.role].p);break;
+    case 'adv':S.adv=v==='0'?0:S.adv+ +v;break;
+    case 'refresh':case 'nav-toggle':if(a==='nav-toggle')S.nav=!S.nav;else{ $('#live').textContent='Dashboard refreshed.';}break;
+    case 'nav-close':S.nav=false;break;
+    default:return;}
+  render();});
+let sortKeyPrev=null;
+document.addEventListener('change',e=>{const t=e.target,a=t.dataset.act;if(!a)return;
+  if(a==='set'){const k=t.dataset.key;let v=t.dataset.val;S[k]=['n','cards'].includes(k)?+v:v;if(k==='role'){S.role=v;S.perm=new Set(ROLES[v].p);S.scope=null;S.tab='summary';S.card=null;S.wf=null;}S.page=1;if(k==='state'&&v==='error')S.mock=S.mock;render();return;}
+  if(a==='perm'){t.checked?S.perm.add(t.dataset.val):S.perm.delete(t.dataset.val);render();return;}
+  if(a==='tog'){S[t.dataset.key]=t.checked;S.page=1;render();return;}
+  if(a==='col'){return;}
+  if(a==='scope'){S.scope=t.value;S.card=null;S.wf=null;S.page=1;render();return;}
+  if(a==='fsel'){S[t.dataset.key]=t.value;S.page=1;render();return;}
+  if(a==='size'){S.size=+t.value;S.page=1;render();return;}
+  if(a==='num'){S[t.dataset.key]=Math.max(0,+t.value||0);render();return;}});
+document.addEventListener('click',e=>{const b=e.target.closest('button[data-act=set]');if(b&&b.dataset.key){const k=b.dataset.key;S[k]=['n','cards'].includes(k)?+b.dataset.val:b.dataset.val;render();}});
+let qt=null;
+document.addEventListener('input',e=>{if(e.target.id==='q'){S.q=e.target.value;S.page=1;clearTimeout(qt);qt=setTimeout(()=>{const pos=e.target.selectionStart;render();const q=$('#q');if(q){q.focus();q.setSelectionRange(pos,pos)}},250);}});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){let ch=false;if(S.colsOpen){S.colsOpen=false;ch=true}if(S.people){S.people=false;ch=true}if(S.mock){S.mock=false;ch=true}if(S.nav){S.nav=false;ch=true}$('#tip').style.display='none';if(ch){render();}}
+  const c=e.target.closest&&e.target.closest('[data-cards]');
+  if(c&&(e.key==='ArrowRight'||e.key==='ArrowLeft')){const bs=$$('.card',c);const i=bs.indexOf(e.target.closest('.card'));const n=bs[(i+(e.key==='ArrowRight'?1:bs.length-1))%bs.length];n.focus();e.preventDefault();}});
+/* tooltip */
+const tip=$('#tip');
+function showTip(el){tip.textContent=el.dataset.tip;tip.style.display='block';const r=el.getBoundingClientRect();const tw=tip.offsetWidth;tip.style.left=Math.max(6,Math.min(innerWidth-tw-6,r.left+r.width/2-tw/2))+'px';tip.style.top=(r.top-tip.offsetHeight-6<4?r.bottom+6:r.top-tip.offsetHeight-6)+'px';}
+document.addEventListener('mouseover',e=>{const el=e.target.closest('[data-tip]');if(el)showTip(el)});
+document.addEventListener('mouseout',e=>{if(e.target.closest('[data-tip]'))tip.style.display='none'});
+document.addEventListener('focusin',e=>{const el=e.target.closest&&e.target.closest('[data-tip]');if(el)showTip(el);else tip.style.display='none'});
+document.addEventListener('focusout',()=>{tip.style.display='none'});
+/* battery inner width for cell size */
+S.cardW=300;
+function measure(){const w=innerWidth<768?innerWidth-32:parseInt(getComputedStyle(document.documentElement).getPropertyValue('--rc'))||340;S.cardW=Math.max(240,w);}
+window.addEventListener('resize',()=>{measure();render();});
+window.addEventListener('hashchange',()=>{parseHash();render();});
+parseHash();measure();render();
+})();
+</script>
+</body>
+</html>
