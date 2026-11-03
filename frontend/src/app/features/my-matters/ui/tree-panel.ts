@@ -118,11 +118,20 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
           />
         }
       </div>
-      <p class="legend">
-        <span><span class="d"></span> Active</span>
-        <span><span class="d q"></span> Quiet</span>
-        <span><i class="pi pi-lock" aria-hidden="true"></i> Sensitive</span>
-        <span><i class="pi pi-exclamation-triangle" aria-hidden="true"></i> Overdue</span>
+      <p class="legend" data-legend>
+        <span title="Active"
+          ><span class="d" aria-hidden="true"></span><span class="lb">Active</span></span
+        >
+        <span title="Quiet"
+          ><span class="d q" aria-hidden="true"></span><span class="lb">Quiet</span></span
+        >
+        <span title="Sensitive"
+          ><i class="pi pi-lock" aria-hidden="true"></i><span class="lb">Sensitive</span></span
+        >
+        <span title="Overdue"
+          ><i class="pi pi-exclamation-triangle" aria-hidden="true"></i
+          ><span class="lb">Overdue</span></span
+        >
       </p>
     </div>
   `,
@@ -134,6 +143,7 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
       min-width: 0;
     }
     .card {
+      container-type: inline-size;
       display: flex;
       flex-direction: column;
       height: 100%;
@@ -222,10 +232,12 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
     }
     .legend {
       display: flex;
-      flex-wrap: wrap;
-      gap: var(--mf-s1) var(--mf-s3);
+      flex-wrap: nowrap;
+      justify-content: space-between;
+      gap: var(--mf-s2);
       margin: 0;
-      padding: var(--mf-s2) var(--mf-s4);
+      padding: var(--mf-s1) var(--mf-s3);
+      white-space: nowrap;
       border-top: 1px solid var(--mf-border);
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-xs);
@@ -237,7 +249,29 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
       height: 9px;
       border-radius: 50%;
       background: var(--mf-active);
-      margin-right: 4px;
+    }
+    .legend > span {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s1);
+      min-width: 0;
+    }
+    .legend .pi {
+      font-size: var(--mf-fs-xs);
+    }
+    /* A tree narrower than the four labels need (resized, tablet panel): the icons stay, the names are the tooltips and stay for screen readers. */
+    @container (max-width: 259px) {
+      .legend {
+        justify-content: flex-start;
+        gap: var(--mf-s3);
+      }
+      .legend .lb {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+      }
     }
     .legend .d.q {
       background: transparent;
