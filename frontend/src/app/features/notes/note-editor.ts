@@ -378,7 +378,7 @@ export interface RefInfo {
   imports: [Dropdown],
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
-  styleUrls: ['./note-editor.scss', './note-editor-refs.scss'],
+  styleUrls: ['./note-editor.scss', './note-editor-refs.scss', './note-editor-colours.scss'],
   template: `
     <div class="ne" [class.ne--edit]="editable()" [class.ne--read]="!editable()" data-note-editor>
       @if (editable()) {
