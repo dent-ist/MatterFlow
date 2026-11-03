@@ -470,7 +470,7 @@ export class MatterDetailPage {
     if (this.canAddEvent()) {
       list.push({
         id: 'new-event',
-        label: 'Calendar event',
+        label: 'Calendar Event',
         icon: 'pi-calendar-plus',
         run: () => this.openEventPanel(),
       });
@@ -487,7 +487,7 @@ export class MatterDetailPage {
       if (this.auth.has('Task.Assign') || this.auth.has('Task.SetPriority')) {
         list.push({
           id: 'bulk-tasks',
-          label: 'Bulk re-assign / re-prioritise',
+          label: 'Bulk Update',
           icon: 'pi-check-square',
           run: () => this.bulk(m.matterId),
         });
@@ -495,7 +495,7 @@ export class MatterDetailPage {
       if (this.auth.has('Task.Comment')) {
         list.push({
           id: 'add-comment',
-          label: 'Add comment',
+          label: 'Add Comment',
           icon: 'pi-comment',
           run: () => {
             this.commentUsed.set(true);
@@ -505,15 +505,15 @@ export class MatterDetailPage {
       }
       list.push({
         id: 'open-tasks',
-        label: "Open the matter's tasks",
+        label: 'Open Task List',
         icon: 'pi-list',
-        run: () => this.go('/tasks?matter=' + m.matterId),
+        run: () => this.select('tasks'),
       });
     }
     if (this.auth.has('Matter.SetActive')) {
       list.push({
         id: 'toggle-active',
-        label: m.isActive ? 'Set inactive' : 'Set active',
+        label: m.isActive ? 'Set Inactive' : 'Set Active',
         separated: true,
         disabled: this.deactivateBlocked(),
         reason: `This matter has ${m.openTaskCount} tasks that aren't Completed or Cancelled. Finish or cancel them first.`,

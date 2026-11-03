@@ -108,8 +108,8 @@ test.describe('Permission matrix of the Project Manager views', () => {
     expect(ui.overviewSections).toEqual(
       expect.arrayContaining(['health', 'status', 'deadlines', 'people', 'assets', 'activity']),
     );
-    expect(ui.headerMenu.join('|')).toMatch(/New task|Bulk re-assign/);
-    expect(ui.headerMenu.join('|')).toMatch(/Add comment/);
+    expect(ui.headerMenu.join('|')).toMatch(/New Task|Bulk Update/);
+    expect(ui.headerMenu.join('|')).toMatch(/Add Comment/);
     const api = await Api.as(fx.pmA.username);
     const status = await collectApi(api, fx);
     await api.dispose();

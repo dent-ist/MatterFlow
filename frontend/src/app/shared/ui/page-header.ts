@@ -217,16 +217,20 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
         font-size: var(--mf-fs-h3);
       }
     }
-    /* The section icon: the same one the left navigation shows, neutral, a little smaller than the text, on the baseline. */
+    /* The section icon, as on My Matters (LC-11): the one the left navigation shows, white on a rounded primary tile, 32px in the 36px title row, so the
+       header height does not change. The tile is 32px square before the icon font has loaded as well as after (no layout shift, #756). */
     .ph__icon {
+      display: inline-grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
       margin-right: var(--mf-s2);
-      color: var(--mf-text-muted);
-      font-size: 0.75em;
-      vertical-align: 0.04em;
-      /* One em wide before the icon font has loaded as well as after, so the title does not widen when it arrives (layout shift, #756). */
-      display: inline-block;
-      width: 1em;
-      text-align: center;
+      border-radius: var(--mf-radius-lg);
+      background: var(--mf-primary);
+      color: var(--mf-primary-contrast);
+      font-size: 1rem;
+      line-height: 1;
+      vertical-align: middle;
     }
     .ph__actions {
       display: flex;
@@ -447,10 +451,17 @@ export class RecordTitle {
   template: `<i [class]="icon()" aria-hidden="true" data-page-icon></i>`,
   styles: `
     :host {
+      display: inline-grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
       margin-right: var(--mf-s2);
-      color: var(--mf-text-muted);
-      font-size: 0.75em;
-      vertical-align: 0.04em;
+      border-radius: var(--mf-radius-lg);
+      background: var(--mf-primary);
+      color: var(--mf-primary-contrast);
+      font-size: 1rem;
+      line-height: 1;
+      vertical-align: middle;
     }
   `,
 })

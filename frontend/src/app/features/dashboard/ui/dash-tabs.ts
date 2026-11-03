@@ -115,10 +115,17 @@ export const panelId = () => 'mf-dash-panel';
       }
     }
     .h1__icon {
+      display: inline-grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
       margin-right: var(--mf-s2);
-      color: var(--mf-text-muted);
-      font-size: 0.75em;
-      vertical-align: 0.04em;
+      border-radius: var(--mf-radius-lg);
+      background: var(--mf-primary);
+      color: var(--mf-primary-contrast);
+      font-size: 1rem;
+      line-height: 1;
+      vertical-align: middle;
     }
     .end {
       display: flex;

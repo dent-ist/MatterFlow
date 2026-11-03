@@ -406,7 +406,7 @@ export class AssetRecordPage {
       list.push({
         id: 'change-disposition',
         role: 'state',
-        label: 'Change disposition',
+        label: 'Change Disposition',
         run: () => this.dispositionOpen.set(true),
       });
     }
@@ -414,7 +414,7 @@ export class AssetRecordPage {
       list.push({
         id: 'toggle-active',
         role: 'state',
-        label: a.isActive ? 'Set inactive' : 'Set active',
+        label: a.isActive ? 'Set Inactive' : 'Set Active',
         run: () => this.toggleOpen.set(true),
       });
     }

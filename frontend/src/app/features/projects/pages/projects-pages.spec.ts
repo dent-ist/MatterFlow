@@ -596,7 +596,7 @@ describe('Projects pages', () => {
       await create(['Project.View', 'Task.View', 'Task.Create']);
 
       expect(el().querySelector('mf-scoped-tasks [data-create-task]')).toBeNull();
-      buttonByLabel(el(), 'Create task')!.click();
+      buttonByLabel(el(), 'Create Task')!.click();
 
       expect(navigateByUrl).toHaveBeenCalledWith('/tasks/new?matterId=7&projectId=3');
     });

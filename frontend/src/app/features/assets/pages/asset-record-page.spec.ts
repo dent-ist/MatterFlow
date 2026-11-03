@@ -114,7 +114,7 @@ describe('AssetRecordPage', () => {
     expect(el().querySelector('[data-action="activity"]')).toBeNull();
     expect(el().querySelector('[data-overflow]')?.getAttribute('aria-label') ?? '').not.toBe('x');
     const menu = await openOverflow(fixture);
-    expect(menu?.textContent ?? '').not.toContain('Set inactive');
+    expect(menu?.textContent ?? '').not.toContain('Set Inactive');
   });
 
   it('puts Edit and Activity in the header and Set inactive in the overflow, in that order', async () => {
@@ -124,7 +124,7 @@ describe('AssetRecordPage', () => {
     ).map((b) => b.getAttribute('data-action'));
     expect(buttons).toEqual(['edit', 'activity']);
     const menu = await openOverflow(fixture);
-    expect(menu?.textContent).toContain('Set inactive');
+    expect(menu?.textContent).toContain('Set Inactive');
 
     buttonByLabel(el(), 'Edit')!.click();
     expect(navigateByUrl).toHaveBeenCalledWith('/assets/9/edit');
@@ -139,7 +139,7 @@ describe('AssetRecordPage', () => {
     expect(el().querySelector('[data-action="edit"]')).toBeNull();
     expect(el().querySelector('[data-inactive-banner]')).not.toBeNull();
     const menu = await openOverflow(fixture);
-    expect(menu?.textContent).toContain('Set active');
+    expect(menu?.textContent).toContain('Set Active');
   });
 
   describe('disposition (epic #851, issue #866)', () => {
@@ -157,10 +157,10 @@ describe('AssetRecordPage', () => {
 
     it('offers Change disposition in the overflow to a person who may edit or dispose, and to nobody else', async () => {
       await create(['Asset.View', 'Asset.Edit']);
-      expect((await openOverflow(fixture))?.textContent).toContain('Change disposition');
+      expect((await openOverflow(fixture))?.textContent).toContain('Change Disposition');
       TestBed.resetTestingModule();
       await create(['Asset.View', 'Asset.Dispose']);
-      expect((await openOverflow(fixture))?.textContent).toContain('Change disposition');
+      expect((await openOverflow(fixture))?.textContent).toContain('Change Disposition');
       TestBed.resetTestingModule();
       await create(['Asset.View']);
       expect(el().querySelector('[data-overflow]')).toBeNull();
@@ -251,7 +251,7 @@ describe('AssetRecordPage', () => {
     await create(['Asset.View', 'Asset.Edit']);
     const menu = await openOverflow(fixture);
     Array.from(menu!.querySelectorAll<HTMLElement>('[role=menuitem]'))
-      .find((i) => i.textContent!.includes('Set inactive'))!
+      .find((i) => i.textContent!.includes('Set Inactive'))!
       .click();
     await settle(fixture);
     const dialog = document.body.querySelector('p-dialog') as HTMLElement;
@@ -270,7 +270,7 @@ describe('AssetRecordPage', () => {
     const openDialog = async (): Promise<HTMLElement> => {
       const menu = await openOverflow(fixture);
       Array.from(menu!.querySelectorAll<HTMLElement>('[role=menuitem]'))
-        .find((i) => i.textContent!.match(/Set (in)?active/))!
+        .find((i) => i.textContent!.match(/Set (in)?active/i))!
         .click();
       await settle(fixture);
       return document.body.querySelector('p-dialog') as HTMLElement;
@@ -299,7 +299,7 @@ describe('AssetRecordPage', () => {
     await create(['Asset.View', 'Asset.Edit']);
     const menu = await openOverflow(fixture);
     Array.from(menu!.querySelectorAll<HTMLElement>('[role=menuitem]'))
-      .find((i) => i.textContent!.includes('Set inactive'))!
+      .find((i) => i.textContent!.includes('Set Inactive'))!
       .click();
     await settle(fixture);
     buttonByLabel(document.body.querySelector('p-dialog') as HTMLElement, 'Set inactive')!.click();

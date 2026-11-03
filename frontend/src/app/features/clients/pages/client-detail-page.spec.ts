@@ -338,7 +338,7 @@ describe('ClientDetailPage', () => {
     const menu = await openOverflow(fixture);
     expect(
       Array.from(menu!.querySelectorAll('[role=menuitem]')).map((b) => b.textContent!.trim()),
-    ).toEqual(['Set inactive']);
+    ).toEqual(['Set Inactive']);
     el().querySelector<HTMLButtonElement>('[data-page-actions] [data-action=new-matter]')!.click();
     expect(navigateByUrl).toHaveBeenCalledWith('/matters/new?clientId=1');
   });
@@ -347,7 +347,7 @@ describe('ClientDetailPage', () => {
     await create(['Client.View', 'Client.Edit']);
 
     await openOverflow(fixture);
-    buttonByLabel(el(), 'Set inactive')!.click();
+    buttonByLabel(el(), 'Set Inactive')!.click();
     await settle(fixture);
     const dialog = document.body.querySelector('p-dialog') as HTMLElement;
     expect(dialog.querySelector('[data-toggle-body]')?.textContent).toContain(
