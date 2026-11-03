@@ -81,12 +81,63 @@ internal sealed class UserAvailabilityConfiguration : IEntityTypeConfiguration<U
     {
         b.ToTable("UserAvailability");
         b.HasKey(x => x.UserId);
-        b.Property(x => x.Status).HasMaxLength(20).IsUnicode(false).IsRequired();
-        b.Property(x => x.Note).HasMaxLength(200);
         b.Property(x => x.TimeZoneId).HasMaxLength(64).IsUnicode(false);
         b.Property(x => x.UpdatedAtUtc).HasColumnName("UpdatedAtUtc");
         b.Property(x => x.RowVersion).HasColumnName("RowVersion").IsRowVersion().IsRequired();
         b.HasOne<AppUser>().WithOne().HasForeignKey<UserAvailability>(x => x.UserId).HasConstraintName("FK_UserAvailability_User");
+    }
+}
+
+internal sealed class UserAbsenceConfiguration : IEntityTypeConfiguration<UserAbsence>
+{
+    public void Configure(EntityTypeBuilder<UserAbsence> b)
+    {
+        b.ToTable("UserAbsence");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("AbsenceId");
+        b.Property(x => x.AbsenceType).HasMaxLength(20).IsUnicode(false).IsRequired();
+        b.Property(x => x.Note).HasMaxLength(200);
+        b.Property(x => x.CreatedAtUtc).HasColumnType("datetime2(3)");
+        b.Property(x => x.UpdatedAtUtc).HasColumnType("datetime2(3)");
+        b.Property(x => x.RowVersion).IsRowVersion().IsRequired();
+        b.HasOne<AppUser>().WithMany().HasForeignKey(x => x.UserId).HasConstraintName("FK_UserAbsence_User");
+        b.HasIndex(x => new { x.UserId, x.StartDate }).HasDatabaseName("IX_UserAbsence_User");
+    }
+}
+
+internal sealed class HolidayCalendarConfiguration : IEntityTypeConfiguration<HolidayCalendar>
+{
+    public void Configure(EntityTypeBuilder<HolidayCalendar> b)
+    {
+        b.ToTable("HolidayCalendar");
+        b.Property(x => x.Id).HasColumnName("CalendarId");
+        b.Property(x => x.Name).HasMaxLength(100).IsRequired();
+        b.Property(x => x.ColourKey).HasMaxLength(20).IsUnicode(false).IsRequired();
+        b.Property(x => x.RegionNote).HasMaxLength(200);
+        b.HasIndex(x => x.Name).IsUnique().HasDatabaseName("UQ_HolidayCalendar_Name");
+    }
+}
+
+internal sealed class HolidayConfiguration : IEntityTypeConfiguration<Holiday>
+{
+    public void Configure(EntityTypeBuilder<Holiday> b)
+    {
+        b.ToTable("Holiday");
+        b.Property(x => x.Id).HasColumnName("HolidayId");
+        b.Property(x => x.Name).HasMaxLength(100).IsRequired();
+        b.Property(x => x.RuleKind).HasMaxLength(20).IsUnicode(false).IsRequired();
+        b.Property(x => x.WeekendRule).HasMaxLength(10).IsUnicode(false).IsRequired();
+        b.Property(x => x.RegionNote).HasMaxLength(200);
+        b.Property(x => x.Month).HasColumnType("tinyint");
+        b.Property(x => x.Day).HasColumnType("tinyint");
+        b.Property(x => x.Weekday).HasColumnType("tinyint");
+        b.Property(x => x.PlusDays).HasColumnType("tinyint");
+        b.Property(x => x.RangeEndMonth).HasColumnType("tinyint");
+        b.Property(x => x.RangeEndDay).HasColumnType("tinyint");
+        b.Property(x => x.Nth).HasColumnType("smallint");
+        b.Property(x => x.EasterOffset).HasColumnType("smallint");
+        b.HasOne<HolidayCalendar>().WithMany().HasForeignKey(x => x.CalendarId).HasConstraintName("FK_Holiday_Calendar");
+        b.HasIndex(x => new { x.CalendarId, x.Id }).HasDatabaseName("IX_Holiday_Calendar");
     }
 }
 

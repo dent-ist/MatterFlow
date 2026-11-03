@@ -19,6 +19,9 @@ public class AppUser : AuditedEntity<int>
     /// <summary>Obsolete since script 13: no longer written (see <see cref="UserIdentity.LastLoginAt"/>). Kept for databases that still hold history.</summary>
     public DateTime? LastLoginAt { get; set; }
 
+    /// <summary>The person's holiday calendar (script 59); null = the default of their pod, then the firm calendar. Set by an administrator.</summary>
+    public int? HolidayCalendarId { get; set; }
+
     public List<UserIdentity> Identities { get; set; } = [];
 
     public List<UserRole> Roles { get; set; } = [];

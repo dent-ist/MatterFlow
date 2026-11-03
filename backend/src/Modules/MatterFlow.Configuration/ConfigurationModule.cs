@@ -38,6 +38,8 @@ public static class ConfigurationModule
         services.AddSingleton<AppSettingsCache>();
         services.AddScoped<AppSettingsService>();
         services.AddScoped<BrandingService>();
+        services.AddScoped<CalendarSettingsService>();
+        services.AddScoped<ICalendarSettings>(sp => sp.GetRequiredService<CalendarSettingsService>());
         services.AddScoped<DashboardSettingsService>();
         services.AddScoped<IDashboardSettings>(sp => sp.GetRequiredService<DashboardSettingsService>());
         services.AddBrandingOpenApi();

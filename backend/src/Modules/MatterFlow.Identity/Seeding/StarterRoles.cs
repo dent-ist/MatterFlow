@@ -54,19 +54,24 @@ public static class StarterRoles
     /// <summary>Technicians: open the Dashboard and the unassigned queue on its Summary tab (to pick work from), not the department-wide counts. Everything else on it is for leads and directors.</summary>
     private static readonly string[] DashboardUnassignedOnly = [Permissions.Dashboard.View, Permissions.Dashboard.ViewUnassigned];
 
+    /// <summary>Dashboard Calendar (epic #1074): Director and Pod Lead open the Calendar, see absence types and manage the Out of office entries of their people.</summary>
+    private static readonly string[] CalendarAccess =
+        [Permissions.Dashboard.ViewCalendar, Permissions.Dashboard.ViewAbsenceReasons, Permissions.User.ManageAvailability];
+
     public static IReadOnlyList<StarterRole> All { get; } =
     [
         new("Director", "Department head: full operational access plus oversight.",
             [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, ..AssignManagers, ..MatterContentManage, Permissions.Matter.ViewSensitive, Permissions.Asset.Dispose, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
                 Permissions.User.View, Permissions.Audit.View,
                 Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewBreakdowns, Permissions.Dashboard.ViewTrends,
-                Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers, Permissions.Dashboard.ViewCoverage]),
+                Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers, Permissions.Dashboard.ViewCoverage,
+                ..CalendarAccess]),
         new("Project Manager", "Manages clients, matters and projects, can be named as a matter's project manager; works from My Matters.",
             [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, Permissions.Matter.BeManager, ..AssignManagers, ..MatterContentManage, Permissions.Asset.Dispose]),
         new("Pod Lead", "Leads a pod: manages pod members; sees the Dashboard summary, swimlane and team workload.",
             [..Everyone, ..ClientMatterEdit, ..ProjectManage, ..MatterContentManage, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
                 Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers,
-                Permissions.Dashboard.ViewCoverage]),
+                Permissions.Dashboard.ViewCoverage, ..CalendarAccess]),
         new("Data Technician", "Works tasks and manages projects.",
             [..Everyone, ..ProjectManage, ..DashboardUnassignedOnly]),
         new("Data Scientist", "Works tasks; read access to projects.",

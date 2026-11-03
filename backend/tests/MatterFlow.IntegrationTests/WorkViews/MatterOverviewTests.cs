@@ -94,8 +94,7 @@ public sealed class MatterOverviewTests(SqlServerFixture sql) : MyMattersTestBas
             await MakeAsync("dl-" + day, M2, new() { ["dueDate"] = In(day + 2), ["assignedPodId"] = PodX, ["assignedUserId"] = Tech });
         await H.ExecuteAsync($"UPDATE dbo.Task SET AssignedUserId = {PmB} WHERE Title IN ('dl-6', 'dl-7')");
         await MakeAsync("tech-late", M2, new() { ["dueDate"] = "2000-01-01", ["assignedPodId"] = PodX, ["assignedUserId"] = Tech });
-        var own = await OkAsync(await TechClient.GetAsync("/api/v1/me/availability"));
-        await OkAsync(await TechClient.PutAsJsonAsync("/api/v1/me/availability", new { status = "OUT_OF_OFFICE", from = In(5), until = In(9), note = "Private reason", rowVersion = own.GetProperty("rowVersion").GetString() }));
+        await TechClient.GoOutAsync(H.Factory, In(5), In(9), "Private reason");
         H.Factory.InvalidateAll();
 
         var o = await Overview(M2);

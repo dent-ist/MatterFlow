@@ -46,7 +46,7 @@ public sealed record CapacityStateCount([property: Required] string State, [prop
 /// A worker's load is counted over all their open Tasks as a bare number; no Task, Matter or title is read for the answer.
 /// </summary>
 /// <param name="AsOfUtc">The instant the figures were computed for.</param>
-/// <param name="State"><c>OK</c> (percentages set), <c>AFTER_HOURS</c> (workers exist but all are outside their work hours or out of office, with at least one outside work hours), <c>ALL_OUT</c> (all workers are out of office) or <c>NO_WORKERS</c> (empty scope).</param>
+/// <param name="State"><c>OK</c> (percentages set), <c>HOLIDAY</c> (nobody can take work and everybody who is off hours is off for a holiday, for example a firm closure; show "Holiday", not an alarm), <c>AFTER_HOURS</c> (workers exist but all are outside their work hours or out of office, with at least one outside work hours), <c>ALL_OUT</c> (all workers are out of office) or <c>NO_WORKERS</c> (empty scope).</param>
 /// <param name="Workers">Workers in the scope, in every state.</param>
 /// <param name="PresentWorkers">Workers who can take work now: not out of office and inside their work hours.</param>
 /// <param name="SlotsPerPerson">Open Tasks (New or In progress) one person can hold (default 3).</param>
@@ -86,6 +86,7 @@ public sealed record CapacityPerson(
 public static class CapacitySummaryStates
 {
     public const string Ok = "OK";
+    public const string Holiday = "HOLIDAY";
     public const string AfterHours = "AFTER_HOURS";
     public const string AllOut = "ALL_OUT";
     public const string NoWorkers = "NO_WORKERS";
@@ -100,7 +101,7 @@ public sealed class CapacityService(DbContext db, IClock clock, IUserAvailabilit
 {
     public const int MaxPeople = 200;
 
-    private sealed record Worker(int UserId, string DisplayName, string State, int Load);
+    private sealed record Worker(int UserId, string DisplayName, string State, int Load, bool OnHoliday);
 
     public async Task<Result<DashboardCapacity>> GetAsync(CapacityQuery query, CancellationToken ct)
     {
@@ -118,7 +119,7 @@ public sealed class CapacityService(DbContext db, IClock clock, IUserAvailabilit
         var total = present.Count * slots;
         var summaryState = workers.Count == 0 ? CapacitySummaryStates.NoWorkers
             : present.Count > 0 ? CapacitySummaryStates.Ok
-            : workers.Any(w => w.State == CapacityStates.OffHours) ? CapacitySummaryStates.AfterHours
+            : workers.Any(w => w.State == CapacityStates.OffHours) ? (workers.Where(w => w.State == CapacityStates.OffHours).All(w => w.OnHoliday) ? CapacitySummaryStates.Holiday : CapacitySummaryStates.AfterHours)
             : CapacitySummaryStates.AllOut;
         int? freePercent = summaryState == CapacitySummaryStates.Ok ? (int)Math.Round(100.0 * free / total, MidpointRounding.AwayFromZero) : null;
 
@@ -234,6 +235,6 @@ public sealed class CapacityService(DbContext db, IClock clock, IUserAvailabilit
             .Select(g => new { UserId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(g => g.UserId, g => g.Count, ct);
         var states = await availability.EvaluateAsync(ids, now, ct);
-        return [.. users.Select(u => new Worker(u.Id, u.DisplayName, CapacityRules.State(loads.GetValueOrDefault(u.Id), states[u.Id].State), loads.GetValueOrDefault(u.Id)))];
+        return [.. users.Select(u => new Worker(u.Id, u.DisplayName, CapacityRules.State(loads.GetValueOrDefault(u.Id), states[u.Id].State), loads.GetValueOrDefault(u.Id), states[u.Id].Reason == AvailabilityReasons.Holiday))];
     }
 }

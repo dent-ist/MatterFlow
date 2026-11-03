@@ -2,6 +2,7 @@ using System.Globalization;
 using MatterFlow.Audit.Contracts;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.Identity.Domain;
+using MatterFlow.Identity.Holidays;
 using MatterFlow.SharedKernel.Availability;
 using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Results;
@@ -14,31 +15,23 @@ namespace MatterFlow.Identity.Application;
 /// <summary>Stable error codes of the availability API.</summary>
 public static class AvailabilityErrorCodes
 {
-    public const string StatusInvalid = "STATUS_INVALID";
-    public const string OutOfOfficeRangeInvalid = "OOO_RANGE_INVALID";
     public const string WorkHoursInvalid = "WORK_HOURS_INVALID";
     public const string TimeZoneUnknown = "TIMEZONE_UNKNOWN";
-    public const string NoteTooLong = "NOTE_TOO_LONG";
 }
 
 /// <summary>
-/// Availability profile of a user: read, save (own or on behalf), and bulk evaluation for other modules. Every change is audited with
-/// readable text ("Set out of office until Oct 20"). Operational capacity only, never a performance measure.
+/// Availability profile of a user: time zone and work hours (read, save own or on behalf, audited with readable text) and the bulk evaluation for other modules, which
+/// combines them with the Out of office entries (<see cref="AbsenceService"/>) and the holidays (<see cref="HolidayLoader"/>). Operational capacity only, never a performance measure.
 /// </summary>
 public sealed class UserAvailabilityService(
     DbContext db,
     IAuditWriter audit,
     ICurrentUser currentUser,
     IClock clock,
-    IConfiguration configuration) : IUserAvailabilityReader
+    IConfiguration configuration,
+    HolidayLoader holidays) : IUserAvailabilityReader
 {
-    public const int MaxNoteLength = 200;
     public const string NewRowVersion = "NEW";
-
-    /// <summary>Plausible date range for out-of-office dates (also keeps date arithmetic away from DateOnly limits).</summary>
-    private static readonly DateOnly MinDate = new(2000, 1, 1);
-
-    private static readonly DateOnly MaxDate = new(2100, 12, 31);
 
     private string FirmZoneId => configuration["Firm:TimeZoneId"] ?? UserTimeZone.DefaultFirmZoneId;
 
@@ -49,7 +42,7 @@ public sealed class UserAvailabilityService(
 
         var row = await db.Set<UserAvailability>().AsNoTracking().FirstOrDefaultAsync(a => a.UserId == userId, ct);
         var hours = row is { HasCustomWorkHours: true } ? await LoadHoursAsync(userId, tracking: false, ct) : [];
-        return ToDto(userId, row, hours);
+        return await ToDtoAsync(userId, row, hours, ct);
     }
 
     public async Task<Result<UserAvailabilityDto>> SaveAsync(int userId, SaveAvailabilityRequest request, CancellationToken ct)
@@ -69,16 +62,12 @@ public sealed class UserAvailabilityService(
             return ConflictError();
 
         var existingHours = row is { HasCustomWorkHours: true } ? await LoadHoursAsync(userId, tracking: true, ct) : [];
-        var oldProfile = ToProfile(row, existingHours);
+        var oldHours = DescribeHours(row?.HasCustomWorkHours ?? false, existingHours.Select(h => new WorkHourSlot(h.DayOfWeek, h.StartTime, h.EndTime)).OrderBy(x => x.DayOfWeek).ToList());
         var oldZone = row?.TimeZoneId;
 
         var now = clock.UtcNow;
         var created = row is null;
         row ??= new UserAvailability { UserId = userId };
-        row.Status = input.Status;
-        row.OutOfOfficeFromDate = input.From;
-        row.OutOfOfficeUntilDate = input.Until;
-        row.Note = input.Note;
         row.TimeZoneId = input.TimeZoneId;
         row.HasCustomWorkHours = input.WorkHours is not null;
 
@@ -99,10 +88,9 @@ public sealed class UserAvailabilityService(
             }
         }
 
-        var newProfile = ToProfile(row, newSlots.Select(s => new UserWorkHour { UserId = userId, DayOfWeek = s.DayOfWeek, StartTime = s.Start, EndTime = s.End }).ToList());
-        var events = AuditEvents(userId, oldProfile, newProfile, oldZone, input.TimeZoneId);
+        var events = AuditEvents(userId, oldHours, DescribeHours(input.WorkHours is not null, newSlots), oldZone, input.TimeZoneId);
         if (events.Count == 0 && !created)
-            return ToDto(userId, row, existingHours); // nothing changed: no write, no audit event
+            return await ToDtoAsync(userId, row, existingHours, ct); // nothing changed: no write, no audit event
 
         row.UpdatedAtUtc = now;
         row.UpdatedByUserId = currentUser.UserId;
@@ -136,6 +124,21 @@ public sealed class UserAvailabilityService(
         if (userIds.Count == 0)
             return result;
 
+        // The window covers every zone's "today" and the 8 days the next-work-start search looks ahead.
+        var utcDay = DateOnly.FromDateTime(DateTime.SpecifyKind(nowUtc, DateTimeKind.Utc));
+        var profiles = await LoadProfilesAsync(userIds, utcDay.AddDays(-2), utcDay.AddDays(11), ct);
+        foreach (var (id, profile) in profiles)
+            result[id] = UserAvailabilityEvaluator.Evaluate(profile, nowUtc);
+        return result;
+    }
+
+    public async Task<IReadOnlyDictionary<int, UserAvailabilityProfile>> LoadProfilesAsync(IReadOnlyCollection<int> userIds, DateOnly from, DateOnly to, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(userIds);
+        var result = new Dictionary<int, UserAvailabilityProfile>();
+        if (userIds.Count == 0)
+            return result;
+
         var ids = userIds.Distinct().ToList();
         var rows = await db.Set<UserAvailability>().AsNoTracking().Where(a => ids.Contains(a.UserId)).ToListAsync(ct);
         var customIds = rows.Where(r => r.HasCustomWorkHours).Select(r => r.UserId).ToList();
@@ -143,13 +146,20 @@ public sealed class UserAvailabilityService(
             ? new List<UserWorkHour>()
             : await db.Set<UserWorkHour>().AsNoTracking().Where(h => customIds.Contains(h.UserId)).ToListAsync(ct);
         var hours = hourRows.ToLookup(h => h.UserId);
+        var absences = (await db.Set<UserAbsence>().AsNoTracking()
+                .Where(a => ids.Contains(a.UserId) && (a.EndDate == null || a.EndDate >= from))
+                .Select(a => new { a.UserId, a.StartDate, a.EndDate, a.AbsenceType, a.Note })
+                .ToListAsync(ct))
+            .ToLookup(a => a.UserId);
+        var holidayDays = await holidays.LoadAsync(ids, from, to, ct);
         var byUser = rows.ToDictionary(r => r.UserId);
         foreach (var id in ids)
         {
-            var profile = byUser.TryGetValue(id, out var row)
-                ? ToProfile(row, hours.Contains(id) ? hours[id].ToList() : [])
-                : UserAvailabilityProfile.Default with { ZoneId = FirmZoneId };
-            result[id] = UserAvailabilityEvaluator.Evaluate(profile, nowUtc);
+            var periods = absences[id].Select(a => new AbsencePeriod(a.StartDate, a.EndDate, a.AbsenceType, a.Note)).OrderBy(p => p.Start).ToList();
+            var holidaysOfUser = holidayDays.TryGetValue(id, out var list) ? list : [];
+            result[id] = byUser.TryGetValue(id, out var row)
+                ? ToProfile(row, hours.Contains(id) ? hours[id].ToList() : [], periods, holidaysOfUser)
+                : UserAvailabilityProfile.Default with { ZoneId = FirmZoneId, Periods = periods, Holidays = holidaysOfUser };
         }
 
         return result;
@@ -158,18 +168,48 @@ public sealed class UserAvailabilityService(
     public async Task<IReadOnlyDictionary<int, AwayWindow>> AwayWindowsAsync(IReadOnlyCollection<int> userIds, DateOnly from, DateOnly to, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(userIds);
+        var result = new Dictionary<int, AwayWindow>();
         if (userIds.Count == 0)
-            return new Dictionary<int, AwayWindow>();
+            return result;
 
         var ids = userIds.Distinct().ToList();
-        var rows = await db.Set<UserAvailability>().AsNoTracking()
-            .Where(a => ids.Contains(a.UserId) && a.Status == AvailabilityStatuses.OutOfOffice
-                && (a.OutOfOfficeFromDate == null || a.OutOfOfficeFromDate <= to)
-                && (a.OutOfOfficeUntilDate == null || a.OutOfOfficeUntilDate >= from))
-            .Select(a => new { a.UserId, a.OutOfOfficeFromDate, a.OutOfOfficeUntilDate })
+        var rows = await db.Set<UserAbsence>().AsNoTracking()
+            .Where(a => ids.Contains(a.UserId) && (a.EndDate == null || a.EndDate >= from))
+            .Select(a => new { a.UserId, a.StartDate, a.EndDate })
             .ToListAsync(ct);
-        return rows.ToDictionary(r => r.UserId, r => new AwayWindow(r.OutOfOfficeFromDate, r.OutOfOfficeUntilDate));
+        foreach (var group in rows.GroupBy(r => r.UserId))
+        {
+            // Entries that touch are one window; the first window that overlaps the asked days is the answer.
+            DateOnly? windowStart = null;
+            DateOnly? windowEnd = null;
+            var open = false;
+            foreach (var a in group.OrderBy(r => r.StartDate))
+            {
+                if (open || (windowStart is not null && (windowEnd is null || a.StartDate <= windowEnd.Value.AddDays(1))))
+                {
+                    if (a.EndDate is null)
+                        windowEnd = null;
+                    else if (windowEnd is { } we && a.EndDate > we)
+                        windowEnd = a.EndDate;
+                    open = windowEnd is null;
+                    continue;
+                }
+
+                if (windowStart is { } ws && Overlaps(ws, windowEnd, from, to))
+                    break;
+                windowStart = a.StartDate;
+                windowEnd = a.EndDate;
+                open = a.EndDate is null;
+            }
+
+            if (windowStart is { } start && Overlaps(start, windowEnd, from, to))
+                result[group.Key] = new AwayWindow(start, windowEnd);
+        }
+
+        return result;
     }
+
+    private static bool Overlaps(DateOnly start, DateOnly? end, DateOnly from, DateOnly to) => start <= to && (end is null || end >= from);
 
     private Task<List<UserWorkHour>> LoadHoursAsync(int userId, bool tracking, CancellationToken ct)
     {
@@ -177,47 +217,57 @@ public sealed class UserAvailabilityService(
         return (tracking ? query : query.AsNoTracking()).OrderBy(h => h.DayOfWeek).ToListAsync(ct);
     }
 
-    private UserAvailabilityProfile ToProfile(UserAvailability? row, IReadOnlyCollection<UserWorkHour> hours) =>
-        row is null
-            ? UserAvailabilityProfile.Default with { ZoneId = FirmZoneId }
-            : new UserAvailabilityProfile(
-                row.Status,
-                row.OutOfOfficeFromDate,
-                row.OutOfOfficeUntilDate,
-                row.Note,
-                row.TimeZoneId ?? FirmZoneId,
-                row.HasCustomWorkHours,
-                hours.Select(h => new WorkHourSlot(h.DayOfWeek, h.StartTime, h.EndTime)).OrderBy(s => s.DayOfWeek).ToList());
+    private UserAvailabilityProfile ToProfile(UserAvailability row, IReadOnlyCollection<UserWorkHour> hours, IReadOnlyList<AbsencePeriod> periods, IReadOnlyList<HolidayDay> holidayDays) =>
+        new(
+            periods,
+            row.TimeZoneId ?? FirmZoneId,
+            row.HasCustomWorkHours,
+            hours.Select(h => new WorkHourSlot(h.DayOfWeek, h.StartTime, h.EndTime)).OrderBy(s => s.DayOfWeek).ToList(),
+            holidayDays);
 
-    private UserAvailabilityDto ToDto(int userId, UserAvailability? row, IReadOnlyCollection<UserWorkHour> hours)
+    private async Task<UserAvailabilityDto> ToDtoAsync(int userId, UserAvailability? row, IReadOnlyCollection<UserWorkHour> hours, CancellationToken ct)
     {
-        var profile = ToProfile(row, hours);
-        var evaluation = UserAvailabilityEvaluator.Evaluate(profile, clock.UtcNow);
-        var zoneId = UserTimeZone.Resolve(profile.ZoneId).Id;
+        var now = clock.UtcNow;
+        var today = DateOnly.FromDateTime(now);
+        var window = await LoadProfilesAsync([userId], today.AddDays(-2), today.AddDays(400), ct);
+        var loaded = window[userId];
+        var profile = loaded with
+        {
+            ZoneId = row?.TimeZoneId ?? FirmZoneId,
+            HasCustomWorkHours = row?.HasCustomWorkHours ?? false,
+            WorkHours = hours.Select(h => new WorkHourSlot(h.DayOfWeek, h.StartTime, h.EndTime)).OrderBy(s => s.DayOfWeek).ToList(),
+        };
+        var evaluation = UserAvailabilityEvaluator.Evaluate(profile, now);
+        var zone = UserTimeZone.Resolve(profile.ZoneId);
+        var localToday = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(now, DateTimeKind.Utc), zone.Zone));
+
+        var entries = await db.Set<UserAbsence>().AsNoTracking()
+            .Where(a => a.UserId == userId && (a.EndDate == null || a.EndDate >= localToday))
+            .OrderBy(a => a.StartDate).ThenBy(a => a.Id)
+            .ToListAsync(ct);
+        var absences = entries.Select(a => AbsenceService.ToDto(a, localToday, profile)).ToList();
+
+        var effective = (await holidays.EffectiveCalendarsAsync([userId], ct)).GetValueOrDefault(userId);
+        var next = profile.Holidays.Where(h => h.Date >= localToday).OrderBy(h => h.Date).Take(5).Select(h => new NextHolidayDto(h.Date, h.Name)).ToList();
         return new UserAvailabilityDto(
             userId,
-            row?.Status ?? AvailabilityStatuses.Available,
-            row?.OutOfOfficeFromDate,
-            row?.OutOfOfficeUntilDate,
-            row?.Note,
             row?.TimeZoneId,
-            zoneId,
+            zone.Id,
             !(row?.HasCustomWorkHours ?? false),
             UserAvailabilityEvaluator.EffectiveWorkHours(profile).OrderBy(s => s.DayOfWeek).Select(s => new WorkHourDto(s.DayOfWeek, FormatTime(s.Start), FormatTime(s.End))).ToList(),
-            new CurrentAvailabilityDto(evaluation.State, evaluation.OutUntilUtc, evaluation.Note, evaluation.NextWorkStartUtc),
+            new CurrentAvailabilityDto(evaluation.State, evaluation.OutUntilUtc, evaluation.Note, evaluation.NextWorkStartUtc, evaluation.Reason, evaluation.AbsenceType),
+            absences,
+            effective is null ? null : new HolidayCalendarRefDto(effective.CalendarId, effective.Name, effective.Source),
+            next,
             row is null ? null : DateTime.SpecifyKind(row.UpdatedAtUtc, DateTimeKind.Utc),
             row?.UpdatedByUserId,
             row is null ? NewRowVersion : Convert.ToBase64String(row.RowVersion));
     }
 
-    private sealed record ValidInput(string Status, DateOnly? From, DateOnly? Until, string? Note, string? TimeZoneId, List<WorkHourSlot>? WorkHours);
+    private sealed record ValidInput(string? TimeZoneId, List<WorkHourSlot>? WorkHours);
 
     private static Result<ValidInput> Validate(SaveAvailabilityRequest request)
     {
-        var status = request.Status?.Trim().ToUpperInvariant();
-        if (!AvailabilityStatuses.IsValid(status))
-            return Error.Validation("status", AvailabilityErrorCodes.StatusInvalid, "status must be AVAILABLE or OUT_OF_OFFICE.", AvailabilityErrorCodes.StatusInvalid);
-
         string? zone = null;
         if (!string.IsNullOrWhiteSpace(request.TimeZoneId))
         {
@@ -225,27 +275,6 @@ public sealed class UserAvailabilityService(
             if (!UserTimeZone.IsValidIanaId(zone))
                 return Error.Validation("timeZoneId", AvailabilityErrorCodes.TimeZoneUnknown, "The time zone is not a known IANA id (for example America/Chicago).", AvailabilityErrorCodes.TimeZoneUnknown);
             zone = UserTimeZone.Resolve(zone).Id;
-        }
-
-        DateOnly? from = null;
-        DateOnly? until = null;
-        string? note = null;
-        if (status == AvailabilityStatuses.OutOfOffice)
-        {
-            from = request.From;
-            until = request.Until;
-            if ((from is { } f && (f < MinDate || f > MaxDate)) || (until is { } u && (u < MinDate || u > MaxDate)))
-                return Error.Validation("from", AvailabilityErrorCodes.OutOfOfficeRangeInvalid, "Out-of-office dates must be between 2000 and 2100.", AvailabilityErrorCodes.OutOfOfficeRangeInvalid);
-            if (from is { } start && until is { } end && end < start)
-                return Error.Validation("until", AvailabilityErrorCodes.OutOfOfficeRangeInvalid, "The last day out of office cannot be before the first day.", AvailabilityErrorCodes.OutOfOfficeRangeInvalid);
-
-            note = CleanNote(request.Note);
-            if (note is { Length: > MaxNoteLength })
-                return Error.Validation("note", AvailabilityErrorCodes.NoteTooLong, $"The note can be at most {MaxNoteLength} characters.", AvailabilityErrorCodes.NoteTooLong);
-        }
-        else if (request.Note is { } raw && CleanNote(raw) is { Length: > MaxNoteLength })
-        {
-            return Error.Validation("note", AvailabilityErrorCodes.NoteTooLong, $"The note can be at most {MaxNoteLength} characters.", AvailabilityErrorCodes.NoteTooLong);
         }
 
         List<WorkHourSlot>? slots = null;
@@ -268,21 +297,11 @@ public sealed class UserAvailabilityService(
             slots.Sort((a, b) => a.DayOfWeek.CompareTo(b.DayOfWeek));
         }
 
-        return new ValidInput(status!, from, until, note, zone, slots);
+        return new ValidInput(zone, slots);
     }
 
     private static Error WorkHoursError(string message) =>
         Error.Validation("workHours", AvailabilityErrorCodes.WorkHoursInvalid, message, AvailabilityErrorCodes.WorkHoursInvalid);
-
-    /// <summary>Plain text: control characters (including line breaks) become spaces, then trimmed. Rendering as text is the client's job.</summary>
-    private static string? CleanNote(string? note)
-    {
-        if (string.IsNullOrWhiteSpace(note))
-            return null;
-        var chars = note.Select(c => char.IsControl(c) ? ' ' : c).ToArray();
-        var clean = new string(chars).Trim();
-        return clean.Length == 0 ? null : clean;
-    }
 
     private static bool TryParseTime(string? text, out TimeOnly time) =>
         TimeOnly.TryParseExact(text?.Trim(), ["HH:mm", "HH:mm:ss"], CultureInfo.InvariantCulture, DateTimeStyles.None, out time);
@@ -292,28 +311,10 @@ public sealed class UserAvailabilityService(
     private static Error ConflictError() =>
         Error.Conflict(ErrorCodes.ConcurrencyConflict, "The availability was changed by someone else. Reload and try again.");
 
-    private List<AuditEntry> AuditEvents(int userId, UserAvailabilityProfile before, UserAvailabilityProfile after, string? zoneBefore, string? newZone)
+    private List<AuditEntry> AuditEvents(int userId, string hoursBefore, string hoursAfter, string? zoneBefore, string? newZone)
     {
         var onBehalf = currentUser.UserId is { } actor && actor != userId ? " (on behalf)" : string.Empty;
         var events = new List<AuditEntry>();
-        var availabilityChanged = before.Status != after.Status
-            || before.OutOfOfficeFromDate != after.OutOfOfficeFromDate
-            || before.OutOfOfficeUntilDate != after.OutOfOfficeUntilDate
-            || before.Note != after.Note;
-        if (availabilityChanged)
-        {
-            events.Add(new AuditEntry
-            {
-                EventType = "USER_AVAILABILITY_CHANGED",
-                ObjectType = "User",
-                ObjectId = userId.ToString(CultureInfo.InvariantCulture),
-                FieldKey = "availability",
-                OldValue = Describe(before),
-                NewValue = Describe(after),
-                Summary = AvailabilityText(before, after) + onBehalf,
-            });
-        }
-
         if (!string.Equals(zoneBefore, newZone, StringComparison.Ordinal))
         {
             events.Add(new AuditEntry
@@ -328,8 +329,6 @@ public sealed class UserAvailabilityService(
             });
         }
 
-        var hoursBefore = DescribeHours(before);
-        var hoursAfter = DescribeHours(after);
         if (hoursBefore != hoursAfter)
         {
             events.Add(new AuditEntry
@@ -340,42 +339,15 @@ public sealed class UserAvailabilityService(
                 FieldKey = "workHours",
                 OldValue = hoursBefore,
                 NewValue = hoursAfter,
-                Summary = (after.HasCustomWorkHours ? "Changed work hours" : "Work hours reset to the default (Mon-Fri 09:00-17:00)") + onBehalf,
+                Summary = (hoursAfter == "default" ? "Work hours reset to the default (Mon-Fri 09:00-17:00)" : "Changed work hours") + onBehalf,
             });
         }
 
         return events;
     }
 
-    private static string AvailabilityText(UserAvailabilityProfile before, UserAvailabilityProfile after)
-    {
-        if (after.Status == AvailabilityStatuses.Available)
-            return "Set available";
-
-        var statusChanged = before.Status != after.Status;
-        var datesChanged = before.OutOfOfficeFromDate != after.OutOfOfficeFromDate || before.OutOfOfficeUntilDate != after.OutOfOfficeUntilDate;
-        if (!statusChanged && !datesChanged)
-            return "Changed the out-of-office note";
-
-        var verb = statusChanged ? "Set out of office" : "Changed out of office";
-        return (after.OutOfOfficeFromDate, after.OutOfOfficeUntilDate) switch
-        {
-            ({ } f, { } u) => $"{verb} from {ShortDate(f)} until {ShortDate(u)}",
-            ({ } f, null) => $"{verb} from {ShortDate(f)}",
-            (null, { } u) => $"{verb} until {ShortDate(u)}",
-            _ => verb,
-        };
-    }
-
-    private static string ShortDate(DateOnly date) => date.ToString("MMM d", CultureInfo.InvariantCulture);
-
-    private static string Describe(UserAvailabilityProfile p) =>
-        p.Status == AvailabilityStatuses.Available
-            ? p.Status
-            : $"{p.Status} {p.OutOfOfficeFromDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "-"}..{p.OutOfOfficeUntilDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "-"}{(p.Note is null ? string.Empty : " " + p.Note)}";
-
-    private static string DescribeHours(UserAvailabilityProfile p) =>
-        p.HasCustomWorkHours
-            ? string.Join("; ", p.WorkHours.OrderBy(s => s.DayOfWeek).Select(s => $"{s.DayOfWeek} {FormatTime(s.Start)}-{FormatTime(s.End)}"))
+    private static string DescribeHours(bool custom, IReadOnlyCollection<WorkHourSlot> slots) =>
+        custom
+            ? string.Join("; ", slots.OrderBy(s => s.DayOfWeek).Select(s => $"{s.DayOfWeek} {FormatTime(s.Start)}-{FormatTime(s.End)}"))
             : "default";
 }

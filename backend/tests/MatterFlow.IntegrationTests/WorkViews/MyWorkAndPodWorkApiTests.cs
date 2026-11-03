@@ -464,8 +464,7 @@ public sealed class MyWorkAndPodWorkApiTests(SqlServerFixture sql)
     public async Task Member_loads_carry_availability_the_unassigned_count_and_the_number_of_people_with_work()
     {
         var d = await DataAsync();
-        var own = await OkAsync(await d.TechBClient.GetAsync("/api/v1/me/availability"));
-        await OkAsync(await d.TechBClient.PutAsJsonAsync("/api/v1/me/availability", new { status = "OUT_OF_OFFICE", until = "2099-12-31", note = "Conference", rowVersion = own.GetProperty("rowVersion").GetString() }));
+        await d.TechBClient.GoOutAsync(d.H.Factory, null, "2099-12-31", "Conference");
         try
         {
             var page = await PodWorkAsync(d, d.TechAClient, $"podId={d.PodA}&view=members");
@@ -486,8 +485,7 @@ public sealed class MyWorkAndPodWorkApiTests(SqlServerFixture sql)
         }
         finally
         {
-            var current = await OkAsync(await d.TechBClient.GetAsync("/api/v1/me/availability"));
-            await OkAsync(await d.TechBClient.PutAsJsonAsync("/api/v1/me/availability", new { status = "AVAILABLE", rowVersion = current.GetProperty("rowVersion").GetString() }));
+            await d.H.ExecuteAsync($"DELETE dbo.UserAbsence WHERE UserId = {d.TechB}");
         }
     }
 }

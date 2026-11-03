@@ -67,8 +67,7 @@ public sealed class DashboardCapacityTests(SqlServerFixture sql) : IAsyncLifetim
         await GiveAsync(_w5, 3);
         await GiveAsync(_loner, 2);
 
-        var own = await OkAsync(await _h.Admin.GetAsync($"/api/v1/users/{_w5}/availability"));
-        await OkAsync(await _h.Admin.PutAsJsonAsync($"/api/v1/users/{_w5}/availability", new { status = "OUT_OF_OFFICE", until = "2099-12-31", note = "Private note", rowVersion = own.GetProperty("rowVersion").GetString() }));
+        await _factory.AddAbsenceAsync(_w5, null, "2099-12-31", "Private note");
         _factory.InvalidateAll();
     }
 

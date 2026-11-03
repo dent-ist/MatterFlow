@@ -115,14 +115,7 @@ public sealed class AdminColumnFilterTests(SqlServerFixture sql) : IAsyncLifetim
         await ProvisionAsync(@"KE\carol");
         await _factory.GrantRoleAsync(@"KE\bob", await _factory.CreateRoleAsync("Member", Permissions.Task.View)); // a pending user cannot save a profile
         var bob = As(@"KE\bob");
-        var profile = await OkAsync(await bob.GetAsync("/api/v1/me/availability"));
-        await OkAsync(await bob.PutAsync("/api/v1/me/availability", Json(new
-        {
-            status = "OUT_OF_OFFICE",
-            until = "2099-10-20",
-            note = "Away",
-            rowVersion = profile.GetProperty("rowVersion").GetString(),
-        })));
+        await bob.GoOutAsync(_factory, null, "2099-10-20", "Away");
 
         (await Names("/api/v1/users?availability=OUT_OF_OFFICE", "windowsAccount")).ShouldBe([@"KE\bob"]);
 

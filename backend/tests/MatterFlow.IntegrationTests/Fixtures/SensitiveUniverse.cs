@@ -95,7 +95,7 @@ public sealed class SensitiveUniverse
         [
             "Task.View", "Task.Create", "Task.Edit", "Task.Assign", "Task.Comment", "Matter.View", "Matter.Create", "Matter.Edit", "Matter.EditNumber", "Matter.SetActive",
             "Matter.AssignManagers", "Matter.BeManager", "Project.View", "Project.Create", "Project.Edit", "Client.View", "Asset.View", "Production.View", "Production.Edit", "Production.Comment", "ProductionSpec.View", "ProductionSpec.Edit", "MatterNote.View", "MatterNote.Edit", "MatterNote.Delete", "Asset.Link", "Asset.Create", "Asset.Edit", "Task.SetPriority", "Task.ChangeStatus", "Task.Complete", "Task.Cancel",
-            "Task.Reopen", "Workflow.Execute", "Workflow.StepReopen", "Pod.View", "User.View", "Audit.View", "Dashboard.View", "Dashboard.ViewSwimlane", "Dashboard.ViewSummary", "Dashboard.ViewBreakdowns", "Dashboard.ViewTrends", "Dashboard.ViewUsers", "Dashboard.ViewCoverage",
+            "Task.Reopen", "Workflow.Execute", "Workflow.StepReopen", "Pod.View", "User.View", "Audit.View", "Dashboard.View", "Dashboard.ViewSwimlane", "Dashboard.ViewSummary", "Dashboard.ViewBreakdowns", "Dashboard.ViewTrends", "Dashboard.ViewUsers", "Dashboard.ViewCoverage", "Dashboard.ViewCalendar", "Dashboard.ViewAbsenceReasons", "User.ManageAvailability",
         ];
         PmPrimaryClient = await h.UserWithAsync(@"KE\pmprimary", broad);
         PmSecondaryClient = await h.UserWithAsync(@"KE\pmsecondary", broad);

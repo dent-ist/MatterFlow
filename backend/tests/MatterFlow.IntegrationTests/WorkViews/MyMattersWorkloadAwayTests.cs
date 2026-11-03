@@ -16,8 +16,7 @@ public sealed class MyMattersWorkloadAwayTests(SqlServerFixture sql) : MyMatters
 {
     private async Task AwayAsync(HttpClient client, string from, string until, string note = "Private reason")
     {
-        var own = await OkAsync(await client.GetAsync("/api/v1/me/availability"));
-        await OkAsync(await client.PutAsJsonAsync("/api/v1/me/availability", new { status = "OUT_OF_OFFICE", from, until, note, rowVersion = own.GetProperty("rowVersion").GetString() }));
+        await client.GoOutAsync(H.Factory, from, until, note);
         H.Factory.InvalidateAll();
     }
 

@@ -38,6 +38,18 @@ public static class SettingDefinitions
 
     public const string DashboardGaugeReset = "SETTINGS_DASHBOARD_GAUGE_RESET";
 
+    public const string CalendarThresholdsKey = "Calendar.Thresholds";
+
+    public const string CalendarThresholdsChanged = "SETTINGS_CALENDAR_THRESHOLDS_CHANGED";
+
+    public const string CalendarThresholdsReset = "SETTINGS_CALENDAR_THRESHOLDS_RESET";
+
+    public const string CalendarFirmHolidayKey = "Calendar.FirmHolidayCalendarId";
+
+    public const string CalendarFirmHolidayChanged = "SETTINGS_CALENDAR_FIRM_HOLIDAY_CHANGED";
+
+    public const string CalendarFirmHolidayReset = "SETTINGS_CALENDAR_FIRM_HOLIDAY_RESET";
+
     /// <summary>The audited object type of every setting event.</summary>
     public const string AuditObjectType = "AppSetting";
 
@@ -51,5 +63,13 @@ public static class SettingDefinitions
     public static SettingDefinition DashboardGauge { get; } =
         new(DashboardGaugeKey, SettingValueType.Text, null, DashboardGaugeChanged, DashboardGaugeReset, "Dashboard gauge settings");
 
-    public static IReadOnlyList<SettingDefinition> All { get; } = [BrandingAppName, BrandingIcon, DashboardGauge];
+    /// <summary>The Dashboard Calendar thresholds (epic #1074) as one JSON text value: firm minimum percent, pod minimum percent and per-pod minimum people. Default: the code defaults (75, 60, none).</summary>
+    public static SettingDefinition CalendarThresholds { get; } =
+        new(CalendarThresholdsKey, SettingValueType.Text, null, CalendarThresholdsChanged, CalendarThresholdsReset, "Calendar coverage thresholds");
+
+    /// <summary>The firm holiday calendar id (epic #1074) as text; no row = no firm calendar.</summary>
+    public static SettingDefinition CalendarFirmHoliday { get; } =
+        new(CalendarFirmHolidayKey, SettingValueType.Text, null, CalendarFirmHolidayChanged, CalendarFirmHolidayReset, "Firm holiday calendar");
+
+    public static IReadOnlyList<SettingDefinition> All { get; } = [BrandingAppName, BrandingIcon, DashboardGauge, CalendarThresholds, CalendarFirmHoliday];
 }

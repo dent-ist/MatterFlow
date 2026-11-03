@@ -2851,6 +2851,195 @@ export class SettingsDashboardClient implements ISettingsDashboardClient {
     }
 }
 
+export interface ISettingsCalendarClient {
+    /**
+     * @return OK
+     */
+    getCalendarSettings(): Observable<CalendarSettingsAdminView>;
+    /**
+     * @return OK
+     */
+    setCalendarSettings(body: SetCalendarSettingsRequest): Observable<CalendarSettingsAdminView>;
+    /**
+     * @param rowVersion (optional) 
+     * @return OK
+     */
+    resetCalendarSettings(rowVersion?: string | undefined): Observable<CalendarSettingsAdminView>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class SettingsCalendarClient implements ISettingsCalendarClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    getCalendarSettings(): Observable<CalendarSettingsAdminView> {
+        let url_ = this.baseUrl + "/api/v1/admin/settings/calendar";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetCalendarSettings(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetCalendarSettings(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<CalendarSettingsAdminView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<CalendarSettingsAdminView>;
+        }));
+    }
+
+    protected processGetCalendarSettings(response: HttpResponseBase): Observable<CalendarSettingsAdminView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as CalendarSettingsAdminView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    setCalendarSettings(body: SetCalendarSettingsRequest): Observable<CalendarSettingsAdminView> {
+        let url_ = this.baseUrl + "/api/v1/admin/settings/calendar";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSetCalendarSettings(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSetCalendarSettings(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<CalendarSettingsAdminView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<CalendarSettingsAdminView>;
+        }));
+    }
+
+    protected processSetCalendarSettings(response: HttpResponseBase): Observable<CalendarSettingsAdminView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as CalendarSettingsAdminView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param rowVersion (optional) 
+     * @return OK
+     */
+    resetCalendarSettings(rowVersion?: string | undefined): Observable<CalendarSettingsAdminView> {
+        let url_ = this.baseUrl + "/api/v1/admin/settings/calendar?";
+        if (rowVersion === null)
+            throw new globalThis.Error("The parameter 'rowVersion' cannot be null.");
+        else if (rowVersion !== undefined)
+            url_ += "rowVersion=" + encodeURIComponent("" + rowVersion) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processResetCalendarSettings(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processResetCalendarSettings(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<CalendarSettingsAdminView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<CalendarSettingsAdminView>;
+        }));
+    }
+
+    protected processResetCalendarSettings(response: HttpResponseBase): Observable<CalendarSettingsAdminView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as CalendarSettingsAdminView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface IFormsClient {
     /**
      * @return OK
@@ -5021,6 +5210,1232 @@ export class UserAvailabilityClient implements IUserAvailabilityClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserAvailabilityDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface IAbsencesClient {
+    /**
+     * @param includePast (optional) 
+     * @return OK
+     */
+    listAbsences(userId: number, includePast?: boolean | undefined): Observable<AbsenceDto[]>;
+    /**
+     * @return Created
+     */
+    createAbsence(userId: number, body: SaveAbsenceRequest): Observable<AbsenceDto>;
+    /**
+     * @return OK
+     */
+    updateAbsence(userId: number, absenceId: number, body: SaveAbsenceRequest): Observable<AbsenceDto>;
+    /**
+     * @param rowVersion (optional) 
+     * @return No Content
+     */
+    deleteAbsence(userId: number, absenceId: number, rowVersion?: string | undefined): Observable<void>;
+    /**
+     * @return OK
+     */
+    endAbsenceToday(userId: number, absenceId: number): Observable<AbsenceBackResult>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class AbsencesClient implements IAbsencesClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param includePast (optional) 
+     * @return OK
+     */
+    listAbsences(userId: number, includePast?: boolean | undefined): Observable<AbsenceDto[]> {
+        let url_ = this.baseUrl + "/api/v1/users/{userId}/absences?";
+        if (userId === undefined || userId === null)
+            throw new globalThis.Error("The parameter 'userId' must be defined.");
+        url_ = url_.replace("{userId}", encodeURIComponent("" + userId));
+        if (includePast === null)
+            throw new globalThis.Error("The parameter 'includePast' cannot be null.");
+        else if (includePast !== undefined)
+            url_ += "includePast=" + encodeURIComponent("" + includePast) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListAbsences(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListAbsences(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AbsenceDto[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AbsenceDto[]>;
+        }));
+    }
+
+    protected processListAbsences(response: HttpResponseBase): Observable<AbsenceDto[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AbsenceDto[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createAbsence(userId: number, body: SaveAbsenceRequest): Observable<AbsenceDto> {
+        let url_ = this.baseUrl + "/api/v1/users/{userId}/absences";
+        if (userId === undefined || userId === null)
+            throw new globalThis.Error("The parameter 'userId' must be defined.");
+        url_ = url_.replace("{userId}", encodeURIComponent("" + userId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateAbsence(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateAbsence(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AbsenceDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AbsenceDto>;
+        }));
+    }
+
+    protected processCreateAbsence(response: HttpResponseBase): Observable<AbsenceDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AbsenceDto;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateAbsence(userId: number, absenceId: number, body: SaveAbsenceRequest): Observable<AbsenceDto> {
+        let url_ = this.baseUrl + "/api/v1/users/{userId}/absences/{absenceId}";
+        if (userId === undefined || userId === null)
+            throw new globalThis.Error("The parameter 'userId' must be defined.");
+        url_ = url_.replace("{userId}", encodeURIComponent("" + userId));
+        if (absenceId === undefined || absenceId === null)
+            throw new globalThis.Error("The parameter 'absenceId' must be defined.");
+        url_ = url_.replace("{absenceId}", encodeURIComponent("" + absenceId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateAbsence(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateAbsence(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AbsenceDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AbsenceDto>;
+        }));
+    }
+
+    protected processUpdateAbsence(response: HttpResponseBase): Observable<AbsenceDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AbsenceDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param rowVersion (optional) 
+     * @return No Content
+     */
+    deleteAbsence(userId: number, absenceId: number, rowVersion?: string | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/users/{userId}/absences/{absenceId}?";
+        if (userId === undefined || userId === null)
+            throw new globalThis.Error("The parameter 'userId' must be defined.");
+        url_ = url_.replace("{userId}", encodeURIComponent("" + userId));
+        if (absenceId === undefined || absenceId === null)
+            throw new globalThis.Error("The parameter 'absenceId' must be defined.");
+        url_ = url_.replace("{absenceId}", encodeURIComponent("" + absenceId));
+        if (rowVersion === null)
+            throw new globalThis.Error("The parameter 'rowVersion' cannot be null.");
+        else if (rowVersion !== undefined)
+            url_ += "rowVersion=" + encodeURIComponent("" + rowVersion) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeleteAbsence(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeleteAbsence(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDeleteAbsence(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    endAbsenceToday(userId: number, absenceId: number): Observable<AbsenceBackResult> {
+        let url_ = this.baseUrl + "/api/v1/users/{userId}/absences/{absenceId}/back";
+        if (userId === undefined || userId === null)
+            throw new globalThis.Error("The parameter 'userId' must be defined.");
+        url_ = url_.replace("{userId}", encodeURIComponent("" + userId));
+        if (absenceId === undefined || absenceId === null)
+            throw new globalThis.Error("The parameter 'absenceId' must be defined.");
+        url_ = url_.replace("{absenceId}", encodeURIComponent("" + absenceId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processEndAbsenceToday(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processEndAbsenceToday(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AbsenceBackResult>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AbsenceBackResult>;
+        }));
+    }
+
+    protected processEndAbsenceToday(response: HttpResponseBase): Observable<AbsenceBackResult> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AbsenceBackResult;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface IHolidayCalendarsClient {
+    /**
+     * @return OK
+     */
+    listHolidayCalendars(): Observable<HolidayCalendarDto[]>;
+    /**
+     * @return Created
+     */
+    createHolidayCalendar(body: SaveHolidayCalendarRequest): Observable<HolidayCalendarDto>;
+    /**
+     * @return OK
+     */
+    getHolidayCalendar(calendarId: number): Observable<HolidayCalendarDto>;
+    /**
+     * @return OK
+     */
+    updateHolidayCalendar(calendarId: number, body: SaveHolidayCalendarRequest): Observable<HolidayCalendarDto>;
+    /**
+     * @param rowVersion (optional) 
+     * @return No Content
+     */
+    deleteHolidayCalendar(calendarId: number, rowVersion?: string | undefined): Observable<void>;
+    /**
+     * @return OK
+     */
+    listHolidays(calendarId: number): Observable<HolidayDto[]>;
+    /**
+     * @return Created
+     */
+    createHoliday(calendarId: number, body: SaveHolidayRequest): Observable<HolidayDto>;
+    /**
+     * @return OK
+     */
+    updateHoliday(calendarId: number, holidayId: number, body: SaveHolidayRequest): Observable<HolidayDto>;
+    /**
+     * @param rowVersion (optional) 
+     * @return No Content
+     */
+    deleteHoliday(calendarId: number, holidayId: number, rowVersion?: string | undefined): Observable<void>;
+    /**
+     * @param year (optional) 
+     * @return OK
+     */
+    previewHolidayCalendar(calendarId: number, year?: number | undefined): Observable<HolidayPreviewDto[]>;
+    /**
+     * @param dryRun (optional) 
+     * @param acceptOk (optional) 
+     * @return OK
+     */
+    importHolidays(calendarId: number, body: HolidayImportRequest, dryRun?: boolean | undefined, acceptOk?: boolean | undefined): Observable<HolidayImportResult>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class HolidayCalendarsClient implements IHolidayCalendarsClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    listHolidayCalendars(): Observable<HolidayCalendarDto[]> {
+        let url_ = this.baseUrl + "/api/v1/admin/holiday-calendars";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListHolidayCalendars(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListHolidayCalendars(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<HolidayCalendarDto[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<HolidayCalendarDto[]>;
+        }));
+    }
+
+    protected processListHolidayCalendars(response: HttpResponseBase): Observable<HolidayCalendarDto[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as HolidayCalendarDto[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createHolidayCalendar(body: SaveHolidayCalendarRequest): Observable<HolidayCalendarDto> {
+        let url_ = this.baseUrl + "/api/v1/admin/holiday-calendars";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateHolidayCalendar(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateHolidayCalendar(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<HolidayCalendarDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<HolidayCalendarDto>;
+        }));
+    }
+
+    protected processCreateHolidayCalendar(response: HttpResponseBase): Observable<HolidayCalendarDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as HolidayCalendarDto;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getHolidayCalendar(calendarId: number): Observable<HolidayCalendarDto> {
+        let url_ = this.baseUrl + "/api/v1/admin/holiday-calendars/{calendarId}";
+        if (calendarId === undefined || calendarId === null)
+            throw new globalThis.Error("The parameter 'calendarId' must be defined.");
+        url_ = url_.replace("{calendarId}", encodeURIComponent("" + calendarId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetHolidayCalendar(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetHolidayCalendar(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<HolidayCalendarDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<HolidayCalendarDto>;
+        }));
+    }
+
+    protected processGetHolidayCalendar(response: HttpResponseBase): Observable<HolidayCalendarDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as HolidayCalendarDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateHolidayCalendar(calendarId: number, body: SaveHolidayCalendarRequest): Observable<HolidayCalendarDto> {
+        let url_ = this.baseUrl + "/api/v1/admin/holiday-calendars/{calendarId}";
+        if (calendarId === undefined || calendarId === null)
+            throw new globalThis.Error("The parameter 'calendarId' must be defined.");
+        url_ = url_.replace("{calendarId}", encodeURIComponent("" + calendarId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateHolidayCalendar(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateHolidayCalendar(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<HolidayCalendarDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<HolidayCalendarDto>;
+        }));
+    }
+
+    protected processUpdateHolidayCalendar(response: HttpResponseBase): Observable<HolidayCalendarDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as HolidayCalendarDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param rowVersion (optional) 
+     * @return No Content
+     */
+    deleteHolidayCalendar(calendarId: number, rowVersion?: string | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/admin/holiday-calendars/{calendarId}?";
+        if (calendarId === undefined || calendarId === null)
+            throw new globalThis.Error("The parameter 'calendarId' must be defined.");
+        url_ = url_.replace("{calendarId}", encodeURIComponent("" + calendarId));
+        if (rowVersion === null)
+            throw new globalThis.Error("The parameter 'rowVersion' cannot be null.");
+        else if (rowVersion !== undefined)
+            url_ += "rowVersion=" + encodeURIComponent("" + rowVersion) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeleteHolidayCalendar(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeleteHolidayCalendar(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDeleteHolidayCalendar(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    listHolidays(calendarId: number): Observable<HolidayDto[]> {
+        let url_ = this.baseUrl + "/api/v1/admin/holiday-calendars/{calendarId}/holidays";
+        if (calendarId === undefined || calendarId === null)
+            throw new globalThis.Error("The parameter 'calendarId' must be defined.");
+        url_ = url_.replace("{calendarId}", encodeURIComponent("" + calendarId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListHolidays(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListHolidays(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<HolidayDto[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<HolidayDto[]>;
+        }));
+    }
+
+    protected processListHolidays(response: HttpResponseBase): Observable<HolidayDto[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as HolidayDto[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createHoliday(calendarId: number, body: SaveHolidayRequest): Observable<HolidayDto> {
+        let url_ = this.baseUrl + "/api/v1/admin/holiday-calendars/{calendarId}/holidays";
+        if (calendarId === undefined || calendarId === null)
+            throw new globalThis.Error("The parameter 'calendarId' must be defined.");
+        url_ = url_.replace("{calendarId}", encodeURIComponent("" + calendarId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateHoliday(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateHoliday(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<HolidayDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<HolidayDto>;
+        }));
+    }
+
+    protected processCreateHoliday(response: HttpResponseBase): Observable<HolidayDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as HolidayDto;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateHoliday(calendarId: number, holidayId: number, body: SaveHolidayRequest): Observable<HolidayDto> {
+        let url_ = this.baseUrl + "/api/v1/admin/holiday-calendars/{calendarId}/holidays/{holidayId}";
+        if (calendarId === undefined || calendarId === null)
+            throw new globalThis.Error("The parameter 'calendarId' must be defined.");
+        url_ = url_.replace("{calendarId}", encodeURIComponent("" + calendarId));
+        if (holidayId === undefined || holidayId === null)
+            throw new globalThis.Error("The parameter 'holidayId' must be defined.");
+        url_ = url_.replace("{holidayId}", encodeURIComponent("" + holidayId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateHoliday(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateHoliday(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<HolidayDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<HolidayDto>;
+        }));
+    }
+
+    protected processUpdateHoliday(response: HttpResponseBase): Observable<HolidayDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as HolidayDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param rowVersion (optional) 
+     * @return No Content
+     */
+    deleteHoliday(calendarId: number, holidayId: number, rowVersion?: string | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/admin/holiday-calendars/{calendarId}/holidays/{holidayId}?";
+        if (calendarId === undefined || calendarId === null)
+            throw new globalThis.Error("The parameter 'calendarId' must be defined.");
+        url_ = url_.replace("{calendarId}", encodeURIComponent("" + calendarId));
+        if (holidayId === undefined || holidayId === null)
+            throw new globalThis.Error("The parameter 'holidayId' must be defined.");
+        url_ = url_.replace("{holidayId}", encodeURIComponent("" + holidayId));
+        if (rowVersion === null)
+            throw new globalThis.Error("The parameter 'rowVersion' cannot be null.");
+        else if (rowVersion !== undefined)
+            url_ += "rowVersion=" + encodeURIComponent("" + rowVersion) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeleteHoliday(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeleteHoliday(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDeleteHoliday(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param year (optional) 
+     * @return OK
+     */
+    previewHolidayCalendar(calendarId: number, year?: number | undefined): Observable<HolidayPreviewDto[]> {
+        let url_ = this.baseUrl + "/api/v1/admin/holiday-calendars/{calendarId}/preview?";
+        if (calendarId === undefined || calendarId === null)
+            throw new globalThis.Error("The parameter 'calendarId' must be defined.");
+        url_ = url_.replace("{calendarId}", encodeURIComponent("" + calendarId));
+        if (year === null)
+            throw new globalThis.Error("The parameter 'year' cannot be null.");
+        else if (year !== undefined)
+            url_ += "year=" + encodeURIComponent("" + year) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processPreviewHolidayCalendar(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processPreviewHolidayCalendar(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<HolidayPreviewDto[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<HolidayPreviewDto[]>;
+        }));
+    }
+
+    protected processPreviewHolidayCalendar(response: HttpResponseBase): Observable<HolidayPreviewDto[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as HolidayPreviewDto[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param dryRun (optional) 
+     * @param acceptOk (optional) 
+     * @return OK
+     */
+    importHolidays(calendarId: number, body: HolidayImportRequest, dryRun?: boolean | undefined, acceptOk?: boolean | undefined): Observable<HolidayImportResult> {
+        let url_ = this.baseUrl + "/api/v1/admin/holiday-calendars/{calendarId}/holidays/import?";
+        if (calendarId === undefined || calendarId === null)
+            throw new globalThis.Error("The parameter 'calendarId' must be defined.");
+        url_ = url_.replace("{calendarId}", encodeURIComponent("" + calendarId));
+        if (dryRun === null)
+            throw new globalThis.Error("The parameter 'dryRun' cannot be null.");
+        else if (dryRun !== undefined)
+            url_ += "dryRun=" + encodeURIComponent("" + dryRun) + "&";
+        if (acceptOk === null)
+            throw new globalThis.Error("The parameter 'acceptOk' cannot be null.");
+        else if (acceptOk !== undefined)
+            url_ += "acceptOk=" + encodeURIComponent("" + acceptOk) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processImportHolidays(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processImportHolidays(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<HolidayImportResult>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<HolidayImportResult>;
+        }));
+    }
+
+    protected processImportHolidays(response: HttpResponseBase): Observable<HolidayImportResult> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as HolidayImportResult;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface ISettingsHolidaysClient {
+    /**
+     * @return OK
+     */
+    getHolidaySettings(): Observable<HolidaySettingsDto>;
+    /**
+     * @return OK
+     */
+    setHolidaySettings(body: SaveHolidaySettingsRequest): Observable<HolidaySettingsDto>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class SettingsHolidaysClient implements ISettingsHolidaysClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    getHolidaySettings(): Observable<HolidaySettingsDto> {
+        let url_ = this.baseUrl + "/api/v1/admin/settings/holidays";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetHolidaySettings(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetHolidaySettings(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<HolidaySettingsDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<HolidaySettingsDto>;
+        }));
+    }
+
+    protected processGetHolidaySettings(response: HttpResponseBase): Observable<HolidaySettingsDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as HolidaySettingsDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    setHolidaySettings(body: SaveHolidaySettingsRequest): Observable<HolidaySettingsDto> {
+        let url_ = this.baseUrl + "/api/v1/admin/settings/holidays";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSetHolidaySettings(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSetHolidaySettings(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<HolidaySettingsDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<HolidaySettingsDto>;
+        }));
+    }
+
+    protected processSetHolidaySettings(response: HttpResponseBase): Observable<HolidaySettingsDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as HolidaySettingsDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface IUserHolidayCalendarClient {
+    /**
+     * @return OK
+     */
+    setUserHolidayCalendar(userId: number, body: AssignHolidayCalendarRequest): Observable<UserHolidayCalendarDto>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class UserHolidayCalendarClient implements IUserHolidayCalendarClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    setUserHolidayCalendar(userId: number, body: AssignHolidayCalendarRequest): Observable<UserHolidayCalendarDto> {
+        let url_ = this.baseUrl + "/api/v1/users/{userId}/holiday-calendar";
+        if (userId === undefined || userId === null)
+            throw new globalThis.Error("The parameter 'userId' must be defined.");
+        url_ = url_.replace("{userId}", encodeURIComponent("" + userId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSetUserHolidayCalendar(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSetUserHolidayCalendar(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserHolidayCalendarDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserHolidayCalendarDto>;
+        }));
+    }
+
+    protected processSetUserHolidayCalendar(response: HttpResponseBase): Observable<UserHolidayCalendarDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserHolidayCalendarDto;
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -16816,6 +18231,323 @@ export class AssetReportRunClient implements IAssetReportRunClient {
     }
 }
 
+export interface IDashboardCalendarClient {
+    /**
+     * @param from (optional) 
+     * @param to (optional) 
+     * @param podScope (optional) 
+     * @param role (optional) 
+     * @return OK
+     */
+    getDashboardCalendarDays(from?: string | undefined, to?: string | undefined, podScope?: string | undefined, role?: number | undefined): Observable<CalendarDays>;
+    /**
+     * @param date (optional) 
+     * @param podScope (optional) 
+     * @param role (optional) 
+     * @param q (optional) 
+     * @return OK
+     */
+    getDashboardCalendarDay(date?: string | undefined, podScope?: string | undefined, role?: number | undefined, q?: string | undefined): Observable<CalendarDay>;
+    /**
+     * @param podScope (optional) 
+     * @param role (optional) 
+     * @return OK
+     */
+    getDashboardCalendarSummary(podScope?: string | undefined, role?: number | undefined): Observable<CalendarSummary>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class DashboardCalendarClient implements IDashboardCalendarClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param from (optional) 
+     * @param to (optional) 
+     * @param podScope (optional) 
+     * @param role (optional) 
+     * @return OK
+     */
+    getDashboardCalendarDays(from?: string | undefined, to?: string | undefined, podScope?: string | undefined, role?: number | undefined): Observable<CalendarDays> {
+        let url_ = this.baseUrl + "/api/v1/dashboard/calendar/days?";
+        if (from === null)
+            throw new globalThis.Error("The parameter 'from' cannot be null.");
+        else if (from !== undefined)
+            url_ += "from=" + encodeURIComponent("" + from) + "&";
+        if (to === null)
+            throw new globalThis.Error("The parameter 'to' cannot be null.");
+        else if (to !== undefined)
+            url_ += "to=" + encodeURIComponent("" + to) + "&";
+        if (podScope === null)
+            throw new globalThis.Error("The parameter 'podScope' cannot be null.");
+        else if (podScope !== undefined)
+            url_ += "podScope=" + encodeURIComponent("" + podScope) + "&";
+        if (role === null)
+            throw new globalThis.Error("The parameter 'role' cannot be null.");
+        else if (role !== undefined)
+            url_ += "role=" + encodeURIComponent("" + role) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetDashboardCalendarDays(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetDashboardCalendarDays(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<CalendarDays>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<CalendarDays>;
+        }));
+    }
+
+    protected processGetDashboardCalendarDays(response: HttpResponseBase): Observable<CalendarDays> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as CalendarDays;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param date (optional) 
+     * @param podScope (optional) 
+     * @param role (optional) 
+     * @param q (optional) 
+     * @return OK
+     */
+    getDashboardCalendarDay(date?: string | undefined, podScope?: string | undefined, role?: number | undefined, q?: string | undefined): Observable<CalendarDay> {
+        let url_ = this.baseUrl + "/api/v1/dashboard/calendar/day?";
+        if (date === null)
+            throw new globalThis.Error("The parameter 'date' cannot be null.");
+        else if (date !== undefined)
+            url_ += "date=" + encodeURIComponent("" + date) + "&";
+        if (podScope === null)
+            throw new globalThis.Error("The parameter 'podScope' cannot be null.");
+        else if (podScope !== undefined)
+            url_ += "podScope=" + encodeURIComponent("" + podScope) + "&";
+        if (role === null)
+            throw new globalThis.Error("The parameter 'role' cannot be null.");
+        else if (role !== undefined)
+            url_ += "role=" + encodeURIComponent("" + role) + "&";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "q=" + encodeURIComponent("" + q) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetDashboardCalendarDay(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetDashboardCalendarDay(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<CalendarDay>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<CalendarDay>;
+        }));
+    }
+
+    protected processGetDashboardCalendarDay(response: HttpResponseBase): Observable<CalendarDay> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as CalendarDay;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param podScope (optional) 
+     * @param role (optional) 
+     * @return OK
+     */
+    getDashboardCalendarSummary(podScope?: string | undefined, role?: number | undefined): Observable<CalendarSummary> {
+        let url_ = this.baseUrl + "/api/v1/dashboard/calendar/summary?";
+        if (podScope === null)
+            throw new globalThis.Error("The parameter 'podScope' cannot be null.");
+        else if (podScope !== undefined)
+            url_ += "podScope=" + encodeURIComponent("" + podScope) + "&";
+        if (role === null)
+            throw new globalThis.Error("The parameter 'role' cannot be null.");
+        else if (role !== undefined)
+            url_ += "role=" + encodeURIComponent("" + role) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetDashboardCalendarSummary(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetDashboardCalendarSummary(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<CalendarSummary>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<CalendarSummary>;
+        }));
+    }
+
+    protected processGetDashboardCalendarSummary(response: HttpResponseBase): Observable<CalendarSummary> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as CalendarSummary;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface IAbsenceCheckClient {
+    /**
+     * @return OK
+     */
+    checkAbsenceCoverage(userId: number, body: AbsenceCheckRequest): Observable<AbsenceCheckResult>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class AbsenceCheckClient implements IAbsenceCheckClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    checkAbsenceCoverage(userId: number, body: AbsenceCheckRequest): Observable<AbsenceCheckResult> {
+        let url_ = this.baseUrl + "/api/v1/users/{userId}/absences/check";
+        if (userId === undefined || userId === null)
+            throw new globalThis.Error("The parameter 'userId' must be defined.");
+        url_ = url_.replace("{userId}", encodeURIComponent("" + userId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCheckAbsenceCoverage(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCheckAbsenceCoverage(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AbsenceCheckResult>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AbsenceCheckResult>;
+        }));
+    }
+
+    protected processCheckAbsenceCoverage(response: HttpResponseBase): Observable<AbsenceCheckResult> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AbsenceCheckResult;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface IDashboardClient {
     /**
      * @param period (optional) 
@@ -22339,6 +24071,48 @@ export class WorkflowsClient implements IWorkflowsClient {
     }
 }
 
+export interface AbsenceBackResult {
+    deleted: boolean;
+    absence: AbsenceDto | undefined;
+
+    [key: string]: any;
+}
+
+export interface AbsenceCheckPod {
+    podId: number;
+    name: string;
+    days: string[];
+
+    [key: string]: any;
+}
+
+export interface AbsenceCheckRequest {
+    startDate: string;
+    endDate: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface AbsenceCheckResult {
+    podsBelowMinimum: AbsenceCheckPod[];
+
+    [key: string]: any;
+}
+
+export interface AbsenceDto {
+    absenceId: number;
+    userId: number;
+    type: string;
+    startDate: string;
+    endDate: string | undefined;
+    note: string | undefined;
+    state: string;
+    workingDays: number | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export interface AddPodMembersRequest {
     userIds: number[];
 
@@ -22785,6 +24559,12 @@ export interface AssetVolumeResponse {
     [key: string]: any;
 }
 
+export interface AssignHolidayCalendarRequest {
+    calendarId: number | undefined;
+
+    [key: string]: any;
+}
+
 export interface AssignmentCellResponse {
     roleId: number;
     reportId: number;
@@ -23075,6 +24855,189 @@ export interface BulkTasksResponse {
     changed: number;
     failed: number;
     results: BulkTaskResult[];
+
+    [key: string]: any;
+}
+
+export interface CalendarAvailableGroup {
+    roleId: number;
+    roleName: string;
+    people: CalendarPerson[];
+
+    [key: string]: any;
+}
+
+export interface CalendarCounts {
+    total: number;
+    expected: number;
+    available: number;
+    outOfOffice: number;
+    onHoliday: number;
+    offHours: number;
+
+    [key: string]: any;
+}
+
+export interface CalendarDay {
+    date: string;
+    level: string;
+    holidays: CalendarDayHoliday[];
+    counts: CalendarCounts;
+    pods: CalendarPod[];
+    available: CalendarAvailableGroup[];
+    unavailable: CalendarUnavailableGroup[];
+
+    [key: string]: any;
+}
+
+export interface CalendarDayCell {
+    date: string;
+    total: number;
+    expected: number;
+    available: number;
+    outOfOffice: number;
+    onHoliday: number;
+    offHours: number;
+    coveragePercent: number | undefined;
+    level: string;
+    holidays: CalendarHoliday[];
+    pods: CalendarPod[];
+
+    [key: string]: any;
+}
+
+export interface CalendarDayHoliday {
+    name: string;
+    category: string;
+    colourKey: string;
+
+    [key: string]: any;
+}
+
+export interface CalendarDays {
+    asOfUtc: string;
+    today: string;
+    firstDayOfWeek: number;
+    roles: CalendarRole[];
+    days: CalendarDayCell[];
+
+    [key: string]: any;
+}
+
+export interface CalendarForecastWeek {
+    weekStart: string;
+    availablePeople: number;
+    freePercent: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface CalendarHoliday {
+    name: string;
+    calendarId: number;
+    category: string;
+    colourKey: string;
+    appliesToEveryone: boolean;
+
+    [key: string]: any;
+}
+
+export interface CalendarPerson {
+    userId: number;
+    displayName: string;
+    podNames: string[];
+    load: number;
+
+    [key: string]: any;
+}
+
+export interface CalendarPod {
+    podId: number;
+    name: string;
+    expected: number;
+    available: number;
+    minimum: number;
+    level: string;
+
+    [key: string]: any;
+}
+
+export interface CalendarRisk {
+    daysAtRisk: number;
+    firstRiskDate: string | undefined;
+    firstRiskLevel: string | undefined;
+    worstPod: CalendarWorstPod | undefined;
+    windowDays: number;
+
+    [key: string]: any;
+}
+
+export interface CalendarRole {
+    roleId: number;
+    name: string;
+
+    [key: string]: any;
+}
+
+export interface CalendarSettingsAdminView {
+    minCoveragePercent: number;
+    podMinimumPercent: number;
+    podMinimums: PodMinimum[];
+    defaults: CalendarThresholdValues;
+    isCustom: boolean;
+    rowVersion: string;
+    updatedAtUtc: string | undefined;
+    updatedBy: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface CalendarSummary {
+    thresholds: CalendarThresholdsInfo;
+    risk: CalendarRisk;
+    forecast: CalendarForecastWeek[];
+
+    [key: string]: any;
+}
+
+export interface CalendarThresholdsInfo {
+    minCoveragePercent: number;
+    podMinimumPercent: number;
+
+    [key: string]: any;
+}
+
+export interface CalendarThresholdValues {
+    minCoveragePercent: number;
+    podMinimumPercent: number;
+    podMinimums: PodMinimum[];
+
+    [key: string]: any;
+}
+
+export interface CalendarUnavailableGroup {
+    roleId: number;
+    roleName: string;
+    people: CalendarUnavailablePerson[];
+
+    [key: string]: any;
+}
+
+export interface CalendarUnavailablePerson {
+    userId: number;
+    displayName: string;
+    podNames: string[];
+    load: number;
+    reason: string;
+    backOn: string | undefined;
+    absenceType: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface CalendarWorstPod {
+    podId: number;
+    name: string;
 
     [key: string]: any;
 }
@@ -23573,6 +25536,8 @@ export interface CurrentAvailabilityDto {
     outUntilUtc: string | undefined;
     note: string | undefined;
     nextWorkStartUtc: string | undefined;
+    reason?: string | undefined;
+    absenceType?: string | undefined;
 
     [key: string]: any;
 }
@@ -23989,6 +25954,93 @@ export interface FormVersionSummary {
     publishedByUserId: number | undefined;
     notes: string | undefined;
     fieldCount: number;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface HolidayCalendarDto {
+    calendarId: number;
+    name: string;
+    colourKey: string;
+    regionNote: string | undefined;
+    appliesToEveryone: boolean;
+    isActive: boolean;
+    holidayCount: number;
+    peopleCount: number;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface HolidayCalendarRefDto {
+    calendarId: number;
+    name: string;
+    source: string;
+
+    [key: string]: any;
+}
+
+export interface HolidayDto {
+    holidayId: number;
+    calendarId: number;
+    name: string;
+    ruleKind: string;
+    month: number | undefined;
+    day: number | undefined;
+    nth: number | undefined;
+    weekday: number | undefined;
+    plusDays: number;
+    easterOffset: number | undefined;
+    onceDate: string | undefined;
+    rangeEndMonth: number | undefined;
+    rangeEndDay: number | undefined;
+    rangeEndDate: string | undefined;
+    yearly: boolean;
+    weekendRule: string;
+    regionNote: string | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface HolidayImportLine {
+    line: number;
+    ok: boolean;
+    message: string | undefined;
+    parsed: HolidayPreviewDto | undefined;
+
+    [key: string]: any;
+}
+
+export interface HolidayImportRequest {
+    text: string;
+    year: number;
+
+    [key: string]: any;
+}
+
+export interface HolidayImportResult {
+    lines: HolidayImportLine[];
+    okCount: number;
+    errorCount: number;
+    saved: boolean;
+
+    [key: string]: any;
+}
+
+export interface HolidayPreviewDto {
+    date: string;
+    endDate: string | undefined;
+    name: string;
+    observedFrom: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface HolidaySettingsDto {
+    firmCalendarId: number | undefined;
+    podDefaults: PodHolidayDefaultDto[];
     rowVersion: string;
 
     [key: string]: any;
@@ -24821,6 +26873,13 @@ export interface NamedIdResponse {
     [key: string]: any;
 }
 
+export interface NextHolidayDto {
+    date: string;
+    name: string;
+
+    [key: string]: any;
+}
+
 export interface NoteHistoryEntry {
     auditEventId: number;
     occurredAtUtc: string;
@@ -25215,6 +27274,14 @@ export interface PodDetail {
     [key: string]: any;
 }
 
+export interface PodHolidayDefaultDto {
+    podId: number;
+    podName: string | undefined;
+    calendarId: number | undefined;
+
+    [key: string]: any;
+}
+
 export interface PodMemberCandidate {
     userId: number;
     displayName: string;
@@ -25243,6 +27310,13 @@ export interface PodMemberLoad {
     overdue: number;
     onHold: number;
     availability?: UserAvailabilitySummary | undefined;
+
+    [key: string]: any;
+}
+
+export interface PodMinimum {
+    podId: number;
+    people: number;
 
     [key: string]: any;
 }
@@ -25798,11 +27872,17 @@ export interface RunReportResponse {
     [key: string]: any;
 }
 
-export interface SaveAvailabilityRequest {
-    status: string;
-    from: string | undefined;
-    until: string | undefined;
+export interface SaveAbsenceRequest {
+    type: string;
+    startDate: string;
+    endDate: string | undefined;
     note: string | undefined;
+    rowVersion?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface SaveAvailabilityRequest {
     timeZoneId: string | undefined;
     workHours: WorkHourDto[] | undefined;
     rowVersion: string;
@@ -25821,6 +27901,46 @@ export interface SaveCategoryRequest {
 export interface SaveFormDraftRequest {
     fields: FormFieldModel[];
     notes?: string | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface SaveHolidayCalendarRequest {
+    name: string;
+    colourKey: string | undefined;
+    regionNote: string | undefined;
+    appliesToEveryone: boolean;
+    isActive?: boolean;
+    rowVersion?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface SaveHolidayRequest {
+    name: string;
+    ruleKind: string;
+    month: number | undefined;
+    day: number | undefined;
+    nth: number | undefined;
+    weekday: number | undefined;
+    plusDays: number;
+    easterOffset: number | undefined;
+    onceDate: string | undefined;
+    rangeEndMonth: number | undefined;
+    rangeEndDay: number | undefined;
+    rangeEndDate: string | undefined;
+    yearly?: boolean;
+    weekendRule?: string;
+    regionNote?: string | undefined;
+    rowVersion?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface SaveHolidaySettingsRequest {
+    firmCalendarId: number | undefined;
+    podDefaults: PodHolidayDefaultDto[];
     rowVersion: string;
 
     [key: string]: any;
@@ -25966,6 +28086,15 @@ export interface SetAssetTypeSizeFieldRequest {
 
 export interface SetBrandingNameRequest {
     appName: string;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface SetCalendarSettingsRequest {
+    minCoveragePercent: number;
+    podMinimumPercent: number;
+    podMinimums: PodMinimum[];
     rowVersion: string;
 
     [key: string]: any;
@@ -27049,15 +29178,14 @@ export interface UpdateWorkflowRequest {
 
 export interface UserAvailabilityDto {
     userId: number;
-    status: string;
-    from: string | undefined;
-    until: string | undefined;
-    note: string | undefined;
     timeZoneId: string | undefined;
     effectiveTimeZoneId: string;
     usesDefaultWorkHours: boolean;
     workHours: WorkHourDto[];
     current: CurrentAvailabilityDto;
+    absences: AbsenceDto[];
+    holidayCalendar: HolidayCalendarRefDto | undefined;
+    nextHolidays: NextHolidayDto[];
     updatedAtUtc: string | undefined;
     updatedByUserId: number | undefined;
     rowVersion: string;
@@ -27097,6 +29225,13 @@ export interface UserDetailDto {
     lastLoginAtUtc: string | undefined;
     rowVersion: string;
     openTaskCount?: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface UserHolidayCalendarDto {
+    userId: number;
+    calendarId: number | undefined;
 
     [key: string]: any;
 }

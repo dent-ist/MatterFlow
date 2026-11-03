@@ -77,9 +77,7 @@ public sealed class UsersLookupSuggestApiTests(SqlServerFixture sql) : IAsyncLif
         // closedonly: only a Completed Task, so zero open.
         await AssignAsync(_closedOnly, "COMPLETED", 1, daysAgo: 5);
         // away: no tasks and out of office.
-        var away = _h.As(@"KE\away");
-        var saved = await OkAsync(await away.PutAsJsonAsync("/api/v1/me/availability", new { status = "OUT_OF_OFFICE", until = "2099-10-20", note = "Vacation", rowVersion = "NEW" }));
-        saved.GetProperty("status").GetString().ShouldBe("OUT_OF_OFFICE");
+        await _h.Factory.AddAbsenceAsync(_away, null, "2099-10-20", "Vacation");
 
         _pod = await _h.CreatePodAsync("Review pod", _busy, _quiet, _away, _inactive);
         await _h.ExecuteAsync($"UPDATE dbo.AppUser SET IsActive = 0 WHERE UserId = {_inactive}");

@@ -80,6 +80,16 @@
       "reason": "Business data that reports may read."
     },
     {
+      "name": "Holiday",
+      "access": "allow",
+      "reason": "Holiday rules (names and dates of firm and regional holidays); not personal data."
+    },
+    {
+      "name": "HolidayCalendar",
+      "access": "allow",
+      "reason": "Holiday calendars (names, colours, regions); not personal data."
+    },
+    {
       "name": "Matter",
       "access": "allow",
       "reason": "Business data that reports may read."
@@ -293,6 +303,11 @@
       "name": "TaskTypeWorkflowEligibility",
       "access": "allow",
       "reason": "Business data that reports may read."
+    },
+    {
+      "name": "UserAbsence",
+      "access": "deny",
+      "reason": "Out of office entries with type (Sick is health related) and note: personal data; the Calendar endpoints leave type and note out without a permission, so reports must not read them either."
     },
     {
       "name": "UserAvailability",
