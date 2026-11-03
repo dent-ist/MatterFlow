@@ -73,6 +73,9 @@ public sealed class PersonaWalk
             notes.Add((await OkAsync(await u.H.Admin.PostAsJsonAsync("/api/v1/notes", new { matterId = matter, bodyHtml = $"<p>{label} note</p>" }), HttpStatusCode.Created)).GetProperty("noteId").GetInt32());
         }
 
+        // A pod of the assignee (who holds a task on a hidden matter) and the unrelated user, so the capacity endpoints of Dashboard v4 return people whose load includes a hidden task (decision AS item 12).
+        await u.H.CreatePodAsync("Walk pod", u.Assignee, u.Unrelated);
+
         return new WalkIds(u.AllMatters, [u.TN1, u.TS1, u.TS2, u.TS3], [u.World.ProjectId, u.PN1, u.PS1, u.PS2, u.PS3], [an, a1, a2, a3, a3b], clientId, u.Assignee, typeId, u.World.TaskTypeId, refs, [.. specs], [.. productions], [.. notes]);
     }
 
