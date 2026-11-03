@@ -359,13 +359,13 @@ describe('DashUsersTab', () => {
       expect(
         qa('[data-capacity-bar] [data-segment]').map((b) => b.getAttribute('data-segment')),
       ).toEqual(['idle', 'light', 'normal', 'heavy']);
-      expect(seg('light').getAttribute('aria-label')).toBe('Filter: 3 light');
-      expect(seg('heavy').getAttribute('aria-label')).toBe('Filter: 1 heavy');
+      expect(seg('light').getAttribute('aria-label')).toContain('Light, 3.');
+      expect(seg('heavy').getAttribute('aria-label')).toContain('Heavy, 1.');
       // The widths follow the counts.
       expect(seg('light').style.flexGrow).toBe('3');
-      expect(q('[data-capacity]').getAttribute('role')).toBe('group');
-      expect(q('[data-capacity]').getAttribute('aria-label')).toBe(
-        'Capacity: 1 idle, 3 light, 1 normal, 1 heavy, 1 out of office',
+      expect(q('[data-capacity-bar]').getAttribute('role')).toBe('group');
+      expect(q('[data-capacity-bar]').getAttribute('aria-label')).toContain(
+        '1 idle, 3 light, 1 normal, 1 heavy, 1 out of office',
       );
       seg('heavy').click();
       await settle();
@@ -676,7 +676,7 @@ describe('DashUsersTab', () => {
       expect(text(row)).toContain('Out of office until Oct 20');
       expect(text(q('[data-user-row="3"]'))).not.toMatch(/No open tasks|Not available/);
       expect(q('[data-user-row="3"] .state').getAttribute('aria-label')).toBe('No open tasks');
-      expect(text(q('[data-assign-work]'))).toBe('');
+      expect(text(q('[data-assign-work]'))).toBe('Assign');
       expect(q('[data-layout="table"]').getAttribute('aria-pressed')).toBe('true');
       q<HTMLButtonElement>('[data-density="compact"]').click();
       await settle();

@@ -517,17 +517,17 @@ test.describe('Users tab: workload', () => {
       await expect(table).toBeVisible();
       const fits = await table.evaluate((t) => t.scrollWidth <= t.parentElement!.clientWidth);
       expect(fits, `${width}px`).toBe(true);
-      await expect(page.locator('[data-sort-key="load"]')).toBeInViewport();
+      await expect(page.locator('[data-sort-key="availability"]')).toBeInViewport();
       await expect(page.locator('[data-assign-work]').first()).toBeInViewport();
       await page.getByRole('button', { name: 'Cards' }).click();
     }
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.getByRole('button', { name: 'Table' }).click();
-    const openers = (t: Locator) => t.locator('tbody td.num.strong');
+    const openers = (t: Locator) => t.locator('tbody [data-priority-counts] .cnt');
     const table = page.locator('[data-users-table]');
-    // One stacked cell per person, with the words in its accessible text.
+    // One Load element per person (the count, a bar split by priority), with the words in its accessible text.
     await expect(table.locator('[data-priority-counts] .sr-only').first()).toHaveText(
-      /^\d+ \w+(, \d+ \w+){3}$/,
+      /^\d+ open tasks: \d+ \w+(, \d+ \w+){3}$/,
     );
     await expect(table.locator('thead th', { hasText: /^Critical$/ })).toHaveCount(0);
     const sortSelect = page.getByLabel('Sort', { exact: true });

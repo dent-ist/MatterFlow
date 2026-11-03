@@ -250,20 +250,23 @@ import { UsersGlyph } from './users-glyph';
       display: block;
       margin-bottom: var(--mf-s2);
     }
+    /* The shared list toolbar standard (theme guide 11.1): one row, labels in line with their controls. */
     .bar {
       display: flex;
       flex-wrap: wrap;
-      align-items: flex-end;
+      align-items: center;
       gap: var(--mf-s2);
     }
     .fld {
-      display: grid;
-      gap: 2px;
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s1);
     }
     .lbl {
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
+      font-size: var(--mf-fs-sm);
       font-weight: 600;
+      white-space: nowrap;
     }
     .grow {
       flex: 1;

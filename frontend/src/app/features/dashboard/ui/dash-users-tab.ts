@@ -130,11 +130,6 @@ export const USERS_PAGE = 200;
     } @else if (canCoverage()) {
       <div class="views-row">
         <mf-users-views [view]="view()" (viewChange)="setView($event)" />
-        <!-- Holds the height of the Workload toolbar (a label over a select), so the switch does not move when the view changes. -->
-        <span class="views-ghost" aria-hidden="true">
-          <span class="views-ghost-label">Sort</span>
-          <span class="mf-control mf-control--compact views-ghost-box"></span>
-        </span>
       </div>
     }
 
@@ -142,15 +137,6 @@ export const USERS_PAGE = 200;
       <mf-coverage-view [filters]="filters()" (filtersChange)="patchFilters($event)" />
     } @else {
       <h2 class="sr-only" id="wl-h">{{ canCoverage() ? 'Team workload' : 'Workload' }}</h2>
-      <mf-users-capacity
-        [users]="board()?.users ?? []"
-        [summary]="board()?.summary ?? null"
-        [filters]="filters()"
-        [thresholds]="board()?.thresholds ?? null"
-        [canAssign]="canAssign()"
-        (loadToggle)="toggleLoad($event)"
-        (showCanTake)="showCanTakeWork()"
-      />
       <mf-users-summary
         [summary]="board()?.summary ?? null"
         [users]="board()?.users ?? []"
@@ -159,6 +145,16 @@ export const USERS_PAGE = 200;
         (loadToggle)="toggleLoad($event)"
         (availabilityToggle)="toggleAvailability($event)"
       >
+        <mf-users-capacity
+          mfBarEnd
+          [users]="board()?.users ?? []"
+          [summary]="board()?.summary ?? null"
+          [filters]="filters()"
+          [thresholds]="board()?.thresholds ?? null"
+          [canAssign]="canAssign()"
+          (loadToggle)="toggleLoad($event)"
+          (showCanTake)="showCanTakeWork()"
+        />
         @if (populationLine(); as line) {
           <p class="population" data-users-population>
             <span data-users-population-text>{{ line.text }}</span>
@@ -326,24 +322,6 @@ export const USERS_PAGE = 200;
       gap: var(--mf-s2);
       margin-bottom: var(--mf-s2);
     }
-    /* The same label-over-control structure as the Workload toolbar's selects, invisible and without width. */
-    .views-ghost {
-      display: grid;
-      gap: 2px;
-      width: 0;
-      overflow: hidden;
-      visibility: hidden;
-    }
-    .views-ghost-label {
-      font-size: var(--mf-fs-xs);
-      font-weight: 600;
-    }
-    .views-ghost-box {
-      display: block;
-      width: 0;
-      padding-inline: 0;
-      border-inline-width: 0;
-    }
     /* The population line (U4) sits at the right end of the chips' row and wraps under them when there is no room. */
     .population {
       display: inline-flex;
@@ -363,7 +341,8 @@ export const USERS_PAGE = 200;
       }
     }
     .population .link {
-      padding: 0;
+      min-height: 24px;
+      padding: 0 var(--mf-s1);
       color: var(--mf-primary);
       background: none;
       border: 0;

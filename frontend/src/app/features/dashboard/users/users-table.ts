@@ -8,9 +8,8 @@ import {
 import { availabilityDisplay } from '../../../core/availability/availability';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { dueCellText, describeDueCell } from '../../../core/time/time';
-import { levelBars, priorityColors } from '../../../shared/ui/priority-badge';
+import { priorityColors } from '../../../shared/ui/priority-badge';
 import { backOnText, bandOf } from './users-card';
-import { UsersGlyph } from './users-glyph';
 import {
   Density,
   LOAD_ICONS,
@@ -29,11 +28,11 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 /**
  * The compact table view of the Team workload: one row per person with the same facts as the card (state, highest priority, a count per
  * priority in rank order, open, overdue, due soon, on hold, next due, load). The name is the button that opens the person's tasks.
- * A plain table, so the keyboard and screen reader model is the browser's own.
+ * Load is one element (the open-task count, a bar split by priority with a tooltip and the level word). The Availability chip shows only when the person is not available, and zeros are a muted dash. A plain table, so the keyboard and screen reader model is the browser's own.
  */
 @Component({
   selector: 'mf-users-table',
-  imports: [RouterLink, UsersGlyph],
+  imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="wrap" tabindex="-1">
@@ -48,14 +47,9 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
                 Person<i class="pi" [class]="arrow('name')" aria-hidden="true"></i>
               </button>
             </th>
-            <th scope="col" [attr.aria-sort]="ariaSort('load')">
-              <button
-                type="button"
-                class="sort"
-                data-sort-key="availability"
-                (click)="sortBy('load')"
-              >
-                Availability<i class="pi" [class]="arrow('load')" aria-hidden="true"></i>
+            <th scope="col" [attr.aria-sort]="ariaSort('open')">
+              <button type="button" class="sort" data-sort-key="open" (click)="sortBy('open')">
+                Load<i class="pi" [class]="arrow('open')" aria-hidden="true"></i>
               </button>
             </th>
             <th scope="col" [attr.aria-sort]="ariaSort('priority')">
@@ -68,23 +62,22 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
                 Highest priority<i class="pi" [class]="arrow('priority')" aria-hidden="true"></i>
               </button>
             </th>
-            <th scope="col" class="num" [attr.aria-sort]="ariaSort('open')">
-              <button type="button" class="sort" data-sort-key="open" (click)="sortBy('open')">
-                Open tasks<i class="pi" [class]="arrow('open')" aria-hidden="true"></i>
+            <th scope="col" [attr.aria-sort]="ariaSort('load')">
+              <button
+                type="button"
+                class="sort"
+                data-sort-key="availability"
+                (click)="sortBy('load')"
+              >
+                Availability<i class="pi" [class]="arrow('load')" aria-hidden="true"></i>
               </button>
             </th>
-            <th scope="col">Open by priority</th>
             <th scope="col" class="num">Overdue</th>
             <th scope="col" class="num">Due soon</th>
             <th scope="col" class="num">On hold</th>
             <th scope="col">Next due</th>
-            <th scope="col" [attr.aria-sort]="ariaSort('load')">
-              <button type="button" class="sort" data-sort-key="load" (click)="sortBy('load')">
-                Load<i class="pi" [class]="arrow('load')" aria-hidden="true"></i>
-              </button>
-            </th>
             @if (canAssign()) {
-              <th scope="col" class="act"><span class="sr-only">Actions</span></th>
+              <th scope="col" class="act"><span class="sr-only">Assign work</span></th>
             }
           </tr>
         </thead>
@@ -112,16 +105,25 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
                   </button>
                 </span>
               </th>
-              <td>
-                @let a = availOf(u);
-                <span class="chip" [class]="'chip chip--' + a.tone">
-                  <i class="pi" [class]="a.icon" aria-hidden="true"></i>{{ a.label }}
+              <td class="loadcell">
+                <span class="load" [attr.data-load-label]="levelOf(u)" data-priority-counts>
+                  <strong class="cnt">{{ u.openTotal }}</strong>
+                  <span class="track" aria-hidden="true" [attr.title]="countsTitle(u)">
+                    @for (s of segmentsOf(u); track s.priorityId) {
+                      <span
+                        class="seg"
+                        [style.width.%]="s.percent"
+                        [style.background]="colors(s.color).bg"
+                        [style.box-shadow]="'inset 0 0 0 1px ' + colors(s.color).fg"
+                      ></span>
+                    }
+                  </span>
+                  <span class="lvl"
+                    ><i class="pi" [class]="icons[levelOf(u)]" aria-hidden="true"></i>
+                    {{ labels[levelOf(u)] }}</span
+                  >
+                  <span class="sr-only">{{ u.openTotal }} open tasks: {{ countsText(u) }}</span>
                 </span>
-                @if (u.availability.note) {
-                  <span class="note" [attr.title]="u.availability.note">{{
-                    u.availability.note
-                  }}</span>
-                }
               </td>
               <td>
                 @let b = bandOf(u);
@@ -139,23 +141,45 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
                   }
                 </span>
               </td>
-              <td class="num strong">{{ u.openTotal }}</td>
-              <td class="stack" data-priority-counts>
-                <span class="sr-only">{{ countsText(u) }}</span>
-                <span class="pcs" aria-hidden="true">
-                  @for (c of countsOf(u); track c.priority.priorityId) {
-                    <span class="pc" [class.zero]="c.count === 0" [attr.title]="c.priority.label">
-                      <mf-users-glyph [level]="levelOf4(c.priority.rank)" />{{ c.count }}
-                    </span>
+              <td>
+                <!-- Quiet rows: only a person who is NOT available has a chip (Out of office, Off hours, Holiday). -->
+                @if (u.availability.state !== 'AVAILABLE') {
+                  @let a = availOf(u);
+                  <span class="chip" [class]="'chip chip--' + a.tone">
+                    <i class="pi" [class]="a.icon" aria-hidden="true"></i>{{ a.label }}
+                  </span>
+                  @if (u.availability.note) {
+                    <span class="note" [attr.title]="u.availability.note">{{
+                      u.availability.note
+                    }}</span>
                   }
-                </span>
+                }
               </td>
-              <td class="num" [class.warn]="u.overdue > 0">{{ u.overdue }}</td>
-              <td class="num" [class.soon]="u.dueSoon > 0">{{ u.dueSoon }}</td>
-              <td class="num">{{ u.onHold }}</td>
+              <td class="num" [class.warn]="u.overdue > 0" [class.zero]="u.overdue === 0">
+                {{ u.overdue > 0 ? u.overdue : '-' }}
+                @if (u.overdue === 0) {
+                  <span class="sr-only">0</span>
+                }
+              </td>
+              <td class="num" [class.soon]="u.dueSoon > 0" [class.zero]="u.dueSoon === 0">
+                {{ u.dueSoon > 0 ? u.dueSoon : '-' }}
+                @if (u.dueSoon === 0) {
+                  <span class="sr-only">0</span>
+                }
+              </td>
+              <td class="num" [class.zero]="u.onHold === 0">
+                {{ u.onHold > 0 ? u.onHold : '-' }}
+                @if (u.onHold === 0) {
+                  <span class="sr-only">0</span>
+                }
+              </td>
               <td>
                 @if (u.nextDue; as n) {
-                  <span class="nd" [attr.title]="n.ref + ' ' + nextDue(u)">
+                  <span
+                    class="nd"
+                    [class.nd--late]="n.isOverdue"
+                    [attr.title]="n.ref + ' ' + nextDue(u)"
+                  >
                     <a
                       class="mf-ref"
                       [routerLink]="['/tasks', n.taskId]"
@@ -169,33 +193,20 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
                   <span class="zero">-</span>
                 }
               </td>
-              <td>
-                <span class="load" [attr.data-load-label]="levelOf(u)">
-                  <span class="track" aria-hidden="true">
-                    @for (s of segmentsOf(u); track s.priorityId) {
-                      <span
-                        class="seg"
-                        [style.width.%]="s.percent"
-                        [style.background]="colors(s.color).bg"
-                        [style.box-shadow]="'inset 0 0 0 1px ' + colors(s.color).fg"
-                      ></span>
-                    }
-                  </span>
-                  <i class="pi" [class]="icons[levelOf(u)]" aria-hidden="true"></i>
-                  {{ labels[levelOf(u)] }}
-                </span>
-              </td>
               @if (canAssign()) {
                 <td class="act">
                   <button
                     type="button"
-                    class="mf-btn mf-btn--icon"
+                    class="mf-btn mf-btn--compact"
                     data-assign-work
                     [attr.aria-label]="'Assign work to ' + u.displayName"
-                    [attr.title]="'Assign work to ' + u.displayName"
+                    [attr.title]="
+                      'Assign work to ' + u.displayName + ': choose an unassigned task for them'
+                    "
                     (click)="assign.emit(u)"
                   >
                     <i class="pi pi-user-plus" aria-hidden="true"></i>
+                    <span class="albl">Assign</span>
                   </button>
                 </td>
               }
@@ -335,28 +346,28 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
     .stack {
       white-space: nowrap;
     }
-    /* One line per row: a long next-due text is cut with an ellipsis. */
+    /* Next due is whole at normal widths (reference and date on one line) and red when it is overdue. */
     .nd {
       display: inline-block;
-      max-width: 7.5rem;
-      overflow: hidden;
-      text-overflow: ellipsis;
       white-space: nowrap;
       vertical-align: middle;
     }
-    .pcs {
-      display: inline-flex;
-      gap: var(--mf-s1);
-      font-variant-numeric: tabular-nums;
-    }
-    .pc {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
+    .nd--late {
+      color: var(--mf-danger);
+      font-weight: 600;
     }
     .act {
-      width: 2.5rem;
-      text-align: center;
+      width: 1%;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .albl {
+      margin-left: var(--mf-s1);
+    }
+    @media (max-width: 767.98px) {
+      .albl {
+        display: none;
+      }
     }
     .pwrap {
       display: inline-flex;
@@ -430,17 +441,33 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
     .load {
       display: inline-flex;
       align-items: center;
-      gap: var(--mf-s1);
+      gap: var(--mf-s2);
       font-weight: 600;
       white-space: nowrap;
+    }
+    .cnt {
+      min-width: 1.5rem;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .lvl {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s1);
+      color: var(--mf-text-muted);
+      font-weight: 500;
+    }
+    .load[data-load-label='HEAVY'] .lvl {
+      color: var(--mf-danger);
+      font-weight: 700;
     }
     .load[data-load-label='HEAVY'] {
       color: var(--mf-danger);
     }
     .track {
       display: inline-flex;
-      width: 3rem;
-      height: 0.6rem;
+      width: 5rem;
+      height: 0.75rem;
       overflow: hidden;
       background: var(--mf-surface-alt);
       border: 1px solid var(--mf-border-strong);
@@ -510,15 +537,19 @@ export class UsersTable {
     this.sortRequest.emit({ sort: key, reversed: this.sort() === key ? !this.reversed() : false });
   }
 
-  protected levelOf4(rank: number): number {
-    return levelBars(rank);
-  }
-
   /** "2 Critical, 5 High, 3 Normal, 0 Low": the accessible text of the stacked count cell. */
   protected countsText(u: WorkloadUser): string {
     return this.countsOf(u)
       .map((c) => `${c.count} ${c.priority.label}`)
       .join(', ');
+  }
+
+  /** The tooltip of the load bar: "Critical 2, High 5, Normal 3" (priorities with open tasks only). */
+  protected countsTitle(u: WorkloadUser): string {
+    const parts = this.countsOf(u)
+      .filter((c) => c.count > 0)
+      .map((c) => `${c.count} ${c.priority.label}`);
+    return `${u.openTotal} open: ${parts.length > 0 ? parts.join(', ') : 'none'}`;
   }
 
   protected availOf(u: WorkloadUser) {
