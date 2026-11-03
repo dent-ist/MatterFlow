@@ -4,6 +4,7 @@ import { USERS_AVAILABILITY_PARAM, USERS_VIEW_PARAM } from './dashboard-links';
 import { DEFAULT_PERIOD_KEY, periodFromParams } from './dashboard-period';
 import { LEGACY_USERS_POD_PARAM, SCOPE_PARAM, parseScope, scopeFromAddress } from './dash-scope';
 import { TECH_PRIORITY_PARAM, TECH_TYPE_PARAM } from './dash-technician';
+import { DASH_GRID_PARAMS } from './summary/dash-grid-params';
 import { DEFAULT_LANE, DEFAULT_VIEW, laneParam } from './swimlane/swimlane-model';
 import { DEFAULT_CHOICE } from './ui/trend-model';
 
@@ -18,7 +19,7 @@ import { DEFAULT_CHOICE } from './ui/trend-model';
 
 /** The query parameters each tab owns (a tab's parameters are removed from the address when another tab is chosen). */
 export const DASH_TAB_PARAMS: Record<DashboardTab, readonly string[]> = {
-  summary: [TECH_PRIORITY_PARAM, TECH_TYPE_PARAM],
+  summary: [TECH_PRIORITY_PARAM, TECH_TYPE_PARAM, ...DASH_GRID_PARAMS],
   breakdowns: ['bmetric'],
   trends: ['types', 'metric', 'all', 'due'],
   swimlane: [

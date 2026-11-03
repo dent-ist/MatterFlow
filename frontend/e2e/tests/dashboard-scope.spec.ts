@@ -102,14 +102,22 @@ async function build(seed: Seeder): Promise<Scenario> {
 }
 
 const scopeSelect = (page: Page) => labelledDropdown(page, 'Scope');
-const tile = (page: Page, label: string) =>
-  page.locator('mf-stat-tile', {
-    has: page.locator('.label', { hasText: new RegExp(`^${label}$`) }),
-  });
-const tileValue = async (page: Page, label: string) =>
-  Number((await tile(page, label).locator('.value').innerText()).trim());
+/** Dashboard v4: the Needs attention cards (Overdue, Unassigned, On hold); "Open" is the grid's own total while no card is pressed. */
+const CARDS: Record<string, string> = {
+  Overdue: 'overdue',
+  Unassigned: 'unassigned',
+  'On hold': 'onHold',
+};
+const tile = (page: Page, label: string) => page.locator(`[data-card="${CARDS[label]}"]`);
+const tileValue = async (page: Page, label: string) => {
+  if (label === 'Open') {
+    return Number((await page.locator('mf-dash-grid [data-list-count]').innerText()).trim());
+  }
+  return Number((await tile(page, label).locator('[data-card-count]').innerText()).trim());
+};
 const shown = async (page: Page) => {
-  await expect(page.locator('[data-tabpanel="summary"] mf-stat-tile').first()).toBeVisible();
+  await expect(page.locator('[data-tabpanel="summary"] [data-dash-cards]')).toBeVisible();
+  await expect(page.locator('mf-dash-grid [data-list-count]')).toBeVisible();
 };
 
 /** The summary of the scope for the signed-in browser user (the page's own request, read through the browser). */
@@ -145,13 +153,10 @@ test.describe('Dashboard Scope', () => {
     expect(await tileValue(page, 'Open')).toBe(4);
     expect(await tileValue(page, 'Unassigned')).toBe(2);
     expect(await tileValue(page, 'Overdue')).toBe(2);
-    await tile(page, 'Overdue').getByRole('link').click();
-    await expect(page).toHaveURL(/\/tasks\?/);
-    const q = new URL(page.url()).searchParams;
-    expect(q.getAll('pod').sort()).toEqual([String(s.podA.podId), String(s.podB.podId)].sort());
-    expect(q.get('overdue')).toBe('true');
-    const queue = await (await page.request.get(`/api/v1/task-queue?pageSize=1&${q}`)).json();
-    expect(queue.total).toBe(2);
+    // Pressing the card filters the grid to the same tasks the queue shows for the card's own query.
+    await tile(page, 'Overdue').click();
+    await expect(page).toHaveURL(/card=overdue/);
+    await expect(page.locator('mf-dash-grid [data-list-count]')).toHaveText('2');
     await expect(page.getByText(s.titles.a1)).toBeVisible();
     await expect(page.getByText(s.titles.b2)).toBeVisible();
     await expect(page.getByText(s.titles.c1)).toHaveCount(0);
@@ -311,13 +316,10 @@ test.describe('Dashboard Scope', () => {
     expect(await tileValue(page, 'Unassigned')).toBe(1);
     expect(await tileValue(page, 'Overdue')).toBe(1);
 
-    // The drill-through of a scoped number: the same pod, the same count.
-    await tile(page, 'Unassigned').getByRole('link').click();
-    await expect(page).toHaveURL(/\/tasks\?/);
-    const q = new URL(page.url()).searchParams;
-    expect(q.getAll('pod')).toEqual([String(s.podB.podId)]);
-    const queue = await (await page.request.get(`/api/v1/task-queue?pageSize=1&${q}`)).json();
-    expect(queue.total).toBe(1);
+    // A scoped card filters the grid to the same pod and the same count.
+    await tile(page, 'Unassigned').click();
+    await expect(page.locator('mf-dash-grid [data-list-count]')).toHaveText('1');
+    await tile(page, 'Unassigned').click();
 
     // Remembered per user: a plain link opens on the last explicit choice.
     await page.goto('/dashboard');

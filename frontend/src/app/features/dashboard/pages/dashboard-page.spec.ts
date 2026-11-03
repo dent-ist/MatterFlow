@@ -27,6 +27,7 @@ import {
   provideQueueChoices,
 } from '../../../shared/work-queue/work-queue-testing';
 import { aTrend } from '../ui/trend-testing';
+import { capacityOf, somePeople } from '../summary/dash-testing';
 import { aMemberChoices, aScopeChoices } from '../dash-scope-testing';
 import { STALE_CHECK_MS } from '../dash-stale';
 import { queueArgsFor } from '../dashboard-links';
@@ -51,6 +52,14 @@ function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
     completed: count(94, 'status=COMPLETED&completedFrom=2026-09-15'),
     created: count(101, 'createdFrom=2026-09-15'),
     scope: { scope: 'all', podIds: [], unassignedNoPod: 0 },
+    unassignedGauge: {
+      count: 17,
+      oldestSinceUtc: '2026-10-14T12:54:00Z',
+      oldestAgeMinutes: 168,
+      ageBasis: 'WORKING',
+      level: 3,
+      asOfUtc: '2026-10-14T15:42:00Z',
+    },
     byTaskType: [
       {
         label: 'Data Processing',
@@ -192,6 +201,14 @@ const DASH: Permission[] = ['Dashboard.View', ...TABS];
 /** The three tabs that read the summary payload. */
 const DATA_TABS: Permission[] = ['Dashboard.View', ...TABS.slice(0, 3)];
 
+/** Dashboard.ViewUnassigned with the right to assign: the Technician's queue. */
+const TECH_QUEUE: Permission[] = [
+  'Task.View',
+  'Task.Assign',
+  'Dashboard.View',
+  'Dashboard.ViewUnassigned',
+];
+
 const ALL: Permission[] = ['Task.View', ...DASH, 'Task.Create', 'Task.Assign', 'Pod.View'];
 
 describe('DashboardPage', () => {
@@ -247,11 +264,20 @@ describe('DashboardPage', () => {
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         {
           provide: DashboardClient,
-          useValue: { getDashboard, getDashboardTrend, getDashboardScopes },
+          useValue: {
+            getDashboard,
+            getDashboardTrend,
+            getDashboardScopes,
+          },
         },
         {
           provide: DashboardBoardClient,
-          useValue: { getDashboardSwimlane, getDashboardWorkload },
+          useValue: {
+            getDashboardSwimlane,
+            getDashboardWorkload,
+            getDashboardCapacity: () => of(capacityOf(somePeople())),
+            getDashboardCapacityPeople: () => of(somePeople()),
+          },
         },
         { provide: TaskQueueClient, useValue: { getTaskQueue } },
         { provide: TasksClient, useValue: { assignTask } },
@@ -306,117 +332,128 @@ describe('DashboardPage', () => {
 
   afterEach(() => vi.restoreAllMocks());
 
-  it('puts Needs attention first: overdue, unassigned and on hold, each with a count, an icon and a link that says what it opens', async () => {
-    const el = await open();
-    expect(getDashboard).toHaveBeenCalledWith(
-      '30d',
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      'all',
-    );
+  describe('Summary v4 (epic #1063)', () => {
+    const card = (el: HTMLElement, key: string) =>
+      el.querySelector<HTMLButtonElement>(`[data-card="${key}"]`)!;
+    const router = () => TestBed.inject(Router);
 
-    const group = el.querySelector('[data-group="attention"]')!;
-    expect(text(group.querySelector('h2'))).toBe('Needs attention');
-    const tiles = Array.from(group.querySelectorAll<HTMLElement>('mf-stat-tile'));
-    expect(tiles.map((t) => text(t.querySelector('.label')))).toEqual([
-      'Overdue',
-      'Unassigned',
-      'On hold',
-      'ASAP open',
-    ]);
-    expect(tiles.map((t) => text(t.querySelector('.value')))).toEqual(['9', '17', '12', '4']);
-    expect(tiles.map((t) => text(t.querySelector('.go')))).toEqual([
-      'View overdue tasks',
-      'View unassigned tasks',
-      'View tasks on hold',
-      'View ASAP tasks',
-    ]);
-    // An icon next to every label, so the tone is never the only signal.
-    for (const t of tiles) expect(t.querySelector('mf-tile-chip .pi')).not.toBeNull();
-    expect(tiles[1].querySelector('a')!.getAttribute('href')).toBe(
-      '/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&unassigned=true',
-    );
-    expect(tiles[0].textContent).toContain('Excludes ASAP tasks');
-    // The severity of the Overdue count: icon and words, and the tile opens the queue in the order of the list.
-    expect(text(tiles[0].querySelector('[data-detail]'))).toBe('2 Critical, 3 High');
-    expect(tiles[0].querySelector('[data-detail] .pi')).not.toBeNull();
-    expect(tiles[0].querySelector('a')!.getAttribute('href')).toBe(
-      '/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&overdue=true&sort=priority&dir=asc',
-    );
-    expect(tiles[1].querySelector('[data-detail]')).toBeNull();
-    // Colour follows the theme: Overdue is red, Unassigned (needs a person) is violet, On hold is neutral slate (no tone attribute), ASAP is the quiet blue
-    // (never the red of Overdue, and a smaller number than the three attention tiles).
-    expect(tiles.map((t) => t.querySelector('a')!.getAttribute('data-tone'))).toEqual([
-      'danger',
-      'person',
-      null,
-      'asap',
-    ]);
-    expect(tiles[3].querySelector('a')!.getAttribute('data-emphasis')).toBe('quiet');
-    expect(tiles[3].querySelector('a')!.getAttribute('href')).toContain('asap=true');
-    expect(tiles[0].querySelector('a')!.getAttribute('data-emphasis')).toBe('attention');
-  });
+    it('shows three Needs attention cards (Overdue, Unassigned, On hold) with the counts, and no ASAP card, Overview or Period control', async () => {
+      const el = await open();
+      expect(getDashboard).toHaveBeenCalledWith(
+        '30d',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        'all',
+      );
+      const cards = Array.from(el.querySelectorAll('[data-dash-cards] [data-card]'));
+      expect(cards.map((c) => c.getAttribute('data-card'))).toEqual([
+        'overdue',
+        'unassigned',
+        'onHold',
+      ]);
+      expect(cards.map((c) => text(c.querySelector('[data-card-count]')))).toEqual([
+        '9',
+        '17',
+        '12',
+      ]);
+      expect(el.querySelector('[data-group="overview"], mf-stat-tile')).toBeNull();
+      expect(el.querySelector('mf-dropdown[data-period]')).toBeNull();
+      expect(el.textContent).not.toContain('ASAP open');
+    });
 
-  it('shows the quieter overview row (no ASAP tile: it is in Needs attention) and the period control beside it', async () => {
-    const el = await open();
-    const group = el.querySelector('[data-group="overview"]')!;
-    const tiles = Array.from(group.querySelectorAll<HTMLElement>('mf-stat-tile'));
-    expect(tiles.map((t) => text(t.querySelector('.label')))).toEqual([
-      'Open',
-      'Due soon',
-      'Completed',
-      'Created',
-    ]);
-    expect(tiles.map((t) => text(t.querySelector('.value')))).toEqual(['128', '6', '94', '101']);
-    expect(tiles[2].textContent).toContain('Sep 15 to Oct 14');
-    expect(tiles[3].textContent).toContain('Sep 15 to Oct 14');
-    // Every tile has its own small icon next to the label.
-    for (const t of tiles) expect(t.querySelector('mf-tile-chip .pi')).not.toBeNull();
-    expect(tiles[2].querySelector('a')!.getAttribute('href')).toBe(
-      '/tasks?status=COMPLETED&completedFrom=2026-09-15',
-    );
-    // The period control sits in the Overview row, named for what it changes, not in the page header.
-    expect(group.querySelector('mf-dropdown[data-period]')).not.toBeNull();
-    expect(text(group.querySelector('mf-period-control .pc-lbl'))).toContain('Period');
-    expect(text(group.querySelector('[data-period-note]'))).toBe(
-      'Applies to Completed and Created. Open, Overdue, Due soon, Unassigned, On hold and ASAP are not affected.',
-    );
-    expect(el.querySelector('mf-page-header mf-dropdown[data-period]')).toBeNull();
-    // The refresh icon sits in the tab row; "Updated <time>" is its tooltip, never visible text.
-    const refresh = el.querySelector<HTMLButtonElement>('mf-dash-tabs [data-refresh]')!;
-    expect(refresh.getAttribute('title')).toContain('Updated Oct 14, 2026, 3:42 PM');
-    expect(refresh.getAttribute('aria-label')).toBe('Refresh');
-    expect(el.querySelector('[data-updated]')).toBeNull();
-    expect(el.textContent).not.toContain('refreshes every 5 minutes');
-  });
+    it('reads the grid from the Task Queue: the scope open tasks, then the card query when a card is pressed, and a second press clears it', async () => {
+      const el = await open();
+      const sizes = () => getTaskQueue.mock.calls.map((c) => c[7]);
+      const calls = getTaskQueue.mock.calls.length;
+      expect(calls).toBeGreaterThan(0);
+      // No card: not the unassigned query.
+      expect(sizes().at(-1)).not.toBe(true);
 
-  it('lays Summary out as tiles beside one column of lists (Unassigned, Overdue, Due soon), with no section headings', async () => {
-    const el = await open();
-    const panel = el.querySelector('[data-tabpanel="summary"] .summary')!;
-    const parts = Array.from(panel.children).map((c) => c.className.split(' ')[0] || c.tagName);
-    expect(parts).toEqual(['summary-tiles', 'summary-lists']);
-    expect(
-      Array.from(panel.querySelectorAll('.summary-lists [data-panel]')).map((p) =>
-        p.getAttribute('data-panel'),
-      ),
-    ).toEqual(['unassigned', 'overdue', 'dueSoon']);
-    // S8: the list headings carry the names; the old section names are gone.
-    expect(Array.from(panel.querySelectorAll('.summary-lists h3')).map((h) => text(h))).toEqual([
-      'Unassigned',
-      'Overdue',
-      'Due soon',
-    ]);
-    expect(panel.querySelector('[data-section]')).toBeNull();
-    expect(el.textContent).not.toContain('Tasks to act on');
-    expect(el.textContent).not.toContain('Deadlines');
-    // The two tile groups are the first thing in the tile column: Needs attention, then Overview.
-    expect(
-      Array.from(panel.querySelectorAll('.summary-tiles > [data-group]')).map((g) =>
-        g.getAttribute('data-group'),
-      ),
-    ).toEqual(['attention', 'overview']);
+      card(el, 'unassigned').click();
+      await settle();
+      expect(router().url).toContain('card=unassigned');
+      expect(card(el, 'unassigned').getAttribute('aria-pressed')).toBe('true');
+      const last = getTaskQueue.mock.calls.at(-1)!;
+      // The unassigned flag, and the order "longest waiting first".
+      expect(last[7]).toBe(true);
+      expect(last[35]).toBe('unassignedSince');
+      expect(last[36]).toBe('asc');
+      // The Unassigned for column joins the grid only while the card is on.
+      expect(el.querySelector('th[data-col="unassignedFor"]')).not.toBeNull();
+      expect(text(el.querySelector('[data-chip="card"]'))).toContain('Unassigned');
+
+      card(el, 'unassigned').click();
+      await settle();
+      expect(router().url).not.toContain('card=');
+      expect(card(el, 'unassigned').getAttribute('aria-pressed')).toBe('false');
+      expect(el.querySelector('th[data-col="unassignedFor"]')).toBeNull();
+    });
+
+    it('opens on a card named in the address, and ignores an unknown one', async () => {
+      let el = await open(of(summary()), ALL, '/dashboard?card=overdue');
+      expect(card(el, 'overdue').getAttribute('aria-pressed')).toBe('true');
+      expect(getTaskQueue.mock.calls.at(-1)![19]).toBe(true);
+      TestBed.resetTestingModule();
+      el = await open(of(summary()), ALL, '/dashboard?card=asap');
+      expect(el.querySelector('[data-card][aria-pressed="true"]')).toBeNull();
+    });
+
+    it('sends the pod of the scope with the card query', async () => {
+      scopeChoices = aMemberChoices();
+      const scoped = summary({
+        overdue: count(3, `${OPEN}&overdue=true&pod=1&pod=2`),
+        scope: { scope: 'mine', podIds: [1, 2], unassignedNoPod: 0 },
+      });
+      const el = await open(of(scoped));
+      card(el, 'overdue').click();
+      await settle();
+      expect(getTaskQueue.mock.calls.at(-1)![4]).toEqual([1, 2]);
+    });
+
+    it('draws the battery and the gauge in the right column for a Director, and the grid with the shared list toolbar', async () => {
+      const el = await open();
+      expect(el.querySelector('[data-dash-rcol] mf-dash-battery [data-battery]')).not.toBeNull();
+      expect(el.querySelector('[data-dash-rcol] mf-dash-gauge [data-gauge]')).not.toBeNull();
+      expect(el.querySelector('mf-dash-grid [data-list-toolbar]')).not.toBeNull();
+      expect(el.querySelector('mf-dash-grid mf-grid-columns')).not.toBeNull();
+    });
+
+    it('leaves the battery out without Dashboard.ViewUsers and keeps the cards, the grid and the gauge', async () => {
+      const el = await open(of(summary()), [
+        'Task.View',
+        'Dashboard.View',
+        'Dashboard.ViewSummary',
+      ]);
+      expect(el.querySelector('mf-dash-battery')).toBeNull();
+      expect(el.querySelector('[data-dash-cards]')).not.toBeNull();
+      expect(el.querySelector('mf-dash-gauge')).not.toBeNull();
+      expect(el.querySelector('mf-dash-grid')).not.toBeNull();
+    });
+
+    it('shows a Technician (View + ViewUnassigned) the queue only: no cards, battery, gauge or grid', async () => {
+      const el = await open(of(summary()), TECH_QUEUE);
+      expect(
+        el.querySelector('[data-dash-cards], mf-dash-battery, mf-dash-gauge, mf-dash-grid'),
+      ).toBeNull();
+      expect(el.querySelector('[data-panel="unassigned"]')).not.toBeNull();
+    });
+
+    it('reads the summary again every minute while the gauge is on screen, without reading the grid again', async () => {
+      vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+      try {
+        await open();
+        const reads = getDashboard.mock.calls.length;
+        const rows = getTaskQueue.mock.calls.length;
+        vi.advanceTimersByTime(60_000);
+        await settle();
+        expect(getDashboard.mock.calls.length).toBe(reads + 1);
+        expect(getTaskQueue.mock.calls.length).toBe(rows);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 
   it('puts focus back on Refresh when Retry in the failed-refresh banner succeeds', async () => {
@@ -435,14 +472,6 @@ describe('DashboardPage', () => {
     expect(el.querySelector('[data-dash-state="stale"]')).toBeNull();
     expect(document.activeElement).toBe(el.querySelector('[data-refresh]'));
     el.remove();
-  });
-
-  it('shows a tile that counts zero as calm text, not a link', async () => {
-    const el = await open(of(summary({ overdue: count(0, `${OPEN}&overdue=true`) })));
-    const tile = el.querySelector('[data-group="attention"] mf-stat-tile')!;
-    expect(tile.querySelector('a')).toBeNull();
-    expect(text(tile)).toContain('Overdue');
-    expect(text(tile.querySelector('.value'))).toBe('0');
   });
 
   it('has no Your work section, no pod breakdown and no recent-activity lists any more', async () => {
@@ -512,7 +541,7 @@ describe('DashboardPage', () => {
       expect(text(selectedTab(el))).toBe('Breakdowns');
       expect(el.querySelectorAll('[role="tabpanel"]').length).toBe(1);
       expect(el.querySelector('[data-tabpanel="breakdowns"]')).not.toBeNull();
-      expect(el.querySelector('[data-group="attention"]')).toBeNull();
+      expect(el.querySelector('[data-dash-cards]')).toBeNull();
     });
 
     it('moves with the arrow keys (wrapping), Home and End, moves focus with the selection and rolls the tab stop', async () => {
@@ -681,7 +710,7 @@ describe('DashboardPage', () => {
       expect(text(selectedTab(el))).toBe('Breakdowns');
     });
 
-    it('shares one summary request between the tabs and reads the lists only for Summary', async () => {
+    it('shares one summary request between the tabs and reads the grid only for Summary', async () => {
       const el = await open(of(summary()), ALL, '/dashboard?tab=breakdowns');
       expect(getDashboard).toHaveBeenCalledTimes(1);
       // Breakdowns needs no list: the Task Queue has not been asked anything.
@@ -692,37 +721,17 @@ describe('DashboardPage', () => {
       expect(getDashboard).toHaveBeenCalledTimes(1);
       expect(getTaskQueue).not.toHaveBeenCalled();
 
-      // Summary reads its three lists when it is first shown, and not again when it is shown again with nothing newer.
+      // Summary reads its grid (one request) when it is first shown, and the summary is not read again within a minute.
       tabButtons(el)[0].click();
       await settle();
       expect(getDashboard).toHaveBeenCalledTimes(1);
-      expect(getTaskQueue).toHaveBeenCalledTimes(3);
-      tabButtons(el)[1].click();
-      await settle();
-      tabButtons(el)[0].click();
-      await settle();
-      expect(getTaskQueue).toHaveBeenCalledTimes(3);
+      expect(getTaskQueue).toHaveBeenCalledTimes(1);
     });
 
-    it('reads the lists again when Summary is shown after a refresh that happened on another tab', async () => {
+    it('shows the period control only on Trends: Summary no longer has an Overview, and Breakdowns never had one', async () => {
       const el = await open();
-      expect(getTaskQueue).toHaveBeenCalledTimes(3);
-      tabButtons(el)[1].click();
-      await settle();
-      el.querySelector<HTMLButtonElement>('[data-refresh]')!.click();
-      await settle();
-      expect(getDashboard).toHaveBeenCalledTimes(2);
-      // The refresh on Breakdowns did not read the lists.
-      expect(getTaskQueue).toHaveBeenCalledTimes(3);
-      tabButtons(el)[0].click();
-      await settle();
-      expect(getTaskQueue).toHaveBeenCalledTimes(6);
-    });
-
-    it('shows the period control only where it is used: the Overview row on Summary and the Trends tab, not on Breakdowns', async () => {
-      const el = await open();
-      expect(el.querySelectorAll('mf-dropdown[data-period]').length).toBe(1);
-      expect(el.querySelector('[data-group="overview"] mf-dropdown[data-period]')).not.toBeNull();
+      expect(el.querySelector('mf-dropdown[data-period]')).toBeNull();
+      expect(el.querySelector('[data-group="overview"]')).toBeNull();
       tabButtons(el)[1].click();
       await settle();
       expect(el.querySelector('mf-dropdown[data-period]')).toBeNull();
@@ -811,8 +820,12 @@ describe('DashboardPage', () => {
       // One tab: no tab list; the only content is the unassigned queue, and the heading says so (R3, S9).
       expect(tabLabels(el)).toEqual([]);
       expect(el.querySelector('h1')!.textContent).toContain('Unassigned work');
-      expect(el.querySelector('[data-group], mf-stat-tile, mf-dropdown[data-period]')).toBeNull();
-      expect(el.querySelector('[data-empty]')).toBeNull();
+      expect(
+        el.querySelector(
+          '[data-dash-cards], mf-dash-gauge, mf-dash-battery, mf-dropdown[data-period]',
+        ),
+      ).toBeNull();
+      expect(el.querySelector('.empty[data-empty]')).toBeNull();
       expect(
         Array.from(el.querySelectorAll('[data-panel]')).map((p) => p.getAttribute('data-panel')),
       ).toEqual(['unassigned']);
@@ -836,38 +849,8 @@ describe('DashboardPage', () => {
       expect(el.querySelector('h1')!.textContent).toContain('Dashboard');
       expect(el.querySelector('[data-dash-head] [role="tablist"]')).not.toBeNull();
       expect(el.querySelector('[role="tabpanel"]')).not.toBeNull();
-      expect(el.querySelector('[data-group]')).toBeNull();
+      expect(el.querySelector('[data-dash-cards]')).toBeNull();
       expect(el.querySelectorAll('[data-panel]').length).toBe(1);
-    });
-
-    it('Dashboard.ViewUnassigned and Dashboard.ViewSummary together show everything as ViewSummary does', async () => {
-      const el = await open(of(summary()), [
-        'Task.View',
-        'Dashboard.View',
-        'Dashboard.ViewSummary',
-        'Dashboard.ViewUnassigned',
-      ]);
-      expect(el.querySelectorAll('[data-group]').length).toBe(2);
-      expect(
-        Array.from(el.querySelectorAll('[data-panel]')).map((p) => p.getAttribute('data-panel')),
-      ).toEqual(['unassigned', 'overdue', 'dueSoon']);
-    });
-
-    it('Summary tab with Task.Assign shows the Unassigned queue; without it only Overdue and Due soon', async () => {
-      let el = await open(of(summary()), [
-        'Task.View',
-        'Task.Assign',
-        'Dashboard.View',
-        'Dashboard.ViewSummary',
-      ]);
-      expect(
-        Array.from(el.querySelectorAll('[data-panel]')).map((p) => p.getAttribute('data-panel')),
-      ).toEqual(['unassigned', 'overdue', 'dueSoon']);
-      TestBed.resetTestingModule();
-      el = await open(of(summary()), ['Task.View', 'Dashboard.View', 'Dashboard.ViewSummary']);
-      expect(
-        Array.from(el.querySelectorAll('[data-panel]')).map((p) => p.getAttribute('data-panel')),
-      ).toEqual(['overdue', 'dueSoon']);
     });
 
     it('Breakdowns or Trends only do not read the task lists', async () => {
@@ -897,7 +880,7 @@ describe('DashboardPage', () => {
   });
 
   it('lists the unassigned tasks by priority then age with reference, title, matter, priority, age and the assignee editor', async () => {
-    const el = await open();
+    const el = await open(of(summary()), TECH_QUEUE);
     const panel = el.querySelector('[data-panel="unassigned"]')!;
     expect(text(panel.querySelector('h3'))).toBe('Unassigned');
     expect(text(panel.querySelector('[data-order]'))).toBe('Highest priority first, then oldest.');
@@ -944,56 +927,26 @@ describe('DashboardPage', () => {
     expect(call.slice(35)).toEqual(['priorityAge', 'asc', 1, 5]);
   });
 
-  it('keeps the tab stops down: a row has one link and its actions, the matter reference is plain text, and a list can be skipped', async () => {
+  it('keeps the tab stops down: a row has one link and its actions, the matter reference is plain text', async () => {
     unassignedRows = [
       unassignedRow,
       secondUnassigned,
       { ...secondUnassigned, taskId: 25, taskNumber: 'TSK-25' },
     ];
-    const el = await open();
+    const el = await open(of(summary()), TECH_QUEUE);
     const row = el.querySelector('[data-panel="unassigned"] li')!;
     // Task link and the assignee menu ("Assign to me" is inside it); no matter link and no copy button.
     expect(row.querySelectorAll('a').length).toBe(1);
     expect(row.querySelectorAll('button').length).toBe(1);
     expect(row.querySelector('mf-matter-ref a')).toBeNull();
-    const overdueRow = el.querySelector('[data-panel="overdue"] li')!;
-    expect(overdueRow.querySelectorAll('a, button').length).toBe(1);
-
-    // "Skip ... list" is the first stop of a long list and moves focus to the next list's heading.
-    const skip = el.querySelector<HTMLButtonElement>('[data-panel="unassigned"] [data-skip]')!;
-    expect(text(skip)).toBe('Skip Unassigned list');
-    skip.click();
-    expect(document.activeElement).toBe(el.querySelector('[data-panel="overdue"] h3'));
-    // A one-row list has nothing to skip.
-    expect(el.querySelector('[data-panel="overdue"] [data-skip]')).toBeNull();
-  });
-
-  it('shows the Unassigned queue only to people who may assign, and then with the assignee editor', async () => {
-    const el = await open(of(summary()), ['Task.View', ...DASH]);
-    expect(el.querySelector('[data-panel="unassigned"]')).toBeNull();
-    expect(
-      Array.from(el.querySelectorAll('[data-panel]')).map((p) => p.getAttribute('data-panel')),
-    ).toEqual(['overdue', 'dueSoon']);
-    // The Unassigned tile (a count and a link to the queue) stays.
-    expect(el.querySelector('[data-group="attention"]')!.textContent).toContain('Unassigned');
-    // The first list of a page can be skipped; the last one has nothing after it to skip to.
-    const rows = [overdueRow, { ...overdueRow, taskId: 31, taskNumber: 'TSK-31' }];
-    getTaskQueue.mockImplementation(() => of(pageOf([...rows, ...rows.slice(0, 1)], { total: 3 })));
-    el.querySelector<HTMLButtonElement>('[data-refresh]')!.click();
-    await settle();
-    expect(el.querySelector('[data-panel="overdue"] [data-skip]')).not.toBeNull();
-    expect(el.querySelector('[data-panel="dueSoon"] [data-skip]')).toBeNull();
   });
 
   it('moves an assigned task out of the unassigned queue at once, keeps counts consistent, moves focus to the next row and announces it', async () => {
     unassignedRows = [unassignedRow, secondUnassigned];
-    const el = await open(of(summary()), ALL);
+    const el = await open(of(summary()), TECH_QUEUE);
     document.body.appendChild(el);
     const panel = () => el.querySelector('[data-panel="unassigned"]')!;
-    const tile = () =>
-      text(el.querySelector('[data-group="attention"] mf-stat-tile:nth-child(2) .value'));
     expect(text(panel().querySelector('[data-more]'))).toBe('Showing 2 of 17');
-    expect(tile()).toBe('17');
 
     // The server's next answer (after the quiet period): one task fewer.
     unassignedRows = [secondUnassigned];
@@ -1007,7 +960,6 @@ describe('DashboardPage', () => {
     expect(panel().querySelectorAll('li').length).toBe(1);
     expect(text(panel().querySelector('[data-total]'))).toBe('16');
     expect(text(panel().querySelector('[data-more]'))).toBe('Showing 1 of 16');
-    expect(tile()).toBe('16');
     // Focus did not fall to the body: it is on the row that took its place.
     expect(document.activeElement).toBe(panel().querySelector('li a.main'));
     expect(text(el.querySelector('[data-dash-live]'))).toContain('TSK-21 assigned to Test User');
@@ -1033,7 +985,7 @@ describe('DashboardPage', () => {
   });
 
   it('puts the task back when the assignment is undone (the lists are read again)', async () => {
-    const el = await open();
+    const el = await open(of(summary()), TECH_QUEUE);
     assignToMe(el);
     await settle();
     expect(el.querySelector('[data-panel="unassigned"] [data-task="TSK-21"]')).toBeNull();
@@ -1056,96 +1008,6 @@ describe('DashboardPage', () => {
     );
     expect(getTaskQueue.mock.calls.length).toBeGreaterThan(queueReads);
     expect(el.querySelector('[data-panel="unassigned"] [data-task="TSK-21"]')).not.toBeNull();
-  });
-
-  it('lists overdue and due-soon tasks with their due dates and "View all" links to the sorted queue', async () => {
-    const el = await open();
-    const overdue = el.querySelector('[data-panel="overdue"]')!;
-    expect(text(overdue.querySelector('[data-due]'))).toContain('Overdue 4d');
-    expect(overdue.querySelector('[data-due] [title]')!.getAttribute('title')).toContain(
-      'Oct 10, 2026',
-    );
-    // The list asks the Task Queue for priority then the most overdue (due ascending), 5 rows, filtered to overdue.
-    const call = getTaskQueue.mock.calls.find((c) => c[19] === true)!;
-    expect(call.slice(35)).toEqual(['priority', 'asc', 1, 5]);
-    expect(text(overdue.querySelector('[data-order]'))).toBe(
-      'Critical first, then longest overdue.',
-    );
-    expect(overdue.querySelector('mf-priority-flag')).not.toBeNull();
-    expect(overdue.querySelector<HTMLAnchorElement>('[data-view-all]')!.getAttribute('href')).toBe(
-      '/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&overdue=true&sort=priority&dir=asc',
-    );
-
-    const soon = el.querySelector('[data-panel="dueSoon"]')!;
-    // Due within two days: the relative word instead of the date (today is Oct 14); the date is the tooltip.
-    expect(soon.querySelector('[data-due] [title]')!.getAttribute('title')).toContain(
-      'Oct 15, 2026',
-    );
-    expect(text(soon.querySelector('[data-due]'))).toContain('Tomorrow');
-    expect(
-      soon.querySelector<HTMLAnchorElement>('[data-view-all]')!.getAttribute('href'),
-    ).toContain('dueTo=2026-10-16&sort=due&dir=asc');
-    expect(text(soon.querySelector('[data-total]'))).toBe('6');
-  });
-
-  it('words the tile captions so none is cut: Due soon is today and the next 2 days (S4), with the last day in the tooltip', async () => {
-    const el = await open();
-    const tiles = Array.from(el.querySelectorAll('mf-stat-tile'));
-    const caption = (label: string) =>
-      text(
-        tiles
-          .find((t) => text(t.querySelector('.label-text')) === label)!
-          .querySelector('.caption'),
-      );
-    expect(caption('Due soon')).toBe('Today and the next 2 days, not overdue, not ASAP');
-    expect(caption('ASAP open')).toBe('No due date');
-    expect(caption('On hold')).toBe('Waiting on client, custodian or internal');
-    expect(caption('Overdue')).toBe('Excludes ASAP tasks');
-    const soon = tiles.find((t) => text(t.querySelector('.label-text')) === 'Due soon')!;
-    expect(text(soon.querySelector('[data-hint]'))).toBe(
-      'Today and the next 2 days, not overdue, not ASAP, through Oct 16, 2026',
-    );
-    expect(soon.querySelector('a')!.getAttribute('aria-describedby')).toBe(
-      soon.querySelector('[data-hint]')!.id,
-    );
-    // The list says the same words (its note and the View all tooltip).
-    const list = el.querySelector('[data-panel="dueSoon"]')!;
-    expect(text(list.querySelector('[data-order]'))).toBe(
-      'Today and the next 2 days, soonest first.',
-    );
-    expect(list.querySelector('[data-view-all]')!.getAttribute('title')).toBe(
-      'View all tasks due soon: today and the next 2 days',
-    );
-  });
-
-  it('names only the severities that are overdue in the Overdue tile, and none when neither is', async () => {
-    const only = await open(
-      of(
-        summary({
-          overdueCritical: count(11, `${OPEN}&overdue=true&priority=1`),
-          overdueHigh: count(0, OPEN),
-        }),
-      ),
-    );
-    expect(text(only.querySelector('mf-stat-tile [data-detail]'))).toBe('11 Critical');
-  });
-
-  it('shows no severity line when nothing overdue is Critical or High', async () => {
-    const el = await open(
-      of(summary({ overdueCritical: count(0, OPEN), overdueHigh: count(0, OPEN) })),
-    );
-    expect(el.querySelector('mf-stat-tile [data-detail]')).toBeNull();
-  });
-
-  it('shows the lists as calm empty messages, not zero rows', async () => {
-    const el = await open();
-    getTaskQueue.mockImplementation(() => of(pageOf([], { total: 0 })));
-    el.querySelector<HTMLButtonElement>('[data-refresh]')!.click();
-    await settle();
-    expect(text(el.querySelector('[data-panel="overdue"] [data-empty]'))).toBe(
-      'Nothing is overdue.',
-    );
-    expect(el.querySelector('[data-panel="overdue"] [data-view-all]')).toBeNull();
   });
 
   it('shows the breakdowns tab: priority, task type (with Other), status and age, with percent, badge colours and every row linked', async () => {
@@ -1240,205 +1102,6 @@ describe('DashboardPage', () => {
     expect(trend.querySelectorAll('tbody tr').length).toBe(3);
   });
 
-  it('offers one period list, writes a choice to the address and reads the counts again', async () => {
-    const el = await open();
-    const select = ddSelect(el, 'Period');
-    expect(Array.from(select.options).map((o) => o.textContent!.trim())).toEqual([
-      '7 days',
-      '30 days',
-      '90 days',
-      'This month',
-      'Last month',
-      'Custom',
-    ]);
-    expect(select.button.closest('[data-group="overview"]')).not.toBeNull();
-    expect(select.value).toBe('30d');
-    expect(TestBed.inject(Router).url).toBe('/dashboard');
-
-    const pick = async (value: string) => {
-      select.value = value;
-      select.dispatchEvent(new Event('change'));
-      await settle();
-    };
-    await pick('7d');
-    expect(getDashboard).toHaveBeenLastCalledWith(
-      '7d',
-      undefined,
-      undefined,
-      undefined,
-      true,
-      'all',
-    );
-    expect(TestBed.inject(Router).url).toBe('/dashboard?period=7d');
-    // 14 Oct 2026: the caption is the resolved range.
-    expect(el.querySelector('[data-group="overview"]')!.textContent).toContain('Oct 8 to Oct 14');
-
-    await pick('this-month');
-    expect(getDashboard).toHaveBeenLastCalledWith(
-      'this-month',
-      undefined,
-      undefined,
-      undefined,
-      true,
-      'all',
-    );
-    expect(el.querySelector('[data-group="overview"]')!.textContent).toContain('Oct 1 to Oct 14');
-
-    await pick('last-month');
-    expect(TestBed.inject(Router).url).toBe('/dashboard?period=last-month');
-    expect(el.querySelector('[data-group="overview"]')!.textContent).toContain('Sep 1 to Sep 30');
-
-    // The default is not written to the address.
-    await pick('30d');
-    expect(TestBed.inject(Router).url).toBe('/dashboard');
-    // Changing the period does not reload the lists (they do not depend on it).
-    expect(getTaskQueue).toHaveBeenCalledTimes(3);
-  });
-
-  it('sends a custom range as from and to, and keeps the previous period when the range is not valid', async () => {
-    const el = await open(of(summary()), ALL, '/dashboard?period=7d');
-    const select = ddSelect(el, 'Period');
-    expect(select.value).toBe('7d');
-    select.value = 'custom';
-    select.dispatchEvent(new Event('change'));
-    await settle();
-    // Custom starts from the range on screen.
-    expect(getDashboard).toHaveBeenLastCalledWith(
-      'custom',
-      '2026-10-08',
-      '2026-10-14',
-      undefined,
-      true,
-      'all',
-    );
-    expect(TestBed.inject(Router).url).toBe(
-      '/dashboard?period=custom&from=2026-10-08&to=2026-10-14',
-    );
-
-    const type = async (id: string, value: string) => {
-      const input = el.querySelector<HTMLInputElement>('#' + id + ', [id$="-' + id + '"]')!;
-      input.value = value;
-      input.dispatchEvent(new Event('input'));
-      input.dispatchEvent(new Event('blur'));
-      await settle();
-    };
-    const calls = getDashboard.mock.calls.length;
-    await type('from', '2026-10-20');
-    expect(text(el.querySelector('[data-period-error]'))).toContain(
-      'The start of the period is after its end.',
-    );
-    expect(text(el.querySelector('[data-period-error]'))).toContain(
-      'Still showing Oct 8 to Oct 14',
-    );
-    expect(getDashboard.mock.calls.length).toBe(calls);
-    expect(TestBed.inject(Router).url).toBe(
-      '/dashboard?period=custom&from=2026-10-08&to=2026-10-14',
-    );
-
-    await type('from', '2025-01-01');
-    expect(text(el.querySelector('[data-period-error]'))).toContain('at most 366 days');
-    expect(getDashboard.mock.calls.length).toBe(calls);
-
-    await type('from', '2026-10-01');
-    expect(el.querySelector('[data-period-error]')).toBeNull();
-    expect(getDashboard).toHaveBeenLastCalledWith(
-      'custom',
-      '2026-10-01',
-      '2026-10-14',
-      undefined,
-      true,
-      'all',
-    );
-  });
-
-  it('remembers the choice per user, shows the same period on the Trends tab and keeps a link as it is', async () => {
-    let el = await open();
-    const select = ddSelect(el, 'Period');
-    select.value = '90d';
-    select.dispatchEvent(new Event('change'));
-    await settle();
-    expect(JSON.parse(localStorage.getItem('mf.dashboard.v2.1') ?? '{}')).toEqual({
-      period: '90d',
-    });
-
-    TestBed.resetTestingModule();
-    el = await open(of(summary()), ALL, '/dashboard?tab=trends');
-    expect(getDashboard).toHaveBeenCalledWith(
-      '90d',
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      'all',
-    );
-    expect(getDashboardTrend).toHaveBeenCalledWith(
-      '90d',
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      'all',
-    );
-    expect(ddSelect(el, 'Period').value).toBe('90d');
-    // The remembered period is not written to the address by itself.
-    expect(TestBed.inject(Router).url).toBe('/dashboard?tab=trends');
-
-    // A link that names a period wins over memory (and is what the recipient sees).
-    TestBed.resetTestingModule();
-    el = await open(of(summary()), ALL, '/dashboard?tab=trends&period=7d');
-    expect(getDashboardTrend.mock.calls[0][0]).toBe('7d');
-    expect(ddSelect(el, 'Period').value).toBe('7d');
-    expect(TestBed.inject(Router).url).toBe('/dashboard?tab=trends&period=7d');
-  });
-
-  it('migrates a period saved by the old list and keeps the address clean', async () => {
-    for (const [old, now] of [
-      ['quarter', '90d'],
-      ['week', '7d'],
-      ['month', 'this-month'],
-      ['30d', '30d'],
-    ] as const) {
-      TestBed.resetTestingModule();
-      localStorage.setItem('mf.dashboard.v2.1', JSON.stringify({ period: old }));
-      const el = await open();
-      expect(ddSelect(el, 'Period').value).toBe(now);
-      expect(getDashboard).toHaveBeenCalledWith(
-        now,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        'all',
-      );
-      expect(TestBed.inject(Router).url).toBe('/dashboard');
-      expect(JSON.parse(localStorage.getItem('mf.dashboard.v2.1')!)).toEqual({ period: now });
-    }
-  });
-
-  it('shows a long Coverage window as 30 days on Summary and Trends, and ignores a bad range in the link', async () => {
-    let el = await open(of(summary()), ALL, '/dashboard?period=12m');
-    expect(ddSelect(el, 'Period').value).toBe('30d');
-    expect(getDashboard).toHaveBeenCalledWith(
-      '30d',
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      'all',
-    );
-
-    TestBed.resetTestingModule();
-    el = await open(
-      of(summary()),
-      ALL,
-      '/dashboard?tab=trends&period=custom&from=2026-10-09&to=2026-10-01',
-    );
-    expect(ddSelect(el, 'Period').value).toBe('30d');
-    expect(TestBed.inject(Router).url).toBe('/dashboard?tab=trends');
-  });
-
   it('works when browser storage is blocked: tabs and the address still work', async () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('blocked');
@@ -1447,7 +1110,7 @@ describe('DashboardPage', () => {
       throw new Error('blocked');
     });
     const el = await open();
-    expect(el.querySelector('[data-group="attention"]')).not.toBeNull();
+    expect(el.querySelector('[data-dash-cards]')).not.toBeNull();
     el.querySelector<HTMLButtonElement>('[data-tab="trends"]')!.click();
     await settle();
     expect(el.querySelector('[data-tabpanel="trends"]')).not.toBeNull();
@@ -1456,7 +1119,7 @@ describe('DashboardPage', () => {
 
   it('refreshes on the button without a loading state, bypassing the server cache', async () => {
     const el = await open();
-    const before = el.querySelector('[data-group="attention"]');
+    const before = el.querySelector('[data-dash-cards]');
     el.querySelector<HTMLButtonElement>('[data-refresh]')!.click();
     expect(el.querySelector('[aria-busy="true"][aria-label]')).toBeNull();
     await settle();
@@ -1468,7 +1131,7 @@ describe('DashboardPage', () => {
       true,
       'all',
     );
-    expect(el.querySelector('[data-group="attention"]')).toBe(before);
+    expect(el.querySelector('[data-dash-cards]')).toBe(before);
   });
 
   it('keeps keyboard focus on Refresh while it works (aria-disabled, not disabled) and announces when it is done', async () => {
@@ -1556,7 +1219,7 @@ describe('DashboardPage', () => {
       'Could not refresh.',
     );
     expect(el.querySelector('[data-dash-state="error"]')).toBeNull();
-    expect(el.querySelector('[data-group="attention"]')).not.toBeNull();
+    expect(el.querySelector('[data-dash-cards]')).not.toBeNull();
     // The refresh ran quietly (no generic error toast); the banner is the one message.
     expect(run).toHaveBeenCalledTimes(1);
 
@@ -1584,8 +1247,6 @@ describe('DashboardPage', () => {
     TestBed.resetTestingModule();
     el = await open(of(empty), ['Task.View', ...DATA_TABS]);
     expect(el.querySelector('[data-empty]')!.textContent).toContain('No open tasks');
-    // A quiet period is not "no tasks ever": the period can be widened right there.
-    expect(el.querySelector('[data-empty] mf-dropdown[data-period]')).not.toBeNull();
     expect(el.querySelector('[role="tablist"]')).toBeNull();
     expect(el.querySelector('a[href="/tasks/new"]')).toBeNull();
 
@@ -1614,7 +1275,7 @@ describe('DashboardPage', () => {
     await settle();
 
     expect(el.querySelector('[aria-busy="true"]')).toBeNull();
-    expect(el.querySelector('[data-group="attention"]')).not.toBeNull();
+    expect(el.querySelector('[data-dash-cards]')).not.toBeNull();
     expect(el.querySelectorAll('[data-refresh]').length).toBe(1);
     expect(el.querySelector('[data-refresh]')).toBe(button);
     expect(document.activeElement).toBe(button);
@@ -1632,7 +1293,7 @@ describe('DashboardPage', () => {
     await settle();
     expect(getDashboard).toHaveBeenCalledTimes(2);
     expect(el.querySelector('[data-dash-state="error"]')).toBeNull();
-    expect(el.querySelector('[data-group="attention"]')).not.toBeNull();
+    expect(el.querySelector('[data-dash-cards]')).not.toBeNull();
   });
 
   describe('shell foundations (UX review 2, WP1)', () => {
@@ -1664,7 +1325,7 @@ describe('DashboardPage', () => {
       el.querySelector<HTMLButtonElement>('[data-dash-state="error"] [data-dash-retry]')!.click();
       await settle();
       expect(el.querySelector('[data-dash-state="error"]')).toBeNull();
-      expect(el.querySelector('[data-group="attention"]')).not.toBeNull();
+      expect(el.querySelector('[data-dash-cards]')).not.toBeNull();
     });
 
     it('P2: a deep link to Trends with a failing summary keeps its address and its tab row', async () => {
@@ -2138,136 +1799,6 @@ describe('DashboardPage', () => {
       expect(select(el)).not.toBeNull();
       expect(el.querySelector('[data-refresh]')).not.toBeNull();
     });
-
-    it('drill-through links of the tiles carry the pod filter the server put in their query', async () => {
-      scopeChoices = aMemberChoices();
-      const scoped = summary({
-        overdue: count(3, `${OPEN}&overdue=true&pod=1&pod=2`),
-        scope: { scope: 'mine', podIds: [1, 2], unassignedNoPod: 0 },
-      });
-      const el = await open(of(scoped));
-      const link = el.querySelector<HTMLAnchorElement>('[data-group="attention"] mf-stat-tile a')!;
-      expect(link.getAttribute('href')).toContain('pod=1&pod=2');
-      const lastQueueCall = getTaskQueue.mock.calls.at(-1)!;
-      expect(lastQueueCall).toBeDefined();
-    });
-  });
-  describe('change since before (S3)', () => {
-    const delta = (tile: Element | null) => tile?.querySelector('[data-delta]') ?? null;
-    const tiles = (el: HTMLElement) =>
-      Array.from(el.querySelectorAll<HTMLElement>('.summary-tiles mf-stat-tile'));
-    const withHistory = (overrides: Partial<DashboardSummary> = {}) =>
-      summary({
-        overdueYesterday: 6,
-        openYesterday: 130,
-        completedPrevious: 80,
-        createdPrevious: 101,
-        previousPeriod: { kind: 'previous', from: '2026-08-16', to: '2026-09-14' },
-        ...overrides,
-      });
-
-    it('shows a glyph, a signed number and words on Overdue, Open, Completed and Created, and nowhere else', async () => {
-      const el = await open(of(withHistory()));
-      const [overdue, unassigned, onHold, asap, openTile, dueSoon, completed, created] = tiles(el);
-      const parts = (tile: Element) => ({
-        glyph: text(delta(tile)!.querySelector('.delta-glyph')),
-        words: text(delta(tile)!.querySelector('.delta-text')),
-        spoken: text(delta(tile)!.querySelector('.sr-only')),
-      });
-      expect(parts(overdue)).toEqual({
-        glyph: '\u25B2',
-        words: '+3 vs yesterday',
-        spoken: '3 more than yesterday',
-      });
-      expect(parts(openTile)).toEqual({
-        glyph: '\u25BC',
-        words: '-2 vs yesterday',
-        spoken: '2 fewer than yesterday',
-      });
-      expect(parts(completed)).toEqual({
-        glyph: '\u25B2',
-        words: '+14 vs previous 30 days',
-        spoken: '14 more than in the previous 30 days',
-      });
-      expect(parts(created)).toEqual({
-        glyph: '=',
-        words: 'no change vs previous 30 days',
-        spoken: 'No change compared with the previous 30 days',
-      });
-      for (const none of [unassigned, onHold, asap, dueSoon]) expect(delta(none)).toBeNull();
-      // The glyph and the visible words are decoration for a screen reader, which hears the sentence; the tile stays one link that names it.
-      expect(delta(overdue)!.querySelector('.delta-glyph')!.getAttribute('aria-hidden')).toBe(
-        'true',
-      );
-      expect(delta(overdue)!.querySelector('.delta-text')!.getAttribute('aria-hidden')).toBe(
-        'true',
-      );
-      expect(text(overdue.querySelector('a'))).toContain('3 more than yesterday');
-    });
-
-    it('styles only Overdue going up as attention; Overdue going down and every other delta are neutral', async () => {
-      let el = await open(of(withHistory()));
-      expect(el.querySelectorAll('[data-delta][data-attention]').length).toBe(1);
-      expect(delta(tiles(el)[0])!.hasAttribute('data-attention')).toBe(true);
-      TestBed.resetTestingModule();
-      el = await open(of(withHistory({ overdueYesterday: 14, openYesterday: 100 })));
-      expect(el.querySelectorAll('[data-delta][data-attention]').length).toBe(0);
-      expect(text(delta(tiles(el)[0])!.querySelector('.delta-text'))).toBe('-5 vs yesterday');
-    });
-
-    it('shows no line, no NaN and no "+0" when the API has no baseline', async () => {
-      const el = await open(of(summary()));
-      expect(el.querySelector('[data-delta]')).toBeNull();
-      expect(el.textContent).not.toMatch(/NaN|\+0 /);
-      TestBed.resetTestingModule();
-      const partial = await open(
-        of(
-          withHistory({
-            overdueYesterday: undefined,
-            createdPrevious: undefined,
-            previousPeriod: undefined,
-          }),
-        ),
-      );
-      expect(partial.querySelectorAll('[data-delta]').length).toBe(1);
-      expect(text(delta(tiles(partial)[4])!.querySelector('.delta-text'))).toBe('-2 vs yesterday');
-    });
-
-    it('names the same days of last month for This month, and keeps the tooltip with the Trends caveat', async () => {
-      const el = await open(
-        of(
-          withHistory({
-            previousPeriod: { kind: 'same-days-last-month', from: '2026-09-01', to: '2026-09-14' },
-          }),
-        ),
-        ALL,
-        '/dashboard?period=this-month',
-      );
-      const [overdue, , , , , , completed] = tiles(el);
-      expect(text(delta(completed)!.querySelector('.delta-text'))).toBe(
-        '+14 vs same days last month',
-      );
-      expect(text(delta(completed)!.querySelector('.sr-only'))).toBe(
-        '14 more than in the same days last month',
-      );
-      expect(completed.querySelector('a')!.getAttribute('title')).toBe(
-        'Completed (cancelled not counted). Compared with Sep 1 to Sep 14: 80 completed.',
-      );
-      expect(overdue.querySelector('a')!.getAttribute('title')).toContain(
-        'At the end of yesterday: 6',
-      );
-      expect(overdue.querySelector('a')!.getAttribute('title')).toContain('Trends tab');
-    });
-
-    it('keeps the line on a tile that counts zero (not a link), and the whole tile stays one link otherwise', async () => {
-      const el = await open(
-        of(withHistory({ overdue: count(0, `${OPEN}&overdue=true`), overdueYesterday: 4 })),
-      );
-      const overdue = tiles(el)[0];
-      expect(overdue.querySelector('a')).toBeNull();
-      expect(text(delta(overdue)!.querySelector('.delta-text'))).toBe('-4 vs yesterday');
-      expect(tiles(el)[4].querySelectorAll('a').length).toBe(1);
-    });
   });
 
   describe('Technician Summary (S9)', () => {
@@ -2301,7 +1832,7 @@ describe('DashboardPage', () => {
       TestBed.resetTestingModule();
       el = await open(of(summary({ mine })), [...TECH, 'Dashboard.ViewSummary']);
       expect(el.querySelector('[data-tech-bar], [data-own-work]')).toBeNull();
-      expect(el.querySelectorAll('[data-group]').length).toBe(2);
+      expect(el.querySelector('[data-dash-cards]')).not.toBeNull();
     });
 
     it('leaves the line out when the API sent no own counts, and does not link to My Work without Task.View', async () => {

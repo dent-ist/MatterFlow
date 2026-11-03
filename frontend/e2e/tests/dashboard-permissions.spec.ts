@@ -111,9 +111,11 @@ test.describe('Dashboard permissions', () => {
     await expect(panel.locator('[data-panel="unassigned"]')).toBeVisible();
     await expect(panel.locator('[data-panel="unassigned"] li').first()).toBeVisible();
     // No tiles, no Overview period control and no Overdue or Due soon lists.
-    await expect(panel.locator('[data-group], mf-stat-tile, mf-dropdown[data-period]')).toHaveCount(
-      0,
-    );
+    await expect(
+      panel.locator(
+        '[data-dash-cards], mf-dash-battery, mf-dash-gauge, mf-dash-grid, mf-dropdown[data-period]',
+      ),
+    ).toHaveCount(0);
     await expect(panel.locator('[data-panel]')).toHaveCount(1);
     // The refresh icon is in the tab row.
     await expect(
@@ -135,8 +137,8 @@ test.describe('Dashboard permissions', () => {
     page,
   }) => {
     await page.goto('/dashboard');
-    await expect(page.locator('[data-group="attention"]')).toBeVisible();
-    await expect(page.locator('[data-panel="overdue"]')).toBeVisible();
+    await expect(page.locator('[data-dash-cards]')).toBeVisible();
+    await expect(page.locator('mf-dash-grid')).toBeVisible();
     for (const tab of ['Summary', 'Breakdowns', 'Trends', 'Swimlane', 'Users']) {
       await page.getByRole('tab', { name: tab }).click();
       await expect(page.getByRole('tab', { name: tab })).toHaveAttribute('aria-selected', 'true');

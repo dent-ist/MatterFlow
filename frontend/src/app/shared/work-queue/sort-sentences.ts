@@ -4,7 +4,7 @@ import { SortDirection } from './queue-filters';
  * Plain words for the direction of a sort (epic #893, issue #898): a sort says what comes first instead of "ascending" or an arrow, so the label carries the
  * direction. One table for every place that names a sort (the note under a list, the phone's Sort sheet, the print line).
  */
-export type SortKind = 'urgency' | 'due' | 'date' | 'age' | 'text' | 'number' | 'count';
+export type SortKind = 'urgency' | 'due' | 'date' | 'age' | 'wait' | 'text' | 'number' | 'count';
 
 /** What kind of values a sort field orders, which decides the words of its two directions. */
 const KINDS: Readonly<Record<string, SortKind>> = {
@@ -17,6 +17,7 @@ const KINDS: Readonly<Record<string, SortKind>> = {
   completed: 'date',
   closed: 'date',
   age: 'age',
+  unassignedSince: 'wait',
   title: 'text',
   status: 'text',
   matterName: 'text',
@@ -40,6 +41,8 @@ const WORDS: Readonly<Record<SortKind, { asc: string; desc: string }>> = {
   date: { asc: 'oldest first', desc: 'newest first' },
   // The Task Queue's Age sort is the creation date reversed: ascending age is the youngest task first.
   age: { asc: 'newest first', desc: 'oldest first' },
+  // Dashboard Summary, "Unassigned for": sorted by the moment the task became unassigned, so ascending is the longest wait first.
+  wait: { asc: 'longest waiting first', desc: 'shortest waiting first' },
   text: { asc: 'A to Z', desc: 'Z to A' },
   number: { asc: 'lowest first', desc: 'highest first' },
   count: { asc: 'fewest first', desc: 'most first' },

@@ -28,20 +28,11 @@ import { QuietRequests } from '../../../core/http/interceptors';
 import { LookupStore } from '../../../core/lookups/lookup-store';
 import { UndoService } from '../../../core/notify/undo.service';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { formatCalendarDay, mfDate, parseDateOnly } from '../../../core/time/time';
+import { mfDate } from '../../../core/time/time';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { FixedPage } from '../../../shared/ui/fixed-page';
-import { COMPLETED_HINT } from '../../../shared/work-queue/work-vocabulary';
+import { LIST_ORDER, ListKind, queueArgsFor } from '../dashboard-links';
 import {
-  DUE_SOON_CAPTION,
-  DUE_SOON_WINDOW,
-  LIST_ORDER,
-  ListKind,
-  dueSoonThrough,
-  queueArgsFor,
-} from '../dashboard-links';
-import {
-  PERIOD_SCOPE_NOTE,
   Period,
   periodArgs,
   periodForTab,
@@ -49,7 +40,6 @@ import {
   rangeText,
   resolveRange,
 } from '../dashboard-period';
-import { TileDelta, YESTERDAY, previousBasis, tileDelta, yesterdayHint } from '../dashboard-deltas';
 import { PeriodControl } from '../ui/period-control';
 import { DashScope } from '../dash-scope';
 import {
@@ -70,17 +60,24 @@ import {
   isDashboardTab,
 } from '../dashboard-prefs';
 import { DashBreakdownsTab } from '../ui/dash-breakdowns-tab';
-import { canonicalParams, clearedTabParams, sameParams, tabFallback } from '../dash-url-state';
+import {
+  DASH_TAB_PARAMS,
+  canonicalParams,
+  clearedTabParams,
+  sameParams,
+  tabFallback,
+} from '../dash-url-state';
 import { FRESH_FOR_MS, STALE_CHECK_MS, staleAgeText } from '../dash-stale';
 import { DASH_FIXED_QUERY, DASH_FIXED_WIDE_QUERY, mediaMatch } from '../ui/dash-media';
 import { DashNote } from '../ui/dash-note';
 import { DashSkeleton, DashSkeletonKind } from '../ui/dash-skeleton';
 import { DashState, focusAfterRetry } from '../ui/dash-state';
 import { DashSection } from '../ui/dash-section';
+import { DashSummaryTab } from '../summary/dash-summary-tab';
+import { CardKey, isCardKey } from '../summary/dash-cards';
 import { DashSwimlaneTab } from '../ui/dash-swimlane-tab';
 import { DashTab, DashTabs, panelId, tabId } from '../ui/dash-tabs';
 import { DashUsersTab } from '../ui/dash-users-tab';
-import { StatTile } from '../ui/stat-tile';
 import { DashTaskList, PanelEmptyState, PanelState } from '../ui/task-list-panel';
 import { DashTechnicianBar } from '../ui/dash-technician-bar';
 import { DashTrendsTab } from '../ui/dash-trends-tab';
@@ -106,11 +103,18 @@ interface ListData {
 
 /** How often the page refreshes itself while the tab is visible. */
 export const AUTO_REFRESH_MS = 5 * 60_000;
+/** The Summary is read every minute while the gauge is on screen: the level is the server's, computed from the age of the oldest unassigned task. */
+export const GAUGE_REFRESH_MS = 60_000;
 /** Pause after an inline edit before the counts are read again (several quick edits make one read). */
 const COUNT_REFRESH_DELAY_MS = 700;
 
 /** Rows per list on the Summary (one line each, review S1); the list's total decides "Showing 5 of N" and the "View all" link. */
 const LIST_SIZE: Record<ListKind, number> = { unassigned: 5, overdue: 5, dueSoon: 5 };
+const CARD_LABELS: Record<CardKey, string> = {
+  overdue: 'Overdue',
+  unassigned: 'Unassigned',
+  onHold: 'On hold',
+};
 const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
 
 /**
@@ -138,12 +142,12 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
     DashTabs,
     RouterLink,
     NgTemplateOutlet,
-    StatTile,
     DashSwimlaneTab,
     DashUsersTab,
     PeriodControl,
     ScopeControl,
     DashTechnicianBar,
+    DashSummaryTab,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -214,7 +218,6 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                 <div class="empty" data-empty>
                   <i class="pi pi-inbox empty-icon" aria-hidden="true"></i>
                   <p>No open tasks, and none were created or completed in this period.</p>
-                  <div class="empty-period"><mf-period-control [period]="period()" /></div>
                   <a *mfHasPermission="'Task.Create'" class="cta" routerLink="/tasks/new">
                     Create the first task
                   </a>
@@ -229,195 +232,83 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                       [id]="panelId()"
                       [attr.aria-labelledby]="labelledBy()"
                     >
-                      <div
-                        class="summary"
-                        [class.summary--queue]="!fullSummary()"
-                        [attr.role]="summaryScrolls() ? 'region' : null"
-                        [attr.tabindex]="summaryScrolls() ? 0 : null"
-                        [attr.aria-label]="summaryScrolls() ? 'Summary, scrollable' : null"
-                      >
-                        @if (fullSummary()) {
-                          <div class="summary-tiles">
-                            <div
-                              role="group"
-                              aria-labelledby="attn-h"
-                              class="group"
-                              data-group="attention"
-                            >
-                              <h2 id="attn-h">Needs attention</h2>
-                              <div class="tiles">
-                                <mf-stat-tile
-                                  label="Overdue"
-                                  icon="pi-exclamation-circle"
-                                  tone="danger"
-                                  emphasis="attention"
-                                  linkText="View overdue tasks"
-                                  [value]="d.overdue.count"
-                                  [query]="d.overdue.query"
-                                  [sort]="overdueOrder"
-                                  caption="Excludes ASAP tasks"
-                                  [delta]="overdueDelta()"
-                                  [hint]="overdueHint()"
-                                  [detail]="overdueSeverity(d)"
-                                  detailIcon="pi-flag-fill"
-                                />
-                                <mf-stat-tile
-                                  label="Unassigned"
-                                  icon="pi-user-minus"
-                                  tone="person"
-                                  emphasis="attention"
-                                  linkText="View unassigned tasks"
-                                  [value]="d.unassigned.count"
-                                  [query]="d.unassigned.query"
-                                  caption="No person assigned"
-                                />
-                                <mf-stat-tile
-                                  label="On hold"
-                                  icon="pi-pause-circle"
-                                  tone="neutral"
-                                  emphasis="attention"
-                                  linkText="View tasks on hold"
-                                  [value]="d.onHold.count"
-                                  [query]="d.onHold.query"
-                                  caption="Waiting on client, custodian or internal"
-                                />
-                                <mf-stat-tile
-                                  label="ASAP open"
-                                  icon="pi-bolt"
-                                  tone="asap"
-                                  emphasis="quiet"
-                                  linkText="View ASAP tasks"
-                                  [value]="d.asapOpen.count"
-                                  [query]="d.asapOpen.query"
-                                  caption="No due date"
-                                />
-                              </div>
-                            </div>
-                            <div
-                              role="group"
-                              aria-labelledby="ov-h"
-                              class="group"
-                              data-group="overview"
-                            >
-                              <div class="group-head">
-                                <h2 id="ov-h">Overview</h2>
-                                <mf-period-control [period]="period()" [scopeNote]="scopeNote" />
-                              </div>
-                              <div class="tiles">
-                                <mf-stat-tile
-                                  label="Open"
-                                  icon="pi-folder-open"
-                                  emphasis="quiet"
-                                  linkText="View open tasks"
-                                  [value]="d.open.count"
-                                  [query]="d.open.query"
-                                  caption="New, in progress and on hold"
-                                  [delta]="openDelta()"
-                                  [hint]="openHint()"
-                                />
-                                <mf-stat-tile
-                                  label="Due soon"
-                                  icon="pi-clock"
-                                  tone="warning"
-                                  emphasis="quiet"
-                                  linkText="View tasks due soon"
-                                  [value]="d.dueSoon.count"
-                                  [query]="d.dueSoon.query"
-                                  [caption]="dueSoonCaption"
-                                  [hint]="dueSoonHint(d)"
-                                />
-                                <mf-stat-tile
-                                  label="Completed"
-                                  icon="pi-check-circle"
-                                  tone="info"
-                                  emphasis="quiet"
-                                  linkText="View completed tasks"
-                                  [value]="d.completed.count"
-                                  [query]="d.completed.query"
-                                  [caption]="periodCaption()"
-                                  [delta]="completedDelta()"
-                                  [hint]="completedHint(d)"
-                                />
-                                <mf-stat-tile
-                                  label="Created"
-                                  icon="pi-plus-circle"
-                                  emphasis="quiet"
-                                  linkText="View created tasks"
-                                  [value]="d.created.count"
-                                  [query]="d.created.query"
-                                  [caption]="periodCaption()"
-                                  [delta]="createdDelta()"
-                                  [hint]="previousHint(d.createdPrevious, 'created')"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        }
-                        @if (technician()) {
-                          <!-- S9: the Technician's strip (Priority and Task type filters, own work); loaded only for this variant. -->
-                          @defer (on immediate) {
-                            <mf-dash-technician-bar
-                              [mine]="d.mine"
-                              [canMyWork]="canSeeMyWork()"
-                              [notInPod]="scope.ready() && !scope.inPod()"
-                            />
-                          }
-                        }
-                        @if (panels().length > 0) {
-                          <!-- No section headings: each list heading names its list (Unassigned, Overdue, Due soon). -->
-                          <div
-                            class="summary-lists"
-                            role="group"
-                            aria-label="Unassigned, overdue and due soon tasks"
-                            [attr.aria-busy]="listsLoading() ? 'true' : null"
-                            data-lists
-                          >
-                            @if (fullSummary()) {
-                              <!-- Same height as the "Needs attention" heading beside it, so the first list starts on the first tile row. -->
-                              <div class="group lists-spacer" aria-hidden="true">
-                                <h2>Needs attention</h2>
-                              </div>
-                            }
-                            <!-- The lists' silhouettes are decorative: one polite status for all of them. -->
-                            <span class="sr-only" role="status" data-lists-status>{{
-                              listsLoading() ? 'Loading the task lists' : ''
-                            }}</span>
-                            @if (noPodHint(); as hint) {
-                              <!-- Tasks with no pod are in no scope but All pods: a quiet line so they cannot be lost. -->
-                              <p class="no-pod" data-no-pod-hint>
-                                {{ hint.text }}
-                                <a
-                                  href="#"
-                                  class="no-pod-link"
-                                  data-show-all-pods
-                                  (click)="showAllPods($event)"
-                                  >Show all pods</a
-                                >
-                              </p>
-                            }
-                            @for (panel of panels(); track panel.kind) {
-                              <mf-dash-task-list
-                                [kind]="panel.kind"
-                                [heading]="panel.heading"
-                                [emptyText]="panel.emptyText"
-                                [viewAllText]="panel.viewAllText"
-                                [viewAllTitle]="panel.viewAllTitle"
-                                [rows]="listOf(panel.kind).rows"
-                                [total]="listOf(panel.kind).total"
-                                [state]="listOf(panel.kind).state"
-                                [query]="panel.query"
-                                [emptyState]="panel.emptyState ?? null"
-                                (emptyClear)="clearTechFilters()"
-                                (emptyAction)="showAllPods()"
-                                [skippable]="panel.kind !== lastKind()"
-                                [scroll]="fixedWide()"
-                                (rowChange)="onRowChange(panel.kind, $event)"
-                                (retry)="reloadList(panel.kind)"
+                      @if (fullSummary()) {
+                        <!-- Dashboard v4 (epic #1063): three cards, the grid in the list standard, the capacity battery and the unassigned gauge. -->
+                        <mf-dash-summary
+                          [summary]="d"
+                          [scope]="scope.scope()"
+                          [card]="card()"
+                          [refreshKey]="gridKey()"
+                          [noPodNote]="noPodHint()?.text ?? null"
+                          (cardPick)="pickCard($event)"
+                          (showAllPods)="showAllPods()"
+                          (assigned)="onAssigned($event)"
+                        />
+                      } @else {
+                        <div
+                          class="summary summary--queue"
+                          [attr.role]="summaryScrolls() ? 'region' : null"
+                          [attr.tabindex]="summaryScrolls() ? 0 : null"
+                          [attr.aria-label]="summaryScrolls() ? 'Summary, scrollable' : null"
+                        >
+                          @if (technician()) {
+                            <!-- S9: the Technician's strip (Priority and Task type filters, own work); loaded only for this variant. -->
+                            @defer (on immediate) {
+                              <mf-dash-technician-bar
+                                [mine]="d.mine"
+                                [canMyWork]="canSeeMyWork()"
+                                [notInPod]="scope.ready() && !scope.inPod()"
                               />
                             }
-                          </div>
-                        }
-                      </div>
+                          }
+                          @if (panels().length > 0) {
+                            <div
+                              class="summary-lists"
+                              role="group"
+                              aria-label="Unassigned tasks"
+                              [attr.aria-busy]="listsLoading() ? 'true' : null"
+                              data-lists
+                            >
+                              <span class="sr-only" role="status" data-lists-status>{{
+                                listsLoading() ? 'Loading the task lists' : ''
+                              }}</span>
+                              @if (noPodHint(); as hint) {
+                                <!-- Tasks with no pod are in no scope but All pods: a quiet line so they cannot be lost. -->
+                                <p class="no-pod" data-no-pod-hint>
+                                  {{ hint.text }}
+                                  <a
+                                    href="#"
+                                    class="no-pod-link"
+                                    data-show-all-pods
+                                    (click)="showAllPods($event)"
+                                    >Show all pods</a
+                                  >
+                                </p>
+                              }
+                              @for (panel of panels(); track panel.kind) {
+                                <mf-dash-task-list
+                                  [kind]="panel.kind"
+                                  [heading]="panel.heading"
+                                  [emptyText]="panel.emptyText"
+                                  [viewAllText]="panel.viewAllText"
+                                  [viewAllTitle]="panel.viewAllTitle"
+                                  [rows]="listOf(panel.kind).rows"
+                                  [total]="listOf(panel.kind).total"
+                                  [state]="listOf(panel.kind).state"
+                                  [query]="panel.query"
+                                  [emptyState]="panel.emptyState ?? null"
+                                  (emptyClear)="clearTechFilters()"
+                                  (emptyAction)="showAllPods()"
+                                  [skippable]="false"
+                                  [scroll]="fixedWide()"
+                                  (rowChange)="onRowChange(panel.kind, $event)"
+                                  (retry)="reloadList(panel.kind)"
+                                />
+                              }
+                            </div>
+                          }
+                        </div>
+                      }
                     </div>
                   }
                   @case ('breakdowns') {
@@ -556,56 +447,20 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
         max-width: none;
       }
     }
-    .group h2 {
-      margin: 0 0 var(--mf-s2);
-      font-size: var(--mf-fs-md);
-      text-transform: none;
-      color: var(--mf-text-muted);
-    }
-    .group {
-      margin-bottom: var(--mf-s5);
-    }
-    /* Summary: tiles on the left and the three lists (one line per row) in a column beside them from 1280px; stacked below the tiles under that. */
+    /* The Technician's queue (S9): a column with the strip and the list under it; the list takes the rest of the height. The v4 Summary (cards, grid, right column) is
+       mf-dash-summary, which lays itself out. */
     .summary {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      column-gap: var(--mf-s5);
-      align-items: start;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      min-width: 0;
     }
     .summary-lists {
       display: grid;
       gap: var(--mf-s2);
       min-width: 0;
     }
-    .lists-spacer {
-      display: none;
-    }
-    @media (min-width: 1280px) {
-      .summary:not(.summary--queue) {
-        grid-template-columns: minmax(0, clamp(360px, 27vw, 452px)) minmax(0, 1fr);
-      }
-      .lists-spacer {
-        display: block;
-        flex: none;
-        margin: 0;
-        visibility: hidden;
-      }
-      .lists-spacer h2 {
-        margin-bottom: 0;
-      }
-      /* The no-pod hint takes the place of the heading row (the spacer keeps its height), so the first list stays level with the tiles. */
-      .summary:not(.summary--queue) .summary-lists {
-        position: relative;
-      }
-      .summary:not(.summary--queue) .summary-lists > .no-pod {
-        position: absolute;
-        inset: 0 0 auto 0;
-        line-height: 1.3;
-      }
-    }
-    /* Fixed-height layout (#137, window at least 768 x 561): the header row stays, the tab panel fills the rest and only regions inside scroll.
-       Summary: from 1280 px the tiles stay (they scroll only on a very short window) and each list scrolls inside its panel; under 1280 px
-       the lists sit under the tiles and the Summary scrolls as one region. */
+    /* Fixed-height layout (#137, window at least 768 x 561): the header row stays, the tab panel fills the rest and only regions inside scroll. */
     @media (min-width: 768px) and (min-height: 561px) {
       .summary {
         flex: 1 1 0;
@@ -616,28 +471,6 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
       .summary:focus-visible {
         outline: 2px solid var(--mf-focus);
         outline-offset: -2px;
-      }
-    }
-    @media (min-width: 1280px) and (min-height: 561px) {
-      .summary {
-        overflow: visible;
-        grid-template-rows: minmax(0, 1fr);
-        align-items: stretch;
-      }
-      .summary-tiles {
-        min-height: 0;
-        overflow-y: auto;
-        overscroll-behavior: contain;
-      }
-      /* Two tiles across in the tile column: both groups fit a 768 px window without scrolling. */
-      .summary-tiles .tiles {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: var(--mf-s2);
-      }
-      .summary-lists {
-        display: flex;
-        flex-direction: column;
-        min-height: 0;
       }
     }
     /* The Technician's Summary (S9): the strip, then the queue under it (a column, not the tiles-and-lists grid); the queue takes the rest of the height. Last, so it
@@ -668,20 +501,6 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
     }
     .note a {
       color: var(--mf-link);
-    }
-    .empty-period {
-      margin: var(--mf-s3) 0 var(--mf-s4);
-    }
-    .group-head {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: var(--mf-s2) var(--mf-s4);
-      margin-bottom: var(--mf-s2);
-    }
-    .group-head h2 {
-      margin: 0;
     }
     .head-period {
       margin-left: auto;
@@ -724,24 +543,6 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
         height: 1px;
         overflow: hidden;
         clip: rect(0 0 0 0);
-      }
-    }
-    /* Compact fixed-width tiles, left-aligned: they never stretch to fill the row. */
-    .tiles {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(170px, 220px));
-      justify-content: start;
-      gap: var(--mf-s3);
-    }
-    @media (max-width: 480px) {
-      .tiles {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: var(--mf-s2);
-      }
-    }
-    @media (max-width: 340px) {
-      .tiles {
-        grid-template-columns: minmax(0, 1fr);
       }
     }
     .grid {
@@ -826,7 +627,6 @@ export class DashboardPage implements OnInit {
   protected readonly fixedWide = mediaMatch(DASH_FIXED_WIDE_QUERY);
   /** Fixed layout with the lists under the tiles (under 1280 px): the Summary scrolls as one region. */
   protected readonly summaryScrolls = computed(() => this.fixed() && !this.fixedWide());
-  protected readonly scopeNote = PERIOD_SCOPE_NOTE;
   protected readonly panelId = panelId;
   protected readonly tabId = tabId;
   /** The period of Summary and Trends: the shared one (address, else memory); the long Coverage windows read as the default here. */
@@ -869,6 +669,13 @@ export class DashboardPage implements OnInit {
   protected readonly fullSummary = computed(
     () => this.canSummary() && this.auth.has('Dashboard.ViewSummary'),
   );
+  /** The pressed Needs attention card (`?card=`), or null. */
+  protected readonly card = computed<CardKey | null>(() => {
+    const raw = this.queryParams().get('card');
+    return isCardKey(raw) ? raw : null;
+  });
+  /** Counts up whenever the summary was read for the lists: the Summary grid and the battery read again (a minute-by-minute gauge read does not count). */
+  protected readonly gridKey = signal(0);
   /** The Technician's Summary (S9): the unassigned queue alone, with its own filters and the own-work line. Never the full Summary. */
   protected readonly technician = computed(() => this.canSummary() && !this.fullSummary());
   /** The filters of the technician's queue as Task Queue terms; a change reads the queue again (page 1). */
@@ -957,35 +764,14 @@ export class DashboardPage implements OnInit {
     if (!this.canSummary()) return [];
     const d = this.data();
     if (!d) return [];
-    // Dashboard.ViewUnassigned alone: the queue is the whole Summary tab.
-    if (!this.fullSummary()) return [technicianQueue(d.unassigned.query)];
-    return [
-      ...(this.canAssign() || this.auth.has('Dashboard.ViewUnassigned')
-        ? [unassigned(d.unassigned.query)]
-        : []),
-      {
-        kind: 'overdue',
-        heading: 'Overdue',
-        emptyText: 'Nothing is overdue.',
-        viewAllText: 'View all',
-        viewAllTitle: 'View all overdue tasks',
-        query: d.overdue.query,
-      },
-      {
-        kind: 'dueSoon',
-        heading: 'Due soon',
-        emptyText: 'Nothing is due today or in the next 2 days.',
-        viewAllText: 'View all',
-        viewAllTitle: `View all tasks due soon: ${DUE_SOON_WINDOW.toLowerCase()}`,
-        query: d.dueSoon.query,
-      },
-    ];
+    // Dashboard.ViewUnassigned alone: the queue is the whole Summary tab. Everyone with Dashboard.ViewSummary has the v4 Summary instead.
+    return this.fullSummary() ? [] : [technicianQueue(d.unassigned.query)];
   });
   /** "N unassigned tasks have no pod." under a Pod scope (null under All pods, or when there are none). */
   protected readonly noPodHint = computed(() => {
     const d = this.data();
     const n = d?.scope?.unassignedNoPod ?? 0;
-    if (this.scope.isAll() || n === 0 || !this.panels().some((p) => p.kind === 'unassigned')) {
+    if (this.scope.isAll() || n === 0 || !(this.fullSummary() || this.panels().length > 0)) {
       return null;
     }
     return { text: `${n} unassigned ${n === 1 ? 'task has' : 'tasks have'} no pod.` };
@@ -1058,49 +844,6 @@ export class DashboardPage implements OnInit {
       : resolveRange(period, now, this.zone);
     return rangeText(range, now.getFullYear());
   });
-  // ---- change since before (S3)
-
-  /** The words for the period Completed and Created were compared with ("previous 30 days", "same days last month"); null without one. */
-  private readonly basis = computed(() => {
-    const d = this.data();
-    return d ? previousBasis(d.previousPeriod, d.period.days) : null;
-  });
-  protected readonly overdueDelta = computed<TileDelta | null>(() => {
-    const d = this.data();
-    return d ? tileDelta(d.overdue.count, d.overdueYesterday, YESTERDAY, true) : null;
-  });
-  protected readonly openDelta = computed<TileDelta | null>(() => {
-    const d = this.data();
-    return d ? tileDelta(d.open.count, d.openYesterday, YESTERDAY) : null;
-  });
-  protected readonly completedDelta = computed<TileDelta | null>(() => {
-    const d = this.data();
-    return d ? tileDelta(d.completed.count, d.completedPrevious, this.basis()) : null;
-  });
-  protected readonly createdDelta = computed<TileDelta | null>(() => {
-    const d = this.data();
-    return d ? tileDelta(d.created.count, d.createdPrevious, this.basis()) : null;
-  });
-  protected readonly overdueHint = computed(() => {
-    const d = this.data();
-    return d && this.overdueDelta() ? yesterdayHint(d.overdueYesterday) : null;
-  });
-  protected readonly openHint = computed(() => {
-    const d = this.data();
-    return d && this.openDelta() ? yesterdayHint(d.openYesterday) : null;
-  });
-
-  /** Tooltip and description of Completed and Created: the period compared with and its figure ("Sep 1 to Sep 14: 59 completed"). */
-  protected previousHint(value: number | null | undefined, noun: string): string | null {
-    const prev = this.data()?.previousPeriod;
-    if (!prev || value === null || value === undefined) return null;
-    const range = rangeText(
-      { from: prev.from, to: prev.to, days: this.data()?.period.days ?? 0 },
-      this.clock.now().getFullYear(),
-    );
-    return `Compared with ${range}: ${value} ${noun}.`;
-  }
-
   protected readonly updated = computed(() => {
     const d = this.data();
     return d ? mfDate(d.generatedAtUtc, this.zone, 'datetime') : null;
@@ -1296,11 +1039,34 @@ export class DashboardPage implements OnInit {
     void this.navigateToTab(key, false);
   }
 
+  /** A Needs attention card was pressed (or pressed again): the `card` parameter filters the grid; the address keeps Back working. */
+  protected pickCard(key: CardKey | null): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { card: key },
+      queryParamsHandling: 'merge',
+    });
+    this.live.set(key === null ? 'Filter cleared.' : `Filtered to ${CARD_LABELS[key]}.`);
+  }
+
+  /** A task was assigned in the grid: the cards, the gauge and the battery are read again shortly (several quick assignments make one read). */
+  protected onAssigned(event: { taskNumber: string; name: string }): void {
+    this.live.set(`${event.taskNumber} assigned to ${event.name}.`);
+    this.scheduleRefresh();
+  }
+
+  /** The parameters of the tab being left go away, also those the next tab names too (Summary's Search and Swimlane's share `q`). */
+  private leftTabParams(next: DashboardTab): Record<string, null> {
+    const from = this.activeTab();
+    if (!from || from === next) return {};
+    return Object.fromEntries(DASH_TAB_PARAMS[from].map((k) => [k, null]));
+  }
+
   private navigateToTab(tab: DashboardTab, replace: boolean): Promise<boolean> {
     return this.router.navigate([], {
       relativeTo: this.route,
       // The parameters of the tab left do not follow the person to another tab.
-      queryParams: { tab, ...clearedTabParams(tab) },
+      queryParams: { ...this.leftTabParams(tab), tab, ...clearedTabParams(tab) },
       queryParamsHandling: 'merge',
       replaceUrl: replace,
     });
@@ -1414,6 +1180,7 @@ export class DashboardPage implements OnInit {
             if (lists) {
               // The lists are part of the Summary tab: read them now when it is shown, else when it is next opened.
               this.summarySeq++;
+              this.gridKey.update((n) => n + 1);
               if (this.activeTab() === 'summary') {
                 this.listsSeq = this.summarySeq;
                 this.loadLists(silent);
@@ -1472,35 +1239,6 @@ export class DashboardPage implements OnInit {
   }
 
   // ---- lists
-
-  /** The order "View overdue tasks" opens in: the same as the Overdue list. */
-  protected readonly overdueOrder = {
-    sort: LIST_ORDER.overdue.sort,
-    dir: LIST_ORDER.overdue.dir,
-  };
-
-  protected readonly dueSoonCaption = DUE_SOON_CAPTION;
-
-  /** Tooltip and description of the Due soon tile: the window in words and its last day ("through Oct 18"). */
-  protected dueSoonHint(d: DashboardSummary): string | null {
-    const to = dueSoonThrough(d.dueSoon.query);
-    const day = to ? parseDateOnly(to) : null;
-    return day ? `${DUE_SOON_CAPTION}, through ${formatCalendarDay(day)}` : null;
-  }
-
-  /** Tooltip of the Completed tile: cancelled tasks are not counted (the My Work Closed tab counts them), then the comparison. */
-  protected completedHint(d: DashboardSummary): string {
-    const previous = this.previousHint(d.completedPrevious, 'completed');
-    return previous ? `${COMPLETED_HINT}. ${previous}` : COMPLETED_HINT;
-  }
-
-  /** The severity line of the Overdue tile, for example "11 Critical, 30 High" (null when neither is overdue). */
-  protected overdueSeverity(d: DashboardSummary): string | null {
-    const parts: string[] = [];
-    if (d.overdueCritical.count > 0) parts.push(`${d.overdueCritical.count} Critical`);
-    if (d.overdueHigh.count > 0) parts.push(`${d.overdueHigh.count} High`);
-    return parts.length ? parts.join(', ') : null;
-  }
 
   protected listOf(kind: ListKind): ListData {
     return this.lists[kind]();
@@ -1606,6 +1344,15 @@ export class DashboardPage implements OnInit {
       if (this.summaryTab() && this.state() === 'ready') this.load({ silent: true });
     };
     const timer = setInterval(tick, AUTO_REFRESH_MS);
+    // The unassigned gauge ages by the minute: while the Summary with the gauge is on screen the summary is read again every minute (no extra endpoint; the grid and the
+    // battery wait for the five-minute read). Not while the tab is hidden or a menu is open.
+    const gaugeTimer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      if (typeof document !== 'undefined' && document.querySelector('.im-pop')) return;
+      if (this.activeTab() === 'summary' && this.fullSummary() && this.state() === 'ready') {
+        this.load({ silent: true, fresh: true, lists: false });
+      }
+    }, GAUGE_REFRESH_MS);
     const ageTimer = setInterval(() => this.now.set(this.clock.now().getTime()), STALE_CHECK_MS);
     // Back on the tab after a long absence: catch up at once instead of waiting for the next tick.
     const onVisible = () => {
@@ -1616,6 +1363,7 @@ export class DashboardPage implements OnInit {
     document.addEventListener('visibilitychange', onVisible);
     this.destroyRef.onDestroy(() => {
       clearInterval(timer);
+      clearInterval(gaugeTimer);
       clearInterval(ageTimer);
       document.removeEventListener('visibilitychange', onVisible);
     });

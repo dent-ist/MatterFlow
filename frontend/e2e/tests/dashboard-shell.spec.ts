@@ -154,13 +154,13 @@ test.describe('Dashboard shell: tabs are independent (P2) and errors stay in the
   }) => {
     await page.clock.install({ time: new Date('2026-10-14T15:00:00Z') });
     await page.goto('/dashboard?tab=summary');
-    await expect(page.locator('[data-group="attention"]')).toBeVisible();
+    await expect(page.locator('[data-dash-cards]')).toBeVisible();
     await failSummary(page);
     await page.clock.fastForward('05:05');
     const banner = page.locator('[data-dash-state="stale"]');
     await expect(banner).toBeVisible();
     await expect(banner).toContainText('Could not refresh. Showing data from');
-    await expect(page.locator('[data-group="attention"]')).toBeVisible();
+    await expect(page.locator('[data-dash-cards]')).toBeVisible();
     await expect(page.locator('[data-toast]')).toHaveCount(0);
     // The banner takes precedence: the age text does not repeat it.
     await page.clock.fastForward('06:00');
@@ -182,7 +182,7 @@ test.describe('Dashboard shell: staleness text (P6)', () => {
   }) => {
     await page.clock.install({ time: new Date('2026-10-14T15:00:00Z') });
     await page.goto('/dashboard?tab=summary');
-    await expect(page.locator('[data-group="attention"]')).toBeVisible();
+    await expect(page.locator('[data-dash-cards]')).toBeVisible();
     await expect(page.locator('[data-stale-age]')).toHaveCount(0);
     // Refreshes started by the timer never finish (a throttled or sleeping laptop): the figures just get old.
     await page.route(SUMMARY_API, () => new Promise(() => undefined));
@@ -232,7 +232,7 @@ test.describe('Dashboard shell: the address keeps only what differs from the def
     page,
   }) => {
     await page.goto('/dashboard?tab=summary');
-    await expect(page.locator('[data-group="attention"]')).toBeVisible();
+    await expect(page.locator('[data-dash-cards]')).toBeVisible();
     await page.goto('/dashboard?tab=swimlane&group=none&sort=priority&days=7&utm=mail');
     await expect(page.getByRole('region', { name: 'Swimlane board' })).toBeVisible();
     await expect.poll(() => new URL(page.url()).search).toBe('?tab=swimlane');

@@ -33,6 +33,7 @@ import {
   statusChoices,
 } from './inline-edit';
 import { AssigneeLists } from '../assignees/assignee-list';
+import { STATE_META } from '../availability/capacity-state';
 import { InlineMenu, MenuOption } from './inline-menu';
 import { InlineStatusFlow } from './inline-status-flow';
 import { stepQueryParams } from './step-link';
@@ -218,6 +219,10 @@ export class RowEdit {
   readonly assignLink = input(false);
   /** Assignee cell only: the visible text of the trigger while nobody is assigned ("Assign" in the Dashboard lists, so "Unassigned" is not repeated on every row). */
   readonly emptyLabel = input('Unassigned');
+  /** Assignee cell only: each person in the menu also shows the capacity state icon (Dashboard v4 assign picker). The words are in the hint either way. */
+  readonly showStates = input(false);
+  /** Text of the toast when the server answers 409 (someone else changed the task). */
+  readonly conflictMessage = input('Someone else changed this task. The row was refreshed.');
   /** Assignee cell only: shows this PrimeIcons class (for example `pi-user-edit`) as an icon button named "Reassign <number>" instead of the assignee's name. */
   readonly triggerIcon = input<string | null>(null);
   readonly rowChange = output<TaskQueueRow>();
@@ -336,6 +341,7 @@ export class RowEdit {
           label: p.name,
           flag: p.flag,
           hint: p.hint,
+          hintIcon: this.showStates() && p.state ? STATE_META[p.state].icon : undefined,
           tip: p.reason || undefined,
           group: heading,
           selected: p.id === r.assignedUser?.userId,
@@ -558,7 +564,7 @@ export class RowEdit {
   }
 
   protected async onConflict(basis: TaskQueueRow = this.row()): Promise<void> {
-    this.notify.error('Someone else changed this task. The row was refreshed.');
+    this.notify.error(this.conflictMessage());
     try {
       const fresh = await firstValueFrom(this.tasks.getTask(basis.taskId));
       this.rowChange.emit(rowFromTask(basis, fresh));

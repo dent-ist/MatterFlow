@@ -475,3 +475,22 @@
   --mf-shadow-bar: 0 -3px 6px -4px var(--mf-shade-soft);
   --mf-shadow-sticky: 0 4px 6px -3px var(--mf-shade-mid);
 }
+
+/* Dashboard v4 (epic #1063, DB-05 and DB-06): the capacity ramp of the battery (lighter = more free; the same four blues as the heat map) and the unassigned-wait ramp of the gauge
+   (level 0 to 5). Words, numbers and icons always say the same thing, so colour is never the only signal. */
+:root {
+  --mf-cap-0: var(--mf-heat-1-bg);
+  --mf-cap-1: var(--mf-heat-2-bg);
+  --mf-cap-2: var(--mf-heat-3-bg);
+  --mf-cap-3: var(--mf-heat-4-bg);
+  --mf-cap-0-fg: var(--mf-heat-1-fg);
+  --mf-cap-1-fg: var(--mf-heat-2-fg);
+  --mf-cap-2-fg: var(--mf-heat-3-fg);
+  --mf-cap-3-fg: var(--mf-heat-4-fg);
+  --mf-wait-0: var(--mf-p-teal-solid);
+  --mf-wait-1: var(--mf-p-amber-line);
+  --mf-wait-2: var(--mf-p-amber-solid);
+  --mf-wait-3: var(--mf-p-orange-solid);
+  --mf-wait-4: var(--mf-p-red-solid);
+  --mf-wait-5: var(--mf-tag-red-fg);
+}

@@ -36,6 +36,7 @@ import { TaskTypeChip } from '../ui/task-type-chip';
 import { Tip } from '../ui/tip';
 import { ColumnMove, ReorderColumns } from '../ui/reorder-columns';
 import { DueCell } from './due-cell';
+import { DueSuffixCell, ageText } from './due-suffix';
 import { MfDatePipe } from '../pipes/mf-date.pipe';
 import { MatterCell, MatterNameCell } from './matter-cell';
 import { ProjectCell } from './project-cell';
@@ -100,6 +101,7 @@ const LONG_PRESS_MS = 500;
     MatterNameCell,
     ProjectCell,
     DueCell,
+    DueSuffixCell,
     MfDatePipe,
     PriorityFlag,
     PriorityPill,
@@ -440,6 +442,40 @@ const LONG_PRESS_MS = 500;
                           }}</span>
                         </span>
                       }
+                      @case ('typeIcon') {
+                        <!-- Dashboard Summary (decision AS item 2): the coloured icon only; the type's name is the tooltip (hover and keyboard focus) and the accessible name. -->
+                        <span
+                          class="wt-typeonly"
+                          tabindex="0"
+                          role="img"
+                          data-type-icon-only
+                          [attr.aria-label]="'Task type: ' + row.taskTypeName"
+                          [mfTip]="row.taskTypeName"
+                        >
+                          <mf-task-type-chip
+                            [size]="density() === 'compact' ? 'sm' : 'md'"
+                            [iconKey]="row.taskTypeIconKey"
+                            [colourKey]="row.taskTypeColourKey"
+                            [typeId]="row.taskTypeId"
+                            [decorative]="true"
+                            data-type-chip
+                          />
+                        </span>
+                      }
+                      @case ('unassignedFor') {
+                        @if (unassignedMinutes(row); as minutes) {
+                          <span
+                            class="wt-age"
+                            data-unassigned-for
+                            [attr.title]="'Unassigned for ' + ageWords(minutes)"
+                            >{{ ageWords(minutes) }}</span
+                          >
+                        } @else if (row.assignedUser) {
+                          <span aria-label="Assigned">-</span>
+                        } @else {
+                          <span class="wt-muted" data-unassigned-for>Just now</span>
+                        }
+                      }
                       @case ('workflow') {
                         <span class="wt-clip" [attr.title]="row.workflowName">{{
                           row.workflowName
@@ -477,7 +513,20 @@ const LONG_PRESS_MS = 500;
                         }
                       }
                       @case ('assignee') {
-                        @if (editable('assignee', row)) {
+                        @if (dash() && !row.assignedUser && editable('assignee', row)) {
+                          <!-- Dashboard Summary (decision AS item 4): the word and the Assign control that opens the people picker (state and load of each person). -->
+                          <span class="wt-assign" data-dash-assign>
+                            <span class="wt-unassigned">Unassigned</span>
+                            <mf-row-edit
+                              field="assignee"
+                              emptyLabel="Assign"
+                              [row]="row"
+                              [showStates]="true"
+                              conflictMessage="This task was changed by someone else. The row was reloaded."
+                              (rowChange)="rowChange.emit($event)"
+                            />
+                          </span>
+                        } @else if (editable('assignee', row)) {
                           <mf-row-edit
                             field="assignee"
                             [row]="row"
@@ -507,13 +556,17 @@ const LONG_PRESS_MS = 500;
                         }}</span>
                       }
                       @case ('due') {
-                        <mf-due-cell
-                          [due]="row"
-                          [status]="row.status"
-                          [atRisk]="row.atRisk"
-                          [layout]="density() === 'compact' ? 'inline' : 'two-line'"
-                          [dateless]="quiet()"
-                        />
+                        @if (dash()) {
+                          <mf-due-suffix-cell [due]="row" [status]="row.status" />
+                        } @else {
+                          <mf-due-cell
+                            [due]="row"
+                            [status]="row.status"
+                            [atRisk]="row.atRisk"
+                            [layout]="density() === 'compact' ? 'inline' : 'two-line'"
+                            [dateless]="quiet()"
+                          />
+                        }
                       }
                       @case ('status') {
                         <div [attr.title]="holdTitle(row)">
@@ -805,6 +858,18 @@ export class TaskTable {
    * is for reading and opening a task, so it adds no editing controls to the page.
    */
   readonly readOnly = input(false);
+  /**
+   * Dashboard Summary cells (epic #1063, decision AS): the Type column is the coloured icon only, the Due cell is the numeric date with a `+9d` suffix on one line, an
+   * unassigned task's Assignee cell is the word plus an Assign control, and the "Unassigned for" column is drawn. Off everywhere else.
+   */
+  readonly dash = input(false);
+  protected unassignedMinutes(row: TaskQueueRow): number | null {
+    const m = row['unassignedForMinutes'];
+    return typeof m === 'number' && m > 0 ? m : null;
+  }
+  protected ageWords(minutes: number): string {
+    return ageText(minutes);
+  }
   /** The scroll box is a Tab stop only while it really scrolls (a short list inside a page that scrolls as a whole, issue #937). */
   readonly scrollStopWhenScrolling = input(false);
   /** Quiet badges (My Matters grids): Priority is a pill only for High and Critical, Status only for On hold and At risk, an overdue Due says "Overdue 26d" without the date. */

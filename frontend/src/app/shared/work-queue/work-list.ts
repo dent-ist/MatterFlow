@@ -29,6 +29,7 @@ import { PrintLine } from './print-line';
 import { TaskTable } from './task-table';
 import { DrillReturn, DrillSource } from './drill';
 import { CopyPart } from '../ui/copy-parts';
+import { ColumnMove } from '../ui/reorder-columns';
 
 /** A short list: this many rows or fewer get the "That's everything" line under the last one. */
 export const NEAR_EMPTY_MAX = 10;
@@ -80,6 +81,9 @@ export type WorkListState = 'loading' | 'ready' | 'error';
       [leaving]="leaving()"
       [from]="from()"
       [phoneCards]="true"
+      [dash]="dash()"
+      [reorderable]="reorderable()"
+      (columnMoved)="columnMoved.emit($event)"
       [groupBuckets]="groupBuckets()"
       [groupOffset]="groupOffset()"
       [groupDir]="groupDir()"
@@ -120,6 +124,10 @@ export class WorkList {
   readonly state = input<WorkListState>('loading');
   readonly columns = input.required<readonly string[]>();
   readonly density = input<Density>('comfortable');
+  /** Dashboard Summary cells (see `TaskTable.dash`). */
+  readonly dash = input(false);
+  /** The columns come in the person's order and headers can be dragged (see `TaskTable.reorderable`). */
+  readonly reorderable = input(false);
   /** The widths the user chose for this scope (sparse, rem): see `work-widths.ts`. */
   readonly colWidths = input<ColumnWidthMap>({});
   readonly sort = input<string | null>(null);
@@ -165,6 +173,8 @@ export class WorkList {
   /** The column menu asks the page to sort one way, hide a column or forget a stored width (#207). */
   readonly columnAction = output<ColumnAction>();
   readonly rowChange = output<TaskQueueRow>();
+  /** A header was dragged to a new place. */
+  readonly columnMoved = output<ColumnMove>();
 
   /** The last width message, read once by the screen reader (cleared first so the same message can be said again). */
   protected readonly widthNote = signal('');

@@ -50,6 +50,13 @@ for (const h of ['overdue', 'risk', 'info', 'healthy', 'person', 'critical', 'ne
     graphic,
   ]);
 }
+// Dashboard v4 (#1063): the battery's capacity steps carry their text colour; the gauge's wait steps 2 to 5 are graphics on a card (step 0 and 1 are labelled by number and word).
+for (const n of [0, 1, 2, 3]) {
+  pairs.push([`capacity step ${n} text on its fill`, `--mf-cap-${n}-fg`, `--mf-cap-${n}`, text]);
+}
+for (const n of [0, 2, 3, 4, 5]) {
+  pairs.push([`wait step ${n} (gauge) on a card`, `--mf-wait-${n}`, '--mf-surface', graphic]);
+}
 // Note tag chips (MD-36, #1049): text on the tint 4.5:1, the dot on the tint 3:1.
 for (const c of ['slate', 'blue', 'teal', 'green', 'amber', 'orange', 'red', 'rose', 'violet', 'indigo', 'neutral']) {
   pairs.push([`tag ${c} text on its tint`, `--mf-tag-${c}-fg`, `--mf-tag-${c}-bg`, text]);

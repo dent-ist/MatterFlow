@@ -417,9 +417,39 @@ Every tab strip in the app is the shared `mf-tabs` (`shared/ui/tabs.ts`): one he
 | Dashboard: Breakdowns, Trends, Swimlane, Users | `pi-chart-pie`, `pi-chart-line`, `pi-table`, `pi-user` | Dashboard |
 | My Work and Pod Work views | Active `pi-bolt`, Due soon `pi-clock`, Closed `pi-check-circle`, Created by me `pi-user-edit`, Unassigned `pi-inbox`, By member `pi-users`, All open `pi-list` | My Work, Pod Work |
 | Admin: Users, Roles, Pods; Labels; Task types, Workflows, Steps; Reports | `pi-user`, `pi-shield`, `pi-users`; `pi-flag`, `pi-tag`, `pi-pause`, `pi-hashtag`; `pi-tags`, `pi-sitemap`, `pi-list`; `pi-file`, `pi-folder-open`, `pi-play`, `pi-share-alt`, `pi-heart` | Administration |
-| Settings: Branding | `pi-palette` | Settings |
+| Settings: Branding, Dashboard | `pi-palette`, `pi-gauge` | Settings |
 
 A new tab adds its concept to `TAB_ICONS` first. The guard `shared/ui/tab-icons.spec.ts` fails when an entry is not a PrimeIcons class, when a file draws its own `role="tab"`, or when a file that uses `mf-tabs` builds tabs without an icon.
+
+### 11.4 Dashboard Summary (epic #1063, decision AS; mockup `docs/ux/mockups/dashboard-v4/` on branch `dashboard-mockup-v4`)
+
+The Summary tab is one fixed page (the page never scrolls on a window of 768 x 561 or more; only the grid body and the right column do), built from shared parts and four new patterns.
+
+```
+[Dashboard]                                            Updated   Scope [All pods v]  [Refresh]
+[Summary] [Breakdowns] [Trends] [Swimlane] [Users]
+[ Overdue 9 ] [ Unassigned 17 ] [ On hold 12 ]                      3 cards, toggles (aria-pressed)
+Tasks (143)  [Search] [Filters] ... Sorted by ...  [Columns]       |  Team capacity    [i] [People]
+Ref | Type | Title | CM Number | Matter Name | ... | Due | ...      |  Capacity used 37%   [Healthy]
+...rows, the frame scrolls sideways, Ref pinned...                  |  [=========.....]
+Rows per page 50   Showing 1-50 of 143   Page 1 of 3               |  8 of 12 can take work now ...
+                                                                    |  Unassigned wait   [Level 3 . High]
+                                                                    |  (half circle gauge) 7 / 2 h 48 m
+```
+
+| Part | Component | Rules |
+| --- | --- | --- |
+| Needs attention cards | `mf-dash-cards` (`summary/dash-cards.ts`) | Three cards in this order: Overdue, Unassigned, On hold. Each is a toggle button: a click filters the grid (`card=` in the address), a second click clears it; one or none is on (`aria-pressed`). One Tab stop, Left/Right move between the cards (no new shortcut, #420). The count is the server's and scope-wide: it does not shrink with Search or Filters; the chip "Needs attention: Overdue" in the toolbar says why the grid total differs. A card at zero is calm (teal check, "Nothing here"). Under 768 px the three stay in one compact row. |
+| Grid | `mf-dash-grid` (`summary/dash-grid.ts`) on `mf-work-list` / `mf-task-table` | The list standard of 11.1: `mf-list-toolbar` (Search, Filters, Columns, chips with Clear filters, "Sorted by" with Reset sort), the standard task column order, 50 rows a page, the frame scrolls sideways with Ref pinned. The base query is the card's (or the scope's open tasks); filters narrow it further. While the Unassigned card is on, the extra column "Unassigned for" shows (not in the Columns menu) and the grid sorts longest waiting first (`sort=unassignedSince`, "Sorted by Unassigned for, longest waiting first"). |
+| Type cell | `typeIcon` column of `mf-task-table` | The coloured task type icon only. The type's name is the tooltip (hover and keyboard focus, `mfTip`) and the accessible name ("Task type: Review"). Column header "Type". |
+| Due cell | `mf-due-suffix-cell` (`shared/work-queue/due-suffix.ts`) | The numeric date (`NUMERIC_DATE`, `MM/DD hh:mm AM/PM`) and, only while overdue, a bold red suffix on the SAME line: `+9d` (days), `+7h` (under a day), `+<1h`. Today, tomorrow and later have no suffix. The words ("9 days overdue") are in the tooltip and in the accessible name, so red is never the only signal. The maths is the shared Due logic (`describeDueCell`). |
+| Assign cell | `data-dash-assign` in the Assignee column | An unassigned task shows the word "Unassigned" and an **Assign** button (only with Task.Assign on an editable row; without it just the word). The button opens the shared assignee menu (`mf-row-edit`, `emptyLabel="Assign"`, `showStates`), which lists each person with the state icon and word and the load ("Busy, 2 open"). 409: "This task was changed by someone else. The row was reloaded." After a successful assign the row leaves the Unassigned view, focus moves to the next row, and the cards, gauge and battery are read again. |
+| Capacity battery | `mf-dash-battery` (`summary/dash-battery.ts`) | ONE department indicator. The charge is the FREE capacity; the big text says "Capacity used NN%" (the API's number); a word (Healthy 50+, Limited 25 to 49, Low) with an icon; one summary line ("8 of 12 can take work now"); a legend of six states with icon, count and words (swatches are the `--mf-cap-*` ramp or hatch/dash patterns for out of office and off hours); a rate hint "N assigned in the last hour" (hidden when absent); an info button with the formula (tooltip, keyboard reachable). After hours the API sends no percentage and the battery says a neutral "After hours" (hatched, never 100% used); "Everyone is out of office" and the empty scope have their own neutral texts. People opens `mf-dash-people` (dialog, search, grouped by state, scrollable, up to 200, read only when it opens). Needs Dashboard.ViewUsers. |
+| Unassigned gauge | `mf-dash-gauge` (`summary/dash-gauge.ts`) | Design A: a half circle with the scale 0 to 5 (numbers on the segments, stripe pattern on the segments up to the level), the needle, the level badge ("Level 3 . High", "Normal", "All clear"), the count, the age of the oldest unassigned task ("2 h 48 m, oldest, working hours") and one "what to do" line. The level is the server's. The visual and the button "Show them, longest waiting first" select the Unassigned card and reset the sort. `aria-live="polite"` speaks only when the level changes. Levels 4 and 5 pulse softly; `prefers-reduced-motion` removes the pulse and the needle's movement. The page reads the summary again every minute while the gauge is on screen. Needs Dashboard.ViewSummary. |
+| Tokens | `--mf-cap-0..3` (+ `-fg`), `--mf-wait-0..5` in `docs/ux/tokens.css` | The capacity ramp reuses the heat-map blues; the wait ramp uses the teal, amber, orange and red solids. Contrast of the text-on-fill and graphic pairs is in `scripts/check-theme-contrast.mjs`. |
+| Settings | Administration > Settings > Dashboard (`mf-dashboard-settings`) | Workday start and end, working days, age basis (working or clock hours), hours for levels 1 to 5, tasks per extra level, the most extra levels; the defaults under each field, Reset to default only fills the form, Save stores (or resets, when the values equal the defaults); the firm's time zone is read-only text. |
+
+Roles: Director and Pod Lead (Dashboard.ViewSummary) get the cards, grid and gauge; the battery needs Dashboard.ViewUsers on top (a Pod Lead has it; a role without it keeps the cards, grid and gauge and the right column holds the gauge only). A Technician (Dashboard.View + ViewUnassigned) keeps the "Unassigned work" queue alone: no cards, grid, battery or gauge. A Pod Lead opens on "My pods". Under 768 px (or a window under 561 high) the page is one column: cards, battery, gauge, then the tasks as cards (the card list keeps the standard cells; the Type icon, `+9d` and the Assign picker are the desktop grid's).
 
 ## 10. Note text colours (epic #1001, MD-30, #1034)
 
