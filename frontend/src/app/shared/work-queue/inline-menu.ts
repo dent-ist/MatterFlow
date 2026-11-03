@@ -21,6 +21,8 @@ export interface MenuOption {
   label: string;
   /** Muted text after the label (for a person: how many tasks they have open). */
   hint?: string;
+  /** PrimeIcons class drawn before the hint (the capacity state of a person in the Dashboard's assign picker); the hint's words say the same. */
+  hintIcon?: string;
   /** Tooltip of the item (for a status action: the status it leads to; statuses are tenant-renamable, so it is not repeated as visible text). */
   tip?: string;
   /** Dangerous choice (Cancel task): the danger colour. */
@@ -175,7 +177,12 @@ let nextId = 0;
               <i class="pi pi-spin pi-spinner im-spin" aria-hidden="true" data-option-pending></i>
             }
             @if (o.hint) {
-              <span class="im-hint">{{ o.hint }}</span>
+              <span class="im-hint" data-option-hint>
+                @if (o.hintIcon) {
+                  <i class="pi im-hint-icon" [class]="o.hintIcon" aria-hidden="true"></i>
+                }
+                {{ o.hint }}
+              </span>
             }
           </button>
           @if (o.reason) {

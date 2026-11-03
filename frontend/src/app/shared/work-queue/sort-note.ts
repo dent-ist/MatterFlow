@@ -28,6 +28,7 @@ export const SORT_LABELS: Readonly<Record<string, string>> = {
   assignee: 'Assignee',
   client: 'Client',
   attention: 'Urgency',
+  unassignedSince: 'Unassigned for',
 };
 
 /**
