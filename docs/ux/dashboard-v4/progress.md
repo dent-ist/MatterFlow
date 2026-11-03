@@ -5,15 +5,15 @@ Protocol: one section per agent below, append-only, newest entry last; `git pull
 | Issue | Code | Title | Hours | Weight % | Done % | Weighted % |
 | --- | --- | --- | --- | --- | --- | --- |
 | #1063 | DB-00 | Epic, issues, plan, decision AS | 2.0 | 4.2 | 100 | 4.2 |
-| #1064 | DB-01 | Backend: unassigned-since, summary gauge block, working-hours age, settings | 6.0 | 12.5 | 0 | 0.0 |
-| #1065 | DB-02 | Backend: capacity summary and People list | 7.0 | 14.6 | 0 | 0.0 |
+| #1064 | DB-01 | Backend: unassigned-since, summary gauge block, working-hours age, settings | 6.0 | 12.5 | 100 | 12.5 |
+| #1065 | DB-02 | Backend: capacity summary and People list | 7.0 | 14.6 | 100 | 14.6 |
 | #1066 | DB-03 | Frontend: Summary layout, cards, grid, right column | 6.0 | 12.5 | 0 | 0.0 |
 | #1067 | DB-04 | Frontend: grid columns and inline assign | 7.0 | 14.6 | 0 | 0.0 |
 | #1068 | DB-05 | Frontend: capacity battery | 4.5 | 9.4 | 0 | 0.0 |
 | #1069 | DB-06 | Frontend: unassigned gauge and settings form | 4.5 | 9.4 | 0 | 0.0 |
 | #1070 | DB-07 | Cross-cutting: contracts, catalog, e2e, axe, guide | 5.0 | 10.4 | 0 | 0.0 |
 | #1071 | DB-08 | Final QA (only when the owner says) | 6.0 | 12.4 | 0 | 0.0 |
-| | | **Total** | **48.0** | **100.0** | | **4.2** |
+| | | **Total** | **48.0** | **100.0** | | **31.3** |
 
 ## PM (DB-00)
 
@@ -30,6 +30,7 @@ Protocol: one section per agent below, append-only, newest entry last; `git pull
   - `GET /users/lookup` items gain `capacityState` and `load` (New + In progress, true count).
   - NEW, not in the sketch (needed for the DB-06 settings form): `GET/PUT/DELETE /api/v1/admin/settings/dashboard` (Settings.Manage). GET returns `{gauge, defaults, isCustom, rowVersion, timeZoneId, updatedAtUtc, updatedBy}` with `gauge = {workdayStart:"08:00", workdayEnd:"18:00", workDays:[1..5 ISO], ageBasis:"WORKING"|"CLOCK", levelHours:[1,2,3,4,5], tasksPerLevel:5, countBonusMax:2}`; PUT body `{gauge, rowVersion}` (empty rowVersion when `isCustom` is false), DELETE `?rowVersion=` resets to defaults; 400 on invalid values, 409 on a version conflict. The settings are ONE stored value (key `Dashboard.Gauge`), not seven rows.
   - Time zone: the firm zone `Firm:TimeZoneId` (appsettings, default America/New_York) is the existing application-level zone, the same one the availability rules use. There is no DB setting for it; `timeZoneId` is shown read-only in the settings view.
+- 2026-11-03 **Agent G hand-back (backend done).** DB-01 #1064 and DB-02 #1065 built and tested; backend part of DB-07 #1070 done. Commits: fab6885 (script 57, column writes, gauge, capacity, lookup, settings API, regenerated contract), 31ae878 (unit and integration tests for the column and the pure rules), 87fa492 (gauge, capacity and settings API tests, endpoint catalog, persona walk, docs), c9c77c7 (schema test for script 57). The contract on `dev` is final; no further shape changes planned. Findings: every path that sets or clears the assignee goes through `TaskService` (create, and `AssignCoreAsync` which the single assign, `assign-batch` and the matter bulk change all use); there is no other writer (user deactivation does not clear assignees), so two code places set the column. Tests run: unit (44 new), architecture (51), integration DashboardUnassignedGaugeTests, DashboardCapacityTests, TaskUnassignedAtTests, DashboardApiTests, SensitivePersonaWalkTests, SensitiveEndpointCatalogTests, SensitiveDashboardTests, UsersLookupSuggestApiTests, DashboardTabPermissionsTests, DashboardScopeApiTests, TaskTypeIconAndAssignedAtTests, BrandingApiTests, TaskQueueSortApiTests, MatterBulkTasksTests, and schema tests for tasks, reports/report-access, app settings, the migration runner and script folder; `dotnet format --verify-no-changes` and `dotnet build -warnaserror` clean; `node contracts/validate-contracts.mjs` OK; OpenAPI and nswag regenerate with no drift after merging dev. Not run: the full integration and schema suites (QA is on hold; a full schema run failed 20 tests only because the shared disk filled up and CREATE DATABASE failed, the relevant classes pass when run alone).
 
 ## Agent H (frontend)
 

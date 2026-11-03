@@ -442,6 +442,7 @@ erDiagram
 | FormValuesJson | nvarchar(max) | yes | values per the pinned Task Type form version; ISJSON check |
 | IsMatterSensitive | bit | no | **denormalised copy of `Matter.IsSensitive`**, default 0, never written by the application (script 37, issue #810): `TR_Matter_SensitivityToTask` copies a change of the matter's flag to its tasks, `TR_Task_MatterSensitivityInsert` sets it for new tasks. The sensitive-matter rule tests it instead of joining the matter (`docs/ux/sensitive-matters/README.md`, `docs/qa/sensitive-matters-performance.md`) |
 | AssignedAt | datetime2(3) | yes | when the current `AssignedUserId` was assigned; NULL while no user is assigned; Pod-only changes do not move it (script 20) |
+| UnassignedAt | datetime2(3) | yes | since when no user has been assigned: set at creation without an assignee and whenever the assignee is cleared (`AssignCoreAsync`, which the single, batch and bulk assign all use), NULL while a user is assigned, kept by Pod-only changes; no backfill, readers use `COALESCE(UnassignedAt, CreatedAt)`; filtered index `IX_Task_Unassigned` (script 57, Dashboard v4) |
 | StatusChangedAt | datetime2(3) | no | |
 | CompletedAt | datetime2(3) | yes | set on COMPLETED, cleared on leaving it |
 | CreatedAt/By, ModifiedAt/By | | | |

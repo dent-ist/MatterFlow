@@ -279,7 +279,7 @@
     {
       "code": "Dashboard.ViewSummary",
       "group": "Dashboard",
-      "description": "Summary tab: headline counts, the unassigned queue, and the overdue and due soon lists"
+      "description": "Summary tab: the Overdue, Unassigned and On hold cards, the task grid and the unassigned-duration gauge"
     },
     {
       "code": "Dashboard.ViewUnassigned",
@@ -304,7 +304,7 @@
     {
       "code": "Dashboard.ViewUsers",
       "group": "Dashboard",
-      "description": "Users tab: team workload per person (open, overdue and due soon tasks)"
+      "description": "Users tab: team workload per person (open, overdue and due soon tasks), and the department capacity battery with its People list on the Summary tab"
     },
     {
       "code": "Dashboard.ViewCoverage",

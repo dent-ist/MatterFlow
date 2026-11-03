@@ -10,13 +10,13 @@ namespace MatterFlow.Configuration.Application.Settings;
 
 /// <summary>The gauge settings as the settings form edits them: times as <c>HH:mm</c>, weekdays as ISO numbers (1 Monday to 7 Sunday).</summary>
 public sealed record DashboardGaugeValues(
-    [property: Required] string WorkdayStart,
-    [property: Required] string WorkdayEnd,
-    [property: Required] IReadOnlyList<int> WorkDays,
-    [property: Required] string AgeBasis,
-    [property: Required] IReadOnlyList<int> LevelHours,
-    [property: Required] int TasksPerLevel,
-    [property: Required] int CountBonusMax);
+    [Required] string WorkdayStart,
+    [Required] string WorkdayEnd,
+    [Required] IReadOnlyList<int> WorkDays,
+    [Required] string AgeBasis,
+    [Required] IReadOnlyList<int> LevelHours,
+    [Required] int TasksPerLevel,
+    [Required] int CountBonusMax);
 
 /// <summary>The administration view of the Dashboard gauge settings: the values in force, the code defaults, whether a custom value is stored, the row version and the last change.</summary>
 /// <param name="RowVersion">Row version (base64) of the stored value; empty when nothing is stored. Send it back on change or reset.</param>
@@ -31,8 +31,8 @@ public sealed record DashboardSettingsAdminView(
 
 /// <summary>Body to change the gauge settings.</summary>
 public sealed record SetDashboardGaugeRequest(
-    [property: Required] DashboardGaugeValues Gauge,
-    [property: Required(AllowEmptyStrings = true)] string RowVersion);
+    [Required] DashboardGaugeValues Gauge,
+    [Required(AllowEmptyStrings = true)] string RowVersion);
 
 /// <summary>
 /// The Dashboard gauge settings (Dashboard v4, #1064): one stored JSON value in <c>dbo.AppSetting</c> (<c>Dashboard.Gauge</c>), code defaults when none (no seed row), validated on save.
@@ -85,11 +85,11 @@ public sealed class DashboardSettingsService(AppSettingsService settings, IUserD
         return reset.IsFailure ? reset.Error! : await GetAdminAsync(ct);
     }
 
-    internal static DashboardGaugeValues ToValues(DashboardGaugeSettings s) =>
+    public static DashboardGaugeValues ToValues(DashboardGaugeSettings s) =>
         new(DashboardGaugeSettings.FormatTime(s.WorkdayStart), DashboardGaugeSettings.FormatTime(s.WorkdayEnd), [.. s.WorkDays.Order()], s.AgeBasis, [.. s.LevelHours], s.TasksPerLevel, s.CountBonusMax);
 
     /// <summary>Validates the form values into settings; a failure names the field.</summary>
-    internal static Result<DashboardGaugeSettings> FromValues(DashboardGaugeValues? values)
+    public static Result<DashboardGaugeSettings> FromValues(DashboardGaugeValues? values)
     {
         if (values is null)
             return Error.Validation("gauge", "REQUIRED", "The settings are required.");
@@ -104,7 +104,7 @@ public sealed class DashboardSettingsService(AppSettingsService settings, IUserD
     }
 
     /// <summary>The stored JSON as settings; null when missing, unreadable or no longer valid.</summary>
-    internal static DashboardGaugeSettings? Parse(string? text)
+    public static DashboardGaugeSettings? Parse(string? text)
     {
         if (string.IsNullOrWhiteSpace(text))
             return null;
