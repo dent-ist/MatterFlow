@@ -62,6 +62,12 @@ export function numericInstant(
   return withTime ? `${day} ${numericTime(p.hour, p.minute)}` : day;
 }
 
+/** An instant with the year always, in the person's zone: `MM/DD/YYYY hh:mm AM/PM` (the Matter Summary's dates, MD-42; a matter lives for years, so the year is never left out). */
+export function numericInstantFull(instant: Date | string | number, zone: string): string {
+  const p = partsInZone(instant, zone);
+  return `${two(p.month)}/${two(p.day)}/${p.year} ${numericTime(p.hour, p.minute)}`;
+}
+
 const LONG = (zone: string, withTime: boolean) =>
   new Intl.DateTimeFormat('en-US', {
     timeZone: zone,

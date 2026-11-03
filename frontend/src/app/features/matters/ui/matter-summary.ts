@@ -1,44 +1,38 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import {
-  AssetsClient,
-  MatterOverview,
-  MatterOverviewClient,
-  MatterResponse,
-  MyMattersActivityItem,
-} from '../../../api/generated/api-client';
+import { AssetsClient, MatterResponse } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
-import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
-import { ActiveBadge, SensitiveBadge } from '../../../shared/ui/badge';
+import { USER_TIME_ZONE } from '../../../core/time/clock';
+import { ActiveBadge, Badge, SensitiveBadge } from '../../../shared/ui/badge';
 import { AssetTypeChip } from '../../../shared/ui/asset-type-chip';
 import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { MatterRef } from '../../../shared/ui/matter-ref';
-import { activityText, activityTime } from '../../my-matters/facts';
+import { numericInstantFull, readableInstant } from '../../../shared/ui/numeric-date';
+import { personInitials } from '../../../shared/ui/person-initials';
+import { shortAccountName } from '../../../shared/ui/person-name';
 import { panelLoader } from '../../my-matters/panel-loader';
 import { aiLabel } from './matter-ai';
 
 /**
- * The Summary tab of the Matter page (MD-03, #1004; owner decision AQ.2, mockup round 3). Nothing here scrolls the page: the asset tiles stay at the top and the
- * details list and the recent activity scroll inside their own boxes (below 768 px the page scrolls and the boxes become plain cards).
+ * The Summary tab of the Matter page (MD-03 #1004, redesigned in MD-42 #1060; mockup `docs/ux/mockups/matter-summary`). The page never scrolls on desktop:
  *
- *   Assets by type (a tile per type with a count; each opens the Assets tab filtered to the type)       [needs Asset.View]
- *   Details (one Edit button)                       | Recent activity (and the "Next events" panel, MD-08, in the same column)
- *     CM number (large, first), Client, Matter number, Name, Status, Sensitive, Primary PM, Secondary PM, Created, Last changed,
- *     the custom fields as ordinary rows (no heading), AI allowed
+ *   Assets by type: equal tiles (a Total tile first with two or more types) that scroll sideways instead of wrapping; each opens the Assets tab for the type  [Asset.View]
+ *   Details: ONE full-width card that fits its content, sits at the top and scrolls inside itself when it is taller than the room; one Edit button.
+ *     Small muted labels over values in a grid of 3 columns (card 1100 px and wider), 2 (700 px and wider) or 1: CM number (one highlighted line), Client, Matter number,
+ *     Matter name, Status, Sensitive (only when sensitive), Primary PM, Secondary PM, AI allowed, Created, Last changed, then the custom fields (no heading).
  *
- * It shows only fields the Matter already has plus the one new field AI allowed; nothing is invented.
+ * Only fields the Matter already has plus AI allowed. The recent activity lives on the Activities tab (owner decision, MD-42).
  */
 @Component({
   selector: 'mf-matter-summary',
   imports: [
     RouterLink,
     ActiveBadge,
+    Badge,
     SensitiveBadge,
     AssetTypeChip,
     CustomFieldsView,
     MatterRef,
-    MfDatePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -49,13 +43,20 @@ import { aiLabel } from './matter-ai';
       gap: var(--mf-s3);
       min-height: 0;
     }
+    /* The strip's room is kept while it loads, so the Details card does not jump when the tiles arrive (layout shift). */
+    [data-summary-assets] {
+      min-height: 3rem;
+    }
+    /* The asset strip: equal tiles in one row that scrolls sideways when there are too many. */
     .ms__tiles {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(220px, 320px);
       gap: var(--mf-s2);
       margin: 0;
-      padding: 0;
+      padding: 0 0 var(--mf-s1);
       list-style: none;
+      overflow-x: auto;
     }
     .ms__tile {
       display: flex;
@@ -73,28 +74,44 @@ import { aiLabel } from './matter-ai';
     .ms__tile:hover {
       background: var(--mf-sem-info-bg);
     }
+    .ms__tile-name {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .ms__count {
       font-size: var(--mf-fs-lg);
       font-weight: 700;
       font-variant-numeric: tabular-nums;
     }
-    .ms__tile-name {
+    .ms__total-icon {
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
     }
-    .ms__grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      grid-auto-rows: minmax(0, 1fr);
-      gap: var(--mf-s3);
-      flex: 1 1 auto;
+    .ms__empty-assets {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--mf-s2);
+      padding: var(--mf-s2) var(--mf-s3);
+      border: 1px dashed var(--mf-border-strong);
+      border-radius: var(--mf-radius-lg);
+      color: var(--mf-text-muted);
+    }
+    /* The Details card fits its content (no stretched white area), then scrolls inside when the room is used up. */
+    .ms__body {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 0;
       min-height: 0;
     }
     .ms__card {
       display: flex;
       flex-direction: column;
-      min-width: 0;
+      flex: 0 1 auto;
       min-height: 0;
+      container-type: inline-size;
       border: 1px solid var(--mf-border-soft);
       border-radius: var(--mf-radius-xl);
       background: var(--mf-surface);
@@ -113,73 +130,75 @@ import { aiLabel } from './matter-ai';
       font-weight: 700;
     }
     .ms__scroll {
-      flex: 1 1 auto;
+      flex: 0 1 auto;
       min-height: 0;
       overflow-y: auto;
       padding: 0 var(--mf-s3) var(--mf-s3);
     }
-    .ms__dl {
+    .ms__fields {
       display: grid;
-      grid-template-columns: minmax(8rem, 12rem) minmax(0, 1fr);
-      gap: var(--mf-s2) var(--mf-s3);
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--mf-s3) var(--mf-s5, 1.5rem);
       margin: 0;
     }
-    .ms__dl dt {
-      color: var(--mf-text-muted);
+    @container (min-width: 700px) {
+      .ms__fields {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
-    .ms__dl dd {
+    @container (min-width: 1100px) {
+      .ms__fields {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+    .ms__f {
+      min-width: 0;
+      min-height: 2.75rem;
+    }
+    .ms__f dt {
+      margin: 0 0 2px;
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-xs);
+    }
+    .ms__f dd {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--mf-s2);
+      min-height: var(--mf-chip-h);
       margin: 0;
       overflow-wrap: anywhere;
     }
-    .ms__cm {
-      font-family: var(--mf-font-mono, monospace);
-      font-size: var(--mf-fs-title);
-      font-weight: 700;
-    }
-    .ms__cm-row {
-      padding: var(--mf-s2);
+    /* The CM number: one highlighted line, number and copy button on one baseline. */
+    .ms__f--cm dd {
+      align-self: start;
+      width: fit-content;
+      padding: 0 var(--mf-s2);
       border-radius: var(--mf-radius-md);
       background: var(--mf-sem-info-bg);
+      font-weight: 700;
     }
-    .ms__feed {
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-    .ms__feed li {
-      display: flex;
-      justify-content: space-between;
-      gap: var(--mf-s2);
-      padding: var(--mf-s2) 0;
-      border-top: 1px solid var(--mf-border-soft);
-    }
-    .ms__feed li:first-child {
-      border-top: 0;
-    }
-    .ms__when {
+    .ms__avatar {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       flex: none;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: var(--mf-radius-pill);
+      background: var(--mf-sem-info-bg);
+      color: var(--mf-sem-info-fg);
+      font-size: var(--mf-fs-xs);
+      font-weight: 700;
+    }
+    .ms__none {
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
     }
-    .ms__empty,
-    .ms__note {
-      margin: 0;
-      color: var(--mf-text-muted);
+    .ms__btn {
+      margin-block: -4px;
     }
-    .ms__side {
-      display: flex;
-      flex-direction: column;
-      gap: var(--mf-s3);
-      min-width: 0;
-      min-height: 0;
-    }
-    .ms__side > .ms__card {
-      flex: 1 1 0;
-    }
-    @media (max-width: 1099.98px) {
-      .ms__grid {
-        grid-template-columns: minmax(0, 1fr);
-      }
+    .ms__custom {
+      margin-top: var(--mf-s3);
     }
     @media (max-width: 767.98px), (max-height: 560.98px) {
       .ms__scroll {
@@ -190,8 +209,29 @@ import { aiLabel } from './matter-ai';
   template: `
     @if (showAssets()) {
       <section aria-label="Assets by type" data-summary-assets>
-        @if (assetTypes().length > 0) {
+        @if (assetsLoader.state() === 'error') {
+          <p class="ms__empty-assets" role="alert" data-assets-error>
+            Couldn't load the assets.
+            <button type="button" class="mf-btn mf-btn--text" (click)="assetsLoader.load()">
+              Try Again
+            </button>
+          </p>
+        } @else if (assetTypes().length > 0) {
           <ul class="ms__tiles">
+            @if (assetTypes().length > 1) {
+              <li>
+                <a
+                  class="ms__tile"
+                  data-asset-tile="total"
+                  [routerLink]="[]"
+                  [queryParams]="{ tab: 'assets' }"
+                >
+                  <i class="pi pi-database ms__total-icon" aria-hidden="true"></i>
+                  <span class="ms__tile-name">Total</span>
+                  <span class="ms__count">{{ assetTotal() }}</span>
+                </a>
+              </li>
+            }
             @for (t of assetTypes(); track t.assetTypeId) {
               <li>
                 <a
@@ -207,19 +247,31 @@ import { aiLabel } from './matter-ai';
                     [name]="t.assetTypeName"
                     [decorative]="true"
                   />
-                  <span class="ms__count">{{ t.count }}</span>
                   <span class="ms__tile-name">{{ t.assetTypeName }}</span>
+                  <span class="ms__count">{{ t.count }}</span>
                 </a>
               </li>
             }
           </ul>
         } @else if (assetsLoader.state() === 'ready') {
-          <p class="ms__note" data-no-assets>This matter has no assets yet.</p>
+          <p class="ms__empty-assets" data-no-assets>
+            <span>This matter has no assets yet.</span>
+            @if (canCreateAsset()) {
+              <button
+                type="button"
+                class="mf-btn mf-btn--text"
+                data-new-asset
+                (click)="newAsset.emit()"
+              >
+                New Asset
+              </button>
+            }
+          </p>
         }
       </section>
     }
 
-    <div class="ms__grid">
+    <div class="ms__body">
       <section class="ms__card" aria-labelledby="ms-details-h" data-summary-details>
         <div class="ms__head">
           <h2 class="ms__title" id="ms-details-h">Details</h2>
@@ -230,136 +282,158 @@ import { aiLabel } from './matter-ai';
           }
         </div>
         <div class="ms__scroll" tabindex="0" role="region" aria-label="Matter details, scrollable">
-          <dl class="ms__dl">
-            <dt class="ms__cm-row">CM number</dt>
-            <dd class="ms__cm-row"><mf-matter-ref [value]="matter().matterRef" /></dd>
-            <dt>Client</dt>
-            <dd data-client-value>
-              @if (canLinkClient()) {
-                <a class="pg-link" [routerLink]="['/clients', matter().clientId]"
-                  ><span class="pg-mono">{{ matter().clientNumber }}</span>
-                  {{ matter().clientName }}</a
-                >
-              } @else {
-                <span class="pg-mono">{{ matter().clientNumber }}</span> {{ matter().clientName }}
-              }
-            </dd>
-            <dt>Matter number</dt>
-            <dd class="pg-mono">{{ matter().matterNumber }}</dd>
-            <dt>Matter name</dt>
-            <dd data-matter-name>{{ matter().name }}</dd>
-            <dt>Status</dt>
-            <dd><mf-active-badge [active]="matter().isActive" /></dd>
-            <dt>Sensitive</dt>
-            <dd data-sensitive-value>
-              @if (matter().isSensitive) {
-                <mf-sensitive-badge /> <span class="pg-muted">Restricted access</span>
-              } @else {
-                No
-              }
-            </dd>
-            <dt>Primary PM</dt>
-            <dd data-managers>
-              <span data-primary-manager>{{ matter().primaryManager?.displayName ?? 'None' }}</span>
-              @if (canAssign()) {
-                <button
-                  type="button"
-                  class="mf-btn mf-btn--text"
-                  [attr.data-change-managers]="hasManagers() ? '' : null"
-                  [attr.data-add-managers]="hasManagers() ? null : ''"
-                  aria-label="Change project managers"
-                  (click)="changeManagers.emit()"
-                >
-                  {{ hasManagers() ? 'Change' : 'Add' }}
-                </button>
-              }
-            </dd>
-            <dt>Secondary PM</dt>
-            <dd>
-              <span data-secondary-manager>{{
-                matter().secondaryManager?.displayName ?? 'None'
-              }}</span>
-            </dd>
-            <dt>Created</dt>
-            <dd>{{ matter().createdAtUtc | mfDate }}</dd>
-            @if (matter().modifiedAtUtc) {
-              <dt>Last changed</dt>
-              <dd>{{ matter().modifiedAtUtc | mfDate }}</dd>
+          <dl class="ms__fields">
+            <div class="ms__f ms__f--cm">
+              <dt>CM number</dt>
+              <dd><mf-matter-ref [value]="matter().matterRef" /></dd>
+            </div>
+            <div class="ms__f">
+              <dt>Client</dt>
+              <dd data-client-value>
+                @if (canLinkClient()) {
+                  <a class="pg-link" [routerLink]="['/clients', matter().clientId]"
+                    ><span class="pg-mono">{{ matter().clientNumber }}</span>
+                    {{ matter().clientName }}</a
+                  >
+                } @else {
+                  <span
+                    ><span class="pg-mono">{{ matter().clientNumber }}</span>
+                    {{ matter().clientName }}</span
+                  >
+                }
+              </dd>
+            </div>
+            <div class="ms__f">
+              <dt>Matter number</dt>
+              <dd class="pg-mono">{{ matter().matterNumber }}</dd>
+            </div>
+            <div class="ms__f">
+              <dt>Matter name</dt>
+              <dd data-matter-name>{{ matter().name }}</dd>
+            </div>
+            <div class="ms__f">
+              <dt>Status</dt>
+              <dd><mf-active-badge [active]="matter().isActive" /></dd>
+            </div>
+            @if (matter().isSensitive) {
+              <div class="ms__f">
+                <dt>Sensitive</dt>
+                <dd data-sensitive-value>
+                  <!-- "Restricted access" is the chip's tooltip; the chip can be reached with Tab and says it to a screen reader. -->
+                  <span
+                    tabindex="0"
+                    title="Restricted access: only its project managers, people assigned one of its tasks and people who may see all sensitive matters can see it."
+                    data-sensitive-chip
+                  >
+                    <mf-sensitive-badge describedBy="matter-sensitive-note" />
+                    <span class="mf-sr-only">Restricted access</span>
+                  </span>
+                </dd>
+              </div>
             }
-            <dt>AI allowed</dt>
-            <dd data-ai-value>{{ ai() }}</dd>
+            <div class="ms__f" data-managers>
+              <dt>Primary PM</dt>
+              <dd>
+                @if (matter().primaryManager; as p) {
+                  <span class="ms__avatar" aria-hidden="true">{{ initials(p.displayName) }}</span>
+                  <span data-primary-manager>{{ person(p.displayName) }}</span>
+                } @else {
+                  <span class="ms__none" data-primary-manager>None</span>
+                }
+                @if (canAssign()) {
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--text ms__btn"
+                    [attr.data-change-managers]="matter().primaryManager ? '' : null"
+                    [attr.data-add-managers]="matter().primaryManager ? null : ''"
+                    [attr.aria-label]="
+                      matter().primaryManager
+                        ? 'Change project managers'
+                        : 'Add a primary project manager'
+                    "
+                    (click)="changeManagers.emit()"
+                  >
+                    {{ matter().primaryManager ? 'Change' : 'Add' }}
+                  </button>
+                }
+              </dd>
+            </div>
+            <div class="ms__f">
+              <dt>Secondary PM</dt>
+              <dd>
+                @if (matter().secondaryManager; as s) {
+                  <span class="ms__avatar" aria-hidden="true">{{ initials(s.displayName) }}</span>
+                  <span data-secondary-manager>{{ person(s.displayName) }}</span>
+                } @else {
+                  <span class="ms__none" data-secondary-manager>None</span>
+                  @if (canAssign()) {
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--text ms__btn"
+                      data-add-secondary-manager
+                      aria-label="Add a secondary project manager"
+                      (click)="changeManagers.emit()"
+                    >
+                      Add
+                    </button>
+                  }
+                }
+              </dd>
+            </div>
+            <div class="ms__f">
+              <dt>AI allowed</dt>
+              <dd data-ai-value>
+                <mf-badge tone="neutral" icon="pi-sparkles">{{ ai() }}</mf-badge>
+              </dd>
+            </div>
+            <div class="ms__f">
+              <dt>Created</dt>
+              <dd [attr.title]="long(matter().createdAtUtc)" data-created>
+                {{ stamp(matter().createdAtUtc) }}
+              </dd>
+            </div>
+            <div class="ms__f">
+              <dt>Last changed</dt>
+              <dd [attr.title]="long(matter().modifiedAtUtc)" data-modified>
+                @if (matter().modifiedAtUtc; as m) {
+                  {{ stamp(m) }}
+                } @else {
+                  <span class="ms__none">-</span>
+                }
+              </dd>
+            </div>
           </dl>
-          <mf-custom-fields-view
-            [heading]="false"
-            [versionId]="matter().formVersionId"
-            [values]="matter().formValues ?? {}"
-          />
+          <div class="ms__custom">
+            <mf-custom-fields-view
+              [heading]="false"
+              [versionId]="matter().formVersionId"
+              [values]="matter().formValues ?? {}"
+            />
+          </div>
         </div>
       </section>
-
-      <div class="ms__side">
-        @if (showActivity()) {
-          <section class="ms__card" aria-labelledby="ms-activity-h" data-summary-activity>
-            <div class="ms__head">
-              <h2 class="ms__title" id="ms-activity-h">Recent activity</h2>
-              @if (canSeeActivities()) {
-                <button
-                  type="button"
-                  class="mf-btn mf-btn--text"
-                  data-all-activities
-                  (click)="openActivities.emit()"
-                >
-                  All activities
-                </button>
-              }
-            </div>
-            <div
-              class="ms__scroll"
-              tabindex="0"
-              role="region"
-              aria-label="Recent activity, scrollable"
-            >
-              @if (activity().length > 0) {
-                <ul class="ms__feed">
-                  @for (e of activity(); track e.eventId) {
-                    <li data-activity-item>
-                      <span>{{ text(e) }}</span>
-                      <span class="ms__when">{{ when(e) }}</span>
-                    </li>
-                  }
-                </ul>
-              } @else {
-                <p class="ms__empty" data-no-activity>No recent activity.</p>
-              }
-            </div>
-          </section>
-        }
-      </div>
     </div>
   `,
 })
 export class MatterSummary {
   readonly matter = input.required<MatterResponse>();
-  /** Counts the changes that make the tiles and the feed load again (a save, a new project). */
+  /** Counts the changes that make the asset tiles load again (a save, a new project). */
   readonly reload = input(0);
   readonly canEdit = input(false);
   readonly canAssign = input(false);
   readonly canLinkClient = input(false);
-  readonly canSeeActivities = input(false);
   readonly edit = output<void>();
   readonly changeManagers = output<void>();
-  readonly openActivities = output<void>();
+  /** The empty asset bar's New Asset button. */
+  readonly newAsset = output<void>();
 
   private readonly auth = inject(AuthStore);
   private readonly assetsApi = inject(AssetsClient);
-  private readonly overviewApi = inject(MatterOverviewClient);
-  private readonly clock = inject(Clock);
   private readonly zone = inject(USER_TIME_ZONE);
 
   protected readonly showAssets = computed(() => this.auth.has('Asset.View'));
-  /** The recent-activity pane needs what the overview needs: Task.View or Asset.View. */
-  protected readonly showActivity = computed(
-    () => this.auth.has('Task.View') || this.auth.has('Asset.View'),
+  protected readonly canCreateAsset = computed(
+    () => this.auth.has('Asset.Create') && this.matter().isActive,
   );
 
   protected readonly assetsLoader = panelLoader(
@@ -367,25 +441,30 @@ export class MatterSummary {
     () => this.assetsApi.getAssetCountsByType(this.matter().matterId),
     { enabled: () => this.showAssets() },
   );
-  protected readonly overviewLoader = panelLoader(
-    () => [this.matter().matterId, this.reload()],
-    () => this.overviewApi.getMatterOverview(this.matter().matterId),
-    { enabled: () => this.showActivity() },
-  );
 
   protected readonly assetTypes = computed(() =>
     (this.assetsLoader.data() ?? []).filter((t) => t.count > 0),
   );
-  protected readonly activity = computed<MyMattersActivityItem[]>(
-    () => (this.overviewLoader.data() as MatterOverview | null)?.activity ?? [],
-  );
-  protected readonly hasManagers = computed(
-    () => !!(this.matter().primaryManager || this.matter().secondaryManager),
+  protected readonly assetTotal = computed(() =>
+    this.assetTypes().reduce((sum, t) => sum + t.count, 0),
   );
   protected readonly ai = computed(() => aiLabel(this.matter().aiAllowed));
-  protected readonly text = activityText;
 
-  protected when(e: MyMattersActivityItem): string {
-    return activityTime(e.occurredAtUtc, this.clock.now(), this.zone);
+  /** `MM/DD/YYYY hh:mm AM/PM`, always with the year; the long form with the zone is the tooltip. */
+  protected stamp(instant: string | undefined): string {
+    return instant ? numericInstantFull(instant, this.zone) : '';
+  }
+
+  protected long(instant: string | undefined): string | null {
+    return instant ? `${readableInstant(instant, this.zone)} (${this.zone})` : null;
+  }
+
+  /** A person's name: the display name, or the account without its domain. */
+  protected person(name: string): string {
+    return shortAccountName(name);
+  }
+
+  protected initials(name: string): string {
+    return personInitials(name);
   }
 }

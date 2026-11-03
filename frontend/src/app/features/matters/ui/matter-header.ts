@@ -1,20 +1,18 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatterResponse } from '../../../api/generated/api-client';
 import { ActionMenu, MenuAction } from '../../../shared/ui/action-menu';
-import { ActiveBadge, Badge, SensitiveBadge } from '../../../shared/ui/badge';
-import { aiChip } from './matter-ai';
 import { SENSITIVE_LEAD, SENSITIVE_TEXT } from '../../../shared/ui/record-header';
-import { MatterRef } from '../../../shared/ui/matter-ref';
 
 /**
- * The compact header of the Matter page (MD-01, #1002; owner decision AQ.2): the breadcrumb `Matters > {CM number}` with a copy button, the title
- * `{Client} > {Matter name}`, one quiet subtitle line with the CM number and the Active, Sensitive and AI chips, and two menus: **New**
- * (Task, Project, Asset, ...) and **More actions**. No task counts and no status buttons. The page builds both menus from the viewer's permissions.
+ * The compact header of the Matter page (MD-01, #1002; simplified in MD-42, #1060): the breadcrumb `Matters > {matter name}`, the title `{Client} > {Matter name}`
+ * and two menus, **New** (Task, Project, Asset, ...) and **More actions**. The CM number, the Active, Sensitive and AI chips are shown in the Summary's Details, not here.
+ * Two things that carry access or read-only information stay: the sensitive information bar under the title (the page keeps the inactive-matter and inactive-client
+ * banners below the header). No task counts and no status buttons. The page builds both menus from the viewer's permissions.
  */
 @Component({
   selector: 'mf-matter-header',
-  imports: [RouterLink, ActionMenu, ActiveBadge, SensitiveBadge, Badge, MatterRef],
+  imports: [RouterLink, ActionMenu],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -85,22 +83,26 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
       align-items: center;
       gap: var(--mf-s2);
     }
+    /* The sensitive information bar: one compact amber bar under the title (access information stays on every tab). */
     .mh__note {
       display: flex;
       align-items: baseline;
       gap: var(--mf-s2);
-      margin: var(--mf-s1) 0 0;
-      color: var(--mf-text-muted);
+      margin: var(--mf-s2) 0 0;
+      padding: var(--mf-s1) var(--mf-s3);
+      border: 1px solid var(--mf-sem-risk-line);
+      border-radius: var(--mf-radius-md);
+      background: var(--mf-sem-risk-bg);
+      color: var(--mf-sem-risk-fg);
       font-size: var(--mf-fs-sm);
     }
-    .mh__sub {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--mf-s2);
-      margin: var(--mf-s1) 0 0;
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
+    .mh__crumb-name {
+      display: inline-block;
+      max-width: min(40ch, 60vw);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: bottom;
+      white-space: nowrap;
     }
   `,
   template: `
@@ -109,7 +111,7 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
         <ol>
           <li><a routerLink="/matters">Matters</a></li>
           <li aria-current="page" data-crumb-current>
-            <mf-matter-ref [value]="matter().matterRef" />
+            <span class="mh__crumb-name" [attr.title]="matter().name">{{ matter().name }}</span>
           </li>
         </ol>
       </nav>
@@ -129,14 +131,6 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
           <mf-action-menu label="More actions" [items]="moreItems()" />
         </div>
       </div>
-      <p class="mh__sub" data-matter-subtitle>
-        <mf-matter-ref [value]="matter().matterRef" [copy]="false" />
-        <mf-active-badge [active]="matter().isActive" />
-        @if (matter().isSensitive) {
-          <mf-sensitive-badge [describedBy]="noteId" />
-        }
-        <mf-badge tone="neutral" icon="pi-sparkles" data-ai-chip>{{ ai() }}</mf-badge>
-      </p>
       @if (matter().isSensitive) {
         <p class="mh__note" role="note" [id]="noteId" data-sensitive-banner>
           <i class="pi pi-lock" aria-hidden="true"></i>
@@ -153,7 +147,6 @@ export class MatterHeader {
   protected readonly lead = SENSITIVE_LEAD;
   protected readonly text = SENSITIVE_TEXT;
   readonly matter = input.required<MatterResponse>();
-  protected readonly ai = computed(() => aiChip(this.matter().aiAllowed));
   readonly newItems = input<readonly MenuAction[]>([]);
   readonly moreItems = input<readonly MenuAction[]>([]);
 }

@@ -7,7 +7,6 @@ import {
   AuditSearchClient,
   MatterManagersClient,
   MatterEventsClient,
-  MatterOverviewClient,
   MattersClient,
   ProjectsClient,
   TaskQueueClient,
@@ -149,30 +148,6 @@ describe('MatterDetailPage', () => {
             createMatterEvent: vi.fn(),
           },
         },
-        {
-          provide: MatterOverviewClient,
-          useValue: {
-            getMatterOverview: vi.fn().mockReturnValue(
-              ok({
-                matter: {},
-                activity: [
-                  {
-                    eventId: 1,
-                    occurredAtUtc: '2026-10-14T14:00:00Z',
-                    kind: 'TASK_CREATED',
-                    actorName: 'Ann Lee',
-                    matterId: 7,
-                    matterRef: '00343-00012',
-                    matterName: 'Merger Review',
-                    clientName: 'Acme Corp',
-                    taskTitle: 'Review contract',
-                    isUnread: false,
-                  },
-                ],
-              }),
-            ),
-          },
-        },
         { provide: TaskQueueClient, useValue: queue },
         query.provider,
         ...provideLookups(),
@@ -228,38 +203,46 @@ describe('MatterDetailPage', () => {
     await settle(fixture);
   }
 
-  it('shows the reference with a copy button, the client and the status', async () => {
+  it('has a simple header: breadcrumb with the matter name, the title, New and More; the CM number, status and AI chips live in the Summary (MD-42, #1060)', async () => {
     await create(['Matter.View', 'Project.View', 'Client.View']);
-
-    // Breadcrumb `Matters > CM number` with the copy button; the title is `Client > Matter name`.
-    expect(el().querySelector('[data-crumb-current] .mf-ref')?.textContent).toBe('00343-00012');
-    expect(el().querySelector('h1')?.textContent).toContain('Acme Corp');
-    expect(el().querySelector('h1')?.textContent).toContain('Merger Review');
-    expect(el().querySelector('[data-matter-subtitle]')?.textContent).toContain('00343-00012');
-    expect(el().querySelector('[data-matter-subtitle]')?.textContent).toContain('Active');
-    await openDetails();
-    expect(el().querySelector('[data-client-value] a')?.getAttribute('href')).toBe('/clients/1');
-    el().querySelector<HTMLButtonElement>('[data-crumb-current] mf-copy-button button')!.click();
+    const header = el().querySelector('[data-matter-header]')!;
+    expect(header.querySelector('[data-crumb-current]')?.textContent?.trim()).toBe('Merger Review');
+    expect(header.querySelector('h1')?.textContent).toContain('Acme Corp');
+    expect(header.querySelector('h1')?.textContent).toContain('Merger Review');
+    // No chips and no CM number in the header.
+    expect(header.querySelector('[data-matter-subtitle]')).toBeNull();
+    expect(header.querySelector('[data-ai-chip]')).toBeNull();
+    expect(header.textContent).not.toContain('00343-00012');
+    expect(header.textContent).not.toContain('Active');
+    // The CM number with its copy button, the client and the status are in the Summary's Details.
+    const details = el().querySelector('[data-summary-details]')!;
+    expect(details.querySelector('.mf-ref')?.textContent).toBe('00343-00012');
+    expect(details.textContent).toContain('Active');
+    expect(details.querySelector('[data-client-value] a')?.getAttribute('href')).toBe('/clients/1');
+    details.querySelector<HTMLButtonElement>('mf-copy-button button')!.click();
     await settle(fixture);
     expect(writeText).toHaveBeenCalledWith('00343-00012');
   });
 
-  it('shows the sensitivity note in the header only for sensitive matters (access rule in the note), with a badge that points to it', async () => {
+  it('keeps the sensitivity information bar in the header for a sensitive matter; the Sensitive chip is in the Details and points to the bar', async () => {
     await create(['Matter.View'], aMatter({ isSensitive: true }));
     const banner = el().querySelector('[data-matter-header] [data-sensitive-banner]');
     expect(banner?.textContent).toContain('Sensitive matter');
     expect(banner?.textContent).toContain('Only its project managers');
-    expect(banner?.textContent).not.toContain('does not restrict');
     expect(banner?.getAttribute('role')).toBe('note');
-    expect(
-      el()
-        .querySelector('[data-matter-subtitle] mf-sensitive-badge span')
-        ?.getAttribute('aria-describedby'),
-    ).toBe(banner?.id);
+    const chip = el().querySelector('[data-summary-details] [data-sensitive-value]')!;
+    expect(chip.querySelector('mf-sensitive-badge span')?.getAttribute('aria-describedby')).toBe(
+      banner?.id,
+    );
+    expect(chip.querySelector('[data-sensitive-chip]')?.getAttribute('title')).toContain(
+      'Restricted access',
+    );
 
     TestBed.resetTestingModule();
     await create(['Matter.View'], aMatter({ isSensitive: false }));
     expect(el().querySelector('[data-sensitive-banner]')).toBeNull();
+    // A matter that is not sensitive has no Sensitive field at all.
+    expect(el().querySelector('[data-sensitive-value]')).toBeNull();
   });
 
   it('shows a persistent banner for an inactive matter and offers Reactivate', async () => {
@@ -412,13 +395,17 @@ describe('MatterDetailPage', () => {
       'Sensitive',
       'Primary PM',
       'Secondary PM',
+      'AI allowed',
       'Created',
       'Last changed',
-      'AI allowed',
     ]);
     expect(summary.querySelector('dl')!.textContent).toContain('00343-00012');
     expect(summary.querySelector('[data-ai-value]')!.textContent!.trim()).toBe('No');
     expect(summary.querySelector('mf-sensitive-badge')).not.toBeNull();
+    // Dates are numeric with the year; the long form is the tooltip.
+    expect(summary.querySelector('[data-created]')!.textContent!.trim()).toMatch(
+      /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2} (AM|PM)$/,
+    );
     expect(summary.querySelector('[data-client-value] a')?.getAttribute('href')).toBe('/clients/1');
     expect(summary.textContent).not.toMatch(/Custom fields/i);
     // Activities is a tab now, no longer a drawer button.
@@ -426,17 +413,17 @@ describe('MatterDetailPage', () => {
     expect(el().querySelector('[data-page-actions]')!.textContent).not.toContain('Activity');
   });
 
-  it('shows the assets by type as tiles that open the Assets tab for the type, and the recent activity (needs Asset.View / Task.View)', async () => {
+  it('shows the assets by type as tiles that open the Assets tab for the type (needs Asset.View); the Summary has no recent activity (MD-42)', async () => {
     await create(['Matter.View', 'Asset.View', 'Task.View']);
     const tile = el().querySelector<HTMLAnchorElement>('[data-asset-tile]')!;
     expect(tile.textContent).toContain('Custodian');
     expect(tile.textContent).toContain('3');
-    expect(el().querySelector('[data-activity-item]')?.textContent).toContain('Ann Lee');
+    expect(el().querySelector('[data-summary-activity]')).toBeNull();
+    expect(el().querySelector('[data-asset-tile=total]')).toBeNull(); // one type: no Total tile
 
     TestBed.resetTestingModule();
     await create(['Matter.View']);
     expect(el().querySelector('[data-summary-assets]')).toBeNull();
-    expect(el().querySelector('[data-summary-activity]')).toBeNull();
     expect(assets.getAssetCountsByType).not.toHaveBeenCalled();
   });
 
@@ -479,7 +466,7 @@ describe('MatterDetailPage', () => {
       number: '99',
       rowVersion: 'BBBB',
     });
-    expect(el().querySelector('[data-crumb-current]')!.textContent).toContain('00343-00099');
+    expect(el().querySelector('[data-summary-details] .mf-ref')!.textContent).toBe('00343-00099');
   });
 
   it('shows Primary PM and Secondary PM as two rows of the details (MD-23, #1027)', async () => {
@@ -489,6 +476,48 @@ describe('MatterDetailPage', () => {
     );
     expect(el().querySelector('[data-primary-manager]')!.textContent).toBe('Test User 03');
     expect(el().querySelector('[data-secondary-manager]')!.textContent).toBe('None');
+  });
+
+  it('shows PMs with initials, no domain on an account name, and Change / Add buttons for people who may assign (MD-42)', async () => {
+    await create(
+      ['Matter.View', 'Matter.AssignManagers'],
+      aMatter({ primaryManager: { userId: 3, displayName: 'KE\\kekim', isActive: true } }),
+    );
+    expect(el().querySelector('[data-primary-manager]')!.textContent).toBe('kekim');
+    expect(el().querySelector('[data-managers] .ms__avatar')!.textContent!.trim()).toBe('KE');
+    expect(el().querySelector('[data-change-managers]')!.textContent!.trim()).toBe('Change');
+    // A missing Secondary PM has its own Add.
+    expect(el().querySelector('[data-add-secondary-manager]')!.textContent!.trim()).toBe('Add');
+
+    TestBed.resetTestingModule();
+    await create(['Matter.View'], aMatter());
+    expect(el().querySelector('[data-change-managers], [data-add-managers]')).toBeNull();
+    expect(el().querySelector('[data-add-secondary-manager]')).toBeNull();
+  });
+
+  it('shows a Total tile first with two or more asset types, and an empty bar with New Asset when there are none', async () => {
+    await create(['Matter.View', 'Asset.View', 'Asset.Create']);
+    assets.getAssetCountsByType.mockReturnValue(
+      ok([
+        { assetTypeId: 4, assetTypeName: 'Custodian', count: 3, retiredCount: 0 },
+        { assetTypeId: 5, assetTypeName: 'Laptop', count: 2, retiredCount: 0 },
+      ]),
+    );
+    (fixture.componentInstance as unknown as { projectSaved(): void }).projectSaved(); // asks the tiles again
+    await settle(fixture);
+    const tiles = Array.from(el().querySelectorAll('[data-summary-assets] .ms__tile')).map((t) =>
+      t.textContent!.replace(/\s+/g, ' ').trim(),
+    );
+    expect(tiles).toEqual(['Total5', 'Custodian3', 'Laptop2']);
+
+    TestBed.resetTestingModule();
+    await create(['Matter.View', 'Asset.View', 'Asset.Create']);
+    assets.getAssetCountsByType.mockReturnValue(ok([]));
+    (fixture.componentInstance as unknown as { projectSaved(): void }).projectSaved();
+    await settle(fixture);
+    expect(el().querySelector('[data-no-assets]')!.textContent).toContain('no assets yet');
+    el().querySelector<HTMLButtonElement>('[data-new-asset]')!.click();
+    expect(navigateByUrl).toHaveBeenCalledWith('/assets/new?matterId=7');
   });
 
   it('shows no task counts in the header and asks for the summary once (MD-01)', async () => {

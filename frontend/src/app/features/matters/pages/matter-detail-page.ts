@@ -160,11 +160,10 @@ type Tab = MatterTabKey;
                     [canEdit]="canEdit()"
                     [canAssign]="canAssign()"
                     [canLinkClient]="canLinkClient()"
-                    [canSeeActivities]="canSeeActivity()"
                     data-details-tab
                     (edit)="openEdit()"
                     (changeManagers)="managersOpen.set(true)"
-                    (openActivities)="select('activities')"
+                    (newAsset)="go('/assets/new?matterId=' + m.matterId)"
                   />
                 }
                 @case ('tasks') {
@@ -427,7 +426,6 @@ export class MatterDetailPage {
   protected readonly blockedOpen = signal(false);
   protected readonly blockedCount = signal(0);
   protected readonly busy = signal(false);
-  protected readonly canSeeActivity = computed(() => this.auth.has('Audit.View'));
   protected readonly canLinkClient = computed(() => this.auth.canLink('client'));
   protected readonly canSeeAssets = computed(() => this.auth.has('Asset.View'));
   /** Deactivation is disabled with a visible reason while Tasks are open (UX 5.7). */

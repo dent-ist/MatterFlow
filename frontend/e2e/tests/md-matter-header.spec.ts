@@ -25,20 +25,26 @@ const noSidewaysScroll = async (page: Page) =>
   ).toBeLessThanOrEqual(0);
 
 test.describe('Matter header (MD-01)', () => {
-  test('breadcrumb, title, CM subtitle and chips', async ({ page, seed }) => {
+  test('breadcrumb with the matter name, title, New and More; no CM number or chips in the header (MD-42)', async ({
+    page,
+    seed,
+  }) => {
     const client = await seed.client({ name: `Hartwell ${uid()}` });
     const matter = await seed.matter({ client, name: `Short ${uid()}` });
     await page.goto(`/matters/${matter.matterId}`);
     const header = page.locator('[data-matter-header]');
     await expect(header.getByRole('link', { name: 'Matters' })).toHaveAttribute('href', '/matters');
-    await expect(header.locator('[data-crumb-current]')).toContainText(matter.matterRef);
-    await expect(header.locator('[data-crumb-current] mf-copy-button button')).toBeVisible();
+    await expect(header.locator('[data-crumb-current]')).toHaveText(matter.name);
     await expect(header.locator('h1')).toContainText(`${client.name}`);
     await expect(header.locator('h1')).toContainText(matter.name);
-    const sub = header.locator('[data-matter-subtitle]');
-    await expect(sub).toContainText(matter.matterRef);
-    await expect(sub).toContainText('Active');
-    await expect(sub.locator('[data-ai-chip]')).toContainText('AI: No');
+    // The CM number, Active and AI chips are in the Summary's Details, with the copy button.
+    await expect(header).not.toContainText(matter.matterRef);
+    await expect(header.locator('[data-matter-subtitle], [data-ai-chip]')).toHaveCount(0);
+    const details = page.locator('[data-summary-details]');
+    await expect(details).toContainText(matter.matterRef);
+    await expect(details.locator('mf-copy-button button')).toBeVisible();
+    await expect(details).toContainText('Active');
+    await expect(details.locator('[data-ai-value]')).toContainText('No');
     await expect(header.locator('[data-sensitive-banner]')).toHaveCount(0);
     // No task counts or status buttons in the header.
     await expect(header).not.toContainText(/Overdue|Due soon|ASAP/);
@@ -65,7 +71,7 @@ test.describe('Matter header (MD-01)', () => {
     }
   });
 
-  test('a sensitive matter shows the chip and the access note, and the badge points to the note', async ({
+  test('a sensitive matter keeps the access note in the header; the Sensitive chip is in the Details and points to the note', async ({
     page,
     seed,
   }) => {
@@ -77,7 +83,7 @@ test.describe('Matter header (MD-01)', () => {
     await expect(note).toContainText('Only its project managers');
     const noteId = await note.getAttribute('id');
     await expect(
-      page.locator('[data-matter-subtitle] mf-sensitive-badge [aria-describedby]'),
+      page.locator('[data-summary-details] [data-sensitive-value] [aria-describedby]'),
     ).toHaveAttribute('aria-describedby', noteId!);
   });
 
@@ -127,7 +133,8 @@ test.describe('Matter header (MD-01)', () => {
     await page.getByRole('menuitem', { name: 'Set inactive' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Set inactive' }).click();
     await expect(page.locator('[data-inactive-banner]')).toBeVisible();
-    await expect(page.locator('[data-matter-subtitle]')).toContainText('Inactive');
+    // The header no longer carries the Active chip: the inactive banner and the Summary's Status say it.
+    await expect(page.locator('[data-summary-details]')).toContainText('Inactive');
   });
 
   test('seven tabs in order; a view-only user gets no New menu and no empty menus', async ({

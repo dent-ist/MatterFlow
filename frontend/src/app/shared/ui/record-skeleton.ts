@@ -114,7 +114,7 @@ const ROWS = [0, 1, 2, 3, 4] as const;
       </div>
       <mf-still-loading (retry)="retry.emit()" />
     </div>
-    <!-- The Matter page's own header (MD-01): the breadcrumb, the title row with the New and More actions, and the subtitle line with its chips, as grey bars at the final heights. -->
+    <!-- The Matter page's own header (MD-01): the breadcrumb, and the title row with the New and More actions, as grey bars at the final heights. -->
     <ng-template #matterHeaderTpl>
       <div class="rk__mh" data-matter-header-skeleton>
         <nav class="rk__mh-crumbs" aria-label="Breadcrumb">
@@ -128,11 +128,6 @@ const ROWS = [0, 1, 2, 3, 4] as const;
             <span class="rk__bar rk__mh-btn"></span>
             <span class="rk__bar rk__mh-btn rk__mh-btn--sq"></span>
           </span>
-        </div>
-        <div class="rk__mh-sub">
-          <span class="rk__bar rk__mh-chip"></span>
-          <span class="rk__bar rk__mh-chip"></span>
-          <span class="rk__bar rk__mh-chip"></span>
         </div>
       </div>
     </ng-template>
@@ -251,7 +246,7 @@ const ROWS = [0, 1, 2, 3, 4] as const;
       display: flex;
       align-items: center;
       gap: var(--mf-s2);
-      min-height: 2rem;
+      min-height: 1.25rem;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
@@ -264,7 +259,7 @@ const ROWS = [0, 1, 2, 3, 4] as const;
       align-items: center;
       justify-content: space-between;
       gap: var(--mf-s3);
-      min-height: 2.5rem;
+      min-height: var(--mf-ctl-h);
     }
     .rk__mh-title {
       width: min(24rem, 60%);
@@ -281,17 +276,6 @@ const ROWS = [0, 1, 2, 3, 4] as const;
     }
     .rk__mh-btn--sq {
       width: var(--mf-ctl-h);
-    }
-    .rk__mh-sub {
-      display: flex;
-      gap: var(--mf-s2);
-      margin-top: var(--mf-s1);
-      min-height: var(--mf-chip-h);
-    }
-    .rk__mh-chip {
-      width: 5rem;
-      height: var(--mf-chip-h);
-      border-radius: var(--mf-radius-pill);
     }
     .rk__rows {
       border-top: 1px solid var(--mf-border);
