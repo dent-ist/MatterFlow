@@ -109,7 +109,7 @@ const TABLE: Row[] = [
   },
   { set: 'clients', routes: CLIENTS_ROUTES, key: ':clientId', title: 'Client - MatterFlow' },
   { set: 'matters', routes: MATTERS_ROUTES, key: '', title: 'Matters - MatterFlow' },
-  { set: 'matters', routes: MATTERS_ROUTES, key: 'new', title: 'New matter - MatterFlow' },
+  // `matters/new` is a redirect to the list with the New matter dialog open (MD-22): the list's own title applies, so it has no row here.
   {
     set: 'matters',
     routes: MATTERS_ROUTES,
