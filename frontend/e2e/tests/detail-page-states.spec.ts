@@ -431,7 +431,7 @@ test.describe('Client Matters tab: New matter and the inactive-client rule (#250
 
     const button = page.locator('[data-page-actions] [data-action="new-matter"]');
     await expect(page.locator('[data-create-matter]')).toHaveCount(0); // no second button in the tab (WP9)
-    await expect(button).toHaveText('New matter');
+    await expect(button).toHaveText(/New Matter/);
     await expect(button).toHaveAttribute('aria-disabled', 'true');
     await expect(button).toHaveJSProperty('disabled', false); // not natively disabled: reachable by keyboard
     await expect(button).toHaveAttribute('title', REASON);

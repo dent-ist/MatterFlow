@@ -61,7 +61,7 @@ import { TaskCount } from '../../../shared/ui/task-count';
 import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { ResizableColumns } from '../../../shared/ui/resizable-columns';
 import { MatterManagersDialog, ManagerTarget } from '../ui/matter-managers-dialog';
-import { MatterCreateDialog } from '../ui/matter-create-dialog';
+import { MatterFormDialog } from '../ui/matter-form-dialog';
 import { GridColumns } from '../../../shared/ui/grid-columns';
 import {
   GridColumnDef,
@@ -141,7 +141,7 @@ const BONES: Record<string, string> = {
     ReorderColumns,
     GridColumns,
     MatterManagersDialog,
-    MatterCreateDialog,
+    MatterFormDialog,
     ScopeSwitch,
     ActionMenu,
     AddCommentDialog,
@@ -785,7 +785,7 @@ const BONES: Record<string, string> = {
         />
       }
       @if (canCreate() && createUsed()) {
-        <mf-matter-create-dialog
+        <mf-matter-form-dialog
           [clientId]="createClient()"
           [(visible)]="createOpen"
           (saved)="created($event)"

@@ -38,7 +38,7 @@ import { MatterHeader } from '../ui/matter-header';
 import { MatterTabKey, matterTabFromParam, visibleMatterTabs } from '../ui/matter-tabs';
 import { ProjectPanel } from '../../projects/ui/project-panel';
 import { ProjectTasksPanel } from '../../projects/ui/project-tasks-panel';
-import { MatterEditPanel } from '../ui/matter-edit-panel';
+import { MatterFormDialog } from '../ui/matter-form-dialog';
 import { MatterActivities } from '../ui/matter-activities';
 import { MatterSummary } from '../ui/matter-summary';
 import { MatterEventPanel } from '../ui/matter-event-panel';
@@ -79,7 +79,7 @@ type Tab = MatterTabKey;
     MatterProjects,
     MatterSummary,
     MatterEventPanel,
-    MatterEditPanel,
+    MatterFormDialog,
     ProductionsTab,
     NotesTab,
     AddCommentDialog,
@@ -258,7 +258,7 @@ type Tab = MatterTabKey;
             }
 
             @if (editUsed()) {
-              <mf-matter-edit-panel
+              <mf-matter-form-dialog
                 [matter]="m"
                 [(visible)]="editOpen"
                 (saved)="edited($event)"
