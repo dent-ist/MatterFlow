@@ -260,7 +260,7 @@ describe('MatterDetailPage', () => {
       "New tasks can't be created and completed or cancelled tasks can't be reopened.",
     );
     await openOverflow(fixture);
-    expect(buttonByLabel(el(), 'Set active')).toBeDefined();
+    expect(buttonByLabel(el(), 'Set Active')).toBeDefined();
   });
 
   it('keeps Create task focusable with its reason while the matter is inactive', async () => {
@@ -802,7 +802,7 @@ describe('MatterDetailPage', () => {
     await create(['Matter.View', 'Matter.SetActive']);
 
     await openOverflow(fixture);
-    buttonByLabel(el(), 'Set inactive')!.click();
+    buttonByLabel(el(), 'Set Inactive')!.click();
     await settle(fixture);
     const dialog = document.body.querySelector('p-dialog') as HTMLElement;
     expect(dialog.querySelector('[data-toggle-body]')?.textContent).toContain(
@@ -840,7 +840,7 @@ describe('MatterDetailPage', () => {
     );
 
     await openOverflow(fixture);
-    buttonByLabel(el(), 'Set inactive')!.click();
+    buttonByLabel(el(), 'Set Inactive')!.click();
     await settle(fixture);
     buttonByLabel(document.body.querySelector('p-dialog') as HTMLElement, 'Set inactive')!.click();
     await settle(fixture);

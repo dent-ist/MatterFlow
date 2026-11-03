@@ -23,10 +23,10 @@ describe('matterActionMenu (quick actions per matter, epic #758)', () => {
     expect(ids(menu)).toEqual(['new-task', 'bulk-tasks', 'add-comment', 'open-tasks']);
     expect(menu.label).toBe('More actions for 90001-80001 Merger');
     expect(menu.items.map((i) => i.label)).toEqual([
-      '+ New task',
-      'Bulk re-assign / re-prioritise',
-      'Add comment',
-      "Open the matter's tasks",
+      'New Task',
+      'Bulk Update',
+      'Add Comment',
+      'Open Task List',
     ]);
   });
 

@@ -17,9 +17,9 @@ export interface MatterActionRuns {
 }
 
 /**
- * The quick actions of one matter (epic #758, PX-25; README 7), as data for the shared row menu (`rowActions`): + New task, Bulk re-assign /
- * re-prioritise (the matter's Tasks tab in selection mode), Add comment (pick one of the matter's open tasks, then write) and Open the matter's
- * tasks (the Task Queue filtered to the matter). An action the person may not use is absent, not greyed; a New task on an inactive matter is
+ * The quick actions of one matter (epic #758, PX-25; README 7), as data for the shared row menu (`rowActions`): New Task, Bulk Update
+ * (the matter's Tasks tab in selection mode), Add Comment (pick one of the matter's open tasks, then write) and Open Task List
+ * (the matter's Tasks tab; LC-11). An action the person may not use is absent, not greyed; a New task on an inactive matter is
  * absent too (the server would refuse it). `omit` leaves out the actions a page already has as a button of its own.
  */
 export function matterActionMenu(
@@ -36,14 +36,14 @@ export function matterActionMenu(
   const tasks = can('Task.View');
   add(
     'newTask',
-    { id: 'new-task', label: '+ New task', icon: 'pi-plus', run: run.newTask },
+    { id: 'new-task', label: 'New Task', icon: 'pi-plus', run: run.newTask },
     can('Task.Create') && target.isActive,
   );
   add(
     'bulk',
     {
       id: 'bulk-tasks',
-      label: 'Bulk re-assign / re-prioritise',
+      label: 'Bulk Update',
       icon: 'pi-check-square',
       run: run.bulk,
     },
@@ -51,12 +51,12 @@ export function matterActionMenu(
   );
   add(
     'addComment',
-    { id: 'add-comment', label: 'Add comment', icon: 'pi-comment', run: run.addComment },
+    { id: 'add-comment', label: 'Add Comment', icon: 'pi-comment', run: run.addComment },
     tasks && can('Task.Comment'),
   );
   add(
     'openTasks',
-    { id: 'open-tasks', label: "Open the matter's tasks", icon: 'pi-list', run: run.openTasks },
+    { id: 'open-tasks', label: 'Open Task List', icon: 'pi-list', run: run.openTasks },
     tasks,
   );
   const menu = rowActions(label, specs, { can });

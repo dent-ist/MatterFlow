@@ -216,7 +216,7 @@ export class ClientDetailPage {
       list.push({
         id: 'toggle-active',
         role: 'state',
-        label: c.isActive ? 'Set inactive' : 'Set active',
+        label: c.isActive ? 'Set Inactive' : 'Set Active',
         run: () => this.toggleOpen.set(true),
       });
     }

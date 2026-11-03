@@ -255,7 +255,7 @@ export class ProjectDetailPage {
       list.push({
         id: 'create-task',
         role: 'primary',
-        label: 'Create task',
+        label: 'Create Task',
         icon: 'pi-plus',
         disabled: !p.isActive,
         reason: "This project is archived. New tasks can't select it.",

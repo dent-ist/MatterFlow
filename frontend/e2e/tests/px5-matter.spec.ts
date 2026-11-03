@@ -25,9 +25,9 @@ test.describe('Quick actions per matter', () => {
     await page.goto(`/matters/${m.matterId}`);
     await page.locator('mf-matter-header [data-overflow][aria-label^="More actions"]').click();
     await expect(page.locator('[role=menuitem]')).toContainText([
-      /Bulk re-assign/,
-      /Add comment/,
-      /Open the matter's tasks/,
+      /Bulk Update/,
+      /Add Comment/,
+      /Open Task List/,
     ]);
 
     // Add comment: choose the task, write, post through the task comment API.
@@ -49,10 +49,10 @@ test.describe('Quick actions per matter', () => {
     await expect(page.locator('[data-selection-bar]')).toBeVisible();
     await page.goto(`/matters/${m.matterId}`);
 
-    // Open the matter's tasks: the Task Queue filtered to the matter, all of its tasks.
+    // Open Task List: the matter's own Tasks tab (LC-11), all of its tasks.
     await page.locator('mf-matter-header [data-overflow][aria-label^="More actions"]').click();
     await page.locator('[data-action=open-tasks]').click();
-    await expect(page).toHaveURL(new RegExp(`/tasks\\?matter=${m.matterId}`));
+    await expect(page).toHaveURL(new RegExp(`/matters/${m.matterId}\\?tab=tasks`));
     await expect(page.locator('[data-range]').first()).toContainText('of 2');
   });
 
@@ -74,10 +74,10 @@ test.describe('Quick actions per matter', () => {
     );
     await rowMenu.click();
     await expect(page.locator('[role=menuitem]')).toHaveText([
-      /New task/,
-      /Bulk re-assign/,
-      /Add comment/,
-      /Open the matter's tasks/,
+      /New Task/,
+      /Bulk Update/,
+      /Add Comment/,
+      /Open Task List/,
     ]);
     await page.keyboard.press('Escape');
     await expect(rowMenu).toBeFocused();
@@ -105,7 +105,7 @@ test.describe('Quick actions per matter', () => {
     await page.goto(`/matters?name=${fx.token}`);
     const rowMenu = page.locator('tbody tr').first().locator('[data-overflow]');
     await rowMenu.click();
-    await expect(page.locator('[role=menuitem]')).toHaveText([/Open the matter's tasks/]);
+    await expect(page.locator('[role=menuitem]')).toHaveText([/Open Task List/]);
     await expect(page.locator('[role=menuitem][aria-disabled=true]')).toHaveCount(0);
 
     page = await asUser(fx.pmNoTask.username); // Matter.View without Task.View

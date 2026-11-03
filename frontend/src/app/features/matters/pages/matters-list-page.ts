@@ -1235,7 +1235,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
           this.commentOpen.set(true);
         },
         openTasks: () =>
-          void this.router.navigate(['/tasks'], { queryParams: { matter: m.matterId } }),
+          void this.router.navigate(['/matters', m.matterId], { queryParams: { tab: 'tasks' } }),
       },
     );
   }
