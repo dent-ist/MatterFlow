@@ -100,14 +100,21 @@ public sealed class AssigneeLoadReader(DbContext db, IMatterVisibility visibilit
         var ids = userIds.Distinct().ToList();
         // The true load (what the ranking orders by) and, when the rule is on, the same facts over the tasks the caller may see (what a screen may show).
         var (open, last) = await ReadAsync(db.Set<WorkTask>().AsNoTracking(), ids, cancellationToken);
+        // Dashboard v4 capacity load (decision AS item 12): New and In progress only, true count, never filtered, leaves the query as a bare integer per person.
+        var active = await db.Set<WorkTask>().AsNoTracking()
+            .Where(t => (t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress) && t.AssignedUserId != null && ids.Contains(t.AssignedUserId.Value))
+            .GroupBy(t => t.AssignedUserId!.Value)
+            .Select(g => new { Key = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(r => r.Key, r => r.Count, cancellationToken);
         (Dictionary<int, int> Open, Dictionary<int, DateTime?> Last)? shown = visibility.Enabled ? await ReadAsync(VisibleTasks.Of(db, visibility), ids, cancellationToken) : null;
 
-        return last.Keys.Union(open.Keys).ToDictionary(
+        return last.Keys.Union(open.Keys).Union(active.Keys).ToDictionary(
             id => id,
             id => new AssigneeLoad(
                 open.GetValueOrDefault(id),
                 last.GetValueOrDefault(id),
-                shown is null ? null : new AssigneeLoadDisplay(shown.Value.Open.GetValueOrDefault(id), shown.Value.Last.GetValueOrDefault(id))));
+                shown is null ? null : new AssigneeLoadDisplay(shown.Value.Open.GetValueOrDefault(id), shown.Value.Last.GetValueOrDefault(id)),
+                active.GetValueOrDefault(id)));
     }
 
     private static async Task<(Dictionary<int, int> Open, Dictionary<int, DateTime?> Last)> ReadAsync(IQueryable<WorkTask> tasks, List<int> ids, CancellationToken cancellationToken)

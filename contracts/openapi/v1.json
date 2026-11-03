@@ -1702,6 +1702,91 @@
         }
       }
     },
+    "/api/v1/admin/settings/dashboard": {
+      "get": {
+        "tags": [
+          "SettingsDashboard"
+        ],
+        "operationId": "GetDashboardSettings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardSettingsAdminView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "SettingsDashboard"
+        ],
+        "operationId": "SetDashboardSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetDashboardGaugeRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetDashboardGaugeRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetDashboardGaugeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardSettingsAdminView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "SettingsDashboard"
+        ],
+        "operationId": "ResetDashboardSettings",
+        "parameters": [
+          {
+            "name": "rowVersion",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardSettingsAdminView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/forms": {
       "post": {
         "tags": [
@@ -11288,6 +11373,89 @@
         }
       }
     },
+    "/api/v1/dashboard/capacity": {
+      "get": {
+        "tags": [
+          "DashboardBoard"
+        ],
+        "operationId": "GetDashboardCapacity",
+        "parameters": [
+          {
+            "name": "podScope",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardCapacity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/capacity/people": {
+      "get": {
+        "tags": [
+          "DashboardBoard"
+        ],
+        "operationId": "GetDashboardCapacityPeople",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "podScope",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CapacityPerson"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/dashboard/coverage": {
       "get": {
         "tags": [
@@ -18777,6 +18945,62 @@
           }
         }
       },
+      "CapacityPerson": {
+        "required": [
+          "userId",
+          "displayName",
+          "state",
+          "load",
+          "outUntil",
+          "podNames"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "load": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "outUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "podNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CapacityStateCount": {
+        "required": [
+          "state",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "ChangeAssetDispositionRequest": {
         "required": [
           "dispositionCode",
@@ -20747,6 +20971,83 @@
           }
         }
       },
+      "DashboardCapacity": {
+        "required": [
+          "asOfUtc",
+          "state",
+          "workers",
+          "presentWorkers",
+          "slotsPerPerson",
+          "totalSlots",
+          "freeSlots",
+          "usedPercent",
+          "freePercent",
+          "canTakeWork",
+          "states",
+          "assignedLastHour"
+        ],
+        "type": "object",
+        "properties": {
+          "asOfUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "state": {
+            "type": "string"
+          },
+          "workers": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "presentWorkers": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "slotsPerPerson": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalSlots": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "freeSlots": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "usedPercent": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "freePercent": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "canTakeWork": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "states": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CapacityStateCount"
+            }
+          },
+          "assignedLastHour": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "DashboardCount": {
         "required": [
           "count",
@@ -20760,6 +21061,51 @@
           },
           "query": {
             "type": "string"
+          }
+        }
+      },
+      "DashboardGaugeValues": {
+        "required": [
+          "workdayStart",
+          "workdayEnd",
+          "workDays",
+          "ageBasis",
+          "levelHours",
+          "tasksPerLevel",
+          "countBonusMax"
+        ],
+        "type": "object",
+        "properties": {
+          "workdayStart": {
+            "type": "string"
+          },
+          "workdayEnd": {
+            "type": "string"
+          },
+          "workDays": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "ageBasis": {
+            "type": "string"
+          },
+          "levelHours": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "tasksPerLevel": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "countBonusMax": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -20890,6 +21236,48 @@
           },
           "isMine": {
             "type": "boolean"
+          }
+        }
+      },
+      "DashboardSettingsAdminView": {
+        "required": [
+          "gauge",
+          "defaults",
+          "isCustom",
+          "rowVersion",
+          "timeZoneId",
+          "updatedAtUtc",
+          "updatedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "gauge": {
+            "$ref": "#/components/schemas/DashboardGaugeValues"
+          },
+          "defaults": {
+            "$ref": "#/components/schemas/DashboardGaugeValues"
+          },
+          "isCustom": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string"
+          },
+          "timeZoneId": {
+            "type": "string"
+          },
+          "updatedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -21028,6 +21416,16 @@
               },
               {
                 "$ref": "#/components/schemas/DashboardMine"
+              }
+            ]
+          },
+          "unassignedGauge": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DashboardUnassignedGauge"
               }
             ]
           }
@@ -21229,6 +21627,45 @@
             "items": {
               "$ref": "#/components/schemas/DashboardTrendDay"
             }
+          }
+        }
+      },
+      "DashboardUnassignedGauge": {
+        "required": [
+          "count",
+          "oldestSinceUtc",
+          "oldestAgeMinutes",
+          "ageBasis",
+          "level",
+          "asOfUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "oldestSinceUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "oldestAgeMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ageBasis": {
+            "type": "string"
+          },
+          "level": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "asOfUtc": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -29124,6 +29561,21 @@
           }
         }
       },
+      "SetDashboardGaugeRequest": {
+        "required": [
+          "gauge",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "gauge": {
+            "$ref": "#/components/schemas/DashboardGaugeValues"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
       "SetMatterManagersRequest": {
         "required": [
           "rowVersion"
@@ -31129,6 +31581,20 @@
           "atRisk": {
             "type": "boolean",
             "default": false
+          },
+          "unassignedSinceUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "unassignedForMinutes": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -33497,7 +33963,9 @@
           "openTaskCount",
           "lastAssignedUtc",
           "suggested",
-          "reason"
+          "reason",
+          "capacityState",
+          "load"
         ],
         "type": "object",
         "properties": {
@@ -33527,6 +33995,13 @@
           },
           "reason": {
             "type": "string"
+          },
+          "capacityState": {
+            "type": "string"
+          },
+          "load": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -34673,6 +35148,9 @@
     },
     {
       "name": "SettingsBranding"
+    },
+    {
+      "name": "SettingsDashboard"
     },
     {
       "name": "Forms"

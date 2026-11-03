@@ -45,6 +45,9 @@ public sealed class TaskSortRow
 
     public DateTime CreatedAtUtc { get; init; }
 
+    /// <summary>Since when the Task has been unassigned (<c>UnassignedAt</c>, else the creation time); null for a Task that has an assigned user.</summary>
+    public DateTime? UnassignedSinceUtc { get; init; }
+
     public DateTime StatusChangedAtUtc { get; init; }
 
     /// <summary>Last update; null for a Task nobody has changed since it was created.</summary>
@@ -95,6 +98,9 @@ public static class TaskQueueRules
     /// <summary>The Task Type name (A to Z), then the default order (PM v2, #860).</summary>
     public const string SortType = "type";
 
+    /// <summary>Unassigned since (Dashboard v4): Tasks with no assigned user first, the longest waiting first when ascending; Tasks with an assignee after them.</summary>
+    public const string SortUnassignedSince = "unassignedSince";
+
     /// <summary>
     /// Urgency (issue #935): by the reason a task needs attention (overdue, at risk, due today, unassigned, on hold too long), and inside a reason by due date (oldest
     /// overdue first), at risk by due date then oldest, on hold by the longest wait. Tasks with no reason come after all five. Ascending is most urgent first.
@@ -116,7 +122,7 @@ public static class TaskQueueRules
     /// </summary>
     public const int DueSoonDays = 2;
 
-    public static readonly IReadOnlyList<string> SortFields = [SortDefault, SortPriority, SortDue, SortCreated, SortNumber, SortStatus, SortCompleted, SortPriorityAge, SortClosed, SortTitle, SortMatter, SortUpdated, SortAge, SortAssignee, SortClient, SortMatterName, SortOnHoldSince, SortType, SortAttention];
+    public static readonly IReadOnlyList<string> SortFields = [SortDefault, SortPriority, SortDue, SortCreated, SortNumber, SortStatus, SortCompleted, SortPriorityAge, SortClosed, SortTitle, SortMatter, SortUpdated, SortAge, SortAssignee, SortClient, SortMatterName, SortOnHoldSince, SortType, SortAttention, SortUnassignedSince];
 
     /// <summary>NEW, IN_PROGRESS or ON_HOLD.</summary>
     public static Expression<Func<WorkTask, bool>> Open { get; } =
@@ -253,6 +259,11 @@ public static class TaskQueueRules
                 return descending
                     ? rows.OrderBy(r => r.Status == TaskStatusCode.OnHold ? 0 : 1).ThenByDescending(r => r.StatusChangedAtUtc).ThenByDescending(r => r.Id)
                     : rows.OrderBy(r => r.Status == TaskStatusCode.OnHold ? 0 : 1).ThenBy(r => r.StatusChangedAtUtc).ThenBy(r => r.Id);
+            case SortUnassignedSince:
+                // Unassigned Tasks first, by how long they have waited (oldest since first when ascending), then everything else in id order.
+                return descending
+                    ? rows.OrderBy(r => r.UnassignedSinceUtc == null ? 1 : 0).ThenByDescending(r => r.UnassignedSinceUtc).ThenByDescending(r => r.Id)
+                    : rows.OrderBy(r => r.UnassignedSinceUtc == null ? 1 : 0).ThenBy(r => r.UnassignedSinceUtc).ThenBy(r => r.Id);
             case SortCreated:
                 return descending ? rows.OrderByDescending(r => r.CreatedAtUtc).ThenByDescending(r => r.Id) : rows.OrderBy(r => r.CreatedAtUtc).ThenBy(r => r.Id);
             case SortNumber:

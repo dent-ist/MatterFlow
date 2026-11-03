@@ -43,6 +43,7 @@ internal sealed class WorkTaskConfiguration : IEntityTypeConfiguration<WorkTask>
         b.Property(x => x.DueAtUtc).HasColumnType("datetime2(3)");
         b.Property(x => x.DueSortKey).HasColumnType("datetime2(3)");
         b.Property(x => x.AssignedAtUtc).HasColumnName("AssignedAt").HasColumnType("datetime2(3)");
+        b.Property(x => x.UnassignedAtUtc).HasColumnName("UnassignedAt").HasColumnType("datetime2(3)");
         b.Property(x => x.StatusChangedAtUtc).HasColumnName("StatusChangedAt").HasColumnType("datetime2(3)");
         b.Property(x => x.CompletedAtUtc).HasColumnName("CompletedAt").HasColumnType("datetime2(3)");
         b.Property(x => x.OnHoldReasonId);

@@ -18,7 +18,7 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// Read side of the Dashboard: a handful of aggregate reads (one for the headline counts, one per breakdown, and one for aging; the Trends tab has its own endpoint, <see cref="DashboardTrendService"/>), never a read per row. It reuses <see cref="TaskQueueRules"/> so every number agrees with the Task Queue the user lands
 /// on, and each number carries the Task Queue query that lists exactly the counted Tasks. Without the sensitive-matter rule (epic #788) there is no per-record visibility (addendum E); with it, every number is computed from the tasks the caller may see.
 /// </summary>
-public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone timeZone, ICurrentUser currentUser, IPermissionChecker permissions, DashboardCache cache, DashboardScopeResolver scopes, IMatterVisibility visibility, VisibilityStamp stamp)
+public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone timeZone, ICurrentUser currentUser, IPermissionChecker permissions, DashboardCache cache, DashboardScopeResolver scopes, IMatterVisibility visibility, VisibilityStamp stamp, UnassignedAge unassignedAge)
 {
     public async Task<Result<DashboardSummary>> GetAsync(DashboardQuery query, CancellationToken ct)
     {
@@ -84,6 +84,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         {
             Open = open.Count(),
             Unassigned = open.Count(t => t.AssignedUserId == null),
+            OldestUnassigned = open.Where(t => t.AssignedUserId == null).Min(t => (DateTime?)(t.UnassignedAtUtc ?? t.CreatedAtUtc)),
             Overdue = open.Count(overdue),
             OverdueCritical = open.Where(overdue).Count(t => criticalIds.Contains(t.PriorityId)),
             OverdueHigh = open.Where(overdue).Count(t => highIds.Contains(t.PriorityId)),
@@ -106,6 +107,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         {
             Open = 0,
             Unassigned = open.Count(t => t.AssignedUserId == null),
+            OldestUnassigned = (DateTime?)null,
             Overdue = 0,
             OverdueCritical = 0,
             OverdueHigh = 0,
@@ -182,7 +184,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             ? await VisibleTasks.Of(db, visibility).Where(TaskQueueRules.Open).CountAsync(t => t.AssignedUserId == null && t.AssignedPodId == null, ct)
             : 0;
 
-        head ??= new { Open = 0, Unassigned = 0, Overdue = 0, OverdueCritical = 0, OverdueHigh = 0, OnHold = 0, DueSoon = 0, AsapOpen = 0, Completed = 0, Created = 0, OpenYesterday = 0, OverdueYesterday = 0, CompletedPrevious = 0, CreatedPrevious = 0, HadYesterday = false, HadBeforePrevious = false };
+        head ??= new { Open = 0, Unassigned = 0, OldestUnassigned = (DateTime?)null, Overdue = 0, OverdueCritical = 0, OverdueHigh = 0, OnHold = 0, DueSoon = 0, AsapOpen = 0, Completed = 0, Created = 0, OpenYesterday = 0, OverdueYesterday = 0, CompletedPrevious = 0, CreatedPrevious = 0, HadYesterday = false, HadBeforePrevious = false };
 
         // Dashboard.ViewUnassigned without Dashboard.ViewSummary (the Technician's Summary): the caller's own open and overdue Tasks, by the Task Queue definitions and whatever the page scope.
         DashboardMine? mine = null;
@@ -190,6 +192,16 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         {
             var own = db.Set<WorkTask>().AsNoTracking().Where(t => t.AssignedUserId == me).Where(TaskQueueRules.Open);
             mine = new DashboardMine(await own.CountAsync(ct), await own.CountAsync(overdue, ct));
+        }
+
+        // Dashboard v4 gauge: the age of the oldest visible unassigned Task in scope (working minutes by default) and the one level every viewer sees. Only with the Summary tab.
+        DashboardUnassignedGauge? gauge = null;
+        if (showSummary)
+        {
+            var (gaugeSettings, _) = await unassignedAge.LoadAsync(ct);
+            var oldest = head.OldestUnassigned is { } since ? DateTime.SpecifyKind(since, DateTimeKind.Utc) : (DateTime?)null;
+            var ageMinutes = oldest is { } o ? await unassignedAge.MinutesAsync(o, queueClock.NowUtc, ct) : 0;
+            gauge = new DashboardUnassignedGauge(head.Unassigned, oldest, ageMinutes, gaugeSettings.AgeBasis, UnassignedGaugeRules.Level(head.Unassigned, ageMinutes, gaugeSettings), DateTime.SpecifyKind(queueClock.NowUtc, DateTimeKind.Utc));
         }
 
         var summary = new DashboardSummary(
@@ -216,7 +228,8 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
             showSummary && head.HadBeforePrevious ? head.CompletedPrevious : null,
             showSummary && head.HadBeforePrevious ? head.CreatedPrevious : null,
             showSummary ? new DashboardPreviousPeriod(previous.Kind, previous.From, previous.To) : null,
-            mine);
+            mine,
+            gauge);
         cache.Set(cacheKey, summary);
         return summary;
     }

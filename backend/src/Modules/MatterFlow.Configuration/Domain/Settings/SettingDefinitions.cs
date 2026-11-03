@@ -32,6 +32,12 @@ public static class SettingDefinitions
 
     public const string BrandingReset = "SETTINGS_BRANDING_RESET";
 
+    public const string DashboardGaugeKey = "Dashboard.Gauge";
+
+    public const string DashboardGaugeChanged = "SETTINGS_DASHBOARD_GAUGE_CHANGED";
+
+    public const string DashboardGaugeReset = "SETTINGS_DASHBOARD_GAUGE_RESET";
+
     /// <summary>The audited object type of every setting event.</summary>
     public const string AuditObjectType = "AppSetting";
 
@@ -41,5 +47,9 @@ public static class SettingDefinitions
     public static SettingDefinition BrandingIcon { get; } =
         new(BrandingIconKey, SettingValueType.Binary, null, BrandingIconChanged, BrandingReset, "Application icon");
 
-    public static IReadOnlyList<SettingDefinition> All { get; } = [BrandingAppName, BrandingIcon];
+    /// <summary>The Dashboard unassigned-gauge settings (Dashboard v4, #1064) as one JSON text value: working day, age basis and level steps. Default: the code default of <c>DashboardGaugeSettings</c> (no stored value).</summary>
+    public static SettingDefinition DashboardGauge { get; } =
+        new(DashboardGaugeKey, SettingValueType.Text, null, DashboardGaugeChanged, DashboardGaugeReset, "Dashboard gauge settings");
+
+    public static IReadOnlyList<SettingDefinition> All { get; } = [BrandingAppName, BrandingIcon, DashboardGauge];
 }

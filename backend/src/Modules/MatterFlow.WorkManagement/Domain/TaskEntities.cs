@@ -49,6 +49,12 @@ public class WorkTask : AuditedEntity<long>
     /// <summary>When the current assignee was assigned (UTC); null while no user is assigned. Pod-only changes do not move it.</summary>
     public DateTime? AssignedAtUtc { get; set; }
 
+    /// <summary>
+    /// Since when the Task has had no assigned user (UTC; script 57): set at creation without an assignee and whenever the assignee is cleared, null while a user is assigned.
+    /// Rows from before script 57 have null too, so readers use <c>UnassignedAtUtc ?? CreatedAtUtc</c> (no backfill). A Pod-only assignment is still unassigned.
+    /// </summary>
+    public DateTime? UnassignedAtUtc { get; set; }
+
     public string RequestorName { get; set; } = string.Empty;
 
     public string? RequestorEmail { get; set; }

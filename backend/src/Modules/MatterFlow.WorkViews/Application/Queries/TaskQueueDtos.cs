@@ -62,7 +62,9 @@ public sealed record TaskQueueRow(
     string? TaskTypeColourKey = null,
     int? OnHoldReasonId = null,
     string? OnHoldReasonName = null,
-    [property: Required] bool AtRisk = false);
+    [property: Required] bool AtRisk = false,
+    DateTime? UnassignedSinceUtc = null,
+    int? UnassignedForMinutes = null);
 
 /// <summary>Where the Task's workflow stands: the current (first unresolved) step and how many steps are resolved (completed or skipped).</summary>
 /// <param name="StepsTotal">Number of steps.</param>
