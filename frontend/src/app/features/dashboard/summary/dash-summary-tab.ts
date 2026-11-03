@@ -100,6 +100,11 @@ import { DashV4Api } from './dash-v4-api';
         --dash-rc: 300px;
       }
     }
+    @media (max-width: 900px) {
+      :host {
+        --dash-rc: 272px;
+      }
+    }
     /* A phone, a narrow window or a very short one: one column and the page scrolls (reflow, 200% zoom). Battery and gauge sit between the cards and the tasks. */
     @media (max-width: 767.98px), (max-height: 560.98px) {
       .body {

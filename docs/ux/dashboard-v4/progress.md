@@ -7,10 +7,10 @@ Protocol: one section per agent below, append-only, newest entry last; `git pull
 | #1063 | DB-00 | Epic, issues, plan, decision AS | 2.0 | 4.2 | 100 | 4.2 |
 | #1064 | DB-01 | Backend: unassigned-since, summary gauge block, working-hours age, settings | 6.0 | 12.5 | 100 | 12.5 |
 | #1065 | DB-02 | Backend: capacity summary and People list | 7.0 | 14.6 | 100 | 14.6 |
-| #1066 | DB-03 | Frontend: Summary layout, cards, grid, right column | 6.0 | 12.5 | 0 | 0.0 |
-| #1067 | DB-04 | Frontend: grid columns and inline assign | 7.0 | 14.6 | 0 | 0.0 |
-| #1068 | DB-05 | Frontend: capacity battery | 4.5 | 9.4 | 0 | 0.0 |
-| #1069 | DB-06 | Frontend: unassigned gauge and settings form | 4.5 | 9.4 | 0 | 0.0 |
+| #1066 | DB-03 | Frontend: Summary layout, cards, grid, right column | 6.0 | 12.5 | 90 | 11.3 |
+| #1067 | DB-04 | Frontend: grid columns and inline assign | 7.0 | 14.6 | 85 | 12.4 |
+| #1068 | DB-05 | Frontend: capacity battery | 4.5 | 9.4 | 90 | 8.5 |
+| #1069 | DB-06 | Frontend: unassigned gauge and settings form | 4.5 | 9.4 | 90 | 8.5 |
 | #1070 | DB-07 | Cross-cutting: contracts, catalog, e2e, axe, guide | 5.0 | 10.4 | 0 | 0.0 |
 | #1071 | DB-08 | Final QA (only when the owner says) | 6.0 | 12.4 | 0 | 0.0 |
 | | | **Total** | **48.0** | **100.0** | | **31.3** |
@@ -38,3 +38,5 @@ Protocol: one section per agent below, append-only, newest entry last; `git pull
 - 2026-11-03 Built on the contract as G pushed it: capacity `state` (OK / AFTER_HOURS / ALL_OUT / NO_WORKERS) decides the battery mode (neutral "After hours" and "Everyone is out of office" instead of a percentage); the formula tooltip says out-of-office and off-hours people are not counted (G's owner decision (a)); the Settings form sends ISO weekday numbers, an empty `rowVersion` for the first save, and a DELETE reset when the values equal the defaults.
 - 2026-11-03 Overview and the Period control are gone from Summary (Trends keeps its Period); the old Summary lists (Overdue, Due soon, the Director's Unassigned list) are gone; the Technician's "Unassigned work" queue is unchanged. Unit specs and the Dashboard e2e specs that depended on the old Summary were removed or rewritten (new e2e: `dashboard-v4-summary.spec.ts`). Shared files touched (small, additive): `task-table.ts/.scss`, `work-list.ts`, `row-edit.ts`, `inline-menu.ts`, `assignee-list.ts`, `column-prefs.ts`, `sort-note.ts`, `sort-sentences.ts`, `tab-icons.ts`, `docs/ux/tokens.css`, `scripts/check-theme-contrast.mjs`.
 - Open for G or the owner: (1) the People list orders by severity on the server and groups by state here, which agrees; (2) the issue text for the formula tooltip says "3 x people who take work", the built text says "people who are at work now" because of decision (a); (3) the phone task cards keep the standard cells (no Type-icon-only, `+9d` or Assign picker in cards).
+- 2026-11-03 Screenshots of the BUILT page (development build, API mocked in the browser; Director, Technician and the dialogs) are in `docs/ux/dashboard-v4/built/`: 1366x768, 1920x1080, 768x1024, 375x812 for the Director, 1366x768 for the Technician, plus the pressed Unassigned card, the Assign picker with states and the People popover. The sign-in stub of the development build has no Pod Lead persona, so the Pod Lead check was done with the Director stub and the My pods scope, and the unit and e2e specs cover the permission differences. No horizontal page scroll at any of the 15 role-and-size combinations; the page does not scroll down at 1366x768, 1920x1080, 1366x600 and 768x1024. Production initial bundle 659.9 kB (limit 700 kB).
+- 2026-11-03 Not done and not run (see the hand-back report): the new and changed Dashboard e2e specs were type-checked but not run (no stack); axe was not run; the phone task cards keep the standard cells.
