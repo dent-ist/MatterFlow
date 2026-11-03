@@ -106,7 +106,7 @@ describe('MatterFormDialog: one form for New and Edit (MD-43, #1061)', () => {
 
   it('shows the CM Number as a read-only preview that follows the client and the matter number', async () => {
     const f = await start(false);
-    expect(q('#matter-number')).not.toBeNull();
+    expect((q('#matter-number') as HTMLInputElement).disabled).toBe(false); // New: both inputs are editable
     expect(q('[data-cm-value]')!.tagName).toBe('OUTPUT'); // not an input: it is never typed
     await settle(f);
     const input = q('#matter-number') as HTMLInputElement;

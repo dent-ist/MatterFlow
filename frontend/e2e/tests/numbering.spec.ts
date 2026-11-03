@@ -82,11 +82,15 @@ test.describe('Client and matter numbering (SCN-001, SCN-002, SCN-003)', () => {
 
     await form.open();
     await form.create(first.clientNumber, '1', `Matter ${uid()}`);
-    await expect(form.heading()).toContainText(`${first.clientNumber}-00001`);
+    await expect(page.locator('[data-summary-details]')).toContainText(
+      `${first.clientNumber}-00001`,
+    );
 
     await form.open();
     await form.create(second.clientNumber, '1', `Matter ${uid()}`);
-    await expect(form.heading()).toContainText(`${second.clientNumber}-00001`);
+    await expect(page.locator('[data-summary-details]')).toContainText(
+      `${second.clientNumber}-00001`,
+    );
   });
 
   test('SCN-003: a duplicate matter number inside one client is rejected', async ({
@@ -102,7 +106,8 @@ test.describe('Client and matter numbering (SCN-001, SCN-002, SCN-003)', () => {
     await form.create(client.clientNumber, '1', `Another ${uid()}`);
 
     await expect(form.summary).toContainText(/already|exists|in use/i);
-    await expect(page).toHaveURL(/\/matters\/new$/);
+    // The pop-up stays open on the list (MD-22): no page change.
+    await expect(page).toHaveURL(/\/matters$/);
 
     const result = await admin.raw('POST', '/api/v1/matters', {
       clientId: client.clientId,

@@ -160,7 +160,7 @@ function clientOption(c: ClientResponse): PickerOption {
             label="Matter number"
             noun="matter number"
             help="Enter 1 to 5 digits, as issued by the firm's main system. It must not be used by another matter of the same client."
-            [disabled]="numberLocked()"
+            [disabled]="isEdit() && numberLocked()"
             [showErrors]="submitted()"
             [serverError]="fieldError('matterNumber')"
             [(value)]="number"
