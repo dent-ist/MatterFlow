@@ -53,8 +53,13 @@ const body = (input: AbsenceInput) => ({
   startDate: input.startDate,
   endDate: input.endDate ?? undefined,
   note: input.note ?? undefined,
-  rowVersion: input.rowVersion,
 });
+
+/** An edit always starts from a loaded entry, so it has its row version; without one the save must not go out. */
+function versionOf(rowVersion: string | undefined): string {
+  if (rowVersion === undefined) throw new Error('An update needs the row version of the entry.');
+  return rowVersion;
+}
 
 @Injectable({ providedIn: 'root' })
 export class HttpAbsenceApi implements AbsenceApi {
@@ -82,7 +87,12 @@ export class HttpAbsenceApi implements AbsenceApi {
 
   async update(userId: number, absenceId: number, input: AbsenceInput): Promise<AbsenceEntry> {
     return toEntry(
-      await firstValueFrom(this.absences.updateAbsence(userId, absenceId, body(input))),
+      await firstValueFrom(
+        this.absences.updateAbsence(userId, absenceId, {
+          ...body(input),
+          rowVersion: versionOf(input.rowVersion),
+        }),
+      ),
     );
   }
 

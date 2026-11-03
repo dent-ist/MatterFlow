@@ -113,8 +113,13 @@ const holidayBody = (i: HolidayInput) => ({
   yearly: i.yearly,
   weekendRule: i.weekendRule,
   regionNote: i.regionNote ?? undefined,
-  rowVersion: i.rowVersion,
 });
+
+/** An edit always starts from a loaded record, so it has its row version; without one the save must not go out. */
+function versionOf(rowVersion: string | undefined): string {
+  if (rowVersion === undefined) throw new Error('An update needs the row version of the record.');
+  return rowVersion;
+}
 
 @Injectable({ providedIn: 'root' })
 export class HttpHolidayApi implements HolidayApi {
@@ -141,13 +146,15 @@ export class HttpHolidayApi implements HolidayApi {
       regionNote: input.regionNote ?? undefined,
       appliesToEveryone: input.appliesToEveryone,
       isActive: true,
-      rowVersion: input.rowVersion,
     };
     return calendar(
       await this.q(
         calendarId === null
           ? this.calendarsClient.createHolidayCalendar(body)
-          : this.calendarsClient.updateHolidayCalendar(calendarId, body),
+          : this.calendarsClient.updateHolidayCalendar(calendarId, {
+              ...body,
+              rowVersion: versionOf(input.rowVersion),
+            }),
       ),
     );
   }
@@ -169,7 +176,12 @@ export class HttpHolidayApi implements HolidayApi {
       await this.q(
         holidayId === null
           ? this.calendarsClient.createHoliday(calendarId, holidayBody(input))
-          : this.calendarsClient.updateHoliday(calendarId, holidayId, holidayBody(input)),
+          : this.calendarsClient.updateHoliday(calendarId, holidayId, {
+              ...holidayBody(input),
+              yearly: input.yearly,
+              weekendRule: input.weekendRule,
+              rowVersion: versionOf(input.rowVersion),
+            }),
       ),
     );
   }
