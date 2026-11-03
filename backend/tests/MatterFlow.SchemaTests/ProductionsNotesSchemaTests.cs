@@ -114,20 +114,26 @@ public class ProductionsNotesSchemaTests(SqlServerFixture sql)
     }
 
     [Fact]
-    public async Task A_template_is_firm_wide_without_a_matter_or_for_one_matter_and_names_are_unique_in_their_scope()
+    public async Task A_template_is_at_the_system_client_or_matter_level_and_names_are_unique_in_their_level()
     {
         var (cs, matter, other, _) = await SeedAsync(sql);
-        await ScalarAsync(cs, "INSERT dbo.NoteTemplate (ScopeCode, Name) VALUES ('FIRM', N'Custodian interview')");
+        var client = await ScalarAsync(cs, $"SELECT ClientId FROM dbo.Matter WHERE MatterId = {matter}");
+        await ScalarAsync(cs, "INSERT dbo.NoteTemplate (ScopeCode, Name) VALUES ('SYSTEM', N'Custodian interview')");
+        await ScalarAsync(cs, $"INSERT dbo.NoteTemplate (ScopeCode, ClientId, Name) VALUES ('CLIENT', {client}, N'Custodian interview')");
         await ScalarAsync(cs, $"INSERT dbo.NoteTemplate (ScopeCode, MatterId, Name) VALUES ('MATTER', {matter}, N'Custodian interview')");
         await ScalarAsync(cs, $"INSERT dbo.NoteTemplate (ScopeCode, MatterId, Name) VALUES ('MATTER', {other}, N'Custodian interview')");
 
-        (await Should.ThrowAsync<SqlException>(() => ScalarAsync(cs, "INSERT dbo.NoteTemplate (ScopeCode, Name) VALUES ('FIRM', N'Custodian interview')")))
-            .Message.ShouldContain("UQ_NoteTemplate_FirmName");
+        (await Should.ThrowAsync<SqlException>(() => ScalarAsync(cs, "INSERT dbo.NoteTemplate (ScopeCode, Name) VALUES ('SYSTEM', N'Custodian interview')")))
+            .Message.ShouldContain("UQ_NoteTemplate_SystemName");
+        (await Should.ThrowAsync<SqlException>(() => ScalarAsync(cs, $"INSERT dbo.NoteTemplate (ScopeCode, ClientId, Name) VALUES ('CLIENT', {client}, N'Custodian interview')")))
+            .Message.ShouldContain("UQ_NoteTemplate_ClientName");
         (await Should.ThrowAsync<SqlException>(() => ScalarAsync(cs, $"INSERT dbo.NoteTemplate (ScopeCode, MatterId, Name) VALUES ('MATTER', {matter}, N'Custodian interview')")))
             .Message.ShouldContain("UQ_NoteTemplate_MatterName");
-        (await Should.ThrowAsync<SqlException>(() => ScalarAsync(cs, $"INSERT dbo.NoteTemplate (ScopeCode, MatterId, Name) VALUES ('FIRM', {matter}, N'Bad')")))
-            .Message.ShouldContain("CK_NoteTemplate_Scope");
+        (await Should.ThrowAsync<SqlException>(() => ScalarAsync(cs, $"INSERT dbo.NoteTemplate (ScopeCode, MatterId, Name) VALUES ('SYSTEM', {matter}, N'Bad')")))
+            .Message.ShouldContain("CK_NoteTemplate_Level");
         (await Should.ThrowAsync<SqlException>(() => ScalarAsync(cs, "INSERT dbo.NoteTemplate (ScopeCode, Name) VALUES ('MATTER', N'Bad')")))
-            .Message.ShouldContain("CK_NoteTemplate_Scope");
+            .Message.ShouldContain("CK_NoteTemplate_Level");
+        (await Should.ThrowAsync<SqlException>(() => ScalarAsync(cs, "INSERT dbo.NoteTemplate (ScopeCode, Name) VALUES ('CLIENT', N'Bad')")))
+            .Message.ShouldContain("CK_NoteTemplate_Level");
     }
 }

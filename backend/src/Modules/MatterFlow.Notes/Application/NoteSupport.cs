@@ -23,7 +23,8 @@ internal static class NoteSupport
     }
 
     public const string TagNameUnique = "UQ_NoteTag_Name";
-    public const string FirmTemplateNameUnique = "UQ_NoteTemplate_FirmName";
+    public const string SystemTemplateNameUnique = "UQ_NoteTemplate_SystemName";
+    public const string ClientTemplateNameUnique = "UQ_NoteTemplate_ClientName";
     public const string MatterTemplateNameUnique = "UQ_NoteTemplate_MatterName";
 
 

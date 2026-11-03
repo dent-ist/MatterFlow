@@ -228,8 +228,8 @@ test.describe('My Matters: the page', () => {
   });
 });
 
-test.describe('My Matters: one dropdown style, pin and icons (UI-19)', () => {
-  test('Show, Recent activity kind, Client and Matter are the same listbox dropdown; the pin shows its state; the grid has its icons', async ({
+test.describe('My Matters: one dropdown style and icons (UI-19)', () => {
+  test('Show, Recent activity kind, Client and Matter are the same listbox dropdown; the tree has no pin; the grid has its icons', async ({
     seed,
     personas,
     asUser,
@@ -263,14 +263,9 @@ test.describe('My Matters: one dropdown style, pin and icons (UI-19)', () => {
     }
     // The activity kind is ONE dropdown with counts, not a row of chips.
     await expect(page.locator('[data-section=activity] mf-filter-chips')).toHaveCount(0);
-    // The pin: a different icon and aria-pressed, and the words Unpin / Pin.
-    const pin = page.locator('[data-tree-pin]');
-    await expect(pin).toHaveAttribute('aria-pressed', 'false');
-    const before = await pin.locator('svg').getAttribute('class');
-    await pin.click();
-    await expect(pin).toHaveAttribute('aria-pressed', 'true');
-    expect(await pin.locator('svg').getAttribute('class')).not.toBe(before);
-    await expect(pin).toHaveAttribute('aria-label', /Unpin/);
+    // The tree has no pin any more (MM-20): it stays open after a choice and keeps only its collapse-to-rail button.
+    await expect(page.locator('[data-tree-pin]')).toHaveCount(0);
+    await expect(page.locator('[data-tree-collapse]')).toBeVisible();
   });
 });
 

@@ -202,7 +202,7 @@ public class NoteTemplatesController(NoteTemplateService templates) : Controller
     public async Task<IActionResult> Get(int templateId, CancellationToken cancellationToken) =>
         this.ToActionResult(await templates.GetAsync(templateId, cancellationToken));
 
-    /// <summary>Creates a template. FIRM scope: administrators only (403 FIRM_TEMPLATE_ADMIN_ONLY); MATTER scope needs the matter.</summary>
+    /// <summary>Creates a template at one of three levels: SYSTEM (administrators only, 403 SYSTEM_TEMPLATE_ADMIN_ONLY), CLIENT (needs client edit and a visible matter of the client) or MATTER (needs the matter).</summary>
     [HttpPost(Name = "CreateNoteTemplate")]
     [Authorize(Policy = NotePolicies.NoteEdit)]
     [ProducesResponseType<NoteTemplateResponse>(StatusCodes.Status201Created, "application/json")]

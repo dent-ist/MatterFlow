@@ -43,9 +43,8 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
 }
 
 /**
- * The tree of clients and matters (`mf-mm-tree-panel`, epic #953 UI-12): a card with a search box, "Active only", Expand all / Collapse all, a pin that keeps it open after a
- * choice, a button that collapses it to its rail, the legend of the marks and the accessible `mf-tree`. It shows exactly the clients and matters the API returned for the person's
- * scope (a sensitive matter the person may not see is not in the data). The same panel is the Browse popover below 1100 px (`popover`: no pin and no collapse button). The open clients are remembered in the browser.
+ * The tree of clients and matters (`mf-mm-tree-panel`, epic #953 UI-12): a card with a search box, "Active only", Expand all / Collapse all, a button that collapses it to its rail, the legend of the marks and the accessible `mf-tree`. It shows exactly the clients and matters the API returned for the person's
+ * scope (a sensitive matter the person may not see is not in the data). The same panel is the Browse popover below 1100 px (`popover`: no collapse button). The open clients are remembered in the browser.
  */
 @Component({
   selector: 'mf-mm-tree-panel',
@@ -57,35 +56,6 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
       <div class="hd">
         <h2 id="mm-tree-h">Client and Matters</h2>
         @if (!popover()) {
-          <button
-            type="button"
-            class="mf-btn mf-btn--icon ib"
-            data-tree-pin
-            [attr.aria-pressed]="pinned()"
-            [attr.aria-label]="
-              pinned()
-                ? 'Unpin the tree (it stays open after choosing)'
-                : 'Pin the tree open after choosing'
-            "
-            [mfTip]="
-              pinned()
-                ? 'Unpin: let the tree close after you choose'
-                : 'Pin open: keep the tree open after you choose'
-            "
-            (click)="pin.emit(!pinned())"
-          >
-            <svg
-              class="pin"
-              [class.on]="pinned()"
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path d="M9 3h6l-1 6 3 3v2H7v-2l3-3zM12 14v7" />
-            </svg>
-          </button>
           <button
             type="button"
             class="mf-btn mf-btn--icon ib"
@@ -148,11 +118,20 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
           />
         }
       </div>
-      <p class="legend">
-        <span><span class="d"></span> Active</span>
-        <span><span class="d q"></span> Quiet</span>
-        <span><i class="pi pi-lock" aria-hidden="true"></i> Sensitive</span>
-        <span><i class="pi pi-exclamation-triangle" aria-hidden="true"></i> Overdue</span>
+      <p class="legend" data-legend>
+        <span title="Active"
+          ><span class="d" aria-hidden="true"></span><span class="lb">Active</span></span
+        >
+        <span title="Quiet"
+          ><span class="d q" aria-hidden="true"></span><span class="lb">Quiet</span></span
+        >
+        <span title="Sensitive"
+          ><i class="pi pi-lock" aria-hidden="true"></i><span class="lb">Sensitive</span></span
+        >
+        <span title="Overdue"
+          ><i class="pi pi-exclamation-triangle" aria-hidden="true"></i
+          ><span class="lb">Overdue</span></span
+        >
       </p>
     </div>
   `,
@@ -164,6 +143,7 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
       min-width: 0;
     }
     .card {
+      container-type: inline-size;
       display: flex;
       flex-direction: column;
       height: 100%;
@@ -186,21 +166,6 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
       margin: 0;
       font-size: var(--mf-fs-md);
       font-weight: 700;
-    }
-    .pin {
-      fill: none;
-      stroke: currentColor;
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-    .pin.on {
-      fill: currentColor;
-    }
-    .ib[aria-pressed='true'] {
-      background: var(--mf-selected-bg);
-      border-color: var(--mf-primary);
-      color: var(--mf-primary);
     }
     .tools {
       display: grid;
@@ -267,10 +232,12 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
     }
     .legend {
       display: flex;
-      flex-wrap: wrap;
-      gap: var(--mf-s1) var(--mf-s3);
+      flex-wrap: nowrap;
+      justify-content: space-between;
+      gap: var(--mf-s2);
       margin: 0;
-      padding: var(--mf-s2) var(--mf-s4);
+      padding: var(--mf-s1) var(--mf-s3);
+      white-space: nowrap;
       border-top: 1px solid var(--mf-border);
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-xs);
@@ -282,7 +249,29 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
       height: 9px;
       border-radius: 50%;
       background: var(--mf-active);
-      margin-right: 4px;
+    }
+    .legend > span {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s1);
+      min-width: 0;
+    }
+    .legend .pi {
+      font-size: var(--mf-fs-xs);
+    }
+    /* A tree narrower than the four labels need (resized, tablet panel): the icons stay, the names are the tooltips and stay for screen readers. */
+    @container (max-width: 259px) {
+      .legend {
+        justify-content: flex-start;
+        gap: var(--mf-s3);
+      }
+      .legend .lb {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+      }
     }
     .legend .d.q {
       background: transparent;
@@ -309,9 +298,7 @@ export class MmTreePanel {
   readonly retry = output<void>();
   readonly clientId = input<number | null>(null);
   readonly matterId = input<number | null>(null);
-  readonly pinned = input(false);
   readonly popover = input(false);
-  readonly pin = output<boolean>();
   readonly collapse = output<void>();
   readonly chooseClient = output<number>();
   readonly chooseMatter = output<{ matterId: number; clientId: number }>();

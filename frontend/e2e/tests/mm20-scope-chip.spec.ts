@@ -30,6 +30,15 @@ test.describe('My Matters scope without dropdowns (#1053)', () => {
     expect(
       await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight),
     ).toBeLessThanOrEqual(1);
+    // MM-21 (#1059): the legend is one line, nothing clipped, the four names are there.
+    const legend = await page.locator('[data-legend]').evaluate((el) => ({
+      h: el.getBoundingClientRect().height,
+      clipped: el.scrollWidth > el.clientWidth,
+      text: el.textContent!.replace(/\s+/g, ' ').trim(),
+    }));
+    expect(legend.h, 'one line').toBeLessThan(28);
+    expect(legend.clipped).toBe(false);
+    expect(legend.text).toBe('ActiveQuietSensitiveOverdue');
     await shot(page, 'mm20-default');
 
     await tree.getByRole('treeitem', { name: new RegExp(a.name) }).click();

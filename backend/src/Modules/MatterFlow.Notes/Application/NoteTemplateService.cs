@@ -1,5 +1,7 @@
 using MatterFlow.Audit.Contracts;
+using MatterFlow.Identity.Contracts;
 using MatterFlow.Notes.Domain;
+using MatterFlow.Organization.Contracts;
 using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Results;
 using Microsoft.EntityFrameworkCore;
@@ -7,10 +9,10 @@ using Microsoft.EntityFrameworkCore;
 namespace MatterFlow.Notes.Application;
 
 /// <summary>
-/// Note templates: a starting text for a note, firm-wide (created and changed by administrators only) or for one matter (anyone with Matter Note Edit who sees the matter). Using a template
+/// Note templates: a starting text for a note at System Level (every matter; created and changed by administrators only), Client Level (every matter of one client; Client.Edit holders who see one of its matters) or Matter Level (one matter; anyone with Matter Note Edit who sees the matter). Using a template
 /// copies it (no link is kept); the placeholders <c>{{date}}</c>, <c>{{time}}</c>, <c>{{matter}}</c> and <c>{{author}}</c> are filled in by the client. A template carries no references.
 /// </summary>
-public sealed class NoteTemplateService(DbContext db, IAuditWriter audit, NoteAccess access, ICurrentUser currentUser)
+public sealed class NoteTemplateService(DbContext db, IAuditWriter audit, NoteAccess access, ICurrentUser currentUser, IPermissionChecker permissions, IMatterDirectory matters)
 {
     public const string ObjectType = nameof(NoteTemplate);
 
@@ -18,17 +20,21 @@ public sealed class NoteTemplateService(DbContext db, IAuditWriter audit, NoteAc
     {
         if (query.MatterId is not { } matterId)
             return Error.Validation("matterId", "REQUIRED", "matterId is required.");
-        if (await access.FindVisibleMatterAsync(matterId, ct) is null)
+        if (await access.FindVisibleMatterAsync(matterId, ct) is not { } matter)
             return NoteSupport.NotFound("Matter");
 
-        var templates = db.Set<NoteTemplate>().AsNoTracking().Where(t => t.MatterId == null || t.MatterId == matterId);
+        // Matter Level of this matter, Client Level of its client, System Level (the caller sees this matter, so the client is visible too).
+        var templates = db.Set<NoteTemplate>().AsNoTracking().Where(t =>
+            t.ScopeCode == TemplateScope.System
+            || (t.ScopeCode == TemplateScope.Matter && t.MatterId == matterId)
+            || (t.ScopeCode == TemplateScope.Client && t.ClientId == matter.ClientId));
         if (!string.IsNullOrWhiteSpace(query.Q))
         {
             var q = query.Q.Trim();
             templates = templates.Where(t => t.Name.Contains(q) || (t.Description != null && t.Description.Contains(q)));
         }
 
-        var rows = await templates.OrderBy(t => t.ScopeCode).ThenBy(t => t.Name).ThenBy(t => t.Id).ToListAsync(ct);
+        var rows = await templates.OrderBy(t => t.ScopeCode == TemplateScope.Matter ? 0 : t.ScopeCode == TemplateScope.Client ? 1 : 2).ThenBy(t => t.Name).ThenBy(t => t.Id).ToListAsync(ct);
         return Result<IReadOnlyList<NoteTemplateResponse>>.Success(await ToResponsesAsync(rows, ct));
     }
 
@@ -40,27 +46,12 @@ public sealed class NoteTemplateService(DbContext db, IAuditWriter audit, NoteAc
 
     public async Task<Result<NoteTemplateResponse>> CreateAsync(CreateNoteTemplateRequest request, CancellationToken ct)
     {
-        if (request.Scope is not (TemplateScope.Firm or TemplateScope.Matter))
-            return Error.Validation("scope", "INVALID", "The scope must be FIRM or MATTER.");
+        var target = await ResolveTargetAsync(request.Scope, request.MatterId, request.ClientId, ct);
+        if (target.IsFailure)
+            return target.Error!;
 
-        int? matterId = null;
-        if (request.Scope == TemplateScope.Firm)
-        {
-            if (!currentUser.IsSystemAdmin)
-                return Error.Forbidden("Firm-wide templates are changed by an administrator.", "FIRM_TEMPLATE_ADMIN_ONLY");
-            if (request.MatterId is not null)
-                return Error.Validation("matterId", "NOT_ALLOWED", "A firm-wide template has no matter.");
-        }
-        else
-        {
-            if (request.MatterId is not { } m)
-                return Error.Validation("matterId", "REQUIRED", "Choose the matter for this template.");
-            if (await access.FindVisibleMatterAsync(m, ct) is null)
-                return Error.Validation("matterId", "NOT_FOUND", "Select a matter.");
-            matterId = m;
-        }
-
-        var template = new NoteTemplate { ScopeCode = request.Scope, MatterId = matterId };
+        var (scope, matterId, clientId) = target.Value;
+        var template = new NoteTemplate { ScopeCode = scope, MatterId = matterId, ClientId = clientId };
         var applied = await ApplyAsync(template, request, existingTags: [], ct);
         if (applied.IsFailure)
             return applied.Error!;
@@ -84,6 +75,15 @@ public sealed class NoteTemplateService(DbContext db, IAuditWriter audit, NoteAc
         if (version.IsFailure)
             return version.Error!;
 
+        if (request.Scope is not null || request.MatterId is not null || request.ClientId is not null)
+        {
+            // Moving to another level needs the right for the target level (the right for the current level was checked above).
+            var target = await ResolveTargetAsync(request.Scope ?? template.ScopeCode, request.MatterId ?? (request.Scope is null ? template.MatterId : null), request.ClientId ?? (request.Scope is null ? template.ClientId : null), ct);
+            if (target.IsFailure)
+                return target.Error!;
+            (template.ScopeCode, template.MatterId, template.ClientId) = target.Value;
+        }
+
         var current = await db.Set<NoteTemplateTag>().Where(l => l.NoteTemplateId == id).ToListAsync(ct);
         var applied = await ApplyAsync(template, request, current.Select(l => l.NoteTagId).ToList(), ct);
         if (applied.IsFailure)
@@ -105,19 +105,14 @@ public sealed class NoteTemplateService(DbContext db, IAuditWriter audit, NoteAc
         if (source is null)
             return NoteSupport.NotFound("Template");
 
-        var firm = request.KeepFirmScope && source.ScopeCode == TemplateScope.Firm;
-        if (firm && !currentUser.IsSystemAdmin)
-            return Error.Forbidden("Firm-wide templates are changed by an administrator.", "FIRM_TEMPLATE_ADMIN_ONLY");
+        var keep = request.KeepLevel && RequireWrite(source).IsSuccess;
+        var target = keep
+            ? await ResolveTargetAsync(source.ScopeCode, source.MatterId, source.ClientId, ct)
+            : await ResolveTargetAsync(TemplateScope.Matter, request.MatterId ?? source.MatterId, null, ct);
+        if (target.IsFailure)
+            return target.Error!;
 
-        int? matterId = null;
-        if (!firm)
-        {
-            matterId = request.MatterId ?? source.MatterId;
-            if (matterId is not { } m)
-                return Error.Validation("matterId", "REQUIRED", "Choose the matter for the copy.");
-            if (await access.FindVisibleMatterAsync(m, ct) is null)
-                return Error.Validation("matterId", "NOT_FOUND", "Select a matter.");
-        }
+        var (scope, matterId, clientId) = target.Value;
 
         var name = NoteSupport.Clean(request.Name) ?? $"{source.Name} (copy)";
         if (name.Length > 100)
@@ -125,8 +120,9 @@ public sealed class NoteTemplateService(DbContext db, IAuditWriter audit, NoteAc
 
         var copy = new NoteTemplate
         {
-            ScopeCode = firm ? TemplateScope.Firm : TemplateScope.Matter,
+            ScopeCode = scope,
             MatterId = matterId,
+            ClientId = clientId,
             Name = name,
             Description = source.Description,
             TitleTemplate = source.TitleTemplate,
@@ -179,7 +175,10 @@ public sealed class NoteTemplateService(DbContext db, IAuditWriter audit, NoteAc
 
     // ---------------------------------------------------------------- helpers
 
-    /// <summary>A firm template is readable by everyone who reads notes; a matter template only when its matter is visible.</summary>
+    /// <summary>
+    /// A System Level template is readable by everyone who reads notes; a Matter Level one only when its matter is visible; a Client Level one only when the caller sees at least one matter of
+    /// that client. Anything else does not exist for the caller (404).
+    /// </summary>
     private async Task<NoteTemplate?> FindReadableAsync(int id, bool tracked, CancellationToken ct)
     {
         var templates = tracked ? db.Set<NoteTemplate>() : db.Set<NoteTemplate>().AsNoTracking();
@@ -188,13 +187,57 @@ public sealed class NoteTemplateService(DbContext db, IAuditWriter audit, NoteAc
             return null;
         if (template.MatterId is { } matterId && !await access.CanSeeMatterAsync(matterId, ct))
             return null;
+        if (template.ClientId is { } clientId && !await CanSeeClientAsync(clientId, ct))
+            return null;
         return template;
     }
 
-    private Result RequireWrite(NoteTemplate template) =>
-        template.ScopeCode == TemplateScope.Firm && !currentUser.IsSystemAdmin
-            ? Error.Forbidden("Firm-wide templates are changed by an administrator.", "FIRM_TEMPLATE_ADMIN_ONLY")
-            : Result.Success();
+    private async Task<bool> CanSeeClientAsync(int clientId, CancellationToken ct)
+    {
+        var ids = await matters.MatterIdsOfClientAsync(clientId, ct);
+        return ids.Count > 0 && await access.AnyVisibleAsync(ids, ct);
+    }
+
+    private Result RequireWrite(NoteTemplate template) => RequireLevel(template.ScopeCode);
+
+    /// <summary>System Level: administrators; Client Level: Client.Edit; Matter Level: Matter Note Edit (checked by the endpoint). Delete follows edit.</summary>
+    private Result RequireLevel(string scope) => scope switch
+    {
+        TemplateScope.System when !currentUser.IsSystemAdmin => Error.Forbidden("System Level templates are changed by an administrator.", "SYSTEM_TEMPLATE_ADMIN_ONLY"),
+        TemplateScope.Client when !currentUser.IsSystemAdmin && !permissions.Has(Permissions.Client.Edit) => Error.Forbidden("Client Level templates are changed by people who may edit clients.", "CLIENT_TEMPLATE_NEEDS_CLIENT_EDIT"),
+        _ => Result.Success(),
+    };
+
+    /// <summary>The level, matter and client a template is created at or moved to, with the right for that level and the visibility of its target.</summary>
+    private async Task<Result<(string Scope, int? MatterId, int? ClientId)>> ResolveTargetAsync(string scope, int? matterId, int? clientId, CancellationToken ct)
+    {
+        if (scope is not (TemplateScope.System or TemplateScope.Client or TemplateScope.Matter))
+            return Error.Validation("scope", "INVALID", "The level must be SYSTEM, CLIENT or MATTER.");
+
+        var allowed = RequireLevel(scope);
+        if (allowed.IsFailure)
+            return allowed.Error!;
+
+        switch (scope)
+        {
+            case TemplateScope.System:
+                return matterId is not null || clientId is not null
+                    ? Error.Validation("matterId", "NOT_ALLOWED", "A System Level template has no matter or client.")
+                    : (scope, null, null);
+            case TemplateScope.Client:
+                if (clientId is not { } c)
+                    return Error.Validation("clientId", "REQUIRED", "Choose the client for this template.");
+                if (matterId is not null)
+                    return Error.Validation("matterId", "NOT_ALLOWED", "A Client Level template has no matter.");
+                return await CanSeeClientAsync(c, ct) ? (scope, null, c) : Error.Validation("clientId", "NOT_FOUND", "Select a client.");
+            default:
+                if (matterId is not { } m)
+                    return Error.Validation("matterId", "REQUIRED", "Choose the matter for this template.");
+                if (clientId is not null)
+                    return Error.Validation("clientId", "NOT_ALLOWED", "A Matter Level template has no client.");
+                return await access.FindVisibleMatterAsync(m, ct) is null ? Error.Validation("matterId", "NOT_FOUND", "Select a matter.") : (scope, m, null);
+        }
+    }
 
     private async Task<Result<IReadOnlyList<NoteTag>>> ApplyAsync(NoteTemplate template, NoteTemplateInput input, IReadOnlyCollection<int> existingTags, CancellationToken ct)
     {
@@ -228,7 +271,9 @@ public sealed class NoteTemplateService(DbContext db, IAuditWriter audit, NoteAc
     private Task<bool> NameTakenAsync(NoteTemplate t, int? exceptId, CancellationToken ct) =>
         db.Set<NoteTemplate>().AnyAsync(
             x => x.Name == t.Name && (exceptId == null || x.Id != exceptId)
-                && (t.ScopeCode == TemplateScope.Firm ? x.ScopeCode == TemplateScope.Firm : x.MatterId == t.MatterId),
+                && (t.ScopeCode == TemplateScope.System
+                    ? x.ScopeCode == TemplateScope.System
+                    : t.ScopeCode == TemplateScope.Client ? x.ClientId == t.ClientId : x.MatterId == t.MatterId),
             ct);
 
     private async Task<Result> SaveWithTagsAsync(NoteTemplate template, IReadOnlyList<NoteTag> tags, CancellationToken ct)
@@ -272,20 +317,30 @@ public sealed class NoteTemplateService(DbContext db, IAuditWriter audit, NoteAc
     {
         var tags = await access.TagsOfTemplatesAsync([.. rows.Select(r => r.Id)], ct);
         var names = await access.NamesAsync(rows.Select(r => r.ModifiedByUserId ?? r.CreatedByUserId), ct);
+        var matterNames = await matters.FindManyAsync([.. rows.Where(r => r.MatterId is not null).Select(r => r.MatterId!.Value).Distinct()], ct);
+        var clientNames = new Dictionary<int, string?>();
+        foreach (var clientId in rows.Where(r => r.ClientId is not null).Select(r => r.ClientId!.Value).Distinct())
+            clientNames[clientId] = await matters.ClientNameAsync(clientId, ct);
+
         return [.. rows.Select(t =>
         {
             var by = t.ModifiedByUserId ?? t.CreatedByUserId;
+            var target = t.MatterId is { } m && matterNames.TryGetValue(m, out var mat) ? $"{mat.MatterRef} {mat.Name}"
+                : t.ClientId is { } c ? clientNames.GetValueOrDefault(c)
+                : null;
             return new NoteTemplateResponse(
                 t.Id,
                 t.ScopeCode,
                 t.MatterId,
+                t.ClientId,
+                target,
                 t.Name,
                 t.Description,
                 t.TitleTemplate,
                 t.BodyHtml,
                 tags.GetValueOrDefault(t.Id) ?? [],
                 t.UsedCount,
-                t.ScopeCode == TemplateScope.Matter || currentUser.IsSystemAdmin,
+                RequireWrite(t).IsSuccess,
                 NoteSupport.Utc(t.ModifiedAtUtc ?? t.CreatedAtUtc),
                 by,
                 by is { } u && names.TryGetValue(u, out var n) ? n : null,

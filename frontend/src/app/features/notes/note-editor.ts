@@ -657,10 +657,17 @@ export interface RefInfo {
       }
       <div class="ne__area" #host data-editor-area></div>
       @if (editable()) {
-        <p class="ne__hint" data-editor-hint>
-          Type <kbd>/</kbd> for commands (template, asset, mention, project, matter, note),
-          <kbd>&#64;</kbd> for people, <kbd>#</kbd> for assets.
-        </p>
+        @if (emptyDoc()) {
+          <p class="ne__hint" data-editor-hint data-editor-empty-hint>
+            Type <kbd>/</kbd> for commands, for example <kbd>/template</kbd> to start from a
+            template.
+          </p>
+        } @else {
+          <p class="ne__hint" data-editor-hint>
+            Type <kbd>/</kbd> for commands (template, asset, mention, project, matter, note),
+            <kbd>&#64;</kbd> for people, <kbd>#</kbd> for assets.
+          </p>
+        }
       }
       @if (menu(); as m) {
         <ul
@@ -966,6 +973,12 @@ export class NoteEditor {
   protected headerOn(): boolean {
     this.tick();
     return this.editor?.isActive('tableHeader') ?? false;
+  }
+
+  /** True while the text is empty (a new note): the hint under the box then names /template. */
+  protected emptyDoc(): boolean {
+    this.tick();
+    return this.editor?.isEmpty ?? true;
   }
 
   protected canUndo(): boolean {
