@@ -242,20 +242,19 @@ const PRIORITY_ICONS: Record<string, string> = {
       /* In a fixed page (desktop) the cards fill the tab: the top row takes the height of its cards, the Task Type card takes the rest
          (at least 12rem) and its list scrolls inside it under the pinned title; shorter than that, the whole region scrolls. */
       @media (min-width: 768px) and (min-height: 561px) {
-        .bd > .scroll {
-          flex: 1 1 0;
-          min-height: 0;
-        }
-        .grid {
-          flex: 1 1 auto;
-          min-height: 0;
-        }
-        .c-type {
-          min-height: 0;
-        }
-        @container bd (min-width: 700px) and (max-width: 999.98px) {
+        /* Under 700 px of tab width the cards stack at their own height and the tab scrolls; from 700 px they fill it. */
+        @container bd (min-width: 700px) {
+          .bd > .scroll {
+            flex: 1 1 0;
+            min-height: 0;
+          }
           .grid {
+            flex: 1 1 auto;
+            min-height: 0;
             grid-template-rows: auto minmax(24rem, 1fr);
+          }
+          .c-type {
+            min-height: 0;
           }
         }
         @container bd (min-width: 1000px) {

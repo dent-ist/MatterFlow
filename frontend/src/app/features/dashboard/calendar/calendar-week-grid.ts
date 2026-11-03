@@ -9,7 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { CalDay, CoverageLevel, PodCoverage } from './calendar-contract';
-import { levelClass } from './calendar-month-grid';
+import { cellClass } from './calendar-month-grid';
 import {
   LEVELS,
   WEEKDAYS_SHORT,
@@ -99,10 +99,12 @@ interface Row {
                     <span class="sr-only">Non-working</span>
                   } @else {
                     <span class="cnt" aria-hidden="true">{{ c.text }}</span>
-                    <span class="lv" aria-hidden="true"
-                      ><i class="pi" [class]="icon(c.level)"></i
-                      ><span class="lw">{{ word(c.level) }}</span></span
-                    >
+                    @if (c.level !== 'GOOD') {
+                      <span class="lv" aria-hidden="true"
+                        ><i class="pi" [class]="icon(c.level)"></i
+                        ><span class="lw">{{ word(c.level) }}</span></span
+                      >
+                    }
                     @if (c.out > 0) {
                       <span class="out" aria-hidden="true"
                         ><i class="pi pi-user-minus"></i>{{ c.out }} out</span
@@ -348,7 +350,7 @@ export class CalWeekGrid {
     return dates[1] ?? dates[0];
   });
 
-  protected cls = (level: CoverageLevel): string => levelClass(level);
+  protected cls = (level: CoverageLevel): string => cellClass(level);
   protected icon = (level: CoverageLevel): string => LEVELS[level].icon;
   protected word = (level: CoverageLevel): string => LEVELS[level].word;
   protected dow = (date: string): string => WEEKDAYS_SHORT[dayOfWeek(date)];

@@ -58,6 +58,17 @@ describe('DashBattery (DB-05)', () => {
     expect(text('[data-battery-rate]')).toBe('3 assigned in the last hour');
   });
 
+  it('has People as an icon-only button named People in the title row, and no ring around the percentage', () => {
+    create(capacityOf(somePeople(12), 3));
+    const btn = el().querySelector('[data-people-open]') as HTMLButtonElement;
+    expect(btn.textContent?.trim()).toBe('');
+    expect(btn.getAttribute('aria-label')).toBe('People');
+    expect(btn.closest('.ph')).not.toBeNull();
+    expect(btn.querySelector('i.pi-users')).not.toBeNull();
+    const val = el().querySelector('[data-battery-big]') as HTMLElement;
+    expect(val.classList.contains('val')).toBe(true);
+  });
+
   it('hides the rate hint when the API does not send it', () => {
     create({ ...capacityOf(somePeople(12)), assignedLastHour: undefined });
     expect(el().querySelector('[data-battery-rate]')).toBeNull();

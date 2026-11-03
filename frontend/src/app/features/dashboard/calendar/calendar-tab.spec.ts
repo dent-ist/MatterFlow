@@ -16,7 +16,7 @@ import { CALENDAR_API, CalendarApi } from './calendar-api';
 import { FixtureCalendarApi } from './calendar-fixtures';
 import { DashCalendarTab } from './calendar-tab';
 import { filterGroups, loadState } from './calendar-panel';
-import { forecastWord, riskSentence } from './calendar-insights';
+import { forecastWord, riskSentence, weekRangeText } from './calendar-insights';
 
 const PERMS: Permission[] = [
   'Task.View',
@@ -110,6 +110,29 @@ describe('DashCalendarTab', () => {
     expect(c.getAttribute('title')).toContain('36 in view');
   });
 
+  it('a Good day is quiet: neutral, no label; only thin days are coloured and labelled', async () => {
+    await open();
+    const good = cell('2026-11-26');
+    expect(good.classList.contains('cv-quiet')).toBe(true);
+    expect(good.querySelector('.lv')).toBeNull();
+    expect(good.querySelector('.cnt--quiet')).not.toBeNull();
+    const thin = qa('[data-day]').filter((d) =>
+      ['WATCH', 'LOW', 'CRITICAL'].includes(d.dataset['level']!),
+    );
+    expect(thin.length).toBeGreaterThan(0);
+    for (const d of thin) expect(d.querySelector('.lv')).not.toBeNull();
+  });
+
+  it('the forecast is Free task slots with real dates, and the risk bar is slim', async () => {
+    await open();
+    expect(text(q('[data-forecast]'))).toContain('Free task slots, next 4 weeks');
+    expect(text(q('[data-forecast]'))).not.toContain('Wk ');
+    expect(text(q('[data-forecast] [data-week]'))).toMatch(
+      /[A-Z][a-z]{2} \d+ to (\d+|[A-Z][a-z]{2} \d+)/,
+    );
+    expect(q('[data-risk-banner]')).not.toBeNull();
+  });
+
   it('a thin day has its level as an icon and a word, and weekends are muted', async () => {
     await open();
     const risky = cell('2026-11-25');
@@ -177,6 +200,12 @@ describe('DashCalendarTab', () => {
     const panel = q('[data-cal-panel]');
     expect(text(panel.querySelector('[data-panel-date]'))).toBe('Wednesday, November 25, 2026');
     expect(qa('[data-count]').length).toBe(4);
+    // Coverage by pod is folded by default and opens with its toggle; the pod level is an icon (the word is for assistive tools).
+    expect(q('[data-panel-pods]').hidden).toBe(true);
+    expect(text(q('[data-panel-level]'))).toMatch(/expected people are available \(\d+%\)/);
+    q<HTMLButtonElement>('[data-pods-toggle]').click();
+    await settle();
+    expect(q('[data-panel-pods]').hidden).toBe(false);
     expect(qa('[data-pod]').length).toBe(5);
     const loads = (list: string) =>
       qa(`[data-list="${list}"] [data-role]`).map((role) => {
@@ -252,6 +281,13 @@ describe('DashCalendarTab', () => {
     TestBed.resetTestingModule();
     await open('/dashboard', [...PERMS, 'User.ManageAvailability']);
     expect(host.querySelector('[data-add-absence]')).not.toBeNull();
+  });
+});
+
+describe('forecast dates', () => {
+  it('words a week as real dates', () => {
+    expect(weekRangeText('2026-11-01')).toBe('Nov 1 to 7');
+    expect(weekRangeText('2026-10-27')).toBe('Oct 27 to Nov 2');
   });
 });
 

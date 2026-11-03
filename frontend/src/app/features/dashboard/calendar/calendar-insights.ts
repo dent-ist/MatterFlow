@@ -1,7 +1,19 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
-import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 import { CalSummary } from './calendar-contract';
-import { LEVELS, WEEKDAYS_SHORT, dayOfWeek } from './calendar-model';
+import { Tip } from '../../../shared/ui/tip';
+import { LEVELS, WEEKDAYS_SHORT, addDays, dayOfWeek } from './calendar-model';
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "Nov 1 to 7" (or "Oct 27 to Nov 2" across a month end): the seven days from a week's first day. */
+export function weekRangeText(weekStart: string): string {
+  const end = addDays(weekStart, 6);
+  const m = (iso: string) => MONTHS[Number(iso.slice(5, 7)) - 1];
+  const d = (iso: string) => Number(iso.slice(8, 10));
+  return m(weekStart) === m(end)
+    ? `${m(weekStart)} ${d(weekStart)} to ${d(end)}`
+    : `${m(weekStart)} ${d(weekStart)} to ${m(end)} ${d(end)}`;
+}
 
 /** The words of the free-capacity forecast (the battery's formula, decision AS): 50 % and more Healthy, 25 to 49 Limited, under 25 Low. */
 export function forecastWord(percent: number | null): {
@@ -33,38 +45,35 @@ export function riskSentence(risk: CalSummary['risk']): string {
  */
 @Component({
   selector: 'mf-cal-insights',
-  imports: [NumericDatePipe],
+  imports: [Tip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './calendar-coverage.scss',
   template: `
     <div class="in">
       @if (summary(); as s) {
-        <div
-          class="risk"
-          [class]="'risk ' + (s.risk.daysAtRisk > 0 ? 'cv-watch' : 'cv-good')"
-          data-risk-banner
-        >
-          <i
-            class="pi"
-            [class]="s.risk.daysAtRisk > 0 ? 'pi-exclamation-triangle' : 'pi-check-circle'"
-            aria-hidden="true"
-          ></i>
-          <p class="risk__t">{{ sentence() }}</p>
-          @if (s.risk.firstRiskDate) {
-            <button
-              type="button"
-              class="mf-btn"
-              data-show-risk
-              (click)="showRisk.emit(s.risk.firstRiskDate!)"
-            >
-              Show risk days
-            </button>
-          }
-        </div>
+        @if (s.risk.daysAtRisk > 0) {
+          <div class="risk cv-watch" data-risk-banner>
+            <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+            <p class="risk__t">{{ sentence() }}</p>
+            @if (s.risk.firstRiskDate) {
+              <button
+                type="button"
+                class="mf-btn risk__b"
+                data-show-risk
+                (click)="showRisk.emit(s.risk.firstRiskDate!)"
+              >
+                Show risk days
+              </button>
+            }
+          </div>
+        } @else {
+          <!-- No risk day: nothing is drawn, the status is still spoken. -->
+          <p class="sr-only" role="status" data-risk-banner>{{ sentence() }}</p>
+        }
         <section
           class="fc"
           [class.fc--open]="open()"
-          aria-label="Free capacity, next 4 weeks"
+          aria-label="Free task slots, next 4 weeks"
           data-forecast
         >
           <button
@@ -75,7 +84,10 @@ export function riskSentence(risk: CalSummary['risk']): string {
             (click)="open.set(!open())"
           >
             <i class="pi pi-chart-line" aria-hidden="true"></i>
-            <span>Free capacity, next 4 weeks</span>
+            <span
+              mfTip="Measures free task slots (open task capacity), not how many people are present."
+              >Free task slots, next 4 weeks</span
+            >
             <i
               class="pi fc__chev"
               [class]="open() ? 'pi-chevron-up' : 'pi-chevron-down'"
@@ -92,12 +104,9 @@ export function riskSentence(risk: CalSummary['risk']): string {
                   ><i class="pi" [class]="word(f.freePercent).icon" aria-hidden="true"></i
                   >{{ word(f.freePercent).word }}</span
                 >
-                <span class="tile__d">Wk {{ f.weekStart | mfNum }}</span>
-                <span class="tile__b" aria-hidden="true"
-                  ><span class="tile__f" [style.width.%]="f.freePercent ?? 0"></span
-                ></span>
+                <span class="tile__d">{{ range(f.weekStart) }}</span>
                 <span class="sr-only"
-                  >Week of {{ f.weekStart | mfNum }}:
+                  >{{ range(f.weekStart) }}:
                   {{
                     f.freePercent === null ? 'nobody available' : f.freePercent + ' percent free'
                   }}, {{ f.availablePeople }} people on average.</span
@@ -130,15 +139,20 @@ export function riskSentence(risk: CalSummary['risk']): string {
     }
     .risk {
       display: flex;
-      flex: 1 1 22rem;
+      flex: 0 1 auto;
+      align-self: center;
       align-items: center;
       gap: var(--mf-s2);
       min-width: 0;
-      padding: var(--mf-s1) var(--mf-s3);
+      padding: 2px var(--mf-s3);
       border: 1px solid var(--cs);
-      border-radius: var(--mf-radius-xl);
+      border-radius: var(--mf-radius-pill);
       background: var(--cb);
       color: var(--cf);
+    }
+    .risk__b {
+      min-height: 28px;
+      padding-block: 0;
     }
     .risk__t {
       flex: 1 1 auto;
@@ -181,9 +195,14 @@ export function riskSentence(risk: CalSummary['risk']): string {
       list-style: none;
     }
     .tile {
-      display: grid;
-      gap: 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0 var(--mf-s2);
       min-width: 0;
+    }
+    .tile__d {
+      flex: 1 1 100%;
     }
     .tile__p {
       font-size: var(--mf-fs-lg);
@@ -201,19 +220,6 @@ export function riskSentence(risk: CalSummary['risk']): string {
     .tile__d {
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-xs);
-    }
-    .tile__b {
-      display: block;
-      height: 4px;
-      margin-top: 2px;
-      border-radius: var(--mf-radius-pill);
-      background: var(--mf-surface-alt);
-    }
-    .tile__f {
-      display: block;
-      height: 100%;
-      border-radius: var(--mf-radius-pill);
-      background: var(--cs);
     }
     .soft {
       display: flex;
@@ -266,6 +272,7 @@ export function riskSentence(risk: CalSummary['risk']): string {
       }
       .risk {
         flex-wrap: wrap;
+        border-radius: var(--mf-radius-xl);
       }
     }
   `,
@@ -282,6 +289,7 @@ export class CalInsights {
     return s ? riskSentence(s.risk) : '';
   });
   protected word = forecastWord;
+  protected range = weekRangeText;
   protected tone = (p: number | null): string => {
     const t = forecastWord(p).tone;
     return t === 'none' ? 'none' : t === 'crit' ? 'crit' : t;

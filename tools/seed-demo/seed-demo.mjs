@@ -48,7 +48,7 @@ Usage: npm run seed:demo -- [options]      (node tools/seed-demo/seed-demo.mjs [
   --seed <n>        seed of the random sequence (default: random, printed); the same seed plans the same data
   --tag <text>      run tag put into the requestor name of the tasks of this run (default: generated, e.g. D4X9K)
   --concurrency <n> tasks worked in parallel (default 3)
-  --aged            also move dates back so the screens have realistic states (issue #925): open tasks that used 80 percent of their
+  --aged            also add busy absence windows (days 9-11, 16-18, 23-25, so the Calendar shows Watch, Low and Critical days) and move dates back so the screens have realistic states (issue #925): open tasks that used 80 percent of their
                     task type's target turnaround (At risk) and tasks that have been On hold for 3 to 21 days. The API cannot do this (it
                     creates every task "now"), so this one step runs UPDATE statements inside the local development SQL Server container
                     (docker exec). Local API only; only Demo tasks (requestor "[demo <tag>]"); safe to repeat. Needs Docker.
@@ -273,6 +273,20 @@ function absencesFor(i) {
 }
 
 /**
+ * With --aged: three busy windows in the next weeks so the Calendar shows every coverage state (CAL-11, #1089). The same people are away on the same days every run (the
+ * rank is a fixed permutation of the user number, so it does not depend on --seed): about a third on days 9 to 11 (Watch), half on days 16 to 18 (Low) and three in four
+ * on days 23 to 25 (Critical). Entries that overlap an existing one are skipped by the API (409), so a repeated run is harmless.
+ */
+function busyWindowsFor(i) {
+  const rank = (i * 7) % 12; // 0 to 11, a permutation of i modulo 12
+  const entries = [];
+  if (rank < 4) entries.push({ type: 'VACATION', from: 9, to: 11, note: null });
+  if (rank < 6) entries.push({ type: 'TRAINING', from: 16, to: 18, note: null });
+  if (rank < 9) entries.push({ type: 'CONFERENCE', from: 23, to: 25, note: null });
+  return entries;
+}
+
+/**
  * Two holiday calendars and a firm closure (Dashboard Calendar): "US Holiday" is the firm default, "UK Holiday" is assigned to about one user in ten,
  * "Firm closure" applies to everyone (the last days of the year). Created once; later runs find them by name.
  */
@@ -463,7 +477,7 @@ async function ensureUsers(admin, ctx, opts, summary) {
         });
       }
       entry.podIds = pods.podIds;
-      const entries = absencesFor(entry.i);
+      const entries = [...absencesFor(entry.i), ...(opts.aged ? busyWindowsFor(entry.i) : [])];
       for (const absence of entries) {
         // The API refuses an entry that overlaps another one, so a repeated run just skips what already exists.
         try {

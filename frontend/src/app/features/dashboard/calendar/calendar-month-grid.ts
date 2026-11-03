@@ -31,6 +31,10 @@ interface Cell {
 /** The token family class of a level (`cv-good` ...); the neutral levels share `cv-none`. */
 export const levelClass = (level: CalDay['level']): string => `cv-${LEVELS[level].key ?? 'none'}`;
 
+/** The class of a calendar CELL or legend chip (CAL-11): a Good day is quiet (neutral, no fill, no label); only Watch, Low and Critical are coloured. */
+export const cellClass = (level: CalDay['level']): string =>
+  level === 'GOOD' ? 'cv-quiet' : levelClass(level);
+
 /**
  * The Month view of the Dashboard Calendar (epic #1074, CAL-07): whole weeks, Sunday first. Each day is ONE button (a month is one tab stop; the arrow keys move between days
  * like My Matters, Home and End within the week, no new shortcuts) that prints the day number, the level as an icon and a word, "available of expected" ("26 of 36 expected",
@@ -77,15 +81,19 @@ export const levelClass = (level: CalDay['level']): string => `cv-${LEVELS[level
               >
                 <span class="top">
                   <span class="num">{{ c.num }}</span>
-                  @if (c.day && c.inMonth && !c.muted && lv(c); as l) {
-                    <span class="lv" [class.lv--good]="c.day.level === 'GOOD'" aria-hidden="true"
+                  @if (c.day && c.inMonth && !c.muted && c.day.level !== 'GOOD' && lv(c); as l) {
+                    <span class="lv" aria-hidden="true"
                       ><i class="pi" [class]="l.icon"></i><span class="lw">{{ l.word }}</span></span
                     >
                   }
                 </span>
                 @if (c.day && c.inMonth) {
                   @if (!c.muted) {
-                    <span class="cnt" aria-hidden="true">
+                    <span
+                      class="cnt"
+                      [class.cnt--quiet]="c.day.level === 'GOOD'"
+                      aria-hidden="true"
+                    >
                       <b class="full">{{ full(c.day) }}</b>
                       <b class="short">{{ short(c.day) }}</b>
                     </span>
@@ -227,6 +235,14 @@ export const levelClass = (level: CalDay['level']): string => `cv-${LEVELS[level
     .cnt b {
       font-weight: 700;
     }
+    /* A Good day says its count small and muted: the full figure is in the day panel and the cell's name. */
+    .cnt--quiet {
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-xs);
+    }
+    .cnt--quiet b {
+      font-weight: 500;
+    }
     .cnt .short {
       display: none;
     }
@@ -337,7 +353,7 @@ export class CalMonthGrid {
 
   protected cls(c: Cell): string {
     if (!c.day || !c.inMonth) return 'cv-none';
-    return levelClass(c.day.level);
+    return cellClass(c.day.level);
   }
   protected lv(c: Cell) {
     return c.day ? LEVELS[c.day.level] : null;

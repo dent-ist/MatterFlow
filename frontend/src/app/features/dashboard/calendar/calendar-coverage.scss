@@ -22,6 +22,11 @@
   --cf: var(--mf-cov-crit-fg);
   --cs: var(--mf-cov-crit-solid);
 }
+.cv-quiet {
+  --cb: transparent;
+  --cf: var(--mf-text-muted);
+  --cs: var(--mf-border-strong);
+}
 .cv-none {
   --cb: var(--mf-cov-none-bg);
   --cf: var(--mf-cov-none-fg);
