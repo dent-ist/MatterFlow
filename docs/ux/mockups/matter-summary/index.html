@@ -1,0 +1,1213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Matter Summary Mockup</title>
+<!-- MOCKUP ONLY (no app code). Self-contained: design tokens from docs/ux/tokens.css are inlined below, then the mockup styles, markup and script.
+     Use the Before / Recommended switch and the Mockup Toolbox (top bar). Choices live in the page address (#size=1366x768&cf=12 ...). -->
+<style>
+/* ===== docs/ux/tokens.css (inlined, unchanged) ===== */
+/* MatterFlow design tokens (light theme, Phase 1). Contrast ratios noted are against --mf-surface (#FFFFFF) unless stated. */
+:root {
+  /* Neutrals */
+  --mf-bg: #f5f6f8; /* app background */
+  --mf-surface: #ffffff; /* cards, tables */
+  --mf-surface-alt: #eef0f4; /* table header, zebra hover */
+  --mf-row-hover: #eaf0fb; /* the row under the pointer in every grid (MD-28); text 4.5:1 and links checked on it, never the only signal of selection or focus */
+  --mf-border: #c9ced8; /* 1.7:1 decorative borders only */
+  --mf-border-strong: #6b7280; /* 4.8:1 input borders (WCAG 1.4.11 >=3:1) */
+  --mf-text: #1b1f27; /* 16.0:1 */
+  --mf-text-muted: #4b5563; /* 7.6:1 */
+  --mf-text-disabled: #6b7280; /* 4.8:1 (disabled text exempt, kept legible) */
+  /* Brand / interactive */
+  --mf-primary: #1f4e9c; /* 7.9:1 on white; white text on it 7.9:1 */
+  --mf-primary-hover: #173c79;
+  --mf-link: #1f4e9c;
+  --mf-focus: #b45309; /* focus ring colour, 2px solid + 2px offset; >=3:1 on bg and surface */
+  --mf-selected-bg: #e3ecfa;
+  /* Navigation panel (MM-43 #939, MM-58 #950): dark navy, clearly apart from the page (--mf-bg) and the header (--mf-surface); light text and
+     icons. Contrast (WCAG 1.4.3) on --mf-nav-bg #1A3556: text 10.9:1, muted text (headings, version) 7.0:1, hover text on #2B4B75 7.8:1
+     (muted 5.0:1), selected text #17324F on the white pill 13.1:1, focus ring #FFC15A 7.7:1 (5.5:1 on hover; needs 3:1). The selected item is a
+     white pill (rounded square in the rail) with bold type, never colour alone and never a thick border. The pending badge keeps its red with a
+     white ring. Dark theme values: see the [data-theme="dark"] block below (the app has no dark theme yet). */
+  --mf-nav-bg: #1a3556;
+  --mf-nav-text: #eaf1fa;
+  --mf-nav-text-muted: #b4c3d8;
+  --mf-nav-hover-bg: #2b4b75;
+  --mf-nav-selected-bg: #ffffff;
+  --mf-nav-selected-fg: #17324f;
+  --mf-nav-border: #3e5c86;
+  --mf-nav-focus: #ffc15a;
+  /* Feedback */
+  --mf-danger: #b42318;
+  --mf-danger-bg: #fdecea;
+  --mf-warning: #8a4b00;
+  --mf-warning-bg: #fff4db;
+  --mf-success: #146c2e;
+  --mf-success-bg: #e5f5ea;
+  --mf-info: #1f4e9c;
+  --mf-info-bg: #e3ecfa;
+  /* Status badges (text / bg / border) */
+  /* Priority badges: default set; admin may override colour but must pass 4.5:1 (validated in designer) */
+  --mf-pr-critical-fg: #ffffff;
+  --mf-pr-critical-bg: #b42318;
+  --mf-pr-high-fg: #5c2e00;
+  --mf-pr-high-bg: #ffd9a8;
+  --mf-pr-normal-fg: #1b1f27;
+  --mf-pr-normal-bg: #e3e7ee;
+  --mf-pr-low-fg: #3b4350;
+  --mf-pr-low-bg: #f1f3f6;
+  /* Due */
+  --mf-due-overdue: #b42318;
+  --mf-due-soon: #8a4b00;
+  --mf-asap: #1f4e9c;
+  /* Typography */
+  --mf-font:
+    "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mf-font-mono:
+    Consolas, "Cascadia Mono", monospace; /* matter numbers, task refs */
+  --mf-fs-xs: 12px;
+  --mf-fs-sm: 13px;
+  --mf-fs-md: 14px;
+  --mf-fs-lg: 16px;
+  --mf-fs-h3: 18px;
+  --mf-fs-h2: 22px;
+  --mf-fs-h1: 28px;
+  --mf-lh: 1.45;
+  /* Spacing (4px base) */
+  --mf-s1: 4px;
+  --mf-s2: 8px;
+  --mf-s3: 12px;
+  --mf-s4: 16px;
+  --mf-s5: 24px;
+  --mf-s6: 32px;
+  --mf-s7: 48px;
+  --mf-radius: 4px;
+  --mf-radius-lg: 8px;
+  --mf-row-h: 40px;
+  --mf-row-h-compact: 32px;
+  --mf-target-min: 24px; /* WCAG 2.2 target size, exceeds 2.1 */
+  /* Work grid (mf-task-table: Task Queue, My Work, Pod Work, Matter and Project task lists; ux-spec 5.2). These are the documented
+     numbers; the grid's styles (task-table.scss, src/styles/_tables.scss) carry them as literals, so change both together.
+     --mf-row-h above is for generic tables and pickers, not the work grid. */
+  --mf-grid-row-h: 44px; /* Comfortable row, exact, in every state (2 px padding, 1 px line, at most 39 px of content) */
+  --mf-grid-row-h-compact: 36px; /* Compact row, exact, one line per cell */
+  --mf-grid-line-h: 18px; /* the two-line cells (Title, Due): two lines are 36 px */
+  --mf-grid-head-h: 40px; /* header row and inline filter row */
+  --mf-grid-group-h: 36px; /* Due-sort divider rows, both densities */
+  /* Work grid column widths in CSS px at the default zoom (the grid applies them in rem at the app's 14 px root, so text zoom scales them).
+     -w default, -min and -max a user may resize to (columns panel, header menu, drag). The Title is the spring: no width, 160 px minimum,
+     never stored. A unit test (column-prefs.spec.ts) keeps these equal to WORK_COLUMNS in column-prefs.ts. */
+  --mf-col-ref-w: 112px;
+  --mf-col-ref-min: 80px;
+  --mf-col-ref-max: 120px;
+  --mf-col-matter-w: 142px;
+  --mf-col-matter-min: 112px;
+  --mf-col-matter-max: 320px;
+  --mf-col-onHoldReason-w: 176px;
+  --mf-col-onHoldReason-min: 120px;
+  --mf-col-onHoldReason-max: 280px;
+  --mf-col-matterName-w: 160px;
+  --mf-col-matterName-min: 112px;
+  --mf-col-matterName-max: 360px;
+  --mf-col-client-w: 140px;
+  --mf-col-client-min: 96px;
+  --mf-col-client-max: 280px;
+  --mf-col-project-w: 140px;
+  --mf-col-project-min: 96px;
+  --mf-col-project-max: 280px;
+  --mf-col-type-w: 112px;
+  --mf-col-type-min: 96px;
+  --mf-col-type-max: 260px;
+  --mf-col-workflow-w: 150px;
+  --mf-col-workflow-min: 96px;
+  --mf-col-workflow-max: 280px;
+  --mf-col-progress-w: 120px;
+  --mf-col-progress-min: 120px;
+  --mf-col-progress-max: 320px;
+  --mf-col-priority-w: 112px;
+  --mf-col-priority-min: 96px;
+  --mf-col-priority-max: 160px;
+  --mf-col-pod-w: 140px;
+  --mf-col-pod-min: 96px;
+  --mf-col-pod-max: 280px;
+  --mf-col-assignee-w: 136px;
+  --mf-col-assignee-min: 112px;
+  --mf-col-assignee-max: 240px;
+  --mf-col-creator-w: 140px;
+  --mf-col-creator-min: 96px;
+  --mf-col-creator-max: 280px;
+  --mf-col-requestor-w: 140px;
+  --mf-col-requestor-min: 96px;
+  --mf-col-requestor-max: 280px;
+  --mf-col-due-w: 136px;
+  --mf-col-due-min: 120px;
+  --mf-col-due-max: 200px;
+  --mf-col-status-w: 140px;
+  --mf-col-status-min: 112px;
+  --mf-col-status-max: 200px;
+  --mf-col-closed-w: 104px;
+  --mf-col-closed-min: 88px;
+  --mf-col-closed-max: 160px;
+  --mf-col-age-w: 64px;
+  --mf-col-age-min: 56px;
+  --mf-col-age-max: 100px;
+  --mf-col-created-w: 104px;
+  --mf-col-created-min: 88px;
+  --mf-col-created-max: 160px;
+  --mf-col-updated-w: 120px;
+  --mf-col-updated-min: 96px;
+  --mf-col-updated-max: 180px;
+  --mf-col-title-min: 160px;
+  --mf-col-assignee-pod-work-w: 216px; /* Assignee on Pod Work, where "Assign to me" shares the cell */
+  --mf-narrow-title-min: 200px; /* the narrow-box rule: autoHide columns drop out while the Title would be narrower than this */
+  /* Clients, Matters and Projects (epic #245, ux-spec 5.9 and S05 to S07): NO token was added. The record pages and lists are built on the
+     tokens above. Numbers they rely on: record lists use the Comfortable work-grid row height (grid-row-h, 44px, in page.scss for .pg-table);
+     the record header title is the H2 size (fs-h2, 22px) and the H3 size (fs-h3, 18px) below 640px; the crumb is fs-sm (13px); the
+     Sensitive note is one 32px line; the summary strip is 28px plus 8px of margin; a phone card is at least 64px; copy button and count
+     hit areas on a card are 44px; every other target is at least target-min (24px). Phone breakpoint 640px (639px is cards, 640px is the
+     table); the Matters Client column shows from 900px and the Projects Client column from 1100px. These are literals in the component
+     styles (record-header.scss, record-card-list.scss, client-overview.scss), like the work grid's, so change docs and styles together. */
+  /* Task page (Task Detail epic #288, ux-spec S10 and S09): NO token was added. The page is built on the tokens above. Numbers it relies on:
+     the facts strip (src/styles/_facts-strip.scss, mf-task-facts and its skeleton) is one rounded box of six tiles with 1px dividers drawn by
+     the gap over --mf-border: six across from 1100px, three by two from 640px, two by three below; a tile is at least 54px tall (label
+     fs-xs, value fs-md semibold); the title is the H2 size (22px, 18px below 640px) in the shared record header (--rh-fs); the Task tab strip
+     is dense (2.5rem tabs, 4px below, #347); the Details panel and its disclosure switch at 1100px
+     (DETAIL_WIDE_QUERY); the Workflow head is one row of at most 56px; the Description is cut at 12 lines (line height 1.4); the Edit dialog
+     is 720px wide; the Create task column is 720px with one input width, --mf-field-max (default 480px for every other form). Status and
+     Hold colours follow section T of the decisions addendum (grey, never a warning colour, for the status note). Phone breakpoint 640px.
+     These are literals in the component styles, like the work grid's, so change docs and styles together. */
+  --mf-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.12);
+  --mf-shadow-2: 0 4px 16px rgba(0, 0, 0, 0.18);
+}
+/* ==========================================================================================================================================
+   UI update (epic #953, UI-01 #954): the shared theme layer, "option A" of the owner decision: ONE set of tokens in code that every component
+   reads. Three layers, so a theme editor or a dark theme can later change values without touching a component:
+     1. Palette   --mf-p-<hue>[-bg|-solid|-line]     raw hues; only this layer and the neutrals above hold hex values.
+     2. Semantic  --mf-sem-<meaning>-*               what a colour MEANS (overdue, at risk, info, healthy, needs a person, critical, neutral).
+     3. Component --mf-status-*, --mf-event-*, --mf-nav-*, --mf-chip-*   the look of one thing; they point at layer 2 or 1 with var().
+   Components use layers 2 and 3 (or the neutrals/feedback tokens above); a component never contains a colour literal (checked by
+   frontend/scripts/check-theme-colours.mjs; contrast of every pairing below checked by check-theme-contrast.mjs). No dark theme and no editor yet.
+   Guide, contrast table and the "change one token" example: docs/ux/theme-guide.md.
+   ========================================================================================================================================== */
+:root {
+  /* 1. Palette. For each hue: text colour on its tint (-fg, 4.5:1 or better), the tint (-bg), a solid for dots, bars and icons on white
+     (-solid, 3:1 or better) and a hairline (-line, decorative). */
+  --mf-p-red-fg: #b42318;
+  --mf-p-red-bg: #fdecea;
+  --mf-p-red-solid: #c62828;
+  --mf-p-red-line: #f4c7c2;
+  --mf-p-amber-fg: #8a4b00;
+  --mf-p-amber-bg: #fff4db;
+  --mf-p-amber-solid: #b45309;
+  --mf-p-amber-line: #f1d9a0;
+  --mf-p-blue-fg: #1f4e9c;
+  --mf-p-blue-bg: #e3ecfa;
+  --mf-p-blue-solid: #1f4e9c;
+  --mf-p-blue-line: #c3d5f2;
+  --mf-p-teal-fg: #0b6b5f;
+  --mf-p-teal-bg: #ddf3ef;
+  --mf-p-teal-solid: #0f766e;
+  --mf-p-teal-line: #b5e0d9;
+  --mf-p-violet-fg: #5b3fa6;
+  --mf-p-violet-bg: #efeafb;
+  --mf-p-violet-solid: #6d4bc2;
+  --mf-p-violet-line: #d6cbf1;
+  --mf-p-orange-fg: #9a3a06;
+  --mf-p-orange-bg: #fdebdc;
+  --mf-p-orange-solid: #c2410c;
+  --mf-p-orange-line: #f5cdae;
+  --mf-p-slate-fg: #475569;
+  --mf-p-slate-bg: #eef1f5;
+  --mf-p-slate-solid: #475569;
+  --mf-p-slate-line: #cbd2dc;
+
+  /* 2. Semantic colours (what the colour says). Red = overdue, amber = at risk, blue = information, teal = healthy / done, violet = needs a
+     person, deep orange = critical, slate = neutral. Colour is never the only signal: the UI always adds an icon or a word. */
+  --mf-sem-overdue-fg: var(--mf-p-red-fg);
+  --mf-sem-overdue-bg: var(--mf-p-red-bg);
+  --mf-sem-overdue-solid: var(--mf-p-red-solid);
+  --mf-sem-overdue-line: var(--mf-p-red-line);
+  --mf-sem-risk-fg: var(--mf-p-amber-fg);
+  --mf-sem-risk-bg: var(--mf-p-amber-bg);
+  --mf-sem-risk-solid: var(--mf-p-amber-solid);
+  --mf-sem-risk-line: var(--mf-p-amber-line);
+  --mf-sem-info-fg: var(--mf-p-blue-fg);
+  --mf-sem-info-bg: var(--mf-p-blue-bg);
+  --mf-sem-info-solid: var(--mf-p-blue-solid);
+  --mf-sem-info-line: var(--mf-p-blue-line);
+  --mf-sem-healthy-fg: var(--mf-p-teal-fg);
+  --mf-sem-healthy-bg: var(--mf-p-teal-bg);
+  --mf-sem-healthy-solid: var(--mf-p-teal-solid);
+  --mf-sem-healthy-line: var(--mf-p-teal-line);
+  /* Note tag chips (MD-36, #1049): a light tint of the colour, dark text and a solid dot. The same ten colours as the Task Type palette. */
+  --mf-tag-slate-bg: #e3e7ee;
+  --mf-tag-slate-fg: #2f3846;
+  --mf-tag-slate-dot: #5b6678;
+  --mf-tag-blue-bg: #dce8fb;
+  --mf-tag-blue-fg: #173c79;
+  --mf-tag-blue-dot: #2b66c4;
+  --mf-tag-teal-bg: #d5f0ee;
+  --mf-tag-teal-fg: #0b4f4a;
+  --mf-tag-teal-dot: #0a7d72;
+  --mf-tag-green-bg: #ddf1e2;
+  --mf-tag-green-fg: #14532d;
+  --mf-tag-green-dot: #1f7a3a;
+  --mf-tag-amber-bg: #fdebb8;
+  --mf-tag-amber-fg: #5c3b00;
+  --mf-tag-amber-dot: #a8590a;
+  --mf-tag-orange-bg: #ffe0cc;
+  --mf-tag-orange-fg: #6b2a00;
+  --mf-tag-orange-dot: #b8400c;
+  --mf-tag-red-bg: #fbdad6;
+  --mf-tag-red-fg: #7a1b12;
+  --mf-tag-red-dot: #c62828;
+  --mf-tag-rose-bg: #fadcea;
+  --mf-tag-rose-fg: #7a1546;
+  --mf-tag-rose-dot: #bf1a5a;
+  --mf-tag-violet-bg: #e9e0fa;
+  --mf-tag-violet-fg: #45248a;
+  --mf-tag-violet-dot: #6a45c0;
+  --mf-tag-indigo-bg: #dfe3fa;
+  --mf-tag-indigo-fg: #2a2f85;
+  --mf-tag-indigo-dot: #4650c0;
+  --mf-tag-neutral-bg: #eef0f4;
+  --mf-tag-neutral-fg: #3b4350;
+  --mf-tag-neutral-dot: #5b6678;
+  /* Note text colours (MD-30, #1034): the fixed palette of the Notes editor; each is dark enough for 4.5:1 on a card and on the quote tint. */
+  --mf-note-red: var(--mf-p-red-fg);
+  --mf-note-orange: var(--mf-p-orange-fg);
+  --mf-note-amber: var(--mf-p-amber-fg);
+  --mf-note-green: #146c2e;
+  --mf-note-teal: var(--mf-p-teal-fg);
+  --mf-note-blue: var(--mf-p-blue-fg);
+  --mf-note-violet: var(--mf-p-violet-fg);
+  --mf-note-slate: var(--mf-p-slate-fg);
+  --mf-sem-person-fg: var(--mf-p-violet-fg);
+  --mf-sem-person-bg: var(--mf-p-violet-bg);
+  --mf-sem-person-solid: var(--mf-p-violet-solid);
+  --mf-sem-person-line: var(--mf-p-violet-line);
+  --mf-sem-critical-fg: var(--mf-p-orange-fg);
+  --mf-sem-critical-bg: var(--mf-p-orange-bg);
+  --mf-sem-critical-solid: var(--mf-p-orange-solid);
+  --mf-sem-critical-line: var(--mf-p-orange-line);
+  --mf-sem-neutral-fg: var(--mf-p-slate-fg);
+  --mf-sem-neutral-bg: var(--mf-p-slate-bg);
+  --mf-sem-neutral-solid: var(--mf-p-slate-solid);
+  --mf-sem-neutral-line: var(--mf-p-slate-line);
+  --mf-border-soft: #d5d9e1; /* hairlines inside cards (decorative) */
+  --mf-border-mid: #c0c6d1; /* control and chip outlines that are not the only cue */
+
+  /* 3a. Task status (New, In Progress, On Hold, Completed, Cancelled) as used by the new My Matters and every converted page.
+     fg / bg / line per status. (The older old-st-* tokens were retired in TH-13, #995.) */
+  --mf-status-new-fg: #2b4a78;
+  --mf-status-new-bg: #ffffff;
+  --mf-status-new-line: #8ea2c2;
+  --mf-status-progress-fg: var(--mf-sem-info-fg);
+  --mf-status-progress-bg: var(--mf-sem-info-bg);
+  --mf-status-progress-line: var(--mf-sem-info-line);
+  --mf-status-hold-fg: var(--mf-sem-neutral-fg);
+  --mf-status-hold-bg: var(--mf-sem-neutral-bg);
+  --mf-status-hold-line: var(--mf-sem-neutral-line);
+  --mf-status-done-fg: var(--mf-sem-healthy-fg);
+  --mf-status-done-bg: var(--mf-sem-healthy-bg);
+  --mf-status-done-line: var(--mf-sem-healthy-line);
+  --mf-status-cancel-fg: #374151;
+  --mf-status-cancel-bg: #e5e7eb;
+  --mf-status-cancel-line: #c9ced8;
+
+  /* 3b. Calendar event types (8 fixed types; code list and icon keys come from the API, GET /matter-event-types): text/icon colour on its tint. */
+  --mf-event-court-fg: #1e3a8a;
+  --mf-event-court-bg: #e4e9f7;
+  --mf-event-trial-fg: #86198f;
+  --mf-event-trial-bg: #f6e4f8;
+  --mf-event-deposition-fg: #0b627d;
+  --mf-event-deposition-bg: #d9eff5;
+  --mf-event-production-fg: #4d6310;
+  --mf-event-production-bg: #e9f1ce;
+  --mf-event-filing-fg: #a3194f;
+  --mf-event-filing-bg: #fbe3ec;
+  --mf-event-mediation-fg: #17683a;
+  --mf-event-mediation-bg: #daf1e2;
+  --mf-event-meeting-fg: #6b4600;
+  --mf-event-meeting-bg: #f3e8cf;
+  --mf-event-other-fg: var(--mf-sem-neutral-fg);
+  --mf-event-other-bg: #e8ecf1;
+
+  /* 3c. Navigation panel (colours are the ones above: --mf-nav-*). Geometry of the new menu: a 36 px row with 6 px corners, 19 px icons, 220 px panel,
+     a 56 px rail. The selected item is a white 6 px rounded row with bold type, never a coloured left border. */
+  --mf-nav-w: 220px;
+  --mf-nav-rail-w: 56px;
+  --mf-nav-item-h: 36px;
+  --mf-nav-item-radius: var(--mf-radius-md); /* 6 px (SH-01, #1044) */
+  --mf-nav-icon: 19px;
+  --mf-nav-indent: 36px; /* Projects and Assets under Matters */
+  --mf-nav-heading: #b4c3d8; /* ADMINISTRATION heading (same as --mf-nav-text-muted: 7.0:1 on the panel) */
+
+  /* Radius scale. --mf-radius (4px) and --mf-radius-lg (8px) above stay. */
+  --mf-radius-md: 6px;
+  --mf-radius-xl: 12px;
+  --mf-radius-pill: 999px;
+
+  /* Type scale. Body 14 px (--mf-fs-md); page title 19 px on the fixed pages (My Matters), 22 px (--mf-fs-h2) on record pages. */
+  --mf-fs-title: 19px;
+  --mf-fs-title-lg: 22px;
+  --mf-fs-chip: 12px;
+  --mf-fw-semibold: 600;
+  --mf-fw-bold: 700;
+
+  /* Density: control and chip heights. A later "compact" density only changes these. */
+  --mf-ctl-h: 36px;
+  --mf-ctl-h-sm: 30px;
+  --mf-chip-h: 26px;
+  --mf-gutter: 16px; /* page gutter of the fixed pages */
+
+  /* Shadows. --mf-shadow-1 and --mf-shadow-2 above stay. */
+  --mf-shadow-card:
+    0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.06);
+  --mf-shadow-pop:
+    0 12px 32px rgba(16, 24, 40, 0.18), 0 2px 6px rgba(16, 24, 40, 0.1);
+
+  /* Focus ring (WCAG 2.4.7 / 1.4.11): 2px solid, 2px offset; --mf-focus on the page, --mf-nav-focus on the navy panel. */
+  --mf-focus-width: 2px;
+  --mf-focus-offset: 2px;
+
+  /* PrimeNG toasts (the preset reads these; values as before). */
+  --mf-toast-success-bg: #e6f4ea;
+  --mf-toast-success-border: #9ed2ad;
+  --mf-toast-success-fg: #14532d;
+  --mf-toast-success-hover: #cde9d5;
+  --mf-toast-info-bg: #e3ecfa;
+  --mf-toast-info-border: #9db9e6;
+  --mf-toast-info-fg: #173c79;
+  --mf-toast-info-hover: #c5d6f2;
+  --mf-toast-warn-bg: #fef3c7;
+  --mf-toast-warn-border: #ebc663;
+  --mf-toast-warn-fg: #78350f;
+  --mf-toast-warn-hover: #fce79a;
+  --mf-toast-error-bg: #fdecea;
+  --mf-toast-error-border: #f4b6ae;
+  --mf-toast-error-fg: #7f1710;
+  --mf-toast-error-hover: #fadbd7;
+  --mf-toast-detail: #1b1f27;
+  --mf-white: #ffffff;
+  --mf-black: #000000; /* print text */
+  --mf-danger-strong: #7f1710; /* hover of a solid danger button (white text 12:1) */
+  --mf-danger-deep: #64120d; /* pressed state of a solid danger button */
+  --mf-primary-contrast: var(--mf-white); /* text on --mf-primary (7.9:1) */
+  --mf-active: var(--mf-p-teal-solid); /* the "active matter" dot of the tree */
+  --mf-tip-bg: #1b1f27; /* tooltip: dark panel, white text 16.0:1 */
+  --mf-tip-fg: #ffffff;
+  --mf-fs-h1-compact: var(--mf-fs-title); /* fixed-page title, 19 px */
+  --mf-btn-secondary-border: #6b7280;
+}
+/* Dark-theme values of the navigation panel (MM-43, MM-58): a deeper navy. Contrast on #101F33: text 14.6:1, muted 9.3:1, hover text on #1F3A5C
+   10.2:1, focus ring #FFC15A 10.3:1; the selected pill stays white with #17324F text (13.1:1). */
+:root[data-theme="dark"] {
+  --mf-row-hover: #243247;
+  --mf-nav-bg: #101f33;
+  --mf-nav-hover-bg: #1f3a5c;
+  --mf-nav-border: #2e4768;
+}
+:focus-visible {
+  outline: 2px solid var(--mf-focus);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* UI update round 2 (UI-20, #971): the solid fill behind the white glyph of a task type chip, one per named Task Type colour (contrast with --mf-white 3:1 or better for the icon;
+   checked by check-theme-contrast.mjs). A type with no colour takes one of these by its id, so the colour is stable. */
+:root {
+  --mf-tt-slate: #475569;
+  --mf-tt-blue: #1f4e9c;
+  --mf-tt-teal: #0f766e;
+  --mf-tt-green: #15803d;
+  --mf-tt-amber: #b45309;
+  --mf-tt-orange: #c2410c;
+  --mf-tt-red: #c62828;
+  --mf-tt-rose: #be185d;
+  --mf-tt-violet: #6d4bc2;
+  --mf-tt-indigo: #4f46e5;
+}
+
+/* Chart colours (theme rollout TH-01, #983): the hand-built SVG charts and the heat map read these tokens, never a hex value. Values are the proven
+   ones of the former chart-palette.ts / stacked-bar.ts / coverage-model.ts (Okabe-Ito based series, 3:1 on the card and the weekend shade, colour-blind
+   distance checked by trend-palette.spec.ts); each series also keeps its own dash pattern, marker shape and hatch so colour is never the only signal. */
+:root {
+  --mf-chart-1: #0072b2;
+  --mf-chart-2: #c2410c;
+  --mf-chart-3: #00795a;
+  --mf-chart-4: #b0306f;
+  --mf-chart-5: #8a6a00;
+  --mf-chart-6: #6b3fa0;
+  --mf-chart-7: #2f8fbf;
+  --mf-chart-8: #6b7280;
+  /* Age bands (one blue hue, light to dark: older is darker) with the text colour that sits on each fill (4.5:1 or better). */
+  --mf-ramp-1-bg: #dce8f8;
+  --mf-ramp-2-bg: #b5cdf0;
+  --mf-ramp-3-bg: #84a8e0;
+  --mf-ramp-4-bg: #3b6ab4;
+  --mf-ramp-5-bg: #25498a;
+  --mf-ramp-6-bg: #16356b;
+  --mf-ramp-1-fg: #102a54;
+  --mf-ramp-2-fg: #102a54;
+  --mf-ramp-3-fg: #102a54;
+  --mf-ramp-4-fg: #ffffff;
+  --mf-ramp-5-fg: #ffffff;
+  --mf-ramp-6-fg: #ffffff;
+  /* Heat map of completed tasks (Users, coverage): four blue steps with their text colour. */
+  --mf-heat-1-bg: #e8f0fb;
+  --mf-heat-2-bg: #bbd2f3;
+  --mf-heat-3-bg: #7faae6;
+  --mf-heat-4-bg: #1f4e9c;
+  --mf-heat-1-fg: #1b1f27;
+  --mf-heat-2-fg: #1b1f27;
+  --mf-heat-3-fg: #1b1f27;
+  --mf-heat-4-fg: #ffffff;
+  /* Hatch lines drawn over a series fill (white, 60 %): the pattern layer of the charts. */
+  --mf-chart-hatch: rgba(255, 255, 255, 0.6);
+  /* A tab or bar that floats over content (swimlane toolbar, sticky column edge). */
+  --mf-shadow-edge: 2px 0 4px -2px rgba(0, 0, 0, 0.25);
+}
+
+/* Shades for scroll shadows, sticky bars and sheets (theme rollout TH-02, #984): black at a fixed opacity, so no component writes rgb(0 0 0 / n). */
+:root {
+  --mf-shade-soft: rgba(0, 0, 0, 0.18);
+  --mf-shade-mid: rgba(0, 0, 0, 0.28);
+  --mf-scrim: rgba(0, 0, 0, 0.4);
+  --mf-shadow-sheet: 0 -6px 24px rgba(0, 0, 0, 0.25);
+  --mf-shadow-bar: 0 -3px 6px -4px var(--mf-shade-soft);
+  --mf-shadow-sticky: 0 4px 6px -3px var(--mf-shade-mid);
+}
+
+</style>
+<style>
+/* ===== Mockup chrome and page (uses only the tokens above) ===== */
+*{box-sizing:border-box}
+html{color-scheme:light}
+body{margin:0;font:var(--mf-fs-md)/var(--mf-lh) var(--mf-font);color:var(--mf-text);background:#2b2f36;-webkit-font-smoothing:antialiased;overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus{outline:none}
+:focus-visible{outline:var(--mf-focus-width) solid var(--mf-focus);outline-offset:var(--mf-focus-offset);border-radius:var(--mf-radius-md)}
+.sr{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+svg.i.sm{width:16px;height:16px} svg.i.xs{width:14px;height:14px} svg.i.lg{width:22px;height:22px}
+
+/* ---- stage and frame (window size simulation) ---- */
+#stage{position:fixed;inset:0;overflow:hidden}
+#frame{position:absolute;background:var(--mf-bg);overflow:hidden;container:fr/size}
+#stage.win #frame{inset:0}
+#stage.sized #frame{left:0;top:0;transform-origin:0 0;box-shadow:0 8px 40px rgba(0,0,0,.5);border-radius:6px}
+#mockbar{position:fixed;z-index:300;display:flex;align-items:center;gap:8px}
+#stage.win #mockbar{top:11px;right:268px}
+#stage.sized #mockbar{top:6px;left:50%;transform:translateX(-50%)}
+#stage.sized #sizelabel{display:inline-block}
+#sizelabel{display:none;color:#c9d1de;font-size:12px;white-space:nowrap}
+.pill{display:flex;align-items:center;gap:4px;background:#fff;border:1px dashed var(--mf-border-strong);border-radius:20px;padding:2px;height:34px;box-shadow:var(--mf-shadow-card)}
+.pill button{border:0;background:transparent;height:28px;border-radius:14px;padding:0 12px;font-size:13px;font-weight:600;color:var(--mf-text-muted);white-space:nowrap}
+.pill button[aria-pressed=true]{background:var(--mf-primary);color:#fff}
+.pill button:not([aria-pressed=true]):hover{background:var(--mf-surface-alt)}
+.pill .gear{display:inline-flex;align-items:center;gap:6px;color:var(--mf-text)}
+.pill .gear[aria-expanded=true]{background:var(--mf-selected-bg);color:var(--mf-primary)}
+#toolbox{position:fixed;z-index:310;right:12px;top:52px;width:330px;max-height:calc(100vh - 64px);overflow:auto;background:#fff;border:1px solid var(--mf-border-soft);border-radius:var(--mf-radius-xl);box-shadow:var(--mf-shadow-pop);padding:12px 14px 14px}
+#toolbox[hidden]{display:none}
+#toolbox h2{margin:0 0 2px;font-size:15px}
+#toolbox .hint{margin:0 0 8px;color:var(--mf-text-muted);font-size:12px}
+#toolbox fieldset{border:0;margin:0 0 8px;padding:0}
+#toolbox legend{font-size:12px;font-weight:700;color:var(--mf-text-muted);padding:0;margin-bottom:3px}
+#toolbox .seg{display:flex;flex-wrap:wrap;gap:4px}
+#toolbox .seg button{border:1px solid var(--mf-border-strong);background:#fff;border-radius:6px;padding:2px 9px;font-size:12px;min-height:26px}
+#toolbox .seg button[aria-pressed=true]{background:var(--mf-primary);border-color:var(--mf-primary);color:#fff;font-weight:600}
+#toolbox .reset{margin-top:4px;border:0;background:none;color:var(--mf-link);text-decoration:underline;padding:4px 0}
+
+/* ---- app shell ---- */
+.shell{display:grid;grid-template-columns:220px minmax(0,1fr);grid-template-rows:56px minmax(0,1fr);height:100%}
+.top{grid-column:1/3;display:flex;align-items:center;gap:16px;padding:0 24px;background:var(--mf-surface);border-bottom:1px solid var(--mf-border-soft);min-width:0}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;color:#1d4e89;width:196px;flex:none}
+.brand svg{width:30px;height:30px;border-radius:8px}
+.burger{display:none;border:0;background:none;padding:6px;border-radius:6px}
+.gsearch{flex:0 1 340px;position:relative;min-width:0}
+.gsearch input{width:100%;height:36px;border:1px solid var(--mf-border-strong);border-radius:6px;padding:0 12px 0 36px;background:#fff}
+.gsearch svg{position:absolute;left:11px;top:9px;color:var(--mf-text-disabled)}
+.top .spacer{flex:1}
+.bell{position:relative;border:0;background:none;padding:6px;border-radius:6px}
+.bell b{position:absolute;top:-3px;right:-5px;background:var(--mf-p-red-solid);color:#fff;font-size:11px;min-width:18px;height:18px;border-radius:9px;display:grid;place-items:center;padding:0 4px;border:2px solid #fff;line-height:1}
+.user{display:flex;align-items:center;gap:10px;border:0;background:none;text-align:left;padding:4px 6px;border-radius:6px;min-width:0}
+.user .nm{font-weight:600;line-height:1.2;white-space:nowrap}
+.nav{background:var(--mf-nav-bg);color:var(--mf-nav-text);padding:12px 12px 0;overflow:auto;display:flex;flex-direction:column}
+.nav a{display:flex;align-items:center;gap:12px;height:36px;flex:none;padding:0 12px;border-radius:var(--mf-radius-pill);color:var(--mf-nav-text);text-decoration:none;margin-bottom:1px;white-space:nowrap}
+.nav a:hover{background:var(--mf-nav-hover-bg)}
+.nav a.ind{padding-left:36px}
+.nav a[aria-current=page]{background:var(--mf-nav-selected-bg);color:var(--mf-nav-selected-fg);font-weight:700}
+.nav h2{font-size:11px;letter-spacing:.08em;color:var(--mf-nav-text-muted);margin:14px 12px 6px;font-weight:600;border-top:1px solid var(--mf-nav-border);padding-top:12px}
+.nav .ver{margin-top:auto;padding:12px;color:var(--mf-nav-text-muted);font-size:12px}
+.nav :focus-visible{outline-color:var(--mf-nav-focus)}
+.scrim{display:none}
+.main{min-width:0;min-height:0;overflow:hidden;background:var(--mf-bg);padding:12px 24px 12px;display:flex;flex-direction:column}
+.main>*{flex:none;min-width:0}
+.main>.tabpanel{flex:1 1 auto;min-height:0}
+
+/* ---- avatars, chips, buttons ---- */
+.av{--s:22px;width:var(--s);height:var(--s);border-radius:50%;display:inline-grid;place-items:center;flex:none;font-size:calc(var(--s)*.42);font-weight:700;letter-spacing:.01em;line-height:1;background:var(--abg);color:var(--afg);border:1px solid var(--aln)}
+.av.lg{--s:30px} .av.sm{--s:18px}
+.av.raw{--abg:var(--mf-sem-neutral-bg);--afg:var(--mf-sem-neutral-fg);--aln:var(--mf-sem-neutral-line)}
+.av.c0{--abg:var(--mf-sem-person-bg);--afg:var(--mf-sem-person-fg);--aln:var(--mf-sem-person-line)}
+.av.c1{--abg:var(--mf-sem-healthy-bg);--afg:var(--mf-sem-healthy-fg);--aln:var(--mf-sem-healthy-line)}
+.av.c2{--abg:var(--mf-sem-info-bg);--afg:var(--mf-sem-info-fg);--aln:var(--mf-sem-info-line)}
+.av.c3{--abg:var(--mf-sem-critical-bg);--afg:var(--mf-sem-critical-fg);--aln:var(--mf-sem-critical-line)}
+.bd{display:inline-flex;align-items:center;gap:var(--mf-s1);padding:2px var(--mf-s2);border:1px solid var(--bl);border-radius:var(--mf-radius-pill);background:var(--bb);color:var(--bf);font-size:var(--mf-fs-xs);font-weight:var(--mf-fw-bold);line-height:18px;white-space:nowrap;vertical-align:middle}
+.bd svg.i{width:12px;height:12px}
+.bd[data-tone=neutral]{--bb:var(--mf-sem-neutral-bg);--bf:var(--mf-sem-neutral-fg);--bl:var(--mf-sem-neutral-line)}
+.bd[data-tone=success]{--bb:var(--mf-sem-healthy-bg);--bf:var(--mf-sem-healthy-fg);--bl:var(--mf-sem-healthy-line)}
+.bd[data-tone=warning]{--bb:var(--mf-sem-risk-bg);--bf:var(--mf-sem-risk-fg);--bl:var(--mf-sem-risk-line)}
+.bd[data-tone=info]{--bb:var(--mf-sem-info-bg);--bf:var(--mf-sem-info-fg);--bl:var(--mf-sem-info-line)}
+.mf-btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--mf-s2);height:32px;padding:0 12px;border-radius:var(--mf-radius-md);border:1px solid var(--mf-btn-secondary-border);background:#fff;font-weight:600;white-space:nowrap}
+.mf-btn:hover{background:var(--mf-surface-alt)}
+.mf-btn--primary{background:var(--mf-primary);border-color:var(--mf-primary);color:#fff}
+.mf-btn--primary:hover{background:var(--mf-primary-hover)}
+.mf-btn--text{border-color:transparent;background:transparent;color:var(--mf-link);font-weight:400;padding:0 8px;text-decoration:underline;text-underline-offset:2px}
+.mf-btn--text:hover{background:var(--mf-row-hover);text-decoration-thickness:2px}
+.mf-btn--icon{width:32px;padding:0}
+.lnk{color:var(--mf-link);text-decoration:underline;text-underline-offset:2px;background:none;border:0;padding:0;cursor:pointer;font:inherit}
+.lnk:hover{color:var(--mf-primary-hover);text-decoration-thickness:2px}
+.mono{font-family:var(--mf-font-mono)}
+.muted{color:var(--mf-text-muted)}
+.copy{display:inline-grid;place-items:center;width:24px;height:24px;border:0;background:transparent;border-radius:var(--mf-radius-md);color:var(--mf-text-muted);padding:0;flex:none}
+.copy:hover{background:var(--mf-row-hover);color:var(--mf-text)}
+.copy.ok{color:var(--mf-sem-healthy-fg)}
+[data-tip]{cursor:default}
+#tt{position:fixed;z-index:400;max-width:300px;background:#1b1f27;color:#fff;font-size:12px;line-height:1.35;padding:5px 8px;border-radius:6px;pointer-events:none;box-shadow:var(--mf-shadow-2)}
+#tt[hidden]{display:none}
+.toast{position:fixed;z-index:500;left:50%;bottom:20px;transform:translateX(-50%);background:#1b1f27;color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;box-shadow:var(--mf-shadow-2)}
+.toast[hidden]{display:none}
+
+/* ---- Matter header (same in Before and Recommended except the breadcrumb) ---- */
+.mh{margin-bottom:var(--mf-s2)}
+.mh__crumbs ol{display:flex;align-items:center;gap:var(--mf-s2);margin:0;padding:0;list-style:none;color:var(--mf-text-muted);font-size:var(--mf-fs-sm);min-height:24px}
+.mh__crumbs li{display:flex;align-items:center;gap:4px}
+.mh__crumbs li+li::before{content:'>';margin-right:var(--mf-s1)}
+.mh__crumbs a{color:var(--mf-link)}
+.mh__row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--mf-s2) var(--mf-s3)}
+.mh__title{display:flex;align-items:center;gap:var(--mf-s2);flex:1 1 18rem;min-width:0;margin:0;font-size:var(--mf-fs-h2);font-weight:700;line-height:1.25;overflow-wrap:anywhere}
+.mh__title svg{color:var(--mf-text-muted)}
+.mh__sep{color:var(--mf-text-muted);font-weight:400}
+.mh__actions{display:flex;align-items:center;gap:var(--mf-s2)}
+.mh__sub{display:flex;flex-wrap:wrap;align-items:center;gap:var(--mf-s2);margin:var(--mf-s1) 0 0;color:var(--mf-text-muted);font-size:var(--mf-fs-sm)}
+.mh__note{display:flex;align-items:baseline;gap:var(--mf-s2);margin:var(--mf-s1) 0 0;color:var(--mf-text-muted);font-size:var(--mf-fs-sm)}
+/* Recommended: the sensitive line is one compact bar */
+.rec .mh__note{align-items:center;margin-top:var(--mf-s2);padding:4px 10px;border:1px solid var(--mf-sem-risk-line);border-radius:var(--mf-radius-md);background:var(--mf-sem-risk-bg);color:var(--mf-text);line-height:1.35}
+.rec .mh__note svg{color:var(--mf-sem-risk-fg);flex:none}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--mf-border-soft);overflow-x:auto;scrollbar-width:none;margin-top:var(--mf-s2)}
+.tabs button{border:0;background:none;padding:10px 14px;font-size:15px;color:var(--mf-text-muted);border-bottom:3px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:8px;white-space:nowrap;border-radius:6px 6px 0 0}
+.tabs button:hover{color:var(--mf-text);background:var(--mf-surface-alt)}
+.tabs button[aria-selected=true]{color:var(--mf-primary);font-weight:700;border-bottom-color:var(--mf-primary)}
+.tabs .cnt{font-weight:400;color:var(--mf-text-muted)}
+.tabpanel{display:flex;flex-direction:column;gap:var(--mf-s3);padding-top:var(--mf-s3)}
+.stub{margin:0;padding:24px;color:var(--mf-text-muted);background:var(--mf-surface);border:1px dashed var(--mf-border-strong);border-radius:var(--mf-radius-xl)}
+
+/* ---- shared card + skeleton ---- */
+.card{display:flex;flex-direction:column;min-width:0;min-height:0;border:1px solid var(--mf-border-soft);border-radius:var(--mf-radius-xl);background:var(--mf-surface);box-shadow:var(--mf-shadow-card)}
+.ch{display:flex;align-items:center;justify-content:space-between;gap:var(--mf-s2);padding:var(--mf-s3) var(--mf-s3) var(--mf-s2);flex:none}
+.ch h2{margin:0;font-size:var(--mf-fs-lg);font-weight:700}
+.scroll{flex:1 1 auto;min-height:0;overflow-y:auto;padding:0 var(--mf-s3) var(--mf-s3)}
+.sk{display:block;border-radius:6px;background:linear-gradient(90deg,var(--mf-surface-alt) 25%,#e4e8ee 50%,var(--mf-surface-alt) 75%);background-size:200% 100%;animation:sk 1.3s linear infinite}
+@keyframes sk{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.sk{animation:none}}
+.err{display:flex;align-items:center;flex-wrap:wrap;gap:var(--mf-s2);margin:0;padding:var(--mf-s2) var(--mf-s3);border:1px solid var(--mf-sem-overdue-line);border-radius:var(--mf-radius-md);background:var(--mf-sem-overdue-bg);color:var(--mf-sem-overdue-fg)}
+.err svg{flex:none}
+.note{margin:0;color:var(--mf-text-muted)}
+
+/* ---- asset tiles ---- */
+.tiles{margin:0;padding:0;list-style:none}
+.tile{display:flex;align-items:center;gap:var(--mf-s2);color:inherit;text-decoration:none;border:1px solid var(--mf-border-soft);border-radius:var(--mf-radius-lg);background:var(--mf-surface);box-shadow:var(--mf-shadow-card);text-align:left;width:100%}
+.tile:hover{background:var(--mf-sem-info-bg)}
+.tchip{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:#fff;background:var(--tc);flex:none}
+.tchip svg.i{width:18px;height:18px}
+.tcount{font-size:var(--mf-fs-lg);font-weight:700;font-variant-numeric:tabular-nums}
+.tname{color:var(--mf-text-muted);font-size:var(--mf-fs-sm);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ======== BEFORE: today's layout ======== */
+.before .tiles{display:flex;flex-wrap:wrap;gap:var(--mf-s2)}
+.before .tile{width:auto;min-height:var(--mf-ctl-h);padding:var(--mf-s2) var(--mf-s3)}
+.before .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-auto-rows:minmax(0,1fr);gap:var(--mf-s3);flex:1 1 auto;min-height:0}
+.before .dl{display:grid;grid-template-columns:minmax(8rem,12rem) minmax(0,1fr);gap:var(--mf-s2) var(--mf-s3);margin:0}
+.before .dl dt{color:var(--mf-text-muted)}
+.before .dl dd{margin:0;overflow-wrap:anywhere}
+.before .cmrow{padding:var(--mf-s2);border-radius:var(--mf-radius-md);background:var(--mf-sem-info-bg)}
+.before .cmval{font-family:var(--mf-font-mono);font-size:var(--mf-fs-title);font-weight:700;display:flex;align-items:center;gap:var(--mf-s1)}
+.before .feed{margin:0;padding:0;list-style:none}
+.before .feed li{display:flex;justify-content:space-between;gap:var(--mf-s2);padding:var(--mf-s2) 0;border-top:1px solid var(--mf-border-soft)}
+.before .feed li:first-child{border-top:0}
+.before .when{flex:none;color:var(--mf-text-muted);font-size:var(--mf-fs-sm)}
+.before .side{display:flex;flex-direction:column;gap:var(--mf-s3);min-width:0;min-height:0}
+.before .side>.card{flex:1 1 0}
+
+/* ======== RECOMMENDED ======== */
+.rec .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--mf-s2)}
+.rec .tile{padding:6px var(--mf-s3);min-height:44px}
+.rec .tile .tcount{margin-left:auto;padding-left:4px}
+.rec .tile.total{--tc:var(--mf-tt-slate)}
+.rec .tile .tname{flex:1 1 auto}
+.rec .tile .tcount{order:3}
+.rec .empty-assets{display:flex;align-items:center;gap:var(--mf-s2);padding:6px var(--mf-s3);min-height:44px;border:1px dashed var(--mf-border-strong);border-radius:var(--mf-radius-lg);color:var(--mf-text-muted)}
+.rec .grid{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(0,6fr) minmax(0,4fr);grid-template-rows:minmax(0,1fr);gap:var(--mf-s3);align-items:start}
+.rec .card{max-height:100%;container:c/inline-size}
+.rec .fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-flow:row dense;gap:10px 28px;margin:0;padding:var(--mf-s1) 0 0}
+.rec .fd{min-width:0;min-height:42px}
+.rec .fd.c1{grid-column:1}.rec .fd.c2{grid-column:2}
+.rec .fl{margin:0;font-size:var(--mf-fs-xs);font-weight:600;line-height:16px;color:var(--mf-text-muted)}
+.rec .fv{margin:2px 0 0;min-height:24px;display:flex;align-items:center;gap:var(--mf-s2);line-height:20px;min-width:0}
+.rec .fv>span:not(.bd):not(.av){min-width:0;overflow-wrap:anywhere}
+.rec .fv .grow{flex:1 1 auto}
+.rec .fv .mf-btn--text{margin-block:-4px;margin-left:auto}
+.rec .fv.long{align-items:flex-start;line-height:18px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.rec .dash{color:var(--mf-text-muted)}
+.rec .cm{display:flex;align-items:center;gap:var(--mf-s2);height:42px;padding:0 var(--mf-s1) 0 var(--mf-s3);border-radius:var(--mf-radius-md);background:var(--mf-sem-info-bg);border:1px solid var(--mf-sem-info-line);min-width:0}
+.rec .cm .fl{color:var(--mf-sem-info-fg);margin:0;white-space:nowrap}
+.rec .cm .num{font-family:var(--mf-font-mono);font-size:var(--mf-fs-lg);font-weight:700;color:var(--mf-text);white-space:nowrap}
+.rec .cm .copy{margin-left:auto;color:var(--mf-sem-info-fg)}
+.rec .cm .copy:hover{background:#fff}
+@container c (max-width:560px){.rec .fields{grid-template-columns:minmax(0,1fr)}.rec .fd.c1,.rec .fd.c2{grid-column:auto}}
+.rec .feed{margin:0;padding:0;list-style:none}
+.rec .feed li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;padding:8px 0;border-top:1px solid var(--mf-border-soft);min-height:52px}
+.rec .feed li:first-child{border-top:0}
+.rec .ki{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--kb);color:var(--kf);border:1px solid var(--kl)}
+.rec .ki svg.i{width:15px;height:15px}
+.k-info{--kb:var(--mf-sem-info-bg);--kf:var(--mf-sem-info-fg);--kl:var(--mf-sem-info-line)}
+.k-ok{--kb:var(--mf-sem-healthy-bg);--kf:var(--mf-sem-healthy-fg);--kl:var(--mf-sem-healthy-line)}
+.k-neutral{--kb:var(--mf-sem-neutral-bg);--kf:var(--mf-sem-neutral-fg);--kl:var(--mf-sem-neutral-line)}
+.k-person{--kb:var(--mf-sem-person-bg);--kf:var(--mf-sem-person-fg);--kl:var(--mf-sem-person-line)}
+.k-crit{--kb:var(--mf-sem-critical-bg);--kf:var(--mf-sem-critical-fg);--kl:var(--mf-sem-critical-line)}
+.rec .what{margin:0;line-height:20px;overflow-wrap:anywhere}
+.rec .who{display:flex;align-items:center;gap:6px;margin-top:2px;color:var(--mf-text-muted);font-size:var(--mf-fs-sm);line-height:18px;min-width:0}
+.rec .who .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;color:var(--mf-text)}
+.rec .who .nm.rawn{font-family:var(--mf-font-mono);font-size:12px}
+.rec .who time{white-space:nowrap}
+.rec .cf{display:flex;align-items:center;justify-content:space-between;gap:var(--mf-s2);padding:4px var(--mf-s3) var(--mf-s2);border-top:1px solid var(--mf-border-soft);flex:none}
+.rec .cf .note{font-size:var(--mf-fs-xs)}
+.rec .scroll.pad0{padding-bottom:var(--mf-s2)}
+
+/* narrow or short windows: the page scrolls and cards are plain (as the app does below 768 px or 561 px high) */
+@container fr (max-width:999.98px) or (max-height:560.98px){
+  .main{display:block;overflow:auto}
+  .main>.tabpanel{min-height:auto}
+  .tabpanel{display:block}
+  .tabpanel>*+*{margin-top:var(--mf-s3)}
+  .before .grid,.rec .grid{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:none;grid-auto-rows:auto}
+  .rec .card{max-height:none}
+  .scroll{overflow:visible}
+  .before .side>.card{flex:none}
+}
+@container fr (max-width:999.98px){
+  .shell{grid-template-columns:56px minmax(0,1fr)}
+  .nav{padding:12px 8px 0}
+  .nav a{padding:0;justify-content:center;font-size:0;gap:0}
+  .nav a.ind{padding-left:0}
+  .nav h2,.nav .ver{display:none}
+  .brand span{display:none}.brand{width:auto}
+  .top{padding:0 12px;gap:10px}
+  .main{padding:12px 16px}
+  .gsearch{flex-basis:200px}
+}
+@container fr (max-width:639.98px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .nav{display:none}
+  .burger{display:block}
+  .gsearch,.user .meta{display:none}
+  .main{padding:12px 16px}
+  .mh__title{font-size:var(--mf-fs-h3)}
+  .tabs button{padding:10px 12px;font-size:14px}
+  .mh__actions{width:100%}
+  .rec .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+
+/* short desktop windows (for example 1366x600): tighter spacing so the inner regions get more room */
+@container fr (max-height:700px) and (min-width:1000px){
+  .main{padding-top:8px;padding-bottom:8px}
+  .mh{margin-bottom:4px}
+  .rec .mh__note{margin-top:4px;padding:2px 10px}
+  .tabs{margin-top:4px}.tabs button{padding:6px 14px}
+  .tabpanel{gap:8px;padding-top:8px}
+  .ch{padding:8px 12px 4px}
+  .rec .tile{min-height:36px;padding:3px 12px}.rec .tchip{width:28px;height:28px}
+  .rec .fields{gap:6px 28px}.rec .fd,.rec .cm{min-height:38px}.rec .cm{height:38px}
+  .rec .feed li{padding:6px 0;min-height:46px}
+  .rec .cf{padding-top:2px}
+}
+
+/* ---- dialog ---- */
+#overlay{position:absolute;inset:0;z-index:200;display:grid;place-items:center;background:rgba(16,24,40,.45);padding:12px}
+#overlay[hidden]{display:none}
+.dlg{background:#fff;border-radius:var(--mf-radius-xl);box-shadow:var(--mf-shadow-pop);width:576px;max-width:100%;max-height:90%;display:flex;flex-direction:column}
+.dlg.small{width:416px}
+.dlg header{padding:14px 16px 8px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.dlg h2{margin:0;font-size:var(--mf-fs-h3)}
+.dlg .sub{color:var(--mf-text-muted);font-size:var(--mf-fs-sm)}
+.dlg .body{padding:4px 16px 12px;overflow:auto;display:grid;gap:10px}
+.dlg label{display:grid;gap:3px;font-weight:600;font-size:var(--mf-fs-sm)}
+.dlg input,.dlg select{height:36px;border:1px solid var(--mf-border-strong);border-radius:6px;padding:0 10px;background:#fff;font-weight:400}
+.dlg input:disabled{background:var(--mf-surface-alt);color:var(--mf-text-muted)}
+.dlg footer{display:flex;justify-content:space-between;gap:8px;padding:10px 16px;border-top:1px solid var(--mf-border-soft)}
+@container fr (max-width:639.98px){.dlg{width:100%;max-height:100%;height:100%;border-radius:0}#overlay{padding:0}}
+
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+<symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/></symbol>
+<symbol id="i-clip" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h4"/></symbol>
+<symbol id="i-checksq" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12 3 3 5-6"/></symbol>
+<symbol id="i-building" viewBox="0 0 24 24"><path d="M4 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16M14 9h5a1 1 0 0 1 1 1v11M3 21h18M8 8h2M8 12h2M8 16h2"/></symbol>
+<symbol id="i-brief" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18"/></symbol>
+<symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+<symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></symbol>
+<symbol id="i-tasks" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 16"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 20a7 7 0 0 1 14 0M17 4.5a3.5 3.5 0 0 1 0 7M22 20a6 6 0 0 0-4-5.6"/></symbol>
+<symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></symbol>
+<symbol id="i-fields" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="11" height="6" rx="1.5"/></symbol>
+<symbol id="i-report" viewBox="0 0 24 24"><path d="M5 21V10M12 21V4M19 21v-7"/></symbol>
+<symbol id="i-audit" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 8v4l3 2"/></symbol>
+<symbol id="i-pod" viewBox="0 0 24 24"><circle cx="8" cy="9" r="3"/><circle cx="17" cy="10" r="2.5"/><path d="M2 20a6 6 0 0 1 12 0M14 20a4.5 4.5 0 0 1 8 0"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/></symbol>
+<symbol id="i-note" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></symbol>
+<symbol id="i-summary" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="18" height="8" rx="1.5"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+<symbol id="i-checkc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></symbol>
+<symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15v4M17 17h4"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></symbol>
+<symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+<symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17h.01"/></symbol>
+<symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></symbol>
+<symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 9.5 4 4 0 0 1 17.5 18z"/></symbol>
+<symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></symbol>
+<symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18.5h2"/></symbol>
+<symbol id="i-share" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M10 13h5M13 11l2 2-2 2"/></symbol>
+<symbol id="i-plusc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m10 8.5 5.5 3.5-5.5 3.5z"/></symbol>
+<symbol id="i-pause" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 9v6M14 9v6"/></symbol>
+<symbol id="i-switch" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 20a7 7 0 0 1 11-5.7M16 14l5 3-5 3M21 17h-8"/></symbol>
+<symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1.1-4.6A8 8 0 1 1 21 12z"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><circle cx="12" cy="10" r="2"/><path d="M8.5 16a4 4 0 0 1 7 0"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-3.5L4 9M4 4v5h5M4 13a8 8 0 0 0 14.5 3.5L20 15M20 20v-5h-5"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+<symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h9M19 6h1M4 12h3M13 12h7M4 18h11M21 18h-1"/><circle cx="16" cy="6" r="2.5"/><circle cx="10" cy="12" r="2.5"/><circle cx="18" cy="18" r="2.5"/></symbol>
+</defs></svg>
+
+<div id="stage" class="win">
+  <div id="mockbar">
+    <span id="sizelabel"></span>
+    <div class="pill" role="group" aria-label="Mockup view">
+      <button type="button" data-set="mode" data-v="before">Before</button>
+      <button type="button" data-set="mode" data-v="rec">Recommended</button>
+      <button type="button" class="gear" id="tbbtn" aria-expanded="false" aria-controls="toolbox"><svg class="i sm"><use href="#i-sliders"/></svg>Mockup Toolbox</button>
+    </div>
+  </div>
+  <section id="toolbox" aria-label="Mockup toolbox" hidden></section>
+  <div id="frame" class="rec">
+    <a class="sr" href="#main">Skip to content</a>
+    <div class="shell">
+      <header class="top">
+        <button class="burger" aria-label="Open navigation" data-act="toast" data-v="Mockup: the navigation opens as a drawer on a phone."><svg class="i lg"><use href="#i-menu"/></svg></button>
+        <div class="brand"><svg viewBox="0 0 256 256" aria-hidden="true"><rect width="256" height="256" rx="56" fill="#1d4e89"/><g stroke="#fff" stroke-width="14" stroke-linecap="round" fill="none"><path d="M128 128 L128 56"/><path d="M128 128 L66 164"/><path d="M128 128 L190 164"/></g></svg><span>LPT Hub</span></div>
+        <div class="gsearch"><svg class="i sm"><use href="#i-search"/></svg><input type="search" placeholder="Search clients, matters, tasks..." aria-label="Search"></div>
+        <div class="spacer"></div>
+        <button class="bell" aria-label="Notifications, 12 unread" data-act="toast" data-v="Mockup: notifications."><svg class="i lg"><use href="#i-bell"/></svg><b>12</b></button>
+        <button class="user" aria-label="User menu" data-act="toast" data-v="Mockup: user menu."><span class="av lg c2" aria-hidden="true">T9</span><span class="meta"><span class="nm">Test User 19</span></span><svg class="i xs"><use href="#i-chev"/></svg></button>
+      </header>
+      <nav class="nav" aria-label="Main">
+        <a href="#" data-act="inert"><svg class="i"><use href="#i-home"/></svg>Dashboard</a>
+        <a href="#" data-act="inert"><svg class="i"><use href="#i-clip"/></svg>My Matters</a>
+        <a href="#" data-act="inert"><svg class="i"><use href="#i-checksq"/></svg>My Work</a>
+        <a href="#" data-act="inert"><svg class="i"><use href="#i-building"/></svg>Clients</a>
+        <a href="#" aria-current="page"><svg class="i"><use href="#i-brief"/></svg>Matters</a>
+        <a href="#" class="ind" data-act="inert"><svg class="i"><use href="#i-folder"/></svg>Projects</a>
+        <a href="#" class="ind" data-act="inert"><svg class="i"><use href="#i-db"/></svg>Assets</a>
+        <a href="#" data-act="inert"><svg class="i"><use href="#i-pod"/></svg>Pod Work</a>
+        <a href="#" data-act="inert"><svg class="i"><use href="#i-tasks"/></svg>Tasks</a>
+        <h2>ADMINISTRATION</h2>
+        <a href="#" data-act="inert"><svg class="i"><use href="#i-users"/></svg>Users</a>
+        <a href="#" data-act="inert"><svg class="i"><use href="#i-tasks"/></svg>Task Types</a>
+        <a href="#" data-act="inert"><svg class="i"><use href="#i-tag"/></svg>Labels</a>
+        <a href="#" data-act="inert"><svg class="i"><use href="#i-db"/></svg>Asset Types</a>
+        <a href="#" data-act="inert"><svg class="i"><use href="#i-fields"/></svg>Custom Fields</a>
+        <a href="#" data-act="inert"><svg class="i"><use href="#i-report"/></svg>Reports</a>
+        <a href="#" data-act="inert"><svg class="i"><use href="#i-audit"/></svg>Audit Logs</a>
+        <a href="#" data-act="inert"><svg class="i"><use href="#i-gear"/></svg>Settings</a>
+        <div class="ver">v0.1.1</div>
+      </nav>
+      <main id="main" class="main" tabindex="-1"></main>
+    </div>
+    <div id="overlay" hidden></div>
+  </div>
+</div>
+<div id="tt" role="tooltip" hidden></div>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function(){
+'use strict';
+/* ===================== state (kept in the URL hash so a view can be linked) ===================== */
+var DEF={mode:'rec',size:'win',cf:'4',act:'many',sens:'1',ai:'onprem',sec:'set',dn:'1',assets:'3',total:'1',load:'ready',edit:'1'};
+var GROUPS=[
+ ['mode','View',[['before','Before'],['rec','Recommended']]],
+ ['size','Window size',[['win','Browser window'],['1920x1080','1920x1080'],['1366x768','1366x768'],['1366x600','1366x600'],['768x1024','768 tablet'],['375x812','375 phone']]],
+ ['cf','Custom fields',[['0','None'],['4','4'],['12','12']]],
+ ['act','Activity rows',[['0','None'],['3','Few (3)'],['many','Many']]],
+ ['sens','Sensitive matter',[['0','Off'],['1','On']]],
+ ['ai','AI allowed',[['no','No'],['onprem','On-prem only'],['company','Company-approved']]],
+ ['sec','Secondary PM',[['set','Set'],['none','None']]],
+ ['dn','People names',[['1','Display name'],['0','Raw account only']]],
+ ['assets','Asset types',[['0','0 (empty)'],['1','1'],['3','3 (today)'],['6','6']]],
+ ['total','Total tile',[['1','On'],['0','Off']]],
+ ['load','Tiles and activity',[['ready','Loaded'],['loading','Loading'],['error','Error']]],
+ ['edit','Viewer can edit',[['1','Yes'],['0','No']]]
+];
+var S=Object.assign({},DEF), TAB='summary', OPEN_TB=false;
+(function readHash(){ try{ new URLSearchParams(location.hash.slice(1)).forEach(function(v,k){ if(k in DEF) S[k]=v; else if(k==='tb') window.__TB=v; else if(k==='tab') TAB=v; else if(k==='open') window.__OPEN=v; }); }catch(e){} })();
+function writeHash(){ try{ var p=new URLSearchParams(); Object.keys(DEF).forEach(function(k){ if(S[k]!==DEF[k]) p.set(k,S[k]); }); if(window.__TB) p.set('tb',window.__TB); history.replaceState(null,'',p.toString()?'#'+p.toString():location.pathname+location.search); }catch(e){} }
+
+/* ===================== fake data ===================== */
+var BS='\\';
+var P={
+ A:{acct:'KE'+BS+'kekim',dn:'Kelly Kim',c:0},
+ B:{acct:'PR'+BS+'prao',dn:'Priya Rao',c:1},
+ T:{acct:'TU'+BS+'tuser27',dn:'Test User 27',c:2,fixed:true},
+ POD:{acct:'Demo Analytics Pod',dn:'Demo Analytics Pod',fixed:true}
+};
+function nm(p){ return (p.fixed||S.dn==='1')?p.dn:p.acct; }
+function ini(p){ if(p.fixed||S.dn==='1'){ var w=p.dn.split(/\s+/); return (w[0][0]+(w.length>1?w[w.length-1][0]:'')).toUpperCase(); } return p.acct.split(BS).pop().slice(0,2).toUpperCase(); }
+function isRaw(p){ return !p.fixed&&S.dn!=='1'; }
+var M={clientNo:'90001',client:'Demo Northwind Holdings',no:'80006',name:'Demo Employment class action',ref:'90001-80006'};
+var NOW=new Date(2026,10,3,10,30);
+function dt(dayBack,h,m){ return new Date(2026,10,3-dayBack,h,m); }
+var CREATED=dt(2,20,42), CHANGED=dt(1,9,24);
+var MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var MONS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function p2(n){ return (n<10?'0':'')+n; }
+function clock12(d,lead){ var h=d.getHours(),ap=h>=12?'PM':'AM'; h=h%12||12; return (lead?p2(h):h)+':'+p2(d.getMinutes())+' '+ap; }
+function dayGap(d){ var a=new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()), b=new Date(d.getFullYear(),d.getMonth(),d.getDate()); return Math.round((a-b)/864e5); }
+/* today's formats (mfDate and activityTime) */
+function oldStamp(d){ return MONS[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear()+', '+clock12(d,false)+' EST'; }
+function oldWhen(d){ var g=dayGap(d); if(g<=0) return clock12(d,false); return g===1?'Yesterday':MONS[d.getMonth()]+' '+d.getDate(); }
+/* recommended: My Matters numeric style (theme guide 8): MM/DD hh:mm AM/PM, year only when it is not the current year */
+function numDay(d){ return p2(d.getMonth()+1)+'/'+p2(d.getDate())+(d.getFullYear()!==NOW.getFullYear()?'/'+d.getFullYear():''); }
+function numWhen(d){ var g=dayGap(d); var c=clock12(d,true); if(g<=0) return 'Today '+c; if(g===1) return 'Yesterday '+c; return numDay(d)+' '+c; }
+function numFull(d){ return p2(d.getMonth()+1)+'/'+p2(d.getDate())+'/'+d.getFullYear()+' '+clock12(d,true); }
+function readable(d){ return MON[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear()+', '+clock12(d,false)+' Eastern Standard Time'; }
+
+var ASSET_TYPES=[
+ {id:1,name:'Collection / Data Set',icon:'i-db',tc:'--mf-tt-orange',n:1},
+ {id:2,name:'Physical Media',icon:'i-box',tc:'--mf-tt-green',n:1},
+ {id:3,name:'Relativity Workspace',icon:'i-cloud',tc:'--mf-tt-blue',n:1},
+ {id:4,name:'Email Archive',icon:'i-mail',tc:'--mf-tt-violet',n:2},
+ {id:5,name:'Mobile Device',icon:'i-phone',tc:'--mf-tt-teal',n:3},
+ {id:6,name:'Network Share',icon:'i-share',tc:'--mf-tt-slate',n:8}
+];
+function assetTypes(){ var n=+S.assets; return ASSET_TYPES.slice(0,n); }
+var CF=[
+ ['Case number','2025-CV-04417'],['Court','U.S. District Court, S.D.N.Y.'],['Opposing counsel',null],['Litigation hold issued','Yes'],
+ ['Judge','Hon. R. Alvarez'],['Jurisdiction','Federal'],['Filing date','08/14/2025'],['Discovery deadline','03/31/2027'],
+ ['Estimated data volume','1.8 TB'],['Data sources','Email, Slack, file shares, mobile devices, HR system exports, payroll database'],['Billing code','NWH-EMP-0042'],['Department',null]
+];
+function customFields(){ var n=+S.cf; if(n===0) return []; if(n===4) return [CF[0],CF[1],CF[2],CF[3]]; return CF; }
+var TAR={t:'task',n:'Analytics / TAR Setup - 33'}, INT={t:'task',n:'Incoming Production Intake - 36'};
+function events(){
+ var a=[
+  {k:'comment',who:P.B,t:dt(0,9,48),o:TAR},
+  {k:'done',who:P.A,t:dt(1,16,12),o:TAR},
+  {k:'prog',who:P.A,t:dt(1,15,40),o:TAR},
+  {k:'assign',who:P.A,t:dt(1,15,31),o:TAR,to:P.A},
+  {k:'create',who:P.A,t:dt(1,15,30),o:TAR},
+  {k:'asset',who:P.B,t:dt(1,13,15),o:{t:'asset',n:'NWH-Workspace-01'}},
+  {k:'hold',who:P.A,t:dt(1,11,2),o:INT},
+  {k:'reassign',who:P.B,t:dt(1,10,20),o:INT,from:P.T,to:P.POD},
+  {k:'mgr',who:P.A,t:dt(1,9,24)},
+  {k:'status',who:P.A,t:dt(2,20,50),o:INT},
+  {k:'asset',who:P.B,t:dt(2,20,44),o:{t:'asset',n:'Collection 01 (Data Set)'}},
+  {k:'create',who:P.A,t:dt(2,20,43),o:INT}
+ ];
+ if(S.mode==='before') a=a.filter(function(e){return e.k!=='asset';}); /* today's feed has no asset events */
+ var n=S.act==='many'?(S.mode==='before'?10:8):+S.act;
+ return a.slice(0,n);
+}
+
+/* ===================== small renderers ===================== */
+function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function ic(id,c){ return '<svg class="i'+(c?' '+c:'')+'" aria-hidden="true"><use href="#'+id+'"/></svg>'; }
+function av(p,c){ var cls='av'+(c?' '+c:'')+(isRaw(p)?' raw':' c'+((p.c==null?3:p.c)%4)); return '<span class="'+cls+'" aria-hidden="true">'+esc(ini(p))+'</span>'; }
+function badge(tone,icon,text,extra){ return '<span class="bd" data-tone="'+tone+'"'+(extra||'')+'>'+(icon?ic(icon):'')+esc(text)+'</span>'; }
+var AIL={no:['No','AI: No'],onprem:['On-prem AI only','AI: On-prem only'],company:['Company-approved AI services','AI: Company-approved']};
+var SENS_LEAD='Sensitive matter.', SENS_TEXT='Only its project managers, people assigned one of its tasks and people who may see all sensitive matters can see it.';
+function copyBtn(){ return '<button type="button" class="copy" data-act="copy" aria-label="Copy CM number" data-tip="Copy CM number">'+ic('i-copy','sm')+'</button>'; }
+function pms(){ var o=[]; if(S.sec==='set') ; return o; }
+
+/* ---------- header ---------- */
+function header(){
+ var rec=S.mode==='rec';
+ var crumb=rec
+  ? '<li aria-current="page" data-crumb-current>'+esc(M.name)+'</li>'
+  : '<li aria-current="page" data-crumb-current><span class="mono">'+M.ref+'</span>'+copyBtn()+'</li>';
+ return '<header class="mh" data-matter-header>'
+  +'<nav class="mh__crumbs" aria-label="Breadcrumb"><ol><li><a href="#" data-act="inert">Matters</a></li>'+crumb+'</ol></nav>'
+  +'<div class="mh__row"><h1 class="mh__title">'+ic('i-brief')+'<span>'+esc(M.client)+'<span class="mh__sep" aria-hidden="true"> &gt; </span><span class="sr">, </span>'+esc(M.name)+'</span></h1>'
+  +'<div class="mh__actions"><button type="button" class="mf-btn" data-act="toast" data-v="Mockup: New menu (Task, Project, Asset, ...)">New '+ic('i-chev','xs')+'</button><button type="button" class="mf-btn" data-act="toast" data-v="Mockup: More actions menu">More Actions '+ic('i-chev','xs')+'</button></div></div>'
+  +'<p class="mh__sub" data-matter-subtitle><span class="mono">'+M.ref+'</span>'+badge('success','i-checkc','Active')
+  +(S.sens==='1'?badge('warning','i-lock','Sensitive',' data-tip="Sensitive matter"'):'')
+  +badge('neutral','i-sparkles',AIL[S.ai][1])+'</p>'
+  +(S.sens==='1'?'<p class="mh__note" role="note" data-sensitive-banner>'+ic('i-lock','sm')+'<span><strong>'+SENS_LEAD+'</strong> '+SENS_TEXT+'</span></p>':'')
+  +'</header>';
+}
+function tabs(){
+ var cnt=0; assetTypes().forEach(function(t){cnt+=t.n;});
+ var T=[['summary','Summary','i-summary',null],['tasks','Tasks','i-tasks',21],['projects','Projects','i-folder',0],['assets','Assets','i-db',cnt],['prods','Productions','i-box',1],['notes','Notes','i-note',3],['acts','Activities','i-audit',null]];
+ return '<div class="tabs" role="tablist" aria-label="Matter sections">'+T.map(function(t){
+  return '<button type="button" role="tab" data-act="tab" data-v="'+t[0]+'" aria-selected="'+(TAB===t[0])+'" tabindex="'+(TAB===t[0]?0:-1)+'">'+ic(t[2],'sm')+t[1]+(t[3]!=null?'<span class="cnt">('+t[3]+')</span>':'')+'</button>';
+ }).join('')+'</div>';
+}
+
+/* ---------- asset strip ---------- */
+function tiles(){
+ var ty=assetTypes(), rec=S.mode==='rec';
+ if(S.load==='loading') return '<section aria-label="Assets by type" aria-busy="true"><ul class="tiles" style="'+(rec?'':'display:flex;gap:8px')+'">'+[0,1,2].map(function(){return '<li><span class="sk" style="width:'+(rec?'100%':'170px')+';height:'+(rec?44:38)+'px"></span></li>';}).join('')+'</ul></section>';
+ if(S.load==='error') return '<section aria-label="Assets by type"><p class="err" role="alert">'+ic('i-warn','sm')+'We couldn\'t load the assets. <button type="button" class="mf-btn mf-btn--text" data-act="retry">Try Again</button></p></section>';
+ if(!ty.length) return '<section aria-label="Assets by type">'+(rec
+   ? '<p class="empty-assets" data-no-assets>'+ic('i-db','sm')+'This matter has no assets yet.'+(S.edit==='1'?'<button type="button" class="mf-btn mf-btn--text" data-act="toast" data-v="Mockup: opens the New Asset dialog">New Asset</button>':'')+'</p>'
+   : '<p class="note" data-no-assets>This matter has no assets yet.</p>')+'</section>';
+ var total=0; ty.forEach(function(t){total+=t.n;});
+ var li='';
+ if(rec&&S.total==='1'&&ty.length>1) li+='<li><button type="button" class="tile total" data-act="toast" data-v="Mockup: opens the Assets tab (all types)"><span class="tchip" aria-hidden="true">'+ic('i-layers')+'</span><span class="tname">Total</span><span class="tcount">'+total+'</span></button></li>';
+ ty.forEach(function(t){
+  li+='<li><button type="button" class="tile" style="--tc:var('+t.tc+')" data-act="toast" data-v="Mockup: opens the Assets tab filtered to '+esc(t.name)+'"><span class="tchip" aria-hidden="true">'+ic(t.icon)+'</span>'
+   +(rec?'<span class="tname" data-tip="'+esc(t.name)+'">'+esc(t.name)+'</span><span class="tcount">'+t.n+'</span>':'<span class="tcount">'+t.n+'</span><span class="tname">'+esc(t.name)+'</span>')+'</button></li>';
+ });
+ return '<section aria-label="Assets by type" data-summary-assets><ul class="tiles">'+li+'</ul></section>';
+}
+
+/* ---------- BEFORE: details + activity as today ---------- */
+function beforeDetails(){
+ var canE=S.edit==='1', hasM=true;
+ var cfRows=customFields().map(function(f){ return '<dt>'+esc(f[0])+'</dt><dd>'+(f[1]==null?'':esc(f[1]))+'</dd>'; }).join('');
+ var sec=S.sec==='set'?nm(P.B):'None';
+ return '<section class="card" aria-labelledby="d-h" data-summary-details><div class="ch"><h2 id="d-h">Details</h2>'+(canE?'<button type="button" class="mf-btn" data-act="edit">'+ic('i-pencil','sm')+' Edit</button>':'')+'</div>'
+  +'<div class="scroll" tabindex="0" role="region" aria-label="Matter details, scrollable"><dl class="dl">'
+  +'<dt class="cmrow">CM number</dt><dd class="cmrow"><span class="cmval">'+M.ref+copyBtn()+'</span></dd>'
+  +'<dt>Client</dt><dd><a class="lnk" href="#" data-act="inert"><span class="mono">'+M.clientNo+'</span> '+esc(M.client)+'</a></dd>'
+  +'<dt>Matter number</dt><dd class="mono">'+M.no+'</dd>'
+  +'<dt>Matter name</dt><dd>'+esc(M.name)+'</dd>'
+  +'<dt>Status</dt><dd>'+badge('success','i-checkc','Active')+'</dd>'
+  +'<dt>Sensitive</dt><dd>'+(S.sens==='1'?badge('warning','i-lock','Sensitive')+' <span class="muted">Restricted access</span>':'No')+'</dd>'
+  +'<dt>Primary PM</dt><dd><span>'+esc(nm(P.A))+'</span>'+(canE?' <button type="button" class="mf-btn mf-btn--text" data-act="pm" aria-label="Change project managers">Change</button>':'')+'</dd>'
+  +'<dt>Secondary PM</dt><dd><span>'+esc(sec)+'</span></dd>'
+  +'<dt>Created</dt><dd>'+oldStamp(CREATED)+'</dd>'
+  +'<dt>Last changed</dt><dd>'+oldStamp(CHANGED)+'</dd>'
+  +'<dt>AI allowed</dt><dd>'+AIL[S.ai][0]+'</dd>'
+  +cfRows+'</dl></div></section>';
+}
+function oldText(e){
+ var who=nm(e.who), t=e.o?'"'+e.o.n+'"':'a task';
+ switch(e.k){
+  case 'create': return who+' created '+t;
+  case 'comment': return who+' commented on '+t;
+  case 'done': return who+' moved '+t+' to Completed';
+  case 'prog': return who+' moved '+t+' to In Progress';
+  case 'hold': return who+' moved '+t+' to On Hold';
+  case 'status': return who+' moved '+t+' to In Progress';
+  case 'assign': return t+' assigned to '+nm(e.to);
+  case 'reassign': return t+' reassigned from '+nm(e.from)+' to '+nm(e.to);
+  case 'mgr': return who+' became primary project manager';
+ } return who+' changed '+t;
+}
+function beforeActivity(){
+ var ev=events(), body;
+ if(S.load==='loading') body='<ul class="feed" aria-busy="true">'+[0,1,2,3,4].map(function(){return '<li><span class="sk" style="width:70%;height:16px"></span><span class="sk" style="width:60px;height:14px"></span></li>';}).join('')+'</ul>';
+ else if(S.load==='error') body='<p class="err" role="alert">'+ic('i-warn','sm')+'We couldn\'t load the recent activity. <button type="button" class="mf-btn mf-btn--text" data-act="retry">Try Again</button></p>';
+ else if(!ev.length) body='<p class="note" data-no-activity>No recent activity.</p>';
+ else body='<ul class="feed">'+ev.map(function(e){return '<li data-activity-item><span>'+esc(oldText(e))+'</span><span class="when">'+oldWhen(e.t)+'</span></li>';}).join('')+'</ul>';
+ return '<div class="side"><section class="card" aria-labelledby="a-h" data-summary-activity><div class="ch"><h2 id="a-h">Recent activity</h2><button type="button" class="mf-btn mf-btn--text" data-act="toast" data-v="Mockup: opens the Activities tab">All activities</button></div><div class="scroll" tabindex="0" role="region" aria-label="Recent activity, scrollable">'+body+'</div></section></div>';
+}
+
+/* ---------- RECOMMENDED ---------- */
+function fd(cls,label,val,extra){ return '<div class="fd '+cls+'"><p class="fl" id="">'+esc(label)+'</p><div class="fv'+(extra||'')+'">'+val+'</div></div>'; }
+function dateVal(d){ return '<time datetime="'+d.toISOString()+'" data-tip="'+esc(readable(d))+'" tabindex="0">'+numFull(d)+'</time>'; }
+function pmVal(p,canChange,hasAny){
+ if(!p) return '<span class="dash">None</span>'+(canChange?'<button type="button" class="mf-btn mf-btn--text" data-act="pm" aria-label="Add project manager">Add</button>':'');
+ return av(p)+'<span'+(isRaw(p)?' class="mono" data-tip="No display name on file, so the account name is shown" tabindex="0"':'')+'>'+esc(nm(p))+'</span>'+(canChange?'<button type="button" class="mf-btn mf-btn--text" data-act="pm" aria-label="Change project managers">Change</button>':'');
+}
+function recDetails(){
+ var canE=S.edit==='1';
+ var sens=S.sens==='1'
+  ? '<span class="bd" data-tone="warning" tabindex="0" aria-describedby="sens-d" data-tip="Restricted access. Only its project managers, people assigned one of its tasks and people who may see all sensitive matters can see this matter.">'+ic('i-lock')+'Sensitive</span><span class="sr" id="sens-d">Restricted access</span>'
+  : '<span class="muted">No</span>';
+ var h='<div class="cm c1" data-cm><span class="fl">CM number</span><span class="num">'+M.ref+'</span>'+copyBtn()+'</div>'
+  +fd('c1','Client','<a class="lnk" href="#" data-act="inert"><span class="mono">'+M.clientNo+'</span> '+esc(M.client)+'</a>')
+  +fd('c1','Matter number','<span class="mono">'+M.no+'</span>')
+  +fd('c1','Matter name','<span>'+esc(M.name)+'</span>')
+  +fd('c1','Status',badge('success','i-checkc','Active'))
+  +fd('c2','Sensitive',sens)
+  +fd('c2','Primary PM',pmVal(P.A,canE,true))
+  +fd('c2','Secondary PM',S.sec==='set'?pmVal(P.B,false,true):'<span class="dash">None</span>')
+  +fd('c2','AI allowed',badge('neutral','i-sparkles',AIL[S.ai][1]))
+  +fd('c2','Created',dateVal(CREATED))
+  +fd('c2','Last changed',dateVal(CHANGED));
+ customFields().forEach(function(f){
+  var long=f[1]&&f[1].length>60;
+  h+=fd('',f[0],f[1]==null?'<span class="dash" aria-label="No value">&mdash;</span>':'<span'+(long?' data-tip="'+esc(f[1])+'" tabindex="0"':'')+'>'+esc(f[1])+'</span>',long?' long':'');
+ });
+ return '<section class="card" aria-labelledby="d-h" data-summary-details><div class="ch"><h2 id="d-h">Details</h2>'+(canE?'<button type="button" class="mf-btn" data-act="edit">'+ic('i-pencil','sm')+' Edit</button>':'')+'</div>'
+  +'<div class="scroll" tabindex="0" role="region" aria-label="Matter details, scrollable"><div class="fields">'+h+'</div></div></section>';
+}
+var KIND={
+ create:['i-plusc','k-neutral','Task created'], comment:['i-msg','k-info','Comment'], done:['i-checkc','k-ok','Completed'], prog:['i-play','k-info','In progress'],
+ hold:['i-pause','k-neutral','On hold'], status:['i-play','k-info','In progress'], assign:['i-switch','k-person','Assigned'], reassign:['i-switch','k-person','Reassigned'],
+ mgr:['i-shield','k-person','Project manager'], asset:['i-db','k-crit','Asset']
+};
+function lk(o){ return '<a class="lnk" href="#" data-act="toast" data-v="Mockup: opens the '+(o.t==='asset'?'asset':'task')+' '+esc(o.n)+'">'+esc(o.n)+'</a>'; }
+function recText(e){
+ switch(e.k){
+  case 'create': return 'Created task '+lk(e.o);
+  case 'comment': return 'Commented on '+lk(e.o);
+  case 'done': return 'Completed '+lk(e.o);
+  case 'prog': case 'status': return 'Moved '+lk(e.o)+' to In Progress';
+  case 'hold': return 'Put '+lk(e.o)+' on hold';
+  case 'assign': return 'Assigned '+lk(e.o)+' to '+esc(nm(e.to));
+  case 'reassign': return 'Reassigned '+lk(e.o)+' from '+esc(nm(e.from))+' to '+esc(nm(e.to));
+  case 'asset': return 'Added asset '+lk(e.o);
+  case 'mgr': return 'Became primary project manager';
+ } return 'Changed '+lk(e.o);
+}
+function recActivity(){
+ var ev=events(), body;
+ if(S.load==='loading') body='<ul class="feed" aria-busy="true">'+[0,1,2,3,4].map(function(){return '<li><span class="sk" style="width:28px;height:28px;border-radius:50%"></span><span><span class="sk" style="width:80%;height:14px;margin:3px 0 6px"></span><span class="sk" style="width:45%;height:12px"></span></span></li>';}).join('')+'</ul>';
+ else if(S.load==='error') body='<p class="err" role="alert">'+ic('i-warn','sm')+'We couldn\'t load the recent activity. <button type="button" class="mf-btn mf-btn--text" data-act="retry">Try Again</button></p>';
+ else if(!ev.length) body='<p class="note" data-no-activity>No recent activity.</p>';
+ else body='<ul class="feed">'+ev.map(function(e){
+   var k=KIND[e.k]||KIND.create, raw=isRaw(e.who);
+   return '<li data-activity-item><span class="ki '+k[1]+'" data-tip="'+k[2]+'" aria-hidden="true">'+ic(k[0])+'</span><div><p class="what">'+recText(e)+'</p>'
+    +'<div class="who">'+av(e.who,'sm')+'<span class="nm'+(raw?' rawn':'')+'"'+(raw?' data-tip="No display name on file, so the account name is shown"':'')+'>'+esc(nm(e.who))+'</span><span aria-hidden="true">&middot;</span><time datetime="'+e.t.toISOString()+'" data-tip="'+esc(readable(e.t))+'">'+numWhen(e.t)+'</time></div></div></li>';
+  }).join('')+'</ul>';
+ return '<section class="card" aria-labelledby="a-h" data-summary-activity><div class="ch"><h2 id="a-h">Recent activity</h2></div>'
+  +'<div class="scroll pad0" tabindex="0" role="region" aria-label="Recent activity, scrollable">'+body+'</div>'
+  +'<div class="cf"><button type="button" class="mf-btn mf-btn--text" data-act="toast" data-v="Mockup: opens the Activities tab">All Activities '+ic('i-arrow','xs')+'</button>'+(ev.length&&S.load==='ready'?'<span class="note">Latest '+ev.length+'</span>':'')+'</div></section>';
+}
+
+function summary(){
+ var rec=S.mode==='rec';
+ return tiles()+'<div class="grid">'+(rec?recDetails()+recActivity():beforeDetails()+beforeActivity())+'</div>';
+}
+function render(){
+ var fr=document.getElementById('frame');
+ fr.className=S.mode==='rec'?'rec':'before';
+ var panel=TAB==='summary'?summary():'<p class="stub">The '+esc(TAB)+' tab is not part of this mockup. Click Summary to return.</p>';
+ var main=document.getElementById('main');
+ var keep=main.scrollTop;
+ main.innerHTML=header()+tabs()+'<div class="tabpanel" role="tabpanel" id="tabpanel">'+panel+'</div>';
+ main.scrollTop=keep;
+ document.querySelectorAll('[data-set=mode]').forEach(function(b){ b.setAttribute('aria-pressed',String(S.mode===b.dataset.v)); });
+ renderToolbox(); fit(); writeHash();
+}
+
+/* ===================== toolbox ===================== */
+function renderToolbox(){
+ var tb=document.getElementById('toolbox');
+ if(!tb.dataset.built||tb.dataset.sig!==JSON.stringify(S)){
+  tb.dataset.built='1'; tb.dataset.sig=JSON.stringify(S);
+  var h='<h2>Mockup toolbox</h2><p class="hint">Not part of the product. Every choice is kept in the page address, so a view can be linked.</p>';
+  GROUPS.forEach(function(g){ h+='<fieldset><legend>'+g[1]+'</legend><div class="seg">'+g[2].map(function(o){return '<button type="button" data-set="'+g[0]+'" data-v="'+o[0]+'" aria-pressed="'+(S[g[0]]===o[0])+'">'+o[1]+'</button>';}).join('')+'</div></fieldset>'; });
+  h+='<button type="button" class="reset" data-act="reset">Reset all choices</button>';
+  tb.innerHTML=h;
+ }
+}
+function setTB(open){ OPEN_TB=open; var t=document.getElementById('toolbox'); t.hidden=!open; var b=document.getElementById('tbbtn'); b.setAttribute('aria-expanded',String(open)); }
+
+/* ===================== window size ===================== */
+function fit(){
+ var st=document.getElementById('stage'), fr=document.getElementById('frame'), lab=document.getElementById('sizelabel');
+ if(window.__TB==='0') document.getElementById('mockbar').style.display='none';
+ if(S.size==='win'){ st.className='win'; fr.style.cssText=''; lab.textContent=''; return; }
+ var wh=S.size.split('x').map(Number), W=wh[0], H=wh[1];
+ st.className='sized'; fr.style.width=W+'px'; fr.style.height=H+'px';
+ var aw=window.innerWidth-24, ah=window.innerHeight-56;
+ var s=Math.min(1,aw/W,ah/H);
+ fr.style.transform='translate('+Math.round((window.innerWidth-W*s)/2)+'px,48px) scale('+s+')';
+ lab.textContent=W+' x '+H+(s<1?' (shown at '+Math.round(s*100)+'%)':'');
+}
+window.addEventListener('resize',fit);
+
+/* ===================== dialogs, toast, tooltip ===================== */
+var toastT, lastFocus;
+function toast(m){ var t=document.getElementById('toast'); t.textContent=m; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(function(){t.hidden=true;},2600); }
+function dialog(title,sub,body,small,onSave){
+ lastFocus=document.activeElement;
+ var o=document.getElementById('overlay');
+ o.innerHTML='<div class="dlg'+(small?' small':'')+'" role="dialog" aria-modal="true" aria-labelledby="dlg-t"><header><div><h2 id="dlg-t">'+title+'</h2>'+(sub?'<div class="sub">'+sub+'</div>':'')+'</div><button type="button" class="mf-btn mf-btn--icon mf-btn--text" data-act="closedlg" aria-label="Close">'+ic('i-x')+'</button></header><div class="body">'+body+'</div><footer><button type="button" class="mf-btn" data-act="closedlg">Cancel</button><button type="button" class="mf-btn mf-btn--primary" data-act="savedlg">Save</button></footer></div>';
+ o.hidden=false; var f=o.querySelector('input:not([disabled]),select'); if(f) f.focus();
+}
+function closeDlg(){ var o=document.getElementById('overlay'); o.hidden=true; o.innerHTML=''; if(lastFocus&&lastFocus.focus) try{lastFocus.focus();}catch(e){} }
+function opt(list,sel){ return list.map(function(x){return '<option'+(x===sel?' selected':'')+'>'+esc(x)+'</option>';}).join(''); }
+function editDialog(){
+ var b='<label>Client<input disabled value="'+M.clientNo+' '+esc(M.client)+'"></label><label>Matter number<input value="'+M.no+'"></label><label>Matter name<input value="'+esc(M.name)+'"></label>'
+  +'<label>Status<select>'+opt(['Active','Inactive'],'Active')+'</select></label><label>Sensitive<select>'+opt(['No','Yes'],S.sens==='1'?'Yes':'No')+'</select></label>'
+  +'<label>AI allowed<select>'+opt(['No','On-prem AI only','Company-approved AI services'],AIL[S.ai][0])+'</select></label>';
+ customFields().forEach(function(f){ b+='<label>'+esc(f[0])+'<input value="'+(f[1]==null?'':esc(f[1]))+'"></label>'; });
+ dialog('Edit Matter','CM number '+M.ref,b,false);
+}
+function pmDialog(){
+ var names=[nm(P.A),nm(P.B),'Test User 27','None'];
+ dialog('Change Project Managers','CM number '+M.ref,'<label>Primary PM<select>'+opt(names,nm(P.A))+'</select></label><label>Secondary PM<select>'+opt(names,S.sec==='set'?nm(P.B):'None')+'</select></label>',true);
+}
+var tt=document.getElementById('tt'), ttEl=null;
+function showTip(el){ var t=el.getAttribute('data-tip'); if(!t) return; ttEl=el; tt.textContent=t; tt.hidden=false; var r=el.getBoundingClientRect(), fr=document.getElementById('frame').getBoundingClientRect();
+ var w=tt.offsetWidth,h=tt.offsetHeight, x=Math.max(8,Math.min(r.left+r.width/2-w/2,window.innerWidth-w-8)), y=r.top-h-6; if(y<8) y=r.bottom+6; tt.style.left=x+'px'; tt.style.top=y+'px'; }
+function hideTip(){ tt.hidden=true; ttEl=null; }
+document.addEventListener('mouseover',function(e){ var el=e.target.closest&&e.target.closest('[data-tip]'); if(el) showTip(el); else if(ttEl) hideTip(); });
+document.addEventListener('focusin',function(e){ var el=e.target.closest&&e.target.closest('[data-tip]'); if(el) showTip(el); });
+document.addEventListener('focusout',hideTip);
+document.addEventListener('scroll',hideTip,true);
+
+/* ===================== events ===================== */
+document.addEventListener('click',function(e){
+ var el=e.target.closest('[data-act],[data-set]'); if(!el) return;
+ if(el.dataset.set){ S[el.dataset.set]=el.dataset.v; render(); return; }
+ var a=el.dataset.act;
+ if(a==='inert'){ e.preventDefault(); toast('Mockup: this link goes to another page.'); }
+ else if(a==='toast') toast(el.dataset.v);
+ else if(a==='tab'){ TAB=el.dataset.v; render(); var t=document.querySelector('[role=tab][aria-selected=true]'); if(t) t.focus(); }
+ else if(a==='copy'){ navigator.clipboard&&navigator.clipboard.writeText(M.ref).catch(function(){}); el.classList.add('ok'); el.innerHTML=ic('i-check','sm'); toast('Copied '+M.ref); setTimeout(function(){ if(el.isConnected){ el.classList.remove('ok'); el.innerHTML=ic('i-copy','sm'); } },1500); }
+ else if(a==='edit') editDialog();
+ else if(a==='pm') pmDialog();
+ else if(a==='closedlg') closeDlg();
+ else if(a==='savedlg'){ closeDlg(); toast('Mockup: saved.'); }
+ else if(a==='retry'){ S.load='ready'; render(); }
+ else if(a==='reset'){ S=Object.assign({},DEF); render(); }
+});
+document.getElementById('tbbtn').addEventListener('click',function(){ setTB(!OPEN_TB); });
+document.addEventListener('keydown',function(e){
+ if(e.key==='Escape'){ var o=document.getElementById('overlay'); if(!o.hidden) closeDlg(); else if(OPEN_TB){ setTB(false); document.getElementById('tbbtn').focus(); } }
+ if(e.key==='Tab'){ var o2=document.getElementById('overlay'); if(!o2.hidden){ var f=o2.querySelectorAll('button,input:not([disabled]),select'); if(!f.length) return; var first=f[0],last=f[f.length-1]; if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();} else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();} } }
+ var tl=e.target.closest&&e.target.closest('[role=tablist]');
+ if(tl&&(e.key==='ArrowRight'||e.key==='ArrowLeft')){ var ts=[].slice.call(tl.querySelectorAll('[role=tab]')); var i=ts.indexOf(document.activeElement); if(i<0) return; var n=ts[(i+(e.key==='ArrowRight'?1:ts.length-1))%ts.length]; TAB=n.dataset.v; render(); document.querySelector('[role=tab][aria-selected=true]').focus(); }
+});
+render();
+if(window.__OPEN==='toolbox') setTB(true);
+if(window.__OPEN==='edit') editDialog();
+if(window.__OPEN==='pm') pmDialog();
+})();
+
+</script>
+</body>
+</html>
