@@ -307,21 +307,3 @@ th:not([aria-sort]) .wt-sort .pi {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-/* Dashboard Summary cells (epic #1063): the Type column is the coloured icon alone (a Tab stop that shows the type's name), the Assignee cell of an unassigned task is the word and the Assign control. */
-.wt-typeonly {
-  display: inline-flex;
-  border-radius: var(--mf-radius-lg);
-}
-
-.wt-typeonly:focus-visible {
-  outline: 2px solid var(--mf-focus);
-  outline-offset: 2px;
-}
-
-.wt-assign {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--mf-s2);
-  min-width: 0;
-}

@@ -54,19 +54,16 @@ describe('TaskTable, Dashboard Summary cells', () => {
     fixture.detectChanges();
   }
 
-  it('shows the Type as the icon only, named by the type (tooltip and accessible name, keyboard reachable)', async () => {
-    await create([aRow({ taskTypeName: 'Data Processing' })], ['ref', 'typeIcon', 'title']);
+  it('shows the Type as the standard chip with the type name next to it', async () => {
+    await create([aRow({ taskTypeName: 'Data Processing' })], ['ref', 'type', 'title']);
     const heads = Array.from(el().querySelectorAll('thead tr:first-child th')).map((th) =>
       th.textContent?.trim(),
     );
     expect(heads).toEqual(['Ref', 'Type', 'Title']);
-    const icon = cell('typeIcon').querySelector('[data-type-icon-only]') as HTMLElement;
-    expect(icon.getAttribute('role')).toBe('img');
-    expect(icon.getAttribute('aria-label')).toBe('Task type: Data Processing');
-    expect(icon.getAttribute('tabindex')).toBe('0');
-    // The name is not repeated as visible text.
-    expect(cell('typeIcon').textContent?.trim()).toBe('');
-    expect(cell('typeIcon').querySelector('[data-type-chip]')).not.toBeNull();
+    expect(cell('type').querySelector('[data-type-chip]')).not.toBeNull();
+    expect(cell('type').querySelector('[data-type-name]')?.textContent?.trim()).toBe(
+      'Data Processing',
+    );
   });
 
   it('shows the Due as the date and +9d on one line, red, with the words in the name', async () => {
@@ -94,21 +91,20 @@ describe('TaskTable, Dashboard Summary cells', () => {
     expect(cell('due').querySelector('[data-due-suffix]')).toBeNull();
   });
 
-  it('draws the word Unassigned and an Assign control for an unassigned task when the viewer may assign', async () => {
+  it('draws Unassigned as the one control (word and chevron) for an unassigned task when the viewer may assign', async () => {
     await create(
       [aRow({ assignedUser: undefined })],
       ['ref', 'title', 'assignee'],
       ['Task.Assign', 'Task.View'],
     );
     const c = cell('assignee');
-    expect(c.querySelector('[data-dash-assign]')).not.toBeNull();
-    expect(c.textContent).toContain('Unassigned');
     const button = c.querySelector('[data-inline-trigger]') as HTMLElement;
-    expect(button.textContent?.trim()).toBe('Assign');
-    expect(button.getAttribute('aria-label')).toBe('Assign TSK-1042');
+    expect(button.textContent?.trim()).toBe('Unassigned');
+    expect(button.getAttribute('aria-label')).toBe('Unassigned: assign this task');
+    expect(c.querySelectorAll('button')).toHaveLength(1);
   });
 
-  it('shows only the word Unassigned without the assign permission (no Assign control)', async () => {
+  it('shows only the word Unassigned without the assign permission (no control)', async () => {
     await create([aRow({ assignedUser: undefined })], ['ref', 'title', 'assignee'], ['Task.View']);
     const c = cell('assignee');
     expect(c.querySelector('[data-inline-trigger]')).toBeNull();
@@ -135,8 +131,11 @@ describe('TaskTable, Dashboard Summary cells', () => {
       ['Task.Assign', 'Task.View'],
     );
     (cell('assignee').querySelector('[data-inline-trigger]') as HTMLElement).click();
-    fixture.detectChanges();
-    await fixture.whenStable();
+    for (let i = 0; i < 4; i++) {
+      fixture.detectChanges();
+      await fixture.whenStable();
+      await new Promise((r) => setTimeout(r, 20));
+    }
     fixture.detectChanges();
     const hints = Array.from(document.querySelectorAll('.im-pop [data-option-hint]')).map((h) =>
       h.textContent?.replace(/\s+/g, ' ').trim(),

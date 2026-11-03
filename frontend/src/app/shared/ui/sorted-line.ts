@@ -47,7 +47,7 @@ export function sortSentence(
           Remove grouping
         </button>
       } @else {
-        <span class="sl__text" data-sorted-text>{{ sentence() }}</span>
+        <span class="sl__text" data-sorted-text [attr.title]="sentence()">{{ sentence() }}</span>
       }
       @if (grouped()) {
         <!-- The grouping is the order: nothing to reset. -->
@@ -97,10 +97,21 @@ export function sortSentence(
       display: inline-flex;
       flex-wrap: wrap;
       align-items: center;
-      justify-content: flex-end;
+      justify-content: flex-start;
+      min-width: 0;
       gap: 0 var(--mf-s2);
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
+    }
+    /* In the toolbar row the sentence stays on one line and ends in an ellipsis when the row is short; the title has the whole sentence. */
+    :host-context(.lt:not(.lt--row3)) .sl {
+      flex-wrap: nowrap;
+    }
+    :host-context(.lt:not(.lt--row3)) .sl__text {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .sl__info {
       display: inline-flex;

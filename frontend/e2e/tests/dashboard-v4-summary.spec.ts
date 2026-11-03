@@ -80,7 +80,7 @@ test.describe('Summary v4', () => {
     await expect(page.locator('mf-dash-grid th[data-col="unassignedFor"]')).toHaveCount(0);
   });
 
-  test('Type is the icon only with its name as tooltip and name, and an overdue Due is the date and +Nd on one line', async ({
+  test('Type shows the chip and the type name, and an overdue Due is the date and +Nd on one line', async ({
     seed,
     page,
   }) => {
@@ -91,11 +91,9 @@ test.describe('Summary v4', () => {
     await page.goto(`/dashboard?card=overdue&q=${tag}`);
     const row = page.locator('mf-dash-grid [data-task]').first();
     await expect(row).toBeVisible();
-    const type = row.locator('[data-type-icon-only]');
-    await expect(type).toHaveAttribute('aria-label', /^Task type: /);
-    await expect(type.locator('xpath=ancestor::td')).toHaveText('');
-    await type.focus();
-    await expect(page.getByRole('tooltip')).toBeVisible();
+    const type = row.locator('td[data-col="type"]');
+    await expect(type.locator('[data-type-chip]')).toBeVisible();
+    await expect(type.locator('[data-type-name]')).not.toHaveText('');
     const due = row.locator('td[data-col="due"]');
     await expect(due.locator('[data-due-suffix]')).toHaveText('+9d');
     await expect(due.locator('[data-due-suffix-cell]')).toHaveAttribute('title', /9 days overdue/);
@@ -120,7 +118,7 @@ test.describe('Summary v4', () => {
     await expect(row).toBeVisible();
     const before = Number(await card(page, 'unassigned').locator('[data-card-count]').innerText());
 
-    const assign = row.getByRole('button', { name: /^Assign TSK-/ });
+    const assign = row.getByRole('button', { name: 'Unassigned: assign this task' });
     await assign.focus();
     await page.keyboard.press('Enter');
     await expect(page.getByRole('textbox', { name: 'Search people' })).toBeFocused();
@@ -158,7 +156,7 @@ test.describe('Summary v4', () => {
       rowVersion: task.rowVersion,
       userId: other.userId,
     });
-    await row.getByRole('button', { name: /^Assign TSK-/ }).click();
+    await row.getByRole('button', { name: 'Unassigned: assign this task' }).click();
     await page.locator('.im-pop [data-option]').first().click();
     await expect(
       page.getByText('This task was changed by someone else. The row was reloaded.'),
