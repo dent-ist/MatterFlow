@@ -183,7 +183,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
               class="panel mf-fill"
               [attr.role]="panelRole()"
               [attr.data-tabpanel]="activeTab()"
-              [id]="panelId(activeTab()!)"
+              [id]="panelId()"
               [attr.aria-labelledby]="labelledBy()"
             >
               <mf-dash-skeleton
@@ -198,7 +198,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
               class="panel mf-fill"
               [attr.role]="panelRole()"
               [attr.data-tabpanel]="activeTab()"
-              [id]="panelId(activeTab()!)"
+              [id]="panelId()"
               [attr.aria-labelledby]="labelledBy()"
             >
               <mf-dash-state
@@ -226,7 +226,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                       class="panel mf-fill"
                       [attr.role]="panelRole()"
                       data-tabpanel="summary"
-                      [id]="panelId('summary')"
+                      [id]="panelId()"
                       [attr.aria-labelledby]="labelledBy()"
                     >
                       <div
@@ -425,7 +425,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                       class="panel mf-fill"
                       [attr.role]="panelRole()"
                       data-tabpanel="breakdowns"
-                      [id]="panelId('breakdowns')"
+                      [id]="panelId()"
                       [attr.aria-labelledby]="labelledBy()"
                     >
                       <mf-dash-breakdowns [summary]="data()" />
@@ -436,7 +436,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                       class="panel mf-fill"
                       [attr.role]="panelRole()"
                       data-tabpanel="trends"
-                      [id]="panelId('trends')"
+                      [id]="panelId()"
                       [attr.aria-labelledby]="labelledBy()"
                     >
                       <mf-dash-section class="mf-fill" heading="Tasks over time" name="trend">
@@ -469,7 +469,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
               class="panel mf-fill"
               [attr.role]="panelRole()"
               data-tabpanel="swimlane"
-              [id]="panelId('swimlane')"
+              [id]="panelId()"
               [attr.aria-labelledby]="labelledBy()"
             >
               @defer (on immediate) {
@@ -484,7 +484,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
               class="panel mf-fill"
               [attr.role]="panelRole()"
               data-tabpanel="users"
-              [id]="panelId('users')"
+              [id]="panelId()"
               [attr.aria-labelledby]="labelledBy()"
             >
               @defer (on immediate) {

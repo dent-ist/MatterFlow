@@ -11,7 +11,7 @@ export interface DashTab {
 /** Ids tie each tab to its panel (`aria-controls`, `aria-labelledby`); the page renders the panel with `panelId`. */
 export const tabId = (key: string) => `mf-dash-tab-${key}`;
 /** The one panel of the strip (`mf-tabs` points the selected tab at `<prefix>-panel`). */
-export const panelId = (_key?: string) => 'mf-dash-panel';
+export const panelId = () => 'mf-dash-panel';
 
 /**
  * The header of the Dashboard (UX review 2, P4 and R3; page-header contract S20, #603): the page heading (H1, 22 px / 700) with the controls
