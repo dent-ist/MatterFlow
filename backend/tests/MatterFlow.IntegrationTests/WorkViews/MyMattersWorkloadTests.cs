@@ -29,7 +29,7 @@ public sealed class MyMattersWorkloadTests(SqlServerFixture sql) : MyMattersTest
         var tech = podX.GetProperty("people").EnumerateArray().Single();
         tech.GetProperty("userId").GetInt32().ShouldBe(Tech);
         tech.GetProperty("availability").GetProperty("state").GetString().ShouldBe("OUT_OF_OFFICE");
-        tech.GetProperty("availability").GetProperty("note").GetString().ShouldBe("Conference");
+        tech.GetProperty("availability").GetProperty("note").ValueKind.ShouldBe(JsonValueKind.Null);
 
         var noPod = pods[1];
         (noPod.GetProperty("open").GetInt32(), noPod.GetProperty("overdue").GetInt32(), noPod.GetProperty("onHold").GetInt32()).ShouldBe((7, 1, 2));

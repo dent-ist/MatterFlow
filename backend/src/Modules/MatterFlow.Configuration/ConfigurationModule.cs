@@ -40,6 +40,7 @@ public static class ConfigurationModule
         services.AddScoped<BrandingService>();
         services.AddScoped<CalendarSettingsService>();
         services.AddScoped<ICalendarSettings>(sp => sp.GetRequiredService<CalendarSettingsService>());
+        services.AddScoped<MatterFlow.Identity.Contracts.IFirmHolidayCalendar>(sp => sp.GetRequiredService<CalendarSettingsService>());
         services.AddScoped<DashboardSettingsService>();
         services.AddScoped<IDashboardSettings>(sp => sp.GetRequiredService<DashboardSettingsService>());
         services.AddBrandingOpenApi();

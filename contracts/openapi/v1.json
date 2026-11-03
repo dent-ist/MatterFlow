@@ -3284,17 +3284,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveAbsenceRequest"
+                "$ref": "#/components/schemas/CreateAbsenceRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveAbsenceRequest"
+                "$ref": "#/components/schemas/CreateAbsenceRequest"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveAbsenceRequest"
+                "$ref": "#/components/schemas/CreateAbsenceRequest"
               }
             }
           },
@@ -3344,17 +3344,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveAbsenceRequest"
+                "$ref": "#/components/schemas/UpdateAbsenceRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveAbsenceRequest"
+                "$ref": "#/components/schemas/UpdateAbsenceRequest"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveAbsenceRequest"
+                "$ref": "#/components/schemas/UpdateAbsenceRequest"
               }
             }
           },
@@ -3486,17 +3486,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveHolidayCalendarRequest"
+                "$ref": "#/components/schemas/CreateHolidayCalendarRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveHolidayCalendarRequest"
+                "$ref": "#/components/schemas/CreateHolidayCalendarRequest"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveHolidayCalendarRequest"
+                "$ref": "#/components/schemas/CreateHolidayCalendarRequest"
               }
             }
           },
@@ -3566,17 +3566,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveHolidayCalendarRequest"
+                "$ref": "#/components/schemas/UpdateHolidayCalendarRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveHolidayCalendarRequest"
+                "$ref": "#/components/schemas/UpdateHolidayCalendarRequest"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveHolidayCalendarRequest"
+                "$ref": "#/components/schemas/UpdateHolidayCalendarRequest"
               }
             }
           },
@@ -3681,17 +3681,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveHolidayRequest"
+                "$ref": "#/components/schemas/CreateHolidayRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveHolidayRequest"
+                "$ref": "#/components/schemas/CreateHolidayRequest"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveHolidayRequest"
+                "$ref": "#/components/schemas/CreateHolidayRequest"
               }
             }
           },
@@ -3741,17 +3741,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveHolidayRequest"
+                "$ref": "#/components/schemas/UpdateHolidayRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveHolidayRequest"
+                "$ref": "#/components/schemas/UpdateHolidayRequest"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveHolidayRequest"
+                "$ref": "#/components/schemas/UpdateHolidayRequest"
               }
             }
           },
@@ -21519,6 +21519,37 @@
           }
         }
       },
+      "CreateAbsenceRequest": {
+        "required": [
+          "type",
+          "startDate",
+          "endDate",
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "CreateAssetLinkRoleRequest": {
         "required": [
           "name"
@@ -21704,6 +21735,145 @@
             "format": "int32"
           },
           "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "CreateHolidayCalendarRequest": {
+        "required": [
+          "name",
+          "colourKey",
+          "regionNote",
+          "appliesToEveryone"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "colourKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "regionNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "appliesToEveryone": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
+      "CreateHolidayRequest": {
+        "required": [
+          "name",
+          "ruleKind",
+          "month",
+          "day",
+          "nth",
+          "weekday",
+          "plusDays",
+          "easterOffset",
+          "onceDate",
+          "rangeEndMonth",
+          "rangeEndDay",
+          "rangeEndDate"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "ruleKind": {
+            "type": "string"
+          },
+          "month": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "day": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "nth": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "weekday": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "plusDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "easterOffset": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "onceDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "rangeEndMonth": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "rangeEndDay": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "rangeEndDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "yearly": {
+            "type": "boolean",
+            "default": true
+          },
+          "weekendRule": {
+            "type": "string",
+            "default": "NONE"
+          },
+          "regionNote": {
             "type": [
               "null",
               "string"
@@ -31243,43 +31413,6 @@
           }
         }
       },
-      "SaveAbsenceRequest": {
-        "required": [
-          "type",
-          "startDate",
-          "endDate",
-          "note"
-        ],
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string"
-          },
-          "startDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "endDate": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "note": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "rowVersion": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
-      },
       "SaveAvailabilityRequest": {
         "required": [
           "timeZoneId",
@@ -31352,157 +31485,6 @@
           },
           "rowVersion": {
             "type": "string"
-          }
-        }
-      },
-      "SaveHolidayCalendarRequest": {
-        "required": [
-          "name",
-          "colourKey",
-          "regionNote",
-          "appliesToEveryone"
-        ],
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "colourKey": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "regionNote": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "appliesToEveryone": {
-            "type": "boolean"
-          },
-          "isActive": {
-            "type": "boolean",
-            "default": true
-          },
-          "rowVersion": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
-      },
-      "SaveHolidayRequest": {
-        "required": [
-          "name",
-          "ruleKind",
-          "month",
-          "day",
-          "nth",
-          "weekday",
-          "plusDays",
-          "easterOffset",
-          "onceDate",
-          "rangeEndMonth",
-          "rangeEndDay",
-          "rangeEndDate"
-        ],
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "ruleKind": {
-            "type": "string"
-          },
-          "month": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "day": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "nth": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "weekday": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "plusDays": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "easterOffset": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "onceDate": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "rangeEndMonth": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "rangeEndDay": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "rangeEndDate": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "yearly": {
-            "type": "boolean",
-            "default": true
-          },
-          "weekendRule": {
-            "type": "string",
-            "default": "NONE"
-          },
-          "regionNote": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "rowVersion": {
-            "type": [
-              "null",
-              "string"
-            ]
           }
         }
       },
@@ -34989,6 +34971,41 @@
           }
         }
       },
+      "UpdateAbsenceRequest": {
+        "required": [
+          "type",
+          "startDate",
+          "endDate",
+          "note",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
       "UpdateAssetLinkRoleRequest": {
         "required": [
           "name",
@@ -35153,6 +35170,154 @@
               "null",
               "object"
             ]
+          }
+        }
+      },
+      "UpdateHolidayCalendarRequest": {
+        "required": [
+          "name",
+          "colourKey",
+          "regionNote",
+          "appliesToEveryone",
+          "isActive",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "colourKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "regionNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "appliesToEveryone": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateHolidayRequest": {
+        "required": [
+          "name",
+          "ruleKind",
+          "month",
+          "day",
+          "nth",
+          "weekday",
+          "plusDays",
+          "easterOffset",
+          "onceDate",
+          "rangeEndMonth",
+          "rangeEndDay",
+          "rangeEndDate",
+          "yearly",
+          "weekendRule",
+          "regionNote",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "ruleKind": {
+            "type": "string"
+          },
+          "month": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "day": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "nth": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "weekday": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "plusDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "easterOffset": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "onceDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "rangeEndMonth": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "rangeEndDay": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "rangeEndDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "yearly": {
+            "type": "boolean"
+          },
+          "weekendRule": {
+            "type": "string"
+          },
+          "regionNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rowVersion": {
+            "type": "string"
           }
         }
       },

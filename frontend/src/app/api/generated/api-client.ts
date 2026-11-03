@@ -5230,11 +5230,11 @@ export interface IAbsencesClient {
     /**
      * @return Created
      */
-    createAbsence(userId: number, body: SaveAbsenceRequest): Observable<AbsenceDto>;
+    createAbsence(userId: number, body: CreateAbsenceRequest): Observable<AbsenceDto>;
     /**
      * @return OK
      */
-    updateAbsence(userId: number, absenceId: number, body: SaveAbsenceRequest): Observable<AbsenceDto>;
+    updateAbsence(userId: number, absenceId: number, body: UpdateAbsenceRequest): Observable<AbsenceDto>;
     /**
      * @param rowVersion (optional) 
      * @return No Content
@@ -5320,7 +5320,7 @@ export class AbsencesClient implements IAbsencesClient {
     /**
      * @return Created
      */
-    createAbsence(userId: number, body: SaveAbsenceRequest): Observable<AbsenceDto> {
+    createAbsence(userId: number, body: CreateAbsenceRequest): Observable<AbsenceDto> {
         let url_ = this.baseUrl + "/api/v1/users/{userId}/absences";
         if (userId === undefined || userId === null)
             throw new globalThis.Error("The parameter 'userId' must be defined.");
@@ -5377,7 +5377,7 @@ export class AbsencesClient implements IAbsencesClient {
     /**
      * @return OK
      */
-    updateAbsence(userId: number, absenceId: number, body: SaveAbsenceRequest): Observable<AbsenceDto> {
+    updateAbsence(userId: number, absenceId: number, body: UpdateAbsenceRequest): Observable<AbsenceDto> {
         let url_ = this.baseUrl + "/api/v1/users/{userId}/absences/{absenceId}";
         if (userId === undefined || userId === null)
             throw new globalThis.Error("The parameter 'userId' must be defined.");
@@ -5558,7 +5558,7 @@ export interface IHolidayCalendarsClient {
     /**
      * @return Created
      */
-    createHolidayCalendar(body: SaveHolidayCalendarRequest): Observable<HolidayCalendarDto>;
+    createHolidayCalendar(body: CreateHolidayCalendarRequest): Observable<HolidayCalendarDto>;
     /**
      * @return OK
      */
@@ -5566,7 +5566,7 @@ export interface IHolidayCalendarsClient {
     /**
      * @return OK
      */
-    updateHolidayCalendar(calendarId: number, body: SaveHolidayCalendarRequest): Observable<HolidayCalendarDto>;
+    updateHolidayCalendar(calendarId: number, body: UpdateHolidayCalendarRequest): Observable<HolidayCalendarDto>;
     /**
      * @param rowVersion (optional) 
      * @return No Content
@@ -5579,11 +5579,11 @@ export interface IHolidayCalendarsClient {
     /**
      * @return Created
      */
-    createHoliday(calendarId: number, body: SaveHolidayRequest): Observable<HolidayDto>;
+    createHoliday(calendarId: number, body: CreateHolidayRequest): Observable<HolidayDto>;
     /**
      * @return OK
      */
-    updateHoliday(calendarId: number, holidayId: number, body: SaveHolidayRequest): Observable<HolidayDto>;
+    updateHoliday(calendarId: number, holidayId: number, body: UpdateHolidayRequest): Observable<HolidayDto>;
     /**
      * @param rowVersion (optional) 
      * @return No Content
@@ -5668,7 +5668,7 @@ export class HolidayCalendarsClient implements IHolidayCalendarsClient {
     /**
      * @return Created
      */
-    createHolidayCalendar(body: SaveHolidayCalendarRequest): Observable<HolidayCalendarDto> {
+    createHolidayCalendar(body: CreateHolidayCalendarRequest): Observable<HolidayCalendarDto> {
         let url_ = this.baseUrl + "/api/v1/admin/holiday-calendars";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -5775,7 +5775,7 @@ export class HolidayCalendarsClient implements IHolidayCalendarsClient {
     /**
      * @return OK
      */
-    updateHolidayCalendar(calendarId: number, body: SaveHolidayCalendarRequest): Observable<HolidayCalendarDto> {
+    updateHolidayCalendar(calendarId: number, body: UpdateHolidayCalendarRequest): Observable<HolidayCalendarDto> {
         let url_ = this.baseUrl + "/api/v1/admin/holiday-calendars/{calendarId}";
         if (calendarId === undefined || calendarId === null)
             throw new globalThis.Error("The parameter 'calendarId' must be defined.");
@@ -5941,7 +5941,7 @@ export class HolidayCalendarsClient implements IHolidayCalendarsClient {
     /**
      * @return Created
      */
-    createHoliday(calendarId: number, body: SaveHolidayRequest): Observable<HolidayDto> {
+    createHoliday(calendarId: number, body: CreateHolidayRequest): Observable<HolidayDto> {
         let url_ = this.baseUrl + "/api/v1/admin/holiday-calendars/{calendarId}/holidays";
         if (calendarId === undefined || calendarId === null)
             throw new globalThis.Error("The parameter 'calendarId' must be defined.");
@@ -5998,7 +5998,7 @@ export class HolidayCalendarsClient implements IHolidayCalendarsClient {
     /**
      * @return OK
      */
-    updateHoliday(calendarId: number, holidayId: number, body: SaveHolidayRequest): Observable<HolidayDto> {
+    updateHoliday(calendarId: number, holidayId: number, body: UpdateHolidayRequest): Observable<HolidayDto> {
         let url_ = this.baseUrl + "/api/v1/admin/holiday-calendars/{calendarId}/holidays/{holidayId}";
         if (calendarId === undefined || calendarId === null)
             throw new globalThis.Error("The parameter 'calendarId' must be defined.");
@@ -25266,6 +25266,15 @@ export interface CoverageUser {
     [key: string]: any;
 }
 
+export interface CreateAbsenceRequest {
+    type: string;
+    startDate: string;
+    endDate: string | undefined;
+    note: string | undefined;
+
+    [key: string]: any;
+}
+
 export interface CreateAssetLinkRoleRequest {
     name: string;
     isActive?: boolean;
@@ -25321,6 +25330,36 @@ export interface CreatedReportResponse {
 export interface CreateFormDraftRequest {
     fromVersionId?: number | undefined;
     notes?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface CreateHolidayCalendarRequest {
+    name: string;
+    colourKey: string | undefined;
+    regionNote: string | undefined;
+    appliesToEveryone: boolean;
+    isActive?: boolean;
+
+    [key: string]: any;
+}
+
+export interface CreateHolidayRequest {
+    name: string;
+    ruleKind: string;
+    month: number | undefined;
+    day: number | undefined;
+    nth: number | undefined;
+    weekday: number | undefined;
+    plusDays: number;
+    easterOffset: number | undefined;
+    onceDate: string | undefined;
+    rangeEndMonth: number | undefined;
+    rangeEndDay: number | undefined;
+    rangeEndDate: string | undefined;
+    yearly?: boolean;
+    weekendRule?: string;
+    regionNote?: string | undefined;
 
     [key: string]: any;
 }
@@ -27879,16 +27918,6 @@ export interface RunReportResponse {
     [key: string]: any;
 }
 
-export interface SaveAbsenceRequest {
-    type: string;
-    startDate: string;
-    endDate: string | undefined;
-    note: string | undefined;
-    rowVersion?: string | undefined;
-
-    [key: string]: any;
-}
-
 export interface SaveAvailabilityRequest {
     timeZoneId: string | undefined;
     workHours: WorkHourDto[] | undefined;
@@ -27909,38 +27938,6 @@ export interface SaveFormDraftRequest {
     fields: FormFieldModel[];
     notes?: string | undefined;
     rowVersion: string;
-
-    [key: string]: any;
-}
-
-export interface SaveHolidayCalendarRequest {
-    name: string;
-    colourKey: string | undefined;
-    regionNote: string | undefined;
-    appliesToEveryone: boolean;
-    isActive?: boolean;
-    rowVersion?: string | undefined;
-
-    [key: string]: any;
-}
-
-export interface SaveHolidayRequest {
-    name: string;
-    ruleKind: string;
-    month: number | undefined;
-    day: number | undefined;
-    nth: number | undefined;
-    weekday: number | undefined;
-    plusDays: number;
-    easterOffset: number | undefined;
-    onceDate: string | undefined;
-    rangeEndMonth: number | undefined;
-    rangeEndDay: number | undefined;
-    rangeEndDate: string | undefined;
-    yearly?: boolean;
-    weekendRule?: string;
-    regionNote?: string | undefined;
-    rowVersion?: string | undefined;
 
     [key: string]: any;
 }
@@ -28886,6 +28883,16 @@ export interface UnlockNoteRequest {
     [key: string]: any;
 }
 
+export interface UpdateAbsenceRequest {
+    type: string;
+    startDate: string;
+    endDate: string | undefined;
+    note: string | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export interface UpdateAssetLinkRoleRequest {
     name: string;
     isActive: boolean;
@@ -28931,6 +28938,38 @@ export interface UpdateClientRequest {
     isActive?: boolean;
     rowVersion: string;
     formValues?: any | undefined;
+
+    [key: string]: any;
+}
+
+export interface UpdateHolidayCalendarRequest {
+    name: string;
+    colourKey: string | undefined;
+    regionNote: string | undefined;
+    appliesToEveryone: boolean;
+    isActive: boolean;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface UpdateHolidayRequest {
+    name: string;
+    ruleKind: string;
+    month: number | undefined;
+    day: number | undefined;
+    nth: number | undefined;
+    weekday: number | undefined;
+    plusDays: number;
+    easterOffset: number | undefined;
+    onceDate: string | undefined;
+    rangeEndMonth: number | undefined;
+    rangeEndDay: number | undefined;
+    rangeEndDate: string | undefined;
+    yearly: boolean;
+    weekendRule: string;
+    regionNote: string | undefined;
+    rowVersion: string;
 
     [key: string]: any;
 }

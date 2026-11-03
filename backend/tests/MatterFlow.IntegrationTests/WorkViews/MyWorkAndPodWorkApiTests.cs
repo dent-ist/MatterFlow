@@ -472,7 +472,7 @@ public sealed class MyWorkAndPodWorkApiTests(SqlServerFixture sql)
             var techB = loads.Single(l => l.GetProperty("userId").GetInt32() == d.TechB);
             var out_ = techB.GetProperty("availability");
             out_.GetProperty("state").GetString().ShouldBe("OUT_OF_OFFICE");
-            out_.GetProperty("note").GetString().ShouldBe("Conference");
+            out_.GetProperty("note").ValueKind.ShouldBe(System.Text.Json.JsonValueKind.Null);
             // Tech A is a member too and available (or off hours, a soft state that is never reported as unavailable): never "out of office".
             var techA = loads.Single(l => l.GetProperty("userId").GetInt32() == d.TechA);
             if (techA.TryGetProperty("availability", out var a) && a.ValueKind != System.Text.Json.JsonValueKind.Null)

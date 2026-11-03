@@ -1,6 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
-using MatterFlow.Configuration.Contracts;
+using MatterFlow.Identity.Contracts;
 using MatterFlow.Identity.Domain;
 using MatterFlow.SharedKernel.Availability;
 using MatterFlow.SharedKernel.Results;
@@ -13,7 +13,7 @@ namespace MatterFlow.Identity.Holidays;
 /// Administration of holiday calendars and holidays (Dashboard Calendar, epic #1074; needs <c>Settings.Manage</c> except the person's calendar, <c>User.Manage</c>): calendars, rules,
 /// the expanded preview of a year, the paste import with a dry run, the firm and pod defaults and the calendar of a person. Changes are audited by the audited entities.
 /// </summary>
-public sealed partial class HolidayCalendarService(DbContext db, ICalendarSettings settings)
+public sealed partial class HolidayCalendarService(DbContext db, IFirmHolidayCalendar settings)
 {
     private const int SqlDuplicateKey = 2601;
     private const int SqlUniqueConstraint = 2627;
@@ -34,10 +34,10 @@ public sealed partial class HolidayCalendarService(DbContext db, ICalendarSettin
         return c is null ? NotFound() : await ToDtoAsync(c, ct);
     }
 
-    public async Task<Result<HolidayCalendarDto>> CreateAsync(SaveHolidayCalendarRequest request, CancellationToken ct)
+    public async Task<Result<HolidayCalendarDto>> CreateAsync(CreateHolidayCalendarRequest request, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var valid = ValidateCalendar(request);
+        var valid = ValidateCalendar(request.Name, request.ColourKey, request.RegionNote);
         if (valid.IsFailure)
             return valid.Error!;
         var (name, colour, note) = valid.Value;
@@ -55,10 +55,10 @@ public sealed partial class HolidayCalendarService(DbContext db, ICalendarSettin
         return failure is not null ? failure : await ToDtoAsync(calendar, ct);
     }
 
-    public async Task<Result<HolidayCalendarDto>> UpdateAsync(int calendarId, SaveHolidayCalendarRequest request, CancellationToken ct)
+    public async Task<Result<HolidayCalendarDto>> UpdateAsync(int calendarId, UpdateHolidayCalendarRequest request, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var valid = ValidateCalendar(request);
+        var valid = ValidateCalendar(request.Name, request.ColourKey, request.RegionNote);
         if (valid.IsFailure)
             return valid.Error!;
         var calendar = await db.Set<HolidayCalendar>().FirstOrDefaultAsync(c => c.Id == calendarId, ct);
@@ -114,13 +114,13 @@ public sealed partial class HolidayCalendarService(DbContext db, ICalendarSettin
         return Result<IReadOnlyList<HolidayDto>>.Success([.. rows.Select(ToDto)]);
     }
 
-    public async Task<Result<HolidayDto>> CreateHolidayAsync(int calendarId, SaveHolidayRequest request, CancellationToken ct)
+    public async Task<Result<HolidayDto>> CreateHolidayAsync(int calendarId, CreateHolidayRequest request, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
         if (!await db.Set<HolidayCalendar>().AnyAsync(c => c.Id == calendarId, ct))
             return NotFound();
         var holiday = new Holiday { CalendarId = calendarId };
-        var applied = Apply(holiday, request);
+        var applied = Apply(holiday, new HolidayInput(request.Name, request.RuleKind, request.Month, request.Day, request.Nth, request.Weekday, request.PlusDays, request.EasterOffset, request.OnceDate, request.RangeEndMonth, request.RangeEndDay, request.RangeEndDate, request.Yearly, request.WeekendRule, request.RegionNote));
         if (applied is not null)
             return applied;
         db.Set<Holiday>().Add(holiday);
@@ -128,7 +128,7 @@ public sealed partial class HolidayCalendarService(DbContext db, ICalendarSettin
         return failure is not null ? failure : ToDto(holiday);
     }
 
-    public async Task<Result<HolidayDto>> UpdateHolidayAsync(int calendarId, int holidayId, SaveHolidayRequest request, CancellationToken ct)
+    public async Task<Result<HolidayDto>> UpdateHolidayAsync(int calendarId, int holidayId, UpdateHolidayRequest request, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
         var holiday = await db.Set<Holiday>().FirstOrDefaultAsync(h => h.Id == holidayId && h.CalendarId == calendarId, ct);
@@ -136,7 +136,7 @@ public sealed partial class HolidayCalendarService(DbContext db, ICalendarSettin
             return Error.NotFound("The holiday does not exist.");
         if (!VersionMatches(holiday.RowVersion, request.RowVersion))
             return ConcurrencyError();
-        var applied = Apply(holiday, request);
+        var applied = Apply(holiday, new HolidayInput(request.Name, request.RuleKind, request.Month, request.Day, request.Nth, request.Weekday, request.PlusDays, request.EasterOffset, request.OnceDate, request.RangeEndMonth, request.RangeEndDay, request.RangeEndDate, request.Yearly, request.WeekendRule, request.RegionNote));
         if (applied is not null)
             return applied;
         db.Entry(holiday).Property(x => x.RowVersion).OriginalValue = holiday.RowVersion;
@@ -335,21 +335,23 @@ public sealed partial class HolidayCalendarService(DbContext db, ICalendarSettin
 
     // ----- helpers -----
 
-    private static Result<(string Name, string Colour, string? Note)> ValidateCalendar(SaveHolidayCalendarRequest request)
+    private static Result<(string Name, string Colour, string? Note)> ValidateCalendar(string? requestName, string? colourKey, string? regionNote)
     {
-        var name = (request.Name ?? string.Empty).Trim();
+        var name = (requestName ?? string.Empty).Trim();
         if (name.Length is 0 or > 100)
             return Error.Validation("name", "INVALID", "The name is required and at most 100 characters.");
-        var colour = string.IsNullOrWhiteSpace(request.ColourKey) ? "slate" : request.ColourKey.Trim();
-        if (!TaskTypeColours.IsValid(colour))
+        var colour = string.IsNullOrWhiteSpace(colourKey) ? "slate" : colourKey.Trim();
+        if (!HolidayColours.IsValid(colour))
             return Error.Validation("colourKey", "UNKNOWN_COLOUR", "Choose a colour of the palette.");
-        var note = string.IsNullOrWhiteSpace(request.RegionNote) ? null : request.RegionNote.Trim();
+        var note = string.IsNullOrWhiteSpace(regionNote) ? null : regionNote.Trim();
         if (note is { Length: > 200 })
             return Error.Validation("regionNote", "TOO_LONG", "The region note can be at most 200 characters.");
         return (name, colour, note);
     }
 
-    private static Error? Apply(Holiday holiday, SaveHolidayRequest request)
+    private sealed record HolidayInput(string? Name, string? RuleKind, int? Month, int? Day, int? Nth, int? Weekday, int PlusDays, int? EasterOffset, DateOnly? OnceDate, int? RangeEndMonth, int? RangeEndDay, DateOnly? RangeEndDate, bool Yearly, string? WeekendRule, string? RegionNote);
+
+    private static Error? Apply(Holiday holiday, HolidayInput request)
     {
         var name = (request.Name ?? string.Empty).Trim();
         if (name.Length is 0 or > 100)

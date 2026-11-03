@@ -9,7 +9,7 @@ namespace MatterFlow.Identity.Contracts;
 public sealed record UserAvailabilitySummary(string State, DateTime? OutUntil, string? Note)
 {
     public static UserAvailabilitySummary From(AvailabilityEvaluation evaluation) =>
-        new(evaluation.State, evaluation.OutUntilUtc, evaluation.Note);
+        new(evaluation.State, evaluation.OutUntilUtc, null); // the note is personal (decision AT item 2): never in lists, lookups, pickers or boards
 }
 
 /// <summary>

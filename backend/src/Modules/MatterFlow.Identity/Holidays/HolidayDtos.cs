@@ -18,14 +18,22 @@ public sealed record HolidayCalendarDto(
     [property: Required] int PeopleCount,
     [property: Required] string RowVersion);
 
-/// <summary>Body to create or change a calendar. <c>rowVersion</c> is required on change.</summary>
-public sealed record SaveHolidayCalendarRequest(
+/// <summary>Body to create a calendar.</summary>
+public sealed record CreateHolidayCalendarRequest(
     [Required, StringLength(200)] string Name,
     [StringLength(20)] string? ColourKey,
     [StringLength(1000)] string? RegionNote,
     bool AppliesToEveryone,
-    bool IsActive = true,
-    string? RowVersion = null);
+    bool IsActive = true);
+
+/// <summary>Body to change a calendar; the row version of the last read is required.</summary>
+public sealed record UpdateHolidayCalendarRequest(
+    [Required, StringLength(200)] string Name,
+    [StringLength(20)] string? ColourKey,
+    [StringLength(1000)] string? RegionNote,
+    bool AppliesToEveryone,
+    bool IsActive,
+    [Required] string RowVersion);
 
 /// <summary>One holiday rule. <c>weekday</c> is 0 = Sunday ... 6 = Saturday; <c>nth</c> is 1 to 4 or -1 for the last.</summary>
 /// <param name="RuleKind"><c>FIXED</c> (month, day), <c>NTH_WEEKDAY</c> (month, nth, weekday, plusDays), <c>EASTER_OFFSET</c> (easterOffset), <c>ONCE</c> (onceDate) or <c>RANGE</c> (yearly: month, day to rangeEndMonth, rangeEndDay; otherwise onceDate to rangeEndDate).</param>
@@ -50,8 +58,8 @@ public sealed record HolidayDto(
     string? RegionNote,
     [property: Required] string RowVersion);
 
-/// <summary>Body to create or change a holiday rule. <c>rowVersion</c> is required on change.</summary>
-public sealed record SaveHolidayRequest(
+/// <summary>Body to add a holiday rule (fields as in <see cref="HolidayDto"/>).</summary>
+public sealed record CreateHolidayRequest(
     [Required, StringLength(200)] string Name,
     [Required] string RuleKind,
     int? Month,
@@ -66,8 +74,26 @@ public sealed record SaveHolidayRequest(
     DateOnly? RangeEndDate,
     bool Yearly = true,
     string WeekendRule = "NONE",
-    [StringLength(1000)] string? RegionNote = null,
-    string? RowVersion = null);
+    [StringLength(1000)] string? RegionNote = null);
+
+/// <summary>Body to change a holiday rule; the row version of the last read is required.</summary>
+public sealed record UpdateHolidayRequest(
+    [Required, StringLength(200)] string Name,
+    [Required] string RuleKind,
+    int? Month,
+    int? Day,
+    int? Nth,
+    int? Weekday,
+    int PlusDays,
+    int? EasterOffset,
+    DateOnly? OnceDate,
+    int? RangeEndMonth,
+    int? RangeEndDay,
+    DateOnly? RangeEndDate,
+    bool Yearly,
+    string WeekendRule,
+    [StringLength(1000)] string? RegionNote,
+    [Required] string RowVersion);
 
 /// <summary>One holiday of a year as the preview shows it: a range is one line from <c>date</c> to <c>endDate</c>; a moved holiday carries the day it fell on in <c>observedFrom</c>.</summary>
 public sealed record HolidayPreviewDto([property: Required] DateOnly Date, DateOnly? EndDate, [property: Required] string Name, DateOnly? ObservedFrom);

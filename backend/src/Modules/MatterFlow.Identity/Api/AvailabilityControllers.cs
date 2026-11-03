@@ -89,7 +89,7 @@ public class AbsencesController(AbsenceService absences) : ControllerBase
     [HttpPost(Name = "CreateAbsence")]
     [RequirePermission(AnyAccess)]
     [ProducesResponseType<AbsenceDto>(StatusCodes.Status201Created, "application/json")]
-    public async Task<IActionResult> Create(int userId, [FromBody] SaveAbsenceRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create(int userId, [FromBody] CreateAbsenceRequest request, CancellationToken cancellationToken)
     {
         var result = await absences.CreateAsync(userId, request, cancellationToken);
         return result.IsFailure ? this.Problem(result.Error!) : StatusCode(StatusCodes.Status201Created, result.Value);
@@ -99,7 +99,7 @@ public class AbsencesController(AbsenceService absences) : ControllerBase
     [HttpPut("{absenceId:int}", Name = "UpdateAbsence")]
     [RequirePermission(AnyAccess)]
     [ProducesResponseType<AbsenceDto>(StatusCodes.Status200OK, "application/json")]
-    public async Task<IActionResult> Update(int userId, int absenceId, [FromBody] SaveAbsenceRequest request, CancellationToken cancellationToken) =>
+    public async Task<IActionResult> Update(int userId, int absenceId, [FromBody] UpdateAbsenceRequest request, CancellationToken cancellationToken) =>
         this.ToActionResult(await absences.UpdateAsync(userId, absenceId, request, cancellationToken));
 
     /// <summary>Deletes an entry that has not ended.</summary>

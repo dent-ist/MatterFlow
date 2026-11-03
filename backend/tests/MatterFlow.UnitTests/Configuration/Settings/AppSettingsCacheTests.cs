@@ -69,7 +69,7 @@ public class AppSettingsCacheTests
         SettingDefinitions.BrandingAppName.ChangedEvent.ShouldBe("SETTINGS_BRANDING_NAME_CHANGED");
         SettingDefinitions.BrandingIcon.ChangedEvent.ShouldBe("SETTINGS_BRANDING_ICON_CHANGED");
         SettingDefinitions.BrandingAppName.ResetEvent.ShouldBe("SETTINGS_BRANDING_RESET");
-        SettingDefinitions.All.Select(d => d.Key).ShouldBe(["Branding.AppName", "Branding.Icon"]);
+        SettingDefinitions.All.Select(d => d.Key).ShouldBe(["Branding.AppName", "Branding.Icon", "Dashboard.Gauge", "Calendar.Thresholds", "Calendar.FirmHolidayCalendarId"]);
         SettingDefinitions.All.ShouldAllBe(d => d.Key.Length <= 100);
     }
 

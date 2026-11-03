@@ -1,4 +1,4 @@
-using MatterFlow.Configuration.Contracts;
+using MatterFlow.Identity.Contracts;
 using MatterFlow.Identity.Domain;
 using MatterFlow.SharedKernel.Availability;
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +21,7 @@ public sealed record EffectiveCalendar(int CalendarId, string Name, string Sourc
 /// requested dates. A person's calendar is: their own (set by an administrator), else the default of their primary pod (the pod with the lowest id when no pod is primary),
 /// else the firm calendar; plus every active "applies to everyone" calendar. Inactive calendars are ignored.
 /// </summary>
-public sealed class HolidayLoader(DbContext db, ICalendarSettings settings)
+public sealed class HolidayLoader(DbContext db, IFirmHolidayCalendar settings)
 {
     private sealed record CalendarInfo(int Id, string Name, string ColourKey, bool AppliesToEveryone);
 

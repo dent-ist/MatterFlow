@@ -31,7 +31,7 @@ public class HolidayCalendarsController(HolidayCalendarService calendars) : Cont
     [HttpPost(Name = "CreateHolidayCalendar")]
     [RequirePermission(Permissions.Settings.Manage)]
     [ProducesResponseType<HolidayCalendarDto>(StatusCodes.Status201Created, "application/json")]
-    public async Task<IActionResult> Create([FromBody] SaveHolidayCalendarRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromBody] CreateHolidayCalendarRequest request, CancellationToken cancellationToken)
     {
         var result = await calendars.CreateAsync(request, cancellationToken);
         return result.IsFailure ? this.Problem(result.Error!) : StatusCode(StatusCodes.Status201Created, result.Value);
@@ -41,7 +41,7 @@ public class HolidayCalendarsController(HolidayCalendarService calendars) : Cont
     [HttpPut("{calendarId:int}", Name = "UpdateHolidayCalendar")]
     [RequirePermission(Permissions.Settings.Manage)]
     [ProducesResponseType<HolidayCalendarDto>(StatusCodes.Status200OK, "application/json")]
-    public async Task<IActionResult> Update(int calendarId, [FromBody] SaveHolidayCalendarRequest request, CancellationToken cancellationToken) =>
+    public async Task<IActionResult> Update(int calendarId, [FromBody] UpdateHolidayCalendarRequest request, CancellationToken cancellationToken) =>
         this.ToActionResult(await calendars.UpdateAsync(calendarId, request, cancellationToken));
 
     /// <summary>Deletes a calendar and its holidays; 409 <c>CALENDAR_IN_USE</c> while a person, a pod or the firm default uses it.</summary>
@@ -62,7 +62,7 @@ public class HolidayCalendarsController(HolidayCalendarService calendars) : Cont
     [HttpPost("{calendarId:int}/holidays", Name = "CreateHoliday")]
     [RequirePermission(Permissions.Settings.Manage)]
     [ProducesResponseType<HolidayDto>(StatusCodes.Status201Created, "application/json")]
-    public async Task<IActionResult> CreateHoliday(int calendarId, [FromBody] SaveHolidayRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> CreateHoliday(int calendarId, [FromBody] CreateHolidayRequest request, CancellationToken cancellationToken)
     {
         var result = await calendars.CreateHolidayAsync(calendarId, request, cancellationToken);
         return result.IsFailure ? this.Problem(result.Error!) : StatusCode(StatusCodes.Status201Created, result.Value);
@@ -72,7 +72,7 @@ public class HolidayCalendarsController(HolidayCalendarService calendars) : Cont
     [HttpPut("{calendarId:int}/holidays/{holidayId:int}", Name = "UpdateHoliday")]
     [RequirePermission(Permissions.Settings.Manage)]
     [ProducesResponseType<HolidayDto>(StatusCodes.Status200OK, "application/json")]
-    public async Task<IActionResult> UpdateHoliday(int calendarId, int holidayId, [FromBody] SaveHolidayRequest request, CancellationToken cancellationToken) =>
+    public async Task<IActionResult> UpdateHoliday(int calendarId, int holidayId, [FromBody] UpdateHolidayRequest request, CancellationToken cancellationToken) =>
         this.ToActionResult(await calendars.UpdateHolidayAsync(calendarId, holidayId, request, cancellationToken));
 
     /// <summary>Deletes a holiday rule.</summary>

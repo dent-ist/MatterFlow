@@ -201,7 +201,11 @@ public sealed class UserAvailabilityApiTests(SqlServerFixture sql) : IAsyncLifet
         var lookup = (await JsonAsync(await As(@"KE\scientist").GetAsync("/api/v1/users/lookup?q=outperson"))).EnumerateArray().Single();
         var availability = lookup.GetProperty("availability");
         availability.GetProperty("state").GetString().ShouldBe("OUT_OF_OFFICE");
-        availability.GetProperty("note").GetString().ShouldBe("Conference");
+        availability.GetProperty("note").ValueKind.ShouldBe(JsonValueKind.Null);
+        (await As(@"KE\scientist").GetStringAsync("/api/v1/users/lookup?q=outperson")).ShouldNotContain("Conference");
+        (await As(DatabaseApiFactory.AdminAccount).GetStringAsync("/api/v1/users?search=outperson")).ShouldNotContain("Conference");
+        (await As(DatabaseApiFactory.AdminAccount).GetStringAsync("/api/v1/dashboard/capacity/people")).ShouldNotContain("Conference");
+        (await As(DatabaseApiFactory.AdminAccount).GetStringAsync("/api/v1/dashboard/workload")).ShouldNotContain("Conference");
         availability.GetProperty("outUntil").GetDateTime().Year.ShouldBe(2099);
 
         var presentLookup = (await JsonAsync(await As(@"KE\scientist").GetAsync("/api/v1/users/lookup?q=present"))).EnumerateArray().Single();

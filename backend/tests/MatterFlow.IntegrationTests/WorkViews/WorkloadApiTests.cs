@@ -105,7 +105,7 @@ public sealed class WorkloadApiTests(SqlServerFixture sql)
         techA.GetProperty("pods").EnumerateArray().Single().GetProperty("name").GetString().ShouldBe("Board Pod A");
         var availability = techA.GetProperty("availability");
         availability.GetProperty("state").GetString().ShouldBe("OUT_OF_OFFICE");
-        availability.GetProperty("note").GetString().ShouldBe("Conference");
+        availability.GetProperty("note").ValueKind.ShouldBe(JsonValueKind.Null);
         availability.GetProperty("outUntil").GetDateTime().Year.ShouldBeGreaterThanOrEqualTo(2099);
         UserOf(board, d.TechB).GetProperty("availability").GetProperty("state").GetString().ShouldBeOneOf("AVAILABLE", "OFF_HOURS");
         // Operational counts only: exactly these fields, no completion statistics, speed or ranking of people.

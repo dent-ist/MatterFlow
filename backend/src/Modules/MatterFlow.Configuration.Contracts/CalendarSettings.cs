@@ -29,18 +29,9 @@ public sealed record CalendarThresholdSettings(int MinCoveragePercent, int PodMi
     }
 }
 
-/// <summary>The firm holiday calendar setting: its id (null = none) and the row version (base64, empty when no row) that edits send back.</summary>
-public sealed record FirmCalendarSetting(int? CalendarId, string RowVersion);
-
-/// <summary>Reads and writes the Calendar settings kept in <c>dbo.AppSetting</c> for the Identity and WorkViews modules.</summary>
+/// <summary>Reads the Calendar thresholds kept in <c>dbo.AppSetting</c> for the WorkViews module.</summary>
 public interface ICalendarSettings
 {
     /// <summary>The thresholds in force: the stored value, or the defaults when nothing (or something invalid) is stored.</summary>
     Task<CalendarThresholdSettings> GetThresholdsAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>The firm holiday calendar (the one used by people whose pod has no default), fresh from the database.</summary>
-    Task<FirmCalendarSetting> GetFirmCalendarAsync(bool fresh = false, CancellationToken cancellationToken = default);
-
-    /// <summary>Sets the firm calendar (null clears it). <paramref name="rowVersion"/> is the one read before; a mismatch is a concurrency conflict.</summary>
-    Task<MatterFlow.SharedKernel.Results.Result<FirmCalendarSetting>> SetFirmCalendarAsync(int? calendarId, string rowVersion, CancellationToken cancellationToken = default);
 }

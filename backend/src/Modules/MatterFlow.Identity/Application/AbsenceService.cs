@@ -61,7 +61,7 @@ public sealed class AbsenceService(
         return Result<IReadOnlyList<AbsenceDto>>.Success(await ToDtosAsync(userId, rows, today, ct));
     }
 
-    public async Task<Result<AbsenceDto>> CreateAsync(int userId, SaveAbsenceRequest request, CancellationToken ct)
+    public async Task<Result<AbsenceDto>> CreateAsync(int userId, CreateAbsenceRequest request, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
         var denied = await GuardAsync(userId, ct);
@@ -70,7 +70,7 @@ public sealed class AbsenceService(
 
         var zone = await ZoneAsync(userId, ct);
         var today = TodayIn(zone);
-        var valid = Validate(request, today, existing: null, ActorIsManager(userId));
+        var valid = Validate(request.Type, request.StartDate, request.EndDate, request.Note, today, existing: null, ActorIsManager(userId));
         if (valid.IsFailure)
             return valid.Error!;
         var input = valid.Value!;
@@ -103,7 +103,7 @@ public sealed class AbsenceService(
         return (await ToDtosAsync(userId, [row], today, ct))[0];
     }
 
-    public async Task<Result<AbsenceDto>> UpdateAsync(int userId, int absenceId, SaveAbsenceRequest request, CancellationToken ct)
+    public async Task<Result<AbsenceDto>> UpdateAsync(int userId, int absenceId, UpdateAbsenceRequest request, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
         var denied = await GuardAsync(userId, ct);
@@ -121,7 +121,7 @@ public sealed class AbsenceService(
         if (IsPast(row, today))
             return Error.Validation("absenceId", AbsenceErrorCodes.ReadOnly, "An entry that has ended is history and cannot be changed.", AbsenceErrorCodes.ReadOnly);
 
-        var valid = Validate(request, today, row, ActorIsManager(userId));
+        var valid = Validate(request.Type, request.StartDate, request.EndDate, request.Note, today, row, ActorIsManager(userId));
         if (valid.IsFailure)
             return valid.Error!;
         var input = valid.Value!;
@@ -244,20 +244,20 @@ public sealed class AbsenceService(
 
     private sealed record ValidInput(string Type, DateOnly Start, DateOnly? End, string? Note);
 
-    private Result<ValidInput> Validate(SaveAbsenceRequest request, DateOnly today, UserAbsence? existing, bool managerForOther)
+    private Result<ValidInput> Validate(string? requestType, DateOnly startDate, DateOnly? endDate, string? requestNote, DateOnly today, UserAbsence? existing, bool managerForOther)
     {
-        var type = request.Type?.Trim().ToUpperInvariant();
+        var type = requestType?.Trim().ToUpperInvariant();
         if (!AbsenceTypes.IsValid(type))
             return Error.Validation("type", AbsenceErrorCodes.TypeInvalid, "type must be VACATION, SICK, TRAINING, CONFERENCE or OTHER.", AbsenceErrorCodes.TypeInvalid);
 
-        var start = request.StartDate;
-        var end = request.EndDate;
+        var start = startDate;
+        var end = endDate;
         if (start < MinDate || start > MaxDate || (end is { } e && (e < MinDate || e > MaxDate)))
             return Error.Validation("startDate", AbsenceErrorCodes.RangeInvalid, "Dates must be between 2000 and 2100.", AbsenceErrorCodes.RangeInvalid);
         if (end is { } last && last < start)
             return Error.Validation("endDate", AbsenceErrorCodes.RangeInvalid, "The last day out of office cannot be before the first day.", AbsenceErrorCodes.RangeInvalid);
 
-        string? note = CleanNote(request.Note);
+        string? note = CleanNote(requestNote);
         if (note is { Length: > MaxNoteLength })
             return Error.Validation("note", AbsenceErrorCodes.NoteTooLong, $"The note can be at most {MaxNoteLength} characters.", AbsenceErrorCodes.NoteTooLong);
 

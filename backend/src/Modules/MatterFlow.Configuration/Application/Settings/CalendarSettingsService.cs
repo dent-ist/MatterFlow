@@ -38,7 +38,7 @@ public sealed record SetCalendarSettingsRequest(
 /// The Dashboard Calendar thresholds and the firm holiday calendar (epic #1074): stored in <c>dbo.AppSetting</c> (<c>Calendar.Thresholds</c> as JSON and
 /// <c>Calendar.FirmHolidayCalendarId</c>), code defaults when nothing is stored, validated on save; a stored value that no longer validates is ignored.
 /// </summary>
-public sealed class CalendarSettingsService(AppSettingsService settings, IUserDirectory users, IPodDirectory pods) : ICalendarSettings
+public sealed class CalendarSettingsService(AppSettingsService settings, IUserDirectory users, IPodDirectory pods) : ICalendarSettings, IFirmHolidayCalendar
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 

@@ -65,7 +65,7 @@ public class AuditScopeRulesTests
         ["UserResolver.cs"] = 3,
         ["RoleAdministration.cs"] = 2,
         ["UserAdministration.cs"] = 1,
-        ["UserAvailabilityService.cs"] = 3,
+        ["UserAvailabilityService.cs"] = 2,
         ["WorkflowAdminService.cs"] = 7,
         ["StepDefinitionService.cs"] = 1,
         ["ClientService.cs"] = 2,

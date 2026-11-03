@@ -80,13 +80,20 @@ public sealed record SaveAvailabilityRequest(
     List<WorkHourDto>? WorkHours,
     [Required] string RowVersion);
 
-/// <summary>Body to create or change an Out of office entry. <c>endDate</c> null = until the person is back (only starting today); <c>rowVersion</c> is required on change.</summary>
-public sealed record SaveAbsenceRequest(
+/// <summary>Body to add an Out of office entry. <c>endDate</c> null = until the person is back (only starting today).</summary>
+public sealed record CreateAbsenceRequest(
+    [Required] string Type,
+    [Required] DateOnly StartDate,
+    DateOnly? EndDate,
+    [StringLength(1000)] string? Note);
+
+/// <summary>Body to change an Out of office entry that has not ended; the row version of the last read is required.</summary>
+public sealed record UpdateAbsenceRequest(
     [Required] string Type,
     [Required] DateOnly StartDate,
     DateOnly? EndDate,
     [StringLength(1000)] string? Note,
-    string? RowVersion = null);
+    [Required] string RowVersion);
 
 /// <summary>The entry a new or changed entry would overlap (409 body).</summary>
 public sealed record AbsenceOverlapDto([property: Required] int AbsenceId, [property: Required] string Type, [property: Required] DateOnly StartDate, DateOnly? EndDate);

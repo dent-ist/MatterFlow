@@ -94,7 +94,7 @@ public sealed class SwimlaneApiTests(SqlServerFixture sql)
         var assignee = card.GetProperty("assignee");
         assignee.GetProperty("userId").GetInt32().ShouldBe(d.TechA);
         assignee.GetProperty("availability").GetProperty("state").GetString().ShouldBe("OUT_OF_OFFICE");
-        assignee.GetProperty("availability").GetProperty("note").GetString().ShouldBe("Conference");
+        assignee.GetProperty("availability").GetProperty("note").ValueKind.ShouldBe(JsonValueKind.Null); // the note never travels in a board
         card.GetProperty("pod").GetProperty("podId").GetInt32().ShouldBe(d.PodA);
         card.GetProperty("clientId").GetInt32().ShouldBe(d.Client1Id);
         card.GetProperty("clientNumber").GetString().ShouldBe("00343");
