@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 import { TaskQueueRow, UsersLookupClient } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../core/auth/auth-testing';
@@ -8,6 +9,17 @@ import { aRow, provideClock, provideLookups } from './work-queue-testing';
 import { TaskTable } from './task-table';
 
 /** The Dashboard Summary cells of the shared task table (epic #1063, decision AS items 2 to 4). */
+const person = (userId: number, displayName: string, capacityState: string, load: number) => ({
+  userId,
+  displayName,
+  availability: { isOutOfOffice: false },
+  openTaskCount: load,
+  suggested: true,
+  reason: '',
+  capacityState,
+  load,
+});
+
 describe('TaskTable, Dashboard Summary cells', () => {
   let fixture: ComponentFixture<TaskTable>;
   const el = () => fixture.nativeElement as HTMLElement;
@@ -20,7 +32,16 @@ describe('TaskTable, Dashboard Summary cells', () => {
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         ...provideLookups(),
         ...provideClock('2026-11-03T15:42:00Z', 'America/New_York'),
-        { provide: UsersLookupClient, useValue: { lookupUsers: () => Promise.resolve([]) } },
+        {
+          provide: UsersLookupClient,
+          useValue: {
+            lookupUsers: () =>
+              of([
+                person(5, 'Priya Nair', 'BUSY', 2),
+                person(6, 'Marcus Oyelaran', 'OUT_OF_OFFICE', 1),
+              ]),
+          },
+        },
       ],
     });
     await TestBed.inject(AuthStore).ensureLoaded();
@@ -105,5 +126,22 @@ describe('TaskTable, Dashboard Summary cells', () => {
       th.textContent?.trim(),
     );
     expect(heads).toContain('Unassigned for');
+  });
+
+  it('lists each person in the Assign menu with the state icon, the state word and the load', async () => {
+    await create(
+      [aRow({ assignedUser: undefined })],
+      ['ref', 'title', 'assignee'],
+      ['Task.Assign', 'Task.View'],
+    );
+    (cell('assignee').querySelector('[data-inline-trigger]') as HTMLElement).click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const hints = Array.from(document.querySelectorAll('.im-pop [data-option-hint]')).map((h) =>
+      h.textContent?.replace(/\s+/g, ' ').trim(),
+    );
+    expect(hints).toEqual(['Busy, 2 open', 'Out of office, 1 open']);
+    expect(document.querySelectorAll('.im-pop .im-hint-icon')).toHaveLength(2);
   });
 });

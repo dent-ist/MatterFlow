@@ -3,7 +3,7 @@ import { firstValueFrom } from 'rxjs';
 import { UsersLookupClient } from '../../api/generated/api-client';
 import { outOfOfficeText } from '../../core/availability/availability';
 import { USER_TIME_ZONE } from '../../core/time/clock';
-import { CapacityState, isCapacityState, stateHint } from '../availability/capacity-state';
+import { CapacityState, isCapacityState } from '../availability/capacity-state';
 
 /** The short Suggested list holds at most this many people (owner decision: 5 to 8). */
 export const SUGGESTION_COUNT = 6;
@@ -22,7 +22,7 @@ export interface AssigneeCandidate {
   hint: string;
   /** Why the person ranks here, for a tooltip. Empty in a plain name search. */
   reason: string;
-  /** Dashboard v4: the person's capacity state and load (`capacityState` and `load` of the lookup); undefined while the server does not send them. */
+  /** Dashboard v4: the person's capacity state and load (`capacityState` and `load` of the lookup); undefined while the server does not send them. Only the Dashboard's Assign menu words them (`RowEdit.showStates`). */
   state?: CapacityState;
   load?: number;
   /** "Out of office until Oct 20" while the person is out of office (still selectable), otherwise undefined. */
@@ -149,7 +149,7 @@ export class AssigneeList {
         id: u.userId,
         name: u.displayName,
         openTaskCount: u.openTaskCount,
-        hint: withState ? stateHint(state, load) : openHint(u.openTaskCount),
+        hint: openHint(u.openTaskCount),
         reason: u.reason,
         flag: outOfOfficeText(u.availability, this.zone) ?? undefined,
         ...(withState ? { state, load } : {}),
