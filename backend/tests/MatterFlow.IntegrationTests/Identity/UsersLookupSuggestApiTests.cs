@@ -196,7 +196,7 @@ public sealed class UsersLookupSuggestApiTests(SqlServerFixture sql) : IAsyncLif
 
         for (var i = 0; i < urls.Length; i++)
             (await CountAsync(urls[i])).ShouldBe(before[i], urls[i]);
-        before[0].ShouldBeLessThan(8, "a handful of statements, none per user");
+        before[0].ShouldBeLessThan(20, "a fixed handful of statements (profiles, hours, entries, holidays), none per user");
 
         var suggested = await OkAsync(await http.GetAsync("/api/v1/users/lookup?suggest=true&limit=50"));
         suggested.GetArrayLength().ShouldBeGreaterThan(40);

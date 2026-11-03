@@ -50,6 +50,7 @@ public class VisibilitySourceRulesTests
         ["TaskTransactions.cs"] = "LockTaskAsync is gated by CanSeeTaskAsync before the lock",
         ["ConfigurationTaskCounts.cs"] = "counts over VisibleTasks; the true load of the ranker is read separately on purpose (owner decision Q5)",
         ["CapacityService.cs"] = "Dashboard v4 capacity battery (decision AS item 12): the DELIBERATE aggregate exception. A worker's New and In progress tasks are counted unfiltered, as a bare integer per person, and the last-hour count is one integer; no task, matter, title or id is selected or returned",
+        ["CalendarService.cs"] = "Dashboard Calendar (epic #1074, decision AT item 21, an extension of AS item 12 to be confirmed by the security review): New and In progress tasks of the workers in view are counted unfiltered, as a bare integer per person (the day panel) and as one total for the forecast; no task, matter, title or id is selected or returned; the answers carry people and availability only",
         ["DashboardService.cs"] = "tasks through VisibleTasks; the caller's own tasks are always visible",
         ["MyMattersActivityService.cs"] = "events of the scope's visible matters; stamped history only for managers",
         ["MatterEventService.cs"] = "calendar events join matters through WhereMatterRowVisible (the sensitive-matter rule); writes load the visible matter first (404 otherwise)",

@@ -251,13 +251,114 @@ function roleNameFor(i) {
   return 'Data Technician';
 }
 
-/** Availability profile of the test users who are out of office (by number). */
-function outOfOfficeFor(i) {
-  if (i === 5) return { note: 'Annual leave', untilDays: 6 };
-  if (i === 19) return { note: 'Parental leave', untilDays: null };
-  if (i === 33) return { note: 'Conference', untilDays: 2 };
-  if (i === 41) return { note: 'Sick leave', untilDays: 3 };
-  return null;
+/**
+ * Out of office entries of the test users (Dashboard Calendar, epic #1074): the four who are away now (an open-ended one starts today, the only
+ * kind the API takes without an end date) and, for about a third of the others, one or two entries in the coming weeks, so the Calendar shows
+ * realistic coverage. Offsets are days from today in the firm zone.
+ */
+function absencesFor(i) {
+  const entries = [];
+  if (i === 5) entries.push({ type: 'VACATION', from: 0, to: 6, note: 'Annual leave' });
+  else if (i === 19) entries.push({ type: 'OTHER', from: 0, to: null, note: 'Parental leave' });
+  else if (i === 33) entries.push({ type: 'CONFERENCE', from: 0, to: 2, note: 'Conference' });
+  else if (i === 41) entries.push({ type: 'SICK', from: 0, to: 3, note: 'Sick leave' });
+  else if (i % 3 === 0) {
+    const start = 7 + ((i * 5) % 40);
+    entries.push({ type: 'VACATION', from: start, to: start + 4 + (i % 5), note: null });
+    if (i % 2 === 0) entries.push({ type: 'TRAINING', from: start + 20, to: start + 21, note: null });
+  } else if (i % 7 === 1) {
+    entries.push({ type: 'CONFERENCE', from: 10 + (i % 12), to: 12 + (i % 12), note: null });
+  }
+  return entries;
+}
+
+/**
+ * Two holiday calendars and a firm closure (Dashboard Calendar): "US Holiday" is the firm default, "UK Holiday" is assigned to about one user in ten,
+ * "Firm closure" applies to everyone (the last days of the year). Created once; later runs find them by name.
+ */
+async function ensureHolidays(admin, ctx, opts, summary) {
+  step('Holiday calendars');
+  const rule = (name, ruleKind, fields = {}) => ({
+    name,
+    ruleKind,
+    plusDays: 0,
+    yearly: true,
+    weekendRule: 'NONE',
+    ...fields,
+  });
+  const defs = [
+    {
+      name: 'US Holiday',
+      colourKey: 'indigo',
+      regionNote: 'United States federal holidays the firm observes',
+      appliesToEveryone: false,
+      rules: [
+        rule("New Year's Day", 'FIXED', { month: 1, day: 1, weekendRule: 'US' }),
+        rule('Martin Luther King Jr. Day', 'NTH_WEEKDAY', { month: 1, nth: 3, weekday: 1 }),
+        rule("Presidents' Day", 'NTH_WEEKDAY', { month: 2, nth: 3, weekday: 1 }),
+        rule('Memorial Day', 'NTH_WEEKDAY', { month: 5, nth: -1, weekday: 1 }),
+        rule('Juneteenth', 'FIXED', { month: 6, day: 19, weekendRule: 'US' }),
+        rule('Independence Day', 'FIXED', { month: 7, day: 4, weekendRule: 'US' }),
+        rule('Labor Day', 'NTH_WEEKDAY', { month: 9, nth: 1, weekday: 1 }),
+        rule('Thanksgiving', 'NTH_WEEKDAY', { month: 11, nth: 4, weekday: 4 }),
+        rule('Day after Thanksgiving', 'NTH_WEEKDAY', { month: 11, nth: 4, weekday: 4, plusDays: 1 }),
+        rule('Christmas Day', 'FIXED', { month: 12, day: 25, weekendRule: 'US' }),
+      ],
+    },
+    {
+      name: 'UK Holiday',
+      colourKey: 'rose',
+      regionNote: 'Bank holidays of England and Wales (London office)',
+      appliesToEveryone: false,
+      rules: [
+        rule("New Year's Day", 'FIXED', { month: 1, day: 1, weekendRule: 'UK' }),
+        rule('Good Friday', 'EASTER_OFFSET', { easterOffset: -2 }),
+        rule('Easter Monday', 'EASTER_OFFSET', { easterOffset: 1 }),
+        rule('Early May bank holiday', 'NTH_WEEKDAY', { month: 5, nth: 1, weekday: 1 }),
+        rule('Spring bank holiday', 'NTH_WEEKDAY', { month: 5, nth: -1, weekday: 1 }),
+        rule('Summer bank holiday', 'NTH_WEEKDAY', { month: 8, nth: -1, weekday: 1 }),
+        rule('Christmas Day', 'FIXED', { month: 12, day: 25, weekendRule: 'UK' }),
+        rule('Boxing Day', 'FIXED', { month: 12, day: 26, weekendRule: 'UK' }),
+      ],
+    },
+    {
+      name: 'Firm closure',
+      colourKey: 'green',
+      regionNote: 'Applies to everyone, whatever their own calendar',
+      appliesToEveryone: true,
+      rules: [rule('Year-end closure', 'RANGE', { month: 12, day: 28, rangeEndMonth: 12, rangeEndDay: 31 })],
+    },
+  ];
+  if (opts.dryRun) {
+    log(`Holiday calendars: would create ${defs.length} if missing.`);
+    return;
+  }
+  const existing = await admin.get('/api/v1/admin/holiday-calendars');
+  ctx.calendars = {};
+  for (const def of defs) {
+    let calendar = existing.find((c) => c.name === def.name);
+    if (!calendar) {
+      calendar = await admin.post('/api/v1/admin/holiday-calendars', {
+        name: def.name,
+        colourKey: def.colourKey,
+        regionNote: def.regionNote,
+        appliesToEveryone: def.appliesToEveryone,
+        isActive: true,
+      });
+      for (const r of def.rules) await admin.post(`/api/v1/admin/holiday-calendars/${calendar.calendarId}/holidays`, r);
+      summary.calendarsCreated = (summary.calendarsCreated ?? 0) + 1;
+    }
+    ctx.calendars[def.name] = calendar;
+  }
+  const settings = await admin.get('/api/v1/admin/settings/holidays');
+  if (settings.firmCalendarId == null) {
+    await admin.put('/api/v1/admin/settings/holidays', {
+      firmCalendarId: ctx.calendars['US Holiday'].calendarId,
+      podDefaults: [],
+      rowVersion: settings.rowVersion,
+    });
+  }
+  log(`Holiday calendars: ${Object.keys(ctx.calendars).length} ready (${summary.calendarsCreated ?? 0} created).`);
 }
 
 function podIdsFor(i, pods) {
@@ -362,19 +463,25 @@ async function ensureUsers(admin, ctx, opts, summary) {
         });
       }
       entry.podIds = pods.podIds;
-      const away = outOfOfficeFor(entry.i);
-      if (away) {
-        const current = await admin.get(`/api/v1/users/${entry.userId}/availability`);
-        await admin.put(`/api/v1/users/${entry.userId}/availability`, {
-          status: 'OUT_OF_OFFICE',
-          from: null,
-          until: away.untilDays ? dateInZone(away.untilDays) : null,
-          note: away.note,
-          timeZoneId: null,
-          workHours: null,
-          rowVersion: current.rowVersion,
+      const entries = absencesFor(entry.i);
+      for (const absence of entries) {
+        // The API refuses an entry that overlaps another one, so a repeated run just skips what already exists.
+        try {
+          await admin.post(`/api/v1/users/${entry.userId}/absences`, {
+            type: absence.type,
+            startDate: dateInZone(absence.from),
+            endDate: absence.to == null ? null : dateInZone(absence.to),
+            note: absence.note,
+          });
+        } catch (error) {
+          if (!(error instanceof ApiError && error.status === 409)) throw error;
+        }
+      }
+      entry.outOfOffice = entries.some((a) => a.from === 0);
+      if (entry.i % 10 === 4 && ctx.calendars?.['UK Holiday']) {
+        await admin.put(`/api/v1/users/${entry.userId}/holiday-calendar`, {
+          calendarId: ctx.calendars['UK Holiday'].calendarId,
         });
-        entry.outOfOffice = true;
       }
     });
     summary[found ? 'usersFinished' : 'usersCreated']++;
@@ -1383,6 +1490,7 @@ async function main() {
   const summary = {};
   step('Pods');
   await ensurePods(admin, ctx, opts, summary);
+  await ensureHolidays(admin, ctx, opts, summary);
   step('Test users');
   await ensureUsers(admin, ctx, opts, summary);
   step('Demo clients, matters, projects and assets');

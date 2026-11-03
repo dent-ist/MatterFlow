@@ -14,10 +14,11 @@ public static class AbsenceSeed
         factory.WithDbAsync(db => db.Database.ExecuteSqlInterpolatedAsync(
             $"INSERT dbo.UserAbsence (UserId, AbsenceType, StartDate, EndDate, Note) VALUES ({userId}, {type}, {from ?? "2000-01-01"}, {until}, {note})"));
 
-    /// <summary>The signed-in user of <paramref name="client"/> goes out of office (an entry for themselves).</summary>
+    /// <summary>The signed-in user of <paramref name="client"/> goes out of office: their entries are replaced by this one (like the old single Out of office value).</summary>
     public static async Task GoOutAsync(this HttpClient client, DatabaseApiFactory factory, string? from, string? until, string? note = null, string type = "OTHER")
     {
         var me = (await client.GetFromJsonAsync<JsonElement>("/api/v1/me")).GetProperty("userId").GetInt32();
+        await factory.WithDbAsync(db => db.Database.ExecuteSqlInterpolatedAsync($"DELETE dbo.UserAbsence WHERE UserId = {me}"));
         await factory.AddAbsenceAsync(me, from, until, note, type);
     }
 }

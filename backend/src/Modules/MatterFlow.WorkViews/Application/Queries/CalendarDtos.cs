@@ -185,7 +185,7 @@ public sealed record CalendarSummary(
 public sealed record AbsenceCheckPod([property: Required] int PodId, [property: Required] string Name, [property: Required] IReadOnlyList<DateOnly> Days);
 
 /// <summary>Body of the advisory overlap check; <c>endDate</c> null = open-ended (checks the next 30 days).</summary>
-public sealed record AbsenceCheckRequest([property: Required] DateOnly StartDate, DateOnly? EndDate);
+public sealed record AbsenceCheckRequest([Required] DateOnly StartDate, DateOnly? EndDate);
 
 /// <summary>Answer of the advisory check: never blocks a save.</summary>
 public sealed record AbsenceCheckResult([property: Required] IReadOnlyList<AbsenceCheckPod> PodsBelowMinimum);

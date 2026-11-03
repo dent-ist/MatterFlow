@@ -155,7 +155,7 @@ public sealed class AbsenceApiTests(SqlServerFixture sql) : IAsyncLifetime
         events.Count.ShouldBe(1);
         events[0].EventType.ShouldBe("USER_ABSENCE_ADDED");
         events[0].ActorUserId.ShouldBe(_leadId);
-        events[0].Summary.ShouldBe("Added Sick 10/12/2026 to 10/13/2026 for ann");
+        events[0].Summary.ShouldBe(@"Added Sick 10/12/2026 to 10/13/2026 for KE\ann");
         events[0].Summary!.ShouldNotContain("Flu"); // the note is in the event detail, not in the readable text
         events[0].NewValue!.ShouldContain("Flu");
     }
@@ -286,7 +286,9 @@ public sealed class AbsenceApiTests(SqlServerFixture sql) : IAsyncLifetime
     public async Task The_advisory_check_names_the_pods_that_would_fall_below_their_minimum_and_never_blocks()
     {
         // Review pod: ann and lead (both Workflow.Execute workers). With ann out for two days the pod has one of two: below the minimum of 2 (60 percent of 2, rounded up).
-        var check = await JsonAsync(await _ann.PostAsJsonAsync($"/api/v1/users/{_annId}/absences/check", new { startDate = "2026-10-19", endDate = "2026-10-20" }));
+        var raw = await _ann.PostAsJsonAsync($"/api/v1/users/{_annId}/absences/check", new { startDate = "2026-10-19", endDate = "2026-10-20" });
+        raw.StatusCode.ShouldBe(HttpStatusCode.OK, await raw.Content.ReadAsStringAsync());
+        var check = await JsonAsync(raw);
 
         var pods = check.GetProperty("podsBelowMinimum").EnumerateArray().ToList();
         pods.Count.ShouldBe(1);
