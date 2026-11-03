@@ -283,7 +283,18 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
       }
       @container (max-width: 30rem) {
         .row {
-          grid-template-columns: 0.875rem minmax(4rem, 1fr) 2rem 2.5rem;
+          grid-template-columns: 0.875rem minmax(4rem, 1fr) 2rem 5.25rem;
+        }
+        .pct {
+          display: none;
+        }
+        .od-text {
+          grid-column: 4;
+        }
+      }
+      @container (max-width: 20rem) {
+        .row {
+          grid-template-columns: 0.875rem minmax(4rem, 1fr) 2rem;
         }
         .od-text {
           grid-column: 2 / -1;
@@ -323,6 +334,9 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
         background: var(--mf-surface-alt);
       }
       .tlink {
+        display: inline-block;
+        min-height: 24px;
+        line-height: 24px;
         border-radius: var(--mf-radius);
         color: var(--mf-link);
         font-weight: 600;

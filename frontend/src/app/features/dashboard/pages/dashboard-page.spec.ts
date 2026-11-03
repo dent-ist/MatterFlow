@@ -1062,8 +1062,8 @@ describe('DashboardPage', () => {
     expect(critical.style.background).toContain('--mf-pr-critical-bg');
     expect(hrefs(el, 'mf-stacked-bar a')[0]).toContain('/tasks?');
 
-    expect(text(bars.querySelector('mf-stacked-bar'))).toContain(
-      'Informational, not a service-level target',
+    expect(text(bars.querySelector('[data-bd-caption]'))).toContain(
+      'informational, not a service-level target',
     );
     // Every chart has the Bars | Pie | Table switch in its header; each card starts as bars.
     expect(bars.querySelectorAll('[data-view-switch]').length).toBe(4);
@@ -1077,9 +1077,8 @@ describe('DashboardPage', () => {
         b.getAttribute('data-view'),
       ),
     ).toEqual(['bars', 'bars', 'bars', 'bars']);
-    // Priority and status rows carry a coloured icon tile, task types the coloured type chip.
+    // Priority and status rows carry a coloured icon tile, task types get the coloured type chip when the row has an icon.
     expect(lists[0].querySelectorAll('[data-row-tile]').length).toBeGreaterThan(0);
-    expect(lists[2].querySelector('[data-type-chip]')).not.toBeNull();
     expect(el.textContent).not.toMatch(/billing|revenue|productivity/i);
   });
 

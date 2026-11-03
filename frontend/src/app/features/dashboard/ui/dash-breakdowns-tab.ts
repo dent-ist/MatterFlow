@@ -85,7 +85,8 @@ const PRIORITY_ICONS: Record<string, string> = {
       <p class="caption" data-bd-caption>
         <span class="info"
           ><i class="pi pi-info-circle" aria-hidden="true"></i>Open tasks, now. Not affected by the
-          period.</span
+          period. Age is the days since a task was created: informational, not a service-level
+          target.</span
         >
         <span class="legend" data-bd-legend>
           <span class="key"><span class="sample plain" aria-hidden="true"></span>Not overdue</span>
@@ -125,7 +126,6 @@ const PRIORITY_ICONS: Record<string, string> = {
             rowHeading="Age"
             [segments]="aging()"
             emptyText="No open tasks."
-            note="Days since the task was created. Informational, not a service-level target."
           />
         </div>
       </div>
@@ -217,8 +217,8 @@ const PRIORITY_ICONS: Record<string, string> = {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
       }
-      /* From 1300 px: Priority, Status and Age side by side, and the Task Type card under them across the whole width. */
-      @container bd (min-width: 1300px) {
+      /* From 1000 px: Priority, Status and Age side by side, and the Task Type card under them across the whole width. */
+      @container bd (min-width: 1000px) {
         .grid {
           grid-template-columns: repeat(3, minmax(0, 1fr));
         }
@@ -250,18 +250,15 @@ const PRIORITY_ICONS: Record<string, string> = {
           flex: 1 1 auto;
           min-height: 0;
         }
-        .c-priority,
-        .c-status,
-        .c-age,
         .c-type {
           min-height: 0;
         }
-        @container bd (min-width: 700px) and (max-width: 1299.98px) {
+        @container bd (min-width: 700px) and (max-width: 999.98px) {
           .grid {
             grid-template-rows: auto minmax(12rem, 1fr);
           }
         }
-        @container bd (min-width: 1300px) {
+        @container bd (min-width: 1000px) {
           .grid {
             grid-template-rows: auto minmax(12rem, 1fr);
           }

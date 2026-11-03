@@ -303,20 +303,26 @@ let nextId = 0;
         display: inline-flex;
         align-items: center;
       }
-      /* A narrow card (three across at 1360 px, or a phone): the overdue text moves under the bar and the name keeps the larger share. */
+      /* A narrow card (three across, or a phone): the percentage goes to the table view and the overdue chip stays on the row. */
       @container (max-width: 30rem) {
         .row {
-          grid-template-columns: minmax(7rem, 1.2fr) minmax(3rem, 1fr) 2.25rem 2.5rem;
+          grid-template-columns: minmax(6.5rem, 1.2fr) minmax(2.5rem, 1fr) 2.5rem 5.25rem;
           gap: var(--mf-s1) var(--mf-s2);
         }
+        .pct {
+          display: none;
+        }
         .od-text {
-          grid-column: 2 / -1;
+          grid-column: 4;
         }
       }
       /* A phone: the share is in the table view; the bar gets the room. */
       @container (max-width: 20rem) {
         .row {
           grid-template-columns: minmax(5rem, 1.2fr) minmax(2.5rem, 1fr) 2.25rem;
+        }
+        .od-text {
+          grid-column: 2 / -1;
         }
         .name {
           -webkit-line-clamp: 3;
@@ -440,6 +446,11 @@ let nextId = 0;
         color: var(--mf-link);
         text-decoration: none;
         font-weight: 600;
+      }
+      .tlink {
+        display: inline-block;
+        min-height: 24px;
+        line-height: 24px;
       }
       .tlink:hover,
       .chip:hover {

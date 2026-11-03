@@ -90,10 +90,9 @@ describe('dashboard charts', () => {
 
     it('adds the overdue count and the share to the table view', () => {
       // Bars -> pie -> table.
-      const toggle = el.querySelector<HTMLButtonElement>('mf-bar-list .toggle')!;
-      toggle.click();
+      el.querySelector<HTMLButtonElement>('mf-bar-list [data-view="pie"]')!.click();
       fixture.detectChanges();
-      toggle.click();
+      el.querySelector<HTMLButtonElement>('mf-bar-list [data-view="table"]')!.click();
       fixture.detectChanges();
       expect(
         Array.from(el.querySelectorAll('mf-bar-list thead th')).map((h) => h.textContent),
@@ -192,10 +191,9 @@ describe('dashboard charts', () => {
 
     it('is available as a table', () => {
       // Bars -> pie -> table.
-      const toggle = el.querySelector<HTMLButtonElement>('mf-stacked-bar .toggle')!;
-      toggle.click();
+      el.querySelector<HTMLButtonElement>('mf-stacked-bar [data-view="pie"]')!.click();
       fixture.detectChanges();
-      toggle.click();
+      el.querySelector<HTMLButtonElement>('mf-stacked-bar [data-view="table"]')!.click();
       fixture.detectChanges();
       expect(el.querySelectorAll('mf-stacked-bar tbody tr').length).toBe(4);
       expect(
