@@ -59,6 +59,9 @@ export function validateAbsence(
   }
   if (input.startDate && input.endDate && input.endDate < input.startDate) {
     out.endDate = 'The last day cannot be before the first day.';
+  } else if (!editing && input.startDate && !input.endDate && input.startDate !== ctx.today) {
+    // The API accepts an open end only for an entry that starts today (the header quick action).
+    out.endDate = 'Enter the last day. Leave it empty only for an entry that starts today.';
   }
   if ((input.note ?? '').trim().length > NOTE_MAX) {
     out.note = `The note can have at most ${NOTE_MAX} characters.`;

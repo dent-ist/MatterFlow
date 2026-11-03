@@ -126,6 +126,8 @@ interface Row {
       flex: 1 1 0;
     }
     .wrap {
+      /* Positioned, so the visually hidden texts inside the table are clipped with it and never widen the page. */
+      position: relative;
       flex: 1 1 0;
       min-height: 0;
       overflow: auto;

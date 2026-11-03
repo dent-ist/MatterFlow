@@ -112,6 +112,7 @@ const label = (key: string): string => key.charAt(0).toUpperCase() + key.slice(1
     }
     .cd__f {
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
       gap: var(--mf-s1);
       min-width: 0;
       margin: 0;

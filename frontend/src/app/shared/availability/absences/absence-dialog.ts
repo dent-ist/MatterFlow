@@ -139,8 +139,8 @@ export function overlapOf(err: ApiError): AbsenceOverlap | null {
           </div>
         </div>
         <p class="ad__help" id="ad-dates-help">
-          The last day is included. Leave it empty if you do not know yet; "I'm back" ends the
-          entry.
+          The last day is included. Leave it empty only for an entry that starts today; "I'm back"
+          ends it.
         </p>
         @if (serverDates(); as e) {
           <p class="ad__error" role="alert" data-ad-overlap>
@@ -186,6 +186,7 @@ export function overlapOf(err: ApiError): AbsenceOverlap | null {
     }
     .ad__field {
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
       gap: var(--mf-s1);
       min-width: 0;
     }

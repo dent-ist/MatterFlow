@@ -74,7 +74,10 @@ export class HttpAbsenceApi implements AbsenceApi {
   }
 
   async create(userId: number, input: AbsenceInput): Promise<AbsenceEntry> {
-    return toEntry(await firstValueFrom(this.absences.createAbsence(userId, body(input))));
+    // The dialog shows the server's message under the dates: no toast as well.
+    return toEntry(
+      await this.quiet.run(() => firstValueFrom(this.absences.createAbsence(userId, body(input)))),
+    );
   }
 
   async update(userId: number, absenceId: number, input: AbsenceInput): Promise<AbsenceEntry> {
@@ -84,11 +87,14 @@ export class HttpAbsenceApi implements AbsenceApi {
   }
 
   async remove(userId: number, absenceId: number, rowVersion: string): Promise<void> {
-    await firstValueFrom(this.absences.deleteAbsence(userId, absenceId, rowVersion));
+    await this.quiet.run(() =>
+      firstValueFrom(this.absences.deleteAbsence(userId, absenceId, rowVersion)),
+    );
   }
 
   async back(userId: number, absenceId: number): Promise<void> {
-    await firstValueFrom(this.absences.endAbsenceToday(userId, absenceId));
+    // The screen that pressed "I'm back" tells the person itself.
+    await this.quiet.run(() => firstValueFrom(this.absences.endAbsenceToday(userId, absenceId)));
   }
 
   async check(userId: number, startDate: string, endDate: string | null): Promise<AbsenceCheck> {
