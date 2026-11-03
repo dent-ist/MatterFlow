@@ -15,7 +15,6 @@ const KEY = 'mf-mm-ui';
 
 export interface LayoutMemory {
   treePref: 'open' | 'rail' | null;
-  treePin: boolean;
   sidePref: 'open' | 'closed' | null;
 }
 
@@ -29,7 +28,7 @@ function store(): Storage | null {
 
 /**
  * Where the docked tree and the side panel stand (My Matters, epic #953 UI-11 and UI-12). Below about 1510 px the two cannot both be wide and still leave the grid 560 px, so they
- * take turns: opening one collapses the other to its rail and the one used last stays wide. Choosing a matter collapses the tree (unless it is pinned) and the side panel
+ * take turns: opening one collapses the other to its rail and the one used last stays wide. Choosing a matter leaves the tree open (MM-20); it gives way only when the width cannot hold both, and the side panel
  * opens in the room that was freed (unless the person closed it). The states the person chose are remembered in the browser (a convenience; the address does not carry them).
  */
 @Injectable()
@@ -41,7 +40,6 @@ export class MmLayout {
   readonly browsable = signal(true);
 
   readonly treeOpen = signal(true);
-  readonly treePin = signal(false);
   readonly sideOpen = signal(true);
   private treePref: 'open' | 'rail' | null = null;
   private sidePref: 'open' | 'closed' | null = null;
@@ -125,11 +123,6 @@ export class MmLayout {
     this.save();
   }
 
-  setPin(on: boolean): void {
-    this.treePin.set(on);
-    this.save();
-  }
-
   expandSide(): void {
     const treeWas = this.treeWide();
     this.sideOpen.set(true);
@@ -161,7 +154,6 @@ export class MmLayout {
     try {
       const o: LayoutMemory = {
         treePref: this.treePref,
-        treePin: this.treePin(),
         sidePref: this.sidePref,
       };
       store()?.setItem(KEY, JSON.stringify(o));
@@ -177,7 +169,6 @@ export class MmLayout {
       const o = JSON.parse(raw) as Partial<LayoutMemory>;
       this.treePref = o.treePref === 'open' || o.treePref === 'rail' ? o.treePref : null;
       this.sidePref = o.sidePref === 'open' || o.sidePref === 'closed' ? o.sidePref : null;
-      this.treePin.set(o.treePin === true);
       if (this.treePref === 'rail') this.treeOpen.set(false);
       if (this.sidePref === 'closed') this.sideOpen.set(false);
     } catch {

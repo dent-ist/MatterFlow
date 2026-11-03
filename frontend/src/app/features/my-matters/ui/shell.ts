@@ -267,8 +267,6 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
                   (retry)="refresh.update((n) => n + 1)"
                   [clientId]="scope.clientId()"
                   [matterId]="scope.matterId()"
-                  [pinned]="layout.treePin()"
-                  (pin)="layout.setPin($event)"
                   (collapse)="collapseTree()"
                   (chooseClient)="pickClientNode($event)"
                   (chooseMatter)="pickMatter($event)"

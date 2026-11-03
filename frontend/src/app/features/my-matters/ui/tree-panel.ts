@@ -43,9 +43,8 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
 }
 
 /**
- * The tree of clients and matters (`mf-mm-tree-panel`, epic #953 UI-12): a card with a search box, "Active only", Expand all / Collapse all, a pin that keeps it open after a
- * choice, a button that collapses it to its rail, the legend of the marks and the accessible `mf-tree`. It shows exactly the clients and matters the API returned for the person's
- * scope (a sensitive matter the person may not see is not in the data). The same panel is the Browse popover below 1100 px (`popover`: no pin and no collapse button). The open clients are remembered in the browser.
+ * The tree of clients and matters (`mf-mm-tree-panel`, epic #953 UI-12): a card with a search box, "Active only", Expand all / Collapse all, a button that collapses it to its rail, the legend of the marks and the accessible `mf-tree`. It shows exactly the clients and matters the API returned for the person's
+ * scope (a sensitive matter the person may not see is not in the data). The same panel is the Browse popover below 1100 px (`popover`: no collapse button). The open clients are remembered in the browser.
  */
 @Component({
   selector: 'mf-mm-tree-panel',
@@ -57,35 +56,6 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
       <div class="hd">
         <h2 id="mm-tree-h">Client and Matters</h2>
         @if (!popover()) {
-          <button
-            type="button"
-            class="mf-btn mf-btn--icon ib"
-            data-tree-pin
-            [attr.aria-pressed]="pinned()"
-            [attr.aria-label]="
-              pinned()
-                ? 'Unpin the tree (it stays open after choosing)'
-                : 'Pin the tree open after choosing'
-            "
-            [mfTip]="
-              pinned()
-                ? 'Unpin: let the tree close after you choose'
-                : 'Pin open: keep the tree open after you choose'
-            "
-            (click)="pin.emit(!pinned())"
-          >
-            <svg
-              class="pin"
-              [class.on]="pinned()"
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path d="M9 3h6l-1 6 3 3v2H7v-2l3-3zM12 14v7" />
-            </svg>
-          </button>
           <button
             type="button"
             class="mf-btn mf-btn--icon ib"
@@ -186,21 +156,6 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
       margin: 0;
       font-size: var(--mf-fs-md);
       font-weight: 700;
-    }
-    .pin {
-      fill: none;
-      stroke: currentColor;
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-    .pin.on {
-      fill: currentColor;
-    }
-    .ib[aria-pressed='true'] {
-      background: var(--mf-selected-bg);
-      border-color: var(--mf-primary);
-      color: var(--mf-primary);
     }
     .tools {
       display: grid;
@@ -309,9 +264,7 @@ export class MmTreePanel {
   readonly retry = output<void>();
   readonly clientId = input<number | null>(null);
   readonly matterId = input<number | null>(null);
-  readonly pinned = input(false);
   readonly popover = input(false);
-  readonly pin = output<boolean>();
   readonly collapse = output<void>();
   readonly chooseClient = output<number>();
   readonly chooseMatter = output<{ matterId: number; clientId: number }>();
