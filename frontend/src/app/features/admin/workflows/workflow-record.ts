@@ -8,6 +8,7 @@ import { OPEN_STATUSES } from '../../../shared/work-queue/queue-filters';
 import { WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { BadgeTone } from '../../../shared/ui/badge';
 import { MfTab } from '../../../shared/ui/tabs';
+import { tabIcon } from '../../../shared/ui/tab-icons';
 import { firstAllowedTab } from '../denial';
 
 /** The three tabs of the Workflow page (WE1, #388). Overview is the default and is not written to the address. */
@@ -32,10 +33,16 @@ export function activeTaskTypes(d: Pick<WorkflowDetail, 'workflow'>): WorkflowTa
 /** The tab strip with the live counts: versions are all the history, task types the active ones. */
 export function workflowTabs(d: WorkflowDetail | null): MfTab[] {
   return [
-    { key: 'overview', label: WORKFLOW_TAB_LABEL.overview },
-    { key: 'versions', label: WORKFLOW_TAB_LABEL.versions, count: d ? d.versions.length : '--' },
+    { key: 'overview', label: WORKFLOW_TAB_LABEL.overview, icon: tabIcon('overview') },
+    {
+      key: 'versions',
+      label: WORKFLOW_TAB_LABEL.versions,
+      icon: tabIcon('versions'),
+      count: d ? d.versions.length : '--',
+    },
     {
       key: 'task-types',
+      icon: tabIcon('task-types'),
       label: WORKFLOW_TAB_LABEL['task-types'],
       count: d ? activeTaskTypes(d).length : '--',
     },

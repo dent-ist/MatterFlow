@@ -28,6 +28,7 @@ import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
 import { DetailLayout } from '../../../shared/ui/detail-layout';
 import { RecordSkeleton } from '../../../shared/ui/record-skeleton';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
+import { tabIcon } from '../../../shared/ui/tab-icons';
 import { RecordState, recordStateTitle } from '../../../shared/ui/record-state';
 import { AuthStore } from '../../../core/auth/auth.store';
 
@@ -257,11 +258,22 @@ export class TaskDetailPage implements HasUnsavedChanges {
       {
         key: 'workflow',
         label: 'Workflow',
+        icon: tabIcon('workflow'),
         count: steps ? `${steps.resolved}/${steps.total}` : null,
         name: steps ? `Workflow, ${steps.resolved} of ${steps.total} steps resolved` : undefined,
       },
-      { key: 'assets', label: 'Assets', count: canSeeAssets ? known(this.assetCount()) : null },
-      { key: 'comments', label: 'Comments', count: known(this.commentCount()) },
+      {
+        key: 'assets',
+        label: 'Assets',
+        icon: tabIcon('assets'),
+        count: canSeeAssets ? known(this.assetCount()) : null,
+      },
+      {
+        key: 'comments',
+        label: 'Comments',
+        icon: tabIcon('comments'),
+        count: known(this.commentCount()),
+      },
     ];
   });
   /** What a closed Details holds, in one line (#307). */

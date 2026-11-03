@@ -18,7 +18,9 @@ export interface MfTab {
   key: string;
   label: string;
   /** A PrimeIcons class (`pi-list`) drawn before the label; decorative (the label names the tab). */
-  icon?: string;
+  icon: string;
+  /** A tooltip saying what the tab holds. */
+  hint?: string;
   /** Count shown in parentheses; omitted while unknown (a string such as `--` while it loads). */
   count?: number | string | null;
   /** A small badge after the label (the number of things waiting in the tab); not drawn for 0. Say it in `name` as well, a badge alone is not read as part of the name. */
@@ -66,7 +68,7 @@ export interface MfTab {
             [attr.aria-label]="nameOf(t)"
             [attr.aria-disabled]="t.disabledReason ? 'true' : null"
             [attr.aria-describedby]="t.disabledReason ? idPrefix() + '-why-' + t.key : null"
-            [attr.title]="t.disabledReason ?? null"
+            [attr.title]="t.disabledReason ?? t.hint ?? null"
             [attr.aria-selected]="t.key === selected()"
             [attr.aria-controls]="t.key === selected() ? idPrefix() + '-panel' : null"
             [attr.tabindex]="t.key === selected() ? 0 : -1"

@@ -36,6 +36,7 @@ import { RecordSkeleton } from '../../../shared/ui/record-skeleton';
 import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
 import { TextField } from '../../../shared/ui/text-field';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
+import { tabIcon } from '../../../shared/ui/tab-icons';
 import { focusStatusAfterAction } from '../after-action';
 import { FormsModule } from '@angular/forms';
 import { TaskTypeIconPicker } from '../../../shared/icons/task-type-icon-picker';
@@ -214,9 +215,10 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
   protected readonly tabs = computed<MfTab[]>(() => {
     const t = this.assetType();
     const list: MfTab[] = [
-      { key: 'overview', label: ASSET_TYPE_TAB_LABEL.overview },
+      { key: 'overview', label: ASSET_TYPE_TAB_LABEL.overview, icon: tabIcon('overview') },
       {
         key: 'fields',
+        icon: tabIcon('fields'),
         label: ASSET_TYPE_TAB_LABEL.fields,
         ...(this.fieldTotal() !== undefined ? { count: this.fieldTotal() } : {}),
         ...(this.isNew() ? { disabledReason: 'Create the asset type first.' } : {}),
@@ -225,6 +227,7 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
     if (this.canSeeAssets()) {
       list.push({
         key: 'assets',
+        icon: tabIcon('assets'),
         label: ASSET_TYPE_TAB_LABEL.assets,
         ...(typeof t?.assetCount === 'number' ? { count: t.assetCount } : {}),
         ...(this.isNew() ? { disabledReason: 'Create the asset type first.' } : {}),

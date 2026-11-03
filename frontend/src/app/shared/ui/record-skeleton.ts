@@ -14,6 +14,7 @@ import { RecordHeader } from './record-header';
 import { RecordKind } from './record-state';
 import { StillLoading } from './still-loading';
 import { MfTab, Tabs } from './tabs';
+import { tabIcon } from './tab-icons';
 
 /**
  * The tabs of the Client, Matter and Project pages: the keys, the visible labels (the document title uses the same labels) and which tabs show a
@@ -52,8 +53,11 @@ export function recordTabs(
   counts: Partial<Record<string, number | string | null>> = {},
 ): MfTab[] {
   return RECORD_TABS[kind].map((t) => {
-    const tab: MfTab = { key: t.key, label: t.label };
-    if ('icon' in t) tab.icon = t.icon;
+    const tab: MfTab = {
+      key: t.key,
+      label: t.label,
+      icon: 'icon' in t ? t.icon : tabIcon(t.label),
+    };
     if ('counted' in t) tab.count = counts[t.key] === undefined ? 0 : counts[t.key];
     return tab;
   });
@@ -441,16 +445,16 @@ export class RecordSkeleton {
     // The Task page has no tab strip; the Administration pages bring theirs with their record pages (the Task Type page: #380).
     if (kind === 'taskType') {
       return [
-        { key: 'overview', label: 'Overview' },
-        { key: 'workflows', label: 'Workflows', count: '--' },
-        { key: 'form', label: 'Request form' },
+        { key: 'overview', label: 'Overview', icon: tabIcon('overview') },
+        { key: 'workflows', label: 'Workflows', icon: tabIcon('workflows'), count: '--' },
+        { key: 'form', label: 'Request form', icon: tabIcon('form') },
       ];
     }
     if (kind === 'step') {
       return [
-        { key: 'details', label: 'Details' },
-        { key: 'inputs', label: 'Inputs' },
-        { key: 'used-by', label: 'Used by', count: '--' },
+        { key: 'details', label: 'Details', icon: tabIcon('details') },
+        { key: 'inputs', label: 'Inputs', icon: tabIcon('inputs') },
+        { key: 'used-by', label: 'Used by', icon: tabIcon('used-by'), count: '--' },
       ];
     }
     if (kind !== 'client' && kind !== 'matter' && kind !== 'project' && kind !== 'asset') return [];

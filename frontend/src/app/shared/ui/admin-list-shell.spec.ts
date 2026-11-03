@@ -48,8 +48,8 @@ const LONG =
 class Host extends FiltersTestHost {
   readonly description = signal('One short line.');
   readonly tabs = signal<MfTab[]>([
-    { key: 'types', label: 'Asset Types' },
-    { key: 'link-roles', label: 'Link Roles' },
+    { key: 'types', icon: 'pi-circle', label: 'Asset Types' },
+    { key: 'link-roles', icon: 'pi-circle', label: 'Link Roles' },
   ]);
   readonly counts = signal<ShellCounts | null>({ types: 12, 'link-roles': null });
   readonly withFilters = signal(true);
@@ -138,7 +138,7 @@ describe('mf-admin-list-shell (#544)', { timeout: 20_000 }, () => {
 
   it('renders no tab strip for a single tab, but keeps the body', async () => {
     await mount();
-    m.host.tabs.set([{ key: 'types', label: 'Asset Types' }]);
+    m.host.tabs.set([{ key: 'types', icon: 'pi-circle', label: 'Asset Types' }]);
     await m.settle();
     expect(q('[role="tablist"]')).toBeNull();
     expect(q('[role="tabpanel"]')).toBeNull();
@@ -193,9 +193,9 @@ describe('mf-admin-list-shell (#544)', { timeout: 20_000 }, () => {
 describe('shell helpers (#545)', () => {
   it('applyCounts shows the number, "--" while unknown, and leaves tabs without an entry alone', () => {
     const tabs: MfTab[] = [
-      { key: 'a', label: 'A' },
-      { key: 'b', label: 'B' },
-      { key: 'c', label: 'C', count: 3 },
+      { key: 'a', icon: 'pi-circle', label: 'A' },
+      { key: 'b', icon: 'pi-circle', label: 'B' },
+      { key: 'c', icon: 'pi-circle', label: 'C', count: 3 },
     ];
     expect(applyCounts(tabs, null)).toBe(tabs);
     const out = applyCounts(tabs, { a: 0, b: null });

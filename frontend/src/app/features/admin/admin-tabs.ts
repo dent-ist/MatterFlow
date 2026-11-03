@@ -2,6 +2,7 @@ import { DestroyRef, Injectable, Signal, computed, inject, signal } from '@angul
 import { QuietRequests } from '../../core/http/interceptors';
 import type { ShellCounts } from '../../shared/ui/admin-list-shell';
 import type { MfTab } from '../../shared/ui/tabs';
+import { tabIcon } from '../../shared/ui/tab-icons';
 import { firstAllowedTab } from './denial';
 
 /**
@@ -74,7 +75,7 @@ export function adminTabItems(
   counts: ShellCounts | null = null,
 ): MfTab[] {
   return allowedAdminTabs(tabs, can).map((t) => {
-    const item: MfTab = { key: t.id, label: t.label };
+    const item: MfTab = { key: t.id, label: t.label, icon: tabIcon(t.id) };
     if (!counts || !t.countKey || !(t.countKey in counts)) return item;
     const n = counts[t.countKey];
     return typeof n === 'number'

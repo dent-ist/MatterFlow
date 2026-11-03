@@ -31,6 +31,7 @@ import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard'
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { Crumb, PageHeader } from '../../../shared/ui/page-header';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
+import { tabIcon } from '../../../shared/ui/tab-icons';
 import { ParametersEditor } from './parameters-editor';
 import { PreviewPanel } from './preview-panel';
 import { ReportRolesTab } from './report-roles-tab';
@@ -208,19 +209,26 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
 
   protected readonly tabs = computed<MfTab[]>(() => {
     const list: MfTab[] = [
-      { key: 'details', label: 'Details' },
-      { key: 'query', label: 'Query' },
-      { key: 'parameters', label: 'Parameters', count: this.activeDefs().length },
+      { key: 'details', label: 'Details', icon: tabIcon('details') },
+      { key: 'query', label: 'Query', icon: tabIcon('query') },
+      {
+        key: 'parameters',
+        label: 'Parameters',
+        icon: tabIcon('parameters'),
+        count: this.activeDefs().length,
+      },
     ];
     if (this.canAssign()) {
       list.push({
         key: 'roles',
+        icon: tabIcon('roles'),
         label: 'Roles',
         ...(this.isNew() ? { disabledReason: 'Save the report first.' } : {}),
       });
     }
     list.push({
       key: 'history',
+      icon: tabIcon('history'),
       label: 'History',
       ...(this.isNew() ? { disabledReason: 'Save the report first.' } : {}),
     });

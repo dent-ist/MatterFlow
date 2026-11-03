@@ -193,8 +193,8 @@ describe('WorkList', () => {
 describe('WorkTabs', () => {
   let fixture: ComponentFixture<WorkTabs>;
   const tabs: WorkTab[] = [
-    { key: 'a', label: 'Active', count: 7, emphasize: true },
-    { key: 'b', label: 'Due Soon', count: 2, emphasize: true },
+    { key: 'a', label: 'Active', count: 7 },
+    { key: 'b', label: 'Due Soon', count: 2 },
     { key: 'c', label: 'Completed' },
   ];
 
@@ -231,8 +231,8 @@ describe('WorkTabs', () => {
 
   it('mutes zero counts and bolds only the counts that ask for it while above zero', () => {
     fixture.componentRef.setInput('tabs', [
-      { key: 'a', label: 'Active', count: 7, emphasize: true },
-      { key: 'b', label: 'Due Soon', count: 0, emphasize: true },
+      { key: 'a', label: 'Active', count: 7 },
+      { key: 'b', label: 'Due Soon', count: 0 },
       { key: 'c', label: 'Done', count: 4 },
       { key: 'd', label: 'Mine', count: 0 },
     ]);

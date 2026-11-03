@@ -30,7 +30,8 @@ const shot = async (page: Page, name: string) => {
 };
 
 const lane = (page: Page, code: string): Locator => page.locator(`[data-lane="${code}"]`);
-const laneTab = (page: Page, code: string): Locator => page.locator(`[data-lane-tab="${code}"]`);
+const laneTab = (page: Page, code: string): Locator =>
+  page.locator(`[data-lane-switcher] [data-tab="${code}"]`);
 const CODES = ['NEW', 'IN_PROGRESS', 'ON_HOLD', 'COMPLETED'] as const;
 
 async function openBoard(
@@ -61,7 +62,7 @@ test.describe('Lane switcher below 900 px (#125)', () => {
       await expect(lane(page, code)).toBeVisible();
       const count = (await lane(page, code).locator('a[data-lane-count]').textContent())?.trim();
       expect(
-        (await laneTab(page, code).locator('[data-lane-tab-count]').textContent())?.trim(),
+        (await laneTab(page, code).locator('.count').textContent())?.replace(/[()]/g, '').trim(),
       ).toBe(count);
       expect(await shownLanes(page)).toEqual([code]);
       await shot(page, `lane-${code.toLowerCase()}-375`);

@@ -537,7 +537,6 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
       key,
       label: TAB_LABELS[key],
       count: counts ? counts[key] : null,
-      emphasize: key === 'active' || key === 'dueSoon',
       hint: TAB_TOOLTIPS[key],
     }));
   });

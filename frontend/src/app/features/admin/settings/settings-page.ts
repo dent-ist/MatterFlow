@@ -21,6 +21,7 @@ import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { Tabs, MfTab } from '../../../shared/ui/tabs';
+import { tabIcon } from '../../../shared/ui/tab-icons';
 import { TextField } from '../../../shared/ui/text-field';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -29,7 +30,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 export const BRANDING_SAVED_TEXT = 'Saved. Other users see it the next time they load the page.';
 
 /** The one tab today; the strip is there so later settings sections slot in. */
-const TABS: readonly MfTab[] = [{ key: 'branding', label: 'Branding' }];
+const TABS: readonly MfTab[] = [{ key: 'branding', label: 'Branding', icon: tabIcon('branding') }];
 
 /** The built-in header mark, shown for "reset" and while no custom icon exists. */
 const BUILT_IN_MARK = 'favicon.svg';

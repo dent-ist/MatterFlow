@@ -15,9 +15,14 @@ import { MfTab, Tabs } from './tabs';
 })
 class Host {
   readonly tabs = signal<MfTab[]>([
-    { key: 'a', label: 'Overview' },
-    { key: 'b', label: 'Workflows', count: 2 },
-    { key: 'c', label: 'Request form', disabledReason: 'Save the task type first' },
+    { key: 'a', icon: 'pi-circle', label: 'Overview' },
+    { key: 'b', icon: 'pi-circle', label: 'Workflows', count: 2 },
+    {
+      key: 'c',
+      icon: 'pi-circle',
+      label: 'Request form',
+      disabledReason: 'Save the task type first',
+    },
   ]);
   readonly selected = signal('a');
   readonly changed: string[] = [];
@@ -42,8 +47,14 @@ describe('mf-tabs', () => {
   it('a badge is a small number after the label, hidden from assistive technology (the name says it), and not drawn for 0', () => {
     const { fixture, tab } = create();
     fixture.componentInstance.tabs.set([
-      { key: 'a', label: 'Overview', badge: 0 },
-      { key: 'b', label: 'Activity', badge: 7, name: 'Activity, 7 changes since your last visit' },
+      { key: 'a', icon: 'pi-circle', label: 'Overview', badge: 0 },
+      {
+        key: 'b',
+        icon: 'pi-circle',
+        label: 'Activity',
+        badge: 7,
+        name: 'Activity, 7 changes since your last visit',
+      },
     ]);
     fixture.detectChanges();
     expect(tab('a').querySelector('[data-tab-badge]')).toBeNull();

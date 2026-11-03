@@ -28,6 +28,8 @@ import { UndoService } from '../../../core/notify/undo.service';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { mfDate } from '../../../core/time/time';
 import { FIXED_MODE_QUERY } from '../../../shared/ui/fixed-page';
+import { MfTab, Tabs } from '../../../shared/ui/tabs';
+import { tabIcon } from '../../../shared/ui/tab-icons';
 import { withoutDefaults } from '../dash-url-state';
 import { DashState, focusAfterRetry } from './dash-state';
 import { DashScope } from '../dash-scope';
@@ -81,7 +83,7 @@ const EDIT_REFRESH_DELAY_MS = 900;
  */
 @Component({
   selector: 'mf-dash-swimlane-tab',
-  imports: [SwimlaneToolbar, SwimlaneLane, SwimlaneDrawer, DashState],
+  imports: [SwimlaneToolbar, SwimlaneLane, SwimlaneDrawer, DashState, Tabs],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -112,24 +114,15 @@ const EDIT_REFRESH_DELAY_MS = 900;
       />
     } @else {
       @if (switcher()) {
-        <div class="switcher" role="tablist" aria-label="Swimlane lanes" data-lane-switcher>
-          @for (lane of lanes(); track lane.code) {
-            <button
-              type="button"
-              role="tab"
-              class="stab"
-              [id]="laneTabId(lane.code)"
-              [attr.data-lane-tab]="lane.code"
-              [attr.aria-selected]="lane.code === activeLane()"
-              [attr.aria-controls]="lane.code === activeLane() ? lanePanelId : null"
-              [attr.tabindex]="lane.code === activeLane() ? 0 : -1"
-              (click)="chooseLane(lane.code)"
-              (keydown)="onSwitcherKey($event)"
-            >
-              {{ lane.label }}
-              <span class="stab-n" data-lane-tab-count>{{ lane.count }}</span>
-            </button>
-          }
+        <!-- The shared strip (LC-10): icon, lane name and count, overflow cues and the arrow keys are mf-tabs'. -->
+        <div class="switcher" data-lane-switcher>
+          <mf-tabs
+            [tabs]="laneTabs()"
+            [selected]="activeLane()"
+            label="Swimlane lanes"
+            idPrefix="mf-sl-lane"
+            (tabChange)="chooseLane($any($event))"
+          />
         </div>
       }
       <div
@@ -238,12 +231,11 @@ const EDIT_REFRESH_DELAY_MS = 900;
       }
     }
     .switcher {
-      display: flex;
-      gap: 0;
       margin-bottom: var(--mf-s2);
-      padding: 0;
       background: var(--mf-bg, var(--mf-surface));
-      border-bottom: 1px solid var(--mf-border);
+    }
+    .switcher mf-tabs {
+      margin-bottom: 0;
     }
     /* Sticky under the Dashboard tab row (sticky from 600 px, 44 px high) while the page scrolls; not on a window so short (400 px) that the two
        rows would take a quarter of it: then it scrolls away with the page. */
@@ -261,47 +253,6 @@ const EDIT_REFRESH_DELAY_MS = 900;
       .switcher {
         position: static;
       }
-    }
-    /* Four equal tabs that always fit (271 px at 375 with the app rail): the lane name over its count; a long name wraps instead of being cut. */
-    .stab {
-      flex: 1 1 0;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 0;
-      min-height: 2.75rem;
-      padding: var(--mf-s1) 2px;
-      color: var(--mf-text-muted);
-      background: none;
-      border: 0;
-      border-bottom: 3px solid transparent;
-      font: inherit;
-      font-size: var(--mf-fs-xs);
-      font-weight: 500;
-      line-height: 1.2;
-      text-align: center;
-      cursor: pointer;
-    }
-    .stab[aria-selected='true'] {
-      color: var(--mf-text);
-      font-weight: 600;
-      border-bottom-color: var(--mf-primary);
-    }
-    .stab:hover {
-      color: var(--mf-text);
-      background: var(--mf-surface-alt);
-    }
-    .stab:focus-visible {
-      outline: 2px solid var(--mf-focus);
-      outline-offset: -2px;
-    }
-    .stab-n {
-      font-size: var(--mf-fs-sm);
-      font-weight: 600;
-      font-variant-numeric: tabular-nums;
-      color: var(--mf-text);
     }
   `,
 })
@@ -394,6 +345,14 @@ export class DashSwimlaneTab implements OnInit {
   // ---- the lane switcher (W4)
 
   protected readonly lanePanelId = 'mf-sl-lane-panel';
+  protected readonly laneTabs = computed<MfTab[]>(() =>
+    this.lanes().map((l) => ({
+      key: l.code,
+      label: l.label,
+      icon: tabIcon('lane'),
+      count: l.count,
+    })),
+  );
   protected readonly laneTabId = (code: string) => `mf-sl-lane-tab-${code}`;
   /** Below 900 px: the lane switcher and one lane (a media query, so a rotated phone or a resized window follows). */
   protected readonly switcher = signal(false);
@@ -541,35 +500,6 @@ export class DashSwimlaneTab implements OnInit {
     this.activeLane.set(code);
     rememberLane(code);
     void this.writeUrl(true);
-  }
-
-  /** WAI-ARIA tabs, automatic activation: arrows move (and wrap), Home and End jump; the focus stays on the tab. */
-  protected onSwitcherKey(event: KeyboardEvent): void {
-    if (event.altKey || event.ctrlKey || event.metaKey) return;
-    const at = LANE_CODES.indexOf(this.activeLane());
-    let to: number;
-    switch (event.key) {
-      case 'ArrowRight':
-        to = (at + 1) % LANE_CODES.length;
-        break;
-      case 'ArrowLeft':
-        to = (at - 1 + LANE_CODES.length) % LANE_CODES.length;
-        break;
-      case 'Home':
-        to = 0;
-        break;
-      case 'End':
-        to = LANE_CODES.length - 1;
-        break;
-      default:
-        return;
-    }
-    event.preventDefault();
-    this.chooseLane(LANE_CODES[to]);
-    // The tab elements stay in place when the lane changes, so the focus can move now and stays on the tab.
-    this.host.nativeElement
-      .querySelector<HTMLElement>(`[data-lane-tab="${LANE_CODES[to]}"]`)
-      ?.focus();
   }
 
   protected expandAll(): void {

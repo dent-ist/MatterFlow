@@ -44,6 +44,7 @@ import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/u
 import { ActionMenu, MenuAction } from '../../../shared/ui/action-menu';
 import { Badge, workflowStatusTone } from '../../../shared/ui/badge';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
+import { tabIcon } from '../../../shared/ui/tab-icons';
 import { Impact, impactLine, retireCopy } from '../shared/dialog-copy';
 import { dependentTaskTypes } from './workflow-impact';
 import { WorkflowTaskTypesTab } from './workflow-task-types-tab';
@@ -611,8 +612,13 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
   protected readonly tabs = computed<MfTab[]>(() => {
     const w = this.workflow();
     return [
-      { key: 'steps', label: 'Steps', count: this.rows().length },
-      { key: 'used-by', label: 'Used by', count: w ? activeTaskTypes({ workflow: w }).length : 0 },
+      { key: 'steps', label: 'Steps', icon: tabIcon('steps'), count: this.rows().length },
+      {
+        key: 'used-by',
+        label: 'Used by',
+        icon: tabIcon('used-by'),
+        count: w ? activeTaskTypes({ workflow: w }).length : 0,
+      },
     ];
   });
 

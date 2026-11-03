@@ -1336,19 +1336,19 @@ describe('DashSwimlaneTab', () => {
         /* ignore */
       }
     });
-    const tabs = () => qa<HTMLButtonElement>('[data-lane-tab]');
+    const tabs = () => qa<HTMLButtonElement>('[data-lane-switcher] [role="tab"]');
 
     it('shows a tablist with the four lane names and counts and only the In progress lane by default', async () => {
       phone(false);
       await open();
-      const list = q('[data-lane-switcher]');
+      const list = q('[data-lane-switcher] [role="tablist"]');
       expect(list.getAttribute('role')).toBe('tablist');
       expect(list.getAttribute('aria-label')).toBe('Swimlane lanes');
       expect(tabs().map((t) => text(t))).toEqual([
-        expect.stringMatching(/^New \d+$/),
-        expect.stringMatching(/^In Progress \d+$/),
-        expect.stringMatching(/^On Hold \d+$/),
-        expect.stringMatching(/^Completed \d+$/),
+        expect.stringMatching(/^New\s*\(\d+\)$/),
+        expect.stringMatching(/^In Progress\s*\(\d+\)$/),
+        expect.stringMatching(/^On Hold\s*\(\d+\)$/),
+        expect.stringMatching(/^Completed\s*\(\d+\)$/),
       ]);
       expect(qa('[data-lane]').map((l) => l.getAttribute('data-lane'))).toEqual(['IN_PROGRESS']);
       expect(tabs().map((t) => t.getAttribute('aria-selected'))).toEqual([
@@ -1362,7 +1362,7 @@ describe('DashSwimlaneTab', () => {
       expect(panel.getAttribute('role')).toBe('tabpanel');
       expect(panel.getAttribute('aria-labelledby')).toBe(tabs()[1].id);
       expect(tabs()[1].getAttribute('aria-controls')).toBe(panel.id);
-      expect(qa('[data-lane-tab] a')).toEqual([]);
+      expect(qa('[data-lane-switcher] [role="tab"] a')).toEqual([]);
       expect(q('[data-lane="IN_PROGRESS"] a[data-lane-count]')).not.toBeNull();
       expect(url()).not.toContain('lane=');
     });

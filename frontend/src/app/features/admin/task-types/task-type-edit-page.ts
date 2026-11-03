@@ -36,6 +36,7 @@ import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/u
 import { RecordSkeleton } from '../../../shared/ui/record-skeleton';
 import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
+import { tabIcon } from '../../../shared/ui/tab-icons';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { WorkStrip } from '../../../shared/work-queue/work-strip';
 import { DEFAULT_TASK_TYPE_ICON, TaskTypeIcon } from '../../../shared/icons/task-type-icon';
@@ -242,10 +243,11 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
     const new_ = this.isNew();
     const count = activeWorkflowCount(this.model().eligible, this.workflows());
     return [
-      { key: 'overview', label: TASK_TYPE_TAB_LABEL.overview },
-      { key: 'workflows', label: TASK_TYPE_TAB_LABEL.workflows, count },
+      { key: 'overview', label: TASK_TYPE_TAB_LABEL.overview, icon: tabIcon('overview') },
+      { key: 'workflows', label: TASK_TYPE_TAB_LABEL.workflows, icon: tabIcon('workflows'), count },
       {
         key: 'form',
+        icon: tabIcon('form'),
         label: TASK_TYPE_TAB_LABEL.form,
         ...(new_ ? { disabledReason: FORM_TAB_REASON } : {}),
       },

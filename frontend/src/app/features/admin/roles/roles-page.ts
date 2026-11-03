@@ -25,6 +25,7 @@ import { phoneCards } from '../../../shared/ui/record-card-list';
 import { AdminTabCounts } from '../admin-tabs';
 import { RoleReportsTab } from '../reports/role-reports-tab';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
+import { tabIcon } from '../../../shared/ui/tab-icons';
 
 /** The permission that every other permission of the same group needs (Assign requires View), if the catalog has one. */
 export function prerequisiteOf(code: string, all: ReadonlySet<string>): string | undefined {
@@ -92,8 +93,8 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
   readonly canAssignReports = input(false);
   protected readonly roleTab = signal<'permissions' | 'reports'>('permissions');
   protected readonly roleTabs = [
-    { key: 'permissions', label: 'Permissions' },
-    { key: 'reports', label: 'Reports' },
+    { key: 'permissions', label: 'Permissions', icon: tabIcon('permissions') },
+    { key: 'reports', label: 'Reports', icon: tabIcon('reports') },
   ];
   protected readonly showRoleTabs = computed(() => this.canAssignReports() && !!this.selected());
 

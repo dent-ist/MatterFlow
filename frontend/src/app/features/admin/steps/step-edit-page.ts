@@ -41,6 +41,7 @@ import { RecordSkeleton } from '../../../shared/ui/record-skeleton';
 import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
 import { Crumb } from '../../../shared/ui/page-header';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
+import { tabIcon } from '../../../shared/ui/tab-icons';
 import { WorkStrip } from '../../../shared/work-queue/work-strip';
 import { DIALOG_COPY, impactLine } from '../shared/dialog-copy';
 import { PageTitle, shortTitleText } from '../../../core/title/page-title';
@@ -251,10 +252,11 @@ export class StepEditPage implements HasUnsavedChanges {
     const isNew = !this.isEdit();
     const reason = isNew ? { disabledReason: STEP_TAB_REASON } : {};
     return [
-      { key: 'details', label: STEP_TAB_LABEL.details },
-      { key: 'inputs', label: STEP_TAB_LABEL.inputs, ...reason },
+      { key: 'details', label: STEP_TAB_LABEL.details, icon: tabIcon('details') },
+      { key: 'inputs', label: STEP_TAB_LABEL.inputs, icon: tabIcon('inputs'), ...reason },
       {
         key: 'used-by',
+        icon: tabIcon('used-by'),
         label: STEP_TAB_LABEL['used-by'],
         ...(isNew ? reason : { count: this.usedCount() }),
       },

@@ -1,55 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { DashTab, DashTabs, revealInList } from './dash-tabs';
-
-function rect(left: number, right: number): DOMRect {
-  return {
-    left,
-    right,
-    top: 0,
-    bottom: 0,
-    width: right - left,
-    height: 0,
-    x: left,
-    y: 0,
-  } as DOMRect;
-}
-
-/** A tab list 100 px wide (from x = 10) holding one tab at the given place; scrollLeft starts at 50. */
-function setup(tabLeft: number, tabRight: number) {
-  const list = document.createElement('div');
-  const tab = document.createElement('button');
-  list.appendChild(tab);
-  list.scrollLeft = 50;
-  vi.spyOn(list, 'getBoundingClientRect').mockReturnValue(rect(10, 110));
-  vi.spyOn(tab, 'getBoundingClientRect').mockReturnValue(rect(tabLeft, tabRight));
-  return { list, tab };
-}
-
-describe('revealInList (the tab list scrolls inside itself, never the page)', () => {
-  it('moves right by exactly what hangs over the right edge', () => {
-    const { list, tab } = setup(90, 150);
-    const scrollIntoView = vi.fn();
-    tab.scrollIntoView = scrollIntoView;
-    revealInList(tab);
-    expect(list.scrollLeft).toBe(90);
-    expect(scrollIntoView).not.toHaveBeenCalled();
-  });
-
-  it('moves left by what hangs over the left edge', () => {
-    const { list, tab } = setup(-5, 55);
-    revealInList(tab);
-    expect(list.scrollLeft).toBe(35);
-  });
-
-  it('does nothing for a tab that is fully inside, or for no tab', () => {
-    const { list, tab } = setup(20, 80);
-    revealInList(tab);
-    expect(list.scrollLeft).toBe(50);
-    expect(() => revealInList(null)).not.toThrow();
-    expect(() => revealInList(document.createElement('button'))).not.toThrow();
-  });
-});
+import { DashTab, DashTabs } from './dash-tabs';
 
 const TABS: DashTab[] = [
   { key: 'summary', label: 'Summary' },
@@ -77,7 +28,6 @@ describe('DashTabs (WP9b: the tab strip on a phone)', () => {
   let el: HTMLElement;
   let fixture: ComponentFixture<Host>;
   const tabs = () => Array.from(el.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
-  const strip = () => el.querySelector<HTMLElement>('.strip')!;
 
   beforeEach(async () => {
     fixture = TestBed.createComponent(Host);
@@ -125,66 +75,15 @@ describe('DashTabs (WP9b: the tab strip on a phone)', () => {
     expect(document.activeElement).toBe(tabs()[4]);
   });
 
-  it('marks the edge that has more tabs out of view and clears it at the other end', () => {
-    const list = el.querySelector<HTMLElement>('.tabs')!;
-    const scrollTo = (client: number, scroll: number, left: number) => {
-      Object.defineProperty(list, 'clientWidth', { value: client, configurable: true });
-      Object.defineProperty(list, 'scrollWidth', { value: scroll, configurable: true });
-      Object.defineProperty(list, 'scrollLeft', { value: left, configurable: true });
-      list.dispatchEvent(new Event('scroll'));
-      fixture.detectChanges();
-    };
-    scrollTo(271, 520, 0);
-    expect(strip().getAttribute('data-more-start')).toBe('false');
-    expect(strip().getAttribute('data-more-end')).toBe('true');
-    scrollTo(271, 520, 120);
-    expect(strip().getAttribute('data-more-start')).toBe('true');
-    expect(strip().getAttribute('data-more-end')).toBe('true');
-    scrollTo(271, 520, 249);
-    expect(strip().getAttribute('data-more-start')).toBe('true');
-    expect(strip().getAttribute('data-more-end')).toBe('false');
-    scrollTo(600, 520, 0);
-    expect(strip().getAttribute('data-more-start')).toBe('false');
-    expect(strip().getAttribute('data-more-end')).toBe('false');
-  });
-});
-
-describe('DashTabs (review round 5: the selected tab stays in view when the room changes)', () => {
-  let observers: (() => void)[];
-  const original = globalThis.ResizeObserver;
-
-  beforeEach(() => {
-    observers = [];
-    globalThis.ResizeObserver = class {
-      constructor(callback: () => void) {
-        observers.push(callback);
-      }
-      observe = vi.fn();
-      disconnect = vi.fn();
-      unobserve = vi.fn();
-    } as unknown as typeof ResizeObserver;
-  });
-  afterEach(() => {
-    globalThis.ResizeObserver = original;
-  });
-
-  it('scrolls the tab list again when the strip is resized, so a selected tab pushed out of sight (768 px, Scope arrives late) comes back', async () => {
-    const fixture = TestBed.createComponent(Host);
-    const el = fixture.nativeElement as HTMLElement;
-    document.body.appendChild(el);
-    fixture.componentInstance.selected.set('users');
-    fixture.detectChanges();
-    await fixture.whenStable();
-    fixture.detectChanges();
-    const list = el.querySelector<HTMLElement>('.tabs')!;
-    const users = el.querySelector<HTMLElement>('[data-tab="users"]')!;
-    // After the resize the list is 200 px wide (from x = 0) and the Users tab sits at 260..330, outside it.
-    vi.spyOn(list, 'getBoundingClientRect').mockReturnValue(rect(0, 200));
-    vi.spyOn(users, 'getBoundingClientRect').mockReturnValue(rect(260, 330));
-    list.scrollLeft = 0;
-    expect(observers.length).toBeGreaterThan(0);
-    observers.forEach((callback) => callback());
-    expect(list.scrollLeft).toBe(130);
-    el.remove();
+  it('draws every tab with its icon, decorative, from the shared strip (LC-10)', () => {
+    const icons = tabs().map((t) => t.querySelector('i.tab__icon'));
+    expect(icons.every((i) => i !== null && i.getAttribute('aria-hidden') === 'true')).toBe(true);
+    expect(icons.map((i) => i!.className.match(/pi-[a-z-]+/)![0])).toEqual([
+      'pi-home',
+      'pi-chart-pie',
+      'pi-chart-line',
+      'pi-table',
+      'pi-user',
+    ]);
   });
 });

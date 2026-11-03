@@ -18,6 +18,7 @@ import { PageTitle } from '../../../core/title/page-title';
 import { CreateTaskContext } from '../../../shared/layout/create-task-context';
 import { FixedPage } from '../../../shared/ui/fixed-page';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
+import { tabIcon } from '../../../shared/ui/tab-icons';
 import { LoadGroup, panelLoader } from '../panel-loader';
 import { MmActivityTab } from './activity-tab';
 import { MmApi } from './mm-api';
@@ -401,7 +402,7 @@ export class MyMattersPage {
   );
   protected readonly tabList = computed<MfTab[]>(() =>
     MM_TABS.map((key) => {
-      const tab: MfTab = { key, label: TAB_LABELS[key] };
+      const tab: MfTab = { key, label: TAB_LABELS[key], icon: tabIcon(key) };
       const n = key === 'activity' ? (this.feedBadge.data()?.unreadCount ?? 0) : 0;
       if (n > 0) {
         tab.badge = n;

@@ -1,6 +1,7 @@
 import { SearchGroup } from '../../api/generated/api-client';
 import { SearchType, SearchTypeInfo, formatTotal } from '../../shared/search/search-meta';
 import { MfTab } from '../../shared/ui/tabs';
+import { tabIcon } from '../../shared/ui/tab-icons';
 import { PAGE_SIZES } from '../../shared/ui/list-query';
 
 /** The key of the tab that holds every type (the default; an old `/search?q=` link opens it). */
@@ -26,7 +27,12 @@ export function resultTabs(
   types: readonly SearchTypeInfo[],
   groups: readonly SearchGroup[] | null,
 ): MfTab[] {
-  const unknown = (label: string): MfTab => ({ key: '', label, count: '--' });
+  const unknown = (label: string): MfTab => ({
+    key: '',
+    label,
+    icon: tabIcon(label),
+    count: '--',
+  });
   if (!groups) {
     return [
       { ...unknown('All'), key: ALL_TAB },
@@ -43,6 +49,7 @@ export function resultTabs(
   const tab = (key: string, label: string, total: number, capped: boolean): MfTab => ({
     key,
     label,
+    icon: tabIcon(key === ALL_TAB ? 'all' : key),
     count: formatTotal(total, capped),
     name: `${label}, ${spoken(total, capped)}`,
   });
