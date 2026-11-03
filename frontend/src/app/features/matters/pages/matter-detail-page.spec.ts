@@ -45,6 +45,7 @@ describe('MatterDetailPage', () => {
     getMatterSummary: ReturnType<typeof vi.fn>;
     setMatterManagers: ReturnType<typeof vi.fn>;
     changeMatterNumber: ReturnType<typeof vi.fn>;
+    updateMatter: ReturnType<typeof vi.fn>;
   };
   let projects: { listProjects: ReturnType<typeof vi.fn> };
   let assets: {
@@ -64,7 +65,14 @@ describe('MatterDetailPage', () => {
     matters = {
       getMatter: vi.fn().mockReturnValue(ok(matter)),
       setMatterActive: vi.fn().mockReturnValue(ok(aMatter({ isActive: false }))),
-      changeMatterNumber: vi.fn().mockReturnValue(ok(aMatter({ matterRef: '00343-00099' }))),
+      changeMatterNumber: vi
+        .fn()
+        .mockReturnValue(
+          ok(aMatter({ matterRef: '00343-00099', matterNumber: '00099', rowVersion: 'CCCC' })),
+        ),
+      updateMatter: vi
+        .fn()
+        .mockReturnValue(ok(aMatter({ matterRef: '00343-00099', matterNumber: '00099' }))),
       setMatterManagers: vi
         .fn()
         .mockReturnValue(
@@ -419,7 +427,7 @@ describe('MatterDetailPage', () => {
     expect(tile.textContent).toContain('Custodian');
     expect(tile.textContent).toContain('3');
     expect(el().querySelector('[data-summary-activity]')).toBeNull();
-    expect(el().querySelector('[data-asset-tile=total]')).toBeNull(); // one type: no Total tile
+    expect(el().querySelector('[data-asset-tile=total]')).toBeNull();
 
     TestBed.resetTestingModule();
     await create(['Matter.View']);
@@ -450,23 +458,63 @@ describe('MatterDetailPage', () => {
     expect(navigateByUrl).not.toHaveBeenCalled();
   });
 
-  it('changes the matter number inside the edit panel (Matter.EditNumber)', async () => {
+  it('Edit shows Client and Matter number locked in the same places as New; the number unlocks after a confirmation and a change is confirmed again with its result (MD-43, #1061)', async () => {
     await create(['Matter.View', 'Matter.Edit', 'Matter.EditNumber']);
     el().querySelector<HTMLButtonElement>('[data-edit-matter]')!.click();
     await settle(fixture);
-    const panel = document.body.querySelector('.mf-formdlg')!;
-    panel.querySelector<HTMLButtonElement>('[data-change-number]')!.click();
+    const dlg = document.body.querySelector('.mf-formdlg')!;
+    const number = () => dlg.querySelector<HTMLInputElement>('#matter-number')!;
+    // Same fields as New; Client and Matter number are locked; the CM Number is a read-only preview.
+    expect(number().disabled).toBe(true);
+    expect(dlg.querySelector('#matter-client')).toBeNull(); // a locked picker shows text, not an input
+    expect(dlg.querySelector('[data-cm-value]')!.textContent).toBe('00343-00012');
+    expect(dlg.querySelector('[data-client-lock]')).not.toBeNull();
+
+    // Unlocking needs a confirmation.
+    dlg.querySelector<HTMLButtonElement>('[data-change-number]')!.click();
     await settle(fixture);
-    const input = panel.querySelector<HTMLInputElement>('#matter-new-number')!;
-    input.value = '99';
-    input.dispatchEvent(new Event('input'));
-    panel.querySelector<HTMLButtonElement>('[data-number-apply]')!.click();
+    expect(document.body.querySelector('[data-unlock-body]')).not.toBeNull();
+    expect(number().disabled).toBe(true);
+    document.body
+      .querySelector<HTMLButtonElement>(
+        '[data-confirm-primary] button, button[data-confirm-primary]',
+      )!
+      .click();
+    await settle(fixture);
+    expect(number().disabled).toBe(false);
+
+    // The CM Number preview follows the number; Save asks again with the exact result.
+    number().value = '99';
+    number().dispatchEvent(new Event('input'));
+    await settle(fixture);
+    expect(dlg.querySelector('[data-cm-value]')!.textContent).toBe('00343-00099');
+    dlg.querySelector<HTMLButtonElement>('[data-panel-primary] button')!.click();
+    await settle(fixture);
+    const body = document.body.querySelector('[data-number-change-body]')!;
+    expect(body.textContent!.replace(/\s+/g, ' ')).toContain(
+      'The CM Number changes from 00343-00012 to 00343-00099.',
+    );
+    expect(matters.changeMatterNumber).not.toHaveBeenCalled();
+    const confirms = document.body.querySelectorAll<HTMLButtonElement>(
+      '[data-confirm-primary] button, button[data-confirm-primary]',
+    );
+    confirms[confirms.length - 1].click();
     await settle(fixture);
     expect(matters.changeMatterNumber).toHaveBeenCalledWith(7, {
       number: '99',
       rowVersion: 'BBBB',
     });
+    expect(matters.updateMatter).toHaveBeenCalled();
     expect(el().querySelector('[data-summary-details] .mf-ref')!.textContent).toBe('00343-00099');
+  });
+
+  it('Edit offers no way to change the matter number without Matter.EditNumber', async () => {
+    await create(['Matter.View', 'Matter.Edit']);
+    el().querySelector<HTMLButtonElement>('[data-edit-matter]')!.click();
+    await settle(fixture);
+    const dlg = document.body.querySelector('.mf-formdlg')!;
+    expect(dlg.querySelector('[data-change-number]')).toBeNull();
+    expect(dlg.querySelector<HTMLInputElement>('#matter-number')!.disabled).toBe(true);
   });
 
   it('shows Primary PM and Secondary PM as two rows of the details (MD-23, #1027)', async () => {
@@ -495,7 +543,7 @@ describe('MatterDetailPage', () => {
     expect(el().querySelector('[data-add-secondary-manager]')).toBeNull();
   });
 
-  it('shows a Total tile first with two or more asset types, and an empty bar with New Asset when there are none', async () => {
+  it('shows one tile per asset type (no Total tile), and an empty bar with New Asset when there are none', async () => {
     await create(['Matter.View', 'Asset.View', 'Asset.Create']);
     assets.getAssetCountsByType.mockReturnValue(
       ok([
@@ -508,7 +556,7 @@ describe('MatterDetailPage', () => {
     const tiles = Array.from(el().querySelectorAll('[data-summary-assets] .ms__tile')).map((t) =>
       t.textContent!.replace(/\s+/g, ' ').trim(),
     );
-    expect(tiles).toEqual(['Total5', 'Custodian3', 'Laptop2']);
+    expect(tiles).toEqual(['Custodian3', 'Laptop2']);
 
     TestBed.resetTestingModule();
     await create(['Matter.View', 'Asset.View', 'Asset.Create']);
