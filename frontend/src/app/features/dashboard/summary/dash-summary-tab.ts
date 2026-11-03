@@ -28,6 +28,15 @@ import { DashV4Api } from './dash-v4-api';
   host: { class: 'mf-fill', '[attr.data-dash-summary]': '""' },
   template: `
     <mf-dash-cards [counts]="counts()" [selected]="card()" (pick)="cardPick.emit($event)" />
+    @if (noPodNote(); as note) {
+      <!-- Tasks with no pod are in no scope but All pods: a quiet line so they cannot be lost. -->
+      <p class="no-pod" data-no-pod-hint>
+        {{ note }}
+        <a href="#" class="no-pod-link" data-show-all-pods (click)="showAll($event)"
+          >Show all pods</a
+        >
+      </p>
+    }
     <div class="body" [class.body--one]="!showRight()">
       <mf-dash-grid
         [summary]="summary()"
@@ -55,6 +64,17 @@ import { DashV4Api } from './dash-v4-api';
       min-width: 0;
       flex-direction: column;
       gap: var(--mf-s3);
+    }
+    .no-pod {
+      margin: 0;
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+    }
+    .no-pod-link {
+      display: inline-block;
+      min-height: 24px;
+      line-height: 24px;
+      color: var(--mf-link);
     }
     .body {
       display: grid;
@@ -104,7 +124,11 @@ export class DashSummaryTab {
   /** Changes whenever the page read the summary for the lists (a refresh, an assignment). */
   readonly refreshKey = input<unknown>(null);
 
+  /** "4 unassigned tasks have no pod." under a Pod scope (null: nothing to say). */
+  readonly noPodNote = input<string | null>(null);
+
   readonly cardPick = output<CardKey | null>();
+  readonly showAllPods = output<void>();
   readonly assigned = output<{ taskNumber: string; name: string }>();
 
   protected readonly resetSort = signal(0);
@@ -119,6 +143,11 @@ export class DashSummaryTab {
     this.auth.has('Dashboard.ViewSummary') ? this.v4.gaugeOf(this.summary()) : null,
   );
   protected readonly showRight = computed(() => this.canUsers() || this.gauge() !== null);
+
+  protected showAll(event: Event): void {
+    event.preventDefault();
+    this.showAllPods.emit();
+  }
 
   /** The gauge: select the Unassigned card and sort it longest waiting first. */
   protected showUnassigned(): void {

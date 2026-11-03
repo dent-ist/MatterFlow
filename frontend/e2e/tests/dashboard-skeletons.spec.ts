@@ -37,7 +37,7 @@ const TABS: TabCase[] = [
     url: '/dashboard?tab=summary',
     panel: '[data-tabpanel="summary"]',
     kind: 'summary',
-    ready: '[data-panel="overdue"] li',
+    ready: 'mf-dash-grid [data-task]',
   },
   {
     name: 'breakdowns',
@@ -241,56 +241,18 @@ test.describe('skeleton motion', () => {
   }
 });
 
-test.describe('skeleton of the Summary lists', () => {
-  test('the three lists read their rows after the figures: five silhouette rows each, one status, the same height as the loaded lists', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 1920, height: 1080 });
-    await observeShifts(page);
-    let release!: () => void;
-    const gate = new Promise<void>((resolve) => (release = resolve));
-    await page.route('**/api/v1/task-queue?**', async (route) => {
-      await gate;
-      await route.continue();
-    });
-    await page.goto('/dashboard?tab=summary');
-    const lists = page.locator('[data-list-loading]');
-    await expect(lists).toHaveCount(3, { timeout: 30_000 });
-    for (const list of await lists.all()) {
-      await expect(list.locator('.bone')).toHaveCount(5);
-    }
-    expect(await announcements(page), 'one Loading status for the three lists').toBe(1);
-    await expect(page.locator('[data-lists]')).toHaveAttribute('aria-busy', 'true');
-    const heights = async () =>
-      page
-        .locator('[data-lists] [data-panel]')
-        .evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
-    const before = await heights();
-    await shoot(page, 'summary-lists-skeleton-1920');
-    release();
-    await expect(page.locator('[data-panel="overdue"] li').first()).toBeVisible();
-    await expect(lists).toHaveCount(0);
-    const after = await heights();
-    expect(after.length).toBe(before.length);
-    after.forEach((h, i) =>
-      expect(Math.abs(h - before[i]), `list ${i}: ${before} -> ${after}`).toBeLessThanOrEqual(1),
-    );
-    expect(await shifts(page), `shift: ${await shiftSources(page)}`).toBeLessThanOrEqual(0.02);
-  });
-});
-
 test.describe('skeleton refresh', () => {
   test('a manual Refresh with figures on screen shows no silhouette', async ({ page }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/dashboard?tab=summary');
-    await expect(page.locator('[data-panel="overdue"] li').first()).toBeVisible({
+    await expect(page.locator('mf-dash-grid [data-task]').first()).toBeVisible({
       timeout: 30_000,
     });
     const release = await hold(page);
     await page.getByRole('button', { name: 'Refresh', exact: true }).click();
     await page.waitForTimeout(500);
     await expect(page.locator('mf-dash-skeleton')).toHaveCount(0);
-    await expect(page.locator('[data-panel="overdue"] li').first()).toBeVisible();
+    await expect(page.locator('mf-dash-grid [data-task]').first()).toBeVisible();
     release();
   });
 });

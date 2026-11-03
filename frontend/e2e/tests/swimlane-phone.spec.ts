@@ -458,7 +458,7 @@ test.describe('Big screens (#126 W5, #93 P5)', () => {
     });
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto('/dashboard');
-    await expect(page.locator('[data-panel="overdue"] li').first()).toBeVisible();
+    await expect(page.locator('mf-dash-grid [data-task]').first()).toBeVisible();
     await page.waitForTimeout(800);
     const cls = () => page.evaluate(() => (window as unknown as { __cls: number }).__cls);
     const reset = () => page.evaluate(() => ((window as unknown as { __cls: number }).__cls = 0));
@@ -466,9 +466,9 @@ test.describe('Big screens (#126 W5, #93 P5)', () => {
     const results: Record<string, number> = {};
     for (const [name, ready] of [
       ['Users', '[data-users-grid] li'],
-      ['Summary', '[data-panel="overdue"] li'],
+      ['Summary', 'mf-dash-grid [data-task]'],
       ['Swimlane', '[data-board] mf-swimlane-card'],
-      ['Summary', '[data-panel="overdue"] li'],
+      ['Summary', 'mf-dash-grid [data-task]'],
     ] as const) {
       await reset();
       const before = (await page.locator('mf-fixed-page.dash').boundingBox())!.x;

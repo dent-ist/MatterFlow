@@ -23,7 +23,7 @@ const SIZES = [
 type TabName = 'summary' | 'breakdowns' | 'trends' | 'swimlane' | 'workload' | 'table' | 'coverage';
 
 const TABS: { name: TabName; url: string; ready: string }[] = [
-  { name: 'summary', url: '/dashboard', ready: '[data-panel="overdue"] li' },
+  { name: 'summary', url: '/dashboard', ready: 'mf-dash-grid [data-task]' },
   { name: 'breakdowns', url: '/dashboard?tab=breakdowns', ready: '[data-grid="breakdowns"]' },
   { name: 'trends', url: '/dashboard?tab=trends', ready: '[data-plot]' },
   { name: 'swimlane', url: '/dashboard?tab=swimlane', ready: '[data-board] [data-card]' },
@@ -159,56 +159,6 @@ test.describe('no page scroll on any tab (#137)', () => {
 });
 
 test.describe('regions inside the tabs scroll (#137)', () => {
-  test('Summary at 1366x768: tiles stay, each list scrolls inside its panel with the heading and View all pinned, all five rows are there', async ({
-    page,
-  }) => {
-    await open(page, TABS[0], { width: 1366, height: 768 });
-    let scrollable = 0;
-    for (const kind of ['unassigned', 'overdue', 'dueSoon']) {
-      const panel = page.locator(`[data-panel="${kind}"]`);
-      // The full capped list (5), not 3: the panel scrolls instead.
-      await expect(panel.locator('li')).toHaveCount(5);
-      const rows = panel.locator('[data-rows]');
-      await expect(rows).toHaveAttribute('role', 'region');
-      await expect(rows).toHaveAttribute('tabindex', '0');
-      await expect(rows).toHaveAttribute('aria-label', /scrollable/);
-      const m = await rows.evaluate((el) => ({ sh: el.scrollHeight, ch: el.clientHeight }));
-      if (m.sh > m.ch + 1) scrollable++;
-      const heading = (await panel.locator('h3').boundingBox())!;
-      const outer = (await panel.boundingBox())!;
-      expect(heading.y + heading.height).toBeLessThanOrEqual(outer.y + outer.height);
-      await rows.evaluate((el) => (el.scrollTop = el.scrollHeight));
-      await page.waitForTimeout(100);
-      const after = (await panel.locator('h3').boundingBox())!;
-      expect(after.y, `${kind} heading did not move`).toBe(heading.y);
-      if (await panel.locator('[data-view-all]').count()) {
-        expect(await panel.locator('[data-view-all]').isVisible()).toBe(true);
-      }
-    }
-    expect(scrollable, 'on a 768 px window the lists do not all fit: they scroll').toBeGreaterThan(
-      0,
-    );
-    // The tiles did not move.
-    const tile = page.locator('mf-stat-tile').first();
-    await expect(tile).toBeInViewport();
-    expect((await docOverflow(page)).over).toBeLessThanOrEqual(0);
-  });
-
-  test('Summary at 1024x768: the lists sit under the tiles and the Summary scrolls as one named region', async ({
-    page,
-  }) => {
-    await open(page, TABS[0], { width: 1024, height: 768 });
-    const region = page.getByRole('region', { name: 'Summary, scrollable' });
-    await expect(region).toHaveAttribute('tabindex', '0');
-    const m = await region.evaluate((el) => ({ sh: el.scrollHeight, ch: el.clientHeight }));
-    expect(m.sh).toBeGreaterThan(m.ch);
-    await region.evaluate((el) => (el.scrollTop = 200));
-    expect((await docOverflow(page)).top).toBe(0);
-    await headerInView(page, 768);
-    // Five rows in every list.
-    await expect(page.locator('[data-panel="overdue"] li')).toHaveCount(5);
-  });
-
   test('Breakdowns: the cards scroll in their own region; the caption stays', async ({ page }) => {
     await open(page, TABS[1], { width: 1024, height: 768 });
     const region = page.getByRole('region', { name: 'Open task breakdowns, scrollable' });
@@ -361,19 +311,6 @@ test.describe('keyboard (#137)', () => {
     expect(await list.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
     await page.keyboard.press('Tab');
     expect(await list.evaluate((el) => el === document.activeElement)).toBe(false);
-    expect((await docOverflow(page)).top).toBe(0);
-  });
-
-  test('a Summary list is reachable with Tab and scrolls with the keyboard', async ({ page }) => {
-    await open(page, TABS[0], { width: 1366, height: 768 });
-    const rows = page.getByRole('region', { name: 'Unassigned tasks, scrollable' });
-    let reached = false;
-    for (let i = 0; i < 40 && !reached; i++) {
-      await page.keyboard.press('Tab');
-      reached = await rows.evaluate((el) => el === document.activeElement);
-    }
-    expect(reached).toBe(true);
-    await page.keyboard.press('End');
     expect((await docOverflow(page)).top).toBe(0);
   });
 });

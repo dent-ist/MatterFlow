@@ -133,13 +133,16 @@ describe('SettingsPage: Administration > Settings > Branding (epic #850, BR-05)'
     vi.restoreAllMocks();
   });
 
-  it('shows the header with the Administration crumb, the one Branding tab and the form', async () => {
+  it('shows the header with the Administration crumb, the Branding and Dashboard tabs and the Branding form', async () => {
     await open();
     expect(text('h1')).toContain('Settings');
     expect(text('nav[aria-label="Breadcrumb"]')).toContain('Administration');
     expect(text('nav[aria-label="Breadcrumb"]')).toContain('Settings');
-    expect(el().querySelectorAll('[role="tab"]')).toHaveLength(1);
-    expect(text('[role="tab"]')).toBe('Branding');
+    const tabs = Array.from(el().querySelectorAll('[role="tab"]')).map((t) => t.textContent?.trim());
+    expect(tabs).toEqual(['Branding', 'Dashboard']);
+    expect(el().querySelector('[role="tab"][aria-selected="true"]')?.textContent?.trim()).toBe(
+      'Branding',
+    );
     expect(q<HTMLInputElement>('#st-name')!.value).toBe('MatterFlow');
     expect(text('#st-name-count')).toBe('10 / 40');
     expect(q('#st-name')!.getAttribute('maxlength')).toBe('40');
@@ -147,6 +150,15 @@ describe('SettingsPage: Administration > Settings > Branding (epic #850, BR-05)'
     expect(text('[data-icon-help]')).toContain('at least 64 x 64 pixels');
     expect(text('[data-icon-file]')).toBe('Built-in icon.');
     expect(q('[data-last-changed]')).toBeNull();
+  });
+
+  it('opens the gauge settings (epic #1063) on the Dashboard tab and leaves the Branding form behind', async () => {
+    await open();
+    (el().querySelectorAll('[role="tab"]')[1] as HTMLElement).click();
+    fixture.detectChanges();
+    expect(q('[data-dashboard-settings]')).not.toBeNull();
+    expect(q('#st-name')).toBeNull();
+    expect(q('#settings-panel')!.getAttribute('aria-labelledby')).toBe('settings-tab-dashboard');
   });
 
   it('shows the last change when there is one', async () => {

@@ -23,6 +23,7 @@ import { PageHeader } from '../../../shared/ui/page-header';
 import { Tabs, MfTab } from '../../../shared/ui/tabs';
 import { tabIcon } from '../../../shared/ui/tab-icons';
 import { TextField } from '../../../shared/ui/text-field';
+import { DashboardSettings } from './dashboard-settings';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -30,7 +31,10 @@ type LoadState = 'loading' | 'ready' | 'error';
 export const BRANDING_SAVED_TEXT = 'Saved. Other users see it the next time they load the page.';
 
 /** The one tab today; the strip is there so later settings sections slot in. */
-const TABS: readonly MfTab[] = [{ key: 'branding', label: 'Branding', icon: tabIcon('branding') }];
+const TABS: readonly MfTab[] = [
+  { key: 'branding', label: 'Branding', icon: tabIcon('branding') },
+  { key: 'dashboard', label: 'Dashboard', icon: tabIcon('dashboard') },
+];
 
 /** The built-in header mark, shown for "reset" and while no custom icon exists. */
 const BUILT_IN_MARK = 'favicon.svg';
@@ -62,7 +66,7 @@ export function brandingOf(view: BrandingAdminView): Branding {
  */
 @Component({
   selector: 'mf-settings-page',
-  imports: [Button, ErrorReference, MfDatePipe, PageHeader, Tabs, TextField],
+  imports: [Button, DashboardSettings, ErrorReference, MfDatePipe, PageHeader, Tabs, TextField],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
@@ -73,15 +77,19 @@ export function brandingOf(view: BrandingAdminView): Branding {
     >
       <mf-tabs
         [tabs]="tabs"
-        selected="branding"
+        [selected]="tab()"
         label="Settings sections"
         idPrefix="settings"
         data-settings-tabs
+        (tabChange)="tab.set($event === 'dashboard' ? 'dashboard' : 'branding')"
       />
     </mf-page-header>
 
-    <div id="settings-panel" role="tabpanel" aria-labelledby="settings-tab-branding">
-      @if (state() === 'loading') {
+    <div id="settings-panel" role="tabpanel" [attr.aria-labelledby]="'settings-tab-' + tab()">
+      @if (tab() === 'dashboard') {
+        <!-- Dashboard v4 (epic #1063, DB-06): the working hours and levels of the unassigned gauge. -->
+        <mf-dashboard-settings />
+      } @else if (state() === 'loading') {
         <div class="pg-state" role="status" aria-busy="true">Loading...</div>
       } @else if (state() === 'error') {
         <div class="pg-alert" role="alert" data-load-error>
@@ -425,6 +433,7 @@ export class SettingsPage implements OnInit, HasUnsavedChanges {
 
   protected readonly crumbs = [{ label: 'Administration' }, { label: 'Settings' }];
   protected readonly tabs = TABS;
+  protected readonly tab = signal<'branding' | 'dashboard'>('branding');
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly view = signal<BrandingAdminView | null>(null);

@@ -70,6 +70,8 @@ export const TAB_ICONS: Readonly<Record<string, string>> = {
   roles: 'pi-shield',
   pods: 'pi-users',
   branding: 'pi-palette',
+  // Settings > Dashboard (epic #1063): the gauge's working hours.
+  dashboard: 'pi-gauge',
   priorities: 'pi-flag',
   'status-labels': 'pi-tag',
   'on-hold-reasons': 'pi-pause',

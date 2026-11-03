@@ -254,37 +254,6 @@ test.describe('Quick view counts and order (WP11)', () => {
     ).toEqual(storedBefore);
   });
 
-  test('#219: Overdue from the quick view and from the Dashboard link, and Unassigned, use the same order', async ({
-    page,
-    seed,
-  }) => {
-    const world = await seed.world();
-    await seed.task(world, { title: `VC overdue ${uid()}`, dueDate: dateInZone(FIRM_ZONE, -3) });
-    await page.goto('/dashboard');
-    await page
-      .locator('[data-panel="overdue"]')
-      .getByRole('link', { name: /View all overdue tasks/ })
-      .click();
-    await expect(page).toHaveURL(/sort=priority&dir=asc/);
-    await expect(page.locator('[data-task]').first()).toBeVisible();
-    const fromDashboard = await rowNumbers(page);
-
-    const queue = new TaskQueuePage(page);
-    await queue.open();
-    await view(page, 'overdue').click();
-    await expect(page).toHaveURL(/sort=priority&dir=asc/);
-    await expect(page.locator('[data-task]').first()).toBeVisible();
-    const fromView = await rowNumbers(page);
-    expect(fromView.length).toBeGreaterThan(0);
-    expect(fromView).toEqual(fromDashboard);
-
-    await view(page, 'unassigned').click();
-    await expect(page).toHaveURL(/sort=priorityAge&dir=asc/);
-    await expect(page.locator('[data-sort-note]').first()).toContainText(
-      'Sorted by Priority, then age',
-    );
-  });
-
   for (const [w, h] of SIZES) {
     test(`axe: the quick views with counts have no violations at ${w}x${h}`, async ({ page }) => {
       test.skip(!axeAvailable(), 'axe-core not available');

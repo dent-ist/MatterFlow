@@ -210,7 +210,7 @@ const OWNED_BY_CARD: Record<CardKey, readonly string[]> = {
           (sortChange)="sortBy($event)"
           (pageChange)="goTo($event)"
           (pageSizeChange)="setPageSize($event)"
-          (retry)="load(false)"
+          (retry)="load(false, true)"
           (clearFilters)="clearAll()"
           (rowChange)="onRowChange($event)"
           (columnMoved)="onColumnMoved($event)"
@@ -435,6 +435,7 @@ export class DashGrid {
   // ---- reading
 
   private requestId = 0;
+  private lastKey = '';
 
   constructor() {
     effect(() => {
@@ -456,19 +457,30 @@ export class DashGrid {
       });
     });
     // The page read the summary again (refresh, auto refresh, an assignment): read the rows again and keep what is on screen meanwhile.
-    let seenRefresh: unknown = this.refreshKey();
+    // Inputs are not bound in the constructor: the first run of each effect only records the value it starts with.
+    let seenRefresh: unknown;
+    let refreshSeen = false;
     effect(() => {
       const key = this.refreshKey();
       untracked(() => {
-        if (key === seenRefresh) return;
+        const first = !refreshSeen;
+        refreshSeen = true;
+        if (first || key === seenRefresh) {
+          seenRefresh = key;
+          return;
+        }
         seenRefresh = key;
         void this.load(true);
       });
     });
-    let seenReset = this.resetSortKey();
+    let seenReset = -1;
     effect(() => {
       const n = this.resetSortKey();
       untracked(() => {
+        if (seenReset === -1) {
+          seenReset = n;
+          return;
+        }
         if (n === seenReset) return;
         seenReset = n;
         this.chosenSort.set(null);
@@ -517,11 +529,16 @@ export class DashGrid {
   }
 
   /** `silent`: a refresh keeps the rows on screen; otherwise the skeleton shows. */
-  protected load(silent: boolean): void {
+  protected load(silent: boolean, force = false): void {
+    const args = taskQueueArgs(this.queueState());
+    // The same question twice in a row (a filter effect that fired again with nothing new) is asked once; a refresh and a Retry always ask.
+    const key = JSON.stringify(args);
+    if (!silent && !force && key === this.lastKey && this.state() !== 'error') return;
+    this.lastKey = key;
     const id = ++this.requestId;
     if (!silent || this.state() !== 'ready') this.state.set('loading');
     this.api
-      .getTaskQueue(...taskQueueArgs(this.queueState()))
+      .getTaskQueue(...args)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (page) => {

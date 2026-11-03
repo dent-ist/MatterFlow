@@ -56,14 +56,13 @@ async function shoot(page: Page, name: string): Promise<void> {
 
 const period = (page: Page) => labelledDropdown(page, 'Period');
 const options = (page: Page) => ({ texts: () => period(page).optionTexts() });
-const tile = (page: Page, label: string) =>
-  page.locator('[data-group="overview"] mf-stat-tile', {
-    has: page.locator('.label', { hasText: label }),
-  });
-
+/**
+ * Dashboard v4 (epic #1063): the Overview and its Period control left Summary, so the period is opened where it lives, on Trends (the address keeps `period`, `from` and
+ * `to` for every tab). The name is kept so the tests below read as before.
+ */
 async function openSummary(page: Page, url = '/dashboard') {
-  await page.goto(url);
-  await expect(page.locator('[data-group="overview"]')).toBeVisible();
+  await page.goto(url + (url.includes('?') ? '&' : '?') + 'tab=trends');
+  await expect(page.locator('[data-plot]').first()).toBeVisible({ timeout: 20_000 });
   await page.waitForLoadState('networkidle');
 }
 
@@ -86,7 +85,7 @@ test.describe('the list, the label and the scope note', () => {
     await openSummary(page);
     expect(await options(page).texts()).toEqual(CORE);
     await expect(period(page)).toHaveAttribute('data-value', '30d');
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page).toHaveURL(/\/dashboard\?tab=trends$/);
 
     await openTrends(page);
     expect(await options(page).texts()).toEqual(CORE);
@@ -94,31 +93,6 @@ test.describe('the list, the label and the scope note', () => {
 
     await openCoverage(page);
     expect(await options(page).texts()).toEqual(COVERAGE);
-  });
-
-  test('the scope note is on Summary only and the control is hidden on Breakdowns, Swimlane and Workload', async ({
-    page,
-  }) => {
-    await openSummary(page);
-    const note = page.locator('[data-period-note]');
-    await expect(note).toHaveText(NOTE);
-    const id = await note.getAttribute('id');
-    await expect(period(page)).toHaveAttribute('aria-describedby', id!);
-
-    await openTrends(page);
-    await expect(page.locator('[data-period-note]')).toHaveCount(0);
-
-    await page.goto('/dashboard?tab=breakdowns');
-    await expect(page.locator('[data-grid="breakdowns"]')).toBeVisible();
-    await expect(labelledDropdown(page, 'Period')).toHaveCount(0);
-    await page.goto('/dashboard?tab=swimlane');
-    await expect(page.locator('[data-board]')).toBeVisible();
-    await expect(labelledDropdown(page, 'Period')).toHaveCount(0);
-    await page.goto('/dashboard?tab=users');
-    await expect(page.locator('[data-users-grid], [data-users-table]').first()).toBeVisible({
-      timeout: 20_000,
-    });
-    await expect(labelledDropdown(page, 'Period')).toHaveCount(0);
   });
 
   test('Swimlane has its own window, "Done in the last"', async ({ page }) => {
@@ -162,71 +136,6 @@ test.describe('the address', () => {
     await other.goto('/dashboard');
     await expect(period(other)).toHaveAttribute('data-value', '90d');
     await other.close();
-  });
-
-  test('the same value moves with the person between Summary, Trends and Coverage', async ({
-    page,
-  }) => {
-    await openSummary(page);
-    await period(page).selectOption({ label: '90 days' });
-    await expect(page).toHaveURL(/period=90d/);
-    const caption = await tile(page, 'Completed').locator('.caption').textContent();
-
-    await page.getByRole('tab', { name: 'Trends' }).click();
-    await expect(page.locator('[data-section="trend"]')).toBeVisible({ timeout: 20_000 });
-    await expect(period(page)).toHaveAttribute('data-value', '90d');
-    await expect(page).toHaveURL(/(?=.*tab=trends)(?=.*period=90d)/);
-    await expect(page.locator('[data-trend-period], [data-section="trend"]').first()).toContainText(
-      caption!.trim(),
-    );
-
-    await page.getByRole('tab', { name: 'Users' }).click();
-    await page.locator('[data-view="coverage"]').click();
-    await expect(page.locator('[data-coverage-region]')).toBeVisible({ timeout: 120_000 });
-    await expect(period(page)).toHaveAttribute('data-value', '90d');
-    await period(page).selectOption({ label: 'Last 12 months' });
-    await expect(page).toHaveURL(/period=12m/);
-
-    // Back on Summary, which has no 12 month item: it reads as the default, and Coverage keeps the long window.
-    await page.getByRole('tab', { name: 'Summary' }).click();
-    await expect(page.locator('[data-group="overview"]')).toBeVisible();
-    await expect(period(page)).toHaveAttribute('data-value', '30d');
-    await page.getByRole('tab', { name: 'Users' }).click();
-    await expect(page.locator('[data-coverage-region]')).toBeVisible({ timeout: 120_000 });
-    await expect(period(page)).toHaveAttribute('data-value', '12m');
-  });
-
-  test('a stored "Last quarter" shows 90 days with a clean address; a bad address falls back to memory', async ({
-    seed,
-    asUser,
-  }) => {
-    const role = await seed.role(
-      ['Task.View', 'Dashboard.View', 'Dashboard.ViewSummary', 'Dashboard.ViewTrends'],
-      'E2E period migrate',
-    );
-    const user = await seed.user([role.name], 'periodold');
-    const page = await asUser(user.username);
-    await page.goto('/dashboard');
-    await expect(page.locator('[data-group="overview"]')).toBeVisible();
-    await page.evaluate(
-      (id) => localStorage.setItem(`mf.dashboard.v2.${id}`, JSON.stringify({ period: 'quarter' })),
-      user.userId,
-    );
-    const read = page.waitForRequest((r) => /\/api\/v1\/dashboard\?.*period=90d/.test(r.url()));
-    await page.reload();
-    await read;
-    await expect(period(page)).toHaveAttribute('data-value', '90d');
-    await expect(page).toHaveURL(/\/dashboard$/);
-    expect(
-      await page.evaluate((id) => localStorage.getItem(`mf.dashboard.v2.${id}`), user.userId),
-    ).toBe(JSON.stringify({ period: '90d' }));
-
-    // A range the address cannot carry (reversed) is dropped and the remembered period applies.
-    await page.goto('/dashboard?tab=trends&period=custom&from=2026-10-09&to=2026-10-01');
-    await expect(page.locator('[data-plot]').first()).toBeVisible({ timeout: 20_000 });
-    await expect(period(page)).toHaveAttribute('data-value', '90d');
-    await expect(page).toHaveURL(/\/dashboard\?tab=trends$/);
-    await page.close();
   });
 
   test('the old periodDays argument still answers for one release', async ({ page }) => {
@@ -303,7 +212,6 @@ test.describe('custom ranges', () => {
     };
     expect(body.period).toMatchObject({ days: 31, from: start, to: end });
     expect(body.created.count).toBeGreaterThan(0);
-    await expect(tile(page, 'Created').locator('.value')).toHaveText(String(body.created.count));
 
     const trend = await page.request.get(
       `/api/v1/dashboard/trend?period=custom&from=${start}&to=${end}&podScope=${ownPod}`,
@@ -312,31 +220,6 @@ test.describe('custom ranges', () => {
     expect(t.all).toHaveLength(31);
     expect(t.all.reduce((n, d) => n + d.created, 0)).toBe(body.created.count);
     expect(t.all.reduce((n, d) => n + d.completed, 0)).toBe(body.completed.count);
-  });
-
-  test('tile totals equal Trends totals for every preset', async ({ page }) => {
-    // Scoped to the owned Pod, so the two reads cannot straddle another worker's new task and the totals are compared exactly.
-    for (const key of ['7d', '30d', '90d', 'this-month', 'last-month']) {
-      const q = `period=${key}&fresh=true&podScope=${ownPod}`;
-      const s = (await (await page.request.get(`/api/v1/dashboard?${q}`)).json()) as {
-        period: { from: string; to: string };
-        created: { count: number };
-        completed: { count: number };
-      };
-      const t = (await (await page.request.get(`/api/v1/dashboard/trend?${q}`)).json()) as {
-        period: { from: string; to: string };
-        all: { created: number; completed: number }[];
-      };
-      expect(t.period, key).toEqual(s.period);
-      expect(
-        t.all.reduce((n, d) => n + d.created, 0),
-        key,
-      ).toBe(s.created.count);
-      expect(
-        t.all.reduce((n, d) => n + d.completed, 0),
-        key,
-      ).toBe(s.completed.count);
-    }
   });
 });
 

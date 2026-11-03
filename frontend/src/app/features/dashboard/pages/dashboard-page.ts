@@ -239,7 +239,9 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                           [scope]="scope.scope()"
                           [card]="card()"
                           [refreshKey]="gridKey()"
+                          [noPodNote]="noPodHint()?.text ?? null"
                           (cardPick)="pickCard($event)"
+                          (showAllPods)="showAllPods()"
                           (assigned)="onAssigned($event)"
                         />
                       } @else {
@@ -769,7 +771,7 @@ export class DashboardPage implements OnInit {
   protected readonly noPodHint = computed(() => {
     const d = this.data();
     const n = d?.scope?.unassignedNoPod ?? 0;
-    if (this.scope.isAll() || n === 0 || !this.panels().some((p) => p.kind === 'unassigned')) {
+    if (this.scope.isAll() || n === 0 || !(this.fullSummary() || this.panels().length > 0)) {
       return null;
     }
     return { text: `${n} unassigned ${n === 1 ? 'task has' : 'tasks have'} no pod.` };
