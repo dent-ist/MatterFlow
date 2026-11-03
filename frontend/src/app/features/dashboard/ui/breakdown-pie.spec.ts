@@ -68,7 +68,7 @@ describe('paletteColor', () => {
   template: `
     <mf-bar-list
       cardKey="task-type"
-      heading="Task type"
+      heading="Task Type"
       rowHeading="Task type"
       [items]="types"
       emptyText="No open tasks."
@@ -95,10 +95,13 @@ describe('breakdown pie view', () => {
   let fixture: ComponentFixture<Host>;
   let el: HTMLElement;
 
-  const toggle = (card: string) =>
-    el.querySelector<HTMLButtonElement>(`${card} [data-view-toggle]`)!;
+  const toggle = (card: string, view: string) =>
+    el.querySelector<HTMLButtonElement>(`${card} [data-view="${view}"]`)!;
+  const NEXT: Record<string, string> = { bars: 'pie', pie: 'table', table: 'bars' };
+  /** Presses the next view of the card (bars, pie, table, bars: the order the tests walk through). */
   async function click(card: string): Promise<void> {
-    toggle(card).click();
+    const pressed = el.querySelector(`${card} [aria-pressed="true"]`)!.getAttribute('data-view')!;
+    toggle(card, NEXT[pressed]).click();
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
@@ -115,18 +118,21 @@ describe('breakdown pie view', () => {
 
   afterEach(() => localStorage.clear());
 
-  it('cycles bars -> pie -> table -> bars and labels the link with the next view', async () => {
-    const label = () => toggle('mf-bar-list').textContent!.replace(/\s+/g, ' ').trim();
-    expect(label()).toBe('View as pie for Task type');
+  it('the Bars | Pie | Table switch shows the pressed view and names its group by the card', async () => {
+    const pressed = () =>
+      el.querySelector('mf-bar-list [aria-pressed="true"]')!.getAttribute('data-view');
+    expect(el.querySelector('mf-bar-list [data-view-switch]')!.getAttribute('aria-label')).toBe(
+      'View of Task Type',
+    );
+    expect(pressed()).toBe('bars');
     await click('mf-bar-list');
     expect(el.querySelector('mf-bar-list [data-pie]')).not.toBeNull();
-    expect(label()).toBe('View as table for Task type');
+    expect(pressed()).toBe('pie');
     await click('mf-bar-list');
     expect(el.querySelector('mf-bar-list table')).not.toBeNull();
-    expect(label()).toBe('View as bars for Task type');
+    expect(pressed()).toBe('table');
     await click('mf-bar-list');
     expect(el.querySelector('mf-bar-list .bars')).not.toBeNull();
-    expect(label()).toBe('View as pie for Task type');
   });
 
   it('draws at most eight slices, an image with a text summary, and a legend whose counts equal the bars', async () => {

@@ -24,15 +24,12 @@ import {
   strokeFill,
 } from './breakdown-overdue';
 import { BreakdownPie } from './breakdown-pie';
-import {
-  BreakdownMode,
-  BreakdownPrefs,
-  DEFAULT_MODE,
-  NEXT_MODE,
-  nextModeLabel,
-} from './breakdown-view';
+import { BreakdownMode, BreakdownPrefs, DEFAULT_MODE } from './breakdown-view';
 import { PieSlice, groupSlices, paletteColor, sharePercent, toneColor } from './breakdown-slices';
 import { PointerFocus } from './pointer-focus';
+import { BD_CARD_CSS } from './breakdown-card';
+import { BreakdownSwitch } from './breakdown-switch';
+import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
 
 /** One bar: a text label, its number, and the Task Queue query it drills into (null: not linkable). */
 export interface BarItem {
@@ -47,6 +44,11 @@ export interface BarItem {
   outline?: string | null;
   /** Task Type icon key (task type breakdown only); drawn before the label, neutral colour. */
   iconKey?: string | null;
+  /** The type's own colour key and id (task type breakdown): the same coloured icon tile as the task lists. */
+  colourKey?: string | null;
+  typeId?: number | null;
+  /** A PrimeIcons class on a coloured tile (priority, status): the tile colours are the badge tokens. */
+  tile?: { icon: string; bg: string; fg: string } | null;
   /** How many of `count` are overdue (Breakdowns B1): the bar gets an overdue segment and the row a "N overdue" link; undefined: no split. */
   overdue?: number;
   /** Outline style of a coloured bar (Normal solid, Low dotted); default solid. */
@@ -64,16 +66,14 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-bar-list',
-  imports: [RouterLink, TaskTypeIcon, BreakdownPie, PointerFocus],
+  imports: [RouterLink, TaskTypeChip, TaskTypeIcon, BreakdownPie, PointerFocus, BreakdownSwitch],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="card" [attr.aria-labelledby]="id + '-h'">
       <header>
         <h3 [id]="id + '-h'">{{ heading() }}</h3>
         @if (items().length > 0) {
-          <button type="button" class="toggle" data-view-toggle (click)="toggle()">
-            {{ nextLabel() }}<span class="sr-only"> for {{ heading() }}</span>
-          </button>
+          <mf-bd-switch [mode]="mode()" [heading]="heading()" (pick)="setMode($event)" />
         }
       </header>
       @if (note(); as n) {
@@ -119,7 +119,9 @@ let nextId = 0;
                       @if (item.iconKey) {
                         <mf-task-type-icon [iconKey]="item.iconKey" size="sm" />
                       }
-                      <a routerLink="/tasks" [queryParams]="params(q)">{{ item.label }}</a>
+                      <a class="tlink" routerLink="/tasks" [queryParams]="params(q)">{{
+                        item.label
+                      }}</a>
                     } @else {
                       {{ item.label }}
                     }
@@ -128,7 +130,9 @@ let nextId = 0;
                   @if (hasOverdue()) {
                     <td class="num">
                       @if ((item.overdue ?? 0) > 0 && overdueLink(item); as od) {
-                        <a routerLink="/tasks" [queryParams]="od">{{ item.overdue }}</a>
+                        <a class="tlink" routerLink="/tasks" [queryParams]="od">{{
+                          item.overdue
+                        }}</a>
                       } @else {
                         {{ item.overdue ?? 0 }}
                       }
@@ -149,8 +153,24 @@ let nextId = 0;
               <li class="r">
                 <div class="row">
                   <span class="namecell">
-                    @if (item.iconKey) {
-                      <mf-task-type-icon class="ti" [iconKey]="item.iconKey" size="md" />
+                    @if (item.tile; as t) {
+                      <span
+                        class="tile"
+                        aria-hidden="true"
+                        data-row-tile
+                        [style.background]="t.bg"
+                        [style.color]="t.fg"
+                        ><i class="pi" [class]="t.icon"></i
+                      ></span>
+                    } @else if (item.iconKey) {
+                      <mf-task-type-chip
+                        size="sm"
+                        data-type-chip
+                        [iconKey]="item.iconKey"
+                        [colourKey]="item.colourKey"
+                        [typeId]="item.typeId"
+                        [decorative]="true"
+                      />
                     }
                     @if (item.query; as q) {
                       <a
@@ -199,7 +219,7 @@ let nextId = 0;
                   <span class="pct">{{ share(item.count) }}</span>
                   @if ((item.overdue ?? 0) > 0) {
                     @if (overdueLink(item); as od) {
-                      <a class="od-text" routerLink="/tasks" [queryParams]="od"
+                      <a class="od-text chip" routerLink="/tasks" [queryParams]="od"
                         >{{ odText(item) }}<span class="sr-only"> in {{ item.label }}</span></a
                       >
                     } @else {
@@ -216,45 +236,8 @@ let nextId = 0;
   `,
   styles: [
     OVERDUE_CSS,
+    BD_CARD_CSS,
     `
-      :host {
-        display: block;
-      }
-      /* The card is a column: the title row stays where it is and only the body scrolls, when the card is given a maximum height (the Task
-         type card on a wide Breakdowns tab, where the list can grow with every new task type). */
-      .card {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        min-height: 0;
-        box-sizing: border-box;
-        padding: var(--mf-s4);
-        background: var(--mf-surface);
-        border: 1px solid var(--mf-border);
-        border-radius: var(--mf-radius-lg);
-        container-type: inline-size;
-      }
-      header {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: var(--mf-s3);
-        margin-bottom: var(--mf-s3);
-      }
-      h3 {
-        margin: 0;
-        font-size: var(--mf-fs-lg);
-      }
-      .toggle {
-        background: none;
-        border: 0;
-        padding: 0;
-        color: var(--mf-link);
-        font: inherit;
-        font-size: var(--mf-fs-sm);
-        cursor: pointer;
-        text-decoration: underline;
-      }
       .body {
         flex: 1 1 auto;
         min-height: 0;
@@ -264,12 +247,6 @@ let nextId = 0;
       .body:focus-visible {
         outline: 2px solid var(--mf-focus);
         outline-offset: -2px;
-      }
-      .note,
-      .empty {
-        margin: 0 0 var(--mf-s3);
-        color: var(--mf-text-muted);
-        font-size: var(--mf-fs-sm);
       }
       .bars {
         margin: 0;
@@ -287,9 +264,10 @@ let nextId = 0;
       }
       .row {
         display: grid;
-        grid-template-columns: minmax(10rem, 1.2fr) minmax(3rem, 1fr) 2.25rem 2.75rem 5.5rem;
+        grid-template-columns: minmax(11rem, 1.2fr) minmax(3rem, 1fr) 2.75rem 3rem 6.5rem;
         align-items: center;
         gap: var(--mf-s3);
+        min-height: 36px;
         padding: var(--mf-s1) var(--mf-s2);
         color: var(--mf-text);
       }
@@ -378,22 +356,18 @@ let nextId = 0;
         -webkit-line-clamp: 2;
         line-clamp: 2;
         overflow: hidden;
-        font-size: var(--mf-fs-md);
+        font-size: var(--mf-fs-lg);
         line-height: 1.25;
       }
       .namecell {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         gap: var(--mf-s2);
         min-width: 0;
       }
-      .ti {
-        margin-top: 1px;
-        color: var(--mf-text-muted);
-      }
       .track {
         display: block;
-        height: 12px;
+        height: 16px;
         background: var(--mf-surface-alt);
         border-radius: var(--mf-radius);
         overflow: hidden;
@@ -424,7 +398,8 @@ let nextId = 0;
       }
       .count {
         text-align: right;
-        font-weight: 600;
+        font-size: var(--mf-fs-lg);
+        font-weight: 700;
         font-variant-numeric: tabular-nums;
       }
       .pct {
@@ -457,6 +432,30 @@ let nextId = 0;
       .num {
         text-align: right;
         font-variant-numeric: tabular-nums;
+      }
+      /* The links that open the Task Queue: the shared link style with a focus ring, not the old underlined blue text. */
+      .tlink,
+      .chip {
+        border-radius: var(--mf-radius);
+        color: var(--mf-link);
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .tlink:hover,
+      .chip:hover {
+        text-decoration: underline;
+      }
+      .tlink:focus-visible,
+      .chip:focus-visible {
+        outline: 2px solid var(--mf-focus);
+        outline-offset: 2px;
+      }
+      .chip {
+        padding: 0 var(--mf-s2);
+        background: var(--mf-surface-alt);
+        border: 1px solid var(--mf-border-soft);
+        border-radius: 999px;
+        font-size: var(--mf-fs-sm);
       }
       .sr-only {
         position: absolute;
@@ -531,12 +530,7 @@ export class BarList implements OnInit {
     if (key) this.mode.set(this.prefs.load(key));
   }
 
-  protected nextLabel(): string {
-    return nextModeLabel(this.mode());
-  }
-
-  protected toggle(): void {
-    const next = NEXT_MODE[this.mode()];
+  protected setMode(next: BreakdownMode): void {
     this.mode.set(next);
     const key = this.cardKey();
     if (key) this.prefs.save(key, next);

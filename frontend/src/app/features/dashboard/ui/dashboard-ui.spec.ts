@@ -105,12 +105,13 @@ describe('dashboard UI', () => {
 
   it('swaps the bars for a table of the same numbers', async () => {
     const el = await render();
-    const toggle = () => el.querySelector<HTMLButtonElement>('mf-bar-list .toggle')!;
-    expect(toggle().textContent).toContain('View as pie');
-    toggle().click(); // bars -> pie
+    const pick = (mode: string) =>
+      el.querySelector<HTMLButtonElement>(`mf-bar-list [data-view="${mode}"]`)!;
+    expect(pick('bars').getAttribute('aria-pressed')).toBe('true');
+    pick('pie').click();
     fixture.detectChanges();
-    expect(toggle().textContent).toContain('View as table');
-    toggle().click(); // pie -> table
+    expect(pick('pie').getAttribute('aria-pressed')).toBe('true');
+    pick('table').click();
     fixture.detectChanges();
     const rows = Array.from(el.querySelectorAll('mf-bar-list tbody tr'));
     expect(
@@ -122,7 +123,9 @@ describe('dashboard UI', () => {
       ),
     ).toEqual(['Pod A 40', 'Pod B 10', 'Other Pods 5', 'Empty Pod 0']);
     expect(el.querySelector('mf-bar-list .bars')).toBeNull();
-    expect(toggle().textContent).toContain('View as bars');
+    expect(el.querySelector('mf-bar-list [data-view="table"]')!.getAttribute('aria-pressed')).toBe(
+      'true',
+    );
   });
 
   it('draws no bar for a zero count, titles each label and names the table link by its list', async () => {
@@ -133,7 +136,8 @@ describe('dashboard UI', () => {
     expect(rows[0].querySelector('.bar')).not.toBeNull();
     // Names wrap to two lines (three on a phone); the full name is the title, the link label and the table view.
     expect(rows[0].querySelector('.name')!.getAttribute('title')).toBe('Pod A');
-    const toggle = el.querySelector('mf-bar-list .toggle')!;
-    expect(toggle.textContent!.replace(/\s+/g, ' ').trim()).toBe('View as pie for Open by Pod');
+    expect(el.querySelector('mf-bar-list [data-view-switch]')!.getAttribute('aria-label')).toBe(
+      'View of Open by Pod',
+    );
   });
 });

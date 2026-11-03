@@ -26,8 +26,43 @@ export function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
     tone: i.code ?? null,
     muted: i.isOther,
     iconKey: i.iconKey ?? null,
+    typeId: i.id ?? null,
+    tile: statusTile(i.code),
   }));
 }
+
+/** The icon tile of a status row: the status badge colours (tokens), so the tile matches the badges of the task lists. */
+function statusTile(code: string | null | undefined): BarItem['tile'] {
+  switch (code) {
+    case 'NEW':
+      return {
+        icon: 'pi-plus-circle',
+        bg: 'var(--mf-status-new-bg)',
+        fg: 'var(--mf-status-new-fg)',
+      };
+    case 'IN_PROGRESS':
+      return {
+        icon: 'pi-play-circle',
+        bg: 'var(--mf-status-progress-bg)',
+        fg: 'var(--mf-status-progress-fg)',
+      };
+    case 'ON_HOLD':
+      return {
+        icon: 'pi-pause-circle',
+        bg: 'var(--mf-status-hold-bg)',
+        fg: 'var(--mf-status-hold-fg)',
+      };
+    default:
+      return null;
+  }
+}
+
+const PRIORITY_ICONS: Record<string, string> = {
+  critical: 'pi-exclamation-triangle',
+  high: 'pi-arrow-up',
+  normal: 'pi-minus',
+  low: 'pi-arrow-down',
+};
 
 /**
  * The Breakdowns tab: open tasks by priority, task type and status, and their age (one card each, one title per card), every bar split
@@ -48,7 +83,10 @@ export function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
     <section class="bd mf-fill" aria-labelledby="mf-bd-h" data-section="breakdowns">
       <h2 id="mf-bd-h" class="sr-only" tabindex="-1" data-skip-target>Open tasks</h2>
       <p class="caption" data-bd-caption>
-        Open tasks, now. Not affected by the period.
+        <span class="info"
+          ><i class="pi pi-info-circle" aria-hidden="true"></i>Open tasks, now. Not affected by the
+          period.</span
+        >
         <span class="legend" data-bd-legend>
           <span class="key"><span class="sample plain" aria-hidden="true"></span>Not overdue</span>
           <span class="key"><span class="sample od" aria-hidden="true"></span>Overdue</span>
@@ -75,8 +113,8 @@ export function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
           <mf-bar-list
             class="c-type"
             cardKey="task-type"
-            heading="Task type"
-            rowHeading="Task type"
+            heading="Task Type"
+            rowHeading="Task Type"
             [items]="types()"
             emptyText="No open tasks."
           />
@@ -115,19 +153,30 @@ export function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
       h2:focus {
         outline: none;
       }
+      /* One compact info row: the unit and the scope said once, and the legend, in a soft band. */
       .caption {
         display: flex;
         flex-wrap: wrap;
-        align-items: baseline;
+        align-items: center;
         gap: var(--mf-s1) var(--mf-s4);
         margin: 0 0 var(--mf-s3);
+        padding: var(--mf-s2) var(--mf-s3);
+        background: var(--mf-surface-alt);
+        border: 1px solid var(--mf-border-soft);
+        border-radius: var(--mf-radius-lg);
         color: var(--mf-text-muted);
         font-size: var(--mf-fs-sm);
+      }
+      .info {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--mf-s2);
       }
       .legend {
         display: inline-flex;
         flex-wrap: wrap;
         gap: var(--mf-s1) var(--mf-s4);
+        margin-left: auto;
       }
       .key {
         display: inline-flex;
@@ -151,79 +200,70 @@ export function toBars(items: readonly DashboardBreakdownItem[]): BarItem[] {
           border: 1px solid CanvasText;
         }
       }
-      /* The cards scroll as one region when the tab is shorter than they are. A press with the pointer shows no focus ring on it. */
       .scroll {
         display: flex;
         flex-direction: column;
       }
-      /* One column below 700 px; cards keep their own height (nothing is stretched). */
+      /* One column below 700 px: the cards keep their own height and the page scrolls (a phone). */
       .grid {
         display: grid;
         grid-template-columns: minmax(0, 1fr);
         gap: var(--mf-s4);
-        align-items: start;
+        padding: 2px;
       }
-      /* Two columns flow top to bottom (Priority and Status, then Task type and Age) without empty space inside or between the cards. */
+      /* From 700 px of tab width: Priority and Status above, Task Type and Age below; all four cards equal height per row. */
       @container bd (min-width: 700px) {
         .grid {
-          display: block;
-          column-count: 2;
-          column-gap: var(--mf-s4);
-        }
-        .grid > * {
-          break-inside: avoid;
-          margin-bottom: var(--mf-s4);
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
       }
-      /* Three equal columns from 1300 px of tab width (the tab keeps its 1360 px reading cap): Priority above Status, Task type, Age. */
+      /* From 1300 px: Priority, Status and Age side by side, and the Task Type card under them across the whole width. */
       @container bd (min-width: 1300px) {
         .grid {
-          display: grid;
-          column-count: auto;
           grid-template-columns: repeat(3, minmax(0, 1fr));
-          grid-template-rows: auto minmax(min-content, 1fr);
-          gap: var(--mf-s4);
-          align-items: start;
-        }
-        .grid > * {
-          margin-bottom: 0;
         }
         .c-priority {
           grid-column: 1;
           grid-row: 1;
         }
         .c-status {
-          grid-column: 1;
-          grid-row: 2;
-        }
-        .c-type {
           grid-column: 2;
-          grid-row: 1 / span 2;
+          grid-row: 1;
         }
-        /* Spans both rows so its height does not decide the height of the Priority row. */
         .c-age {
           grid-column: 3;
-          grid-row: 1 / span 2;
+          grid-row: 1;
+        }
+        .c-type {
+          grid-column: 1 / -1;
+          grid-row: 2;
         }
       }
-      /* In a fixed page (three columns) the cards take their natural height; nothing is stretched. The Task type card is capped at the
-         visible height of the tab (100cqh of the scroll region, a size container only here): when its list is longer, only the list body
-         scrolls inside the card under the pinned title. Shorter than 12rem of room, the card keeps 12rem and the whole region scrolls.
-         The card spans both rows, which only grows the flexible second row (Status stays where it is). */
+      /* In a fixed page (desktop) the cards fill the tab: the top row takes the height of its cards, the Task Type card takes the rest
+         (at least 12rem) and its list scrolls inside it under the pinned title; shorter than that, the whole region scrolls. */
       @media (min-width: 768px) and (min-height: 561px) {
-        @container bd (min-width: 1300px) {
-          .bd > .scroll {
-            flex: 1 1 0;
-            min-height: 0;
-            container: bdscroll / size;
-          }
+        .bd > .scroll {
+          flex: 1 1 0;
+          min-height: 0;
+        }
+        .grid {
+          flex: 1 1 auto;
+          min-height: 0;
+        }
+        .c-priority,
+        .c-status,
+        .c-age,
+        .c-type {
+          min-height: 0;
+        }
+        @container bd (min-width: 700px) and (max-width: 1299.98px) {
           .grid {
-            flex: none;
+            grid-template-rows: auto minmax(12rem, 1fr);
           }
-          .c-type {
-            display: flex;
-            flex-direction: column;
-            max-height: max(100cqh, 12rem);
+        }
+        @container bd (min-width: 1300px) {
+          .grid {
+            grid-template-rows: auto minmax(12rem, 1fr);
           }
         }
       }
@@ -252,6 +292,11 @@ export class DashBreakdownsTab {
         fill: colors.bg,
         outline: colors.fg,
         stroke: strokeFor(found?.color),
+        tile: {
+          icon: PRIORITY_ICONS[found?.color ?? ''] ?? 'pi-flag',
+          bg: colors.bg,
+          fg: colors.fg,
+        },
       };
     });
   });

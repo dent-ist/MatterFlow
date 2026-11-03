@@ -1018,7 +1018,7 @@ describe('DashboardPage', () => {
     expect(lists.map((l) => text(l.querySelector('h3')))).toEqual([
       'Priority',
       'Status',
-      'Task type',
+      'Task Type',
     ]);
     expect(text(bars.querySelector('mf-stacked-bar h3'))).toBe('Age');
     expect(text(bars.querySelector('h2.sr-only'))).toBe('Open tasks');
@@ -1032,7 +1032,7 @@ describe('DashboardPage', () => {
     expect(Array.from(bars.querySelectorAll('h3')).map((h) => h.textContent!.trim())).toEqual([
       'Priority',
       'Status',
-      'Task type',
+      'Task Type',
       'Age',
     ]);
 
@@ -1065,18 +1065,21 @@ describe('DashboardPage', () => {
     expect(text(bars.querySelector('mf-stacked-bar'))).toContain(
       'Informational, not a service-level target',
     );
-    // Every chart can be viewed as a table or a pie: each card starts as bars, so its toggle offers the pie.
-    expect(bars.querySelectorAll('.toggle').length).toBe(4);
+    // Every chart has the Bars | Pie | Table switch in its header; each card starts as bars.
+    expect(bars.querySelectorAll('[data-view-switch]').length).toBe(4);
     expect(
-      Array.from(bars.querySelectorAll('[data-view-toggle]')).map((b) =>
-        b.textContent!.replace(/\s+/g, ' ').trim(),
+      Array.from(bars.querySelectorAll('[data-view-switch]')).map((g) =>
+        g.getAttribute('aria-label'),
       ),
-    ).toEqual([
-      'View as pie for Priority',
-      'View as pie for Status',
-      'View as pie for Task type',
-      'View as pie for Age',
-    ]);
+    ).toEqual(['View of Priority', 'View of Status', 'View of Task Type', 'View of Age']);
+    expect(
+      Array.from(bars.querySelectorAll('[data-view-switch] [aria-pressed="true"]')).map((b) =>
+        b.getAttribute('data-view'),
+      ),
+    ).toEqual(['bars', 'bars', 'bars', 'bars']);
+    // Priority and status rows carry a coloured icon tile, task types the coloured type chip.
+    expect(lists[0].querySelectorAll('[data-row-tile]').length).toBeGreaterThan(0);
+    expect(lists[2].querySelector('[data-type-chip]')).not.toBeNull();
     expect(el.textContent).not.toMatch(/billing|revenue|productivity/i);
   });
 

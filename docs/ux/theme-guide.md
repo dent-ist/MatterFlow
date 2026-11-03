@@ -451,6 +451,21 @@ Rows per page 50   Showing 1-50 of 143   Page 1 of 3               |  8 of 12 ca
 
 Roles: Director and Pod Lead (Dashboard.ViewSummary) get the cards, grid and gauge; the battery needs Dashboard.ViewUsers on top (a Pod Lead has it; a role without it keeps the cards, grid and gauge and the right column holds the gauge only). A Technician (Dashboard.View + ViewUnassigned) keeps the "Unassigned work" queue alone: no cards, grid, battery or gauge. A Pod Lead opens on "My pods". Under 768 px (or a window under 561 high) the page is one column: cards, battery, gauge, then the tasks as cards (the card list keeps the standard cells; the Type icon, `+9d` and the Assign picker are the desktop grid's).
 
+### 11.5 Dashboard Breakdowns (epic #1063, DB-11 #1085)
+
+The tab is one fixed page: an info row, then four cards (Priority, Status, Age in one row of equal height; Task Type under them across the width). From 1300 px of tab width that is three columns plus the wide Task Type card; from 700 px two columns; below 700 px one column and the page scrolls (phone). On a desktop window (768 x 561 or more) the Task Type card takes the rest of the height (12 rem at least) and its list scrolls inside it under the pinned title, so there is no empty area under the cards.
+
+| Part | Rule |
+| --- | --- |
+| Card (`BD_CARD_CSS`, `breakdown-card.ts`) | The Dashboard card style: `--mf-radius-xl`, `--mf-border-soft`, `--mf-shadow-card`, 16 px padding. Title Case H3 at `--mf-fs-xl` (Priority, Status, Task Type, Age) and the view switch in the header. |
+| View switch (`mf-bd-switch`) | The shared segmented control (`mfSegmented`): Bars, Pie, Table, one Tab stop, arrow keys, the pressed button ticked and bold, the group named "View of <card>". It replaces the "View as table" link; the choice is remembered per card and user (`BreakdownPrefs`); the table is the accessible table. In a card narrower than 17 rem only the icons show (the words stay for assistive tools). |
+| Rows | At least 36 px high, label and count at `--mf-fs-lg`, count bold, bar 16 px. |
+| Priority and status icons | A 28 px tile with a PrimeIcons icon, coloured with the badge tokens of the same priority or status (`--mf-pr-*-bg/fg`, `--mf-status-*-bg/fg`), so the pair is already contrast checked. The icon is decorative; the label, count and share are text. Priority: Critical `pi-exclamation-triangle`, High `pi-arrow-up`, Normal `pi-minus`, Low `pi-arrow-down`. Status: New `pi-plus-circle`, In Progress `pi-play-circle`, On Hold `pi-pause-circle`. |
+| Task Type | The same `mf-task-type-chip` (icon tile in the type's colour) and the type name as the task lists. The summary does not carry the type's colour key, so the tile uses the colour the chip derives from the type's id until the API sends it. |
+| Age | The sequential ramp `--mf-ramp-1..6` (light to dark with age). |
+| Overdue | Unchanged: the red hatched segment and the red "N overdue" text; the text is now the shared link chip (soft pill, link colour, focus ring) and still opens the Task Queue with the same filters plus `overdue=true`. Counts and names in the table view use the shared link style with a focus ring. |
+| Info row | One soft band above the cards: "Open tasks, now. Not affected by the period." with an info icon, and the legend (Not overdue, Overdue) at its right end. |
+
 ## 10. Note text colours (epic #1001, MD-30, #1034)
 
 The Notes editor offers a fixed palette of eight text colours plus Default: red, orange, amber, green, teal, blue, violet and slate (grey). They are the tokens `--mf-note-<key>` in `docs/ux/tokens.css`; `scripts/check-theme-contrast.mjs` checks each at 4.5:1 on a card and on the quote tint. A note stores a colour as `<span data-color="red">` (never inline CSS); the server keeps only these eight keys. The page maps the key to the token (`[data-color='red'] { color: var(--mf-note-red) }` in `note-editor-refs.scss`). Colour never carries meaning alone: the menu names every colour, and bold or headings stay available.

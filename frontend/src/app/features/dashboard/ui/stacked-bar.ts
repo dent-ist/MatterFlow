@@ -11,14 +11,10 @@ import { RouterLink } from '@angular/router';
 import { queueParams } from '../dashboard-links';
 import { OVERDUE_CSS, overdueParams, overdueShare, overdueText } from './breakdown-overdue';
 import { BreakdownPie } from './breakdown-pie';
+import { BD_CARD_CSS } from './breakdown-card';
+import { BreakdownSwitch } from './breakdown-switch';
 import { PieSlice, sharePercent } from './breakdown-slices';
-import {
-  BreakdownMode,
-  BreakdownPrefs,
-  DEFAULT_MODE,
-  NEXT_MODE,
-  nextModeLabel,
-} from './breakdown-view';
+import { BreakdownMode, BreakdownPrefs, DEFAULT_MODE } from './breakdown-view';
 
 /** One segment of the bar (an age band). */
 export interface Segment {
@@ -51,16 +47,14 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
  */
 @Component({
   selector: 'mf-stacked-bar',
-  imports: [RouterLink, BreakdownPie],
+  imports: [RouterLink, BreakdownPie, BreakdownSwitch],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="card" [attr.aria-labelledby]="id + '-h'">
       <header>
         <h3 [id]="id + '-h'">{{ heading() }}</h3>
         @if (total() > 0) {
-          <button type="button" class="toggle" data-view-toggle (click)="toggle()">
-            {{ nextLabel() }}<span class="sr-only"> for {{ heading() }}</span>
-          </button>
+          <mf-bd-switch [mode]="mode()" [heading]="heading()" (pick)="setMode($event)" />
         }
       </header>
       @if (note(); as n) {
@@ -94,13 +88,17 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
               @for (s of segments(); track $index) {
                 <tr>
                   <th scope="row">
-                    <a routerLink="/tasks" [queryParams]="params(s.query)">{{ s.label }}</a>
+                    <a class="tlink" routerLink="/tasks" [queryParams]="params(s.query)">{{
+                      s.label
+                    }}</a>
                   </th>
                   <td class="num">{{ s.count }}</td>
                   @if (hasOverdue()) {
                     <td class="num">
                       @if ((s.overdue ?? 0) > 0) {
-                        <a routerLink="/tasks" [queryParams]="od(s)">{{ s.overdue }}</a>
+                        <a class="tlink" routerLink="/tasks" [queryParams]="od(s)">{{
+                          s.overdue
+                        }}</a>
                       } @else {
                         {{ s.overdue ?? 0 }}
                       }
@@ -166,7 +164,7 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
                 <span class="count">{{ s.count }}</span>
                 <span class="pct">{{ share(s.count) }}</span>
                 @if ((s.overdue ?? 0) > 0) {
-                  <a class="od-text" routerLink="/tasks" [queryParams]="od(s)"
+                  <a class="od-text chip" routerLink="/tasks" [queryParams]="od(s)"
                     >{{ odText(s) }}<span class="sr-only"> in {{ s.label }}</span></a
                   >
                 }
@@ -179,49 +177,12 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
   `,
   styles: [
     OVERDUE_CSS,
+    BD_CARD_CSS,
     `
-      :host {
-        display: block;
-      }
-      .card {
-        height: 100%;
-        box-sizing: border-box;
-        padding: var(--mf-s4);
-        background: var(--mf-surface);
-        border: 1px solid var(--mf-border);
-        border-radius: var(--mf-radius-lg);
-        container-type: inline-size;
-      }
-      header {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: var(--mf-s3);
-        margin-bottom: var(--mf-s3);
-      }
-      h3 {
-        margin: 0;
-        font-size: var(--mf-fs-lg);
-      }
-      .toggle {
-        background: none;
-        border: 0;
-        padding: 0;
-        color: var(--mf-link);
-        font: inherit;
-        font-size: var(--mf-fs-sm);
-        cursor: pointer;
-        text-decoration: underline;
-      }
-      .note {
-        margin: 0 0 var(--mf-s3);
-        color: var(--mf-text-muted);
-        font-size: var(--mf-fs-sm);
-      }
       .stack {
         display: flex;
         gap: 2px;
-        height: 2.5rem;
+        height: 3.25rem;
         margin-bottom: var(--mf-s3);
       }
       .seg {
@@ -273,8 +234,10 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
         grid-template-columns: 0.875rem minmax(4rem, 1fr) 2.25rem 2.75rem 5.5rem;
         align-items: center;
         gap: var(--mf-s2);
+        min-height: 36px;
         padding: var(--mf-s1) var(--mf-s2);
         color: var(--mf-text);
+        font-size: var(--mf-fs-lg);
       }
       .rowlink {
         color: inherit;
@@ -334,7 +297,7 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
       }
       .count {
         text-align: right;
-        font-weight: 600;
+        font-weight: 700;
         font-variant-numeric: tabular-nums;
       }
       .pct {
@@ -358,6 +321,36 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
         font-weight: 600;
         font-size: var(--mf-fs-sm);
         background: var(--mf-surface-alt);
+      }
+      .tlink {
+        border-radius: var(--mf-radius);
+        color: var(--mf-link);
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .tlink:hover {
+        text-decoration: underline;
+      }
+      .tlink:focus-visible {
+        outline: 2px solid var(--mf-focus);
+        outline-offset: 2px;
+      }
+      .chip {
+        padding: 0 var(--mf-s2);
+        background: var(--mf-surface-alt);
+        border: 1px solid var(--mf-border-soft);
+        border-radius: 999px;
+        color: var(--mf-link);
+        font-size: var(--mf-fs-sm);
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .chip:hover {
+        text-decoration: underline;
+      }
+      .chip:focus-visible {
+        outline: 2px solid var(--mf-focus);
+        outline-offset: 2px;
       }
       .num {
         text-align: right;
@@ -398,12 +391,7 @@ export class StackedBar implements OnInit {
     if (key) this.mode.set(this.prefs.load(key));
   }
 
-  protected nextLabel(): string {
-    return nextModeLabel(this.mode());
-  }
-
-  protected toggle(): void {
-    const next = NEXT_MODE[this.mode()];
+  protected setMode(next: BreakdownMode): void {
     this.mode.set(next);
     const key = this.cardKey();
     if (key) this.prefs.save(key, next);
