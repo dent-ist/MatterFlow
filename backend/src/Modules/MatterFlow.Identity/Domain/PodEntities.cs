@@ -16,6 +16,9 @@ public class Pod : AuditedEntity<int>
 
     public bool IsActive { get; set; } = true;
 
+    /// <summary>The holiday calendar of members who have none of their own (script 59); null = the firm calendar.</summary>
+    public int? DefaultHolidayCalendarId { get; set; }
+
     public List<PodMember> Members { get; set; } = [];
 }
 

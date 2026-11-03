@@ -13,8 +13,8 @@ public sealed record UserAvailabilitySummary(string State, DateTime? OutUntil, s
 }
 
 /// <summary>
-/// An out-of-office period of one person, as saved: whole calendar days in the person's own zone. <c>From</c> null means "since the beginning", <c>Until</c> null means open-ended.
-/// The free-text note of the profile is deliberately not part of it.
+/// An out-of-office window of one person: whole calendar days in the person's own zone. Entries that touch (one starts the day after the other ends) are one window.
+/// <c>From</c> null means "since the beginning", <c>Until</c> null means open-ended. The note and the type of the entry are deliberately not part of it.
 /// </summary>
 public sealed record AwayWindow(DateOnly? From, DateOnly? Until);
 
@@ -23,13 +23,20 @@ public interface IUserAvailabilityReader
 {
     /// <summary>
     /// Availability of each given user at <paramref name="nowUtc"/>, keyed by id. A user who never saved a profile is available during the
-    /// default hours in the firm zone. Two queries regardless of the number of users.
+    /// default hours in the firm zone. A fixed number of queries regardless of the number of users (profiles, hours, entries, holidays).
     /// </summary>
     Task<IReadOnlyDictionary<int, AvailabilityEvaluation>> EvaluateAsync(IReadOnlyCollection<int> userIds, DateTime nowUtc, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// The saved out-of-office period of each given user that overlaps the calendar days <paramref name="from"/> to <paramref name="to"/> (both included); users who are not away in that
+    /// The first out-of-office window of each given user that overlaps the calendar days <paramref name="from"/> to <paramref name="to"/> (both included); users who are not away in that
     /// range are absent. One query regardless of the number of users. Used by the workload view ("who is away in the next four weeks").
     /// </summary>
     Task<IReadOnlyDictionary<int, AwayWindow>> AwayWindowsAsync(IReadOnlyCollection<int> userIds, DateOnly from, DateOnly to, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The availability profile of each given user for the calendar days <paramref name="from"/> to <paramref name="to"/>: zone, work hours, the Out of office entries that overlap the range
+    /// and the holiday dates of the person's calendar plus every "applies to everyone" calendar. A fixed number of queries regardless of the number of users (Dashboard Calendar).
+    /// Evaluate a day with <see cref="UserAvailabilityEvaluator.EvaluateDay"/>.
+    /// </summary>
+    Task<IReadOnlyDictionary<int, UserAvailabilityProfile>> LoadProfilesAsync(IReadOnlyCollection<int> userIds, DateOnly from, DateOnly to, CancellationToken cancellationToken = default);
 }

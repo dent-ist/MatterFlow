@@ -192,6 +192,9 @@ public static class Permissions
 
         /// <summary>Activate or disable users and assign roles.</summary>
         public const string Manage = "User.Manage";
+
+        /// <summary>Create, edit and delete Out of office entries of other people (a Pod Lead: members of their own pods).</summary>
+        public const string ManageAvailability = "User.ManageAvailability";
     }
 
     /// <summary>Role permissions.</summary>
@@ -275,6 +278,12 @@ public static class Permissions
 
         /// <summary>See how many tasks each person completed per task type (training and coverage planning). Needs <see cref="View"/> too.</summary>
         public const string ViewCoverage = "Dashboard.ViewCoverage";
+
+        /// <summary>Calendar tab: who is out and who can work each day, and holidays. Needs <see cref="View"/> too.</summary>
+        public const string ViewCalendar = "Dashboard.ViewCalendar";
+
+        /// <summary>See the type of an absence (vacation, sick, training) in the Calendar. Needs <see cref="ViewCalendar"/>.</summary>
+        public const string ViewAbsenceReasons = "Dashboard.ViewAbsenceReasons";
     }
 
     /// <summary>Reports permissions (epic #671): authoring, assignment to roles and running.</summary>
@@ -288,7 +297,7 @@ public static class Permissions
     /// <summary>Application settings permissions (epic #850).</summary>
     public static class Settings
     {
-        /// <summary>Change application settings (name and icon).</summary>
+        /// <summary>Change application settings (name and icon, holiday calendars, calendar coverage thresholds).</summary>
         public const string Manage = "Settings.Manage";
     }
 
@@ -349,6 +358,7 @@ public static class Permissions
         Pod.ManageMembers,
         User.View,
         User.Manage,
+        User.ManageAvailability,
         Role.Manage,
         TaskType.Manage,
         AssetType.Manage,
@@ -364,6 +374,8 @@ public static class Permissions
         Dashboard.ViewSwimlane,
         Dashboard.ViewUsers,
         Dashboard.ViewCoverage,
+        Dashboard.ViewCalendar,
+        Dashboard.ViewAbsenceReasons,
         Report.Manage,
         Report.Assign,
         Report.Run,

@@ -132,8 +132,7 @@ public sealed class BoardData
         await SetClosedAsync("sw-done-10d", "COMPLETED", DateTime.UtcNow.AddDays(-10));
 
         // Tech A is out of office; the cards of their Tasks show it.
-        var own = await OkAsync(await TechAClient.GetAsync("/api/v1/me/availability"));
-        await OkAsync(await TechAClient.PutAsJsonAsync("/api/v1/me/availability", new { status = "OUT_OF_OFFICE", until = "2099-12-31", note = "Conference", rowVersion = own.GetProperty("rowVersion").GetString() }));
+        await TechAClient.GoOutAsync(H.Factory, null, "2099-12-31", "Conference");
 
         await H.ExecuteAsync($"UPDATE dbo.AppUser SET IsActive = 0 WHERE UserId = {Inactive}");
         H.Factory.InvalidateAll();

@@ -229,3 +229,33 @@ public class SettingsDashboardController(DashboardSettingsService dashboard) : C
     public async Task<IActionResult> Reset([FromQuery] string? rowVersion, CancellationToken cancellationToken) =>
         this.ToActionResult(await dashboard.ResetAsync(rowVersion, cancellationToken));
 }
+
+/// <summary>
+/// Administration of the Dashboard Calendar thresholds (Administration &gt; Settings &gt; Dashboard, epic #1074): the minimum coverage percent (default 75), the pod minimum percent
+/// (default 60) and an optional minimum number of people per pod. Needs <c>Settings.Manage</c>. Defaults live in code; a reset deletes the stored value. Writes are audited and use a
+/// row version (<c>409</c> when someone changed them meanwhile, <c>400</c> when a value is not valid).
+/// </summary>
+[ApiController]
+[Route("api/v1/admin/settings/calendar")]
+public class SettingsCalendarController(CalendarSettingsService calendar) : ControllerBase
+{
+    /// <summary>The thresholds in force, the code defaults and the row version.</summary>
+    [HttpGet(Name = "GetCalendarSettings")]
+    [Authorize(Policy = ConfigurationPolicies.SettingsManage)]
+    [ProducesResponseType<CalendarSettingsAdminView>(StatusCodes.Status200OK, "application/json")]
+    public async Task<ActionResult<CalendarSettingsAdminView>> Get(CancellationToken cancellationToken) => await calendar.GetAdminAsync(cancellationToken);
+
+    /// <summary>Saves the thresholds.</summary>
+    [HttpPut(Name = "SetCalendarSettings")]
+    [Authorize(Policy = ConfigurationPolicies.SettingsManage)]
+    [ProducesResponseType<CalendarSettingsAdminView>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> Set([FromBody] SetCalendarSettingsRequest request, CancellationToken cancellationToken) =>
+        this.ToActionResult(await calendar.SaveAsync(request, cancellationToken));
+
+    /// <summary>Resets the thresholds to the code defaults by deleting the stored value.</summary>
+    [HttpDelete(Name = "ResetCalendarSettings")]
+    [Authorize(Policy = ConfigurationPolicies.SettingsManage)]
+    [ProducesResponseType<CalendarSettingsAdminView>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> Reset([FromQuery] string? rowVersion, CancellationToken cancellationToken) =>
+        this.ToActionResult(await calendar.ResetAsync(rowVersion, cancellationToken));
+}

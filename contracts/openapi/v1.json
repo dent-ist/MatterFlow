@@ -1787,6 +1787,91 @@
         }
       }
     },
+    "/api/v1/admin/settings/calendar": {
+      "get": {
+        "tags": [
+          "SettingsCalendar"
+        ],
+        "operationId": "GetCalendarSettings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarSettingsAdminView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "SettingsCalendar"
+        ],
+        "operationId": "SetCalendarSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetCalendarSettingsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetCalendarSettingsRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetCalendarSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarSettingsAdminView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "SettingsCalendar"
+        ],
+        "operationId": "ResetCalendarSettings",
+        "parameters": [
+          {
+            "name": "rowVersion",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarSettingsAdminView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/forms": {
       "post": {
         "tags": [
@@ -3132,6 +3217,812 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UserAvailabilityDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{userId}/absences": {
+      "get": {
+        "tags": [
+          "Absences"
+        ],
+        "operationId": "ListAbsences",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "includePast",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AbsenceDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Absences"
+        ],
+        "operationId": "CreateAbsence",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAbsenceRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAbsenceRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAbsenceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbsenceDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{userId}/absences/{absenceId}": {
+      "put": {
+        "tags": [
+          "Absences"
+        ],
+        "operationId": "UpdateAbsence",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "absenceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAbsenceRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAbsenceRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAbsenceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbsenceDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Absences"
+        ],
+        "operationId": "DeleteAbsence",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "absenceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "rowVersion",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": { }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{userId}/absences/{absenceId}/back": {
+      "post": {
+        "tags": [
+          "Absences"
+        ],
+        "operationId": "EndAbsenceToday",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "absenceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbsenceBackResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/holiday-calendars": {
+      "get": {
+        "tags": [
+          "HolidayCalendars"
+        ],
+        "operationId": "ListHolidayCalendars",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HolidayCalendarDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "HolidayCalendars"
+        ],
+        "operationId": "CreateHolidayCalendar",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveHolidayCalendarRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveHolidayCalendarRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveHolidayCalendarRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HolidayCalendarDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/holiday-calendars/{calendarId}": {
+      "get": {
+        "tags": [
+          "HolidayCalendars"
+        ],
+        "operationId": "GetHolidayCalendar",
+        "parameters": [
+          {
+            "name": "calendarId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HolidayCalendarDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "HolidayCalendars"
+        ],
+        "operationId": "UpdateHolidayCalendar",
+        "parameters": [
+          {
+            "name": "calendarId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveHolidayCalendarRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveHolidayCalendarRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveHolidayCalendarRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HolidayCalendarDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "HolidayCalendars"
+        ],
+        "operationId": "DeleteHolidayCalendar",
+        "parameters": [
+          {
+            "name": "calendarId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "rowVersion",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": { }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/holiday-calendars/{calendarId}/holidays": {
+      "get": {
+        "tags": [
+          "HolidayCalendars"
+        ],
+        "operationId": "ListHolidays",
+        "parameters": [
+          {
+            "name": "calendarId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HolidayDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "HolidayCalendars"
+        ],
+        "operationId": "CreateHoliday",
+        "parameters": [
+          {
+            "name": "calendarId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveHolidayRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveHolidayRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveHolidayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HolidayDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/holiday-calendars/{calendarId}/holidays/{holidayId}": {
+      "put": {
+        "tags": [
+          "HolidayCalendars"
+        ],
+        "operationId": "UpdateHoliday",
+        "parameters": [
+          {
+            "name": "calendarId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "holidayId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveHolidayRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveHolidayRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveHolidayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HolidayDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "HolidayCalendars"
+        ],
+        "operationId": "DeleteHoliday",
+        "parameters": [
+          {
+            "name": "calendarId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "holidayId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "rowVersion",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": { }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/holiday-calendars/{calendarId}/preview": {
+      "get": {
+        "tags": [
+          "HolidayCalendars"
+        ],
+        "operationId": "PreviewHolidayCalendar",
+        "parameters": [
+          {
+            "name": "calendarId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HolidayPreviewDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/holiday-calendars/{calendarId}/holidays/import": {
+      "post": {
+        "tags": [
+          "HolidayCalendars"
+        ],
+        "operationId": "ImportHolidays",
+        "parameters": [
+          {
+            "name": "calendarId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "dryRun",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          {
+            "name": "acceptOk",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HolidayImportRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HolidayImportRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/HolidayImportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HolidayImportResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/settings/holidays": {
+      "get": {
+        "tags": [
+          "SettingsHolidays"
+        ],
+        "operationId": "GetHolidaySettings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HolidaySettingsDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "SettingsHolidays"
+        ],
+        "operationId": "SetHolidaySettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveHolidaySettingsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveHolidaySettingsRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveHolidaySettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HolidaySettingsDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{userId}/holiday-calendar": {
+      "put": {
+        "tags": [
+          "UserHolidayCalendar"
+        ],
+        "operationId": "SetUserHolidayCalendar",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignHolidayCalendarRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignHolidayCalendarRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignHolidayCalendarRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserHolidayCalendarDto"
                 }
               }
             }
@@ -11014,6 +11905,207 @@
         }
       }
     },
+    "/api/v1/dashboard/calendar/days": {
+      "get": {
+        "tags": [
+          "DashboardCalendar"
+        ],
+        "operationId": "GetDashboardCalendarDays",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "podScope",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarDays"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/calendar/day": {
+      "get": {
+        "tags": [
+          "DashboardCalendar"
+        ],
+        "operationId": "GetDashboardCalendarDay",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "podScope",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarDay"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/calendar/summary": {
+      "get": {
+        "tags": [
+          "DashboardCalendar"
+        ],
+        "operationId": "GetDashboardCalendarSummary",
+        "parameters": [
+          {
+            "name": "podScope",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{userId}/absences/check": {
+      "post": {
+        "tags": [
+          "AbsenceCheck"
+        ],
+        "operationId": "CheckAbsenceCoverage",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AbsenceCheckRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AbsenceCheckRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AbsenceCheckRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbsenceCheckResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/dashboard": {
       "get": {
         "tags": [
@@ -16156,6 +17248,143 @@
   },
   "components": {
     "schemas": {
+      "AbsenceBackResult": {
+        "required": [
+          "deleted",
+          "absence"
+        ],
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "boolean"
+          },
+          "absence": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AbsenceDto"
+              }
+            ]
+          }
+        }
+      },
+      "AbsenceCheckPod": {
+        "required": [
+          "podId",
+          "name",
+          "days"
+        ],
+        "type": "object",
+        "properties": {
+          "podId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        }
+      },
+      "AbsenceCheckRequest": {
+        "required": [
+          "startDate",
+          "endDate"
+        ],
+        "type": "object",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        }
+      },
+      "AbsenceCheckResult": {
+        "required": [
+          "podsBelowMinimum"
+        ],
+        "type": "object",
+        "properties": {
+          "podsBelowMinimum": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AbsenceCheckPod"
+            }
+          }
+        }
+      },
+      "AbsenceDto": {
+        "required": [
+          "absenceId",
+          "userId",
+          "type",
+          "startDate",
+          "endDate",
+          "note",
+          "state",
+          "workingDays",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "absenceId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "type": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "state": {
+            "type": "string"
+          },
+          "workingDays": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
       "AddPodMembersRequest": {
         "required": [
           "userIds"
@@ -17873,6 +19102,21 @@
           }
         }
       },
+      "AssignHolidayCalendarRequest": {
+        "required": [
+          "calendarId"
+        ],
+        "type": "object",
+        "properties": {
+          "calendarId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "AssignmentCellResponse": {
         "required": [
           "roleId",
@@ -18925,6 +20169,612 @@
             "items": {
               "$ref": "#/components/schemas/BulkTaskResult"
             }
+          }
+        }
+      },
+      "CalendarAvailableGroup": {
+        "required": [
+          "roleId",
+          "roleName",
+          "people"
+        ],
+        "type": "object",
+        "properties": {
+          "roleId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "roleName": {
+            "type": "string"
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarPerson"
+            }
+          }
+        }
+      },
+      "CalendarCounts": {
+        "required": [
+          "total",
+          "expected",
+          "available",
+          "outOfOffice",
+          "onHoliday",
+          "offHours"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expected": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "available": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "outOfOffice": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onHoliday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "offHours": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CalendarDay": {
+        "required": [
+          "date",
+          "level",
+          "holidays",
+          "counts",
+          "pods",
+          "available",
+          "unavailable"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "level": {
+            "type": "string"
+          },
+          "holidays": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarDayHoliday"
+            }
+          },
+          "counts": {
+            "$ref": "#/components/schemas/CalendarCounts"
+          },
+          "pods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarPod"
+            }
+          },
+          "available": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarAvailableGroup"
+            }
+          },
+          "unavailable": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarUnavailableGroup"
+            }
+          }
+        }
+      },
+      "CalendarDayCell": {
+        "required": [
+          "date",
+          "total",
+          "expected",
+          "available",
+          "outOfOffice",
+          "onHoliday",
+          "offHours",
+          "coveragePercent",
+          "level",
+          "holidays",
+          "pods"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expected": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "available": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "outOfOffice": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onHoliday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "offHours": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "coveragePercent": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "level": {
+            "type": "string"
+          },
+          "holidays": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarHoliday"
+            }
+          },
+          "pods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarPod"
+            }
+          }
+        }
+      },
+      "CalendarDayHoliday": {
+        "required": [
+          "name",
+          "category",
+          "colourKey"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "colourKey": {
+            "type": "string"
+          }
+        }
+      },
+      "CalendarDays": {
+        "required": [
+          "asOfUtc",
+          "today",
+          "firstDayOfWeek",
+          "roles",
+          "days"
+        ],
+        "type": "object",
+        "properties": {
+          "asOfUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "today": {
+            "type": "string",
+            "format": "date"
+          },
+          "firstDayOfWeek": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarRole"
+            }
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarDayCell"
+            }
+          }
+        }
+      },
+      "CalendarForecastWeek": {
+        "required": [
+          "weekStart",
+          "availablePeople",
+          "freePercent"
+        ],
+        "type": "object",
+        "properties": {
+          "weekStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "availablePeople": {
+            "type": "number",
+            "format": "double"
+          },
+          "freePercent": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "CalendarHoliday": {
+        "required": [
+          "name",
+          "calendarId",
+          "category",
+          "colourKey",
+          "appliesToEveryone"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "calendarId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "category": {
+            "type": "string"
+          },
+          "colourKey": {
+            "type": "string"
+          },
+          "appliesToEveryone": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CalendarPerson": {
+        "required": [
+          "userId",
+          "displayName",
+          "podNames",
+          "load"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "podNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "load": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CalendarPod": {
+        "required": [
+          "podId",
+          "name",
+          "expected",
+          "available",
+          "minimum",
+          "level"
+        ],
+        "type": "object",
+        "properties": {
+          "podId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "expected": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "available": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "minimum": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "level": {
+            "type": "string"
+          }
+        }
+      },
+      "CalendarRisk": {
+        "required": [
+          "daysAtRisk",
+          "firstRiskDate",
+          "firstRiskLevel",
+          "worstPod",
+          "windowDays"
+        ],
+        "type": "object",
+        "properties": {
+          "daysAtRisk": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "firstRiskDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "firstRiskLevel": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "worstPod": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CalendarWorstPod"
+              }
+            ]
+          },
+          "windowDays": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CalendarRole": {
+        "required": [
+          "roleId",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "roleId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "CalendarSettingsAdminView": {
+        "required": [
+          "minCoveragePercent",
+          "podMinimumPercent",
+          "podMinimums",
+          "defaults",
+          "isCustom",
+          "rowVersion",
+          "updatedAtUtc",
+          "updatedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "minCoveragePercent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "podMinimumPercent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "podMinimums": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PodMinimum"
+            }
+          },
+          "defaults": {
+            "$ref": "#/components/schemas/CalendarThresholdValues"
+          },
+          "isCustom": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string"
+          },
+          "updatedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "CalendarSummary": {
+        "required": [
+          "thresholds",
+          "risk",
+          "forecast"
+        ],
+        "type": "object",
+        "properties": {
+          "thresholds": {
+            "$ref": "#/components/schemas/CalendarThresholdsInfo"
+          },
+          "risk": {
+            "$ref": "#/components/schemas/CalendarRisk"
+          },
+          "forecast": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarForecastWeek"
+            }
+          }
+        }
+      },
+      "CalendarThresholdsInfo": {
+        "required": [
+          "minCoveragePercent",
+          "podMinimumPercent"
+        ],
+        "type": "object",
+        "properties": {
+          "minCoveragePercent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "podMinimumPercent": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CalendarThresholdValues": {
+        "required": [
+          "minCoveragePercent",
+          "podMinimumPercent",
+          "podMinimums"
+        ],
+        "type": "object",
+        "properties": {
+          "minCoveragePercent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "podMinimumPercent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "podMinimums": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PodMinimum"
+            }
+          }
+        }
+      },
+      "CalendarUnavailableGroup": {
+        "required": [
+          "roleId",
+          "roleName",
+          "people"
+        ],
+        "type": "object",
+        "properties": {
+          "roleId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "roleName": {
+            "type": "string"
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarUnavailablePerson"
+            }
+          }
+        }
+      },
+      "CalendarUnavailablePerson": {
+        "required": [
+          "userId",
+          "displayName",
+          "podNames",
+          "load",
+          "reason",
+          "backOn",
+          "absenceType"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "podNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "load": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "backOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "absenceType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "CalendarWorstPod": {
+        "required": [
+          "podId",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "podId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
           }
         }
       },
@@ -20780,6 +22630,18 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "absenceType": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -22208,6 +24070,332 @@
           "fieldCount": {
             "type": "integer",
             "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "HolidayCalendarDto": {
+        "required": [
+          "calendarId",
+          "name",
+          "colourKey",
+          "regionNote",
+          "appliesToEveryone",
+          "isActive",
+          "holidayCount",
+          "peopleCount",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "calendarId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "colourKey": {
+            "type": "string"
+          },
+          "regionNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "appliesToEveryone": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "holidayCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "peopleCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "HolidayCalendarRefDto": {
+        "required": [
+          "calendarId",
+          "name",
+          "source"
+        ],
+        "type": "object",
+        "properties": {
+          "calendarId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          }
+        }
+      },
+      "HolidayDto": {
+        "required": [
+          "holidayId",
+          "calendarId",
+          "name",
+          "ruleKind",
+          "month",
+          "day",
+          "nth",
+          "weekday",
+          "plusDays",
+          "easterOffset",
+          "onceDate",
+          "rangeEndMonth",
+          "rangeEndDay",
+          "rangeEndDate",
+          "yearly",
+          "weekendRule",
+          "regionNote",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "holidayId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "calendarId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "ruleKind": {
+            "type": "string"
+          },
+          "month": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "day": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "nth": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "weekday": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "plusDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "easterOffset": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "onceDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "rangeEndMonth": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "rangeEndDay": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "rangeEndDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "yearly": {
+            "type": "boolean"
+          },
+          "weekendRule": {
+            "type": "string"
+          },
+          "regionNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "HolidayImportLine": {
+        "required": [
+          "line",
+          "ok",
+          "message",
+          "parsed"
+        ],
+        "type": "object",
+        "properties": {
+          "line": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "parsed": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/HolidayPreviewDto"
+              }
+            ]
+          }
+        }
+      },
+      "HolidayImportRequest": {
+        "required": [
+          "text",
+          "year"
+        ],
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "HolidayImportResult": {
+        "required": [
+          "lines",
+          "okCount",
+          "errorCount",
+          "saved"
+        ],
+        "type": "object",
+        "properties": {
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HolidayImportLine"
+            }
+          },
+          "okCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "errorCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "saved": {
+            "type": "boolean"
+          }
+        }
+      },
+      "HolidayPreviewDto": {
+        "required": [
+          "date",
+          "endDate",
+          "name",
+          "observedFrom"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "name": {
+            "type": "string"
+          },
+          "observedFrom": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        }
+      },
+      "HolidaySettingsDto": {
+        "required": [
+          "firmCalendarId",
+          "podDefaults",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "firmCalendarId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "podDefaults": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PodHolidayDefaultDto"
+            }
           },
           "rowVersion": {
             "type": "string"
@@ -25366,6 +27554,22 @@
           }
         }
       },
+      "NextHolidayDto": {
+        "required": [
+          "date",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
       "NoteHistoryEntry": {
         "required": [
           "auditEventId",
@@ -26719,6 +28923,33 @@
           }
         }
       },
+      "PodHolidayDefaultDto": {
+        "required": [
+          "podId",
+          "podName",
+          "calendarId"
+        ],
+        "type": "object",
+        "properties": {
+          "podId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "podName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "calendarId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "PodMemberCandidate": {
         "required": [
           "userId",
@@ -26826,6 +29057,23 @@
                 "$ref": "#/components/schemas/UserAvailabilitySummary"
               }
             ]
+          }
+        }
+      },
+      "PodMinimum": {
+        "required": [
+          "podId",
+          "people"
+        ],
+        "type": "object",
+        "properties": {
+          "podId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "people": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -28975,29 +31223,23 @@
           }
         }
       },
-      "SaveAvailabilityRequest": {
+      "SaveAbsenceRequest": {
         "required": [
-          "status",
-          "from",
-          "until",
-          "note",
-          "timeZoneId",
-          "workHours",
-          "rowVersion"
+          "type",
+          "startDate",
+          "endDate",
+          "note"
         ],
         "type": "object",
         "properties": {
-          "status": {
+          "type": {
             "type": "string"
           },
-          "from": {
-            "type": [
-              "null",
-              "string"
-            ],
+          "startDate": {
+            "type": "string",
             "format": "date"
           },
-          "until": {
+          "endDate": {
             "type": [
               "null",
               "string"
@@ -29010,6 +31252,22 @@
               "string"
             ]
           },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "SaveAvailabilityRequest": {
+        "required": [
+          "timeZoneId",
+          "workHours",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
           "timeZoneId": {
             "type": [
               "null",
@@ -29071,6 +31329,183 @@
               "null",
               "string"
             ]
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "SaveHolidayCalendarRequest": {
+        "required": [
+          "name",
+          "colourKey",
+          "regionNote",
+          "appliesToEveryone"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "colourKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "regionNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "appliesToEveryone": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "SaveHolidayRequest": {
+        "required": [
+          "name",
+          "ruleKind",
+          "month",
+          "day",
+          "nth",
+          "weekday",
+          "plusDays",
+          "easterOffset",
+          "onceDate",
+          "rangeEndMonth",
+          "rangeEndDay",
+          "rangeEndDate"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "ruleKind": {
+            "type": "string"
+          },
+          "month": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "day": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "nth": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "weekday": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "plusDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "easterOffset": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "onceDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "rangeEndMonth": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "rangeEndDay": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "rangeEndDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "yearly": {
+            "type": "boolean",
+            "default": true
+          },
+          "weekendRule": {
+            "type": "string",
+            "default": "NONE"
+          },
+          "regionNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "SaveHolidaySettingsRequest": {
+        "required": [
+          "firmCalendarId",
+          "podDefaults",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "firmCalendarId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "podDefaults": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PodHolidayDefaultDto"
+            }
           },
           "rowVersion": {
             "type": "string"
@@ -29555,6 +31990,34 @@
         "properties": {
           "appName": {
             "type": "string"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "SetCalendarSettingsRequest": {
+        "required": [
+          "minCoveragePercent",
+          "podMinimumPercent",
+          "podMinimums",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "minCoveragePercent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "podMinimumPercent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "podMinimums": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PodMinimum"
+            }
           },
           "rowVersion": {
             "type": "string"
@@ -33733,15 +36196,14 @@
       "UserAvailabilityDto": {
         "required": [
           "userId",
-          "status",
-          "from",
-          "until",
-          "note",
           "timeZoneId",
           "effectiveTimeZoneId",
           "usesDefaultWorkHours",
           "workHours",
           "current",
+          "absences",
+          "holidayCalendar",
+          "nextHolidays",
           "updatedAtUtc",
           "updatedByUserId",
           "rowVersion"
@@ -33751,29 +36213,6 @@
           "userId": {
             "type": "integer",
             "format": "int32"
-          },
-          "status": {
-            "type": "string"
-          },
-          "from": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "until": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "note": {
-            "type": [
-              "null",
-              "string"
-            ]
           },
           "timeZoneId": {
             "type": [
@@ -33795,6 +36234,28 @@
           },
           "current": {
             "$ref": "#/components/schemas/CurrentAvailabilityDto"
+          },
+          "absences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AbsenceDto"
+            }
+          },
+          "holidayCalendar": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/HolidayCalendarRefDto"
+              }
+            ]
+          },
+          "nextHolidays": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NextHolidayDto"
+            }
           },
           "updatedAtUtc": {
             "type": [
@@ -33947,6 +36408,26 @@
             "type": "string"
           },
           "openTaskCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "UserHolidayCalendarDto": {
+        "required": [
+          "userId",
+          "calendarId"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "calendarId": {
             "type": [
               "null",
               "integer"
@@ -35153,6 +37634,9 @@
       "name": "SettingsDashboard"
     },
     {
+      "name": "SettingsCalendar"
+    },
+    {
       "name": "Forms"
     },
     {
@@ -35172,6 +37656,18 @@
     },
     {
       "name": "UserAvailability"
+    },
+    {
+      "name": "Absences"
+    },
+    {
+      "name": "HolidayCalendars"
+    },
+    {
+      "name": "SettingsHolidays"
+    },
+    {
+      "name": "UserHolidayCalendar"
     },
     {
       "name": "MatterManagers"
@@ -35280,6 +37776,12 @@
     },
     {
       "name": "AssetReportRun"
+    },
+    {
+      "name": "DashboardCalendar"
+    },
+    {
+      "name": "AbsenceCheck"
     },
     {
       "name": "Dashboard"

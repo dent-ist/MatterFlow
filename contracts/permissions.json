@@ -232,6 +232,11 @@
       "description": "Activate or disable users and assign roles"
     },
     {
+      "code": "User.ManageAvailability",
+      "group": "Organization",
+      "description": "Create, edit and delete Out of office entries of other people (a Pod Lead: members of their own pods)"
+    },
+    {
       "code": "Role.Manage",
       "group": "Configuration",
       "description": "Create and edit roles and their permissions"
@@ -312,6 +317,16 @@
       "description": "See how many tasks each person completed per task type (training and coverage planning)"
     },
     {
+      "code": "Dashboard.ViewCalendar",
+      "group": "Dashboard",
+      "description": "Open the Calendar tab: who is out and who can work each day, and holidays"
+    },
+    {
+      "code": "Dashboard.ViewAbsenceReasons",
+      "group": "Dashboard",
+      "description": "See the type of an absence (vacation, sick, training) in the Calendar"
+    },
+    {
       "code": "Report.Manage",
       "group": "Reports",
       "description": "Create and edit reports, categories and parameters, preview and activate them, browse the report schema and read the run log"
@@ -329,7 +344,7 @@
     {
       "code": "Settings.Manage",
       "group": "Administration",
-      "description": "Change application settings (name and icon)"
+      "description": "Change application settings (name and icon, holiday calendars, calendar coverage thresholds)"
     },
     {
       "code": "Audit.View",

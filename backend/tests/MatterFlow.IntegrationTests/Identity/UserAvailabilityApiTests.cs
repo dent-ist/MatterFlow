@@ -32,8 +32,8 @@ public sealed class UserAvailabilityApiTests(SqlServerFixture sql) : IAsyncLifet
 
     private static string Version(JsonElement dto) => dto.GetProperty("rowVersion").GetString()!;
 
-    private static object Body(string version, string status = "AVAILABLE", string? from = null, string? until = null, string? note = null, string? zone = null, object[]? hours = null) =>
-        new { status, from, until, note, timeZoneId = zone, workHours = hours, rowVersion = version };
+    private static object Body(string version, string? zone = null, object[]? hours = null) =>
+        new { timeZoneId = zone, workHours = hours, rowVersion = version };
 
     private async Task<List<AuditEvent>> AuditAsync(int userId) =>
         await _factory.WithDbAsync(db => db.Set<AuditEvent>().AsNoTracking()
@@ -45,7 +45,9 @@ public sealed class UserAvailabilityApiTests(SqlServerFixture sql) : IAsyncLifet
     {
         var dto = await JsonAsync(await As(@"KE\scientist").GetAsync("/api/v1/me/availability"));
 
-        dto.GetProperty("status").GetString().ShouldBe("AVAILABLE");
+        dto.GetProperty("current").GetProperty("state").GetString().ShouldBeOneOf("AVAILABLE", "OFF_HOURS");
+        dto.GetProperty("absences").GetArrayLength().ShouldBe(0);
+        dto.GetProperty("nextHolidays").GetArrayLength().ShouldBe(0);
         dto.GetProperty("usesDefaultWorkHours").GetBoolean().ShouldBeTrue();
         dto.GetProperty("rowVersion").GetString().ShouldBe("NEW");
         dto.GetProperty("effectiveTimeZoneId").GetString().ShouldBe("America/New_York");
@@ -56,43 +58,14 @@ public sealed class UserAvailabilityApiTests(SqlServerFixture sql) : IAsyncLifet
     }
 
     [Fact]
-    public async Task A_user_edits_their_own_availability_and_it_is_audited_in_readable_text()
-    {
-        var me = await ProvisionAsync(@"KE\scientist");
-        var client = As(@"KE\scientist");
-        var initial = await JsonAsync(await client.GetAsync("/api/v1/me/availability"));
-
-        var response = await client.PutAsJsonAsync("/api/v1/me/availability", Body(Version(initial), "OUT_OF_OFFICE", until: "2099-10-20", note: "  Vacation\nin Maine "));
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var saved = await JsonAsync(response);
-
-        saved.GetProperty("status").GetString().ShouldBe("OUT_OF_OFFICE");
-        saved.GetProperty("until").GetString().ShouldBe("2099-10-20");
-        saved.GetProperty("note").GetString().ShouldBe("Vacation in Maine");
-        saved.GetProperty("current").GetProperty("state").GetString().ShouldBe("OUT_OF_OFFICE");
-        saved.GetProperty("current").GetProperty("outUntilUtc").GetDateTime().ShouldBe(new DateTime(2099, 10, 21, 4, 0, 0, DateTimeKind.Utc));
-        Version(saved).ShouldNotBe("NEW");
-
-        var audit = await AuditAsync(me);
-        audit.Count.ShouldBe(1);
-        audit[0].EventType.ShouldBe("USER_AVAILABILITY_CHANGED");
-        audit[0].ActorUserId.ShouldBe(me);
-        audit[0].Summary.ShouldBe("Set out of office until Oct 20");
-
-        var back = await client.PutAsJsonAsync("/api/v1/me/availability", Body(Version(saved)));
-        (await JsonAsync(back)).GetProperty("note").ValueKind.ShouldBe(JsonValueKind.Null);
-        (await AuditAsync(me)).Last().Summary.ShouldBe("Set available");
-    }
-
-    [Fact]
     public async Task Saving_without_changes_writes_no_audit_event()
     {
         var me = await ProvisionAsync(@"KE\scientist");
         var client = As(@"KE\scientist");
-        var saved = await JsonAsync(await client.PutAsJsonAsync("/api/v1/me/availability", Body("NEW", "OUT_OF_OFFICE", note: "Away")));
+        var saved = await JsonAsync(await client.PutAsJsonAsync("/api/v1/me/availability", Body("NEW", zone: "America/Chicago")));
         (await AuditAsync(me)).Count.ShouldBe(1);
 
-        var again = await client.PutAsJsonAsync("/api/v1/me/availability", Body(Version(saved), "OUT_OF_OFFICE", note: "Away"));
+        var again = await client.PutAsJsonAsync("/api/v1/me/availability", Body(Version(saved), zone: "America/Chicago"));
 
         again.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await AuditAsync(me)).Count.ShouldBe(1);
@@ -132,18 +105,11 @@ public sealed class UserAvailabilityApiTests(SqlServerFixture sql) : IAsyncLifet
     }
 
     [Theory]
-    [InlineData("OUT_OF_OFFICE", "2099-10-20", "2099-10-19", null, null, "OOO_RANGE_INVALID")]
-    [InlineData("OUT_OF_OFFICE", "1900-01-01", null, null, null, "OOO_RANGE_INVALID")]
-    [InlineData("AWAY", null, null, null, null, "STATUS_INVALID")]
-    [InlineData("AVAILABLE", null, null, null, "Mars/Olympus", "TIMEZONE_UNKNOWN")]
-    [InlineData("AVAILABLE", null, null, null, "Eastern Standard Time", "TIMEZONE_UNKNOWN")]
-    [InlineData("OUT_OF_OFFICE", null, null, "x", null, "NOTE_TOO_LONG")]
-    public async Task Invalid_input_returns_stable_codes(string status, string? from, string? until, string? note, string? zone, string code)
+    [InlineData("Mars/Olympus", "TIMEZONE_UNKNOWN")]
+    [InlineData("Eastern Standard Time", "TIMEZONE_UNKNOWN")]
+    public async Task Invalid_input_returns_stable_codes(string zone, string code)
     {
-        if (note == "x")
-            note = new string('x', 201);
-
-        var response = await As(@"KE\scientist").PutAsJsonAsync("/api/v1/me/availability", Body("NEW", status, from, until, note, zone));
+        var response = await As(@"KE\scientist").PutAsJsonAsync("/api/v1/me/availability", Body("NEW", zone: zone));
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await JsonAsync(response)).GetProperty("code").GetString().ShouldBe(code);
@@ -176,7 +142,7 @@ public sealed class UserAvailabilityApiTests(SqlServerFixture sql) : IAsyncLifet
     public async Task A_stale_or_missing_row_version_is_a_409_and_a_missing_one_a_400()
     {
         var client = As(@"KE\scientist");
-        var saved = await JsonAsync(await client.PutAsJsonAsync("/api/v1/me/availability", Body("NEW", "OUT_OF_OFFICE")));
+        var saved = await JsonAsync(await client.PutAsJsonAsync("/api/v1/me/availability", Body("NEW", zone: "America/Chicago")));
 
         var stale = await client.PutAsJsonAsync("/api/v1/me/availability", Body("NEW"));
         stale.StatusCode.ShouldBe(HttpStatusCode.Conflict);
@@ -184,9 +150,9 @@ public sealed class UserAvailabilityApiTests(SqlServerFixture sql) : IAsyncLifet
 
         // A first successful change moves the version on; the old one is now stale.
         await client.PutAsJsonAsync("/api/v1/me/availability", Body(Version(saved)));
-        (await client.PutAsJsonAsync("/api/v1/me/availability", Body(Version(saved), "OUT_OF_OFFICE"))).StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await client.PutAsJsonAsync("/api/v1/me/availability", Body(Version(saved), zone: "America/Denver"))).StatusCode.ShouldBe(HttpStatusCode.Conflict);
 
-        (await client.PutAsJsonAsync("/api/v1/me/availability", new { status = "AVAILABLE" })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await client.PutAsJsonAsync("/api/v1/me/availability", new { timeZoneId = "America/Denver" })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
     [Fact]
@@ -194,7 +160,7 @@ public sealed class UserAvailabilityApiTests(SqlServerFixture sql) : IAsyncLifet
     {
         var target = await ProvisionAsync(@"KE\scientist");
         var admin = await ProvisionAsync(DatabaseApiFactory.AdminAccount);
-        var body = Body("NEW", "OUT_OF_OFFICE", from: "2099-01-05", until: "2099-01-09", note: "Sick leave");
+        var body = Body("NEW", zone: "America/Denver");
 
         (await As(@"KE\director").PutAsJsonAsync($"/api/v1/users/{target}/availability", body)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await As(@"KE\director").GetAsync($"/api/v1/users/{target}/availability")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
@@ -207,10 +173,10 @@ public sealed class UserAvailabilityApiTests(SqlServerFixture sql) : IAsyncLifet
         var audit = (await AuditAsync(target)).Single();
         audit.ActorUserId.ShouldBe(admin);
         audit.ObjectId.ShouldBe(target.ToString());
-        audit.Summary.ShouldBe("Set out of office from Jan 5 until Jan 9 (on behalf)");
+        audit.Summary.ShouldBe("Time zone set to America/Denver (on behalf)");
 
         var own = await JsonAsync(await As(@"KE\scientist").GetAsync("/api/v1/me/availability"));
-        own.GetProperty("note").GetString().ShouldBe("Sick leave");
+        own.GetProperty("timeZoneId").GetString().ShouldBe("America/Denver");
         (await As(DatabaseApiFactory.AdminAccount).GetAsync("/api/v1/users/999999/availability")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
@@ -223,20 +189,6 @@ public sealed class UserAvailabilityApiTests(SqlServerFixture sql) : IAsyncLifet
     }
 
     [Fact]
-    public async Task The_users_zone_decides_when_out_of_office_starts()
-    {
-        var client = As(@"KE\scientist");
-        var zone = TimeZoneInfo.FindSystemTimeZoneById("Pacific/Kiritimati"); // UTC+14: its calendar date differs from the date in New York for 14 hours of the day
-        var localToday = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, zone));
-
-        var tomorrow = await JsonAsync(await client.PutAsJsonAsync("/api/v1/me/availability", Body("NEW", "OUT_OF_OFFICE", from: localToday.AddDays(1).ToString("yyyy-MM-dd"), zone: "Pacific/Kiritimati")));
-        tomorrow.GetProperty("current").GetProperty("state").GetString().ShouldNotBe("OUT_OF_OFFICE");
-
-        var today = await JsonAsync(await client.PutAsJsonAsync("/api/v1/me/availability", Body(Version(tomorrow), "OUT_OF_OFFICE", from: localToday.ToString("yyyy-MM-dd"), zone: "Pacific/Kiritimati")));
-        today.GetProperty("current").GetProperty("state").GetString().ShouldBe("OUT_OF_OFFICE");
-    }
-
-    [Fact]
     public async Task Lookups_and_the_admin_users_list_carry_the_compact_availability()
     {
         var out1 = await ProvisionAsync(@"KE\outperson");
@@ -244,8 +196,7 @@ public sealed class UserAvailabilityApiTests(SqlServerFixture sql) : IAsyncLifet
         var roleId = await _factory.CreateRoleAsync("Worker", "Task.View");
         await _factory.GrantRoleAsync(@"KE\outperson", roleId);
         await _factory.GrantRoleAsync(@"KE\present", roleId);
-        var saved = await As(@"KE\outperson").PutAsJsonAsync("/api/v1/me/availability", Body("NEW", "OUT_OF_OFFICE", until: "2099-10-20", note: "Conference"));
-        saved.StatusCode.ShouldBe(HttpStatusCode.OK);
+        await _factory.AddAbsenceAsync(out1, null, "2099-10-20", "Conference");
 
         var lookup = (await JsonAsync(await As(@"KE\scientist").GetAsync("/api/v1/users/lookup?q=outperson"))).EnumerateArray().Single();
         var availability = lookup.GetProperty("availability");

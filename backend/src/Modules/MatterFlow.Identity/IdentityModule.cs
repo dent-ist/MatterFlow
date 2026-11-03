@@ -62,6 +62,11 @@ public static class IdentityModule
         // The one assignee ranking every picker uses (#757); a smarter rule replaces this registration only.
         services.AddSingleton<IAssigneeRanker, Application.LoadBalancedAssigneeRanker>();
         services.AddScoped<Application.UserAdministration>();
+        services.AddScoped<Holidays.HolidayLoader>();
+        services.AddScoped<Holidays.HolidayCalendarService>();
+        services.AddScoped<Application.CalendarAccess>();
+        services.AddScoped<ICalendarAccess>(sp => sp.GetRequiredService<Application.CalendarAccess>());
+        services.AddScoped<Application.AbsenceService>();
         services.AddScoped<Application.UserAvailabilityService>();
         services.AddScoped<IUserAvailabilityReader>(sp => sp.GetRequiredService<Application.UserAvailabilityService>());
         services.AddScoped<Application.RoleAdministration>();

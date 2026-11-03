@@ -16,8 +16,7 @@ public sealed class MyMattersWorkloadTests(SqlServerFixture sql) : MyMattersTest
     [Fact]
     public async Task Workload_groups_open_tasks_by_pod_and_person_with_out_of_office()
     {
-        var own = await OkAsync(await TechClient.GetAsync("/api/v1/me/availability"));
-        await OkAsync(await TechClient.PutAsJsonAsync("/api/v1/me/availability", new { status = "OUT_OF_OFFICE", until = "2099-12-31", note = "Conference", rowVersion = own.GetProperty("rowVersion").GetString() }));
+        await TechClient.GoOutAsync(H.Factory, null, "2099-12-31", "Conference");
         H.Factory.InvalidateAll();
 
         var w = await Mine("workload");
