@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TabView } from './users-model';
 
 /**
- * Workload | Coverage as two text toggle buttons (U2, #128). A group of buttons with `aria-pressed`, not a second tablist (the tab row above is
+ * Workload | Coverage | Skills as text toggle buttons (U2, #128). A group of buttons with `aria-pressed`, not a second tablist (the tab row above is
  * the page's tablist). The tab renders it only when the person may open Coverage, so a Pod Lead without `Dashboard.ViewCoverage` sees no switch.
  * It is the first control of the toolbar on both views.
  */
@@ -11,7 +11,7 @@ import { TabView } from './users-model';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="views" role="group" aria-label="Users view" data-users-views>
-      @for (v of views; track v.key) {
+      @for (v of shown(); track v.key) {
         <button
           type="button"
           class="seg"
@@ -68,6 +68,11 @@ import { TabView } from './users-model';
 })
 export class UsersViews {
   readonly view = input.required<TabView>();
+  /** Coverage needs Dashboard.ViewCoverage; Skills needs only Dashboard.ViewUsers (the tab's own permission). */
+  readonly coverage = input(true);
+  protected readonly shown = computed(() =>
+    this.views.filter((v) => v.key !== 'coverage' || this.coverage()),
+  );
   readonly viewChange = output<TabView>();
 
   protected readonly views: { key: TabView; label: string; title: string }[] = [
@@ -76,6 +81,11 @@ export class UsersViews {
       key: 'coverage',
       label: 'Coverage',
       title: 'Coverage: task types each person has completed',
+    },
+    {
+      key: 'skills',
+      label: 'Skills',
+      title: 'Skills and training: completed tasks by person and task type, and thin cover',
     },
   ];
 }

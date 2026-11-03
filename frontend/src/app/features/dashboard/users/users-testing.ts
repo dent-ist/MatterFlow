@@ -1,4 +1,5 @@
 import {
+  SkillsMatrix,
   CoverageBoard,
   CoverageUser,
   WorkloadBoard,
@@ -167,5 +168,59 @@ export function aCoverageTypeBoard(overrides: Partial<CoverageBoard> = {}): Cove
     })),
     scopePeople: undefined,
     ...overrides,
+  };
+}
+
+/** A small skills matrix: four people, two task types (QC is thin), three non-zero cells. */
+export function aMatrix(): SkillsMatrix {
+  const person = (userId: number, displayName: string, state: string, load: number) => ({
+    userId,
+    displayName,
+    initials: displayName.slice(0, 2).toUpperCase(),
+    pods: [],
+    state,
+    load,
+    completed3Months: 0,
+    completed12Months: 0,
+  });
+  return {
+    asOfUtc: '2026-11-03T12:00:00Z',
+    since3MonthsUtc: '2026-08-03T00:00:00Z',
+    since12MonthsUtc: '2025-11-03T00:00:00Z',
+    experiencedMin: 5,
+    thinMax: 2,
+    types: [
+      {
+        taskTypeId: 1,
+        name: 'Review',
+        iconKey: 'eye',
+        isActive: true,
+        completed3Months: 30,
+        completed12Months: 90,
+        experiencedPeople: 4,
+        isThin: false,
+      },
+      {
+        taskTypeId: 2,
+        name: 'QC',
+        iconKey: 'check',
+        isActive: true,
+        completed3Months: 3,
+        completed12Months: 8,
+        experiencedPeople: 1,
+        isThin: true,
+      },
+    ],
+    people: [
+      person(1, 'Ana Bell', 'AVAILABLE', 3),
+      person(2, 'Ben Carter', 'AVAILABLE', 0),
+      person(3, 'Cy Dunn', 'OUT_OF_OFFICE', 0),
+      person(4, 'Di Eng', 'AVAILABLE', 1),
+    ],
+    cells: [
+      { userId: 1, taskTypeId: 1, completed3Months: 12, completed12Months: 40 },
+      { userId: 1, taskTypeId: 2, completed3Months: 3, completed12Months: 8 },
+      { userId: 4, taskTypeId: 2, completed3Months: 1, completed12Months: 2 },
+    ],
   };
 }

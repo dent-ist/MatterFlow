@@ -18,6 +18,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import {
   DashboardBoardClient,
+  SkillsPerson,
   WorkloadBoard,
   WorkloadUser,
 } from '../../../api/generated/api-client';
@@ -34,6 +35,7 @@ import { DashSkeleton } from './dash-skeleton';
 import { DashState, focusAfterRetry } from './dash-state';
 import { DashScope } from '../dash-scope';
 import { CoverageView } from '../users/coverage-view';
+import { SkillsView } from '../users/skills-view';
 import { UsersAssign } from '../users/users-assign';
 import { UsersCapacity } from '../users/users-capacity';
 import { UsersCard } from '../users/users-card';
@@ -103,6 +105,7 @@ export const USERS_PAGE = 200;
     UsersDrawer,
     UsersAssign,
     CoverageView,
+    SkillsView,
     DashSkeleton,
     DashState,
     ScrollArea,
@@ -123,18 +126,20 @@ export const USERS_PAGE = 200;
         (densityChange)="setDensity($event)"
         (layoutChange)="setLayout($event)"
       >
-        @if (canCoverage()) {
-          <mf-users-views [view]="view()" (viewChange)="setView($event)" />
-        }
+        <mf-users-views [view]="view()" [coverage]="canCoverage()" (viewChange)="setView($event)" />
       </mf-users-toolbar>
-    } @else if (canCoverage()) {
+    } @else if (view() === 'coverage') {
       <div class="views-row">
-        <mf-users-views [view]="view()" (viewChange)="setView($event)" />
+        <mf-users-views [view]="view()" [coverage]="canCoverage()" (viewChange)="setView($event)" />
       </div>
     }
 
     @if (view() === 'coverage') {
       <mf-coverage-view [filters]="filters()" (filtersChange)="patchFilters($event)" />
+    } @else if (view() === 'skills') {
+      <mf-skills-view (open)="openSkillsPerson($event)">
+        <mf-users-views [view]="view()" [coverage]="canCoverage()" (viewChange)="setView($event)" />
+      </mf-skills-view>
     } @else {
       <h2 class="sr-only" id="wl-h">{{ canCoverage() ? 'Team workload' : 'Workload' }}</h2>
       <mf-users-summary
@@ -427,10 +432,18 @@ export class DashUsersTab implements OnInit {
   private readonly workloadOkAt = signal<number | null>(null);
   /** When the figures of the view on screen were last read successfully (epoch ms); the page shows "Updated N min ago" from it once it is old (P6). */
   readonly failed = computed(() =>
-    this.view() === 'coverage' ? (this.coverage()?.refreshFailed() ?? false) : this.refreshFailed(),
+    this.view() === 'coverage'
+      ? (this.coverage()?.refreshFailed() ?? false)
+      : this.view() === 'skills'
+        ? (this.skills()?.refreshFailed() ?? false)
+        : this.refreshFailed(),
   );
   readonly lastOkAt = computed(() =>
-    this.view() === 'coverage' ? (this.coverage()?.lastOkAt() ?? null) : this.workloadOkAt(),
+    this.view() === 'coverage'
+      ? (this.coverage()?.lastOkAt() ?? null)
+      : this.view() === 'skills'
+        ? (this.skills()?.lastOkAt() ?? null)
+        : this.workloadOkAt(),
   );
   private editTimer: ReturnType<typeof setTimeout> | null = null;
   private undoSeen = 0;
@@ -447,6 +460,7 @@ export class DashUsersTab implements OnInit {
   readonly refreshing = computed(() => this.reading() || (this.coverage()?.refreshing() ?? false));
   private readonly reading = signal(false);
   private readonly coverage = viewChild(CoverageView);
+  private readonly skills = viewChild(SkillsView);
   readonly refreshFailed = signal(false);
   protected readonly live = signal('');
   protected readonly version = signal(0);
@@ -562,11 +576,17 @@ export class DashUsersTab implements OnInit {
     this.filters.set(filtersFromParams(this.route.snapshot.queryParamMap));
     const asked = this.route.snapshot.queryParamMap.get(USERS_VIEW_PARAM);
     const wanted = isTabView(asked) ? asked : this.prefs.view();
-    this.view.set(wanted === 'coverage' && this.canCoverage() ? 'coverage' : 'workload');
+    this.view.set(
+      wanted === 'coverage' && this.canCoverage()
+        ? 'coverage'
+        : wanted === 'skills'
+          ? 'skills'
+          : 'workload',
+    );
     // A link that names the view (even the default one) is what the person wants: remember it, so the address can leave the default out.
     if (isTabView(asked)) this.prefs.remember({ view: this.view() });
     this.initialised = true;
-    if (this.view() === 'workload') this.load();
+    if (this.view() !== 'coverage') this.load();
     else if ([null, 'users'].includes(this.route.snapshot.queryParamMap.get('tab')))
       void this.writeUrl();
     this.startAutoRefresh();
@@ -606,13 +626,14 @@ export class DashUsersTab implements OnInit {
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: {
-        [USERS_VIEW_PARAM]: view === 'coverage' ? 'coverage' : null,
+        [USERS_VIEW_PARAM]: view === 'workload' ? null : view,
         // The orientation belongs to Coverage: leaving it drops `cov=matrix`.
         ...(view === 'workload' ? { cov: null } : {}),
       },
       queryParamsHandling: 'merge',
     });
-    if (view === 'workload') this.load({ silent: !!this.board() });
+    // The board is read for Skills too (the drawer shows the person's open work from it).
+    if (view !== 'coverage') this.load({ silent: !!this.board() });
   }
 
   /** A load chip: on or off (the chips combine). */
@@ -678,7 +699,7 @@ export class DashUsersTab implements OnInit {
       relativeTo: this.route,
       queryParams: withoutDefaults('users', {
         ...filtersToParams(this.filters()),
-        [USERS_VIEW_PARAM]: this.view() === 'coverage' ? 'coverage' : null,
+        [USERS_VIEW_PARAM]: this.view() === 'workload' ? null : this.view(),
       }),
       queryParamsHandling: 'merge',
       replaceUrl: true,
@@ -691,6 +712,10 @@ export class DashUsersTab implements OnInit {
   refresh(): void {
     if (this.view() === 'coverage') {
       this.coverage()?.refresh();
+      return;
+    }
+    if (this.view() === 'skills') {
+      this.skills()?.refresh();
       return;
     }
     if (this.refreshing()) return;
@@ -782,6 +807,32 @@ export class DashUsersTab implements OnInit {
   protected openUser(user: WorkloadUser): void {
     this.drawerSnapshot.set(user);
     this.drawerId.set(user.userId);
+  }
+
+  /** A person chosen in the Skills matrix: the drawer opens with the board's copy of them, else a bare copy (their open tasks are read from the Task Queue anyway). */
+  protected openSkillsPerson(p: SkillsPerson): void {
+    const known = this.board()?.users.find((u) => u.userId === p.userId);
+    this.openUser(
+      known ?? {
+        userId: p.userId,
+        displayName: p.displayName,
+        initials: p.initials,
+        pods: p.pods,
+        availability: {
+          state: p.state === 'OUT_OF_OFFICE' || p.state === 'OFF_HOURS' ? p.state : 'AVAILABLE',
+          outUntil: undefined,
+          note: undefined,
+        },
+        byPriority: [],
+        openTotal: p.load,
+        overdue: 0,
+        dueSoon: 0,
+        onHold: 0,
+        topPriority: undefined,
+        nextDue: undefined,
+        loadLevel: p.load === 0 ? 'IDLE' : p.load <= 3 ? 'LIGHT' : p.load <= 8 ? 'NORMAL' : 'HEAVY',
+      },
+    );
   }
 
   protected closeDrawer(): void {

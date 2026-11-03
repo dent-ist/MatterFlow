@@ -39,8 +39,8 @@ export type Layout = (typeof LAYOUTS)[number];
 export const DENSITIES = ['comfortable', 'compact'] as const;
 export type Density = (typeof DENSITIES)[number];
 
-/** The two views of the Users tab: the team workload cards and the task type coverage matrix. */
-export const TAB_VIEWS = ['workload', 'coverage'] as const;
+/** The views of the Users tab: the team workload, the task type coverage matrix and the skills and training matrix. */
+export const TAB_VIEWS = ['workload', 'coverage', 'skills'] as const;
 export type TabView = (typeof TAB_VIEWS)[number];
 export const isTabView = (v: unknown): v is TabView => TAB_VIEWS.includes(v as TabView);
 
