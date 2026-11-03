@@ -1006,7 +1006,9 @@ export class TaskTable {
    */
   /** The Type column (chip and name) is shown: the small badge before the title would say it twice, so it is not drawn (LC-03). */
   protected readonly typeColumn = computed(() =>
-    this.shownColumns().some((c) => c.key === 'type' || c.key === 'typeChip'),
+    this.shownColumns().some(
+      (c) => c.key === 'type' || c.key === 'typeChip' || c.key === 'typeIcon',
+    ),
   );
   protected readonly shownColumns = computed<ColumnDef[]>(() => {
     const wanted = new Set(this.columns());

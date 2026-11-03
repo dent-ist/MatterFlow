@@ -96,6 +96,11 @@ export interface FilterDef {
   /** triState: the row's control names itself ("Sensitive: Any"), because it has no column header of its own. The sheet has labels. */
   readonly labelInRow?: boolean;
   /** No control anywhere (a link-only filter such as `?matterId=`): it only shows as a removable chip. */
+  /**
+   * The filter shows its chip (and counts for Clear filters and the empty state) but is not counted in the Filters button's badge and does not open the filter row:
+   * a state the page itself set above the list (the Dashboard's pressed Needs attention card), not a column filter the person chose here.
+   */
+  readonly notInBadge?: boolean;
   readonly noControl?: boolean;
   /**
    * text: the filter is driven by the list toolbar's always-visible Search box (LC-01, decision AR 2), not by a cell of the filter row or a field of the sheet.

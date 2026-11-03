@@ -863,10 +863,16 @@ export class DashboardPage implements OnInit {
     const tab = this.activeTab();
     return this.tabRow() && tab ? tabId(tab) : 'mf-dash-h1';
   });
-  /** Tabs whose content uses the whole width from 1600 px (Swimlane, Users with Coverage, Trends); Summary and Breakdowns keep the reading cap (P5). */
+  /** Tabs whose content uses the whole width from 1600 px (Swimlane, Users with Coverage, Trends, the v4 Summary); Breakdowns and the Technician's queue keep the reading cap (P5). */
   protected readonly wide = computed(() => {
     const tab = this.activeTab();
-    return tab === 'swimlane' || tab === 'users' || tab === 'trends';
+    // The v4 Summary (grid and right column) uses the whole width like the board tabs; the Technician's queue keeps the reading cap.
+    return (
+      tab === 'swimlane' ||
+      tab === 'users' ||
+      tab === 'trends' ||
+      (tab === 'summary' && this.fullSummary())
+    );
   });
   /** The tab row is always there (P2/P7: an error stays inside the tab), except on the empty Summary, which has no other tab to offer. */
   protected readonly showTabs = computed(

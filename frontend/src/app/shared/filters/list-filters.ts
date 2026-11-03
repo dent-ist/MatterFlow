@@ -162,7 +162,7 @@ export class ListFilters {
     this.badgeCount = computed(() => {
       const v = this.values();
       return this.defs().filter(
-        (d) => counted(d) && !d.search && isActive(d, v[d.key] ?? defaultValue(d)),
+        (d) => counted(d) && !d.search && !d.notInBadge && isActive(d, v[d.key] ?? defaultValue(d)),
       ).length;
     });
     this.chips = computed(() => {

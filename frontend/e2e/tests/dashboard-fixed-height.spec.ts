@@ -333,7 +333,7 @@ test.describe('page chrome and width (#92, #93, #100)', () => {
     await shoot(page, 'header-1366');
   });
 
-  test('1600 px and up: Swimlane, Users and Trends use the whole content area, Summary and Breakdowns keep 1360 px; the left edge never moves', async ({
+  test('1600 px and up: Summary (v4), Swimlane, Users and Trends use the whole content area, Breakdowns keeps 1360 px; the left edge never moves', async ({
     page,
   }) => {
     const widths: Record<string, number> = {};
@@ -347,9 +347,8 @@ test.describe('page chrome and width (#92, #93, #100)', () => {
       lefts.add(Math.round(b.x));
     }
     expect(lefts.size, 'one left edge for every tab').toBe(1);
-    expect(widths['summary']).toBeLessThanOrEqual(1360);
     expect(widths['breakdowns']).toBeLessThanOrEqual(1360);
-    for (const name of ['trends', 'swimlane', 'workload'])
+    for (const name of ['summary', 'trends', 'swimlane', 'workload'])
       expect(widths[name], name).toBeGreaterThan(1360);
     // 1366: nothing changes (the content is narrower than the cap anyway).
     await open(page, TABS[3], { width: 1366, height: 768 });

@@ -38,7 +38,7 @@ import { phoneCards } from '../../../shared/ui/record-card-list';
 import { ColumnMove } from '../../../shared/ui/reorder-columns';
 import { SortedLine } from '../../../shared/ui/sorted-line';
 import { ColumnAction } from '../../../shared/work-queue/column-menu-items';
-import { ColumnWidthMap } from '../../../shared/work-queue/column-widths';
+import { ColumnWidthMap, pxToRem } from '../../../shared/work-queue/column-widths';
 import { PhoneSort, SortChoice, SortOption } from '../../../shared/work-queue/phone-sort';
 import { QueueChoices } from '../../../shared/work-queue/queue-choices';
 import {
@@ -57,6 +57,8 @@ export { DASH_GRID_PARAMS } from './dash-grid-params';
 
 /** The page size of a list (decision AR 10): 50, chosen from 25 / 50 / 100. */
 const PAGE_SIZE = 50;
+/** Default width of the Assignee column (px): "Unassigned" and the Assign control sit on one line. */
+const ASSIGNEE_PX = 200;
 const CARD_NAMES: Record<CardKey, string> = {
   overdue: 'Overdue',
   unassigned: 'Unassigned',
@@ -304,9 +306,11 @@ export class DashGrid {
       ? [...keys, 'unassignedFor']
       : [...keys.slice(0, at + 1), 'unassignedFor', ...keys.slice(at + 1)];
   });
-  protected readonly colWidths = computed<ColumnWidthMap>(() =>
-    this.widthStore.widths('dashboardSummary', this.auth.profile()?.userId ?? null),
-  );
+  /** The Assignee column is wide enough for the word Unassigned and the Assign control side by side; a width the person chose wins. */
+  protected readonly colWidths = computed<ColumnWidthMap>(() => ({
+    assignee: pxToRem(ASSIGNEE_PX),
+    ...this.widthStore.widths('dashboardSummary', this.auth.profile()?.userId ?? null),
+  }));
 
   protected setPrefs(next: GridPrefs): void {
     this.prefs.set(next);
@@ -383,6 +387,7 @@ export class DashGrid {
       type: 'select',
       param: 'card',
       noControl: true,
+      notInBadge: true,
       options: CARD_KEYS.map((k) => ({ value: k, label: CARD_NAMES[k] })),
       normalize: (v: string) => (isCardKey(v) ? v : null),
     };

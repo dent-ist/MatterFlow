@@ -222,6 +222,20 @@ const CARDS: readonly CardSpec[] = [
         right: 4px;
       }
     }
+    /* A small phone: the three cards share 100 px each, so the icon box gives way to the count and the name (the words carry the meaning). */
+    @media (max-width: 420px) {
+      .ci {
+        display: none;
+      }
+      .card {
+        justify-content: center;
+        padding: var(--mf-s2) var(--mf-s1);
+      }
+      .txt {
+        align-items: center;
+        text-align: center;
+      }
+    }
     @media (max-width: 359.98px) {
       .cards {
         grid-template-columns: minmax(0, 1fr);
