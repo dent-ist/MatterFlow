@@ -779,10 +779,10 @@ export class DashCalendarTab {
   }
 
   protected closePanel(): void {
-    this.closed.set(true);
-    this.go({ day: null }, true);
     // The focus goes back to the day that was open.
     const day = this.shownDay();
+    this.closed.set(true);
+    this.go({ day: null }, true);
     afterNextRender(
       () =>
         this.host.nativeElement

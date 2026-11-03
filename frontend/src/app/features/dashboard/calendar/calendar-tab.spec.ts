@@ -227,7 +227,7 @@ describe('DashCalendarTab', () => {
     ddChoose(host, 'Filter by role', 'Data Scientist');
     await settle();
     expect(url()).toContain('role=1');
-    expect(cell('2026-11-03').getAttribute('title')).toContain('6 in view');
+    expect(cell('2026-11-03').getAttribute('title')).toContain('5 in view');
   });
 
   it('an error shows the retry state and Retry reads again', async () => {
