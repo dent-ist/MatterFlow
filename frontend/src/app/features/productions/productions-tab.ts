@@ -161,6 +161,10 @@ const emptySpec = (): SpecDraft => ({
     .pt__spacer {
       flex: 1 1 auto;
     }
+    .pt__search {
+      flex: 0 1 18rem;
+      min-width: 11rem;
+    }
     .pt__count {
       margin-inline-start: var(--mf-s1);
       color: var(--mf-text-muted);
@@ -265,6 +269,17 @@ const emptySpec = (): SpecDraft => ({
   template: `
     <section class="pt" aria-label="Productions" data-productions-tab>
       <div class="pt__bar">
+        <mf-search-box
+          inputId="pt-search"
+          [label]="view() === 'productions' ? 'Search productions' : 'Search specs'"
+          [hideLabel]="true"
+          [leadingIcon]="true"
+          [compact]="true"
+          class="pt__search"
+          [placeholder]="view() === 'productions' ? 'Search productions' : 'Search specs'"
+          [value]="query()"
+          (searchChange)="onSearch($event)"
+        />
         <div mfSegmented role="group" aria-label="Productions view">
           <button
             type="button"
@@ -308,15 +323,6 @@ const emptySpec = (): SpecDraft => ({
             size="sm"
           />
         }
-        <mf-search-box
-          inputId="pt-search"
-          [label]="view() === 'productions' ? 'Search productions' : 'Search specs'"
-          [hideLabel]="true"
-          [leadingIcon]="true"
-          placeholder="Search"
-          [value]="query()"
-          (searchChange)="onSearch($event)"
-        />
         <span class="pt__spacer"></span>
         @if (view() === 'productions' && canEdit()) {
           <p-button

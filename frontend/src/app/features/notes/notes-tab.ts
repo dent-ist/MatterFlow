@@ -163,6 +163,7 @@ interface RefChip {
                   [hideLabel]="true"
                   [hintOnFocus]="true"
                   [leadingIcon]="true"
+                  [compact]="true"
                   [placeholder]="
                     view() === 'templates' ? 'Search templates' : 'Search title and text'
                   "

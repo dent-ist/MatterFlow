@@ -247,7 +247,7 @@ Where things live now, so the next page does not repeat the discoveries:
 - **One dropdown.** Every choice or filter control is `mf-dropdown` (`shared/ui/dropdown.ts`): the inline column filters (`ColumnSelectFilter`, `ColumnTristateFilter`), the pager's rows per page, Dashboard Scope and Period, Pod Work's Pod, the time zone, the phone sort sheet and the Search filters. Data-entry selects inside forms (Project in the edit dialog, form-engine fields, colour pickers) stay native and take their look from `_forms.scss`. In a table cell the host takes `width: 0; min-width: 100%` so the words of the choices never widen a column; set `--mf-ctl-h-sm` on the host to match neighbouring 32 px inputs. A page that opens it near the bottom gets the list upward automatically.
 - **Chips.** Counts and status switches are `mf-filter-chips` (with `[strip]="true"` for a summary strip: it keeps `data-strip` / `data-strip-item`; items may be `inert`, `tinted` or `alert`). `mf-work-strip` remains only for read-only record strips.
 - **Status and priority.** `mf-status-badge` draws `mf-status-chip`; lists use `mf-priority-flag` (pill for Critical and High, plain words for the rest); only `mf-priority-badge` remains for the admin colour preview.
-- **Grids.** The work grid keeps its own scroll area and draws the `mf-grid-frame` card on `mf-work-list`; record and admin lists use `mf-grid-frame`. Heading rows are small bold capitals in the muted ink, so specs read header text with `textContent` (`allTextContents()`), not `innerText`. A grid that overflows sideways with its filter row open moves the controls to the sheet: keep column floors small (the Status and Sensitive pair is 15 rem from 1500 px).
+- **Grids.** The work grid keeps its own scroll area and draws the `mf-grid-frame` card on `mf-work-list`; record and admin lists use `mf-grid-frame`. Heading rows are small bold capitals in the muted ink, so specs read header text with `textContent` (`allTextContents()`), not `innerText`. A grid that is wider than its frame scrolls sideways inside the frame (LC-09) and its filter row scrolls with it; the controls move to the sheet only in a narrow window (under 768 px).
 - **No coloured edges.** An overdue row or card, the current workflow step and the Swimlane and Users cards carry their state in words and a full thin ring or border, never a 3 to 8 px coloured left edge.
 - **Dialogs.** Title 16 px / 600, secondary action on the left in the DOM and on screen, primary on the right (the Edit task dialog was the last exception).
 - **Headings.** Dashboard lane and list headings are `h3` with `aria-level="2"` so the outline does not skip a level.
@@ -344,8 +344,8 @@ Every list page puts the same things in the same place with the same names. A zo
 
 ```
 Row 1  [icon] Title  (count chip)                                          [+ New Thing]
-Row 2  [Search tasks]  [Filters (2)]  [Other filters]  [view slot]  ......  [Columns]  [...]
-Row 3  filter chips  Clear filters                          Sorted by Name, A to Z   Reset sort
+Row 2  [Search tasks]  [Filters (2)]  [Other filters]  [view slot]  ...  Sorted by Name, A to Z  [Columns]  [...]  [+ New]
+Row 3  (only with chips or a notice) filter chips  Clear filters                  Sorted by Name, A to Z   Reset sort
 Grid   sort by header click; a bulk bar REPLACES row 2 while rows are selected
 Foot   Rows per page [50]   Showing 1-50 of 139   Page 1 of 3   First  Previous  Next  Last
 ```
@@ -354,7 +354,7 @@ Foot   Rows per page [50]   Showing 1-50 of 139   Page 1 of 3   First  Previous 
 | --- | --- | --- |
 | Row 1 | `mf-page-header` with `[count]` | the H1, then the total after the filters as a small chip (`data-list-count`, left out while the list loads); the primary "+ New Thing" is the last `mfActions` button (Title Case, `pi pi-plus`, guide section 9) |
 | Row 2 | `mf-list-toolbar` (`shared/filters/list-toolbar.ts`) | Search first (always visible, not the global search; it drives the one text filter marked `search: true` in the page's `FilterDef[]`, so the URL parameter, links and saved views are unchanged), then Filters (n) and Other filters, then the `[mfView]` slot (quick views or a View dropdown), a spring, the `[mfColumns]` slot, the `[mfMore]` "..." menu (`mf-options-menu`: Saved views, Export) and, on a tab that has no H1, the `[mfPrimary]` button |
-| Row 3 | `mf-list-toolbar` + `mf-sorted-line` (`shared/ui/sorted-line.ts`, in the `[mfBarEnd]` slot) | chips with "Clear filters" show whenever a filter is active, with the filter row open or closed; the Sorted by line always names the sort, the default order included, and "Reset sort" shows only while the person chose a sort |
+| Row 3 | `mf-list-toolbar` + `mf-sorted-line` (`shared/ui/sorted-line.ts`, in the `[mfBarEnd]` slot) | chips with "Clear filters" show whenever a filter is active, with the filter row open or closed; the Sorted by line always names the sort, the default order included, and "Reset sort" shows only while the person chose a sort. With no chip and no notice there is no row 3: the Sorted by line moves up into row 2, before Columns (owner decision 2026-11-02), so a list keeps one toolbar row. A page whose row 2 is already full (the Task Queue's quick-view chips) sets `[sortedBelow]="true"` and keeps row 3 for the line in every state |
 | Bulk bar | `[mfBulk]` slot, `[bulkActive]` | replaces row 2 ("3 selected", the actions, Clear) |
 | Footer | `mf-pager` | rows per page 25 / 50 / 100 (default 50, `DEFAULT_PAGE_SIZE` in `list-query.ts`), Showing a-b of n, Page n of m, First / Previous / Next / Last; no "Load more" |
 | Phone (under 640 px) | the same component | Search and Filters stay (the Filters sheet holds every filter and the Sort select), Columns and Other filters are hidden, the primary button stays |
@@ -363,9 +363,33 @@ Rules: the Search box is `mf-search-box` (live after 300 ms, Enter at once, x to
 
 **Wide grids scroll inside the frame (LC-09 #1052, owner decision 2026-11-02).** On a desktop window every column the person has chosen stays visible at its width (resizable above its minimum); when the columns are wider than the grid frame the frame scrolls sideways inside itself, the page never scrolls sideways, the header row stays at the top, the Ref or Name column stays pinned on the work lists, and the scroll region is focusable and named ("Task list, scrollable"; arrow keys scroll). No list drops a column because of the window width any more (the old narrow-box rule, the `data-drop` thresholds and the Matters Secondary PM 1280 px rule are gone; `data-drop` stays as a marker only). Under 640 px the lists are cards as before.
 
-**Adopted in phase 1:** Task Queue, My Work, Pod Work, the Matter Tasks tab (`mf-scoped-tasks`), Clients, Matters, Projects, Assets. Not yet (later phases): admin lists, Matter Assets and Matter Projects tabs, My Matters, Search, Notifications, Audit Logs, Activities.
+**Adopted:** Task Queue, My Work, Pod Work, the Matter Tasks tab (`mf-scoped-tasks`), Clients, Matters, Projects, Assets, and (LC-08) the Matter Assets and Matter Projects tabs. Not yet (later phases): admin lists, My Matters, Search, Notifications, Audit Logs, Activities. Search on Clients and Matters also finds the CM Number (the API `q`).
 
 **Standard columns.** Tasks, one order on every list (`WORK_COLUMNS` in `shared/work-queue/column-prefs.ts` is the order of the table and of the Columns menu): Ref, Type, Title, CM Number, Matter Name (global lists only), Project, Priority, Assignee, Due, Status, Progress; a list that is already scoped drops the obvious columns by default (Matter Tasks: no CM Number or Matter Name; My Work: no Assignee; the Closed tab shows Closed in place of Due). Assets: Type, Name, CM Number (global lists), Size, Linked Tasks, External Reference, Disposition. The matter number is "CM Number" everywhere; the workflow progress is "Progress".
+
+### 11.2 Matter detail tab controls (epic #1037, LC-08 #1051)
+
+The seven tabs of a Matter (Summary, Tasks, Projects, Assets, Productions, Notes, Activities) look like one family. The review with the matrix of what differed and small pictures is `docs/ux/matter-detail/tab-controls-review.md`.
+
+**The tab strip** is the shared `mf-tabs` for every tab: a PrimeIcons icon, the label, the count in brackets where the viewer may see it (Tasks, Projects, Assets, Productions, Notes), a 2 px primary underline on the selected tab, one Tab stop with the arrow keys moving between tabs, sideways scroll with edge cues on a phone. A tab never draws its own strip, and a sub-switch inside a tab (Productions / Specs, Notes By tag / Latest / Templates) is the shared segmented control, never a second row of tabs.
+
+**The control row** of a tab sits directly under the strip and above the frame, one line, left to right:
+
+```
+[Search x]  [Filters (n)]  [view: segmented or dropdown]  ......  Sorted by ...  [Columns]  [...]  [+ New Thing]
+```
+
+| Zone | Rule |
+| --- | --- |
+| Search | `mf-search-box` (compact, leading icon, placeholder "Search tasks / projects / assets / productions / specs / title and text", live after 300 ms). Always first. |
+| Filters and views | `mf-filters-toggle` and the column filter row for a record list; a view is the shared segmented control (`mfSegmented`) for 2 to 4 modes or `mf-dropdown` for a filter with many values. Never a hand-made button group or a native `<select>`. |
+| Right end | Sorted by line, Columns, the "..." menu, then the primary action of the tab last ("+ New Task", "+ New Project", "+ New Asset", "+ New Production", "+ New Note"). One primary per tab. The same words the header "New" menu uses. |
+| Heights | every control is the shared control height; nothing in a row is painted by a page (`button-rule.spec.ts` fails on a local colour, border or background for a button, a segmented control or a dropdown in these tabs). |
+| Log tabs | Activities has no list to search: its row holds the Kind dropdown only, and the tab name is the screen-reader heading. |
+| Summary | has no list controls; its one action ("Edit") lives in the Details card header. |
+| Width | `mf-list-toolbar` wraps as pieces; the primary action stays at the right end of its line. On a phone the control row is Search and Filters, then the view. |
+
+A new Matter tab uses `mf-list-toolbar` (record or work list) or the row above with the same order; it does not invent a header of its own.
 
 ## 10. Note text colours (epic #1001, MD-30, #1034)
 

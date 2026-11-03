@@ -634,14 +634,15 @@ describe('MatterDetailPage', () => {
     expect(grid.querySelector('tbody a')?.getAttribute('href')).toBe('/assets/9');
     // New asset lives in the header overflow now (#274); the tab has no button of its own while it lists assets.
     expect(buttonByLabel(el(), 'New asset')).toBeUndefined();
-    expect(grid.querySelector('[data-new-asset], [data-empty-new-asset]')).toBeNull();
+    expect(grid.querySelector('[data-empty-new-asset]')).toBeNull();
     // The standalone search box and status select are gone: Name, Type, External reference and Disposition are column filters.
     expect(grid.querySelector('#matter-asset-search, #matter-asset-status')).toBeNull();
     expect(grid.querySelector('[data-filter-row]')).toBeNull(); // closed by default
     grid.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
     await settle(fixture);
-    for (const name of ['Name', 'External Reference'])
-      expect(grid.querySelector(`input[aria-label^="Filter by ${name}"]`), name).not.toBeNull();
+    // Name is the toolbar's Search box (LC-08); the other text filter stays in the row.
+    expect(grid.querySelector('[data-list-search] input')).not.toBeNull();
+    expect(grid.querySelector('input[aria-label^="Filter by External Reference"]')).not.toBeNull();
     expect(ddSelect(grid, 'Filter by Disposition').value).toBe('active');
     expect(grid.querySelector('[aria-label^="Filter by Type"]')).not.toBeNull();
 

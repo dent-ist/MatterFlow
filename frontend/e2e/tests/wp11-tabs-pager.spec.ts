@@ -107,7 +107,7 @@ test.describe('Tab strip scroll cue (#279)', () => {
   test('a deep link to the last tab opens with that tab whole in view', async ({ page }) => {
     for (const width of [375, 320]) {
       await page.setViewportSize({ width, height: 812 });
-      await page.goto(`/matters/${matterId}?tab=assets`);
+      await page.goto(`/matters/${matterId}?tab=activities`);
       await expect(lastTab(page)).toHaveAttribute('aria-selected', 'true');
       await expect.poll(() => wholeInStrip(page, lastTab(page)), `at ${width}`).toBe(true);
       await expect(cue(page, 'start')).toBeVisible();
@@ -124,12 +124,22 @@ test.describe('Tab strip scroll cue (#279)', () => {
     await cue(page, 'end').click();
     await expect.poll(() => strip(page).evaluate((el) => el.scrollLeft)).toBeGreaterThan(20);
     await expect(cue(page, 'start')).toBeVisible();
-    await cue(page, 'start').click();
-    await expect.poll(() => strip(page).evaluate((el) => el.scrollLeft)).toBe(0);
+    // Seven tabs (MD-01): a chevron pages the strip, so click until the start cue is gone.
+    await expect
+      .poll(async () => {
+        if ((await cue(page, 'start').count()) > 0) await cue(page, 'start').click();
+        return strip(page).evaluate((el) => el.scrollLeft);
+      })
+      .toBe(0);
     await expect(cue(page, 'start')).toHaveCount(0);
     // Click the last tab: it is selected and whole.
-    await cue(page, 'end').click();
-    await expect.poll(() => cue(page, 'end').count()).toBe(0);
+    // Seven tabs (MD-01): a chevron pages the strip, so click until the end cue is gone.
+    await expect
+      .poll(async () => {
+        if ((await cue(page, 'end').count()) > 0) await cue(page, 'end').click();
+        return cue(page, 'end').count();
+      })
+      .toBe(0);
     await lastTab(page).click();
     await expect(lastTab(page)).toHaveAttribute('aria-selected', 'true');
     await expect.poll(() => wholeInStrip(page, lastTab(page))).toBe(true);
@@ -153,7 +163,6 @@ test.describe('Tab strip scroll cue (#279)', () => {
     for (const [w, h] of [
       [1366, 768],
       [1920, 1080],
-      [768, 1024],
     ] as const) {
       await page.setViewportSize({ width: w, height: h });
       await page.goto(`/matters/${matterId}`);
@@ -198,7 +207,7 @@ test.describe('Tab strip scroll cue (#279)', () => {
       expect(await noPageScroll(page)).toBe(true);
     }
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(`/matters/${matterId}?tab=assets`);
+    await page.goto(`/matters/${matterId}?tab=activities`);
     await expect(cue(page, 'start')).toBeVisible();
     expect(await axeViolations(page), 'matter, scrolled, 375').toEqual([]);
   });

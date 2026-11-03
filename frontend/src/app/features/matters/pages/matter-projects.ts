@@ -9,6 +9,8 @@ import {
   signal,
 } from '@angular/core';
 import { Button } from 'primeng/button';
+import { ListFilters } from '../../../shared/filters/list-filters';
+import { ListToolbar } from '../../../shared/filters/list-toolbar';
 import { ProjectResponse } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
@@ -35,16 +37,12 @@ import { groupProjects } from './matter-project-groups';
     GridFrame,
     TaskCount,
     RowLink,
+    ListToolbar,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   styleUrl: '../../../shared/ui/page.scss',
   styles: `
-    .mp-bar {
-      display: flex;
-      justify-content: flex-end;
-      margin: 0 0 var(--mf-s2);
-    }
     .mp-name {
       width: 100%;
       min-width: 14rem;
@@ -91,14 +89,16 @@ import { groupProjects } from './matter-project-groups';
       </div>
     } @else {
       <!-- A tab has no H1: its primary action ends the row above the grid (LC-07, #1045), as "New Task" does on the Tasks tab. The header's New menu keeps its Project entry. -->
-      <div class="mp-bar" *mfHasPermission="'Project.Create'">
+      <mf-list-toolbar [filters]="filters" searchLabel="Search projects">
         <p-button
+          mfPrimary
+          *mfHasPermission="'Project.Create'"
           label="New Project"
           icon="pi pi-plus"
           data-new-project
           (onClick)="newProject.emit()"
         />
-      </div>
+      </mf-list-toolbar>
       <mf-grid-frame scrollLabel="Projects list">
         <table class="pg-table tt" data-matter-projects>
           <caption class="pg-sr">
@@ -240,8 +240,18 @@ export class MatterProjects {
   protected readonly counts = computed(() => this.auth.has('Task.View'));
   protected readonly columns = computed(() => (this.counts() ? 4 : 2));
   protected readonly shown = computed(() => this.projects().length);
+  /** Search finds a project by name among the ones the tab loaded (all of a matter's projects, a few dozen at most). */
+  protected readonly filters = new ListFilters({
+    screen: 'matter-projects',
+    noun: 'projects',
+    defs: [{ key: 'pname', label: 'Name', type: 'text', search: true }],
+  });
+  private readonly visible = computed(() => {
+    const q = this.filters.text('pname').trim().toLowerCase();
+    return q ? this.projects().filter((p) => p.name.toLowerCase().includes(q)) : this.projects();
+  });
   protected readonly groups = computed(() =>
-    groupProjects(this.projects(), this.total() <= this.projects().length),
+    groupProjects(this.visible(), this.total() <= this.projects().length),
   );
   /** What the person chose for this visit; until then the group is open only when there is nothing else to show. */
   private readonly chosen = signal<boolean | null>(null);
