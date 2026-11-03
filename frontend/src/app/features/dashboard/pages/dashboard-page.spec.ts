@@ -27,6 +27,7 @@ import {
   provideQueueChoices,
 } from '../../../shared/work-queue/work-queue-testing';
 import { aTrend } from '../ui/trend-testing';
+import { capacityOf, somePeople } from '../summary/dash-testing';
 import { aMemberChoices, aScopeChoices } from '../dash-scope-testing';
 import { STALE_CHECK_MS } from '../dash-stale';
 import { queueArgsFor } from '../dashboard-links';
@@ -51,6 +52,14 @@ function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
     completed: count(94, 'status=COMPLETED&completedFrom=2026-09-15'),
     created: count(101, 'createdFrom=2026-09-15'),
     scope: { scope: 'all', podIds: [], unassignedNoPod: 0 },
+    unassignedGauge: {
+      count: 17,
+      oldestSinceUtc: '2026-10-14T12:54:00Z',
+      oldestAgeMinutes: 168,
+      ageBasis: 'WORKING',
+      level: 3,
+      asOfUtc: '2026-10-14T15:42:00Z',
+    },
     byTaskType: [
       {
         label: 'Data Processing',
@@ -255,11 +264,20 @@ describe('DashboardPage', () => {
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         {
           provide: DashboardClient,
-          useValue: { getDashboard, getDashboardTrend, getDashboardScopes },
+          useValue: {
+            getDashboard,
+            getDashboardTrend,
+            getDashboardScopes,
+          },
         },
         {
           provide: DashboardBoardClient,
-          useValue: { getDashboardSwimlane, getDashboardWorkload },
+          useValue: {
+            getDashboardSwimlane,
+            getDashboardWorkload,
+            getDashboardCapacity: () => of(capacityOf(somePeople())),
+            getDashboardCapacityPeople: () => of(somePeople()),
+          },
         },
         { provide: TaskQueueClient, useValue: { getTaskQueue } },
         { provide: TasksClient, useValue: { assignTask } },

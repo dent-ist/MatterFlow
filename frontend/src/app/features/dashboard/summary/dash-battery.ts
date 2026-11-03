@@ -12,7 +12,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Tip } from '../../../shared/ui/tip';
-import { CapacityPerson, CapacitySummary } from '../dash-v4-contract';
+import { CapacityPerson, DashboardCapacity } from '../../../api/generated/api-client';
 import { BatteryView, batteryView } from './capacity-model';
 import { DashPeople } from './dash-people';
 import { DashV4Api } from './dash-v4-api';
@@ -409,10 +409,10 @@ export class DashBattery {
   /** Changes whenever the figures should be read again (a page refresh, a task assigned). */
   readonly refreshKey = input<unknown>(null);
   /** The last good read, for the page's "updated" text. */
-  readonly loaded = output<CapacitySummary>();
+  readonly loaded = output<DashboardCapacity>();
 
   protected readonly state = signal<BatteryState>('loading');
-  protected readonly data = signal<CapacitySummary | null>(null);
+  protected readonly data = signal<DashboardCapacity | null>(null);
   /** A refresh failed but older figures are still on screen. */
   protected readonly stale = signal(false);
   protected readonly view = computed<BatteryView | null>(() => {

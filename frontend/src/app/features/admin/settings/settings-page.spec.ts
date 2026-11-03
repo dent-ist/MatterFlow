@@ -138,7 +138,9 @@ describe('SettingsPage: Administration > Settings > Branding (epic #850, BR-05)'
     expect(text('h1')).toContain('Settings');
     expect(text('nav[aria-label="Breadcrumb"]')).toContain('Administration');
     expect(text('nav[aria-label="Breadcrumb"]')).toContain('Settings');
-    const tabs = Array.from(el().querySelectorAll('[role="tab"]')).map((t) => t.textContent?.trim());
+    const tabs = Array.from(el().querySelectorAll('[role="tab"]')).map((t) =>
+      t.textContent?.trim(),
+    );
     expect(tabs).toEqual(['Branding', 'Dashboard']);
     expect(el().querySelector('[role="tab"][aria-selected="true"]')?.textContent?.trim()).toBe(
       'Branding',

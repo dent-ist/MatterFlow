@@ -1,5 +1,5 @@
 import { ageText } from '../../../shared/work-queue/due-suffix';
-import { UnassignedGauge } from '../dash-v4-contract';
+import { DashboardUnassignedGauge } from '../../../api/generated/api-client';
 
 /** The level words and the one "what to do" line per level, from the approved mockup. Index 0 is level 0 ("Normal"). */
 export const LEVEL_WORDS = ['Normal', 'Warning', 'Elevated', 'High', 'Severe', 'Critical'] as const;
@@ -44,7 +44,7 @@ export interface GaugeView {
   pulses: boolean;
 }
 
-export function gaugeView(g: UnassignedGauge): GaugeView {
+export function gaugeView(g: DashboardUnassignedGauge): GaugeView {
   const clear = g.count === 0;
   const level = clampLevel(g.level);
   const word = clear ? 'All clear' : LEVEL_WORDS[level];
@@ -81,7 +81,7 @@ export function gaugeView(g: UnassignedGauge): GaugeView {
  */
 export function levelChange(
   previous: number | null,
-  g: UnassignedGauge,
+  g: DashboardUnassignedGauge,
 ): { key: number; message: string | null } {
   const view = gaugeView(g);
   const key = view.clear ? -1 : view.level;

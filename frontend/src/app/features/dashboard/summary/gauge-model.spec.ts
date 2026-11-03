@@ -1,7 +1,7 @@
-import { UnassignedGauge } from '../dash-v4-contract';
+import { DashboardUnassignedGauge } from '../../../api/generated/api-client';
 import { GAUGE_CLEAR, LEVEL_WORDS, clampLevel, gaugeView, levelChange } from './gauge-model';
 
-const gauge = (over: Partial<UnassignedGauge> = {}): UnassignedGauge => ({
+const gauge = (over: Partial<DashboardUnassignedGauge> = {}): DashboardUnassignedGauge => ({
   count: 7,
   oldestSinceUtc: '2026-11-03T12:00:00Z',
   oldestAgeMinutes: 168,
@@ -35,7 +35,9 @@ describe('gaugeView', () => {
   });
 
   it('is calmly All clear when nothing is unassigned', () => {
-    const v = gaugeView(gauge({ count: 0, oldestSinceUtc: null, oldestAgeMinutes: 0, level: 0 }));
+    const v = gaugeView(
+      gauge({ count: 0, oldestSinceUtc: undefined, oldestAgeMinutes: 0, level: 0 }),
+    );
     expect(v.clear).toBe(true);
     expect(v.badge).toBe('All clear');
     expect(v.doLine).toBe(GAUGE_CLEAR);

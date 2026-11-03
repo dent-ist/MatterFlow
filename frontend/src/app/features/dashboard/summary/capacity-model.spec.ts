@@ -1,5 +1,5 @@
-import { CapacitySummary } from '../dash-v4-contract';
-import { capacityOf, fixturePeople } from '../dash-v4-fixtures';
+import { DashboardCapacity } from '../../../api/generated/api-client';
+import { capacityOf, somePeople } from './dash-testing';
 import {
   STATE_META,
   batteryView,
@@ -11,7 +11,7 @@ import {
 } from './capacity-model';
 
 describe('batteryView', () => {
-  const people = fixturePeople(12);
+  const people = somePeople(12);
   const summary = capacityOf(people, 3);
 
   it('says Capacity used NN% with the number the API returned', () => {
@@ -38,19 +38,37 @@ describe('batteryView', () => {
       'Off hours',
     ]);
     expect(v.legend.reduce((n, l) => n + l.count, 0)).toBe(12);
+    expect(v.legend.map((l) => l.count)).toEqual([3, 3, 2, 1, 2, 1]);
     expect(v.legend.every((l) => l.icon.startsWith('pi-'))).toBe(true);
   });
 
   it('shows a neutral After hours state, never 100% used, when the API sends usedPercent null', () => {
-    const v = batteryView({ ...summary, usedPercent: null, freePercent: 0, canTakeWork: 0 });
+    const v = batteryView({
+      ...summary,
+      state: 'AFTER_HOURS',
+      usedPercent: undefined,
+      freePercent: undefined,
+      canTakeWork: 0,
+    });
     expect(v.mode).toBe('after-hours');
     expect(v.bigText).toBe('After hours');
     expect(v.bigText).not.toContain('100');
     expect(v.word).toBeNull();
   });
 
+  it('says Everyone is out of office, neutral, when nobody is present and nobody is off hours', () => {
+    const v = batteryView(
+      capacityOf(
+        somePeople(12).filter((p) => p.state === 'OUT_OF_OFFICE'),
+        0,
+      ),
+    );
+    expect(v.mode).toBe('all-out');
+    expect(v.bigText).toBe('Everyone is out of office');
+  });
+
   it('shows the empty state for no workers and no rate hint', () => {
-    const none: CapacitySummary = capacityOf([], 0);
+    const none: DashboardCapacity = capacityOf([], 0);
     const v = batteryView({ ...none, assignedLastHour: 4 });
     expect(v.mode).toBe('empty');
     expect(v.summaryLine).toBe('No one in this scope takes work yet.');
@@ -73,14 +91,14 @@ describe('batteryView', () => {
   });
 
   it('takes the slots per person into the formula', () => {
-    expect(formulaText(3)).toContain('(3 x people who take work)');
+    expect(formulaText(3)).toContain('(3 x people who are at work now)');
     expect(formulaText(4)).toContain('fewer than 4 open tasks');
     expect(formulaText(3)).toContain('On hold tasks do not count.');
   });
 });
 
 describe('People list', () => {
-  const people = fixturePeople(12);
+  const people = somePeople(12);
 
   it('groups by state in legend order and sorts names inside a group', () => {
     const groups = groupPeople(people, '');

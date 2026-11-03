@@ -2,7 +2,10 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { ApiError } from '../../../core/http/api-error';
 import { DashboardSettings } from './dashboard-settings';
-import { DashboardSettingsApi } from './dashboard-settings-api';
+import {
+  DashboardSettingsAdminView,
+  SettingsDashboardClient,
+} from '../../../api/generated/api-client';
 import {
   DEFAULT_GAUGE_SETTINGS,
   GaugeSettings,
@@ -34,10 +37,21 @@ describe('validateGaugeSettings', () => {
 
 describe('DashboardSettings form (DB-06)', () => {
   let fixture: ComponentFixture<DashboardSettings>;
-  let saved: GaugeSettings | null;
-  let saveResult: 'ok' | 'server-error';
+  let setBody: { gauge: GaugeSettings; rowVersion: string } | null;
+  let resetVersion: string | null;
+  let failWith: ApiError | null;
   const el = () => fixture.nativeElement as HTMLElement;
-  const btn = (sel: string) => el().querySelector(sel) as HTMLButtonElement;
+
+  const view = (over: Partial<DashboardSettingsAdminView> = {}): DashboardSettingsAdminView => ({
+    gauge: { ...structuredClone(DEFAULT_GAUGE_SETTINGS) },
+    defaults: { ...structuredClone(DEFAULT_GAUGE_SETTINGS) },
+    isCustom: false,
+    rowVersion: '',
+    timeZoneId: 'America/New_York',
+    updatedAtUtc: undefined,
+    updatedBy: undefined,
+    ...over,
+  });
 
   function type(id: string, value: string) {
     const input = el().querySelector<HTMLInputElement>(`#${id}`)!;
@@ -45,35 +59,26 @@ describe('DashboardSettings form (DB-06)', () => {
     input.dispatchEvent(new Event('input'));
     fixture.detectChanges();
   }
+  const saveButton = () => el().querySelector('p-button[data-save] button') as HTMLButtonElement;
 
-  beforeEach(async () => {
-    saved = null;
-    saveResult = 'ok';
+  async function create(initial = view()) {
+    setBody = null;
+    resetVersion = null;
+    failWith = null;
     TestBed.configureTestingModule({
       providers: [
         {
-          provide: DashboardSettingsApi,
+          provide: SettingsDashboardClient,
           useValue: {
-            load: () => of(structuredClone(DEFAULT_GAUGE_SETTINGS)),
-            save: (s: GaugeSettings) => {
-              if (saveResult === 'server-error') {
-                return throwError(
-                  () =>
-                    new ApiError(
-                      400,
-                      'VALIDATION',
-                      'Invalid',
-                      {
-                        errors: {
-                          TasksPerLevel: [{ code: 'RANGE', message: 'Too many per level.' }],
-                        },
-                      },
-                      undefined as never,
-                    ),
-                );
-              }
-              saved = s;
-              return of(s);
+            getDashboardSettings: () => of(initial),
+            setDashboardSettings: (body: { gauge: GaugeSettings; rowVersion: string }) => {
+              if (failWith) return throwError(() => failWith);
+              setBody = body;
+              return of(view({ gauge: body.gauge, isCustom: true, rowVersion: 'V2' }));
+            },
+            resetDashboardSettings: (rowVersion: string) => {
+              resetVersion = rowVersion;
+              return of(view());
             },
           },
         },
@@ -83,50 +88,88 @@ describe('DashboardSettings form (DB-06)', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
-  });
+  }
 
-  it('shows the defaults under the fields and starts with Save and Cancel disabled and Reset disabled', () => {
+  it('shows the defaults under the fields, the firm time zone, and starts with Save disabled', async () => {
+    await create();
     expect(el().textContent).toContain('Default 08:00');
     expect(el().textContent).toContain('Default Monday to Friday');
-    expect(btn('[data-save] button, button[data-save]').disabled).toBe(true);
+    expect(el().querySelector('[data-ds-meta]')?.textContent).toContain('America/New_York');
+    expect(saveButton().disabled).toBe(true);
     expect((el().querySelector('#ds-start') as HTMLInputElement).value).toBe('08:00');
     expect((el().querySelector('[data-basis="WORKING"]') as HTMLInputElement).checked).toBe(true);
   });
 
-  it('saves changed hours and the clock basis (clock hours are selectable)', async () => {
+  it('saves changed hours and the clock basis (clock hours are selectable) with an empty version for the first save', async () => {
+    await create();
     type('ds-start', '07:30');
     (el().querySelector('[data-basis="CLOCK"]') as HTMLInputElement).click();
     fixture.detectChanges();
-    const save = el().querySelector('p-button[data-save] button') as HTMLButtonElement;
-    expect(save.disabled).toBe(false);
-    save.click();
+    expect(saveButton().disabled).toBe(false);
+    saveButton().click();
     await fixture.whenStable();
-    expect(saved?.workdayStart).toBe('07:30');
-    expect(saved?.ageBasis).toBe('CLOCK');
+    expect(setBody?.gauge.workdayStart).toBe('07:30');
+    expect(setBody?.gauge.ageBasis).toBe('CLOCK');
+    expect(setBody?.rowVersion).toBe('');
   });
 
-  it('blocks Save and says why when the workday ends before it starts', () => {
+  it('sends the version of a stored value, and sends a reset when the form is back at the defaults', async () => {
+    await create(
+      view({
+        isCustom: true,
+        rowVersion: 'V1',
+        gauge: { ...DEFAULT_GAUGE_SETTINGS, tasksPerLevel: 8 },
+      }),
+    );
+    type('ds-per', '5');
+    saveButton().click();
+    await fixture.whenStable();
+    expect(resetVersion).toBe('V1');
+    expect(setBody).toBeNull();
+  });
+
+  it('blocks Save and says why when the workday ends before it starts', async () => {
+    await create();
     type('ds-end', '07:00');
     expect(el().querySelector('#ds-end-err')?.textContent).toContain('must end after');
-    expect((el().querySelector('p-button[data-save] button') as HTMLButtonElement).disabled).toBe(
-      true,
-    );
+    expect(saveButton().disabled).toBe(true);
   });
 
-  it('Reset to default only fills the form; nothing is saved until Save', () => {
+  it('Reset to default only fills the form; nothing is saved until Save', async () => {
+    await create();
     type('ds-per', '8');
     (el().querySelector('p-button[data-reset] button') as HTMLButtonElement).click();
     fixture.detectChanges();
     expect((el().querySelector('#ds-per') as HTMLInputElement).value).toBe('5');
-    expect(saved).toBeNull();
+    expect(setBody).toBeNull();
   });
 
   it('puts a message from the server under the field it names', async () => {
-    saveResult = 'server-error';
+    await create();
     type('ds-per', '9');
-    (el().querySelector('p-button[data-save] button') as HTMLButtonElement).click();
+    failWith = new ApiError(
+      400,
+      'VALIDATION',
+      'Invalid',
+      { errors: { TasksPerLevel: [{ code: 'RANGE', message: 'Too many per level.' }] } },
+      undefined as never,
+    );
+    saveButton().click();
     await fixture.whenStable();
     fixture.detectChanges();
     expect(el().querySelector('#ds-per-err')?.textContent).toContain('Too many per level.');
+  });
+
+  it('offers Reload latest after a version conflict', async () => {
+    await create();
+    type('ds-per', '9');
+    failWith = new ApiError(409, 'CONCURRENCY_CONFLICT', 'Changed', undefined, undefined as never);
+    saveButton().click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(el().querySelector('[data-server-error]')?.textContent).toContain(
+      'Someone else changed',
+    );
+    expect(el().querySelector('[data-reload]')).not.toBeNull();
   });
 });

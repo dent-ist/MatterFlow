@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
-import { CapacityPerson, CapacitySummary } from '../dash-v4-contract';
-import { capacityOf, fixturePeople } from '../dash-v4-fixtures';
+import { CapacityPerson, DashboardCapacity } from '../../../api/generated/api-client';
+import { capacityOf, somePeople } from './dash-testing';
 import { DashBattery } from './dash-battery';
 import { DashV4Api } from './dash-v4-api';
 
@@ -12,10 +12,7 @@ describe('DashBattery (DB-05)', () => {
   let capacityCalls = 0;
   let peopleCalls = 0;
 
-  function create(
-    summary: CapacitySummary | 'error',
-    people: CapacityPerson[] = fixturePeople(12),
-  ) {
+  function create(summary: DashboardCapacity | 'error', people: CapacityPerson[] = somePeople(12)) {
     capacityCalls = 0;
     peopleCalls = 0;
     TestBed.configureTestingModule({
@@ -41,7 +38,7 @@ describe('DashBattery (DB-05)', () => {
   }
 
   it('says Capacity used NN% with the API number, 8 of 12 can take work now, and a legend that adds up to 12', () => {
-    const summary = capacityOf(fixturePeople(12), 3);
+    const summary = capacityOf(somePeople(12), 3);
     create(summary);
     expect(text('[data-battery-big]')).toBe(`Capacity used ${summary.usedPercent}%`);
     expect(text('[data-battery-summary]')).toBe('8 of 12 can take work now');
@@ -57,12 +54,17 @@ describe('DashBattery (DB-05)', () => {
   });
 
   it('hides the rate hint when the API does not send it', () => {
-    create({ ...capacityOf(fixturePeople(12)), assignedLastHour: undefined });
+    create({ ...capacityOf(somePeople(12)), assignedLastHour: undefined });
     expect(el().querySelector('[data-battery-rate]')).toBeNull();
   });
 
   it('shows a neutral After hours state when the API sends no percentage', () => {
-    create({ ...capacityOf(fixturePeople(12)), usedPercent: null, canTakeWork: 0 });
+    create({
+      ...capacityOf(somePeople(12)),
+      state: 'AFTER_HOURS',
+      usedPercent: undefined,
+      canTakeWork: 0,
+    });
     expect(text('[data-battery-big]')).toBe('After hours');
     expect(el().textContent).not.toContain('100%');
   });
@@ -81,7 +83,7 @@ describe('DashBattery (DB-05)', () => {
   });
 
   it('reads the People list only when the popover opens, then searches it on the client', () => {
-    create(capacityOf(fixturePeople(12), 3));
+    create(capacityOf(somePeople(12), 3));
     expect(peopleCalls).toBe(0);
     (el().querySelector('[data-people-open]') as HTMLButtonElement).click();
     fixture.detectChanges();
@@ -100,7 +102,7 @@ describe('DashBattery (DB-05)', () => {
   });
 
   it('reads again when the refresh key changes', () => {
-    create(capacityOf(fixturePeople(12), 3));
+    create(capacityOf(somePeople(12), 3));
     fixture.componentRef.setInput('refreshKey', 1);
     fixture.detectChanges();
     expect(capacityCalls).toBe(2);

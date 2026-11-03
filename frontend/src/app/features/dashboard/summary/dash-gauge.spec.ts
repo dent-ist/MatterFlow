@@ -1,8 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { UnassignedGauge } from '../dash-v4-contract';
+import { DashboardUnassignedGauge } from '../../../api/generated/api-client';
 import { DashGauge } from './dash-gauge';
 
-const gauge = (over: Partial<UnassignedGauge> = {}): UnassignedGauge => ({
+const gauge = (over: Partial<DashboardUnassignedGauge> = {}): DashboardUnassignedGauge => ({
   count: 7,
   oldestSinceUtc: '2026-11-03T12:00:00Z',
   oldestAgeMinutes: 168,
@@ -17,7 +17,7 @@ describe('DashGauge (DB-06)', () => {
   const el = () => fixture.nativeElement as HTMLElement;
   const text = (sel: string) => el().querySelector(sel)?.textContent?.trim();
 
-  function create(g: UnassignedGauge = gauge(), reduced = false) {
+  function create(g: DashboardUnassignedGauge = gauge(), reduced = false) {
     const original = window.matchMedia;
     window.matchMedia = ((q: string) => ({
       matches: reduced && q.includes('prefers-reduced-motion'),
@@ -56,7 +56,7 @@ describe('DashGauge (DB-06)', () => {
   });
 
   it('says All clear calmly, with no button, when nothing is unassigned', () => {
-    create(gauge({ count: 0, oldestSinceUtc: null, oldestAgeMinutes: 0, level: 0 }));
+    create(gauge({ count: 0, oldestSinceUtc: undefined, oldestAgeMinutes: 0, level: 0 }));
     expect(text('[data-gauge-badge]')).toBe('All clear');
     expect(el().querySelector('[data-gauge-go]')).toBeNull();
     expect(text('[data-gauge-do]')).toBe('Nothing is waiting for an owner.');

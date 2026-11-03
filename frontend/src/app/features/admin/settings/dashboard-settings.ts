@@ -8,14 +8,18 @@ import {
 } from '@angular/core';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
+import {
+  DashboardSettingsAdminView,
+  SettingsDashboardClient,
+} from '../../../api/generated/api-client';
+import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
-import { DashboardSettingsApi } from './dashboard-settings-api';
 import {
-  AgeBasis,
   DEFAULT_GAUGE_SETTINGS,
   GaugeSettings,
   WEEKDAYS,
+  fromServer,
   WEEKDAY_LABELS,
   Weekday,
   sameSettings,
@@ -29,7 +33,7 @@ import {
  */
 @Component({
   selector: 'mf-dashboard-settings',
-  imports: [Button],
+  imports: [Button, MfDatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form class="ds" novalidate (submit)="$event.preventDefault(); save()" data-dashboard-settings>
@@ -54,7 +58,9 @@ import {
               "
               (input)="patch({ workdayStart: $any($event.target).value })"
             />
-            <p class="mf-field__help" id="ds-start-help">Default {{ defaults.workdayStart }}</p>
+            <p class="mf-field__help" id="ds-start-help">
+              Default {{ defaultSettings().workdayStart }}
+            </p>
             @if (errors()['workdayStart']; as e) {
               <p class="mf-field__error" role="alert" id="ds-start-err">
                 <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ e }}
@@ -74,7 +80,9 @@ import {
               "
               (input)="patch({ workdayEnd: $any($event.target).value })"
             />
-            <p class="mf-field__help" id="ds-end-help">Default {{ defaults.workdayEnd }}</p>
+            <p class="mf-field__help" id="ds-end-help">
+              Default {{ defaultSettings().workdayEnd }}
+            </p>
             @if (errors()['workdayEnd']; as e) {
               <p class="mf-field__error" role="alert" id="ds-end-err">
                 <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ e }}
@@ -189,8 +197,8 @@ import {
               (input)="patch({ tasksPerLevel: toInt($any($event.target).value) })"
             />
             <p class="mf-field__help" id="ds-per-help">
-              Default {{ defaults.tasksPerLevel }}: every {{ defaults.tasksPerLevel }} waiting tasks
-              add one level.
+              Default {{ defaultSettings().tasksPerLevel }}: every
+              {{ defaultSettings().tasksPerLevel }} waiting tasks add one level.
             </p>
             @if (errors()['tasksPerLevel']; as e) {
               <p class="mf-field__error" role="alert" id="ds-per-err">
@@ -215,7 +223,7 @@ import {
               (input)="patch({ countBonusMax: toInt($any($event.target).value) })"
             />
             <p class="mf-field__help" id="ds-bonus-help">
-              Default {{ defaults.countBonusMax }}. The level never goes above 5.
+              Default {{ defaultSettings().countBonusMax }}. The level never goes above 5.
             </p>
             @if (errors()['countBonusMax']; as e) {
               <p class="mf-field__error" role="alert" id="ds-bonus-err">
@@ -227,7 +235,23 @@ import {
       </fieldset>
 
       @if (serverMessage(); as m) {
-        <div class="pg-alert" role="alert" data-server-error>{{ m }}</div>
+        <div class="pg-alert" role="alert" data-server-error>
+          {{ m }}
+          @if (conflict()) {
+            <p-button label="Reload latest" severity="secondary" data-reload (onClick)="load()" />
+          }
+        </div>
+      }
+      @if (view(); as v) {
+        <p class="ds__intro" data-ds-meta>
+          Times are in the firm's time zone ({{ v.timeZoneId }}), for everyone.
+          @if (v.updatedAtUtc) {
+            Last changed {{ v.updatedAtUtc | mfDate }}
+            @if (v.updatedBy) {
+              by {{ v.updatedBy }}
+            }
+          }
+        </p>
       }
 
       <div class="ds__actions">
@@ -333,12 +357,19 @@ import {
   `,
 })
 export class DashboardSettings implements OnInit {
-  private readonly api = inject(DashboardSettingsApi);
+  private readonly api = inject(SettingsDashboardClient);
   private readonly notify = inject(NotificationService);
 
   protected readonly weekdays = WEEKDAYS;
   protected readonly dayLabels = WEEKDAY_LABELS;
   protected readonly defaults = DEFAULT_GAUGE_SETTINGS;
+  /** The server's answer: the stored values, the defaults, the version to send back and the firm's time zone. */
+  protected readonly view = signal<DashboardSettingsAdminView | null>(null);
+  protected readonly conflict = signal(false);
+  protected readonly defaultSettings = computed(() => {
+    const v = this.view();
+    return v ? fromServer(v.defaults) : DEFAULT_GAUGE_SETTINGS;
+  });
 
   private readonly saved = signal<GaugeSettings>(structuredClone(DEFAULT_GAUGE_SETTINGS));
   protected readonly form = signal<GaugeSettings>(structuredClone(DEFAULT_GAUGE_SETTINGS));
@@ -354,13 +385,30 @@ export class DashboardSettings implements OnInit {
   }));
   protected readonly hasErrors = computed(() => Object.keys(this.errors()).length > 0);
   protected readonly dirty = computed(() => !sameSettings(this.form(), this.saved()));
-  protected readonly isDefault = computed(() => sameSettings(this.form(), DEFAULT_GAUGE_SETTINGS));
+  protected readonly isDefault = computed(() => sameSettings(this.form(), this.defaultSettings()));
 
   ngOnInit(): void {
-    void firstValueFrom(this.api.load()).then((s) => {
-      this.saved.set(structuredClone(s));
-      this.form.set(structuredClone(s));
-    });
+    void this.load();
+  }
+
+  /** Reads the settings (also "Reload latest" after a version conflict). */
+  protected async load(): Promise<void> {
+    try {
+      const view = await firstValueFrom(this.api.getDashboardSettings());
+      this.applyView(view);
+      this.conflict.set(false);
+    } catch {
+      this.serverMessage.set("We couldn't load the settings. Try again.");
+    }
+  }
+
+  private applyView(view: DashboardSettingsAdminView): void {
+    const gauge = fromServer(view.gauge);
+    this.view.set(view);
+    this.saved.set(structuredClone(gauge));
+    this.form.set(structuredClone(gauge));
+    this.serverErrors.set({});
+    this.serverMessage.set(null);
   }
 
   protected patch(change: Partial<GaugeSettings>): void {
@@ -387,7 +435,7 @@ export class DashboardSettings implements OnInit {
   }
 
   protected reset(): void {
-    this.patch(structuredClone(DEFAULT_GAUGE_SETTINGS));
+    this.patch(structuredClone(this.defaultSettings()));
     this.live.set('Defaults filled in. Save to keep them.');
   }
 
@@ -399,27 +447,47 @@ export class DashboardSettings implements OnInit {
   }
 
   protected async save(): Promise<void> {
-    if (this.busy() || this.hasErrors() || !this.dirty()) return;
+    const view = this.view();
+    if (!view || this.busy() || this.hasErrors() || !this.dirty()) return;
     this.busy.set(true);
     try {
-      const saved = await firstValueFrom(this.api.save(this.form()));
-      this.saved.set(structuredClone(saved));
-      this.form.set(structuredClone(saved));
+      // Back to the defaults is a reset (the stored value goes away); anything else stores the values. The version of what was read goes back with it.
+      const toDefaults = sameSettings(this.form(), this.defaultSettings());
+      const next =
+        toDefaults && view.isCustom
+          ? await firstValueFrom(this.api.resetDashboardSettings(view.rowVersion))
+          : await firstValueFrom(
+              this.api.setDashboardSettings({
+                gauge: this.form(),
+                rowVersion: view.isCustom ? view.rowVersion : '',
+              }),
+            );
+      this.applyView(next);
       this.notify.success('Saved. The gauge uses the new hours the next time it refreshes.');
       this.live.set('Dashboard settings saved.');
     } catch (error) {
-      if (error instanceof ApiError && error.hasFieldErrors) {
-        // The server's messages go under the field they name (the first one of each); a field the form does not know shows in the summary above the buttons.
-        const named: Record<string, string> = {};
-        for (const [field, list] of Object.entries(error.problem?.errors ?? {})) {
-          const key = field.charAt(0).toLowerCase() + field.slice(1);
-          if (list[0]) named[key] = list[0].message;
+      if (
+        error instanceof ApiError &&
+        (error.status === 409 || error.code === 'CONCURRENCY_CONFLICT')
+      ) {
+        this.conflict.set(true);
+        this.serverMessage.set(
+          'Someone else changed these settings while you were editing. Reload to see the latest values; your changes here are not saved.',
+        );
+      } else {
+        if (error instanceof ApiError && error.hasFieldErrors) {
+          // The server's messages go under the field they name (the first one of each); a field the form does not know shows above the buttons.
+          const named: Record<string, string> = {};
+          for (const [field, list] of Object.entries(error.problem?.errors ?? {})) {
+            const key = field.charAt(0).toLowerCase() + field.slice(1);
+            if (list[0]) named[key] = list[0].message;
+          }
+          this.serverErrors.set(named);
         }
-        this.serverErrors.set(named);
+        this.serverMessage.set(
+          error instanceof ApiError ? error.message : "We couldn't save the settings. Try again.",
+        );
       }
-      this.serverMessage.set(
-        error instanceof ApiError ? error.message : "We couldn't save the settings. Try again.",
-      );
     } finally {
       this.busy.set(false);
     }

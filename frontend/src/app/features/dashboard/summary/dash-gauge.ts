@@ -11,7 +11,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { UnassignedGauge } from '../dash-v4-contract';
+import { DashboardUnassignedGauge } from '../../../api/generated/api-client';
 import { GaugeView, gaugeView, levelChange } from './gauge-model';
 
 const SEGMENTS = [0, 1, 2, 3, 4, 5] as const;
@@ -321,7 +321,7 @@ export function arcPath(a0: number, a1: number): string {
   `,
 })
 export class DashGauge {
-  readonly gauge = input.required<UnassignedGauge>();
+  readonly gauge = input.required<DashboardUnassignedGauge>();
   /** Show the unassigned tasks, longest waiting first (the Unassigned card on, sorted by `unassignedSince`). */
   readonly show = output<void>();
 

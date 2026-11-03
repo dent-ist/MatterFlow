@@ -2,18 +2,19 @@ import {
   CAPACITY_STATES,
   CapacityState,
   STATE_META,
+  isCapacityState,
   StateMeta,
 } from '../../../shared/availability/capacity-state';
-import { CapacityPerson, CapacitySummary } from '../dash-v4-contract';
+import { CapacityPerson, DashboardCapacity } from '../../../api/generated/api-client';
 
 export { STATE_META };
 
-/** The formula, in the words of the issue; the slots per person comes from the response. */
+/** The formula, in the words of the issue; the slots per person comes from the response. Out of office and off hours people are left out of the people counted. */
 export function formulaText(slotsPerPerson: number): string {
   return (
-    `Free capacity = free slots / (${slotsPerPerson} x people who take work). ` +
-    `A slot is free when the person is available and has fewer than ${slotsPerPerson} open tasks. ` +
-    'On hold tasks do not count. Out of office and off hours people have no free slots.'
+    `Free capacity = free slots / (${slotsPerPerson} x people who are at work now). ` +
+    `A slot is free when the person has fewer than ${slotsPerPerson} open tasks. ` +
+    'On hold tasks do not count. People who are out of office or outside their work hours have no free slots and are not counted.'
   );
 }
 
@@ -22,6 +23,8 @@ export type BatteryMode =
   | 'normal'
   /** Nobody can take work right now because it is outside working hours (owner decision: neutral "After hours", never 100 % used). */
   | 'after-hours'
+  /** Everybody in the scope is out of office. */
+  | 'all-out'
   /** No worker in this scope. */
   | 'empty';
 
@@ -61,8 +64,8 @@ export function rateHintText(assignedLastHour: number | null | undefined): strin
 }
 
 /** Everything the battery shows, from the server's numbers (nothing is recomputed here: the big number is the API's). */
-export function batteryView(c: CapacitySummary): BatteryView {
-  const counts = new Map(c.states.map((s) => [s.state, s.count]));
+export function batteryView(c: DashboardCapacity): BatteryView {
+  const counts = new Map<string, number>(c.states.map((s) => [s.state, s.count]));
   const legend: LegendItem[] = CAPACITY_STATES.map((state) => ({
     state,
     ...STATE_META[state],
@@ -70,7 +73,7 @@ export function batteryView(c: CapacitySummary): BatteryView {
   }));
   const formula = formulaText(c.slotsPerPerson);
   const rateHint = rateHintText(c.assignedLastHour);
-  if (c.workers === 0) {
+  if (c.state === 'NO_WORKERS' || c.workers === 0) {
     return {
       mode: 'empty',
       charge: 0,
@@ -84,7 +87,20 @@ export function batteryView(c: CapacitySummary): BatteryView {
     };
   }
   const summaryLine = `${c.canTakeWork} of ${c.workers} can take work now`;
-  if (c.usedPercent === null || c.usedPercent === undefined) {
+  if (c.state === 'ALL_OUT') {
+    return {
+      mode: 'all-out',
+      charge: 0,
+      bigText: 'Everyone is out of office',
+      summaryLine,
+      word: null,
+      rateHint,
+      legend,
+      formula,
+      ariaLabel: `Capacity. Everyone is out of office. ${summaryLine}.`,
+    };
+  }
+  if (c.state === 'AFTER_HOURS' || c.usedPercent === null || c.usedPercent === undefined) {
     return {
       mode: 'after-hours',
       charge: 0,
@@ -97,17 +113,18 @@ export function batteryView(c: CapacitySummary): BatteryView {
       ariaLabel: `Capacity. After hours. ${summaryLine}.`,
     };
   }
-  const free = c.freePercent ?? 100 - c.usedPercent;
+  const used = c.usedPercent as number;
+  const free = c.freePercent ?? 100 - used;
   return {
     mode: 'normal',
     charge: Math.max(0, Math.min(100, free)),
-    bigText: `Capacity used ${c.usedPercent}%`,
+    bigText: `Capacity used ${used}%`,
     summaryLine,
     word: freeWord(free),
     rateHint,
     legend,
     formula,
-    ariaLabel: `Capacity used ${c.usedPercent} percent. ${summaryLine}. ${freeWord(free)} free capacity.`,
+    ariaLabel: `Capacity used ${used} percent. ${summaryLine}. ${freeWord(free)} free capacity.`,
   };
 }
 
@@ -124,7 +141,7 @@ export function groupPeople(people: readonly CapacityPerson[], query: string): P
   const match = (p: CapacityPerson): boolean =>
     q === '' ||
     p.displayName.toLowerCase().includes(q) ||
-    STATE_META[p.state].label.toLowerCase().includes(q);
+    (isCapacityState(p.state) && STATE_META[p.state].label.toLowerCase().includes(q));
   return CAPACITY_STATES.map((state) => ({
     state,
     label: STATE_META[state].label,
@@ -137,7 +154,7 @@ export function groupPeople(people: readonly CapacityPerson[], query: string): P
 
 /** `Busy, 2 open` / `Out of office until 11/06`: the line of one person in the People list. */
 export function personDetail(p: CapacityPerson): string {
-  const meta = STATE_META[p.state].label;
+  const meta = isCapacityState(p.state) ? STATE_META[p.state].label : p.state;
   if (p.state === 'OUT_OF_OFFICE' && p.outUntil) {
     const m = /^\d{4}-(\d{2})-(\d{2})/.exec(p.outUntil);
     return m ? `${meta} until ${m[1]}/${m[2]}` : meta;

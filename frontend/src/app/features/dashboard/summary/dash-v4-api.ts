@@ -1,39 +1,33 @@
-import { Injectable } from '@angular/core';
-import { Observable, delay, of } from 'rxjs';
-import { DashboardSummary } from '../../../api/generated/api-client';
-import { CapacityPerson, CapacitySummary, UnassignedGauge } from '../dash-v4-contract';
-import { FIXTURE_GAUGE, capacityOf, fixturePeople } from '../dash-v4-fixtures';
+import { Injectable, inject } from '@angular/core';
+import { Observable } from 'rxjs';
+import {
+  CapacityPerson,
+  DashboardCapacity,
+  DashboardBoardClient,
+  DashboardSummary,
+  DashboardUnassignedGauge,
+} from '../../../api/generated/api-client';
 
 /**
- * The one door to the Dashboard v4 data that is not in the generated client yet (epic #1063). Today it answers from the typed fixtures in
- * `dash-v4-fixtures.ts`; when Agent G has pushed the regenerated nswag client, ONLY this class changes (the methods call `DashboardClient`
- * and the temporary types go away). Nothing else imports the fixtures.
+ * The one door to the Dashboard v4 data that is not part of the summary itself (epic #1063): the capacity of the scope and the People behind it. It was a fixture
+ * facade until the regenerated client arrived; now it calls `DashboardBoardClient`. Both calls need Dashboard.ViewUsers; `scope` is the page scope (`all`, `mine` or a pod id).
  */
 @Injectable({ providedIn: 'root' })
 export class DashV4Api {
-  /** `GET /dashboard/capacity` (Dashboard.ViewUsers). `scope` is the page scope (`all`, `mine` or a pod id). */
-  capacity(scope: string): Observable<CapacitySummary> {
-    return of(capacityOf(fixturePeopleFor(scope))).pipe(delay(0));
+  private readonly api = inject(DashboardBoardClient);
+
+  /** `GET /dashboard/capacity`. */
+  capacity(scope: string): Observable<DashboardCapacity> {
+    return this.api.getDashboardCapacity(scope);
   }
 
-  /** `GET /dashboard/capacity/people` (Dashboard.ViewUsers), called when the People popover opens. */
-  people(scope: string, q?: string): Observable<CapacityPerson[]> {
-    const needle = (q ?? '').trim().toLowerCase();
-    return of(
-      fixturePeopleFor(scope).filter(
-        (p) => needle === '' || p.displayName.toLowerCase().includes(needle),
-      ),
-    ).pipe(delay(0));
+  /** `GET /dashboard/capacity/people`, called when the People popover opens (the search is a client filter over up to 200 people). */
+  people(scope: string): Observable<CapacityPerson[]> {
+    return this.api.getDashboardCapacityPeople(undefined, undefined, scope);
   }
 
-  /** The `unassignedGauge` block of the summary; null when the viewer has no Dashboard.ViewSummary. */
-  gaugeOf(summary: DashboardSummary): UnassignedGauge | null {
-    const real = summary['unassignedGauge'] as UnassignedGauge | null | undefined;
-    if (real !== undefined) return real;
-    return { ...FIXTURE_GAUGE, count: summary.unassigned.count };
+  /** The `unassignedGauge` block of the summary; null without Dashboard.ViewSummary. */
+  gaugeOf(summary: DashboardSummary): DashboardUnassignedGauge | null {
+    return summary.unassignedGauge ?? null;
   }
-}
-
-function fixturePeopleFor(scope: string): CapacityPerson[] {
-  return fixturePeople(scope === 'all' || scope === 'mine' ? 12 : 6);
 }

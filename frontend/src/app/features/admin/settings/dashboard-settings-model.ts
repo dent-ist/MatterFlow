@@ -2,16 +2,17 @@
  * The gauge settings of the Dashboard (epic #1063, DB-06; plan section 3): the working hours the age of the oldest unassigned task is counted in, and how the level is
  * worked out. The defaults live in code on the server (no seed row); the form shows them and "Reset to default" fills them in.
  */
-export const WEEKDAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const;
+/** The working days as the server stores them: ISO numbers, 1 = Monday to 7 = Sunday. */
+export const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 export type Weekday = (typeof WEEKDAYS)[number];
 export const WEEKDAY_LABELS: Record<Weekday, string> = {
-  MON: 'Monday',
-  TUE: 'Tuesday',
-  WED: 'Wednesday',
-  THU: 'Thursday',
-  FRI: 'Friday',
-  SAT: 'Saturday',
-  SUN: 'Sunday',
+  1: 'Monday',
+  2: 'Tuesday',
+  3: 'Wednesday',
+  4: 'Thursday',
+  5: 'Friday',
+  6: 'Saturday',
+  7: 'Sunday',
 };
 
 export type AgeBasis = 'WORKING' | 'CLOCK';
@@ -20,7 +21,8 @@ export interface GaugeSettings {
   /** `HH:mm`, the firm's local time. */
   workdayStart: string;
   workdayEnd: string;
-  workDays: Weekday[];
+  /** ISO day numbers, 1 = Monday. */
+  workDays: number[];
   ageBasis: AgeBasis;
   /** Hours of the oldest unassigned task for levels 1 to 5 (strictly increasing). */
   levelHours: number[];
@@ -30,10 +32,11 @@ export interface GaugeSettings {
   countBonusMax: number;
 }
 
+/** The defaults the server states (shown until the first read answers; the server's own `defaults` replace them). */
 export const DEFAULT_GAUGE_SETTINGS: GaugeSettings = {
   workdayStart: '08:00',
   workdayEnd: '18:00',
-  workDays: ['MON', 'TUE', 'WED', 'THU', 'FRI'],
+  workDays: [1, 2, 3, 4, 5],
   ageBasis: 'WORKING',
   levelHours: [1, 2, 3, 4, 5],
   tasksPerLevel: 5,
@@ -44,6 +47,27 @@ const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export function sameSettings(a: GaugeSettings, b: GaugeSettings): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
+}
+
+/** The server's values as the form's: the basis is one of the two words, the days in order. */
+export function fromServer(v: {
+  workdayStart: string;
+  workdayEnd: string;
+  workDays: number[];
+  ageBasis: string;
+  levelHours: number[];
+  tasksPerLevel: number;
+  countBonusMax: number;
+}): GaugeSettings {
+  return {
+    workdayStart: v.workdayStart.slice(0, 5),
+    workdayEnd: v.workdayEnd.slice(0, 5),
+    workDays: [...v.workDays].sort((a, b) => a - b),
+    ageBasis: v.ageBasis === 'CLOCK' ? 'CLOCK' : 'WORKING',
+    levelHours: [...v.levelHours],
+    tasksPerLevel: v.tasksPerLevel,
+    countBonusMax: v.countBonusMax,
+  };
 }
 
 /** Field errors by name; empty when the form can be saved. The server checks again and its messages are shown the same way. */

@@ -10,7 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Dismissable } from '../../../shared/ui/dismissable';
-import { CapacityPerson } from '../dash-v4-contract';
+import { CapacityPerson } from '../../../api/generated/api-client';
 import { groupPeople, personDetail } from './capacity-model';
 
 let nextId = 0;
