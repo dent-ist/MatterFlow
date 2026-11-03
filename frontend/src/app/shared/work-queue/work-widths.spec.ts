@@ -42,9 +42,9 @@ describe('work widths (#203)', () => {
     expect(hasWidths(TQ, 7)).toBe(true);
   });
 
-  it('stores nothing for the default, the Title, unknown keys and non-numbers', () => {
+  it('stores nothing for the default, the Title at its minimum, unknown keys and non-numbers', () => {
     saveWidth(TQ, 7, 'due', pxToRem(136));
-    saveWidth(TQ, 7, 'title', 20);
+    saveWidth(TQ, 7, 'title', pxToRem(160));
     saveWidth(TQ, 7, 'foo', 20);
     saveWidth(TQ, 7, 'matter', NaN);
     expect(localStorage.length).toBe(0);
@@ -63,10 +63,19 @@ describe('work widths (#203)', () => {
     expect(w['foo']).toBeUndefined();
   });
 
-  it('ignores the Title, strings, nulls, a wrong version and corrupt JSON', () => {
+  it('keeps the width the Title keeps, clamped to 96 to 1600 px (DB-10, #1073)', () => {
+    saveWidth(TQ, 7, 'title', pxToRem(420));
+    expect(remToPx(loadWidths(TQ, 7)['title'])).toBe(420);
+    saveWidth(TQ, 7, 'title', pxToRem(20));
+    expect(remToPx(loadWidths(TQ, 7)['title'])).toBe(96);
+    saveWidth(TQ, 7, 'title', pxToRem(9000));
+    expect(remToPx(loadWidths(TQ, 7)['title'])).toBe(1600);
+  });
+
+  it('ignores strings, nulls, a wrong version and corrupt JSON', () => {
     localStorage.setItem(
       widthsKey(TQ, 7),
-      '{"v":1,"w":{"due":132,"title":300,"matter":"x","age":null}}',
+      '{"v":1,"w":{"due":132,"title":"x","matter":"x","age":null}}',
     );
     expect(loadWidths(TQ, 7)).toEqual({ due: 132 / 14 });
     localStorage.setItem(widthsKey(TQ, 7), '{"v":2,"w":{"due":132}}');

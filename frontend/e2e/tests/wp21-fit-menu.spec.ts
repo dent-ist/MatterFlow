@@ -118,7 +118,7 @@ test.describe('Fit to content (#205)', () => {
       'title',
       'Double-click to fit the rows on this page',
     );
-    expect(await handle(page, 'title').count()).toBe(0);
+    expect(await handle(page, 'title').count()).toBe(1); // every column, the Title too (DB-10, #1073)
 
     const fitted: Record<string, number> = {};
     for (const key of ['matter', 'matterName', 'assignee', 'due', 'status']) {
@@ -178,7 +178,7 @@ test.describe('Fit to content (#205)', () => {
     const box = (await handle(page, 'status').boundingBox())!;
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();
-    await page.mouse.move(box.x + box.width / 2 - 50, box.y + box.height / 2, { steps: 5 });
+    await page.mouse.move(box.x + box.width / 2 + 50, box.y + box.height / 2, { steps: 5 });
     await page.mouse.up();
     expect(Math.round(await width(page, 'status'))).toBe(190);
     await handle(page, 'status').dblclick();
@@ -424,7 +424,7 @@ test.describe('Column header menu (#207)', () => {
     const before = await width(page, 'due');
     await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2);
     await page.mouse.down();
-    await page.mouse.move(h.x + h.width / 2 - 30, h.y + h.height / 2, { steps: 5 });
+    await page.mouse.move(h.x + h.width / 2 + 30, h.y + h.height / 2, { steps: 5 });
     await page.mouse.up();
     expect(Math.abs((await width(page, 'due')) - (before + 30))).toBeLessThanOrEqual(1);
   });

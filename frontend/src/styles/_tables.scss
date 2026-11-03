@@ -116,7 +116,16 @@ td.mf-col-actions {
 }
 
 .wt-resize[data-side='end'] {
-  right: -12px;
+  /* DB-10 (#1073): every handle is on the right edge of its own column and INSIDE it (16 px wide), so the next header cell, which paints
+     later, never covers half of it; the divider line sits on the border itself. */
+  right: 0;
+  width: 16px;
+}
+
+.wt-resize[data-side='end']::after {
+  left: auto;
+  right: 0;
+  margin-left: 0;
 }
 
 .wt-resize[data-side='start'] {
@@ -140,6 +149,11 @@ td.mf-col-actions {
   width: 2px;
   margin-left: -1px;
   background: var(--mf-primary);
+}
+
+.wt-resize[data-side='end']:hover::after,
+.wt-resize[data-side='end'].wt-resize--active::after {
+  margin-left: 0;
 }
 
 .wt-resize--active::after {

@@ -1,5 +1,5 @@
 import { ColumnDef } from './column-prefs';
-import { pxToRem } from './column-widths';
+import { ROOT_PX } from './column-widths';
 
 /**
  * Drag resize of a column (#204). Pointer events with capture on a handle in the header cell; the pure rules are exported for the unit
@@ -12,6 +12,10 @@ import { pxToRem } from './column-widths';
  */
 export type ResizeSide = 'start' | 'end';
 
+/** The Title (the spring) can be widened and narrowed too, between these limits in px (DB-10, #1073). */
+export const TITLE_RESIZE_MIN_PX = 96;
+export const TITLE_RESIZE_MAX_PX = 1600;
+
 /** Up to this many rendered rows the columns relayout live during the drag (measured: 100 rows cost about 19 ms per frame). */
 export const LIVE_ROW_LIMIT = 100;
 /** A frame that takes longer (style + layout) switches the rest of the drag to the guide line. */
@@ -19,12 +23,15 @@ export const SLOW_FRAME_MS = 24;
 /** Below this width the grid is cards/scroll on a phone: no resizing. */
 export const RESIZE_MIN_VIEWPORT_PX = 640;
 
-/** The edge a column's handle sits on: null for the Title (fill) and columns that cannot be resized. */
-export function resizeSide(def: ColumnDef, shown: readonly ColumnDef[]): ResizeSide | null {
-  if (def.fill || def.resizable === false) return null;
-  const spring = shown.findIndex((c) => c.fill);
-  const at = shown.findIndex((c) => c.key === def.key);
-  return spring >= 0 && at > spring ? 'start' : 'end';
+/**
+ * The edge a column's handle sits on. Since DB-10 (#1073) every handle is on the RIGHT edge of the column it belongs to, the Title's too: the
+ * divider between two columns resizes the column on its left and nothing else. (Before, the columns after the Title had their handle on the
+ * LEFT edge and shrank themselves, so in a grid that scrolls sideways the next divider moved instead of the one under the pointer.) Null for a
+ * column that cannot be resized; the Title can be dragged although it is not in the menu or the fit.
+ */
+export function resizeSide(def: ColumnDef): ResizeSide | null {
+  if (def.resizable === false && !def.fill) return null;
+  return 'end';
 }
 
 /** The new width in px: the start width plus the pointer travel (inverted for a left-edge handle), whole pixels, clamped to min and max. */
@@ -44,6 +51,34 @@ export function useGuideLine(rowCount: number, slowestFrameMs: number): boolean 
   return rowCount > LIVE_ROW_LIMIT || slowestFrameMs > SLOW_FRAME_MS;
 }
 
+/**
+ * What a drag does, in px (pure, for the specs). `startPx` is the dragged column's width at the start; `titlePx` the Title's rendered width and
+ * `fixedPx` the sum of all other columns' widths at the start. The dragged column changes by the pointer travel `dx`; every other column keeps
+ * its width, the Title is FROZEN at the width it has (so it does not give way and the divider stays under the pointer, the table grows and
+ * scrolls sideways instead). Dragging the Title itself sets the width it keeps. `tableMinPx` is the narrowest the table may be: the grid is
+ * never narrower than its window, so a smaller total only gives the room back to the Title.
+ */
+export function dragLayout(o: {
+  isTitle: boolean;
+  startPx: number;
+  titlePx: number;
+  fixedPx: number;
+  dx: number;
+  minPx: number;
+  maxPx: number;
+}): { widthPx: number; titleMinPx: number; tableMinPx: number } {
+  if (o.isTitle) {
+    const titleMinPx = Math.min(
+      TITLE_RESIZE_MAX_PX,
+      Math.max(TITLE_RESIZE_MIN_PX, Math.round(o.titlePx + o.dx)),
+    );
+    return { widthPx: titleMinPx, titleMinPx, tableMinPx: o.fixedPx + titleMinPx };
+  }
+  const widthPx = resizedPx(o.startPx, o.dx, 'end', o.minPx, o.maxPx);
+  const titleMinPx = Math.round(o.titlePx);
+  return { widthPx, titleMinPx, tableMinPx: o.fixedPx - o.startPx + widthPx + titleMinPx };
+}
+
 export interface ColumnResizeOptions {
   handle: HTMLElement;
   event: PointerEvent;
@@ -52,32 +87,53 @@ export interface ColumnResizeOptions {
   side: ResizeSide;
   /** The real root font size in px (text-only zoom grows it). */
   rootPx: number;
+  /** The key of the Title (the spring), when the grid has one. */
+  fillKey?: string | null;
   /** Called on release with the final width in rem, only when it differs from the start. */
   commit: (rem: number) => void;
+  /** Called on release with the width the Title keeps (rem), whenever a drag changed anything. */
+  commitTitle?: (rem: number) => void;
 }
 
 /**
- * Starts a drag. Returns false when none starts (not the main button, or a viewport below 640 px). Everything is written to the table's
- * `--w-<key>` and `--wt-min` custom properties inside `requestAnimationFrame`; nothing reaches Angular or storage until the pointer is
- * released (`commit`). Escape restores the start width and commits nothing.
+ * Starts a drag. Returns false when none starts (not the main button, or a viewport below 640 px). During the drag the width goes straight to the
+ * `<col>` and to the table's `min-width`; nothing reaches Angular or storage until the pointer is released (`commit`). Escape restores the start.
+ * Geometry: `dragLayout`.
  */
 export function startColumnResize(o: ColumnResizeOptions): boolean {
   const { handle, event, table, def, side, rootPx } = o;
   if (event.button !== 0 || window.innerWidth < RESIZE_MIN_VIEWPORT_PX) return false;
-  const widthVar = `--w-${def.key}`;
-  const startVar = table.style.getPropertyValue(widthVar);
-  const startMinVar = table.style.getPropertyValue('--wt-min');
-  const startRem = parseFloat(startVar);
-  const startMinRem = parseFloat(startMinVar);
-  if (!Number.isFinite(startRem)) return false;
-  const startPx = startRem * rootPx;
-  const minPx = pxToRem(def.minWidth) * rootPx;
-  const maxPx = pxToRem(def.maxWidth) * rootPx;
+  const isTitle = !!def.fill;
+  const heads = Array.from(table.querySelectorAll<HTMLElement>('thead tr:first-child th'));
+  const scale = rootPx / ROOT_PX;
+  /** A header's rendered width; without layout (a test) the width the table declares, the Title its minimum. */
+  const widthOfHead = (h: HTMLElement): number => {
+    const measured = h.getBoundingClientRect().width;
+    if (measured > 0) return measured;
+    const declared = parseFloat(table.style.getPropertyValue(`--w-${h.dataset['col']}`));
+    return Number.isFinite(declared)
+      ? declared * rootPx
+      : h.dataset['col'] === o.fillKey
+        ? def.minWidth * scale
+        : 0;
+  };
+  const startPx = widthOfHead(
+    heads.find((h) => h.dataset['col'] === def.key) ?? handle.closest('th')!,
+  );
+  if (!(startPx > 0)) return false;
+  const titlePx = o.fillKey
+    ? widthOfHead(heads.find((h) => h.dataset['col'] === o.fillKey) ?? heads[0])
+    : 0;
+  const fixedPx = heads
+    .filter((h) => h.dataset['col'] !== o.fillKey)
+    .reduce((sum, h) => sum + widthOfHead(h), 0);
+  const minPx = (isTitle ? TITLE_RESIZE_MIN_PX : def.minWidth) * scale;
+  const maxPx = (isTitle ? TITLE_RESIZE_MAX_PX : def.maxWidth) * scale;
   const startX = event.clientX;
   const rowCount = table.querySelectorAll('tbody tr[data-task]').length;
   let guide = useGuideLine(rowCount, 0);
   delete table.dataset['resizeFrameMs'];
-  let widthPx = Math.round(startPx);
+  let layout = dragLayout({ isTitle, startPx, titlePx, fixedPx, dx: 0, minPx, maxPx });
   let frame = 0;
   let done = false;
 
@@ -86,15 +142,12 @@ export function startColumnResize(o: ColumnResizeOptions): boolean {
   let line: HTMLElement | null = null;
   let tip: HTMLElement | null = null;
 
-  // During the drag the width goes straight to the <col> and to the table's min-width: a custom property changed on the table would
-  // restyle every cell below it (they all inherit it), which costs several times more per frame than moving the column.
-  const colEl = table.querySelector<HTMLElement>(`col[data-col="${def.key}"]`);
+  const colEl = isTitle ? null : table.querySelector<HTMLElement>(`col[data-col="${def.key}"]`);
   const startColWidth = colEl?.style.width ?? '';
   const startMinWidth = table.style.minWidth;
   const apply = (): void => {
-    const rem = widthPx / rootPx;
-    if (colEl) colEl.style.width = `${rem}rem`;
-    if (Number.isFinite(startMinRem)) table.style.minWidth = `${startMinRem + rem - startRem}rem`;
+    if (colEl) colEl.style.width = `${layout.widthPx}px`;
+    table.style.minWidth = `${layout.tableMinPx}px`;
   };
   const restore = (): void => {
     if (colEl) colEl.style.width = startColWidth;
@@ -109,10 +162,10 @@ export function startColumnResize(o: ColumnResizeOptions): boolean {
       document.body.append(line, tip);
     }
     const box = wrap.getBoundingClientRect();
-    const x = handleX + (side === 'end' ? 1 : -1) * (widthPx - startPx);
+    const x = handleX + (layout.widthPx - startPx);
     line.style.cssText = `left:${x}px;top:${box.top}px;height:${box.height}px`;
     if (tip) {
-      tip.textContent = `${def.label} ${widthPx} px`;
+      tip.textContent = `${def.label} ${Math.round(layout.widthPx / scale)} px`;
       tip.style.cssText = `left:${x + 8}px;top:${box.top + 8}px`;
     }
   };
@@ -154,27 +207,33 @@ export function startColumnResize(o: ColumnResizeOptions): boolean {
     handle.classList.remove('wt-resize--active');
     line?.remove();
     tip?.remove();
-    if (guide) table.dataset['resizeMode'] = 'guide';
-    else table.dataset['resizeMode'] = 'live';
+    table.dataset['resizeMode'] = guide ? 'guide' : 'live';
     try {
       handle.releasePointerCapture(event.pointerId);
     } catch {
       // Already released.
     }
-    if (commit && widthPx !== Math.round(startPx)) {
+    const changed = Math.round(layout.widthPx) !== Math.round(startPx);
+    if (commit && changed) {
       // The variables first, so the column keeps its new width when the inline overrides go; Angular writes the same values next.
-      const rem = widthPx / rootPx;
-      table.style.setProperty(widthVar, `${rem}rem`);
-      if (Number.isFinite(startMinRem))
-        table.style.setProperty('--wt-min', `${startMinRem + rem - startRem}rem`);
+      if (!isTitle) table.style.setProperty(`--w-${def.key}`, `${layout.widthPx / rootPx}rem`);
       restore();
-      o.commit(rem);
+      if (o.fillKey && o.commitTitle) o.commitTitle(layout.titleMinPx / rootPx);
+      if (!isTitle) o.commit(layout.widthPx / rootPx);
     } else {
       restore();
     }
   };
   const onMove = (e: PointerEvent): void => {
-    widthPx = resizedPx(startPx, e.clientX - startX, side, minPx, maxPx);
+    layout = dragLayout({
+      isTitle,
+      startPx,
+      titlePx,
+      fixedPx,
+      dx: e.clientX - startX,
+      minPx,
+      maxPx,
+    });
     schedule();
   };
   const onUp = (): void => finish(true);
@@ -200,5 +259,6 @@ export function startColumnResize(o: ColumnResizeOptions): boolean {
   handle.addEventListener('lostpointercapture', onCancel);
   document.addEventListener('keydown', onKey, true);
   if (guide) schedule();
+  void side;
   return true;
 }

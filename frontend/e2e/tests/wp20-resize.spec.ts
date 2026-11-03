@@ -46,6 +46,7 @@ const stored = (page: Page): Promise<Record<string, Record<string, number>>> =>
 /** Presses on a handle, moves the pointer so the column grows by `amount` px (negative: shrinks), optionally keeps the button down. */
 async function dragGrow(page: Page, key: string, amount: number, release = true): Promise<void> {
   const h = handle(page, key);
+  await h.scrollIntoViewIfNeeded(); // at 1366 px the grid scrolls sideways: bring the handle into view
   const side = await h.getAttribute('data-side');
   const box = (await h.boundingBox())!;
   const x = box.x + box.width / 2;
@@ -120,7 +121,8 @@ test.describe('Drag resize (#204)', () => {
     await page.mouse.up();
 
     expect(Math.abs((await width(page, 'due')) - (due0 + 44))).toBeLessThanOrEqual(1);
-    expect(Math.abs((await width(page, 'title')) - (title0 - 44))).toBeLessThanOrEqual(1);
+    // The Title keeps its width (DB-10, #1073): the divider belongs to Due, the grid grows and scrolls instead.
+    expect(Math.abs((await width(page, 'title')) - title0)).toBeLessThanOrEqual(1);
     await expectColumnAligned(page, 'due');
     await expectColumnAligned(page, 'title');
     await expectColumnAligned(page, 'status');
@@ -147,7 +149,7 @@ test.describe('Drag resize (#204)', () => {
     expect(Math.round(await width(page, 'due'))).toBe(136);
   });
 
-  test('clamps at the column minimum and maximum; the Title is never stored; Ref grows from its right edge', async ({
+  test('clamps at the column minimum and maximum; the Title keeps the width it had; Ref grows from its right edge', async ({
     seed,
     asUser,
   }) => {
@@ -158,7 +160,7 @@ test.describe('Drag resize (#204)', () => {
     await page.setViewportSize({ width: 1920, height: 1080 });
     await new TaskQueuePage(page).open(`?q=${encodeURIComponent(tag)}`);
     await expect(page.locator('[data-task]')).toHaveCount(1);
-    expect(await handle(page, 'title').count()).toBe(0);
+    expect(await handle(page, 'title').count()).toBe(1); // every column has a handle on its right edge, the Title too
 
     await dragGrow(page, 'due', 400);
     expect(Math.round(await width(page, 'due'))).toBe(200); // maximum
@@ -169,7 +171,6 @@ test.describe('Drag resize (#204)', () => {
     const all = Object.values(await stored(page))[0];
     expect(all['due']).toBe(120);
     expect(all['ref']).toBe(80);
-    expect(Object.keys(all)).not.toContain('title');
     await expectColumnAligned(page, 'ref');
   });
 
@@ -412,7 +413,7 @@ test.describe('Drag resize (#204)', () => {
     for (let i = 1; i <= 6; i++)
       await cdp.send('Input.dispatchTouchEvent', {
         type: 'touchMove',
-        touchPoints: [{ x: x - 5 * i, y }],
+        touchPoints: [{ x: x + 5 * i, y }], // right edge handle: dragging right grows (DB-10, #1073)
       });
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await expect.poll(async () => Math.round((await width(page, 'matter')) - before)).toBe(30);

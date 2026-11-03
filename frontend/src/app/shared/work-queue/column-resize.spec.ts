@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { AuthStore } from '../../core/auth/auth.store';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../core/auth/auth-testing';
 import { WORK_COLUMNS } from './column-prefs';
-import { LIVE_ROW_LIMIT, resizeSide, resizedPx, useGuideLine } from './column-resize';
+import { LIVE_ROW_LIMIT, dragLayout, resizeSide, resizedPx, useGuideLine } from './column-resize';
 import { aRow, provideClock, provideLookups } from './work-queue-testing';
 import { TaskTable } from './task-table';
 
@@ -22,12 +22,55 @@ describe('column resize rules (#204)', () => {
     expect(resizedPx(136, 10.4, 'end', 120, 200)).toBe(146);
   });
 
-  it('puts the handle on the right edge of columns before the Title and on the left edge after it; never on the Title', () => {
+  it('puts every handle on the right edge of its own column, the Title included (DB-10, #1073)', () => {
     const shown = ['ref', 'title', 'matter', 'due', 'status'].map(def);
-    expect(resizeSide(def('ref'), shown)).toBe('end');
-    expect(resizeSide(def('title'), shown)).toBeNull();
-    expect(resizeSide(def('due'), shown)).toBe('start');
-    expect(resizeSide(def('status'), shown)).toBe('start');
+    for (const c of shown) expect(resizeSide(c), c.key).toBe('end');
+  });
+
+  describe('drag geometry: the divider resizes the column on its left and nothing else (DB-10, #1073)', () => {
+    // A grid of 1000 px: fixed columns 600 px (Ref 100, Matter 200, Due 150, Status 150), Title 400 px (the spring).
+    const base = {
+      isTitle: false,
+      startPx: 150,
+      titlePx: 400,
+      fixedPx: 600,
+      minPx: 100,
+      maxPx: 400,
+    };
+
+    it('widens a column after the Title by the pointer travel; the Title keeps its width, so the grid grows and scrolls', () => {
+      const r = dragLayout({ ...base, dx: 40 });
+      expect(r.widthPx).toBe(190);
+      expect(r.titleMinPx).toBe(400);
+      expect(r.tableMinPx).toBe(1040); // 640 fixed + 400 Title: the total grew by exactly the pointer travel
+    });
+
+    it('narrows it: the total shrinks by the travel (the window keeps the grid at least as wide as itself)', () => {
+      const r = dragLayout({ ...base, dx: -30 });
+      expect(r.widthPx).toBe(120);
+      expect(r.tableMinPx).toBe(970);
+    });
+
+    it('the divider follows the pointer: the new right edge moves by exactly the travel (within the limits)', () => {
+      for (const dx of [-30, 10, 99]) {
+        const r = dragLayout({ ...base, dx });
+        expect(r.widthPx - base.startPx).toBe(dx);
+      }
+    });
+
+    it('clamps at the limits and the total follows the clamped width', () => {
+      expect(dragLayout({ ...base, dx: 900 }).widthPx).toBe(400);
+      expect(dragLayout({ ...base, dx: 900 }).tableMinPx).toBe(600 - 150 + 400 + 400);
+      expect(dragLayout({ ...base, dx: -900 }).widthPx).toBe(100);
+    });
+
+    it('dragging the Title sets the width it keeps and leaves every other column alone', () => {
+      const r = dragLayout({ ...base, isTitle: true, startPx: 400, dx: 60 });
+      expect(r.titleMinPx).toBe(460);
+      expect(r.tableMinPx).toBe(1060);
+      expect(dragLayout({ ...base, isTitle: true, startPx: 400, dx: -900 }).titleMinPx).toBe(96);
+      expect(dragLayout({ ...base, isTitle: true, startPx: 400, dx: 9000 }).titleMinPx).toBe(1600);
+    });
   });
 
   it('uses the guide line above 100 rows or after a frame slower than 24 ms', () => {
@@ -90,12 +133,12 @@ describe('TaskTable resize handles (#204)', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it('renders aria-hidden handles outside the tab order, none on the Title, none in the body', async () => {
+  it('renders aria-hidden handles outside the tab order, one per column (the Title too), none in the body', async () => {
     await create();
     const keys = Array.from(el.querySelectorAll('.wt-resize')).map((h) =>
       h.getAttribute('data-resize'),
     );
-    expect(keys).toEqual(['ref', 'matter', 'due', 'status']);
+    expect(keys).toEqual(['ref', 'title', 'matter', 'due', 'status']);
     for (const h of Array.from(el.querySelectorAll('.wt-resize'))) {
       expect(h.getAttribute('aria-hidden')).toBe('true');
       expect(h.hasAttribute('tabindex')).toBe(false);
@@ -104,31 +147,55 @@ describe('TaskTable resize handles (#204)', () => {
     expect(el.querySelector('tbody .wt-resize')).toBeNull();
   });
 
-  it('drags a left-edge handle: the live width follows, the pointer travel is inverted, and release emits once', async () => {
+  it('drags a handle: the live width follows the pointer to the right, and release emits the Title it keeps and the column, once', async () => {
     await create();
     expect(width('due')).toBe(`${136 / 14}rem`);
     const h = handle('due');
     fire(h, 'pointerdown', 500);
     expect(document.body.classList.contains('wt-resizing')).toBe(true);
-    fire(h, 'pointermove', 480);
-    expect(width('due')).toBe(`${156 / 14}rem`);
+    fire(h, 'pointermove', 520);
+    expect(width('due')).toBe('156px');
     expect(resized).toEqual([]); // nothing is stored per frame
-    fire(h, 'pointermove', 470);
-    fire(h, 'pointerup', 470);
-    expect(resized).toEqual([{ key: 'due', rem: 166 / 14, defaultRem: undefined }]);
+    fire(h, 'pointermove', 530);
+    fire(h, 'pointerup', 530);
+    expect(resized.map((r) => r.key)).toEqual(['title', 'due']);
+    expect(resized[1]).toEqual({ key: 'due', rem: 166 / 14, defaultRem: undefined });
     expect(document.body.classList.contains('wt-resizing')).toBe(false);
+  });
+
+  it('only the dragged column changes: the neighbours keep their widths (DB-10, #1073)', async () => {
+    await create();
+    const before = ['ref', 'matter', 'due', 'status'].map((k) => width(k));
+    fire(handle('matter'), 'pointerdown', 300);
+    fire(handle('matter'), 'pointermove', 340);
+    const during = ['ref', 'matter', 'due', 'status'].map((k) => width(k));
+    expect(during[0]).toBe(before[0]);
+    expect(during[1]).not.toBe(before[1]);
+    expect(during[2]).toBe(before[2]);
+    expect(during[3]).toBe(before[3]);
+    fire(handle('matter'), 'pointerup', 340);
+  });
+
+  it('the Title handle resizes the Title only and emits its width', async () => {
+    await create();
+    const before = ['ref', 'matter', 'due', 'status'].map((k) => width(k));
+    fire(handle('title'), 'pointerdown', 300);
+    fire(handle('title'), 'pointermove', 360);
+    expect(['ref', 'matter', 'due', 'status'].map((k) => width(k))).toEqual(before);
+    fire(handle('title'), 'pointerup', 360);
+    expect(resized).toEqual([{ key: 'title', rem: 220 / 14 }]);
   });
 
   it('clamps at the minimum and maximum', async () => {
     await create();
     const h = handle('due');
     fire(h, 'pointerdown', 500);
-    fire(h, 'pointermove', 100);
-    expect(width('due')).toBe(`${200 / 14}rem`);
     fire(h, 'pointermove', 900);
-    expect(width('due')).toBe(`${120 / 14}rem`);
-    fire(h, 'pointerup', 900);
-    expect(resized[0].rem).toBe(120 / 14);
+    expect(width('due')).toBe('200px');
+    fire(h, 'pointermove', 100);
+    expect(width('due')).toBe('120px');
+    fire(h, 'pointerup', 100);
+    expect(resized.at(-1)!.rem).toBe(120 / 14);
   });
 
   it('Escape restores the start width and stores nothing', async () => {
@@ -164,12 +231,12 @@ describe('TaskTable resize handles (#204)', () => {
     await create(LIVE_ROW_LIMIT + 1);
     const h = handle('due');
     fire(h, 'pointerdown', 500);
-    fire(h, 'pointermove', 470);
+    fire(h, 'pointermove', 530);
     expect(width('due')).toBe(`${136 / 14}rem`);
     expect(document.querySelector('.wt-resize-guide')).not.toBeNull();
-    fire(h, 'pointerup', 470);
+    fire(h, 'pointerup', 530);
     expect(document.querySelector('.wt-resize-guide')).toBeNull();
-    expect(resized[0].rem).toBe(166 / 14);
+    expect(resized.at(-1)!.rem).toBe(166 / 14);
   });
 
   it('does not start below 640 px', async () => {

@@ -45,7 +45,7 @@ export function loadWidths(scope: ColumnScope, userId: number | null): ColumnWid
     return {};
   const out: Record<string, number> = {};
   for (const def of WORK_COLUMNS) {
-    if (def.fill || def.resizable === false) continue;
+    if (def.resizable === false && !def.fill) continue;
     const value = (w as Record<string, unknown>)[def.key];
     if (typeof value !== 'number' || !Number.isFinite(value)) continue;
     out[def.key] = pxToRem(clampPx(def.key, value));
@@ -57,6 +57,7 @@ export function loadWidths(scope: ColumnScope, userId: number | null): ColumnWid
 export function clampPx(key: string, px: number): number {
   const def = WORK_COLUMNS.find((c) => c.key === key);
   if (!def) return Math.round(px);
+  if (def.fill) return Math.round(Math.min(1600, Math.max(96, px))); // the Title (DB-10, #1073)
   return Math.round(Math.min(def.maxWidth, Math.max(def.minWidth, px)));
 }
 
@@ -88,10 +89,11 @@ function withWidth(
   defaultRem?: number,
 ): ColumnWidthMap {
   const def = WORK_COLUMNS.find((c) => c.key === key);
-  if (!def || def.fill || def.resizable === false || !Number.isFinite(rem)) return current;
+  if (!def || (def.resizable === false && !def.fill) || !Number.isFinite(rem)) return current;
   const next: Record<string, number> = { ...current };
   const px = clampPx(key, remToPx(rem));
-  const base = defaultRem === undefined ? def.width : remToPx(defaultRem);
+  const base =
+    defaultRem === undefined ? (def.fill ? def.minWidth : def.width) : remToPx(defaultRem);
   if (px === Math.round(base)) delete next[key];
   else next[key] = pxToRem(px);
   return next;

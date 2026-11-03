@@ -1257,7 +1257,7 @@ export class TaskTable {
   }
 
   protected resizeSideOf(col: ColumnDef): ResizeSide | null {
-    return this.widthsEditable() ? resizeSide(col, this.shownColumns()) : null;
+    return this.widthsEditable() ? resizeSide(col) : null;
   }
 
   protected resizeStart(event: PointerEvent, col: ColumnDef, side: ResizeSide): void {
@@ -1271,6 +1271,8 @@ export class TaskTable {
       def: col,
       side,
       rootPx: this.rootPx(),
+      fillKey: this.shownColumns().find((c) => c.fill)?.key ?? null,
+      commitTitle: (rem) => this.columnResized.emit({ key: 'title', rem }),
       commit: (rem) =>
         this.columnResized.emit({
           key: col.key,

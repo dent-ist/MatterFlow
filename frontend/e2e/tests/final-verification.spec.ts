@@ -194,9 +194,9 @@ test.describe('Final verification (#240)', () => {
       ).toEqual([...s.titles].sort());
       for (const t of m.titles)
         expect(t, `${grid.name}: no client or matter line under the Title`).not.toContain('Zenith');
-      // 2. Widths are resizable: a handle on the columns, none on the Title.
+      // 2. Widths are resizable: a handle on the right edge of every column, the Title's too (DB-10, #1073).
       expect(m.handles, `${grid.name}: resize handles`).toBeGreaterThanOrEqual(3);
-      expect(m.titleHandles, `${grid.name}: the Title has no handle`).toBe(0);
+      expect(m.titleHandles, `${grid.name}: the Title has a handle`).toBe(1);
       // 3. The Due cell has the date on line 1 and the relative text on line 2 (all three tasks have a due date).
       for (const [i, d] of m.due.entries())
         expect(d, `${grid.name}: Due cell of row ${i} has two lines`).toEqual({

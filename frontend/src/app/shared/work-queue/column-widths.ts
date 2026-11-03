@@ -30,6 +30,17 @@ export function columnWidthRem(def: ColumnDef, overrides?: ColumnWidthMap): numb
   return Math.min(pxToRem(def.maxWidth), Math.max(pxToRem(def.minWidth), stored));
 }
 
+/**
+ * The width the Title keeps, in rem (DB-10, #1073): the person's (a drag of the Title's divider, or the width it had when another divider was
+ * dragged), clamped to 96 and 1600 px, else its minimum. The Title is still the spring: it takes what the other columns leave and is never
+ * narrower than this.
+ */
+export function fillMinRem(def: ColumnDef, overrides?: ColumnWidthMap): number {
+  const stored = overrides?.[def.key];
+  if (stored === undefined || !Number.isFinite(stored)) return pxToRem(def.minWidth);
+  return Math.min(pxToRem(1600), Math.max(pxToRem(96), stored));
+}
+
 /** The CSS custom properties of the table: `--w-<key>` per column (not the fill column). */
 export function widthVars(
   defs: readonly ColumnDef[],
@@ -48,6 +59,6 @@ export function tableMinRem(
   overrides: ColumnWidthMap | undefined,
 ): number {
   let sum = 0;
-  for (const d of defs) sum += d.fill ? pxToRem(d.minWidth) : columnWidthRem(d, overrides);
+  for (const d of defs) sum += d.fill ? fillMinRem(d, overrides) : columnWidthRem(d, overrides);
   return sum;
 }
