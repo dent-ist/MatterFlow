@@ -201,7 +201,9 @@ test.describe('Summary v4', () => {
     const gauge = page.locator('[data-gauge]');
     await expect(gauge).toBeVisible();
     await expect(gauge.locator('[data-gauge-badge]')).toContainText(/Level \d|Normal|All clear/);
-    await gauge.getByRole('button', { name: 'Show them, longest waiting first' }).click();
+    await gauge
+      .getByRole('button', { name: 'Show them, longest waiting first', exact: true })
+      .click();
     await expect(card(page, 'unassigned')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('[data-sorted-text]')).toContainText('longest waiting first');
   });

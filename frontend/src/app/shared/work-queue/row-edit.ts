@@ -33,7 +33,7 @@ import {
   statusChoices,
 } from './inline-edit';
 import { AssigneeLists } from '../assignees/assignee-list';
-import { STATE_META } from '../availability/capacity-state';
+import { STATE_META, stateHint } from '../availability/capacity-state';
 import { InlineMenu, MenuOption } from './inline-menu';
 import { InlineStatusFlow } from './inline-status-flow';
 import { stepQueryParams } from './step-link';
@@ -340,7 +340,8 @@ export class RowEdit {
           id: String(p.id),
           label: p.name,
           flag: p.flag,
-          hint: p.hint,
+          hint:
+            this.showStates() && p.state ? stateHint(p.state, p.load ?? p.openTaskCount) : p.hint,
           hintIcon: this.showStates() && p.state ? STATE_META[p.state].icon : undefined,
           tip: p.reason || undefined,
           group: heading,
