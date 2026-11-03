@@ -140,32 +140,6 @@
   }
 }
 
-.nt__tcard {
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: center;
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--mf-border);
-  border-radius: 10px;
-  background: var(--mf-surface);
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-
-  &:hover {
-    border-color: var(--mf-primary);
-  }
-
-  small {
-    display: block;
-    color: var(--mf-text-muted);
-    font-size: 12.5px;
-  }
-}
-
 .nt__actions {
   display: flex;
   flex-wrap: wrap;
@@ -244,11 +218,6 @@
   flex-direction: column;
   gap: 2px;
   margin: var(--mf-s2) 0;
-}
-
-.nt__tchoose {
-  display: grid;
-  gap: 10px;
 }
 
 .nt__panel-form {

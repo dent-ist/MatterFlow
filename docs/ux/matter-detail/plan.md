@@ -104,7 +104,7 @@ Existing: `Matter.Edit` (edits the matter including AI allowed), `Matter.BeManag
 - `ProductionSpec.View`, `ProductionSpec.Edit` (create, edit, duplicate, retire)
 - `MatterNote.View` (shown as Matter Note Read), `MatterNote.Edit`, `MatterNote.Delete`
 
-Lock/unlock needs `MatterNote.Edit`; only the locker or an administrator unlocks. Firm-wide note templates: administrators only. Sensitive-matter rule on every new endpoint (404 for invisible matters), list and count.
+Lock/unlock needs `MatterNote.Edit`; only the locker or an administrator unlocks. Note templates have three levels (MD-39): System Level (administrators only), Client Level (Client.Edit) and Matter Level (MatterNote.Edit). Sensitive-matter rule on every new endpoint (404 for invisible matters), list and count.
 
 ## 8. Cheap checks per issue, one full QA
 

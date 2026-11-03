@@ -23054,6 +23054,7 @@ export interface CreateNoteTagRequest {
 export interface CreateNoteTemplateRequest {
     scope: string;
     matterId?: number | undefined;
+    clientId?: number | undefined;
     name: string;
     description?: string | undefined;
     titleTemplate?: string | undefined;
@@ -23452,7 +23453,7 @@ export interface DiffLineResponse {
 export interface DuplicateNoteTemplateRequest {
     matterId?: number | undefined;
     name?: string | undefined;
-    keepFirmScope?: boolean;
+    keepLevel?: boolean;
 
     [key: string]: any;
 }
@@ -24549,6 +24550,8 @@ export interface NoteTemplateResponse {
     noteTemplateId: number;
     scope: string;
     matterId: number | undefined;
+    clientId: number | undefined;
+    targetName: string | undefined;
     name: string;
     description: string | undefined;
     titleTemplate: string | undefined;
@@ -26440,6 +26443,9 @@ export interface UpdateNoteTagRequest {
 
 export interface UpdateNoteTemplateRequest {
     rowVersion: string;
+    scope?: string | undefined;
+    matterId?: number | undefined;
+    clientId?: number | undefined;
     name: string;
     description?: string | undefined;
     titleTemplate?: string | undefined;

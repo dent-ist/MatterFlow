@@ -193,6 +193,8 @@ type Tab = MatterTabKey;
                   <mf-notes-tab
                     [matterId]="m.matterId"
                     [matterLabel]="m.matterRef + ' ' + m.name"
+                    [clientId]="m.clientId"
+                    [clientName]="m.clientName"
                     [sensitive]="m.isSensitive"
                     [aiAllowed]="m.aiAllowed"
                     (changed)="refreshTabCounts()"

@@ -118,6 +118,55 @@ public sealed class MatterContentApiTests(SqlServerFixture sql)
     }
 
     [Fact]
+    public async Task Templates_have_a_system_a_client_and_a_matter_level_and_a_hidden_matter_hides_its_templates()
+    {
+        var u = await SensitiveUniverse.BuildAsync(sql, enabled: true);
+        try
+        {
+            var admin = u.H.Admin;
+            var unrelated = u.UnrelatedClient;
+            var visibleClient = (await OkAsync(await admin.GetAsync($"/api/v1/matters/{u.N1}"))).GetProperty("clientId").GetInt32();
+            var hiddenClient = (await OkAsync(await admin.GetAsync($"/api/v1/matters/{u.S1}"))).GetProperty("clientId").GetInt32();
+
+            var system = await OkAsync(await admin.PostAsJsonAsync("/api/v1/note-templates", new { scope = "SYSTEM", name = "System one", bodyHtml = "<p>x</p>" }), HttpStatusCode.Created);
+            var client = await OkAsync(await admin.PostAsJsonAsync("/api/v1/note-templates", new { scope = "CLIENT", clientId = visibleClient, name = "Client one", bodyHtml = "<p>x</p>" }), HttpStatusCode.Created);
+            var matter = await OkAsync(await admin.PostAsJsonAsync("/api/v1/note-templates", new { scope = "MATTER", matterId = u.N1, name = "Matter one", bodyHtml = "<p>x</p>" }), HttpStatusCode.Created);
+            system.GetProperty("scope").GetString().ShouldBe("SYSTEM");
+            client.GetProperty("scope").GetString().ShouldBe("CLIENT");
+            client.GetProperty("clientId").GetInt32().ShouldBe(visibleClient);
+            matter.GetProperty("scope").GetString().ShouldBe("MATTER");
+
+            // The old name FIRM is gone, and a level needs its target.
+            (await admin.PostAsJsonAsync("/api/v1/note-templates", new { scope = "FIRM", name = "Old", bodyHtml = "<p>x</p>" })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+            (await admin.PostAsJsonAsync("/api/v1/note-templates", new { scope = "CLIENT", name = "No client", bodyHtml = "<p>x</p>" })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+
+            // The matter's list offers all three levels.
+            var list = await OkAsync(await admin.GetAsync($"/api/v1/note-templates?matterId={u.N1}"));
+            var scopes = list.EnumerateArray().Select(t => t.GetProperty("scope").GetString()).ToList();
+            scopes.ShouldContain("SYSTEM");
+            scopes.ShouldContain("CLIENT");
+            scopes.ShouldContain("MATTER");
+
+            // Only an administrator creates at System Level.
+            (await unrelated.PostAsJsonAsync("/api/v1/note-templates", new { scope = "SYSTEM", name = "Not allowed", bodyHtml = "<p>x</p>" })).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+
+            // A hidden matter hides its Matter Level template, and a client with only hidden matters hides its Client Level template.
+            var hiddenMatterTemplate = (await OkAsync(await admin.PostAsJsonAsync("/api/v1/note-templates", new { scope = "MATTER", matterId = u.S1, name = "Hidden matter", bodyHtml = "<p>x</p>" }), HttpStatusCode.Created)).GetProperty("noteTemplateId").GetInt32();
+            (await unrelated.GetAsync($"/api/v1/note-templates/{hiddenMatterTemplate}")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+            (await unrelated.PostAsJsonAsync("/api/v1/note-templates", new { scope = "MATTER", matterId = u.S1, name = "x", bodyHtml = "<p>x</p>" })).StatusCode.ShouldNotBe(HttpStatusCode.Created);
+            if (hiddenClient != visibleClient)
+            {
+                var hiddenClientTemplate = (await OkAsync(await admin.PostAsJsonAsync("/api/v1/note-templates", new { scope = "CLIENT", clientId = hiddenClient, name = "Hidden client", bodyHtml = "<p>x</p>" }), HttpStatusCode.Created)).GetProperty("noteTemplateId").GetInt32();
+                (await unrelated.GetAsync($"/api/v1/note-templates/{hiddenClientTemplate}")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+            }
+        }
+        finally
+        {
+            await u.H.Factory.DisposeAsync();
+        }
+    }
+
+    [Fact]
     public async Task Notes_are_sanitised_titled_checked_for_references_and_locked_for_everybody()
     {
         var u = await SensitiveUniverse.BuildAsync(sql, enabled: true);

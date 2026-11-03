@@ -229,8 +229,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
       matterId: w.matter.matterId,
       name,
       description: 'Inserted by slash',
-      titleTemplate: 'Slash title',
-      bodyHtml: '<p>Template body for {{matter}}</p>',
+      bodyHtml: '<h1>Slash title</h1><p>Template body for {{matter}}</p>',
       tagIds: [w.tagA.noteTagId],
     });
     await open(page, w.matter.matterId);
@@ -241,7 +240,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await expect(menu.getByRole('option')).toHaveCount(1);
     await expect(menu).toContainText('Inserted by slash');
     await page.keyboard.press('Enter');
-    // an empty note: the title line and the suggested tags come too
+    // an empty note: the first line of the template becomes the title, the suggested tags come too
     await expect(page.locator('.ProseMirror h1')).toHaveText('Slash title');
     await expect(page.locator('.ProseMirror')).toContainText('Template body for');
     await expect(page.locator('[data-template-tags]')).toContainText('Template tags');
@@ -250,7 +249,6 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await page.keyboard.press('Enter');
     await page.keyboard.type('/template Slash');
     await page.keyboard.press('Enter');
-    await expect(page.locator('.ProseMirror h1')).toHaveCount(1);
     await expect(page.locator('.ProseMirror p', { hasText: 'Template body for' })).toHaveCount(2);
   });
 
@@ -359,7 +357,6 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
       scope: 'MATTER',
       matterId: w.matter.matterId,
       name: tplName,
-      titleTemplate: 'T',
       bodyHtml: '<h1>Heading</h1><p>Body text</p>',
       tagIds: [],
     });
@@ -529,14 +526,13 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
       matterId: w.matter.matterId,
       name,
       description: 'A test template',
-      titleTemplate: 'Log {{date}}',
       bodyHtml: '<p>By {{author}} about {{custodian}}</p>',
       tagIds: [],
     });
     await open(page, w.matter.matterId);
     await page.getByRole('button', { name: 'Templates', exact: true }).click();
     const row = page.locator('[data-template-list] li', { hasText: name });
-    await expect(row).toContainText('This matter');
+    await expect(row).toContainText('Matter Level');
     await expect(page.getByRole('button', { name: 'New Template' })).toHaveCount(0);
     await expect(row.getByRole('button')).toHaveCount(1); // no Use, Edit, Duplicate or Delete on the row
     await row.getByRole('button').click();
@@ -561,6 +557,55 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await page.locator('[data-template-delete]').click();
     await page.getByRole('dialog').getByRole('button', { name: 'Delete template' }).click();
     await expect(page.locator('[data-template-list] li', { hasText: name })).toHaveCount(0);
+  });
+
+  test('templates have a Matter, Client and System Level; the edit form has Name, Description, Tags and Level', async ({
+    page,
+    seed,
+  }) => {
+    const w = await world(seed);
+    const mk = (n: string, extra: object) =>
+      seed.admin.post('/api/v1/note-templates', {
+        name: n,
+        bodyHtml: `<h1>${n}</h1><p>Body</p>`,
+        tagIds: [],
+        ...extra,
+      });
+    const sys = `Sys ${uid()}`;
+    const cli = `Cli ${uid()}`;
+    const mat = `Mat ${uid()}`;
+    await mk(sys, { scope: 'SYSTEM' });
+    await mk(cli, { scope: 'CLIENT', clientId: w.client.clientId });
+    await mk(mat, { scope: 'MATTER', matterId: w.matter.matterId });
+    await open(page, w.matter.matterId);
+    await page.getByRole('button', { name: 'Templates', exact: true }).click();
+    const groups = page.locator('[data-template-group]');
+    await expect(groups).toHaveText([/Matter Level/, /Client Level/, /System Level/]);
+    await expect(page.locator('[data-template-list] li', { hasText: cli })).toContainText(
+      'Client Level',
+    );
+    await expect(page.locator('[data-template-list] li', { hasText: sys })).toContainText(
+      'System Level',
+    );
+    // the edit form: no "Title when used"; the tags are one compact picker; a level select
+    await page.locator('[data-template-list] li', { hasText: mat }).getByRole('button').click();
+    await page.locator('[data-template-edit]').click();
+    await expect(page.getByLabel('Title when used')).toHaveCount(0);
+    await expect(page.locator('[data-template-help]')).toBeVisible();
+    await page.locator('[data-template-tags-button]').click();
+    await page
+      .getByRole('group', { name: 'Tags the template offers' })
+      .getByRole('checkbox')
+      .first()
+      .check();
+    await expect(page.locator('[data-template-tags-button] mf-note-tag')).toHaveCount(1);
+    expect(await axeViolations(page, '[data-notes-tab]')).toEqual([]);
+    // move it to Client Level
+    await page.locator('[data-template-level-select]').selectOption('CLIENT');
+    await page.locator('[data-template-save]').click();
+    await expect(page.locator('[data-template-list] li', { hasText: mat })).toContainText(
+      'Client Level',
+    );
   });
 
   test('a reader sees the Read only pill, the reader banner, no Edit and no New Note', async ({
@@ -613,26 +658,38 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await page.locator('[data-note-actions]').click();
     await page.getByRole('menuitem', { name: 'Save as template...' }).click();
     const dlg = page.getByRole('dialog', { name: 'Save as template' });
-    await expect(dlg).toContainText('Who can use it');
+    await expect(dlg).toContainText('Level (who can use it)');
     await expect(dlg.getByLabel('Template name')).not.toHaveValue('');
     await dlg.getByRole('button', { name: 'Save template' }).click();
-    await page.locator('[data-new-menu]').click();
-    await page.getByRole('menuitem', { name: 'From template...' }).click();
-    await page.getByRole('dialog').locator('[data-template-use]', { hasText: source }).click();
+    await page.locator('[data-new-note]').click();
+    await page.locator('.ProseMirror').click();
+    await page.keyboard.type(`/template ${source}`);
+    await expect(page.locator('[data-suggest-menu] [role=option]')).toHaveCount(1);
+    await page.keyboard.press('Enter');
     await expect(page.locator('[data-template-tags]')).toContainText('Template tags');
     await page.locator('[data-template-tags]').getByRole('button', { name: 'Apply tags' }).click();
     await expect(page.locator('[data-note-tag-chips] mf-note-tag')).toHaveCount(1);
   });
 
-  test('the empty state and the New note menu', async ({ page, seed }) => {
+  test('the empty state and one plain New Note button with the /template hint', async ({
+    page,
+    seed,
+  }) => {
     const w = await world(seed);
     await open(page, w.matter.matterId);
     const empty = page.locator('[data-notes-empty]');
     await expect(empty).toContainText('No notes on this matter yet');
     await expect(empty.getByRole('button', { name: 'Add the first note' })).toBeVisible();
-    await page.locator('[data-new-menu]').click();
-    await expect(page.getByRole('menuitem', { name: 'Blank note' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'From template...' })).toBeVisible();
+    // one plain button: no caret, no dropdown, no From template picker
+    await expect(page.locator('[data-new-menu]')).toHaveCount(0);
+    await page.locator('[data-new-note]').click();
+    await expect(page.locator('[data-editor-toolbar]')).toBeVisible();
+    await expect(page.locator('[data-editor-empty-hint]')).toContainText(
+      'Type / for commands, for example /template to start from a template.',
+    );
+    await page.locator('.ProseMirror').click();
+    await page.keyboard.type('x');
+    await expect(page.locator('[data-editor-empty-hint]')).toHaveCount(0);
   });
 
   test('the AI button says it is not available on a matter that does not allow AI', async ({

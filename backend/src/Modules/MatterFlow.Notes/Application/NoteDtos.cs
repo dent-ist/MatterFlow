@@ -310,43 +310,56 @@ public abstract class NoteTemplateInput
 /// <summary>Creates a template.</summary>
 public sealed class CreateNoteTemplateRequest : NoteTemplateInput
 {
-    /// <summary><c>FIRM</c> (administrators only) or <c>MATTER</c>.</summary>
+    /// <summary>The level: <c>SYSTEM</c> (administrators only), <c>CLIENT</c> (Client.Edit holders) or <c>MATTER</c>.</summary>
     [Required, StringLength(6)]
     public string Scope { get; init; } = string.Empty;
 
     /// <summary>The matter, required for <c>MATTER</c>.</summary>
     public int? MatterId { get; init; }
+
+    /// <summary>The client, required for <c>CLIENT</c>.</summary>
+    public int? ClientId { get; init; }
 }
 
-/// <summary>Changes a template; the scope and matter do not change.</summary>
+/// <summary>Changes a template. <c>scope</c>, <c>matterId</c> and <c>clientId</c> move it to another level (all omitted = it stays where it is); the caller needs the right for the target level.</summary>
 public sealed class UpdateNoteTemplateRequest : NoteTemplateInput
 {
     [Required]
     public string RowVersion { get; init; } = string.Empty;
+
+    [StringLength(6)]
+    public string? Scope { get; init; }
+
+    public int? MatterId { get; init; }
+
+    public int? ClientId { get; init; }
 }
 
 /// <summary>Copies a template.</summary>
 public sealed class DuplicateNoteTemplateRequest
 {
-    /// <summary>The matter for the copy; required unless an administrator copies a firm template as firm-wide.</summary>
+    /// <summary>The matter for the copy; required unless the copy keeps the source level (<c>keepLevel</c>).</summary>
     public int? MatterId { get; init; }
 
     /// <summary>Name of the copy (max 100); omitted = "{name} (copy)".</summary>
     [StringLength(100)]
     public string? Name { get; init; }
 
-    /// <summary>True (administrators): keep a firm template firm-wide; otherwise the copy belongs to <c>matterId</c>.</summary>
-    public bool KeepFirmScope { get; init; }
+    /// <summary>True: the copy keeps the level of the source when the caller may create one there; otherwise the copy is a Matter Level template of <c>matterId</c>.</summary>
+    public bool KeepLevel { get; init; }
 }
 
 /// <summary>A note template.</summary>
-/// <param name="Scope"><c>FIRM</c> or <c>MATTER</c>.</param>
+/// <param name="Scope"><c>SYSTEM</c>, <c>CLIENT</c> or <c>MATTER</c>.</param>
+/// <param name="TargetName">The client (Client Level) or matter (Matter Level) the template belongs to; null at System Level.</param>
 /// <param name="UsedCount">How many times it was used.</param>
 /// <param name="CanEdit">True when the caller may change or delete it.</param>
 public sealed record NoteTemplateResponse(
     [property: Required] int NoteTemplateId,
     [property: Required] string Scope,
     int? MatterId,
+    int? ClientId,
+    string? TargetName,
     [property: Required] string Name,
     string? Description,
     string? TitleTemplate,
