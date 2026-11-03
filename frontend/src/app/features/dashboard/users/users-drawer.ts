@@ -27,6 +27,8 @@ import { QuietRequests } from '../../../core/http/interceptors';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { describeDueCell } from '../../../core/time/time';
 import { DialogFocus } from '../../../shared/ui/dialog-focus';
+import { MfTab, Tabs } from '../../../shared/ui/tabs';
+import { UsersHistory } from './users-history';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { canEditField } from '../../../shared/work-queue/inline-edit';
@@ -93,6 +95,8 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
     TaskTypeIcon,
     DueCell,
     ErrorReference,
+    Tabs,
+    UsersHistory,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -166,119 +170,187 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
             }
           </p>
 
-          <section aria-labelledby="ud-tasks">
-            <h3 id="ud-tasks" class="h">
-              Open tasks
-              @if (state() === 'ready') {
-                <span class="muted">({{ total() }})</span>
-              }
-            </h3>
-            @if (state() === 'ready' && rows().length > 1) {
-              <p class="muted order" data-drawer-order>Overdue first, then priority.</p>
-            }
-            <p class="sr-only" role="status" aria-live="polite" data-drawer-live>{{ live() }}</p>
-            @switch (state()) {
-              @case ('loading') {
-                <div class="bones" role="status" aria-busy="true">
-                  <span class="sr-only">Loading open tasks...</span>
-                  @for (n of bones; track n) {
-                    <span class="bone" aria-hidden="true"></span>
+          <mf-tabs
+            idPrefix="ud"
+            label="Person details"
+            [tabs]="tabs"
+            [selected]="tab()"
+            (tabChange)="tab.set($any($event))"
+          />
+          @if (tab() === 'types') {
+            <div
+              id="ud-panel"
+              role="tabpanel"
+              aria-labelledby="ud-tab-types"
+              data-drawer-panel="types"
+            >
+              <mf-users-history [userId]="u.userId" panel="types" />
+            </div>
+          } @else if (tab() === 'trend') {
+            <div
+              id="ud-panel"
+              role="tabpanel"
+              aria-labelledby="ud-tab-trend"
+              data-drawer-panel="trend"
+            >
+              <mf-users-history [userId]="u.userId" panel="trend" />
+            </div>
+          } @else {
+            <div
+              id="ud-panel"
+              role="tabpanel"
+              aria-labelledby="ud-tab-overview"
+              data-drawer-panel="overview"
+            >
+              <dl class="counts" data-drawer-counts>
+                <div>
+                  <dt>Open</dt>
+                  <dd>{{ u.openTotal }}</dd>
+                </div>
+                <div>
+                  <dt>Overdue</dt>
+                  <dd [class.late]="u.overdue > 0">{{ u.overdue }}</dd>
+                </div>
+                <div>
+                  <dt>Due soon</dt>
+                  <dd>{{ u.dueSoon }}</dd>
+                </div>
+                <div>
+                  <dt>On hold</dt>
+                  <dd>{{ u.onHold }}</dd>
+                </div>
+              </dl>
+              <section aria-labelledby="ud-tasks">
+                <h3 id="ud-tasks" class="h">
+                  Open tasks
+                  @if (state() === 'ready') {
+                    <span class="muted">({{ total() }})</span>
                   }
-                </div>
-              }
-              @case ('error') {
-                <div class="alert" role="alert" data-drawer-error>
-                  <span>The open tasks could not be loaded.</span>
-                  <mf-error-reference />
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--icon"
-                    data-drawer-retry
-                    aria-label="Retry"
-                    title="Retry"
-                    (click)="load()"
-                  >
-                    <i class="pi pi-refresh" aria-hidden="true"></i>
-                  </button>
-                </div>
-              }
-              @default {
-                @if (rows().length === 0) {
-                  <p class="empty" data-drawer-empty>
-                    <i class="pi pi-check-circle" aria-hidden="true"></i>
-                    {{ u.displayName }} has no open tasks.
-                  </p>
-                } @else {
-                  <ul class="rows" data-drawer-tasks>
-                    @for (r of rows(); track r.taskId) {
-                      <li
-                        class="row"
-                        [attr.data-task]="r.taskNumber"
-                        [attr.data-task-id]="r.taskId"
+                </h3>
+                @if (state() === 'ready' && rows().length > 1) {
+                  <p class="muted order" data-drawer-order>Overdue first, then priority.</p>
+                }
+                <p class="sr-only" role="status" aria-live="polite" data-drawer-live>
+                  {{ live() }}
+                </p>
+                @switch (state()) {
+                  @case ('loading') {
+                    <div class="bones" role="status" aria-busy="true">
+                      <span class="sr-only">Loading open tasks...</span>
+                      @for (n of bones; track n) {
+                        <span class="bone" aria-hidden="true"></span>
+                      }
+                    </div>
+                  }
+                  @case ('error') {
+                    <div class="alert" role="alert" data-drawer-error>
+                      <span>The open tasks could not be loaded.</span>
+                      <mf-error-reference />
+                      <button
+                        type="button"
+                        class="mf-btn mf-btn--icon"
+                        data-drawer-retry
+                        aria-label="Retry"
+                        title="Retry"
+                        (click)="load()"
                       >
-                        <div class="main">
-                          <a
-                            class="ref mf-ref"
-                            [routerLink]="['/tasks', r.taskId]"
-                            [queryParams]="origin.params('dashboard')"
-                            [state]="origin.state()"
-                            >{{ r.taskNumber }}</a
+                        <i class="pi pi-refresh" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                  }
+                  @default {
+                    @if (rows().length === 0) {
+                      <p class="empty" data-drawer-empty>
+                        <i class="pi pi-check-circle" aria-hidden="true"></i>
+                        {{ u.displayName }} has no open tasks.
+                      </p>
+                    } @else {
+                      <ul class="rows" data-drawer-tasks>
+                        @for (r of rows(); track r.taskId) {
+                          <li
+                            class="row"
+                            [attr.data-task]="r.taskNumber"
+                            [attr.data-task-id]="r.taskId"
                           >
-                          <span
-                            class="type"
-                            role="img"
-                            data-type
-                            [attr.aria-label]="r.taskTypeName"
-                            [attr.title]="r.taskTypeName"
-                          >
-                            <mf-task-type-icon [iconKey]="r.taskTypeIconKey" size="sm" />
-                          </span>
-                          <span class="title" [attr.title]="r.title">{{ r.title }}</span>
-                        </div>
-                        <div class="meta">
-                          <span class="field" data-field="status">
-                            @if (editable('status', r)) {
-                              <mf-row-edit field="status" [row]="r" (rowChange)="onRow($event)" />
-                            } @else {
-                              <mf-status-badge [code]="r.status" [label]="r.statusLabel" />
+                            <div class="main">
+                              <a
+                                class="ref mf-ref"
+                                [routerLink]="['/tasks', r.taskId]"
+                                [queryParams]="origin.params('dashboard')"
+                                [state]="origin.state()"
+                                >{{ r.taskNumber }}</a
+                              >
+                              <span
+                                class="type"
+                                role="img"
+                                data-type
+                                [attr.aria-label]="r.taskTypeName"
+                                [attr.title]="r.taskTypeName"
+                              >
+                                <mf-task-type-icon [iconKey]="r.taskTypeIconKey" size="sm" />
+                              </span>
+                              <span class="title" [attr.title]="r.title">{{ r.title }}</span>
+                            </div>
+                            <div class="meta">
+                              <span class="field" data-field="status">
+                                @if (editable('status', r)) {
+                                  <mf-row-edit
+                                    field="status"
+                                    [row]="r"
+                                    (rowChange)="onRow($event)"
+                                  />
+                                } @else {
+                                  <mf-status-badge [code]="r.status" [label]="r.statusLabel" />
+                                }
+                              </span>
+                              <span class="field" data-field="priority">
+                                @if (editable('priority', r)) {
+                                  <mf-row-edit
+                                    field="priority"
+                                    [row]="r"
+                                    (rowChange)="onRow($event)"
+                                  />
+                                } @else {
+                                  <mf-priority-flag
+                                    [label]="r.priority.label"
+                                    [color]="r.priority.color"
+                                  />
+                                }
+                              </span>
+                              @if (r.dueDate || r.dueAtUtc || r.isAsap) {
+                                <mf-due-cell
+                                  data-due
+                                  layout="inline"
+                                  [due]="r"
+                                  [status]="r.status"
+                                />
+                              }
+                            </div>
+                            @if (editable('assignee', r)) {
+                              <div class="reassign" data-field="assignee" data-reassign>
+                                <mf-row-edit
+                                  field="assignee"
+                                  triggerIcon="pi-user-edit"
+                                  [row]="r"
+                                  (rowChange)="onRow($event)"
+                                />
+                              </div>
                             }
-                          </span>
-                          <span class="field" data-field="priority">
-                            @if (editable('priority', r)) {
-                              <mf-row-edit field="priority" [row]="r" (rowChange)="onRow($event)" />
-                            } @else {
-                              <mf-priority-flag
-                                [label]="r.priority.label"
-                                [color]="r.priority.color"
-                              />
-                            }
-                          </span>
-                          @if (r.dueDate || r.dueAtUtc || r.isAsap) {
-                            <mf-due-cell data-due layout="inline" [due]="r" [status]="r.status" />
-                          }
-                        </div>
-                        @if (editable('assignee', r)) {
-                          <div class="reassign" data-field="assignee" data-reassign>
-                            <mf-row-edit
-                              field="assignee"
-                              triggerIcon="pi-user-edit"
-                              [row]="r"
-                              (rowChange)="onRow($event)"
-                            />
-                          </div>
+                          </li>
                         }
-                      </li>
+                      </ul>
+                      @if (total() > rows().length) {
+                        <p class="muted" data-drawer-more>
+                          Showing {{ rows().length }} of {{ total() }}. The rest are in the Task
+                          Queue.
+                        </p>
+                      }
                     }
-                  </ul>
-                  @if (total() > rows().length) {
-                    <p class="muted" data-drawer-more>
-                      Showing {{ rows().length }} of {{ total() }}. The rest are in the Task Queue.
-                    </p>
                   }
                 }
-              }
-            }
-          </section>
+              </section>
+            </div>
+          }
         </div>
       }
     </p-dialog>
@@ -287,6 +359,30 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
     .peek {
       display: grid;
       gap: var(--mf-s4);
+    }
+    .counts {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: var(--mf-s2);
+      margin: 0 0 var(--mf-s3);
+    }
+    .counts div {
+      padding: var(--mf-s2);
+      border: 1px solid var(--mf-border-soft);
+      border-radius: var(--mf-radius-lg);
+    }
+    .counts dt {
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-xs);
+    }
+    .counts dd {
+      margin: 0;
+      font-size: var(--mf-fs-lg);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .counts dd.late {
+      color: var(--mf-danger);
     }
     .facts {
       display: flex;
@@ -491,6 +587,12 @@ export class UsersDrawer {
   readonly tasksChanged = output<void>();
 
   protected readonly plural = plural;
+  protected readonly tab = signal<'overview' | 'types' | 'trend'>('overview');
+  protected readonly tabs: readonly MfTab[] = [
+    { key: 'overview', label: 'Overview', icon: 'pi-home' },
+    { key: 'types', label: 'Task types', icon: 'pi-th-large' },
+    { key: 'trend', label: 'Trend', icon: 'pi-chart-bar' },
+  ];
   protected readonly bones = [1, 2, 3];
   protected readonly state = signal<LoadState>('loading');
   protected readonly rows = signal<TaskQueueRow[]>([]);
@@ -519,6 +621,13 @@ export class UsersDrawer {
 
   constructor() {
     inject(DestroyRef).onDestroy(() => (this.destroyed = true));
+    // A different person always opens on the Overview.
+    effect(() => {
+      const id = this.user()?.userId;
+      untracked(() => {
+        if (id !== undefined) this.tab.set('overview');
+      });
+    });
     effect(() => {
       const id = this.user()?.userId ?? null;
       untracked(() => {
