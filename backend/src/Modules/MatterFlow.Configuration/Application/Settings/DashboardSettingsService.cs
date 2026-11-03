@@ -85,11 +85,11 @@ public sealed class DashboardSettingsService(AppSettingsService settings, IUserD
         return reset.IsFailure ? reset.Error! : await GetAdminAsync(ct);
     }
 
-    internal static DashboardGaugeValues ToValues(DashboardGaugeSettings s) =>
+    public static DashboardGaugeValues ToValues(DashboardGaugeSettings s) =>
         new(DashboardGaugeSettings.FormatTime(s.WorkdayStart), DashboardGaugeSettings.FormatTime(s.WorkdayEnd), [.. s.WorkDays.Order()], s.AgeBasis, [.. s.LevelHours], s.TasksPerLevel, s.CountBonusMax);
 
     /// <summary>Validates the form values into settings; a failure names the field.</summary>
-    internal static Result<DashboardGaugeSettings> FromValues(DashboardGaugeValues? values)
+    public static Result<DashboardGaugeSettings> FromValues(DashboardGaugeValues? values)
     {
         if (values is null)
             return Error.Validation("gauge", "REQUIRED", "The settings are required.");
@@ -104,7 +104,7 @@ public sealed class DashboardSettingsService(AppSettingsService settings, IUserD
     }
 
     /// <summary>The stored JSON as settings; null when missing, unreadable or no longer valid.</summary>
-    internal static DashboardGaugeSettings? Parse(string? text)
+    public static DashboardGaugeSettings? Parse(string? text)
     {
         if (string.IsNullOrWhiteSpace(text))
             return null;
