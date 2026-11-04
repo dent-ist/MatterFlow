@@ -35,11 +35,11 @@ One of: an exact description with numbers; an ASCII sketch; or a small HTML snip
 
 ## Acceptance (measurable; the reviewer checks each line)
 - [ ] Every value comes from a token; `npm run lint` passes (no colour literal, no icon size literal); no px outside spec section 0.4.
-- [ ] Heights measured in the browser: controls 36 px (32 px in a cell, 44 px under 640 px), tab 40 px, grid row 44 / 36 px, chip 26 px, dialog and drawer widths per D-32 and D-33 (list the ones that apply with the number).
+- [ ] Heights measured in the browser: controls 36 px (32 px in a cell), tab 40 px, grid row 44 / 36 px, chip 26 px, dialog and drawer widths per D-32 and D-33 (list the ones that apply with the number).
 - [ ] Wording matches D-20 and D-22 (list the exact strings that must appear).
 - [ ] States per D-05: hover, focus ring, disabled, selected checked by script or by hand.
-- [ ] axe: 0 violations at 1366x768, 1920x1080 and 375x812 on every changed page and dialog.
-- [ ] Screenshots attached to the PR: 1366x768, 1920x1080, 375x812, before next to after, with the dialog or drawer open when the issue touches one. Stored under `docs/ux/ui-update/screenshots/<page>/after/`.
+- [ ] axe: 0 violations at 1366x768 and 1920x1080 on every changed page and dialog.
+- [ ] Screenshots attached to the PR: 1366x768 and 1920x1080 (desktop only; the app is desktop-only, no phone or tablet sizes), before next to after, with the dialog or drawer open when the issue touches one. Stored under `docs/ux/ui-update/screenshots/<page>/after/`.
 - [ ] No private chip, link, button or dialog class is added; the shared component is used or extended.
 - [ ] No keyboard shortcut added or changed (#420); `shortcut-registry.ts` untouched.
 - [ ] Initial bundle under 700 kB (`npm run build` output quoted in the PR).
