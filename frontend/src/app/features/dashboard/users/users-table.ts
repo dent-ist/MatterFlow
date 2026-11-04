@@ -464,6 +464,8 @@ export class UsersTable {
     fewest: 'ascending',
     priority: 'descending',
     load: 'ascending',
+    overdue: 'descending',
+    nextdue: 'ascending',
   };
 
   protected ariaSort(key: UserSort): 'ascending' | 'descending' | 'none' {

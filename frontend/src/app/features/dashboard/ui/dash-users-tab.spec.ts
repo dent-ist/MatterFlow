@@ -1,4 +1,5 @@
 import {
+  ddButton,
   ddChoose,
   ddOptionTexts,
   ddSelect,
@@ -239,11 +240,13 @@ describe('DashUsersTab', () => {
       await settle();
       return;
     }
-    // The filters live in the Filters popover (the themed dropdowns): open it, then choose by label.
+    // Sort is a dropdown of its own (US-11); the Coverage display choices live in the Display popover: open it, then choose by label.
+    if (selector === '[data-sort]') {
+      ddChoose(host, 'Sort', value);
+      await settle();
+      return;
+    }
     const labels: Record<string, string> = {
-      '[data-filter="priority"]': 'Highest priority',
-      '[data-filter="availability"]': 'Availability',
-      '[data-sort]': 'Sort',
       '[data-coverage-row-order]': 'Order',
       '[data-coverage-scale]': 'Colour scale',
       '[data-coverage-type-order]': 'Task types',
@@ -266,6 +269,18 @@ describe('DashUsersTab', () => {
       await settle();
     }
   };
+  /** The State dropdown: open it, click each state, then Done. A value of '' is "All states". */
+  const pickStates = async (...values: string[]) => {
+    ddButton(host, 'State').click();
+    await settle();
+    for (const v of values) {
+      document.querySelector<HTMLElement>(`.dd-panel [role="option"][data-value="${v}"]`)!.click();
+      await settle();
+    }
+    document.querySelector<HTMLElement>('[data-dd-done]')!.click();
+    await settle();
+  };
+  const names = () => qa('[data-user-card]').map((c) => c.getAttribute('data-user'));
   const openWho = async () => {
     if (!q('[data-who-popover]')) {
       q<HTMLButtonElement>('[data-who-counted]').click();
@@ -291,9 +306,9 @@ describe('DashUsersTab', () => {
   describe('cards', () => {
     it('asks the workload endpoint with the filters of the address', async () => {
       await open(of(board()), '/dashboard?tab=users&uavail=out&uq=ann');
-      expect(getWorkload).toHaveBeenCalledWith(undefined, 'out', 'ann', 'all', false);
-      await openFilters();
-      expect(ddValue(host, 'Availability')).toBe('out');
+      // An old address (uavail=out) opens as the Out of office state; the states are applied on the page, the API is asked for everyone.
+      expect(getWorkload).toHaveBeenCalledWith(undefined, 'all', 'ann', 'all', false);
+      expect(ddText(host, 'State')).toBe('Out of office');
     });
 
     it('draws one card per person in the default order: available, off hours, out of office; lighter first', async () => {
@@ -309,8 +324,8 @@ describe('DashUsersTab', () => {
       expect(text(ann.querySelector('[data-open-total]'))).toBe('3');
       expect(text(ann.querySelector('[data-workload]'))).toBe('3 open');
       expect(ann.querySelectorAll('[data-pip]')).toHaveLength(3);
-      expect(ann.querySelectorAll('[data-pip].pip--on')).toHaveLength(3);
-      expect(card('Cy Tan').querySelectorAll('[data-pip].pip--on')).toHaveLength(0);
+      expect(ann.querySelectorAll('[data-pip].dot--on')).toHaveLength(3);
+      expect(card('Cy Tan').querySelectorAll('[data-pip].dot--on')).toHaveLength(0);
       // "Available" is spoken, never drawn.
       expect(ann.querySelector('[data-availability-line]')).toBeNull();
       expect(text(ann)).not.toContain('Available');
@@ -319,6 +334,18 @@ describe('DashUsersTab', () => {
       );
       expect(text(ann)).not.toContain('Workload');
       expect(ann.querySelector('[data-load-bar], [data-segment], .avatar')).toBeNull();
+    });
+
+    it('shows the state of the person as an icon SHAPE with its colour: Idle, Light, Heavy, Out of office, Off hours', async () => {
+      await open();
+      const icon = (n: string) =>
+        card(n).querySelector('mf-user-state-icon')!.getAttribute('data-state-icon');
+      expect(icon('Cy Tan')).toBe('idle');
+      expect(icon('Ann Lee')).toBe('light');
+      expect(icon('Hal Moe')).toBe('heavy');
+      expect(icon('Dee Fox')).toBe('out');
+      expect(icon('Eve Kim')).toBe('off');
+      expect(card('Ann Lee').querySelector('mf-user-state-icon svg path')).not.toBeNull();
     });
 
     it('shows only the exceptions: Off hours as a chip, Out of office as an amber band with the return date', async () => {
@@ -357,7 +384,7 @@ describe('DashUsersTab', () => {
         'Heavy',
       );
       // More open tasks than slots: every pip is filled.
-      expect(card('Hal Moe').querySelectorAll('[data-pip].pip--on')).toHaveLength(3);
+      expect(card('Hal Moe').querySelectorAll('[data-pip].dot--on')).toHaveLength(3);
     });
 
     it('names the open button with the name first, then the count, the level and the availability', async () => {
@@ -377,36 +404,6 @@ describe('DashUsersTab', () => {
   });
 
   describe('capacity strip (U1)', () => {
-    const seg = (k: string) => q<HTMLButtonElement>(`[data-capacity-bar] [data-segment="${k}"]`);
-
-    it('stacks the people by load level with the chips counts, names every segment and clears on a second click', async () => {
-      await open();
-      expect(
-        qa('[data-capacity-bar] [data-segment]').map((b) => b.getAttribute('data-segment')),
-      ).toEqual(['idle', 'light', 'normal', 'heavy']);
-      expect(seg('light').getAttribute('aria-label')).toContain('Light, 3.');
-      expect(seg('heavy').getAttribute('aria-label')).toContain('Heavy, 1.');
-      // The widths follow the counts.
-      expect(q('[data-capacity-bar]').getAttribute('role')).toBe('group');
-      expect(q('[data-capacity-bar]').getAttribute('aria-label')).toContain(
-        '1 idle, 3 light, 1 normal, 1 heavy, 1 out of office',
-      );
-      seg('heavy').click();
-      await settle();
-      expect(url()).toContain('uload=heavy');
-      expect(seg('heavy').getAttribute('aria-pressed')).toBe('true');
-      expect(q('[data-chip="heavy"]').getAttribute('aria-pressed')).toBe('true');
-      expect(qa('[data-user-card]').map((c) => c.getAttribute('data-user'))).toEqual(['Hal Moe']);
-      seg('heavy').click();
-      await settle();
-      expect(url()).not.toContain('uload');
-      expect(qa('[data-user-card]').length).toBe(6);
-      // The chip toggles the same filter, in step with the strip.
-      q<HTMLButtonElement>('[data-chip="light"]').click();
-      await settle();
-      expect(seg('light').getAttribute('aria-pressed')).toBe('true');
-    });
-
     it('links the unassigned count to the Task Queue within the scope', async () => {
       await open();
       const scope = TestBed.inject(DashScope);
@@ -434,9 +431,8 @@ describe('DashUsersTab', () => {
       await settle();
       expect(q('[data-assign-menu]')).toBeNull();
       expect(url()).toContain('uavail=available');
-      expect(url()).toContain('uload=idle,light');
+      expect(url()).toContain('ustate=idle,light');
       expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'available', undefined, 'all', false);
-      await openFilters();
       expect(ddValue(host, 'Sort')).toBe('fewest');
       // Idle or Light, fewest open tasks first (the fake API does not drop the out of office Dee Fox; the real one does for Available).
       expect(qa('[data-user-card]').map((c) => c.getAttribute('data-user'))).toEqual([
@@ -493,11 +489,10 @@ describe('DashUsersTab', () => {
     });
 
     it('reads unopod=1 from the address, keeps it when the filters are cleared, and is quiet when nobody is hidden', async () => {
-      await open(of(board()), '/dashboard?tab=users&unopod=1&uavail=out');
-      expect(getWorkload).toHaveBeenCalledWith(undefined, 'out', undefined, 'all', true);
-      await openFilters();
-      q<HTMLButtonElement>('[data-clear-filters]').click();
-      await settle();
+      await open(of(board()), '/dashboard?tab=users&unopod=1&ustate=out');
+      expect(getWorkload).toHaveBeenCalledWith(undefined, 'all', undefined, 'all', true);
+      await pickStates('');
+      expect(url()).not.toContain('ustate');
       expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all', true);
       expect(url()).toContain('unopod=1');
       await reopen(of(board({ hiddenCount: 0 })));
@@ -547,31 +542,23 @@ describe('DashUsersTab', () => {
       expect(text(q('[data-who-counted]'))).toBe('');
       expect(q('[data-legend-toggle]')).toBeNull();
     });
-
-    it('names each chip with its thresholds', async () => {
-      await open();
-      expect(q('[data-chip="idle"]').getAttribute('aria-label')).toContain('no open tasks');
-      expect(q('[data-chip="light"]').getAttribute('aria-label')).toContain('1 to 3 open tasks');
-      expect(q('[data-chip="light"]').getAttribute('title')).toContain('1 to 3');
-      expect(q('[data-chip="normal"]').getAttribute('aria-label')).toContain('4 to 8 open tasks');
-      expect(q('[data-chip="heavy"]').getAttribute('aria-label')).toContain(
-        'more than 8 open tasks',
-      );
-    });
   });
 
-  describe('quick filter chips', () => {
-    it('count the team by load, out of office and off hours, and link the unassigned tasks to the Task Queue', async () => {
+  describe('State dropdown', () => {
+    it('lists All states and the six states with their number of people, and links the unassigned tasks to the Task Queue', async () => {
       await open();
-      const n = (k: string) => text(q(`[data-chip="${k}"] [data-n]`));
-      expect([n('idle'), n('light'), n('normal'), n('heavy'), n('out'), n('off')]).toEqual([
-        '1',
-        '3',
-        '1',
-        '1',
-        '1',
-        '1',
+      expect(ddOptionTexts(host, 'State')).toEqual([
+        'All states 6',
+        'Idle 1',
+        'Light 3',
+        'Normal 1',
+        'Heavy 1',
+        'Out of office 1',
+        'Off hours 1',
       ]);
+      expect(ddText(host, 'State')).toBe('All states');
+      // The six buttons, the Filters button and the legend icon in the toolbar are gone.
+      expect(q('[data-chip], [data-filters-toggle], [data-legend-toggle]')).toBeNull();
       expect(text(q('[data-summary-unassigned] [data-n]'))).toBe('4');
       const href = q('[data-summary-unassigned]').getAttribute('href')!;
       expect(href).toContain('/tasks?');
@@ -579,67 +566,47 @@ describe('DashUsersTab', () => {
       expect(href).toContain('status=NEW');
     });
 
-    it('the out of office chip toggles the availability filter through the API', async () => {
+    it('choosing Out of office filters on the page without another read and writes ustate to the address', async () => {
       await open();
-      q<HTMLButtonElement>('[data-chip="out"]').click();
-      await settle();
-      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'out', undefined, 'all', false);
-      expect(url()).toContain('uavail=out');
-      expect(q('[data-chip="out"]').getAttribute('aria-pressed')).toBe('true');
-      q<HTMLButtonElement>('[data-chip="out"]').click();
-      await settle();
-      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all', false);
-      expect(url()).not.toContain('uavail');
+      await pickStates('out');
+      expect(names()).toEqual(['Dee Fox']);
+      expect(url()).toContain('ustate=out');
+      expect(getWorkload).toHaveBeenCalledTimes(1);
+      expect(ddText(host, 'State')).toBe('Out of office');
+      await pickStates('out');
+      expect(url()).not.toContain('ustate');
+      expect(names().length).toBe(6);
     });
 
-    it('load chips combine and filter on the page without another read; the address keeps them', async () => {
+    it('states combine (any of them), "All states" clears them, and the address keeps them', async () => {
       await open();
-      q<HTMLButtonElement>('[data-chip="idle"]').click();
-      await settle();
-      expect(qa('[data-user-card]').map((c) => c.getAttribute('data-user'))).toEqual(['Cy Tan']);
-      q<HTMLButtonElement>('[data-chip="heavy"]').click();
-      await settle();
-      expect(qa('[data-user-card]').map((c) => c.getAttribute('data-user'))).toEqual([
-        'Cy Tan',
-        'Hal Moe',
-      ]);
-      expect(url()).toContain('uload=idle,heavy');
+      await pickStates('idle', 'heavy');
+      expect(names()).toEqual(['Cy Tan', 'Hal Moe']);
+      expect(url()).toContain('ustate=idle,heavy');
       expect(getWorkload).toHaveBeenCalledTimes(1);
       expect(text(q('[data-users-live]'))).toBe('2 people shown.');
-      expect(q('[data-chip="idle"]').getAttribute('aria-pressed')).toBe('true');
-      q<HTMLButtonElement>('[data-chip="idle"]').click();
-      await settle();
-      expect(qa('[data-user-card]').map((c) => c.getAttribute('data-user'))).toEqual(['Hal Moe']);
+      expect(ddText(host, 'State')).toBe('Idle +1');
+      await pickStates('');
+      expect(names().length).toBe(6);
+      expect(url()).not.toContain('ustate');
+      expect(ddText(host, 'State')).toBe('All states');
     });
 
-    it('off hours is the availability filter applied on the page', async () => {
+    it('Off hours is a state applied on the page', async () => {
       await open();
-      q<HTMLButtonElement>('[data-chip="off"]').click();
-      await settle();
-      expect(qa('[data-user-card]').map((c) => c.getAttribute('data-user'))).toEqual(['Eve Kim']);
+      await pickStates('off');
+      expect(names()).toEqual(['Eve Kim']);
       expect(getWorkload).toHaveBeenCalledTimes(1);
-      expect(url()).toContain('uavail=off');
+      expect(url()).toContain('ustate=off');
     });
 
-    it('opens with the load and priority filters of the address', async () => {
+    it('opens with the states of the address, and an old address (uload, uprio) still opens: loads become states, the priority is ignored', async () => {
       await open(of(board()), '/dashboard?tab=users&uload=normal,heavy&uprio=1');
-      expect(qa('[data-user-card]').map((c) => c.getAttribute('data-user'))).toEqual(['Hal Moe']);
-      expect(q('[data-chip="heavy"]').getAttribute('aria-pressed')).toBe('true');
-      await openFilters();
-      expect(ddValue(host, 'Highest priority')).toBe('1');
-    });
-
-    it('the priority filter keeps people whose highest open priority is the chosen one', async () => {
-      await open();
-      await choose('[data-filter="priority"]', '3');
-      expect(qa('[data-user-card]').map((c) => c.getAttribute('data-user'))).toEqual(['Bob Ray']);
-      expect(url()).toContain('uprio=3');
-      expect(getWorkload).toHaveBeenCalledTimes(1);
-      await openFilters();
-      q<HTMLButtonElement>('[data-clear-filters]').click();
-      await settle();
-      expect(qa('[data-user-card]').length).toBe(6);
-      expect(url()).not.toContain('uprio');
+      expect(names()).toContain('Hal Moe');
+      expect(names().length).toBe(2);
+      expect(ddText(host, 'State')).toBe('Normal +1');
+      await reopen(of(board()), '/dashboard?tab=users&uprio=1');
+      expect(names().length).toBe(6);
     });
   });
 
@@ -661,17 +628,22 @@ describe('DashUsersTab', () => {
       expect(getWorkload).toHaveBeenCalledTimes(1);
     });
 
-    it('filters by availability and name through the API and writes them to the address; there is no Pod control (the page-wide scope replaces it)', async () => {
+    it('has no Filters button: the toolbar is search, State, Sort, the layout switch and the info icon; the Sort menu has five plain choices', async () => {
       await open();
-      expect(q('[data-filter="pod"]')).toBeNull();
-      await choose('[data-filter="availability"]', 'available');
-      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'available', undefined, 'all', false);
-      expect(url()).toContain('uavail=available');
-      await openFilters();
-      q<HTMLButtonElement>('[data-clear-filters]').click();
-      await settle();
-      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all', false);
-      expect(url()).not.toContain('uavail');
+      expect(q('[data-filters-toggle]')).toBeNull();
+      expect(
+        q('[data-filter="priority"], [data-filter="availability"], [data-filter="pod"]'),
+      ).toBeNull();
+      expect(ddOptionTexts(host, 'Sort')).toEqual([
+        'Availability and load',
+        'Name',
+        'Open tasks',
+        'Overdue',
+        'Next due',
+      ]);
+      await choose('[data-sort]', 'overdue');
+      expect(qa('[data-user-card]')[0].getAttribute('data-user')).toBe('Ann Lee');
+      expect(text(q('[data-sorted-text]'))).toBe('Sorted by Overdue');
     });
 
     it('reads the workload for the page-wide scope and again when the scope changes', async () => {

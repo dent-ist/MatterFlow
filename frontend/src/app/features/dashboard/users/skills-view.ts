@@ -18,7 +18,6 @@ import {
 import { Clock } from '../../../core/time/clock';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
-import { UsersFilterPopover } from './users-filter-popover';
 import { SearchBox } from '../../../shared/ui/search-box';
 import { Segmented } from '../../../shared/ui/segmented';
 import { Tip } from '../../../shared/ui/tip';
@@ -39,22 +38,13 @@ type SkillsState = 'loading' | 'ready' | 'error';
 /**
  * The Skills and training view of Dashboard > Users (US-04, #1094), read from `GET /dashboard/users/skills` for the page scope (permission Dashboard.ViewUsers only). A matrix of people
  * (rows, the first column sticks) by task types (columns, the header sticks): the completed tasks of the last 3 or 12 months, always as a number, with a tint by count. A column header marks task
- * types with thin coverage (0 to 2 people with 5 or more completed in 12 months) with an icon, the word and a tooltip. Filters: name, one task type, availability. "Growth candidates" lists, for the
+ * types with thin coverage (0 to 2 people with 5 or more completed in 12 months) with an icon, the word and a tooltip. Filters: name and one task type (a dropdown of its own). "Growth candidates" lists, for the
  * chosen task type, people with little experience in it who can take work now, lightest load first; a click opens the person's drawer. The same 3-month counts drive the assignee suggestions (#1088).
  * No ranking of people: this is for planning cover and training.
  */
 @Component({
   selector: 'mf-skills-view',
-  imports: [
-    TaskTypeIcon,
-    SearchBox,
-    Segmented,
-    Tip,
-    Dropdown,
-    UsersFilterPopover,
-    DashSkeleton,
-    DashState,
-  ],
+  imports: [TaskTypeIcon, SearchBox, Segmented, Tip, Dropdown, DashSkeleton, DashState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="bar" role="toolbar" aria-label="Skills controls" data-skills-toolbar>
@@ -72,34 +62,18 @@ type SkillsState = 'loading' | 'ready' | 'error';
         [value]="q()"
         (searchChange)="q.set($event)"
       />
-      <mf-users-filter-popover [count]="filterCount()" (cleared)="clearFilters()">
-        <div class="fl" data-filter="type">
-          <span>Task type</span>
-          <mf-dropdown
-            buttonId="sk-type"
-            label="Task type"
-            data-skills-type
-            [items]="typeItems()"
-            [value]="typeId() === null ? '' : '' + typeId()"
-            [neutralValue]="''"
-            (valueChange)="setType($event)"
-            [panelWidth]="260"
-          />
-        </div>
-        <div class="fl" data-filter="availability">
-          <span>Availability</span>
-          <mf-dropdown
-            buttonId="sk-avail"
-            label="Availability"
-            data-skills-availability
-            [items]="availabilityItems"
-            [value]="availability()"
-            [neutralValue]="'all'"
-            (valueChange)="availability.set($event === 'now' ? 'now' : 'all')"
-            [panelWidth]="260"
-          />
-        </div>
-      </mf-users-filter-popover>
+      <mf-dropdown
+        class="typedd"
+        buttonId="sk-type"
+        label="Task type"
+        prefix="Task type:"
+        data-skills-type
+        [items]="typeItems()"
+        [value]="typeId() === null ? '' : '' + typeId()"
+        [neutralValue]="''"
+        [panelWidth]="260"
+        (valueChange)="setType($event)"
+      />
       <span class="grow"></span>
       <div mfSegmented role="group" aria-label="Window" data-skills-window>
         @for (w of windows; track w) {
@@ -271,12 +245,22 @@ type SkillsState = 'loading' | 'ready' | 'error';
       white-space: nowrap;
     }
     .bar {
+      --mf-seg-h: var(--mf-ctl-h);
       display: flex;
       flex: none;
       flex-wrap: wrap;
       align-items: center;
       gap: var(--mf-s2);
       margin-bottom: var(--mf-s2);
+    }
+    /* One control height on all three views (the shared token): the search box, the switches, the dropdowns and the icon buttons are the same height. */
+    .bar .mf-btn {
+      min-height: var(--mf-ctl-h);
+    }
+    .search ::ng-deep .sb__input {
+      height: var(--mf-ctl-h);
+      min-height: var(--mf-ctl-h);
+      padding-block: 0;
     }
     .search {
       min-width: 10rem;
@@ -504,24 +488,16 @@ export class SkillsView {
 
   protected readonly q = signal('');
   protected readonly typeId = signal<number | null>(null);
-  protected readonly availability = signal<'all' | 'now'>('all');
   protected readonly window = signal<SkillsWindow>(3);
 
   protected readonly help =
     'Completed tasks per person and task type. A thin column has 0 to 2 people with 5 or more completed in 12 months. The same 3-month counts drive the assignee suggestions. For planning cover and training, not a ranking of people.';
 
-  protected readonly availabilityItems: DropdownItem[] = [
-    { value: 'all', label: 'All' },
-    { value: 'now', label: 'Can take work now' },
-  ];
   protected readonly types = computed(() => this.matrix()?.types ?? []);
   protected readonly typeItems = computed<DropdownItem[]>(() => [
     { value: '', label: 'All task types' },
     ...this.types().map((t) => ({ value: String(t.taskTypeId), label: t.name })),
   ]);
-  protected readonly filterCount = computed(
-    () => (this.typeId() === null ? 0 : 1) + (this.availability() === 'all' ? 0 : 1),
-  );
   private readonly cells = computed(() => {
     const m = this.matrix();
     return m ? cellIndex(m) : new Map();
@@ -537,11 +513,7 @@ export class SkillsView {
     const m = this.matrix();
     if (!m) return [];
     const q = this.q().trim().toLowerCase();
-    return m.people.filter(
-      (p) =>
-        (q === '' || p.displayName.toLowerCase().includes(q)) &&
-        (this.availability() === 'all' || (p.state !== 'OUT_OF_OFFICE' && p.state !== 'OFF_HOURS')),
-    );
+    return m.people.filter((p) => q === '' || p.displayName.toLowerCase().includes(q));
   });
   protected readonly candidates = computed(() => {
     const m = this.matrix();
@@ -562,10 +534,6 @@ export class SkillsView {
   }
   protected count(userId: number, typeId: number): number {
     return countOf(this.cells(), userId, typeId, this.window());
-  }
-  protected clearFilters(): void {
-    this.typeId.set(null);
-    this.availability.set('all');
   }
   protected setType(v: string): void {
     this.typeId.set(v === '' ? null : Number(v));

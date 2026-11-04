@@ -7,6 +7,7 @@ import {
 import { availabilityDisplay, shortDay } from '../../../core/availability/availability';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { calendarDayInZone } from '../../../core/time/time';
+import { UserStateIcon, UserStateKey } from '../../../shared/icons/user-state-icon';
 import { priorityColors } from '../../../shared/ui/priority-badge';
 import {
   CARD_SLOTS,
@@ -43,6 +44,7 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
  */
 @Component({
   selector: 'mf-users-card',
+  imports: [UserStateIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let u = user();
@@ -64,16 +66,13 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
         </p>
       }
       <div class="body">
-        <div
-          class="num"
-          aria-hidden="true"
-          data-workload
-          [class]="'num num--' + level().toLowerCase()"
-        >
-          <strong class="n" data-open-total>{{ u.openTotal }}</strong
-          >&ngsp;
-          <span class="cap">open</span>
-        </div>
+        <mf-user-state-icon
+          class="ico"
+          data-state-icon-slot
+          [state]="stateKey()"
+          size="lg"
+          [circle]="true"
+        />
         <div class="main">
           <p class="head">
             <button
@@ -98,16 +97,18 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
               >
             }
           </p>
-          <span
-            class="pips"
-            [class]="'pips pips--' + level().toLowerCase()"
-            aria-hidden="true"
-            data-slots
-          >
-            @for (p of pips(); track $index) {
-              <i class="pip" [class.pip--on]="p" data-pip></i>
-            }
-          </span>
+          <div class="wl" aria-hidden="true" data-workload>
+            <strong class="n" data-open-total>{{ u.openTotal }}</strong
+            >&ngsp;<span class="cap">open</span>
+            <span class="dots" [class]="'dots dots--' + level().toLowerCase()" data-slots>
+              @for (p of pips(); track $index) {
+                <i class="dot" [class.dot--on]="p" data-pip></i>
+              }
+              @if (u.openTotal > slots) {
+                <span class="more" data-more>+{{ u.openTotal - slots }}</span>
+              }
+            </span>
+          </div>
         </div>
       </div>
       @if (st !== 'ooo' && u.availability.state === 'OFF_HOURS') {
@@ -134,16 +135,17 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
   styles: `
     :host {
       display: block;
-      min-width: 0;
-    }
-    .card {
-      position: relative;
-      display: grid;
-      gap: var(--mf-s2);
-      align-content: start;
       height: 100%;
       min-width: 0;
-      padding: var(--mf-s3);
+    }
+    /* No padding on the card itself: the amber band runs edge to edge inside the rounded corners (overflow hidden), the body and the chip keep the padding. */
+    .card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      height: 100%;
+      min-width: 0;
       overflow: hidden;
       background: var(--mf-surface);
       border: 1px solid var(--mf-border);
@@ -155,12 +157,12 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
     .card--heavy {
       box-shadow: inset 0 0 0 1px var(--mf-danger);
     }
-    /* Out of office: a solid amber band across the top (the away-state tokens, 4.5:1 and more), the rest of the card keeps its normal look. */
+    /* Out of office: a solid amber band across the top (the away-state tokens), the rest of the card keeps its normal look. */
     .band {
       display: flex;
       align-items: center;
       gap: var(--mf-s2);
-      margin: calc(var(--mf-s3) * -1) calc(var(--mf-s3) * -1) 0;
+      margin: 0;
       padding: var(--mf-s1) var(--mf-s3);
       color: var(--mf-warning);
       background: var(--mf-warning-bg);
@@ -173,46 +175,16 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
     }
     .body {
       display: flex;
+      flex: 1 1 auto;
       align-items: center;
       gap: var(--mf-s3);
       min-width: 0;
-    }
-    .num {
-      flex: none;
-      display: grid;
-      justify-items: center;
-      min-width: 3rem;
-      line-height: 1;
-    }
-    .n {
-      font-size: 2.5rem;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-    }
-    .cap {
-      margin-top: var(--mf-s1);
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-    .num--idle .n {
-      color: var(--mf-success);
-    }
-    .num--light .n {
-      color: var(--mf-info);
-    }
-    .num--normal .n {
-      color: var(--mf-text-muted);
-    }
-    .num--heavy .n {
-      color: var(--mf-danger);
+      padding: var(--mf-s3);
     }
     .main {
       display: grid;
       flex: 1 1 auto;
-      gap: var(--mf-s2);
+      gap: var(--mf-s1);
       min-width: 0;
     }
     .head {
@@ -268,36 +240,59 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
     .late .pi {
       font-size: var(--mf-icon-sm);
     }
-    /* The three capacity slots (the same rule as the Team capacity battery): filled up to the open tasks. */
-    .pips {
+    /* The open count (about 24 px), its caption and the three capacity dots (the 3-slot rule of the Team capacity battery) on one line. */
+    .wl {
       display: flex;
+      align-items: baseline;
       gap: var(--mf-s1);
     }
-    .pip {
-      flex: 1;
+    .n {
+      font-size: 1.5rem;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .cap {
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+    }
+    .dots {
+      display: inline-flex;
+      align-items: center;
+      align-self: center;
+      gap: var(--mf-s1);
+      margin-left: auto;
+    }
+    .dot {
+      width: 0.625rem;
       height: 0.625rem;
       background: var(--mf-surface-alt);
       border: 1px solid var(--mf-border-strong);
-      border-radius: 999px;
+      border-radius: 50%;
     }
-    .pips--idle .pip--on {
+    .dots--idle .dot--on {
       background: var(--mf-success);
       border-color: var(--mf-success);
     }
-    .pips--light .pip--on {
+    .dots--light .dot--on {
       background: var(--mf-info);
       border-color: var(--mf-info);
     }
-    .pips--normal .pip--on {
+    .dots--normal .dot--on {
       background: var(--mf-text-muted);
       border-color: var(--mf-text-muted);
     }
-    .pips--heavy .pip--on {
+    .dots--heavy .dot--on {
       background: var(--mf-danger);
       border-color: var(--mf-danger);
     }
+    .more {
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-xs);
+      font-weight: 600;
+    }
     .av {
       margin: 0;
+      padding: 0 var(--mf-s3) var(--mf-s3);
     }
     .chip {
       display: inline-flex;
@@ -381,10 +376,18 @@ export class UsersCard {
     const u = this.user();
     return `${u.displayName}, ${plural(u.openTotal, 'open task')}, ${LOAD_LABELS[this.level()]}, ${this.avail().label}`;
   });
-  /** One filled pip per open task up to the slots; the rest are empty. */
+  protected readonly slots = CARD_SLOTS;
+  /** One filled dot per open task up to the slots; the rest are empty (more than the slots: all filled and a small +N). */
   protected readonly pips = computed(() =>
     Array.from({ length: CARD_SLOTS }, (_, i) => i < this.user().openTotal),
   );
+  /** The state icon: Out of office wins, then Off hours, then the load level (the shape says it, the colour supports it). */
+  protected readonly stateKey = computed<UserStateKey>(() => {
+    const u = this.user();
+    if (u.availability?.state === 'OUT_OF_OFFICE') return 'out';
+    if (u.availability?.state === 'OFF_HOURS') return 'off';
+    return this.level().toLowerCase() as UserStateKey;
+  });
   /** The tooltip: the level with its meaning, from the board's thresholds ("Light: 1 to 3 open tasks"), and the availability. */
   protected readonly levelTip = computed(() => {
     const key = this.level().toLowerCase();

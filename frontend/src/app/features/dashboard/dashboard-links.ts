@@ -71,6 +71,7 @@ export const USERS_AVAILABILITY_PARAM = 'uavail';
 export const USERS_Q_PARAM = 'uq';
 export const USERS_LOAD_PARAM = 'uload';
 export const USERS_PRIORITY_PARAM = 'uprio';
+export const USERS_STATE_PARAM = 'ustate';
 /** `unopod=1` adds the people who cannot take work (no pod and nothing open) to the Workload view (U4). */
 export const USERS_NOPOD_PARAM = 'unopod';
 
@@ -84,6 +85,7 @@ export function clearedUsersParams(): Record<string, null> {
     [USERS_Q_PARAM]: null,
     [USERS_LOAD_PARAM]: null,
     [USERS_PRIORITY_PARAM]: null,
+    [USERS_STATE_PARAM]: null,
     [USERS_NOPOD_PARAM]: null,
     [USERS_VIEW_PARAM]: null,
   };

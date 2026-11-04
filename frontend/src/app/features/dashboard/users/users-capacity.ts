@@ -15,7 +15,7 @@ import {
   WorkloadUser,
 } from '../../../api/generated/api-client';
 import { DashScope } from '../dash-scope';
-import { LoadFilter, UsersFilters, plural, unassignedQueueParams } from './users-model';
+import { UsersFilters, plural, unassignedQueueParams } from './users-model';
 
 let nextId = 0;
 
@@ -196,7 +196,6 @@ export class UsersCapacity {
   readonly thresholds = input<WorkloadThresholds | null>(null);
   readonly canAssign = input(false);
 
-  readonly loadToggle = output<LoadFilter>();
   /** "Show people who can take work now" was chosen. */
   readonly showCanTake = output<void>();
 

@@ -1,4 +1,5 @@
 import { ParamMap } from '@angular/router';
+import { UserStateKey } from '../../../shared/icons/user-state-icon';
 import {
   WorkloadPriority,
   WorkloadThresholds,
@@ -11,12 +12,21 @@ import {
   USERS_NOPOD_PARAM,
   USERS_PRIORITY_PARAM,
   USERS_Q_PARAM,
+  USERS_STATE_PARAM,
   queueParams,
 } from '../dashboard-links';
 
 // ---- the view (what the toolbar chooses)
 
-export const USER_SORTS = ['load', 'name', 'priority', 'open', 'fewest'] as const;
+export const USER_SORTS = [
+  'load',
+  'name',
+  'priority',
+  'open',
+  'fewest',
+  'overdue',
+  'nextdue',
+] as const;
 export type UserSort = (typeof USER_SORTS)[number];
 export const USER_SORT_LABELS: Record<UserSort, string> = {
   load: 'Availability and load',
@@ -24,16 +34,14 @@ export const USER_SORT_LABELS: Record<UserSort, string> = {
   priority: 'Highest priority',
   open: 'Open tasks',
   fewest: 'Fewest open tasks',
+  overdue: 'Overdue',
+  nextdue: 'Next due',
 };
-/** `available` is everyone not out of office (the API's meaning); `off` (off hours) is applied on the page. */
-export const AVAILABILITY_FILTERS = ['all', 'available', 'off', 'out'] as const;
+/** The sorts the Sort dropdown offers (US-11); Highest priority and Fewest open tasks stay as table-header and "can take work" sorts. */
+export const SORT_MENU: readonly UserSort[] = ['load', 'name', 'open', 'overdue', 'nextdue'];
+/** `available` is everyone not out of office (the API's meaning); it is set only by "Assign work > Show people who can take work now" and by old links. */
+export const AVAILABILITY_FILTERS = ['all', 'available'] as const;
 export type AvailabilityFilter = (typeof AVAILABILITY_FILTERS)[number];
-export const AVAILABILITY_LABELS: Record<AvailabilityFilter, string> = {
-  all: 'All',
-  available: 'Available',
-  off: 'Off hours',
-  out: 'Out of office',
-};
 export const LAYOUTS = ['cards', 'table'] as const;
 export type Layout = (typeof LAYOUTS)[number];
 
@@ -47,23 +55,39 @@ export const isAvailabilityFilter = (v: unknown): v is AvailabilityFilter =>
   AVAILABILITY_FILTERS.includes(v as AvailabilityFilter);
 export const isLayout = (v: unknown): v is Layout => LAYOUTS.includes(v as Layout);
 
-/** The load filters (chips): `idle` is a person with nothing open and not out of office; the others follow the API's load level. */
-export const LOAD_FILTERS = ['idle', 'light', 'normal', 'heavy'] as const;
-export type LoadFilter = (typeof LOAD_FILTERS)[number];
-export const isLoadFilter = (v: unknown): v is LoadFilter => LOAD_FILTERS.includes(v as LoadFilter);
+/**
+ * The states of the State dropdown (US-11, #1102): the four load levels and the two availability exceptions. A person has their load level, plus Out of office or Off hours
+ * when that is their availability; choosing several states shows the people who are in ANY of them. Idle is a person with nothing open.
+ */
+export const STATE_KEYS = [
+  'idle',
+  'light',
+  'normal',
+  'heavy',
+  'out',
+  'off',
+] as const satisfies readonly UserStateKey[];
+export const isStateKey = (v: unknown): v is UserStateKey => STATE_KEYS.includes(v as UserStateKey);
+
+/** The states a person is in: the load level, and Out of office or Off hours. */
+export function stateKeysOf(u: WorkloadUser): UserStateKey[] {
+  const keys: UserStateKey[] = [loadLevelOf(u).toLowerCase() as UserStateKey];
+  if (u.availability?.state === 'OUT_OF_OFFICE') keys.push('out');
+  if (u.availability?.state === 'OFF_HOURS') keys.push('off');
+  return keys;
+}
 
 /**
- * The filters of the tab. Availability (all, available, out) and name are sent to the API; load, priority and off hours are applied on
- * the page. All of them live in the address (`?tab=users&uavail=out&uq=ann&uload=idle,heavy&uprio=1`). The Pod is not a filter of the tab: it is the
- * page-wide Scope (`?pod=`, P1).
+ * The filters of the tab: the name (sent to the API) and the states (applied on the page), in the address (`?tab=users&uq=ann&ustate=idle,out`). `availability`
+ * is not a control any more: `available` (hide the people who are out of office) is set by "Assign work > Show people who can take work now" and by old links.
+ * The old `uload`, `uavail` and `uprio` addresses still open: loads and out or off become states, the priority is ignored. The Pod is not a filter of the tab:
+ * it is the page-wide Scope (`?pod=`, P1).
  */
 export interface UsersFilters {
   availability: AvailabilityFilter;
   q: string;
-  /** Load levels to show (any of them); empty means all. */
-  load: LoadFilter[];
-  /** Highest open priority to show (a priority id), or null for all. */
-  priority: number | null;
+  /** States to show (any of them); empty means all. */
+  states: UserStateKey[];
   /**
    * The population (U4, #130), not a filter: false (default) lists the people who can take work (active, in a pod or holding an open task); true adds
    * the rest (`unopod=1`). It is not counted by `filterCount` and "Clear filters" leaves it alone.
@@ -74,8 +98,7 @@ export interface UsersFilters {
 export const DEFAULT_FILTERS: UsersFilters = {
   availability: 'all',
   q: '',
-  load: [],
-  priority: null,
+  states: [],
   includeNoPod: false,
 };
 
@@ -83,9 +106,8 @@ export function sameFilters(a: UsersFilters, b: UsersFilters): boolean {
   return (
     a.availability === b.availability &&
     a.q === b.q &&
-    a.priority === b.priority &&
     a.includeNoPod === b.includeNoPod &&
-    a.load.join() === b.load.join()
+    a.states.join() === b.states.join()
   );
 }
 
@@ -95,63 +117,58 @@ export function hasFilterParams(params: ParamMap): boolean {
     USERS_Q_PARAM,
     USERS_LOAD_PARAM,
     USERS_PRIORITY_PARAM,
+    USERS_STATE_PARAM,
     USERS_NOPOD_PARAM,
   ].some((k) => params.has(k));
 }
 
 export function filtersFromParams(params: ParamMap): UsersFilters {
-  const prio = Number(params.get(USERS_PRIORITY_PARAM));
   const availability = params.get(USERS_AVAILABILITY_PARAM);
-  const load = (params.get(USERS_LOAD_PARAM) ?? '').split(',').filter(isLoadFilter);
+  const wanted = new Set<string>(
+    (params.get(USERS_STATE_PARAM) ?? '').split(',').filter(isStateKey),
+  );
+  // Old addresses: loads (`uload=idle,heavy`) and out of office or off hours (`uavail=out`) are states now.
+  for (const l of (params.get(USERS_LOAD_PARAM) ?? '').split(',').filter(isStateKey)) wanted.add(l);
+  if (availability === 'out' || availability === 'off') wanted.add(availability);
   return {
-    availability: isAvailabilityFilter(availability) ? availability : 'all',
+    availability: availability === 'available' ? 'available' : 'all',
     q: (params.get(USERS_Q_PARAM) ?? '').trim(),
-    load: LOAD_FILTERS.filter((l) => load.includes(l)),
-    priority: Number.isInteger(prio) && prio > 0 ? prio : null,
+    states: STATE_KEYS.filter((k) => wanted.has(k)),
     includeNoPod: params.get(USERS_NOPOD_PARAM) === '1',
   };
 }
 
-/** Router query parameters for the filters; unset ones are `null` so `merge` removes them. */
+/** Router query parameters for the filters; unset ones are `null` so `merge` removes them (the old `uload` and `uprio` too). */
 export function filtersToParams(f: UsersFilters): Record<string, string | null> {
   return {
     [USERS_AVAILABILITY_PARAM]: f.availability === 'all' ? null : f.availability,
     [USERS_Q_PARAM]: f.q || null,
-    [USERS_LOAD_PARAM]: f.load.length ? f.load.join(',') : null,
-    [USERS_PRIORITY_PARAM]: f.priority === null ? null : String(f.priority),
+    [USERS_STATE_PARAM]: f.states.length ? f.states.join(',') : null,
+    [USERS_LOAD_PARAM]: null,
+    [USERS_PRIORITY_PARAM]: null,
     [USERS_NOPOD_PARAM]: f.includeNoPod ? '1' : null,
   };
 }
 
 export function filterCount(f: UsersFilters): number {
-  return (
-    (f.availability !== 'all' ? 1 : 0) +
-    (f.q ? 1 : 0) +
-    (f.load.length ? 1 : 0) +
-    (f.priority !== null ? 1 : 0)
-  );
+  return (f.availability !== 'all' ? 1 : 0) + (f.q ? 1 : 0) + (f.states.length ? 1 : 0);
 }
 
 /** The filters "Clear filters" puts back: everything except the population switch. */
 export const CLEARED_FILTERS: Partial<UsersFilters> = {
   availability: 'all',
   q: '',
-  load: [],
-  priority: null,
+  states: [],
 };
 
-/** What the API is asked for: it knows all, available and out; "off hours" is read as "all" and narrowed on the page. */
-export function apiAvailability(f: UsersFilters): 'all' | 'available' | 'out' {
-  return f.availability === 'off' ? 'all' : f.availability;
+/** What the API is asked for: all, or `available` (not out of office); the states are applied on the page. */
+export function apiAvailability(f: UsersFilters): 'all' | 'available' {
+  return f.availability;
 }
 
-/** True when the person passes the filters that are applied on the page (load, priority, off hours). */
+/** True when the person is in any of the chosen states (all when none is chosen). */
 export function passesLocalFilters(u: WorkloadUser, f: UsersFilters): boolean {
-  if (f.availability === 'off' && u.availability?.state !== 'OFF_HOURS') return false;
-  if (f.priority !== null && (u.openTotal === 0 || u.topPriority?.priorityId !== f.priority)) {
-    return false;
-  }
-  return f.load.length === 0 || f.load.includes(loadLevelOf(u).toLowerCase() as LoadFilter);
+  return f.states.length === 0 || stateKeysOf(u).some((k) => f.states.includes(k));
 }
 
 export function filterUsers(users: readonly WorkloadUser[], f: UsersFilters): WorkloadUser[] {
@@ -274,7 +291,7 @@ export function capacitySegments(
 /** What "Assign work > Show people who can take work now" sets: not out of office, Idle or Light, fewest open tasks first. */
 export const CAN_TAKE_WORK_NOW: Partial<UsersFilters> = {
   availability: 'available',
-  load: ['idle', 'light'],
+  states: ['idle', 'light'],
 };
 
 // ---- colours
@@ -359,6 +376,13 @@ const byName = (a: WorkloadUser, b: WorkloadUser) =>
  * the lighter load first, then by name. `priority` puts the most urgent open work first (people with nothing open last), `open` the
  * most open tasks first. Equal people are ordered by name, so the order never jumps around.
  */
+/** The instant of a person's next due task; people without one sort last. */
+function nextDueKey(u: WorkloadUser): number {
+  const d = u.nextDue?.dueAtUtc ?? u.nextDue?.dueDate;
+  const t = d ? Date.parse(d) : NaN;
+  return Number.isNaN(t) ? Number.MAX_SAFE_INTEGER : t;
+}
+
 export function sortUsers(users: readonly WorkloadUser[], sort: UserSort): WorkloadUser[] {
   const list = [...users];
   switch (sort) {
@@ -376,6 +400,10 @@ export function sortUsers(users: readonly WorkloadUser[], sort: UserSort): Workl
       return list.sort((a, b) => b.openTotal - a.openTotal || byName(a, b));
     case 'fewest':
       return list.sort((a, b) => a.openTotal - b.openTotal || byName(a, b));
+    case 'overdue':
+      return list.sort((a, b) => b.overdue - a.overdue || byName(a, b));
+    case 'nextdue':
+      return list.sort((a, b) => nextDueKey(a) - nextDueKey(b) || byName(a, b));
     default:
       return list.sort(
         (a, b) =>
