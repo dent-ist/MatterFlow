@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using MatterFlow.Identity.Application;
 using MatterFlow.Identity.Authorization;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.Identity.Domain;
@@ -40,17 +41,19 @@ public sealed record UserLookupItem(
 [ApiController]
 [Route("api/v1/users/lookup")]
 [Produces("application/json")]
-public class UsersLookupController(DbContext db, IUserAvailabilityReader availability, IAssigneeLoadReader loads, IAssigneeRanker ranker, IClock clock) : ControllerBase
+public class UsersLookupController(DbContext db, IUserAvailabilityReader availability, IAssigneeLoadReader loads, IAssigneeExperienceReader experience, IAssigneeRanker ranker, IClock clock) : ControllerBase
 {
     /// <summary>
     /// Finds active users that hold a role. Plain (default): matches by name, ordered by name. With <paramref name="podId"/>: only that Pod's members,
-    /// ranked. With <paramref name="suggest"/>: only people who are not out of office, ranked, at most <paramref name="limit"/>.
+    /// ranked. With <paramref name="suggest"/>: only people who are not out of office, ranked, at most <paramref name="limit"/>. With <paramref name="assignable"/>
+    /// (the assignee pickers): only people who can be assigned Tasks, that is hold <c>Workflow.Execute</c> and are not out of office, in every mode.
     /// </summary>
     /// <param name="q">Matches the display name.</param>
     /// <param name="limit">Maximum items (default 25, max 50).</param>
-    /// <param name="podId">Narrow to the active members of this Pod and rank them (fewest open Tasks, least recently assigned, name).</param>
-    /// <param name="taskTypeId">The Task Type being assigned; passed to the ranking, which may use it.</param>
+    /// <param name="podId">Narrow to the active members of this Pod and rank them (least load, fewest completed Tasks of the type in 3 months, longest since last assigned, name, id).</param>
+    /// <param name="taskTypeId">The Task Type being assigned; the ranking counts the Tasks of this type each person completed in the last 3 months. Without it that step is skipped.</param>
     /// <param name="suggest">Return the ranked Suggested list: out of office people are left out.</param>
+    /// <param name="assignable">For assignee pickers: only people who hold <c>Workflow.Execute</c>, and nobody who is out of office (also in a Pod list and in a name search).</param>
     /// <param name="cancellationToken">Request cancellation.</param>
     [HttpGet(Name = "LookupUsers")]
     [RequirePermission(Permissions.Task.Assign)]
@@ -61,11 +64,14 @@ public class UsersLookupController(DbContext db, IUserAvailabilityReader availab
         [FromQuery] int? podId = null,
         [FromQuery] int? taskTypeId = null,
         [FromQuery] bool suggest = false,
+        [FromQuery] bool assignable = false,
         CancellationToken cancellationToken = default)
     {
         var now = clock.UtcNow;
         // Access Pending users (active, no role) cannot open Tasks, so they are not offered as assignees (SEC2-14).
         var query = db.Set<AppUser>().AsNoTracking().Where(u => u.IsActive && db.Set<UserRole>().Any(r => r.UserId == u.Id));
+        if (assignable)
+            query = query.WhereHoldsExecute();
         if (podId is { } pod)
             query = query.Where(u => db.Set<PodMember>().Any(m => m.PodId == pod && m.UserId == u.Id));
         if (!string.IsNullOrWhiteSpace(q))
@@ -75,24 +81,33 @@ public class UsersLookupController(DbContext db, IUserAvailabilityReader availab
         }
 
         var ranked = podId is not null || suggest;
-        var rows = await (ranked ? query.OrderBy(u => u.DisplayName) : query.OrderBy(u => u.DisplayName).Take(limit))
+        // Out of office people are only known after the availability check, so an assignable name search takes the limit after leaving them out.
+        var rows = await (ranked || assignable ? query.OrderBy(u => u.DisplayName) : query.OrderBy(u => u.DisplayName).Take(limit))
             .Select(u => new { u.Id, u.DisplayName })
             .ToArrayAsync(cancellationToken);
+        var states = await availability.EvaluateAsync(rows.Select(r => r.Id).ToArray(), now, cancellationToken);
+        if (assignable)
+            rows = rows.Where(r => states[r.Id].State != AvailabilityStates.OutOfOffice).ToArray();
         var ids = rows.Select(r => r.Id).ToArray();
-        var states = await availability.EvaluateAsync(ids, now, cancellationToken);
         var load = await loads.ReadAsync(ids, cancellationToken);
+        // Experience (completed Tasks of the type in the last 3 months) only matters to the ranking, and only when the Task has a type.
+        IReadOnlyDictionary<int, AssigneeExperience> done = ranked && taskTypeId is { } type
+            ? await experience.ReadAsync(ids, type, now.AddMonths(-LoadBalancedAssigneeRanker.ExperienceMonths), cancellationToken)
+            : new Dictionary<int, AssigneeExperience>();
 
         var candidates = rows.Select(r =>
         {
             var l = load.GetValueOrDefault(r.Id);
+            var x = done.GetValueOrDefault(r.Id);
             var state = states[r.Id];
-            return new AssigneeCandidate(r.Id, r.DisplayName, l?.OpenTaskCount ?? 0, l?.LastAssignedUtc, state.State != AvailabilityStates.OutOfOffice, state.OutUntilUtc,
-                l?.Visible is { } shown ? new AssigneeCandidateDisplay(shown.OpenTaskCount, shown.LastAssignedUtc) : null);
+            // The display facts are the viewer's view only when the sensitive-matter rule is on (the load reader says so); the experience then carries its own visible count.
+            var display = l?.Visible is { } shown ? new AssigneeCandidateDisplay(shown.OpenTaskCount, shown.ActiveCount, shown.LastAssignedUtc, x?.Visible ?? 0) : null;
+            return new AssigneeCandidate(r.Id, r.DisplayName, l?.OpenTaskCount ?? 0, l?.ActiveCount ?? 0, x?.Completed ?? 0, l?.LastAssignedUtc, state.State != AvailabilityStates.OutOfOffice, state.OutUntilUtc, display);
         }).ToArray();
 
         if (!ranked)
         {
-            return candidates.Select(c => Item(c, states[c.UserId], suggested: false, reason: string.Empty, load)).ToArray();
+            return candidates.Take(limit).Select(c => Item(c, states[c.UserId], suggested: false, reason: string.Empty, load)).ToArray();
         }
 
         var order = ranker.Rank(new AssigneeRankingRequest(candidates, podId, taskTypeId, now));

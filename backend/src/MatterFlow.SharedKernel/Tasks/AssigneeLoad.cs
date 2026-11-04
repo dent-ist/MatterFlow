@@ -8,8 +8,8 @@ namespace MatterFlow.SharedKernel.Tasks;
 /// <param name="ActiveCount">Dashboard v4 capacity load: the person's open Tasks that are New or In progress (On hold does not count), the TRUE number whatever the visibility rule (a bare integer, decision AS item 12).</param>
 public sealed record AssigneeLoad(int OpenTaskCount, DateTime? LastAssignedUtc, AssigneeLoadDisplay? Visible = null, int ActiveCount = 0);
 
-/// <summary>What a viewer may see of a person's load: open tasks and the last assignment time over the tasks that viewer can see.</summary>
-public sealed record AssigneeLoadDisplay(int OpenTaskCount, DateTime? LastAssignedUtc);
+/// <summary>What a viewer may see of a person's load: open tasks, the capacity load (New and In progress) and the last assignment time over the tasks that viewer can see.</summary>
+public sealed record AssigneeLoadDisplay(int OpenTaskCount, DateTime? LastAssignedUtc, int ActiveCount);
 
 /// <summary>
 /// Task load per candidate assignee for the assignee pickers (#757). The Task table belongs to the Work Management module, which the Identity
@@ -27,4 +27,29 @@ public sealed class NoTasksAssigneeLoadReader : IAssigneeLoadReader
 {
     public Task<IReadOnlyDictionary<int, AssigneeLoad>> ReadAsync(IReadOnlyCollection<int> userIds, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyDictionary<int, AssigneeLoad>>(new Dictionary<int, AssigneeLoad>());
+}
+
+/// <summary>
+/// How much of one Task Type a person completed lately (DB-14, assignee ranking step 2).
+/// </summary>
+/// <param name="Completed">Tasks of the type the person completed in the window: the TRUE count, what the ranking orders by.</param>
+/// <param name="Visible">The same count over the tasks the caller may see (sensitive-matter rule), what a screen may DISPLAY. Null: the same as <paramref name="Completed"/> (the rule is off).</param>
+public sealed record AssigneeExperience(int Completed, int? Visible = null);
+
+/// <summary>
+/// Experience of candidate assignees with one Task Type: Tasks of that type the person COMPLETED (Completed only, not Cancelled) since a given instant. The Task table belongs to the
+/// Work Management module, which the Identity module may not reference, so the WorkViews module implements this (like <see cref="IAssigneeLoadReader"/>). One grouped statement per
+/// call, whatever the number of users. The person is the one the Task was assigned to when it was completed.
+/// </summary>
+public interface IAssigneeExperienceReader
+{
+    /// <summary>Completed Tasks of the type per user since <paramref name="sinceUtc"/>. Users with none are absent.</summary>
+    Task<IReadOnlyDictionary<int, AssigneeExperience>> ReadAsync(IReadOnlyCollection<int> userIds, int taskTypeId, DateTime sinceUtc, CancellationToken cancellationToken = default);
+}
+
+/// <summary>Default <see cref="IAssigneeExperienceReader"/> until the WorkViews module registers the real one: nobody completed anything.</summary>
+public sealed class NoTasksAssigneeExperienceReader : IAssigneeExperienceReader
+{
+    public Task<IReadOnlyDictionary<int, AssigneeExperience>> ReadAsync(IReadOnlyCollection<int> userIds, int taskTypeId, DateTime sinceUtc, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyDictionary<int, AssigneeExperience>>(new Dictionary<int, AssigneeExperience>());
 }

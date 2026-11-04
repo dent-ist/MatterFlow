@@ -54,6 +54,8 @@ public static class WorkViewsModule
         services.AddScoped<IUserTaskCounts, UserTaskCounts>();
         services.RemoveAll<IAssigneeLoadReader>();
         services.AddScoped<IAssigneeLoadReader, AssigneeLoadReader>();
+        services.RemoveAll<IAssigneeExperienceReader>();
+        services.AddScoped<IAssigneeExperienceReader, AssigneeExperienceReader>();
         services.Configure<DashboardOptions>(configuration.GetSection(DashboardOptions.SectionName));
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<DashboardCache>();

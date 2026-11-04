@@ -99,28 +99,28 @@ public sealed class AssigneeLoadReader(DbContext db, IMatterVisibility visibilit
 
         var ids = userIds.Distinct().ToList();
         // The true load (what the ranking orders by) and, when the rule is on, the same facts over the tasks the caller may see (what a screen may show).
-        var (open, last) = await ReadAsync(db.Set<WorkTask>().AsNoTracking(), ids, cancellationToken);
-        // Dashboard v4 capacity load (decision AS item 12): New and In progress only, true count, never filtered, leaves the query as a bare integer per person.
-        var active = await db.Set<WorkTask>().AsNoTracking()
-            .Where(t => (t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress) && t.AssignedUserId != null && ids.Contains(t.AssignedUserId.Value))
-            .GroupBy(t => t.AssignedUserId!.Value)
-            .Select(g => new { Key = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(r => r.Key, r => r.Count, cancellationToken);
-        (Dictionary<int, int> Open, Dictionary<int, DateTime?> Last)? shown = visibility.Enabled ? await ReadAsync(VisibleTasks.Of(db, visibility), ids, cancellationToken) : null;
+        // The capacity load (decision AS item 12) is New and In progress only; its true number is a bare integer per person.
+        var all = await ReadAsync(db.Set<WorkTask>().AsNoTracking(), ids, cancellationToken);
+        (Dictionary<int, int> Open, Dictionary<int, DateTime?> Last, Dictionary<int, int> Active)? shown = visibility.Enabled ? await ReadAsync(VisibleTasks.Of(db, visibility), ids, cancellationToken) : null;
 
-        return last.Keys.Union(open.Keys).Union(active.Keys).ToDictionary(
+        return all.Last.Keys.Union(all.Open.Keys).Union(all.Active.Keys).ToDictionary(
             id => id,
             id => new AssigneeLoad(
-                open.GetValueOrDefault(id),
-                last.GetValueOrDefault(id),
-                shown is null ? null : new AssigneeLoadDisplay(shown.Value.Open.GetValueOrDefault(id), shown.Value.Last.GetValueOrDefault(id)),
-                active.GetValueOrDefault(id)));
+                all.Open.GetValueOrDefault(id),
+                all.Last.GetValueOrDefault(id),
+                shown is null ? null : new AssigneeLoadDisplay(shown.Value.Open.GetValueOrDefault(id), shown.Value.Last.GetValueOrDefault(id), shown.Value.Active.GetValueOrDefault(id)),
+                all.Active.GetValueOrDefault(id)));
     }
 
-    private static async Task<(Dictionary<int, int> Open, Dictionary<int, DateTime?> Last)> ReadAsync(IQueryable<WorkTask> tasks, List<int> ids, CancellationToken cancellationToken)
+    private static async Task<(Dictionary<int, int> Open, Dictionary<int, DateTime?> Last, Dictionary<int, int> Active)> ReadAsync(IQueryable<WorkTask> tasks, List<int> ids, CancellationToken cancellationToken)
     {
         var open = await tasks.Where(TaskQueueRules.Open)
             .Where(t => t.AssignedUserId != null && ids.Contains(t.AssignedUserId.Value))
+            .GroupBy(t => t.AssignedUserId!.Value)
+            .Select(g => new { Key = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+        var active = await tasks
+            .Where(t => (t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress) && t.AssignedUserId != null && ids.Contains(t.AssignedUserId.Value))
             .GroupBy(t => t.AssignedUserId!.Value)
             .Select(g => new { Key = g.Key, Count = g.Count() })
             .ToListAsync(cancellationToken);
@@ -129,6 +129,29 @@ public sealed class AssigneeLoadReader(DbContext db, IMatterVisibility visibilit
             .GroupBy(t => t.AssignedUserId!.Value)
             .Select(g => new { Key = g.Key, Last = g.Max(t => t.AssignedAtUtc) })
             .ToListAsync(cancellationToken);
-        return (open.ToDictionary(r => r.Key, r => r.Count), last.ToDictionary(r => r.Key, r => r.Last));
+        return (open.ToDictionary(r => r.Key, r => r.Count), last.ToDictionary(r => r.Key, r => r.Last), active.ToDictionary(r => r.Key, r => r.Count));
     }
+}
+
+/// <summary>Completed Tasks of one type per candidate assignee (DB-14): Completed only, by completion time, one grouped statement for the true count and one more over the visible Tasks when the sensitive-matter rule is on.</summary>
+public sealed class AssigneeExperienceReader(DbContext db, IMatterVisibility visibility) : IAssigneeExperienceReader
+{
+    public async Task<IReadOnlyDictionary<int, AssigneeExperience>> ReadAsync(IReadOnlyCollection<int> userIds, int taskTypeId, DateTime sinceUtc, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(userIds);
+        if (userIds.Count == 0)
+            return new Dictionary<int, AssigneeExperience>();
+
+        var ids = userIds.Distinct().ToList();
+        var all = await CountAsync(db.Set<WorkTask>().AsNoTracking(), ids, taskTypeId, sinceUtc, cancellationToken);
+        var shown = visibility.Enabled ? await CountAsync(VisibleTasks.Of(db, visibility), ids, taskTypeId, sinceUtc, cancellationToken) : null;
+        return all.ToDictionary(r => r.Key, r => new AssigneeExperience(r.Value, shown is null ? null : shown.GetValueOrDefault(r.Key)));
+    }
+
+    private static Task<Dictionary<int, int>> CountAsync(IQueryable<WorkTask> tasks, List<int> ids, int taskTypeId, DateTime sinceUtc, CancellationToken cancellationToken) =>
+        tasks.Where(t => t.Status == TaskStatusCode.Completed && t.TaskTypeId == taskTypeId && t.CompletedAtUtc != null && t.CompletedAtUtc >= sinceUtc
+                && t.AssignedUserId != null && ids.Contains(t.AssignedUserId.Value))
+            .GroupBy(t => t.AssignedUserId!.Value)
+            .Select(g => new { Key = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(r => r.Key, r => r.Count, cancellationToken);
 }

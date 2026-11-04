@@ -59,6 +59,7 @@ public static class IdentityModule
         services.AddScoped<IMatterManagerEligibility>(sp => sp.GetRequiredService<Application.MatterManagerEligibility>());
         services.TryAddScoped<MatterFlow.SharedKernel.Tasks.IUserTaskCounts, MatterFlow.SharedKernel.Tasks.NoTasksUserTaskCounts>();
         services.TryAddScoped<MatterFlow.SharedKernel.Tasks.IAssigneeLoadReader, MatterFlow.SharedKernel.Tasks.NoTasksAssigneeLoadReader>();
+        services.TryAddScoped<MatterFlow.SharedKernel.Tasks.IAssigneeExperienceReader, MatterFlow.SharedKernel.Tasks.NoTasksAssigneeExperienceReader>();
         // The one assignee ranking every picker uses (#757); a smarter rule replaces this registration only.
         services.AddSingleton<IAssigneeRanker, Application.LoadBalancedAssigneeRanker>();
         services.AddScoped<Application.UserAdministration>();

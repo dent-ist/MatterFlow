@@ -201,7 +201,7 @@ public sealed class AssetLinkedTaskCountsApiTests(SqlServerFixture sql) : IAsync
     public async Task Linked_tasks_carry_due_date_assignee_priority_and_open_and_overdue_flags_in_due_order()
     {
         var asset = await CreateAssetAsync(_w.MatterId, "Due drive");
-        await _h.UserWithAsync(@"KE\assignee", "Task.View");
+        await _h.UserWithAsync(@"KE\assignee", "Task.View", "Workflow.Execute");
         var userId = await _h.UserIdAsync(@"KE\assignee");
         var yesterday = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-2)).ToString("yyyy-MM-dd");
         var tomorrow = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2)).ToString("yyyy-MM-dd");

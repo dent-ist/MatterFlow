@@ -71,7 +71,7 @@ describe('AssigneePicker (Edit task, Create task)', () => {
   it('opens on focus with the Suggested heading, the counts and the tooltip reason', async () => {
     input().focus();
     await settle();
-    expect(lookup).toHaveBeenCalledWith(undefined, 6, undefined, 3, true);
+    expect(lookup).toHaveBeenCalledWith(undefined, 6, undefined, 3, true, true);
     expect(el().querySelector('[data-assignee-heading]')!.textContent).toContain('Suggested');
     expect(options().map((o) => o.querySelector('.mf-picker__name')!.textContent)).toEqual([
       'Ann Ames',
@@ -89,7 +89,7 @@ describe('AssigneePicker (Edit task, Create task)', () => {
     fixture.detectChanges();
     input().focus();
     await settle();
-    expect(lookup).toHaveBeenCalledWith(undefined, 50, 2, 3, undefined);
+    expect(lookup).toHaveBeenCalledWith(undefined, 50, 2, 3, undefined, true);
     expect(options()[0].textContent).toContain('Sam Kim');
     expect(el().querySelector('[data-assignee-heading]')).toBeNull();
     const all = el().querySelector<HTMLElement>('[data-search-all]')!;
@@ -97,7 +97,7 @@ describe('AssigneePicker (Edit task, Create task)', () => {
 
     all.closest('li')!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
     await settle();
-    expect(lookup).toHaveBeenLastCalledWith(undefined, 6, undefined, 3, true);
+    expect(lookup).toHaveBeenLastCalledWith(undefined, 6, undefined, 3, true, true);
     expect(el().querySelector('[data-search-all]')).toBeNull();
     expect(input()).not.toBeNull();
   });
@@ -108,7 +108,7 @@ describe('AssigneePicker (Edit task, Create task)', () => {
     input().value = 'User 1';
     input().dispatchEvent(new Event('input'));
     await settle();
-    expect(lookup).toHaveBeenLastCalledWith('User 1', 25, undefined, 3, undefined);
+    expect(lookup).toHaveBeenLastCalledWith('User 1', 25, undefined, 3, undefined, true);
 
     input().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
     input().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));

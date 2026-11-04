@@ -857,6 +857,8 @@ public sealed class TaskService
                 return Error.Validation("userId", "NOT_FOUND", "Select a user.");
             if (!info.IsActive)
                 return Error.Validation("userId", "USER_INACTIVE", $"{info.DisplayName} is disabled and can't be assigned work.");
+            if (!await _users.CanExecuteWorkAsync(user, ct))
+                return Error.Validation("userId", "USER_CANNOT_EXECUTE", $"{info.DisplayName} can't be assigned work (no permission to work on tasks).");
         }
 
         bool? inPod = null;

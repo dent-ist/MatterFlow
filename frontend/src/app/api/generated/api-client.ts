@@ -8111,9 +8111,10 @@ export interface IUsersLookupClient {
      * @param podId (optional) 
      * @param taskTypeId (optional) 
      * @param suggest (optional) 
+     * @param assignable (optional) 
      * @return OK
      */
-    lookupUsers(q?: string | undefined, limit?: number | undefined, podId?: number | undefined, taskTypeId?: number | undefined, suggest?: boolean | undefined): Observable<UserLookupItem[]>;
+    lookupUsers(q?: string | undefined, limit?: number | undefined, podId?: number | undefined, taskTypeId?: number | undefined, suggest?: boolean | undefined, assignable?: boolean | undefined): Observable<UserLookupItem[]>;
 }
 
 @Injectable({
@@ -8135,9 +8136,10 @@ export class UsersLookupClient implements IUsersLookupClient {
      * @param podId (optional) 
      * @param taskTypeId (optional) 
      * @param suggest (optional) 
+     * @param assignable (optional) 
      * @return OK
      */
-    lookupUsers(q?: string | undefined, limit?: number | undefined, podId?: number | undefined, taskTypeId?: number | undefined, suggest?: boolean | undefined): Observable<UserLookupItem[]> {
+    lookupUsers(q?: string | undefined, limit?: number | undefined, podId?: number | undefined, taskTypeId?: number | undefined, suggest?: boolean | undefined, assignable?: boolean | undefined): Observable<UserLookupItem[]> {
         let url_ = this.baseUrl + "/api/v1/users/lookup?";
         if (q === null)
             throw new globalThis.Error("The parameter 'q' cannot be null.");
@@ -8159,6 +8161,10 @@ export class UsersLookupClient implements IUsersLookupClient {
             throw new globalThis.Error("The parameter 'suggest' cannot be null.");
         else if (suggest !== undefined)
             url_ += "suggest=" + encodeURIComponent("" + suggest) + "&";
+        if (assignable === null)
+            throw new globalThis.Error("The parameter 'assignable' cannot be null.");
+        else if (assignable !== undefined)
+            url_ += "assignable=" + encodeURIComponent("" + assignable) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {

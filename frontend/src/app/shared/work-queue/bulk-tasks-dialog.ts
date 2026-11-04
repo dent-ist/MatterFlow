@@ -260,7 +260,9 @@ export class BulkTasksDialog {
 
   protected readonly searchPeople = async (query: string): Promise<PickerOption[]> => {
     const found = await firstValueFrom(
-      this.quiet.run(() => this.users.lookupUsers(query || undefined, 8)),
+      this.quiet.run(() =>
+        this.users.lookupUsers(query || undefined, 8, undefined, undefined, undefined, true),
+      ),
     );
     return found.map((u) => ({
       id: u.userId,

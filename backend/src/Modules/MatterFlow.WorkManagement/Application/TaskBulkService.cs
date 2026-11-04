@@ -67,6 +67,8 @@ public sealed class TaskBulkService(
                 return Error.Validation("reassignTo.userId", "NOT_FOUND", "Select a user.");
             if (!user.IsActive)
                 return Error.Validation("reassignTo.userId", "USER_INACTIVE", $"{user.DisplayName} is disabled and can't be assigned work.");
+            if (!await users.CanExecuteWorkAsync(userId, ct))
+                return Error.Validation("reassignTo.userId", "USER_CANNOT_EXECUTE", $"{user.DisplayName} can't be assigned work (no permission to work on tasks).");
         }
 
         if (reassign?.PodId is { } podId)

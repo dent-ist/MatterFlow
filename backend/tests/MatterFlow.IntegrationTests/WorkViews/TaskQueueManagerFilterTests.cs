@@ -31,7 +31,7 @@ public sealed class TaskQueueManagerFilterTests(SqlServerFixture sql) : IAsyncLi
     {
         _h = new TaskHarness(new DatabaseApiFactory(await sql.CreateDatabaseAsync()) { Clock = ViewerDay.HostClock });
         _w = await _h.CreateWorldAsync();
-        var perms = new[] { "Task.View", "Matter.View", "Matter.BeManager" };
+        var perms = new[] { "Task.View", "Matter.View", "Matter.BeManager", "Workflow.Execute" };
         _pmAClient = await _h.UserWithAsync(@"KE\pma", perms);
         await _h.UserWithAsync(@"KE\pmb", perms);
         _assigner = await _h.UserWithAsync(@"KE\assigner", [.. perms, "Matter.AssignManagers"]);

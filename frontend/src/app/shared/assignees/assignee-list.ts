@@ -25,7 +25,7 @@ export interface AssigneeCandidate {
   /** Dashboard v4: the person's capacity state and load (`capacityState` and `load` of the lookup); undefined while the server does not send them. Only the Dashboard's Assign menu words them (`RowEdit.showStates`). */
   state?: CapacityState;
   load?: number;
-  /** "Out of office until Oct 20" while the person is out of office (still selectable), otherwise undefined. */
+  /** "Out of office until Oct 20": the server leaves out-of-office people out of every assignee list (DB-14), so this is only set by an older answer; otherwise undefined. */
   flag?: string;
 }
 
@@ -43,7 +43,7 @@ export const openHint = (count: number): string => `${count} open`;
 /**
  * The state of one assignee picker: what it lists when it opens and what typing does. The same class drives the inline grid picker, the Edit task
  * dialog and Create task, so the rules (Pod members first with a "Search all users" way out, Suggested for a Task without a Pod, a search over all
- * eligible users) exist once. It does not rank: the order and the Suggested set come from `GET /users/lookup` (the server's single ranking).
+ * eligible users) exist once. It does not rank: the order and the Suggested set come from `GET /users/lookup` (the server's single ranking: least load, fewest completed Tasks of the type in 3 months, longest since last assigned, name).
  */
 export class AssigneeList {
   readonly items = signal<AssigneeCandidate[]>([]);
@@ -138,6 +138,8 @@ export class AssigneeList {
         podId ?? undefined,
         taskTypeId ?? undefined,
         suggest || undefined,
+        // Only people who can be assigned work: Workflow.Execute, not out of office (DB-14).
+        true,
       ),
     );
     return found.map((u) => {

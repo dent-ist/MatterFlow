@@ -7,9 +7,9 @@ import { SIZES, noHorizontalScroll } from '../support/screens';
 import { uid } from '../support/seed';
 
 /**
- * Assignee picker (#757): the inline picker, the Edit task dialog and Create task share one rule. A task in a Pod lists the Pod's members by
- * load with "Search all users"; a task without a Pod lists the Suggested people (available, fewest open tasks first) and searches all
- * eligible users (25 shown). The order comes from the server, so these checks read the counts the pickers show, not fixed positions: the
+ * Assignee picker (#757, order changed by DB-14): the inline picker, the Edit task dialog and Create task share one rule. A task in a Pod lists
+ * the Pod's members by load with "Search all users"; a task without a Pod lists the Suggested people (fewest open tasks first) and searches all
+ * eligible users (25 shown). Only people who can execute work are listed, and nobody who is out of office, in any list or search. The order comes from the server, so these checks read the counts the pickers show, not fixed positions: the
  * stack is shared with other specs, so other people with no tasks may also be in the Suggested list.
  */
 const assigneeTrigger = (page: Page): Locator =>
@@ -40,7 +40,7 @@ async function openEdit(page: Page): Promise<void> {
 }
 
 test.describe('#757: assignee picker suggestions', () => {
-  test('no Pod: the inline picker opens on Suggested (counts, no unavailable people) and searching finds the out-of-office person greyed with the return date', async ({
+  test('no Pod: the inline picker opens on Suggested (counts, no unavailable people) and searching does not find the out-of-office person', async ({
     page,
     seed,
     admin,
@@ -67,25 +67,25 @@ test.describe('#757: assignee picker suggestions', () => {
     // Out-of-office people are not suggested.
     await expect(pop.locator(`[data-option="${away.userId}"]`)).toHaveCount(0);
 
-    // Search covers everyone eligible: the busy person with the count, the absent one flagged with the return date.
+    // Search covers everyone eligible: the busy person with the count; the absent one is hidden here too.
     const search = pop.getByRole('textbox', { name: 'Search people' });
     await search.fill(`as-busy-${token}`);
     await expect(pop.locator(`[data-option="${busy.userId}"] .im-hint`)).toHaveText('3 open');
     await expect(pop.locator('[data-menu-group]')).toHaveCount(0);
     await search.fill(`as-away-${token}`);
-    await expect(pop.locator(`[data-option="${away.userId}"] [data-option-flag]`)).toContainText(
-      'Out of office until Oct 20, 2099',
-    );
-    // Still selectable.
-    await pop.locator(`[data-option="${away.userId}"]`).click();
+    await expect(pop.locator('[data-option]')).toHaveCount(0);
+    await expect(pop.locator(`[data-option="${away.userId}"]`)).toHaveCount(0);
+    // An eligible person can still be typed and assigned.
+    await search.fill(`as-busy-${token}`);
+    await pop.locator(`[data-option="${busy.userId}"]`).click();
     await expect(page.locator('[data-undo-message]')).toBeVisible();
     expect(
       (await admin.get<{ assignedUser: { userId: number } }>(`/api/v1/tasks/${task.taskId}`))
         .assignedUser.userId,
-    ).toBe(away.userId);
+    ).toBe(busy.userId);
   });
 
-  test('Pod: members by load with their counts and an out-of-office marker, then "Search all users" reaches an outsider', async ({
+  test('Pod: members by load with their counts (the out-of-office member is not listed), then "Search all users" reaches an outsider', async ({
     page,
     seed,
   }) => {
@@ -109,24 +109,21 @@ test.describe('#757: assignee picker suggestions', () => {
     await assigneeTrigger(page).click();
     const pop = page.locator('.im-pop');
     // The list is read from the server after the menu opens: wait for this test's own members (and their counts) before reading it.
-    for (const member of [loaded, free, away]) {
+    for (const member of [loaded, free]) {
       await expect(pop.locator(`[data-option="${member.userId}"] .im-hint`)).toBeVisible();
     }
     const ids = await pop
       .locator('[data-option]')
       .evaluateAll((els) => els.map((e) => e.getAttribute('data-option')));
     expect(ids, 'only the Pod members').toEqual(
-      expect.arrayContaining([String(loaded.userId), String(free.userId), String(away.userId)]),
+      expect.arrayContaining([String(loaded.userId), String(free.userId)]),
     );
     expect(ids).not.toContain(String(outsider.userId));
-    // Fewest open first: the loaded member (2 open) is after the two with none.
+    expect(ids, 'out of office people are hidden').not.toContain(String(away.userId));
+    // Fewest open first: the loaded member (2 open) is after the one with none.
     expect(ids.indexOf(String(loaded.userId))).toBeGreaterThan(ids.indexOf(String(free.userId)));
-    expect(ids.indexOf(String(loaded.userId))).toBeGreaterThan(ids.indexOf(String(away.userId)));
     await expect(pop.locator(`[data-option="${loaded.userId}"] .im-hint`)).toHaveText('2 open');
     await expect(pop.locator(`[data-option="${free.userId}"] .im-hint`)).toHaveText('0 open');
-    await expect(pop.locator(`[data-option="${away.userId}"] [data-option-flag]`)).toContainText(
-      'Out of office',
-    );
     await expect(pop.locator('[data-menu-note]')).toContainText('members of AS Pod');
 
     await pop.getByRole('button', { name: 'Search all users' }).click();

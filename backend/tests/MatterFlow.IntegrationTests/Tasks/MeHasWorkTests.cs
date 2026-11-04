@@ -110,7 +110,9 @@ public sealed class MeHasWorkTests(SqlServerFixture sql) : IAsyncLifetime
         await _h.UserWithAsync(@"KE\dashonly", "Dashboard.View");
         await _h.UserWithAsync(@"KE\notaskview", "Matter.View");
         var dashId = await _h.UserIdAsync(@"KE\dashonly");
-        await _h.CreateTaskAsync(_w, extra: new() { ["assignedUserId"] = dashId });
+        // A person without Workflow.Execute cannot be assigned through the API any more (DB-14); an assignment made before that rule is seeded directly.
+        var task = await _h.CreateTaskAsync(_w);
+        await _h.ExecuteAsync($"UPDATE dbo.Task SET AssignedUserId = {dashId}, AssignedAt = SYSUTCDATETIME() WHERE TaskId = {TaskId(task)}");
 
         (await HasWorkAsync(@"KE\dashonly")).ShouldBeTrue();
         (await HasWorkAsync(@"KE\notaskview")).ShouldBeFalse();

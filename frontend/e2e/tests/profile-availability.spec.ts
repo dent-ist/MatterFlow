@@ -154,7 +154,7 @@ test.describe('My profile: availability and work hours', () => {
     await expect(me).toHaveURL(/\/my-work$/);
   });
 
-  test('assignee pickers and menus flag a person who is out of office but still let you choose them', async ({
+  test('assignee pickers and menus do not list a person who is out of office (DB-14)', async ({
     page,
     seed,
     admin,
@@ -165,30 +165,19 @@ test.describe('My profile: availability and work hours', () => {
     await seed.outOfOffice(userId, { until: until.iso });
     const world = await seed.world();
 
-    // Create task: the Assignee typeahead.
+    // Create task: the Assignee typeahead finds nobody by that name.
     const create = new CreateTaskPage(page);
     await create.open(`?taskType=${world.taskType.id}`);
     await create.openWhen();
     await create.assignee.fill(name);
-    const option = page.getByRole('option', { name });
-    await expect(option.locator('[data-option-flag]')).toContainText(
-      `Out of office until ${until.short}`,
-    );
-    await option.click();
-    await expect(page.locator('[data-chosen]').filter({ hasText: name })).toBeVisible();
-    await expect(page.locator('[data-chosen-flag]')).toContainText('Out of office until');
+    await expect(page.getByRole('option', { name })).toHaveCount(0);
 
-    // The inline assignee menu on a task: flagged, and the pick still assigns.
+    // The inline assignee menu on a task: not listed either.
     const task = await seed.task(world, { title: `Flag ${name}` });
     await new TaskDetailPage(page).open(task.taskId);
     await page.locator('[data-assignee] [data-inline-trigger]').click();
     await page.getByRole('textbox', { name: 'Search people' }).fill(name);
-    const item = page.getByRole('menuitemradio', { name });
-    await expect(item.locator('[data-option-flag]')).toContainText(
-      `Out of office until ${until.short}`,
-    );
-    await item.click();
-    await expect(page.locator('[data-assignee]')).toContainText(name);
+    await expect(page.getByRole('menuitemradio', { name })).toHaveCount(0);
   });
 });
 

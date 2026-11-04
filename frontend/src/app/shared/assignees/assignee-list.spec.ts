@@ -37,7 +37,7 @@ describe('AssigneeList (the one logic behind the three assignee pickers)', () =>
     );
     const list = make();
     await list.open();
-    expect(lookup).toHaveBeenCalledWith(undefined, SUGGESTION_COUNT, undefined, 7, true);
+    expect(lookup).toHaveBeenCalledWith(undefined, SUGGESTION_COUNT, undefined, 7, true, true);
     expect(list.mode()).toBe('suggested');
     expect(list.heading()).toBe('Suggested');
     expect(list.canSearchAll()).toBe(false);
@@ -53,23 +53,23 @@ describe('AssigneeList (the one logic behind the three assignee pickers)', () =>
     lookup.mockReturnValue(of([aLookupItem({ userId: 3, openTaskCount: 0 })]));
     const list = make();
     await list.open();
-    expect(lookup).toHaveBeenCalledWith(undefined, POD_COUNT, 5, 7, undefined);
+    expect(lookup).toHaveBeenCalledWith(undefined, POD_COUNT, 5, 7, undefined, true);
     expect(list.mode()).toBe('pod');
     expect(list.heading()).toBeNull();
     expect(list.canSearchAll()).toBe(true);
 
     lookup.mockReturnValue(of([aLookupItem({ userId: 9 })]));
     await list.search(' sam ');
-    expect(lookup).toHaveBeenLastCalledWith('sam', POD_COUNT, 5, 7, undefined);
+    expect(lookup).toHaveBeenLastCalledWith('sam', POD_COUNT, 5, 7, undefined, true);
     expect(list.mode()).toBe('pod');
 
     await list.searchAll();
-    expect(lookup).toHaveBeenLastCalledWith(undefined, SUGGESTION_COUNT, undefined, 7, true);
+    expect(lookup).toHaveBeenLastCalledWith(undefined, SUGGESTION_COUNT, undefined, 7, true, true);
     expect(list.mode()).toBe('suggested');
     expect(list.canSearchAll()).toBe(false);
 
     await list.search('User 1');
-    expect(lookup).toHaveBeenLastCalledWith('User 1', SEARCH_COUNT, undefined, 7, undefined);
+    expect(lookup).toHaveBeenLastCalledWith('User 1', SEARCH_COUNT, undefined, 7, undefined, true);
     expect(list.mode()).toBe('search');
     expect(list.heading()).toBeNull();
 
@@ -99,7 +99,7 @@ describe('AssigneeList (the one logic behind the three assignee pickers)', () =>
     expect(list.items().map((p) => p.id)).toEqual([4]);
   });
 
-  it('marks people who are out of office with the return date and keeps them selectable', async () => {
+  it('still words an out-of-office flag if an answer carries one (the server leaves such people out of assignee lists)', async () => {
     lookup.mockReturnValue(
       of([
         aLookupItem({

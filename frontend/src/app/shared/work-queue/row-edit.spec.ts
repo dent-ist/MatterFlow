@@ -316,7 +316,7 @@ describe('RowEdit', () => {
     await open();
     // One lookup, asked for the Pod's members; the client neither ranks nor reads the Pod itself.
     expect(users.lookupUsers).toHaveBeenCalledTimes(1);
-    expect(users.lookupUsers).toHaveBeenCalledWith(undefined, 50, 5, 2, undefined);
+    expect(users.lookupUsers).toHaveBeenCalledWith(undefined, 50, 5, 2, undefined, true);
     expect(option('none')).not.toBeNull();
     expect(option('4')).not.toBeNull();
     // Why the list is short (UAT2-13), and the way out.
@@ -364,7 +364,7 @@ describe('RowEdit', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     // Everyone, as the Suggested list (no Pod): five arguments, the last one asking for suggestions.
-    expect(users.lookupUsers).toHaveBeenLastCalledWith(undefined, 6, undefined, 2, true);
+    expect(users.lookupUsers).toHaveBeenLastCalledWith(undefined, 6, undefined, 2, true, true);
     expect(option('8')).not.toBeNull();
     expect(el().querySelector('[data-foot-action]')).toBeNull();
 
@@ -373,7 +373,7 @@ describe('RowEdit', () => {
     input.dispatchEvent(new Event('input'));
     await new Promise((r) => setTimeout(r));
     await fixture.whenStable();
-    expect(users.lookupUsers).toHaveBeenLastCalledWith('User 1', 25, undefined, 2, undefined);
+    expect(users.lookupUsers).toHaveBeenLastCalledWith('User 1', 25, undefined, 2, undefined, true);
   });
 
   it('assignee: typing in a Pod list searches the Pod, with the Pod id', async () => {
@@ -384,7 +384,7 @@ describe('RowEdit', () => {
     input.dispatchEvent(new Event('input'));
     await new Promise((r) => setTimeout(r));
     await fixture.whenStable();
-    expect(users.lookupUsers).toHaveBeenLastCalledWith('sam', 50, 5, 2, undefined);
+    expect(users.lookupUsers).toHaveBeenLastCalledWith('sam', 50, 5, 2, undefined, true);
   });
 
   it('assignee: a Pod without people to offer falls back to the Suggested list', async () => {
@@ -500,7 +500,7 @@ describe('RowEdit', () => {
   it('assignee without a Pod shows the Suggested list first, with the heading and the counts', async () => {
     await create('assignee', aRow({ assignedPod: undefined, assignedUser: undefined }));
     await open();
-    expect(users.lookupUsers).toHaveBeenCalledWith(undefined, 6, undefined, 2, true);
+    expect(users.lookupUsers).toHaveBeenCalledWith(undefined, 6, undefined, 2, true, true);
     expect(el().querySelector('[data-menu-group]')!.textContent).toContain('Suggested');
     expect(option('8')!.querySelector('.im-hint')!.textContent!.trim()).toBe('1 open');
     expect(option('none')).toBeNull();

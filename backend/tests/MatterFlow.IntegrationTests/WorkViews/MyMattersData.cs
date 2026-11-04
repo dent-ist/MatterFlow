@@ -64,10 +64,10 @@ public abstract class MyMattersTestBase(SqlServerFixture sql) : IAsyncLifetime
     {
         H = new TaskHarness(new DatabaseApiFactory(await sql.CreateDatabaseAsync()) { Clock = ViewerDay.HostClock });
         W = await H.CreateWorldAsync();
-        string[] pm = ["Task.View", "Matter.View", "Matter.BeManager"];
+        string[] pm = ["Task.View", "Matter.View", "Matter.BeManager", "Workflow.Execute"];
         A = await H.UserWithAsync(@"KE\pma", pm);
         B = await H.UserWithAsync(@"KE\pmb", pm);
-        TechClient = await H.UserWithAsync(@"KE\tech", "Task.View", "Matter.View");
+        TechClient = await H.UserWithAsync(@"KE\tech", "Task.View", "Matter.View", "Workflow.Execute");
         Director = await H.UserWithAsync(@"KE\director", "Task.View", "Matter.View", "Matter.AssignManagers");
         Observer = await H.UserWithAsync(@"KE\observer", "Task.View", "Matter.View");
         NoTaskView = await H.UserWithAsync(@"KE\notasks", "Matter.View", "Matter.BeManager");

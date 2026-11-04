@@ -27,6 +27,9 @@ public sealed class UserDirectory(DbContext db) : IUserDirectory
         return users.ToDictionary(u => u.UserId);
     }
 
+    public Task<bool> CanExecuteWorkAsync(int userId, CancellationToken cancellationToken = default) =>
+        db.Set<AppUser>().AsNoTracking().Where(u => u.Id == userId).WhereHoldsExecute().AnyAsync(cancellationToken);
+
     public IQueryable<UserNameKey> NameKeys() =>
         db.Set<AppUser>().AsNoTracking().Select(u => new UserNameKey { UserId = u.Id, DisplayName = u.DisplayName });
 
@@ -41,4 +44,12 @@ public sealed class UserDirectory(DbContext db) : IUserDirectory
             .Where(r => ids.Contains(r.Id))
             .ToDictionaryAsync(r => r.Id, r => r.Name, cancellationToken);
     }
+}
+
+/// <summary>The one definition of "can do work" for assignment: an active user holding Workflow.Execute through an active role (the System Admin role holds every permission).</summary>
+public static class WorkerQueries
+{
+    public static IQueryable<AppUser> WhereHoldsExecute(this IQueryable<AppUser> users) =>
+        users.Where(u => u.IsActive
+            && u.Roles.Any(ur => ur.Role.IsActive && (ur.Role.IsSystemAdmin || ur.Role.Permissions.Any(rp => rp.Permission.IsActive && rp.Permission.Code == Permissions.Workflow.Execute))));
 }

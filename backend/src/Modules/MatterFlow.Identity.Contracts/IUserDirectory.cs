@@ -16,6 +16,12 @@ public interface IUserDirectory
     /// <summary>The users with the given ids that exist (missing ids are skipped), keyed by id.</summary>
     Task<IReadOnlyDictionary<int, UserInfo>> FindManyAsync(IReadOnlyCollection<int> userIds, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Whether the user holds <c>Workflow.Execute</c> through an active role (the System Admin role holds every permission): only such people can be assigned Tasks (DB-14).
+    /// The default says yes, so a directory that does not know roles restricts nothing.
+    /// </summary>
+    Task<bool> CanExecuteWorkAsync(int userId, CancellationToken cancellationToken = default) => Task.FromResult(true);
+
     /// <summary>Names of the Roles that exist (inactive ones too: history keeps their names), keyed by Role id. The default resolves nothing.</summary>
     Task<IReadOnlyDictionary<int, string>> RoleNamesAsync(IReadOnlyCollection<int> roleIds, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyDictionary<int, string>>(new Dictionary<int, string>());

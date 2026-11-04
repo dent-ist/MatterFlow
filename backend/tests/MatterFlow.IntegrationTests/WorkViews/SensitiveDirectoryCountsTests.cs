@@ -79,6 +79,39 @@ public sealed class SensitiveDirectoryCountsTests(SqlServerFixture sql)
     }
 
     [Fact]
+    public async Task Assignee_picker_experience_is_ranked_by_the_true_count_and_shown_as_the_visible_count_and_leaves_out_people_without_Execute()
+    {
+        var u = await SensitiveUniverse.BuildAsync(sql, enabled: true);
+        try
+        {
+            // The secondary manager completed one task of the type on the hidden matter S2 (a month ago). Only the viewer, the administrator and the person herself may see it.
+            await u.H.ExecuteAsync($"UPDATE dbo.Task SET StatusCode = 'COMPLETED', AssignedUserId = {u.PmSecondary}, AssignedAt = DATEADD(day, -30, SYSUTCDATETIME()), CompletedAt = DATEADD(day, -20, SYSUTCDATETIME()) WHERE TaskId = {u.TS2}");
+
+            foreach (var (name, client, sees) in Personas())
+            {
+                var http = client(u);
+                var shown = sees(u).Contains(u.TS2) || ReferenceEquals(http, u.PmSecondaryClient) ? 1 : 0;
+                var url = $"/api/v1/users/lookup?suggest=true&assignable=true&limit=50&taskTypeId={u.World.TaskTypeId}";
+                var suggestions = await GetAsync(http, url);
+                var items = suggestions.EnumerateArray().ToArray();
+                var ids = items.Select(x => x.GetProperty("userId").GetInt32()).ToArray();
+
+                ids.ShouldNotContain(await u.H.UserIdAsync(@"KE\noperm"), name + ": no Workflow.Execute, not offered");
+                var secondary = items.Single(x => x.GetProperty("userId").GetInt32() == u.PmSecondary);
+                secondary.GetProperty("reason").GetString()!.ShouldContain($"{shown} completed of this type in 3 months", Case.Sensitive, name);
+                // The order uses the true count: with the same load, the person who truly completed one ranks after everyone who completed none, whatever the viewer sees.
+                var position = Array.FindIndex(ids, id => id == u.PmSecondary);
+                position.ShouldBe(items.Length - 2, name + ": ranked after the idle people with no experience, before the one who holds an open task");
+                suggestions.GetRawText().ShouldNotContain(SensitiveUniverse.SentinelPrefix);
+            }
+        }
+        finally
+        {
+            await u.H.Factory.DisposeAsync();
+        }
+    }
+
+    [Fact]
     public async Task A_priority_only_a_hidden_task_uses_shows_no_count_to_others_but_is_still_in_use_without_a_number()
     {
         var u = await SensitiveUniverse.BuildAsync(sql, enabled: true);

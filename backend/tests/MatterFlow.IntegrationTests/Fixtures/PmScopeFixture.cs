@@ -106,7 +106,7 @@ public sealed class PmScopeFixture
         PmOther = await h.UserWithAsync(@"KE\pmother", [.. view, "Matter.BeManager"]);
         PmNoTaskView = await h.UserWithAsync(@"KE\pmnotask", "Matter.View", "Matter.BeManager", "Matter.AssignManagers");
         Director = await h.UserWithAsync(@"KE\fxdirector", [.. view, "Matter.AssignManagers"]);
-        Technician = await h.UserWithAsync(@"KE\technician", view);
+        Technician = await h.UserWithAsync(@"KE\technician", [.. view, "Workflow.Execute"]); // assignees must hold Workflow.Execute (DB-14)
         PmFewId = await h.UserIdAsync(@"KE\pmfew");
         PmManyId = await h.UserIdAsync(@"KE\pmmany");
         PmNoneId = await h.UserIdAsync(@"KE\pmnone");

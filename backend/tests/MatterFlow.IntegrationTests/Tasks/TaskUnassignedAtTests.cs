@@ -38,7 +38,7 @@ public sealed class TaskUnassignedAtTests(SqlServerFixture sql) : IAsyncLifetime
         _h = new TaskHarness(_factory);
         _w = await _h.CreateWorldAsync();
         _admin = await _h.UserIdAsync(DatabaseApiFactory.AdminAccount);
-        await _h.UserWithAsync(@"KE\other", "Task.View");
+        await _h.UserWithAsync(@"KE\other", "Task.View", "Workflow.Execute");
         _other = await _h.UserIdAsync(@"KE\other");
     }
 
