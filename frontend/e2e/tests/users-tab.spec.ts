@@ -121,39 +121,19 @@ test.describe('Users tab: workload', () => {
     }
   });
 
-  test('colours the tile by the highest priority with the same colours as the priority badge, and a level glyph', async ({
+  test('the card tones follow the highest priority and the load bar segments follow the priority order', async ({
     page,
   }) => {
     await openUsers(page);
     const critical = card(page, 'critical');
     await expect(critical).toHaveAttribute('data-tone', 'critical');
-    const pill = critical.locator('[data-pill]');
-    expect(await pill.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(
-      await tokenColor(page, '--mf-pr-critical-bg'),
-    );
-    expect(await pill.evaluate((el) => getComputedStyle(el).color)).toBe(
-      await tokenColor(page, '--mf-pr-critical-fg'),
-    );
-    // The theme has no coloured left edge: the tone is the pill and the glyph, the border is the same on all four sides.
-    expect(
-      await critical.evaluate((el) => {
-        const s = getComputedStyle(el);
-        return [s.borderLeftColor, s.borderLeftWidth];
-      }),
-    ).toEqual(
-      await critical.evaluate((el) => {
-        const s = getComputedStyle(el);
-        return [s.borderTopColor, s.borderTopWidth];
-      }),
-    );
-    // The glyph repeats the rank (colour is never the only cue): 4 bars for the most urgent, 1 for the least.
-    await expect(critical.locator('[data-glyph]')).toHaveAttribute('data-bars', '4');
     await expect(card(page, 'high')).toHaveAttribute('data-tone', 'high');
-    await expect(card(page, 'high').locator('[data-glyph]')).toHaveAttribute('data-bars', '3');
     await expect(card(page, 'lightNormal')).toHaveAttribute('data-tone', 'normal');
     await expect(card(page, 'low')).toHaveAttribute('data-tone', 'low');
-    await expect(card(page, 'low').locator('[data-glyph]')).toHaveAttribute('data-bars', '1');
-    // Load bar segments follow the priority order.
+    // The card is simple: name, Workload (count, bar, level word) and the Availability line; no pill or glyph.
+    await expect(critical.locator('[data-workload]')).toBeVisible();
+    await expect(critical.locator('[data-availability-line]')).toBeVisible();
+    await expect(critical.locator('[data-pill], [data-glyph]')).toHaveCount(0);
     expect(
       await critical
         .locator('[data-load-bar] [data-segment]')
@@ -166,7 +146,7 @@ test.describe('Users tab: workload', () => {
   }) => {
     await openUsers(page);
     const idle = card(page, 'idle');
-    await expect(idle.locator('[data-state-icon]')).toHaveClass(/pi-check-circle/);
+    await expect(idle.locator('[data-level-word]')).toHaveText('Idle');
     await expect(idle.locator('[data-open-total]')).toHaveCount(0);
     // Idle is a quiet tint of the Idle token (U7): not the saturated token fill (checked in detail in users-capacity.spec.ts).
     expect(await idle.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(
@@ -179,7 +159,7 @@ test.describe('Users tab: workload', () => {
 
     const away = card(page, 'ooo');
     await expect(away).toHaveAttribute('data-availability', 'OUT_OF_OFFICE');
-    await expect(away.locator('[data-state-icon]')).toHaveClass(/pi-calendar-minus/);
+    await expect(away.locator('[data-availability-line]')).toContainText('Out of office');
     await expect(away.locator('[data-user-open]')).toHaveAttribute(
       'aria-label',
       /Out of office until [A-Z][a-z]{2} \d{1,2}\. Annual leave\. 2 open tasks/,
@@ -195,7 +175,7 @@ test.describe('Users tab: workload', () => {
     );
 
     const off = card(page, 'offHours');
-    await expect(off.locator('[data-off-hours]')).toHaveCount(1);
+    await expect(off.locator('[data-availability-line]')).toHaveText(/Off hours/);
     await expect(off).toHaveAttribute('data-state', 'busy');
     await expect(off.locator('[data-user-open]')).toHaveAttribute('aria-label', /Off hours/);
 
@@ -296,11 +276,10 @@ test.describe('Users tab: workload', () => {
     await expect(
       table.locator(`[data-user-row][data-user="${css(person('ooo').displayName)}"]`),
     ).toContainText('Out of office until');
-    await page.locator('[data-density="compact"]').click();
     await page.reload();
-    await expect(page.locator('[data-users-table]')).toHaveAttribute('data-density', 'compact');
+    await expect(page.locator('[data-users-table]')).toBeVisible();
     await page.getByRole('button', { name: 'Cards' }).click();
-    await expect(page.locator('[data-users-grid]')).toHaveAttribute('data-density', 'compact');
+    await expect(page.locator('[data-users-grid]')).toBeVisible();
   });
 
   test('the chips count the team, filter by load, idle, out of office and off hours, and link the unassigned tasks to the Task Queue', async ({
@@ -441,7 +420,6 @@ test.describe('Users tab: workload', () => {
     await expect(page.getByText(/priority set to Critical/)).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(low).toHaveAttribute('data-tone', 'critical', { timeout: 15_000 });
-    await expect(low.locator('[data-glyph]')).toHaveAttribute('data-bars', '4');
     await page.getByRole('button', { name: 'Undo' }).click();
     await expect(low).toHaveAttribute('data-tone', 'low', { timeout: 15_000 });
   });
@@ -692,20 +670,13 @@ test.describe('Users tab: workload', () => {
     }
   });
 
-  test('the legend explains the colours, the marks, the load levels and what the view is not', async ({
-    page,
-  }) => {
+  test('the legend is six states with one line each and the real thresholds', async ({ page }) => {
     await openUsers(page);
     await page.getByRole('button', { name: 'Legend and help' }).click();
     const legend = page.locator('[data-legend]');
-    await expect(legend.locator('[data-legend-priorities]')).toContainText('Critical');
-    await expect(legend.locator('[data-legend-priorities]')).toContainText('Idle: no open tasks');
-    await expect(legend.locator('[data-legend-priorities]')).toContainText('Out of office');
-    await expect(legend.locator('[data-legend-marks]')).toContainText('overdue');
-    await expect(legend).toContainText('Light: 1 to 3 open tasks.');
-    await expect(legend).toContainText('Heavy: more than 8 open tasks.');
-    await expect(legend.locator('[data-frame]')).toContainText('Operational capacity only');
-    await expect(legend).toContainText('No completion');
+    await expect(legend.locator('[data-legend-states] li')).toHaveCount(6);
+    await expect(legend).toContainText('1 to 3 open tasks');
+    await expect(legend).toContainText('9 or more open tasks');
   });
 
   test('is usable at 1024 and 375 px without sideways scrolling', async ({ page }) => {

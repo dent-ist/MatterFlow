@@ -11,7 +11,6 @@ import { dueCellText, describeDueCell } from '../../../core/time/time';
 import { priorityColors } from '../../../shared/ui/priority-badge';
 import { backOnText, bandOf } from './users-card';
 import {
-  Density,
   LOAD_ICONS,
   LOAD_LABELS,
   cardState,
@@ -36,7 +35,7 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="wrap" tabindex="-1">
-      <table class="tbl" data-users-table [attr.data-density]="density()">
+      <table class="tbl" data-users-table>
         <caption class="sr-only">
           Team workload, one row per person
         </caption>
@@ -289,10 +288,6 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
     th[aria-sort='descending'] .sort {
       color: var(--mf-text);
     }
-    [data-density='compact'] th,
-    [data-density='compact'] td {
-      padding-block: 2px;
-    }
     tbody tr:last-child > * {
       border-bottom: 0;
     }
@@ -489,7 +484,6 @@ export class UsersTable {
   readonly users = input.required<readonly WorkloadUser[]>();
   readonly legend = input<readonly WorkloadPriority[]>([]);
   readonly thresholds = input<WorkloadThresholds | null>(null);
-  readonly density = input<Density>('comfortable');
   readonly canAssign = input(false);
   /** The sort the toolbar select (and the header) hold, and whether the header reversed its order. */
   readonly sort = input<UserSort>('load');

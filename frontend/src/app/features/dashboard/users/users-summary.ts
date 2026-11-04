@@ -30,8 +30,7 @@ export const WHO_IS_COUNTED =
   'This tab lists every active user with a role who is in a pod or holds open tasks. The Team capacity battery and the Calendar count only people who can execute workflow and are in a pod of the scope, so their number is lower.';
 
 /**
- * The ONE filter bar above the tiles (US-01, #1091): the four load levels (Idle, Light, Normal, Heavy) as segments whose width follows their share of the people on the
- * board, then Out of office and Off hours, each a toggle (`aria-pressed`) with its icon, word and count. The unassigned link and the Assign work menu (projected as `mfBarEnd`)
+ * The ONE filter bar above the cards (US-01, #1091, US-05, #1096): the four load levels (Idle, Light, Normal, Heavy) as buttons of one fixed size (not proportional to the people), then Out of office and Off hours, each a toggle (`aria-pressed`) with its icon, word and count. The unassigned link and the Assign work menu (projected as `mfBarEnd`)
  * sit at the end of the same row and the population line wraps under it. Load segments combine (any of them); Out of office and Off hours are the availability filter. Counts of
  * the load segments and Off hours follow the people on the board (the page scope and the name filter apply); Out of office while "Available" hides them comes from the team summary, which
  * follows the page scope and ignores the availability and name filters. An info button says who is counted (the capacity battery counts fewer people).
@@ -54,10 +53,8 @@ export const WHO_IS_COUNTED =
             type="button"
             class="chip"
             [class]="'chip chip--' + c.key"
-            [class.seg]="isLevel(c.key)"
             [attr.data-chip]="c.key"
             [attr.data-segment]="isLevel(c.key) ? c.key : null"
-            [style.flex-grow]="isLevel(c.key) ? grow(c) : null"
             [attr.aria-pressed]="c.pressed"
             [attr.title]="c.title"
             [attr.aria-label]="c.label"
@@ -93,21 +90,23 @@ export const WHO_IS_COUNTED =
       align-items: center;
       gap: var(--mf-s1) var(--mf-s3);
     }
-    /* One bar: the load levels share the width by their count (never narrower than their words), the two availability toggles and the info button follow. */
+    /* The state buttons are all the same size (the widest label with its count), left aligned and not stretched: the width does not follow the number of people. */
     .chips {
       display: flex;
-      flex: 1 1 26rem;
+      flex: 0 1 auto;
       flex-wrap: wrap;
-      align-items: stretch;
-      gap: 2px var(--mf-s1);
+      align-items: center;
+      gap: var(--mf-s1) var(--mf-s2);
       min-width: 0;
     }
     .chip {
       display: inline-flex;
+      flex: none;
       align-items: center;
       justify-content: center;
       gap: 5px;
       box-sizing: border-box;
+      width: 8.25rem;
       min-height: 28px;
       padding: 0 var(--mf-s2);
       color: var(--mf-text);
@@ -118,11 +117,6 @@ export const WHO_IS_COUNTED =
       font-size: var(--mf-fs-sm);
       white-space: nowrap;
       cursor: pointer;
-    }
-    .chip.seg {
-      flex: 1 1 auto;
-      flex-basis: 5.5rem;
-      min-width: 5.5rem;
     }
     .chip:hover {
       filter: brightness(0.96);
@@ -260,11 +254,6 @@ export class UsersSummary {
 
   protected isLevel(key: Chip['key']): boolean {
     return key !== 'out' && key !== 'off';
-  }
-
-  /** The share of a level on the board: its count (at least 1 so an empty level still has its words). */
-  protected grow(c: Chip): number {
-    return Math.max(1, Number(c.count) || 1);
   }
 
   /** The group's name carries every count in words. */

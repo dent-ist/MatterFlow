@@ -36,8 +36,6 @@ export const AVAILABILITY_LABELS: Record<AvailabilityFilter, string> = {
 };
 export const LAYOUTS = ['cards', 'table'] as const;
 export type Layout = (typeof LAYOUTS)[number];
-export const DENSITIES = ['comfortable', 'compact'] as const;
-export type Density = (typeof DENSITIES)[number];
 
 /** The views of the Users tab: the team workload, the task type coverage matrix and the skills and training matrix. */
 export const TAB_VIEWS = ['workload', 'coverage', 'skills'] as const;
@@ -48,7 +46,6 @@ export const isUserSort = (v: unknown): v is UserSort => USER_SORTS.includes(v a
 export const isAvailabilityFilter = (v: unknown): v is AvailabilityFilter =>
   AVAILABILITY_FILTERS.includes(v as AvailabilityFilter);
 export const isLayout = (v: unknown): v is Layout => LAYOUTS.includes(v as Layout);
-export const isDensity = (v: unknown): v is Density => DENSITIES.includes(v as Density);
 
 /** The load filters (chips): `idle` is a person with nothing open and not out of office; the others follow the API's load level. */
 export const LOAD_FILTERS = ['idle', 'light', 'normal', 'heavy'] as const;
@@ -201,6 +198,47 @@ export function thresholdText(t: WorkloadThresholds | null | undefined): string[
     `Light: 1 to ${light} open tasks.`,
     `Normal: ${light + 1} to ${normal} open tasks.`,
     `Heavy: more than ${normal} open tasks.`,
+  ];
+}
+
+export interface LegendState {
+  key: 'idle' | 'light' | 'normal' | 'heavy' | 'out' | 'off';
+  word: string;
+  icon: string;
+  line: string;
+}
+
+/** The Legend of the Users tab: the six states, each with its icon and ONE plain line; the load lines come from the real thresholds of the board. */
+export function legendStates(t: WorkloadThresholds | null | undefined): LegendState[] {
+  const light = t?.lightMax ?? 3;
+  const normal = t?.normalMax ?? 8;
+  return [
+    { key: 'idle', word: 'Idle', icon: LOAD_ICONS.IDLE, line: 'No open tasks' },
+    { key: 'light', word: 'Light', icon: LOAD_ICONS.LIGHT, line: `1 to ${light} open tasks` },
+    {
+      key: 'normal',
+      word: 'Normal',
+      icon: LOAD_ICONS.NORMAL,
+      line: `${light + 1} to ${normal} open tasks`,
+    },
+    {
+      key: 'heavy',
+      word: 'Heavy',
+      icon: LOAD_ICONS.HEAVY,
+      line: `${normal + 1} or more open tasks`,
+    },
+    {
+      key: 'out',
+      word: 'Out of office',
+      icon: 'pi-calendar-minus',
+      line: 'Away; the day they are back is on the card',
+    },
+    {
+      key: 'off',
+      word: 'Off hours',
+      icon: 'pi-moon',
+      line: 'Outside their working hours right now',
+    },
   ];
 }
 

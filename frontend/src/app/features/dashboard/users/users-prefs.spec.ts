@@ -19,15 +19,13 @@ describe('UsersPrefs', () => {
   beforeEach(() => localStorage.clear());
   afterEach(() => vi.restoreAllMocks());
 
-  it('starts with the defaults and remembers sort, density and layout per user', async () => {
+  it('starts with the defaults and remembers sort and layout per user', async () => {
     const p = await prefs();
     p.ensureLoaded();
-    expect([p.sort(), p.density(), p.layout()]).toEqual(['load', 'comfortable', 'cards']);
+    expect([p.sort(), p.layout()]).toEqual(['load', 'cards']);
     p.remember({ sort: 'name', layout: 'table' });
-    p.remember({ density: 'compact' });
     expect(JSON.parse(localStorage.getItem('mf.dashboard.users.v1.7')!)).toEqual({
       sort: 'name',
-      density: 'compact',
       layout: 'table',
       view: 'workload',
     });
@@ -35,7 +33,7 @@ describe('UsersPrefs', () => {
     TestBed.resetTestingModule();
     const again = await prefs();
     again.ensureLoaded();
-    expect([again.sort(), again.density(), again.layout()]).toEqual(['name', 'compact', 'table']);
+    expect([again.sort(), again.layout()]).toEqual(['name', 'table']);
 
     TestBed.resetTestingModule();
     const other = await prefs(8);
@@ -43,11 +41,21 @@ describe('UsersPrefs', () => {
     expect(other.sort()).toBe('load');
   });
 
-  it('ignores invalid stored values', async () => {
+  it('ignores invalid stored values; a saved mode that no longer exists falls back to the table', async () => {
     localStorage.setItem('mf.dashboard.users.v1.7', JSON.stringify({ sort: 'x', layout: 3 }));
     const p = await prefs();
     p.ensureLoaded();
-    expect([p.sort(), p.density(), p.layout()]).toEqual(['load', 'comfortable', 'cards']);
+    expect([p.sort(), p.layout()]).toEqual(['load', 'table']);
+  });
+
+  it('ignores the old tile size (density) that was saved before it was removed, without an error', async () => {
+    localStorage.setItem(
+      'mf.dashboard.users.v1.7',
+      JSON.stringify({ sort: 'name', density: 'compact', layout: 'cards', view: 'workload' }),
+    );
+    const p = await prefs();
+    p.ensureLoaded();
+    expect([p.sort(), p.layout()]).toEqual(['name', 'cards']);
   });
 
   it('works when storage is unavailable', async () => {

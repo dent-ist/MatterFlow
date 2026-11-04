@@ -7,17 +7,17 @@ import {
 import { availabilityDisplay, shortDay } from '../../../core/availability/availability';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { calendarDayInZone } from '../../../core/time/time';
-import { levelBars, priorityColors } from '../../../shared/ui/priority-badge';
+import { priorityColors } from '../../../shared/ui/priority-badge';
 import {
-  Density,
   IDLE_TINT,
+  LOAD_ICONS,
+  LOAD_LABELS,
   cardState,
   cardSummary,
   loadLevelOf,
   segmentsOf,
   toneOf,
 } from './users-model';
-import { UsersGlyph } from './users-glyph';
 
 /** The colours, icon and phrase of a person's state: priority colours when something is open, green when free, hatched grey when out of office. */
 export interface Band {
@@ -36,29 +36,21 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
 }
 
 /**
- * One person on the Team workload board, as a small tile (about 150 x 52 px). Row 1 is the name (truncated; the tooltip and the accessible
- * name carry the whole status). Row 2 is a colour pill (the highest priority colours with a level glyph and the open count; a green check
- * when nothing is open; a grey calendar when out of office), the load bar split by priority, and small icon marks for overdue work, a heavy
- * load and off hours. A left edge in the pill colour repeats the highest priority. No sentences on the tile: colour, hatching and icons carry
- * the state, and the legend explains them. The name is the button that opens the person's tasks and stretches over the whole tile; the Assign
- * icon sits above it and appears on hover or focus. Operational capacity only: no completion counts, speed or ranking.
- *
- * `density="compact"` is the dense variant: one row with the pill, the name and the marks.
+ * One person on the Team workload board as a card (US-05, #1096), simple on purpose: the name with the avatar initials, Workload (the open-task count, the load bar split by priority and
+ * the level word) and the Availability (icon and word: Available, Out of office until ..., Off hours). Overdue work shows only as a red badge when there is some. The name is the button
+ * that opens the person's drawer and it stretches over the whole card; the Assign icon sits above it and appears on hover or focus. Operational capacity only: no completion counts, speed
+ * or ranking.
  */
 @Component({
   selector: 'mf-users-card',
-  imports: [UsersGlyph],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '[class.compact]': "density() === 'compact'" },
   template: `
     @let u = user();
     @let st = state();
-    @let b = band();
     <article
-      class="tile"
-      [class.tile--ooo]="st === 'ooo'"
-      [class.tile--free]="st === 'free'"
-      [class.tile--heavy]="level() === 'HEAVY'"
+      class="card"
+      [class.card--ooo]="st === 'ooo'"
+      [class.card--heavy]="level() === 'HEAVY'"
       [attr.data-user-card]="u.userId"
       [attr.data-user]="u.displayName"
       [attr.data-state]="st"
@@ -66,7 +58,8 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
       [attr.data-load]="level()"
       [attr.data-availability]="u.availability.state"
     >
-      <p class="name">
+      <p class="head">
+        <span class="avatar" aria-hidden="true">{{ u.initials }}</span>
         <button
           type="button"
           class="open"
@@ -78,49 +71,42 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
         >
           {{ u.displayName }}
         </button>
+        @if (u.overdue > 0) {
+          <span
+            class="late"
+            data-overdue
+            [attr.data-count]="u.overdue"
+            [attr.title]="u.overdue + ' overdue'"
+            aria-hidden="true"
+            ><i class="pi pi-clock"></i>{{ u.overdue }}</span
+          >
+        }
       </p>
-      <div class="meta" aria-hidden="true">
-        <span
-          class="pill"
-          data-pill
-          [style.background]="b.bg"
-          [style.color]="b.fg"
-          [style.border-color]="b.fg"
-        >
-          @if (st === 'busy') {
-            <mf-users-glyph data-glyph [level]="bars()" [attr.data-bars]="bars()" />
-          } @else {
-            <i class="pi" [class]="b.icon" data-state-icon></i>
-          }
-          @if (u.openTotal > 0) {
-            <strong class="n" data-open-total>{{ u.openTotal }}</strong>
-          }
-        </span>
-        <span class="marks">
-          @if (u.overdue > 0) {
-            <span class="mark mark--late" data-overdue [attr.data-count]="u.overdue"
-              ><i class="pi pi-clock"></i>{{ u.overdue }}</span
-            >
-          }
-          @if (level() === 'HEAVY') {
-            <i class="pi pi-exclamation-triangle mark mark--heavy" data-heavy></i>
-          }
-          @if (u.availability.state === 'OFF_HOURS') {
-            <i class="pi pi-moon mark" data-off-hours></i>
-          }
+      <div class="wl" aria-hidden="true" data-workload>
+        <span class="lbl">Workload</span>
+        <span class="row">
+          <strong class="n" data-open-total>{{ u.openTotal }}</strong>
+          <span class="track" data-load-bar [attr.data-open]="u.openTotal">
+            @for (s of segments(); track s.priorityId) {
+              <span
+                class="seg"
+                [attr.data-segment]="s.label"
+                [style.width.%]="s.percent"
+                [style.background]="colorsOf(s.color).bg"
+                [style.box-shadow]="'inset 0 0 0 1px ' + colorsOf(s.color).fg"
+              ></span>
+            }
+          </span>
+          <span class="lvl" data-level-word
+            ><i class="pi" [class]="icons[level()]"></i>{{ labels[level()] }}</span
+          >
         </span>
       </div>
-      <span class="track" aria-hidden="true" data-load-bar [attr.data-open]="u.openTotal">
-        @for (s of segments(); track s.priorityId) {
-          <span
-            class="seg"
-            [attr.data-segment]="s.label"
-            [style.width.%]="s.percent"
-            [style.background]="colorsOf(s.color).bg"
-            [style.box-shadow]="'inset 0 0 0 1px ' + colorsOf(s.color).fg"
-          ></span>
-        }
-      </span>
+      <div class="av" aria-hidden="true" data-availability-line>
+        <span class="chip" [class]="'chip chip--' + avail().tone">
+          <i class="pi" [class]="avail().icon"></i>{{ avail().label }}
+        </span>
+      </div>
       @if (canAssign()) {
         <button
           type="button"
@@ -140,53 +126,61 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
       display: block;
       min-width: 0;
     }
-    .tile {
+    .card {
       position: relative;
       display: grid;
-      gap: 3px;
+      gap: var(--mf-s2);
       align-content: start;
       height: 100%;
       min-width: 0;
-      padding: 5px 6px 5px 6px;
-      overflow: hidden;
+      padding: var(--mf-s3);
       background: var(--mf-surface);
       border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius);
+      border-radius: var(--mf-radius-lg);
     }
-    .tile:hover {
+    .card:hover {
       border-color: var(--mf-border-strong);
     }
-    /* Idle (U7): the lightest tint of the Idle token with a thin outline; saturated fills are for Heavy and Out of office. */
-    .tile--free {
-      background: color-mix(in srgb, var(--mf-success-bg) 45%, var(--mf-surface));
-      border-color: var(--mf-success);
-    }
-    .tile--ooo {
+    .card--ooo {
       border-style: dashed;
-      border-color: var(--mf-border-strong);
       background: repeating-linear-gradient(
         135deg,
         var(--mf-surface-alt) 0 6px,
         var(--mf-surface) 6px 12px
       );
     }
-    .tile--heavy {
+    .card--heavy {
       box-shadow: inset 0 0 0 1px var(--mf-danger);
     }
-    .name {
-      margin: 0;
+    .head {
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s2);
       min-width: 0;
-      font-size: var(--mf-fs-sm);
-      line-height: 1.3;
+      margin: 0;
+    }
+    .avatar {
+      flex: none;
+      display: inline-grid;
+      place-items: center;
+      width: 2rem;
+      height: 2rem;
+      color: var(--mf-primary);
+      background: var(--mf-selected-bg);
+      border: 1px solid var(--mf-primary);
+      border-radius: 50%;
+      font-size: var(--mf-fs-xs);
+      font-weight: 700;
     }
     .open {
-      display: block;
-      max-width: 100%;
+      flex: 1 1 auto;
+      min-width: 0;
       padding: 0;
       border: 0;
       background: none;
       color: var(--mf-text);
       font: inherit;
+      font-size: var(--mf-fs-md);
       font-weight: 600;
       text-align: left;
       white-space: nowrap;
@@ -198,7 +192,7 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
       content: '';
       position: absolute;
       inset: 0;
-      border-radius: var(--mf-radius);
+      border-radius: var(--mf-radius-lg);
     }
     .open:focus-visible {
       outline: none;
@@ -207,103 +201,116 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
       outline: 2px solid var(--mf-focus);
       outline-offset: 1px;
     }
-    .meta {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 5px;
-      min-width: 0;
-      height: 18px;
-    }
-    .pill {
+    .late {
       flex: none;
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      gap: 4px;
-      box-sizing: border-box;
-      min-width: 1.5rem;
-      height: 18px;
-      padding: 0 5px;
-      border: 1px solid;
-      border-radius: 9px;
+      gap: 3px;
+      padding: 0 var(--mf-s2);
+      color: var(--mf-danger);
+      background: var(--mf-danger-bg);
+      border: 1px solid var(--mf-danger);
+      border-radius: 999px;
       font-size: var(--mf-fs-xs);
-      line-height: 1;
-    }
-    .pill .pi {
-      font-size: 0.7rem;
-    }
-    .n {
+      font-weight: 700;
       font-variant-numeric: tabular-nums;
     }
-    .tile--ooo .pill {
-      border-style: dashed;
-      background: var(--mf-surface);
+    .wl {
+      display: grid;
+      gap: 2px;
+    }
+    .lbl {
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-xs);
+      font-weight: 600;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s2);
+    }
+    .n {
+      min-width: 1.5rem;
+      font-size: var(--mf-fs-lg);
+      font-variant-numeric: tabular-nums;
     }
     .track {
       display: flex;
-      height: 7px;
+      flex: 1 1 auto;
+      min-width: 3rem;
+      height: 0.75rem;
       overflow: hidden;
       background: var(--mf-surface-alt);
       border: 1px solid var(--mf-border-strong);
       border-radius: 999px;
-    }
-    .tile--free .track {
-      background: transparent;
-      border-style: dashed;
-      border-color: var(--mf-success);
     }
     .seg {
       flex: none;
       height: 100%;
       min-width: 3px;
     }
-    .tile--ooo .seg {
+    .card--ooo .seg {
       opacity: 0.6;
     }
-    .marks {
+    .lvl {
       flex: none;
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: var(--mf-s1);
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
+      font-size: var(--mf-fs-sm);
     }
-    .mark {
+    .card--heavy .lvl {
+      color: var(--mf-danger);
+      font-weight: 700;
+    }
+    .chip {
       display: inline-flex;
       align-items: center;
-      gap: 2px;
-      font-size: 0.7rem;
-    }
-    .mark--late {
-      color: var(--mf-danger);
+      gap: var(--mf-s1);
+      max-width: 100%;
+      padding: 0 var(--mf-s2);
+      border: 1px solid currentColor;
+      border-radius: 999px;
       font-size: var(--mf-fs-xs);
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    .mark--heavy {
-      color: var(--mf-danger);
+    .chip--success {
+      color: var(--mf-success);
+      background: var(--mf-success-bg);
+    }
+    .chip--warning {
+      color: var(--mf-warning);
+      background: var(--mf-warning-bg);
+    }
+    .chip--neutral {
+      color: var(--mf-text-muted);
+      background: var(--mf-surface-alt);
+      border-style: dashed;
     }
     .assign {
       position: absolute;
-      top: 2px;
-      right: 2px;
+      right: var(--mf-s2);
+      bottom: var(--mf-s2);
       z-index: 1;
       display: inline-grid;
       place-items: center;
-      width: 24px;
-      height: 24px;
+      width: 28px;
+      height: 28px;
       padding: 0;
       color: var(--mf-text);
       background: var(--mf-surface);
       border: 1px solid var(--mf-border-strong);
       border-radius: var(--mf-radius);
-      font-size: 0.75rem;
+      font-size: 0.8rem;
       cursor: pointer;
       opacity: 0;
     }
-    .tile:hover .assign,
-    .tile:focus-within .assign,
+    .card:hover .assign,
+    .card:focus-within .assign,
     .assign:focus-visible {
       opacity: 1;
     }
@@ -314,34 +321,11 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
       outline: 2px solid var(--mf-focus);
       outline-offset: 1px;
     }
-    /* No hover on a touch screen: the drawer has the Assign icon, so the tile keeps its whole name. */
+    /* No hover on a touch screen: the drawer has the Assign icon. */
     @media (hover: none) {
       .assign {
         display: none;
       }
-    }
-    /* Dense: one row (pill, name, marks), no bar. */
-    :host(.compact) .tile {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      padding-block: 3px;
-    }
-    :host(.compact) .meta {
-      display: contents;
-    }
-    :host(.compact) .pill {
-      order: -1;
-    }
-    :host(.compact) .name {
-      flex: 1;
-    }
-    :host(.compact) .track {
-      display: none;
-    }
-    :host(.compact) .assign {
-      top: 50%;
-      transform: translateY(-50%);
     }
   `,
 })
@@ -352,7 +336,6 @@ export class UsersCard {
   readonly user = input.required<WorkloadUser>();
   readonly legend = input<readonly WorkloadPriority[]>([]);
   readonly thresholds = input<WorkloadThresholds | null>(null);
-  readonly density = input<Density>('comfortable');
   readonly canAssign = input(false);
 
   readonly open = output<WorkloadUser>();
@@ -368,9 +351,8 @@ export class UsersCard {
     availabilityDisplay(this.user().availability, this.zone, this.clock.now()),
   );
   protected readonly summary = computed(() => cardSummary(this.user(), this.avail().label));
-  protected readonly band = computed<Band>(() => bandOf(this.user()));
-  /** Level bars of the priority glyph: 4 for the most urgent rank down to 1, as on the priority badge. */
-  protected readonly bars = computed(() => levelBars(this.user().topPriority?.rank));
+  protected readonly icons = LOAD_ICONS;
+  protected readonly labels = LOAD_LABELS;
 
   protected colorsOf(tone: string) {
     return priorityColors(tone);

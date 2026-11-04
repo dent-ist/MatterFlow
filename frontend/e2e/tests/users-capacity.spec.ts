@@ -257,7 +257,7 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     // Keyboard order: switch, search, filters, sort, then density, layout and legend.
     await views.getByRole('button', { name: 'Workload' }).focus();
     const order: string[] = [];
-    for (let i = 0; i < 11; i++) {
+    for (let i = 0; i < 10; i++) {
       order.push(
         await page.evaluate(() => {
           const a = document.activeElement as HTMLElement;
@@ -274,12 +274,11 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     expect(order).toEqual([
       'Workload',
       'Coverage',
+      'Skills',
       'wl-q',
       'wl-prio',
       'wl-avail',
       'wl-sort',
-      'Tile size: standard',
-      'Tile size: dense',
       'Layout: cards',
       'Layout: table',
       'Legend and help',
@@ -308,7 +307,8 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     const lead = await asUser(username);
     await lead.goto(`/dashboard?tab=users&uq=${wl.tag}`);
     await expect(lead.locator('[data-user-card]').first()).toBeVisible();
-    await expect(lead.locator('[data-users-views]')).toHaveCount(0);
+    // Without Dashboard.ViewCoverage the switch offers Workload and Skills only.
+    await expect(lead.locator('[data-users-views] [data-view="coverage"]')).toHaveCount(0);
     await expect(lead.getByRole('heading', { name: 'Workload', exact: true })).toHaveCount(1);
   });
 
@@ -317,29 +317,28 @@ test.describe('Users tab: capacity, population and toolbar', () => {
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await openUsers(page);
-    const dense = page.getByRole('button', { name: 'Tile size: dense' });
-    const standard = page.getByRole('button', { name: 'Tile size: standard' });
-    await expect(standard).toHaveAttribute('aria-pressed', 'true');
-    await dense.click();
-    await expect(dense).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('[data-users-grid]')).toHaveAttribute('data-density', 'compact');
-    await standard.click();
-    for (const b of [dense, standard, page.getByRole('button', { name: 'Layout: table' })]) {
+    // The tile size buttons are gone: only the cards and table buttons remain.
+    await expect(page.locator('[data-density-group]')).toHaveCount(0);
+    for (const b of [
+      page.getByRole('button', { name: 'Layout: cards' }),
+      page.getByRole('button', { name: 'Layout: table' }),
+    ]) {
       const box = (await b.boundingBox())!;
       expect(box.width).toBeGreaterThanOrEqual(32);
       expect(box.height).toBeGreaterThanOrEqual(32);
     }
     // Distinct icons.
     const icon = (loc: ReturnType<Page['locator']>) => loc.locator('.pi').getAttribute('class');
-    expect(await icon(dense)).not.toBe(await icon(standard));
     expect(await icon(page.locator('[data-layout="cards"]'))).not.toBe(
       await icon(page.locator('[data-layout="table"]')),
     );
     // A text tip on hover and on keyboard focus.
-    await dense.hover();
-    expect(await dense.evaluate((el) => getComputedStyle(el, '::after').content)).toContain(
-      'Dense tiles',
-    );
+    await page.getByRole('button', { name: 'Layout: cards' }).hover();
+    expect(
+      await page
+        .getByRole('button', { name: 'Layout: cards' })
+        .evaluate((el) => getComputedStyle(el, '::after').content),
+    ).toContain('Cards');
     await page.mouse.move(0, 0);
     await page.getByRole('button', { name: 'Layout: table' }).focus();
     await page.keyboard.press('Shift+Tab');
@@ -412,14 +411,14 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     const token = await luminanceOf('var(--mf-success-bg)', null);
     const idle = page.locator('[data-user-card][data-state="free"]').first();
     expect(await luminance(idle)).toBeGreaterThan(token);
-    await expect(idle.locator('[data-state-icon]')).toHaveClass(/pi-check-circle/);
+    await expect(idle.locator('[data-level-word]')).toHaveText('Idle');
     expect(await idle.evaluate((e) => getComputedStyle(e).borderTopWidth)).toBe('1px');
     for (const c of await page.locator('[data-user-card]:not([data-state="ooo"])').all()) {
       const heavy = (await c.getAttribute('data-load')) === 'HEAVY';
       if (!heavy) expect(await luminance(c)).toBeGreaterThanOrEqual(token);
     }
     const heavy = page.locator('[data-user-card][data-load="HEAVY"]').first();
-    await expect(heavy.locator('[data-heavy]')).toHaveCount(1);
+    await expect(heavy.locator('[data-level-word]')).toHaveText('Heavy');
     expect(await heavy.evaluate((e) => getComputedStyle(e).boxShadow)).not.toBe('none');
   });
 
@@ -441,10 +440,8 @@ test.describe('Users tab: capacity, population and toolbar', () => {
       ).toHaveAttribute('title', new RegExp(words));
     }
     await page.getByRole('button', { name: 'Legend and help' }).click();
-    await expect(page.locator('[data-load-help]')).toContainText('Light: 1 to 3 open tasks.');
-    await expect(page.locator('[data-legend-population]')).toContainText(
-      'in a pod or hold an open task',
-    );
+    await expect(page.locator('[data-legend-states]')).toContainText('1 to 3 open tasks');
+    await expect(page.locator('[data-who-counted]')).toBeVisible();
   });
 
   test('has no axe violations in the strip, the open menu, the population line and the toolbar at 1366, 1920 and 375', async ({
@@ -606,9 +603,6 @@ test.describe('users capacity screenshots', () => {
     await page.getByRole('button', { name: 'Legend and help' }).click();
     await shot('06-legend-1366');
     await page.getByRole('button', { name: 'Legend and help' }).click();
-    await page.locator('[data-density="compact"]').click();
-    await shot('07-dense-1366');
-    await page.locator('[data-density="comfortable"]').click();
     // The tile anatomy at 200%: sorted by name (a mix of idle, light, normal and heavy people), the grid scaled up.
     await page.getByLabel('Sort', { exact: true }).selectOption('name');
     await page.evaluate(() => {

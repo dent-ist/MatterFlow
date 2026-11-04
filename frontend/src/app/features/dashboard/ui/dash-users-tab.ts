@@ -44,7 +44,6 @@ import {
   CAN_TAKE_WORK_NOW,
   CLEARED_FILTERS,
   DEFAULT_FILTERS,
-  Density,
   Layout,
   TabView,
   UserSort,
@@ -117,13 +116,11 @@ export const USERS_PAGE = 200;
       <mf-users-toolbar
         [filters]="filters()"
         [sort]="sort()"
-        [density]="density()"
         [layout]="layout()"
         [priorities]="board()?.priorities ?? []"
         [thresholds]="board()?.thresholds ?? null"
         (filtersChange)="patchFilters($event)"
         (sortChange)="setSort($event)"
-        (densityChange)="setDensity($event)"
         (layoutChange)="setLayout($event)"
       >
         <mf-users-views [view]="view()" [coverage]="canCoverage()" (viewChange)="setView($event)" />
@@ -233,7 +230,6 @@ export const USERS_PAGE = 200;
                 [users]="shown()"
                 [legend]="board()?.priorities ?? []"
                 [thresholds]="board()?.thresholds ?? null"
-                [density]="density()"
                 [canAssign]="canAssign()"
                 [sort]="sort()"
                 [reversed]="sortReversed()"
@@ -246,7 +242,6 @@ export const USERS_PAGE = 200;
                 class="grid"
                 data-users-grid
                 aria-labelledby="wl-h"
-                [attr.data-density]="density()"
                 [attr.aria-busy]="refreshing() ? 'true' : null"
               >
                 @for (u of shown(); track u.userId) {
@@ -255,7 +250,6 @@ export const USERS_PAGE = 200;
                       [user]="u"
                       [legend]="board()?.priorities ?? []"
                       [thresholds]="board()?.thresholds ?? null"
-                      [density]="density()"
                       [canAssign]="canAssign()"
                       (open)="openUser($event)"
                       (assign)="assignTo($event)"
@@ -372,18 +366,14 @@ export const USERS_PAGE = 200;
       clip-path: inset(50%);
       white-space: nowrap;
     }
-    /* Tiles of about 9rem x 3.3rem: seven or more to a line on a laptop, two on a phone. */
+    /* Cards of about 17rem: three or four to a line on a laptop, one on a phone. */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(min(9rem, 100%), 1fr));
-      gap: var(--mf-s2);
+      grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr));
+      gap: var(--mf-s3);
       margin: 0;
       padding: 0;
       list-style: none;
-    }
-    .grid[data-density='compact'] {
-      grid-template-columns: repeat(auto-fill, minmax(min(8.5rem, 100%), 1fr));
-      gap: var(--mf-s1);
     }
     .cell {
       min-width: 0;
@@ -450,7 +440,6 @@ export class DashUsersTab implements OnInit {
 
   protected readonly filters = signal<UsersFilters>(DEFAULT_FILTERS);
   protected readonly sort = this.prefs.sort;
-  protected readonly density = this.prefs.density;
   protected readonly layout = this.prefs.layout;
   protected readonly view = signal<TabView>('workload');
   protected readonly canCoverage = computed(() => this.auth.has('Dashboard.ViewCoverage'));
@@ -684,10 +673,6 @@ export class DashUsersTab implements OnInit {
     this.live.set(
       `Sorted by ${{ load: 'availability and load', name: 'name', priority: 'highest priority', open: 'open tasks', fewest: 'fewest open tasks' }[sort]}.`,
     );
-  }
-
-  protected setDensity(density: Density): void {
-    this.prefs.remember({ density });
   }
 
   protected setLayout(layout: Layout): void {

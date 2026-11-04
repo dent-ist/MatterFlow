@@ -102,11 +102,7 @@ test.describe('users screenshots', () => {
       });
       console.log(`TILE-METRICS ${label} ${JSON.stringify(m)}`);
     };
-    await metrics('standard');
-    await page.locator('[data-density="compact"]').click();
-    await metrics('dense');
-    await shot('03-dense-1366');
-    await page.locator('[data-density="comfortable"]').click();
+    await metrics('cards');
     await page.locator('[data-chip="idle"]').click();
     await page.locator('[data-chip="heavy"]').click();
     await shot('12-filter-chips-1366');
