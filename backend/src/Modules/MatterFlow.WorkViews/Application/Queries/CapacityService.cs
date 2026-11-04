@@ -1,10 +1,13 @@
 using System.ComponentModel.DataAnnotations;
+using MatterFlow.Configuration.Contracts;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.Identity.Domain;
 using MatterFlow.SharedKernel.Availability;
+using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.Tasks;
 using MatterFlow.SharedKernel.Time;
+using MatterFlow.SharedKernel.Visibility;
 using MatterFlow.WorkManagement.Domain;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -40,23 +43,26 @@ public class CapacityPeopleQuery : CapacityQuery
 public sealed record CapacityStateCount([property: Required] string State, [property: Required] int Count);
 
 /// <summary>
-/// The department capacity battery (Dashboard v4, decision AS items 5, 6 and 12): aggregates only, no per-person data. A worker holds <c>Workflow.Execute</c> and is an active member of a Pod in the scope.
-/// The battery counts only the workers who can take work now: people out of office or outside their work hours are left out of <c>TotalSlots</c> and the percentages (they still show in <c>States</c>),
-/// so the figure never reads 100% used just because it is evening. When nobody can take work now <c>State</c> says why and the percentages are null (show "After hours", not an alarm).
+/// The department capacity battery (Dashboard v4, decision AS items 5, 6 and 12, changed by decision AV): aggregates only, no per-person data. A worker holds <c>Workflow.Execute</c> and is an active member of a Pod in the scope.
+/// Capacity counts by absence, not by the clock: a worker counts unless out of office or on a holiday; a person who is only outside their work hours still counts (3 slots, free = slots minus load) while the setting
+/// <c>Dashboard.Capacity.countOffHours</c> is on (default). With it off, off-hours people are left out of <c>TotalSlots</c> (the old behaviour) and <c>State</c> is <c>AFTER_HOURS</c> when nobody is left.
 /// A worker's load is counted over all their open Tasks as a bare number; no Task, Matter or title is read for the answer.
 /// </summary>
 /// <param name="AsOfUtc">The instant the figures were computed for.</param>
-/// <param name="State"><c>OK</c> (percentages set), <c>HOLIDAY</c> (nobody can take work and everybody who is off hours is off for a holiday, for example a firm closure; show "Holiday", not an alarm), <c>AFTER_HOURS</c> (workers exist but all are outside their work hours or out of office, with at least one outside work hours), <c>ALL_OUT</c> (all workers are out of office) or <c>NO_WORKERS</c> (empty scope).</param>
+/// <param name="State"><c>OK</c> (at least one worker counts; percentages set), <c>HOLIDAY</c> (nobody counts and everybody who is off hours is off for a holiday, for example a firm closure; show "Holiday", not an alarm), <c>AFTER_HOURS</c> (only with <c>countOffHours</c> off: workers exist but all are outside their work hours or out of office, with at least one outside work hours), <c>ALL_OUT</c> (all workers are out of office or on a holiday and none is merely off hours) or <c>NO_WORKERS</c> (empty scope).</param>
 /// <param name="Workers">Workers in the scope, in every state.</param>
-/// <param name="PresentWorkers">Workers who can take work now: not out of office and inside their work hours.</param>
+/// <param name="PresentWorkers">Workers who count as capacity: not out of office, not on a holiday and, only when <c>countOffHours</c> is off, inside their work hours.</param>
 /// <param name="SlotsPerPerson">Open Tasks (New or In progress) one person can hold (default 3).</param>
 /// <param name="TotalSlots"><c>PresentWorkers</c> times <c>SlotsPerPerson</c>.</param>
-/// <param name="FreeSlots">Free slots among the present workers (slots minus load, never below zero).</param>
-/// <param name="UsedPercent">100 minus <c>FreePercent</c>, rounded; null unless <c>State</c> is <c>OK</c>.</param>
+/// <param name="FreeSlots">Free slots among the counted workers (slots minus load, never below zero).</param>
+/// <param name="UsedPercent">100 minus <c>FreePercent</c>, rounded; null unless <c>State</c> is <c>OK</c>. Slots based: slack elsewhere can hide overload, see <c>OverCapacityTasks</c>.</param>
 /// <param name="FreePercent">Free slots over total slots, rounded; null unless <c>State</c> is <c>OK</c>.</param>
-/// <param name="CanTakeWork">Present workers with at least one free slot.</param>
-/// <param name="States">All six states in fixed order (Available, Occupied, Busy, Overloaded, Out of office, Off hours) with the number of workers in each; they add up to <c>Workers</c>.</param>
+/// <param name="CanTakeWork">Counted workers with at least one free slot.</param>
+/// <param name="States">All six states in fixed order (Available, Occupied, Busy, Overloaded, Out of office, Off hours) with the number of workers in each; they add up to <c>Workers</c>. Off hours keeps its own count (people outside work hours, also when they are counted as capacity).</param>
 /// <param name="AssignedLastHour">Tasks assigned to workers of the scope in the last hour (from <c>Task.AssignedAt</c>): the rate hint. No trend is kept.</param>
+/// <param name="CountOffHours">The setting in force: people outside their work hours count as capacity.</param>
+/// <param name="OverCapacityTasks">Sum over the counted workers of the open Tasks above their slot count (max(0, load minus slots)); zero when nobody counts.</param>
+/// <param name="UnassignedWaiting">Open Tasks nobody is assigned to in the scope, the visibility-filtered number of the Summary's Unassigned card; null unless the caller also holds <c>Dashboard.ViewSummary</c> or <c>Dashboard.ViewUnassigned</c>.</param>
 public sealed record DashboardCapacity(
     [property: Required] DateTime AsOfUtc,
     [property: Required] string State,
@@ -69,7 +75,10 @@ public sealed record DashboardCapacity(
     int? FreePercent,
     [property: Required] int CanTakeWork,
     [property: Required] IReadOnlyList<CapacityStateCount> States,
-    int? AssignedLastHour);
+    int? AssignedLastHour,
+    [property: Required] bool CountOffHours,
+    [property: Required] int OverCapacityTasks,
+    int? UnassignedWaiting);
 
 /// <summary>One row of the People list: name, state and the load number. No Task, Matter or note text.</summary>
 /// <param name="OutUntil">While out of office: the last day out (date only, no note); null when open-ended or not out of office.</param>
@@ -92,12 +101,46 @@ public static class CapacitySummaryStates
     public const string NoWorkers = "NO_WORKERS";
 }
 
+/// <summary>One worker as the battery rules see them: the capacity state, the open-task load and whether the person is off for a holiday.</summary>
+public sealed record CapacityWorkerFact(string State, int Load, bool OnHoliday);
+
+/// <summary>The figures of the battery for one scope.</summary>
+public sealed record CapacityTotals(string SummaryState, int Counted, int TotalSlots, int FreeSlots, int OverCapacityTasks, int CanTakeWork, int? FreePercent);
+
+/// <summary>Pure rules of the battery (decision AV): who counts, the totals and the summary state. Tested without a database.</summary>
+public static class CapacitySummary
+{
+    /// <summary>Counts as capacity: not out of office, not on a holiday; a person merely outside work hours only while <paramref name="countOffHours"/> is on.</summary>
+    public static bool Counts(CapacityWorkerFact w, bool countOffHours) => w.State switch
+    {
+        CapacityStates.OutOfOffice => false,
+        CapacityStates.OffHours => countOffHours && !w.OnHoliday,
+        _ => true,
+    };
+
+    public static CapacityTotals Compute(IReadOnlyCollection<CapacityWorkerFact> workers, int slots, bool countOffHours)
+    {
+        ArgumentNullException.ThrowIfNull(workers);
+        var counted = workers.Where(w => Counts(w, countOffHours)).ToList();
+        var free = counted.Sum(w => Math.Max(0, slots - Math.Max(0, w.Load)));
+        var over = counted.Sum(w => Math.Max(0, w.Load - slots));
+        var total = counted.Count * slots;
+        var offHours = workers.Where(w => w.State == CapacityStates.OffHours && !Counts(w, countOffHours)).ToList();
+        var state = workers.Count == 0 ? CapacitySummaryStates.NoWorkers
+            : counted.Count > 0 ? CapacitySummaryStates.Ok
+            : offHours.Count > 0 ? (offHours.All(w => w.OnHoliday) ? CapacitySummaryStates.Holiday : CapacitySummaryStates.AfterHours)
+            : CapacitySummaryStates.AllOut;
+        int? freePercent = state == CapacitySummaryStates.Ok ? (int)Math.Round(100.0 * free / total, MidpointRounding.AwayFromZero) : null;
+        return new CapacityTotals(state, counted.Count, total, free, over, counted.Count(w => slots - w.Load > 0), freePercent);
+    }
+}
+
 /// <summary>
 /// Read side of the capacity battery and its People list. A fixed number of statements whatever the number of workers: the workers, one grouped load count, the availability of all of them
 /// (two queries), the last-hour count and, for the People list only, the Pod names and the out-of-office end dates. The load is deliberately NOT filtered by the sensitive-matter rule
 /// (true load matters for capacity); it leaves the database only as an integer per person and no Task, Matter or title is ever selected (decision AS item 12).
 /// </summary>
-public sealed class CapacityService(DbContext db, IClock clock, IUserAvailabilityReader availability, IOptions<DashboardOptions> options, DashboardScopeResolver scopes)
+public sealed class CapacityService(DbContext db, IClock clock, IUserAvailabilityReader availability, IOptions<DashboardOptions> options, DashboardScopeResolver scopes, IDashboardSettings dashboardSettings, IPermissionChecker permissions, IMatterVisibility visibility)
 {
     public const int MaxPeople = 200;
 
@@ -114,14 +157,8 @@ public sealed class CapacityService(DbContext db, IClock clock, IUserAvailabilit
         var workers = await ReadWorkersAsync(resolved.Value, now, ct);
         var slots = SlotsPerPerson;
 
-        var present = workers.Where(w => CapacityRules.IsPresent(w.State)).ToList();
-        var free = present.Sum(w => CapacityRules.FreeSlots(w.State, w.Load, slots));
-        var total = present.Count * slots;
-        var summaryState = workers.Count == 0 ? CapacitySummaryStates.NoWorkers
-            : present.Count > 0 ? CapacitySummaryStates.Ok
-            : workers.Any(w => w.State == CapacityStates.OffHours) ? (workers.Where(w => w.State == CapacityStates.OffHours).All(w => w.OnHoliday) ? CapacitySummaryStates.Holiday : CapacitySummaryStates.AfterHours)
-            : CapacitySummaryStates.AllOut;
-        int? freePercent = summaryState == CapacitySummaryStates.Ok ? (int)Math.Round(100.0 * free / total, MidpointRounding.AwayFromZero) : null;
+        var countOffHours = (await dashboardSettings.GetCapacityAsync(ct)).CountOffHours;
+        var totals = CapacitySummary.Compute([.. workers.Select(w => new CapacityWorkerFact(w.State, w.Load, w.OnHoliday))], slots, countOffHours);
 
         var counts = CapacityStates.All.Select(s => new CapacityStateCount(s, workers.Count(w => w.State == s))).ToList();
         int? lastHour = null;
@@ -136,19 +173,27 @@ public sealed class CapacityService(DbContext db, IClock clock, IUserAvailabilit
             lastHour = 0;
         }
 
+        // The Summary's visibility-filtered unassigned number (VisibleTasks.OpenUnassigned), only for callers who may see unassigned counts.
+        int? unassignedWaiting = permissions.Has(Permissions.Dashboard.ViewSummary) || permissions.Has(Permissions.Dashboard.ViewUnassigned)
+            ? await VisibleTasks.OpenUnassigned(db, visibility, resolved.Value).CountAsync(ct)
+            : null;
+
         return new DashboardCapacity(
             DateTime.SpecifyKind(now, DateTimeKind.Utc),
-            summaryState,
+            totals.SummaryState,
             workers.Count,
-            present.Count,
+            totals.Counted,
             slots,
-            total,
-            free,
-            freePercent is { } fp ? 100 - fp : null,
-            freePercent,
-            present.Count(w => CapacityRules.FreeSlots(w.State, w.Load, slots) > 0),
+            totals.TotalSlots,
+            totals.FreeSlots,
+            totals.FreePercent is { } fp ? 100 - fp : null,
+            totals.FreePercent,
+            totals.CanTakeWork,
             counts,
-            lastHour);
+            lastHour,
+            countOffHours,
+            totals.OverCapacityTasks,
+            unassignedWaiting);
     }
 
     public async Task<Result<IReadOnlyList<CapacityPerson>>> GetPeopleAsync(CapacityPeopleQuery query, CancellationToken ct)

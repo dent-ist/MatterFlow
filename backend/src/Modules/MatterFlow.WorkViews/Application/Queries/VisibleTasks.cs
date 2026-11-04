@@ -13,4 +13,11 @@ internal static class VisibleTasks
 {
     public static IQueryable<WorkTask> Of(DbContext db, IMatterVisibility visibility, Viewer? viewer = null) =>
         visibility.WhereTaskFlagVisible(db.Set<WorkTask>().AsNoTracking(), t => t.MatterId, t => t.IsMatterSensitive, t => t.AssignedUserId, viewer);
+
+    /// <summary>
+    /// The open Tasks of the scope that nobody is assigned to, under the sensitive-matter rule: the number behind the Summary's Unassigned card and the capacity battery's "waiting" hint
+    /// (one definition: <c>TaskQueueRules.Open</c> and no assigned person; a Pod may be set).
+    /// </summary>
+    public static IQueryable<WorkTask> OpenUnassigned(DbContext db, IMatterVisibility visibility, DashboardScope scope, Viewer? viewer = null) =>
+        scope.Apply(Of(db, visibility, viewer)).Where(TaskQueueRules.Open).Where(t => t.AssignedUserId == null);
 }

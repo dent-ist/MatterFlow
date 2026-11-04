@@ -38,6 +38,12 @@ public static class SettingDefinitions
 
     public const string DashboardGaugeReset = "SETTINGS_DASHBOARD_GAUGE_RESET";
 
+    public const string DashboardCapacityKey = "Dashboard.Capacity";
+
+    public const string DashboardCapacityChanged = "SETTINGS_DASHBOARD_CAPACITY_CHANGED";
+
+    public const string DashboardCapacityReset = "SETTINGS_DASHBOARD_CAPACITY_RESET";
+
     public const string CalendarThresholdsKey = "Calendar.Thresholds";
 
     public const string CalendarThresholdsChanged = "SETTINGS_CALENDAR_THRESHOLDS_CHANGED";
@@ -63,6 +69,10 @@ public static class SettingDefinitions
     public static SettingDefinition DashboardGauge { get; } =
         new(DashboardGaugeKey, SettingValueType.Text, null, DashboardGaugeChanged, DashboardGaugeReset, "Dashboard gauge settings");
 
+    /// <summary>The Dashboard capacity battery settings (decision AV, #1103) as one JSON text value (<c>{"countOffHours":true}</c>). Default: count people outside work hours (no stored value).</summary>
+    public static SettingDefinition DashboardCapacity { get; } =
+        new(DashboardCapacityKey, SettingValueType.Text, null, DashboardCapacityChanged, DashboardCapacityReset, "Dashboard capacity settings");
+
     /// <summary>The Dashboard Calendar thresholds (epic #1074) as one JSON text value: firm minimum percent, pod minimum percent and per-pod minimum people. Default: the code defaults (75, 60, none).</summary>
     public static SettingDefinition CalendarThresholds { get; } =
         new(CalendarThresholdsKey, SettingValueType.Text, null, CalendarThresholdsChanged, CalendarThresholdsReset, "Calendar coverage thresholds");
@@ -71,5 +81,5 @@ public static class SettingDefinitions
     public static SettingDefinition CalendarFirmHoliday { get; } =
         new(CalendarFirmHolidayKey, SettingValueType.Text, null, CalendarFirmHolidayChanged, CalendarFirmHolidayReset, "Firm holiday calendar");
 
-    public static IReadOnlyList<SettingDefinition> All { get; } = [BrandingAppName, BrandingIcon, DashboardGauge, CalendarThresholds, CalendarFirmHoliday];
+    public static IReadOnlyList<SettingDefinition> All { get; } = [BrandingAppName, BrandingIcon, DashboardGauge, DashboardCapacity, CalendarThresholds, CalendarFirmHoliday];
 }

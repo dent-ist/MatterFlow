@@ -144,18 +144,133 @@ public sealed class DashboardCapacityTests(SqlServerFixture sql) : IAsyncLifetim
     }
 
     [Fact]
-    public async Task After_hours_nobody_can_take_work_and_the_battery_says_so_instead_of_reading_one_hundred_percent()
+    public async Task In_the_evening_people_outside_work_hours_still_count_as_capacity_by_default()
     {
-        _clock.UtcNow = Night; // 11 PM in New York
+        _clock.UtcNow = Night; // 11 PM in New York: everybody off hours, w5 still out of office
         var c = await CapacityAsync();
+        c.GetProperty("countOffHours").GetBoolean().ShouldBeTrue();
+        c.GetProperty("state").GetString().ShouldBe("OK");
+        c.GetProperty("workers").GetInt32().ShouldBe(5);
+        c.GetProperty("presentWorkers").GetInt32().ShouldBe(4);
+        c.GetProperty("totalSlots").GetInt32().ShouldBe(12);
+        c.GetProperty("freeSlots").GetInt32().ShouldBe(6); // 3 + 2 + 1 + 0
+        c.GetProperty("freePercent").GetInt32().ShouldBe(50);
+        c.GetProperty("usedPercent").GetInt32().ShouldBe(50);
+        c.GetProperty("canTakeWork").GetInt32().ShouldBe(3);
+        c.GetProperty("overCapacityTasks").GetInt32().ShouldBe(0);
+        States(c).ShouldBe(new Dictionary<string, int> { ["AVAILABLE"] = 0, ["OCCUPIED"] = 0, ["BUSY"] = 0, ["OVERLOADED"] = 0, ["OUT_OF_OFFICE"] = 1, ["OFF_HOURS"] = 4 });
+    }
+
+    [Fact]
+    public async Task With_the_setting_off_nobody_can_take_work_after_hours_and_the_battery_says_so_instead_of_reading_one_hundred_percent()
+    {
+        await SetCountOffHoursAsync(false);
+        _clock.UtcNow = Night;
+        var c = await CapacityAsync();
+        c.GetProperty("countOffHours").GetBoolean().ShouldBeFalse();
         c.GetProperty("state").GetString().ShouldBe("AFTER_HOURS");
         c.GetProperty("workers").GetInt32().ShouldBe(5);
         c.GetProperty("presentWorkers").GetInt32().ShouldBe(0);
         c.GetProperty("totalSlots").GetInt32().ShouldBe(0);
         c.GetProperty("canTakeWork").GetInt32().ShouldBe(0);
+        c.GetProperty("overCapacityTasks").GetInt32().ShouldBe(0);
         c.GetProperty("usedPercent").ValueKind.ShouldBe(JsonValueKind.Null);
         c.GetProperty("freePercent").ValueKind.ShouldBe(JsonValueKind.Null);
         States(c).ShouldBe(new Dictionary<string, int> { ["AVAILABLE"] = 0, ["OCCUPIED"] = 0, ["BUSY"] = 0, ["OVERLOADED"] = 0, ["OUT_OF_OFFICE"] = 1, ["OFF_HOURS"] = 4 });
+
+        // In work hours the setting makes no difference.
+        _clock.UtcNow = Noon;
+        (await CapacityAsync()).GetProperty("totalSlots").GetInt32().ShouldBe(12);
+    }
+
+    [Fact]
+    public async Task A_firm_holiday_is_not_counted_even_with_the_setting_on()
+    {
+        var cal = (await OkAsync(await _h.Admin.PostAsJsonAsync("/api/v1/admin/holiday-calendars", new { name = "Closure", colourKey = "indigo", appliesToEveryone = true, isActive = true }), HttpStatusCode.Created)).GetProperty("calendarId").GetInt32();
+        await OkAsync(await _h.Admin.PostAsJsonAsync($"/api/v1/admin/holiday-calendars/{cal}/holidays", new { name = "Closed", ruleKind = "FIXED", month = 10, day = 14, plusDays = 0, yearly = true, weekendRule = "NONE" }), HttpStatusCode.Created);
+        _factory.InvalidateAll();
+
+        var c = await CapacityAsync();
+        c.GetProperty("state").GetString().ShouldBe("HOLIDAY");
+        c.GetProperty("presentWorkers").GetInt32().ShouldBe(0);
+        c.GetProperty("totalSlots").GetInt32().ShouldBe(0);
+        c.GetProperty("freePercent").ValueKind.ShouldBe(JsonValueKind.Null);
+        States(c)["OFF_HOURS"].ShouldBe(5); // a holiday wins over the absence of w5 (decision AT item 7)
+        States(c)["OUT_OF_OFFICE"].ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task Over_capacity_tasks_count_the_tasks_above_the_slots_of_counted_workers_and_the_unassigned_waiting_number_follows_the_summary()
+    {
+        await GiveAsync(_w4, 2); // w4 now holds 5 on 3 slots
+        await GiveAsync(_w1, 4); // w1 now holds 4 on 3 slots; w5 (out of office, 3 tasks) and the loner (no pod) do not count
+        await _h.CreateTaskAsync(_w);
+        await _h.CreateTaskAsync(_w);
+        await _h.CreateTaskAsync(_w);
+
+        var c = await CapacityAsync();
+        c.GetProperty("overCapacityTasks").GetInt32().ShouldBe(2 + 1);
+        c.GetProperty("freeSlots").GetInt32().ShouldBe(0 + 2 + 1 + 0); // slack elsewhere is real, the overload is shown separately
+        c.GetProperty("unassignedWaiting").GetInt32().ShouldBe(3);
+
+        var summary = await OkAsync(await _h.Admin.GetAsync("/api/v1/dashboard?fresh=true"));
+        c.GetProperty("unassignedWaiting").GetInt32().ShouldBe(summary.GetProperty("unassigned").GetProperty("count").GetInt32());
+
+        // Scoped to a pod the number follows the same pod rule as the Summary.
+        var b = await CapacityAsync($"?podScope={_podB}");
+        var summaryB = await OkAsync(await _h.Admin.GetAsync($"/api/v1/dashboard?fresh=true&podScope={_podB}"));
+        b.GetProperty("unassignedWaiting").GetInt32().ShouldBe(summaryB.GetProperty("unassigned").GetProperty("count").GetInt32());
+    }
+
+    [Fact]
+    public async Task Unassigned_waiting_is_null_without_a_permission_that_allows_unassigned_counts_and_present_with_either()
+    {
+        await _h.CreateTaskAsync(_w);
+        (await CapacityAsync(client: _manager)).GetProperty("unassignedWaiting").ValueKind.ShouldBe(JsonValueKind.Null);
+
+        var summary = await _h.UserWithAsync(@"KE\sumusers", "Task.View", "Dashboard.View", "Dashboard.ViewUsers", "Dashboard.ViewSummary");
+        (await CapacityAsync(client: summary)).GetProperty("unassignedWaiting").GetInt32().ShouldBe(1);
+        var unassigned = await _h.UserWithAsync(@"KE\unasusers", "Task.View", "Dashboard.View", "Dashboard.ViewUsers", "Dashboard.ViewUnassigned");
+        (await CapacityAsync(client: unassigned)).GetProperty("unassignedWaiting").GetInt32().ShouldBe(1);
+    }
+
+    private async Task SetCountOffHoursAsync(bool value)
+    {
+        var current = await OkAsync(await _h.Admin.GetAsync("/api/v1/admin/settings/dashboard/capacity"));
+        await OkAsync(await _h.Admin.PutAsJsonAsync("/api/v1/admin/settings/dashboard/capacity", new { countOffHours = value, rowVersion = current.GetProperty("rowVersion").GetString() }));
+    }
+
+    [Fact]
+    public async Task The_capacity_settings_default_to_on_are_saved_audited_reset_and_need_Settings_Manage()
+    {
+        var def = await OkAsync(await _h.Admin.GetAsync("/api/v1/admin/settings/dashboard/capacity"));
+        def.GetProperty("countOffHours").GetBoolean().ShouldBeTrue();
+        def.GetProperty("defaultCountOffHours").GetBoolean().ShouldBeTrue();
+        def.GetProperty("isCustom").GetBoolean().ShouldBeFalse();
+        def.GetProperty("rowVersion").GetString().ShouldBe(string.Empty);
+
+        var saved = await OkAsync(await _h.Admin.PutAsJsonAsync("/api/v1/admin/settings/dashboard/capacity", new { countOffHours = false, rowVersion = "" }));
+        saved.GetProperty("countOffHours").GetBoolean().ShouldBeFalse();
+        saved.GetProperty("isCustom").GetBoolean().ShouldBeTrue();
+        saved.GetProperty("updatedBy").GetString().ShouldNotBeNullOrEmpty();
+        var version = saved.GetProperty("rowVersion").GetString()!;
+        (await CapacityAsync()).GetProperty("countOffHours").GetBoolean().ShouldBeFalse();
+
+        // A stale version is a conflict; the gauge settings are untouched by the capacity setting.
+        (await _h.Admin.PutAsJsonAsync("/api/v1/admin/settings/dashboard/capacity", new { countOffHours = true, rowVersion = "" })).StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await OkAsync(await _h.Admin.GetAsync("/api/v1/admin/settings/dashboard"))).GetProperty("isCustom").GetBoolean().ShouldBeFalse();
+        (await _h.AuditAsync("SETTINGS_DASHBOARD_CAPACITY_CHANGED")).Count.ShouldBe(1);
+
+        var reset = await OkAsync(await _h.Admin.DeleteAsync($"/api/v1/admin/settings/dashboard/capacity?rowVersion={Uri.EscapeDataString(version)}"));
+        reset.GetProperty("isCustom").GetBoolean().ShouldBeFalse();
+        reset.GetProperty("countOffHours").GetBoolean().ShouldBeTrue();
+        (await _h.AuditAsync("SETTINGS_DASHBOARD_CAPACITY_RESET")).Count.ShouldBe(1);
+        (await CapacityAsync()).GetProperty("countOffHours").GetBoolean().ShouldBeTrue();
+
+        // Without Settings.Manage nothing is readable or writable, however many dashboard permissions the caller holds.
+        (await _manager.GetAsync("/api/v1/admin/settings/dashboard/capacity")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await _manager.PutAsJsonAsync("/api/v1/admin/settings/dashboard/capacity", new { countOffHours = false, rowVersion = "" })).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await _manager.DeleteAsync("/api/v1/admin/settings/dashboard/capacity")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 
     [Fact]
@@ -290,7 +405,7 @@ public sealed class DashboardCapacityTests(SqlServerFixture sql) : IAsyncLifetim
             text.ShouldNotContain(SensitiveUniverse.SentinelPrefix);
             foreach (var forbidden in new[] { "taskId", "matterId", "matterName", "matterRef", "title", "projectId" })
                 text.ShouldNotContain($"\"{forbidden}\"");
-            capacity.EnumerateObject().Select(x => x.Name).Order().ShouldBe(new[] { "assignedLastHour", "asOfUtc", "canTakeWork", "freePercent", "freeSlots", "presentWorkers", "slotsPerPerson", "state", "states", "totalSlots", "usedPercent", "workers" }.Order());
+            capacity.EnumerateObject().Select(x => x.Name).Order().ShouldBe(new[] { "assignedLastHour", "asOfUtc", "canTakeWork", "countOffHours", "freePercent", "freeSlots", "overCapacityTasks", "presentWorkers", "slotsPerPerson", "state", "states", "totalSlots", "unassignedWaiting", "usedPercent", "workers" }.Order());
 
             // Without the permission neither endpoint answers at all.
             (await u.NoPermClient.GetAsync("/api/v1/dashboard/capacity")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);

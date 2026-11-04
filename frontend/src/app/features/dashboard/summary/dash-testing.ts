@@ -89,5 +89,9 @@ export function capacityOf(
       count: people.filter((p) => p.state === s).length,
     })),
     assignedLastHour: people.length === 0 ? 0 : assignedLastHour,
+    // Decision AV fields; this builder keeps the old rule (off hours left out), so the setting reads as off.
+    countOffHours: false,
+    overCapacityTasks: 0,
+    unassignedWaiting: undefined,
   };
 }

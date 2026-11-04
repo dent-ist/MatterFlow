@@ -2676,6 +2676,19 @@ export interface ISettingsDashboardClient {
      * @return OK
      */
     resetDashboardSettings(rowVersion?: string | undefined): Observable<DashboardSettingsAdminView>;
+    /**
+     * @return OK
+     */
+    getDashboardCapacitySettings(): Observable<DashboardCapacityAdminView>;
+    /**
+     * @return OK
+     */
+    setDashboardCapacitySettings(body: SetDashboardCapacityRequest): Observable<DashboardCapacityAdminView>;
+    /**
+     * @param rowVersion (optional) 
+     * @return OK
+     */
+    resetDashboardCapacitySettings(rowVersion?: string | undefined): Observable<DashboardCapacityAdminView>;
 }
 
 @Injectable({
@@ -2840,6 +2853,165 @@ export class SettingsDashboardClient implements ISettingsDashboardClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as DashboardSettingsAdminView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getDashboardCapacitySettings(): Observable<DashboardCapacityAdminView> {
+        let url_ = this.baseUrl + "/api/v1/admin/settings/dashboard/capacity";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetDashboardCapacitySettings(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetDashboardCapacitySettings(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<DashboardCapacityAdminView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<DashboardCapacityAdminView>;
+        }));
+    }
+
+    protected processGetDashboardCapacitySettings(response: HttpResponseBase): Observable<DashboardCapacityAdminView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as DashboardCapacityAdminView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    setDashboardCapacitySettings(body: SetDashboardCapacityRequest): Observable<DashboardCapacityAdminView> {
+        let url_ = this.baseUrl + "/api/v1/admin/settings/dashboard/capacity";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSetDashboardCapacitySettings(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSetDashboardCapacitySettings(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<DashboardCapacityAdminView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<DashboardCapacityAdminView>;
+        }));
+    }
+
+    protected processSetDashboardCapacitySettings(response: HttpResponseBase): Observable<DashboardCapacityAdminView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as DashboardCapacityAdminView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param rowVersion (optional) 
+     * @return OK
+     */
+    resetDashboardCapacitySettings(rowVersion?: string | undefined): Observable<DashboardCapacityAdminView> {
+        let url_ = this.baseUrl + "/api/v1/admin/settings/dashboard/capacity?";
+        if (rowVersion === null)
+            throw new globalThis.Error("The parameter 'rowVersion' cannot be null.");
+        else if (rowVersion !== undefined)
+            url_ += "rowVersion=" + encodeURIComponent("" + rowVersion) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processResetDashboardCapacitySettings(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processResetDashboardCapacitySettings(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<DashboardCapacityAdminView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<DashboardCapacityAdminView>;
+        }));
+    }
+
+    protected processResetDashboardCapacitySettings(response: HttpResponseBase): Observable<DashboardCapacityAdminView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as DashboardCapacityAdminView;
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -25781,6 +25953,20 @@ export interface DashboardCapacity {
     canTakeWork: number;
     states: CapacityStateCount[];
     assignedLastHour: number | undefined;
+    countOffHours: boolean;
+    overCapacityTasks: number;
+    unassignedWaiting: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface DashboardCapacityAdminView {
+    countOffHours: boolean;
+    defaultCountOffHours: boolean;
+    isCustom: boolean;
+    rowVersion: string;
+    updatedAtUtc: string | undefined;
+    updatedBy: string | undefined;
 
     [key: string]: any;
 }
@@ -28234,6 +28420,13 @@ export interface SetCalendarSettingsRequest {
     minCoveragePercent: number;
     podMinimumPercent: number;
     podMinimums: PodMinimum[];
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface SetDashboardCapacityRequest {
+    countOffHours: boolean;
     rowVersion: string;
 
     [key: string]: any;

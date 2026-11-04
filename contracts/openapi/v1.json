@@ -1787,6 +1787,91 @@
         }
       }
     },
+    "/api/v1/admin/settings/dashboard/capacity": {
+      "get": {
+        "tags": [
+          "SettingsDashboard"
+        ],
+        "operationId": "GetDashboardCapacitySettings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardCapacityAdminView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "SettingsDashboard"
+        ],
+        "operationId": "SetDashboardCapacitySettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetDashboardCapacityRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetDashboardCapacityRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetDashboardCapacityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardCapacityAdminView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "SettingsDashboard"
+        ],
+        "operationId": "ResetDashboardCapacitySettings",
+        "parameters": [
+          {
+            "name": "rowVersion",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardCapacityAdminView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/settings/calendar": {
       "get": {
         "tags": [
@@ -23103,7 +23188,10 @@
           "freePercent",
           "canTakeWork",
           "states",
-          "assignedLastHour"
+          "assignedLastHour",
+          "countOffHours",
+          "overCapacityTasks",
+          "unassignedWaiting"
         ],
         "type": "object",
         "properties": {
@@ -23164,6 +23252,58 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "countOffHours": {
+            "type": "boolean"
+          },
+          "overCapacityTasks": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unassignedWaiting": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "DashboardCapacityAdminView": {
+        "required": [
+          "countOffHours",
+          "defaultCountOffHours",
+          "isCustom",
+          "rowVersion",
+          "updatedAtUtc",
+          "updatedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "countOffHours": {
+            "type": "boolean"
+          },
+          "defaultCountOffHours": {
+            "type": "boolean"
+          },
+          "isCustom": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string"
+          },
+          "updatedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -32107,6 +32247,21 @@
             "items": {
               "$ref": "#/components/schemas/PodMinimum"
             }
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "SetDashboardCapacityRequest": {
+        "required": [
+          "countOffHours",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "countOffHours": {
+            "type": "boolean"
           },
           "rowVersion": {
             "type": "string"

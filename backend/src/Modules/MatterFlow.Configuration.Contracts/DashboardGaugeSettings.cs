@@ -63,4 +63,16 @@ public static class GaugeAgeBasis
 public interface IDashboardSettings
 {
     Task<DashboardGaugeSettings> GetGaugeAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>The capacity battery settings (decision AV): <c>Dashboard.Capacity</c>, <see cref="DashboardCapacitySettings.Default"/> when nothing valid is stored.</summary>
+    Task<DashboardCapacitySettings> GetCapacityAsync(CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// The Dashboard capacity battery settings (decision AV, issue #1103). <paramref name="CountOffHours"/> (default true): people who are only outside their work hours count as capacity;
+/// people out of office or on a holiday never do. When false the battery leaves off-hours people out and says "After hours" when nobody is left (the behaviour of decision AS item 6).
+/// </summary>
+public sealed record DashboardCapacitySettings(bool CountOffHours)
+{
+    public static DashboardCapacitySettings Default { get; } = new(true);
 }

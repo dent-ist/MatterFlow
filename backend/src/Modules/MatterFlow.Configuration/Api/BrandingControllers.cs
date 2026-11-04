@@ -228,6 +228,26 @@ public class SettingsDashboardController(DashboardSettingsService dashboard) : C
     [ProducesResponseType<DashboardSettingsAdminView>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> Reset([FromQuery] string? rowVersion, CancellationToken cancellationToken) =>
         this.ToActionResult(await dashboard.ResetAsync(rowVersion, cancellationToken));
+
+    /// <summary>The capacity battery settings (decision AV): whether people outside their work hours count as capacity (default true), the default, whether a value is stored and the row version.</summary>
+    [HttpGet("capacity", Name = "GetDashboardCapacitySettings")]
+    [Authorize(Policy = ConfigurationPolicies.SettingsManage)]
+    [ProducesResponseType<DashboardCapacityAdminView>(StatusCodes.Status200OK, "application/json")]
+    public async Task<ActionResult<DashboardCapacityAdminView>> GetCapacity(CancellationToken cancellationToken) => await dashboard.GetCapacityAdminAsync(cancellationToken);
+
+    /// <summary>Saves the capacity battery settings. Audited (<c>SETTINGS_DASHBOARD_CAPACITY_CHANGED</c>); 409 when someone changed them meanwhile.</summary>
+    [HttpPut("capacity", Name = "SetDashboardCapacitySettings")]
+    [Authorize(Policy = ConfigurationPolicies.SettingsManage)]
+    [ProducesResponseType<DashboardCapacityAdminView>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> SetCapacity([FromBody] SetDashboardCapacityRequest request, CancellationToken cancellationToken) =>
+        this.ToActionResult(await dashboard.SaveCapacityAsync(request, cancellationToken));
+
+    /// <summary>Resets the capacity battery settings to the default (count people outside work hours) by deleting the stored value. Audited.</summary>
+    [HttpDelete("capacity", Name = "ResetDashboardCapacitySettings")]
+    [Authorize(Policy = ConfigurationPolicies.SettingsManage)]
+    [ProducesResponseType<DashboardCapacityAdminView>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> ResetCapacity([FromQuery] string? rowVersion, CancellationToken cancellationToken) =>
+        this.ToActionResult(await dashboard.ResetCapacityAsync(rowVersion, cancellationToken));
 }
 
 /// <summary>

@@ -100,7 +100,7 @@ public class DashboardBoardController(SwimlaneService swimlane, WorkloadService 
     /// <summary>
     /// The department capacity battery (Dashboard v4): the workers of the scope (<c>Workflow.Execute</c> holders who are active members of a Pod in the scope), how many can take work now, free slots, used percent and a count per state
     /// (Available, Occupied, Busy, Overloaded, Out of office, Off hours), plus how many Tasks were assigned in the last hour. Aggregates only; load is the true count of a worker's open Tasks (a bare number, also for hidden Matters). People
-    /// out of office or outside their work hours are not counted as capacity; when nobody can take work now <c>state</c> is <c>AFTER_HOURS</c> and the percentages are null. Needs <c>Dashboard.View</c> and <c>Dashboard.ViewUsers</c>.
+    /// out of office or on a holiday are not counted as capacity; people merely outside their work hours are (setting <c>countOffHours</c>, default on, decision AV); with it off they are left out and <c>state</c> is <c>AFTER_HOURS</c> when nobody is left. <c>overCapacityTasks</c> counts the tasks above the slots of the counted workers; <c>unassignedWaiting</c> is the Summary's visibility-filtered unassigned count (null without <c>Dashboard.ViewSummary</c> or <c>Dashboard.ViewUnassigned</c>). Needs <c>Dashboard.View</c> and <c>Dashboard.ViewUsers</c>.
     /// </summary>
     [HttpGet("capacity", Name = "GetDashboardCapacity")]
     [Authorize(Policy = "Perm:" + Permissions.Dashboard.View)]
