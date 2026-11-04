@@ -6,7 +6,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { onlyDefaultPriorities } from '../support/isolate';
 import { PLAN, WorkloadSeed, crowdPlan, seedWorkload } from '../support/workload';
-import { labelledDropdown, usersFilter } from '../support/dropdown';
+import { labelledDropdown, pickUserStates, userStateCount } from '../support/dropdown';
 
 /**
  * Dashboard > Users tab, Workload view (WP10a, UX review 2): the "can take work" population (U4, #130), the text Workload | Coverage switch and the
@@ -118,13 +118,10 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     await expect(page.locator('[data-user-card]')).toHaveCount(PLAN.length + 2);
     await expect(line).toHaveText('Including people without a pod.');
     // The old population: the idle chip counts one more, and Clear filters leaves the switch on.
-    const idleOn = Number(await page.locator('[data-chip="idle"] [data-n]').textContent());
-    expect(idleOn).toBe(levels(everyone).idle);
-    await page.locator('[data-chip="heavy"]').click();
-    await page.getByRole('button', { name: /^Clear filters/ }).click();
+    expect(await userStateCount(page, 'idle')).toBe(levels(everyone).idle);
+    await pickUserStates(page, 'heavy');
+    await pickUserStates(page, '');
     await expect(page).toHaveURL(/unopod=1/);
-    await page.locator('[data-chip="heavy"]').click();
-    await page.locator('[data-chip="heavy"]').click();
 
     // The address is the state: reload keeps it, and Hide them goes back to the rule.
     await openUsers(page, '&unopod=1');
@@ -141,22 +138,9 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     const board = await workload(page, '&includeNoPod=false');
     const lv = levels(board);
     for (const key of ['idle', 'light', 'normal', 'heavy'] as const) {
-      expect(Number(await page.locator(`[data-chip="${key}"] [data-n]`).textContent())).toBe(
-        lv[key],
-      );
-      const segment = page.locator(`[data-capacity-bar] [data-segment="${key}"]`);
-      if (lv[key] > 0) {
-        await expect(segment).toHaveAttribute('aria-label', `Filter: ${lv[key]} ${key}`);
-        await expect(segment).toHaveCSS('flex-grow', String(lv[key]));
-      } else {
-        await expect(segment).toHaveCount(0);
-      }
+      expect(await userStateCount(page, key)).toBe(lv[key]);
     }
-    expect(Number(await page.locator('[data-chip="out"] [data-n]').textContent())).toBe(out(board));
-    await expect(page.locator('[data-capacity]')).toHaveAttribute(
-      'aria-label',
-      `Capacity: ${lv.idle} idle, ${lv.light} light, ${lv.normal} normal, ${lv.heavy} heavy, ${out(board)} out of office`,
-    );
+    expect(await userStateCount(page, 'out')).toBe(out(board));
     // The tiles on screen add up to the strip.
     expect(lv.idle + lv.light + lv.normal + lv.heavy).toBe(
       await page.locator('[data-user-card]').count(),
@@ -165,15 +149,12 @@ test.describe('Users tab: capacity, population and toolbar', () => {
       `${board.summary.unassignedTasks} unassigned task`,
     );
 
-    // Clicking a segment filters like the chip, and a second click clears.
-    const heavy = page.locator('[data-capacity-bar] [data-segment="heavy"]');
-    await heavy.click();
-    await expect(page).toHaveURL(/uload=heavy/);
-    await expect(heavy).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('[data-chip="heavy"]')).toHaveAttribute('aria-pressed', 'true');
+    // Choosing a state filters, and "All states" clears.
+    await pickUserStates(page, 'heavy');
+    await expect(page).toHaveURL(/ustate=heavy/);
     await expect(page.locator('[data-user-card]')).toHaveCount(lv.heavy);
-    await heavy.click();
-    await expect(page).not.toHaveURL(/uload/);
+    await pickUserStates(page, '');
+    await expect(page).not.toHaveURL(/ustate/);
     await expect(page.locator('[data-user-card]')).toHaveCount(
       lv.idle + lv.light + lv.normal + lv.heavy,
     );
@@ -185,8 +166,8 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     const scoped = await workload(page, `&podScope=${wl.podB.podId}`);
     expect(scoped.hiddenCount).toBe(0);
     const slv = levels(scoped);
-    await expect(page.locator('[data-chip="idle"] [data-n]')).toHaveText(String(slv.idle));
-    await expect(page.locator('[data-chip="heavy"] [data-n]')).toHaveText(String(slv.heavy));
+    expect(await userStateCount(page, 'idle')).toBe(slv.idle);
+    expect(await userStateCount(page, 'heavy')).toBe(slv.heavy);
     await expect(page.locator('[data-capacity]')).toHaveAttribute(
       'aria-label',
       new RegExp(`^Capacity: ${slv.idle} idle, ${slv.light} light`),
@@ -218,8 +199,8 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     await trigger.click();
     await page.getByRole('menuitem', { name: 'Show people who can take work now' }).click();
     await expect(page).toHaveURL(/uavail=available/);
-    await expect(page).toHaveURL(/uload=idle(,|%2C)light/);
-    await expect(await usersFilter(page, 'Sort')).toHaveAttribute('data-value', 'fewest');
+    await expect(page).toHaveURL(/ustate=idle(,|%2C)light/);
+    await expect(labelledDropdown(page, 'Sort')).toHaveAttribute('data-value', 'fewest');
     const board = await workload(page, '&availability=available&includeNoPod=false');
     const wanted = board.users
       .filter((u: Json) => u.loadLevel === 'IDLE' || u.loadLevel === 'LIGHT')
@@ -367,10 +348,10 @@ test.describe('Users tab: capacity, population and toolbar', () => {
         () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
       ),
     ).toBe(true);
-    await expect(page.locator('[data-capacity-bar]')).toBeVisible();
-    const strip = (await page.locator('[data-capacity-bar]').boundingBox())!;
-    // The app shell's 56 px rail leaves 271 px at 375: the bar fills it.
-    expect(strip.width).toBeGreaterThan(250);
+    // The State dropdown is one control (a plain button) that fits the 271 px a phone leaves.
+    const state = page.getByRole('button', { name: /^State:/ });
+    await expect(state).toBeVisible();
+    expect((await state.boundingBox())!.width).toBeGreaterThan(120);
   });
 
   test('an Idle tile is a light tint with a thin outline; Heavy keeps its outline and icon; no tile is darker than the tint except Heavy and Out of office', async ({
@@ -419,19 +400,6 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     page,
   }) => {
     await openUsers(page);
-    for (const [key, words] of [
-      ['idle', 'no open tasks'],
-      ['light', '1 to 3 open tasks'],
-      ['normal', '4 to 8 open tasks'],
-      ['heavy', 'more than 8 open tasks'],
-    ] as const) {
-      const chip = page.locator(`[data-chip="${key}"]`);
-      await expect(chip).toHaveAttribute('aria-label', new RegExp(words));
-      await expect(chip).toHaveAttribute('title', new RegExp(words));
-      await expect(
-        page.locator(`[data-capacity-bar] [data-segment="${key}"]`).first(),
-      ).toHaveAttribute('title', new RegExp(words));
-    }
     await page.locator('[data-who-counted]').click();
     await expect(page.locator('[data-legend-states]')).toContainText('1 to 3 open tasks');
     await expect(page.locator('[data-who-counted]')).toBeVisible();
@@ -458,7 +426,7 @@ test.describe('Users tab: capacity, population and toolbar', () => {
       await expect(page.getByRole('menu')).toBeVisible();
       expect(await axeViolations(page), `menu ${width}`).toEqual([]);
       await page.keyboard.press('Escape');
-      await page.locator('[data-capacity-bar] [data-segment="heavy"]').click();
+      await pickUserStates(page, 'heavy');
       expect(await axeViolations(page), `filtered ${width}`).toEqual([]);
       await page.goto(`/dashboard?tab=users&view=coverage&uq=${wl.tag}`);
       await expect(page.locator('[data-users-views]')).toBeVisible();
@@ -504,15 +472,8 @@ test.describe('capacity strip on a big board', () => {
     ]) {
       await page.setViewportSize({ width, height });
       await page.goto(`/dashboard?tab=users&uq=${wl.tag}`);
-      const segments = page.locator('[data-capacity-bar] [data-segment]');
-      await expect(segments).toHaveCount(4);
-      for (const level of ['idle', 'light', 'normal', 'heavy']) {
-        const box = await page
-          .locator(`[data-capacity-bar] [data-segment="${level}"]`)
-          .boundingBox();
-        expect(box!.width, `${level} width at ${width}`).toBeGreaterThanOrEqual(24);
-        expect(box!.height, `${level} height at ${width}`).toBeGreaterThanOrEqual(24);
-      }
+      const state = await page.getByRole('button', { name: /^State:/ }).boundingBox();
+      expect(state!.height, `State dropdown height at ${width}`).toBeGreaterThanOrEqual(24);
       // The strip stays inside its row: no horizontal page scroll.
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
@@ -574,13 +535,9 @@ test.describe('users capacity screenshots', () => {
       await page.goto(base);
       await ready();
       await shot(`01-workload-${w}`);
-      await page.locator('[data-capacity-bar] [data-segment="heavy"]').click();
-      await expect(page.locator('[data-capacity-bar] [data-segment="heavy"]')).toHaveAttribute(
-        'aria-pressed',
-        'true',
-      );
+      await pickUserStates(page, 'heavy');
       await shot(`02-strip-heavy-${w}`);
-      await page.locator('[data-capacity-bar] [data-segment="heavy"]').click();
+      await pickUserStates(page, '');
       await page.getByRole('button', { name: 'Assign work', exact: true }).click();
       await shot(`03-assign-menu-${w}`);
       await page.keyboard.press('Escape');
@@ -600,7 +557,7 @@ test.describe('users capacity screenshots', () => {
     await shot('06-legend-1366');
     await page.locator('[data-who-counted]').click();
     // The tile anatomy at 200%: sorted by name (a mix of idle, light, normal and heavy people), the grid scaled up.
-    await (await usersFilter(page, 'Sort')).selectOption('name');
+    await labelledDropdown(page, 'Sort').selectOption('name');
     await page.evaluate(() => {
       const grid = document.querySelector<HTMLElement>('[data-users-grid]')!;
       grid.style.transformOrigin = '0 0';

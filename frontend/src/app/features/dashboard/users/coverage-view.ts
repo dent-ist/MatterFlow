@@ -523,6 +523,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
       font-size: var(--mf-fs-sm);
     }
     .bar {
+      --mf-seg-h: var(--mf-ctl-h);
       display: flex;
       flex-wrap: wrap;
       align-items: center;
@@ -539,6 +540,15 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
     .info:focus-visible {
       outline: 2px solid var(--mf-focus);
       outline-offset: 1px;
+    }
+    /* One control height on all three views (the shared token): the search box, the switches, the dropdowns and the icon buttons are the same height. */
+    .bar .mf-btn {
+      min-height: var(--mf-ctl-h);
+    }
+    .search ::ng-deep .sb__input {
+      height: var(--mf-ctl-h);
+      min-height: var(--mf-ctl-h);
+      padding-block: 0;
     }
     .search {
       min-width: 14rem;

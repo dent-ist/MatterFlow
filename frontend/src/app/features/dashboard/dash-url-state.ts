@@ -35,7 +35,16 @@ export const DASH_TAB_PARAMS: Record<DashboardTab, readonly string[]> = {
     'mine',
     'lane',
   ],
-  users: [USERS_AVAILABILITY_PARAM, 'uq', 'uload', 'uprio', USERS_VIEW_PARAM, 'cov', 'unopod'],
+  users: [
+    USERS_AVAILABILITY_PARAM,
+    'uq',
+    'uload',
+    'uprio',
+    'ustate',
+    USERS_VIEW_PARAM,
+    'cov',
+    'unopod',
+  ],
   calendar: [...CAL_PARAMS],
 };
 

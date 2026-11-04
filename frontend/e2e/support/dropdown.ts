@@ -96,3 +96,22 @@ export async function usersFilter(page: Page, label: string): Promise<Dropdown> 
   await expect(page.locator('[data-filters-panel]')).toBeVisible();
   return labelledDropdown(page, label);
 }
+
+/**
+ * The State dropdown of the Users Workload view (US-11, #1102): opens it, clicks each state (a value of '' is "All states") and closes it with Done. The list is a
+ * multi choice, so the states combine.
+ */
+export async function pickUserStates(page: Page, ...values: string[]): Promise<void> {
+  await page.getByRole('button', { name: /^State:/ }).click();
+  for (const v of values)
+    await page.locator(`.dd-panel [role="option"][data-value="${v}"]`).click();
+  await page.locator('[data-dd-done]').click();
+}
+
+/** The number next to a state in the State dropdown (the people in it); '' is "All states". */
+export async function userStateCount(page: Page, key: string): Promise<number> {
+  await page.getByRole('button', { name: /^State:/ }).click();
+  const n = await page.locator(`.dd-panel [role="option"][data-value="${key}"] .n`).textContent();
+  await page.keyboard.press('Escape');
+  return Number(n);
+}

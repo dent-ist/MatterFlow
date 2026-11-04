@@ -1653,9 +1653,10 @@ describe('DashboardPage', () => {
       const el = await open(of(summary()), ALL, '/dashboard?tab=users&upod=3&uavail=out');
       expect(router().url).toBe('/dashboard?tab=users&pod=3&uavail=out');
       expect(select(el).value).toBe('3');
+      // uavail=out is the Out of office state now, applied on the page: the API is asked for everyone.
       expect(getDashboardWorkload).toHaveBeenLastCalledWith(
         undefined,
-        'out',
+        'all',
         undefined,
         '3',
         false,

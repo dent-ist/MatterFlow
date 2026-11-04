@@ -66,14 +66,16 @@ describe('SkillsView', () => {
     expect(thin[0].querySelector('.sr-only')!.textContent).toContain('Thin coverage: 1 person has');
   });
 
-  it('filters by name and availability, and a name opens the person', async () => {
+  it('filters by name, has no Filters button, and a name opens the person', async () => {
     const { f, el, opened } = create();
-    el.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
+    expect(el.querySelector('[data-filters-toggle]')).toBeNull();
+    (f.componentInstance as unknown as { q: { set(v: string): void } }).q.set('car');
     f.detectChanges();
-    ddChoose(el, 'Availability', 'now');
-    await f.whenStable();
+    expect(el.querySelectorAll('[data-person]').length).toBeGreaterThan(0);
+    expect(el.querySelectorAll('[data-person]').length).toBeLessThan(4);
+    (f.componentInstance as unknown as { q: { set(v: string): void } }).q.set('');
     f.detectChanges();
-    expect(el.querySelectorAll('[data-person]')).toHaveLength(3);
+    expect(el.querySelectorAll('[data-person]')).toHaveLength(4);
     el.querySelector<HTMLButtonElement>('[data-person="4"] [data-skills-open]')!.click();
     expect(opened).toEqual([4]);
   });
@@ -81,8 +83,6 @@ describe('SkillsView', () => {
   it('shows growth candidates for the chosen task type and opens one', async () => {
     const { f, el, opened } = create();
     expect(el.querySelector('[data-growth]')).toBeNull();
-    el.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
-    f.detectChanges();
     ddChoose(el, 'Task type', '2');
     await f.whenStable();
     f.detectChanges();

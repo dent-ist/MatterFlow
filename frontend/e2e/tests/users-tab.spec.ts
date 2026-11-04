@@ -4,7 +4,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { onlyDefaultPriorities } from '../support/isolate';
 import { TaskQueuePage } from '../pages/queues.pages';
-import { labelledDropdown, usersFilter } from '../support/dropdown';
+import { labelledDropdown, pickUserStates, userStateCount } from '../support/dropdown';
 import {
   CoverageSeed,
   PLAN,
@@ -100,7 +100,7 @@ test.describe('Users tab: workload', () => {
         await expect(c.locator('[data-overdue]')).toHaveAttribute('data-count', String(u.overdue));
       }
       // One filled slot pip per open task, up to the three slots.
-      await expect(c.locator('[data-pip].pip--on')).toHaveCount(Math.min(u.openTotal, 3));
+      await expect(c.locator('[data-pip].dot--on')).toHaveCount(Math.min(u.openTotal, 3));
       // The whole status is in the accessible name (Available is spoken, never drawn); the tooltip has the level.
       const open = c.locator('[data-user-open]');
       const name = await open.getAttribute('aria-label');
@@ -198,31 +198,27 @@ test.describe('Users tab: workload', () => {
     );
   });
 
-  test('sorts, filters by pod and availability, searches by name, and keeps the filters in the address', async ({
+  test('sorts, filters by state, searches by name, and keeps the filters in the address', async ({
     page,
   }) => {
     await openUsers(page);
-    await (await usersFilter(page, 'Sort')).selectOption({ label: 'Name' });
+    await labelledDropdown(page, 'Sort').selectOption({ label: 'Name' });
     const names = await page
       .locator('[data-user-card]')
       .evaluateAll((els) => els.map((e) => e.getAttribute('data-user')!));
     expect(names).toEqual(
       [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
     );
-    await (await usersFilter(page, 'Sort')).selectOption({ label: 'Open tasks' });
+    await labelledDropdown(page, 'Sort').selectOption({ label: 'Open tasks' });
     await expect(page.locator('[data-user-card]').first()).toHaveAttribute('data-load', 'HEAVY');
     // The choice is remembered across a reload.
     await page.reload();
-    await expect(await usersFilter(page, 'Sort')).toHaveAttribute('data-value', 'open');
+    await expect(labelledDropdown(page, 'Sort')).toHaveAttribute('data-value', 'open');
 
-    await (await usersFilter(page, 'Availability')).selectOption({ label: 'Out of office' });
+    await pickUserStates(page, 'out');
     await expect(page.locator('[data-user-card]')).toHaveCount(2);
-    await expect(page).toHaveURL(/uavail=out/);
-    // The summary does not change with the filter.
-    await expect(page.locator('[data-chip="out"] [data-n]')).not.toHaveText('-');
-    await (await usersFilter(page, 'Availability')).selectOption({ label: 'Available' });
-    await expect(page.locator('[data-user-card]')).toHaveCount(PLAN.length - 2);
-    await (await usersFilter(page, 'Availability')).selectOption({ label: 'All' });
+    await expect(page).toHaveURL(/ustate=out/);
+    await pickUserStates(page, '');
     await expect(page.locator('[data-user-card]')).toHaveCount(PLAN.length);
 
     // The Pod is the page-wide Scope now (P1), not a filter of the tab.
@@ -266,12 +262,11 @@ test.describe('Users tab: workload', () => {
     await expect(page.locator('[data-users-grid]')).toBeVisible();
   });
 
-  test('the chips count the team, filter by load, idle, out of office and off hours, and link the unassigned tasks to the Task Queue', async ({
+  test('the State dropdown counts the team, filters by load, idle, out of office and off hours, and link the unassigned tasks to the Task Queue', async ({
     page,
   }) => {
     await openUsers(page);
-    const n = async (k: string) =>
-      Number(await page.locator(`[data-chip="${k}"] [data-n]`).textContent());
+    const n = (k: string) => userStateCount(page, k);
     const data = await api(page);
     const byLevel = (l: string) => data.users.filter((u: Json) => u.loadLevel === l).length;
     expect(await n('idle')).toBe(byLevel('IDLE'));
@@ -289,39 +284,27 @@ test.describe('Users tab: workload', () => {
     );
     expect(await n('out')).toBeGreaterThanOrEqual(2);
 
-    await page.locator('[data-chip="out"]').click();
+    await pickUserStates(page, 'out');
     await expect(page.locator('[data-user-card]')).toHaveCount(2);
-    await expect(page.locator('[data-chip="out"]')).toHaveAttribute('aria-pressed', 'true');
-    await page.locator('[data-chip="out"]').click();
+    await pickUserStates(page, 'out');
     await expect(page.locator('[data-user-card]')).toHaveCount(PLAN.length);
 
-    // Idle is everyone with nothing open (including the one out of office); heavy joins it (any of the chosen levels).
-    await page.locator('[data-chip="idle"]').click();
+    // Idle is everyone with nothing open (including the one out of office); heavy joins it (any of the chosen states).
+    await pickUserStates(page, 'idle');
     await expect(page.locator('[data-user-card]')).toHaveCount(byLevel('IDLE'));
-    await expect(page).toHaveURL(/uload=idle/);
-    await page.locator('[data-chip="heavy"]').click();
+    await expect(page).toHaveURL(/ustate=idle/);
+    await pickUserStates(page, 'heavy');
     await expect(page.locator('[data-user-card]')).toHaveCount(byLevel('IDLE') + byLevel('HEAVY'));
-    await expect(page).toHaveURL(/uload=idle(,|%2C)heavy/);
+    await expect(page).toHaveURL(/ustate=idle(,|%2C)heavy/);
     await page.reload();
-    await expect(page.locator('[data-chip="heavy"]')).toHaveAttribute('aria-pressed', 'true');
-    await page.locator('[data-chip="idle"]').click();
-    await page.locator('[data-chip="heavy"]').click();
+    await expect(page.getByRole('button', { name: /^State: Idle \+1/ })).toBeVisible();
+    await pickUserStates(page, '');
     await expect(page.locator('[data-user-card]')).toHaveCount(PLAN.length);
 
-    await page.locator('[data-chip="off"]').click();
+    await pickUserStates(page, 'off');
     await expect(page.locator('[data-user-card]')).toHaveCount(1);
     await expect(card(page, 'offHours')).toBeVisible();
-    await page.locator('[data-chip="off"]').click();
-
-    await (await usersFilter(page, 'Highest priority')).selectOption({ label: 'Critical' });
-    await expect(page.locator('[data-user-card]')).toHaveCount(
-      data.users.filter((u: Json) => u.topPriority?.label === 'Critical').length,
-    );
-    await expect(page).toHaveURL(/uprio=/);
-    await page
-      .getByLabel('Highest priority', { exact: true })
-      .selectOption({ label: 'Any priority' });
-    await expect(page.locator('[data-user-card]')).toHaveCount(PLAN.length);
+    await pickUserStates(page, '');
 
     await page.locator('[data-summary-unassigned]').click();
     await expect(page).toHaveURL(/\/tasks\?.*unassigned=true/);
@@ -492,7 +475,7 @@ test.describe('Users tab: workload', () => {
       /^\d+ open tasks: \d+ \w+(, \d+ \w+){3}$/,
     );
     await expect(table.locator('thead th', { hasText: /^Critical$/ })).toHaveCount(0);
-    const sortSelect = await usersFilter(page, 'Sort');
+    const sortSelect = labelledDropdown(page, 'Sort');
     const header = table.locator('thead th', { has: page.locator('[data-sort-key="open"]') });
     await page.locator('[data-sort-key="open"]').click();
     await expect(header).toHaveAttribute('aria-sort', 'descending');

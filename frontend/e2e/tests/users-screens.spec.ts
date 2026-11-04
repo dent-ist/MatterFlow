@@ -1,4 +1,4 @@
-import { usersFilter } from '../support/dropdown';
+import { labelledDropdown, pickUserStates } from '../support/dropdown';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Page } from '@playwright/test';
@@ -104,17 +104,15 @@ test.describe('users screenshots', () => {
       console.log(`TILE-METRICS ${label} ${JSON.stringify(m)}`);
     };
     await metrics('cards');
-    await page.locator('[data-chip="idle"]').click();
-    await page.locator('[data-chip="heavy"]').click();
+    await pickUserStates(page, 'idle', 'heavy');
     await shot('12-filter-chips-1366');
-    await page.locator('[data-chip="idle"]').click();
-    await page.locator('[data-chip="heavy"]').click();
-    await page.locator('[data-chip="out"]').click();
+    await pickUserStates(page, '');
+    await pickUserStates(page, 'out');
     await shot('13-out-of-office-1366');
-    await page.locator('[data-chip="out"]').click();
+    await pickUserStates(page, '');
 
     // A close-up of the tile anatomy: sorted by highest priority, the page zoomed to 200%.
-    await (await usersFilter(page, 'Sort')).selectOption('priority');
+    await labelledDropdown(page, 'Sort').selectOption('open');
     await page.evaluate(() => {
       const grid = document.querySelector<HTMLElement>('[data-users-grid]')!;
       grid.style.scrollMarginTop = '120px';
@@ -133,7 +131,7 @@ test.describe('users screenshots', () => {
     });
     await page.goto(base);
     await ready(page);
-    await (await usersFilter(page, 'Sort')).selectOption('load');
+    await labelledDropdown(page, 'Sort').selectOption('load');
 
     await page.getByRole('button', { name: 'Table' }).click();
     await expect(page.locator('[data-users-table]')).toBeVisible();

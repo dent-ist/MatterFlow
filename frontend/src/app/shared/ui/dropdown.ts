@@ -15,6 +15,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
+import { UserStateIcon, UserStateKey } from '../icons/user-state-icon';
 import { TaskTypeChip } from './task-type-chip';
 
 export interface DropdownItem {
@@ -38,6 +39,8 @@ export interface DropdownItem {
     id?: number | null;
     kind?: string;
   };
+  /** The person-state icon (the Users state list): the shape of the state in its colour, before the label. */
+  stateIcon?: UserStateKey;
   /** A group heading (not choosable). */
   heading?: boolean;
 }
@@ -52,7 +55,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-dropdown',
-  imports: [TaskTypeChip],
+  imports: [TaskTypeChip, UserStateIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <button
@@ -71,7 +74,9 @@ let nextId = 0;
       (click)="toggle()"
       (keydown)="onButtonKey($event)"
     >
-      @if (chosen()?.typeChip; as tc) {
+      @if (chosen()?.stateIcon; as si) {
+        <mf-user-state-icon [state]="si" />
+      } @else if (chosen()?.typeChip; as tc) {
         <mf-task-type-chip
           size="sm"
           [decorative]="true"
@@ -151,7 +156,9 @@ let nextId = 0;
                     [name]="it.label"
                   />
                 }
-                @if (it.icon) {
+                @if (it.stateIcon) {
+                  <mf-user-state-icon [state]="it.stateIcon" [circle]="true" />
+                } @else if (it.icon) {
                   <span class="ki" [attr.data-tone]="it.tone" aria-hidden="true"
                     ><i class="pi" [class]="it.icon"></i
                   ></span>
@@ -530,7 +537,7 @@ export class Dropdown {
   );
   protected readonly highlighted = computed(() =>
     this.multi()
-      ? this.values().length > 0
+      ? this.values().some((v) => v !== this.neutralValue())
       : this.neutralValue() !== null && this.value() !== this.neutralValue(),
   );
 
@@ -558,7 +565,7 @@ export class Dropdown {
 
   /** Some row has an icon or type chip, so the "All ..." row gets a list icon and the left edges line up. */
   protected readonly hasIcons = computed(() =>
-    this.items().some((i) => !i.heading && (i.icon || i.typeChip)),
+    this.items().some((i) => !i.heading && (i.icon || i.typeChip || i.stateIcon)),
   );
 
   protected isOn(v: string): boolean {

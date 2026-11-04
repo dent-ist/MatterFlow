@@ -128,7 +128,7 @@ describe('users model', () => {
     });
 
     it('"Show people who can take work now" is available, Idle or Light', () => {
-      expect(CAN_TAKE_WORK_NOW).toEqual({ availability: 'available', load: ['idle', 'light'] });
+      expect(CAN_TAKE_WORK_NOW).toEqual({ availability: 'available', states: ['idle', 'light'] });
     });
 
     it('names a level with its threshold for chips and tooltips', () => {
@@ -218,7 +218,7 @@ describe('users model', () => {
   describe('filters and the address', () => {
     it('reads valid parameters and ignores the rest', () => {
       const f = filtersFromParams(convertToParamMap({ uavail: 'out', uq: ' ann ' }));
-      expect(f).toEqual({ ...DEFAULT_FILTERS, availability: 'out', q: 'ann' });
+      expect(f).toEqual({ ...DEFAULT_FILTERS, states: ['out'], q: 'ann' });
       expect(filtersFromParams(convertToParamMap({ uavail: 'nope' }))).toEqual(DEFAULT_FILTERS);
       // The Pod is the page-wide scope now: the old Users Pod parameter is no filter of the tab.
       expect(filtersFromParams(convertToParamMap({ upod: '3' }))).toEqual(DEFAULT_FILTERS);
@@ -227,16 +227,17 @@ describe('users model', () => {
         filtersFromParams(
           convertToParamMap({ uload: 'heavy,bogus,idle', uprio: '2', uavail: 'off' }),
         ),
-      ).toEqual({ ...DEFAULT_FILTERS, load: ['idle', 'heavy'], priority: 2, availability: 'off' });
+      ).toEqual({ ...DEFAULT_FILTERS, states: ['idle', 'heavy', 'off'] });
       expect(hasFilterParams(convertToParamMap({ uq: 'a' }))).toBe(true);
       expect(hasFilterParams(convertToParamMap({ uload: 'idle' }))).toBe(true);
       expect(hasFilterParams(convertToParamMap({ tab: 'users' }))).toBe(false);
     });
 
-    it('writes only what is set (null removes a parameter) and counts the filters', () => {
+    it('writes only what is set (null removes a parameter, also the old uload and uprio) and counts the filters', () => {
       expect(filtersToParams(DEFAULT_FILTERS)).toEqual({
         uavail: null,
         uq: null,
+        ustate: null,
         uload: null,
         uprio: null,
         unopod: null,
@@ -244,21 +245,31 @@ describe('users model', () => {
       const f = {
         availability: 'available' as const,
         q: 'x',
-        load: ['idle' as const, 'heavy' as const],
-        priority: 1,
+        states: ['idle' as const, 'out' as const],
         includeNoPod: true,
       };
       expect(filtersToParams(f)).toEqual({
         uavail: 'available',
         uq: 'x',
-        uload: 'idle,heavy',
-        uprio: '1',
+        ustate: 'idle,out',
+        uload: null,
+        uprio: null,
         unopod: '1',
       });
       // The population switch is no filter: it is not counted.
-      expect(filterCount(f)).toBe(4);
+      expect(filterCount(f)).toBe(3);
       expect(filterCount({ ...DEFAULT_FILTERS, includeNoPod: true })).toBe(0);
       expect(filterCount(DEFAULT_FILTERS)).toBe(0);
+    });
+
+    it('reads old addresses: loads and out or off become states, the priority is ignored', () => {
+      const read = (o: Record<string, string>) => filtersFromParams(convertToParamMap(o));
+      expect(read({ uload: 'heavy,idle', uavail: 'out', uprio: '2' })).toEqual({
+        ...DEFAULT_FILTERS,
+        states: ['idle', 'heavy', 'out'],
+      });
+      expect(read({ ustate: 'off,light,nonsense' }).states).toEqual(['light', 'off']);
+      expect(read({ uavail: 'available' }).availability).toBe('available');
     });
 
     it('reads the population switch (unopod=1 only) and keeps it when the filters are cleared', () => {
@@ -273,20 +284,18 @@ describe('users model', () => {
       );
     });
 
-    it('applies load, priority and off hours on the page; off hours is read from the API as all', () => {
+    it('applies the states on the page: a person is in their load level and, when it applies, Out of office or Off hours', () => {
       const f = (patch: Partial<typeof DEFAULT_FILTERS>) => ({ ...DEFAULT_FILTERS, ...patch });
-      expect(names(filterUsers(all, f({ load: ['idle'] })))).toEqual(['Cy Tan']);
-      expect(names(filterUsers(all, f({ load: ['light', 'heavy'] })))).toEqual([
+      expect(names(filterUsers(all, f({ states: ['idle'] })))).toEqual(['Cy Tan']);
+      expect(names(filterUsers(all, f({ states: ['light', 'heavy'] })))).toEqual([
         'Dee Fox',
         'Ann Lee',
         'Eve Kim',
       ]);
-      // priority: the highest open priority is the person's tone (Critical = 1, High = 2, Normal = 3)
-      expect(names(filterUsers(all, f({ priority: 1 })))).toEqual(['Ann Lee']);
-      expect(names(filterUsers(all, f({ priority: 3 })))).toEqual(['Bob Ray']);
-      expect(names(filterUsers(all, f({ availability: 'off' })))).toEqual(['Eve Kim']);
-      expect(apiAvailability(f({ availability: 'off' }))).toBe('all');
-      expect(apiAvailability(f({ availability: 'out' }))).toBe('out');
+      expect(names(filterUsers(all, f({ states: ['off'] })))).toEqual(['Eve Kim']);
+      expect(names(filterUsers(all, f({ states: ['out', 'heavy'] })))).toContain('Dee Fox');
+      expect(apiAvailability(f({ availability: 'available' }))).toBe('available');
+      expect(apiAvailability(f({ states: ['out'] }))).toBe('all');
       expect(filterUsers(all, DEFAULT_FILTERS)).toHaveLength(all.length);
     });
   });

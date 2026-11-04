@@ -33,6 +33,7 @@ import { USERS_VIEW_PARAM } from '../dashboard-links';
 import { withoutDefaults } from '../dash-url-state';
 import { DashSkeleton } from './dash-skeleton';
 import { DashState, focusAfterRetry } from './dash-state';
+import { UserStateKey } from '../../../shared/icons/user-state-icon';
 import { DashScope } from '../dash-scope';
 import { CoverageView } from '../users/coverage-view';
 import { SkillsView } from '../users/skills-view';
@@ -46,13 +47,11 @@ import {
   DEFAULT_FILTERS,
   Layout,
   TabView,
+  USER_SORT_LABELS,
   UserSort,
   UsersFilters,
   filterCount,
   filterUsers,
-  LOAD_FILTERS,
-  LoadFilter,
-  AvailabilityFilter,
   apiAvailability,
   filtersFromParams,
   filtersToParams,
@@ -117,8 +116,6 @@ export const USERS_PAGE = 200;
         [filters]="filters()"
         [sort]="sort()"
         [layout]="layout()"
-        [priorities]="board()?.priorities ?? []"
-        [thresholds]="board()?.thresholds ?? null"
         (filtersChange)="patchFilters($event)"
         (sortChange)="setSort($event)"
         (layoutChange)="setLayout($event)"
@@ -146,8 +143,7 @@ export const USERS_PAGE = 200;
           [population]="populationLine()"
           [populationOn]="filters().includeNoPod"
           (populationToggle)="toggleNoPod()"
-          (loadToggle)="toggleLoad($event)"
-          (availabilityToggle)="toggleAvailability($event)"
+          (statesChange)="setStates($event)"
         >
           <mf-users-capacity
             mfBarEnd
@@ -156,7 +152,6 @@ export const USERS_PAGE = 200;
             [filters]="filters()"
             [thresholds]="board()?.thresholds ?? null"
             [canAssign]="canAssign()"
-            (loadToggle)="toggleLoad($event)"
             (showCanTake)="showCanTakeWork()"
           />
         </mf-users-summary>
@@ -313,13 +308,15 @@ export const USERS_PAGE = 200;
     /* Cards of about 17rem: three or four to a line on a laptop, one on a phone. */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(15.5rem, 100%), 1fr));
       gap: var(--mf-s3);
       margin: 0;
       padding: 0;
       list-style: none;
     }
+    /* Every card stretches to the height of its row (also the ones with an Out of office band or an Off hours chip). */
     .cell {
+      display: grid;
       min-width: 0;
     }
     .more {
@@ -566,15 +563,9 @@ export class DashUsersTab implements OnInit {
   }
 
   /** A load chip: on or off (the chips combine). */
-  protected toggleLoad(level: LoadFilter): void {
-    const on = new Set(this.filters().load);
-    if (!on.delete(level)) on.add(level);
-    this.patchFilters({ load: LOAD_FILTERS.filter((l) => on.has(l)) });
-  }
-
-  /** The Out of office and Off hours chips: the availability filter, on or off. */
-  protected toggleAvailability(value: AvailabilityFilter): void {
-    this.patchFilters({ availability: this.filters().availability === value ? 'all' : value });
+  /** The State dropdown: the people in any of the chosen states (none: everyone). Choosing states also lifts the "can take work now" availability narrowing. */
+  protected setStates(states: UserStateKey[]): void {
+    this.patchFilters({ states, availability: 'all' });
   }
 
   protected clearFilters(): void {
@@ -610,9 +601,7 @@ export class DashUsersTab implements OnInit {
     this.sortReversed.set(false);
     this.limit.set(USERS_PAGE);
     this.prefs.remember({ sort });
-    this.live.set(
-      `Sorted by ${{ load: 'availability and load', name: 'name', priority: 'highest priority', open: 'open tasks', fewest: 'fewest open tasks' }[sort]}.`,
-    );
+    this.live.set(`Sorted by ${USER_SORT_LABELS[sort].toLowerCase()}.`);
   }
 
   protected setLayout(layout: Layout): void {
