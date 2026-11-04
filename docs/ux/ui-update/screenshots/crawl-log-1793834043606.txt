@@ -1,0 +1,310 @@
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-landing-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-tab-summary-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-tab-breakdowns-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-tab-trends-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-tab-swimlane-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-tab-users-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-tab-calendar-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-users-drawer-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-users-state-dropdown-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-users-unassigned-drawer-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-users-table-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-users-coverage-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-users-skills-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-summary-people-dialog-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-summary-filters-open-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-summary-columns-menu-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-calendar-week-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-queue/director-landing-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-queue/director-columns-menu-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-queue/director-filters-open-1366x768.png
+FAIL director 1366x768 task-queue row select (bulk): locator.check: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-queue/director-row-menu-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/create-task/director-form-1366x768.png
+FAIL director 1366x768 create validate: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-overview-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-tab-workflow-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-tab-assets-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-tab-comments-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-edit-dialog-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-action-dialog-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/clients/director-list-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/clients/director-new-form-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/clients/director-record-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/clients/director-activity-drawer-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/clients/director-edit-form-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-list-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-new-dialog-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-columns-menu-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-filters-open-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-record-summary-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-record-tab-tasks-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-record-tab-projects-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-record-tab-assets-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-record-tab-productions-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-record-tab-notes-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-record-tab-activities-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-edit-dialog-1366x768.png
+FAIL director 1366x768 matter new menu: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-new-project-dialog-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-new-production-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-new-note-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/projects/director-list-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/projects/director-new-dialog-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/projects/director-record-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/projects/director-edit-form-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/assets/director-list-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/assets/director-record-1366x768.png
+FAIL director 1366x768 asset disposition: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/assets/director-new-form-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/assets/director-reports-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/notifications-search-profile/director-notifications-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/notifications-search-profile/director-search-results-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/notifications-search-profile/director-profile-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/notifications-search-profile/director-profile-ooo-dialog-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/shell/director-user-menu-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/shell/director-bell-panel-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/shell/director-global-search-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/shell/director-create-task-from-shell-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/podlead-landing-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/podlead-tab-summary-1366x768.png
+FAIL podlead 1366x768 dashboard tab Breakdowns: locator.click: Timeout 2500ms exceeded.
+FAIL podlead 1366x768 dashboard tab Trends: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/podlead-tab-swimlane-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/podlead-tab-users-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/podlead-tab-calendar-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/pod-work/podlead-landing-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/pod-work/podlead-tab-unassigned-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/pod-work/podlead-tab-by-member-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/pod-work/podlead-tab-all-open-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/pod-work/podlead-columns-menu-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/pod-work/podlead-filters-open-1366x768.png
+FAIL podlead 1366x768 pod-work row select (bulk): locator.check: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/pod-work/podlead-row-menu-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/tech-landing-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-work/tech-landing-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-work/tech-tab-active-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-work/tech-tab-due-soon-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-work/tech-tab-closed-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-work/tech-tab-created-by-me-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-work/tech-columns-menu-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-work/tech-filters-open-1366x768.png
+FAIL tech 1366x768 my-work row select (bulk): locator.check: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-work/tech-row-menu-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-queue/tech-landing-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-queue/tech-columns-menu-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-queue/tech-filters-open-1366x768.png
+FAIL tech 1366x768 task-queue row select (bulk): locator.check: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-queue/tech-row-menu-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/notifications-search-profile/tech-profile-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/system-pages/tech-403-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/system-pages/tech-404-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/system-pages/tech-admin-denied-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/system-pages/tech-error-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-matters/pm-landing-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-matters/pm-tab-overview-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-matters/pm-tab-calendar-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-matters/pm-tab-assets-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-matters/pm-tab-metrics-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-matters/pm-tab-activity-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-matters/pm-new-menu-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-matters/pm-event-dialog-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/system-pages/pending-access-pending-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-users-roles-pods/admin-landing-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-users-roles-pods/admin-tab-users-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-users-roles-pods/admin-tab-roles-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-users-roles-pods/admin-tab-pods-1366x768.png
+FAIL admin 1366x768 admin-users-roles-pods /admin/users new: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-task-types/admin-landing-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-task-types/admin-tab-task-types-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-task-types/admin-tab-workflows-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-task-types/admin-tab-workflow-steps-1366x768.png
+FAIL admin 1366x768 admin-task-types /admin/task-types new: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-lookups/admin-landing-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-lookups/admin-tab-priorities-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-lookups/admin-tab-status-labels-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-lookups/admin-tab-on-hold-reasons-1366x768.png
+FAIL admin 1366x768 admin-lookups tab Note tags: locator.click: Timeout 2500ms exceeded.
+FAIL admin 1366x768 admin-lookups /admin/priorities new: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-lookups/admin-asset-types-landing-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-lookups/admin-asset-types-tab-asset-types-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-lookups/admin-asset-types-tab-link-roles-1366x768.png
+FAIL admin 1366x768 admin-lookups /admin/asset-types new: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-lookups/admin-custom-fields-landing-1366x768.png
+FAIL admin 1366x768 admin-lookups /admin/custom-fields new: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-reports-landing-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-reports-tab-reports-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-reports-tab-categories-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-reports-tab-run-log-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-reports-tab-assignments-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-reports-tab-settings-1366x768.png
+FAIL admin 1366x768 admin-reports-audit-settings /admin/reports new: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-audit-landing-1366x768.png
+FAIL admin 1366x768 admin-reports-audit-settings /admin/audit new: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-settings-landing-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-settings-tab-branding-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-settings-tab-dashboard-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-settings-tab-holidays-1366x768.png
+FAIL admin 1366x768 admin-reports-audit-settings /admin/settings new: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-users-roles-pods/admin-user-drawer-1366x768.png
+FAIL admin 1366x768 roles detail: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-task-types/admin-task-type-record-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-task-types/admin-step-new-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-task-types/admin-workflow-new-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-settings-holidays-dialog-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-report-editor-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-landing-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-tab-summary-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-tab-breakdowns-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-tab-trends-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-tab-swimlane-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-tab-users-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-tab-calendar-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-users-drawer-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-users-state-dropdown-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-users-unassigned-drawer-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-users-table-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-users-coverage-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-users-skills-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-summary-people-dialog-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-summary-filters-open-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-summary-columns-menu-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/director-calendar-week-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-queue/director-landing-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-queue/director-columns-menu-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-queue/director-filters-open-1920x1080.png
+FAIL director 1920x1080 task-queue row select (bulk): locator.check: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-queue/director-row-menu-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/create-task/director-form-1920x1080.png
+FAIL director 1920x1080 create validate: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-overview-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-tab-workflow-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-tab-assets-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-tab-comments-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-edit-dialog-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-action-dialog-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/clients/director-list-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/clients/director-new-form-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/clients/director-record-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/clients/director-activity-drawer-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/clients/director-edit-form-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-list-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-new-dialog-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-columns-menu-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-filters-open-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-record-summary-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-record-tab-tasks-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-record-tab-projects-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-record-tab-assets-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-record-tab-productions-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-record-tab-notes-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-record-tab-activities-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-edit-dialog-1920x1080.png
+FAIL director 1920x1080 matter new menu: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-new-project-dialog-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-new-production-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-new-note-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/projects/director-list-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/projects/director-new-dialog-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/projects/director-record-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/projects/director-edit-form-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/assets/director-list-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/assets/director-record-1920x1080.png
+FAIL director 1920x1080 asset disposition: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/assets/director-new-form-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/assets/director-reports-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/notifications-search-profile/director-notifications-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/notifications-search-profile/director-search-results-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/notifications-search-profile/director-profile-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/notifications-search-profile/director-profile-ooo-dialog-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/shell/director-user-menu-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/shell/director-bell-panel-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/shell/director-global-search-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/shell/director-create-task-from-shell-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/podlead-landing-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/podlead-tab-summary-1920x1080.png
+FAIL podlead 1920x1080 dashboard tab Breakdowns: locator.click: Timeout 2500ms exceeded.
+FAIL podlead 1920x1080 dashboard tab Trends: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/podlead-tab-swimlane-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/podlead-tab-users-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/podlead-tab-calendar-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/pod-work/podlead-landing-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/pod-work/podlead-tab-unassigned-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/pod-work/podlead-tab-by-member-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/pod-work/podlead-tab-all-open-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/pod-work/podlead-columns-menu-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/pod-work/podlead-filters-open-1920x1080.png
+FAIL podlead 1920x1080 pod-work row select (bulk): locator.check: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/pod-work/podlead-row-menu-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/dashboard/tech-landing-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-work/tech-landing-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-work/tech-tab-active-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-work/tech-tab-due-soon-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-work/tech-tab-closed-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-work/tech-tab-created-by-me-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-work/tech-columns-menu-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-work/tech-filters-open-1920x1080.png
+FAIL tech 1920x1080 my-work row select (bulk): locator.check: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-work/tech-row-menu-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-queue/tech-landing-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-queue/tech-columns-menu-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-queue/tech-filters-open-1920x1080.png
+FAIL tech 1920x1080 task-queue row select (bulk): locator.check: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-queue/tech-row-menu-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/notifications-search-profile/tech-profile-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/system-pages/tech-403-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/system-pages/tech-404-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/system-pages/tech-admin-denied-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/system-pages/tech-error-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-matters/pm-landing-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-matters/pm-tab-overview-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-matters/pm-tab-calendar-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-matters/pm-tab-assets-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-matters/pm-tab-metrics-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-matters/pm-tab-activity-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-matters/pm-new-menu-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/my-matters/pm-event-dialog-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/system-pages/pending-access-pending-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-users-roles-pods/admin-landing-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-users-roles-pods/admin-tab-users-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-users-roles-pods/admin-tab-roles-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-users-roles-pods/admin-tab-pods-1920x1080.png
+FAIL admin 1920x1080 admin-users-roles-pods /admin/users new: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-task-types/admin-landing-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-task-types/admin-tab-task-types-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-task-types/admin-tab-workflows-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-task-types/admin-tab-workflow-steps-1920x1080.png
+FAIL admin 1920x1080 admin-task-types /admin/task-types new: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-lookups/admin-landing-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-lookups/admin-tab-priorities-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-lookups/admin-tab-status-labels-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-lookups/admin-tab-on-hold-reasons-1920x1080.png
+FAIL admin 1920x1080 admin-lookups tab Note tags: locator.click: Timeout 2500ms exceeded.
+FAIL admin 1920x1080 admin-lookups /admin/priorities new: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-lookups/admin-asset-types-landing-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-lookups/admin-asset-types-tab-asset-types-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-lookups/admin-asset-types-tab-link-roles-1920x1080.png
+FAIL admin 1920x1080 admin-lookups /admin/asset-types new: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-lookups/admin-custom-fields-landing-1920x1080.png
+FAIL admin 1920x1080 admin-lookups /admin/custom-fields new: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-reports-landing-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-reports-tab-reports-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-reports-tab-categories-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-reports-tab-run-log-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-reports-tab-assignments-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-reports-tab-settings-1920x1080.png
+FAIL admin 1920x1080 admin-reports-audit-settings /admin/reports new: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-audit-landing-1920x1080.png
+FAIL admin 1920x1080 admin-reports-audit-settings /admin/audit new: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-settings-landing-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-settings-tab-branding-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-settings-tab-dashboard-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-settings-tab-holidays-1920x1080.png
+FAIL admin 1920x1080 admin-reports-audit-settings /admin/settings new: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-users-roles-pods/admin-user-drawer-1920x1080.png
+FAIL admin 1920x1080 roles detail: locator.click: Timeout 2500ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-task-types/admin-task-type-record-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-task-types/admin-step-new-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-task-types/admin-workflow-new-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-settings-holidays-dialog-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-report-editor-1920x1080.png

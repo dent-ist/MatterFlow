@@ -1,0 +1,60 @@
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-status-menu-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-assignee-menu-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-due-popover-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-more-menu-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-activity-drawer-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-complete-dialog-1366x768.png
+FAIL director 1366x768 skip step: locator.click: Timeout 4000ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-edit-dialog-2-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/clients/director-empty-no-match-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-header-more-menu-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-header-new-menu-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-menu-action-dialog-2-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/notifications-search-profile/director-profile-save-toast-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/notifications-search-profile/director-profile-dirty-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/notifications-search-profile/director-profile-ooo-edit-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/notifications-search-profile/director-profile-ooo-delete-confirm-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-users-roles-pods/admin-admin-roles-list-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-users-roles-pods/admin-admin-role-new-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-users-roles-pods/admin-admin-pods-list-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-users-roles-pods/admin-admin-pod-new-1366x768.png
+FAIL admin 1366x768 user actions menu: locator.click: Timeout 4000ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-users-roles-pods/admin-admin-grant-access-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-lookups/admin-admin-status-labels-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-lookups/admin-admin-custom-fields-list-1366x768.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-lookups/admin-admin-save-toast-1366x768.png
+FAIL admin 1366x768 dashboard settings toast: locator.fill: Timeout 30000ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-settings-holidays-list-1366x768.png
+FAIL admin 1366x768 holidays list: locator.click: Timeout 4000ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-settings-branding-2-1366x768.png
+FAIL pm 1366x768 options: locator.click: Timeout 4000ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-status-menu-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-assignee-menu-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-due-popover-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-more-menu-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-activity-drawer-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-complete-dialog-1920x1080.png
+FAIL director 1920x1080 skip step: locator.click: Timeout 4000ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/task-page/director-edit-dialog-2-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/clients/director-empty-no-match-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-header-more-menu-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-header-new-menu-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/matters/director-menu-action-dialog-2-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/notifications-search-profile/director-profile-save-toast-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/notifications-search-profile/director-profile-dirty-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/notifications-search-profile/director-profile-ooo-edit-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/notifications-search-profile/director-profile-ooo-delete-confirm-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-users-roles-pods/admin-admin-roles-list-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-users-roles-pods/admin-admin-role-new-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-users-roles-pods/admin-admin-pods-list-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-users-roles-pods/admin-admin-pod-new-1920x1080.png
+FAIL admin 1920x1080 user actions menu: locator.click: Timeout 4000ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-users-roles-pods/admin-admin-grant-access-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-lookups/admin-admin-status-labels-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-lookups/admin-admin-custom-fields-list-1920x1080.png
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-lookups/admin-admin-save-toast-1920x1080.png
+FAIL admin 1920x1080 dashboard settings toast: locator.fill: Timeout 30000ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-settings-holidays-list-1920x1080.png
+FAIL admin 1920x1080 holidays list: locator.click: Timeout 4000ms exceeded.
+OK /home/user/wt/ui-designer/docs/ux/ui-update/screenshots/admin-reports-audit-settings/admin-settings-branding-2-1920x1080.png
+FAIL pm 1920x1080 options: locator.click: Timeout 4000ms exceeded.

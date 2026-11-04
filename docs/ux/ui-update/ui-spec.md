@@ -1,6 +1,6 @@
-# MatterFlow UI standard, round 2 (DRAFT, phase 1)
+# MatterFlow UI standard, round 2 (FINAL after the phase 2 crawl)
 
-Owner: Agent U (UI designer). Branch `ui-update-2`. The owner approved all recommendations in advance, so every rule below is a decision, not a question; the rules the owner may care about are listed in section 0.3. Phase 2 (live crawl) turns this draft into the final spec and into the issues.
+Owner: Agent U (UI designer). Branch `ui-update-2`. The owner approved all recommendations in advance, so every rule below is a decision, not a question; the rules the owner may care about are listed in section 0.3. This version is final after the live desktop crawl (1366x768 and 1920x1080; the app is desktop-only). Measured facts are in `screenshots/measurements-*.json`; the findings are in the epic and issue bodies on GitHub.
 
 Base documents, unchanged and not reopened: `docs/ux/theme-guide.md` and `docs/ux/tokens.css`; dialogs guide section 6; buttons section 9; grid and list anatomy 11.x; icon sizes 11.9; fixed-page layout (the page never scrolls on desktop, only inner regions); decisions AQ to AV; no new or changed keyboard shortcuts (#420); no diagonal stripes; no repeated "Available" chips; tabs need icons; the owner prefers bigger icons and a simple UI; buttons come only from the shared theme.
 
@@ -26,6 +26,7 @@ All sizes below are px at the default zoom. The app root font is 14 px, so `1rem
 | D-21 | Every page has the same header: 32 px solid-blue icon tile (the Dashboard look), H1 22 px / 700 | all pages except Dashboard get the tile; fixed pages lose the 19 px title |
 | D-10 | Cards 12 px radius, soft border and card shadow everywhere (8 px cards go to 12) | Profile, tiles, record cards |
 | D-17 | Dashboard > Summary tab gets its own icon so it stops repeating the Dashboard tile icon | one tab |
+| D-35 | Required fields keep the "(required)" word (changed from the draft's red asterisk, because the live app already uses it everywhere); "(optional)" is removed | one dialog |
 | D-00 | One epic per page group (15 epics plus the shared one and the top one), not per tab | planning |
 
 ### 0.4 Proposed changes to `docs/ux/tokens.css` (dev agents implement; nobody else edits that file)
@@ -63,7 +64,7 @@ Don't: 2, 3, 5, 7, 9, 10 px radius; 10, 11, 11.5, 12.5, 13.5, 15, 17, 19, 26 px 
 
 **D-03 Layout frame.** Do: fixed pages as the guide (page never scrolls at 768 x 561 and larger); main area gutter 16; header 12 below the top; grid frame fills to the bottom gutter; below 768 x 561 the page scrolls. Content max width: forms 480 px per field (`--mf-field-max`), reading text 72 characters. Don't: a second vertical scroll bar on the page. Reference: Matters list.
 
-**D-04 Colour meaning.** Do: Overdue / error = `--mf-sem-overdue-*` (red); At risk / due soon / warning = `risk` (amber); In progress / info / links = `info` (blue); Completed / healthy = `healthy` (teal); Unassigned / needs a person = `person` (violet); Critical priority = `critical` (deep orange); Neutral / on hold / cancelled / sensitive = `neutral` (slate). Every coloured signal also has an icon or a word. Don't: new hues, hatching, diagonal stripes, red for anything that is not overdue, failed or destructive. Reference: theme guide section 2.
+**D-04 Colour meaning.** Do: no hatching or diagonal stripes anywhere, including the Breakdowns overdue segments and the Summary gauge segments (crawl: both still use stripes): an overdue part of a bar is the solid `--mf-sem-overdue-solid` fill next to the "N overdue" count chip; gauge level segments are solid tints with their number in them. Also:  Overdue / error = `--mf-sem-overdue-*` (red); At risk / due soon / warning = `risk` (amber); In progress / info / links = `info` (blue); Completed / healthy = `healthy` (teal); Unassigned / needs a person = `person` (violet); Critical priority = `critical` (deep orange); Neutral / on hold / cancelled / sensitive = `neutral` (slate). Every coloured signal also has an icon or a word. Don't: new hues, hatching, diagonal stripes, red for anything that is not overdue, failed or destructive. Reference: theme guide section 2.
 
 **D-05 States (one table for all interactive things).**
 
@@ -156,7 +157,7 @@ Don't: the primary first (about 10 pages today), "Discard changes" as a button l
 
 **D-34 Confirm dialogs.** Do: title = the question's verb and thing ("Delete Note"), body = one sentence saying what happens and whether it can be undone ("This note and its history are removed. This cannot be undone."), `[Cancel] ... [Delete Note]` where the confirm button repeats the verb and the thing in Title Case; danger confirms use the solid red `mf-btn--solid` button. The cancel button is always "Cancel", except the unsaved-changes dialog. A reversible action does not ask: it acts and shows a toast with Undo. Don't: "Keep active", "Stay", "Keep it as it is", "Yes" and "No". Evidence: 12 different cancel labels.
 
-**D-35 Forms.** Do: label above the field, 13 / 600 `--mf-text`, 4 gap; field 36 high (textarea min 4 lines); help text below, 13 muted, 4 gap; error text below, 13 `--mf-danger` with `pi-exclamation-circle` 16 and `role="alert"`, border per D-05; fields 16 apart; one column up to 480 px per field; two columns (16 gap) only in a Large dialog or a page at 1100 px and wider; section headings per D-11; required fields end the label with a red `*` (`aria-hidden`, input has `aria-required`), and a form with more than five fields starts with the line "* Required"; optional is never written; checkbox and radio 18 px with a 36 px row; read-only values are plain text, not disabled inputs; date and time fields are native inputs with `lang="en-US"` on `html` so they show MM/DD/YYYY and 12-hour time; character counter bottom right, 12 muted. Don't: placeholder as a label, "(required)", a label to the left of the field (except the segmented "Sort" row), inline editing that looks like text without a hover cue. Reference: Create Task page, `_forms.scss`.
+**D-35 Forms.** Do: label above the field, 13 / 600 `--mf-text`, 4 gap; field 36 high (textarea min 4 lines); help text below, 13 muted, 4 gap; error text below, 13 `--mf-danger` with `pi-exclamation-circle` 16 and `role="alert"`, border per D-05; fields 16 apart; one column up to 480 px per field; two columns (16 gap) only in a Large dialog or a page at 1100 px and wider; section headings per D-11; required fields keep the existing wording: the word "(required)" after the label in muted regular 13 px (measured on every form and dialog; it works without colour), optional fields carry no mark and the word "(optional)" is removed (only the Out of Office dialog uses it); read-only values are plain text, not disabled inputs; date and time fields are native inputs with `lang="en-US"` on `html` so they show MM/DD/YYYY and 12-hour time; character counter bottom right, 12 muted. Don't: placeholder as a label, "(required)", a label to the left of the field (except the segmented "Sort" row), inline editing that looks like text without a hover cue. Reference: Create Task page, `_forms.scss`.
 
 **D-36 Menus and popovers.** Do: radius 8, 1 px `--mf-border-soft`, `--mf-shadow-pop`, padding 4; item 36 high, 14 px, icon 18 + 8 gap, hover `--mf-row-hover`, focus ring inset, danger item in `--mf-danger`, separator 1 px `--mf-border-soft`; width min 200, max 360; filter popover 320. A "..." menu holds two or more secondary actions; one action is its own icon button. Opens below, flips up near the bottom, closes on Esc, outside click and selection, focus returns to the trigger. Don't: a popover with a scrollbar in the popover itself taller than 70% of the window (scroll inside the list), a menu that moves the page.
 
@@ -203,12 +204,14 @@ Don't: Status first, an action column wider than 48, a column header that differ
 - Filtered: "No tasks match these filters." + `Clear Filters`.
 - Search: "No results for "<text>"."
 - Read-only: "No tasks." Always a full stop; "yet" only when the user can create one.
-- Error: `pi-exclamation-triangle` in `--mf-sem-overdue-solid`, "Couldn't load tasks." (never "Could not"), an optional second line with the reason or reference, and a secondary `Retry` button; a failed refresh keeps the old data and shows the stale banner "Couldn't refresh. Showing earlier data." with `Retry`.
+- Error (crawl: today a bare red line plus a toast that says the same, repeated x3): one block in the empty area, never also a toast for the same failure; `pi-exclamation-triangle` in `--mf-sem-overdue-solid`, "Couldn't load tasks." (never "Could not"), an optional second line with the reason or reference, and a secondary `Retry` button; a failed refresh keeps the old data and shows the stale banner "Couldn't refresh. Showing earlier data." with `Retry`.
 - No access: "You don't have access to <thing>." with the 403 page for whole pages.
 - Stale save: "This <thing> was changed by someone else." with `Reload Latest`.
 Don't: "Something went wrong. Try again." as the only text (19 uses: name the thing), a card full of zeros, a red empty state. Reference: `mf-record-state`, `mf-dash-state`.
 
 **D-52 Toasts.** Do: `NotificationService` only. Title in sentence case, "<Thing> <past participle>" without a full stop: "Role saved", "Production deleted", "Task TSK-12 created", "Link copied"; optional detail line (a sentence with a full stop, or the name of the thing). Errors: "Couldn't save the role." + the reason as detail. Severity colours from `--mf-toast-*` with the icon. Success 4 s, info 6 s, warning 8 s, error stays until closed; at most three visible; a `key` replaces a repeat. Undo toast: "Pods of Ann Lee restored." then Undo button, wording "Not undone: ..." when it can't. Don't: "Saved." (12 admin pages say it), a name-less "Saved", emojis, a toast for something the user can see change. Reference: `roles-page` ("Role saved").
+
+**D-47 Record not found.** Do: a missing record ("We couldn't find that task.") uses the same `state-page` card as 403 (D-53) inside the shell, with the breadcrumb above and one `Go to <List>` button; not a bare heading and link. Reference: `state-page.ts`.
 
 **D-53 System pages.** Do: Access Pending, 403, 404 and Error are one `state-page` layout: centred card 480 px wide, radius 12, icon tile 48, H1 22 / 700 (the same title rule), one sentence, one primary or secondary action ("Go to Dashboard", "Retry"), the error reference in muted mono text with a copy button. Don't: separate layouts. Reference: `state-page.ts`.
 
@@ -248,7 +251,16 @@ Owner decision: the app is desktop-only. There are no phone or tablet rules in t
 
 Every issue's acceptance list is built from: tokens only (no hex, no px outside this spec), shared component, heights per D-02, wording per D-20 and D-22, states per D-05, axe 0 violations, no new shortcut, screenshots at 1366 x 768 and 1920 x 1080. See `issue-template.md`.
 
-## 12. Open points for phase 2 (to measure in the crawl, then freeze)
+## 12. Changes from the phase 1 draft, after the crawl
+
+1. D-35: "(required)" kept, asterisk dropped.
+2. D-04: stripes in Breakdowns and the gauge named explicitly.
+3. D-47 added (record not found).
+4. D-51: no duplicate toast for a load failure.
+5. All phone and tablet rules removed (owner decision: desktop only).
+6. Measured baselines added to the findings: controls 32 (about 1,170 buttons), 36, 40 px (top bar Create task, admin row "..."), inputs 40 / 32 / 36 / 21 px with radius 4 and 6 px, tabs 35 and 39 px, grid rows 44 px, headers 40 / 49 / 32 px, dialogs 448 / 476 / 504 / 672 / 720 px.
+
+## 13. Open points (was: to measure in the crawl)
 
 1. Real heights of every control, tab and row (`getBoundingClientRect`), to size the issues.
 2. Toast position and duration actually in use (spec fixes only the wording and timing).

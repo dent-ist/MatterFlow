@@ -1,0 +1,1736 @@
+{
+ "task-page/director-status-menu-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 1,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 8
+  },
+  "input": {
+   "40h/14px/400/r4px": 2
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 2
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "24h/14px/700/r0px": 1,
+   "26h/14px/600/r0px": 1,
+   "24h/14px/600/r0px": 1,
+   "24h/12px/700/r999px": 1,
+   "25h/14px/600/r0px": 3
+  },
+  "h1": {
+   "30h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 2,
+   "17h/14px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "task-page/director-assignee-menu-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 1,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 8
+  },
+  "input": {
+   "40h/14px/400/r4px": 2,
+   "28h/14px/600/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 2
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "24h/14px/700/r0px": 1,
+   "26h/14px/600/r0px": 1,
+   "24h/14px/600/r0px": 1,
+   "24h/12px/700/r999px": 1,
+   "25h/14px/600/r0px": 3
+  },
+  "h1": {
+   "30h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 2,
+   "17h/14px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "task-page/director-due-popover-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 10
+  },
+  "input": {
+   "40h/14px/400/r4px": 3,
+   "40h/14px/400/r6px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 2
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "24h/14px/700/r0px": 1,
+   "26h/14px/600/r0px": 1,
+   "24h/14px/600/r0px": 1,
+   "24h/12px/700/r999px": 1,
+   "25h/14px/600/r0px": 3
+  },
+  "h1": {
+   "30h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 2,
+   "17h/14px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "task-page/director-more-menu-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 1,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 8
+  },
+  "input": {
+   "40h/14px/400/r4px": 2
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 2
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "24h/14px/700/r0px": 1,
+   "26h/14px/600/r0px": 1,
+   "24h/14px/600/r0px": 1,
+   "24h/12px/700/r999px": 1,
+   "25h/14px/600/r0px": 3
+  },
+  "h1": {
+   "30h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 2,
+   "17h/14px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "task-page/director-activity-drawer-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 1,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 8,
+   "32h/14px/400/r50%": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 2
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 2
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "24h/14px/700/r0px": 1,
+   "26h/14px/600/r0px": 1,
+   "24h/14px/600/r0px": 1,
+   "24h/12px/700/r999px": 1,
+   "25h/14px/600/r0px": 3,
+   "32h/14px/600/r4px": 1,
+   "32h/14px/400/r4px": 6
+  },
+  "h1": {
+   "30h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {
+   "768h/14px/400/r0px/w504": 1
+  },
+  "link": {
+   "24h/13px/400/r0px": 2,
+   "17h/14px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "task-page/director-complete-dialog-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 3,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 8,
+   "32h/14px/400/r50%": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 2
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 2
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "24h/14px/700/r0px": 1,
+   "26h/14px/600/r0px": 1,
+   "24h/14px/600/r0px": 1,
+   "24h/12px/700/r999px": 1,
+   "25h/14px/600/r0px": 3
+  },
+  "h1": {
+   "30h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {
+   "300h/14px/400/r8px/w448": 1
+  },
+  "link": {
+   "24h/13px/400/r0px": 2,
+   "17h/14px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "task-page/director-edit-dialog-2-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 1,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 10,
+   "32h/14px/400/r50%": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 2,
+   "57h/14px/400/r6px": 1,
+   "40h/14px/400/r6px": 3,
+   "84h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 2
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "24h/14px/700/r0px": 1,
+   "24h/14px/600/r0px": 2,
+   "24h/12px/700/r999px": 1,
+   "17h/14px/600/r0px": 2
+  },
+  "h1": {
+   "30h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {
+   "691h/14px/400/r8px/w720": 1
+  },
+  "link": {
+   "24h/13px/400/r0px": 2,
+   "17h/14px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "clients/director-empty-no-match-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 3,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/14px/400/r6px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 6
+  },
+  "row": {
+   "105h/14px/400/r0px": 1
+  },
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "matters/director-header-more-menu-1366x768": {
+  "button": {
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 3,
+   "32h/14px/400/r4px": 2
+  },
+  "input": {
+   "40h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 6
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "32h/14px/400/r8px": 4,
+   "24h/14px/400/r0px": 2
+  },
+  "h1": {
+   "28h/22px/700/r0px": 1
+  },
+  "card": {
+   "347h/14px/400/r12px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "16h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "matters/director-header-new-menu-1366x768": {
+  "button": {
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 3,
+   "32h/14px/400/r4px": 2
+  },
+  "input": {
+   "40h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 6
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "32h/14px/400/r8px": 4,
+   "24h/14px/400/r0px": 2
+  },
+  "h1": {
+   "28h/22px/700/r0px": 1
+  },
+  "card": {
+   "347h/14px/400/r12px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "16h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "matters/director-menu-action-dialog-2-1366x768": {
+  "button": {
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 3,
+   "32h/14px/400/r4px": 4
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "96h/14px/400/r6px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 6
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "32h/14px/400/r8px": 4,
+   "24h/14px/400/r0px": 2
+  },
+  "h1": {
+   "28h/22px/700/r0px": 1
+  },
+  "card": {
+   "347h/14px/400/r12px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {
+   "351h/14px/400/r8px/w504": 1
+  },
+  "link": {
+   "16h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "notifications-search-profile/director-profile-save-toast-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 11,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 2
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 2
+  },
+  "dropdown": {
+   "36h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "24h/14px/700/r0px": 1
+  },
+  "h1": {
+   "38h/22px/700/r0px": 1
+  },
+  "card": {
+   "352h/14px/400/r12px": 1,
+   "21h/18px/600/r0px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 10
+  }
+ },
+ "notifications-search-profile/director-profile-dirty-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 11,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 2
+  },
+  "dropdown": {
+   "36h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "24h/14px/700/r0px": 1
+  },
+  "h1": {
+   "38h/22px/700/r0px": 1
+  },
+  "card": {
+   "352h/14px/400/r12px": 1,
+   "21h/18px/600/r0px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 10
+  }
+ },
+ "notifications-search-profile/director-profile-ooo-edit-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 13,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 3,
+   "40h/14px/400/r6px": 3,
+   "57h/14px/400/r6px": 1
+  },
+  "dropdown": {
+   "36h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "24h/14px/700/r0px": 1
+  },
+  "h1": {
+   "38h/22px/700/r0px": 1
+  },
+  "card": {
+   "352h/14px/400/r12px": 1,
+   "21h/18px/600/r0px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {
+   "481h/14px/400/r8px/w504": 1
+  },
+  "link": {
+   "36h/14px/400/r6px": 10
+  }
+ },
+ "notifications-search-profile/director-profile-ooo-delete-confirm-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 13,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 1,
+   "32h/14px/400/r50%": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 2
+  },
+  "dropdown": {
+   "36h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "24h/14px/700/r0px": 1
+  },
+  "h1": {
+   "38h/22px/700/r0px": 1
+  },
+  "card": {
+   "352h/14px/400/r12px": 1,
+   "21h/18px/600/r0px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {
+   "191h/14px/400/r8px/w448": 1
+  },
+  "link": {
+   "36h/14px/400/r6px": 10
+  }
+ },
+ "admin-users-roles-pods/admin-admin-roles-list-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/500/r0px": 2,
+   "35h/14px/600/r0px": 1
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "15h/12px/400/r999px": 1
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "32h/20px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-users-roles-pods/admin-admin-role-new-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 30,
+   "40h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 3,
+   "56h/14px/400/r6px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/500/r0px": 2,
+   "35h/14px/600/r0px": 1
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "15h/12px/400/r999px": 1
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "32h/20px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-users-roles-pods/admin-admin-pods-list-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 5
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "32h/14px/400/r6px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1,
+   "30h/14px/400/r0px": 1
+  },
+  "tab": {
+   "35h/14px/500/r0px": 2,
+   "35h/14px/600/r0px": 1
+  },
+  "th": {
+   "40h/12px/700/r0px": 3
+  },
+  "row": {
+   "44h/14px/400/r0px": 4
+  },
+  "chip": {
+   "24h/14px/400/r0px": 4
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "32h/20px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-users-roles-pods/admin-admin-pod-new-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 3,
+   "40h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "77h/14px/400/r6px": 1
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "29h/22px/700/r0px": 1
+  },
+  "card": {
+   "29h/18px/400/r0px": 1,
+   "314h/14px/400/r12px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "16h/13px/400/r0px": 3,
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-users-roles-pods/admin-admin-grant-access-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 5,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 7,
+   "32h/14px/400/r50%": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "32h/14px/400/r6px": 1,
+   "40h/14px/400/r6px": 3
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1,
+   "30h/14px/400/r0px": 1
+  },
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 2
+  },
+  "th": {
+   "40h/12px/700/r0px": 7
+  },
+  "row": {
+   "44h/14px/400/r0px": 1
+  },
+  "chip": {
+   "32h/13px/600/r999px": 4,
+   "24h/14px/400/r0px": 2
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "32h/20px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {
+   "768h/14px/400/r0px/w480": 1
+  },
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-admin-status-labels-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 1,
+   "40h/14px/600/r4px": 6
+  },
+  "input": {
+   "40h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/500/r0px": 3,
+   "35h/14px/600/r0px": 1
+  },
+  "th": {
+   "32h/12px/700/r0px": 3
+  },
+  "row": {
+   "45h/14px/400/r0px": 5
+  },
+  "chip": {
+   "24h/14px/400/r0px": 5,
+   "24h/12px/700/r999px": 5
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "17h/14px/400/r0px": 5,
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-admin-custom-fields-list-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 1,
+   "40h/14px/600/r4px": 4
+  },
+  "input": {
+   "40h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {
+   "32h/12px/700/r0px": 5
+  },
+  "row": {
+   "45h/14px/400/r0px": 3
+  },
+  "chip": {
+   "24h/14px/400/r0px": 3
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-admin-save-toast-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 6,
+   "32h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 3
+  },
+  "th": {
+   "32h/12px/700/r0px": 6
+  },
+  "row": {
+   "45h/14px/400/r0px": 5
+  },
+  "chip": {
+   "24h/14px/400/r0px": 6
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-reports-audit-settings/admin-settings-holidays-list-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 6,
+   "40h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "39h/14px/600/r0px": 1,
+   "39h/14px/500/r0px": 2
+  },
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-reports-audit-settings/admin-settings-branding-2-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 6,
+   "40h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "39h/14px/600/r0px": 1,
+   "39h/14px/500/r0px": 2
+  },
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "task-page/director-status-menu-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 1,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 8
+  },
+  "input": {
+   "40h/14px/400/r4px": 2
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 2
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "24h/14px/700/r0px": 1,
+   "26h/14px/600/r0px": 1,
+   "24h/14px/600/r0px": 1,
+   "24h/12px/700/r999px": 1,
+   "25h/14px/600/r0px": 3
+  },
+  "h1": {
+   "30h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 2,
+   "17h/14px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "task-page/director-assignee-menu-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 1,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 8
+  },
+  "input": {
+   "40h/14px/400/r4px": 2,
+   "28h/14px/600/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 2
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "24h/14px/700/r0px": 1,
+   "26h/14px/600/r0px": 1,
+   "24h/14px/600/r0px": 1,
+   "24h/12px/700/r999px": 1,
+   "25h/14px/600/r0px": 3
+  },
+  "h1": {
+   "30h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 2,
+   "17h/14px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "task-page/director-due-popover-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 10
+  },
+  "input": {
+   "40h/14px/400/r4px": 3,
+   "40h/14px/400/r6px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 2
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "24h/14px/700/r0px": 1,
+   "26h/14px/600/r0px": 1,
+   "24h/14px/600/r0px": 1,
+   "24h/12px/700/r999px": 1,
+   "25h/14px/600/r0px": 3
+  },
+  "h1": {
+   "30h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 2,
+   "17h/14px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "task-page/director-more-menu-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 1,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 8
+  },
+  "input": {
+   "40h/14px/400/r4px": 2
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 2
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "24h/14px/700/r0px": 1,
+   "26h/14px/600/r0px": 1,
+   "24h/14px/600/r0px": 1,
+   "24h/12px/700/r999px": 1,
+   "25h/14px/600/r0px": 3
+  },
+  "h1": {
+   "30h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 2,
+   "17h/14px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "task-page/director-activity-drawer-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 1,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 8,
+   "32h/14px/400/r50%": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 2
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 2
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "24h/14px/700/r0px": 1,
+   "26h/14px/600/r0px": 1,
+   "24h/14px/600/r0px": 1,
+   "24h/12px/700/r999px": 1,
+   "25h/14px/600/r0px": 3,
+   "32h/14px/600/r4px": 1,
+   "32h/14px/400/r4px": 6
+  },
+  "h1": {
+   "30h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {
+   "1080h/14px/400/r0px/w504": 1
+  },
+  "link": {
+   "24h/13px/400/r0px": 2,
+   "17h/14px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "task-page/director-complete-dialog-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 3,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 8,
+   "32h/14px/400/r50%": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 2
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 2
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "24h/14px/700/r0px": 1,
+   "26h/14px/600/r0px": 1,
+   "24h/14px/600/r0px": 1,
+   "24h/12px/700/r999px": 1,
+   "25h/14px/600/r0px": 3
+  },
+  "h1": {
+   "30h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {
+   "300h/14px/400/r8px/w448": 1
+  },
+  "link": {
+   "24h/13px/400/r0px": 2,
+   "17h/14px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "task-page/director-edit-dialog-2-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 1,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 10,
+   "32h/14px/400/r50%": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 2,
+   "57h/14px/400/r6px": 1,
+   "40h/14px/400/r6px": 3,
+   "84h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 2
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "24h/14px/700/r0px": 1,
+   "24h/14px/600/r0px": 2,
+   "24h/12px/700/r999px": 1,
+   "17h/14px/600/r0px": 2
+  },
+  "h1": {
+   "30h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {
+   "972h/14px/400/r8px/w720": 1
+  },
+  "link": {
+   "24h/13px/400/r0px": 2,
+   "17h/14px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "clients/director-empty-no-match-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 3,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/14px/400/r6px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 6
+  },
+  "row": {
+   "105h/14px/400/r0px": 1
+  },
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "matters/director-header-more-menu-1920x1080": {
+  "button": {
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 3,
+   "32h/14px/400/r4px": 2
+  },
+  "input": {
+   "40h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 6
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "32h/14px/400/r8px": 4,
+   "24h/14px/400/r0px": 2
+  },
+  "h1": {
+   "28h/22px/700/r0px": 1
+  },
+  "card": {
+   "292h/14px/400/r12px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "16h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "matters/director-header-new-menu-1920x1080": {
+  "button": {
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 3,
+   "32h/14px/400/r4px": 2
+  },
+  "input": {
+   "40h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 6
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "32h/14px/400/r8px": 4,
+   "24h/14px/400/r0px": 2
+  },
+  "h1": {
+   "28h/22px/700/r0px": 1
+  },
+  "card": {
+   "292h/14px/400/r12px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "16h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "matters/director-menu-action-dialog-2-1920x1080": {
+  "button": {
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 3,
+   "32h/14px/400/r4px": 4
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "96h/14px/400/r6px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 6
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "32h/14px/400/r8px": 4,
+   "24h/14px/400/r0px": 2
+  },
+  "h1": {
+   "28h/22px/700/r0px": 1
+  },
+  "card": {
+   "292h/14px/400/r12px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {
+   "351h/14px/400/r8px/w504": 1
+  },
+  "link": {
+   "16h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "notifications-search-profile/director-profile-save-toast-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 11,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 2
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 2
+  },
+  "dropdown": {
+   "36h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "24h/14px/700/r0px": 1
+  },
+  "h1": {
+   "38h/22px/700/r0px": 1
+  },
+  "card": {
+   "352h/14px/400/r12px": 1,
+   "21h/18px/600/r0px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 10
+  }
+ },
+ "notifications-search-profile/director-profile-dirty-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 11,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 2
+  },
+  "dropdown": {
+   "36h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "24h/14px/700/r0px": 1
+  },
+  "h1": {
+   "38h/22px/700/r0px": 1
+  },
+  "card": {
+   "352h/14px/400/r12px": 1,
+   "21h/18px/600/r0px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 10
+  }
+ },
+ "notifications-search-profile/director-profile-ooo-edit-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 13,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 3,
+   "40h/14px/400/r6px": 3,
+   "57h/14px/400/r6px": 1
+  },
+  "dropdown": {
+   "36h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "24h/14px/700/r0px": 1
+  },
+  "h1": {
+   "38h/22px/700/r0px": 1
+  },
+  "card": {
+   "352h/14px/400/r12px": 1,
+   "21h/18px/600/r0px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {
+   "481h/14px/400/r8px/w504": 1
+  },
+  "link": {
+   "36h/14px/400/r6px": 10
+  }
+ },
+ "notifications-search-profile/director-profile-ooo-delete-confirm-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 13,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 1,
+   "32h/14px/400/r50%": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 2
+  },
+  "dropdown": {
+   "36h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "24h/14px/700/r0px": 1
+  },
+  "h1": {
+   "38h/22px/700/r0px": 1
+  },
+  "card": {
+   "352h/14px/400/r12px": 1,
+   "21h/18px/600/r0px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {
+   "191h/14px/400/r8px/w448": 1
+  },
+  "link": {
+   "36h/14px/400/r6px": 10
+  }
+ },
+ "admin-users-roles-pods/admin-admin-roles-list-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/500/r0px": 2,
+   "35h/14px/600/r0px": 1
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "15h/12px/400/r999px": 1
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "32h/20px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-users-roles-pods/admin-admin-role-new-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 30,
+   "40h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 3,
+   "56h/14px/400/r6px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/500/r0px": 2,
+   "35h/14px/600/r0px": 1
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "15h/12px/400/r999px": 1
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "32h/20px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-users-roles-pods/admin-admin-pods-list-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 5
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "32h/14px/400/r6px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1,
+   "30h/14px/400/r0px": 1
+  },
+  "tab": {
+   "35h/14px/500/r0px": 2,
+   "35h/14px/600/r0px": 1
+  },
+  "th": {
+   "40h/12px/700/r0px": 3
+  },
+  "row": {
+   "44h/14px/400/r0px": 4
+  },
+  "chip": {
+   "24h/14px/400/r0px": 4
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "32h/20px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-users-roles-pods/admin-admin-pod-new-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 3,
+   "40h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "77h/14px/400/r6px": 1
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "29h/22px/700/r0px": 1
+  },
+  "card": {
+   "29h/18px/400/r0px": 1,
+   "314h/14px/400/r12px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "16h/13px/400/r0px": 3,
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-users-roles-pods/admin-admin-grant-access-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 5,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 7,
+   "32h/14px/400/r50%": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "32h/14px/400/r6px": 1,
+   "40h/14px/400/r6px": 3
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1,
+   "30h/14px/400/r0px": 1
+  },
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 2
+  },
+  "th": {
+   "40h/12px/700/r0px": 7
+  },
+  "row": {
+   "44h/14px/400/r0px": 1
+  },
+  "chip": {
+   "32h/13px/600/r999px": 4,
+   "24h/14px/400/r0px": 2
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "32h/20px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {
+   "1080h/14px/400/r0px/w480": 1
+  },
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-admin-status-labels-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 1,
+   "40h/14px/600/r4px": 6
+  },
+  "input": {
+   "40h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/500/r0px": 3,
+   "35h/14px/600/r0px": 1
+  },
+  "th": {
+   "32h/12px/700/r0px": 3
+  },
+  "row": {
+   "45h/14px/400/r0px": 5
+  },
+  "chip": {
+   "24h/14px/400/r0px": 5,
+   "24h/12px/700/r999px": 5
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "17h/14px/400/r0px": 5,
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-admin-custom-fields-list-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 1,
+   "40h/14px/600/r4px": 4
+  },
+  "input": {
+   "40h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {
+   "32h/12px/700/r0px": 5
+  },
+  "row": {
+   "45h/14px/400/r0px": 3
+  },
+  "chip": {
+   "24h/14px/400/r0px": 3
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-admin-save-toast-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 4,
+   "40h/14px/600/r4px": 6
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 2
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 3
+  },
+  "th": {
+   "32h/12px/700/r0px": 6
+  },
+  "row": {
+   "45h/14px/400/r0px": 5
+  },
+  "chip": {
+   "24h/14px/400/r0px": 6
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {
+   "455h/14px/400/r8px/w420": 1
+  },
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-reports-audit-settings/admin-settings-holidays-list-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 6,
+   "40h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "39h/14px/600/r0px": 1,
+   "39h/14px/500/r0px": 2
+  },
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-reports-audit-settings/admin-settings-branding-2-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 6,
+   "40h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "39h/14px/600/r0px": 1,
+   "39h/14px/500/r0px": 2
+  },
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ }
+}

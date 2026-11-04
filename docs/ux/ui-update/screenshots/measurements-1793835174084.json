@@ -1,0 +1,1162 @@
+{
+ "matters/director-error-state-2-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 3,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 5
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/14px/400/r6px": 2
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 4
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 9
+  },
+  "row": {
+   "105h/14px/400/r0px": 1
+  },
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "matters/director-loading-state-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 3
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/14px/400/r6px": 2
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 4
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 9
+  },
+  "row": {
+   "44h/14px/400/r0px": 5
+  },
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "task-queue/director-error-state-2-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 10
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/13.3333px/400/r0px": 1,
+   "32h/14px/400/r6px": 2
+  },
+  "dropdown": {
+   "30h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 11
+  },
+  "row": {
+   "44h/14px/400/r0px": 46,
+   "56h/14px/400/r0px": 4
+  },
+  "chip": {
+   "32h/14px/400/r8px": 50,
+   "20h/14px/400/r0px": 43,
+   "24h/14px/400/r0px": 50,
+   "24h/12px/700/r999px": 50
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "task-queue/director-loading-state-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 10
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/13.3333px/400/r0px": 1,
+   "32h/14px/400/r6px": 2
+  },
+  "dropdown": {
+   "30h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 11
+  },
+  "row": {
+   "44h/14px/400/r0px": 46,
+   "56h/14px/400/r0px": 4
+  },
+  "chip": {
+   "32h/14px/400/r8px": 50,
+   "20h/14px/400/r0px": 43,
+   "24h/14px/400/r0px": 50,
+   "24h/12px/700/r999px": 50
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "clients/director-error-state-2-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 3,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 2
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/14px/400/r6px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 6
+  },
+  "row": {
+   "105h/14px/400/r0px": 1
+  },
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "clients/director-loading-state-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/14px/400/r6px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 6
+  },
+  "row": {
+   "44h/14px/400/r0px": 5
+  },
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "projects/director-error-state-2-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 2
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/14px/400/r6px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 6
+  },
+  "row": {
+   "44h/14px/400/r0px": 5
+  },
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "projects/director-loading-state-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/14px/400/r6px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 6
+  },
+  "row": {
+   "44h/14px/400/r0px": 5
+  },
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "assets/director-error-state-2-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 3,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 3
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/14px/400/r6px": 2
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 8
+  },
+  "row": {
+   "107h/14px/400/r0px": 1
+  },
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "assets/director-loading-state-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 2
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/14px/400/r6px": 2
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 8
+  },
+  "row": {
+   "44h/14px/400/r0px": 5
+  },
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "dashboard/director-error-state-2-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 1,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 11
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1
+  },
+  "dropdown": {
+   "30h/14px/400/r0px": 2
+  },
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 5
+  },
+  "th": {
+   "49h/12px/700/r0px": 11
+  },
+  "row": {
+   "44h/14px/400/r0px": 46,
+   "56h/14px/400/r0px": 4
+  },
+  "chip": {
+   "32h/14px/400/r8px": 50,
+   "20h/14px/400/r0px": 43,
+   "24h/14px/400/r0px": 50,
+   "24h/12px/700/r999px": 50
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "64h/14px/400/r0px": 1,
+   "64h/14px/400/r12px": 3,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "dashboard/director-loading-state-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 1,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 5
+  },
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "task-page/director-not-found-record-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 1,
+   "40h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "36h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "matters/director-not-found-record-1366x768": {
+  "button": {
+   "40h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "36h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "my-work/director-director-view-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 8
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/14px/400/r6px": 2
+  },
+  "dropdown": {
+   "30h/14px/400/r0px": 1
+  },
+  "tab": {
+   "35h/14px/500/r0px": 3,
+   "35h/14px/600/r0px": 1
+  },
+  "th": {
+   "40h/12px/700/r0px": 11
+  },
+  "row": {
+   "44h/14px/400/r0px": 1
+  },
+  "chip": {
+   "32h/14px/400/r8px": 1,
+   "24h/14px/400/r0px": 1,
+   "24h/12px/700/r999px": 1
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "admin-users-roles-pods/admin-error-state-2-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 4
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "32h/14px/400/r6px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 2
+  },
+  "th": {
+   "40h/12px/700/r0px": 6
+  },
+  "row": {
+   "107h/14px/400/r0px": 1
+  },
+  "chip": {
+   "32h/13px/600/r999px": 4
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "32h/20px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-users-roles-pods/admin-loading-state-1366x768": {
+  "button": {
+   "32h/14px/400/r4px": 1,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 2
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "32h/14px/400/r6px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 2
+  },
+  "th": {
+   "40h/12px/700/r0px": 6
+  },
+  "row": {
+   "44h/14px/400/r0px": 5
+  },
+  "chip": {
+   "32h/13px/600/r999px": 4
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "32h/20px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "matters/director-error-state-2-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 3,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 5
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/14px/400/r6px": 2
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 4
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 9
+  },
+  "row": {
+   "105h/14px/400/r0px": 1
+  },
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "matters/director-loading-state-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 3
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/14px/400/r6px": 2
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 4
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 9
+  },
+  "row": {
+   "44h/14px/400/r0px": 5
+  },
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "task-queue/director-error-state-2-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 10
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/13.3333px/400/r0px": 1,
+   "32h/14px/400/r6px": 2
+  },
+  "dropdown": {
+   "30h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 11
+  },
+  "row": {
+   "44h/14px/400/r0px": 46,
+   "56h/14px/400/r0px": 4
+  },
+  "chip": {
+   "32h/14px/400/r8px": 50,
+   "20h/14px/400/r0px": 43,
+   "24h/14px/400/r0px": 50,
+   "24h/12px/700/r999px": 50
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "task-queue/director-loading-state-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 10
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/13.3333px/400/r0px": 1,
+   "32h/14px/400/r6px": 2
+  },
+  "dropdown": {
+   "30h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 11
+  },
+  "row": {
+   "44h/14px/400/r0px": 46,
+   "56h/14px/400/r0px": 4
+  },
+  "chip": {
+   "32h/14px/400/r8px": 50,
+   "20h/14px/400/r0px": 43,
+   "24h/14px/400/r0px": 50,
+   "24h/12px/700/r999px": 50
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "clients/director-error-state-2-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 3,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 3
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/14px/400/r6px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 6
+  },
+  "row": {
+   "105h/14px/400/r0px": 1
+  },
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "clients/director-loading-state-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/14px/400/r6px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 6
+  },
+  "row": {
+   "44h/14px/400/r0px": 5
+  },
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "projects/director-error-state-2-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 3,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 2
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/14px/400/r6px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 6
+  },
+  "row": {
+   "105h/14px/400/r0px": 1
+  },
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "projects/director-loading-state-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/14px/400/r6px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 6
+  },
+  "row": {
+   "44h/14px/400/r0px": 5
+  },
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "assets/director-error-state-2-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 3
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/14px/400/r6px": 2
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 8
+  },
+  "row": {
+   "44h/14px/400/r0px": 5
+  },
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "assets/director-loading-state-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 2
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/14px/400/r6px": 2
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 8
+  },
+  "row": {
+   "44h/14px/400/r0px": 5
+  },
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "dashboard/director-error-state-2-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 1,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 11
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1
+  },
+  "dropdown": {
+   "30h/14px/400/r0px": 2
+  },
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 5
+  },
+  "th": {
+   "49h/12px/700/r0px": 11
+  },
+  "row": {
+   "44h/14px/400/r0px": 46,
+   "56h/14px/400/r0px": 4
+  },
+  "chip": {
+   "32h/14px/400/r8px": 50,
+   "20h/14px/400/r0px": 43,
+   "24h/14px/400/r0px": 50,
+   "24h/12px/700/r999px": 50
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "64h/14px/400/r0px": 1,
+   "64h/14px/400/r12px": 3,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "dashboard/director-loading-state-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 1,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 5
+  },
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "task-page/director-not-found-record-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 1,
+   "40h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "36h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "matters/director-not-found-record-1920x1080": {
+  "button": {
+   "40h/14px/600/r4px": 1
+  },
+  "input": {
+   "40h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "36h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "my-work/director-director-view-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 8
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "40h/14px/400/r6px": 1,
+   "32h/14px/400/r6px": 2
+  },
+  "dropdown": {
+   "30h/14px/400/r0px": 1
+  },
+  "tab": {
+   "35h/14px/500/r0px": 3,
+   "35h/14px/600/r0px": 1
+  },
+  "th": {
+   "40h/12px/700/r0px": 11
+  },
+  "row": {
+   "44h/14px/400/r0px": 1
+  },
+  "chip": {
+   "32h/14px/400/r8px": 1,
+   "24h/14px/400/r0px": 1,
+   "24h/12px/700/r999px": 1
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "admin-users-roles-pods/admin-error-state-2-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 2,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 4
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "32h/14px/400/r6px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 2
+  },
+  "th": {
+   "40h/12px/700/r0px": 6
+  },
+  "row": {
+   "107h/14px/400/r0px": 1
+  },
+  "chip": {
+   "32h/13px/600/r999px": 4
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "32h/20px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-users-roles-pods/admin-loading-state-1920x1080": {
+  "button": {
+   "32h/14px/400/r4px": 1,
+   "40h/14px/600/r4px": 1,
+   "32h/14px/600/r4px": 2
+  },
+  "input": {
+   "40h/14px/400/r4px": 1,
+   "32h/14px/400/r6px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "35h/14px/600/r0px": 1,
+   "35h/14px/500/r0px": 2
+  },
+  "th": {
+   "40h/12px/700/r0px": 6
+  },
+  "row": {
+   "44h/14px/400/r0px": 5
+  },
+  "chip": {
+   "32h/13px/600/r999px": 4
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "32h/20px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ }
+}
