@@ -63,3 +63,7 @@ Crawl step "Add priority" created the priority `UI sample`; the profile save ste
 ## Disk
 
 `df -h /home` showed about 5.7 GB free at the start (allowance fixed per session). The worktree, node_modules (hard links), dotnet build output, the Docker image (2.35 GB, already pulled by an earlier agent) and the screenshots (about 30 MB after palette compression) are what this stack uses. Delete nothing that you did not create.
+
+## After a container restart (happened once on 2026-11-04)
+
+Everything in memory is gone but the worktree, the Docker volume (SQL data) and `node_modules` survive. Recovery took about 3 minutes: `nohup dockerd >/tmp/dockerd.log 2>&1 &`, wait 15 s, `docker compose -f docker-compose.dev.yml up -d --wait sqlserver`, `docs/ux/ui-update/stack-start.sh` (API ready after about 90 s, web after about 3 minutes), no new seed needed. Status when this note was written: API ready on 5080, web 200 on 4200, demo data intact, 5.2 GB free on `/home`.
