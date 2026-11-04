@@ -1,5 +1,7 @@
 # UI update 2: draft findings (phase 1)
 
+The app is desktop-only (owner decision, 2026-11-05): phone and tablet layouts are out of scope. Checks and screenshots use 1366x768 and 1920x1080 only.
+
 Source: the UI designer's phase 1 review (code counts by grep on non-spec files at f26c324; "old shot" = seen in a 2026-11-01 or 2026-11-03 screenshot that the phase 2 crawl must re-check). Phase 2 replaces this file with `findings.md` built from the real screenshot crawl.
 
 Severity: High / Medium / Low.
@@ -35,7 +37,8 @@ Severity: High / Medium / Low.
 | 27 | Uppercase | 33 uppercase rules in 27 files (tile captions, group headings, weekdays). | Low | |
 | 28 | Number formats | Not consistent (to measure in the crawl). | Low | |
 | 29 | 403, 404, error, access-pending | Each draws its own card. | Low | |
-| 30 | Phone | Toolbars, Users and Calendar hide different things. | Medium (crawl) | |
+
+(The earlier finding 30, phone layouts, was dropped: the app is desktop-only.)
 
 ## The ten biggest
 
@@ -43,7 +46,7 @@ Severity: High / Medium / Low.
 
 ## Decisions recorded in ui-spec.md section 0.3 that the owner may care about
 
-- D-02: every control is 36 px (buttons 32 to 36, form fields 40 to 36), 32 px dense in grid cells, 44 px on a phone. Touches guide section 9. Fallback: everything 32.
+- D-02: every control is 36 px (buttons 32 to 36, form fields 40 to 36), 32 px dense in grid cells. Touches guide section 9. Fallback: everything 32.
 - D-20: one capitalisation rule: "click it or name it is Title Case, read it is sentence case" (nav "Asset Types", chips "Out of Office" and "Off Hours", buttons "Clear Filters", tabs "Status Labels").
 - D-30: routed page forms get the dialog order (Cancel, then primary last); Delete far left.
 - D-32 and D-33: dialogs 416/576/768 px, drawers 520 px (720 wide), in px.
