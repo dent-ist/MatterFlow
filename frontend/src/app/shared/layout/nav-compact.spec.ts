@@ -25,7 +25,7 @@ describe('main menu order (MM-59, #951)', () => {
     expect(at('Assets')).toBe(at('Matters') + 2);
   });
 
-  it('for a person who lands on My Matters: "Tasks" instead of Task Queue, no Pod Work, nothing else changes', () => {
+  it('for a person who lands on My Matters: the Task Queue keeps its name "Task Queue" (no compact "Tasks" label), no Pod Work, nothing else changes', () => {
     expect(labels(mainNav(NAV_ITEMS, true))).toEqual([
       'Dashboard',
       'My Matters',
@@ -34,7 +34,7 @@ describe('main menu order (MM-59, #951)', () => {
       'Matters',
       'Projects',
       'Assets',
-      'Tasks',
+      'Task Queue',
     ]);
   });
 

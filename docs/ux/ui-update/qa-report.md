@@ -104,6 +104,6 @@ Worst cases (feed for 145 matters 396 ms, assets with a name filter or linked-ta
 - Playwright ran on the build before the QA fixes for the full pass; the fixed build was used for the targeted re-runs (about 270 tests in six re-runs) and for the sensitive and axe runs. The QA fixes touch the My Matters page, shared dropdown, asset admin pages, rail CSS and one backend query; the full frontend unit suite (4,312) ran on the final sources.
 - The shell scrolls the document at 1366x600 for an administrator (#980).
 - Events: every PM can add items on any matter they can see (#977); the Add Event button shows for anyone holding `Matter.Edit` or `Matter.BeManager`, the server decides and the dialog reports the refusal.
-- A director cannot open My Matters (#976); the menu says "Task Queue" for most roles (#978).
+- A director cannot open My Matters (#976); the menu says "Task Queue" for most roles (#978; owner decision 2026-11-05: "Task Queue" for everyone, the compact "Tasks" label is removed, and the Overview's task type chip now shows the task type name).
 - Dropdown panels (drawn on the page body) trigger the best-practice axe rule "region"; not a WCAG failure.
 - Disk and memory on the build machine were close to the limit during the run (an OOM kill, disk down to 1 GB at one point); nothing in the product depends on it.

@@ -89,7 +89,7 @@ async function collectApi(who: Api, fx: PmFixtures): Promise<Record<string, numb
   return out;
 }
 
-const PM_MENU = ['My Matters', 'My Work', 'Clients', 'Matters', 'Projects', 'Assets', 'Tasks'];
+const PM_MENU = ['My Matters', 'My Work', 'Clients', 'Matters', 'Projects', 'Assets', 'Task Queue'];
 const FOUR_TABS = ['Overview', 'Calendar', 'Assets', 'Metrics', 'Activity']; // the five tabs of the UI update (epic #953); Metrics holds Breakdown and Data
 
 test.describe('Permission matrix of the Project Manager views', () => {
@@ -147,7 +147,7 @@ test.describe('Permission matrix of the Project Manager views', () => {
     const ui = await collectUi(page, fx);
     expect(ui.landing).not.toBe('/my-matters');
     expect(ui.menu).not.toContain('My Matters');
-    expect(ui.menu).not.toContain('Tasks');
+    expect(ui.menu).not.toContain('Task Queue');
     expect(ui.tabs).toEqual([]);
     expect(ui.overviewSections).not.toContain('status');
     expect(ui.overviewSections).not.toContain('deadlines');
@@ -378,7 +378,7 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
       'Matters',
       'Projects',
       'Assets',
-      'Tasks',
+      'Task Queue',
     ]);
     await page.setViewportSize(SIZES[0]);
     await page.goto('/my-matters');

@@ -214,7 +214,7 @@ describe('AppShell header search', () => {
       'Pod.View',
     ];
 
-    it('sees the one order with "Tasks" and no Pod Work, and no More button', async () => {
+    it('sees the one order with "Task Queue" and no Pod Work, and no More button', async () => {
       localStorage.setItem('mf.nav.more.1', '1');
       const fixture = await create(PM);
       expect(navLabels(fixture)).toEqual([
@@ -224,7 +224,7 @@ describe('AppShell header search', () => {
         'Matters',
         'Projects',
         'Assets',
-        'Tasks',
+        'Task Queue',
       ]);
       expect(fixture.nativeElement.querySelector('[data-nav-more-toggle]')).toBeNull();
       // The state "More" used to remember is forgotten.

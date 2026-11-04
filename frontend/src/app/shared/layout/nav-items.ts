@@ -19,8 +19,6 @@ export interface NavItem {
   child?: boolean;
   /** Left out of the menu of a person who lands on My Matters (epic #758; the rule is `landsOnMyMatters`, never a role name). The address still works. */
   hideWhenCompact?: boolean;
-  /** The item's name in the menu of a person who lands on My Matters, when it differs ("Tasks" for the Task Queue). */
-  compactLabel?: string;
 }
 
 /**
@@ -91,18 +89,15 @@ export const NAV_ITEMS: NavItem[] = [
     icon: 'pi pi-list-check',
     path: '/tasks',
     permissions: ['Task.View'],
-    compactLabel: 'Tasks',
   },
 ];
 
 /**
- * The main menu of the permitted items (already filtered by permission). A person who lands on My Matters (epic #758) sees "Tasks" for the
- * Task Queue and no Pod Work; everybody else sees the items as defined. Pure data: the flags on the items decide, never a role name.
+ * The main menu of the permitted items (already filtered by permission). A person who lands on My Matters (epic #758) sees no Pod Work
+ * (the Task Queue is called "Task Queue" for everybody, #978); everybody else sees the items as defined. Pure data: the flags on the items decide, never a role name.
  */
 export function mainNav(items: readonly NavItem[], compact: boolean): NavItem[] {
-  return items
-    .filter((i) => !(compact && i.hideWhenCompact))
-    .map((i) => (compact && i.compactLabel ? { ...i, label: i.compactLabel } : i));
+  return items.filter((i) => !(compact && i.hideWhenCompact));
 }
 
 /** Administration section: shown only when at least one entry is permitted. */

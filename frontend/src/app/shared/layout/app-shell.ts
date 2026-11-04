@@ -117,7 +117,7 @@ export class AppShell {
   /** The shortcut list loads the first time it is opened. */
   protected readonly helpHost = signal<Type<unknown> | null>(null);
   protected readonly navItems = computed(() => this.visible(NAV_ITEMS));
-  /** A person who lands on My Matters (epic #758) sees "Tasks" and no Pod Work; the rule is the landing test (permissions), not a role name. */
+  /** A person who lands on My Matters (epic #758) sees no Pod Work (the Task Queue keeps its name for everybody, #978); the rule is the landing test (permissions), not a role name. */
   private readonly compact = computed(() => landsOnMyMatters(this.auth));
   /** The main menu in its one order (MM-59, #951); Projects and Assets are indented children of Matters. */
   protected readonly mainItems = computed(() => mainNav(this.navItems(), this.compact()));

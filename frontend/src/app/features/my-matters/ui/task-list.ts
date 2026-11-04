@@ -16,6 +16,8 @@ import {
   UsersLookupClient,
 } from '../../../api/generated/api-client';
 import { LookupStore } from '../../../core/lookups/lookup-store';
+import { SectionTypes } from '../section-types';
+import { taskTypeChipText } from './task-type-chip-text';
 import { todayText } from '../calendar-month';
 import { GridFilters } from './mm-scope';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
@@ -174,7 +176,7 @@ export function statusCodes(status: StatusFilter): string[] {
           @if (activeChips().length > 0) {
             <div class="achips" data-active-filters>
               @for (c of activeChips(); track c.key) {
-                <span class="achip"
+                <span class="achip" [attr.title]="c.title ?? null"
                   >{{ c.label }}
                   <button
                     type="button"
@@ -892,6 +894,7 @@ export class MmTaskList {
     { value: 'range', label: 'Custom range' },
   ];
   private readonly lookups = inject(LookupStore);
+  private readonly sectionTypes = inject(SectionTypes);
   private readonly usersApi = inject(UsersLookupClient);
   private readonly people = signal<{ id: number; name: string }[]>([]);
   protected readonly priorityItems = computed<DropdownItem[]>(() =>
@@ -933,7 +936,12 @@ export class MmTaskList {
   });
   protected readonly activeChips = computed(() => {
     const g = this.grid();
-    const out: { key: string; label: string; clear: Record<string, string | null> }[] = [];
+    const out: {
+      key: string;
+      label: string;
+      title?: string;
+      clear: Record<string, string | null>;
+    }[] = [];
     if (!this.statuses().includes('open'))
       out.push({
         key: 'status',
@@ -961,12 +969,17 @@ export class MmTaskList {
         label: `Due: ${this.dueItems.find((d) => d.value === g.due)?.label ?? g.due}${g.due === 'range' && (g.from || g.to) ? ` ${this.numDay(g.from)} to ${this.numDay(g.to)}` : ''}`,
         clear: { due: null, dfrom: null, dto: null },
       });
-    if (g.types.length)
+    if (g.types.length) {
+      const known = new Map(this.sectionTypes.options().map((t) => [t.id, t.name]));
+      const typeText = taskTypeChipText(g.types, known);
       out.push({
         key: 'ttype',
-        label: `Task type: ${g.types.length === 1 ? 'one chosen' : g.types.length + ' chosen'}`,
+        // The task type NAME (#978): one or two names in full, more as "N types" with every name in the tooltip. Until the names are read the count is shown.
+        label: `Task type: ${typeText.label}`,
+        title: typeText.title,
         clear: { ttype: null },
       });
+    }
     if (g.createdFrom || g.createdTo)
       out.push({
         key: 'created',
@@ -1053,6 +1066,10 @@ export class MmTaskList {
   );
 
   constructor() {
+    // The chip names the task types of the address (a drill from Metrics), so the names are read once when there is one.
+    effect(() => {
+      if (this.grid().types.length > 0) this.sectionTypes.ensure();
+    });
     // The Priority filter and its chip read the shared priority list; a page opened by address would otherwise show an empty list.
     void this.lookups.ensureLoaded();
     if (this.filterOpen()) this.loadPeople();

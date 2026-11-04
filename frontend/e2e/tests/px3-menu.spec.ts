@@ -27,7 +27,7 @@ test.describe('The short menu of the Project Manager', () => {
       'Matters',
       'Projects',
       'Assets',
-      'Tasks',
+      'Task Queue',
     ]);
     await expect(page.locator('[data-nav-more], [data-nav-more-toggle]')).toHaveCount(0);
     // Every route stays reachable, with the current item marked; an indented item is current without Matters.
