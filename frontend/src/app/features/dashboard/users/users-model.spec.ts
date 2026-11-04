@@ -4,7 +4,6 @@ import { assignHint } from './users-assign';
 import { backOnText, bandOf } from './users-card';
 import { contrastRatio } from '../../../shared/ui/color-contrast';
 import {
-  CAN_TAKE_WORK_NOW,
   CLEARED_FILTERS,
   DEFAULT_FILTERS,
   IDLE_TINT_PERCENT,
@@ -125,10 +124,6 @@ describe('users model', () => {
       ]);
       expect(segs.reduce((n, s) => n + s.percent, 0)).toBeCloseTo(100);
       expect(capacitySegments([]).every((s) => s.count === 0 && s.percent === 0)).toBe(true);
-    });
-
-    it('"Show people who can take work now" is available, Idle or Light', () => {
-      expect(CAN_TAKE_WORK_NOW).toEqual({ availability: 'available', states: ['idle', 'light'] });
     });
 
     it('names a level with its threshold for chips and tooltips', () => {

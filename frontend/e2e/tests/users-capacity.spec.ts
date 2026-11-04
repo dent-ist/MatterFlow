@@ -175,50 +175,31 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     await expect(page.locator('[data-summary-unassigned]')).toContainText(
       `${scoped.summary.unassignedTasks} unassigned task`,
     );
-    await expect(page.locator('[data-summary-unassigned]')).toHaveAttribute(
+    await page.locator('[data-summary-unassigned]').click();
+    await expect(page.locator('[data-unassigned-queue]')).toHaveAttribute(
       'href',
       new RegExp(`pod=${wl.podB.podId}`),
     );
+    await page.keyboard.press('Escape');
   });
 
-  test('Assign work offers the people who can take work now (fewest open tasks first) and the unassigned queue; Escape closes it', async ({
+  test('the unassigned button opens the right side panel (title with the count, Esc closes it and the focus returns to the button) and there is no Assign work dropdown', async ({
     page,
   }) => {
     await openUsers(page);
-    const trigger = page.getByRole('button', { name: 'Assign work', exact: true });
-    await trigger.click();
-    await expect(page.getByRole('menuitem')).toHaveText([
-      'Show people who can take work now',
-      'Open the unassigned queue',
-    ]);
-    await expect(page.getByRole('menuitem').first()).toBeFocused();
-    await page.keyboard.press('Escape');
-    await expect(page.getByRole('menu')).toHaveCount(0);
-    await expect(trigger).toBeFocused();
-
-    await trigger.click();
-    await page.getByRole('menuitem', { name: 'Show people who can take work now' }).click();
-    await expect(page).toHaveURL(/uavail=available/);
-    await expect(page).toHaveURL(/ustate=idle(,|%2C)light/);
-    await expect(labelledDropdown(page, 'Sort')).toHaveAttribute('data-value', 'fewest');
-    const board = await workload(page, '&availability=available&includeNoPod=false');
-    const wanted = board.users
-      .filter((u: Json) => u.loadLevel === 'IDLE' || u.loadLevel === 'LIGHT')
-      .sort((a: Json, b: Json) => a.openTotal - b.openTotal);
-    await expect(page.locator('[data-user-card]')).toHaveCount(wanted.length);
-    const opens = await page
-      .locator('[data-user-card] [data-open-total]')
-      .allTextContents()
-      .then((t) => t.map(Number));
-    expect(opens).toEqual([...opens].sort((a, b) => a - b));
-    // No one out of office is offered.
-    await expect(page.locator('[data-user-card][data-availability="OUT_OF_OFFICE"]')).toHaveCount(
-      0,
+    await expect(page.locator('[data-assign-work-menu]')).toHaveCount(0);
+    const button = page.locator('[data-summary-unassigned]');
+    const count = Number(await button.locator('[data-n]').textContent());
+    await button.click();
+    await expect(page.locator('[data-unassigned-panel]')).toBeVisible();
+    await expect(page.locator('[data-unassigned-title]')).toHaveText(`Unassigned tasks (${count})`);
+    await expect(page.locator('[data-unassigned-queue]')).toHaveAttribute(
+      'href',
+      /unassigned=true/,
     );
-
-    await page.getByRole('button', { name: 'Assign work', exact: true }).click();
-    await page.getByRole('menuitem', { name: 'Open the unassigned queue' }).click();
-    await expect(page).toHaveURL(/\/tasks\?.*unassigned=true/);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('[data-unassigned-panel]')).toHaveCount(0);
+    await expect(button).toBeFocused();
   });
 
   test('Workload | Coverage is a text switch of toggle buttons, first in the toolbar and on Coverage; a role without Coverage has none', async ({
@@ -422,9 +403,9 @@ test.describe('Users tab: capacity, population and toolbar', () => {
       await expect(page.locator('[data-who-popover]')).toBeVisible();
       expect(await axeViolations(page), `who counted ${width}`).toEqual([]);
       await page.keyboard.press('Escape');
-      await page.getByRole('button', { name: 'Assign work', exact: true }).click();
-      await expect(page.getByRole('menu')).toBeVisible();
-      expect(await axeViolations(page), `menu ${width}`).toEqual([]);
+      await page.locator('[data-summary-unassigned]').click();
+      await expect(page.locator('[data-unassigned-panel]')).toBeVisible();
+      expect(await axeViolations(page), `unassigned panel ${width}`).toEqual([]);
       await page.keyboard.press('Escape');
       await pickUserStates(page, 'heavy');
       expect(await axeViolations(page), `filtered ${width}`).toEqual([]);
@@ -538,8 +519,9 @@ test.describe('users capacity screenshots', () => {
       await pickUserStates(page, 'heavy');
       await shot(`02-strip-heavy-${w}`);
       await pickUserStates(page, '');
-      await page.getByRole('button', { name: 'Assign work', exact: true }).click();
-      await shot(`03-assign-menu-${w}`);
+      await page.locator('[data-summary-unassigned]').click();
+      await expect(page.locator('[data-unassigned-panel]')).toBeVisible();
+      await shot(`03-unassigned-panel-${w}`);
       await page.keyboard.press('Escape');
       await page.goto(`/dashboard?tab=users&view=coverage&uq=${crowd.tag}`);
       await expect(page.locator('[data-users-views]')).toBeVisible();

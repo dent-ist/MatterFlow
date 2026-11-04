@@ -288,12 +288,6 @@ export function capacitySegments(
   });
 }
 
-/** What "Assign work > Show people who can take work now" sets: not out of office, Idle or Light, fewest open tasks first. */
-export const CAN_TAKE_WORK_NOW: Partial<UsersFilters> = {
-  availability: 'available',
-  states: ['idle', 'light'],
-};
-
 // ---- colours
 
 /**

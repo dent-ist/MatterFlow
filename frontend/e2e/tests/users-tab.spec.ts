@@ -144,7 +144,7 @@ test.describe('Users tab: workload', () => {
 
     const away = card(page, 'ooo');
     await expect(away).toHaveAttribute('data-availability', 'OUT_OF_OFFICE');
-    await expect(away.locator('[data-ooo-band]')).toContainText('Out of office until');
+    await expect(away.locator('[data-back-on]')).toContainText('Back ');
     await expect(away.locator('[data-user-open]')).toHaveAttribute(
       'aria-label',
       /, 2 open tasks, .*, Out of office until [A-Z][a-z]{2} \d{1,2}/,
@@ -159,9 +159,14 @@ test.describe('Users tab: workload', () => {
     );
 
     const off = card(page, 'offHours');
-    await expect(off.locator('[data-availability-line]')).toHaveText(/Off hours/);
     await expect(off).toHaveAttribute('data-state', 'busy');
     await expect(off.locator('[data-user-open]')).toHaveAttribute('aria-label', /Off hours/);
+
+    // Every card has exactly the same height, whatever its state (out of office, off hours, heavy, overdue, long names).
+    const heights = await page
+      .locator('[data-user-card]')
+      .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)));
+    expect(new Set(heights).size).toBe(1);
 
     // No filler sentences anywhere on a tile.
     for (const c of await page.locator('[data-user-card]').all()) {
@@ -307,6 +312,7 @@ test.describe('Users tab: workload', () => {
     await pickUserStates(page, '');
 
     await page.locator('[data-summary-unassigned]').click();
+    await page.locator('[data-unassigned-queue]').click();
     await expect(page).toHaveURL(/\/tasks\?.*unassigned=true/);
     // The shared database holds everyone's unassigned tasks, so the seeded one is on the first page only after the Title filter narrows the list.
     await new TaskQueuePage(page).search(wl.tag);

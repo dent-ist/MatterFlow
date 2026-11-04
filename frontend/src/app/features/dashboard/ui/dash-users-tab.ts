@@ -39,10 +39,10 @@ import { CoverageView } from '../users/coverage-view';
 import { SkillsView } from '../users/skills-view';
 import { UsersAssign } from '../users/users-assign';
 import { UsersCapacity } from '../users/users-capacity';
+import { UsersUnassigned } from '../users/users-unassigned';
 import { UsersCard } from '../users/users-card';
 import { UsersDrawer } from '../users/users-drawer';
 import {
-  CAN_TAKE_WORK_NOW,
   CLEARED_FILTERS,
   DEFAULT_FILTERS,
   Layout,
@@ -102,6 +102,7 @@ export const USERS_PAGE = 200;
     UsersTable,
     UsersDrawer,
     UsersAssign,
+    UsersUnassigned,
     CoverageView,
     SkillsView,
     DashSkeleton,
@@ -147,12 +148,9 @@ export const USERS_PAGE = 200;
         >
           <mf-users-capacity
             mfBarEnd
-            [users]="board()?.users ?? []"
             [summary]="board()?.summary ?? null"
-            [filters]="filters()"
-            [thresholds]="board()?.thresholds ?? null"
-            [canAssign]="canAssign()"
-            (showCanTake)="showCanTakeWork()"
+            [expanded]="unassignedOpen()"
+            (show)="unassignedOpen.set(true)"
           />
         </mf-users-summary>
       }
@@ -272,6 +270,12 @@ export const USERS_PAGE = 200;
       [version]="version()"
       (closed)="closeDrawer()"
       (assign)="assignTo($event)"
+      (tasksChanged)="scheduleRefresh()"
+    />
+    <mf-users-unassigned
+      [(open)]="unassignedOpen"
+      [pods]="unassignedPods()"
+      [version]="version()"
       (tasksChanged)="scheduleRefresh()"
     />
     <mf-users-assign
@@ -406,6 +410,9 @@ export class DashUsersTab implements OnInit {
     initialValue: this.route.snapshot.queryParamMap,
   });
 
+  /** The right side panel of the unassigned tasks (US-13). */
+  protected readonly unassignedOpen = signal(false);
+  protected readonly unassignedPods = computed(() => this.scope.queueParam());
   protected readonly canAssign = computed(() => this.auth.has('Task.Assign'));
   /**
    * The quiet line about the population (U4, #130). Only under All pods (a Pod scope lists that Pod's members and hides nobody): with people hidden it says
@@ -577,12 +584,6 @@ export class DashUsersTab implements OnInit {
   /** Include people without a pod, or hide them again (`unopod=1`). */
   protected toggleNoPod(): void {
     this.patchFilters({ includeNoPod: !this.filters().includeNoPod });
-  }
-
-  /** Assign work > "Show people who can take work now": not out of office, Idle or Light, fewest open tasks first. */
-  protected showCanTakeWork(): void {
-    this.patchFilters(CAN_TAKE_WORK_NOW);
-    this.setSort('fewest');
   }
 
   protected showMore(): void {

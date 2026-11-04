@@ -4,7 +4,6 @@ import {
   ddOptionTexts,
   ddSelect,
   ddText,
-  ddValue,
 } from '../../../testing/dropdown-testing.spec-util';
 import { DashboardPrefs } from '../dashboard-prefs';
 import { TestBed } from '@angular/core/testing';
@@ -348,7 +347,7 @@ describe('DashUsersTab', () => {
       expect(card('Ann Lee').querySelector('mf-user-state-icon svg path')).not.toBeNull();
     });
 
-    it('shows only the exceptions: Off hours as a chip, Out of office as an amber band with the return date', async () => {
+    it('shows the exceptions without changing the height: Off hours adds nothing, Out of office tints the card and says when they are back', async () => {
       await open();
       const free = card('Cy Tan');
       expect(free.getAttribute('data-state')).toBe('free');
@@ -359,9 +358,13 @@ describe('DashUsersTab', () => {
       const ooo = card('Dee Fox');
       expect(ooo.getAttribute('data-state')).toBe('ooo');
       expect(ooo.getAttribute('data-availability')).toBe('OUT_OF_OFFICE');
-      const band = ooo.querySelector('[data-ooo-band]')!;
-      expect(text(band)).toContain('Out of office until Oct 20');
-      // The card keeps its normal look: the workload is still there.
+      // No band (it added height): the return date is in the count row, the whole wording in the tooltip and the accessible name.
+      expect(ooo.querySelector('[data-ooo-band]')).toBeNull();
+      expect(text(ooo.querySelector('[data-back-on]'))).toBe('Back Oct 21');
+      expect(ooo.querySelector('[data-user-open]')!.getAttribute('title')).toContain(
+        'Out of office until Oct 20',
+      );
+      // The workload is still there.
       expect(text(ooo.querySelector('[data-open-total]'))).toBe('1');
       expect(ooo.querySelector('[data-user-open]')!.getAttribute('aria-label')).toContain(
         'Dee Fox, 1 open task, ',
@@ -371,11 +374,16 @@ describe('DashUsersTab', () => {
       );
       expect(OUT_UNTIL).toBeTruthy();
       const eve = card('Eve Kim');
-      expect(text(eve.querySelector('[data-availability-line]'))).toBe('Off hours');
-      expect(eve.querySelector('[data-ooo-band]')).toBeNull();
+      // Off hours adds no row and no chip (the moon is in the state icon): the card keeps the same height.
+      expect(
+        eve.querySelector('[data-availability-line], .chip, [data-ooo-band], [data-back-on]'),
+      ).toBeNull();
+      expect(eve.querySelector('[data-user-open]')!.getAttribute('aria-label')).toContain(
+        'Off hours',
+      );
     });
 
-    it('shows overdue work only as a red badge with a count and marks a heavy load by its level', async () => {
+    it('shows overdue work only as a red clock and a count (no pill) and marks a heavy load by its level', async () => {
       await open();
       expect(text(card('Ann Lee').querySelector('[data-overdue]'))).toBe('2');
       expect(card('Bob Ray').querySelector('[data-overdue]')).toBeNull();
@@ -404,65 +412,67 @@ describe('DashUsersTab', () => {
   });
 
   describe('capacity strip (U1)', () => {
-    it('links the unassigned count to the Task Queue within the scope', async () => {
+    it('the unassigned button opens the right side panel with the unassigned tasks, longest waiting first, within the scope', async () => {
+      await open();
+      const button = q<HTMLButtonElement>('[data-summary-unassigned]');
+      expect(text(button)).toContain('4 unassigned tasks');
+      expect(button.tagName).toBe('BUTTON');
+      expect(button.getAttribute('aria-haspopup')).toBe('dialog');
+      expect(document.querySelector('[data-unassigned-panel]')).toBeNull();
+      button.click();
+      await settle();
+      const args = getQueue.mock.calls.at(-1)!;
+      expect(args[2]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']);
+      expect(args[7]).toBe(true);
+      expect(args[35]).toBe('unassignedSince');
+      expect(args[36]).toBe('asc');
+      const panel = document.querySelector('[data-unassigned-panel]')!;
+      expect(panel.querySelectorAll('[data-unassigned-tasks] li')).toHaveLength(2);
+      expect(text(document.querySelector('[data-unassigned-title]'))).toBe('Unassigned tasks (2)');
+      expect(document.querySelector('[data-unassigned-queue]')!.getAttribute('href')).toContain(
+        'unassigned=true',
+      );
+      expect(button.getAttribute('aria-expanded')).toBe('true');
+    });
+
+    it('lists the unassigned tasks of the Pod scope only', async () => {
       await open();
       const scope = TestBed.inject(DashScope);
       scope.ensureLoaded();
-      scope.applyAddress((k) => (k === 'pod' ? '2' : null));
+      scope.applyAddress((k) => (k === 'pod' ? 'mine' : null));
       await settle();
-      const link = q('[data-summary-unassigned]');
-      expect(text(link)).toContain('4 unassigned tasks');
-      expect(link.getAttribute('href')).toContain('unassigned=true');
-    });
-
-    it('Assign work has two entries: people who can take work now (Available, Idle or Light, fewest open tasks first) and the unassigned queue', async () => {
-      await open();
-      const trigger = q<HTMLButtonElement>('[data-assign-work-menu]');
-      expect(trigger.getAttribute('aria-haspopup')).toBe('menu');
-      trigger.click();
+      q<HTMLButtonElement>('[data-summary-unassigned]').click();
       await settle();
-      expect(q('[data-assign-menu]').getAttribute('role')).toBe('menu');
-      expect(qa('[role="menuitem"]').map(text)).toEqual([
-        'Show people who can take work now',
-        'Open the unassigned queue',
-      ]);
-      expect(q('[data-menu-queue]').getAttribute('href')).toContain('unassigned=true');
-      q<HTMLButtonElement>('[data-menu-can-take]').click();
-      await settle();
-      expect(q('[data-assign-menu]')).toBeNull();
-      expect(url()).toContain('uavail=available');
-      expect(url()).toContain('ustate=idle,light');
-      expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'available', undefined, 'all', false);
-      expect(ddValue(host, 'Sort')).toBe('fewest');
-      // Idle or Light, fewest open tasks first (the fake API does not drop the out of office Dee Fox; the real one does for Available).
-      expect(qa('[data-user-card]').map((c) => c.getAttribute('data-user'))).toEqual([
-        'Cy Tan',
-        'Dee Fox',
-        'Eve Kim',
-        'Ann Lee',
-      ]);
-    });
-
-    it('Escape closes the Assign work menu and returns the focus to its button', async () => {
-      await open();
-      q<HTMLButtonElement>('[data-assign-work-menu]').click();
-      await settle();
-      q('[data-assign-menu]').dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      const args = getQueue.mock.calls.at(-1)!;
+      expect(args.some((a) => Array.isArray(a) && a.join() === '1,2')).toBe(true);
+      expect(document.querySelector('[data-unassigned-queue]')!.getAttribute('href')).toContain(
+        'pod=2',
       );
-      await settle();
-      expect(q('[data-assign-menu]')).toBeNull();
-      expect(document.activeElement).toBe(q('[data-assign-work-menu]'));
     });
 
-    it('has no Assign work menu without Task.Assign', async () => {
-      await open(
-        of(board()),
-        '/dashboard?tab=users',
-        PERMS.filter((p) => p !== 'Task.Assign'),
-      );
-      expect(q('[data-assign-work-menu]')).toBeNull();
-      expect(q('[data-capacity]')).not.toBeNull();
+    it('shows the empty and the error state of the panel, and Retry reads again', async () => {
+      await open();
+      getQueueRows = [];
+      q<HTMLButtonElement>('[data-summary-unassigned]').click();
+      await settle();
+      expect(text(document.querySelector('[data-unassigned-empty]'))).toBe('No unassigned tasks.');
+      document
+        .querySelector<HTMLButtonElement>('button[aria-label="Close unassigned tasks"]')!
+        .click();
+      await settle();
+      getQueue.mockReturnValue(throwError(() => new Error('x')));
+      q<HTMLButtonElement>('[data-summary-unassigned]').click();
+      await settle();
+      expect(document.querySelector('[data-unassigned-error]')).not.toBeNull();
+      getQueue.mockReturnValue(of(pageOf([unassigned(21, 1, 'Critical')])));
+      document.querySelector<HTMLButtonElement>('[data-unassigned-retry]')!.click();
+      await settle();
+      expect(document.querySelectorAll('[data-unassigned-tasks] li')).toHaveLength(1);
+    });
+
+    it('has no Assign work dropdown any more (the panel rows and the person Assign icon assign)', async () => {
+      await open();
+      expect(q('[data-assign-work-menu], [data-assign-menu]')).toBeNull();
     });
   });
 
@@ -560,10 +570,6 @@ describe('DashUsersTab', () => {
       // The six buttons, the Filters button and the legend icon in the toolbar are gone.
       expect(q('[data-chip], [data-filters-toggle], [data-legend-toggle]')).toBeNull();
       expect(text(q('[data-summary-unassigned] [data-n]'))).toBe('4');
-      const href = q('[data-summary-unassigned]').getAttribute('href')!;
-      expect(href).toContain('/tasks?');
-      expect(href).toContain('unassigned=true');
-      expect(href).toContain('status=NEW');
     });
 
     it('choosing Out of office filters on the page without another read and writes ustate to the address', async () => {
@@ -659,18 +665,6 @@ describe('DashUsersTab', () => {
       await settle();
       expect(getWorkload.mock.calls.length).toBe(reads + 1);
       expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'mine', false);
-    });
-
-    it('links the Unassigned chip to the Task Queue with the pods of the scope', async () => {
-      await open();
-      const scope = TestBed.inject(DashScope);
-      scope.ensureLoaded();
-      scope.applyAddress((k) => (k === 'pod' ? 'mine' : null));
-      await settle();
-      const href = q('[data-summary-unassigned]').getAttribute('href')!;
-      expect(href).toContain('pod=1');
-      expect(href).toContain('pod=2');
-      expect(href).not.toContain('pod=3');
     });
 
     it('switches to the table and remembers it', async () => {
