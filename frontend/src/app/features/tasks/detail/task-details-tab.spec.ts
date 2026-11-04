@@ -510,19 +510,19 @@ describe('Details tab', () => {
     await settle(fixture);
     const lookup = TestBed.inject(UsersLookupClient).lookupUsers as ReturnType<typeof vi.fn>;
     // The task is in Pod 2: its members come first, with their open-task count, and the list ends with "Search all users".
-    expect(lookup).toHaveBeenCalledWith(undefined, 50, 2, expect.any(Number), undefined);
+    expect(lookup).toHaveBeenCalledWith(undefined, 50, 2, expect.any(Number), undefined, true);
     const members = Array.from(document.body.querySelectorAll('[role=option]'));
     expect(members[0].textContent).toContain('Tariq M.');
     expect(members[0].textContent).toContain('4 open');
     expect(members[members.length - 1].textContent).toContain('Search all users');
     members[members.length - 1].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
     await settle(fixture);
-    expect(lookup).toHaveBeenCalledWith(undefined, 6, undefined, expect.any(Number), true);
+    expect(lookup).toHaveBeenCalledWith(undefined, 6, undefined, expect.any(Number), true, true);
 
     await type(fixture, document.body, '#td-assignee', 'Coll');
     await new Promise((r) => setTimeout(r, 300));
     await settle(fixture);
-    expect(lookup).toHaveBeenCalledWith('Coll', 25, undefined, expect.any(Number), undefined);
+    expect(lookup).toHaveBeenCalledWith('Coll', 25, undefined, expect.any(Number), undefined, true);
     const option = q(document.body, '[role=option]')!;
     expect(option.textContent).toContain('Colleague C.');
     option.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));

@@ -420,7 +420,7 @@ describe('CreateTaskPage', () => {
     await fillRequired(h);
     h.el.querySelector<HTMLInputElement>('#ct-user')!.focus();
     await settle(h.fixture);
-    expect(h.users.lookupUsers).toHaveBeenCalledWith(undefined, 6, undefined, 1, true);
+    expect(h.users.lookupUsers).toHaveBeenCalledWith(undefined, 6, undefined, 1, true, true);
     expect(h.el.querySelector('[data-assignee-heading]')!.textContent).toContain('Suggested');
     expect(h.el.querySelector('#ct-user-opt-0')!.textContent).toContain('Tariq M.');
     expect(h.el.querySelector('#ct-user-opt-0')!.textContent).toContain('2 open');
@@ -445,7 +445,7 @@ describe('CreateTaskPage', () => {
     await settle(h.fixture);
 
     // Pod 4 is chosen: typing searches that Pod's members (the shared list), with the Task Type for the ranking.
-    expect(h.users.lookupUsers).toHaveBeenCalledWith('tar', 50, 4, 1, undefined);
+    expect(h.users.lookupUsers).toHaveBeenCalledWith('tar', 50, 4, 1, undefined, true);
     expect(field(h, '[data-due-help]').textContent).toContain('local time zone (UTC)');
     expect(field(h, '[data-not-in-pod]').textContent).toContain("Tariq M. isn't a member of Pod A");
 

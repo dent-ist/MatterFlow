@@ -47,7 +47,7 @@ import {
       cursor: pointer;
     }
     .mf-copy .pi {
-      font-size: var(--mf-fs-lg);
+      font-size: var(--mf-icon-md);
     }
     .mf-copy:hover {
       background: var(--mf-surface-alt);

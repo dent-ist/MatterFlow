@@ -195,7 +195,7 @@ export function hasControlCharacters(text: string): boolean {
       outline-offset: 1px;
     }
     .ti__remove .pi {
-      font-size: 0.7rem;
+      font-size: var(--mf-icon-xs);
     }
     .ti__input {
       flex: 1 1 8rem;

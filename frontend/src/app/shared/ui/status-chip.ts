@@ -107,7 +107,7 @@ export const DISPOSITION_CHIPS: Readonly<Record<string, ChipStyle>> = {
       cursor: help;
     }
     .chip .pi {
-      font-size: var(--mf-fs-xs);
+      font-size: var(--mf-icon-sm);
     }
     /* The New icon: a ring with a dot (the mockup's "not started"). */
     .newic {

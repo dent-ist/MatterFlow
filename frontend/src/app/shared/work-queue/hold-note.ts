@@ -82,7 +82,7 @@ export function holdTitle(
       color: var(--mf-text-muted);
     }
     .pi {
-      font-size: var(--mf-fs-xs);
+      font-size: var(--mf-icon-sm);
     }
     .line {
       display: block;

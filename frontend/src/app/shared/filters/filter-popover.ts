@@ -134,7 +134,7 @@ export const FILTER_TRIGGER_STYLES = `
   .ft-btn[data-active] { border-color: var(--mf-primary); }
   .ft-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ft-text[data-empty] { color: var(--mf-text-muted); }
-  .ft-btn .pi { flex: none; color: var(--mf-text-muted); font-size: 0.75rem; }
+  .ft-btn .pi { flex: none; color: var(--mf-text-muted); font-size: var(--mf-icon-sm); }
   .ft-field { display: grid; gap: var(--mf-s1); margin-bottom: var(--mf-s2); }
   .ft-field label, .ft-legend { font-size: var(--mf-fs-sm); font-weight: 600; }
   .ft-foot { display: flex; justify-content: space-between; gap: var(--mf-s2); margin-top: var(--mf-s2); }

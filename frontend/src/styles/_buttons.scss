@@ -39,7 +39,12 @@
 }
 
 .mf-btn .pi {
-  font-size: var(--mf-fs-md);
+  font-size: var(--mf-icon-md);
+}
+
+/* The segmented switch is a primary control: its icons are the larger size. */
+.mf-seg > .mf-btn .pi {
+  font-size: var(--mf-icon-lg);
 }
 
 .mf-btn--primary {

@@ -487,6 +487,19 @@ The drawer that opens from a person (the `mf-users-drawer` dialog, a right drawe
 
 Workload | Coverage | Skills is the view switch of the Users tab (Coverage only with Dashboard.ViewCoverage; Skills needs Dashboard.ViewUsers, the tab's own permission); the address carries `view=skills`. `mf-skills-view` reads `GET /dashboard/users/skills` for the page scope. A matrix of people (rows, the Person column sticks) by task types (columns, the header sticks) scrolls inside its frame, a focusable region named "Skills matrix, scrollable". Each cell prints the completed count of the chosen window (3 or 12 months) as a number, always, with a tint by count (0 none, 1 to 2, 3 to 4, 5 to 9, 10 and more; ramp tokens `--mf-ramp-*` with their text colours). A column header marks thin cover (0 to 2 people with 5 or more completed in 12 months) with an icon, the word "Thin" and a tooltip, and the words are also spoken. The toolbar follows the Workload toolbar (labels in line): search by name, Task type, Availability (All, Can take work now), the 3 | 12 months switch and an info button saying the same 3-month counts drive the assignee suggestions (#1088). Choosing a task type narrows the matrix to that column and shows **Growth candidates**: people with fewer than 5 completed in 12 months in it who can take work now, the lightest load first, at most six; a click on a name opens the person's drawer. This is for planning cover and training, not a ranking of people.
 
+### 11.9 Icon sizes (US-06, #1097)
+
+Icons grow together through ONE scale in `docs/ux/tokens.css`, used only by the shared components and global styles (no per-page overrides, no px or rem icon sizes in shared code; `scripts/check-icon-sizes.mjs` runs in `npm run lint` and fails on a number):
+
+| Token | Size | Used for |
+| --- | --- | --- |
+| `--mf-icon-xs` | 12 px | tiny marks: the remove x on a filter chip or tag, nothing a person has to hit on its own |
+| `--mf-icon-sm` | 16 px | chips, badges and pills (status, priority, count), sort arrows, menu triggers, icons beside small text |
+| `--mf-icon-md` | 18 px | every button (`.mf-btn`), toolbar and row action icon buttons, the copy button, the record header icon |
+| `--mf-icon-lg` | 20 px | tab strips (`mf-tabs`), the segmented switch (`.mf-seg`) and the section icon in the page header tile (the tile itself stays 32 px) |
+
+The left navigation keeps its own `--mf-nav-icon`. A new shared component takes an icon size from this table; a feature that needs an icon beside text leaves it at the text size. Touch targets are unchanged (44 px on a phone), so the larger icons do not change the row heights; the tab strips and toolbars keep their overflow patterns (the strip scrolls, the toolbar wraps by group).
+
 ## 10. Note text colours (epic #1001, MD-30, #1034)
 
 The Notes editor offers a fixed palette of eight text colours plus Default: red, orange, amber, green, teal, blue, violet and slate (grey). They are the tokens `--mf-note-<key>` in `docs/ux/tokens.css`; `scripts/check-theme-contrast.mjs` checks each at 4.5:1 on a card and on the quote tint. A note stores a colour as `<span data-color="red">` (never inline CSS); the server keeps only these eight keys. The page maps the key to the token (`[data-color='red'] { color: var(--mf-note-red) }` in `note-editor-refs.scss`). Colour never carries meaning alone: the menu names every colour, and bold or headings stay available.

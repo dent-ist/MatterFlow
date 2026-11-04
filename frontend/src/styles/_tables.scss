@@ -75,7 +75,7 @@ td.mf-col-actions {
 
 .wt td[data-col='priority'] .im-trigger .pi,
 .wt td[data-col='status'] .im-trigger .pi {
-  font-size: 0.75rem;
+  font-size: var(--mf-icon-sm);
 }
 
 /* Narrow-box rule (#201): while the grid scrolls sideways (measured in the component, `wt--scroll`) the Ref column stays in view at the
@@ -273,7 +273,7 @@ body.wt-resizing {
 }
 
 .wt-group__btn .pi {
-  font-size: var(--mf-fs-xs);
+  font-size: var(--mf-icon-sm);
 }
 
 .wt-group__count,

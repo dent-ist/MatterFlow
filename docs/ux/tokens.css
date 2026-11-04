@@ -358,6 +358,12 @@
   --mf-radius-pill: 999px;
 
   /* Type scale. Body 14 px (--mf-fs-md); page title 19 px on the fixed pages (My Matters), 22 px (--mf-fs-h2) on record pages. */
+  /* Icon sizes (US-06, #1097): ONE scale for every icon of the shared components (the app grows together). xs: tiny marks (a remove x, a sort arrow); sm: chips, badges and icons beside small text;
+     md: buttons, toolbar and row action buttons (dense areas); lg: tabs, switches and the section icon in the page header tile. Shared code never sets an icon size in px or rem (scripts/check-icon-sizes.mjs). */
+  --mf-icon-xs: 12px;
+  --mf-icon-sm: 16px;
+  --mf-icon-md: 18px;
+  --mf-icon-lg: 20px;
   --mf-fs-title: 19px;
   --mf-fs-title-lg: 22px;
   --mf-fs-chip: 12px;

@@ -90,7 +90,7 @@
 .rh__icon {
   flex: none;
   color: var(--mf-text-muted);
-  font-size: calc(var(--rh-fs) * 0.75);
+  font-size: var(--mf-icon-md);
   line-height: calc(var(--rh-fs) * 1.3);
 }
 

@@ -109,7 +109,7 @@
 }
 
 .wt-sort .pi {
-  font-size: var(--mf-fs-xs);
+  font-size: var(--mf-icon-sm);
 }
 
 th[aria-sort='ascending'] .wt-sort,
@@ -121,7 +121,7 @@ th[aria-sort='descending'] .wt-sort {
 
 th[aria-sort='ascending'] .wt-sort .pi,
 th[aria-sort='descending'] .wt-sort .pi {
-  font-size: var(--mf-fs-sm);
+  font-size: var(--mf-icon-sm);
   font-weight: 700;
 }
 

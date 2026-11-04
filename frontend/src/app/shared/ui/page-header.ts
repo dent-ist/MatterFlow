@@ -228,7 +228,7 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
       border-radius: var(--mf-radius-lg);
       background: var(--mf-primary);
       color: var(--mf-primary-contrast);
-      font-size: 1rem;
+      font-size: var(--mf-icon-lg);
       line-height: 1;
       vertical-align: middle;
     }
@@ -459,7 +459,7 @@ export class RecordTitle {
       border-radius: var(--mf-radius-lg);
       background: var(--mf-primary);
       color: var(--mf-primary-contrast);
-      font-size: 1rem;
+      font-size: var(--mf-icon-lg);
       line-height: 1;
       vertical-align: middle;
     }

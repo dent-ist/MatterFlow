@@ -46,7 +46,7 @@ const PILLS: Readonly<Record<PillKind, { icon: string; label: string }>> = {
       color: var(--p-fg);
     }
     .pill .pi {
-      font-size: 0.7rem;
+      font-size: var(--mf-icon-sm);
     }
     .pill svg {
       flex: none;

@@ -52,7 +52,7 @@ export function workflowStatusTone(status: string | null | undefined): BadgeTone
       white-space: nowrap;
     }
     .pi {
-      font-size: var(--mf-fs-xs);
+      font-size: var(--mf-icon-sm);
     }
     /* The same pill as mf-status-chip: a tint, its text colour and a hairline (--mf-sem-* tokens, contrast checked). */
     [data-tone='neutral'] {

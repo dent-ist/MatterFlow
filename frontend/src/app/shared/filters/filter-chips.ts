@@ -118,7 +118,7 @@ import { restoreSummary } from './restore-summary';
       color: var(--mf-text);
     }
     .fch__x .pi {
-      font-size: 0.625rem;
+      font-size: var(--mf-icon-xs);
     }
     .fch__act,
     .fch__more {
@@ -226,7 +226,7 @@ export class FilterChips {
       color: var(--mf-text);
     }
     .fn__x .pi {
-      font-size: 0.625rem;
+      font-size: var(--mf-icon-xs);
     }
     @media print {
       .fn {

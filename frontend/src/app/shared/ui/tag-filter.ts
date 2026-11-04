@@ -226,7 +226,7 @@ export type TagMatch = 'all' | 'any';
       outline-offset: 1px;
     }
     .tf__chip-remove .pi {
-      font-size: 0.7rem;
+      font-size: var(--mf-icon-xs);
     }
     .tf__panel {
       position: absolute;

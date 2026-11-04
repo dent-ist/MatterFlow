@@ -98,7 +98,7 @@ import { SEARCH_DEBOUNCE_MS } from './search-box';
       color: var(--mf-text);
     }
     .cf__clear .pi {
-      font-size: 0.75rem;
+      font-size: var(--mf-icon-sm);
     }
   `,
 })

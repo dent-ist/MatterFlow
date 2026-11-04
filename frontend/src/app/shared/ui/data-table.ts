@@ -42,7 +42,7 @@ export type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
       cursor: pointer;
     }
     .mf-sort .pi {
-      font-size: 0.75rem;
+      font-size: var(--mf-icon-sm);
       color: var(--mf-text-muted);
     }
     :host([aria-sort='ascending']) .pi,

@@ -183,7 +183,7 @@ export interface MfTab {
     }
     .tab__icon {
       margin-right: var(--mf-s1);
-      font-size: var(--mf-fs-sm);
+      font-size: var(--mf-icon-lg);
     }
     .tab {
       flex: none;
