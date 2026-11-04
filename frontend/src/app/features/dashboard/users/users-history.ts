@@ -11,10 +11,15 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription } from 'rxjs';
-import { DashboardBoardClient, UserHistory } from '../../../api/generated/api-client';
+import {
+  DashboardBoardClient,
+  UserHistory,
+  UserHistoryType,
+} from '../../../api/generated/api-client';
 import { ApiError } from '../../../core/http/api-error';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { Segmented } from '../../../shared/ui/segmented';
+import { Tip } from '../../../shared/ui/tip';
 import { DashScope } from '../dash-scope';
 import {
   comparisonOf,
@@ -34,7 +39,7 @@ type HistoryState = 'loading' | 'ready' | 'error' | 'missing';
  */
 @Component({
   selector: 'mf-users-history',
-  imports: [TaskTypeIcon, Segmented],
+  imports: [TaskTypeIcon, Segmented, Tip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @switch (state()) {
@@ -96,10 +101,8 @@ type HistoryState = 'loading' | 'ready' | 'error' | 'missing';
                   <thead>
                     <tr>
                       <th scope="col">Task type</th>
-                      <th scope="col" class="num">Completed</th>
-                      <th scope="col" class="num">Their median</th>
-                      <th scope="col" class="num">Firm median</th>
-                      <th scope="col">Compared</th>
+                      <th scope="col" class="num">Done</th>
+                      <th scope="col">vs firm</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -113,31 +116,31 @@ type HistoryState = 'loading' | 'ready' | 'error' | 'missing';
                           </span>
                         </th>
                         <td class="num">{{ t.completed }}</td>
-                        <td class="num" data-median>
-                          @if (t.medianMinutes === null || t.medianMinutes === undefined) {
-                            <span class="muted">Not enough tasks yet</span>
-                          } @else {
-                            {{ dur(t.medianMinutes) }}
-                          }
-                          <span class="sample">n={{ t.sampleSize }}</span>
-                        </td>
-                        <td class="num" data-firm>
-                          @if (t.firmMedianMinutes === null || t.firmMedianMinutes === undefined) {
-                            <span class="muted">-</span>
-                          } @else {
-                            {{ dur(t.firmMedianMinutes) }}
-                          }
-                          <span class="sample">n={{ t.firmSampleSize }}</span>
-                        </td>
                         <td>
                           @if (c.tone !== 'none') {
-                            <span class="cmp" [class]="'cmp cmp--' + c.tone" data-compare>
+                            <span
+                              class="cmp"
+                              [class]="'cmp cmp--' + c.tone"
+                              data-compare
+                              [mfTip]="detail(t)"
+                              tabindex="0"
+                            >
                               <i class="pi" [class]="c.icon" aria-hidden="true"></i>
-                              <span>{{ c.text }}</span>
-                              <span class="sr-only">. {{ c.word }}</span>
+                              <span data-compare-text>{{ c.short }}</span>
+                              <span class="sr-only">. {{ c.word }}. {{ detail(t) }}</span>
                             </span>
                           } @else {
-                            <span class="muted">-</span>
+                            <span
+                              class="muted"
+                              data-too-few
+                              mfTip="Too few completed tasks of this type for a fair comparison"
+                              tabindex="0"
+                              >Too few
+                              <span class="sr-only"
+                                >completed tasks of this type for a fair comparison.
+                                {{ detail(t) }}</span
+                              ></span
+                            >
                           }
                         </td>
                       </tr>
@@ -398,6 +401,19 @@ export class UsersHistory {
   protected readonly short = monthShort;
   protected readonly dur = durationText;
   protected readonly compare = comparisonOf;
+
+  /** Medians and sample sizes for the tooltip and the screen reader text (US-08). */
+  protected detail(t: UserHistoryType): string {
+    const own =
+      t.medianMinutes === null || t.medianMinutes === undefined
+        ? 'Too few tasks for a median'
+        : `Their median ${durationText(t.medianMinutes)} (${t.sampleSize} tasks)`;
+    const firm =
+      t.firmMedianMinutes === null || t.firmMedianMinutes === undefined
+        ? 'no firm median'
+        : `firm median ${durationText(t.firmMedianMinutes)} (${t.firmSampleSize} tasks)`;
+    return `${own}; ${firm}`;
+  }
   protected readonly basisWord = computed(() =>
     this.data()?.durationBasis === 'CLOCK' ? 'clock time' : 'working time',
   );

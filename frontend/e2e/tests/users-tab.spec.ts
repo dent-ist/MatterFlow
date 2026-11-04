@@ -146,7 +146,7 @@ test.describe('Users tab: workload', () => {
   }) => {
     await openUsers(page);
     const idle = card(page, 'idle');
-    await expect(idle.locator('[data-level-word]')).toHaveText('Idle');
+    await expect(idle.locator('[data-workload]')).toHaveAttribute('title', /^Idle/);
     await expect(idle.locator('[data-open-total]')).toHaveCount(0);
     // Idle is a quiet tint of the Idle token (U7): not the saturated token fill (checked in detail in users-capacity.spec.ts).
     expect(await idle.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(

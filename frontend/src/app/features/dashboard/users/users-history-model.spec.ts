@@ -22,6 +22,9 @@ describe('users history model', () => {
       icon: 'pi-arrow-up-right',
       tone: 'longer',
     });
+    expect(comparisonOf({ ratio: 1.34 }).short).toBe('1.3x longer');
+    expect(comparisonOf({ ratio: 0.7 }).short).toBe('0.7x shorter');
+    expect(comparisonOf({ ratio: 1 }).short).toBe('About the same');
     expect(comparisonOf({ ratio: 0.7 }).word).toBe('Shorter than the firm median');
     expect(comparisonOf({ ratio: 1 }).word).toBe('About the firm median');
     expect(comparisonOf({ ratio: undefined }).tone).toBe('none');

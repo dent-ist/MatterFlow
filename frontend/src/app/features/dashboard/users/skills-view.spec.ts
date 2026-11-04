@@ -5,6 +5,7 @@ import { Clock } from '../../../core/time/clock';
 import { DashScope } from '../dash-scope';
 import { SkillsView } from './skills-view';
 import { aMatrix } from './users-testing';
+import { ddChoose } from '../../../testing/dropdown-testing.spec-util';
 
 describe('SkillsView', () => {
   let calls: unknown[][];
@@ -40,8 +41,10 @@ describe('SkillsView', () => {
     expect(el.querySelectorAll('thead [data-type]')).toHaveLength(2);
     const ana = el.querySelector('[data-person="1"]')!;
     expect(ana.querySelector('[data-type-id], td')!.textContent!.trim()).toBe('12');
-    // A cell with no tasks still prints 0.
-    expect(el.querySelector('[data-person="2"] td')!.textContent!.trim()).toBe('0');
+    // A cell with no tasks shows a dash (colour is never the only signal) and says 0 to a screen reader.
+    const zero = el.querySelector('[data-person="2"] td')!;
+    expect(zero.querySelector('.num')!.textContent!.trim()).toBe('–');
+    expect(zero.querySelector('.sr-only')!.textContent!.trim()).toBe('0');
   });
 
   it('switches the window to 12 months', () => {
@@ -55,27 +58,33 @@ describe('SkillsView', () => {
     const { el } = create();
     const thin = el.querySelectorAll('[data-thin]');
     expect(thin).toHaveLength(1);
-    expect(thin[0].textContent).toContain('Thin');
+    expect(thin[0].getAttribute('aria-label')).toBe('Thin cover');
+    // Icon only: the only text is the spoken one.
+    expect(
+      thin[0].textContent!.replace(thin[0].querySelector('.sr-only')!.textContent!, '').trim(),
+    ).toBe('');
     expect(thin[0].querySelector('.sr-only')!.textContent).toContain('Thin coverage: 1 person has');
   });
 
-  it('filters by name and availability, and a name opens the person', () => {
+  it('filters by name and availability, and a name opens the person', async () => {
     const { f, el, opened } = create();
-    const sel = el.querySelector<HTMLSelectElement>('[data-skills-availability]')!;
-    sel.value = 'now';
-    sel.dispatchEvent(new Event('change'));
+    el.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
+    f.detectChanges();
+    ddChoose(el, 'Availability', 'now');
+    await f.whenStable();
     f.detectChanges();
     expect(el.querySelectorAll('[data-person]')).toHaveLength(3);
     el.querySelector<HTMLButtonElement>('[data-person="4"] [data-skills-open]')!.click();
     expect(opened).toEqual([4]);
   });
 
-  it('shows growth candidates for the chosen task type and opens one', () => {
+  it('shows growth candidates for the chosen task type and opens one', async () => {
     const { f, el, opened } = create();
     expect(el.querySelector('[data-growth]')).toBeNull();
-    const sel = el.querySelector<HTMLSelectElement>('[data-skills-type]')!;
-    sel.value = '2';
-    sel.dispatchEvent(new Event('change'));
+    el.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
+    f.detectChanges();
+    ddChoose(el, 'Task type', '2');
+    await f.whenStable();
     f.detectChanges();
     const names = [...el.querySelectorAll('[data-growth-person]')].map((b) =>
       b.textContent!.trim(),

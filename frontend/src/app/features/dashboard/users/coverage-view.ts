@@ -32,6 +32,8 @@ import { PeriodControl } from '../ui/period-control';
 import { DashSkeleton } from '../ui/dash-skeleton';
 import { DashState, focusAfterRetry } from '../ui/dash-state';
 import { SearchBox } from '../../../shared/ui/search-box';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
+import { UsersFilterPopover } from './users-filter-popover';
 import { CoverageDrawer, CoverageTarget } from './coverage-drawer';
 import {
   DEFAULT_ORIENTATION,
@@ -94,6 +96,8 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
     CoverageTypes,
     CoverageNotes,
     CoverageOrientation,
+    Dropdown,
+    UsersFilterPopover,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -128,66 +132,65 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
         [placeholder]="searchLabel()"
         [hideLabel]="true"
         [hintOnFocus]="true"
+        [leadingIcon]="true"
+        [compact]="true"
         [value]="filters().q"
         (searchChange)="filtersChange.emit({ q: $event })"
       />
-      @if (orientation() === 'type') {
-        <div class="fld">
-          <label class="lbl" for="cv-order">Order</label>
-          <select
-            id="cv-order"
-            class="mf-control mf-control--compact"
-            data-coverage-row-order
-            [value]="rowOrder()"
-            (change)="onRowOrder($any($event.target).value)"
-          >
-            @for (o of rowOrders; track o) {
-              <option [value]="o" [selected]="rowOrder() === o">{{ rowOrderLabels[o] }}</option>
-            }
-          </select>
-        </div>
-      } @else {
-        <div class="fld">
-          <label class="lbl" for="cv-scale">Colour scale</label>
-          <select
-            id="cv-scale"
-            class="mf-control mf-control--compact"
-            data-coverage-scale
-            [value]="scale()"
-            (change)="onScale($any($event.target).value)"
-          >
-            <option value="relative" [selected]="scale() === 'relative'">
-              Relative to the task type
-            </option>
-            <option value="absolute" [selected]="scale() === 'absolute'">Absolute</option>
-          </select>
-        </div>
-        <div class="fld">
-          <label class="lbl" for="cv-rows">Task types</label>
-          <select
-            id="cv-rows"
-            class="mf-control mf-control--compact"
-            data-coverage-type-order
-            [value]="typeOrder()"
-            (change)="onTypeOrder($any($event.target).value)"
-          >
-            <option value="name" [selected]="typeOrder() === 'name'">By name</option>
-            <option value="total" [selected]="typeOrder() === 'total'">By total completed</option>
-          </select>
-        </div>
-        <div class="fld">
-          <label class="lbl" for="cv-cols">People</label>
-          <select
-            id="cv-cols"
-            class="mf-control mf-control--compact"
-            data-coverage-user-order
-            [value]="userOrder()"
-            (change)="onUserOrder($any($event.target).value)"
-          >
-            <option value="name" [selected]="userOrder() === 'name'">By name</option>
-            <option value="total" [selected]="userOrder() === 'total'">By total completed</option>
-          </select>
-        </div>
+      <mf-users-filter-popover label="Display" icon="pi-sliders-h">
+        @if (orientation() === 'type') {
+          <div class="fl" data-display="order">
+            <span>Order</span>
+            <mf-dropdown
+              buttonId="cv-order"
+              label="Order"
+              data-coverage-row-order
+              [items]="rowOrderItems"
+              [value]="rowOrder()"
+              (valueChange)="onRowOrder($event)"
+              [panelWidth]="260"
+            />
+          </div>
+        } @else {
+          <div class="fl" data-display="scale">
+            <span>Colour scale</span>
+            <mf-dropdown
+              buttonId="cv-scale"
+              label="Colour scale"
+              data-coverage-scale
+              [items]="scaleItems"
+              [value]="scale()"
+              (valueChange)="onScale($event)"
+              [panelWidth]="260"
+            />
+          </div>
+          <div class="fl" data-display="types">
+            <span>Task types</span>
+            <mf-dropdown
+              buttonId="cv-rows"
+              label="Task types"
+              data-coverage-type-order
+              [items]="nameTotalItems"
+              [value]="typeOrder()"
+              (valueChange)="onTypeOrder($event)"
+              [panelWidth]="260"
+            />
+          </div>
+          <div class="fl" data-display="people">
+            <span>People</span>
+            <mf-dropdown
+              buttonId="cv-cols"
+              label="People"
+              data-coverage-user-order
+              [items]="nameTotalItems"
+              [value]="userOrder()"
+              (valueChange)="onUserOrder($event)"
+              [panelWidth]="260"
+            />
+          </div>
+        }
+      </mf-users-filter-popover>
+      @if (orientation() === 'matrix') {
         <button
           type="button"
           class="mf-btn toggle"
@@ -195,7 +198,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
           [attr.aria-pressed]="showGaps()"
           (click)="showGaps.set(!showGaps())"
         >
-          <i class="pi pi-filter" aria-hidden="true"></i>Training gaps
+          <i class="pi pi-flag" aria-hidden="true"></i>Training gaps
         </button>
       }
       <span class="grow"></span>
@@ -516,18 +519,13 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
     .bar {
       display: flex;
       flex-wrap: wrap;
-      align-items: flex-end;
-      gap: var(--mf-s2) var(--mf-s3);
+      align-items: center;
+      gap: var(--mf-s2);
       margin-bottom: var(--mf-s3);
     }
-    .fld {
+    .fl {
       display: grid;
-      gap: 2px;
-    }
-    .lbl {
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
-      font-weight: 600;
+      gap: var(--mf-s1);
     }
     .grow {
       flex: 1;
@@ -784,12 +782,6 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
       .search {
         flex-basis: 100%;
       }
-      .fld {
-        flex: 1 1 8rem;
-      }
-      .fld select {
-        width: 100%;
-      }
       .corner,
       .ttype {
         min-width: 9rem;
@@ -827,8 +819,6 @@ export class CoverageView implements OnInit {
   protected readonly statusText = STATUS_TEXT;
   protected readonly colsPage = MATRIX_COLS;
   protected readonly rowsPage = MATRIX_ROWS;
-  protected readonly rowOrders = TYPE_ROW_ORDERS;
-  protected readonly rowOrderLabels = TYPE_ROW_ORDER_LABELS;
 
   private readonly dashPrefs = inject(DashboardPrefs);
   private readonly scope = inject(DashScope);
@@ -951,6 +941,19 @@ export class CoverageView implements OnInit {
     const n = Number(value);
     return value !== '' && Number.isInteger(n) && n > 0 ? n : null;
   }
+
+  protected readonly rowOrderItems: DropdownItem[] = TYPE_ROW_ORDERS.map((o) => ({
+    value: o,
+    label: TYPE_ROW_ORDER_LABELS[o],
+  }));
+  protected readonly scaleItems: DropdownItem[] = [
+    { value: 'relative', label: 'Relative to the task type' },
+    { value: 'absolute', label: 'Absolute' },
+  ];
+  protected readonly nameTotalItems: DropdownItem[] = [
+    { value: 'name', label: 'By name' },
+    { value: 'total', label: 'By total completed' },
+  ];
 
   protected onScale(value: string): void {
     if (isScale(value)) this.prefs.remember({ scale: value as Scale });

@@ -17,6 +17,8 @@ import {
 } from '../../../api/generated/api-client';
 import { Clock } from '../../../core/time/clock';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
+import { UsersFilterPopover } from './users-filter-popover';
 import { SearchBox } from '../../../shared/ui/search-box';
 import { Segmented } from '../../../shared/ui/segmented';
 import { Tip } from '../../../shared/ui/tip';
@@ -43,7 +45,16 @@ type SkillsState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-skills-view',
-  imports: [TaskTypeIcon, SearchBox, Segmented, Tip, DashSkeleton, DashState],
+  imports: [
+    TaskTypeIcon,
+    SearchBox,
+    Segmented,
+    Tip,
+    Dropdown,
+    UsersFilterPopover,
+    DashSkeleton,
+    DashState,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="bar" role="toolbar" aria-label="Skills controls" data-skills-toolbar>
@@ -56,39 +67,40 @@ type SkillsState = 'loading' | 'ready' | 'error';
         placeholder="Search by name"
         [hideLabel]="true"
         [hintOnFocus]="true"
+        [leadingIcon]="true"
+        [compact]="true"
         [value]="q()"
         (searchChange)="q.set($event)"
       />
-      <div class="fld">
-        <label class="lbl" for="sk-type">Task type</label>
-        <select
-          id="sk-type"
-          class="mf-control mf-control--compact"
-          data-skills-type
-          [value]="typeId() ?? ''"
-          (change)="setType($any($event.target).value)"
-        >
-          <option value="">All task types</option>
-          @for (t of types(); track t.taskTypeId) {
-            <option [value]="t.taskTypeId" [selected]="t.taskTypeId === typeId()">
-              {{ t.name }}
-            </option>
-          }
-        </select>
-      </div>
-      <div class="fld">
-        <label class="lbl" for="sk-avail">Availability</label>
-        <select
-          id="sk-avail"
-          class="mf-control mf-control--compact"
-          data-skills-availability
-          [value]="availability()"
-          (change)="availability.set($any($event.target).value)"
-        >
-          <option value="all">All</option>
-          <option value="now">Can take work now</option>
-        </select>
-      </div>
+      <mf-users-filter-popover [count]="filterCount()" (cleared)="clearFilters()">
+        <div class="fl" data-filter="type">
+          <span>Task type</span>
+          <mf-dropdown
+            buttonId="sk-type"
+            label="Task type"
+            data-skills-type
+            [items]="typeItems()"
+            [value]="typeId() === null ? '' : '' + typeId()"
+            [neutralValue]="''"
+            (valueChange)="setType($event)"
+            [panelWidth]="260"
+          />
+        </div>
+        <div class="fl" data-filter="availability">
+          <span>Availability</span>
+          <mf-dropdown
+            buttonId="sk-avail"
+            label="Availability"
+            data-skills-availability
+            [items]="availabilityItems"
+            [value]="availability()"
+            [neutralValue]="'all'"
+            (valueChange)="availability.set($event === 'now' ? 'now' : 'all')"
+            [panelWidth]="260"
+          />
+        </div>
+      </mf-users-filter-popover>
+      <span class="grow"></span>
       <div mfSegmented role="group" aria-label="Window" data-skills-window>
         @for (w of windows; track w) {
           <button
@@ -192,11 +204,15 @@ type SkillsState = 'loading' | 'ready' | 'error';
                             <span
                               class="thin"
                               data-thin
+                              role="img"
+                              aria-label="Thin cover"
                               [mfTip]="thin(t.experiencedPeople)"
                               tabindex="0"
                             >
-                              <i class="pi pi-exclamation-triangle" aria-hidden="true"></i> Thin
-                              <span class="sr-only">. {{ thin(t.experiencedPeople) }}</span>
+                              <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+                              <span class="sr-only"
+                                >Thin cover. {{ thin(t.experiencedPeople) }}</span
+                              >
                             </span>
                           }
                         </span>
@@ -221,7 +237,12 @@ type SkillsState = 'loading' | 'ready' | 'error';
                       @for (t of shownTypes(); track t.taskTypeId) {
                         @let n = count(p.userId, t.taskTypeId);
                         <td class="cell" [attr.data-step]="step(n)" [attr.data-count]="n">
-                          <span class="num">{{ n }}</span>
+                          @if (n === 0) {
+                            <span class="num" aria-hidden="true">&ndash;</span>
+                            <span class="sr-only">0</span>
+                          } @else {
+                            <span class="num">{{ n }}</span>
+                          }
                         </td>
                       }
                     </tr>
@@ -261,19 +282,12 @@ type SkillsState = 'loading' | 'ready' | 'error';
       min-width: 10rem;
       flex: 0 1 11rem;
     }
-    .fld {
-      display: inline-flex;
-      align-items: center;
+    .grow {
+      flex: 1;
+    }
+    .fl {
+      display: grid;
       gap: var(--mf-s1);
-    }
-    .lbl {
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-      font-weight: 600;
-      white-space: nowrap;
-    }
-    .fld select {
-      max-width: 13rem;
     }
     .muted {
       color: var(--mf-text-muted);
@@ -343,6 +357,7 @@ type SkillsState = 'loading' | 'ready' | 'error';
     }
     /* The matrix scrolls inside its frame: the person column and the header stick. */
     .frame {
+      position: relative; /* the spoken zeros are absolutely placed: this keeps them inside the scrolling frame */
       flex: 1 1 0;
       min-height: 0;
       overflow: auto;
@@ -391,8 +406,10 @@ type SkillsState = 'loading' | 'ready' | 'error';
       max-width: 9rem;
     }
     .th {
-      display: grid;
-      gap: 2px;
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s1);
+      min-width: 0;
     }
     .tn {
       overflow: hidden;
@@ -403,15 +420,16 @@ type SkillsState = 'loading' | 'ready' | 'error';
     .thin {
       display: inline-flex;
       align-items: center;
-      gap: 3px;
-      justify-self: start;
-      padding: 0 var(--mf-s1);
+      justify-content: center;
+      width: 1.5rem;
+      height: 1.5rem;
       color: var(--mf-warning);
       background: var(--mf-warning-bg);
       border: 1px solid var(--mf-warning);
-      border-radius: 999px;
-      font-size: var(--mf-fs-xs);
-      font-weight: 700;
+      border-radius: 50%;
+    }
+    .thin .pi {
+      font-size: var(--mf-icon-sm);
     }
     .link {
       max-width: 13rem;
@@ -426,6 +444,9 @@ type SkillsState = 'loading' | 'ready' | 'error';
       text-decoration: underline;
       text-underline-offset: 2px;
       cursor: pointer;
+    }
+    .mx td {
+      height: 3rem;
     }
     .cell {
       text-align: center;
@@ -442,20 +463,24 @@ type SkillsState = 'loading' | 'ready' | 'error';
       background: var(--mf-ramp-2-bg);
       color: var(--mf-ramp-2-fg);
     }
-    .mx td.cell[data-step='3'] {
+    .mx td.cell[data-step='3'],
+    .mx td.cell[data-step='4'] {
       background: var(--mf-ramp-4-bg);
       color: var(--mf-ramp-4-fg);
-    }
-    .mx td.cell[data-step='4'] {
-      background: var(--mf-ramp-6-bg);
-      color: var(--mf-ramp-6-fg);
-      font-weight: 700;
+      font-weight: 600;
     }
     .info:focus-visible {
       outline: 2px solid var(--mf-focus);
       outline-offset: 1px;
     }
     @media (max-width: 767.98px) {
+      /* On a phone the page scrolls, so the frame needs its own height (a flex frame in an auto-height page collapses). */
+      .frame {
+        flex: none;
+        max-height: 70vh;
+        min-height: 16rem;
+        max-width: 100%;
+      }
       .pcol {
         min-width: 8rem;
       }
@@ -485,7 +510,18 @@ export class SkillsView {
   protected readonly help =
     'Completed tasks per person and task type. A thin column has 0 to 2 people with 5 or more completed in 12 months. The same 3-month counts drive the assignee suggestions. For planning cover and training, not a ranking of people.';
 
+  protected readonly availabilityItems: DropdownItem[] = [
+    { value: 'all', label: 'All' },
+    { value: 'now', label: 'Can take work now' },
+  ];
   protected readonly types = computed(() => this.matrix()?.types ?? []);
+  protected readonly typeItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'All task types' },
+    ...this.types().map((t) => ({ value: String(t.taskTypeId), label: t.name })),
+  ]);
+  protected readonly filterCount = computed(
+    () => (this.typeId() === null ? 0 : 1) + (this.availability() === 'all' ? 0 : 1),
+  );
   private readonly cells = computed(() => {
     const m = this.matrix();
     return m ? cellIndex(m) : new Map();
@@ -526,6 +562,10 @@ export class SkillsView {
   }
   protected count(userId: number, typeId: number): number {
     return countOf(this.cells(), userId, typeId, this.window());
+  }
+  protected clearFilters(): void {
+    this.typeId.set(null);
+    this.availability.set('all');
   }
   protected setType(v: string): void {
     this.typeId.set(v === '' ? null : Number(v));

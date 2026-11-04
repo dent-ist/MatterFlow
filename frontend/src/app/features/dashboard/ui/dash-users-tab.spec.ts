@@ -1,4 +1,10 @@
-import { ddChoose, ddSelect, ddValue } from '../../../testing/dropdown-testing.spec-util';
+import {
+  ddChoose,
+  ddOptionTexts,
+  ddSelect,
+  ddText,
+  ddValue,
+} from '../../../testing/dropdown-testing.spec-util';
 import { DashboardPrefs } from '../dashboard-prefs';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
@@ -238,6 +244,10 @@ describe('DashUsersTab', () => {
       '[data-filter="priority"]': 'Highest priority',
       '[data-filter="availability"]': 'Availability',
       '[data-sort]': 'Sort',
+      '[data-coverage-row-order]': 'Order',
+      '[data-coverage-scale]': 'Colour scale',
+      '[data-coverage-type-order]': 'Task types',
+      '[data-coverage-user-order]': 'People',
     };
     if (!labels[selector]) {
       const select = q<HTMLSelectElement>(selector);
@@ -292,14 +302,17 @@ describe('DashUsersTab', () => {
       expect(q('[data-users-grid]').getAttribute('aria-busy')).toBeNull();
     });
 
-    it('draws a card with the name, Workload (count, bar, level word) and the Availability line, and keeps the tokens for tests', async () => {
+    it('draws a card with the name, open count, bar, level in a tooltip and the Availability line, and keeps the tokens for tests', async () => {
       await open();
       const ann = card('Ann Lee');
       expect(ann.getAttribute('data-tone')).toBe('critical');
       expect(text(ann.querySelector('[data-open-total]'))).toBe('3');
-      expect(text(ann.querySelector('[data-level-word]'))).toBe('Light');
+      expect(ann.querySelector('[data-workload]')!.getAttribute('title')).toBe('Light: 3 open');
+      expect(text(ann.querySelector('[data-workload]'))).toBe('3 open');
+      expect(ann.querySelector('[data-level-word]')).toBeNull();
       expect(text(ann.querySelector('[data-availability-line]'))).toBe('Available');
-      expect(text(ann.querySelector('[data-workload]'))).toContain('Workload');
+      // The repeated "Workload" label is gone from the card (the page already says it).
+      expect(text(ann)).not.toContain('Workload');
       // Priority signals, the pill and the glyph are gone from the card.
       expect(
         ann.querySelector('[data-pill], [data-glyph], [data-heavy], [data-off-hours]'),
@@ -311,7 +324,7 @@ describe('DashUsersTab', () => {
       const free = card('Cy Tan');
       expect(free.getAttribute('data-state')).toBe('free');
       expect(text(free.querySelector('[data-open-total]'))).toBe('0');
-      expect(text(free.querySelector('[data-level-word]'))).toBe('Idle');
+      expect(free.querySelector('[data-workload]')!.getAttribute('title')).toContain('Idle');
       expect(free.querySelector('[data-user-open]')!.getAttribute('aria-label')).toBe(
         'Cy Tan. No open tasks',
       );
@@ -342,7 +355,9 @@ describe('DashUsersTab', () => {
       expect(text(card('Ann Lee').querySelector('[data-overdue]'))).toBe('2');
       expect(card('Bob Ray').querySelector('[data-overdue]')).toBeNull();
       expect(card('Hal Moe').getAttribute('data-load')).toBe('HEAVY');
-      expect(text(card('Hal Moe').querySelector('[data-level-word]'))).toBe('Heavy');
+      expect(card('Hal Moe').querySelector('[data-workload]')!.getAttribute('title')).toContain(
+        'Heavy',
+      );
     });
 
     it('draws the load bar segments in rank order', async () => {
@@ -805,7 +820,7 @@ describe('DashUsersTab', () => {
       expect(
         drawer.querySelector('[data-drawer-tasks] [data-field="priority"] [data-inline-trigger]'),
       ).not.toBeNull();
-      const link = drawer.querySelector('[data-open-queue]')!.getAttribute('href')!;
+      const link = document.querySelector('[data-open-queue]')!.getAttribute('href')!;
       expect(link).toContain('assignee=1');
       expect(link).toContain('status=IN_PROGRESS');
       expect(document.activeElement?.getAttribute('aria-label')).toBe('Close person details');
@@ -1276,10 +1291,12 @@ describe('DashUsersTab', () => {
           'Review',
           'Archive',
         ]);
-        expect(
-          Array.from(q<HTMLSelectElement>('[data-coverage-row-order]').options).map((o) => text(o)),
-        ).toEqual(['Fewest people first', 'Type name', 'Most completed']);
-        expect(text(q('[data-coverage-row-order]'))).not.toMatch(/best|worst|top|rank|score/i);
+        expect(ddOptionTexts(host, 'Order')).toEqual([
+          'Fewest people first',
+          'Type name',
+          'Most completed',
+        ]);
+        expect(ddText(host, 'Order')).not.toMatch(/best|worst|top|rank|score/i);
         expect(JSON.parse(localStorage.getItem('mf.dashboard.coverage.v1.5')!).rowOrder).toBe(
           'completed',
         );
@@ -1519,8 +1536,8 @@ describe('DashUsersTab', () => {
       ]);
       await choose('[data-coverage-user-order]', 'total');
       expect(qa('thead th[data-person]')[0].getAttribute('data-person')).toBe('3');
-      expect(text(q('[data-coverage-type-order]'))).toContain('By total completed');
-      expect(text(q('[data-coverage-type-order]'))).not.toMatch(/best|worst|top|rank/i);
+      expect(ddText(host, 'Task types')).toContain('By total completed');
+      expect(ddText(host, 'Task types')).not.toMatch(/best|worst|top|rank/i);
     });
 
     it('the Training gaps toggle outlines the possible gaps with a count, and every row stays', async () => {
@@ -1728,7 +1745,7 @@ describe('DashUsersTab', () => {
       expect(args[22]).toBe('2026-10-15');
       expect(args[35]).toBe('completed');
       expect(drawer.querySelectorAll('[data-coverage-tasks] li').length).toBe(1);
-      const link = drawer.querySelector('[data-open-queue]')!.getAttribute('href')!;
+      const link = document.querySelector('[data-open-queue]')!.getAttribute('href')!;
       expect(link).toContain('status=COMPLETED');
       expect(link).toContain('assignee=1');
       expect(link).toContain('type=10');

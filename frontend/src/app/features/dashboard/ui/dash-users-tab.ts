@@ -149,17 +149,19 @@ export const USERS_PAGE = 200;
       </mf-skills-view>
     } @else {
       <h2 class="sr-only" id="wl-h">{{ canCoverage() ? 'Team workload' : 'Workload' }}</h2>
-      <mf-users-summary
-        [summary]="board()?.summary ?? null"
-        [users]="board()?.users ?? []"
-        [filters]="filters()"
-        [thresholds]="board()?.thresholds ?? null"
-        [population]="populationLine()"
-        [populationOn]="filters().includeNoPod"
-        (populationToggle)="toggleNoPod()"
-        (loadToggle)="toggleLoad($event)"
-        (availabilityToggle)="toggleAvailability($event)"
-      />
+      @if (state() !== 'error' && state() !== 'forbidden') {
+        <mf-users-summary
+          [summary]="board()?.summary ?? null"
+          [users]="board()?.users ?? []"
+          [filters]="filters()"
+          [thresholds]="board()?.thresholds ?? null"
+          [population]="populationLine()"
+          [populationOn]="filters().includeNoPod"
+          (populationToggle)="toggleNoPod()"
+          (loadToggle)="toggleLoad($event)"
+          (availabilityToggle)="toggleAvailability($event)"
+        />
+      }
 
       <p class="sr-only" role="status" aria-live="polite" data-users-live>{{ live() }}</p>
 

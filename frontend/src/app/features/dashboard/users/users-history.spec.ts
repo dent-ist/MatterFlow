@@ -80,17 +80,21 @@ describe('UsersHistory', () => {
   }
   const el = (f: { nativeElement: unknown }) => f.nativeElement as HTMLElement;
 
-  it('Task types: reads 3 months with the page scope, shows the table with neutral comparison and "Not enough tasks yet"', () => {
+  it('Task types: reads 3 months with the page scope, shows the table with one neutral "vs firm" cell and "Too few"', () => {
     const f = create('types');
     expect(calls[0]).toEqual([7, 3, 'all']);
     const rows = el(f).querySelectorAll('[data-type-row]');
     expect(rows).toHaveLength(2);
-    expect(rows[0].textContent).toContain('3.3 h');
-    expect(rows[0].querySelector('[data-compare]')!.textContent).toContain('1.3x firm median');
+    // The medians and sample sizes are in the tooltip and the spoken text, not in columns.
+    expect(rows[0].textContent).toContain(
+      'Their median 3.3 h (12 tasks); firm median 2.5 h (90 tasks)',
+    );
+    expect(rows[0].querySelector('[data-compare-text]')!.textContent).toBe('1.3x longer');
+    expect(rows[0].querySelectorAll('td')).toHaveLength(2);
     expect(rows[0].querySelector('[data-compare] .sr-only')!.textContent).toContain(
       'Longer than the firm median',
     );
-    expect(rows[1].querySelector('[data-median]')!.textContent).toContain('Not enough tasks yet');
+    expect(rows[1].querySelector('[data-too-few]')!.textContent).toContain('Too few');
     expect(rows[1].querySelector('[data-compare]')).toBeNull();
     expect(el(f).querySelector('[data-basis]')!.textContent).toContain('working time');
   });

@@ -36,8 +36,7 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
 }
 
 /**
- * One person on the Team workload board as a card (US-05, #1096), simple on purpose: the name with the avatar initials, Workload (the open-task count, the load bar split by priority and
- * the level word) and the Availability (icon and word: Available, Out of office until ..., Off hours). Overdue work shows only as a red badge when there is some. The name is the button
+ * One person on the Team workload board as a card (US-05, #1096), simple on purpose: the name with the avatar initials, Workload as one line ("3 open", the load bar split by priority, the level icon; the level word is in the tooltip) and the Availability (icon and word: Available, Out of office until ..., Off hours). Overdue work shows only as a red badge when there is some. The name is the button
  * that opens the person's drawer and it stretches over the whole card; the Assign icon sits above it and appears on hover or focus. Operational capacity only: no completion counts, speed
  * or ranking.
  */
@@ -82,25 +81,22 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
           >
         }
       </p>
-      <div class="wl" aria-hidden="true" data-workload>
-        <span class="lbl">Workload</span>
-        <span class="row">
-          <strong class="n" data-open-total>{{ u.openTotal }}</strong>
-          <span class="track" data-load-bar [attr.data-open]="u.openTotal">
-            @for (s of segments(); track s.priorityId) {
-              <span
-                class="seg"
-                [attr.data-segment]="s.label"
-                [style.width.%]="s.percent"
-                [style.background]="colorsOf(s.color).bg"
-                [style.box-shadow]="'inset 0 0 0 1px ' + colorsOf(s.color).fg"
-              ></span>
-            }
-          </span>
-          <span class="lvl" data-level-word
-            ><i class="pi" [class]="icons[level()]"></i>{{ labels[level()] }}</span
-          >
+      <div class="wl" aria-hidden="true" data-workload [attr.title]="levelTip()">
+        <strong class="n" data-open-total>{{ u.openTotal }}</strong
+        >&ngsp;
+        <span class="o">open</span>
+        <span class="track" data-load-bar [attr.data-open]="u.openTotal">
+          @for (s of segments(); track s.priorityId) {
+            <span
+              class="seg"
+              [attr.data-segment]="s.label"
+              [style.width.%]="s.percent"
+              [style.background]="colorsOf(s.color).bg"
+              [style.box-shadow]="'inset 0 0 0 1px ' + colorsOf(s.color).fg"
+            ></span>
+          }
         </span>
+        <i class="pi lvl" data-level-icon [class]="icons[level()]"></i>
       </div>
       <div class="av" aria-hidden="true" data-availability-line>
         <span class="chip" [class]="'chip chip--' + avail().tone">
@@ -163,13 +159,13 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
       flex: none;
       display: inline-grid;
       place-items: center;
-      width: 2rem;
-      height: 2rem;
+      width: 2.5rem;
+      height: 2.5rem;
       color: var(--mf-primary);
       background: var(--mf-selected-bg);
       border: 1px solid var(--mf-primary);
       border-radius: 50%;
-      font-size: var(--mf-fs-xs);
+      font-size: var(--mf-fs-sm);
       font-weight: 700;
     }
     .open {
@@ -215,24 +211,19 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
       font-weight: 700;
       font-variant-numeric: tabular-nums;
     }
+    /* One line: "3 open" and the load bar; the level word is in the tooltip and the accessible name (the icon repeats it). */
     .wl {
-      display: grid;
-      gap: 2px;
-    }
-    .lbl {
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
-      font-weight: 600;
-    }
-    .row {
       display: flex;
       align-items: center;
       gap: var(--mf-s2);
     }
     .n {
-      min-width: 1.5rem;
-      font-size: var(--mf-fs-lg);
+      font-size: var(--mf-fs-h3);
       font-variant-numeric: tabular-nums;
+    }
+    .o {
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
     }
     .track {
       display: flex;
@@ -254,15 +245,11 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
     }
     .lvl {
       flex: none;
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
+      font-size: var(--mf-icon-md);
     }
     .card--heavy .lvl {
       color: var(--mf-danger);
-      font-weight: 700;
     }
     .chip {
       display: inline-flex;
@@ -277,6 +264,9 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+    .chip .pi {
+      font-size: var(--mf-icon-sm);
     }
     .chip--success {
       color: var(--mf-success);
@@ -352,6 +342,10 @@ export class UsersCard {
   );
   protected readonly summary = computed(() => cardSummary(this.user(), this.avail().label));
   protected readonly icons = LOAD_ICONS;
+  /** The tooltip of the workload line: the level word with its meaning ("Heavy: 9 or more open tasks"). */
+  protected readonly levelTip = computed(
+    () => `${LOAD_LABELS[this.level()]}: ${this.user().openTotal} open`,
+  );
   protected readonly labels = LOAD_LABELS;
 
   protected colorsOf(tone: string) {

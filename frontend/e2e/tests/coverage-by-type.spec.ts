@@ -3,6 +3,7 @@ import path from 'node:path';
 import { Page } from '@playwright/test';
 import { Json } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
+import { usersFilter } from '../support/dropdown';
 import { expect, test } from '../support/fixtures';
 import { CoverageSeed, seedCoverage } from '../support/workload';
 
@@ -71,7 +72,7 @@ test.describe('By task type (C1, #134)', () => {
     await expect(review.locator('[data-status="one"]')).toHaveText('One person');
     await expect(page.locator('[data-summary="completed"]')).toContainText('7');
     // Neutral orders, no scores.
-    await expect(page.locator('[data-coverage-row-order] option')).toHaveText([
+    expect(await (await usersFilter(page, 'Order')).optionTexts()).toEqual([
       'Fewest people first',
       'Type name',
       'Most completed',
@@ -153,8 +154,8 @@ test.describe('By task type (C1, #134)', () => {
     page,
   }) => {
     await openTypes(page);
-    const order = page.locator('[data-coverage-row-order]');
-    await expect(order).toHaveValue('fewest');
+    const order = await usersFilter(page, 'Order');
+    await expect(order).toHaveAttribute('data-value', 'fewest');
     const names = () =>
       page
         .locator('[data-type-row]')
@@ -165,7 +166,7 @@ test.describe('By task type (C1, #134)', () => {
     await order.selectOption('name');
     expect(await names()).toEqual([cov.typeNames.production, cov.typeNames.review]);
     await page.reload();
-    await expect(page.locator('[data-coverage-row-order]')).toHaveValue('name');
+    await expect(await usersFilter(page, 'Order')).toHaveAttribute('data-value', 'name');
     await page.locator('#cv-q').fill(`Cov ${cov.tag} Review`);
     await expect(page.locator('[data-type-row]')).toHaveCount(1);
   });

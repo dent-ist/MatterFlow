@@ -27,6 +27,7 @@ import { QuietRequests } from '../../../core/http/interceptors';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { describeDueCell } from '../../../core/time/time';
 import { DialogFocus } from '../../../shared/ui/dialog-focus';
+import { Tip } from '../../../shared/ui/tip';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { UsersHistory } from './users-history';
 import { ErrorReference } from '../../../shared/ui/error-reference';
@@ -96,12 +97,12 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
     DueCell,
     ErrorReference,
     Tabs,
+    Tip,
     UsersHistory,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <p-dialog
-      [header]="user() ? user()!.displayName : 'Team member'"
       position="right"
       styleClass="mf-drawer mf-users-drawer"
       [modal]="true"
@@ -124,6 +125,39 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
         borderRadius: '0',
       }"
     >
+      <ng-template #header let-labelId="ariaLabelledBy">
+        <span class="htitle">
+          <span class="hname" [id]="labelId" data-drawer-title>{{
+            user() ? user()!.displayName : 'Team member'
+          }}</span>
+          @if (user(); as hu) {
+            <span class="hbtns">
+              <a
+                class="mf-btn mf-btn--icon"
+                data-open-queue
+                routerLink="/tasks"
+                aria-label="Open their tasks in Task Queue"
+                mfTip="Open their tasks in Task Queue"
+                [queryParams]="queueParams()"
+              >
+                <i class="pi pi-list" aria-hidden="true"></i>
+              </a>
+              @if (canAssign()) {
+                <button
+                  type="button"
+                  class="mf-btn mf-btn--icon"
+                  data-drawer-assign
+                  [attr.aria-label]="'Assign work to ' + hu.displayName"
+                  [mfTip]="'Assign work to ' + hu.displayName"
+                  (click)="assign.emit(hu)"
+                >
+                  <i class="pi pi-user-plus" aria-hidden="true"></i>
+                </button>
+              }
+            </span>
+          }
+        </span>
+      </ng-template>
       @if (visible() && user(); as u) {
         <div class="peek" data-users-drawer [attr.data-drawer-user]="u.userId">
           <div class="facts">
@@ -144,31 +178,6 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
               </span>
             </div>
           </div>
-
-          <p class="actions">
-            <a
-              class="mf-btn mf-btn--icon mf-btn--primary"
-              data-open-queue
-              routerLink="/tasks"
-              aria-label="Open in Task Queue"
-              title="Open in Task Queue"
-              [queryParams]="queueParams()"
-            >
-              <i class="pi pi-external-link" aria-hidden="true"></i>
-            </a>
-            @if (canAssign()) {
-              <button
-                type="button"
-                class="mf-btn mf-btn--icon"
-                data-drawer-assign
-                [attr.aria-label]="'Assign work to ' + u.displayName"
-                [attr.title]="'Assign work to ' + u.displayName"
-                (click)="assign.emit(u)"
-              >
-                <i class="pi pi-user-plus" aria-hidden="true"></i>
-              </button>
-            }
-          </p>
 
           <mf-tabs
             idPrefix="ud"
@@ -440,14 +449,30 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
       gap: var(--mf-s1);
       font-size: var(--mf-fs-sm);
     }
-    .actions {
+    .htitle {
       display: flex;
-      flex-wrap: wrap;
+      flex: 1;
+      align-items: center;
+      justify-content: space-between;
       gap: var(--mf-s2);
-      margin: 0;
+      min-width: 0;
     }
-    .actions a {
+    .hname {
+      min-width: 0;
+      overflow: hidden;
+      font-weight: 600;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .hbtns {
+      display: inline-flex;
+      gap: var(--mf-s1);
+    }
+    .hbtns a {
       text-decoration: none;
+    }
+    .hbtns .pi {
+      font-size: var(--mf-icon-lg);
     }
     .h {
       margin: 0 0 var(--mf-s2);

@@ -21,12 +21,12 @@ let nextId = 0;
       aria-haspopup="dialog"
       [attr.aria-expanded]="open()"
       [attr.aria-controls]="open() ? id : null"
-      [attr.aria-label]="count() > 0 ? 'Filters, ' + count() + ' in use' : 'Filters'"
+      [attr.aria-label]="count() > 0 ? label() + ', ' + count() + ' in use' : label()"
       [class.fbtn--on]="count() > 0"
       (click)="open.set(!open())"
     >
-      <i class="pi pi-filter" aria-hidden="true"></i>
-      <span class="w">Filters</span>
+      <i class="pi" [class]="icon()" aria-hidden="true"></i>
+      <span class="w">{{ label() }}</span>
       @if (count() > 0) {
         <span class="n" data-filters-count aria-hidden="true">{{ count() }}</span>
       }
@@ -35,7 +35,7 @@ let nextId = 0;
       <div
         class="panel"
         role="dialog"
-        aria-label="Filters"
+        [attr.aria-label]="label()"
         data-filters-panel
         [id]="id"
         [mfDismissable]="btn"
@@ -120,6 +120,9 @@ let nextId = 0;
 export class UsersFilterPopover {
   /** How many filters are in use (the badge, and Clear filters shows only above 0). */
   readonly count = input(0);
+  /** The button word and icon: Filters by default; the Coverage view calls its display choices "Display". */
+  readonly label = input('Filters');
+  readonly icon = input('pi-filter');
   readonly cleared = output<void>();
 
   protected readonly id = `uf-panel-${nextId++}`;

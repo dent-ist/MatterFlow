@@ -36,19 +36,21 @@ let nextId = 0;
   host: { '(document:click)': 'onDocumentClick($event)' },
   template: `
     <div class="strip" role="group" aria-label="Unassigned work" data-capacity>
-      <a
-        class="unassigned"
-        data-summary-unassigned
-        routerLink="/tasks"
-        [queryParams]="queue()"
-        title="Open tasks nobody has: open them in the Task Queue"
-        [attr.aria-label]="plural(count(), 'unassigned task') + '. Open in the Task Queue'"
-      >
-        <i class="pi pi-inbox" aria-hidden="true"></i>
-        <strong data-n>{{ unassignedText() }}</strong
-        >&ngsp;<span>unassigned {{ count() === 1 ? 'task' : 'tasks' }}</span>
-        <i class="pi pi-external-link go" aria-hidden="true"></i>
-      </a>
+      @if (summary()) {
+        <a
+          class="unassigned"
+          data-summary-unassigned
+          routerLink="/tasks"
+          [queryParams]="queue()"
+          title="Open tasks nobody has: open them in the Task Queue"
+          [attr.aria-label]="plural(count(), 'unassigned task') + '. Open in the Task Queue'"
+        >
+          <i class="pi pi-inbox" aria-hidden="true"></i>
+          <strong data-n>{{ unassignedText() }}</strong
+          >&ngsp;<span>unassigned {{ count() === 1 ? 'task' : 'tasks' }}</span>
+          <i class="pi pi-external-link go" aria-hidden="true"></i>
+        </a>
+      }
       @if (canAssign()) {
         <div class="assign">
           <button
@@ -164,8 +166,8 @@ let nextId = 0;
       align-items: center;
       gap: var(--mf-s2);
       box-sizing: border-box;
-      min-height: 2rem;
-      padding: 0 var(--mf-s2);
+      min-height: 2.5rem;
+      padding: 0 var(--mf-s3) 0 var(--mf-s2);
       color: var(--mf-text);
       background: transparent;
       border: 0;
@@ -177,6 +179,9 @@ let nextId = 0;
     }
     .item:hover {
       background: var(--mf-surface-alt);
+    }
+    .item .pi {
+      font-size: var(--mf-icon-md);
     }
   `,
 })
