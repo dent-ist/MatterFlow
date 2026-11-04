@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { Segmented } from '../../../shared/ui/segmented';
 import { TabView } from './users-model';
 
 /**
@@ -8,19 +9,21 @@ import { TabView } from './users-model';
  */
 @Component({
   selector: 'mf-users-views',
+  imports: [Segmented],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="views" role="group" aria-label="Users view" data-users-views>
+    <div mfSegmented role="group" aria-label="Users view" data-users-views>
       @for (v of shown(); track v.key) {
         <button
           type="button"
-          class="seg"
+          class="mf-btn"
           [attr.data-view]="v.key"
           [attr.aria-pressed]="view() === v.key"
           [attr.title]="v.title"
           (click)="viewChange.emit(v.key)"
         >
-          {{ v.label }}
+          <i class="pi" [class]="v.icon" aria-hidden="true"></i>
+          <span class="t">{{ v.label }}</span>
         </button>
       }
     </div>
@@ -29,40 +32,16 @@ import { TabView } from './users-model';
     :host {
       display: inline-block;
     }
-    .views {
-      display: inline-flex;
-      box-sizing: border-box;
-      height: 32px;
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      overflow: hidden;
-      background: var(--mf-surface);
-    }
-    .seg {
-      min-width: 5.5rem;
-      padding: 0 var(--mf-s3);
-      color: var(--mf-text);
-      background: transparent;
-      border: 0;
-      font: inherit;
-      font-size: var(--mf-fs-md);
-      cursor: pointer;
-    }
-    .seg + .seg {
-      border-left: 1px solid var(--mf-border-strong);
-    }
-    .seg:hover {
-      background: var(--mf-surface-alt);
-    }
-    .seg[aria-pressed='true'] {
-      color: var(--mf-primary);
-      background: var(--mf-selected-bg);
-      font-weight: 600;
-      box-shadow: inset 0 -2px 0 var(--mf-primary);
-    }
-    .seg:focus-visible {
-      outline: 2px solid var(--mf-focus);
-      outline-offset: -2px;
+    /* The same themed switch on all three views; on a small phone the words give way to the icons (the title and the accessible name keep them). */
+    @media (max-width: 420px) {
+      .t {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
     }
   `,
 })
@@ -75,16 +54,23 @@ export class UsersViews {
   );
   readonly viewChange = output<TabView>();
 
-  protected readonly views: { key: TabView; label: string; title: string }[] = [
-    { key: 'workload', label: 'Workload', title: 'Workload: who has room and what is open' },
+  protected readonly views: { key: TabView; label: string; title: string; icon: string }[] = [
+    {
+      key: 'workload',
+      label: 'Workload',
+      icon: 'pi-chart-bar',
+      title: 'Workload: who has room and what is open',
+    },
     {
       key: 'coverage',
       label: 'Coverage',
+      icon: 'pi-th-large',
       title: 'Coverage: task types each person has completed',
     },
     {
       key: 'skills',
       label: 'Skills',
+      icon: 'pi-star',
       title: 'Skills and training: completed tasks by person and task type, and thin cover',
     },
   ];

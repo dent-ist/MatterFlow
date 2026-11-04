@@ -1,6 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { WorkloadPriority, WorkloadThresholds } from '../../../api/generated/api-client';
+import { Dismissable } from '../../../shared/ui/dismissable';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { SearchBox } from '../../../shared/ui/search-box';
+import { Segmented } from '../../../shared/ui/segmented';
+import { UsersFilterPopover } from './users-filter-popover';
 import {
   AVAILABILITY_FILTERS,
   AVAILABILITY_LABELS,
@@ -19,13 +23,14 @@ import {
 } from './users-model';
 
 /**
- * The toolbar of the Users tab: search by name, highest priority, availability and sort, then icon buttons: clear filters, tile size, the
- * cards or table view and the legend (six states, one line each). It owns no state: every choice is emitted and the tab writes it to the address (the
- * filters) and to the remembered choices (sort, view).
+ * The toolbar of the Workload view (US-07, #1098), in the look of the shared list toolbar (theme guide 11.1): the view switch, a search box with its icon, ONE Filters button (Highest
+ * priority, Availability and Sort, with the themed dropdowns), the "Sorted by" line with Reset sort, and at the right the cards or table switch, the legend (an info icon with an anchored
+ * popover) and whatever the page projects as `mfBarEnd` (Assign work and the unassigned link). It owns no state: every choice is emitted and the tab writes it to the address (the filters) and
+ * to the remembered choices (sort, view).
  */
 @Component({
   selector: 'mf-users-toolbar',
-  imports: [SearchBox],
+  imports: [SearchBox, Dropdown, Segmented, Dismissable, UsersFilterPopover],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let f = filters();
@@ -39,243 +44,178 @@ import {
         placeholder="Search by name"
         [hideLabel]="true"
         [hintOnFocus]="true"
+        [leadingIcon]="true"
+        [compact]="true"
         [value]="f.q"
         (searchChange)="filtersChange.emit({ q: $event })"
       />
-      <div class="fld">
-        <label class="lbl" for="wl-prio">Highest priority</label>
-        <select
-          id="wl-prio"
-          class="mf-control mf-control--compact"
-          data-filter="priority"
-          (change)="filtersChange.emit({ priority: num($any($event.target).value) })"
-        >
-          <option value="">Any priority</option>
-          @for (p of priorities(); track p.priorityId) {
-            <option [value]="p.priorityId" [selected]="f.priority === p.priorityId">
-              {{ p.label }}
-            </option>
-          }
-        </select>
-      </div>
-      <div class="fld">
-        <label class="lbl" for="wl-avail">Availability</label>
-        <select
-          id="wl-avail"
-          class="mf-control mf-control--compact"
-          data-filter="availability"
-          [value]="f.availability"
-          (change)="onAvailability($any($event.target).value)"
-        >
-          @for (a of availabilities; track a) {
-            <option [value]="a" [selected]="a === f.availability">
-              {{ availabilityLabels[a] }}
-            </option>
-          }
-        </select>
-      </div>
-      <div class="fld">
-        <label class="lbl" for="wl-sort">Sort</label>
-        <select
-          id="wl-sort"
-          class="mf-control mf-control--compact"
-          data-sort
-          [value]="sort()"
-          (change)="onSort($any($event.target).value)"
-        >
-          @for (s of sorts; track s) {
-            <option [value]="s" [selected]="s === sort()">{{ sortLabels[s] }}</option>
-          }
-        </select>
-      </div>
-      <span class="grow"></span>
-      <span class="tools">
-        @if (count() > 0) {
+      <mf-users-filter-popover [count]="count()" (cleared)="clear()">
+        <div class="fl" data-filter="priority">
+          <span>Highest priority</span>
+          <mf-dropdown
+            buttonId="wl-prio"
+            label="Highest priority"
+            [items]="priorityItems()"
+            [value]="f.priority === null ? '' : '' + f.priority"
+            (valueChange)="filtersChange.emit({ priority: num($event) })"
+            [panelWidth]="240"
+          />
+        </div>
+        <div class="fl" data-filter="availability">
+          <span>Availability</span>
+          <mf-dropdown
+            buttonId="wl-avail"
+            label="Availability"
+            [items]="availabilityItems"
+            [value]="f.availability"
+            [neutralValue]="'all'"
+            (valueChange)="onAvailability($event)"
+            [panelWidth]="240"
+          />
+        </div>
+        <div class="fl" data-sort>
+          <span>Sort</span>
+          <mf-dropdown
+            buttonId="wl-sort"
+            label="Sort"
+            [items]="sortItems"
+            [value]="sort()"
+            [neutralValue]="null"
+            (valueChange)="onSort($event)"
+            [panelWidth]="240"
+          />
+        </div>
+      </mf-users-filter-popover>
+      <p class="sorted" data-sorted-line>
+        <span class="st" data-sorted-text>Sorted by {{ sortLabels[sort()] }}</span>
+        @if (sort() !== 'load') {
           <button
             type="button"
-            class="mf-btn mf-btn--icon tip clear"
-            data-clear-filters
-            [attr.data-tip]="'Clear filters (' + count() + ')'"
-            [attr.aria-label]="'Clear filters (' + count() + ')'"
-            (click)="clear()"
+            class="mf-btn mf-btn--text"
+            data-reset-sort
+            (click)="sortChange.emit('load')"
           >
-            <i class="pi pi-filter-slash" aria-hidden="true"></i>
-            <span class="badge" aria-hidden="true">{{ count() }}</span>
+            Reset sort
           </button>
         }
-        <span class="pair" role="group" aria-label="Layout" data-layout-group>
-          @for (l of layouts; track l) {
-            <button
-              type="button"
-              class="mf-btn mf-btn--icon tip toggle"
-              [attr.data-layout]="l"
-              [attr.data-tip]="
-                l === 'cards' ? 'Cards: one card per person' : 'Table: one row per person'
-              "
-              [attr.aria-pressed]="layout() === l"
-              [attr.aria-label]="l === 'cards' ? 'Layout: cards' : 'Layout: table'"
-              (click)="layoutChange.emit(l)"
-            >
-              <i
-                class="pi"
-                [class]="l === 'cards' ? 'pi-id-card' : 'pi-table'"
-                aria-hidden="true"
-              ></i>
-            </button>
-          }
-        </span>
+      </p>
+      <span class="grow"></span>
+      <div mfSegmented role="group" aria-label="Layout" data-layout-group>
+        @for (l of layouts; track l) {
+          <button
+            type="button"
+            class="mf-btn mf-btn--icon"
+            [attr.data-layout]="l"
+            [attr.title]="
+              l === 'cards' ? 'Cards: one card per person' : 'Table: one row per person'
+            "
+            [attr.aria-pressed]="layout() === l"
+            [attr.aria-label]="l === 'cards' ? 'Layout: cards' : 'Layout: table'"
+            (click)="layoutChange.emit(l)"
+          >
+            <i
+              class="pi"
+              [class]="l === 'cards' ? 'pi-id-card' : 'pi-table'"
+              aria-hidden="true"
+            ></i>
+          </button>
+        }
+      </div>
+      <span class="legend-wrap">
         <button
+          #legendBtn
           type="button"
-          class="mf-btn tip toggle legend-btn"
+          class="mf-btn mf-btn--icon toggle"
           data-legend-toggle
-          data-tip="Legend and help"
+          title="Legend and help"
           aria-label="Legend and help"
-          [attr.aria-pressed]="legendOpen()"
+          aria-haspopup="dialog"
           [attr.aria-expanded]="legendOpen()"
           [attr.aria-controls]="legendOpen() ? 'wl-legend' : null"
           (click)="legendOpen.set(!legendOpen())"
         >
           <i class="pi pi-info-circle" aria-hidden="true"></i>
-          <span class="legend-word" aria-hidden="true">Legend</span>
         </button>
+        @if (legendOpen()) {
+          <section
+            id="wl-legend"
+            class="legend"
+            role="dialog"
+            aria-label="Legend and help"
+            data-legend
+            [mfDismissable]="legendBtn"
+            (dismissed)="legendOpen.set(false)"
+          >
+            <h3>What the states mean</h3>
+            <ul class="states" data-legend-states>
+              @for (st of states(); track st.key) {
+                <li [attr.data-state]="st.key">
+                  <span class="chipk" [class]="'chipk chipk--' + st.key"
+                    ><i class="pi" [class]="st.icon" aria-hidden="true"></i>{{ st.word }}</span
+                  >&ngsp;<span class="line">{{ st.line }}</span>
+                </li>
+              }
+            </ul>
+          </section>
+        }
       </span>
+      <ng-content select="[mfBarEnd]" />
     </div>
-
-    @if (legendOpen()) {
-      <section id="wl-legend" class="legend" aria-label="Legend and help" data-legend>
-        <h3>What the states mean</h3>
-        <ul class="states" data-legend-states>
-          @for (st of states(); track st.key) {
-            <li [attr.data-state]="st.key">
-              <span class="chipk" [class]="'chipk chipk--' + st.key"
-                ><i class="pi" [class]="st.icon" aria-hidden="true"></i>{{ st.word }}</span
-              >&ngsp;<span class="line">{{ st.line }}</span>
-            </li>
-          }
-        </ul>
-      </section>
-    }
   `,
   styles: `
     :host {
       display: block;
       margin-bottom: var(--mf-s2);
     }
-    /* The shared list toolbar standard (theme guide 11.1): one row, labels in line with their controls. */
+    /* One row like the shared list toolbar (theme guide 11.1); it wraps by group on a narrow window. */
     .bar {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: var(--mf-s2);
     }
-    .fld {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
-    }
-    .lbl {
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-      font-weight: 600;
-      white-space: nowrap;
-    }
     .grow {
       flex: 1;
+    }
+    /* Assign work and the unassigned link stay at the right end, also when they wrap to their own line. */
+    :host ::ng-deep [mfBarEnd] {
+      margin-left: auto;
     }
     .search {
       min-width: 10rem;
       flex: 0 1 11rem;
     }
-    .pair {
+    .sorted {
+      flex: 1 1 5rem;
       display: inline-flex;
-      gap: var(--mf-s1);
-    }
-    .mf-btn {
-      min-height: 32px;
-    }
-    .mf-btn--icon {
-      min-width: 32px;
-    }
-    /* A text tooltip on hover and on keyboard focus (a title shows on hover only). */
-    .tip {
-      position: relative;
-    }
-    .tip[data-tip]:hover::after,
-    .tip[data-tip]:focus-visible::after {
-      content: attr(data-tip);
-      position: absolute;
-      top: calc(100% + 4px);
-      right: 0;
-      z-index: 30;
-      padding: 3px var(--mf-s2);
-      color: var(--mf-surface);
-      background: var(--mf-text);
-      border-radius: var(--mf-radius);
-      font-size: var(--mf-fs-xs);
-      font-weight: 400;
-      white-space: nowrap;
-      pointer-events: none;
-    }
-    .legend-btn {
-      gap: 6px;
-      padding: 0 var(--mf-s2);
-    }
-    .legend-word {
-      display: none;
-    }
-    @media (min-width: 1100px) {
-      .legend-word {
-        display: inline;
-      }
-    }
-    .tools {
-      display: inline-flex;
-      flex-wrap: wrap;
       align-items: center;
       gap: var(--mf-s2);
+      min-width: 0;
+      margin: 0;
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
     }
-    .fld select {
-      max-width: 13rem;
+    .st {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
-    .toggle[aria-pressed='true'],
-    .toggle[aria-expanded='true'] {
-      background: var(--mf-selected-bg);
-      border-color: var(--mf-primary);
-      color: var(--mf-primary);
-    }
-    .mf-btn:focus-visible {
-      outline: 2px solid var(--mf-focus);
-      outline-offset: 1px;
-    }
-    .clear {
+    .legend-wrap {
       position: relative;
+      display: inline-block;
     }
-    .badge {
-      position: absolute;
-      top: -6px;
-      right: -6px;
-      min-width: 16px;
-      padding: 0 3px;
-      color: #fff;
-      background: var(--mf-primary);
-      border-radius: 8px;
-      font-size: 0.65rem;
-      line-height: 16px;
-      text-align: center;
-    }
-    /* The search input is as tall as the other (compact) controls on the line. */
-    .search ::ng-deep .sb__input {
-      min-height: var(--mf-row-h-compact);
-      height: var(--mf-row-h-compact);
-      padding-block: 0;
-    }
-    /* A short list: six states, each with its chip and one line. It fits without scrolling on a laptop. */
     .legend {
-      margin-top: var(--mf-s2);
-      padding: var(--mf-s3) var(--mf-s4);
+      position: absolute;
+      top: calc(100% + var(--mf-s1));
+      right: 0;
+      z-index: 40;
+      width: min(24rem, 90vw);
+      padding: var(--mf-s3);
       background: var(--mf-surface);
-      border: 1px solid var(--mf-border);
+      border: 1px solid var(--mf-border-strong);
       border-radius: var(--mf-radius-lg);
+      box-shadow: var(--mf-shadow-pop);
     }
     .legend h3 {
       margin: 0 0 var(--mf-s2);
@@ -283,8 +223,7 @@ import {
     }
     .states {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
-      gap: var(--mf-s2) var(--mf-s4);
+      gap: var(--mf-s2);
       margin: 0;
       padding: 0;
       list-style: none;
@@ -301,8 +240,8 @@ import {
       justify-content: center;
       gap: 5px;
       box-sizing: border-box;
-      min-width: 7.5rem;
-      min-height: 26px;
+      min-width: 8rem;
+      min-height: 28px;
       padding: 0 var(--mf-s2);
       color: var(--mf-text);
       background: var(--mf-surface);
@@ -310,6 +249,9 @@ import {
       border-radius: var(--mf-radius);
       font-size: var(--mf-fs-sm);
       white-space: nowrap;
+    }
+    .chipk .pi {
+      font-size: var(--mf-icon-md);
     }
     .chipk--idle {
       background: color-mix(in srgb, var(--mf-success-bg) 45%, var(--mf-surface));
@@ -340,15 +282,17 @@ import {
       color: var(--mf-text);
       font-size: var(--mf-fs-sm);
     }
+    .toggle[aria-expanded='true'] {
+      background: var(--mf-selected-bg);
+      border-color: var(--mf-primary);
+      color: var(--mf-primary);
+    }
     @media (max-width: 560px) {
       .search {
-        flex-basis: 100%;
-      }
-      .fld {
         flex: 1 1 8rem;
       }
-      .fld select {
-        width: 100%;
+      .sorted {
+        flex-basis: 100%;
       }
     }
   `,
@@ -359,6 +303,19 @@ export class UsersToolbar {
   protected readonly availabilities = AVAILABILITY_FILTERS;
   protected readonly availabilityLabels = AVAILABILITY_LABELS;
   protected readonly layouts = LAYOUTS;
+
+  protected readonly availabilityItems: DropdownItem[] = AVAILABILITY_FILTERS.map((a) => ({
+    value: a,
+    label: AVAILABILITY_LABELS[a],
+  }));
+  protected readonly sortItems: DropdownItem[] = USER_SORTS.map((v) => ({
+    value: v,
+    label: USER_SORT_LABELS[v],
+  }));
+  protected readonly priorityItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'Any priority' },
+    ...this.priorities().map((p) => ({ value: String(p.priorityId), label: p.label })),
+  ]);
 
   readonly filters = input.required<UsersFilters>();
   readonly sort = input<UserSort>('load');
@@ -375,7 +332,8 @@ export class UsersToolbar {
   /** The six states with their icon, chip and ONE line each; the load lines use the real thresholds. */
   protected readonly states = computed(() => legendStates(this.thresholds()));
 
-  protected num(value: string): number | null {
+  protected num(value: string | null | undefined): number | null {
+    if (value === null || value === undefined) return null;
     const n = Number(value);
     return value !== '' && Number.isInteger(n) && n > 0 ? n : null;
   }

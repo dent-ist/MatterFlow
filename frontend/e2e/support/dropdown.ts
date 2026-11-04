@@ -85,3 +85,14 @@ export const dropdownById = (scope: Page | Locator, id: string): Dropdown =>
 /** The dropdown whose host element carries this attribute (`data-sort-select`). */
 export const dropdownByAttr = (scope: Page | Locator, attr: string): Dropdown =>
   asDropdown(scope.locator(`[${attr}] button`));
+
+/**
+ * A dropdown inside the Filters popover of the Dashboard Users views (US-07, #1098): opens the popover first when it is closed, then finds the dropdown by its label
+ * ("Highest priority", "Availability", "Sort", "Task type"). The popover stays open for the next choice.
+ */
+export async function usersFilter(page: Page, label: string): Promise<Dropdown> {
+  if ((await page.locator('[data-filters-panel]').count()) === 0)
+    await page.locator('[data-filters-toggle]').click();
+  await expect(page.locator('[data-filters-panel]')).toBeVisible();
+  return labelledDropdown(page, label);
+}

@@ -1,4 +1,4 @@
-import { ddChoose, ddSelect } from '../../../testing/dropdown-testing.spec-util';
+import { ddChoose, ddSelect, ddValue } from '../../../testing/dropdown-testing.spec-util';
 import { DashboardPrefs } from '../dashboard-prefs';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
@@ -233,10 +233,34 @@ describe('DashUsersTab', () => {
       await settle();
       return;
     }
-    const select = q<HTMLSelectElement>(selector);
-    select.value = value;
-    select.dispatchEvent(new Event('change'));
+    // The filters live in the Filters popover (the themed dropdowns): open it, then choose by label.
+    const labels: Record<string, string> = {
+      '[data-filter="priority"]': 'Highest priority',
+      '[data-filter="availability"]': 'Availability',
+      '[data-sort]': 'Sort',
+    };
+    if (!labels[selector]) {
+      const select = q<HTMLSelectElement>(selector);
+      select.value = value;
+      select.dispatchEvent(new Event('change'));
+      await settle();
+      return;
+    }
+    await openFilters();
+    ddChoose(host, labels[selector], value);
     await settle();
+  };
+  const openFilters = async () => {
+    if (!q('[data-filters-panel]')) {
+      q<HTMLButtonElement>('[data-filters-toggle]').click();
+      await settle();
+    }
+  };
+  const openWho = async () => {
+    if (!q('[data-who-popover]')) {
+      q<HTMLButtonElement>('[data-who-counted]').click();
+      await settle();
+    }
   };
 
   beforeEach(() => {
@@ -258,7 +282,8 @@ describe('DashUsersTab', () => {
     it('asks the workload endpoint with the filters of the address', async () => {
       await open(of(board()), '/dashboard?tab=users&uavail=out&uq=ann');
       expect(getWorkload).toHaveBeenCalledWith(undefined, 'out', 'ann', 'all', false);
-      expect(q<HTMLSelectElement>('[data-filter="availability"]').value).toBe('out');
+      await openFilters();
+      expect(ddValue(host, 'Availability')).toBe('out');
     });
 
     it('draws one card per person in the default order: available, off hours, out of office; lighter first', async () => {
@@ -408,7 +433,8 @@ describe('DashUsersTab', () => {
       expect(url()).toContain('uavail=available');
       expect(url()).toContain('uload=idle,light');
       expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'available', undefined, 'all', false);
-      expect(q<HTMLSelectElement>('[data-sort]').value).toBe('fewest');
+      await openFilters();
+      expect(ddValue(host, 'Sort')).toBe('fewest');
       // Idle or Light, fewest open tasks first (the fake API does not drop the out of office Dee Fox; the real one does for Available).
       expect(qa('[data-user-card]').map((c) => c.getAttribute('data-user'))).toEqual([
         'Cy Tan',
@@ -444,16 +470,19 @@ describe('DashUsersTab', () => {
   describe('people who can take work (U4)', () => {
     it('says how many are hidden, shows them on request (unopod=1) and hides them again', async () => {
       await open(of(board({ hiddenCount: 30 })));
+      await openWho();
       expect(text(q('[data-users-population-text]'))).toBe(
         'Showing 6 people who can take work. 30 others are hidden.',
       );
       expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all', false);
       q<HTMLButtonElement>('[data-users-population-toggle]').click();
       await settle();
+      await openWho();
       expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all', true);
       expect(url()).toContain('unopod=1');
       expect(text(q('[data-users-population-text]'))).toBe('Including people without a pod.');
       expect(q('[data-users-population-toggle]').getAttribute('aria-pressed')).toBe('true');
+      await openWho();
       q<HTMLButtonElement>('[data-users-population-toggle]').click();
       await settle();
       expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all', false);
@@ -463,21 +492,26 @@ describe('DashUsersTab', () => {
     it('reads unopod=1 from the address, keeps it when the filters are cleared, and is quiet when nobody is hidden', async () => {
       await open(of(board()), '/dashboard?tab=users&unopod=1&uavail=out');
       expect(getWorkload).toHaveBeenCalledWith(undefined, 'out', undefined, 'all', true);
+      await openFilters();
       q<HTMLButtonElement>('[data-clear-filters]').click();
       await settle();
       expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all', true);
       expect(url()).toContain('unopod=1');
       await reopen(of(board({ hiddenCount: 0 })));
+      await openWho();
+      expect(q('[data-who-text]')).not.toBeNull();
       expect(q('[data-users-population]')).toBeNull();
     });
 
     it('says nothing under a Pod scope, which lists that Pod and hides nobody', async () => {
       await open(of(board({ hiddenCount: 5 })));
+      await openWho();
       expect(q('[data-users-population]')).not.toBeNull();
       const scope = TestBed.inject(DashScope);
       scope.ensureLoaded();
       scope.applyAddress((k) => (k === 'pod' ? '2' : null));
       await settle();
+      await openWho();
       expect(q('[data-users-population]')).toBeNull();
     });
   });
@@ -504,7 +538,8 @@ describe('DashUsersTab', () => {
       expect(q('[data-layout="table"]').getAttribute('aria-label')).toBe('Layout: table');
       expect(q('[data-layout="cards"]').getAttribute('aria-pressed')).toBe('true');
       expect(q('[data-legend-toggle]').getAttribute('aria-label')).toBe('Legend and help');
-      expect(text(q('.legend-word'))).toBe('Legend');
+      // A plain info icon: no word beside it.
+      expect(text(q('[data-legend-toggle]'))).toBe('');
     });
 
     it('names each chip with its thresholds', async () => {
@@ -584,7 +619,8 @@ describe('DashUsersTab', () => {
       await open(of(board()), '/dashboard?tab=users&uload=normal,heavy&uprio=1');
       expect(qa('[data-user-card]').map((c) => c.getAttribute('data-user'))).toEqual(['Hal Moe']);
       expect(q('[data-chip="heavy"]').getAttribute('aria-pressed')).toBe('true');
-      expect(q<HTMLSelectElement>('[data-filter="priority"]').value).toBe('1');
+      await openFilters();
+      expect(ddValue(host, 'Highest priority')).toBe('1');
     });
 
     it('the priority filter keeps people whose highest open priority is the chosen one', async () => {
@@ -593,6 +629,7 @@ describe('DashUsersTab', () => {
       expect(qa('[data-user-card]').map((c) => c.getAttribute('data-user'))).toEqual(['Bob Ray']);
       expect(url()).toContain('uprio=3');
       expect(getWorkload).toHaveBeenCalledTimes(1);
+      await openFilters();
       q<HTMLButtonElement>('[data-clear-filters]').click();
       await settle();
       expect(qa('[data-user-card]').length).toBe(6);
@@ -624,6 +661,7 @@ describe('DashUsersTab', () => {
       await choose('[data-filter="availability"]', 'available');
       expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'available', undefined, 'all', false);
       expect(url()).toContain('uavail=available');
+      await openFilters();
       q<HTMLButtonElement>('[data-clear-filters]').click();
       await settle();
       expect(getWorkload).toHaveBeenLastCalledWith(undefined, 'all', undefined, 'all', false);
@@ -668,8 +706,13 @@ describe('DashUsersTab', () => {
       expect(row.getAttribute('data-state')).toBe('ooo');
       expect(text(row)).toContain('Out of office until Oct 20');
       expect(text(q('[data-user-row="3"]'))).not.toMatch(/No open tasks|Not available/);
-      expect(q('[data-user-row="3"] .state').getAttribute('aria-label')).toBe('No open tasks');
-      expect(text(q('[data-assign-work]'))).toBe('Assign');
+      // Highest priority only for a person with open tasks: nobody (Cy Tan) has no pill at all.
+      expect(q('[data-user-row="3"] .state')).toBeNull();
+      expect(q('[data-user-row="1"] .state')).not.toBeNull();
+      // The row action is a quiet icon button with a name and a tooltip.
+      expect(text(q('[data-assign-work]'))).toBe('');
+      expect(q('[data-assign-work]').getAttribute('aria-label')).toMatch(/^Assign work to /);
+      expect(q('[data-assign-work]').getAttribute('title')).toContain('Assign work to');
       expect(q('[data-layout="table"]').getAttribute('aria-pressed')).toBe('true');
       expect(JSON.parse(localStorage.getItem('mf.dashboard.users.v1.5')!)).toEqual({
         sort: 'load',

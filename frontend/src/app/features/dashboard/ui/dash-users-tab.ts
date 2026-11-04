@@ -124,6 +124,16 @@ export const USERS_PAGE = 200;
         (layoutChange)="setLayout($event)"
       >
         <mf-users-views [view]="view()" [coverage]="canCoverage()" (viewChange)="setView($event)" />
+        <mf-users-capacity
+          mfBarEnd
+          [users]="board()?.users ?? []"
+          [summary]="board()?.summary ?? null"
+          [filters]="filters()"
+          [thresholds]="board()?.thresholds ?? null"
+          [canAssign]="canAssign()"
+          (loadToggle)="toggleLoad($event)"
+          (showCanTake)="showCanTakeWork()"
+        />
       </mf-users-toolbar>
     } @else if (view() === 'coverage') {
       <div class="views-row">
@@ -144,40 +154,12 @@ export const USERS_PAGE = 200;
         [users]="board()?.users ?? []"
         [filters]="filters()"
         [thresholds]="board()?.thresholds ?? null"
+        [population]="populationLine()"
+        [populationOn]="filters().includeNoPod"
+        (populationToggle)="toggleNoPod()"
         (loadToggle)="toggleLoad($event)"
         (availabilityToggle)="toggleAvailability($event)"
-      >
-        <mf-users-capacity
-          mfBarEnd
-          [users]="board()?.users ?? []"
-          [summary]="board()?.summary ?? null"
-          [filters]="filters()"
-          [thresholds]="board()?.thresholds ?? null"
-          [canAssign]="canAssign()"
-          (loadToggle)="toggleLoad($event)"
-          (showCanTake)="showCanTakeWork()"
-        />
-        @if (populationLine(); as line) {
-          <p class="population" data-users-population>
-            <span data-users-population-text>{{ line.text }}</span>
-            <button
-              type="button"
-              class="link"
-              data-users-population-toggle
-              [attr.aria-pressed]="filters().includeNoPod"
-              (click)="toggleNoPod()"
-            >
-              {{ line.action }}
-            </button>
-          </p>
-        } @else if (populationGhost()) {
-          <!-- Holds the room of the line that arrives with the board (it wraps under the chips on a laptop), so the tiles do not move down. -->
-          <p class="population population--ghost" aria-hidden="true">
-            <span>Showing 000 people who can take work. 000 others are hidden.</span>
-            <span class="link">Show them</span>
-          </p>
-        }
-      </mf-users-summary>
+      />
 
       <p class="sr-only" role="status" aria-live="polite" data-users-live>{{ live() }}</p>
 
@@ -321,39 +303,6 @@ export const USERS_PAGE = 200;
       gap: var(--mf-s2);
       margin-bottom: var(--mf-s2);
     }
-    /* The population line (U4) sits at the right end of the chips' row and wraps under them when there is no room. */
-    .population {
-      display: inline-flex;
-      flex-wrap: wrap;
-      gap: 0 var(--mf-s2);
-      margin: 0;
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-    }
-    .population--ghost {
-      visibility: hidden;
-    }
-    /* The real line wraps under the chips on a laptop (the chips are wider once they hold numbers); the placeholder does the same. */
-    @media (max-width: 1599px) {
-      .population--ghost {
-        width: 100%;
-      }
-    }
-    .population .link {
-      min-height: 24px;
-      padding: 0 var(--mf-s1);
-      color: var(--mf-primary);
-      background: none;
-      border: 0;
-      font: inherit;
-      text-decoration: underline;
-      text-underline-offset: 2px;
-      cursor: pointer;
-    }
-    .population .link:focus-visible {
-      outline: 2px solid var(--mf-focus);
-      outline-offset: 1px;
-    }
     .mf-btn:focus-visible {
       outline: 2px solid var(--mf-focus);
       outline-offset: 1px;
@@ -481,10 +430,6 @@ export class DashUsersTab implements OnInit {
       action: 'Show them',
     };
   });
-  /** The first read of the board is on its way and the line may come with it (the whole department). */
-  protected readonly populationGhost = computed(
-    () => this.state() === 'loading' && this.scope.isAll(),
-  );
   protected readonly filtered = computed(() => filterCount(this.filters()) > 0);
   /** The table header reverses the order of the chosen sort; the toolbar select resets it. */
   protected readonly sortReversed = signal(false);

@@ -4,7 +4,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { onlyDefaultPriorities } from '../support/isolate';
 import { TaskQueuePage } from '../pages/queues.pages';
-import { labelledDropdown } from '../support/dropdown';
+import { labelledDropdown, usersFilter } from '../support/dropdown';
 import {
   CoverageSeed,
   PLAN,
@@ -218,27 +218,27 @@ test.describe('Users tab: workload', () => {
     page,
   }) => {
     await openUsers(page);
-    await page.getByLabel('Sort', { exact: true }).selectOption({ label: 'Name' });
+    await (await usersFilter(page, 'Sort')).selectOption({ label: 'Name' });
     const names = await page
       .locator('[data-user-card]')
       .evaluateAll((els) => els.map((e) => e.getAttribute('data-user')!));
     expect(names).toEqual(
       [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
     );
-    await page.getByLabel('Sort', { exact: true }).selectOption({ label: 'Open tasks' });
+    await (await usersFilter(page, 'Sort')).selectOption({ label: 'Open tasks' });
     await expect(page.locator('[data-user-card]').first()).toHaveAttribute('data-load', 'HEAVY');
     // The choice is remembered across a reload.
     await page.reload();
-    await expect(page.getByLabel('Sort', { exact: true })).toHaveValue('open');
+    await expect(await usersFilter(page, 'Sort')).toHaveAttribute('data-value', 'open');
 
-    await page.getByLabel('Availability', { exact: true }).selectOption({ label: 'Out of office' });
+    await (await usersFilter(page, 'Availability')).selectOption({ label: 'Out of office' });
     await expect(page.locator('[data-user-card]')).toHaveCount(2);
     await expect(page).toHaveURL(/uavail=out/);
     // The summary does not change with the filter.
     await expect(page.locator('[data-chip="out"] [data-n]')).not.toHaveText('-');
-    await page.getByLabel('Availability', { exact: true }).selectOption({ label: 'Available' });
+    await (await usersFilter(page, 'Availability')).selectOption({ label: 'Available' });
     await expect(page.locator('[data-user-card]')).toHaveCount(PLAN.length - 2);
-    await page.getByLabel('Availability', { exact: true }).selectOption({ label: 'All' });
+    await (await usersFilter(page, 'Availability')).selectOption({ label: 'All' });
     await expect(page.locator('[data-user-card]')).toHaveCount(PLAN.length);
 
     // The Pod is the page-wide Scope now (P1), not a filter of the tab.
@@ -329,7 +329,7 @@ test.describe('Users tab: workload', () => {
     await expect(card(page, 'offHours')).toBeVisible();
     await page.locator('[data-chip="off"]').click();
 
-    await page.getByLabel('Highest priority', { exact: true }).selectOption({ label: 'Critical' });
+    await (await usersFilter(page, 'Highest priority')).selectOption({ label: 'Critical' });
     await expect(page.locator('[data-user-card]')).toHaveCount(
       data.users.filter((u: Json) => u.topPriority?.label === 'Critical').length,
     );
@@ -508,11 +508,11 @@ test.describe('Users tab: workload', () => {
       /^\d+ open tasks: \d+ \w+(, \d+ \w+){3}$/,
     );
     await expect(table.locator('thead th', { hasText: /^Critical$/ })).toHaveCount(0);
-    const sortSelect = page.getByLabel('Sort', { exact: true });
+    const sortSelect = await usersFilter(page, 'Sort');
     const header = table.locator('thead th', { has: page.locator('[data-sort-key="open"]') });
     await page.locator('[data-sort-key="open"]').click();
     await expect(header).toHaveAttribute('aria-sort', 'descending');
-    await expect(sortSelect).toHaveValue('open');
+    await expect(sortSelect).toHaveAttribute('data-value', 'open');
     const desc = (await openers(table).allTextContents()).map(Number);
     expect(desc).toEqual([...desc].sort((a, b) => b - a));
     await page.locator('[data-sort-key="open"]').click();
@@ -522,7 +522,7 @@ test.describe('Users tab: workload', () => {
     // Keyboard: a header is a button.
     await page.locator('[data-sort-key="name"]').focus();
     await page.keyboard.press('Enter');
-    await expect(sortSelect).toHaveValue('name');
+    await expect(sortSelect).toHaveAttribute('data-value', 'name');
     await expect(
       table.locator('thead th', { has: page.locator('[data-sort-key="name"]') }),
     ).toHaveAttribute('aria-sort', 'ascending');

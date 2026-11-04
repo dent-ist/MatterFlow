@@ -1,3 +1,4 @@
+import { usersFilter } from '../support/dropdown';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Page } from '@playwright/test';
@@ -113,7 +114,7 @@ test.describe('users screenshots', () => {
     await page.locator('[data-chip="out"]').click();
 
     // A close-up of the tile anatomy: sorted by highest priority, the page zoomed to 200%.
-    await page.getByLabel('Sort', { exact: true }).selectOption('priority');
+    await (await usersFilter(page, 'Sort')).selectOption('priority');
     await page.evaluate(() => {
       const grid = document.querySelector<HTMLElement>('[data-users-grid]')!;
       grid.style.scrollMarginTop = '120px';
@@ -132,7 +133,7 @@ test.describe('users screenshots', () => {
     });
     await page.goto(base);
     await ready(page);
-    await page.getByLabel('Sort', { exact: true }).selectOption('load');
+    await (await usersFilter(page, 'Sort')).selectOption('load');
 
     await page.getByRole('button', { name: 'Table' }).click();
     await expect(page.locator('[data-users-table]')).toBeVisible();

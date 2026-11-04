@@ -27,19 +27,21 @@ describe('UsersTable', () => {
 
   it('has one Load element next to the person: the count, a bar split by priority, a tooltip and a full accessible text', () => {
     const el = root(render('load'));
-    expect(el.querySelectorAll('thead th').length).toBe(9);
+    expect(el.querySelectorAll('thead th').length).toBe(7);
     const heads = [...el.querySelectorAll('thead th')].map((th) => th.textContent?.trim());
-    expect(heads.slice(0, 3)).toEqual(['Person', 'Load', 'Highest priority']);
+    expect(heads.slice(0, 3)).toEqual(['Person', 'Workload', 'Highest priority']);
     const cell = el.querySelector('[data-priority-counts]')!;
     expect(cell.querySelector('.cnt')!.textContent!.trim()).toBe('10');
     expect(cell.querySelector('.sr-only')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
-      '10 open tasks: 2 Critical, 5 High, 3 Normal, 0 Low',
+      'Heavy load, 10 open tasks: 2 Critical, 5 High, 3 Normal, 0 Low',
     );
     expect(cell.querySelector('.track')!.getAttribute('title')).toBe(
-      '10 open: 2 Critical, 5 High, 3 Normal',
+      'Heavy: 10 open (2 Critical, 5 High, 3 Normal)',
     );
     // No separate Open tasks column and no signal icons with digits.
     expect(heads).not.toContain('Open tasks');
+    expect(heads).not.toContain('Due soon');
+    expect(heads).not.toContain('On hold');
     expect(heads).not.toContain('Open by priority');
   });
 
@@ -58,7 +60,10 @@ describe('UsersTable', () => {
     f.detectChanges();
     expect(el.querySelector('tbody .chip')!.textContent).toContain('Out of office');
     expect(el.querySelector('tbody td.warn')!.textContent!.trim()).toBe('2');
-    expect(el.querySelector('[data-assign-work]')!.textContent).toContain('Assign');
+    expect(el.querySelector('[data-assign-work]')!.textContent!.trim()).toBe('');
+    expect(el.querySelector('[data-assign-work]')!.getAttribute('aria-label')).toBe(
+      'Assign work to Ana Bell',
+    );
   });
 
   it('marks the sorted column with aria-sort and the others none', () => {

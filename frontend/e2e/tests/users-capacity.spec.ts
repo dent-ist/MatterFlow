@@ -6,7 +6,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { onlyDefaultPriorities } from '../support/isolate';
 import { PLAN, WorkloadSeed, crowdPlan, seedWorkload } from '../support/workload';
-import { labelledDropdown } from '../support/dropdown';
+import { labelledDropdown, usersFilter } from '../support/dropdown';
 
 /**
  * Dashboard > Users tab, Workload view (WP10a, UX review 2): the "can take work" population (U4, #130), the text Workload | Coverage switch and the
@@ -102,6 +102,7 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     await expect(page.locator('[data-user-card]')).toHaveCount(PLAN.length + 1);
     await expect(cardOf(page, podless.busy.displayName)).toBeVisible();
     await expect(cardOf(page, podless.idle.displayName)).toHaveCount(0);
+    await page.locator('[data-who-counted]').click();
     const line = page.locator('[data-users-population-text]');
     await expect(line).toContainText(/Showing \d+ people who can take work\./);
     const text = (await line.textContent()) ?? '';
@@ -179,6 +180,7 @@ test.describe('Users tab: capacity, population and toolbar', () => {
 
     // Scope = Pod B: strip, chips and unassigned link follow it; nobody is hidden, so there is no population line.
     await labelledDropdown(page, 'Scope').selectOption(String(wl.podB.podId));
+    await page.locator('[data-who-counted]').click();
     await expect(page.locator('[data-users-population]')).toHaveCount(0);
     const scoped = await workload(page, `&podScope=${wl.podB.podId}`);
     expect(scoped.hiddenCount).toBe(0);
@@ -217,7 +219,7 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     await page.getByRole('menuitem', { name: 'Show people who can take work now' }).click();
     await expect(page).toHaveURL(/uavail=available/);
     await expect(page).toHaveURL(/uload=idle(,|%2C)light/);
-    await expect(page.locator('[data-sort]')).toHaveValue('fewest');
+    await expect(await usersFilter(page, 'Sort')).toHaveAttribute('data-value', 'fewest');
     const board = await workload(page, '&availability=available&includeNoPod=false');
     const wanted = board.users
       .filter((u: Json) => u.loadLevel === 'IDLE' || u.loadLevel === 'LIGHT')
@@ -257,7 +259,7 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     // Keyboard order: switch, search, filters, sort, then density, layout and legend.
     await views.getByRole('button', { name: 'Workload' }).focus();
     const order: string[] = [];
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 8; i++) {
       order.push(
         await page.evaluate(() => {
           const a = document.activeElement as HTMLElement;
@@ -276,9 +278,7 @@ test.describe('Users tab: capacity, population and toolbar', () => {
       'Coverage',
       'Skills',
       'wl-q',
-      'wl-prio',
-      'wl-avail',
-      'wl-sort',
+      'Filters',
       'Layout: cards',
       'Layout: table',
       'Legend and help',
@@ -333,26 +333,20 @@ test.describe('Users tab: capacity, population and toolbar', () => {
       await icon(page.locator('[data-layout="table"]')),
     );
     // A text tip on hover and on keyboard focus.
-    await page.getByRole('button', { name: 'Layout: cards' }).hover();
-    expect(
-      await page
-        .getByRole('button', { name: 'Layout: cards' })
-        .evaluate((el) => getComputedStyle(el, '::after').content),
-    ).toContain('Cards');
-    await page.mouse.move(0, 0);
+    await expect(page.getByRole('button', { name: 'Layout: cards' })).toHaveAttribute(
+      'title',
+      /Cards/,
+    );
     await page.getByRole('button', { name: 'Layout: table' }).focus();
     await page.keyboard.press('Shift+Tab');
     await page.keyboard.press('Tab');
-    expect(
-      await page
-        .getByRole('button', { name: 'Layout: table' })
-        .evaluate((el) => getComputedStyle(el, '::after').content),
-    ).toContain('Table');
-    await expect(page.locator('.legend-word')).toBeVisible();
-    await expect(page.locator('.legend-word')).toHaveText('Legend');
-    await page.setViewportSize({ width: 1000, height: 768 });
-    await expect(page.locator('.legend-word')).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Layout: table' })).toHaveAttribute(
+      'title',
+      /Table/,
+    );
+    // The legend is a plain info icon (no word) that opens a popover.
     await expect(page.getByRole('button', { name: 'Legend and help' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Legend and help' })).toHaveText('');
   });
 
   test('the toolbar is one line at 1366, wraps without sideways scroll at 375, and the strip keeps its place while loading', async ({
@@ -456,8 +450,11 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     ]) {
       await page.setViewportSize({ width, height });
       await openUsers(page);
-      await expect(page.locator('[data-users-population]')).toBeVisible();
       expect(await axeViolations(page), `workload ${width}`).toEqual([]);
+      await page.locator('[data-who-counted]').click();
+      await expect(page.locator('[data-who-popover]')).toBeVisible();
+      expect(await axeViolations(page), `who counted ${width}`).toEqual([]);
+      await page.keyboard.press('Escape');
       await page.getByRole('button', { name: 'Assign work', exact: true }).click();
       await expect(page.getByRole('menu')).toBeVisible();
       expect(await axeViolations(page), `menu ${width}`).toEqual([]);
@@ -604,7 +601,7 @@ test.describe('users capacity screenshots', () => {
     await shot('06-legend-1366');
     await page.getByRole('button', { name: 'Legend and help' }).click();
     // The tile anatomy at 200%: sorted by name (a mix of idle, light, normal and heavy people), the grid scaled up.
-    await page.getByLabel('Sort', { exact: true }).selectOption('name');
+    await (await usersFilter(page, 'Sort')).selectOption('name');
     await page.evaluate(() => {
       const grid = document.querySelector<HTMLElement>('[data-users-grid]')!;
       grid.style.transformOrigin = '0 0';

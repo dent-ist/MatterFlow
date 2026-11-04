@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { Tip } from '../../../shared/ui/tip';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { Dismissable } from '../../../shared/ui/dismissable';
 import {
   WorkloadSummary,
   WorkloadThresholds,
@@ -37,7 +37,7 @@ export const WHO_IS_COUNTED =
  */
 @Component({
   selector: 'mf-users-summary',
-  imports: [Tip],
+  imports: [Dismissable],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="row">
@@ -65,17 +65,48 @@ export const WHO_IS_COUNTED =
             <strong class="n" data-n>{{ c.count }}</strong>
           </button>
         }
-        <button
-          type="button"
-          class="mf-btn mf-btn--icon info"
-          data-who-counted
-          aria-label="Who is counted"
-          [mfTip]="who"
-        >
-          <i class="pi pi-info-circle" aria-hidden="true"></i>
-        </button>
+        <span class="who-wrap">
+          <button
+            #whoBtn
+            type="button"
+            class="mf-btn mf-btn--icon info"
+            data-who-counted
+            aria-label="Who is counted"
+            title="Who is counted"
+            aria-haspopup="dialog"
+            [attr.aria-expanded]="whoOpen()"
+            (click)="whoOpen.set(!whoOpen())"
+          >
+            <i class="pi pi-info-circle" aria-hidden="true"></i>
+          </button>
+          @if (whoOpen()) {
+            <div
+              class="who"
+              role="dialog"
+              aria-label="Who is counted"
+              data-who-popover
+              [mfDismissable]="whoBtn"
+              (dismissed)="whoOpen.set(false)"
+            >
+              <p class="wt" data-who-text>{{ who }}</p>
+              @if (population(); as line) {
+                <p class="pop" data-users-population>
+                  <span data-users-population-text>{{ line.text }}</span>
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--text"
+                    data-users-population-toggle
+                    [attr.aria-pressed]="populationOn()"
+                    (click)="populationToggle.emit()"
+                  >
+                    {{ line.action }}
+                  </button>
+                </p>
+              }
+            </div>
+          }
+        </span>
       </div>
-      <ng-content select="[mfBarEnd]" />
     </div>
     <ng-content />
   `,
@@ -106,7 +137,7 @@ export const WHO_IS_COUNTED =
       justify-content: center;
       gap: 5px;
       box-sizing: border-box;
-      width: 8.25rem;
+      width: 9rem;
       min-height: 28px;
       padding: 0 var(--mf-s2);
       color: var(--mf-text);
@@ -117,6 +148,40 @@ export const WHO_IS_COUNTED =
       font-size: var(--mf-fs-sm);
       white-space: nowrap;
       cursor: pointer;
+    }
+    .chip .pi {
+      font-size: var(--mf-icon-md);
+    }
+    .who-wrap {
+      position: relative;
+      display: inline-flex;
+      align-self: center;
+    }
+    .who {
+      position: absolute;
+      top: calc(100% + var(--mf-s1));
+      left: 0;
+      z-index: 40;
+      width: min(26rem, 90vw);
+      padding: var(--mf-s3);
+      background: var(--mf-surface);
+      border: 1px solid var(--mf-border-strong);
+      border-radius: var(--mf-radius-lg);
+      box-shadow: var(--mf-shadow-pop);
+    }
+    .who p {
+      margin: 0 0 var(--mf-s2);
+      font-size: var(--mf-fs-sm);
+    }
+    .who p:last-child {
+      margin-bottom: 0;
+    }
+    .pop {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--mf-s1) var(--mf-s2);
+      color: var(--mf-text-muted);
     }
     .chip:hover {
       filter: brightness(0.96);
@@ -251,6 +316,12 @@ export class UsersSummary {
   });
 
   protected readonly who = WHO_IS_COUNTED;
+  protected readonly whoOpen = signal(false);
+
+  /** The "Showing 60 people ... Show them" line (the page's population rule) and its action: both live in the Who is counted popover. */
+  readonly population = input<{ text: string; action: string } | null>(null);
+  readonly populationOn = input(false);
+  readonly populationToggle = output<void>();
 
   protected isLevel(key: Chip['key']): boolean {
     return key !== 'out' && key !== 'off';
