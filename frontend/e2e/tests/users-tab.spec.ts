@@ -94,34 +94,23 @@ test.describe('Users tab: workload', () => {
         ooo ? 'ooo' : u.openTotal === 0 ? 'free' : u.topPriority.color,
       );
       await expect(c).toHaveAttribute('data-load', u.loadLevel);
-      if (u.openTotal > 0) {
-        await expect(c.locator('[data-open-total]')).toHaveText(String(u.openTotal));
-      } else {
-        await expect(c.locator('[data-open-total]')).toHaveCount(0);
-      }
+      await expect(c.locator('[data-open-total]')).toHaveText(String(u.openTotal));
       await expect(c.locator('[data-overdue]')).toHaveCount(u.overdue > 0 ? 1 : 0);
       if (u.overdue > 0) {
         await expect(c.locator('[data-overdue]')).toHaveAttribute('data-count', String(u.overdue));
       }
-      // The bar has a segment for every priority that has open tasks, and only for those.
-      for (const p of data.priorities) {
-        const n = u.byPriority.find((b: Json) => b.priorityId === p.priorityId).count;
-        await expect(c.locator(`[data-load-bar] [data-segment="${p.label}"]`)).toHaveCount(
-          n > 0 ? 1 : 0,
-        );
-      }
-      // The whole status is in the accessible name and the tooltip, not on the tile.
+      // One filled slot pip per open task, up to the three slots.
+      await expect(c.locator('[data-pip].pip--on')).toHaveCount(Math.min(u.openTotal, 3));
+      // The whole status is in the accessible name (Available is spoken, never drawn); the tooltip has the level.
       const open = c.locator('[data-user-open]');
       const name = await open.getAttribute('aria-label');
-      expect(name).toBe(await open.getAttribute('title'));
       expect(name).toContain(u.displayName);
-      if (u.openTotal === 0) expect(name).toContain('No open tasks');
-      else expect(name).toContain(`${u.openTotal} open task`);
+      expect(name).toContain(`${u.openTotal} open task`);
       if (ooo) expect(name).toContain('Out of office');
     }
   });
 
-  test('the card tones follow the highest priority and the load bar segments follow the priority order', async ({
+  test('the card tones follow the highest priority and the slot pips follow the open count', async ({
     page,
   }) => {
     await openUsers(page);
@@ -130,48 +119,43 @@ test.describe('Users tab: workload', () => {
     await expect(card(page, 'high')).toHaveAttribute('data-tone', 'high');
     await expect(card(page, 'lightNormal')).toHaveAttribute('data-tone', 'normal');
     await expect(card(page, 'low')).toHaveAttribute('data-tone', 'low');
-    // The card is simple: name, Workload (count, bar, level word) and the Availability line; no pill or glyph.
+    // Design B: the big number and the slot pips; no Available chip, no pill or glyph.
     await expect(critical.locator('[data-workload]')).toBeVisible();
-    await expect(critical.locator('[data-availability-line]')).toBeVisible();
+    await expect(critical.locator('[data-slots] [data-pip]')).toHaveCount(3);
+    await expect(critical).not.toContainText('Available');
     await expect(critical.locator('[data-pill], [data-glyph]')).toHaveCount(0);
-    expect(
-      await critical
-        .locator('[data-load-bar] [data-segment]')
-        .evaluateAll((els) => els.map((e) => e.getAttribute('data-segment'))),
-    ).toEqual(['Critical', 'High', 'Normal']);
   });
 
-  test('idle is a light green tint and out of office is hatched grey, with icons and no sentences; the words are in the name and tooltip', async ({
+  test('idle is a green number, out of office is an amber band, and Available is spoken but never drawn', async ({
     page,
   }) => {
     await openUsers(page);
     const idle = card(page, 'idle');
-    await expect(idle.locator('[data-workload]')).toHaveAttribute('title', /^Idle/);
-    await expect(idle.locator('[data-open-total]')).toHaveCount(0);
+    await expect(idle.locator('[data-user-open]')).toHaveAttribute('title', /^Idle/);
+    await expect(idle.locator('[data-open-total]')).toHaveText('0');
     // Idle is a quiet tint of the Idle token (U7): not the saturated token fill (checked in detail in users-capacity.spec.ts).
     expect(await idle.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(
       await tokenColor(page, '--mf-success-bg'),
     );
     await expect(idle.locator('[data-user-open]')).toHaveAttribute(
       'aria-label',
-      `${person('idle').displayName}. No open tasks`,
+      new RegExp(`^${person('idle').displayName}, 0 open tasks, Idle, `),
     );
 
     const away = card(page, 'ooo');
     await expect(away).toHaveAttribute('data-availability', 'OUT_OF_OFFICE');
-    await expect(away.locator('[data-availability-line]')).toContainText('Out of office');
+    await expect(away.locator('[data-ooo-band]')).toContainText('Out of office until');
     await expect(away.locator('[data-user-open]')).toHaveAttribute(
       'aria-label',
-      /Out of office until [A-Z][a-z]{2} \d{1,2}\. Annual leave\. 2 open tasks/,
+      /, 2 open tasks, .*, Out of office until [A-Z][a-z]{2} \d{1,2}/,
     );
-    expect(await away.evaluate((el) => getComputedStyle(el).backgroundImage)).toContain(
-      'repeating-linear-gradient',
-    );
+    // No diagonal stripes anywhere.
+    expect(await away.evaluate((el) => getComputedStyle(el).backgroundImage)).toBe('none');
     // Their open tasks are still counted.
     await expect(away.locator('[data-open-total]')).toHaveText('2');
     await expect(card(page, 'oooIdle').locator('[data-user-open]')).toHaveAttribute(
       'aria-label',
-      /Parental leave\. No open tasks/,
+      /, 0 open tasks, Idle, Out of office until/,
     );
 
     const off = card(page, 'offHours');

@@ -302,81 +302,69 @@ describe('DashUsersTab', () => {
       expect(q('[data-users-grid]').getAttribute('aria-busy')).toBeNull();
     });
 
-    it('draws a card with the name, open count, bar, level in a tooltip and the Availability line, and keeps the tokens for tests', async () => {
+    it('draws design B: the big open count, the name, three slot pips and NO Available chip', async () => {
       await open();
       const ann = card('Ann Lee');
       expect(ann.getAttribute('data-tone')).toBe('critical');
       expect(text(ann.querySelector('[data-open-total]'))).toBe('3');
-      expect(ann.querySelector('[data-workload]')!.getAttribute('title')).toBe('Light: 3 open');
       expect(text(ann.querySelector('[data-workload]'))).toBe('3 open');
-      expect(ann.querySelector('[data-level-word]')).toBeNull();
-      expect(text(ann.querySelector('[data-availability-line]'))).toBe('Available');
-      // The repeated "Workload" label is gone from the card (the page already says it).
+      expect(ann.querySelectorAll('[data-pip]')).toHaveLength(3);
+      expect(ann.querySelectorAll('[data-pip].pip--on')).toHaveLength(3);
+      expect(card('Cy Tan').querySelectorAll('[data-pip].pip--on')).toHaveLength(0);
+      // "Available" is spoken, never drawn.
+      expect(ann.querySelector('[data-availability-line]')).toBeNull();
+      expect(text(ann)).not.toContain('Available');
+      expect(ann.querySelector('[data-user-open]')!.getAttribute('aria-label')).toContain(
+        'Ann Lee, 3 open tasks, Light, Available',
+      );
       expect(text(ann)).not.toContain('Workload');
-      // Priority signals, the pill and the glyph are gone from the card.
-      expect(
-        ann.querySelector('[data-pill], [data-glyph], [data-heavy], [data-off-hours]'),
-      ).toBeNull();
+      expect(ann.querySelector('[data-load-bar], [data-segment], .avatar')).toBeNull();
     });
 
-    it('says the availability in words on the card, the whole status in the name and tooltip', async () => {
+    it('shows only the exceptions: Off hours as a chip, Out of office as an amber band with the return date', async () => {
       await open();
       const free = card('Cy Tan');
       expect(free.getAttribute('data-state')).toBe('free');
       expect(text(free.querySelector('[data-open-total]'))).toBe('0');
-      expect(free.querySelector('[data-workload]')!.getAttribute('title')).toContain('Idle');
-      expect(free.querySelector('[data-user-open]')!.getAttribute('aria-label')).toBe(
-        'Cy Tan. No open tasks',
+      expect(free.querySelector('[data-user-open]')!.getAttribute('title')).toContain(
+        'Idle: No open tasks',
       );
-      for (const c of qa('[data-user-card]')) {
-        const open = c.querySelector('[data-user-open]')!;
-        expect(open.getAttribute('title')).toBe(open.getAttribute('aria-label'));
-      }
       const ooo = card('Dee Fox');
       expect(ooo.getAttribute('data-state')).toBe('ooo');
       expect(ooo.getAttribute('data-availability')).toBe('OUT_OF_OFFICE');
-      expect(text(ooo.querySelector('[data-availability-line]'))).toContain(
-        'Out of office until Oct 20',
+      const band = ooo.querySelector('[data-ooo-band]')!;
+      expect(text(band)).toContain('Out of office until Oct 20');
+      // The card keeps its normal look: the workload is still there.
+      expect(text(ooo.querySelector('[data-open-total]'))).toBe('1');
+      expect(ooo.querySelector('[data-user-open]')!.getAttribute('aria-label')).toContain(
+        'Dee Fox, 1 open task, ',
       );
       expect(ooo.querySelector('[data-user-open]')!.getAttribute('aria-label')).toContain(
-        'Dee Fox. Out of office until Oct 20. Annual leave. 1 open task',
+        'Out of office until Oct 20',
       );
       expect(OUT_UNTIL).toBeTruthy();
-    });
-
-    it('says Off hours on the card, shows overdue work only as a red badge with a count, and marks a heavy load by its word', async () => {
-      await open();
       const eve = card('Eve Kim');
       expect(text(eve.querySelector('[data-availability-line]'))).toBe('Off hours');
-      expect(eve.getAttribute('data-state')).toBe('busy');
-      expect(eve.querySelector('[data-user-open]')!.getAttribute('aria-label')).toContain(
-        'Off hours',
-      );
+      expect(eve.querySelector('[data-ooo-band]')).toBeNull();
+    });
+
+    it('shows overdue work only as a red badge with a count and marks a heavy load by its level', async () => {
+      await open();
       expect(text(card('Ann Lee').querySelector('[data-overdue]'))).toBe('2');
       expect(card('Bob Ray').querySelector('[data-overdue]')).toBeNull();
       expect(card('Hal Moe').getAttribute('data-load')).toBe('HEAVY');
-      expect(card('Hal Moe').querySelector('[data-workload]')!.getAttribute('title')).toContain(
+      expect(card('Hal Moe').querySelector('[data-user-open]')!.getAttribute('title')).toContain(
         'Heavy',
       );
+      // More open tasks than slots: every pip is filled.
+      expect(card('Hal Moe').querySelectorAll('[data-pip].pip--on')).toHaveLength(3);
     });
 
-    it('draws the load bar segments in rank order', async () => {
-      await open();
-      const bar = card('Bob Ray').querySelector('[data-load-bar]')!;
-      expect(
-        Array.from(bar.querySelectorAll('[data-segment]')).map((s) =>
-          s.getAttribute('data-segment'),
-        ),
-      ).toEqual(['Normal', 'Low']);
-      expect(card('Cy Tan').querySelectorAll('[data-segment]').length).toBe(0);
-    });
-
-    it('names the open button with the visible name first and the state in words', async () => {
+    it('names the open button with the name first, then the count, the level and the availability', async () => {
       await open();
       const label = card('Ann Lee').querySelector('[data-user-open]')!.getAttribute('aria-label')!;
       expect(label.startsWith('Ann Lee')).toBe(true);
-      expect(label).toContain('3 open tasks, highest priority Critical, 2 overdue, 1 due soon');
-      expect(label).toContain('light load');
+      expect(label).toBe('Ann Lee, 3 open tasks, Light, Available');
     });
 
     it('assigns with an icon button that has a name and a tooltip', async () => {

@@ -225,12 +225,8 @@ export const WHO_IS_COUNTED =
       color: var(--mf-danger);
     }
     .chip--out {
-      border-style: dashed;
-      background: repeating-linear-gradient(
-        135deg,
-        var(--mf-surface-alt) 0 5px,
-        var(--mf-surface) 5px 10px
-      );
+      color: var(--mf-warning);
+      background: var(--mf-warning-bg);
     }
     /* On a phone the bar is one line that scrolls sideways inside itself, so the tiles start higher. */
     @media (max-width: 560px) {

@@ -9,17 +9,17 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { calendarDayInZone } from '../../../core/time/time';
 import { priorityColors } from '../../../shared/ui/priority-badge';
 import {
+  CARD_SLOTS,
   IDLE_TINT,
-  LOAD_ICONS,
   LOAD_LABELS,
   cardState,
-  cardSummary,
+  legendStates,
   loadLevelOf,
-  segmentsOf,
+  plural,
   toneOf,
 } from './users-model';
 
-/** The colours, icon and phrase of a person's state: priority colours when something is open, green when free, hatched grey when out of office. */
+/** The colours, icon and phrase of a person's state: priority colours when something is open, green when free, an amber band when out of office. */
 export interface Band {
   icon: string;
   /** The words for tooltips and accessible names (the tile itself shows none of them). */
@@ -36,9 +36,10 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
 }
 
 /**
- * One person on the Team workload board as a card (US-05, #1096), simple on purpose: the name with the avatar initials, Workload as one line ("3 open", the load bar split by priority, the level icon; the level word is in the tooltip) and the Availability (icon and word: Available, Out of office until ..., Off hours). Overdue work shows only as a red badge when there is some. The name is the button
- * that opens the person's drawer and it stretches over the whole card; the Assign icon sits above it and appears on hover or focus. Operational capacity only: no completion counts, speed
- * or ranking.
+ * One person on the Team workload board as a card (design B, US-09 #1100): the open-task count as a big number coloured by the load level with a small "OPEN" caption, the name,
+ * three slot pips (the capacity rule of the Team capacity battery: filled up to the open tasks) and a red overdue badge only when above zero. There is NO "Available" chip (it is spoken in
+ * the accessible name and tooltip); only the exceptions are drawn: Off hours as a grey chip, Out of office as a solid amber band across the top with the return date. The name is the button
+ * that opens the person's drawer and it stretches over the whole card; the Assign icon sits above it and appears on hover or focus. Operational capacity only: no completion counts or ranking.
  */
 @Component({
   selector: 'mf-users-card',
@@ -57,52 +58,65 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
       [attr.data-load]="level()"
       [attr.data-availability]="u.availability.state"
     >
-      <p class="head">
-        <span class="avatar" aria-hidden="true">{{ u.initials }}</span>
-        <button
-          type="button"
-          class="open"
-          data-user-open
-          [id]="'wl-open-' + u.userId"
-          [attr.aria-label]="summary()"
-          [attr.title]="summary()"
-          (click)="open.emit(u)"
+      @if (st === 'ooo') {
+        <p class="band" aria-hidden="true" data-availability-line data-ooo-band>
+          <i class="pi pi-calendar"></i>{{ avail().label }}
+        </p>
+      }
+      <div class="body">
+        <div
+          class="num"
+          aria-hidden="true"
+          data-workload
+          [class]="'num num--' + level().toLowerCase()"
         >
-          {{ u.displayName }}
-        </button>
-        @if (u.overdue > 0) {
+          <strong class="n" data-open-total>{{ u.openTotal }}</strong
+          >&ngsp;
+          <span class="cap">open</span>
+        </div>
+        <div class="main">
+          <p class="head">
+            <button
+              type="button"
+              class="open"
+              data-user-open
+              [id]="'wl-open-' + u.userId"
+              [attr.aria-label]="summary()"
+              [attr.title]="levelTip()"
+              (click)="open.emit(u)"
+            >
+              {{ u.displayName }}
+            </button>
+            @if (u.overdue > 0) {
+              <span
+                class="late"
+                data-overdue
+                [attr.data-count]="u.overdue"
+                [attr.title]="u.overdue + ' overdue'"
+                aria-hidden="true"
+                ><i class="pi pi-clock"></i>{{ u.overdue }}</span
+              >
+            }
+          </p>
           <span
-            class="late"
-            data-overdue
-            [attr.data-count]="u.overdue"
-            [attr.title]="u.overdue + ' overdue'"
+            class="pips"
+            [class]="'pips pips--' + level().toLowerCase()"
             aria-hidden="true"
-            ><i class="pi pi-clock"></i>{{ u.overdue }}</span
+            data-slots
           >
-        }
-      </p>
-      <div class="wl" aria-hidden="true" data-workload [attr.title]="levelTip()">
-        <strong class="n" data-open-total>{{ u.openTotal }}</strong
-        >&ngsp;
-        <span class="o">open</span>
-        <span class="track" data-load-bar [attr.data-open]="u.openTotal">
-          @for (s of segments(); track s.priorityId) {
-            <span
-              class="seg"
-              [attr.data-segment]="s.label"
-              [style.width.%]="s.percent"
-              [style.background]="colorsOf(s.color).bg"
-              [style.box-shadow]="'inset 0 0 0 1px ' + colorsOf(s.color).fg"
-            ></span>
-          }
-        </span>
-        <i class="pi lvl" data-level-icon [class]="icons[level()]"></i>
+            @for (p of pips(); track $index) {
+              <i class="pip" [class.pip--on]="p" data-pip></i>
+            }
+          </span>
+        </div>
       </div>
-      <div class="av" aria-hidden="true" data-availability-line>
-        <span class="chip" [class]="'chip chip--' + avail().tone">
-          <i class="pi" [class]="avail().icon"></i>{{ avail().label }}
-        </span>
-      </div>
+      @if (st !== 'ooo' && u.availability.state === 'OFF_HOURS') {
+        <p class="av" aria-hidden="true" data-availability-line>
+          <span class="chip chip--neutral"
+            ><i class="pi" [class]="avail().icon"></i>{{ avail().label }}</span
+          >
+        </p>
+      }
       @if (canAssign()) {
         <button
           type="button"
@@ -130,6 +144,7 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
       height: 100%;
       min-width: 0;
       padding: var(--mf-s3);
+      overflow: hidden;
       background: var(--mf-surface);
       border: 1px solid var(--mf-border);
       border-radius: var(--mf-radius-lg);
@@ -137,16 +152,68 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
     .card:hover {
       border-color: var(--mf-border-strong);
     }
-    .card--ooo {
-      border-style: dashed;
-      background: repeating-linear-gradient(
-        135deg,
-        var(--mf-surface-alt) 0 6px,
-        var(--mf-surface) 6px 12px
-      );
-    }
     .card--heavy {
       box-shadow: inset 0 0 0 1px var(--mf-danger);
+    }
+    /* Out of office: a solid amber band across the top (the away-state tokens, 4.5:1 and more), the rest of the card keeps its normal look. */
+    .band {
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s2);
+      margin: calc(var(--mf-s3) * -1) calc(var(--mf-s3) * -1) 0;
+      padding: var(--mf-s1) var(--mf-s3);
+      color: var(--mf-warning);
+      background: var(--mf-warning-bg);
+      border-bottom: 1px solid var(--mf-warning);
+      font-size: var(--mf-fs-sm);
+      font-weight: 600;
+    }
+    .band .pi {
+      font-size: var(--mf-icon-md);
+    }
+    .body {
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s3);
+      min-width: 0;
+    }
+    .num {
+      flex: none;
+      display: grid;
+      justify-items: center;
+      min-width: 3rem;
+      line-height: 1;
+    }
+    .n {
+      font-size: 2.5rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .cap {
+      margin-top: var(--mf-s1);
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-xs);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .num--idle .n {
+      color: var(--mf-success);
+    }
+    .num--light .n {
+      color: var(--mf-info);
+    }
+    .num--normal .n {
+      color: var(--mf-text-muted);
+    }
+    .num--heavy .n {
+      color: var(--mf-danger);
+    }
+    .main {
+      display: grid;
+      flex: 1 1 auto;
+      gap: var(--mf-s2);
+      min-width: 0;
     }
     .head {
       display: flex;
@@ -154,19 +221,6 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
       gap: var(--mf-s2);
       min-width: 0;
       margin: 0;
-    }
-    .avatar {
-      flex: none;
-      display: inline-grid;
-      place-items: center;
-      width: 2.5rem;
-      height: 2.5rem;
-      color: var(--mf-primary);
-      background: var(--mf-selected-bg);
-      border: 1px solid var(--mf-primary);
-      border-radius: 50%;
-      font-size: var(--mf-fs-sm);
-      font-weight: 700;
     }
     .open {
       flex: 1 1 auto;
@@ -211,45 +265,39 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
       font-weight: 700;
       font-variant-numeric: tabular-nums;
     }
-    /* One line: "3 open" and the load bar; the level word is in the tooltip and the accessible name (the icon repeats it). */
-    .wl {
+    .late .pi {
+      font-size: var(--mf-icon-sm);
+    }
+    /* The three capacity slots (the same rule as the Team capacity battery): filled up to the open tasks. */
+    .pips {
       display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
+      gap: var(--mf-s1);
     }
-    .n {
-      font-size: var(--mf-fs-h3);
-      font-variant-numeric: tabular-nums;
-    }
-    .o {
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-    }
-    .track {
-      display: flex;
-      flex: 1 1 auto;
-      min-width: 3rem;
-      height: 0.75rem;
-      overflow: hidden;
+    .pip {
+      flex: 1;
+      height: 0.625rem;
       background: var(--mf-surface-alt);
       border: 1px solid var(--mf-border-strong);
       border-radius: 999px;
     }
-    .seg {
-      flex: none;
-      height: 100%;
-      min-width: 3px;
+    .pips--idle .pip--on {
+      background: var(--mf-success);
+      border-color: var(--mf-success);
     }
-    .card--ooo .seg {
-      opacity: 0.6;
+    .pips--light .pip--on {
+      background: var(--mf-info);
+      border-color: var(--mf-info);
     }
-    .lvl {
-      flex: none;
-      color: var(--mf-text-muted);
-      font-size: var(--mf-icon-md);
+    .pips--normal .pip--on {
+      background: var(--mf-text-muted);
+      border-color: var(--mf-text-muted);
     }
-    .card--heavy .lvl {
-      color: var(--mf-danger);
+    .pips--heavy .pip--on {
+      background: var(--mf-danger);
+      border-color: var(--mf-danger);
+    }
+    .av {
+      margin: 0;
     }
     .chip {
       display: inline-flex;
@@ -268,18 +316,9 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
     .chip .pi {
       font-size: var(--mf-icon-sm);
     }
-    .chip--success {
-      color: var(--mf-success);
-      background: var(--mf-success-bg);
-    }
-    .chip--warning {
-      color: var(--mf-warning);
-      background: var(--mf-warning-bg);
-    }
     .chip--neutral {
       color: var(--mf-text-muted);
       background: var(--mf-surface-alt);
-      border-style: dashed;
     }
     .assign {
       position: absolute;
@@ -295,7 +334,7 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
       background: var(--mf-surface);
       border: 1px solid var(--mf-border-strong);
       border-radius: var(--mf-radius);
-      font-size: 0.8rem;
+      font-size: var(--mf-icon-sm);
       cursor: pointer;
       opacity: 0;
     }
@@ -334,26 +373,28 @@ export class UsersCard {
   protected readonly state = computed(() => cardState(this.user()));
   protected readonly tone = computed(() => toneOf(this.user()));
   protected readonly level = computed(() => loadLevelOf(this.user()));
-  protected readonly segments = computed(() =>
-    segmentsOf(this.user(), this.legend(), this.thresholds()),
-  );
   protected readonly avail = computed(() =>
     availabilityDisplay(this.user().availability, this.zone, this.clock.now()),
   );
-  protected readonly summary = computed(() => cardSummary(this.user(), this.avail().label));
-  protected readonly icons = LOAD_ICONS;
-  /** The tooltip of the workload line: the level word with its meaning ("Heavy: 9 or more open tasks"). */
-  protected readonly levelTip = computed(
-    () => `${LOAD_LABELS[this.level()]}: ${this.user().openTotal} open`,
+  /** "Ann Lee, 3 open tasks, Light, Available" (Available is spoken here, never drawn). */
+  protected readonly summary = computed(() => {
+    const u = this.user();
+    return `${u.displayName}, ${plural(u.openTotal, 'open task')}, ${LOAD_LABELS[this.level()]}, ${this.avail().label}`;
+  });
+  /** One filled pip per open task up to the slots; the rest are empty. */
+  protected readonly pips = computed(() =>
+    Array.from({ length: CARD_SLOTS }, (_, i) => i < this.user().openTotal),
   );
+  /** The tooltip: the level with its meaning, from the board's thresholds ("Light: 1 to 3 open tasks"), and the availability. */
+  protected readonly levelTip = computed(() => {
+    const key = this.level().toLowerCase();
+    const line = legendStates(this.thresholds()).find((l) => l.key === key)?.line ?? '';
+    return `${LOAD_LABELS[this.level()]}: ${line}. ${this.avail().label}`;
+  });
   protected readonly labels = LOAD_LABELS;
-
-  protected colorsOf(tone: string) {
-    return priorityColors(tone);
-  }
 }
 
-/** The colours, icon and phrase of a user: priority colours when something is open, green when free, hatched grey when out of office. */
+/** The colours, icon and phrase of a user: priority colours when something is open, green when free, an amber band when out of office. */
 export function bandOf(u: WorkloadUser): Band {
   switch (cardState(u)) {
     case 'ooo':

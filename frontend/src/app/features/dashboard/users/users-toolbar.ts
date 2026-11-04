@@ -271,12 +271,8 @@ import {
       color: var(--mf-danger);
     }
     .chipk--out {
-      border-style: dashed;
-      background: repeating-linear-gradient(
-        135deg,
-        var(--mf-surface-alt) 0 5px,
-        var(--mf-surface) 5px 10px
-      );
+      color: var(--mf-warning);
+      background: var(--mf-warning-bg);
     }
     .line {
       color: var(--mf-text);

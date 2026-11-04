@@ -405,14 +405,14 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     const token = await luminanceOf('var(--mf-success-bg)', null);
     const idle = page.locator('[data-user-card][data-state="free"]').first();
     expect(await luminance(idle)).toBeGreaterThan(token);
-    await expect(idle.locator('[data-workload]')).toHaveAttribute('title', /^Idle/);
+    await expect(idle.locator('[data-user-open]')).toHaveAttribute('title', /^Idle/);
     expect(await idle.evaluate((e) => getComputedStyle(e).borderTopWidth)).toBe('1px');
     for (const c of await page.locator('[data-user-card]:not([data-state="ooo"])').all()) {
       const heavy = (await c.getAttribute('data-load')) === 'HEAVY';
       if (!heavy) expect(await luminance(c)).toBeGreaterThanOrEqual(token);
     }
     const heavy = page.locator('[data-user-card][data-load="HEAVY"]').first();
-    await expect(heavy.locator('[data-workload]')).toHaveAttribute('title', /^Heavy/);
+    await expect(heavy.locator('[data-user-open]')).toHaveAttribute('title', /^Heavy/);
     expect(await heavy.evaluate((e) => getComputedStyle(e).boxShadow)).not.toBe('none');
   });
 

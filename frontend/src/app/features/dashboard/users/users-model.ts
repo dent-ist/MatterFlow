@@ -168,6 +168,9 @@ export function cardState(u: WorkloadUser): CardState {
   return u.openTotal === 0 ? 'free' : 'busy';
 }
 
+/** Capacity slots drawn on a person's card: the same 3-slot rule as the Team capacity battery. */
+export const CARD_SLOTS = 3;
+
 export type LoadLevel = 'IDLE' | 'LIGHT' | 'NORMAL' | 'HEAVY';
 
 export function loadLevelOf(u: Pick<WorkloadUser, 'loadLevel'>): LoadLevel {

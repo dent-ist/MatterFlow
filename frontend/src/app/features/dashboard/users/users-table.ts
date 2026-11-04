@@ -292,11 +292,7 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
       font-weight: 700;
     }
     tr.ooo {
-      background: repeating-linear-gradient(
-        135deg,
-        var(--mf-surface-alt) 0 8px,
-        var(--mf-surface) 8px 16px
-      );
+      background: var(--mf-warning-bg);
     }
     .person {
       font-weight: 600;
