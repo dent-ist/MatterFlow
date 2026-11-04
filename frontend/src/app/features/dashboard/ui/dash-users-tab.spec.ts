@@ -359,13 +359,13 @@ describe('DashUsersTab', () => {
       expect(
         qa('[data-capacity-bar] [data-segment]').map((b) => b.getAttribute('data-segment')),
       ).toEqual(['idle', 'light', 'normal', 'heavy']);
-      expect(seg('light').getAttribute('aria-label')).toBe('Filter: 3 light');
-      expect(seg('heavy').getAttribute('aria-label')).toBe('Filter: 1 heavy');
+      expect(seg('light').getAttribute('aria-label')).toContain('Light, 3.');
+      expect(seg('heavy').getAttribute('aria-label')).toContain('Heavy, 1.');
       // The widths follow the counts.
       expect(seg('light').style.flexGrow).toBe('3');
-      expect(q('[data-capacity]').getAttribute('role')).toBe('group');
-      expect(q('[data-capacity]').getAttribute('aria-label')).toBe(
-        'Capacity: 1 idle, 3 light, 1 normal, 1 heavy, 1 out of office',
+      expect(q('[data-capacity-bar]').getAttribute('role')).toBe('group');
+      expect(q('[data-capacity-bar]').getAttribute('aria-label')).toContain(
+        '1 idle, 3 light, 1 normal, 1 heavy, 1 out of office',
       );
       seg('heavy').click();
       await settle();
@@ -487,15 +487,16 @@ describe('DashUsersTab', () => {
   });
 
   describe('toolbar labels (U2)', () => {
-    it('puts the text Workload | Coverage switch first, only with the Coverage permission', async () => {
+    it('puts the text Workload | Coverage | Skills switch first, Coverage only with its permission', async () => {
       await open(of(board()), '/dashboard?tab=users', [...PERMS, 'Dashboard.ViewCoverage']);
       const views = q('[data-users-views]');
-      expect(qa('[data-users-views] button').map(text)).toEqual(['Workload', 'Coverage']);
+      expect(qa('[data-users-views] button').map(text)).toEqual(['Workload', 'Coverage', 'Skills']);
       expect(q('[role="toolbar"]').firstElementChild).toBe(views.parentElement);
       expect(q('[data-view="workload"]').getAttribute('aria-pressed')).toBe('true');
       expect(views.querySelector('[role="tablist"]')).toBeNull();
       await reopen(of(board()));
-      expect(q('[data-users-views]')).toBeNull();
+      // Without Dashboard.ViewCoverage the switch offers Workload and Skills (Skills needs only Dashboard.ViewUsers).
+      expect(qa('[data-users-views] button').map(text)).toEqual(['Workload', 'Skills']);
       expect(text(q('#wl-h'))).toBe('Workload');
     });
 
@@ -676,7 +677,7 @@ describe('DashUsersTab', () => {
       expect(text(row)).toContain('Out of office until Oct 20');
       expect(text(q('[data-user-row="3"]'))).not.toMatch(/No open tasks|Not available/);
       expect(q('[data-user-row="3"] .state').getAttribute('aria-label')).toBe('No open tasks');
-      expect(text(q('[data-assign-work]'))).toBe('');
+      expect(text(q('[data-assign-work]'))).toBe('Assign');
       expect(q('[data-layout="table"]').getAttribute('aria-pressed')).toBe('true');
       q<HTMLButtonElement>('[data-density="compact"]').click();
       await settle();
@@ -1373,7 +1374,7 @@ describe('DashUsersTab', () => {
 
     it('offers the Coverage view only with its own permission', async () => {
       await open();
-      expect(q('[data-users-views]')).toBeNull();
+      expect(q('[data-users-views] [data-view="coverage"]')).toBeNull();
       await reopen(of(board()), '/dashboard?tab=users&view=coverage');
       expect(q('[data-coverage-heading]')).toBeNull();
       expect(qa('[data-user-card]').length).toBe(6);

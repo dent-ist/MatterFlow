@@ -12556,6 +12556,85 @@
         }
       }
     },
+    "/api/v1/dashboard/users/{userId}/history": {
+      "get": {
+        "tags": [
+          "DashboardBoard"
+        ],
+        "operationId": "GetDashboardUserHistory",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "months",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "podScope",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserHistory"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/users/skills": {
+      "get": {
+        "tags": [
+          "DashboardBoard"
+        ],
+        "operationId": "GetDashboardSkills",
+        "parameters": [
+          {
+            "name": "podScope",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillsMatrix"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/dashboard/coverage": {
       "get": {
         "tags": [
@@ -32261,6 +32340,175 @@
           }
         }
       },
+      "SkillsCell": {
+        "required": [
+          "userId",
+          "taskTypeId",
+          "completed3Months",
+          "completed12Months"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "taskTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completed3Months": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completed12Months": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SkillsMatrix": {
+        "required": [
+          "asOfUtc",
+          "since3MonthsUtc",
+          "since12MonthsUtc",
+          "experiencedMin",
+          "thinMax",
+          "types",
+          "people",
+          "cells"
+        ],
+        "type": "object",
+        "properties": {
+          "asOfUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "since3MonthsUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "since12MonthsUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "experiencedMin": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "thinMax": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SkillsTaskType"
+            }
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SkillsPerson"
+            }
+          },
+          "cells": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SkillsCell"
+            }
+          }
+        }
+      },
+      "SkillsPerson": {
+        "required": [
+          "userId",
+          "displayName",
+          "initials",
+          "pods",
+          "state",
+          "load",
+          "completed3Months",
+          "completed12Months"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "initials": {
+            "type": "string"
+          },
+          "pods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkloadPod"
+            }
+          },
+          "state": {
+            "type": "string"
+          },
+          "load": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completed3Months": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completed12Months": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SkillsTaskType": {
+        "required": [
+          "taskTypeId",
+          "name",
+          "iconKey",
+          "isActive",
+          "completed3Months",
+          "completed12Months",
+          "experiencedPeople",
+          "isThin"
+        ],
+        "type": "object",
+        "properties": {
+          "taskTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "iconKey": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "completed3Months": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completed12Months": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "experiencedPeople": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isThin": {
+            "type": "boolean"
+          }
+        }
+      },
       "SkipStepRequest": {
         "required": [
           "rowVersion"
@@ -36606,6 +36854,190 @@
               "integer"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "UserHistory": {
+        "required": [
+          "userId",
+          "displayName",
+          "isActive",
+          "asOfUtc",
+          "zoneId",
+          "windowMonths",
+          "windowFromUtc",
+          "durationBasis",
+          "durationUnit",
+          "minSampleSize",
+          "totalCompleted",
+          "types",
+          "months",
+          "onTime"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "asOfUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "zoneId": {
+            "type": "string"
+          },
+          "windowMonths": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "windowFromUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "durationBasis": {
+            "type": "string"
+          },
+          "durationUnit": {
+            "type": "string"
+          },
+          "minSampleSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCompleted": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserHistoryType"
+            }
+          },
+          "months": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserHistoryMonth"
+            }
+          },
+          "onTime": {
+            "$ref": "#/components/schemas/UserHistoryOnTime"
+          }
+        }
+      },
+      "UserHistoryMonth": {
+        "required": [
+          "month",
+          "completed"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "completed": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "UserHistoryOnTime": {
+        "required": [
+          "onTime",
+          "late",
+          "sampleSize",
+          "rate"
+        ],
+        "type": "object",
+        "properties": {
+          "onTime": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "late": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sampleSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rate": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "UserHistoryType": {
+        "required": [
+          "taskTypeId",
+          "name",
+          "iconKey",
+          "isActive",
+          "completed",
+          "sampleSize",
+          "medianMinutes",
+          "firmSampleSize",
+          "firmMedianMinutes",
+          "ratio"
+        ],
+        "type": "object",
+        "properties": {
+          "taskTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "iconKey": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "completed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sampleSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "medianMinutes": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "firmSampleSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "firmMedianMinutes": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "ratio": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
           }
         }
       },

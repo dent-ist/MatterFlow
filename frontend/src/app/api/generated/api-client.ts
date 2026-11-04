@@ -18855,6 +18855,17 @@ export interface IDashboardBoardClient {
      */
     getDashboardCapacityPeople(q?: string | undefined, state?: string | undefined, podScope?: string | undefined): Observable<CapacityPerson[]>;
     /**
+     * @param months (optional) 
+     * @param podScope (optional) 
+     * @return OK
+     */
+    getDashboardUserHistory(userId: number, months?: number | undefined, podScope?: string | undefined): Observable<UserHistory>;
+    /**
+     * @param podScope (optional) 
+     * @return OK
+     */
+    getDashboardSkills(podScope?: string | undefined): Observable<SkillsMatrix>;
+    /**
      * @param period (optional) 
      * @param from (optional) 
      * @param to (optional) 
@@ -19171,6 +19182,124 @@ export class DashboardBoardClient implements IDashboardBoardClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as CapacityPerson[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param months (optional) 
+     * @param podScope (optional) 
+     * @return OK
+     */
+    getDashboardUserHistory(userId: number, months?: number | undefined, podScope?: string | undefined): Observable<UserHistory> {
+        let url_ = this.baseUrl + "/api/v1/dashboard/users/{userId}/history?";
+        if (userId === undefined || userId === null)
+            throw new globalThis.Error("The parameter 'userId' must be defined.");
+        url_ = url_.replace("{userId}", encodeURIComponent("" + userId));
+        if (months === null)
+            throw new globalThis.Error("The parameter 'months' cannot be null.");
+        else if (months !== undefined)
+            url_ += "months=" + encodeURIComponent("" + months) + "&";
+        if (podScope === null)
+            throw new globalThis.Error("The parameter 'podScope' cannot be null.");
+        else if (podScope !== undefined)
+            url_ += "podScope=" + encodeURIComponent("" + podScope) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetDashboardUserHistory(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetDashboardUserHistory(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserHistory>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserHistory>;
+        }));
+    }
+
+    protected processGetDashboardUserHistory(response: HttpResponseBase): Observable<UserHistory> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserHistory;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param podScope (optional) 
+     * @return OK
+     */
+    getDashboardSkills(podScope?: string | undefined): Observable<SkillsMatrix> {
+        let url_ = this.baseUrl + "/api/v1/dashboard/users/skills?";
+        if (podScope === null)
+            throw new globalThis.Error("The parameter 'podScope' cannot be null.");
+        else if (podScope !== undefined)
+            url_ += "podScope=" + encodeURIComponent("" + podScope) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetDashboardSkills(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetDashboardSkills(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<SkillsMatrix>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<SkillsMatrix>;
+        }));
+    }
+
+    protected processGetDashboardSkills(response: HttpResponseBase): Observable<SkillsMatrix> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as SkillsMatrix;
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -28187,6 +28316,54 @@ export interface SetUserRolesRequest {
     [key: string]: any;
 }
 
+export interface SkillsCell {
+    userId: number;
+    taskTypeId: number;
+    completed3Months: number;
+    completed12Months: number;
+
+    [key: string]: any;
+}
+
+export interface SkillsMatrix {
+    asOfUtc: string;
+    since3MonthsUtc: string;
+    since12MonthsUtc: string;
+    experiencedMin: number;
+    thinMax: number;
+    types: SkillsTaskType[];
+    people: SkillsPerson[];
+    cells: SkillsCell[];
+
+    [key: string]: any;
+}
+
+export interface SkillsPerson {
+    userId: number;
+    displayName: string;
+    initials: string;
+    pods: WorkloadPod[];
+    state: string;
+    load: number;
+    completed3Months: number;
+    completed12Months: number;
+
+    [key: string]: any;
+}
+
+export interface SkillsTaskType {
+    taskTypeId: number;
+    name: string;
+    iconKey: string;
+    isActive: boolean;
+    completed3Months: number;
+    completed12Months: number;
+    experiencedPeople: number;
+    isThin: boolean;
+
+    [key: string]: any;
+}
+
 export interface SkipStepRequest {
     rowVersion: string;
     comment?: string | undefined;
@@ -29277,6 +29454,56 @@ export interface UserDetailDto {
     lastLoginAtUtc: string | undefined;
     rowVersion: string;
     openTaskCount?: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface UserHistory {
+    userId: number;
+    displayName: string;
+    isActive: boolean;
+    asOfUtc: string;
+    zoneId: string;
+    windowMonths: number;
+    windowFromUtc: string;
+    durationBasis: string;
+    durationUnit: string;
+    minSampleSize: number;
+    totalCompleted: number;
+    types: UserHistoryType[];
+    months: UserHistoryMonth[];
+    onTime: UserHistoryOnTime;
+
+    [key: string]: any;
+}
+
+export interface UserHistoryMonth {
+    month: string;
+    completed: number;
+
+    [key: string]: any;
+}
+
+export interface UserHistoryOnTime {
+    onTime: number;
+    late: number;
+    sampleSize: number;
+    rate: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface UserHistoryType {
+    taskTypeId: number;
+    name: string;
+    iconKey: string;
+    isActive: boolean;
+    completed: number;
+    sampleSize: number;
+    medianMinutes: number | undefined;
+    firmSampleSize: number;
+    firmMedianMinutes: number | undefined;
+    ratio: number | undefined;
 
     [key: string]: any;
 }

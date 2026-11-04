@@ -25,14 +25,40 @@ describe('UsersTable', () => {
   }
   const root = (f: { nativeElement: unknown }) => f.nativeElement as HTMLElement;
 
-  it('folds the four priority counts into one cell with a full accessible text', () => {
+  it('has one Load element next to the person: the count, a bar split by priority, a tooltip and a full accessible text', () => {
     const el = root(render('load'));
-    expect(el.querySelectorAll('thead th').length).toBe(11);
+    expect(el.querySelectorAll('thead th').length).toBe(9);
+    const heads = [...el.querySelectorAll('thead th')].map((th) => th.textContent?.trim());
+    expect(heads.slice(0, 3)).toEqual(['Person', 'Load', 'Highest priority']);
     const cell = el.querySelector('[data-priority-counts]')!;
-    expect(cell.querySelector('.sr-only')!.textContent!.trim()).toBe(
-      '2 Critical, 5 High, 3 Normal, 0 Low',
+    expect(cell.querySelector('.cnt')!.textContent!.trim()).toBe('10');
+    expect(cell.querySelector('.sr-only')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+      '10 open tasks: 2 Critical, 5 High, 3 Normal, 0 Low',
     );
-    expect(cell.querySelectorAll('.pc').length).toBe(4);
+    expect(cell.querySelector('.track')!.getAttribute('title')).toBe(
+      '10 open: 2 Critical, 5 High, 3 Normal',
+    );
+    // No separate Open tasks column and no signal icons with digits.
+    expect(heads).not.toContain('Open tasks');
+    expect(heads).not.toContain('Open by priority');
+  });
+
+  it('is quiet: no Availability chip for an available person, a muted dash for zeros, red when overdue', () => {
+    const f = render('load');
+    const el = root(f);
+    expect(el.querySelector('tbody .chip')).toBeNull();
+    const cells = [...el.querySelectorAll('tbody tr td')].map((c) => c.textContent?.trim());
+    expect(cells).toContain('-');
+    f.componentRef.setInput('users', [
+      aUser(1, 'Ana Bell', [1, 0, 0, 0], {
+        overdue: 2,
+        availability: { state: 'OUT_OF_OFFICE', outUntil: undefined, note: undefined },
+      }),
+    ]);
+    f.detectChanges();
+    expect(el.querySelector('tbody .chip')!.textContent).toContain('Out of office');
+    expect(el.querySelector('tbody td.warn')!.textContent!.trim()).toBe('2');
+    expect(el.querySelector('[data-assign-work]')!.textContent).toContain('Assign');
   });
 
   it('marks the sorted column with aria-sort and the others none', () => {

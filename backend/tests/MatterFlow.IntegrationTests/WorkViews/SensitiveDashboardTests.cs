@@ -89,7 +89,14 @@ public sealed class SensitiveDashboardTests(SqlServerFixture sql)
                 var coverage = await GetAsync(http, "/api/v1/dashboard/coverage");
                 coverage.GetProperty("summary").GetProperty("totalCompleted").GetInt32().ShouldBe(completedVisible, name + ": coverage total");
 
-                var text = summary.GetRawText() + trend.GetRawText() + workload.GetRawText() + coverage.GetRawText();
+                // Person history and skills matrix (#1092): the same visible set, counts only.
+                var history = await GetAsync(http, $"/api/v1/dashboard/users/{u.Viewer}/history");
+                history.GetProperty("totalCompleted").GetInt32().ShouldBe(completedVisible, name + ": history total");
+                history.GetProperty("types").EnumerateArray().Sum(t => t.GetProperty("completed").GetInt32()).ShouldBe(completedVisible, name + ": history by type");
+                history.GetProperty("months").EnumerateArray().Sum(m => m.GetProperty("completed").GetInt32()).ShouldBe(completedVisible, name + ": history months");
+                var skills = await GetAsync(http, "/api/v1/dashboard/users/skills");
+
+                var text = summary.GetRawText() + trend.GetRawText() + workload.GetRawText() + coverage.GetRawText() + history.GetRawText() + skills.GetRawText();
                 foreach (var matter in u.SensitiveMatters.Where(m => !visible.Contains(m == u.S1 ? u.TS1 : m == u.S2 ? u.TS2 : u.TS3)))
                     text.ShouldNotContain(SensitiveUniverse.Sentinel(matter), Case.Sensitive, name);
             }

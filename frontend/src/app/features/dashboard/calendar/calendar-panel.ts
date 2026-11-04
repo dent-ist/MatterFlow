@@ -143,14 +143,36 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
 
               @if (p.pods.length > 0) {
                 <section aria-labelledby="cp-pods">
-                  <h3 class="h3" id="cp-pods">Coverage by pod</h3>
-                  <ul class="pods" data-panel-pods>
+                  <h3 class="h3 h3--fold" id="cp-pods">
+                    <button
+                      type="button"
+                      class="fold"
+                      data-pods-toggle
+                      [attr.aria-expanded]="podsOpen()"
+                      aria-controls="cp-pods-list"
+                      (click)="podsOpen.set(!podsOpen())"
+                    >
+                      <i
+                        class="pi"
+                        [class]="podsOpen() ? 'pi-chevron-down' : 'pi-chevron-right'"
+                        aria-hidden="true"
+                      ></i>
+                      Coverage by pod
+                      <span class="n">{{ p.pods.length }}</span>
+                    </button>
+                  </h3>
+                  <ul class="pods" id="cp-pods-list" data-panel-pods [hidden]="!podsOpen()">
                     @for (pod of p.pods; track pod.podId) {
                       <li [class]="'pod ' + cls(pod.level)" [attr.data-pod]="pod.podId">
                         <span class="pod__l">
-                          <i class="pi" [class]="LEVELS[pod.level].icon" aria-hidden="true"></i>
-                          <span class="pod__n">{{ pod.name }}</span>
-                          <span class="pod__w">{{ LEVELS[pod.level].word }}</span>
+                          <i
+                            class="pi"
+                            [class]="LEVELS[pod.level].icon"
+                            [attr.title]="LEVELS[pod.level].word"
+                            aria-hidden="true"
+                          ></i>
+                          <span class="pod__n" [attr.title]="pod.name">{{ pod.name }}</span>
+                          <span class="sr-only">{{ LEVELS[pod.level].word }}</span>
                         </span>
                         <span class="pod__c"
                           >{{ pod.available }}/{{ pod.expected }}
@@ -361,27 +383,32 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
       height: 22px;
       font-size: var(--mf-fs-sm);
     }
+    /* The four counts on one compact row (CAL-11). */
     .counts {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: var(--mf-s2);
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: var(--mf-s1);
       margin: 0;
     }
     .ct {
-      padding: var(--mf-s2) var(--mf-s3);
+      padding: var(--mf-s1) var(--mf-s2);
       border: 1px solid var(--mf-border-soft);
       border-radius: var(--mf-radius-lg);
+    }
+    .ct dt .pi {
+      display: none;
     }
     .ct dt {
       display: flex;
       align-items: center;
-      gap: var(--mf-s1);
+      gap: 3px;
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
+      font-size: var(--mf-fs-xs);
+      line-height: 1.2;
     }
     .ct dd {
       margin: 0;
-      font-size: var(--mf-fs-h3);
+      font-size: var(--mf-fs-lg);
       font-weight: 700;
     }
     .lvl {
@@ -418,6 +445,31 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-xs);
     }
+    .h3--fold {
+      margin: 0;
+    }
+    .fold {
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s2);
+      width: 100%;
+      min-height: 28px;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: inherit;
+      font: inherit;
+      font-weight: 700;
+      text-align: left;
+      cursor: pointer;
+    }
+    .fold:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: 2px;
+    }
+    .pods[hidden] {
+      display: none;
+    }
     .pods {
       display: grid;
       gap: var(--mf-s2);
@@ -443,11 +495,6 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
       text-overflow: ellipsis;
       white-space: nowrap;
       font-weight: 600;
-    }
-    .pod__w {
-      font-size: var(--mf-fs-xs);
-      font-weight: 700;
-      white-space: nowrap;
     }
     .pod__c {
       font-weight: 700;
@@ -649,6 +696,8 @@ export class CalPanel {
   protected readonly state = signal<LoadState>('loading');
   protected readonly panel = signal<DayPanel | null>(null);
   protected readonly search = signal('');
+  /** Coverage by pod is folded by default (CAL-11): the lists of people are what the panel is for. */
+  protected readonly podsOpen = signal(false);
   protected readonly isToday = computed(() => this.date() === this.today());
   protected readonly avail = computed(() =>
     filterGroups(this.panel()?.available ?? [], this.search()),
@@ -692,7 +741,7 @@ export class CalPanel {
     p.counts.expected > 0 ? Math.round((p.counts.available / p.counts.expected) * 100) : 0;
   protected levelText(p: DayPanel): string {
     return p.counts.expected > 0
-      ? `${p.counts.available} of ${p.counts.expected} expected people are in (${this.pct(p)}%).`
+      ? `${p.counts.available} of ${p.counts.expected} expected people are available (${this.pct(p)}%).`
       : `${LEVELS[p.level].hint}.`;
   }
   protected share = (n: number, of: number): number => (of > 0 ? Math.min(100, (n / of) * 100) : 0);

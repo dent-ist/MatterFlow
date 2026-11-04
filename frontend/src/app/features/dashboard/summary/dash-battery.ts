@@ -59,12 +59,14 @@ type BatteryState = 'loading' | 'ready' | 'error';
             <button
               #peopleBtn
               type="button"
-              class="mf-btn people"
+              class="mf-btn mf-btn--icon people"
               data-people-open
+              aria-label="People"
+              mfTip="People"
               [attr.aria-expanded]="peopleOpen()"
               (click)="togglePeople()"
             >
-              <i class="pi pi-users" aria-hidden="true"></i>People
+              <i class="pi pi-users" aria-hidden="true"></i>
             </button>
           }
         }
@@ -124,7 +126,13 @@ type BatteryState = 'loading' | 'ready' | 'error';
                   <span class="tick" style="left: 25%"></span>
                   <span class="tick" style="left: 50%"></span>
                   <span class="tick" style="left: 75%"></span>
-                  <span class="val" [attr.data-level]="v.level" data-battery-big>
+                  <span
+                    class="val"
+                    [class.val--empty]="v.charge < 28"
+                    [style.left]="v.charge < 28 ? 'calc(' + v.charge + '% + var(--mf-s2))' : null"
+                    [attr.data-level]="v.level"
+                    data-battery-big
+                  >
                     <i class="pi pi-bolt" aria-hidden="true"></i>{{ v.bigText }}
                   </span>
                 </div>
@@ -173,7 +181,6 @@ type BatteryState = 'loading' | 'ready' | 'error';
     }
     .ph {
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
       gap: var(--mf-s2);
       margin-bottom: var(--mf-s2);
@@ -188,6 +195,7 @@ type BatteryState = 'loading' | 'ready' | 'error';
       white-space: nowrap;
     }
     .people {
+      flex: none;
       margin-left: auto;
     }
     /* The status word beside the title: the colour of the remaining capacity plus the word and the icon, so colour is never the only signal. */
@@ -229,7 +237,7 @@ type BatteryState = 'loading' | 'ready' | 'error';
     .bat {
       display: flex;
       align-items: stretch;
-      height: 34px;
+      height: 51px;
     }
     .shell {
       position: relative;
@@ -254,7 +262,7 @@ type BatteryState = 'loading' | 'ready' | 'error';
         var(--mf-p-slate-line) 4px 7px
       );
     }
-    /* The number sits on its own pill in the step colour, so its contrast does not depend on how full the battery is. */
+    /* The number is plain text on the fill (no ring); the fill colours are chosen so the text colour of each step passes 4.5:1. When the fill is shorter than the number (under about 20 percent) the number sits on the battery's empty part: see .val--empty. */
     .val {
       position: absolute;
       top: 50%;
@@ -263,16 +271,17 @@ type BatteryState = 'loading' | 'ready' | 'error';
       display: inline-flex;
       align-items: center;
       gap: var(--mf-s1);
-      padding: 0 var(--mf-s2);
-      border-radius: 999px;
+      padding: 0;
       transform: translateY(-50%);
       color: var(--mf-rem-fg, var(--mf-text));
-      background: var(--mf-rem, var(--mf-surface));
-      border: 1px solid var(--mf-surface);
-      font-size: 15px;
+      font-size: 18px;
       font-weight: 700;
       line-height: 22px;
       white-space: nowrap;
+    }
+    /* A short fill (under 28 percent): the number sits just after it, on the empty part, in the normal text colour. */
+    .val--empty {
+      color: var(--mf-text);
     }
     .tick {
       position: absolute;
@@ -285,7 +294,7 @@ type BatteryState = 'loading' | 'ready' | 'error';
     .cap {
       flex: none;
       width: 6px;
-      margin: 9px 0;
+      margin: 14px 0;
       border-radius: 0 4px 4px 0;
       background: var(--mf-border-strong);
     }
@@ -400,7 +409,7 @@ type BatteryState = 'loading' | 'ready' | 'error';
       height: 24px;
     }
     .sk--bar {
-      height: 34px;
+      height: 51px;
     }
     .sk--line {
       width: 40%;

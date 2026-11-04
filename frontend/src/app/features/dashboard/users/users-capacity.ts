@@ -15,17 +15,7 @@ import {
   WorkloadUser,
 } from '../../../api/generated/api-client';
 import { DashScope } from '../dash-scope';
-import {
-  LOAD_ICONS,
-  LOAD_LABELS,
-  LoadFilter,
-  LoadLevel,
-  UsersFilters,
-  capacitySegments,
-  loadHelp,
-  plural,
-  unassignedQueueParams,
-} from './users-model';
+import { LoadFilter, UsersFilters, plural, unassignedQueueParams } from './users-model';
 
 let nextId = 0;
 
@@ -45,30 +35,7 @@ let nextId = 0;
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:click)': 'onDocumentClick($event)' },
   template: `
-    <div class="strip" role="group" [attr.aria-label]="summaryText()" data-capacity>
-      <div class="bar" data-capacity-bar>
-        @for (s of segments(); track s.level) {
-          @if (s.count > 0) {
-            <button
-              type="button"
-              class="seg"
-              [class]="'seg seg--' + s.level.toLowerCase()"
-              [attr.data-segment]="s.level.toLowerCase()"
-              [style.flex-grow]="s.count"
-              [attr.aria-pressed]="isOn(s.level)"
-              [attr.aria-label]="'Filter: ' + s.count + ' ' + word(s.level)"
-              [attr.title]="s.count + ' ' + word(s.level) + '. ' + help(s.level)"
-              (click)="loadToggle.emit(key(s.level))"
-            >
-              <i class="pi" [class]="icons[s.level]" aria-hidden="true"></i>
-              <span class="n" aria-hidden="true">{{ s.count }}</span>
-            </button>
-          }
-        }
-        @if (users().length === 0) {
-          <span class="none" data-capacity-none>No people to show.</span>
-        }
-      </div>
+    <div class="strip" role="group" aria-label="Unassigned work" data-capacity>
       <a
         class="unassigned"
         data-summary-unassigned
@@ -138,7 +105,6 @@ let nextId = 0;
   styles: `
     :host {
       display: block;
-      margin-bottom: var(--mf-s2);
     }
     .strip {
       display: flex;
@@ -146,93 +112,11 @@ let nextId = 0;
       align-items: center;
       gap: var(--mf-s2) var(--mf-s3);
     }
-    .bar {
-      display: flex;
-      flex: 1 1 18rem;
-      gap: 2px;
-      min-width: 0;
-      height: 24px;
-    }
-    .seg {
-      container-type: inline-size;
-      display: flex;
-      flex-basis: 0;
-      flex-shrink: 1;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      box-sizing: border-box;
-      /* WCAG 2.2 target size (24 x 24): the four segments always fit (4 x 24 px and three 2 px gaps), so a level with a handful of people on a big board
-         still gets a real target and is never squeezed to a sliver beside its neighbours. */
-      min-width: 24px;
-      height: 100%;
-      padding: 0;
-      overflow: hidden;
-      color: var(--mf-text);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: 4px;
-      font: inherit;
-      font-size: var(--mf-fs-xs);
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .seg .pi {
-      font-size: 0.7rem;
-    }
-    .seg .n {
-      display: none;
-      font-variant-numeric: tabular-nums;
-    }
-    @container (min-width: 44px) {
-      .seg .n {
-        display: inline;
-      }
-    }
-    @container (max-width: 15px) {
-      .seg .pi {
-        display: none;
-      }
-    }
-    /* The same tints as the tiles and chips (U7): Idle the lightest, saturated colour only for Heavy. */
-    .seg--idle {
-      background: color-mix(in srgb, var(--mf-success-bg) 45%, var(--mf-surface));
-      border-color: var(--mf-success);
-    }
-    .seg--light {
-      background: var(--mf-info-bg);
-    }
-    .seg--normal {
-      background: color-mix(in srgb, var(--mf-info-bg) 55%, var(--mf-surface-alt));
-    }
-    .seg--heavy {
-      background: var(--mf-danger-bg);
-      border-color: var(--mf-danger);
-      box-shadow: inset 0 0 0 1px var(--mf-danger);
-    }
-    .seg--heavy .pi {
-      color: var(--mf-danger);
-    }
-    .seg:hover {
-      filter: brightness(0.96);
-    }
-    .seg[aria-pressed='true'] {
-      outline: 2px solid var(--mf-primary);
-      outline-offset: 1px;
-    }
-    .seg[aria-pressed='true'] .n {
-      text-decoration: underline;
-      text-underline-offset: 2px;
-    }
-    .seg:focus-visible,
     .unassigned:focus-visible,
     .menu-btn:focus-visible,
     .item:focus-visible {
       outline: 2px solid var(--mf-focus);
       outline-offset: 1px;
-    }
-    .none {
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
     }
     .unassigned {
       display: inline-flex;
@@ -294,11 +178,6 @@ let nextId = 0;
     .item:hover {
       background: var(--mf-surface-alt);
     }
-    @media (max-width: 560px) {
-      .bar {
-        flex-basis: 100%;
-      }
-    }
   `,
 })
 export class UsersCapacity {
@@ -316,38 +195,12 @@ export class UsersCapacity {
   /** "Show people who can take work now" was chosen. */
   readonly showCanTake = output<void>();
 
-  protected readonly icons = LOAD_ICONS;
   protected readonly plural = plural;
   protected readonly open = signal(false);
 
-  protected readonly segments = computed(() => capacitySegments(this.users()));
   protected readonly queue = computed(() => unassignedQueueParams(this.scope.queueParam()));
   protected readonly count = computed(() => this.summary()?.unassignedTasks ?? 0);
   protected readonly unassignedText = computed(() => (this.summary() ? String(this.count()) : '-'));
-  /** The group's name: every count in words (the segments' numbers are drawn only when they fit). */
-  protected readonly summaryText = computed(() => {
-    const segs = this.segments();
-    const out = this.users().filter((u) => u.availability?.state === 'OUT_OF_OFFICE').length;
-    const parts = segs.map((s) => `${s.count} ${this.word(s.level)}`);
-    return `Capacity: ${parts.join(', ')}, ${out} out of office`;
-  });
-
-  protected word(level: LoadLevel): string {
-    return LOAD_LABELS[level].toLowerCase();
-  }
-
-  protected key(level: LoadLevel): LoadFilter {
-    return level.toLowerCase() as LoadFilter;
-  }
-
-  protected isOn(level: LoadLevel): boolean {
-    return this.filters().load.includes(this.key(level));
-  }
-
-  protected help(level: LoadLevel): string {
-    return loadHelp(level, this.thresholds());
-  }
-
   protected toggle(): void {
     this.open.update((v) => !v);
     if (this.open()) setTimeout(() => this.items()[0]?.focus());

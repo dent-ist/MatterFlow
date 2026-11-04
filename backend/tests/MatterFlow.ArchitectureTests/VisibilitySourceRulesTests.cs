@@ -86,6 +86,7 @@ public class VisibilitySourceRulesTests
         ["ReportAuditSql.cs"] = "Reports are undecided (README section 15, issue #808)",
         ["TaskTransactions.cs"] = "row locks; the task lock is gated by CanSeeTaskAsync",
         ["MyMattersActivityService.cs"] = "audit window read restricted to the scope's visible matters",
+        ["UserHistory.cs"] = "first IN_PROGRESS audit time read only as a correlated minimum for tasks that already come from VisibleTasks (never returned, no content columns; #1092)",
     };
 
     [Fact]

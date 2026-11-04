@@ -41,7 +41,7 @@ import {
   weekTitle,
 } from './calendar-model';
 import { CalPanel } from './calendar-panel';
-import { levelClass } from './calendar-month-grid';
+import { cellClass } from './calendar-month-grid';
 import { CalWeekGrid } from './calendar-week-grid';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -401,8 +401,27 @@ const ALL_ROLES = '';
     }
     .lg {
       display: inline-flex;
+      flex: none;
       align-items: center;
       gap: var(--mf-s1);
+    }
+    /* The legend never clips its sample chip (CAL-11): the words stay whole, the row wraps instead. */
+    .legend .hchip {
+      height: auto;
+      min-height: 18px;
+      max-width: none;
+      overflow: visible;
+    }
+    .legend .hchip > span {
+      overflow: visible;
+      text-overflow: clip;
+    }
+    .lg.cv-quiet {
+      padding: 1px var(--mf-s2);
+      border: 1px solid var(--mf-border-strong);
+      border-radius: var(--mf-radius-pill);
+      color: var(--mf-text);
+      font-weight: 600;
     }
     .lg.cv-good,
     .lg.cv-watch,
@@ -530,7 +549,7 @@ export class DashCalendarTab {
   protected readonly legend = LEGEND_LEVELS;
   protected readonly LEVELS = LEVELS;
   protected readonly skeleton = Array.from({ length: 35 }, (_, i) => i);
-  protected readonly cls = levelClass;
+  protected readonly cls = cellClass;
   protected readonly fixed = mediaMatch(DASH_FIXED_QUERY);
   protected readonly docked = mediaMatch(DOCKED_QUERY);
   protected readonly sheet = mediaMatch(SHEET_QUERY);
