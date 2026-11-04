@@ -309,6 +309,8 @@ export const USERS_PAGE = 200;
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(min(15.5rem, 100%), 1fr));
+      /* One fixed row height for the whole grid: no card state (Out of office, Off hours, long names) can make a row taller. */
+      grid-auto-rows: var(--mf-users-card-h, 5.5rem);
       gap: var(--mf-s3);
       margin: 0;
       padding: 0;

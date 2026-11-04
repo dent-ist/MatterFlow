@@ -39,7 +39,7 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
 /**
  * One person on the Team workload board as a card (design B, US-09 #1100): the open-task count as a big number coloured by the load level with a small "OPEN" caption, the name,
  * three slot pips (the capacity rule of the Team capacity battery: filled up to the open tasks) and a red overdue badge only when above zero. There is NO "Available" chip (it is spoken in
- * the accessible name and tooltip); only the exceptions are drawn: Off hours as a grey chip, Out of office as a solid amber band across the top with the return date. The name is the button
+ * the accessible name and tooltip); only the exceptions show: Off hours is the moon in the state icon (no extra row), Out of office tints the whole card amber and writes "Back Nov 7" in the count row. Every card has the same height. The name is the button
  * that opens the person's drawer and it stretches over the whole card; the Assign icon sits above it and appears on hover or focus. Operational capacity only: no completion counts or ranking.
  */
 @Component({
@@ -60,11 +60,6 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
       [attr.data-load]="level()"
       [attr.data-availability]="u.availability.state"
     >
-      @if (st === 'ooo') {
-        <p class="band" aria-hidden="true" data-availability-line data-ooo-band>
-          <i class="pi pi-calendar"></i>{{ avail().label }}
-        </p>
-      }
       <div class="body">
         <mf-user-state-icon
           class="ico"
@@ -99,7 +94,12 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
           </p>
           <div class="wl" aria-hidden="true" data-workload>
             <strong class="n" data-open-total>{{ u.openTotal }}</strong
-            >&ngsp;<span class="cap">open</span>
+            >&ngsp;
+            @if (st === 'ooo' && backText(); as back) {
+              <span class="back" data-back-on><i class="pi pi-calendar"></i>{{ back }}</span>
+            } @else {
+              <span class="cap">open</span>
+            }
             <span class="dots" [class]="'dots dots--' + level().toLowerCase()" data-slots>
               @for (p of pips(); track $index) {
                 <i class="dot" [class.dot--on]="p" data-pip></i>
@@ -111,13 +111,6 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
           </div>
         </div>
       </div>
-      @if (st !== 'ooo' && u.availability.state === 'OFF_HOURS') {
-        <p class="av" aria-hidden="true" data-availability-line>
-          <span class="chip chip--neutral"
-            ><i class="pi" [class]="avail().icon"></i>{{ avail().label }}</span
-          >
-        </p>
-      }
       @if (canAssign()) {
         <button
           type="button"
@@ -138,7 +131,7 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
       height: 100%;
       min-width: 0;
     }
-    /* No padding on the card itself: the amber band runs edge to edge inside the rounded corners (overflow hidden), the body and the chip keep the padding. */
+    /* Every card has the same height: the grid rows are fixed (see the tab), so no state can change it. */
     .card {
       position: relative;
       display: flex;
@@ -157,21 +150,22 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
     .card--heavy {
       box-shadow: inset 0 0 0 1px var(--mf-danger);
     }
-    /* Out of office: a solid amber band across the top (the away-state tokens), the rest of the card keeps its normal look. */
-    .band {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      margin: 0;
-      padding: var(--mf-s1) var(--mf-s3);
-      color: var(--mf-warning);
+    /* Out of office: the whole card is tinted amber with an amber border (the away-state tokens); the return date sits in the count row, so the height never changes. */
+    .card--ooo {
       background: var(--mf-warning-bg);
-      border-bottom: 1px solid var(--mf-warning);
+      border-color: var(--mf-warning);
+    }
+    .back {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s1);
+      color: var(--mf-warning);
       font-size: var(--mf-fs-sm);
       font-weight: 600;
+      white-space: nowrap;
     }
-    .band .pi {
-      font-size: var(--mf-icon-md);
+    .back .pi {
+      font-size: var(--mf-icon-sm);
     }
     .body {
       display: flex;
@@ -223,17 +217,14 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
       outline: 2px solid var(--mf-focus);
       outline-offset: 1px;
     }
+    /* Overdue: just a red clock and the number (no pill, no border, no background). */
     .late {
       flex: none;
       display: inline-flex;
       align-items: center;
       gap: 3px;
-      padding: 0 var(--mf-s2);
       color: var(--mf-danger);
-      background: var(--mf-danger-bg);
-      border: 1px solid var(--mf-danger);
-      border-radius: 999px;
-      font-size: var(--mf-fs-xs);
+      font-size: var(--mf-fs-sm);
       font-weight: 700;
       font-variant-numeric: tabular-nums;
     }
@@ -289,31 +280,6 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-xs);
       font-weight: 600;
-    }
-    .av {
-      margin: 0;
-      padding: 0 var(--mf-s3) var(--mf-s3);
-    }
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
-      max-width: 100%;
-      padding: 0 var(--mf-s2);
-      border: 1px solid currentColor;
-      border-radius: 999px;
-      font-size: var(--mf-fs-xs);
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .chip .pi {
-      font-size: var(--mf-icon-sm);
-    }
-    .chip--neutral {
-      color: var(--mf-text-muted);
-      background: var(--mf-surface-alt);
     }
     .assign {
       position: absolute;
@@ -375,6 +341,11 @@ export class UsersCard {
   protected readonly summary = computed(() => {
     const u = this.user();
     return `${u.displayName}, ${plural(u.openTotal, 'open task')}, ${LOAD_LABELS[this.level()]}, ${this.avail().label}`;
+  });
+  /** "Back Nov 7" for the count row of an Out of office card (the full wording is in the tooltip and the accessible name). */
+  protected readonly backText = computed(() => {
+    const b = backOnText(this.user().availability?.outUntil, this.zone, this.clock.now());
+    return b ? b.replace('Back on ', 'Back ') : null;
   });
   protected readonly slots = CARD_SLOTS;
   /** One filled dot per open task up to the slots; the rest are empty (more than the slots: all filled and a small +N). */
