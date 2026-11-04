@@ -540,9 +540,12 @@ describe('DashUsersTab', () => {
       expect(q('[data-density-group]')).toBeNull();
       expect(q('[data-layout="table"]').getAttribute('aria-label')).toBe('Layout: table');
       expect(q('[data-layout="cards"]').getAttribute('aria-pressed')).toBe('true');
-      expect(q('[data-legend-toggle]').getAttribute('aria-label')).toBe('Legend and help');
-      // A plain info icon: no word beside it.
-      expect(text(q('[data-legend-toggle]'))).toBe('');
+      // ONE plain info icon (no word) for the legend and who is counted; the toolbar has no second one.
+      expect(q('[data-who-counted]').getAttribute('aria-label')).toBe(
+        'What the states mean and who is counted',
+      );
+      expect(text(q('[data-who-counted]'))).toBe('');
+      expect(q('[data-legend-toggle]')).toBeNull();
     });
 
     it('names each chip with its thresholds', async () => {
@@ -727,9 +730,11 @@ describe('DashUsersTab', () => {
     it('opens the short legend: the six states with their words, one line each and the real thresholds', async () => {
       await open();
       expect(q('[data-legend]')).toBeNull();
-      q<HTMLButtonElement>('[data-legend-toggle]').click();
+      q<HTMLButtonElement>('[data-who-counted]').click();
       await settle();
-      expect(q('[data-legend-toggle]').getAttribute('aria-expanded')).toBe('true');
+      expect(q('[data-who-counted]').getAttribute('aria-expanded')).toBe('true');
+      // The same popover also says who is counted.
+      expect(q('[data-who-text]')).not.toBeNull();
       const rows = qa('[data-legend-states] li').map((li) => text(li));
       expect(rows).toEqual([
         'Idle No open tasks',
@@ -1215,6 +1220,9 @@ describe('DashUsersTab', () => {
       it('lists the names alphabetically with the people count, the completed total and the status', async () => {
         await typeView();
         expect(text(trow('Production').querySelector('[data-names]'))).toBe(
+          'Priya Shah, Sam Ortiz +1',
+        );
+        expect(trow('Production').querySelector('[data-names]')!.getAttribute('title')).toBe(
           'Priya Shah, Sam Ortiz, Tess Wu',
         );
         expect(text(trow('Production').querySelector('[data-people]'))).toBe('3');
@@ -1264,9 +1272,7 @@ describe('DashUsersTab', () => {
           ...base,
           byType: base.byType!.map((g) => (g.taskTypeId === 10 ? { ...g, people } : g)),
         });
-        expect(text(trow('Production').querySelector('[data-names]'))).toBe(
-          'Ann, Bea, Cat, Dan, Eve, +2',
-        );
+        expect(text(trow('Production').querySelector('[data-names]'))).toBe('Ann, Bea +5');
         await choose('[data-coverage-row-order]', 'name');
         expect(qa('[data-type-row]').map((r) => r.getAttribute('data-type-name'))).toEqual([
           'Archive',
@@ -1619,7 +1625,7 @@ describe('DashUsersTab', () => {
         'all',
       );
       expect(url()).toContain('period=90d');
-      expect(text(q('[data-coverage-frame]'))).toContain('completed from Jul 18');
+      expect(text(q('[data-coverage-frame]'))).toContain('from Jul 18');
       await choose('mf-dropdown[data-period]', '12m');
       expect(getCoverage).toHaveBeenLastCalledWith(
         '12m',

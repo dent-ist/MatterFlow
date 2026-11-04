@@ -9,7 +9,7 @@ import { availabilityDisplay } from '../../../core/availability/availability';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { dueCellText, describeDueCell } from '../../../core/time/time';
 import { priorityColors } from '../../../shared/ui/priority-badge';
-import { backOnText, bandOf } from './users-card';
+import { backOnText } from './users-card';
 import {
   LOAD_ICONS,
   LOAD_LABELS,
@@ -41,17 +41,17 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
         </caption>
         <thead>
           <tr>
-            <th scope="col" class="person" [attr.aria-sort]="ariaSort('name')">
+            <th scope="col" class="person c-person" [attr.aria-sort]="ariaSort('name')">
               <button type="button" class="sort" data-sort-key="name" (click)="sortBy('name')">
                 Person<i class="pi" [class]="arrow('name')" aria-hidden="true"></i>
               </button>
             </th>
-            <th scope="col" [attr.aria-sort]="ariaSort('open')">
+            <th scope="col" class="c-load" [attr.aria-sort]="ariaSort('open')">
               <button type="button" class="sort" data-sort-key="open" (click)="sortBy('open')">
                 Workload<i class="pi" [class]="arrow('open')" aria-hidden="true"></i>
               </button>
             </th>
-            <th scope="col" [attr.aria-sort]="ariaSort('priority')">
+            <th scope="col" class="c-prio" [attr.aria-sort]="ariaSort('priority')">
               <button
                 type="button"
                 class="sort"
@@ -61,18 +61,8 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
                 Highest priority<i class="pi" [class]="arrow('priority')" aria-hidden="true"></i>
               </button>
             </th>
-            <th scope="col" [attr.aria-sort]="ariaSort('load')">
-              <button
-                type="button"
-                class="sort"
-                data-sort-key="availability"
-                (click)="sortBy('load')"
-              >
-                Availability<i class="pi" [class]="arrow('load')" aria-hidden="true"></i>
-              </button>
-            </th>
-            <th scope="col" class="num">Overdue</th>
-            <th scope="col">Next due</th>
+            <th scope="col" class="num c-over">Overdue</th>
+            <th scope="col" class="c-next">Next due</th>
             @if (canAssign()) {
               <th scope="col" class="act"><span class="sr-only">Assign work</span></th>
             }
@@ -89,7 +79,6 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
             >
               <th scope="row" class="person">
                 <span class="pwrap">
-                  <span class="avatar" aria-hidden="true">{{ u.initials }}</span>
                   <button
                     type="button"
                     class="link"
@@ -100,6 +89,20 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
                   >
                     {{ u.displayName }}
                   </button>
+                  <!-- Quiet rows: a small chip beside the name only when the person is away (Out of office, Off hours, Holiday). -->
+                  @if (u.availability.state !== 'AVAILABLE') {
+                    @let a = availOf(u);
+                    <span
+                      class="chip"
+                      aria-hidden="true"
+                      [class]="'chip chip--' + a.tone"
+                      [attr.title]="
+                        u.availability.note ? a.label + ': ' + u.availability.note : a.label
+                      "
+                    >
+                      <i class="pi" [class]="a.icon" aria-hidden="true"></i>{{ a.label }}
+                    </span>
+                  }
                 </span>
               </th>
               <td class="loadcell">
@@ -122,35 +125,15 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
                 </span>
               </td>
               <td>
-                @if (u.openTotal > 0) {
-                  @let b = bandOf(u);
+                @if (u.openTotal > 0 && u.topPriority; as tp) {
                   <span
                     class="state"
-                    [style.background]="b.bg"
-                    [style.color]="b.fg"
-                    [attr.title]="b.label"
-                    [attr.aria-label]="stateOf(u) === 'busy' ? null : b.label"
-                    [attr.role]="stateOf(u) === 'busy' ? null : 'img'"
+                    [style.background]="colors(tp.color).bg"
+                    [style.color]="colors(tp.color).fg"
+                    [attr.title]="'Highest priority: ' + tp.label"
                   >
-                    <i class="pi" [class]="b.icon" aria-hidden="true"></i>
-                    @if (stateOf(u) === 'busy') {
-                      {{ u.topPriority?.label ?? '' }}
-                    }
+                    <i class="pi pi-flag-fill" aria-hidden="true"></i>{{ tp.label }}
                   </span>
-                }
-              </td>
-              <td>
-                <!-- Quiet rows: only a person who is NOT available has a chip (Out of office, Off hours, Holiday). -->
-                @if (u.availability.state !== 'AVAILABLE') {
-                  @let a = availOf(u);
-                  <span class="chip" [class]="'chip chip--' + a.tone">
-                    <i class="pi" [class]="a.icon" aria-hidden="true"></i>{{ a.label }}
-                  </span>
-                  @if (u.availability.note) {
-                    <span class="note" [attr.title]="u.availability.note">{{
-                      u.availability.note
-                    }}</span>
-                  }
                 }
               </td>
               <td class="num" [class.warn]="u.overdue > 0" [class.zero]="u.overdue === 0">
@@ -281,6 +264,22 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
       text-align: right;
       font-variant-numeric: tabular-nums;
     }
+    /* Workload gets the room; the other columns keep a fixed share, so no column is a wide empty one at 1366 or 1920. */
+    .c-person {
+      width: 32%;
+    }
+    .c-load {
+      width: 28%;
+    }
+    .c-prio {
+      width: 14%;
+    }
+    .c-over {
+      width: 8%;
+    }
+    .c-next {
+      width: 16%;
+    }
     .strong {
       font-weight: 700;
     }
@@ -301,14 +300,14 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
       left: 0;
       z-index: 1;
       background: var(--mf-surface);
-      max-width: 14rem;
+      max-width: 22rem;
     }
     thead th.person {
       z-index: 3;
       background: var(--mf-surface-alt);
     }
     tr.ooo .person {
-      background: var(--mf-surface-alt);
+      background: var(--mf-warning-bg);
     }
     /* A shadow on the sticky column appears only where the table scrolls sideways. */
     @media (max-width: 899px) {
@@ -357,20 +356,8 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
       align-items: center;
       gap: var(--mf-s2);
     }
-    .avatar {
-      display: inline-grid;
-      place-items: center;
-      width: 1.75rem;
-      height: 1.75rem;
-      color: var(--mf-primary);
-      background: var(--mf-selected-bg);
-      border: 1px solid var(--mf-primary);
-      border-radius: 50%;
-      font-size: var(--mf-fs-xs);
-      font-weight: 700;
-    }
     .link {
-      max-width: 8rem;
+      max-width: 16rem;
       overflow: hidden;
       text-overflow: ellipsis;
       padding: 0;
@@ -409,16 +396,6 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
     .chip--neutral {
       color: var(--mf-text-muted);
       background: var(--mf-surface-alt);
-      border-style: dashed;
-    }
-    .note {
-      display: block;
-      max-width: 8rem;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      color: var(--mf-text-muted);
-      font-style: italic;
     }
     .load {
       display: inline-flex;
@@ -440,7 +417,7 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
     }
     .track {
       display: inline-flex;
-      width: 5rem;
+      width: 10rem;
       height: 0.75rem;
       overflow: hidden;
       background: var(--mf-surface-alt);
@@ -476,7 +453,6 @@ export class UsersTable {
   protected readonly icons = LOAD_ICONS;
   protected readonly labels = LOAD_LABELS;
   protected readonly toneOf = toneOf;
-  protected readonly bandOf = bandOf;
   protected readonly stateOf = cardState;
   protected readonly levelOf = loadLevelOf;
   protected readonly legendTexts = computed(() => thresholdText(this.thresholds()));

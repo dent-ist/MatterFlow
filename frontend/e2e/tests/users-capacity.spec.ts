@@ -259,7 +259,7 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     // Keyboard order: switch, search, filters, sort, then density, layout and legend.
     await views.getByRole('button', { name: 'Workload' }).focus();
     const order: string[] = [];
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 7; i++) {
       order.push(
         await page.evaluate(() => {
           const a = document.activeElement as HTMLElement;
@@ -281,7 +281,6 @@ test.describe('Users tab: capacity, population and toolbar', () => {
       'Filters',
       'Layout: cards',
       'Layout: table',
-      'Legend and help',
     ]);
 
     await views.getByRole('button', { name: 'Coverage' }).click();
@@ -345,8 +344,8 @@ test.describe('Users tab: capacity, population and toolbar', () => {
       /Table/,
     );
     // The legend is a plain info icon (no word) that opens a popover.
-    await expect(page.getByRole('button', { name: 'Legend and help' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Legend and help' })).toHaveText('');
+    await expect(page.locator('[data-who-counted]')).toBeVisible();
+    await expect(page.locator('[data-who-counted]')).toHaveText('');
   });
 
   test('the toolbar is one line at 1366, wraps without sideways scroll at 375, and the strip keeps its place while loading', async ({
@@ -433,7 +432,7 @@ test.describe('Users tab: capacity, population and toolbar', () => {
         page.locator(`[data-capacity-bar] [data-segment="${key}"]`).first(),
       ).toHaveAttribute('title', new RegExp(words));
     }
-    await page.getByRole('button', { name: 'Legend and help' }).click();
+    await page.locator('[data-who-counted]').click();
     await expect(page.locator('[data-legend-states]')).toContainText('1 to 3 open tasks');
     await expect(page.locator('[data-who-counted]')).toBeVisible();
   });
@@ -597,9 +596,9 @@ test.describe('users capacity screenshots', () => {
     await shot('05-include-no-pod-1366');
     await page.goto(base);
     await ready();
-    await page.getByRole('button', { name: 'Legend and help' }).click();
+    await page.locator('[data-who-counted]').click();
     await shot('06-legend-1366');
-    await page.getByRole('button', { name: 'Legend and help' }).click();
+    await page.locator('[data-who-counted]').click();
     // The tile anatomy at 200%: sorted by name (a mix of idle, light, normal and heavy people), the grid scaled up.
     await (await usersFilter(page, 'Sort')).selectOption('name');
     await page.evaluate(() => {

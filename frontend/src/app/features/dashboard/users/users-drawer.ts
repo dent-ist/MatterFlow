@@ -375,7 +375,11 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
       gap: var(--mf-s2);
       margin: 0 0 var(--mf-s3);
     }
+    /* The large-number style of the cards (US-10): the figure on top, a small label under it. */
     .counts div {
+      display: flex;
+      flex-direction: column-reverse;
+      align-items: center;
       padding: var(--mf-s2);
       border: 1px solid var(--mf-border-soft);
       border-radius: var(--mf-radius-lg);
@@ -383,10 +387,14 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
     .counts dt {
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-xs);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
     }
     .counts dd {
       margin: 0;
-      font-size: var(--mf-fs-lg);
+      font-size: 2rem;
+      line-height: 1.1;
       font-weight: 700;
       font-variant-numeric: tabular-nums;
     }
@@ -410,10 +418,12 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
       border-radius: 50%;
       font-weight: 700;
     }
+    /* ONE status line: the availability chip, the return date and the workload word with the count. */
     .who {
-      display: grid;
-      gap: 2px;
-      justify-items: start;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--mf-s1) var(--mf-s2);
       min-width: 0;
     }
     .chip {
@@ -437,7 +447,6 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
     .chip--neutral {
       color: var(--mf-text-muted);
       background: var(--mf-surface-alt);
-      border-style: dashed;
     }
     .note {
       font-style: italic;

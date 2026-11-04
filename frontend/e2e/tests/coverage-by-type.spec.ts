@@ -63,7 +63,9 @@ test.describe('By task type (C1, #134)', () => {
     const { a, b, c } = cov.people;
     const production = row(page, cov.typeNames.production);
     const names = [a, b, c].map((p) => p.displayName).sort((x, y) => x.localeCompare(y));
-    await expect(production.locator('[data-names]')).toHaveText(names.join(', '));
+    await expect(production.locator('[data-names]')).toHaveText(
+      `${names[0]}, ${names[1]} +${names.length - 2}`,
+    );
     await expect(production.locator('[data-people]')).toHaveText('3');
     await expect(production.locator('[data-completed]')).toHaveText('6');
     await expect(production.locator('[data-status]')).toHaveCount(0);

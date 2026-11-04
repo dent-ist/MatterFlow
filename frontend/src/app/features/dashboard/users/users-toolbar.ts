@@ -1,6 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { WorkloadPriority, WorkloadThresholds } from '../../../api/generated/api-client';
-import { Dismissable } from '../../../shared/ui/dismissable';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { SearchBox } from '../../../shared/ui/search-box';
 import { Segmented } from '../../../shared/ui/segmented';
@@ -19,7 +18,6 @@ import {
   filterCount,
   isAvailabilityFilter,
   isUserSort,
-  legendStates,
 } from './users-model';
 
 /**
@@ -30,7 +28,7 @@ import {
  */
 @Component({
   selector: 'mf-users-toolbar',
-  imports: [SearchBox, Dropdown, Segmented, Dismissable, UsersFilterPopover],
+  imports: [SearchBox, Dropdown, Segmented, UsersFilterPopover],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let f = filters();
@@ -121,45 +119,6 @@ import {
           </button>
         }
       </div>
-      <span class="legend-wrap">
-        <button
-          #legendBtn
-          type="button"
-          class="mf-btn mf-btn--icon toggle"
-          data-legend-toggle
-          title="Legend and help"
-          aria-label="Legend and help"
-          aria-haspopup="dialog"
-          [attr.aria-expanded]="legendOpen()"
-          [attr.aria-controls]="legendOpen() ? 'wl-legend' : null"
-          (click)="legendOpen.set(!legendOpen())"
-        >
-          <i class="pi pi-info-circle" aria-hidden="true"></i>
-        </button>
-        @if (legendOpen()) {
-          <section
-            id="wl-legend"
-            class="legend"
-            role="dialog"
-            aria-label="Legend and help"
-            data-legend
-            [mfDismissable]="legendBtn"
-            (dismissed)="legendOpen.set(false)"
-          >
-            <h3>What the states mean</h3>
-            <ul class="states" data-legend-states>
-              @for (st of states(); track st.key) {
-                <li [attr.data-state]="st.key">
-                  <span class="chipk" [class]="'chipk chipk--' + st.key"
-                    ><i class="pi" [class]="st.icon" aria-hidden="true"></i>{{ st.word }}</span
-                  >&ngsp;<span class="line">{{ st.line }}</span>
-                </li>
-              }
-            </ul>
-          </section>
-        }
-      </span>
-      <ng-content select="[mfBarEnd]" />
     </div>
   `,
   styles: `
@@ -176,10 +135,6 @@ import {
     }
     .grow {
       flex: 1;
-    }
-    /* Assign work and the unassigned link stay at the right end, also when they wrap to their own line. */
-    :host ::ng-deep [mfBarEnd] {
-      margin-left: auto;
     }
     .search {
       min-width: 10rem;
@@ -200,88 +155,6 @@ import {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-    }
-    .legend-wrap {
-      position: relative;
-      display: inline-block;
-    }
-    .legend {
-      position: absolute;
-      top: calc(100% + var(--mf-s1));
-      right: 0;
-      z-index: 40;
-      width: min(24rem, 90vw);
-      padding: var(--mf-s3);
-      background: var(--mf-surface);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
-      box-shadow: var(--mf-shadow-pop);
-    }
-    .legend h3 {
-      margin: 0 0 var(--mf-s2);
-      font-size: var(--mf-fs-md);
-    }
-    .states {
-      display: grid;
-      gap: var(--mf-s2);
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-    .states li {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
-    }
-    .chipk {
-      flex: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      box-sizing: border-box;
-      min-width: 8rem;
-      min-height: 28px;
-      padding: 0 var(--mf-s2);
-      color: var(--mf-text);
-      background: var(--mf-surface);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      font-size: var(--mf-fs-sm);
-      white-space: nowrap;
-    }
-    .chipk .pi {
-      font-size: var(--mf-icon-md);
-    }
-    .chipk--idle {
-      background: color-mix(in srgb, var(--mf-success-bg) 45%, var(--mf-surface));
-      border-color: var(--mf-success);
-    }
-    .chipk--light {
-      background: var(--mf-info-bg);
-    }
-    .chipk--normal {
-      background: color-mix(in srgb, var(--mf-info-bg) 55%, var(--mf-surface-alt));
-    }
-    .chipk--heavy {
-      background: var(--mf-danger-bg);
-      border-color: var(--mf-danger);
-    }
-    .chipk--heavy .pi {
-      color: var(--mf-danger);
-    }
-    .chipk--out {
-      color: var(--mf-warning);
-      background: var(--mf-warning-bg);
-    }
-    .line {
-      color: var(--mf-text);
-      font-size: var(--mf-fs-sm);
-    }
-    .toggle[aria-expanded='true'] {
-      background: var(--mf-selected-bg);
-      border-color: var(--mf-primary);
-      color: var(--mf-primary);
     }
     @media (max-width: 560px) {
       .search {
@@ -323,10 +196,7 @@ export class UsersToolbar {
   readonly sortChange = output<UserSort>();
   readonly layoutChange = output<Layout>();
 
-  protected readonly legendOpen = signal(false);
   protected readonly count = computed(() => filterCount(this.filters()));
-  /** The six states with their icon, chip and ONE line each; the load lines use the real thresholds. */
-  protected readonly states = computed(() => legendStates(this.thresholds()));
 
   protected num(value: string | null | undefined): number | null {
     if (value === null || value === undefined) return null;

@@ -19,7 +19,7 @@ export type TypePick = Pick<CoverageTarget, 'user' | 'type' | 'count'>;
 
 /**
  * The "By task type" orientation of Coverage (WP11, #134): one row per task type with the names of the people who completed at least one task of
- * it in the period (first 5, then "+N"), the number of people, the tasks completed and a status ("No one" neutral, "One person" amber with an
+ * it in the period (the first two, then "+N"; the count in front, the full list in the tooltip), the number of people, the tasks completed and a status ("No one" neutral, "One person" amber with an
  * icon). Names are plain text in alphabetical order, never by count, so nothing ranks people; the counts per person sit only in the row's
  * details, where each opens the tasks behind it in the Coverage drawer. A real table from 561 px, cards below. The "not handled" list is limited
  * to the page scope's pod (it asks to pick a pod when the scope is all pods).
@@ -123,9 +123,10 @@ export type TypePick = Pick<CoverageTarget, 'user' | 'type' | 'count'>;
               <th scope="col" class="tog-col"><span class="sr-only">Show people</span></th>
               <th scope="col" class="type-col">Task type</th>
               <th scope="col">Handled by</th>
-              <th scope="col" class="num">People</th>
               <th scope="col" class="num">Completed</th>
-              <th scope="col">Status</th>
+              @if (anyStatus()) {
+                <th scope="col">Status</th>
+              }
             </tr>
           </thead>
           <tbody>
@@ -162,26 +163,30 @@ export type TypePick = Pick<CoverageTarget, 'user' | 'type' | 'count'>;
                     }
                   </span>
                 </th>
-                <td class="names" data-names>
+                <td class="names">
                   @if (r.people.length) {
-                    {{ names(r) }}
+                    <span class="cnt" data-people>{{ r.people.length }}</span
+                    >&ngsp;<span data-names [attr.title]="allNames(r)">{{ names(r) }}</span>
                   } @else {
-                    <span class="muted">No one in this period</span>
+                    <span class="cnt" data-people>0</span>&ngsp;<span class="muted" data-names
+                      >No one in this period</span
+                    >
                   }
                 </td>
-                <td class="num" data-people>{{ r.people.length }}</td>
                 <td class="num" data-completed>{{ r.type.total }}</td>
-                <td>
-                  <ng-container
-                    [ngTemplateOutlet]="statusChip"
-                    [ngTemplateOutletContext]="{ $implicit: r.status }"
-                  />
-                </td>
+                @if (anyStatus()) {
+                  <td>
+                    <ng-container
+                      [ngTemplateOutlet]="statusChip"
+                      [ngTemplateOutletContext]="{ $implicit: r.status }"
+                    />
+                  </td>
+                }
               </tr>
               @if (isOpen(r)) {
                 <tr class="detail-row">
                   <td></td>
-                  <td colspan="5">
+                  <td [attr.colspan]="anyStatus() ? 4 : 3">
                     <ng-container
                       [ngTemplateOutlet]="detail"
                       [ngTemplateOutletContext]="{ row: r, id: 'ct-d-' + r.type.taskTypeId }"
@@ -313,6 +318,12 @@ export type TypePick = Pick<CoverageTarget, 'user' | 'type' | 'count'>;
     .names {
       max-width: 34rem;
       overflow-wrap: anywhere;
+    }
+    .cnt {
+      display: inline-block;
+      min-width: 1.5rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
     }
     .muted {
       color: var(--mf-text-muted);
@@ -496,6 +507,13 @@ export class CoverageTypes {
 
   protected showMore(): void {
     this.limit.update((n) => n + TYPE_ROWS);
+  }
+
+  /** A Status column only when some row has a status to show (a training gap: no one, or one person). */
+  protected readonly anyStatus = computed(() => this.visible().some((r) => r.status !== 'many'));
+
+  protected allNames(r: TypeRow): string {
+    return r.people.map((p) => p.displayName).join(', ');
   }
 
   protected names(r: TypeRow): string {

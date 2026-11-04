@@ -228,7 +228,7 @@ export interface TypeRow {
   more: number;
 }
 
-export const NAMES_SHOWN = 5;
+export const NAMES_SHOWN = 2;
 
 const typeByName = (a: CoverageTaskType, b: CoverageTaskType) =>
   byName(a.name, b.name) || a.taskTypeId - b.taskTypeId;
@@ -303,7 +303,7 @@ export function oneNoteText(names: readonly string[], max = 6): string {
   return `${plural(names.length, 'task type')} ${names.length === 1 ? 'was' : 'were'} handled by only one person in this period: ${shown}${rest}. Consider cross-training.`;
 }
 
-/** "Ana, Ben, +3 more" for the row; the full list sits in the details. */
+/** "Dana Whitfield, Lena Okoro +3" for the row (US-10); the full list is the tooltip and the row's details. */
 export function namesText(row: Pick<TypeRow, 'names' | 'more'>): string {
-  return row.names.join(', ') + (row.more > 0 ? `, +${row.more}` : '');
+  return row.names.join(', ') + (row.more > 0 ? ` +${row.more}` : '');
 }

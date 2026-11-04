@@ -164,9 +164,9 @@ describe('coverage model', () => {
         'Fay',
         'Zed',
       ]);
-      expect(row.names).toEqual(['Ann', 'Bea', 'Cat', 'Dan', 'Eve']);
-      expect(row.more).toBe(2);
-      expect(namesText(row)).toBe('Ann, Bea, Cat, Dan, Eve, +2');
+      expect(row.names).toEqual(['Ann', 'Bea']);
+      expect(row.more).toBe(5);
+      expect(namesText(row)).toBe('Ann, Bea +5');
     });
 
     it('counts per type equal the matrix counts', () => {

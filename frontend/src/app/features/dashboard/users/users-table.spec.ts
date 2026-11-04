@@ -27,9 +27,18 @@ describe('UsersTable', () => {
 
   it('has one Load element next to the person: the count, a bar split by priority, a tooltip and a full accessible text', () => {
     const el = root(render('load'));
-    expect(el.querySelectorAll('thead th').length).toBe(7);
+    expect(el.querySelectorAll('thead th').length).toBe(6);
     const heads = [...el.querySelectorAll('thead th')].map((th) => th.textContent?.trim());
-    expect(heads.slice(0, 3)).toEqual(['Person', 'Workload', 'Highest priority']);
+    expect(heads.slice(0, 5)).toEqual([
+      'Person',
+      'Workload',
+      'Highest priority',
+      'Overdue',
+      'Next due',
+    ]);
+    // No Availability column and no avatar (US-10).
+    expect(heads).not.toContain('Availability');
+    expect(el.querySelector('.avatar')).toBeNull();
     const cell = el.querySelector('[data-priority-counts]')!;
     expect(cell.querySelector('.cnt')!.textContent!.trim()).toBe('10');
     expect(cell.querySelector('.sr-only')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
@@ -59,6 +68,8 @@ describe('UsersTable', () => {
     ]);
     f.detectChanges();
     expect(el.querySelector('tbody .chip')!.textContent).toContain('Out of office');
+    // The chip sits beside the name, in the Person cell.
+    expect(el.querySelector('tbody th.person .chip')).not.toBeNull();
     expect(el.querySelector('tbody td.warn')!.textContent!.trim()).toBe('2');
     expect(el.querySelector('[data-assign-work]')!.textContent!.trim()).toBe('');
     expect(el.querySelector('[data-assign-work]')!.getAttribute('aria-label')).toBe(

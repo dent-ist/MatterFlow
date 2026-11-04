@@ -32,6 +32,7 @@ import { PeriodControl } from '../ui/period-control';
 import { DashSkeleton } from '../ui/dash-skeleton';
 import { DashState, focusAfterRetry } from '../ui/dash-state';
 import { SearchBox } from '../../../shared/ui/search-box';
+import { Tip } from '../../../shared/ui/tip';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { UsersFilterPopover } from './users-filter-popover';
 import { CoverageDrawer, CoverageTarget } from './coverage-drawer';
@@ -98,30 +99,12 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
     CoverageOrientation,
     Dropdown,
     UsersFilterPopover,
+    Tip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h3 class="head" id="cv-h" data-coverage-heading>
-      Task type coverage - use this to plan training and cross-coverage, not to rank people
-    </h3>
-    <p class="frame" data-coverage-frame>
-      <i class="pi pi-info-circle" aria-hidden="true"></i>
-      @if (orientation() === 'type') {
-        <span>
-          Each row lists the people who completed at least one task of that type
-          {{ phrase() }}, in alphabetical order. A task counts for the person it was assigned to
-          when it was completed. Cancelled tasks are not counted.
-        </span>
-      } @else {
-        <span>
-          Each cell is the number of tasks of that type the person completed {{ phrase() }}. A task
-          counts for the person it was assigned to when it was completed. Cancelled tasks are not
-          counted.
-        </span>
-      }
-    </p>
-
-    <div class="bar" role="toolbar" aria-label="Coverage controls">
+    <div class="bar" role="toolbar" aria-label="Coverage controls" data-coverage-toolbar>
+      <ng-content />
       <mf-coverage-orientation [value]="orientation()" (valueChange)="setOrientation($event)" />
       <mf-period-control [period]="period()" [longWindows]="true" />
       <mf-search-box
@@ -202,7 +185,27 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
         </button>
       }
       <span class="grow"></span>
+      <button
+        type="button"
+        class="mf-btn mf-btn--icon info"
+        data-coverage-help
+        aria-label="How to read this view"
+        [mfTip]="help()"
+      >
+        <i class="pi pi-info-circle" aria-hidden="true"></i>
+      </button>
     </div>
+
+    <h3 class="head" id="cv-h" data-coverage-heading>
+      Task type coverage - use this to plan training and cross-coverage, not to rank people
+    </h3>
+    <p class="frame" data-coverage-frame>
+      @if (orientation() === 'type') {
+        <span>People who completed tasks of each type {{ phrase() }}.</span>
+      } @else {
+        <span>Tasks each person completed per type {{ phrase() }}.</span>
+      }
+    </p>
 
     <p class="sr-only" role="status" aria-live="polite" data-coverage-live>{{ live() }}</p>
 
@@ -513,6 +516,9 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
       display: flex;
       gap: var(--mf-s2);
       margin: 0 0 var(--mf-s3);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
@@ -530,6 +536,10 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
     .grow {
       flex: 1;
     }
+    .info:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: 1px;
+    }
     .search {
       min-width: 14rem;
       flex: 0 1 16rem;
@@ -539,12 +549,6 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
       border-color: var(--mf-primary);
       color: var(--mf-primary);
       font-weight: 600;
-    }
-    /* The search input is as tall as the other (compact) controls on the line. */
-    .search ::ng-deep .sb__input {
-      min-height: var(--mf-row-h-compact);
-      height: var(--mf-row-h-compact);
-      padding-block: 0;
     }
     .sr-only {
       position: absolute;
@@ -942,6 +946,12 @@ export class CoverageView implements OnInit {
     return value !== '' && Number.isInteger(n) && n > 0 ? n : null;
   }
 
+  /** The rest of the explanation (it was a paragraph under the title): the info icon's tooltip. */
+  protected readonly help = computed(() =>
+    this.orientation() === 'type'
+      ? `Each row lists the people who completed at least one task of that type ${this.phrase()}, in alphabetical order. A task counts for the person it was assigned to when it was completed. Cancelled tasks are not counted.`
+      : `Each cell is the number of tasks of that type the person completed ${this.phrase()}. A task counts for the person it was assigned to when it was completed. Cancelled tasks are not counted.`,
+  );
   protected readonly rowOrderItems: DropdownItem[] = TYPE_ROW_ORDERS.map((o) => ({
     value: o,
     label: TYPE_ROW_ORDER_LABELS[o],

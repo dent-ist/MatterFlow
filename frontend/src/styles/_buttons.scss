@@ -146,7 +146,7 @@
 /*
  * One segmented toggle (epic #893, issue #919): a group of two to four buttons that are alternatives of ONE thing (the scope, a range, a view). Put
  * `mfSegmented` on the group element (shared/ui/segmented.ts) and `class="mf-btn"` with `[attr.aria-pressed]` on its buttons. Same height as every
- * control (32 px, 44 px on a phone and on touch), the pressed button is filled, bold and carries a check mark, so the state is never colour alone.
+ * control (32 px, 44 px on a phone and on touch), the pressed button is a solid blue fill with white text and bold (no check mark since US-10, #1101: the inverted fill is the signal, so the state is never colour alone).
  */
 .mf-seg {
   display: inline-flex;
@@ -175,13 +175,15 @@
   position: relative;
   z-index: 1;
   border-color: var(--mf-primary);
-  background: var(--mf-selected-bg);
+  background: var(--mf-primary);
+  color: var(--mf-primary-contrast);
   font-weight: 700;
 }
 
-.mf-seg > .mf-btn[aria-pressed='true']::before {
-  content: '\2713';
-  font-weight: 700;
+.mf-seg > .mf-btn[aria-pressed='true']:hover:not(:disabled, [aria-disabled='true']) {
+  border-color: var(--mf-primary-hover);
+  background: var(--mf-primary-hover);
+  color: var(--mf-primary-contrast);
 }
 
 .mf-seg > .mf-btn:focus-visible {

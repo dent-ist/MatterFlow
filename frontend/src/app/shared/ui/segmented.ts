@@ -2,8 +2,8 @@ import { Directive, ElementRef, OnDestroy, afterNextRender, inject } from '@angu
 
 /**
  * The one segmented toggle of the app (epic #893, issue #919): `mfSegmented` on the element that holds two to four buttons which are alternatives of one
- * thing (the scope, a range, a way to look at a list). The look is the global `.mf-seg` (same height as every control, the pressed button filled, bold and
- * ticked, never colour alone); this directive adds what a group of toggle buttons needs from the keyboard and a screen reader:
+ * thing (the scope, a range, a way to look at a list). The look is the global `.mf-seg` (same height as every control, the pressed button a solid blue fill, white and
+ * bold, never colour alone); this directive adds what a group of toggle buttons needs from the keyboard and a screen reader:
  *
  * - the group is named (`aria-label` on the element, set by the template), every button says whether it is pressed (`aria-pressed`);
  * - ONE Tab stop: only the pressed button is in the Tab order (the others have `tabindex="-1"`), so Tab goes into the group and out of it;

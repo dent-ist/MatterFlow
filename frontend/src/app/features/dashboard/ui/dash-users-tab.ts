@@ -124,25 +124,13 @@ export const USERS_PAGE = 200;
         (layoutChange)="setLayout($event)"
       >
         <mf-users-views [view]="view()" [coverage]="canCoverage()" (viewChange)="setView($event)" />
-        <mf-users-capacity
-          mfBarEnd
-          [users]="board()?.users ?? []"
-          [summary]="board()?.summary ?? null"
-          [filters]="filters()"
-          [thresholds]="board()?.thresholds ?? null"
-          [canAssign]="canAssign()"
-          (loadToggle)="toggleLoad($event)"
-          (showCanTake)="showCanTakeWork()"
-        />
       </mf-users-toolbar>
-    } @else if (view() === 'coverage') {
-      <div class="views-row">
-        <mf-users-views [view]="view()" [coverage]="canCoverage()" (viewChange)="setView($event)" />
-      </div>
     }
 
     @if (view() === 'coverage') {
-      <mf-coverage-view [filters]="filters()" (filtersChange)="patchFilters($event)" />
+      <mf-coverage-view [filters]="filters()" (filtersChange)="patchFilters($event)">
+        <mf-users-views [view]="view()" [coverage]="canCoverage()" (viewChange)="setView($event)" />
+      </mf-coverage-view>
     } @else if (view() === 'skills') {
       <mf-skills-view (open)="openSkillsPerson($event)">
         <mf-users-views [view]="view()" [coverage]="canCoverage()" (viewChange)="setView($event)" />
@@ -160,7 +148,18 @@ export const USERS_PAGE = 200;
           (populationToggle)="toggleNoPod()"
           (loadToggle)="toggleLoad($event)"
           (availabilityToggle)="toggleAvailability($event)"
-        />
+        >
+          <mf-users-capacity
+            mfBarEnd
+            [users]="board()?.users ?? []"
+            [summary]="board()?.summary ?? null"
+            [filters]="filters()"
+            [thresholds]="board()?.thresholds ?? null"
+            [canAssign]="canAssign()"
+            (loadToggle)="toggleLoad($event)"
+            (showCanTake)="showCanTakeWork()"
+          />
+        </mf-users-summary>
       }
 
       <p class="sr-only" role="status" aria-live="polite" data-users-live>{{ live() }}</p>
@@ -298,12 +297,6 @@ export const USERS_PAGE = 200;
     }
     .body ::ng-deep .wrap {
       overflow: visible;
-    }
-    .views-row {
-      display: flex;
-      align-items: flex-end;
-      gap: var(--mf-s2);
-      margin-bottom: var(--mf-s2);
     }
     .mf-btn:focus-visible {
       outline: 2px solid var(--mf-focus);

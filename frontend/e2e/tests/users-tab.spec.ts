@@ -479,7 +479,7 @@ test.describe('Users tab: workload', () => {
       await expect(table).toBeVisible();
       const fits = await table.evaluate((t) => t.scrollWidth <= t.parentElement!.clientWidth);
       expect(fits, `${width}px`).toBe(true);
-      await expect(page.locator('[data-sort-key="availability"]')).toBeInViewport();
+      await expect(page.locator('[data-sort-key="name"]')).toBeInViewport();
       await expect(page.locator('[data-assign-work]').first()).toBeInViewport();
       await page.getByRole('button', { name: 'Cards' }).click();
     }
@@ -656,7 +656,7 @@ test.describe('Users tab: workload', () => {
 
   test('the legend is six states with one line each and the real thresholds', async ({ page }) => {
     await openUsers(page);
-    await page.getByRole('button', { name: 'Legend and help' }).click();
+    await page.locator('[data-who-counted]').click();
     const legend = page.locator('[data-legend]');
     await expect(legend.locator('[data-legend-states] li')).toHaveCount(6);
     await expect(legend).toContainText('1 to 3 open tasks');
@@ -707,7 +707,7 @@ test.describe('Users tab: workload', () => {
       await page.getByRole('button', { name: 'Cards' }).click();
       expect(await axeViolations(page), `cards ${width}`).toEqual([]);
       if (width === 1366) {
-        await page.getByRole('button', { name: 'Legend and help' }).click();
+        await page.locator('[data-who-counted]').click();
         expect(await axeViolations(page), 'legend').toEqual([]);
         await page.keyboard.press('Escape');
       }

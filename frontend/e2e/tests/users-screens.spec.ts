@@ -139,9 +139,9 @@ test.describe('users screenshots', () => {
     await expect(page.locator('[data-users-table]')).toBeVisible();
     await shot('04-table-1366');
     await page.getByRole('button', { name: 'Cards' }).click();
-    await page.getByRole('button', { name: 'Legend and help' }).click();
+    await page.locator('[data-who-counted]').click();
     await shot('05-legend-1366');
-    await page.getByRole('button', { name: 'Legend and help' }).click();
+    await page.locator('[data-who-counted]').click();
 
     await page
       .locator(`[data-user-card][data-state="busy"][data-load="HEAVY"] [data-user-open]`)
