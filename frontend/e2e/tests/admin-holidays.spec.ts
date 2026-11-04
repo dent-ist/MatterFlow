@@ -108,6 +108,31 @@ test.describe('Settings > Holidays', () => {
     await expect(page.locator('[data-next-holidays]')).toBeVisible();
   });
 
+  test('the capacity checkbox (count people outside work hours) is on by default, saves and resets', async ({
+    page,
+  }) => {
+    await page.goto('/admin/settings');
+    await page.getByRole('tab', { name: 'Dashboard' }).click();
+    const form = page.locator('[data-capacity-settings]');
+    const box = form.locator('[data-count-off-hours]');
+    await expect(box).toBeVisible();
+    await expect(box).toBeChecked();
+    await box.uncheck();
+    await form.locator('p-button[data-capacity-save] button').click();
+    await expect(
+      page.getByText('Saved. The capacity battery uses the new rule').first(),
+    ).toBeVisible();
+    await page.reload();
+    await page.getByRole('tab', { name: 'Dashboard' }).click();
+    await expect(box).not.toBeChecked();
+    await box.check();
+    await form.locator('p-button[data-capacity-save] button').click();
+    await expect(
+      page.getByText('Saved. The capacity battery uses the new rule').first(),
+    ).toBeVisible();
+    await expect(box).toBeChecked();
+  });
+
   test('the thresholds save, validate and reset to the defaults', async ({ page }) => {
     await page.goto('/admin/settings');
     await page.getByRole('tab', { name: 'Dashboard' }).click();

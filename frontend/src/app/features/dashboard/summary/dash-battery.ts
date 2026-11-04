@@ -21,8 +21,8 @@ type BatteryState = 'loading' | 'ready' | 'error';
 
 /**
  * The department capacity battery (epic #1063, DB-05): ONE indicator for everyone who takes work in the scope. The charge is the FREE capacity, the percentage REMAINING sits inside the battery next to a bolt,
- * a summary line says "8 of 12 can take work now", a compact legend counts people per state (icon and words, never colour alone), an info button explains the formula, and the People
- * button opens the list of names. After hours or when nobody can take work the API sends no percentage and the battery shows a neutral "After hours" state instead of 100 percent used.
+ * a summary line says "9 unassigned waiting, 12 free slots" (the waiting part selects the Unassigned card; it is hidden when the caller may not see unassigned counts), "N tasks over capacity" in red only above zero, a compact legend counts people per state (icon and words, never colour alone), an info button explains the formula, and the People
+ * button opens the list of names. People who are only outside their work hours count by default (decision AV), so the battery shows a percentage in the evening; the neutral words are only Everyone out, Holiday, No workers and, when the setting is off, After hours.
  * It reads `GET /dashboard/capacity` for the page scope and again whenever `refreshKey` changes (the page refreshes, or a task was assigned); the People list is read when the popover opens.
  * Shown only with Dashboard.ViewUsers (the page decides).
  */
@@ -138,7 +138,25 @@ type BatteryState = 'loading' | 'ready' | 'error';
                 </div>
                 <div class="cap"></div>
               </div>
-              <p class="sum" data-battery-summary>{{ v.summaryLine }}</p>
+              <p class="sum" data-battery-summary>
+                @if (v.waiting !== null) {
+                  <button
+                    type="button"
+                    class="wait"
+                    data-battery-waiting
+                    aria-label="{{ v.waiting }} unassigned waiting. Show them"
+                    (click)="showUnassigned.emit()"
+                  >
+                    {{ v.waiting }} unassigned waiting</button
+                  >,
+                }
+                {{ v.freeText }}
+              </p>
+              @if (v.overText; as over) {
+                <p class="over" data-battery-over>
+                  <i class="pi pi-exclamation-circle" aria-hidden="true"></i>{{ over }}
+                </p>
+              }
               <ul class="legend" aria-label="People by state" data-battery-legend>
                 @for (l of v.legend; track l.state) {
                   <li class="lg" [attr.data-state]="l.state">
@@ -302,6 +320,30 @@ type BatteryState = 'loading' | 'ready' | 'error';
       margin: var(--mf-s2) 0 0;
       font-size: 13px;
     }
+    .wait {
+      padding: 0;
+      color: var(--mf-link);
+      background: none;
+      border: 0;
+      font: inherit;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      cursor: pointer;
+    }
+    .wait:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: 2px;
+    }
+    /* Tasks above the slot count: red text and icon, shown only above zero, so slack elsewhere never hides an overload. */
+    .over {
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s1);
+      margin: var(--mf-s1) 0 0;
+      color: var(--mf-danger);
+      font-size: 13px;
+      font-weight: 600;
+    }
     .legend {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -444,6 +486,8 @@ export class DashBattery {
   readonly refreshKey = input<unknown>(null);
   /** The last good read, for the page's "updated" text. */
   readonly loaded = output<DashboardCapacity>();
+  /** The "N unassigned waiting" part of the summary line was pressed: the page selects the Unassigned card. */
+  readonly showUnassigned = output<void>();
 
   protected readonly icons = WORD_ICON;
   protected readonly state = signal<BatteryState>('loading');

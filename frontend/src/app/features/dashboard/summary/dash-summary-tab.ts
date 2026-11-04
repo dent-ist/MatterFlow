@@ -48,7 +48,11 @@ import { DashV4Api } from './dash-v4-api';
       @if (showRight()) {
         <div class="rcol" data-dash-rcol>
           @if (canUsers()) {
-            <mf-dash-battery [scope]="scope()" [refreshKey]="refreshKey()" />
+            <mf-dash-battery
+              [scope]="scope()"
+              [refreshKey]="refreshKey()"
+              (showUnassigned)="showUnassigned()"
+            />
           }
           @if (gauge(); as g) {
             <mf-dash-gauge [gauge]="g" (show)="showUnassigned()" />

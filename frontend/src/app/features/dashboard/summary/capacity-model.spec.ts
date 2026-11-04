@@ -31,9 +31,35 @@ describe('batteryView', () => {
     ]);
   });
 
-  it('reads 8 of 12 can take work now with four people out or off', () => {
-    const v = batteryView(summary);
-    expect(v.summaryLine).toBe('8 of 12 can take work now');
+  it('says the unassigned waiting and the free slots in one line, and hides the waiting part when the caller may not see it', () => {
+    const v = batteryView(capacityOf(people, 3, { unassignedWaiting: 9 }));
+    expect(v.waiting).toBe(9);
+    expect(v.summaryLine).toBe(`9 unassigned waiting, ${summary.freeSlots} free slots`);
+    expect(v.freeText).toBe(`${summary.freeSlots} free slots`);
+    const hidden = batteryView(summary);
+    expect(hidden.waiting).toBeNull();
+    expect(hidden.summaryLine).toBe(`${summary.freeSlots} free slots`);
+    expect(batteryView({ ...summary, freeSlots: 1 }).freeText).toBe('1 free slot');
+  });
+
+  it('counts people outside work hours (decision AV): 10 of 12 are counted, so the off hours person adds free slots', () => {
+    expect(summary.presentWorkers).toBe(10);
+    expect(summary.totalSlots).toBe(30);
+    const off = capacityOf(people, 3, { countOffHours: false });
+    expect(off.presentWorkers).toBe(9);
+    expect(summary.freeSlots).toBe(off.freeSlots + 3);
+  });
+
+  it('shows N tasks over capacity only above zero, with the singular for one', () => {
+    const o = summary.overCapacityTasks;
+    expect(batteryView(summary).overText).toBe(
+      o ? `${o} ${o === 1 ? 'task' : 'tasks'} over capacity` : null,
+    );
+    expect(batteryView({ ...summary, overCapacityTasks: 0 }).overText).toBeNull();
+    expect(batteryView({ ...summary, overCapacityTasks: 4 }).overText).toBe(
+      '4 tasks over capacity',
+    );
+    expect(batteryView({ ...summary, overCapacityTasks: 1 }).overText).toBe('1 task over capacity');
   });
 
   it('has a legend of all six states whose counts add up to the workers', () => {
@@ -44,21 +70,41 @@ describe('batteryView', () => {
       'Busy',
       'Overloaded',
       'Out of office',
-      'Off hours',
+      'Outside work hours, still counted',
     ]);
+    // With the setting off the word is the plain one.
+    expect(batteryView(capacityOf(people, 3, { countOffHours: false })).legend.at(-1)!.label).toBe(
+      'Off hours',
+    );
     expect(v.legend.reduce((n, l) => n + l.count, 0)).toBe(12);
     expect(v.legend.map((l) => l.count)).toEqual([3, 3, 2, 1, 2, 1]);
     expect(v.legend.every((l) => l.icon.startsWith('pi-'))).toBe(true);
   });
 
-  it('shows a neutral After hours state, never 100% used, when the API sends usedPercent null', () => {
+  it('shows no After hours in normal use: everybody outside work hours still counts and the battery shows a percentage', () => {
+    const evening = somePeople(6).map((p) => ({ ...p, state: 'OFF_HOURS' as const, load: 1 }));
+    const v = batteryView(capacityOf(evening, 0));
+    expect(v.mode).toBe('normal');
+    expect(v.bigText).toBe('67%');
+    expect(v.legend.at(-1)!.count).toBe(6);
+  });
+
+  it('says Holiday, neutral, when the server says nobody counts because of a holiday', () => {
     const v = batteryView({
       ...summary,
-      state: 'AFTER_HOURS',
+      state: 'HOLIDAY',
       usedPercent: undefined,
       freePercent: undefined,
-      canTakeWork: 0,
     });
+    expect(v.mode).toBe('holiday');
+    expect(v.bigText).toBe('Holiday');
+  });
+
+  it('shows a neutral After hours state, never 100% used, only when the setting is off and nobody is at work', () => {
+    const evening = somePeople(6).map((p) => ({ ...p, state: 'OFF_HOURS' as const }));
+    const raw = capacityOf(evening, 0, { countOffHours: false });
+    expect(raw.state).toBe('AFTER_HOURS');
+    const v = batteryView(raw);
     expect(v.mode).toBe('after-hours');
     expect(v.bigText).toBe('After hours');
     expect(v.level).toBeNull();
@@ -104,7 +150,9 @@ describe('batteryView', () => {
   });
 
   it('takes the slots per person into the formula', () => {
-    expect(formulaText(3)).toContain('(3 x people who are at work now)');
+    expect(formulaText(3)).toContain('(3 x people who are at work)');
+    expect(formulaText(3)).toContain('outside their work hours are counted');
+    expect(formulaText(3, false)).toContain('After hours');
     expect(formulaText(4)).toContain('fewer than 4 open tasks');
     expect(formulaText(3)).toContain('On hold tasks do not count.');
   });

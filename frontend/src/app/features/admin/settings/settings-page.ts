@@ -23,6 +23,7 @@ import { PageHeader } from '../../../shared/ui/page-header';
 import { Tabs, MfTab } from '../../../shared/ui/tabs';
 import { tabIcon } from '../../../shared/ui/tab-icons';
 import { TextField } from '../../../shared/ui/text-field';
+import { DashboardCapacitySettings } from './dashboard-capacity-settings';
 import { DashboardSettings } from './dashboard-settings';
 import { CalendarThresholdsForm } from '../holidays/thresholds-form';
 import { HolidaysAdmin } from '../holidays/holidays-admin';
@@ -74,6 +75,7 @@ export function brandingOf(view: BrandingAdminView): Branding {
     Button,
     CalendarThresholdsForm,
     DashboardSettings,
+    DashboardCapacitySettings,
     ErrorReference,
     HolidaysAdmin,
     MfDatePipe,
@@ -107,6 +109,7 @@ export function brandingOf(view: BrandingAdminView): Branding {
       @if (tab() === 'dashboard') {
         <!-- Dashboard v4 (epic #1063, DB-06): the working hours and levels of the unassigned gauge. -->
         <mf-dashboard-settings />
+        <mf-dashboard-capacity-settings />
         <mf-calendar-thresholds />
       } @else if (tab() === 'holidays') {
         <mf-holidays-admin />

@@ -9,20 +9,28 @@ import { CapacityPerson, DashboardCapacity } from '../../../api/generated/api-cl
 
 export { STATE_META };
 
-/** The formula, in the words of the issue; the slots per person comes from the response. Out of office and off hours people are left out of the people counted. */
-export function formulaText(slotsPerPerson: number): string {
+/**
+ * The formula, in the words of the issue; the slots per person comes from the response. People who are out of office or on holiday are left out; people only outside their work
+ * hours count while the setting "Count people outside work hours as available" is on (decision AV, the default).
+ */
+export function formulaText(slotsPerPerson: number, countOffHours = true): string {
   return (
-    `Remaining capacity = free slots / (${slotsPerPerson} x people who are at work now). ` +
+    `Remaining capacity = free slots / (${slotsPerPerson} x people who are at work). ` +
     `A slot is free when the person has fewer than ${slotsPerPerson} open tasks. ` +
-    'On hold tasks do not count. People who are out of office or outside their work hours have no free slots and are not counted.'
+    'On hold tasks do not count. People who are out of office or on holiday are not counted. ' +
+    (countOffHours
+      ? 'People who are only outside their work hours are counted as available.'
+      : 'People outside their work hours are not counted, so the battery says After hours when nobody is at work.')
   );
 }
 
 export type BatteryMode =
   /** Normal: a percentage. */
   | 'normal'
-  /** Nobody can take work right now because it is outside working hours (owner decision: neutral "After hours", never 100 % used). */
+  /** Nobody counts because it is outside working hours AND the setting leaves off-hours people out (neutral "After hours", never 100 % used). */
   | 'after-hours'
+  /** Nobody counts because everybody unavailable is on a holiday. */
+  | 'holiday'
   /** Everybody in the scope is out of office. */
   | 'all-out'
   /** No worker in this scope. */
@@ -48,8 +56,16 @@ export interface BatteryView {
   level: number | null;
   /** `Remaining capacity 62%`: the tooltip's first line (the state word in the neutral states). */
   tooltip: string;
-  /** `8 of 12 can take work now`. */
+  /** `9 unassigned waiting, 12 free slots` (without the waiting part when the caller may not see it). */
   summaryLine: string;
+  /** Open unassigned tasks in scope, or null when the caller may not see the count: the waiting part of the line is hidden. */
+  waiting: number | null;
+  /** The free slots part of the line. */
+  freeText: string;
+  /** Tasks above the slot count of the people who count; the red line shows only when above 0. */
+  overCapacity: number;
+  /** `3 tasks over capacity`, or null at 0. */
+  overText: string | null;
   /** Healthy (50% and more), Watch (30 to 49), Low (10 to 29), Critical (under 10), or null when there is no percentage. */
   word: CapacityWord | null;
   rateHint: string | null;
@@ -99,18 +115,32 @@ export function rateHintText(assignedLastHour: number | null | undefined): strin
     : `${assignedLastHour} assigned in the last hour`;
 }
 
+const plural = (n: number, one: string, many = one + 's'): string => `${n} ${n === 1 ? one : many}`;
+
 /** Everything the battery shows, from the server's numbers (nothing is recomputed here: the big number is the API's). */
 export function batteryView(c: DashboardCapacity): BatteryView {
   const counts = new Map<string, number>(c.states.map((s) => [s.state, s.count]));
   const legend: LegendItem[] = CAPACITY_STATES.map((state) => ({
     state,
     ...STATE_META[state],
+    // The Off hours count stays as information: with the setting on those people are still counted.
+    label:
+      state === 'OFF_HOURS' && c.countOffHours
+        ? 'Outside work hours, still counted'
+        : STATE_META[state].label,
     count: counts.get(state) ?? 0,
   }));
-  const formula = formulaText(c.slotsPerPerson);
+  const formula = formulaText(c.slotsPerPerson, c.countOffHours);
   const rateHint = rateHintText(c.assignedLastHour);
+  const over = c.overCapacityTasks ?? 0;
+  const overText = over > 0 ? `${plural(over, 'task')} over capacity` : null;
+  const waiting = c.unassignedWaiting ?? null;
+  const freeText = plural(c.freeSlots, 'free slot');
+  const summaryLine = waiting === null ? freeText : `${waiting} unassigned waiting, ${freeText}`;
+  const common = { waiting, freeText, overCapacity: over, overText, rateHint, legend, formula };
   if (c.state === 'NO_WORKERS' || c.workers === 0) {
     return {
+      ...common,
       mode: 'empty',
       charge: 0,
       bigText: 'No workers',
@@ -119,44 +149,49 @@ export function batteryView(c: DashboardCapacity): BatteryView {
       summaryLine: 'No one in this scope takes work yet.',
       word: null,
       rateHint: null,
-      legend,
-      formula,
       ariaLabel: 'Remaining capacity. No one in this scope takes work yet.',
     };
   }
-  const summaryLine = `${c.canTakeWork} of ${c.workers} can take work now`;
+  const neutral = (
+    mode: BatteryMode,
+    bigText: string,
+    tooltip: string,
+    spoken: string,
+  ): BatteryView => ({
+    ...common,
+    mode,
+    charge: 0,
+    bigText,
+    level: null,
+    tooltip,
+    summaryLine,
+    word: null,
+    ariaLabel: `Remaining capacity. ${spoken}. ${summaryLine}.`,
+  });
   if (c.state === 'ALL_OUT') {
-    return {
-      mode: 'all-out',
-      charge: 0,
-      bigText: 'Everyone out',
-      level: null,
-      tooltip: 'Everyone is out of office',
-      summaryLine,
-      word: null,
-      rateHint,
-      legend,
-      formula,
-      ariaLabel: `Remaining capacity. Everyone is out of office. ${summaryLine}.`,
-    };
+    return neutral(
+      'all-out',
+      'Everyone out',
+      'Everyone is out of office',
+      'Everyone is out of office',
+    );
   }
-  if (c.state === 'AFTER_HOURS' || c.usedPercent === null || c.usedPercent === undefined) {
-    return {
-      mode: 'after-hours',
-      charge: 0,
-      bigText: 'After hours',
-      level: null,
-      tooltip: 'After hours',
-      summaryLine: `${summaryLine}. Nobody is taking new work right now.`,
-      word: null,
-      rateHint,
-      legend,
-      formula,
-      ariaLabel: `Remaining capacity. After hours. ${summaryLine}.`,
-    };
+  if (c.state === 'HOLIDAY') {
+    return neutral(
+      'holiday',
+      'Holiday',
+      'Holiday: nobody is at work',
+      'Holiday, nobody is at work',
+    );
   }
-  const free = c.freePercent ?? 100 - (c.usedPercent as number);
+  if (c.state === 'AFTER_HOURS') {
+    return neutral('after-hours', 'After hours', 'After hours', 'After hours');
+  }
+  const free =
+    c.freePercent ??
+    (c.usedPercent === null || c.usedPercent === undefined ? 0 : 100 - c.usedPercent);
   return {
+    ...common,
     mode: 'normal',
     charge: Math.max(0, Math.min(100, free)),
     bigText: `${free}%`,
@@ -164,10 +199,7 @@ export function batteryView(c: DashboardCapacity): BatteryView {
     tooltip: `Remaining capacity ${free}%`,
     summaryLine,
     word: freeWord(free),
-    rateHint,
-    legend,
-    formula,
-    ariaLabel: `Remaining capacity ${free} percent. ${summaryLine}. ${freeWord(free)}.`,
+    ariaLabel: `Remaining capacity ${free} percent. ${summaryLine}.${overText ? ' ' + overText + '.' : ''} ${freeWord(free)}.`,
   };
 }
 

@@ -54,23 +54,37 @@ export function somePeople(count = 12): CapacityPerson[] {
   });
 }
 
-/** What the capacity endpoint answers for these people (the server's rules: people out or off hours are not in the denominator). */
+export interface CapacityOptions {
+  /** Decision AV: people only outside work hours count as available (default true). */
+  countOffHours?: boolean;
+  /** Open unassigned tasks in scope; undefined: the caller may not see the count. */
+  unassignedWaiting?: number;
+}
+
+/**
+ * What the capacity endpoint answers for these people (the server's rules, decision AV): people out of office are left out; people only outside their work hours count (3 slots each,
+ * free = slots minus load) unless the setting is off; tasks above the slot count are the over-capacity tasks. `OFF_HOURS` keeps its count in `states`.
+ */
 export function capacityOf(
   people: readonly CapacityPerson[],
   assignedLastHour = 3,
+  options: CapacityOptions = {},
 ): DashboardCapacity {
+  const countOffHours = options.countOffHours ?? true;
   const slotsPerPerson = 3;
-  const away = (p: CapacityPerson) => p.state === 'OUT_OF_OFFICE' || p.state === 'OFF_HOURS';
-  const present = people.filter((p) => !away(p));
+  const counts = (p: CapacityPerson) =>
+    p.state !== 'OUT_OF_OFFICE' && (countOffHours || p.state !== 'OFF_HOURS');
+  const present = people.filter(counts);
   const total = slotsPerPerson * present.length;
   const free = present.reduce((n, p) => n + Math.max(0, slotsPerPerson - p.load), 0);
+  const over = present.reduce((n, p) => n + Math.max(0, p.load - slotsPerPerson), 0);
   const canTakeWork = present.filter((p) => p.load < slotsPerPerson).length;
   const state =
     people.length === 0
       ? 'NO_WORKERS'
       : present.length > 0
         ? 'OK'
-        : people.some((p) => p.state === 'OFF_HOURS')
+        : !countOffHours && people.some((p) => p.state === 'OFF_HOURS')
           ? 'AFTER_HOURS'
           : 'ALL_OUT';
   return {
@@ -89,9 +103,8 @@ export function capacityOf(
       count: people.filter((p) => p.state === s).length,
     })),
     assignedLastHour: people.length === 0 ? 0 : assignedLastHour,
-    // Decision AV fields; this builder keeps the old rule (off hours left out), so the setting reads as off.
-    countOffHours: false,
-    overCapacityTasks: 0,
-    unassignedWaiting: undefined,
+    countOffHours,
+    overCapacityTasks: over,
+    unassignedWaiting: options.unassignedWaiting,
   };
 }

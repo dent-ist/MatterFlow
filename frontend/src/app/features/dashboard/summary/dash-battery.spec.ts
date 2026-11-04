@@ -37,7 +37,7 @@ describe('DashBattery (DB-05)', () => {
     fixture.detectChanges();
   }
 
-  it('shows the remaining percentage inside the battery with the API number, 8 of 12 can take work now, and a legend that adds up to 12', () => {
+  it('shows the remaining percentage inside the battery with the API number, the free slots, and a legend that adds up to 12', () => {
     const summary = capacityOf(somePeople(12), 3);
     create(summary);
     expect(text('[data-battery-big]')).toBe(`${summary.freePercent}%`);
@@ -46,7 +46,8 @@ describe('DashBattery (DB-05)', () => {
     );
     expect(el().textContent).not.toContain('Capacity used');
     expect(text('[data-battery-word]')).toMatch(/Healthy|Watch|Low|Critical/);
-    expect(text('[data-battery-summary]')).toBe('8 of 12 can take work now');
+    expect(text('[data-battery-summary]')).toBe(`${summary.freeSlots} free slots`);
+    expect(el().querySelector('[data-battery-waiting]')).toBeNull();
     const counts = Array.from(el().querySelectorAll('[data-battery-legend] li b')).map((b) =>
       Number(b.textContent),
     );
@@ -74,15 +75,40 @@ describe('DashBattery (DB-05)', () => {
     expect(el().querySelector('[data-battery-rate]')).toBeNull();
   });
 
-  it('shows a neutral After hours state when the API sends no percentage', () => {
-    create({
-      ...capacityOf(somePeople(12)),
-      state: 'AFTER_HOURS',
-      usedPercent: undefined,
-      canTakeWork: 0,
-    });
+  it('shows a neutral After hours state only when the setting is off and nobody is at work', () => {
+    const evening = somePeople(6).map((p) => ({ ...p, state: 'OFF_HOURS' as const }));
+    create(capacityOf(evening, 0, { countOffHours: false }));
     expect(text('[data-battery-big]')).toBe('After hours');
     expect(el().textContent).not.toContain('100%');
+  });
+
+  it('shows a percentage, not After hours, in the evening when everybody off hours is counted', () => {
+    const evening = somePeople(6).map((p) => ({ ...p, state: 'OFF_HOURS' as const, load: 1 }));
+    create(capacityOf(evening, 0));
+    expect(text('[data-battery-big]')).toBe('67%');
+    expect(el().textContent).not.toContain('After hours');
+    expect(text('[data-battery-legend] li[data-state="OFF_HOURS"]')).toContain(
+      'Outside work hours, still counted',
+    );
+  });
+
+  it('says the unassigned waiting as a button that selects the Unassigned card, and N tasks over capacity in red only above zero', () => {
+    create({ ...capacityOf(somePeople(12), 3, { unassignedWaiting: 9 }), overCapacityTasks: 3 });
+    const waiting = el().querySelector<HTMLButtonElement>('[data-battery-waiting]')!;
+    expect(waiting.textContent!.trim()).toBe('9 unassigned waiting');
+    expect(text('[data-battery-summary]')!.replace(/\s+/g, ' ')).toMatch(
+      /^9 unassigned waiting, \d+ free slots$/,
+    );
+    let shown = 0;
+    fixture.componentInstance.showUnassigned.subscribe(() => shown++);
+    waiting.click();
+    expect(shown).toBe(1);
+    expect(text('[data-battery-over]')).toBe('3 tasks over capacity');
+  });
+
+  it('shows no over capacity line at zero', () => {
+    create({ ...capacityOf(somePeople(12), 3), overCapacityTasks: 0 });
+    expect(el().querySelector('[data-battery-over]')).toBeNull();
   });
 
   it('shows the empty state for no workers, without the People button', () => {
