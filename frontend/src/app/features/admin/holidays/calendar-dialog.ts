@@ -29,7 +29,7 @@ const label = (key: string): string => key.charAt(0).toUpperCase() + key.slice(1
   styleUrl: '../../dashboard/calendar/calendar-coverage.scss',
   template: `
     <mf-form-dialog
-      [title]="calendar() ? 'Edit holiday calendar' : 'New holiday calendar'"
+      [title]="calendar() ? 'Edit Holiday Calendar' : 'New Holiday Calendar'"
       subtitle="The category name people see on the calendar"
       [primaryLabel]="calendar() ? 'Save' : 'Create'"
       size="small"

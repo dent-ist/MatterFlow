@@ -285,7 +285,7 @@ One helper owns it: `frontend/src/app/shared/ui/numeric-date.ts` (constant `NUME
 Rules of the dialog:
 
 - Header (56 px): title 16 px / 600 in Title Case ("New Project"; the verb and the thing), an optional quiet 13 px subtitle (for example the CM number) and the 36 x 36 close icon button. Body (16 px padding) scrolls inside the dialog (never taller than 90% of the window). Footer: **Cancel on the left, the primary action on the right**; `deleteLabel` adds a red Delete button at the far left (D-30); `showPrimary` false is for a dialog that only shows a result (one "Close" button at the right).
-- The anatomy is shared with `mf-confirm-dialog` (`size` small by default) and `mf-lookup-dialog` (`size` small by default).
+- The anatomy is shared with `mf-confirm-dialog` (`size` small by default) and `mf-lookup-dialog` (`size` small by default). The form dialog is drawn in the page body (`appendTo`, default `body`) so a page's own stacking context cannot cover it. A form or a record action never uses a hand-built `p-dialog` any more: Edit Task, Skip Step, Complete Task, bulk tasks and Add Comment (#1138), Out of Office, Set Out of Office, Edit availability, Add Event and Change Managers (#1139), the holiday dialogs, change disposition and the dashboard Assign Work picker (#1140) all use `mf-form-dialog`; the priority dialog uses `mf-lookup-dialog`. Date fields in these dialogs are the native date input (mm/dd/yyyy), not `mf-date-input`.
 - Esc and a click on the scrim close it; Tab stays inside; focus goes to the first field when it opens and returns to the control that opened it.
 - Sizes: `small` 416 px, default 576 px, `large` 768 px (`--mf-dialog-w-sm`, `--mf-dialog-w`, `--mf-dialog-w-lg`, never wider than the window minus 32 px); **full screen below 640 px**.
 - `dirty` makes every way of closing ask "You have unsaved changes. Discard them?" ([Keep Editing] [Discard Changes]). `busy` shows "Saving..." (or `busyLabel`) and ignores clicks; `error` shows a message above the footer buttons with an icon (`role="alert"`); `canSubmit` false makes the primary button `aria-disabled`.
@@ -293,7 +293,7 @@ Rules of the dialog:
 - Put the form inside an `@if` so it exists only while the dialog is open; reset the form signals each time `visible` turns true.
 - Examples: `features/projects/ui/project-panel.ts` (create and edit a project), `features/matters/ui/matter-form-dialog.ts` (New matter and Edit matter: one shared form, MD-43).
 
-Screens that should adopt the dialog later (not converted in this epic): My Matters Add event dialog, Create/Edit task, Clients create/edit, Assets list create/edit, Users, Roles, Pods, the admin lookup forms (task types, asset types, labels, custom fields) and profile preferences.
+Screens that should adopt the dialog later (not converted in this epic): the Create Task page, Clients create/edit, Assets list create/edit, Users, Roles, Pods, the admin lookup forms (task types, asset types, labels, custom fields) and profile preferences.
 
 
 ## 9. Buttons: one rule, from the shared theme only (epic #1001, MD-26, #1030)

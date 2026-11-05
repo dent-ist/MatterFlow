@@ -123,7 +123,7 @@ describe('AssetDispositionDialog', () => {
     await pick('DISPOSED');
     await save();
     expect(api.changeAssetDisposition).not.toHaveBeenCalled();
-    expect(q('[data-confirm-error]').textContent).toContain('note is required');
+    expect(q('[data-panel-error]').textContent).toContain('note is required');
     await note('Destroyed on 12 Oct');
     await save();
     expect(api.changeAssetDisposition).toHaveBeenCalledWith(9, {
@@ -189,7 +189,7 @@ describe('AssetDispositionDialog', () => {
     );
     await pick('INACTIVE');
     await save();
-    expect(q('[data-confirm-error]').textContent).toContain('changed by someone else');
+    expect(q('[data-panel-error]').textContent).toContain('changed by someone else');
     expect(fixture.componentInstance.visible()).toBe(true);
   });
 });

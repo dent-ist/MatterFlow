@@ -115,7 +115,7 @@ describe('Labels page on the admin list shell (#593)', () => {
       await settle();
       expect(router.url).toBe('/admin/priorities?edit=new');
       expect(document.body.querySelector('[data-lookup-title]')!.textContent).toContain(
-        'New priority',
+        'New Priority',
       );
     },
     SLOW,

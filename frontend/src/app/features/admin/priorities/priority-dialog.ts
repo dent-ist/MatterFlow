@@ -71,7 +71,7 @@ const DEFAULT_CUSTOM_COLOUR = '#336699'; // theme-colour-ok: starting value of a
   template: `
     <mf-lookup-dialog
       [title]="title()"
-      [submitLabel]="priority() ? 'Save priority' : 'Add priority'"
+      [submitLabel]="priority() ? 'Save Priority' : 'Add Priority'"
       cancelLabel="Cancel"
       [visible]="open()"
       (visibleChange)="open.set($event)"
@@ -162,7 +162,7 @@ export class PriorityDialog {
   /** The name last sent to the server: its duplicate-name answer belongs to that text and goes away when the person types. */
   private readonly sentLabel = signal('');
 
-  protected readonly title = computed(() => (this.priority() ? 'Edit priority' : 'New priority'));
+  protected readonly title = computed(() => (this.priority() ? 'Edit Priority' : 'New Priority'));
   protected readonly colorValue = computed(() =>
     this.choice() === 'custom' ? this.custom() : this.choice(),
   );

@@ -27,7 +27,7 @@ import { ImportResult } from './holiday-contract';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-form-dialog
-      title="Import or paste holidays"
+      title="Import Holidays"
       [subtitle]="calendarName()"
       [primaryLabel]="importLabel()"
       size="large"
@@ -197,7 +197,7 @@ export class ImportDialog {
 
   protected importLabel(): string {
     const n = this.result()?.okCount ?? 0;
-    return n > 0 ? `Import ${n} ${n === 1 ? 'holiday' : 'holidays'}` : 'Import';
+    return n > 0 ? `Import ${n} ${n === 1 ? 'Holiday' : 'Holidays'}` : 'Import Holidays';
   }
 
   protected onText(value: string): void {

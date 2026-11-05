@@ -46,7 +46,7 @@ test.describe('Asset disposition (PM v2)', () => {
       '2 open tasks keep this link.',
     );
     await dialog.getByLabel(/^Note/).fill('Matter closed 12 Oct');
-    await dialog.getByRole('button', { name: 'Set pending disposition' }).click();
+    await dialog.getByRole('button', { name: 'Change Disposition' }).click();
 
     await expect(page.locator('[data-disposition-badge]')).toContainText('Pending disposition');
     await expect(page.locator('[data-inactive-banner]')).toContainText('pending disposition');
@@ -89,10 +89,10 @@ test.describe('Asset disposition (PM v2)', () => {
     await page.getByRole('menuitem', { name: 'Change disposition' }).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByRole('radio', { name: /^Disposed/ }).check();
-    await dialog.getByRole('button', { name: 'Set disposed' }).click();
-    await expect(dialog.locator('[data-confirm-error]')).toContainText('note is required');
+    await dialog.getByRole('button', { name: 'Change Disposition' }).click();
+    await expect(dialog.locator('[data-panel-error]')).toContainText('note is required');
     await dialog.getByLabel(/^Note/).fill('Destroyed');
-    await dialog.getByRole('button', { name: 'Set disposed' }).click();
+    await dialog.getByRole('button', { name: 'Change Disposition' }).click();
     await expect(page.locator('[data-disposition-badge]')).toContainText('Disposed');
 
     await page.getByRole('button', { name: 'More actions' }).click();

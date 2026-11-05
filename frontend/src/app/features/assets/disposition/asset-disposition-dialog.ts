@@ -16,14 +16,13 @@ import {
   AssetsClient,
   BulkAssetDispositionResponse,
 } from '../../../api/generated/api-client';
-import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { FormDialog } from '../../../shared/ui/form-dialog';
 import {
   DISPOSITIONS,
   DispositionCode,
   NOTE_MAX,
   bulkImpactLine,
   bulkReason,
-  dispositionLabel,
   impactLine,
   noteRequired,
   whyNot,
@@ -52,7 +51,7 @@ export interface DispositionOutcome {
  */
 @Component({
   selector: 'mf-asset-disposition-dialog',
-  imports: [ConfirmDialog],
+  imports: [FormDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .dd {
@@ -136,16 +135,16 @@ export interface DispositionOutcome {
     }
   `,
   template: `
-    <mf-confirm-dialog
-      [title]="phase() === 'result' ? 'Result' : 'Change disposition'"
-      [confirmLabel]="confirmLabel()"
-      [cancelLabel]="phase() === 'result' ? 'Close' : 'Cancel'"
-      [showConfirm]="phase() === 'form'"
+    <mf-form-dialog
+      [title]="phase() === 'result' ? 'Result' : 'Change Disposition'"
+      [primaryLabel]="confirmLabel()"
+      busyLabel="Working..."
+      [secondaryLabel]="phase() === 'result' ? 'Close' : 'Cancel'"
+      [showPrimary]="phase() === 'form'"
       [busy]="busy()"
       [error]="error()"
-      scrollLabel="Change disposition"
       [(visible)]="visible"
-      (confirmed)="run()"
+      (submitted)="run()"
     >
       <div class="dd" data-disposition-dialog>
         @if (phase() === 'form') {
@@ -210,7 +209,7 @@ export interface DispositionOutcome {
           }
         }
       </div>
-    </mf-confirm-dialog>
+    </mf-form-dialog>
   `,
 })
 export class AssetDispositionDialog {
@@ -276,12 +275,7 @@ export class AssetDispositionDialog {
 
   protected readonly confirmLabel = computed(() => {
     const n = this.targets().length;
-    const to = this.choice();
-    return n > 1
-      ? `Change ${n} assets`
-      : to
-        ? `Set ${dispositionLabel(to).toLowerCase()}`
-        : 'Change disposition';
+    return n > 1 ? `Change ${n} Assets` : 'Change Disposition';
   });
 
   protected readonly notChanged = computed(() => this.bulk()?.results.filter((r) => !r.ok) ?? []);

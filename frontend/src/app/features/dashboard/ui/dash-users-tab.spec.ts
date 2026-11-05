@@ -925,7 +925,7 @@ describe('DashUsersTab', () => {
       expect(text(dialog().querySelector('[data-assign-empty]'))).toContain(
         "No unassigned tasks in Cy's pods. Show all pods",
       );
-      document.querySelector<HTMLButtonElement>('button[aria-label="Close assign work"]')!.click();
+      document.querySelector<HTMLButtonElement>('.mf-formdlg [data-panel-close]')!.click();
       await settle();
       getQueue.mockReturnValue(throwError(() => new Error('x')));
       await openPicker('Ann Lee');
@@ -946,7 +946,7 @@ describe('DashUsersTab', () => {
       await settle();
       expect(getQueue.mock.calls.at(-1)![4]).toBeUndefined();
       expect(text(dialog().querySelector('[data-assign-order]'))).not.toContain('in Pod A');
-      document.querySelector<HTMLButtonElement>('button[aria-label="Close assign work"]')!.click();
+      document.querySelector<HTMLButtonElement>('.mf-formdlg [data-panel-close]')!.click();
       await settle();
       await openPicker('Cy Tan');
       expect(dialog().querySelector<HTMLInputElement>('[data-assign-allpods]')!.checked).toBe(true);

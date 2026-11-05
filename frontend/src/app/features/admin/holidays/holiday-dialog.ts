@@ -46,9 +46,9 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-form-dialog
-      [title]="holiday() ? 'Edit holiday' : 'Add holiday'"
+      [title]="holiday() ? 'Edit Holiday' : 'Add Holiday'"
       [subtitle]="calendarName()"
-      [primaryLabel]="holiday() ? 'Save' : 'Add holiday'"
+      [primaryLabel]="holiday() ? 'Save' : 'Add Holiday'"
       size="default"
       [dirty]="dirty()"
       [busy]="busy()"

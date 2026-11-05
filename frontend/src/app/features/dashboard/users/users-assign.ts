@@ -13,7 +13,6 @@ import {
   untracked,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Dialog } from 'primeng/dialog';
 import { firstValueFrom } from 'rxjs';
 import {
   TaskQueueClient,
@@ -29,8 +28,8 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { UndoService } from '../../../core/notify/undo.service';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
-import { DialogFocus } from '../../../shared/ui/dialog-focus';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { FormDialog } from '../../../shared/ui/form-dialog';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { PriorityFlag } from '../../../shared/ui/priority-flag';
 import { SearchBox } from '../../../shared/ui/search-box';
@@ -91,8 +90,7 @@ export function assignHint(
 @Component({
   selector: 'mf-users-assign',
   imports: [
-    Dialog,
-    DialogFocus,
+    FormDialog,
     RouterLink,
     PriorityFlag,
     MatterRef,
@@ -103,19 +101,12 @@ export function assignHint(
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <p-dialog
-      [header]="user() ? 'Assign work to ' + user()!.displayName : 'Assign work'"
-      styleClass="mf-users-assign"
-      [modal]="true"
-      [closable]="true"
-      [dismissableMask]="true"
-      closeAriaLabel="Close assign work"
-      [mfDialogFocus]="visible()"
-      [draggable]="false"
-      [resizable]="false"
+    <mf-form-dialog
+      [title]="user() ? 'Assign Work to ' + user()!.displayName : 'Assign Work'"
+      secondaryLabel="Close"
+      [showPrimary]="false"
       [visible]="visible()"
       (visibleChange)="onVisible($event)"
-      [style]="{ width: '40rem', maxWidth: '100vw' }"
     >
       @if (user(); as u) {
         <div class="assign" data-assign-dialog>
@@ -353,7 +344,7 @@ export function assignHint(
           }
         </div>
       }
-    </p-dialog>
+    </mf-form-dialog>
   `,
   styles: `
     .assign {
@@ -677,7 +668,7 @@ export class UsersAssign {
   protected cancelConfirm(): void {
     this.confirming.set(null);
     afterNextRender(
-      () => document.querySelector<HTMLElement>('.mf-users-assign [data-assign-next]')?.focus(),
+      () => document.querySelector<HTMLElement>('[data-assign-dialog] [data-assign-next]')?.focus(),
       { injector: this.injector },
     );
   }
@@ -685,7 +676,9 @@ export class UsersAssign {
   private focusConfirm(): void {
     afterNextRender(
       () =>
-        document.querySelector<HTMLElement>('.mf-users-assign [data-assign-confirm-ok]')?.focus(),
+        document
+          .querySelector<HTMLElement>('[data-assign-dialog] [data-assign-confirm-ok]')
+          ?.focus(),
       { injector: this.injector },
     );
   }
@@ -743,7 +736,7 @@ export class UsersAssign {
         () =>
           document
             .querySelector<HTMLElement>(
-              '.mf-users-assign [data-assign-next], [aria-label="Close assign work"]',
+              '[data-assign-dialog] [data-assign-next], .mf-formdlg [data-panel-close]',
             )
             ?.focus(),
         { injector: this.injector },
@@ -879,13 +872,11 @@ export class UsersAssign {
     afterNextRender(
       () => {
         const buttons = [
-          ...document.querySelectorAll<HTMLElement>('.mf-users-assign [data-assign-pick]'),
+          ...document.querySelectorAll<HTMLElement>('[data-assign-dialog] [data-assign-pick]'),
         ];
         const target =
           buttons[Math.min(index, buttons.length - 1)] ??
-          document.querySelector<HTMLElement>(
-            '.mf-users-assign button[aria-label="Close assign work"]',
-          );
+          document.querySelector<HTMLElement>('.mf-formdlg [data-panel-close]');
         target?.focus();
       },
       { injector: this.injector },

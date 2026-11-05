@@ -311,14 +311,14 @@ describe('PrioritiesPage (#605, #609, #614, #618)', () => {
     }
 
     async function save(): Promise<void> {
-      await click(dialogButton('Save priority') ?? dialogButton('Add priority'));
+      await click(dialogButton('Save Priority') ?? dialogButton('Add Priority'));
     }
 
     it('opens Edit priority for ?edit=<id> with the name, the color, a live badge and the counter', async () => {
       await setEdit('2');
 
       expect(document.body.querySelector('[data-lookup-title]')!.textContent).toContain(
-        'Edit priority',
+        'Edit Priority',
       );
       expect(field().value).toBe('High');
       expect(document.body.querySelector('#priority-label-count')!.textContent).toContain('4 / 50');
@@ -399,7 +399,7 @@ describe('PrioritiesPage (#605, #609, #614, #618)', () => {
     it('adds a priority at the end with a 46 character name', async () => {
       await setEdit('new');
       expect(document.body.querySelector('[data-lookup-title]')!.textContent).toContain(
-        'New priority',
+        'New Priority',
       );
       const long = 'Wait for the client to confirm in writing x'.padEnd(46, 'y');
       await type(field(), long);
