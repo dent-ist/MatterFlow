@@ -157,7 +157,12 @@ type Tab = 'details' | 'tasks' | 'history';
               </div>
             }
 
-            <mf-work-strip label="Asset summary" [items]="strip()" data-asset-strip />
+            <mf-work-strip
+              label="Asset summary"
+              [items]="strip()"
+              [plain]="true"
+              data-asset-strip
+            />
 
             <mf-tabs
               label="Asset sections"

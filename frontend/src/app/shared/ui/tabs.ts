@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { FixedPage } from './fixed-page';
 import { TabBox, pageLeft, revealLeft, scrollCues } from './tab-scroll';
+import { CountChip } from './count-chip';
 
 export interface MfTab {
   key: string;
@@ -45,6 +46,7 @@ export interface MfTab {
  */
 @Component({
   selector: 'mf-tabs',
+  imports: [CountChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.tabs--pinned]': 'pinned', '[class.tabs--dense]': 'dense()' },
   template: `
@@ -83,7 +85,9 @@ export interface MfTab {
               <span class="count">({{ t.count }})</span>
             }
             @if (t.badge) {
-              <span class="badge" aria-hidden="true" data-tab-badge>{{ t.badge }}</span>
+              <mf-count-chip class="badge" aria-hidden="true" data-tab-badge>{{
+                t.badge
+              }}</mf-count-chip>
             }
           </button>
           @if (t.disabledReason) {
@@ -223,18 +227,7 @@ export interface MfTab {
       outline-offset: -2px;
     }
     .badge {
-      display: inline-block;
-      min-width: 1.25rem;
       margin-left: var(--mf-s1);
-      padding: 0 var(--mf-s1);
-      border-radius: 999px;
-      background: var(--mf-primary);
-      color: var(--mf-primary-contrast);
-      font-size: var(--mf-fs-xs);
-      font-weight: 700;
-      line-height: 1.25rem;
-      text-align: center;
-      font-variant-numeric: tabular-nums;
     }
     .count {
       color: var(--mf-text-muted);

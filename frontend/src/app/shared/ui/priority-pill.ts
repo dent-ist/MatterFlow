@@ -20,7 +20,7 @@ const PILLS: Readonly<Record<PillKind, { icon: string; label: string }>> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<span class="pill" [attr.data-kind]="kind()">
     @if (svg(); as p) {
-      <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <path [attr.d]="p" />
       </svg>
     } @else {
@@ -32,15 +32,19 @@ const PILLS: Readonly<Record<PillKind, { icon: string; label: string }>> = {
     :host {
       display: inline-block;
     }
+    /* Chip kind 1 (D-12, #1129): the same 26 px pill as mf-status-chip, in the priority tokens. */
     .pill {
       display: inline-flex;
       align-items: center;
       gap: var(--mf-s1);
-      padding: 1px var(--mf-s2);
-      border-radius: 999px;
-      font-size: var(--mf-fs-xs);
-      font-weight: 700;
-      line-height: 18px;
+      box-sizing: border-box;
+      height: var(--mf-chip-h);
+      padding: 0 var(--mf-s2);
+      border: 1px solid var(--p-bg);
+      border-radius: var(--mf-radius-pill);
+      font-size: var(--mf-fs-chip);
+      font-weight: var(--mf-fw-semibold);
+      line-height: 1;
       white-space: nowrap;
       background: var(--p-bg);
       color: var(--p-fg);
@@ -50,6 +54,8 @@ const PILLS: Readonly<Record<PillKind, { icon: string; label: string }>> = {
     }
     .pill svg {
       flex: none;
+      width: var(--mf-icon-sm);
+      height: var(--mf-icon-sm);
       fill: none;
       stroke: currentColor;
       stroke-width: 2;

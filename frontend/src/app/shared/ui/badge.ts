@@ -14,6 +14,15 @@ export function workflowStatusTone(status: string | null | undefined): BadgeTone
   }
 }
 
+/** The icon a badge shows when the page gives none: a chip of kind 1 always has an icon and the word (D-12, #1129). */
+const TONE_ICONS: Readonly<Record<BadgeTone, string>> = {
+  neutral: 'pi-minus-circle',
+  info: 'pi-info-circle',
+  success: 'pi-check-circle',
+  warning: 'pi-exclamation-triangle',
+  danger: 'pi-exclamation-circle',
+};
+
 /**
  * One badge family (UXR-15, UXR-27; TH-05 #987): a tone (a `--mf-sem-*` tint with its text colour, all at least 4.5:1) plus an optional icon, drawn as the same pill as `mf-status-chip`.
  * Lifecycle task status and priority keep their own components (`mf-status-badge`, `mf-priority-badge`) and look the same.
@@ -26,9 +35,7 @@ export function workflowStatusTone(status: string | null | undefined): BadgeTone
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <span class="badge" [attr.data-tone]="tone()" [attr.aria-describedby]="describedBy()">
-      @if (icon()) {
-        <i class="pi" [class]="icon()" aria-hidden="true"></i>
-      }
+      <i class="pi" [class]="shownIcon()" aria-hidden="true"></i>
       <ng-content />
     </span>
   `,
@@ -41,17 +48,20 @@ export function workflowStatusTone(status: string | null | undefined): BadgeTone
       display: inline-flex;
       align-items: center;
       gap: var(--mf-s1);
-      padding: 2px var(--mf-s2);
+      box-sizing: border-box;
+      height: var(--mf-chip-h);
+      padding: 0 var(--mf-s2);
       border: 1px solid var(--bd-line);
       border-radius: var(--mf-radius-pill);
       background: var(--bd-bg);
       color: var(--bd-fg);
-      font-size: var(--mf-fs-xs);
-      font-weight: var(--mf-fw-bold);
-      line-height: 18px;
+      font-size: var(--mf-fs-chip);
+      font-weight: var(--mf-fw-semibold);
+      line-height: 1;
       white-space: nowrap;
     }
     .pi {
+      flex: none;
       font-size: var(--mf-icon-sm);
     }
     /* The same pill as mf-status-chip: a tint, its text colour and a hairline (--mf-sem-* tokens, contrast checked). */
@@ -84,10 +94,12 @@ export function workflowStatusTone(status: string | null | undefined): BadgeTone
 })
 export class Badge {
   readonly tone = input<BadgeTone>('neutral');
-  /** PrimeIcons class, for example `pi-check-circle`. */
+  /** PrimeIcons class, for example `pi-check-circle`; without one the tone's own icon is drawn (a status chip always has an icon). */
   readonly icon = input<string | null>(null);
   /** The id of an element that describes this badge (read out once with it). */
   readonly describedBy = input<string | null>(null);
+
+  protected readonly shownIcon = computed(() => this.icon() || TONE_ICONS[this.tone()]);
 }
 
 /** Active / Inactive state of a record (clients, matters, assets, steps...): green with a check, or grey. */

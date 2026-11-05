@@ -586,3 +586,18 @@ Holiday category colours are the note-tag palette (`--mf-tag-<colour>-bg|fg`), a
 ### 12.3 States
 
 Loading shows a skeleton of the grid; an error shows `mf-dash-state` with Retry; no people shows "No people to plan yet"; a role with nobody shows "Clear filters"; a failed refresh keeps the figures and shows the stale banner. The Profile list, the holiday screens and the threshold form have their own loading, empty and error lines, each with Retry.
+
+## 13. UI update 2: building blocks (branch `ui-update-2`, spec `docs/ux/ui-update/ui-spec.md`)
+
+### 13.1 Chips: four kinds and nothing else (D-12, #1129)
+
+| Kind | Component | Look | Use |
+| --- | --- | --- | --- |
+| 1 Status / state | `mf-status-chip`, `mf-badge` (and `mf-status-badge`, `mf-active-badge`, `mf-sensitive-badge`, `mf-priority-pill`) | 26 px (`--mf-chip-h`), padding 0 8, pill, 12 / 600, icon 16 (`--mf-icon-sm`) always plus the word, tint `-bg` with `-fg` text and `-line` border | the state of a record or task |
+| 2 Count | `mf-count-chip` | 22 px high, at least 22 wide, padding 0 6, `--mf-surface-alt`, 12 / 600, no icon | a number beside a title or a tab (tab badge) |
+| 3 Filter / toggle | `mf-filter-chips`, the chips of `mf-work-strip` | 26 px, same shape as kind 1, `--mf-border-mid` outline; chosen = `--mf-primary` fill, white text, a tick, `aria-pressed`; the count is bold at the end | Open 42 / Overdue 8, the Task Queue quick views, the Users status row |
+| 4 Tag / scope | `mf-tag-chip` (read-only lists use `mf-tag-chips`) | 26 px, pill, `--mf-surface`, `--mf-border-mid`, 13 px text; removable = a 16 px button with `pi-times` at `--mf-icon-xs`, name "Remove <name>" | a tag or a scope the user chose |
+
+- A chip never wraps (`white-space: nowrap`) and a chip is never a plain label: a fact such as "Size 159 GB" or a count with no filter behind it is plain label and value text (`.fact` in `mf-work-strip`; `[plain]="true"` makes a whole strip facts, as on the Asset record).
+- `mf-badge` without an `icon` draws its tone's icon (neutral minus-circle, info info-circle, success check-circle, warning exclamation-triangle, danger exclamation-circle), so every status chip has an icon and the word.
+- Private chip classes in feature styles are migrated by the later sweep (#1130); do not add new ones.

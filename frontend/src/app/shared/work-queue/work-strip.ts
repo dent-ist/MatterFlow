@@ -62,7 +62,32 @@ export interface WorkStripItem {
       >
         @for (item of items(); track item.key) {
           <li [attr.role]="roving() ? 'none' : null">
-            @if (!interactive() && item.link) {
+            @if (item.value !== undefined || plain() || (!interactive() && !item.link)) {
+              <!-- A fact (a word or phrase, or a count nobody can press) is plain label and value text, not a chip. -->
+              @if (!interactive() && item.link) {
+                <a
+                  class="fact fact--link"
+                  [class.zero]="item.count === 0"
+                  [class.alert]="item.alert && !!item.count"
+                  [routerLink]="item.link.path"
+                  [queryParams]="item.link.queryParams"
+                  [attr.title]="item.hint ?? null"
+                  [attr.data-strip-item]="item.key"
+                >
+                  <ng-container *ngTemplateOutlet="body; context: { $implicit: item, on: false }" />
+                </a>
+              } @else {
+                <span
+                  class="fact"
+                  [class.zero]="item.count === 0"
+                  [class.alert]="item.alert && !!item.count"
+                  [attr.title]="item.hint ?? null"
+                  [attr.data-strip-item]="item.key"
+                >
+                  <ng-container *ngTemplateOutlet="body; context: { $implicit: item, on: false }" />
+                </span>
+              }
+            } @else if (!interactive() && item.link) {
               <a
                 class="item"
                 [class.zero]="item.count === 0"
@@ -72,7 +97,7 @@ export interface WorkStripItem {
                 [attr.title]="item.hint ?? null"
                 [attr.data-strip-item]="item.key"
               >
-                <ng-container *ngTemplateOutlet="body; context: { $implicit: item }" />
+                <ng-container *ngTemplateOutlet="body; context: { $implicit: item, on: false }" />
               </a>
             } @else if (interactive() && !item.inert) {
               <button
@@ -88,25 +113,29 @@ export interface WorkStripItem {
                 [attr.data-strip-item]="item.key"
                 (click)="pick.emit(item.key)"
               >
-                <ng-container *ngTemplateOutlet="body; context: { $implicit: item }" />
+                <ng-container
+                  *ngTemplateOutlet="body; context: { $implicit: item, on: item.key === active() }"
+                />
               </button>
             } @else {
               <span
-                class="item"
+                class="fact"
                 [class.zero]="item.count === 0"
                 [class.alert]="item.alert && !!item.count"
                 [attr.title]="item.hint ?? null"
                 [attr.data-strip-item]="item.key"
               >
-                <ng-container *ngTemplateOutlet="body; context: { $implicit: item }" />
+                <ng-container *ngTemplateOutlet="body; context: { $implicit: item, on: false }" />
               </span>
             }
           </li>
         }
       </ul>
     }
-    <ng-template #body let-item>
-      @if (item.alert && item.count) {
+    <ng-template #body let-item let-on="on">
+      @if (on && interactive() && !segments()) {
+        <i class="pi pi-check tick" aria-hidden="true"></i>
+      } @else if (item.alert && item.count) {
         <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
       }
       {{ item.label }}
@@ -129,18 +158,23 @@ export interface WorkStripItem {
       list-style: none;
       color: var(--mf-text-muted);
     }
+    /* A chip is only what can be pressed or followed: kind 3 of D-12 (#1129), 26 px, 0 8, pill, 12 / 600, the count bold at the end. Facts below are plain text. */
     .item {
       display: inline-flex;
       align-items: center;
       gap: var(--mf-s1);
-      min-height: 32px;
-      padding: 0 var(--mf-s3);
-      /* A count chip of the theme (like mf-filter-chips): a pill with a thin border; the words and the number are always there. */
-      border: 1px solid var(--mf-border);
+      box-sizing: border-box;
+      height: var(--mf-chip-h);
+      padding: 0 var(--mf-s2);
+      border: 1px solid var(--mf-border-mid);
       border-radius: var(--mf-radius-pill);
       background: var(--mf-surface);
-      color: inherit;
+      color: var(--mf-text);
       font: inherit;
+      font-size: var(--mf-fs-chip);
+      font-weight: var(--mf-fw-semibold);
+      line-height: 1;
+      white-space: nowrap;
     }
     button.item,
     a.item {
@@ -157,14 +191,19 @@ export interface WorkStripItem {
     a.item:hover {
       background: var(--mf-surface-alt);
     }
+    .item .tick,
+    .item .pi {
+      flex: none;
+      font-size: var(--mf-icon-sm);
+    }
     button.item.on {
-      outline: 2px solid var(--mf-focus);
-      outline-offset: -2px;
-      color: var(--mf-text);
+      border-color: var(--mf-primary);
+      background: var(--mf-primary);
+      color: var(--mf-primary-contrast);
     }
     .n {
       min-width: 2ch;
-      color: var(--mf-text);
+      font-weight: var(--mf-fw-bold);
       font-variant-numeric: tabular-nums;
     }
     .n.v {
@@ -176,15 +215,54 @@ export interface WorkStripItem {
     .zero,
     .zero .n {
       color: var(--mf-text-muted);
-      font-weight: 400;
+      font-weight: var(--mf-fw-semibold);
     }
     .alert,
     .alert .n {
       color: var(--mf-sem-overdue-fg);
     }
-    .alert {
+    .item.alert {
       border-color: var(--mf-sem-overdue-line);
       background: var(--mf-sem-overdue-bg);
+    }
+    button.item.on .n {
+      color: inherit;
+    }
+    /* A fact: the label in muted text and its value in the text colour, no border, no fill. A fact that is a link reads as a link (D-13). */
+    .fact {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s1);
+      box-sizing: border-box;
+      height: var(--mf-chip-h);
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+      white-space: nowrap;
+    }
+    .fact .n {
+      color: var(--mf-text);
+      font-size: var(--mf-fs-md);
+    }
+    .fact.zero .n {
+      color: var(--mf-text-muted);
+    }
+    .fact.alert .n {
+      color: var(--mf-sem-overdue-fg);
+    }
+    .fact .pi {
+      font-size: var(--mf-icon-sm);
+    }
+    a.fact--link {
+      color: var(--mf-link);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    a.fact--link .n,
+    a.fact--link.zero .n {
+      color: inherit;
+    }
+    a.fact--link:hover {
+      color: var(--mf-primary-hover);
     }
     /* Somebody is waiting (Pending access): the warning colours while the count is above zero; the pressed segment keeps its fill. */
     button.item.tinted:not(.on) {
@@ -200,10 +278,16 @@ export interface WorkStripItem {
       gap: 0;
     }
     .seg .item {
+      height: auto;
       min-height: 32px;
       padding-inline: var(--mf-s3);
       border: 1px solid var(--mf-border);
       border-radius: 0;
+      font-size: var(--mf-fs-md);
+      font-weight: 400;
+    }
+    .seg .n {
+      font-weight: inherit;
     }
     .seg li:not(:first-child) .item {
       margin-left: -1px;
@@ -218,6 +302,7 @@ export interface WorkStripItem {
       outline: none;
       border-color: var(--mf-primary);
       background: color-mix(in srgb, var(--mf-primary) 12%, var(--mf-surface));
+      color: var(--mf-text);
       box-shadow: inset 0 -2px 0 var(--mf-primary);
       font-weight: 600;
       position: relative;
@@ -330,6 +415,8 @@ export class WorkStrip {
   readonly chipRow = input(false);
   /** Below 480 px the items are three to a row with the label above the number (the matter's six counts), instead of two to a row. */
   readonly threeUp = input(false);
+  /** Every item is a fact: plain label and value text, no chip (the Asset summary, #1129). A link item stays a link. */
+  readonly plain = input(false);
   readonly active = input<string | null>(null);
   /**
    * One Tab stop for the whole group, arrow keys move between the choices (a roving tabindex, as a toolbar): Left/Right, Home and End.

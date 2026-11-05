@@ -22,7 +22,7 @@ export interface FilterChip {
 /**
  * A row of toggle chips with counts (`mf-filter-chips`, epic #953 UI-10): the status row and the activity kinds. One chip is chosen at a time (`aria-pressed`, a ticked outline
  * as well as the fill, so colour is not the only signal); choosing the chosen chip again returns `emptyKey` when it is set (the kinds clear that way), otherwise it keeps it.
- * Each chip is a 32 px target on a desktop and 44 px on a phone. The row is a labelled group, not a menu: Tab moves between chips, Space and Enter choose.
+ * Each chip is 26 px high (`--mf-chip-h`) on a desktop and a 44 px target on a phone. The row is a labelled group, not a menu: Tab moves between chips, Space and Enter choose.
  */
 @Component({
   selector: 'mf-filter-chips',
@@ -61,10 +61,10 @@ export interface FilterChip {
             [attr.title]="c.hint ?? null"
             (click)="pick(c.key)"
           >
-            @if (c.icon) {
-              <i class="pi ico" [class]="c.icon" aria-hidden="true"></i>
-            } @else if (c.key === value()) {
+            @if (c.key === value()) {
               <i class="pi pi-check tick" aria-hidden="true"></i>
+            } @else if (c.icon) {
+              <i class="pi ico" [class]="c.icon" aria-hidden="true"></i>
             }
             <span>{{ c.label }}</span>
             {{ ' ' }}
@@ -89,19 +89,22 @@ export interface FilterChip {
       gap: var(--mf-s1) var(--mf-s2);
       min-width: 0;
     }
+    /* Chip kind 3 (D-12, #1129): the shape of the status chip (26 px, 0 8, pill, 12 / 600); chosen = solid primary, white text, a tick; the count is bold at the end. */
     .chip {
       display: inline-flex;
       align-items: center;
-      gap: var(--mf-s2);
-      min-height: 32px;
-      padding: 0 var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: 999px;
+      gap: var(--mf-s1);
+      box-sizing: border-box;
+      height: var(--mf-chip-h);
+      padding: 0 var(--mf-s2);
+      border: 1px solid var(--mf-border-mid);
+      border-radius: var(--mf-radius-pill);
       background: var(--mf-surface);
       color: var(--mf-text);
       font: inherit;
-      font-size: var(--mf-fs-sm);
-      font-weight: 600;
+      font-size: var(--mf-fs-chip);
+      font-weight: var(--mf-fw-semibold);
+      line-height: 1;
       white-space: nowrap;
       cursor: pointer;
     }
@@ -116,21 +119,29 @@ export interface FilterChip {
     .chip.alert .n {
       color: var(--mf-sem-overdue-fg);
     }
+    /* A plain count with no filter behind it is text, not a fifth chip kind. */
     .chip--inert {
-      border-style: dashed;
+      padding: 0;
+      border-color: transparent;
+      background: transparent;
+      color: var(--mf-text-muted);
       cursor: default;
     }
     .chip--inert:hover {
-      background: var(--mf-surface);
+      background: transparent;
     }
     .chip .n {
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
+      color: inherit;
+      font-weight: var(--mf-fw-bold);
       font-variant-numeric: tabular-nums;
+    }
+    .chip--inert .n {
+      color: var(--mf-text);
     }
     .chip .tick,
     .chip .ico {
-      font-size: var(--mf-fs-xs);
+      flex: none;
+      font-size: var(--mf-icon-sm);
     }
     .chip[aria-pressed='true'] {
       background: var(--mf-primary);

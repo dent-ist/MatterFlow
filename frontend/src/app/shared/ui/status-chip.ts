@@ -88,19 +88,22 @@ export const DISPOSITION_CHIPS: Readonly<Record<string, ChipStyle>> = {
       gap: var(--mf-s2);
       min-width: 0;
     }
+    /* Chip kind 1 (D-12, #1129): 26 px high, 0 8 padding, pill, 12 / 600, a 16 px icon and the word, tint -bg / -fg / -line. Never wraps. */
     .chip {
       display: inline-flex;
       align-items: center;
       gap: var(--mf-s1);
       flex: none;
-      padding: 2px var(--mf-s3) 2px var(--mf-s2);
-      border-radius: 999px;
+      box-sizing: border-box;
+      height: var(--mf-chip-h);
+      padding: 0 var(--mf-s2);
+      border-radius: var(--mf-radius-pill);
       border: 1px solid var(--st-line, transparent);
       background: var(--st-bg);
       color: var(--st-fg);
-      font-size: var(--mf-fs-xs);
-      font-weight: 700;
-      line-height: 18px;
+      font-size: var(--mf-fs-chip);
+      font-weight: var(--mf-fw-semibold);
+      line-height: 1;
       white-space: nowrap;
     }
     .chip[tabindex] {
@@ -114,11 +117,11 @@ export const DISPOSITION_CHIPS: Readonly<Record<string, ChipStyle>> = {
       display: inline-block;
       box-sizing: border-box;
       flex: none;
-      width: 12px;
-      height: 12px;
+      width: var(--mf-icon-sm);
+      height: var(--mf-icon-sm);
       border: 1.5px solid currentColor;
       border-radius: 50%;
-      background: radial-gradient(circle, currentColor 0 2px, transparent 2.5px);
+      background: radial-gradient(circle, currentColor 0 3px, transparent 3.5px);
     }
     .chip[data-tone='new'] {
       --st-bg: var(--mf-status-new-bg);
@@ -128,18 +131,22 @@ export const DISPOSITION_CHIPS: Readonly<Record<string, ChipStyle>> = {
     .chip[data-tone='progress'] {
       --st-bg: var(--mf-status-progress-bg);
       --st-fg: var(--mf-status-progress-fg);
+      --st-line: var(--mf-status-progress-line);
     }
     .chip[data-tone='hold'] {
       --st-bg: var(--mf-status-hold-bg);
       --st-fg: var(--mf-status-hold-fg);
+      --st-line: var(--mf-status-hold-line);
     }
     .chip[data-tone='done'] {
       --st-bg: var(--mf-status-done-bg);
       --st-fg: var(--mf-status-done-fg);
+      --st-line: var(--mf-status-done-line);
     }
     .chip[data-tone='cancel'] {
       --st-bg: var(--mf-status-cancel-bg);
       --st-fg: var(--mf-status-cancel-fg);
+      --st-line: var(--mf-status-cancel-line);
     }
     .chip[data-tone='disp-active'] {
       --st-bg: var(--mf-sem-healthy-bg);

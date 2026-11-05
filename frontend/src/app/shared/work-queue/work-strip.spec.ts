@@ -80,6 +80,26 @@ describe('WorkStrip', () => {
     expect(inert.textContent!.replace(/\s+/g, ' ').trim()).toBe('Inputs in draft 2');
   });
 
+  it('draws a value item as plain label and value text, never as a chip (#1129)', () => {
+    const { f, el } = create();
+    f.componentInstance.items.set([
+      { key: 'form', label: 'Form', count: null, value: 'Published v2' },
+      { key: 'n', label: 'Workflows', count: 3 },
+    ]);
+    f.detectChanges();
+    expect(el.querySelector('[data-strip-item="form"]')!.classList).toContain('fact');
+    expect(el.querySelector('[data-strip-item="form"]')!.classList).not.toContain('item');
+    expect(el.querySelector('[data-strip-item="n"]')!.classList).toContain('item');
+  });
+
+  it('marks the pressed chip with a tick and aria-pressed', () => {
+    const { f, el } = create();
+    f.componentInstance.active.set('a');
+    f.detectChanges();
+    expect(el.querySelector('[data-strip-item="a"] .pi-check')).not.toBeNull();
+    expect(el.querySelector('[data-strip-item="b"] .pi-check')).toBeNull();
+  });
+
   it('renders plain text, no buttons, when not interactive', () => {
     const { f, el } = create();
     f.componentInstance.interactive.set(false);
