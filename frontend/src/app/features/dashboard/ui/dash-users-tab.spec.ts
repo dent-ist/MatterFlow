@@ -981,7 +981,7 @@ describe('DashUsersTab', () => {
       ];
       await open();
       await openPicker('Cy Tan');
-      dialog().querySelector<HTMLButtonElement>('[data-assign-next]')!.click();
+      document.querySelector<HTMLButtonElement>('[data-assign-next]')!.click();
       await settle();
       expect(tasks['assignTasksBatch']).not.toHaveBeenCalled();
       expect(text(dialog().querySelector('[data-assign-confirm]'))).toContain(
@@ -1011,8 +1011,8 @@ describe('DashUsersTab', () => {
       for (const c of checks.slice(0, 10)) c.click();
       await settle();
       expect(checks[10].disabled).toBe(true);
-      expect(text(dialog().querySelector('[data-assign-selected]'))).toBe('Assign 10 selected');
-      dialog().querySelector<HTMLButtonElement>('[data-assign-selected]')!.click();
+      expect(text(document.querySelector('[data-assign-selected]'))).toBe('Assign 10 selected');
+      document.querySelector<HTMLButtonElement>('[data-assign-selected]')!.click();
       await settle();
       expect(text(dialog().querySelector('[data-assign-confirm-hint]'))).toContain('heavy load');
     });
@@ -1039,7 +1039,7 @@ describe('DashUsersTab', () => {
         }),
       );
       await openPicker('Cy Tan');
-      dialog().querySelector<HTMLButtonElement>('[data-assign-next]')!.click();
+      document.querySelector<HTMLButtonElement>('[data-assign-next]')!.click();
       await settle();
       dialog().querySelector<HTMLButtonElement>('[data-assign-confirm-ok]')!.click();
       await settle();

@@ -9,8 +9,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { Dialog } from 'primeng/dialog';
-import { DialogFocus } from '../ui/dialog-focus';
+import { FormDialog } from '../ui/form-dialog';
 import { GridNav } from '../ui/grid-nav';
 import type { TaskTypeIconDef } from './task-type-icon-catalog.generated';
 import { TaskTypeIcon } from './task-type-icon';
@@ -84,7 +83,7 @@ export function rankIcons(icons: readonly TaskTypeIconDef[], query: string): Tas
  */
 @Component({
   selector: 'mf-task-type-icon-picker',
-  imports: [Dialog, DialogFocus, GridNav, TaskTypeIcon],
+  imports: [FormDialog, GridNav, TaskTypeIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './task-type-icon-picker.html',
   styleUrl: './task-type-icon-picker.scss',
@@ -173,12 +172,13 @@ export class TaskTypeIconPicker {
 
   protected pick(key: string): void {
     this.value.set(key);
-    this.visible.set(false);
+    this.onVisible(false);
   }
 
-  /** Runs after the dialog has closed by any path (Escape, X, a pick, a click outside): focus goes back to the opener. */
-  protected onHide(): void {
-    setTimeout(() => this.trigger()?.nativeElement.focus({ preventScroll: true }), 0);
+  /** Every way of closing the dialog (Escape, the X, Close, a pick, a click outside) ends here: focus goes back to the opener. */
+  protected onVisible(open: boolean): void {
+    this.visible.set(open);
+    if (!open) setTimeout(() => this.trigger()?.nativeElement.focus({ preventScroll: true }), 0);
   }
 
   protected setCategory(name: string): void {

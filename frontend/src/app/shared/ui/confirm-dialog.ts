@@ -34,6 +34,14 @@ import { ScrollRegion } from './scroll-region';
       padding: 3px;
       margin: -3px;
     }
+    /* The body padding (16 px, from the dialog anatomy) is the only space above the first sentence and below the last (#1217): the paragraph margins of the
+       projected content do not add a second band under the title. */
+    :host ::ng-deep .mf-confirm__body > :first-child {
+      margin-top: 0;
+    }
+    :host ::ng-deep .mf-confirm__body > :last-child {
+      margin-bottom: 0;
+    }
     /* While the action runs the buttons look disabled but stay focusable: a disabled button loses focus and the dialog's focus trap then
        moves it to Cancel (TY-K, #414). The click is ignored while busy. */
     :host ::ng-deep .mf-confirm__busy button {

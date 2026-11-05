@@ -19,17 +19,13 @@
   </span>
 </button>
 
-<p-dialog
-  header="Choose an icon"
-  [modal]="true"
-  [closable]="true"
-  closeAriaLabel="Close dialog"
-  [mfDialogFocus]="visible()"
-  [draggable]="false"
-  [resizable]="false"
-  [(visible)]="visible"
-  (onHide)="onHide()"
-  [style]="{ width: '60rem', maxWidth: '95vw' }"
+<mf-form-dialog
+  title="Choose an icon"
+  size="large"
+  secondaryLabel="Close"
+  [showPrimary]="false"
+  [visible]="visible()"
+  (visibleChange)="onVisible($event)"
 >
   <div class="tip__body" data-icon-dialog>
     <div class="tip__search">
@@ -111,4 +107,4 @@
       }
     </div>
   </div>
-</p-dialog>
+</mf-form-dialog>

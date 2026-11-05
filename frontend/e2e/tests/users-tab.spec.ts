@@ -569,7 +569,7 @@ test.describe('Users tab: workload', () => {
     const dialog = page.locator('[data-assign-dialog]');
     await expect(dialog).toBeVisible();
     await dialog.locator('[data-assign-allpods]').check();
-    await dialog.locator('[data-assign-next]').click();
+    await page.locator('[data-assign-next]').click();
     const confirm = dialog.locator('[data-assign-confirm]');
     await expect(confirm).toContainText('Assign these 3 tasks to');
     await expect(confirm.locator('[data-confirm-row]')).toHaveCount(3);
@@ -586,9 +586,9 @@ test.describe('Users tab: workload', () => {
     await expect(dialog.locator('[data-assign-row]')).toHaveCount(4);
     // Other picks: the selection button counts the checked rows.
     await dialog.locator('[data-assign-check]').nth(3).check();
-    await expect(dialog.locator('[data-assign-selected]')).toHaveText('Assign 1 selected');
+    await expect(page.locator('[data-assign-selected]')).toHaveText('Assign 1 selected');
     await dialog.locator('[data-assign-check]').nth(3).uncheck();
-    await dialog.locator('[data-assign-next]').click();
+    await page.locator('[data-assign-next]').click();
     await expect(dialog.locator('[data-assign-confirm-hint]')).toHaveCount(0);
     const refs = await dialog
       .locator('[data-confirm-row]')

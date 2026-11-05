@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { FormDialog } from './form-dialog';
@@ -145,5 +147,76 @@ describe('FormDialog (MD-22, #1026)', () => {
     const dlg = q('.mf-formdlg');
     expect(dlg?.getAttribute('role')).toBe('dialog');
     expect(dlg?.getAttribute('aria-modal')).toBe('true');
+  });
+});
+
+@Component({
+  imports: [FormDialog],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<mf-form-dialog
+    title="Assign Work"
+    [secondaryLabel]="actions() ? 'Cancel' : 'Close'"
+    [showPrimary]="false"
+    [footerActions]="actions()"
+    [visible]="true"
+  >
+    <p>Body</p>
+    @if (actions()) {
+      <span mfFooterActions class="mf-dlg__buttons-main">
+        <button type="button" class="mf-btn" data-first>Assign 0 selected</button>
+        <button type="button" class="mf-btn mf-btn--primary" data-second>Assign the next 3</button>
+      </span>
+    }
+  </mf-form-dialog>`,
+})
+class ActionsHost {
+  readonly actions = signal(true);
+}
+
+describe('FormDialog footer actions and the leave-over (#1217)', () => {
+  const footer = () =>
+    document.body.querySelector<HTMLElement>('[data-panel-footer] .mf-dlg__buttons')!;
+  const names = () =>
+    Array.from(footer().querySelectorAll('button')).map((b) => b.textContent?.trim());
+
+  it('with its own actions: [Cancel] at the left, the actions at the right end (space-between)', async () => {
+    const f = TestBed.createComponent(ActionsHost);
+    await f.whenStable();
+    f.detectChanges();
+    expect(names()).toEqual(['Cancel', 'Assign 0 selected', 'Assign the next 3']);
+    expect(footer().classList.contains('mf-dlg__buttons--end')).toBe(false);
+  });
+
+  it('without a primary and without actions: only [Close], right aligned', async () => {
+    const f = TestBed.createComponent(ActionsHost);
+    f.componentInstance.actions.set(false);
+    await f.whenStable();
+    f.detectChanges();
+    expect(names()).toEqual(['Close']);
+    expect(footer().classList.contains('mf-dlg__buttons--end')).toBe(true);
+  });
+});
+
+describe('one dialog (D-31, #1217)', () => {
+  it('no <p-dialog> is left outside the shared dialog components', () => {
+    const found: string[] = [];
+    const walk = (dir: string): void => {
+      for (const name of readdirSync(dir)) {
+        const path = join(dir, name);
+        if (statSync(path).isDirectory()) walk(path);
+        else if (/\.(ts|html)$/.test(name) && !name.endsWith('.spec.ts')) {
+          if (readFileSync(path, 'utf8').includes('<p-dialog'))
+            found.push(path.replace(/\\/g, '/'));
+        }
+      }
+    };
+    walk(join(process.cwd(), 'src', 'app'));
+    expect(found.map((f) => f.slice(f.indexOf('src/app/') + 8)).sort()).toEqual([
+      'shared/ui/confirm-dialog.ts',
+      'shared/ui/dialog-focus.ts',
+      'shared/ui/form-dialog.ts',
+      'shared/ui/lookup-dialog.ts',
+      'shared/ui/slide-panel.ts',
+    ]);
   });
 });

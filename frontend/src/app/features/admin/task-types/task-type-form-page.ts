@@ -5,6 +5,7 @@ import {
   HostListener,
   Injector,
   computed,
+  linkedSignal,
   afterNextRender,
   effect,
   inject,
@@ -15,8 +16,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
-import { Dialog } from 'primeng/dialog';
-import { DialogFocus } from '../../../shared/ui/dialog-focus';
+import { FormDialog } from '../../../shared/ui/form-dialog';
 import { focusStatusAfterAction } from '../after-action';
 import { ScrollRegion } from '../../../shared/ui/scroll-region';
 import { FixedPage } from '../../../shared/ui/fixed-page';
@@ -70,8 +70,7 @@ type DialogKind = 'publish' | 'retire' | 'discard' | 'conflict' | 'versions' | n
     RecordState,
     FormDesigner,
     Button,
-    Dialog,
-    DialogFocus,
+    FormDialog,
     ScrollRegion,
     FormsModule,
     MfDatePipe,
@@ -212,31 +211,47 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
   protected readonly copy = DIALOG_COPY;
   protected readonly publishText = computed(() => publishCopy(this.current()?.versionNo ?? ''));
   protected readonly retireText = computed(() => retireCopy(this.current()?.versionNo ?? ''));
-  protected readonly dialogTitle = computed(() => {
-    switch (this.dialog()) {
+  /** The kind on screen, kept while the dialog fades out so its words do not change on the way. */
+  private readonly shownKind = linkedSignal<DialogKind, Exclude<DialogKind, null>>({
+    source: this.dialog,
+    computation: (kind, previous) => kind ?? previous?.value ?? 'discard',
+  });
+  /** Title, buttons and tone of the publish, retire, conflict and discard questions (one `mf-form-dialog`, wording from the one table). */
+  protected readonly dialogText = computed(() => {
+    switch (this.shownKind()) {
       case 'publish':
-        return this.publishText().title;
+        return this.publishText();
       case 'retire':
-        return this.retireText().title;
+        return this.retireText();
       case 'conflict':
-        return DIALOG_COPY.conflict.title;
+        return DIALOG_COPY.conflict;
       default:
-        return DIALOG_COPY.discardChanges.title;
+        return DIALOG_COPY.discardChanges;
     }
   });
+  protected readonly dialogTitle = computed(() => this.dialogText().title);
 
-  /**
-   * The publish and retire dialogs open on their primary action, so it is not two Tabs away behind the optional Version note (the note
-   * stays in the Tab order, just before the buttons). The other dialogs keep PrimeNG's first-control focus.
-   */
+  /** The primary button of the question on screen (Publish, Retire, Keep my changes, Discard Changes). */
+  protected submitDialog(): void {
+    switch (this.dialog()) {
+      case 'publish':
+        void this.confirmPublish();
+        break;
+      case 'retire':
+        void this.confirmRetire();
+        break;
+      case 'conflict':
+        void this.resolveConflict(true);
+        break;
+      case 'discard':
+        void this.confirmDiscard();
+        break;
+    }
+  }
+
+  /** After a failed Publish the dialog stays open with its message and focus on its button (#414). */
   protected focusPrimary(): void {
-    const kind = this.dialog();
-    const root = document.querySelector<HTMLElement>(`[data-dialog="${kind}"]`);
-    const target =
-      kind === 'publish' || kind === 'retire'
-        ? root?.querySelector<HTMLElement>('[data-primary] button')
-        : root?.querySelector<HTMLElement>('input, textarea, select, button');
-    target?.focus();
+    document.querySelector<HTMLElement>('.mf-formdlg [data-panel-primary] button')?.focus();
   }
 
   constructor() {

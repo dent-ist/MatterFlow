@@ -34,8 +34,8 @@ test.describe('Version editor: leaving a dirty draft (VP8, #398)', () => {
     await expect(ask(page).getByRole('button', { name: 'Keep Editing' })).toBeFocused();
     const buttons = await ask(page).getByRole('button').allTextContents();
     expect(buttons.map((t) => t.trim()).filter((t) => t && t !== 'Close dialog')).toEqual([
-      'Stay',
-      'Leave',
+      'Keep Editing',
+      'Discard Changes',
       'Save draft and leave',
     ]);
     await expectNoViolations(page, 'leave dialog');

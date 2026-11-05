@@ -37,8 +37,7 @@
   overflow: auto;
 }
 
-.ttf__actions,
-.ttf__dialog-actions {
+.ttf__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
@@ -55,10 +54,6 @@
     border-radius: var(--mf-radius, 4px);
     font: inherit;
   }
-}
-
-.ttf__dialog-actions {
-  justify-content: flex-end;
 }
 
 /* A long list of changes scrolls in its own box (named and reachable by keyboard: ScrollRegion, BUG-4), not the whole dialog. */

@@ -139,7 +139,7 @@ export const DIALOG_WIDTHS = {
             }
             <div
               class="mf-dlg__buttons"
-              [class.mf-dlg__buttons--end]="!showPrimary() && !deleteLabel()"
+              [class.mf-dlg__buttons--end]="!showPrimary() && !footerActions() && !deleteLabel()"
             >
               @if (deleteLabel()) {
                 <p-button
@@ -155,17 +155,19 @@ export const DIALOG_WIDTHS = {
                   [label]="secondaryLabel()"
                   severity="secondary"
                   data-panel-cancel
-                  (onClick)="requestClose()"
+                  (onClick)="ownSecondary() ? secondaryClick.emit() : requestClose()"
                 />
                 @if (showPrimary()) {
                   <p-button
                     [label]="busy() ? busyLabel() : primaryLabel()"
-                    [styleClass]="busy() ? 'fd__busy' : ''"
+                    [severity]="danger() ? 'danger' : null"
+                    [styleClass]="(danger() ? 'mf-btn--solid ' : '') + (busy() ? 'fd__busy' : '')"
                     [attr.aria-disabled]="!canSubmit() || busy() ? 'true' : null"
                     data-panel-primary
                     (onClick)="canSubmit() && !busy() && submitted.emit()"
                   />
                 }
+                <ng-content select="[mfFooterActions]" />
               </span>
             </div>
           </div>
@@ -205,11 +207,24 @@ export class FormDialog {
   readonly appendTo = input<string>('body');
   /** False for a dialog that has no footer. */
   readonly showFooter = input(true);
+  /**
+   * The host puts its own action buttons in the footer, at the right end, after the primary (`<span mfFooterActions class="mf-dlg__buttons-main">...</span>`, one root element):
+   * they count as the primary for the alignment, so Cancel stays at the left end ("Assign the next 3" in the Dashboard Users dialog, #1217). Without them and without a
+   * primary the footer has only the secondary button, at the right end.
+   */
+  readonly footerActions = input(false);
+  /** A destructive primary: the solid red button (D-34). */
+  readonly danger = input(false);
+  /** The secondary button does its own thing (`secondaryClick`) instead of closing the dialog ("Reload latest" in a conflict). The X, Esc and the scrim still close it. */
+  readonly ownSecondary = input(false);
+  /** The dialog opens on its primary button, not on the first field (the publish and retire questions). */
+  readonly focusPrimary = input(false);
 
   readonly visible = model(false);
   readonly submitted = output<void>();
   readonly cancelled = output<void>();
   readonly deleted = output<void>();
+  readonly secondaryClick = output<void>();
 
   protected readonly guard = signal(false);
   protected readonly width = computed(() => DIALOG_WIDTHS[this.size()]);
@@ -279,6 +294,13 @@ export class FormDialog {
       active.matches('input, select, textarea, [tabindex="0"]')
     )
       return;
+    if (this.focusPrimary()) {
+      const primary = root?.querySelector<HTMLElement>('[data-panel-primary] button');
+      if (primary) {
+        primary.focus();
+        return;
+      }
+    }
     const field = root?.querySelector<HTMLElement>(
       '[data-panel-body] input:not([type=hidden]):not([disabled]), [data-panel-body] select:not([disabled]), [data-panel-body] textarea:not([disabled]), [data-panel-body] [tabindex="0"]',
     );

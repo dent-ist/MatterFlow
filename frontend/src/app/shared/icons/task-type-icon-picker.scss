@@ -66,12 +66,12 @@
   justify-self: start;
 }
 
-/* Tall: most of the window, whatever its height, so several rows of icons are visible at once (UXR4-07). */
+/* Tall: most of the window, whatever its height, so several rows of icons are visible at once (UXR4-07); the dialog header, search, categories and footer (24.5 rem) leave no second scroll bar (#1217). */
 .tip__scroll {
   display: grid;
   align-content: start;
   gap: var(--mf-s3);
-  height: clamp(14rem, calc(90vh - 15.5rem), 44rem);
+  height: clamp(14rem, calc(90vh - 24.5rem), 44rem);
   padding-right: var(--mf-s2);
   overflow-y: auto;
 }

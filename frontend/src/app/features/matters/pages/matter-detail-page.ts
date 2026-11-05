@@ -300,7 +300,6 @@ type Tab = MatterTabKey;
 
             <mf-confirm-dialog
               title="Can't Set Matter Inactive"
-              cancelLabel="Close"
               [showConfirm]="false"
               [(visible)]="blockedOpen"
             >

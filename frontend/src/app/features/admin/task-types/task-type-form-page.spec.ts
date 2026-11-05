@@ -276,7 +276,7 @@ describe('TaskTypeFormPage', () => {
     expect(q('[data-dialog="retire"]', document.body)).not.toBeNull();
     // The dialog opens on its primary action and uses the shared wording (#362).
     expect(document.activeElement?.textContent?.trim()).toBe('Retire v1');
-    await press('Retire v1', document.body.querySelector('[data-dialog="retire"]')!);
+    await press('Retire v1', document.body);
     expect(q('[data-status]').textContent).toContain('Retired v1');
   });
 });

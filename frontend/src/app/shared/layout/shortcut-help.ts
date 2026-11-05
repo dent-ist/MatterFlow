@@ -10,12 +10,7 @@ import { ShortcutRegistry } from './shortcut-registry';
   imports: [ConfirmDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <mf-confirm-dialog
-      title="Keyboard Shortcuts"
-      cancelLabel="Close"
-      [showConfirm]="false"
-      [(visible)]="state.open"
-    >
+    <mf-confirm-dialog title="Keyboard Shortcuts" [showConfirm]="false" [(visible)]="state.open">
       <div data-shortcut-help>
         <div class="sh__switch">
           <label class="sh__switchlabel">

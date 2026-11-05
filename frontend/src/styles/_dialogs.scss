@@ -122,6 +122,13 @@
   gap: var(--mf-s2);
 }
 
+/* The host's own action buttons at the right end of the footer (`mfFooterActions`, #1217): the same gap as every footer. */
+.mf-dlg__buttons-main {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s2);
+}
+
 /* No Delete button: Cancel stays at the left end and the primary at the right end (the two are the ends of the row). */
 .mf-dlg__buttons-end--split {
   display: contents;

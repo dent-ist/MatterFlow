@@ -85,18 +85,12 @@
       }
     }
 
-    <p-dialog
+    <mf-form-dialog
+      title="Form versions"
+      secondaryLabel="Close"
+      [showPrimary]="false"
       [visible]="dialog() === 'versions'"
       (visibleChange)="onVisibleChange($event)"
-      [modal]="true"
-      [draggable]="false"
-      [closable]="true"
-      closeAriaLabel="Close dialog"
-      [mfDialogFocus]="dialog() === 'versions'"
-      [focusOnShow]="false"
-      (onShow)="focusPrimary()"
-      [style]="{ width: '40rem', maxWidth: '95vw' }"
-      header="Form versions"
     >
       @if (dialog() === 'versions') {
         <div class="ttf__dialog" data-dialog="versions">
@@ -144,20 +138,21 @@
           </div>
         </div>
       }
-    </p-dialog>
+    </mf-form-dialog>
 
-    <p-dialog
+    <mf-form-dialog
+      [title]="dialogTitle()"
+      [secondaryLabel]="dialogText().cancel"
+      [primaryLabel]="dialogText().confirm"
+      [danger]="dialogText().danger"
+      [busy]="busy() && dialog() === 'publish'"
+      busyLabel="Publishing..."
+      [focusPrimary]="dialog() === 'publish' || dialog() === 'retire'"
+      [ownSecondary]="dialog() === 'conflict'"
       [visible]="dialogOpen() && dialog() !== 'versions'"
       (visibleChange)="onVisibleChange($event)"
-      [modal]="true"
-      [draggable]="false"
-      [closable]="true"
-      closeAriaLabel="Close dialog"
-      [mfDialogFocus]="dialogOpen()"
-      [focusOnShow]="false"
-      (onShow)="focusPrimary()"
-      [style]="{ width: '34rem', maxWidth: '95vw' }"
-      [header]="dialogTitle()"
+      (secondaryClick)="resolveConflict(false)"
+      (submitted)="submitDialog()"
     >
       @switch (dialog()) {
         @case ('publish') {
@@ -200,19 +195,6 @@
             @if (failure() && serverIssues().length === 0) {
               <p class="ttf__error" role="alert" data-dialog-error>{{ failure() }}</p>
             }
-            <div class="ttf__dialog-actions">
-              <p-button
-                [label]="publishText().cancel"
-                severity="secondary"
-                (onClick)="closeDialog()"
-              />
-              <p-button
-                data-primary
-                [label]="publishText().confirm"
-                [disabled]="busy()"
-                (onClick)="confirmPublish()"
-              />
-            </div>
           </div>
         }
         @case ('retire') {
@@ -224,20 +206,6 @@
             @if (failure() && serverIssues().length === 0) {
               <p class="ttf__error" role="alert" data-dialog-error>{{ failure() }}</p>
             }
-            <div class="ttf__dialog-actions">
-              <p-button
-                [label]="retireText().cancel"
-                severity="secondary"
-                (onClick)="closeDialog()"
-              />
-              <p-button
-                data-primary
-                [label]="retireText().confirm"
-                severity="danger"
-                styleClass="mf-btn--solid"
-                (onClick)="confirmRetire()"
-              />
-            </div>
           </div>
         }
         @case ('conflict') {
@@ -246,35 +214,14 @@
               Another admin saved this draft after you opened it. Reload to see their version, or
               keep your edits and save over theirs.
             </p>
-            <div class="ttf__dialog-actions">
-              <p-button
-                [label]="copy.conflict.cancel"
-                severity="secondary"
-                (onClick)="resolveConflict(false)"
-              />
-              <p-button [label]="copy.conflict.confirm" (onClick)="resolveConflict(true)" />
-            </div>
           </div>
         }
         @case ('discard') {
           <div class="ttf__dialog" data-dialog="discard">
             <p>You have unsaved changes to this draft. Opening another version discards them.</p>
-            <div class="ttf__dialog-actions">
-              <p-button
-                [label]="copy.discardChanges.cancel"
-                severity="secondary"
-                (onClick)="closeDialog()"
-              />
-              <p-button
-                [label]="copy.discardChanges.confirm"
-                severity="danger"
-                styleClass="mf-btn--solid"
-                (onClick)="confirmDiscard()"
-              />
-            </div>
           </div>
         }
       }
-    </p-dialog>
+    </mf-form-dialog>
   }
 </mf-fixed-page>

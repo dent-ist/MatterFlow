@@ -103,8 +103,9 @@ export function assignHint(
   template: `
     <mf-form-dialog
       [title]="user() ? 'Assign Work to ' + user()!.displayName : 'Assign Work'"
-      secondaryLabel="Close"
+      [secondaryLabel]="footerReady() ? 'Cancel' : 'Close'"
       [showPrimary]="false"
+      [footerActions]="footerReady()"
       [visible]="visible()"
       (visibleChange)="onVisible($event)"
     >
@@ -255,27 +256,7 @@ export function assignHint(
                     }
                   </p>
                 } @else {
-                  <div class="bar" data-assign-bar>
-                    <button
-                      type="button"
-                      class="mf-btn mf-btn--primary"
-                      data-assign-next
-                      [disabled]="busy()"
-                      (click)="startNext()"
-                    >
-                      Assign the next {{ nextCount() }}
-                    </button>
-                    <button
-                      type="button"
-                      class="mf-btn"
-                      data-assign-selected
-                      [disabled]="busy() || selectedRows().length === 0"
-                      (click)="startSelected()"
-                    >
-                      Assign {{ selectedRows().length }} selected
-                    </button>
-                    <span class="muted">Up to {{ max }} at a time.</span>
-                  </div>
+                  <p class="muted" data-assign-max>Up to {{ max }} at a time.</p>
                   <ul class="rows" data-assign-list>
                     @for (r of rows(); track r.taskId) {
                       <li class="row" [attr.data-assign-row]="r.taskNumber">
@@ -343,6 +324,29 @@ export function assignHint(
             }
           }
         </div>
+      }
+      <!-- The two assign actions sit in the footer, [Cancel] at the left, the primary at the right (D-31, #1217). Without a list there is only [Close], right aligned. -->
+      @if (footerReady()) {
+        <span mfFooterActions class="mf-dlg__buttons-main">
+          <button
+            type="button"
+            class="mf-btn"
+            data-assign-selected
+            [disabled]="busy() || selectedRows().length === 0"
+            (click)="startSelected()"
+          >
+            Assign {{ selectedRows().length }} selected
+          </button>
+          <button
+            type="button"
+            class="mf-btn mf-btn--primary"
+            data-assign-next
+            [disabled]="busy()"
+            (click)="startNext()"
+          >
+            Assign the next {{ nextCount() }}
+          </button>
+        </span>
       }
     </mf-form-dialog>
   `,
@@ -582,6 +586,14 @@ export class UsersAssign {
     return this.rows().filter((r) => ids.has(r.taskId));
   });
   protected readonly visible = computed(() => this.user() !== null);
+  /** The list is on screen with tasks in it: the assign actions are in the footer; in every other state the footer has only [Close]. */
+  protected readonly footerReady = computed(
+    () =>
+      this.user() !== null &&
+      this.confirming() === null &&
+      this.state() === 'ready' &&
+      this.rows().length > 0,
+  );
   protected readonly hint = computed(() => {
     const u = this.user();
     return u ? assignHint(u, this.thresholds(), this.zone, this.clock.now()) : null;
@@ -668,7 +680,7 @@ export class UsersAssign {
   protected cancelConfirm(): void {
     this.confirming.set(null);
     afterNextRender(
-      () => document.querySelector<HTMLElement>('[data-assign-dialog] [data-assign-next]')?.focus(),
+      () => document.querySelector<HTMLElement>('.mf-formdlg [data-assign-next]')?.focus(),
       { injector: this.injector },
     );
   }
@@ -736,7 +748,7 @@ export class UsersAssign {
         () =>
           document
             .querySelector<HTMLElement>(
-              '[data-assign-dialog] [data-assign-next], .mf-formdlg [data-panel-close]',
+              '.mf-formdlg [data-assign-next], .mf-formdlg [data-panel-close]',
             )
             ?.focus(),
         { injector: this.injector },

@@ -32,15 +32,24 @@ describe('ConfirmDialog', () => {
     expect(style.whiteSpace).not.toBe('nowrap');
     expect(style.overflowWrap).toBe('anywhere');
   });
+
+  it('has no second band under the title: the first sentence starts at the 16 px body padding, so its own margin is 0 (#1217)', async () => {
+    const fixture = TestBed.createComponent(Host);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const text = document.body.querySelector<HTMLElement>('[data-text]')!;
+    expect(getComputedStyle(text).marginTop).toBe('0px');
+    expect(getComputedStyle(text).marginBottom).toBe('0px');
+  });
 });
 
 @Component({
   imports: [ConfirmDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<mf-confirm-dialog
-    title="Leave without saving?"
-    confirmLabel="Leave"
-    cancelLabel="Stay"
+    title="Discard Unsaved Changes"
+    confirmLabel="Discard Changes"
+    cancelLabel="Keep Editing"
     [danger]="true"
     [extraLabel]="extra()"
     [visible]="true"
@@ -59,13 +68,13 @@ describe('ConfirmDialog extra choice (VP8, #398)', () => {
   const buttons = () =>
     Array.from(document.body.querySelectorAll<HTMLButtonElement>('.p-dialog-footer button'));
 
-  it('shows Stay, Leave and the primary extra choice in this order, and each says what it is', async () => {
+  it('shows Keep Editing, Discard Changes and the primary extra choice in this order, and each says what it is', async () => {
     const fixture = TestBed.createComponent(ExtraHost);
     await fixture.whenStable();
     fixture.detectChanges();
     expect(buttons().map((b) => b.textContent?.trim())).toEqual([
-      'Stay',
-      'Leave',
+      'Keep Editing',
+      'Discard Changes',
       'Save draft and leave',
     ]);
     buttons()[1].click();
@@ -78,7 +87,10 @@ describe('ConfirmDialog extra choice (VP8, #398)', () => {
     fixture.componentInstance.extra.set('');
     await fixture.whenStable();
     fixture.detectChanges();
-    expect(buttons().map((b) => b.textContent?.trim())).toEqual(['Stay', 'Leave']);
+    expect(buttons().map((b) => b.textContent?.trim())).toEqual([
+      'Keep Editing',
+      'Discard Changes',
+    ]);
   });
 });
 
@@ -86,8 +98,8 @@ describe('ConfirmDialog extra choice (VP8, #398)', () => {
   imports: [ConfirmDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<mf-confirm-dialog
-    title="Deactivate?"
-    confirmLabel="Deactivate"
+    title="Deactivate Priority"
+    confirmLabel="Deactivate Priority"
     [busy]="busy()"
     [error]="error()"
     [visible]="true"
