@@ -4,7 +4,8 @@
  *   secondary  white outline (default) .mf-btn                   / p-button severity="secondary"
  *   danger     red outline in rows and pages; red fill only inside confirm dialogs (add .mf-btn--solid)
  *   text       link-styled, no border  .mf-btn.mf-btn--text      / p-button [text]="true"
- * Size: 32 px minimum height, 14 px label (spec 2 and UAT2-22). Both native buttons and PrimeNG's p-button
+ * Size: 36 px (`--mf-ctl-h`, D-02), 32 px (`--mf-ctl-h-sm`) only inside a table cell or the inline filter row; icon buttons 36 x 36; 14 px label, 8 px gap,
+ * 0 12 px padding, 600 weight (400 for text buttons). Both native buttons and PrimeNG's p-button
  * render through the same tokens (see core/theme/mf-preset.ts), so templates can use either.
  */
 .mf-btn {
@@ -13,7 +14,7 @@
   justify-content: center;
   gap: var(--mf-s2);
   box-sizing: border-box;
-  min-height: 32px;
+  min-height: var(--mf-ctl-h);
   padding: 0 var(--mf-s3);
   border: 1px solid var(--mf-border-strong);
   border-radius: var(--mf-radius);
@@ -33,9 +34,20 @@
 }
 
 .mf-btn:disabled,
-.mf-btn[aria-disabled='true'] {
-  opacity: 0.55;
+.mf-btn[aria-disabled='true'],
+button.p-button:disabled {
+  border-color: var(--mf-border);
+  background: var(--mf-surface-alt);
+  color: var(--mf-text-disabled);
+  opacity: 1;
   cursor: not-allowed;
+}
+
+.mf-btn--text:disabled,
+.mf-btn--text[aria-disabled='true'],
+.p-button.p-button-text:disabled {
+  border-color: transparent;
+  background: transparent;
 }
 
 .mf-btn .pi {
@@ -102,22 +114,38 @@
   background: var(--mf-danger-bg);
 }
 
-/* Square, icon-only button (needs an aria-label). */
+/* Square, icon-only button (needs an aria-label): 36 x 36. */
 .mf-btn--icon {
-  min-width: 32px;
+  min-width: var(--mf-ctl-h);
   padding: 0;
+}
+
+/* Buttons inside a table cell or the inline filter row are 32 px (D-02): one rule here, never per page. */
+td .mf-btn:not(.mf-btn--text),
+td .p-button:not(.p-button-text),
+.mf-btn--cell {
+  min-height: var(--mf-ctl-h-sm);
+}
+
+td .mf-btn--icon,
+.mf-btn--icon.mf-btn--cell {
+  min-width: var(--mf-ctl-h-sm);
 }
 
 /* PrimeNG buttons: same size scale (small is no longer smaller than the default) and the same variants. */
 .p-button {
-  min-height: 32px;
+  min-height: var(--mf-ctl-h);
   font-size: var(--mf-fs-md);
   white-space: nowrap;
 }
 
 .p-button.p-button-sm {
-  min-height: 32px;
+  min-height: var(--mf-ctl-h);
   font-size: var(--mf-fs-md);
+}
+
+.p-button .p-button-icon {
+  font-size: var(--mf-icon-md);
 }
 
 .p-button.p-button-text {
@@ -146,7 +174,7 @@
 /*
  * One segmented toggle (epic #893, issue #919): a group of two to four buttons that are alternatives of ONE thing (the scope, a range, a view). Put
  * `mfSegmented` on the group element (shared/ui/segmented.ts) and `class="mf-btn"` with `[attr.aria-pressed]` on its buttons. Same height as every
- * control (32 px, 44 px on a phone and on touch), the pressed button is a solid blue fill with white text and bold (no check mark since US-10, #1101: the inverted fill is the signal, so the state is never colour alone).
+ * control (36 px, 44 px on a phone and on touch), the pressed button is a solid blue fill with white text and bold (no check mark since US-10, #1101: the inverted fill is the signal, so the state is never colour alone).
  */
 .mf-seg {
   display: inline-flex;
@@ -154,7 +182,7 @@
 }
 
 .mf-seg > .mf-btn {
-  min-height: var(--mf-seg-h, 32px);
+  min-height: var(--mf-seg-h, var(--mf-ctl-h));
 }
 
 .mf-seg > .mf-btn + .mf-btn {

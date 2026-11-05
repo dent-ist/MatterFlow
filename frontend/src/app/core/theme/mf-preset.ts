@@ -58,14 +58,21 @@ export const MfPreset = definePreset(AuraLite, {
       },
     },
     // Button variants (UXR-04): primary = filled brand; secondary = white outline; danger = red outline (the red fill is the
-    // `mf-btn--solid` class, used only in confirm dialogs); text = link style. One size: 14 px label, 32 px high (src/styles/_buttons.scss).
+    // `mf-btn--solid` class, used only in confirm dialogs); text = link style. One size: 14 px label, 36 px high (--mf-ctl-h; src/styles/_buttons.scss).
     button: {
       root: {
         paddingX: '0.75rem',
         paddingY: '0.375rem',
         fontSize: '0.875rem',
+        gap: '0.5rem',
+        iconOnlyWidth: 'var(--mf-ctl-h)',
         label: { fontWeight: '600' },
-        sm: { fontSize: '0.875rem', paddingX: '0.75rem', paddingY: '0.375rem' },
+        sm: {
+          fontSize: '0.875rem',
+          paddingX: '0.75rem',
+          paddingY: '0.375rem',
+          iconOnlyWidth: 'var(--mf-ctl-h)',
+        },
         secondary: {
           background: 'var(--mf-white)',
           hoverBackground: '{surface.100}',

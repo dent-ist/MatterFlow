@@ -39,6 +39,8 @@ const SIZE_PENDING: string[] = [];
 /** Properties that paint a button. */
 const PAINT =
   /(^|[;{\s])(background|background-color|border|border-color|border-radius|color|padding|padding-inline|padding-block|font|font-size|font-weight|height)\s*:/;
+/** A `height` or `min-height` written as a number (UI update 2, #1123: button heights come from `--mf-ctl-h` / `--mf-ctl-h-sm` only; the 44 px touch rule in a media query is allowed). */
+const LITERAL_HEIGHT = /(^|[;{\s])(min-)?height\s*:\s*(?!44px)[\d.]/;
 /** Selectors that target a button. */
 const BUTTON_SELECTOR = /(^|[\s,>:])(button\b|\.p-button|\.mf-btn)|__(link|btn|button)\b/;
 
@@ -46,7 +48,8 @@ export function paintedButtonRules(css: string): string[] {
   const out: string[] = [];
   for (const rule of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
     const selector = rule[1].trim();
-    if (BUTTON_SELECTOR.test(selector) && PAINT.test(rule[2])) out.push(selector);
+    if (BUTTON_SELECTOR.test(selector) && (PAINT.test(rule[2]) || LITERAL_HEIGHT.test(rule[2])))
+      out.push(selector);
   }
   return out;
 }
@@ -88,6 +91,23 @@ describe('button rule (theme guide section 9)', () => {
     expect(paintedButtonRules('.x__link { color: blue; }')).toEqual(['.x__link']);
     expect(paintedButtonRules('.a .mf-btn { margin-inline-start: 8px; }')).toEqual([]);
     expect(paintedButtonRules('.a { color: red; }')).toEqual([]);
+  });
+
+  it('fails on a min-height or height literal on a button and accepts a token (#1123)', () => {
+    expect(paintedButtonRules('.a .mf-btn { min-height: 32px; }')).toEqual(['.a .mf-btn']);
+    expect(paintedButtonRules('.a .p-button { height: 2rem; }')).toEqual(['.a .p-button']);
+    expect(paintedButtonRules('.a .mf-btn { min-height: var(--mf-ctl-h); }')).toEqual([]);
+  });
+
+  it('the shared button sheet takes every height from a token (#1123)', () => {
+    const css = readFileSync(join(process.cwd(), 'src', 'styles', '_buttons.scss'), 'utf8').replace(
+      /\/\*.*?\*\//gs,
+      '',
+    );
+    const touch = css.indexOf('@media');
+    const heights = (touch < 0 ? css : css.slice(0, touch)).match(/(?<![-\w])(min-)?height:\s*[^;]+;/g) ?? [];
+    for (const h of heights) expect(h, h).toMatch(/var\(--mf-/);
+    expect(css).not.toMatch(/opacity:\s*0?\.\d/);
   });
 
   for (const file of FILES) {
