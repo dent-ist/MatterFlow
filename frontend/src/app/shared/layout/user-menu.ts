@@ -276,7 +276,7 @@ export class UserMenu {
           });
         } catch (err) {
           this.notify.error(
-            'We could not update your status',
+            "Couldn't update your status.",
             err instanceof ApiError ? err.message : 'Try again from My profile.',
           );
         }

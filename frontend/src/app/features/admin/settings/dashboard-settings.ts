@@ -465,7 +465,10 @@ export class DashboardSettings implements OnInit {
               }),
             );
       this.applyView(next);
-      this.notify.success('Saved. The gauge uses the new hours the next time it refreshes.');
+      this.notify.success(
+        'Dashboard settings saved',
+        'The gauge uses the new hours the next time it refreshes.',
+      );
       this.live.set('Dashboard settings saved.');
     } catch (error) {
       if (

@@ -30,8 +30,10 @@ import { HolidaysAdmin } from '../holidays/holidays-admin';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
-/** The toast after a successful save (design section 3). */
-export const BRANDING_SAVED_TEXT = 'Saved. Other users see it the next time they load the page.';
+/** The toast after a successful save (design section 3): title and detail; the live region reads both. */
+export const BRANDING_SAVED_TITLE = 'Branding saved';
+export const BRANDING_SAVED_DETAIL = 'Other users see it the next time they load the page.';
+export const BRANDING_SAVED_TEXT = `${BRANDING_SAVED_TITLE}. ${BRANDING_SAVED_DETAIL}`;
 
 /** The one tab today; the strip is there so later settings sections slot in. */
 const TABS: readonly MfTab[] = [
@@ -691,7 +693,7 @@ export class SettingsPage implements OnInit, HasUnsavedChanges {
 
     this.brand.apply(brandingOf(latest));
     this.announcement.set(BRANDING_SAVED_TEXT);
-    this.notify.success(BRANDING_SAVED_TEXT);
+    this.notify.success(BRANDING_SAVED_TITLE, BRANDING_SAVED_DETAIL);
   }
 
   /** Shows a validation message under its field. Returns true when the whole save must stop (a conflict). */

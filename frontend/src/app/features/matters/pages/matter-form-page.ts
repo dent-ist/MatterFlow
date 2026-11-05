@@ -464,12 +464,13 @@ export class MatterFormPage implements HasUnsavedChanges {
           );
       this.saved = true;
       if (saved.droppedFields.length > 0) {
-        this.notify.info(`Hidden custom values were not saved: ${saved.droppedFields.join(', ')}.`);
+        this.notify.info('Hidden values not saved', `${saved.droppedFields.join(', ')}.`);
       }
       if (confirmLoss) {
         // The person confirmed that they lose sight of the matter: its page would now answer "not found", so they go to the list instead.
         this.notify.success(
-          `Matter ${saved.matterRef} saved. It is sensitive now and you no longer see it.`,
+          `Matter ${saved.matterRef} saved`,
+          'It is sensitive now and you no longer see it.',
         );
         await this.router.navigate(['/matters']);
         return;
@@ -521,7 +522,7 @@ export class MatterFormPage implements HasUnsavedChanges {
       const o = this.original()!;
       this.original.set({ ...updated, name: o.name, isSensitive: o.isSensitive });
       this.changeNumberOpen.set(false);
-      this.notify.success(`Matter number changed to ${updated.matterRef}`);
+      this.notify.success('Matter number changed', updated.matterRef);
     } catch (err) {
       const errors = serverFormErrors(err);
       this.serverErrors.set(errors.fields);

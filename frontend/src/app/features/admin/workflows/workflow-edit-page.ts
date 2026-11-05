@@ -671,7 +671,10 @@ export class WorkflowEditPage implements HasUnsavedChanges {
     }
     this.deactivateOpen.set(false);
     this.apply(result, true);
-    this.notify.success(`Workflow ${result.workflow.name} ${active ? 'activated' : 'deactivated'}`);
+    this.notify.success(
+      active ? 'Workflow activated' : 'Workflow deactivated',
+      result.workflow.name,
+    );
     this.announcement.set(`Workflow ${active ? 'activated' : 'deactivated'}`);
     focusStatusAfterAction(this.injector);
   }
@@ -700,7 +703,7 @@ export class WorkflowEditPage implements HasUnsavedChanges {
         : firstValueFrom(this.api.createWorkflow({ ...body, isOrdered: this.isOrdered() })),
     );
     if (!result) return false;
-    this.notify.success(`Workflow ${result.workflow.name} saved`);
+    this.notify.success('Workflow saved', result.workflow.name);
     if (this.isEdit()) {
       this.apply(result);
       this.announcement.set('Saved');

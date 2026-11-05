@@ -327,7 +327,7 @@ export class ClientFormPage implements HasUnsavedChanges {
           );
       this.saved = true;
       if (saved.droppedFields.length > 0) {
-        this.notify.info(`Hidden custom values were not saved: ${saved.droppedFields.join(', ')}.`);
+        this.notify.info('Hidden values not saved', `${saved.droppedFields.join(', ')}.`);
       }
       this.notify.success(`Client ${saved.clientNumber} saved`);
       await this.router.navigate(['/clients', saved.clientId]);
@@ -375,7 +375,7 @@ export class ClientFormPage implements HasUnsavedChanges {
         isActive: this.original()!.isActive,
       });
       this.changeNumberOpen.set(false);
-      this.notify.success(`Client number changed to ${updated.clientNumber}`);
+      this.notify.success('Client number changed', updated.clientNumber);
     } catch (err) {
       const errors = serverFormErrors(err);
       this.serverErrors.set(errors.fields);

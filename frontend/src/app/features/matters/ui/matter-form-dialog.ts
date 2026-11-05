@@ -533,7 +533,7 @@ export class MatterFormDialog {
         }),
       );
       if (saved.droppedFields.length > 0) {
-        this.notify.info(`Hidden custom values were not saved: ${saved.droppedFields.join(', ')}.`);
+        this.notify.info('Hidden values not saved', `${saved.droppedFields.join(', ')}.`);
       }
       this.notify.success(`Matter ${saved.matterRef} saved`);
       this.visible.set(false);
@@ -558,7 +558,7 @@ export class MatterFormDialog {
             rowVersion: current.rowVersion,
           }),
         );
-        this.notify.success(`CM Number changed to ${current.matterRef}`);
+        this.notify.success('CM Number changed', current.matterRef);
       }
       const saved = await firstValueFrom(
         this.api.updateMatter(current.matterId, {
@@ -571,13 +571,14 @@ export class MatterFormDialog {
         }),
       );
       if (saved.droppedFields.length > 0) {
-        this.notify.info(`Hidden custom values were not saved: ${saved.droppedFields.join(', ')}.`);
+        this.notify.info('Hidden values not saved', `${saved.droppedFields.join(', ')}.`);
       }
       this.askNumberChange.set(false);
       this.visible.set(false);
       if (confirmLoss) {
         this.notify.success(
-          `Matter ${saved.matterRef} saved. It is sensitive now and you no longer see it.`,
+          `Matter ${saved.matterRef} saved`,
+          'It is sensitive now and you no longer see it.',
         );
         this.lostAccess.emit();
         return;

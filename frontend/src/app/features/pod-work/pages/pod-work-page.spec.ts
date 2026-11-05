@@ -505,8 +505,14 @@ describe('PodWorkPage', () => {
     expect(
       TestBed.inject(NotificationService)
         .toasts()
-        .map((t) => [t.severity, t.summary]),
-    ).toEqual([['error', 'Someone else changed this task. The row was refreshed.']]);
+        .map((t) => [t.severity, t.summary, t.detail]),
+    ).toEqual([
+      [
+        'error',
+        "Couldn't save the change.",
+        'Someone else changed this task. The row was refreshed.',
+      ],
+    ]);
   });
 
   it('hides "Assign to me" without Task.Assign and on the By member tab', async () => {

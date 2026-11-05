@@ -18,15 +18,15 @@ export interface Toast {
   readonly key: string | undefined;
   /** How many identical messages this toast stands for ("x3"). */
   readonly count: number;
-  /** Milliseconds it stays after the last identical message (4 s, errors and warnings 8 s). */
+  /** Milliseconds it stays after the last identical message (success 4 s, info 6 s, warning 8 s); 0 = until it is closed (errors, D-52). */
   readonly life: number;
 }
 
 const LIFE_MS: Record<ToastSeverity, number> = {
   success: 4000,
-  info: 4000,
+  info: 6000,
   warn: 8000,
-  error: 8000,
+  error: 0,
 };
 
 /**
@@ -124,7 +124,7 @@ export class NotificationService {
 
   private start(toast: Toast): void {
     this.stop(toast.id);
-    if (this.holding) return;
+    if (this.holding || toast.life === 0) return;
     this.timers.set(
       toast.id,
       setTimeout(() => this.dismiss(toast.id), toast.life),

@@ -160,10 +160,10 @@ test.describe('pf1-toast-replace: one availability toast at a time (#525)', () =
     const me = await asUser(p.username);
     await me.goto('/my-work');
     await setOutFromMenu(me);
-    await expect(toasts(me).filter({ hasText: 'You are out of office' })).toHaveCount(1);
+    await expect(toasts(me).filter({ hasText: 'Out of office set' })).toHaveCount(1);
     await imBackFromMenu(me);
     await expect(toasts(me).filter({ hasText: 'Welcome back' })).toHaveCount(1);
-    await expect(toasts(me).filter({ hasText: 'You are out of office' })).toHaveCount(0);
+    await expect(toasts(me).filter({ hasText: 'Out of office set' })).toHaveCount(0);
     await expect(toasts(me)).toHaveCount(1);
     await shot(me, 'pf1-toast-replace');
   });
@@ -176,10 +176,10 @@ test.describe('pf1-toast-replace: one availability toast at a time (#525)', () =
     const me = await asUser(p.username);
     await me.goto('/profile');
     await setOutFromMenu(me);
-    await expect(toasts(me).filter({ hasText: 'You are out of office' })).toHaveCount(1);
+    await expect(toasts(me).filter({ hasText: 'Out of office set' })).toHaveCount(1);
     await me.getByLabel('Start time', { exact: true }).fill('08:00');
     await me.getByRole('button', { name: 'Save changes' }).click();
     await expect(toasts(me).filter({ hasText: 'Availability saved' })).toHaveCount(1);
-    await expect(toasts(me).filter({ hasText: 'You are out of office' })).toHaveCount(0);
+    await expect(toasts(me).filter({ hasText: 'Out of office set' })).toHaveCount(0);
   });
 });

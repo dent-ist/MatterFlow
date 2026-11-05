@@ -936,7 +936,7 @@ export class TaskEditDialog {
     const dropped = this.store.task()?.droppedFields ?? [];
     this.store.editing.set(false);
     this.store.dirty.set(false);
-    this.notify.success('Task saved.');
+    this.notify.success('Task saved');
     if (dropped.length > 0) {
       this.notify.info(
         'Some answers were removed',

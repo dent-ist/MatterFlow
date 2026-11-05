@@ -428,7 +428,7 @@ export class StepEditPage implements HasUnsavedChanges {
         : firstValueFrom(this.api.createStepDefinition(body)),
     );
     if (!result) return false;
-    this.notify.success(`Step ${result.title} saved`);
+    this.notify.success('Step saved', result.title);
     if (this.isEdit()) {
       this.apply(result);
       this.submitted.set(false);

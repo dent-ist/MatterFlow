@@ -272,7 +272,7 @@ export class AddCommentDialog {
       await firstValueFrom(
         this.comments.addTaskComment(taskId, { bodyHtml: textToHtml(this.text()) }),
       );
-      this.notify.success('Comment posted.');
+      this.notify.success('Comment posted');
       this.visible.set(false);
       this.posted.emit(taskId);
     } catch (e) {

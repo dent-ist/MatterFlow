@@ -422,7 +422,8 @@ export class UserDrawer {
         this.notify.info(`Not undone: ${granted.displayName} was changed by someone else since.`);
       } else if (!(err instanceof ApiError) || err.hasFieldErrors) {
         this.notify.error(
-          err instanceof ApiError ? err.message : "We couldn't undo that. Try again.",
+          "Couldn't undo the access.",
+          err instanceof ApiError ? err.message : 'Try again.',
         );
       } else {
         this.notify.error(`Couldn't take back the access of ${granted.displayName}.`);

@@ -350,7 +350,7 @@ export class TaskHeader {
     const url = new URL(`/tasks/${taskId}`, location.origin).toString();
     try {
       await navigator.clipboard.writeText(url);
-      this.notify.success('Link copied.');
+      this.notify.success('Link copied');
     } catch {
       this.notify.error('The link could not be copied.', url);
     }

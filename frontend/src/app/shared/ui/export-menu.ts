@@ -127,14 +127,14 @@ export class ExportMenu {
       } else {
         this.status.set('');
         this.notify.error(
-          'Could not copy',
+          "Couldn't copy the list.",
           'The browser did not allow it. Download the CSV instead.',
         );
       }
     } catch (error) {
       this.status.set('');
       this.notify.error(
-        'Could not export the list',
+        "Couldn't export the list.",
         error instanceof ExportError ? error.message : 'Try again in a moment.',
       );
     } finally {

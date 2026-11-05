@@ -693,13 +693,15 @@ export class UsersPage implements OnInit {
       this.patchPods(user.userId, before);
       if (error instanceof ApiError && error.code === 'CONCURRENCY_CONFLICT') {
         this.notify.error(
+          "Couldn't save the pods.",
           `The pods of ${user.displayName} were changed by someone else. The list was refreshed.`,
         );
         void this.reload();
       } else if (!(error instanceof ApiError) || error.hasFieldErrors) {
         // The HTTP layer already toasts other API failures.
         this.notify.error(
-          error instanceof ApiError ? error.message : "We couldn't save the pods. Try again.",
+          "Couldn't save the pods.",
+          error instanceof ApiError ? error.message : 'Try again.',
         );
       }
     } finally {
@@ -730,7 +732,8 @@ export class UsersPage implements OnInit {
         void this.reload();
       } else if (!(error instanceof ApiError) || error.hasFieldErrors) {
         this.notify.error(
-          error instanceof ApiError ? error.message : "We couldn't undo that change. Try again.",
+          "Couldn't undo the pod change.",
+          error instanceof ApiError ? error.message : 'Try again.',
         );
       } else {
         // The HTTP layer toasts the failure; add what it means for the Undo.

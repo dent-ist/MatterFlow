@@ -1345,7 +1345,7 @@ describe('UsersPage', () => {
       expect(notify.toasts()).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          summary: "We couldn't save the pods. Try again.",
+          summary: "Couldn't save the pods.",
         }),
       );
       expect(TestBed.inject(UndoService).current()).toBeNull();
@@ -1368,8 +1368,8 @@ describe('UsersPage', () => {
       expect(notify.toasts()).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          summary:
-            'The pods of Tariq Mahmood were changed by someone else. The list was refreshed.',
+          summary: "Couldn't save the pods.",
+          detail: 'The pods of Tariq Mahmood were changed by someone else. The list was refreshed.',
         }),
       );
       expect(list).toHaveBeenCalled();

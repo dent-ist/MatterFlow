@@ -506,7 +506,7 @@ export class AbsenceList {
       this.changed.emit();
     } catch (err) {
       this.notify.error(
-        'We could not end the entry',
+        "Couldn't end the entry.",
         err instanceof ApiError ? err.message : 'Try again.',
       );
     } finally {

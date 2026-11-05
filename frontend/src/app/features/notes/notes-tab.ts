@@ -420,7 +420,7 @@ interface RefChip {
                       <i class="pi pi-plus" aria-hidden="true"></i>Add the first note
                     </button>
                   } @else {
-                    <p>Nobody has added a note yet. People who can edit this matter can add one.</p>
+                    No notes.
                   }
                 </div>
               } @else if (items().length === 0) {
@@ -2488,7 +2488,10 @@ export class NotesTab {
       await navigator.clipboard.writeText(url);
       this.notify.success('Link copied');
     } catch {
-      this.notify.warn('Copying is not allowed here. Copy the address from the browser.');
+      this.notify.warn(
+        "Couldn't copy the link.",
+        'Copying is not allowed here. Copy the address from the browser.',
+      );
     }
   }
 
@@ -2667,7 +2670,7 @@ export class NotesTab {
     if (!this.lock().canEdit) {
       ev.preventDefault();
       const n = this.note();
-      this.notify.info(`Locked by ${n?.lockedByName ?? 'someone'}`);
+      this.notify.info(`Note locked by ${n?.lockedByName ?? 'someone'}`);
       return;
     }
     this.edit();
@@ -2700,9 +2703,8 @@ export class NotesTab {
     void firstValueFrom(this.templatesApi.useNoteTemplate(t.noteTemplateId)).catch(() => undefined);
     const open = openPlaceholders(body);
     this.notify.info(
-      open.length > 0
-        ? `Template "${t.name}" inserted. Fill in: ${open.join(', ')}`
-        : `Template "${t.name}" inserted`,
+      'Template inserted',
+      open.length > 0 ? `"${t.name}". Fill in: ${open.join(', ')}.` : t.name,
     );
   }
 
@@ -2760,7 +2762,10 @@ export class NotesTab {
 
   protected onSaveClick(): void {
     if (this.saveBlocked()) {
-      this.notify.info(`Locked by ${this.lockedWhileEditing()}; your changes cannot be saved`);
+      this.notify.info(
+        `Note locked by ${this.lockedWhileEditing()}`,
+        'Your changes cannot be saved.',
+      );
       return;
     }
     void this.save();
@@ -2769,7 +2774,7 @@ export class NotesTab {
   protected async save(): Promise<void> {
     const html = this.editorRef()?.getHtml() ?? this.currentHtml();
     if (html.length > 100_000) {
-      this.notify.warn('The note is too large (limit 100 KB of formatted text).');
+      this.notify.warn('Note too large', 'The limit is 100 KB of formatted text.');
       return;
     }
     const check = await this.beforeSave()?.(html);
@@ -2854,7 +2859,7 @@ export class NotesTab {
     this.editing.set(false);
     this.currentHtml.set(this.startedHtml());
     await this.openNow(n.noteId, true);
-    this.notify.info('Loaded their version');
+    this.notify.info('Their version loaded');
   }
 
   protected async copyMine(): Promise<void> {
@@ -2863,9 +2868,12 @@ export class NotesTab {
       .replace(/<[^>]+>/g, ' ');
     try {
       await navigator.clipboard.writeText(text.replace(/[ \t]+/g, ' ').trim());
-      this.notify.success('Your text was copied');
+      this.notify.success('Text copied');
     } catch {
-      this.notify.warn('Copying is not allowed here. Select your text and copy it by hand.');
+      this.notify.warn(
+        "Couldn't copy the text.",
+        'Copying is not allowed here. Select your text and copy it by hand.',
+      );
     }
   }
 
@@ -2924,7 +2932,7 @@ export class NotesTab {
         firstValueFrom(
           this.notesApi.setNotePinned(n.noteId, { pinned: !n.isPinned, rowVersion: n.rowVersion }),
         ),
-      n.isPinned ? 'Unpinned' : 'Pinned to the top of its groups',
+      n.isPinned ? ['Note unpinned'] : ['Note pinned', 'It stays at the top of its group.'],
     );
   }
 
@@ -2933,7 +2941,7 @@ export class NotesTab {
     if (n)
       await this.change(
         () => firstValueFrom(this.notesApi.lockNote(n.noteId, { rowVersion: n.rowVersion })),
-        'Note locked: it is read only for everybody',
+        ['Note locked', 'It is read only for everybody.'],
       );
   }
 
@@ -2942,17 +2950,23 @@ export class NotesTab {
     if (n)
       await this.change(
         () => firstValueFrom(this.notesApi.unlockNote(n.noteId, { rowVersion: n.rowVersion })),
-        'Note unlocked',
+        ['Note unlocked'],
       );
   }
 
-  private async change(call: () => Promise<NoteResponse>, done: string): Promise<void> {
+  private async change(
+    call: () => Promise<NoteResponse>,
+    done: readonly [title: string, detail?: string],
+  ): Promise<void> {
     try {
       this.showNote(await call());
-      this.notify.info(done);
+      this.notify.info(done[0], done[1]);
       await this.loadList();
     } catch (e) {
-      this.notify.error(e instanceof ApiError ? e.message : 'That did not work. Try again.');
+      this.notify.error(
+        "Couldn't complete that.",
+        e instanceof ApiError ? e.message : 'Try again.',
+      );
       const n = this.note();
       if (n) void this.openNow(n.noteId);
     }
@@ -3070,7 +3084,7 @@ export class NotesTab {
   protected histReset(): void {
     this.histWidth.set(300);
     this.writeNumber(HIST_WIDTH_KEY, 300);
-    this.notify.info('Width reset to the default');
+    this.notify.info('Width reset');
   }
 
   private clampHist(w: number): number {
@@ -3255,7 +3269,8 @@ export class NotesTab {
       );
       this.panel.set('none');
       this.notify.success(
-        `Template "${this.tplName().trim()}" saved; find it under Templates or with New note, From template`,
+        'Template saved',
+        `Find "${this.tplName().trim()}" under Templates or with New note, From template.`,
       );
     } catch (e) {
       this.tplError.set(e instanceof ApiError ? e.message : 'The template could not be saved.');
@@ -3343,7 +3358,7 @@ export class NotesTab {
   protected splitReset(): void {
     this.split.set(SPLIT_DEFAULT);
     this.saveSplit();
-    this.notify.info('Width reset to the default');
+    this.notify.info('Width reset');
   }
 
   private readSplit(): number {

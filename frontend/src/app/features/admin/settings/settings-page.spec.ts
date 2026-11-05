@@ -10,7 +10,13 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { DEFAULT_BRANDING, applyBranding, currentBranding } from '../../../core/branding/branding';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
-import { BRANDING_SAVED_TEXT, SettingsPage, brandingOf, fileSizeText } from './settings-page';
+import {
+  BRANDING_SAVED_TEXT,
+  BRANDING_SAVED_TITLE,
+  SettingsPage,
+  brandingOf,
+  fileSizeText,
+} from './settings-page';
 
 const view = (patch: Partial<BrandingAdminView> = {}): BrandingAdminView => ({
   appName: 'MatterFlow',
@@ -231,7 +237,7 @@ describe('SettingsPage: Administration > Settings > Branding (epic #850, BR-05)'
       rowVersion: 'rv-1',
     });
     expect(api['setBrandingIcon']).not.toHaveBeenCalled();
-    expect(toasts).toEqual([BRANDING_SAVED_TEXT]);
+    expect(toasts).toEqual([BRANDING_SAVED_TITLE]);
     expect(currentBranding().appName).toBe('Smith & Co');
     expect(q<HTMLInputElement>('#st-name')!.value).toBe('Smith & Co');
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
@@ -290,7 +296,7 @@ describe('SettingsPage: Administration > Settings > Branding (epic #850, BR-05)'
     await submit();
     expect(api['resetBrandingName']).toHaveBeenCalledWith('rv-9');
     expect(api['setBrandingName']).not.toHaveBeenCalled();
-    expect(toasts).toEqual([BRANDING_SAVED_TEXT]);
+    expect(toasts).toEqual([BRANDING_SAVED_TITLE]);
     expect(currentBranding().appName).toBe('MatterFlow');
   });
 
@@ -329,7 +335,7 @@ describe('SettingsPage: Administration > Settings > Branding (epic #850, BR-05)'
     expect(param.fileName).toBe('mf-logo.svg');
     expect(param.data).toBe(file);
     expect(version).toBe('ic-1');
-    expect(toasts).toEqual([BRANDING_SAVED_TEXT]);
+    expect(toasts).toEqual([BRANDING_SAVED_TITLE]);
     expect(currentBranding().iconUrl).toBe('/api/v1/branding/icon?v=cccccccccccc');
     expect(q('[data-icon-thumb]')!.getAttribute('src')).toBe(
       '/api/v1/branding/icon?v=cccccccccccc',
@@ -382,7 +388,7 @@ describe('SettingsPage: Administration > Settings > Branding (epic #850, BR-05)'
     await submit();
     expect(api['resetBrandingIcon']).toHaveBeenCalledWith('ic-5');
     expect(currentBranding().iconUrl).toBeNull();
-    expect(toasts).toEqual([BRANDING_SAVED_TEXT]);
+    expect(toasts).toEqual([BRANDING_SAVED_TITLE]);
   });
 
   it('saves the name and the icon in one Save, name first', async () => {
@@ -407,7 +413,7 @@ describe('SettingsPage: Administration > Settings > Branding (epic #850, BR-05)'
     await submit();
     expect(api['setBrandingName']).toHaveBeenCalledTimes(1);
     expect(api['setBrandingIcon'].mock.calls[0][1]).toBe('i1'); // the row version returned by the name save
-    expect(toasts).toEqual([BRANDING_SAVED_TEXT]);
+    expect(toasts).toEqual([BRANDING_SAVED_TITLE]);
   });
 
   it('a conflict stops the save, says so, and Reload latest loads the current values', async () => {

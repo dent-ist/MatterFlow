@@ -88,7 +88,10 @@ describe('ReportRolesTab (#717)', () => {
     fixture.detectChanges();
 
     expect(api.setRolesOfReport).toHaveBeenCalledWith(5, { roleIds: [1, 2] });
-    expect(success).toHaveBeenCalledWith('Overdue tasks now has 2 roles (added System Admin).');
+    expect(success).toHaveBeenCalledWith(
+      'Report assignments saved',
+      'Overdue tasks now has 2 roles (added System Admin).',
+    );
     expect(el.querySelector('[data-checklist-search]')).not.toBeNull();
   });
 

@@ -205,9 +205,9 @@ export class ProjectPanel {
             }),
           );
       if (saved.droppedFields.length > 0) {
-        this.notify.info(`Hidden custom values were not saved: ${saved.droppedFields.join(', ')}.`);
+        this.notify.info('Hidden values not saved', `${saved.droppedFields.join(', ')}.`);
       }
-      this.notify.success(`Project ${saved.name} saved`);
+      this.notify.success('Project saved', saved.name);
       this.visible.set(false);
       this.saved.emit(saved);
     } catch (err) {

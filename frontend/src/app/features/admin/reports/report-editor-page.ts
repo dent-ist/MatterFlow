@@ -526,7 +526,7 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
         const created = await firstValueFrom(this.api.createReport(body));
         this.baseline = this.key();
         this.baselineVersion.update((n) => n + 1);
-        this.notify.success('Report created. It is inactive until you preview and activate it.');
+        this.notify.success('Report created', 'It is inactive until you preview and activate it.');
         await this.router.navigate(['/admin/reports', created.reportId], { replaceUrl: true });
         return true;
       }
@@ -542,15 +542,18 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
       this.versionsKey.update((n) => n + 1);
       if (result.deactivated) {
         this.announcement.set(`Saved as version ${result.versionNo}. Preview it to activate.`);
-        this.notify.warn(`Saved as version ${result.versionNo}. Preview it to activate.`);
+        this.notify.warn(`Report saved as version ${result.versionNo}`, 'Preview it to activate.');
       } else if (result.unchanged) {
         this.announcement.set(
           'Saved. The query and parameters did not change, so no new version was written.',
         );
-        this.notify.success('Saved.');
+        this.notify.success(
+          'Report saved',
+          'The query and parameters did not change, so no new version was written.',
+        );
       } else {
         this.announcement.set(`Saved as version ${result.versionNo}.`);
-        this.notify.success(`Saved as version ${result.versionNo}.`);
+        this.notify.success('Report saved', `Saved as version ${result.versionNo}.`);
       }
       return true;
     } catch (e) {
@@ -668,6 +671,7 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
     await this.changeState(
       () => firstValueFrom(this.admin.activateReport(current.reportId)),
       `${current.name} is active. Roles it is assigned to can run it.`,
+      ['Report activated', 'Roles it is assigned to can run it.'],
     );
   }
 
@@ -678,10 +682,15 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
     await this.changeState(
       () => firstValueFrom(this.admin.deactivateReport(current.reportId)),
       `${current.name} is inactive. It is hidden from people and cannot run.`,
+      ['Report deactivated', 'It is hidden from people and cannot run.'],
     );
   }
 
-  private async changeState(call: () => Promise<unknown>, message: string): Promise<void> {
+  private async changeState(
+    call: () => Promise<unknown>,
+    message: string,
+    toast: readonly [title: string, detail: string],
+  ): Promise<void> {
     this.busy.set(true);
     this.failure.set('');
     try {
@@ -692,7 +701,7 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
         this.report.set(fresh);
       }
       this.announcement.set(message);
-      this.notify.success(message);
+      this.notify.success(toast[0], toast[1]);
     } catch (e) {
       this.failure.set(e instanceof ApiError ? e.message : 'The state could not be changed.');
     } finally {
@@ -716,7 +725,10 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
       this.versionsKey.update((n) => n + 1);
       const text = `Version ${versionNo} restored as version ${result.versionNo}. Preview it to activate.`;
       this.announcement.set(text);
-      this.notify.success(text);
+      this.notify.success(
+        `Version ${versionNo} restored`,
+        `Saved as version ${result.versionNo}. Preview it to activate.`,
+      );
     } catch (e) {
       if (serverFormErrors(e).conflict) this.conflict.set(true);
       else

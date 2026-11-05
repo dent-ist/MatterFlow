@@ -83,10 +83,10 @@ describe('ToastHost (#616)', () => {
     expect(texts()).toEqual(['b', 'd', 'e']);
   });
 
-  it('removes a toast after its time (4 s, errors 8 s) and holds the time while the pointer is on it', async () => {
+  it('removes a toast after its time (success 4 s, warning 8 s; an error stays) and holds the time while the pointer is on it', async () => {
     const { fixture, el } = setup();
     notify.success('Saved');
-    notify.error('Failed');
+    notify.warn('Careful');
     await flush(fixture);
     vi.advanceTimersByTime(4001);
     await flush(fixture);

@@ -451,7 +451,7 @@ describe('AssetTypeRecordPage', () => {
         published(),
         apiError(404, { title: 'Not found', status: 404 }),
       );
-      expect(q('h1').textContent).toBe("We couldn't find that asset type.");
+      expect(q('h1').textContent?.trim()).toBe("We couldn't find that asset type.");
       expect(q('nav[aria-label=Breadcrumb]').textContent!.replace(/\s+/g, ' ')).toMatch(
         /Administration\s*>?\s*Asset Types\s*>?\s*Asset type/,
       );
@@ -461,7 +461,7 @@ describe('AssetTypeRecordPage', () => {
 
     it('says the same for an address that is not a number, without asking the API', async () => {
       await open('abc');
-      expect(q('h1').textContent).toBe("We couldn't find that asset type.");
+      expect(q('h1').textContent?.trim()).toBe("We couldn't find that asset type.");
       expect(api.getAssetType).not.toHaveBeenCalled();
     });
 
@@ -473,7 +473,7 @@ describe('AssetTypeRecordPage', () => {
         published(),
         apiError(403, { title: 'Forbidden', status: 403 }),
       );
-      expect(q('h1').textContent).toBe("You don't have access to this asset type.");
+      expect(q('h1').textContent?.trim()).toBe("You don't have access to this asset type.");
       expect(el().querySelector('[data-retry]')).toBeNull();
       fixture.destroy();
       TestBed.resetTestingModule();

@@ -82,7 +82,7 @@ describe('AddCommentDialog (Add comment from a matter, epic #758)', () => {
     expect(comments.addTaskComment).toHaveBeenCalledWith(12, {
       bodyHtml: '<p>Called the client.</p><p>Waiting for &lt;b&gt;batch 5&lt;/b&gt;.</p>',
     });
-    expect(notify.success).toHaveBeenCalledWith('Comment posted.');
+    expect(notify.success).toHaveBeenCalledWith('Comment posted');
     expect(f.componentInstance.posted).toEqual([12]);
     expect(f.componentInstance.open()).toBe(false);
   });

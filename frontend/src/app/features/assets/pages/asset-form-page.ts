@@ -583,9 +583,9 @@ export class AssetFormPage implements HasUnsavedChanges {
             }),
           );
       this.saved = true;
-      this.notify.success(`Asset ${result.displayName} saved`);
+      this.notify.success('Asset saved', result.displayName);
       if (result.droppedFields.length > 0) {
-        this.notify.info(`Hidden values were not saved: ${result.droppedFields.join(', ')}.`);
+        this.notify.info('Hidden values not saved', `${result.droppedFields.join(', ')}.`);
       }
       await this.router.navigate(['/assets', result.assetId]);
     } catch (err) {

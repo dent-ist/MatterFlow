@@ -448,7 +448,7 @@ export class TaskAssetLinks {
         }),
       );
       this.linking.set(false);
-      this.notify.success('Asset linked.');
+      this.notify.success('Asset linked');
       await this.load();
       this.changed.emit();
     } catch (error) {
@@ -495,7 +495,7 @@ export class TaskAssetLinks {
       await firstValueFrom(this.api.unlinkTaskAsset(this.taskId(), link.assetId));
       this.unlinkOpen.set(false);
       this.unlinking = null;
-      this.notify.success('Link removed.');
+      this.notify.success('Link removed');
       await this.load();
       this.changed.emit();
     } catch (error) {

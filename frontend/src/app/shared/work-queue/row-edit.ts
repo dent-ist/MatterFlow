@@ -549,7 +549,8 @@ export class RowEdit {
       } else if (!(error instanceof ApiError) || error.hasFieldErrors) {
         // The HTTP layer already toasts other API failures.
         this.notify.error(
-          error instanceof ApiError ? error.message : "We couldn't save that change. Try again.",
+          "Couldn't save the change.",
+          error instanceof ApiError ? error.message : 'Try again.',
         );
       }
     } finally {
@@ -558,7 +559,7 @@ export class RowEdit {
   }
 
   protected async onConflict(basis: TaskQueueRow = this.row()): Promise<void> {
-    this.notify.error(this.conflictMessage());
+    this.notify.error("Couldn't save the change.", this.conflictMessage());
     try {
       const fresh = await firstValueFrom(this.tasks.getTask(basis.taskId));
       this.rowChange.emit(rowFromTask(basis, fresh));
@@ -599,7 +600,10 @@ export class RowEdit {
       this.notify.success(`${updated.taskNumber} ${name} back to ${spec.previousLabel}.`);
     } catch (error) {
       if (error instanceof ApiError && error.code === 'CONCURRENCY_CONFLICT') {
-        this.notify.error(`Couldn't undo: someone else changed this task. Check it and try again.`);
+        this.notify.error(
+          `Couldn't undo the ${name} change.`,
+          'Someone else changed this task. Check it and try again.',
+        );
         try {
           this.showTask(await firstValueFrom(this.tasks.getTask(taskId)));
         } catch {
@@ -607,7 +611,8 @@ export class RowEdit {
         }
       } else if (!(error instanceof ApiError) || error.hasFieldErrors) {
         this.notify.error(
-          error instanceof ApiError ? error.message : "We couldn't undo that change. Try again.",
+          `Couldn't undo the ${name} change.`,
+          error instanceof ApiError ? error.message : 'Try again.',
         );
       } else {
         // The HTTP layer toasts the failure; add what it means for the Undo.

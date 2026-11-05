@@ -610,7 +610,7 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
       );
       this.all.set(this.all().map((r) => (r.id === updated.id ? updated : r)));
       this.announcement.set(`${t.name} ${isActive ? 'activated' : 'deactivated'}.`);
-      this.notify.success('Saved.');
+      this.notify.success(isActive ? 'Task type activated' : 'Task type deactivated', t.name);
       focusListAfterAction(this.injector, `Actions for ${t.name}`);
       return 'done';
     } catch (e) {

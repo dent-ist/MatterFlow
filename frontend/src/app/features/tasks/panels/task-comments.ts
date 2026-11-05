@@ -924,7 +924,7 @@ export class TaskComments {
       await firstValueFrom(this.api.addTaskComment(this.taskId(), { bodyHtml: this.draft() }));
       this.draft.set('');
       this.composerOpen.set(false);
-      this.notify.success('Comment posted.');
+      this.notify.success('Comment posted');
       await this.load(this.items().length);
       this.changed.emit();
     } catch (error) {
@@ -959,7 +959,7 @@ export class TaskComments {
       );
       this.editingId.set(null);
       this.historyId.set(null);
-      this.notify.success('Saved.');
+      this.notify.success('Comment saved');
       await this.load(this.items().length);
       this.changed.emit();
     } catch (error) {

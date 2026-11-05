@@ -211,7 +211,7 @@ export class StatusLabelsPage implements OnInit, HasUnsavedChanges {
       );
       this.apply(this.rows().map((r) => (r.code === updated.code ? updated : r)));
       this.announcement.set(`${row.code} now reads ${updated.displayLabel}.`);
-      this.notify.success('Saved.');
+      this.notify.success('Status label saved', updated.displayLabel);
       this.closeDialog();
     } catch (e) {
       const error = e instanceof ApiError ? e : null;

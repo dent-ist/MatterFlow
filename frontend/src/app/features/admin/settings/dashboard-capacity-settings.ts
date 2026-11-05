@@ -233,7 +233,8 @@ export class DashboardCapacitySettings implements OnInit {
             );
       this.applyView(next);
       this.notify.success(
-        'Saved. The capacity battery uses the new rule the next time it refreshes.',
+        'Capacity setting saved',
+        'The capacity battery uses the new rule the next time it refreshes.',
       );
       this.live.set('Capacity setting saved.');
     } catch (error) {

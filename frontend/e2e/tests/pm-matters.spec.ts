@@ -94,7 +94,7 @@ test.describe('Matters list: project managers', () => {
       .locator('[data-manager-select=primary]')
       .selectOption({ label: `PM Bravo ${fx.token}` });
     await page.locator('[data-panel-primary] button').click();
-    await expect(toasts(page).first()).toContainText('Project managers set on 2 matters');
+    await expect(toasts(page).first()).toContainText('Project managers set');
     await expect(rowOf(page, 'No manager two').locator('[data-primary-manager]')).toContainText(
       'PM Bravo',
     );

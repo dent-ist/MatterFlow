@@ -251,6 +251,7 @@ export class PrioritiesPage implements OnInit, HasUnsavedChanges {
       if (!updated) return;
       this.apply(this.rows().map((r) => (r.id === updated.id ? updated : r)));
       this.announcement.set(`${updated.label} saved.`);
+      this.notify.success('Priority saved', updated.label);
     } else {
       const created = await this.run(
         () =>
@@ -262,8 +263,8 @@ export class PrioritiesPage implements OnInit, HasUnsavedChanges {
       if (!created) return;
       this.apply([...this.rows(), created]);
       this.announcement.set(`Priority ${created.label} added.`);
+      this.notify.success('Priority added', created.label);
     }
-    this.notify.success('Saved.');
     this.closeDialog();
   }
 
@@ -298,7 +299,7 @@ export class PrioritiesPage implements OnInit, HasUnsavedChanges {
     if (!updated) return;
     this.apply(this.rows().map((r) => (r.id === updated.id ? updated : r)));
     this.announcement.set(`${p.label} ${active ? 'activated' : 'deactivated'}.`);
-    this.notify.success('Saved.');
+    this.notify.success(active ? 'Priority activated' : 'Priority deactivated', p.label);
     this.focusMenuOf(p.id);
   }
 
@@ -323,7 +324,7 @@ export class PrioritiesPage implements OnInit, HasUnsavedChanges {
     if (list) {
       this.apply(list);
       this.announcement.set(`${p.label} is now the default priority.`);
-      this.notify.success('Saved.');
+      this.notify.success('Default priority changed', `${p.label} is now the default.`);
       this.focusMenuOf(p.id);
     }
   }

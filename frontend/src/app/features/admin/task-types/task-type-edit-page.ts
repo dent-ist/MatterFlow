@@ -398,7 +398,7 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
       this.taskType.set(updated);
       this.rebase(updated, this.overviewDirty(), this.workflowsDirty());
       this.announcement.set(`${updated.name} ${active ? 'activated' : 'deactivated'}.`);
-      this.notify.success(active ? 'Task type activated.' : 'Task type deactivated.');
+      this.notify.success(active ? 'Task type activated' : 'Task type deactivated');
       done = true;
     } catch (e) {
       this.fail(e);
@@ -609,7 +609,7 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
           }),
         );
         this.apply(this.modelOf(created));
-        this.notify.success('Task type created.');
+        this.notify.success('Task type created');
         // Lands on the Workflows tab (the next thing to set up); the address is replaced so Back returns to where Create was opened.
         await this.router.navigate(['/admin/task-types', created.id], {
           queryParams: { tab: 'workflows' },
@@ -635,7 +635,7 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
       this.taskType.set(updated);
       this.rebase(updated, false, false);
       this.announcement.set(`${updated.name} saved.`);
-      this.notify.success('Saved.');
+      this.notify.success('Task type saved');
       return true;
     } catch (e) {
       this.fail(e);

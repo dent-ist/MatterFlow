@@ -291,9 +291,8 @@ export class MatterManagersDialog {
       this.failed.set([]);
       this.visible.set(false);
       this.notify.success(
-        this.bulk()
-          ? `Project managers set on ${this.savedCount()} matters`
-          : 'Project managers saved',
+        this.bulk() ? 'Project managers set' : 'Project managers saved',
+        this.bulk() ? `${this.savedCount()} matters.` : undefined,
       );
       return;
     }

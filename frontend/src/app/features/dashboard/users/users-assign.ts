@@ -733,7 +733,8 @@ export class UsersAssign {
     } catch (error) {
       if (!(error instanceof ApiError) || error.hasFieldErrors) {
         this.notify.error(
-          error instanceof ApiError ? error.message : "We couldn't assign those tasks. Try again.",
+          "Couldn't assign the tasks.",
+          error instanceof ApiError ? error.message : 'Try again.',
         );
       }
       this.batchError.set(true);
@@ -766,7 +767,7 @@ export class UsersAssign {
       }
     }
     if (undone > 0) this.notify.success(`${plural(undone, 'task')} back to Unassigned.`);
-    if (skipped > 0) this.notify.info(`${plural(skipped, 'task')} not undone: changed since.`);
+    if (skipped > 0) this.notify.info(`Not undone: ${plural(skipped, 'task')} changed since.`);
     if (!this.destroyed) this.load();
     this.changed.emit();
   }
@@ -811,12 +812,16 @@ export class UsersAssign {
       this.focusAfter(index);
     } catch (error) {
       if (error instanceof ApiError && error.code === 'CONCURRENCY_CONFLICT') {
-        this.notify.error('Someone else changed this task. The list was refreshed.');
+        this.notify.error(
+          "Couldn't assign the task.",
+          'Someone else changed it. The list was refreshed.',
+        );
         this.load();
       } else if (!(error instanceof ApiError) || error.hasFieldErrors) {
         // The HTTP layer already toasts other API failures.
         this.notify.error(
-          error instanceof ApiError ? error.message : "We couldn't assign that task. Try again.",
+          "Couldn't assign the task.",
+          error instanceof ApiError ? error.message : 'Try again.',
         );
       }
     } finally {
@@ -842,13 +847,17 @@ export class UsersAssign {
       this.notify.success(`${updated.taskNumber} assignee back to Unassigned.`);
     } catch (error) {
       if (error instanceof ApiError && error.code === 'CONCURRENCY_CONFLICT') {
-        this.notify.error(`Couldn't undo: someone else changed this task. Check it and try again.`);
+        this.notify.error(
+          "Couldn't undo the assignment.",
+          'Someone else changed this task. Check it and try again.',
+        );
       } else if (!(error instanceof ApiError) || error.hasFieldErrors) {
         this.notify.error(
-          error instanceof ApiError ? error.message : "We couldn't undo that change. Try again.",
+          "Couldn't undo the assignment.",
+          error instanceof ApiError ? error.message : 'Try again.',
         );
       } else {
-        this.notify.error(`Couldn't undo the assignee change.`);
+        this.notify.error("Couldn't undo the assignment.");
       }
     } finally {
       if (!this.destroyed) this.load();

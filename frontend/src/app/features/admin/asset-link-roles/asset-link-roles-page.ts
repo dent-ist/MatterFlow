@@ -278,6 +278,7 @@ export class AssetLinkRolesPage implements OnInit, HasUnsavedChanges {
       if (!updated) return;
       this.apply(this.rows().map((r) => (r.id === updated.id ? updated : r)));
       this.announcement.set(`${updated.name} saved.`);
+      this.notify.success('Link role saved', updated.name);
     } else {
       const created = await this.run(
         () => firstValueFrom(this.api.createAssetLinkRole({ name, isActive: true })),
@@ -286,8 +287,8 @@ export class AssetLinkRolesPage implements OnInit, HasUnsavedChanges {
       if (!created) return;
       this.apply([...this.rows(), created]);
       this.announcement.set(`Asset link role ${created.name} added.`);
+      this.notify.success('Link role added', created.name);
     }
-    this.notify.success('Saved.');
     this.closeDialog();
   }
 
@@ -321,7 +322,7 @@ export class AssetLinkRolesPage implements OnInit, HasUnsavedChanges {
     if (!updated) return;
     this.apply(this.rows().map((x) => (x.id === updated.id ? updated : x)));
     this.announcement.set(`${r.name} ${active ? 'activated' : 'deactivated'}.`);
-    this.notify.success('Saved.');
+    this.notify.success(active ? 'Link role activated' : 'Link role deactivated', r.name);
     this.focusMenuOf(r.id);
   }
 

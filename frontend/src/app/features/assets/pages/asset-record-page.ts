@@ -483,9 +483,7 @@ export class AssetRecordPage {
   protected dispositionDone(outcome: DispositionOutcome): void {
     if (!outcome.asset) return;
     this.asset.set(outcome.asset);
-    this.notify.success(
-      'Disposition changed: ' + dispositionOf(outcome.asset.dispositionCode).label,
-    );
+    this.notify.success('Disposition changed', dispositionOf(outcome.asset.dispositionCode).label);
     setTimeout(() => this.focusHeading(), 0);
   }
 

@@ -124,7 +124,7 @@ describe('SetOutOfOfficeDialog', () => {
     });
     await vi.waitFor(() => expect(fixture.componentInstance.visible()).toBe(false));
     // #525: the toast carries the shared availability key, so "I'm back" replaces it.
-    expect(success).toHaveBeenCalledWith('You are out of office', expect.any(String), {
+    expect(success).toHaveBeenCalledWith('Out of office set', expect.any(String), {
       key: 'availability',
     });
   });

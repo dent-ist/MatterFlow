@@ -295,4 +295,9 @@ export class NoteTagsPage {
   private message(e: unknown, fallback: string): string {
     return e instanceof ApiError ? e.message : fallback;
   }
+
+  /** The reason line of an error toast: the server's sentence, or nothing. */
+  private reason(e: unknown): string | undefined {
+    return e instanceof ApiError ? e.message : undefined;
+  }
 }

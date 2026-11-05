@@ -192,7 +192,7 @@ export class TaskDetailStore {
           }),
         );
         if (result.ok) {
-          this.notify.success(`${result.task.taskNumber} is In Progress.`);
+          this.notify.success(`Task ${result.task.taskNumber} started`);
           this.statusDone();
         }
         break;
@@ -230,8 +230,8 @@ export class TaskDetailStore {
       this.dialog.set(null);
       this.notify.success(
         action === 'HOLD'
-          ? `${result.task.taskNumber} is On Hold.`
-          : `${result.task.taskNumber} cancelled.`,
+          ? `Task ${result.task.taskNumber} put on hold`
+          : `Task ${result.task.taskNumber} cancelled`,
       );
       this.statusDone();
     } else if (this.conflict()) {
@@ -244,7 +244,7 @@ export class TaskDetailStore {
     const result = await this.act((t) =>
       this.tasks.reopenTask(t.taskId, { rowVersion: t.rowVersion }),
     );
-    if (result.ok) this.notify.success(`${result.task.taskNumber} is back In Progress.`);
+    if (result.ok) this.notify.success(`Task ${result.task.taskNumber} reopened`);
     this.dialog.set(null);
     if (result.ok) this.statusDone();
   }
@@ -267,7 +267,7 @@ export class TaskDetailStore {
         }),
       );
       if (result.ok) {
-        this.notify.success(`${result.task.taskNumber} completed.`);
+        this.notify.success(`Task ${result.task.taskNumber} completed`);
         this.statusDone();
       }
       return;
@@ -288,7 +288,7 @@ export class TaskDetailStore {
     );
     if (result.ok) {
       this.dialog.set(null);
-      this.notify.success(`${result.task.taskNumber} completed.`);
+      this.notify.success(`Task ${result.task.taskNumber} completed`);
       this.statusDone();
       return;
     }

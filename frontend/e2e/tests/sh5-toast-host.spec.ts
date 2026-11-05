@@ -94,7 +94,7 @@ test.describe('SH-B: the one toast host', () => {
     await dialog.getByRole('button', { name: 'Set out of office' }).click();
     const ok = me.locator('[role="status"] [data-toast][data-severity="success"]');
     await expect(ok).toHaveCount(1);
-    await expect(ok).toContainText('You are out of office');
+    await expect(ok).toContainText('Out of office set');
     await expect(ok).not.toHaveAttribute('role', 'alert');
     await shot(me, 'toast-error-and-success-1366x768');
   });

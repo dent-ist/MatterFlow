@@ -337,7 +337,7 @@ describe('TaskTypeFormPage for Asset Types and Custom Fields (#541)', () => {
 
   it('says it could not find the asset type, keeps the header and offers no Retry', async () => {
     const el = await open('Asset Type', '/admin/asset-types');
-    expect(el.querySelector('h1')!.textContent).toBe("We couldn't find that asset type.");
+    expect(el.querySelector('h1')!.textContent?.trim()).toBe("We couldn't find that asset type.");
     expect(el.querySelector('[data-record-state="notFound"]')).not.toBeNull();
     expect(el.querySelector('[data-retry]')).toBeNull();
     expect(Array.from(el.querySelectorAll('nav li')).map((li) => li.textContent!.trim())).toEqual([
@@ -349,7 +349,7 @@ describe('TaskTypeFormPage for Asset Types and Custom Fields (#541)', () => {
 
   it('says it could not find the object for Custom Fields', async () => {
     const el = await open('Object', '/admin/custom-fields');
-    expect(el.querySelector('h1')!.textContent).toBe("We couldn't find that object.");
+    expect(el.querySelector('h1')!.textContent?.trim()).toBe("We couldn't find that object.");
     expect(el.querySelector('[data-back-link]')!.getAttribute('href')).toBe('/admin/custom-fields');
   });
 });

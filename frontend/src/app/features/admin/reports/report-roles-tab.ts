@@ -141,7 +141,7 @@ export class ReportRolesTab {
         diff.removed.map((n) => n.name),
       );
       this.announcement.set(text);
-      this.notify.success(text);
+      this.notify.success('Report assignments saved', text);
       await this.load();
     } catch (e) {
       this.failure.set(e instanceof ApiError ? e.message : 'The assignment could not be saved.');

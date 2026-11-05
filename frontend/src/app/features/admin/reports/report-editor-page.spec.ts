@@ -263,7 +263,7 @@ describe('ReportEditorPage (#713, #714)', () => {
         changeNote: 'renamed',
         keepActive: false,
       });
-      expect(success).toHaveBeenCalledWith('Saved as version 4.');
+      expect(success).toHaveBeenCalledWith('Report saved', 'Saved as version 4.');
       expect(defs.getAdminReport).toHaveBeenCalledTimes(2);
       expect(q('[data-state-line]').textContent).toContain('Version 4');
     });
@@ -359,7 +359,8 @@ describe('ReportEditorPage (#713, #714)', () => {
 
       expect(defs.restoreReportVersion).toHaveBeenCalledWith(5, 1, 'RV1');
       expect(success).toHaveBeenCalledWith(
-        'Version 1 restored as version 5. Preview it to activate.',
+        'Version 1 restored',
+        'Saved as version 5. Preview it to activate.',
       );
     });
 

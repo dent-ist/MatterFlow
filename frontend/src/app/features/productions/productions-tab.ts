@@ -1641,6 +1641,6 @@ export class ProductionsTab {
   }
 
   private fail(e: unknown, fallback: string): void {
-    this.notify.error(e instanceof ApiError ? e.message : fallback);
+    this.notify.error(fallback, e instanceof ApiError ? e.message : undefined);
   }
 }

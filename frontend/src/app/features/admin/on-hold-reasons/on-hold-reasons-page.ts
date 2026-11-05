@@ -269,6 +269,7 @@ export class OnHoldReasonsPage implements OnInit, HasUnsavedChanges {
       if (!updated) return;
       this.apply(this.rows().map((r) => (r.id === updated.id ? updated : r)));
       this.announcement.set(`${updated.name} saved.`);
+      this.notify.success('On-hold reason saved', updated.name);
     } else {
       const created = await this.run(
         () => firstValueFrom(this.api.createOnHoldReason({ name, isActive: true })),
@@ -277,8 +278,8 @@ export class OnHoldReasonsPage implements OnInit, HasUnsavedChanges {
       if (!created) return;
       this.apply([...this.rows(), created]);
       this.announcement.set(`On-hold reason ${created.name} added.`);
+      this.notify.success('On-hold reason added', created.name);
     }
-    this.notify.success('Saved.');
     this.closeDialog();
   }
 
@@ -312,7 +313,7 @@ export class OnHoldReasonsPage implements OnInit, HasUnsavedChanges {
     if (!updated) return;
     this.apply(this.rows().map((x) => (x.id === updated.id ? updated : x)));
     this.announcement.set(`${r.name} ${active ? 'activated' : 'deactivated'}.`);
-    this.notify.success('Saved.');
+    this.notify.success(active ? 'On-hold reason activated' : 'On-hold reason deactivated', r.name);
     this.focusMenuOf(r.id);
   }
 

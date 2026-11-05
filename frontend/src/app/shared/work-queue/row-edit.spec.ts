@@ -246,7 +246,10 @@ describe('RowEdit', () => {
 
     await undo.run();
 
-    expect(notify.error).toHaveBeenCalledWith(expect.stringContaining("Couldn't undo"));
+    expect(notify.error).toHaveBeenCalledWith(
+      expect.stringContaining("Couldn't undo"),
+      expect.stringContaining('Someone else changed this task'),
+    );
     expect(emitted.at(-1)!.rowVersion).toBe('V2');
   });
 
@@ -306,7 +309,10 @@ describe('RowEdit', () => {
     await open();
     await pick('3');
 
-    expect(notify.error).toHaveBeenCalledWith(expect.stringContaining('refreshed'));
+    expect(notify.error).toHaveBeenCalledWith(
+      "Couldn't save the change.",
+      expect.stringContaining('refreshed'),
+    );
     expect(tasks['getTask']).toHaveBeenCalledWith(1042);
     expect(emitted.at(-1)!.rowVersion).toBe('FRESH');
   });

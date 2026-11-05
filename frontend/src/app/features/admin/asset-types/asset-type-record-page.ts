@@ -373,7 +373,10 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
       this.sizeKey.set(updated.sizeFieldKey ?? '');
       this.sizeUnit.set(updated.sizeUnit ?? '');
       this.announcement.set(updated.sizeFieldKey ? 'Size field saved.' : 'Size field cleared.');
-      this.notify.success(updated.sizeFieldKey ? 'Size field saved.' : 'Size field cleared.');
+      this.notify.success(
+        updated.sizeFieldKey ? 'Size field saved' : 'Size field cleared',
+        updated.name,
+      );
     } catch (e) {
       const errors = serverFormErrors(e);
       if (errors.conflict) this.conflict.set(true);
@@ -398,7 +401,10 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
       const result = await firstValueFrom(this.api.reindexAssetType(t.assetTypeId));
       const message = `Index rebuilt for ${result.assetsProcessed} ${result.assetsProcessed === 1 ? 'asset' : 'assets'}.`;
       this.announcement.set(message);
-      this.notify.success(message);
+      this.notify.success(
+        'Index rebuilt',
+        `${result.assetsProcessed} ${result.assetsProcessed === 1 ? 'asset' : 'assets'} processed.`,
+      );
     } catch (e) {
       this.sizeError.set(e instanceof Error ? e.message : 'Couldn’t rebuild the index. Try again.');
     } finally {
@@ -514,7 +520,7 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
           }),
         );
         this.apply(this.modelOf(created));
-        this.notify.success(`Asset type ${created.name} created`);
+        this.notify.success('Asset type created', created.name);
         // Lands on the Fields tab (the next thing to set up); the address is replaced so Back returns to where New was opened.
         await this.router.navigate(['/admin/asset-types', created.assetTypeId], {
           queryParams: { tab: 'fields' },
@@ -537,7 +543,7 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
       this.assetType.set(updated);
       this.apply(this.modelOf(updated));
       this.announcement.set(`${updated.name} saved.`);
-      this.notify.success('Saved.');
+      this.notify.success('Asset type saved', updated.name);
       return true;
     } catch (e) {
       this.fail(e);
@@ -590,7 +596,7 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
       this.apply(this.modelOf(updated));
       if (keep) this.model.set(keep);
       this.announcement.set(`${updated.name} ${active ? 'activated' : 'deactivated'}.`);
-      this.notify.success(active ? 'Asset type activated.' : 'Asset type deactivated.');
+      this.notify.success(active ? 'Asset type activated' : 'Asset type deactivated', updated.name);
       done = true;
     } catch (e) {
       this.fail(e);

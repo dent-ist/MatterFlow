@@ -26,15 +26,21 @@ describe('NotificationService (BUG-4 de-duplication, #616 list)', () => {
     expect(notify.toasts().length).toBe(4);
   });
 
-  it('keeps the durations: 4 s for success and info, 8 s for warnings and errors', () => {
+  it('keeps the durations (D-52): success 4 s, info 6 s, warning 8 s, an error until it is closed', () => {
     notify.success('s');
     notify.info('i');
     notify.warn('w');
     notify.error('e');
-    expect(notify.toasts().map((t) => t.life)).toEqual([4000, 4000, 8000, 8000]);
+    expect(notify.toasts().map((t) => t.life)).toEqual([4000, 6000, 8000, 0]);
     vi.advanceTimersByTime(4001);
+    expect(summaries()).toEqual(['i', 'w', 'e']);
+    vi.advanceTimersByTime(2000);
     expect(summaries()).toEqual(['w', 'e']);
-    vi.advanceTimersByTime(4000);
+    vi.advanceTimersByTime(2000);
+    expect(summaries()).toEqual(['e']);
+    vi.advanceTimersByTime(600000);
+    expect(summaries()).toEqual(['e']);
+    notify.dismiss(notify.toasts()[0].id);
     expect(summaries()).toEqual([]);
   });
 
@@ -54,9 +60,9 @@ describe('NotificationService (BUG-4 de-duplication, #616 list)', () => {
   });
 
   it('an identical message while the toast shows restarts its time', () => {
-    notify.error('Down');
+    notify.warn('Down');
     vi.advanceTimersByTime(6000);
-    notify.error('Down');
+    notify.warn('Down');
     vi.advanceTimersByTime(6000);
     expect(notify.toasts().length).toBe(1);
     vi.advanceTimersByTime(2001);

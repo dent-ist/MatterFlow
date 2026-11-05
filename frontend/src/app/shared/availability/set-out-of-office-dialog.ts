@@ -284,7 +284,7 @@ export class SetOutOfOfficeDialog {
     try {
       await this.store.setOutOfOffice(this.until(), this.note(), this.todayIso(), this.type());
       this.notify.success(
-        'You are out of office',
+        'Out of office set',
         'Use "I\'m back" in your name menu when you return.',
         { key: 'availability' },
       );

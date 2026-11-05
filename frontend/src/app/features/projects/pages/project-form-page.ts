@@ -335,9 +335,9 @@ export class ProjectFormPage implements HasUnsavedChanges {
           );
       this.saved = true;
       if (saved.droppedFields.length > 0) {
-        this.notify.info(`Hidden custom values were not saved: ${saved.droppedFields.join(', ')}.`);
+        this.notify.info('Hidden values not saved', `${saved.droppedFields.join(', ')}.`);
       }
-      this.notify.success(`Project ${saved.name} saved`);
+      this.notify.success('Project saved', saved.name);
       await this.router.navigate(['/projects', saved.projectId]);
     } catch (err) {
       const errors = serverFormErrors(err);

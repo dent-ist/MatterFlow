@@ -19,7 +19,7 @@ import { toasts } from '../support/toasts';
  * Epic #850 (BR-06): Administration > Settings > Branding end to end. The application name and icon are global, so this file runs in its own Playwright
  * project after the rest of the suite (see playwright.config.ts) and every test starts from, and leaves, the built-in branding.
  */
-const SAVED = 'Saved. Other users see it the next time they load the page.';
+const SAVED = 'Branding saved';
 const WIDEST_NAME = 'W'.repeat(40);
 
 test.beforeEach(async ({ admin }) => resetBranding(admin));
