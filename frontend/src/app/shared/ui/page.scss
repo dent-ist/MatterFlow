@@ -145,12 +145,14 @@
 
 /* Count columns (Open tasks, Overdue; WP9): the number and its header sit on the right edge, the column is only as wide as its words. */
 .pg-table th.pg-num {
+  font-variant-numeric: tabular-nums;
   width: 1%;
   text-align: right;
   white-space: nowrap;
 }
 
 .pg-table td.pg-num {
+  font-variant-numeric: tabular-nums;
   width: 1%;
   text-align: right;
 }

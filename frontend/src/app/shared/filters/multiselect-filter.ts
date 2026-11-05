@@ -15,6 +15,7 @@ import {
 } from '@angular/core';
 import { FILTER_TRIGGER_STYLES, FilterPopover } from './filter-popover';
 import { FilterOption, ValueGroup } from './filter-def';
+import { IntPipe } from '../ui/number-format';
 
 /** A tick applies 400 ms after the last one (never per tick), or at once when the panel closes. */
 export const MULTI_COMMIT_MS = 400;
@@ -31,7 +32,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-column-multiselect-filter',
-  imports: [NgTemplateOutlet, FilterPopover],
+  imports: [IntPipe, NgTemplateOutlet, FilterPopover],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.ft--inline]': 'inline()' },
   template: `
@@ -90,7 +91,7 @@ let nextId = 0;
                 <span class="ms-hint"> {{ o.hint }}</span>
               }
               @if (o.count !== undefined) {
-                <span class="ms-count">{{ o.count }}</span>
+                <span class="ms-count">{{ o.count | mfInt }}</span>
               }
             </label>
           } @empty {

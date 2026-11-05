@@ -17,6 +17,7 @@ import {
 import { DOCUMENT } from '@angular/common';
 import { UserStateIcon, UserStateKey } from '../icons/user-state-icon';
 import { TaskTypeChip } from './task-type-chip';
+import { IntPipe } from './number-format';
 
 export interface DropdownItem {
   value: string;
@@ -57,7 +58,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-dropdown',
-  imports: [TaskTypeChip, UserStateIcon],
+  imports: [IntPipe, TaskTypeChip, UserStateIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <button
@@ -105,7 +106,7 @@ let nextId = 0;
         }
       </span>
       @if (buttonCount() !== null) {
-        <span class="cnt">({{ buttonCount() }})</span>
+        <span class="cnt">({{ buttonCount() | mfInt }})</span>
       }
       <i class="pi pi-chevron-down chev" aria-hidden="true"></i>
     </button>
@@ -199,7 +200,7 @@ let nextId = 0;
                   <i class="pi pi-check tick" aria-hidden="true"></i>
                 }
                 @if ((it.count ?? -1) >= 0) {
-                  <span class="n">{{ it.count }}</span>
+                  <span class="n">{{ it.count | mfInt }}</span>
                 }
               </li>
             }
@@ -275,6 +276,7 @@ let nextId = 0;
     }
     .pre,
     .cnt {
+      font-variant-numeric: tabular-nums;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
       flex: none;

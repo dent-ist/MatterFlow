@@ -23,6 +23,7 @@ import { MmLayout } from './mm-layout';
 import { FEED_KINDS, FeedItem, FeedKind, MatterEvent, ShowFilter, StatusFilter } from './mm-models';
 import { GridFilters } from './mm-scope';
 import { MmTaskList } from './task-list';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 const PREVIEW_ITEMS = 6;
 const UPCOMING_DAYS = 14;
@@ -35,7 +36,7 @@ const UPCOMING_DAYS = 14;
  */
 @Component({
   selector: 'mf-mm-overview',
-  imports: [Dropdown, EventIcon, MmTaskList, NgTemplateOutlet, NumericDatePipe, SidePanel],
+  imports: [IntPipe, Dropdown, EventIcon, MmTaskList, NgTemplateOutlet, NumericDatePipe, SidePanel],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -131,7 +132,7 @@ const UPCOMING_DAYS = 14;
           <h2 id="mm-ac-h" tabindex="-1" data-section-focus>Recent activity</h2>
           @if (feed.data(); as f) {
             @if (f.unreadCount > 0) {
-              <span class="unread">{{ f.unreadCount }} unread</span>
+              <span class="unread">{{ f.unreadCount | mfInt }} unread</span>
             }
           }
         </div>

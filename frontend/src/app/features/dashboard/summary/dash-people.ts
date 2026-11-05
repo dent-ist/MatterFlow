@@ -12,6 +12,7 @@ import {
 import { Dismissable } from '../../../shared/ui/dismissable';
 import { CapacityPerson } from '../../../api/generated/api-client';
 import { groupPeople, personDetail } from './capacity-model';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 let nextId = 0;
 
@@ -22,7 +23,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-dash-people',
-  imports: [Dismissable],
+  imports: [IntPipe, Dismissable],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
@@ -62,7 +63,7 @@ let nextId = 0;
         data-people-search
       />
       <p class="sr-only" role="status" aria-live="polite" data-people-count>
-        {{ shownCount() }} {{ shownCount() === 1 ? 'person' : 'people' }} shown
+        {{ shownCount() | mfInt }} {{ shownCount() === 1 ? 'person' : 'people' }} shown
       </p>
       <div class="list" tabindex="0" role="region" aria-label="People by state, scrollable">
         @for (g of groups(); track g.state) {

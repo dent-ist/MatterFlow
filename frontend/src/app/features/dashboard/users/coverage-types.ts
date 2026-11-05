@@ -13,6 +13,7 @@ import { CoveragePerson } from '../../../api/generated/api-client';
 import { CoverageTarget } from './coverage-drawer';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { STATUS_TEXT, TYPE_ROWS, TypeRow, namesText, notHandledBy, plural } from './coverage-model';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** What the view needs to open the drawer (it adds the period). */
 export type TypePick = Pick<CoverageTarget, 'user' | 'type' | 'count'>;
@@ -26,7 +27,7 @@ export type TypePick = Pick<CoverageTarget, 'user' | 'type' | 'count'>;
  */
 @Component({
   selector: 'mf-coverage-types',
-  imports: [TaskTypeIcon, NgTemplateOutlet],
+  imports: [IntPipe, TaskTypeIcon, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-template #statusChip let-status>
@@ -173,7 +174,7 @@ export type TypePick = Pick<CoverageTarget, 'user' | 'type' | 'count'>;
                     >
                   }
                 </td>
-                <td class="num" data-completed>{{ r.type.total }}</td>
+                <td class="num" data-completed>{{ r.type.total | mfInt }}</td>
                 @if (anyStatus()) {
                   <td>
                     <ng-container
@@ -215,7 +216,8 @@ export type TypePick = Pick<CoverageTarget, 'user' | 'type' | 'count'>;
                 />
               </div>
               <p class="facts">
-                {{ plural(r.people.length, 'person', 'people') }}, {{ r.type.total }} completed
+                {{ plural(r.people.length, 'person', 'people') }},
+                {{ r.type.total | mfInt }} completed
               </p>
               <button
                 type="button"
@@ -365,6 +367,7 @@ export type TypePick = Pick<CoverageTarget, 'user' | 'type' | 'count'>;
     }
     .tog,
     .count {
+      font-variant-numeric: tabular-nums;
       font: inherit;
       color: inherit;
       background: none;
@@ -380,10 +383,12 @@ export type TypePick = Pick<CoverageTarget, 'user' | 'type' | 'count'>;
     }
     .tog:hover,
     .count:hover {
+      font-variant-numeric: tabular-nums;
       background: var(--mf-surface-alt);
     }
     .tog:focus-visible,
     .count:focus-visible {
+      font-variant-numeric: tabular-nums;
       outline: 3px solid var(--mf-focus);
       outline-offset: -2px;
     }

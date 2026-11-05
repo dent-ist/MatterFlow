@@ -33,6 +33,7 @@ import { InlineField, canEditField } from './inline-edit';
 import { CLOSED_STATUSES } from './queue-filters';
 import { RowEdit } from './row-edit';
 import { personInitials } from '../ui/person-initials';
+import { IntPipe } from '../ui/number-format';
 
 /** Below this width (the same 640 px as the navigation rail and the pager) a work list is cards instead of a table (#192). */
 export const PHONE_CARDS_QUERY = '(max-width: 639.98px)';
@@ -55,6 +56,7 @@ export function initialsOf(name: string): string {
 @Component({
   selector: 'mf-task-card-list',
   imports: [
+    IntPipe,
     NgTemplateOutlet,
     RouterLink,
     CopyParts,
@@ -138,7 +140,7 @@ export function initialsOf(name: string): string {
                       ><span class="tc-group__name">{{ group.label }}</span
                       >{{ ' '
                       }}<span class="tc-group__count"
-                        >({{ group.count
+                        >({{ group.count | mfInt
                         }}<span class="mf-sr-only"> {{ group.count === 1 ? 'task' : 'tasks' }}</span
                         >)</span
                       >
@@ -223,7 +225,7 @@ export function initialsOf(name: string): string {
                       ></span>
                       <span class="tc-prog__text"
                         >Progress: {{ row.workflow.stepsResolved }} of
-                        {{ row.workflow.stepsTotal }} steps</span
+                        {{ row.workflow.stepsTotal | mfInt }} steps</span
                       >
                     </p>
                   }

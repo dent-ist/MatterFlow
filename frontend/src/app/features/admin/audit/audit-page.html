@@ -408,7 +408,7 @@
           data-show-operation
           (click)="showOperation(item)"
         >
-          Show only this operation ({{ item.correlationEventCount }} events)
+          Show only this operation ({{ item.correlationEventCount | mfInt }} events)
         </button>
       }
       <button

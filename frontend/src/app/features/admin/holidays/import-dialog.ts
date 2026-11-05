@@ -15,6 +15,7 @@ import { FormDialog } from '../../../shared/ui/form-dialog';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 import { HOLIDAY_API } from './holiday-api';
 import { ImportResult } from './holiday-contract';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /**
  * Paste or import a list of holidays (epic #1074, CAL-06): one holiday per line, a date (MM/DD/YYYY) or a range (MM/DD/YYYY - MM/DD/YYYY) and the name, a comma or a tab between them
@@ -23,7 +24,7 @@ import { ImportResult } from './holiday-contract';
  */
 @Component({
   selector: 'mf-import-dialog',
-  imports: [FormDialog, NumericDatePipe],
+  imports: [IntPipe, FormDialog, NumericDatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-form-dialog
@@ -97,7 +98,7 @@ import { ImportResult } from './holiday-contract';
             </table>
           </div>
           <p class="im__s" role="status" data-import-summary>
-            {{ r.okCount }} ready{{
+            {{ r.okCount | mfInt }} ready{{
               r.errorCount > 0 ? ', ' + r.errorCount + ' with a problem (skipped)' : ''
             }}.
           </p>

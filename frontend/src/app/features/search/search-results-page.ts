@@ -53,6 +53,7 @@ import {
   resolveTab,
   resultTabs,
 } from './search-tabs';
+import { IntPipe } from '../../shared/ui/number-format';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -74,7 +75,7 @@ interface Section {
  */
 @Component({
   selector: 'mf-search-results-page',
-  imports: [AdminListShell, RouterLink, SearchFilters, SearchGrid, ScrollArea, Pager],
+  imports: [IntPipe, AdminListShell, RouterLink, SearchFilters, SearchGrid, ScrollArea, Pager],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../shared/ui/page.scss',
   template: `
@@ -103,7 +104,7 @@ interface Section {
         >
           Filters
           @if (activeFilterCount() > 0) {
-            ({{ activeFilterCount() }})
+            ({{ activeFilterCount() | mfInt }})
           }
         </button>
       }

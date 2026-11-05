@@ -12,6 +12,7 @@ import { personInitials } from '../../../shared/ui/person-initials';
 import { shortAccountName } from '../../../shared/ui/person-name';
 import { panelLoader } from '../../my-matters/panel-loader';
 import { aiLabel } from './matter-ai';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /**
  * The Summary tab of the Matter page (MD-03 #1004, redesigned in MD-42 #1060; mockup `docs/ux/mockups/matter-summary`). The page never scrolls on desktop:
@@ -26,6 +27,7 @@ import { aiLabel } from './matter-ai';
 @Component({
   selector: 'mf-matter-summary',
   imports: [
+    IntPipe,
     RouterLink,
     ActiveBadge,
     Badge,
@@ -219,7 +221,7 @@ import { aiLabel } from './matter-ai';
                     [decorative]="true"
                   />
                   <span class="ms__tile-name">{{ t.assetTypeName }}</span>
-                  <span class="ms__count">{{ t.count }}</span>
+                  <span class="ms__count">{{ t.count | mfInt }}</span>
                 </a>
               </li>
             }

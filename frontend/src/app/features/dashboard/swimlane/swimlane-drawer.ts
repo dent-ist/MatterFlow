@@ -34,6 +34,7 @@ import { htmlToPlainText, htmlToText } from '../../tasks/panels/rich-text';
 import { applyRow, cardToRow } from './swimlane-model';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -48,6 +49,7 @@ export const PEEK_COMMENTS = 3;
 @Component({
   selector: 'mf-swimlane-drawer',
   imports: [
+    IntPipe,
     NumericDatePipe,
     SlidePanel,
     RouterLink,
@@ -196,7 +198,7 @@ export const PEEK_COMMENTS = 3;
                     Workflow steps
                     <span class="muted"
                       >({{ t.workflow.progress.resolved }} of
-                      {{ t.workflow.progress.total }} done)</span
+                      {{ t.workflow.progress.total | mfInt }} done)</span
                     >
                   </h3>
                   @if (t.workflow.steps.length === 0) {

@@ -19,6 +19,7 @@ import { friendlyText } from '../../../shared/ui/audit-format';
 import { auditObjectLink, auditObjectText } from '../../admin/audit/audit-links';
 import { stampText } from '../../admin/audit/audit-rows';
 import { StateBlock } from '../../../shared/ui/state-block';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /**
  * The Kind dropdown of the Activities tab: a word for the audit object types that belong together. The choice is sent to the server as the object type filter, so paging
@@ -50,7 +51,7 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
  */
 @Component({
   selector: 'mf-matter-activities',
-  imports: [StateBlock, GridFrame, Dropdown, RouterLink],
+  imports: [IntPipe, StateBlock, GridFrame, Dropdown, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   styleUrl: '../../../shared/ui/page.scss',
@@ -109,7 +110,7 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
       <div frameStatus>
         @if (newCount() > 0) {
           <p class="ma__banner" role="status" data-new-banner>
-            {{ newCount() }} new since your last visit
+            {{ newCount() | mfInt }} new since your last visit
           </p>
         }
       </div>

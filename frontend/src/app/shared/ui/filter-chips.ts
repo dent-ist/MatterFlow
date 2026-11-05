@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { IntPipe } from './number-format';
 
 export interface FilterChip {
   key: string;
@@ -26,6 +27,7 @@ export interface FilterChip {
  */
 @Component({
   selector: 'mf-filter-chips',
+  imports: [IntPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
@@ -46,7 +48,7 @@ export interface FilterChip {
             @if (c.count === null && strip()) {
               <span class="n">--</span>
             } @else if ((c.count ?? -1) >= 0) {
-              <span class="n">{{ c.count }}</span>
+              <span class="n">{{ c.count | mfInt }}</span>
             }
           </span>
         } @else if (!c.hidden) {
@@ -71,7 +73,7 @@ export interface FilterChip {
             @if (c.count === null && strip()) {
               <span class="n">--</span>
             } @else if ((c.count ?? -1) >= 0) {
-              <span class="n">{{ c.count }}</span>
+              <span class="n">{{ c.count | mfInt }}</span>
             }
           </button>
         }

@@ -30,6 +30,7 @@ import { DUE_SOON_DAYS } from '../../../shared/work-queue/work-vocabulary';
 import { WorkStrip } from '../../../shared/work-queue/work-strip';
 import { ZeroDash } from '../../../shared/ui/zero-dash';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** How many matters the table lists (the summary's `topMatters` holds at most this many). */
 export const OVERVIEW_MATTERS = 5;
@@ -81,6 +82,7 @@ export function rowsFromMatters(matters: readonly MatterResponse[]): OverviewMat
 @Component({
   selector: 'mf-client-overview',
   imports: [
+    IntPipe,
     NumericDatePipe,
     ZeroDash,
     WorkStrip,
@@ -197,7 +199,7 @@ export function rowsFromMatters(matters: readonly MatterResponse[]): OverviewMat
               [queryParams]="{ tab: 'matters' }"
               queryParamsHandling="merge"
               data-view-all
-              >View all {{ client().matterCount }}
+              >View all {{ client().matterCount | mfInt }}
               {{ client().matterCount === 1 ? 'matter' : 'matters' }}</a
             >
           }

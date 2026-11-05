@@ -23,6 +23,7 @@ import { HasUnsavedChanges } from '../../shared/guards/unsaved-changes.guard';
 import { PageHeader } from '../../shared/ui/page-header';
 import { RecordSkeleton } from '../../shared/ui/record-skeleton';
 import { RecordState, recordStateTitle } from '../../shared/ui/record-state';
+import { shortAccountName } from '../../shared/ui/person-name';
 
 /**
  * My profile (epics #68 and #520): the person's own page. The header names them (display name, or the Windows account when there is none),
@@ -110,7 +111,7 @@ export class ProfilePage implements HasUnsavedChanges {
   /** The display name, or the Windows account when the person has none. */
   protected readonly name = computed(() => {
     const p = this.auth.profile();
-    return p?.displayName?.trim() || p?.windowsAccount?.trim() || 'My profile';
+    return p?.displayName?.trim() || shortAccountName(p?.windowsAccount) || 'My Profile';
   });
 
   /** "Data Technician · Demo Pod": the roles by name, then the primary Pod. */

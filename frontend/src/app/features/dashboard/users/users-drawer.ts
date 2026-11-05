@@ -47,6 +47,7 @@ import {
   userQueueParams,
 } from './users-model';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -86,6 +87,7 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
 @Component({
   selector: 'mf-users-drawer',
   imports: [
+    IntPipe,
     SlidePanel,
     RouterLink,
     RowEdit,
@@ -192,7 +194,7 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
               <dl class="counts" data-drawer-counts>
                 <div>
                   <dt>Open</dt>
-                  <dd>{{ u.openTotal }}</dd>
+                  <dd>{{ u.openTotal | mfInt }}</dd>
                 </div>
                 <div>
                   <dt>Overdue</dt>
@@ -211,7 +213,7 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
                 <h3 id="ud-tasks" class="h">
                   Open tasks
                   @if (state() === 'ready') {
-                    <span class="muted">({{ total() }})</span>
+                    <span class="muted">({{ total() | mfInt }})</span>
                   }
                 </h3>
                 @if (state() === 'ready' && rows().length > 1) {
@@ -328,8 +330,8 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
                       </ul>
                       @if (total() > rows().length) {
                         <p class="muted" data-drawer-more>
-                          Showing {{ rows().length }} of {{ total() }}. The rest are in the Task
-                          Queue.
+                          Showing {{ rows().length }} of {{ total() | mfInt }}. The rest are in the
+                          Task Queue.
                         </p>
                       }
                     }

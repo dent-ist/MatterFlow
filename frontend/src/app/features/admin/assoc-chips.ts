@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { IntPipe } from '../../shared/ui/number-format';
 
 /** One associated record: a workflow on a task type row, a task type on a workflow row. */
 export interface AssocItem {
@@ -21,7 +22,7 @@ export interface AssocItem {
  */
 @Component({
   selector: 'mf-assoc-chips',
-  imports: [RouterLink],
+  imports: [IntPipe, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (items().length === 0) {
@@ -62,10 +63,10 @@ export interface AssocItem {
                 [attr.aria-label]="
                   'Show all ' + items().length + ' ' + noun() + ' (' + hiddenCount() + ' more)'
                 "
-                >+{{ hiddenCount() }} more</a
+                >+{{ hiddenCount() | mfInt }} more</a
               >
             } @else {
-              <span class="ac__tag" data-assoc-more>+{{ hiddenCount() }} more</span>
+              <span class="ac__tag" data-assoc-more>+{{ hiddenCount() | mfInt }} more</span>
             }
           </li>
         }

@@ -21,6 +21,7 @@ import { ApiError } from '../../../core/http/api-error';
 import { QuietRequests } from '../../../core/http/interceptors';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { FormDialog } from '../../../shared/ui/form-dialog';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** One matter the dialog changes: its id, how it reads in the result list, the row version last read and the managers it has now. */
 export interface ManagerTarget {
@@ -51,7 +52,7 @@ const CONCURRENCY = 3;
  */
 @Component({
   selector: 'mf-matter-managers-dialog',
-  imports: [FormDialog],
+  imports: [IntPipe, FormDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .mmd {
@@ -147,7 +148,7 @@ const CONCURRENCY = 3;
         @if (failed().length > 0) {
           <div role="alert" data-managers-failed>
             <p class="mmd__label">
-              {{ savedCount() }} saved. {{ failed().length }} could not be changed:
+              {{ savedCount() | mfInt }} saved. {{ failed().length }} could not be changed:
             </p>
             <ul class="mmd__list">
               @for (f of failed(); track f.target.matterId) {

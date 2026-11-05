@@ -104,14 +104,14 @@
                       class="mf-name us-open"
                       data-open
                       data-row-open
-                      [attr.title]="u.displayName"
+                      [attr.title]="nameOf(u)"
                       [attr.aria-label]="'Open ' + nameWithAccount(u)"
                       (click)="open(u)"
                     >
-                      {{ u.displayName }}
+                      {{ nameOf(u) }}
                     </button>
                     <span class="mf-desc" [attr.title]="accountLine(u)" data-account>
-                      <span class="mf-mono">{{ u.windowsAccount }}</span>
+                      <span class="mf-mono">{{ accountShort(u) }}</span>
                       @if (u.isSeededAdmin) {
                         <span> &middot; Seeded</span>
                       }

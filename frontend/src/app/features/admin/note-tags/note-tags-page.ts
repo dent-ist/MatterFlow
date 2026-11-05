@@ -16,6 +16,7 @@ import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { GridFrame } from '../../../shared/ui/grid-frame';
 import { FormDialog } from '../../../shared/ui/form-dialog';
 import { TextField } from '../../../shared/ui/text-field';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /**
  * Admin: Note Tags (epic #1001, MD-19; mockup notes-mockup-r3), the fourth tab of the Labels page. The firm-wide tags people pick in a note: name, colour of the
@@ -24,7 +25,7 @@ import { TextField } from '../../../shared/ui/text-field';
  */
 @Component({
   selector: 'mf-note-tags-page',
-  imports: [ActionMenu, ConfirmDialog, Pager, Dropdown, GridFrame, FormDialog, TextField],
+  imports: [IntPipe, ActionMenu, ConfirmDialog, Pager, Dropdown, GridFrame, FormDialog, TextField],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   styleUrl: '../../../shared/ui/page.scss',
@@ -71,7 +72,7 @@ import { TextField } from '../../../shared/ui/text-field';
                   >
                 </td>
                 <td>{{ colourLabel(t.colourKey) }}</td>
-                <td class="pg-num">{{ t.visibleNoteCount }}</td>
+                <td class="pg-num">{{ t.visibleNoteCount | mfInt }}</td>
                 <td>{{ t.isActive ? 'Active' : 'Inactive' }}</td>
                 <td class="mf-col-actions">
                   @let menu = menuFor(t);

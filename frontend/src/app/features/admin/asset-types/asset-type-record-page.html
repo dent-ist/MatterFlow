@@ -282,8 +282,8 @@
               <h2 id="at-assets">Assets</h2>
               @if (t.assetCount) {
                 <p data-asset-count>
-                  {{ t.assetCount }} {{ t.assetCount === 1 ? 'asset has' : 'assets have' }} this
-                  type.
+                  {{ t.assetCount | mfInt }}
+                  {{ t.assetCount === 1 ? 'asset has' : 'assets have' }} this type.
                 </p>
                 <a
                   class="mf-btn"

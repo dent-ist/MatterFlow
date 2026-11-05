@@ -162,7 +162,7 @@
               <span class="ct__tile-label">Workflow</span>
               <span class="ct__tile-value">
                 @if (selectedWorkflow(); as w) {
-                  {{ w.name }} v{{ w.versionNo }} ({{ w.stepCount }}
+                  {{ w.name }} v{{ w.versionNo }} ({{ w.stepCount | mfInt }}
                   {{ w.stepCount === 1 ? 'step' : 'steps' }},
                   {{ w.isOrdered ? 'ordered' : 'any order' }})
                 } @else {
@@ -359,7 +359,7 @@
                   <span>
                     {{ w.name }} v{{ w.versionNo }}
                     <span class="pg-reason">
-                      ({{ w.stepCount }} {{ w.stepCount === 1 ? 'step' : 'steps' }},
+                      ({{ w.stepCount | mfInt }} {{ w.stepCount === 1 ? 'step' : 'steps' }},
                       {{ w.isOrdered ? 'ordered' : 'any order'
                       }}{{ w.isDefault ? ', default' : '' }})
                     </span>

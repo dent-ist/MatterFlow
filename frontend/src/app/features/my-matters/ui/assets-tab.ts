@@ -22,6 +22,7 @@ import { MmFilters } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
 import { AssetQuery, MmApi } from './mm-api';
 import { AssetRow, AssetStatusCode } from './mm-models';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 const PAGE_SIZE = 25;
 
@@ -49,7 +50,16 @@ const HEADS = [
  */
 @Component({
   selector: 'mf-mm-assets-tab',
-  imports: [AssetTypeChip, Dropdown, GridFrame, NumericDatePipe, Pager, RouterLink, StatusChip],
+  imports: [
+    IntPipe,
+    AssetTypeChip,
+    Dropdown,
+    GridFrame,
+    NumericDatePipe,
+    Pager,
+    RouterLink,
+    StatusChip,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -57,7 +67,7 @@ const HEADS = [
       <mf-grid-frame scrollLabel="Assets" [resetKey]="resetKey()">
         <div frameHead class="hd">
           <h2 class="ttl">
-            Assets <span class="tot">{{ total() }}</span>
+            Assets <span class="tot">{{ total() | mfInt }}</span>
           </h2>
           <label class="srch">
             <span class="sr">Search assets</span>
@@ -361,6 +371,7 @@ const HEADS = [
       gap: var(--mf-s2);
     }
     .tot {
+      font-variant-numeric: tabular-nums;
       padding: 0 var(--mf-s2);
       border-radius: 999px;
       background: var(--mf-surface-alt);

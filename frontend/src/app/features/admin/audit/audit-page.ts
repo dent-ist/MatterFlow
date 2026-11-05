@@ -61,6 +61,7 @@ import {
   stampText,
   withDayDividers,
 } from './audit-rows';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 const PAGE_SIZE = 50;
 /** People offered in the Who filter: the first pages of the user list (100 each). */
@@ -95,6 +96,7 @@ const ACCESS_VALUE = ACCESS_OBJECT_TYPES.join(',');
 @Component({
   selector: 'mf-audit-page',
   imports: [
+    IntPipe,
     ActionMenu,
     AdminListShell,
     ColumnFilterRow,

@@ -1,17 +1,15 @@
 import { UserHistoryType } from '../../../api/generated/api-client';
+import { formatDuration } from '../../../shared/ui/number-format';
 
 /** Fewer completed tasks than this and the server sends no median: the UI says "Not enough tasks yet". */
 export const MIN_SAMPLE = 5;
 
 /**
- * A duration in minutes as the UI says it: under an hour "45 min", otherwise hours with one decimal ("3.3 h"), over 100 hours whole hours. The
- * minutes are WORKING minutes by default (the server's `durationBasis`), so the screen says "working time" beside them.
+ * A duration in minutes as the UI says it (D-61): "45 m", "3 h 18 m", "4 d 4 h". The minutes are WORKING minutes by default (the server's
+ * `durationBasis`), so the screen says "working time" beside them.
  */
 export function durationText(minutes: number | null | undefined): string {
-  if (minutes === null || minutes === undefined) return '';
-  if (minutes < 60) return `${Math.round(minutes)} min`;
-  const h = minutes / 60;
-  return h >= 100 ? `${Math.round(h)} h` : `${(Math.round(h * 10) / 10).toString()} h`;
+  return formatDuration(minutes);
 }
 
 export interface Comparison {

@@ -46,6 +46,7 @@ import {
 } from './production-ui';
 import { StateBlock } from '../../shared/ui/state-block';
 import { NumericDatePipe } from '../../shared/ui/numeric-date';
+import { IntPipe } from '../../shared/ui/number-format';
 
 type View = 'productions' | 'specs';
 type Panel = 'none' | 'production' | 'production-form' | 'spec' | 'spec-form';
@@ -130,6 +131,7 @@ const emptySpec = (): SpecDraft => ({
 @Component({
   selector: 'mf-productions-tab',
   imports: [
+    IntPipe,
     NumericDatePipe,
     StateBlock,
     Button,
@@ -290,7 +292,7 @@ const emptySpec = (): SpecDraft => ({
             [attr.aria-pressed]="view() === 'productions'"
             (click)="setView('productions')"
           >
-            Productions <span class="pt__count">{{ productionTotal() }}</span>
+            Productions <span class="pt__count">{{ productionTotal() | mfInt }}</span>
           </button>
           @if (canViewSpecs()) {
             <button
@@ -300,7 +302,7 @@ const emptySpec = (): SpecDraft => ({
               [attr.aria-pressed]="view() === 'specs'"
               (click)="setView('specs')"
             >
-              Specs <span class="pt__count">{{ specTotal() }}</span>
+              Specs <span class="pt__count">{{ specTotal() | mfInt }}</span>
             </button>
           }
         </div>
@@ -473,7 +475,7 @@ const emptySpec = (): SpecDraft => ({
                       {{ s.loadFile }}
                       <span class="pt__sub">{{ s.metadataFields.length }} metadata fields</span>
                     </td>
-                    <td class="pg-num">{{ s.usedByCount }}</td>
+                    <td class="pg-num">{{ s.usedByCount | mfInt }}</td>
                     <td>{{ s.modifiedAtUtc ?? s.createdAtUtc | mfNum: 'date' }}</td>
                   </tr>
                 }
@@ -1012,7 +1014,7 @@ const emptySpec = (): SpecDraft => ({
     >
       <p>
         {{ currentSpec()?.name }} stays on the productions that use it ({{
-          currentSpec()?.usedByCount
+          currentSpec()?.usedByCount | mfInt
         }}), but it can no longer be chosen for a new or changed production. You can reinstate it
         later.
       </p>

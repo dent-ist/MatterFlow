@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { DashboardUnassignedGauge } from '../../../api/generated/api-client';
 import { GaugeView, gaugeView, levelChange } from './gauge-model';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 const SEGMENTS = [0, 1, 2, 3, 4, 5] as const;
 const CX = 130;
@@ -80,7 +81,7 @@ export function arcPath(a0: number, a1: number): string {
       }
       <div class="stats">
         <div>
-          <span class="gcount" data-gauge-count>{{ v.count }}</span>
+          <span class="gcount" data-gauge-count>{{ v.count | mfInt }}</span>
           <small>unassigned</small>
         </div>
         <div>
@@ -130,7 +131,7 @@ export function arcPath(a0: number, a1: number): string {
       </svg>
     </ng-template>
   `,
-  imports: [NgTemplateOutlet],
+  imports: [IntPipe, NgTemplateOutlet],
   styles: `
     :host {
       display: block;
@@ -260,6 +261,7 @@ export function arcPath(a0: number, a1: number): string {
       stroke-width: 2;
     }
     .num {
+      font-variant-numeric: tabular-nums;
       fill: var(--mf-text-muted);
       font-size: 11px;
     }

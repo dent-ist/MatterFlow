@@ -4,6 +4,7 @@ import {
   AssetReportResult,
 } from '../../../api/generated/api-client';
 import { ChartFormat, ChartRow } from '../../../shared/charts/chart-types';
+import { formatDecimal } from '../../../shared/ui/number-format';
 
 /** What the form holds; `typeId` null is "All asset types". */
 export interface ReportDraft {
@@ -80,14 +81,12 @@ export function toDraft(name: string, def: AssetReportDefinition): ReportDraft {
   };
 }
 
-const NUMBER = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
-
-/** "1,240" or "412.5": whole numbers without decimals, others with at most two. */
-export const formatCell: ChartFormat = (value) => NUMBER.format(value);
+/** "1,240" or "412.5": whole numbers without decimals, others with at most one. */
+export const formatCell: ChartFormat = (value) => formatDecimal(value);
 
 /** The cell text of a result table ("" where no asset of the group had a value). */
 export function cellText(value: number | null | undefined): string {
-  return value === null || value === undefined ? '' : NUMBER.format(value);
+  return value === null || value === undefined ? '' : formatDecimal(value);
 }
 
 /** The columns a graph can draw (all of them: the count, and each measure column). */

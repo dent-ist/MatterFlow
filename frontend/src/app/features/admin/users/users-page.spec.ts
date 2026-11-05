@@ -135,7 +135,7 @@ describe('UsersPage', () => {
     await create('User.View', 'User.Manage');
     const cell = q('[data-user="4"] td.mf-cell-name');
     expect(cell.querySelector('button[data-open]')!.textContent!.trim()).toBe('Priya Patel');
-    expect(cell.querySelector('[data-account]')!.textContent!.trim()).toBe('KE\\ppatel');
+    expect(cell.querySelector('[data-account]')!.textContent!.trim()).toBe('ppatel');
     expect(cell.querySelectorAll('a, button').length).toBe(1);
     expect(cell.querySelector('button[data-open]')!.getAttribute('aria-label')).toBe(
       'Open Priya Patel (KE\\ppatel)',
@@ -1152,7 +1152,7 @@ describe('UsersPage', () => {
       expect(el().querySelector('table')).toBeNull();
       expect(cards().length).toBe(2); // the two people waiting
       const priya = cardOf('Priya Patel');
-      expect(priya.textContent).toContain('KE\\ppatel');
+      expect(priya.textContent).toContain('ppatel');
       expect(priya.textContent).toContain('Pending access');
       expect(priya.querySelector('[data-card-summary]')!.textContent).toContain('None · No pod');
       const grant = priya.querySelector<HTMLButtonElement>(

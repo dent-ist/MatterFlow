@@ -43,6 +43,7 @@ import { ScopeSwitch } from '../../../shared/scope/scope-switch';
 import { Pager } from '../../../shared/ui/pager';
 import { TaskCount } from '../../../shared/ui/task-count';
 import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** Bone widths of a skeleton row, per column key. */
 const BONES: Record<string, string> = {
@@ -63,6 +64,7 @@ const BONES: Record<string, string> = {
 @Component({
   selector: 'mf-clients-list-page',
   imports: [
+    IntPipe,
     FixedPage,
     GridFrame,
     NgTemplateOutlet,
@@ -176,7 +178,7 @@ const BONES: Record<string, string> = {
                   <span class="rc-ref">{{ c.clientNumber }}</span>
                   <span class="rc-sep" aria-hidden="true">-</span><span class="mf-sr-only">, </span>
                   <span class="rc-text"
-                    >{{ c.matterCount }} {{ c.matterCount === 1 ? 'matter' : 'matters'
+                    >{{ c.matterCount | mfInt }} {{ c.matterCount === 1 ? 'matter' : 'matters'
                     }}{{ myCount() ? ', ' + (c.myMatterCount ?? 0) + ' mine' : '' }}</span
                   >
                 </p>
@@ -312,7 +314,7 @@ const BONES: Record<string, string> = {
                           >{{ c.name }}</a
                         >
                       </td>
-                      <td class="pg-num">{{ c.matterCount }}</td>
+                      <td class="pg-num">{{ c.matterCount | mfInt }}</td>
                       @if (myCount()) {
                         <td class="pg-num" data-my-matters-cell>{{ c.myMatterCount ?? 0 }}</td>
                       }

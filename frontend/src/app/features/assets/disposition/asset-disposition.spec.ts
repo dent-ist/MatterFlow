@@ -73,9 +73,9 @@ describe('dispositions', () => {
 });
 
 describe('formatSize', () => {
-  it('shows whole numbers without decimals, others with at most two, and nothing without a value', () => {
+  it('shows whole numbers without decimals, others with at most one, and nothing without a value', () => {
     expect(formatSize(412, 'GB')).toBe('412 GB');
-    expect(formatSize(412.456, 'GB')).toBe('412.46 GB');
+    expect(formatSize(412.456, 'GB')).toBe('412.5 GB');
     expect(formatSize(26400, 'Items')).toBe('26,400 Items');
     expect(formatSize(7, undefined)).toBe('7');
     expect(formatSize(undefined, 'GB')).toBe('');

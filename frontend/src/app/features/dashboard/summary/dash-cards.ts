@@ -156,6 +156,7 @@ const CARDS: readonly CardSpec[] = [
       flex-direction: column;
     }
     .n {
+      font-variant-numeric: tabular-nums;
       font-size: 28px;
       font-weight: 700;
       line-height: 1;
@@ -205,6 +206,7 @@ const CARDS: readonly CardSpec[] = [
         font-size: 0.9rem;
       }
       .n {
+        font-variant-numeric: tabular-nums;
         font-size: 22px;
       }
       .chk {

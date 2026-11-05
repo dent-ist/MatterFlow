@@ -21,6 +21,7 @@ import { PriorityFlag } from '../../../shared/ui/priority-flag';
 import { StatusBadge } from '../../../shared/ui/status-badge';
 import { DueEdit } from './task-due-edit';
 import { TaskDetailStore } from './task-detail.store';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** The fields of a queue row that the inline editors read, taken from the Task. */
 function rowOfTask(t: TaskResponse): TaskQueueRow {
@@ -74,7 +75,7 @@ function whenNoDialog(then: () => void): void {
  */
 @Component({
   selector: 'mf-task-facts',
-  imports: [RowEdit, StatusBadge, PriorityFlag, DueCell, DueEdit],
+  imports: [IntPipe, RowEdit, StatusBadge, PriorityFlag, DueCell, DueEdit],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.task(); as t) {
@@ -164,7 +165,7 @@ function whenNoDialog(then: () => void): void {
           <span class="mf-facts__label">Workflow</span>
           <span class="mf-facts__value" data-progress>
             @if (t.workflow.progress.total > 0) {
-              {{ t.workflow.progress.resolved }} of {{ t.workflow.progress.total }} resolved
+              {{ t.workflow.progress.resolved }} of {{ t.workflow.progress.total | mfInt }} resolved
             } @else {
               No steps
             }

@@ -53,6 +53,7 @@ import { WorkList, WorkListState } from '../../../shared/work-queue/work-list';
 import { WorkWidths } from '../../../shared/work-queue/work-widths';
 import { queueParams } from '../dashboard-links';
 import { CARD_KEYS, CardKey, isCardKey } from './dash-cards';
+import { IntPipe } from '../../../shared/ui/number-format';
 export { DASH_GRID_PARAMS } from './dash-grid-params';
 
 /** The page size of a list (decision AR 10): 50, chosen from 25 / 50 / 100. */
@@ -95,7 +96,7 @@ const OWNED_BY_CARD: Record<CardKey, readonly string[]> = {
  */
 @Component({
   selector: 'mf-dash-grid',
-  imports: [ListToolbar, GridColumns, SortedLine, PhoneSort, WorkList],
+  imports: [IntPipe, ListToolbar, GridColumns, SortedLine, PhoneSort, WorkList],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   styles: `
@@ -139,7 +140,7 @@ const OWNED_BY_CARD: Record<CardKey, readonly string[]> = {
       <h2 id="dg-title">
         {{ heading() }}
         @if (state() === 'ready') {
-          <span data-list-count>{{ total() }}</span>
+          <span data-list-count>{{ total() | mfInt }}</span>
         }
       </h2>
       <div class="body">

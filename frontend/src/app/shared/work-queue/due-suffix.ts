@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { DueCell, DueInput, describeDueCell } from '../../core/time/time';
 import { numericDate, numericInstant } from '../ui/numeric-date';
+import { formatDuration } from '../ui/number-format';
 
 /** What the Due cell of the Dashboard grid shows (decision AS item 3): the date, and when overdue a compact suffix, on ONE line. */
 export interface DashDue {
@@ -73,11 +74,7 @@ export function dashDue(
 
 /** `12 m`, `2 h 48 m`, `3 d 4 h`: how long a task has waited (the Unassigned for column and the gauge). */
 export function ageText(minutes: number): string {
-  const m = Math.max(0, Math.round(minutes));
-  if (m < 60) return `${m} m`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h} h ${String(m % 60).padStart(2, '0')} m`;
-  return `${Math.floor(h / 24)} d ${h % 24} h`;
+  return formatDuration(minutes);
 }
 
 /**

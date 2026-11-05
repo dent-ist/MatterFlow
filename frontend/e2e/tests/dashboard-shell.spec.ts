@@ -177,7 +177,7 @@ test.describe('Dashboard shell: tabs are independent (P2) and errors stay in the
 });
 
 test.describe('Dashboard shell: staleness text (P6)', () => {
-  test('nothing is shown in a fresh session or at 9 minutes; "Updated N min ago" from 10 minutes, gone after a refresh', async ({
+  test('nothing is shown in a fresh session or at 9 minutes; "Updated N m ago" from 10 minutes, gone after a refresh', async ({
     page,
   }) => {
     await page.clock.install({ time: new Date('2026-10-14T15:00:00Z') });
@@ -192,10 +192,10 @@ test.describe('Dashboard shell: staleness text (P6)', () => {
     await page.clock.fastForward('01:30');
     const age = page.locator('[data-stale-age]');
     await expect(age).toBeVisible();
-    await expect(age).toHaveText(/Updated 10 min ago/);
+    await expect(age).toHaveText(/Updated 10 m ago/);
     await expect(page.locator('[data-refresh]')).toHaveAttribute(
       'aria-label',
-      /Refresh\. Updated 10 min ago\./,
+      /Refresh\. Updated 10 m ago\./,
     );
     await expect(page.locator('[data-stale-age-live]')).toHaveAttribute('aria-live', 'polite');
     await page.setViewportSize({ width: 1366, height: 768 });

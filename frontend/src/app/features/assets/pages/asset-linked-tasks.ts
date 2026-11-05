@@ -24,6 +24,7 @@ import {
   phoneCards,
 } from '../../../shared/ui/record-card-list';
 import { StatusBadge } from '../../../shared/ui/status-badge';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -52,6 +53,7 @@ function dueKey(t: AssetTaskLink): number | null {
 @Component({
   selector: 'mf-asset-linked-tasks',
   imports: [
+    IntPipe,
     ErrorReference,
     RouterLink,
     Button,
@@ -151,7 +153,7 @@ function dueKey(t: AssetTaskLink): number | null {
             </div>
           } @else {
             <p class="lt-summary" data-linked-summary>
-              {{ totals().total }} linked - {{ totals().open }} open -
+              {{ totals().total | mfInt }} linked - {{ totals().open }} open -
               <span [class.lt-over]="totals().overdue > 0">{{ totals().overdue }} overdue</span>
             </p>
             <div class="mf-scroll lt-card">

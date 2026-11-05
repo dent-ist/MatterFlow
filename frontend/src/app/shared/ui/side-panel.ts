@@ -10,6 +10,7 @@ import {
   Injector,
 } from '@angular/core';
 import { Tip } from './tip';
+import { IntPipe } from './number-format';
 
 export interface SideSection {
   key: string;
@@ -30,7 +31,7 @@ export interface SideSection {
  */
 @Component({
   selector: 'mf-side-panel',
-  imports: [Tip],
+  imports: [IntPipe, Tip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.open]': 'open()', '[attr.data-open]': 'open()' },
   template: `
@@ -77,7 +78,9 @@ export interface SideSection {
           >
             <i class="pi" [class]="s.icon" aria-hidden="true"></i>
             @if (s.count) {
-              <span class="badge" [class.alert]="s.alert" aria-hidden="true">{{ s.count }}</span>
+              <span class="badge" [class.alert]="s.alert" aria-hidden="true">{{
+                s.count | mfInt
+              }}</span>
             }
           </button>
         }

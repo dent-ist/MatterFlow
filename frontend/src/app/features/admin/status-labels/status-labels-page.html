@@ -72,7 +72,7 @@
                         [queryParams]="tasksQuery(row.code)"
                         [attr.aria-label]="countSentence(row)"
                         [attr.title]="countSentence(row)"
-                        >{{ row.taskCount }}</a
+                        >{{ row.taskCount | mfInt }}</a
                       >
                     } @else {
                       <span class="sl-zero" [attr.title]="countSentence(row)">0</span>

@@ -27,6 +27,7 @@ import { AdminTabCounts } from '../admin-tabs';
 import { RoleReportsTab } from '../reports/role-reports-tab';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { tabIcon } from '../../../shared/ui/tab-icons';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** The permission that every other permission of the same group needs (Assign requires View), if the catalog has one. */
 export function prerequisiteOf(code: string, all: ReadonlySet<string>): string | undefined {
@@ -76,7 +77,16 @@ export function roleChanges(
 /** S12 Admin: Roles and permissions. List with member counts, editor with the grouped permission matrix. */
 @Component({
   selector: 'mf-roles-page',
-  imports: [Button, CharCounter, ConfirmDialog, Dropdown, RoleReportsTab, ScrollArea, Tabs],
+  imports: [
+    IntPipe,
+    Button,
+    CharCounter,
+    ConfirmDialog,
+    Dropdown,
+    RoleReportsTab,
+    ScrollArea,
+    Tabs,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   templateUrl: './roles-page.html',

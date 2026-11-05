@@ -19,6 +19,7 @@ import {
   plural,
   toneOf,
 } from './users-model';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** The colours, icon and phrase of a person's state: priority colours when something is open, green when free, an amber band when out of office. */
 export interface Band {
@@ -44,7 +45,7 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
  */
 @Component({
   selector: 'mf-users-card',
-  imports: [UserStateIcon],
+  imports: [IntPipe, UserStateIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let u = user();
@@ -93,7 +94,7 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
             }
           </p>
           <div class="wl" aria-hidden="true" data-workload>
-            <strong class="n" data-open-total>{{ u.openTotal }}</strong
+            <strong class="n" data-open-total>{{ u.openTotal | mfInt }}</strong
             >&ngsp;
             @if (st === 'ooo' && backText(); as back) {
               <span class="back" data-back-on><i class="pi pi-calendar"></i>{{ back }}</span>

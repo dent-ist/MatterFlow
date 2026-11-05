@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { RowStop } from './row-nav';
+import { IntPipe } from './number-format';
 
 /** The record a count belongs to; the Task Queue filters by it with `client=`, `matter=`, `project=` or, for a Task Type, `type=` and, for a Priority, `priority=` (#605). */
 export type CountScope = 'client' | 'matter' | 'project' | 'type' | 'priority';
@@ -30,7 +31,7 @@ export function taskQueueQuery(
  */
 @Component({
   selector: 'mf-task-count',
-  imports: [RouterLink, RowStop],
+  imports: [IntPipe, RouterLink, RowStop],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[attr.data-count]': 'kind()', '[class.tc-card]': 'word()' },
   template: `
@@ -47,7 +48,7 @@ export function taskQueueQuery(
         @if (kind() === 'overdue') {
           <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
         }
-        {{ count() }}{{ wordText() }}
+        {{ count() | mfInt }}{{ wordText() }}
       </a>
     } @else if (kind() === 'overdue') {
       <span class="tc tc-zero" [attr.title]="sentence()">

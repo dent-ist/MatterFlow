@@ -16,6 +16,7 @@ import { CapacityPerson, DashboardCapacity } from '../../../api/generated/api-cl
 import { BatteryView, WORD_ICON, batteryView } from './capacity-model';
 import { DashPeople } from './dash-people';
 import { DashV4Api } from './dash-v4-api';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 type BatteryState = 'loading' | 'ready' | 'error';
 
@@ -28,7 +29,7 @@ type BatteryState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-dash-battery',
-  imports: [Tip, DashPeople],
+  imports: [IntPipe, Tip, DashPeople],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section
@@ -163,7 +164,7 @@ type BatteryState = 'loading' | 'ready' | 'error';
                     <span class="sw" [class]="'sw sw--' + l.swatch" aria-hidden="true">
                       <i class="pi" [class]="l.icon"></i>
                     </span>
-                    <b>{{ l.count }}</b>
+                    <b>{{ l.count | mfInt }}</b>
                     <span class="t">{{ l.label }}</span>
                   </li>
                 }

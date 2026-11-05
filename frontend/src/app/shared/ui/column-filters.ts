@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import { Dropdown, DropdownItem } from './dropdown';
 import { SEARCH_DEBOUNCE_MS } from './search-box';
+import { IntPipe } from './number-format';
 
 /**
  * Inline column filters of a grid (product-owner request for Assets): one compact control under each filterable column header, in a
@@ -219,6 +220,7 @@ export class ColumnSelectFilter {
  */
 @Component({
   selector: 'mf-filters-toggle',
+  imports: [IntPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <button
@@ -236,7 +238,7 @@ export class ColumnSelectFilter {
       <i class="pi pi-filter" aria-hidden="true"></i>
       Filters
       @if (count() > 0) {
-        <span class="ft__count" data-filter-count>({{ count() }})</span>
+        <span class="ft__count" data-filter-count>({{ count() | mfInt }})</span>
       }
     </button>
   `,

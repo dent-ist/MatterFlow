@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import { Dismissable } from '../../../shared/ui/dismissable';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 let nextId = 0;
 
@@ -10,7 +11,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-users-filter-popover',
-  imports: [Dismissable],
+  imports: [IntPipe, Dismissable],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <button
@@ -28,7 +29,7 @@ let nextId = 0;
       <i class="pi" [class]="icon()" aria-hidden="true"></i>
       <span class="w">{{ label() }}</span>
       @if (count() > 0) {
-        <span class="n" data-filters-count aria-hidden="true">{{ count() }}</span>
+        <span class="n" data-filters-count aria-hidden="true">{{ count() | mfInt }}</span>
       }
     </button>
     @if (open()) {
@@ -69,6 +70,7 @@ let nextId = 0;
       background: var(--mf-selected-bg);
     }
     .n {
+      font-variant-numeric: tabular-nums;
       min-width: 1.25rem;
       padding: 0 var(--mf-s1);
       color: var(--mf-primary-contrast);

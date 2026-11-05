@@ -67,6 +67,8 @@ import {
   titleOfHtml,
   withoutTitleBlock,
 } from './note-ui';
+import { formatAgo } from '../../shared/ui/number-format';
+import { IntPipe } from '../../shared/ui/number-format';
 
 type PanelKind = 'none' | 'tags' | 'history' | 'refs' | 'save-template';
 type NoteView = 'tag' | 'latest' | 'templates';
@@ -111,6 +113,7 @@ interface RefChip {
 @Component({
   selector: 'mf-notes-tab',
   imports: [
+    IntPipe,
     AiButton,
     AiComingSoon,
     ConfirmDialog,
@@ -260,7 +263,7 @@ interface RefChip {
                                 aria-hidden="true"
                               ></i
                               ><span class="nt__grow">{{ o.label }}</span
-                              ><span class="nt__n">{{ o.count }}</span>
+                              ><span class="nt__n">{{ o.count | mfInt }}</span>
                             </button>
                           </li>
                         }
@@ -387,7 +390,7 @@ interface RefChip {
                                 @for (g of t.tags; track g.noteTagId) {
                                   <mf-note-tag [name]="g.name" [colourKey]="g.colourKey" />
                                 }
-                                <span class="nt__plain">Used {{ t.usedCount }} times</span>
+                                <span class="nt__plain">Used {{ t.usedCount | mfInt }} times</span>
                               </span>
                             </span>
                           </button>
@@ -695,7 +698,7 @@ interface RefChip {
                     <div class="nt__pscroll">
                       <h2 class="nt__ptitle" tabindex="-1" #ptitle>{{ t.name }}</h2>
                       <p class="nt__upd">
-                        Used {{ t.usedCount }} times &middot; last changed by
+                        Used {{ t.usedCount | mfInt }} times &middot; last changed by
                         <b>{{ t.updatedByName ?? 'someone' }}</b> &middot;
                         {{ t.updatedAtUtc | mfNum }}
                       </p>
@@ -1549,7 +1552,7 @@ interface RefChip {
             >
               <mf-note-tag [name]="t.name" [colourKey]="t.colourKey" [inactive]="!t.isActive" />
               <span class="nt__grow"></span>
-              <span class="nt__n">{{ t.visibleNoteCount }}</span>
+              <span class="nt__n">{{ t.visibleNoteCount | mfInt }}</span>
               <i class="pi nt__tick" [class.pi-check]="hasTag(t.noteTagId)" aria-hidden="true"></i>
             </button>
           } @empty {
@@ -2298,15 +2301,15 @@ export class NotesTab {
       : '';
   }
 
-  /** "10 min ago", "3 hours ago", "yesterday", "4 days ago" for the history. */
+  /** "10 m ago", "3 h ago", "yesterday", "4 d ago" for the history. */
   protected relative(iso: string): string {
     const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
     if (m < 1) return 'just now';
-    if (m < 60) return `${m} min ago`;
+    if (m < 60) return formatAgo(m);
     const h = Math.round(m / 60);
-    if (h < 24) return `${h} ${h === 1 ? 'hour' : 'hours'} ago`;
+    if (h < 24) return formatAgo(h * 60);
     const d = Math.round(h / 24);
-    return d <= 1 ? 'yesterday' : `${d} days ago`;
+    return d <= 1 ? 'yesterday' : formatAgo(d * 1440);
   }
 
   /** The text split into plain and highlighted parts (the search words show with a mark). */

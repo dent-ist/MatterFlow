@@ -14,6 +14,7 @@ import {
 import { FixedPage } from './fixed-page';
 import { TabBox, pageLeft, revealLeft, scrollCues } from './tab-scroll';
 import { CountChip } from './count-chip';
+import { IntPipe } from './number-format';
 
 export interface MfTab {
   key: string;
@@ -46,7 +47,7 @@ export interface MfTab {
  */
 @Component({
   selector: 'mf-tabs',
-  imports: [CountChip],
+  imports: [IntPipe, CountChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.tabs--pinned]': 'pinned', '[class.tabs--dense]': 'dense()' },
   template: `
@@ -82,7 +83,7 @@ export interface MfTab {
             }
             {{ t.label }}
             @if (t.count !== undefined && t.count !== null) {
-              <span class="count">({{ t.count }})</span>
+              <span class="count">({{ t.count | mfInt }})</span>
             }
             @if (t.badge) {
               <mf-count-chip class="badge" aria-hidden="true" data-tab-badge>{{
@@ -230,6 +231,7 @@ export interface MfTab {
       margin-left: var(--mf-s1);
     }
     .count {
+      font-variant-numeric: tabular-nums;
       color: var(--mf-text-muted);
       font-weight: 400;
     }

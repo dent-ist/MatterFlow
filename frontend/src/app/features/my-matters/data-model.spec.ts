@@ -47,7 +47,7 @@ describe('assetsParams', () => {
 
 describe('sizeText', () => {
   it('shows each unit, leaves out units no asset had a value for, and is empty without a size', () => {
-    expect(sizeText([unit('GB', 640.25), unit('Items', 26400)])).toBe('640.25 GB + 26,400 Items');
+    expect(sizeText([unit('GB', 640.25), unit('Items', 26400)])).toBe('640.3 GB + 26,400 Items');
     expect(sizeText([unit('GB', 0, 0)])).toBe('');
     expect(sizeText([])).toBe('');
   });

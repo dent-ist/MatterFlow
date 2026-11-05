@@ -28,6 +28,7 @@ import {
   isGroupBy,
   isSortKey,
 } from './swimlane-model';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 let nextId = 0;
 
@@ -44,7 +45,7 @@ export interface Option {
  */
 @Component({
   selector: 'mf-swimlane-toolbar',
-  imports: [Dropdown, SearchBox, NgTemplateOutlet],
+  imports: [IntPipe, Dropdown, SearchBox, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:click)': 'onDocumentClick($event)' },
   template: `
@@ -75,7 +76,7 @@ export interface Option {
         <i class="pi pi-filter" aria-hidden="true"></i>
         Filters
         @if (shownCount() > 0) {
-          <span class="n" data-filter-count>({{ shownCount() }})</span>
+          <span class="n" data-filter-count>({{ shownCount() | mfInt }})</span>
         }
       </button>
       <span class="grow"></span>

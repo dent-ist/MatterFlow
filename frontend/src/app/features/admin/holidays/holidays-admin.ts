@@ -18,6 +18,7 @@ import { Holiday, HolidayCalendar, HolidayDefaults, PodRef, PreviewRow } from '.
 import { HolidayDialog } from './holiday-dialog';
 import { ruleText } from './holiday-rules';
 import { ImportDialog } from './import-dialog';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 type LoadState = 'loading' | 'ready' | 'error';
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -29,7 +30,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
  */
 @Component({
   selector: 'mf-holidays-admin',
-  imports: [CalendarDialog, ConfirmDialog, HolidayDialog, ImportDialog, NumericDatePipe],
+  imports: [IntPipe, CalendarDialog, ConfirmDialog, HolidayDialog, ImportDialog, NumericDatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../dashboard/calendar/calendar-coverage.scss',
   template: `
@@ -397,8 +398,8 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         (confirmed)="confirmDeleteCalendar(c)"
       >
         <p>
-          {{ c.name }} and its {{ c.holidayCount }} days are deleted, and people who used it fall
-          back to their pod's or the firm's default. This cannot be undone.
+          {{ c.name }} and its {{ c.holidayCount | mfInt }} days are deleted, and people who used it
+          fall back to their pod's or the firm's default. This cannot be undone.
         </p>
       </mf-confirm-dialog>
     }

@@ -49,7 +49,7 @@
         data-category=""
         (click)="setCategory('')"
       >
-        All <span class="tip__n">{{ totalCount() }}</span>
+        All <span class="tip__n">{{ totalCount() | mfInt }}</span>
       </button>
       @for (c of categoryButtons(); track c.name) {
         <button
@@ -59,7 +59,7 @@
           [attr.data-category]="c.name"
           (click)="setCategory(c.name)"
         >
-          {{ c.name }} <span class="tip__n">{{ c.count }}</span>
+          {{ c.name }} <span class="tip__n">{{ c.count | mfInt }}</span>
         </button>
       }
     </div>
@@ -67,7 +67,7 @@
       @if (loadFailed()) {
         The icons could not be loaded.
       } @else {
-        {{ matchCount() }} {{ matchCount() === 1 ? 'icon' : 'icons' }}
+        {{ matchCount() | mfInt }} {{ matchCount() === 1 ? 'icon' : 'icons' }}
       }
     </p>
     @if (loadFailed()) {

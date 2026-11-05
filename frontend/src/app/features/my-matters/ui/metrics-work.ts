@@ -263,18 +263,22 @@ const ATTENTION = [
       cursor: pointer;
     }
     .num:hover:not(:disabled) {
+      font-variant-numeric: tabular-nums;
       background: var(--mf-selected-bg);
       text-decoration: underline;
     }
     .num:disabled {
+      font-variant-numeric: tabular-nums;
       color: var(--mf-text-muted);
       font-weight: 400;
       cursor: default;
     }
     .num.over:not(:disabled) {
+      font-variant-numeric: tabular-nums;
       color: var(--mf-sem-overdue-fg);
     }
     .num.risk:not(:disabled) {
+      font-variant-numeric: tabular-nums;
       color: var(--mf-sem-risk-fg);
     }
     .tiles {
@@ -298,6 +302,7 @@ const ATTENTION = [
       border-color: var(--mf-sem-risk-line);
     }
     .big {
+      font-variant-numeric: tabular-nums;
       display: flex;
       flex-direction: column;
       width: 100%;
@@ -313,16 +318,20 @@ const ATTENTION = [
       cursor: pointer;
     }
     .tile.over .big {
+      font-variant-numeric: tabular-nums;
       color: var(--mf-sem-overdue-fg);
     }
     .tile.risk .big {
+      font-variant-numeric: tabular-nums;
       color: var(--mf-sem-risk-fg);
     }
     .big span {
+      font-variant-numeric: tabular-nums;
       font-size: var(--mf-fs-sm);
       font-weight: 600;
     }
     .big:disabled {
+      font-variant-numeric: tabular-nums;
       color: var(--mf-text-muted);
       cursor: default;
     }
@@ -346,6 +355,7 @@ const ATTENTION = [
       border-bottom: 1px solid var(--mf-border);
     }
     .tt2 .n {
+      font-variant-numeric: tabular-nums;
       text-align: right;
     }
     .tycell {
@@ -358,6 +368,7 @@ const ATTENTION = [
         grid-template-columns: 1fr;
       }
       .num {
+        font-variant-numeric: tabular-nums;
         min-width: 44px;
         height: 44px;
       }

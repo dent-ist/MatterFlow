@@ -17,6 +17,7 @@ import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { AdminTabCounts } from '../admin-tabs';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 interface Draft {
   /** Category id; 0 for a new category. */
@@ -35,7 +36,7 @@ interface Draft {
  */
 @Component({
   selector: 'mf-report-categories-tab',
-  imports: [ActiveBadge, NgTemplateOutlet, ScrollArea],
+  imports: [IntPipe, ActiveBadge, NgTemplateOutlet, ScrollArea],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -85,7 +86,7 @@ interface Draft {
                   <tr [attr.data-row]="c.name" [class.inactive]="!c.isActive">
                     <td class="mf-cell-name">{{ c.name }}</td>
                     <td class="mf-cell-num">{{ c.sortOrder }}</td>
-                    <td class="mf-cell-num">{{ c.reportCount }}</td>
+                    <td class="mf-cell-num">{{ c.reportCount | mfInt }}</td>
                     <td class="mf-cell-badge"><mf-active-badge [active]="c.isActive" /></td>
                     <td class="mf-cell-actions">
                       <button

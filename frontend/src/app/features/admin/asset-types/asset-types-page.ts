@@ -52,6 +52,7 @@ import { AdminShellFilters } from '../task-types/shell-filters';
 import { ADMIN_LIST, AdminListLeave } from '../list-return';
 import { dialogCopy } from '../shared/dialog-copy';
 import { FormStatusCell } from '../shared/form-status-cell';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** Every column of the grid, in order; the keys the filter definitions point at. */
 type Column = 'name' | 'fields' | 'assets' | 'status' | 'actions';
@@ -79,6 +80,7 @@ const LOAD_PAGE_SIZE = 100;
 @Component({
   selector: 'mf-asset-types-page',
   imports: [
+    IntPipe,
     ActionMenu,
     ActiveBadge,
     ActivityDrawer,
@@ -213,7 +215,7 @@ const LOAD_PAGE_SIZE = 100;
                   @if (assetsShown()) {
                     <td class="mf-cell-num" data-assets>
                       @if (t.assetCount !== undefined && t.assetCount !== null) {
-                        {{ t.assetCount }}
+                        {{ t.assetCount | mfInt }}
                       }
                     </td>
                   }

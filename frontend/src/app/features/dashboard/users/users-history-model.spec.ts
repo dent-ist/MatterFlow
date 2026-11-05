@@ -8,10 +8,10 @@ import {
 
 describe('users history model', () => {
   it('says durations in minutes under an hour and hours above', () => {
-    expect(durationText(45)).toBe('45 min');
-    expect(durationText(200)).toBe('3.3 h');
-    expect(durationText(120)).toBe('2 h');
-    expect(durationText(7200)).toBe('120 h');
+    expect(durationText(45)).toBe('45 m');
+    expect(durationText(200)).toBe('3 h 20 m');
+    expect(durationText(120)).toBe('2 h 00 m');
+    expect(durationText(7200)).toBe('5 d 0 h');
     expect(durationText(undefined)).toBe('');
   });
 

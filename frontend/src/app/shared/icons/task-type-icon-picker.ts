@@ -14,6 +14,7 @@ import { GridNav } from '../ui/grid-nav';
 import type { TaskTypeIconDef } from './task-type-icon-catalog.generated';
 import { TaskTypeIcon } from './task-type-icon';
 import { TaskTypeIconLibrary } from './task-type-icon-library';
+import { IntPipe } from '../ui/number-format';
 
 interface IconGroup {
   category: string;
@@ -83,7 +84,7 @@ export function rankIcons(icons: readonly TaskTypeIconDef[], query: string): Tas
  */
 @Component({
   selector: 'mf-task-type-icon-picker',
-  imports: [FormDialog, GridNav, TaskTypeIcon],
+  imports: [IntPipe, FormDialog, GridNav, TaskTypeIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './task-type-icon-picker.html',
   styleUrl: './task-type-icon-picker.scss',

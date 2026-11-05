@@ -151,7 +151,7 @@
                           @if (r.description) {
                             {{ r.description }} &middot;
                           }
-                          {{ r.permissionCount }}
+                          {{ r.permissionCount | mfInt }}
                           {{ r.permissionCount === 1 ? 'permission' : 'permissions' }}
                         </span>
                       </span>
@@ -167,9 +167,9 @@
                 <div class="ud-perms" role="group" aria-labelledby="ud-perms-h" data-permissions>
                   <h4 id="ud-perms-h">
                     @if (rolesChanged()) {
-                      After you save: {{ permissionTotal() }} permissions
+                      After you save: {{ permissionTotal() | mfInt }} permissions
                     } @else {
-                      Effective permissions ({{ permissionTotal() }})
+                      Effective permissions ({{ permissionTotal() | mfInt }})
                     }
                   </h4>
                   @if (rolesChanged()) {
@@ -189,7 +189,7 @@
                     <ul class="ud-chips">
                       @for (g of permissionGroups(); track g.group) {
                         <li class="ud-chip" data-permission-group [attr.title]="g.codes.join(', ')">
-                          {{ g.group }} ({{ g.count }})
+                          {{ g.group }} ({{ g.count | mfInt }})
                         </li>
                       }
                     </ul>

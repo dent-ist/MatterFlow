@@ -84,6 +84,7 @@ interface MatterExtraColumnChoice {
 }
 const EXTRA_KEYS: readonly string[] = ['onHold', 'atRisk', 'dataSize', 'pending'];
 import { assetsParams, sizeText } from '../../my-matters/data-model';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** The "None" choice of a project manager filter (the matters with nobody in that place); the API argument is `hasPrimaryManager=false`. */
 const NO_MANAGER = 'none';
@@ -115,6 +116,7 @@ const BONES: Record<string, string> = {
 @Component({
   selector: 'mf-matters-list-page',
   imports: [
+    IntPipe,
     ZeroDash,
     FixedPage,
     GridFrame,
@@ -680,7 +682,7 @@ const BONES: Record<string, string> = {
                                   routerLink="/tasks"
                                   [queryParams]="{ matter: m.matterId, status: ['ON_HOLD'] }"
                                   [attr.aria-label]="m.onHoldTaskCount + ' on hold in ' + m.name"
-                                  >{{ m.onHoldTaskCount }}</a
+                                  >{{ m.onHoldTaskCount | mfInt }}</a
                                 >
                               } @else {
                                 <mf-zero-dash />
@@ -698,7 +700,7 @@ const BONES: Record<string, string> = {
                                     atRisk: 'true',
                                   }"
                                   [attr.aria-label]="m.atRiskTaskCount + ' at risk in ' + m.name"
-                                  >{{ m.atRiskTaskCount }}</a
+                                  >{{ m.atRiskTaskCount | mfInt }}</a
                                 >
                               } @else {
                                 <mf-zero-dash />

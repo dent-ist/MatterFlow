@@ -28,6 +28,7 @@ import { emptyState, taskQueueArgs } from '../../../shared/work-queue/queue-filt
 import { RowEdit } from '../../../shared/work-queue/row-edit';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 import { plural, unassignedQueueParams } from './users-model';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -44,6 +45,7 @@ export const UNASSIGNED_PAGE = 50;
 @Component({
   selector: 'mf-users-unassigned',
   imports: [
+    IntPipe,
     SlidePanel,
     Tip,
     RouterLink,
@@ -144,7 +146,8 @@ export const UNASSIGNED_PAGE = 50;
                 </ul>
                 @if (total() > rows().length) {
                   <p class="muted" data-unassigned-more>
-                    Showing {{ rows().length }} of {{ total() }}. The rest are in the Task Queue.
+                    Showing {{ rows().length }} of {{ total() | mfInt }}. The rest are in the Task
+                    Queue.
                   </p>
                 }
               }

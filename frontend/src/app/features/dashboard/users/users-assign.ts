@@ -39,6 +39,7 @@ import { assignedText } from '../../../shared/work-queue/row-edit';
 import { ageInDays } from '../ui/task-list-panel';
 import { loadLevelOf, plural } from './users-model';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -90,6 +91,7 @@ export function assignHint(
 @Component({
   selector: 'mf-users-assign',
   imports: [
+    IntPipe,
     FormDialog,
     RouterLink,
     PriorityFlag,
@@ -301,7 +303,8 @@ export function assignHint(
                   </ul>
                   @if (total() > rows().length) {
                     <p class="more" data-assign-more>
-                      Showing {{ rows().length }} of {{ total() }}. The rest are in the Task Queue.
+                      Showing {{ rows().length }} of {{ total() | mfInt }}. The rest are in the Task
+                      Queue.
                     </p>
                   }
                 }
@@ -329,7 +332,7 @@ export function assignHint(
             [disabled]="busy()"
             (click)="startNext()"
           >
-            Assign the next {{ nextCount() }}
+            Assign the next {{ nextCount() | mfInt }}
           </button>
         </span>
       }

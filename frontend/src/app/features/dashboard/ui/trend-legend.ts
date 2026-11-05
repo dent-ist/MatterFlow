@@ -17,6 +17,7 @@ import {
   totalMeasure,
   typeRows,
 } from './trend-model';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 let nextId = 0;
 /** The legend shows a search box above this many task types. */
@@ -31,7 +32,7 @@ export const SEARCH_ABOVE = 8;
  */
 @Component({
   selector: 'mf-trend-legend',
-  imports: [RouterLink, NgTemplateOutlet, TrendSample, TaskTypeIcon],
+  imports: [IntPipe, RouterLink, NgTemplateOutlet, TrendSample, TaskTypeIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="group" role="group" [attr.aria-labelledby]="id + '-types'" data-group="task-types">
@@ -174,10 +175,10 @@ export const SEARCH_ABOVE = 8;
           [attr.aria-label]="
             info[measure()].label + ' ' + t.count + ', ' + t.label + ', view in the Task Queue'
           "
-          >{{ t.count }}</a
+          >{{ t.count | mfInt }}</a
         >
       } @else {
-        <span class="total zero" [attr.data-total]="key">{{ t.count }}</span>
+        <span class="total zero" [attr.data-total]="key">{{ t.count | mfInt }}</span>
       }
     </ng-template>
   `,

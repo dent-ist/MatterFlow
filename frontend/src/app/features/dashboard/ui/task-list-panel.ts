@@ -23,6 +23,8 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { LIST_ORDER, ListKind, queueParamsSorted } from '../dashboard-links';
 import { DashState } from './dash-state';
+import { formatAgo } from '../../../shared/ui/number-format';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 export type PanelKind = ListKind;
 export type PanelState = 'loading' | 'ready' | 'error';
@@ -57,6 +59,7 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
 @Component({
   selector: 'mf-dash-task-list',
   imports: [
+    IntPipe,
     RouterLink,
     RowLink,
     MatterRef,
@@ -73,13 +76,13 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
       <header>
         <h3 [id]="id" aria-level="2" tabindex="-1" data-skip-target>{{ heading() }}</h3>
         @if (state() === 'ready' && total() > 0) {
-          <span class="count" data-total>{{ total() }}</span>
+          <span class="count" data-total>{{ total() | mfInt }}</span>
         }
         @if (orderNote(); as note) {
           <span class="order" data-order>{{ note }}</span>
         }
         @if (state() === 'ready' && total() > shown().length) {
-          <span class="more" data-more>Showing {{ shown().length }} of {{ total() }}</span>
+          <span class="more" data-more>Showing {{ shown().length }} of {{ total() | mfInt }}</span>
         }
         @if (state() === 'ready' && total() > 0) {
           <a
@@ -621,13 +624,13 @@ export class DashTaskList {
     return canEditField('assignee', row, (p) => this.auth.has(p));
   }
 
-  /** The creation information, now in the Due cell tooltip: "Created today", "Created 1 day ago", "Created 10 days ago". */
+  /** The creation information, now in the Due cell tooltip: "Created today", "Created 1 d ago", "Created 10 d ago". */
   protected createdText(row: TaskQueueRow): string {
     const days = ageInDays(row.createdAtUtc, this.clock.now(), this.zone);
     return days === 0
       ? 'Created today'
       : days === 1
-        ? 'Created 1 day ago'
-        : `Created ${days} days ago`;
+        ? 'Created 1 d ago'
+        : `Created ${formatAgo(days * 1440)}`;
   }
 }

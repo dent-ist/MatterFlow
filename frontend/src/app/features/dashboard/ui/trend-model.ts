@@ -6,6 +6,7 @@ import {
   DashboardTrendDay,
   DashboardTrendType,
 } from '../../../api/generated/api-client';
+import { formatInt } from '../../../shared/ui/number-format';
 
 /**
  * The pure model of the Trends tab: what can be drawn (measures), how each line looks (colour, dash, marker; never colour alone), the two
@@ -825,7 +826,7 @@ export function nudgeLabels(ys: readonly number[], gap: number, lo: number, hi: 
 
 /** The text of an end label, cut with an ellipsis so that it fits `maxChars`; the value is always kept ("Document rev… 15"). */
 export function endLabelText(name: string, value: number, maxChars: number): string {
-  const tail = ` ${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  const tail = ` ${formatInt(value)}`;
   const room = Math.max(1, maxChars - tail.length);
   return (
     (name.length > room ? name.slice(0, Math.max(1, room - 1)).trimEnd() + '\u2026' : name) + tail

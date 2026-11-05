@@ -30,6 +30,7 @@ import { PointerFocus } from './pointer-focus';
 import { BD_CARD_CSS } from './breakdown-card';
 import { BreakdownSwitch } from './breakdown-switch';
 import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** One bar: a text label, its number, and the Task Queue query it drills into (null: not linkable). */
 export interface BarItem {
@@ -66,7 +67,15 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-bar-list',
-  imports: [RouterLink, TaskTypeChip, TaskTypeIcon, BreakdownPie, PointerFocus, BreakdownSwitch],
+  imports: [
+    IntPipe,
+    RouterLink,
+    TaskTypeChip,
+    TaskTypeIcon,
+    BreakdownPie,
+    PointerFocus,
+    BreakdownSwitch,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="card" [attr.aria-labelledby]="id + '-h'">
@@ -126,7 +135,7 @@ let nextId = 0;
                       {{ item.label }}
                     }
                   </th>
-                  <td class="num">{{ item.count }}</td>
+                  <td class="num">{{ item.count | mfInt }}</td>
                   @if (hasOverdue()) {
                     <td class="num">
                       @if ((item.overdue ?? 0) > 0 && overdueLink(item); as od) {
@@ -215,7 +224,7 @@ let nextId = 0;
                       </span>
                     }
                   </span>
-                  <span class="count">{{ item.count }}</span>
+                  <span class="count">{{ item.count | mfInt }}</span>
                   <span class="pct">{{ share(item.count) }}</span>
                   @if ((item.overdue ?? 0) > 0) {
                     @if (overdueLink(item); as od) {
@@ -400,6 +409,7 @@ let nextId = 0;
       }
       .count,
       .pct {
+        font-variant-numeric: tabular-nums;
         white-space: nowrap;
       }
       .count {

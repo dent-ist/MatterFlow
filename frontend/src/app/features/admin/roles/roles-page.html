@@ -27,10 +27,10 @@
               </span>
               <span class="mf-desc">{{ r.description }}</span>
               <span class="mf-count"
-                >{{ r.memberCount }} {{ r.memberCount === 1 ? 'member' : 'members' }}</span
+                >{{ r.memberCount | mfInt }} {{ r.memberCount === 1 ? 'member' : 'members' }}</span
               >
               <span class="mf-count mf-permcount" data-perm-count
-                >{{ r.permissionCount }} of {{ totalPermissions()
+                >{{ r.permissionCount | mfInt }} of {{ totalPermissions()
                 }}<span [class.mf-sr-only]="!editing() && !phone()"> permissions</span></span
               >
             </button>
@@ -76,7 +76,8 @@
             }
 
             <p class="mf-editor-count" data-editor-count>
-              <strong>{{ draftCount() }} of {{ totalPermissions() }}</strong> permissions selected
+              <strong>{{ draftCount() | mfInt }} of {{ totalPermissions() }}</strong> permissions
+              selected
             </p>
 
             @if (changes().length > 0) {

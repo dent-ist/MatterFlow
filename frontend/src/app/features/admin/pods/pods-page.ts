@@ -56,6 +56,7 @@ import { statusDef } from '../../../shared/filters/common-defs';
 import { FilterDef } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 const SEARCH_DEBOUNCE_MS = 200;
 
@@ -73,6 +74,7 @@ const COLUMNS = ['name', 'members', 'status'] as const;
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   imports: [
+    IntPipe,
     ScrollArea,
     ConfirmDialog,
     ActiveBadge,

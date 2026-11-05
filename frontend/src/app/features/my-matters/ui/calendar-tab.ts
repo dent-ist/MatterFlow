@@ -493,10 +493,12 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
       outline-offset: -2px;
     }
     .num {
+      font-variant-numeric: tabular-nums;
       font-weight: 700;
       font-size: var(--mf-fs-sm);
     }
     .today .num {
+      font-variant-numeric: tabular-nums;
       display: inline-grid;
       place-items: center;
       width: 24px;

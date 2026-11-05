@@ -1,3 +1,4 @@
+import { formatAgo } from '../../shared/ui/number-format';
 /** How old the figures on screen must be before the page says so (P6): two missed 5-minute refreshes. */
 export const STALE_AFTER_MS = 10 * 60_000;
 /** How often the age is looked at again. */
@@ -13,5 +14,5 @@ export function staleAgeText(lastOkAt: number | null, now: number): string | nul
   if (lastOkAt === null) return null;
   const age = now - lastOkAt;
   if (age < STALE_AFTER_MS) return null;
-  return `Updated ${Math.floor(age / 60_000)} min ago`;
+  return `Updated ${formatAgo(Math.floor(age / 60_000))}`;
 }

@@ -43,6 +43,7 @@ import { AdminTabCounts } from '../admin-tabs';
 import { ADMIN_LIST, AdminListLeave } from '../list-return';
 import { AdminShellFilters } from '../task-types/shell-filters';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 type Column = 'name' | 'category' | 'roles' | 'lastRun' | 'status' | 'actions';
 
@@ -65,6 +66,7 @@ const COLUMN_SPEC: Record<Column, AdminColumn> = {
 @Component({
   selector: 'mf-reports-list-tab',
   imports: [
+    IntPipe,
     NumericDatePipe,
     ActionMenu,
     ActiveBadge,
@@ -169,7 +171,7 @@ const COLUMN_SPEC: Record<Column, AdminColumn> = {
                   </td>
                   <td class="mf-cell-badge" data-category>{{ r.categoryName }}</td>
                   @if (roomy()) {
-                    <td class="mf-cell-num" data-roles>{{ r.roleCount }}</td>
+                    <td class="mf-cell-num" data-roles>{{ r.roleCount | mfInt }}</td>
                     <td class="mf-cell-badge" data-last-run>
                       @if (r.lastRunAtUtc) {
                         {{ r.lastRunAtUtc | mfNum: 'date' }}

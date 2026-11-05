@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { PreviewResponse } from '../../../api/generated/api-client';
 import { ParamDef } from './report-model';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** What the author typed for each parameter of the preview (text; the parts of a range have their own keys). */
 export type SampleTexts = Record<string, string | undefined>;
@@ -57,6 +58,7 @@ export function sampleValuesOf(
  */
 @Component({
   selector: 'mf-preview-panel',
+  imports: [IntPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="pp" aria-labelledby="pp-title" data-preview-panel>
@@ -144,7 +146,7 @@ export function sampleValuesOf(
           @if (r.success) {
             <p class="pp__ok" data-preview-ok>
               <i class="pi pi-check-circle" aria-hidden="true"></i>
-              First {{ r.rows.length }} of {{ r.rowCount }}
+              First {{ r.rows.length }} of {{ r.rowCount | mfInt }}
               {{ r.rowCount === 1 ? 'row' : 'rows' }} in {{ r.durationMs }} ms.
               @if (r.exceedsCap) {
                 The full result would be cut off at the row limit.

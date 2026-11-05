@@ -70,6 +70,7 @@ import { CoverageTypes, TypePick } from './coverage-types';
 import { CoveragePrefs } from './coverage-prefs';
 import { UsersFilters } from './users-model';
 import { DashScope } from '../dash-scope';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
 
@@ -88,6 +89,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
 @Component({
   selector: 'mf-coverage-view',
   imports: [
+    IntPipe,
     PeriodControl,
     SearchBox,
     TaskTypeIcon,
@@ -282,7 +284,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
             </li>
             @if (showGaps()) {
               <li class="chip" data-summary="gaps">
-                <strong>{{ m.gapCount }}</strong> possible training
+                <strong>{{ m.gapCount | mfInt }}</strong> possible training
                 {{ m.gapCount === 1 ? 'gap' : 'gaps' }}
                 <span class="sub">(0 for someone active)</span>
               </li>
@@ -415,7 +417,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
                             (keydown)="onKey($event, m, ri, ci)"
                           >
                             @if (c.count > 0) {
-                              <span class="n">{{ c.count }}</span>
+                              <span class="n">{{ c.count | mfInt }}</span>
                             }
                             @if (c.gap && showGaps()) {
                               <i class="pi pi-exclamation-circle mark" aria-hidden="true"></i>
@@ -423,7 +425,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
                           </button>
                         </td>
                       }
-                      <td class="num total" data-row-total>{{ r.total }}</td>
+                      <td class="num total" data-row-total>{{ r.total | mfInt }}</td>
                       <td class="num" data-people>
                         @if (r.status !== 'many') {
                           <span

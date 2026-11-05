@@ -85,7 +85,7 @@ describe('ProfilePage', () => {
 
   it('with no display name the header shows the Windows account', async () => {
     const { root } = await create({ me: { displayName: '' } });
-    expect(text(root, '[data-profile-who] [data-name]')).toBe('KE\\kekim');
+    expect(text(root, '[data-profile-who] [data-name]')).toBe('kekim');
   });
 
   it('lists the out of office entries (several, grouped) and the holiday card beside them', async () => {

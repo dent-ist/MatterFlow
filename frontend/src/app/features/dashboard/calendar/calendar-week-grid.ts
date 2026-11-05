@@ -245,6 +245,7 @@ interface Row {
         inset -2px 0 0 var(--mf-primary);
     }
     .cnt {
+      font-variant-numeric: tabular-nums;
       display: block;
       font-weight: 700;
       font-size: var(--mf-fs-md);

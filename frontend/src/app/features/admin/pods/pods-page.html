@@ -344,7 +344,7 @@
                     }}</span>
                   }
                 </td>
-                <td class="mf-cell-num">{{ pod.memberCount }}</td>
+                <td class="mf-cell-num">{{ pod.memberCount | mfInt }}</td>
                 <td class="mf-cell-badge"><mf-active-badge [active]="pod.isActive" /></td>
               </tr>
             }

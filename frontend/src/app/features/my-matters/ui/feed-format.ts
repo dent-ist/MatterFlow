@@ -1,6 +1,7 @@
 import { dayIndex, parseDateOnly } from '../../../core/time/time';
 import { numericDate } from '../../../shared/ui/numeric-date';
 import { FEED_KINDS, FeedItem, FeedKind } from './mm-models';
+import { formatAgo } from '../../../shared/ui/number-format';
 
 export interface KindLook {
   label: string;
@@ -68,12 +69,12 @@ export function feedTitle(i: FeedItem): string {
     : (i.assetName ?? 'Asset');
 }
 
-/** "Today", "Yesterday", "3 days ago" or the short date. */
+/** "Today", "Yesterday", "3 d ago" or the short date. */
 export function agoShort(iso: string, now: Date): string {
   const then = new Date(iso);
   const n = Math.floor((now.getTime() - then.getTime()) / 86_400_000);
   if (n <= 0) return 'Today';
   if (n === 1) return 'Yesterday';
-  if (n < 7) return `${n} days ago`;
+  if (n < 7) return formatAgo(n * 1440);
   return iso.slice(0, 10);
 }

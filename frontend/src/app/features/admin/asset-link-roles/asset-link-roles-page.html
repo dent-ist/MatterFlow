@@ -76,7 +76,7 @@
               @if (linksShown()) {
                 <td class="mf-cell-num" data-links>
                   @if (hasCount(r)) {
-                    <span [attr.title]="linkSentence(r)">{{ r.linkCount }}</span>
+                    <span [attr.title]="linkSentence(r)">{{ r.linkCount | mfInt }}</span>
                   }
                 </td>
               }

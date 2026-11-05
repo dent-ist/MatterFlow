@@ -10,6 +10,7 @@ import { Badge, workflowStatusTone } from '../../../shared/ui/badge';
 import { phoneCards } from '../../../shared/ui/record-card-list';
 import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** Why Create draft from this version is unavailable while a draft is in progress (WE4). */
 export const DRAFT_EXISTS_REASON = 'A draft is already in progress. Open it or discard it first.';
@@ -22,7 +23,7 @@ export const DRAFT_EXISTS_REASON = 'A draft is already in progress. Open it or d
  */
 @Component({
   selector: 'mf-workflow-versions-tab',
-  imports: [NumericDatePipe, RouterLink, Badge, ActionMenu, MfDateLongPipe],
+  imports: [IntPipe, NumericDatePipe, RouterLink, Badge, ActionMenu, MfDateLongPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['../../../shared/ui/page.scss', './workflow-versions-tab.scss'],
   template: `
@@ -66,7 +67,7 @@ export const DRAFT_EXISTS_REASON = 'A draft is already in progress. Open it or d
                 </div>
                 <div>
                   <dt>Steps</dt>
-                  <dd>{{ v.stepCount }}</dd>
+                  <dd>{{ v.stepCount | mfInt }}</dd>
                 </div>
                 <div>
                   <dt>Created</dt>
@@ -132,7 +133,7 @@ export const DRAFT_EXISTS_REASON = 'A draft is already in progress. Open it or d
                     <mf-badge [tone]="tone(v)">{{ v.status }}</mf-badge>
                   </td>
                   <td>{{ v.isOrdered ? 'Ordered' : 'Unordered' }}</td>
-                  <td class="pg-num">{{ v.stepCount }}</td>
+                  <td class="pg-num">{{ v.stepCount | mfInt }}</td>
                   <td [attr.title]="v.createdAtUtc | mfDateLong">
                     {{ v.createdAtUtc | mfNum: 'date' }}
                   </td>

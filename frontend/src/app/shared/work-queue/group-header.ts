@@ -6,6 +6,7 @@ import {
   output,
 } from '@angular/core';
 import { RowGroup } from './due-groups';
+import { IntPipe } from '../ui/number-format';
 
 /**
  * The header row of a due group (M12.1): a non-interactive `<tr>` whose `th scope="colgroup"` spans the table and holds the one button that
@@ -16,6 +17,7 @@ import { RowGroup } from './due-groups';
   // An attribute selector on the native <tr>, so the table keeps its semantics.
   // eslint-disable-next-line @angular-eslint/component-selector
   selector: 'tr[mfGroupHeader]',
+  imports: [IntPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
   host: { class: 'wt-group', '[attr.data-group]': 'group().key' },
@@ -37,7 +39,7 @@ import { RowGroup } from './due-groups';
           ><span class="wt-group__name">{{ group().label }}</span
           >{{ ' '
           }}<span class="wt-group__count"
-            >({{ group().count
+            >({{ group().count | mfInt
             }}<span class="mf-sr-only"> {{ group().count === 1 ? 'task' : 'tasks' }}</span
             >)</span
           >

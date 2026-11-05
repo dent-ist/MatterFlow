@@ -11,6 +11,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { FixedPage } from './fixed-page';
+import { IntPipe } from './number-format';
 
 /** A tag the filter offers, with how many steps carry it. */
 export interface TagOption {
@@ -28,6 +29,7 @@ export type TagMatch = 'all' | 'any';
  */
 @Component({
   selector: 'mf-tag-filter',
+  imports: [IntPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.tf--pinned]': 'pinned' },
   template: `
@@ -128,7 +130,7 @@ export type TagMatch = 'all' | 'any';
                       (change)="toggle($any($event.target).checked, o.name)"
                     />
                     <span class="tf__name">{{ o.name }}</span
-                    >{{ ' ' }}<span class="tf__count">({{ o.count }})</span>
+                    >{{ ' ' }}<span class="tf__count">({{ o.count | mfInt }})</span>
                   </label>
                 </li>
               }

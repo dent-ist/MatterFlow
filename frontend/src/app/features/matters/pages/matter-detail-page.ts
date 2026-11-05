@@ -47,6 +47,7 @@ import { ManagerTarget, MatterManagersDialog } from '../ui/matter-managers-dialo
 import { MatterProjects } from './matter-projects';
 import { ProductionsTab } from '../../productions/productions-tab';
 import { NotesTab } from '../../notes/notes-tab';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** The API's largest page (`PageRequest.MaxPageSize`). */
 const PROJECTS_PAGE_MAX = 100;
@@ -63,6 +64,7 @@ type Tab = MatterTabKey;
 @Component({
   selector: 'mf-matter-detail-page',
   imports: [
+    IntPipe,
     FixedPage,
     MatterHeader,
     ProjectPanel,
@@ -304,8 +306,8 @@ type Tab = MatterTabKey;
               [(visible)]="blockedOpen"
             >
               <p data-blocked-body>
-                This matter has {{ blockedCount() }} tasks that aren't Completed or Cancelled.
-                Finish or cancel them first.
+                This matter has {{ blockedCount() | mfInt }} tasks that aren't Completed or
+                Cancelled. Finish or cancel them first.
               </p>
               <p-button
                 *mfHasPermission="'Task.View'"

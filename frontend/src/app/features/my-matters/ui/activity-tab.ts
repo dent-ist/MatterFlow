@@ -20,6 +20,7 @@ import { panelLoader } from '../panel-loader';
 import { agoShort, feedTitle, feedWhat, KIND_LOOK } from './feed-format';
 import { MmApi } from './mm-api';
 import { FEED_KINDS, FeedItem, FeedKind } from './mm-models';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 const PAGE_SIZE = 25;
 
@@ -30,7 +31,7 @@ const PAGE_SIZE = 25;
  */
 @Component({
   selector: 'mf-mm-activity-tab',
-  imports: [AssetTypeChip, TaskTypeChip, FilterChips, GridFrame, NumericDatePipe, Pager],
+  imports: [IntPipe, AssetTypeChip, TaskTypeChip, FilterChips, GridFrame, NumericDatePipe, Pager],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -39,7 +40,7 @@ const PAGE_SIZE = 25;
         <h2 class="ttl">
           Activity
           @if (unreadCount() > 0) {
-            <span class="tot" data-unread>{{ unreadCount() }} unread</span>
+            <span class="tot" data-unread>{{ unreadCount() | mfInt }} unread</span>
           }
         </h2>
         <div class="tools">
@@ -215,6 +216,7 @@ const PAGE_SIZE = 25;
       gap: var(--mf-s2);
     }
     .tot {
+      font-variant-numeric: tabular-nums;
       padding: 0 var(--mf-s2);
       border-radius: 999px;
       background: var(--mf-primary);

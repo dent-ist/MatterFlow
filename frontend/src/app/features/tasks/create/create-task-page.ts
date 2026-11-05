@@ -70,6 +70,7 @@ import { MyMattersFocus } from '../../my-matters/focus';
 import { recentTypeIds, rememberMatter, rememberType } from '../../../shared/tasks/recent-choices';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 type LoadState = 'loading' | 'ready' | 'error';
 type SchemaState = 'none' | 'loading' | 'ready' | 'error';
@@ -113,6 +114,7 @@ const matterOption = (m: MatterResponse): PickerOption => ({
 @Component({
   selector: 'mf-create-task-page',
   imports: [
+    IntPipe,
     NumericDatePipe,
     ErrorReference,
     Button,

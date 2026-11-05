@@ -206,10 +206,12 @@ export const cellClass = (level: CalDay['level']): string =>
       min-height: 22px;
     }
     .num {
+      font-variant-numeric: tabular-nums;
       font-weight: 700;
       font-size: var(--mf-fs-sm);
     }
     .today .num {
+      font-variant-numeric: tabular-nums;
       display: inline-grid;
       place-items: center;
       min-width: 24px;
@@ -228,22 +230,27 @@ export const cellClass = (level: CalDay['level']): string =>
       white-space: nowrap;
     }
     .cnt {
+      font-variant-numeric: tabular-nums;
       display: block;
       font-size: var(--mf-fs-sm);
       line-height: 1.25;
     }
     .cnt b {
+      font-variant-numeric: tabular-nums;
       font-weight: 700;
     }
     /* A Good day says its count small and muted: the full figure is in the day panel and the cell's name. */
     .cnt--quiet {
+      font-variant-numeric: tabular-nums;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-xs);
     }
     .cnt--quiet b {
+      font-variant-numeric: tabular-nums;
       font-weight: 500;
     }
     .cnt .short {
+      font-variant-numeric: tabular-nums;
       display: none;
     }
     .out {
@@ -268,9 +275,11 @@ export const cellClass = (level: CalDay['level']): string =>
     }
     @container (max-width: 130px) {
       .cnt .full {
+        font-variant-numeric: tabular-nums;
         display: none;
       }
       .cnt .short {
+        font-variant-numeric: tabular-nums;
         display: block;
       }
       .lv--good .lw {

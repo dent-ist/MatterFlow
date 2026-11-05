@@ -1,5 +1,6 @@
 import { calendarDayInZone, dayIndex, formatInstant } from '../../core/time/time';
 import { numericDay } from '../../shared/ui/numeric-date';
+import { formatAgo } from '../../shared/ui/number-format';
 
 /** The parts of a notification the text helpers need (the generated `NotificationItem` fits). */
 export interface NotificationLike {
@@ -26,7 +27,7 @@ export function announcementText(items: readonly { message: string }[]): string 
 }
 
 /**
- * "5 min ago", "1 h ago", "yesterday", then "Oct 18" (and "Oct 18, 2025" in another year) in the viewer's zone. Under a minute reads
+ * "5 m ago", "1 h ago", "yesterday", then "Oct 18" (and "Oct 18, 2025" in another year) in the viewer's zone. Under a minute reads
  * "just now". The absolute time is the tooltip (`absoluteTime`).
  */
 export function relativeTime(createdUtc: string, now: Date, zone: string): string {
@@ -34,11 +35,11 @@ export function relativeTime(createdUtc: string, now: Date, zone: string): strin
   if (Number.isNaN(created.getTime())) return '';
   const minutes = Math.floor((now.getTime() - created.getTime()) / 60_000);
   if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes} min ago`;
+  if (minutes < 60) return formatAgo(minutes);
   const today = calendarDayInZone(now, zone);
   const day = calendarDayInZone(created, zone);
   const daysAgo = dayIndex(today) - dayIndex(day);
-  if (daysAgo <= 0) return `${Math.floor(minutes / 60)} h ago`;
+  if (daysAgo <= 0) return formatAgo(minutes);
   if (daysAgo === 1) return 'yesterday';
   return numericDay(day, today.year);
 }

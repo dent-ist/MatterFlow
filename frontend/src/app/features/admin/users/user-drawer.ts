@@ -38,6 +38,8 @@ import { permissionsOfRoles, summarizePermissions } from './user-access';
 import { UserCalendarField } from '../holidays/user-calendar-field';
 import { PodsChange, UserPodsCell } from './user-pods-cell';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
+import { IntPipe } from '../../../shared/ui/number-format';
+import { shortAccountName } from '../../../shared/ui/person-name';
 
 /**
  * Where the drawer starts: nothing special, with the deactivation question already on screen (the row menu's Deactivate), or with the
@@ -73,6 +75,7 @@ export function readOnlyReason(canManage: boolean, canEditPods: boolean): string
 @Component({
   selector: 'mf-user-drawer',
   imports: [
+    IntPipe,
     NumericDatePipe,
     SlidePanel,
     Button,
@@ -141,7 +144,8 @@ export class UserDrawer {
     return u ? u.windowsAccount + (u.isSeededAdmin ? ' \u00b7 Seeded' : '') : '';
   });
   protected readonly name = computed(
-    () => this.detail()?.displayName ?? this.summary()?.displayName ?? 'User details',
+    () =>
+      shortAccountName(this.detail()?.displayName ?? this.summary()?.displayName) || 'User details',
   );
   protected readonly readOnlyReason = computed(() =>
     readOnlyReason(this.canManage(), this.canEditPods()),

@@ -35,6 +35,7 @@ import { TextField } from '../../../shared/ui/text-field';
 import { AdminTabCounts } from '../admin-tabs';
 import { dialogCopy, refusedDeleteMessage } from '../shared/dialog-copy';
 import { ADMIN_FIELD_LIMITS } from '../shared/field-limits';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -58,6 +59,7 @@ const TAB = 'link-roles';
   selector: 'mf-asset-link-roles-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    IntPipe,
     ActionMenu,
     ActiveBadge,
     AdminCardList,

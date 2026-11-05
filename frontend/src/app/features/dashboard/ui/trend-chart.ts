@@ -44,6 +44,7 @@ import {
   xTicks,
 } from './trend-model';
 import { isHollow, markerPath } from '../../../shared/charts/chart-palette';
+import { formatInt } from '../../../shared/ui/number-format';
 
 export { niceMax } from './trend-model';
 
@@ -629,6 +630,7 @@ let nextId = 0;
       font-variant-numeric: tabular-nums;
     }
     .num .colhead {
+      font-variant-numeric: tabular-nums;
       justify-content: flex-end;
     }
     .sr-only {
@@ -1071,7 +1073,7 @@ function peakOf(lines: readonly ChartLine[]): number {
 
 /** Axis labels in the viewer's number format (no decimals: the axes count tasks). */
 function format(value: number): string {
-  return value.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  return formatInt(value);
 }
 
 function isWeekend(date: string): boolean {

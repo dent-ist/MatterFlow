@@ -27,6 +27,7 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
 import { emptyState, taskQueueArgs } from '../../../shared/work-queue/queue-filters';
 import { plural } from './coverage-model';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** The cell a person opened: who, which task type and the period (local days). */
 export interface CoverageTarget {
@@ -62,7 +63,7 @@ export function targetQueueParams(t: CoverageTarget): Record<string, string | st
  */
 @Component({
   selector: 'mf-coverage-drawer',
-  imports: [SlidePanel, Tip, RouterLink, MatterRef, ErrorReference],
+  imports: [IntPipe, SlidePanel, Tip, RouterLink, MatterRef, ErrorReference],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-slide-panel
@@ -137,7 +138,8 @@ export function targetQueueParams(t: CoverageTarget): Record<string, string | st
                 </ul>
                 @if (total() > rows().length) {
                   <p class="muted" data-coverage-more>
-                    Showing {{ rows().length }} of {{ total() }}. The rest are in the Task Queue.
+                    Showing {{ rows().length }} of {{ total() | mfInt }}. The rest are in the Task
+                    Queue.
                   </p>
                 }
               }

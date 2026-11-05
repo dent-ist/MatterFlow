@@ -27,6 +27,7 @@ import { DashboardSettings } from './dashboard-settings';
 import { CalendarThresholdsForm } from '../holidays/thresholds-form';
 import { HolidaysAdmin } from '../holidays/holidays-admin';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
+import { formatBytes } from '../../../shared/ui/number-format';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -46,11 +47,9 @@ const TABS: readonly MfTab[] = [
 /** The built-in header mark, shown for "reset" and while no custom icon exists. */
 const BUILT_IN_MARK = 'favicon.svg';
 
-/** `2 KB`, `256 KB`, `812 bytes`: the size line under the chosen file. */
+/** `2 KB`, `256 KB`, `812 B`, `1.2 MB`: the size line under the chosen file. */
 export function fileSizeText(bytes: number): string {
-  if (bytes < 1024) return `${bytes} ${bytes === 1 ? 'byte' : 'bytes'}`;
-  const kb = bytes / 1024;
-  return `${kb >= 10 ? Math.round(kb) : Math.round(kb * 10) / 10} KB`;
+  return formatBytes(bytes);
 }
 
 /** The local type the application bar needs, from the administration view. */

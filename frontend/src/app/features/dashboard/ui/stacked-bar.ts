@@ -15,6 +15,7 @@ import { BD_CARD_CSS } from './breakdown-card';
 import { BreakdownSwitch } from './breakdown-switch';
 import { PieSlice, sharePercent } from './breakdown-slices';
 import { BreakdownMode, BreakdownPrefs, DEFAULT_MODE } from './breakdown-view';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** One segment of the bar (an age band). */
 export interface Segment {
@@ -47,7 +48,7 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
  */
 @Component({
   selector: 'mf-stacked-bar',
-  imports: [RouterLink, BreakdownPie, BreakdownSwitch],
+  imports: [IntPipe, RouterLink, BreakdownPie, BreakdownSwitch],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="card" [attr.aria-labelledby]="id + '-h'">
@@ -92,7 +93,7 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
                       s.label
                     }}</a>
                   </th>
-                  <td class="num">{{ s.count }}</td>
+                  <td class="num">{{ s.count | mfInt }}</td>
                   @if (hasOverdue()) {
                     <td class="num">
                       @if ((s.overdue ?? 0) > 0) {
@@ -133,7 +134,7 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
                   routerLink="/tasks"
                   [queryParams]="params(s.query)"
                   [attr.title]="s.label + ': ' + s.count + ' (' + share(s.count) + ')'"
-                  ><span>{{ s.count }}</span></a
+                  ><span>{{ s.count | mfInt }}</span></a
                 >
                 @if ((s.overdue ?? 0) > 0) {
                   <a
@@ -161,7 +162,7 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
                   [attr.aria-label]="s.label + ': ' + s.count + ' tasks, ' + share(s.count)"
                   >{{ s.label }}</a
                 >
-                <span class="count">{{ s.count }}</span>
+                <span class="count">{{ s.count | mfInt }}</span>
                 <span class="pct">{{ share(s.count) }}</span>
                 @if ((s.overdue ?? 0) > 0) {
                   <a class="od-text chip" routerLink="/tasks" [queryParams]="od(s)"

@@ -58,6 +58,7 @@ import { stripChips } from '../../../shared/ui/strip-items';
 import { FilterChips } from '../../../shared/ui/filter-chips';
 import { WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
 const COLUMNS = [
@@ -89,6 +90,7 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
 @Component({
   selector: 'mf-workflows-list-page',
   imports: [
+    IntPipe,
     NumericDatePipe,
     ScrollArea,
     Badge,
@@ -357,10 +359,10 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
                             ' use ' +
                             w.name
                           "
-                          >{{ w.taskTypeCount }}</a
+                          >{{ w.taskTypeCount | mfInt }}</a
                         >
                       } @else {
-                        {{ w.taskTypeCount }}
+                        {{ w.taskTypeCount | mfInt }}
                       }
                     </td>
                   }

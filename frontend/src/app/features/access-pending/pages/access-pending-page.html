@@ -34,7 +34,7 @@
       @if (auth.profile()?.windowsAccount; as account) {
         <li>
           Give the administrator your Windows account name:
-          <span class="mf-account">{{ account }}</span>
+          <span class="mf-account">{{ account | mfInt }}</span>
           <mf-copy-button [text]="account" label="Windows account name" [showText]="true" />
         </li>
       }

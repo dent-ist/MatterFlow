@@ -8,6 +8,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** One line of an assignment checklist. */
 export interface ChecklistItem {
@@ -45,6 +46,7 @@ export function diffMessage(
  */
 @Component({
   selector: 'mf-assignment-checklist',
+  imports: [IntPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="ac" data-assignment-checklist>
@@ -64,7 +66,7 @@ export function diffMessage(
           />
         </div>
         <p class="ac__count" role="status" aria-live="polite" data-checklist-count>
-          {{ selectedCount() }} of {{ items().length }}
+          {{ selectedCount() | mfInt }} of {{ items().length }}
           {{ items().length === 1 ? noun() : nounPlural() }} assigned
         </p>
       </div>

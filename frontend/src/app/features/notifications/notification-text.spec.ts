@@ -23,7 +23,7 @@ describe('notification text', () => {
 
   it('words the age: just now, minutes, hours, yesterday, then the date', () => {
     expect(relativeTime('2026-10-22T17:59:40Z', now, zone)).toBe('just now');
-    expect(relativeTime('2026-10-22T17:55:00Z', now, zone)).toBe('5 min ago');
+    expect(relativeTime('2026-10-22T17:55:00Z', now, zone)).toBe('5 m ago');
     expect(relativeTime('2026-10-22T17:00:00Z', now, zone)).toBe('1 h ago');
     expect(relativeTime('2026-10-22T14:00:00Z', now, zone)).toBe('4 h ago');
     expect(relativeTime('2026-10-21T20:00:00Z', now, zone)).toBe('yesterday');

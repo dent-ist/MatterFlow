@@ -905,7 +905,7 @@ describe('DashboardPage', () => {
     const due = row.querySelector('mf-due-cell[data-due]')!;
     expect(row.querySelector('[data-age]')).toBeNull();
     expect(due.querySelector('.dc--inline')).not.toBeNull();
-    expect(due.querySelector('.dc')!.getAttribute('title')).toContain('Created 10 days ago');
+    expect(due.querySelector('.dc')!.getAttribute('title')).toContain('Created 10 d ago');
     expect(row.querySelector('mf-row-edit [data-inline-trigger]')).not.toBeNull();
     // "Assign to me" is the first choice of that menu, not a link of its own; the menu sits before the client column (the other lists' order plus the menu).
     expect(row.querySelector('[data-assign-me]')).toBeNull();
@@ -1396,20 +1396,20 @@ describe('DashboardPage', () => {
         return { el, advance };
       }
 
-      it('shows nothing in a fresh session and at 9 minutes, "Updated 10 min ago" at 10', async () => {
+      it('shows nothing in a fresh session and at 9 minutes, "Updated 10 m ago" at 10', async () => {
         const { el, advance } = await openWithClock();
         expect(el.querySelector('[data-stale-age]')).toBeNull();
         await advance(9);
         expect(el.querySelector('[data-stale-age]')).toBeNull();
         expect(el.querySelector('[data-refresh]')!.getAttribute('aria-label')).toBe('Refresh');
         await advance(10);
-        expect(ageText(el)).toBe('Updated 10 min ago');
+        expect(ageText(el)).toBe('Updated 10 m ago');
         expect(el.querySelector('[data-stale-age] .pi')).not.toBeNull();
         expect(el.querySelector('[data-refresh]')!.getAttribute('aria-label')).toBe(
-          'Refresh. Updated 10 min ago.',
+          'Refresh. Updated 10 m ago.',
         );
         await advance(14);
-        expect(ageText(el)).toBe('Updated 14 min ago');
+        expect(ageText(el)).toBe('Updated 14 m ago');
       });
 
       it('sits in a polite live region that exists before the text appears', async () => {
@@ -1422,7 +1422,7 @@ describe('DashboardPage', () => {
       it('disappears after a successful refresh', async () => {
         const { el, advance } = await openWithClock();
         await advance(12);
-        expect(ageText(el)).toBe('Updated 12 min ago');
+        expect(ageText(el)).toBe('Updated 12 m ago');
         el.querySelector<HTMLButtonElement>('[data-refresh]')!.click();
         await settle();
         expect(el.querySelector('[data-stale-age]')).toBeNull();
@@ -1443,7 +1443,7 @@ describe('DashboardPage', () => {
         el.querySelector<HTMLButtonElement>('[data-tab="users"]')!.click();
         await settle();
         await advance(11);
-        expect(ageText(el)).toBe('Updated 11 min ago');
+        expect(ageText(el)).toBe('Updated 11 m ago');
       });
     });
 

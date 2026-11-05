@@ -67,6 +67,7 @@ import { UserDrawer, UserDrawerIntent } from './user-drawer';
 import { availabilityShown } from './user-availability';
 import { podsText } from './user-pods-draft';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
+import { shortAccountName } from '../../../shared/ui/person-name';
 
 type Tab = Exclude<UserStatusFilter, 'all'>;
 type StatusOption = UserStatusFilter;
@@ -475,8 +476,18 @@ export class UsersPage implements OnInit {
     return availabilityShown(user);
   }
 
+  /** The name to show: the display name, or the account without the domain when the person has no display name of their own (D-62). */
+  protected nameOf(user: UserSummaryDto): string {
+    return shortAccountName(user.displayName);
+  }
+
+  /** The account without the domain ("kekim"): a grid never shows "KE\\kekim" (D-62); the drawer shows the full account. */
+  protected accountShort(user: UserSummaryDto): string {
+    return shortAccountName(user.windowsAccount);
+  }
+
   protected accountLine(user: UserSummaryDto): string {
-    const account = user.windowsAccount ?? '';
+    const account = shortAccountName(user.windowsAccount);
     return user.isSeededAdmin ? `${account} · Seeded` : account;
   }
 
@@ -521,7 +532,7 @@ export class UsersPage implements OnInit {
     const waiting = user.isPending && this.canManage();
     const pods = user.pods.length;
     return {
-      title: user.displayName,
+      title: this.nameOf(user),
       activate: () => this.open(user),
       rowKey: user.userId,
       subtitle: this.accountLine(user),

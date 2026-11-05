@@ -87,7 +87,7 @@ describe('UsersHistory', () => {
     expect(rows).toHaveLength(2);
     // The medians and sample sizes are in the tooltip and the spoken text, not in columns.
     expect(rows[0].textContent).toContain(
-      'Their median 3.3 h (12 tasks); firm median 2.5 h (90 tasks)',
+      'Their median 3 h 20 m (12 tasks); firm median 2 h 30 m (90 tasks)',
     );
     expect(rows[0].querySelector('[data-compare-text]')!.textContent).toBe('1.3x longer');
     expect(rows[0].querySelectorAll('td')).toHaveLength(2);

@@ -452,8 +452,8 @@ describe('SettingsPage: Administration > Settings > Branding (epic #850, BR-05)'
 
 describe('helpers', () => {
   it('formats file sizes', () => {
-    expect(fileSizeText(1)).toBe('1 byte');
-    expect(fileSizeText(812)).toBe('812 bytes');
+    expect(fileSizeText(1)).toBe('1 B');
+    expect(fileSizeText(812)).toBe('812 B');
     expect(fileSizeText(2048)).toBe('2 KB');
     expect(fileSizeText(1536)).toBe('1.5 KB');
     expect(fileSizeText(262144)).toBe('256 KB');

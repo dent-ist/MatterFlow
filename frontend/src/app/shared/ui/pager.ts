@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { Dropdown, DropdownItem } from './dropdown';
+import { formatRange } from './number-format';
 
 let nextId = 0;
 
@@ -194,9 +195,8 @@ export class Pager {
   protected readonly shownPage = computed(() => Math.min(Math.max(1, this.page()), this.pages()));
   protected readonly range = computed(() => {
     const total = this.total();
-    if (total === 0) return 'Showing 0 of 0';
     const from = (this.page() - 1) * this.pageSize() + 1;
     const to = Math.min(total, this.page() * this.pageSize());
-    return `Showing ${from}-${to} of ${total}${this.hidden() > 0 ? ' active' : ''}`;
+    return `Showing ${formatRange(from, to, total)}${total > 0 && this.hidden() > 0 ? ' active' : ''}`;
   });
 }

@@ -67,9 +67,9 @@ describe('report model', () => {
     expect(undrawnGroups(result, 0)).toBe(0);
   });
 
-  it('formats cells with grouping and at most two decimals; no value is empty', () => {
+  it('formats cells with grouping and at most one decimals; no value is empty', () => {
     expect(cellText(1240)).toBe('1,240');
-    expect(cellText(412.456)).toBe('412.46');
+    expect(cellText(412.456)).toBe('412.5');
     expect(cellText(undefined)).toBe('');
     expect(cellText(0)).toBe('0');
   });

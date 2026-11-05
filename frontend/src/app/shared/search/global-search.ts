@@ -35,6 +35,7 @@ import {
 import { Badge, SensitiveBadge } from '../ui/badge';
 import type { LookupStore } from '../../core/lookups/lookup-store';
 import { ScrollRegion } from '../ui/scroll-region';
+import { IntPipe } from '../ui/number-format';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -66,7 +67,7 @@ interface DisplayGroup {
  * Result counts and states are announced through a live region. Only the types the user may view come back (the server filters by permission).
  */
 @Component({
-  imports: [Badge, SensitiveBadge, ScrollRegion],
+  imports: [IntPipe, Badge, SensitiveBadge, ScrollRegion],
   selector: 'mf-global-search',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:click)': 'onDocumentClick($event)', '(focusout)': 'onFocusOut($event)' },
@@ -124,7 +125,8 @@ interface DisplayGroup {
                 @for (group of groups(); track group.type) {
                   <li role="presentation" class="mf-gs__section" [attr.data-group]="group.type">
                     <span class="mf-gs__group" [id]="listId + '-' + group.type" role="presentation"
-                      >{{ group.label }} <span data-group-count>({{ group.count }})</span></span
+                      >{{ group.label }}
+                      <span data-group-count>({{ group.count | mfInt }})</span></span
                     >
                     <ul
                       role="group"

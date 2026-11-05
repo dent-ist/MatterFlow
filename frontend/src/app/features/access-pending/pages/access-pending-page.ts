@@ -17,11 +17,12 @@ import { sameIdentity } from '../../../shared/layout/same-identity';
 import { CopyButton } from '../../../shared/ui/copy-button';
 import { TitleIcon } from '../../../shared/ui/page-header';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** S21 Access Pending: the only screen a user with zero permissions can reach. */
 @Component({
   selector: 'mf-access-pending-page',
-  imports: [NumericDatePipe, Button, CopyButton, TitleIcon],
+  imports: [IntPipe, NumericDatePipe, Button, CopyButton, TitleIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './access-pending-page.html',
   styleUrl: './access-pending-page.scss',

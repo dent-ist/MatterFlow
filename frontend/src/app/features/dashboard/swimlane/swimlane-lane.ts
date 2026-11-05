@@ -18,6 +18,7 @@ import { priorityColors } from '../../../shared/ui/priority-badge';
 import { DashSkeleton } from '../ui/dash-skeleton';
 import { SwimlaneCardView, initials } from './swimlane-card';
 import { Density, GroupBy, LANE_HINTS, LaneModel, LaneRow, GroupNode } from './swimlane-model';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** How many cards a lane draws before "Show more": a lane holds at most 200, and a long board stays quick to draw. */
 export const LANE_PAGE = 40;
@@ -40,7 +41,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-swimlane-lane',
-  imports: [DashSkeleton, SwimlaneCardView, RouterLink],
+  imports: [IntPipe, DashSkeleton, SwimlaneCardView, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(keydown)': 'onKey($event)',
@@ -65,7 +66,7 @@ let nextId = 0;
           [queryParams]="countParams()"
           [attr.aria-label]="countLabel()"
           [attr.title]="searching() ? 'Search text is not included' : 'Open in the Task Queue'"
-          >{{ m.count }}</a
+          >{{ m.count | mfInt }}</a
         >
         <p class="hint">
           {{ hint }}
@@ -137,7 +138,7 @@ let nextId = 0;
                       <span class="node-name">{{ row.node.label }}</span>
                     </span>
                     <span class="count count--node" [attr.aria-hidden]="true">{{
-                      row.node.count
+                      row.node.count | mfInt
                     }}</span>
                   </li>
                 } @else {
@@ -203,7 +204,7 @@ let nextId = 0;
                         }
                       }
                       <span class="count count--node"
-                        >{{ row.node.count
+                        >{{ row.node.count | mfInt
                         }}<span class="sr-only">
                           {{ row.node.count === 1 ? 'task' : 'tasks' }}</span
                         ></span
@@ -239,7 +240,7 @@ let nextId = 0;
             <p class="trunc" data-truncated role="note">
               <i class="pi pi-info-circle" aria-hidden="true"></i>
               <span>
-                Showing {{ m.loaded }} of {{ m.count }}.
+                Showing {{ m.loaded }} of {{ m.count | mfInt }}.
                 <a [routerLink]="['/tasks']" [queryParams]="queueParams()" data-open-queue
                   >Open the Task Queue</a
                 >
@@ -299,6 +300,7 @@ let nextId = 0;
     }
     /* The lane count is a link to the Task Queue (W2): a 24 px target, underlined, with the focus ring of links. */
     .count--link {
+      font-variant-numeric: tabular-nums;
       min-height: 24px;
       line-height: 22px;
       box-sizing: border-box;
@@ -307,14 +309,17 @@ let nextId = 0;
       text-underline-offset: 2px;
     }
     .count--link:hover {
+      font-variant-numeric: tabular-nums;
       border-color: var(--mf-link);
     }
     .count--link:focus-visible {
+      font-variant-numeric: tabular-nums;
       outline: 2px solid var(--mf-focus);
       outline-offset: 2px;
     }
     /* With search text the target may show other tasks: the link is not drawn as an exact match. */
     .count--caveat {
+      font-variant-numeric: tabular-nums;
       border-style: dashed;
       text-decoration-style: dashed;
     }
@@ -395,6 +400,7 @@ let nextId = 0;
     .node .chevron,
     .node .kind,
     .node .count--node {
+      font-variant-numeric: tabular-nums;
       margin-top: 0.15rem;
     }
     .grp-btn--priority {
@@ -425,6 +431,7 @@ let nextId = 0;
       outline-offset: 2px;
     }
     .count--node {
+      font-variant-numeric: tabular-nums;
       flex: none;
       color: var(--mf-text);
     }

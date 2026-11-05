@@ -50,6 +50,7 @@ import { ADMIN_FIELD_LIMITS } from '../shared/field-limits';
 import { FormStatusCell } from '../shared/form-status-cell';
 import { notFoundError } from './asset-type-form-designer-api';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** The tabs of the record (`?tab=`); the Assets tab is for people who may see assets. */
 export type AssetTypeTab = 'overview' | 'fields' | 'assets';
@@ -110,6 +111,7 @@ const modelKey = (m: Model): string =>
   selector: 'mf-asset-type-record-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    IntPipe,
     NumericDatePipe,
     ActivityDrawer,
     ConfirmDialog,

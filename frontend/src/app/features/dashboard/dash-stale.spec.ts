@@ -8,7 +8,7 @@ describe('staleAgeText (P6)', () => {
   });
   it('shows nothing at 9 minutes and the age at 10', () => {
     expect(staleAgeText(t0, t0 + 9 * 60_000)).toBeNull();
-    expect(staleAgeText(t0, t0 + STALE_AFTER_MS)).toBe('Updated 10 min ago');
-    expect(staleAgeText(t0, t0 + 14 * 60_000 + 59_000)).toBe('Updated 14 min ago');
+    expect(staleAgeText(t0, t0 + STALE_AFTER_MS)).toBe('Updated 10 m ago');
+    expect(staleAgeText(t0, t0 + 14 * 60_000 + 59_000)).toBe('Updated 14 m ago');
   });
 });

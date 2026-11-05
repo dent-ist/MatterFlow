@@ -13,6 +13,7 @@ import {
 import { RouterLink } from '@angular/router';
 import { WorkflowOption } from '../../../core/lookups/workflow-lookup';
 import { Badge } from '../../../shared/ui/badge';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** One row of the table: a workflow the type is eligible for. `known` is false for an id the lookup does not list (no permission, or gone). */
 export interface WorkflowRow {
@@ -165,7 +166,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-task-type-workflows-tab',
-  imports: [RouterLink, Badge],
+  imports: [IntPipe, RouterLink, Badge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './task-type-workflows-tab.scss',
   template: `
@@ -311,7 +312,7 @@ let nextId = 0;
                 </td>
                 <td class="wt__steps">
                   @if (r.stepCount !== null && r.publishedVersionNo) {
-                    <span class="wt__lbl" aria-hidden="true">Steps </span>{{ r.stepCount }}
+                    <span class="wt__lbl" aria-hidden="true">Steps </span>{{ r.stepCount | mfInt }}
                   } @else {
                     <span class="muted" aria-label="No steps shown">--</span>
                   }

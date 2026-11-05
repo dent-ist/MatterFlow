@@ -11,6 +11,7 @@ import { firstValueFrom } from 'rxjs';
 import { AuditEventDto, AuditEventsClient, UsersClient } from '../../api/generated/api-client';
 import { describeAuditEvent, isNoise } from './audit-format';
 import { NumericDatePipe } from './numeric-date';
+import { shortAccountName } from './person-name';
 
 /** Change history of one object (UX `mf-activity-feed`), read from the audit trail. Needs `Audit.View`; hide the host tab otherwise. */
 @Component({
@@ -141,7 +142,7 @@ export class EntityActivity {
       missing.map(async (id) => {
         try {
           const user = await firstValueFrom(this.users.getUser(id));
-          return [id, user.windowsAccount || user.displayName] as const;
+          return [id, user.displayName?.trim() || shortAccountName(user.windowsAccount)] as const;
         } catch {
           return null;
         }

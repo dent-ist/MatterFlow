@@ -33,6 +33,7 @@ import { RichTextEditor } from './rich-text-editor';
 import { countNew, latestOf, readSeen, saveSeen } from './section-state';
 import { StateBlock } from '../../../shared/ui/state-block';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 export const COMMENTS_INTERNAL_NOTE = 'Internal only. Visible to people who can view tasks.';
 export const COMMENTS_PRIVILEGE_NOTE =
@@ -93,6 +94,7 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
 @Component({
   selector: 'mf-task-comments',
   imports: [
+    IntPipe,
     NumericDatePipe,
     StateBlock,
     NgTemplateOutlet,
@@ -172,21 +174,21 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
               }
               @if (!query() && limited()) {
                 <p class="tc__muted" data-limit-note role="status">
-                  Showing latest {{ visibleItems().length }} of {{ total() }}.
+                  Showing latest {{ visibleItems().length }} of {{ total() | mfInt }}.
                   <button type="button" class="tc__link" data-show-all (click)="setLimit('all')">
                     Show all
                   </button>
                 </p>
               } @else if (!query() && shownAll() && total() > latestCount) {
                 <p class="tc__muted" data-limit-note role="status">
-                  Showing all {{ total() }}.
+                  Showing all {{ total() | mfInt }}.
                   <button
                     type="button"
                     class="tc__link"
                     data-show-latest
                     (click)="setLimit(latestCount)"
                   >
-                    Show latest {{ latestCount }}
+                    Show latest {{ latestCount | mfInt }}
                   </button>
                 </p>
               }
@@ -326,7 +328,7 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
               @if (items().length < total() && (shownAll() || query())) {
                 <div class="tc__more" data-more>
                   <p class="tc__muted" data-more-note>
-                    Showing {{ items().length }} of {{ total() }} comments.
+                    Showing {{ items().length }} of {{ total() | mfInt }} comments.
                   </p>
                   @if (moreError()) {
                     <p class="tc__alert" role="alert" data-more-error>{{ moreError() }}</p>

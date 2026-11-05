@@ -9,6 +9,7 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { IntPipe } from './number-format';
 
 export interface TreeNode {
   id: string;
@@ -62,6 +63,7 @@ export function filterTree(nodes: readonly TreeNode[], text: string): TreeNode[]
  */
 @Component({
   selector: 'mf-tree',
+  imports: [IntPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(keydown)': 'onKey($event)',
@@ -105,7 +107,7 @@ export function filterTree(nodes: readonly TreeNode[], text: string): TreeNode[]
             >
           }
           @if ((r.node.count ?? -1) >= 0) {
-            <span class="cnt" aria-hidden="true">{{ r.node.count }}</span>
+            <span class="cnt" aria-hidden="true">{{ r.node.count | mfInt }}</span>
           }
         </li>
       }

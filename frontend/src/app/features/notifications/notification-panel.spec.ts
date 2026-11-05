@@ -72,7 +72,7 @@ describe('NotificationPanel', () => {
     );
     expect(rows[1].textContent).not.toContain('Unread:');
     expect(rows[0].getAttribute('href')).toBe('/tasks/102');
-    expect(rows[0].querySelector('time')!.textContent).toContain('5 min ago');
+    expect(rows[0].querySelector('time')!.textContent).toContain('5 m ago');
     expect(el(fixture).querySelector('[role=dialog]')!.getAttribute('aria-labelledby')).toBe(
       'np-title',
     );

@@ -15,6 +15,7 @@ import { Density, applyRow, cardToRow } from './swimlane-model';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 import { personInitials } from '../../../shared/ui/person-initials';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** Initials for the avatar: first letters of the first and last word. */
 export function initials(name: string): string {
@@ -30,6 +31,7 @@ export function initials(name: string): string {
 @Component({
   selector: 'mf-swimlane-card',
   imports: [
+    IntPipe,
     NumericDatePipe,
     RouterLink,
     NgTemplateOutlet,
@@ -239,7 +241,9 @@ export function initials(name: string): string {
               >
                 <span class="fill" [style.width.%]="percent()"></span>
               </span>
-              <span class="steps" aria-hidden="true">{{ c.stepsResolved }}/{{ c.stepsTotal }}</span>
+              <span class="steps" aria-hidden="true"
+                >{{ c.stepsResolved }}/{{ c.stepsTotal | mfInt }}</span
+              >
             </div>
           }
         </div>

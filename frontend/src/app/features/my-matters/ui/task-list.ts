@@ -41,6 +41,7 @@ import { panelLoader } from '../panel-loader';
 import { MmApi } from './mm-api';
 import { SHOW_FILTERS, STATUS_FILTERS, ShowFilter, StatusFilter, TaskCounts } from './mm-models';
 import { personInitials } from '../../../shared/ui/person-initials';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 const OPEN_KEY = 'mf-mm-grid-filter-open';
 function rememberedOpen(): boolean {
@@ -114,7 +115,16 @@ export function statusCodes(status: StatusFilter): string[] {
  */
 @Component({
   selector: 'mf-mm-task-list',
-  imports: [Dropdown, GridFrame, Pager, PriorityPill, RouterLink, StatusChip, TaskTypeChip],
+  imports: [
+    IntPipe,
+    Dropdown,
+    GridFrame,
+    Pager,
+    PriorityPill,
+    RouterLink,
+    StatusChip,
+    TaskTypeChip,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -123,7 +133,7 @@ export function statusCodes(status: StatusFilter): string[] {
         <h2 class="ttl">
           Tasks
           @if (counts(); as c) {
-            <span class="tot">{{ total() }}</span>
+            <span class="tot">{{ total() | mfInt }}</span>
           }
         </h2>
         <div class="tools">
@@ -140,7 +150,7 @@ export function statusCodes(status: StatusFilter): string[] {
             <span>Filters</span>
             @if (activeCount() > 0) {
               <span class="bdg" data-filter-count
-                >{{ activeCount() }}<span class="sr"> active</span></span
+                >{{ activeCount() | mfInt }}<span class="sr"> active</span></span
               >
             }
           </button>
@@ -438,6 +448,7 @@ export function statusCodes(status: StatusFilter): string[] {
       gap: var(--mf-s2);
     }
     .tot {
+      font-variant-numeric: tabular-nums;
       padding: 0 var(--mf-s2);
       border-radius: 999px;
       background: var(--mf-surface-alt);

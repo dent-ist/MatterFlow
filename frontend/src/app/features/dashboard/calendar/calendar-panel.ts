@@ -21,6 +21,7 @@ import { CALENDAR_API } from './calendar-api';
 import { CalQuery, CoverageLevel, DayPanel, DayPerson, RoleGroup } from './calendar-contract';
 import { levelClass } from './calendar-month-grid';
 import { LEVELS, longDay } from './calendar-model';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -53,7 +54,7 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
  */
 @Component({
   selector: 'mf-cal-panel',
-  imports: [NumericDatePipe, NgTemplateOutlet],
+  imports: [IntPipe, NumericDatePipe, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './calendar-coverage.scss',
   host: { '(keydown.escape)': 'closed.emit()' },
@@ -72,7 +73,7 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
             <span class="tdy">Today</span>
           }
           @if (panel(); as p) {
-            <p class="sub">{{ p.counts.total }} people in view</p>
+            <p class="sub">{{ p.counts.total | mfInt }} people in view</p>
           }
         </div>
         <button
@@ -434,6 +435,7 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
       font-weight: 700;
     }
     .n {
+      font-variant-numeric: tabular-nums;
       padding: 0 var(--mf-s2);
       border-radius: var(--mf-radius-pill);
       background: var(--mf-surface-alt);

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { Button } from 'primeng/button';
 import { Badge } from '../../../shared/ui/badge';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /**
  * The action bar of the form designer (FD1, #407), the same pattern as the workflow version page's bar. It sits under the page header
@@ -14,7 +15,7 @@ import { Badge } from '../../../shared/ui/badge';
  */
 @Component({
   selector: 'mf-form-designer-bar',
-  imports: [Button, Badge],
+  imports: [IntPipe, Button, Badge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -73,7 +74,7 @@ import { Badge } from '../../../shared/ui/badge';
           aria-haspopup="dialog"
           (click)="versions.emit($any($event.currentTarget))"
         >
-          Versions ({{ versionCount() }})
+          Versions ({{ versionCount() | mfInt }})
         </button>
         @if (!readOnly() && dirty()) {
           <mf-badge tone="warning" icon="pi-pencil" data-dirty>Unsaved changes</mf-badge>

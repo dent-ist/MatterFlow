@@ -14,6 +14,7 @@ import {
   placeholderNames,
   withType,
 } from './report-model';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /** The default as typed: a number for a number, a boolean for yes/no, text otherwise (a keyword such as `today` stays text). */
 export function parseDefault(def: ParamDef, text: string): unknown {
@@ -318,7 +319,7 @@ export function parseDefault(def: ParamDef, text: string): unknown {
           @if (tested()[d.name]; as t) {
             <div class="pe__test" role="status" data-test-result>
               @if (t.success) {
-                {{ t.total }} {{ t.total === 1 ? 'choice' : 'choices'
+                {{ t.total | mfInt }} {{ t.total === 1 ? 'choice' : 'choices'
                 }}{{ t.truncated ? ' (cut off at 1,000)' : '' }} in {{ t.durationMs }} ms:
                 {{ preview(t) }}
               } @else {
@@ -332,7 +333,7 @@ export function parseDefault(def: ParamDef, text: string): unknown {
       }
     </ng-template>
   `,
-  imports: [NgTemplateOutlet],
+  imports: [IntPipe, NgTemplateOutlet],
   styles: `
     :host {
       display: grid;

@@ -23,6 +23,7 @@ import {
   toneOf,
 } from './users-model';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 /**
  * The compact table view of the Team workload: one row per person with the same facts as the card (state, highest priority, a count per
@@ -31,7 +32,7 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
  */
 @Component({
   selector: 'mf-users-table',
-  imports: [RouterLink],
+  imports: [IntPipe, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="wrap" tabindex="-1">
@@ -107,7 +108,7 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
               </th>
               <td class="loadcell">
                 <span class="load" [attr.data-load-label]="levelOf(u)" data-priority-counts>
-                  <strong class="cnt">{{ u.openTotal }}</strong>
+                  <strong class="cnt">{{ u.openTotal | mfInt }}</strong>
                   <span class="track" aria-hidden="true" [attr.title]="countsTitle(u)">
                     @for (s of segmentsOf(u); track s.priorityId) {
                       <span
@@ -119,7 +120,7 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
                     }
                   </span>
                   <span class="sr-only"
-                    >{{ labels[levelOf(u)] }} load, {{ u.openTotal }} open tasks:
+                    >{{ labels[levelOf(u)] }} load, {{ u.openTotal | mfInt }} open tasks:
                     {{ countsText(u) }}</span
                   >
                 </span>
@@ -419,6 +420,7 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
       font-variant-numeric: tabular-nums;
     }
     .load[data-load-label='HEAVY'] .cnt {
+      font-variant-numeric: tabular-nums;
       color: var(--mf-danger);
     }
     .load[data-load-label='HEAVY'] {

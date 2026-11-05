@@ -207,6 +207,7 @@ export interface WorkStripItem {
       font-variant-numeric: tabular-nums;
     }
     .n.v {
+      font-variant-numeric: tabular-nums;
       max-width: 22ch;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -214,11 +215,13 @@ export interface WorkStripItem {
     }
     .zero,
     .zero .n {
+      font-variant-numeric: tabular-nums;
       color: var(--mf-text-muted);
       font-weight: var(--mf-fw-semibold);
     }
     .alert,
     .alert .n {
+      font-variant-numeric: tabular-nums;
       color: var(--mf-sem-overdue-fg);
     }
     .item.alert {
@@ -226,6 +229,7 @@ export interface WorkStripItem {
       background: var(--mf-sem-overdue-bg);
     }
     button.item.on .n {
+      font-variant-numeric: tabular-nums;
       color: inherit;
     }
     /* A fact: the label in muted text and its value in the text colour, no border, no fill. A fact that is a link reads as a link (D-13). */
@@ -240,13 +244,16 @@ export interface WorkStripItem {
       white-space: nowrap;
     }
     .fact .n {
+      font-variant-numeric: tabular-nums;
       color: var(--mf-text);
       font-size: var(--mf-fs-md);
     }
     .fact.zero .n {
+      font-variant-numeric: tabular-nums;
       color: var(--mf-text-muted);
     }
     .fact.alert .n {
+      font-variant-numeric: tabular-nums;
       color: var(--mf-sem-overdue-fg);
     }
     .fact .pi {
@@ -259,6 +266,7 @@ export interface WorkStripItem {
     }
     a.fact--link .n,
     a.fact--link.zero .n {
+      font-variant-numeric: tabular-nums;
       color: inherit;
     }
     a.fact--link:hover {
@@ -271,6 +279,7 @@ export interface WorkStripItem {
       color: var(--mf-sem-risk-fg);
     }
     button.item.tinted:not(.on) .n {
+      font-variant-numeric: tabular-nums;
       color: inherit;
     }
     /* Segments (#581): one connected group of choices, the pressed one filled; the same tokens as the chips. */
@@ -287,6 +296,7 @@ export interface WorkStripItem {
       font-weight: 400;
     }
     .seg .n {
+      font-variant-numeric: tabular-nums;
       font-weight: inherit;
     }
     .seg li:not(:first-child) .item {
@@ -366,9 +376,11 @@ export interface WorkStripItem {
         gap: 0;
       }
       .item:has(.n.v) .n.v {
+        font-variant-numeric: tabular-nums;
         max-width: 100%;
       }
       .n.v {
+        font-variant-numeric: tabular-nums;
         flex: 0 1 auto;
         min-width: 0;
         max-width: none;

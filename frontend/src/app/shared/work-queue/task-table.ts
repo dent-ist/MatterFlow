@@ -77,6 +77,7 @@ import { TaskSkeleton } from './task-skeleton';
 import { PHONE_CARDS_QUERY, TaskCardList } from './task-card-list';
 import { Dropdown, DropdownItem } from '../ui/dropdown';
 import { NumericDatePipe, numericInstant } from '../ui/numeric-date';
+import { IntPipe } from '../ui/number-format';
 
 const NARROW_BELOW = 760;
 /** A touch held this long on a header opens its column menu (PM ruling on #207). */
@@ -90,6 +91,7 @@ const LONG_PRESS_MS = 500;
 @Component({
   selector: 'mf-task-table',
   imports: [
+    IntPipe,
     NumericDatePipe,
     Dropdown,
     TaskTypeBadge,
@@ -624,7 +626,7 @@ const LONG_PRESS_MS = 500;
         } @else if (!row.workflow.currentStepName) {
           <span class="wt-muted">All steps resolved</span>
         } @else {
-          {{ row.workflow.stepsResolved }} of {{ row.workflow.stepsTotal }} done ·
+          {{ row.workflow.stepsResolved }} of {{ row.workflow.stepsTotal | mfInt }} done ·
           @if (stepLinked(row)) {
             <a
               class="wt-steplink"

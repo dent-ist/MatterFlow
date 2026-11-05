@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { NotificationService, ToastSeverity } from '../../core/notify/notification.service';
 import { UndoService } from '../../core/notify/undo.service';
+import { IntPipe } from './number-format';
 
 /** The most toasts on screen at once; older ones stay in the list and show again when newer ones close. */
 export const MAX_VISIBLE_TOASTS = 3;
@@ -82,7 +83,7 @@ const ICONS: Record<ToastSeverity, string> = {
             >{{ item.summary }}</span
           >
           @if (item.count > 1) {
-            <span class="th__count" data-toast-count>x{{ item.count }}</span>
+            <span class="th__count" data-toast-count>x{{ item.count | mfInt }}</span>
           }
           @if (item.detail) {
             <span class="th__detail" data-toast-detail>{{ item.detail }}</span>
@@ -114,7 +115,7 @@ const ICONS: Record<ToastSeverity, string> = {
       </div>
     </ng-template>
   `,
-  imports: [NgTemplateOutlet],
+  imports: [IntPipe, NgTemplateOutlet],
   styles: `
     :host {
       display: contents;

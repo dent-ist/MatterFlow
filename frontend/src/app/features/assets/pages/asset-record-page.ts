@@ -42,6 +42,7 @@ import { DispositionCode, dispositionOf } from '../disposition/asset-disposition
 import { firstAllowedTab } from '../../admin/denial';
 import { dialogCopy } from '../../admin/shared/dialog-copy';
 import { AssetLinkedTasks, LinkedTaskTotals } from './asset-linked-tasks';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 type Tab = 'details' | 'tasks' | 'history';
 
@@ -55,6 +56,7 @@ type Tab = 'details' | 'tasks' | 'history';
 @Component({
   selector: 'mf-asset-record-page',
   imports: [
+    IntPipe,
     FixedPage,
     ScrollArea,
     RecordHeader,
@@ -129,7 +131,7 @@ type Tab = 'details' | 'tasks' | 'history';
             @if (a.inactiveLinked) {
               <div class="pg-banner" role="note" data-inactive-linked-banner>
                 <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-                Not active, but still linked to {{ a.openLinkedTaskCount }} open
+                Not active, but still linked to {{ a.openLinkedTaskCount | mfInt }} open
                 {{ a.openLinkedTaskCount === 1 ? 'task' : 'tasks' }}.
               </div>
             }

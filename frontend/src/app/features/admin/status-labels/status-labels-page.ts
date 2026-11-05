@@ -33,6 +33,7 @@ import { TextField } from '../../../shared/ui/text-field';
 import { AdminTabCounts } from '../admin-tabs';
 import { dialogCopy } from '../shared/dialog-copy';
 import { ADMIN_FIELD_LIMITS } from '../shared/field-limits';
+import { IntPipe } from '../../../shared/ui/number-format';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -49,6 +50,7 @@ const tasksQuery = (code: string) => ({ status: code });
   selector: 'mf-status-labels-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    IntPipe,
     RouterLink,
     ActionMenu,
     AdminCardList,
