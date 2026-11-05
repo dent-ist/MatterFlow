@@ -100,7 +100,7 @@ Each rule: **Do** exactly this; **Don't** the listed things; **Ref** the page or
 
 **D-44 Row actions.** One icon-only "..." (36 target, no border, muted at rest, full on row hover or focus), two or more actions in its menu; one obvious action is its own icon button; the whole row opens the record.
 
-**D-45 Truncation.** Names one line with ellipsis plus tooltip; descriptions two lines; toolbar text fits at 1366 ("Sorted by Load", "Search by name").
+**D-45 Truncation.** Names one line with ellipsis plus tooltip; descriptions two lines; toolbar text fits at 1366 ("Sorted by Load", "Search by name"). A chip or a fixed word (Status, Priority, a count) is never cut: its column is wide enough (Status 140, Priority 112; a cell with an inline editor keeps 4 px side padding). The Type column shows the tile alone with the name as tooltip, and the name beside it only from a column about 200 px wide. A Matter or Project Tasks tab hides Progress by default (Columns menu) so Status and Priority are whole at 1366 (#1154).
 
 **D-47 Record not found.** The state-page card (D-53) in the shell with the breadcrumb above and one `Go to <List>` button.
 

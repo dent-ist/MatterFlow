@@ -100,7 +100,7 @@ let nextId = 0;
         <span class="pre">{{ prefix() }}</span>
       }
       <span class="vw">
-        <span class="val">{{ text() }}</span>
+        <span class="val" [attr.title]="text() || null">{{ text() }}</span>
         @for (w of sizer(); track $index) {
           <span class="siz" aria-hidden="true" [attr.data-w]="w"></span>
         }

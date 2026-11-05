@@ -240,7 +240,7 @@ describe('ScopedTasks', () => {
     expect(text(el().querySelector('thead'))).not.toContain('Project');
   });
 
-  it('has the default column order Ref, Type, Title, Project, Priority, Assignee, Due, Status, Progress, with the type name beside the chip (MD-29)', async () => {
+  it('has the default column order Ref, Type, Title, Project, Priority, Assignee, Due, Status (Progress is off by default, #1154), with the type name beside the chip (MD-29)', async () => {
     await create(['Task.View'], { projectCount: 2 });
     const heads = Array.from(el().querySelectorAll('thead tr:first-child th')).map((h) => text(h));
     expect(heads).toEqual([
@@ -252,7 +252,6 @@ describe('ScopedTasks', () => {
       'Assignee',
       'Due',
       'Status',
-      'Progress',
     ]);
     expect(el().querySelector('[data-type-chip]')).not.toBeNull();
     expect(text(el().querySelector('[data-type-name]'))).not.toBe('');

@@ -183,7 +183,7 @@ export function initials(name: string): string {
 
           @if (showWhere()) {
             <div class="where" data-where>
-              <span class="where-text"
+              <span class="where-text" [attr.title]="c.clientName + ' / ' + c.matterName"
                 ><span class="client-name" data-client>{{ c.clientName }}</span> /
                 <span class="matter-name">{{ c.matterName }}</span></span
               >

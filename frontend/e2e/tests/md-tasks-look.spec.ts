@@ -25,7 +25,7 @@ test('Tasks tab at 1366x768: columns fit and the cells show what they should', a
   });
   expect(overflow, 'the Tasks table scrolls sideways').toBeLessThanOrEqual(1);
 
-  // Default order (MD-29): Ref, Type, Title, Project, Priority, Assignee, Due, Status, Progress.
+  // Default order (MD-29, #1154): Ref, Type, Title, Project, Priority, Assignee, Due, Status; Progress is off by default and added in the Columns menu below.
   const order = (await page.locator('mf-task-table thead tr:first-child th').allTextContents()).map(
     (t) => t.trim(),
   );
@@ -38,7 +38,6 @@ test('Tasks tab at 1366x768: columns fit and the cells show what they should', a
     'Assignee',
     'Due',
     'Status',
-    'Progress',
   ]);
 
   // Every header is fully visible (not cut by the cell).
@@ -50,12 +49,26 @@ test('Tasks tab at 1366x768: columns fit and the cells show what they should', a
   expect(clippedHeaders, 'clipped column headers').toEqual([]);
 
   const first = rows.first();
+  // No cell cuts its text: the status and priority chips and the assignee are whole at 1366 (#1154).
+  const cutChips = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('mf-task-table tbody .im-value'))
+      .filter(
+        (v) =>
+          v.scrollWidth > v.clientWidth + 1 &&
+          v.closest('td[data-col="status"], td[data-col="priority"]'),
+      )
+      .map((v) => v.textContent?.trim()),
+  );
+  expect(cutChips, 'a Status or Priority chip is cut').toEqual([]);
   await expect(first.locator('[data-type-chip]')).toBeVisible();
   // The chip is the My Matters chip (32 px) with the type's name beside it (MD-29).
   await expect(first.locator('[data-type-name]')).not.toHaveText('');
   const chip = await first.locator('[data-type-chip] .chip').boundingBox();
   expect(chip!.width).toBeGreaterThanOrEqual(31);
   await expect(page.locator('mf-task-table thead th', { hasText: /^\s*Type\s*$/ })).toBeVisible();
+  await page.locator('[data-grid-columns]').click();
+  await page.locator('[data-grid-columns-panel] [data-column="steps"]').check();
+  await page.keyboard.press('Escape');
   await expect(
     page.locator('mf-task-table thead th', { hasText: /^\s*Progress\s*$/ }),
   ).toBeVisible();

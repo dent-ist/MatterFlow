@@ -315,7 +315,8 @@ let nextId = 0;
       /* A narrow card (three across, or a phone): the percentage goes to the table view and the overdue chip stays on the row. */
       @container (max-width: 30rem) {
         .row {
-          grid-template-columns: minmax(6.5rem, 1.2fr) minmax(2.5rem, 1fr) 2.5rem 5.25rem;
+          /* 9 rem for the label: "In Progress" and "On Hold" (icon, gap and word) stay on one line in a three-across card at 1366 (#1154). */
+          grid-template-columns: minmax(9rem, 1.2fr) minmax(2.5rem, 1fr) 2.5rem 5.25rem;
           gap: var(--mf-s1) var(--mf-s2);
         }
         .pct {

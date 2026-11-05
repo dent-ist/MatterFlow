@@ -53,6 +53,12 @@
   line-height: var(--mf-grid-line-h);
 }
 
+/* A cell that holds an inline editor (Status, Priority, Assignee, Project) keeps 4 px at each side: the editor has its own 1 px border and 4 px padding, so a chip
+   such as "In Progress" or "Critical" is whole in its D-43 width (Status 140, Priority 112) instead of being cut by a few pixels (#1154). The text still lines up with the heading. */
+.wt td.wt-edit {
+  padding-inline: var(--mf-s1);
+}
+
 /* Compact: one 36 px line (title only, Status and Due beside it, one-line title). */
 .wt--compact th,
 .wt--compact td {
@@ -208,13 +214,13 @@ th:not([aria-sort]) .wt-sort .pi {
   max-width: 10rem;
   background: linear-gradient(var(--mf-status-progress-bg), var(--mf-status-progress-bg)) center /
     100% 6px no-repeat;
-  border-radius: var(--mf-radius);
+  border-radius: 3px;
 }
 
 .wt-stepbar__fill {
   display: block;
   height: 6px;
-  border-radius: 3px;
+  border-radius: var(--mf-radius);
   background: var(--mf-status-progress-fg);
 }
 
@@ -306,12 +312,27 @@ th:not([aria-sort]) .wt-sort .pi {
   margin: 0;
 }
 
-/* The Type column (MD-29, every task list since LC-03): the chip and the type's name beside it, the name on one line cut with an ellipsis, so a row stays one line tall. */
+/* The Type column (MD-29, every task list since LC-03): the chip and, in a wide column, the type's name beside it, on one line cut with an ellipsis, so a row stays one line tall. */
 .wt-typecell {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--mf-s2);
   min-width: 0;
+  container: wt-type / inline-size;
+}
+
+/* A narrow Type column (the 112 px default) shows the tile alone, its name is the tooltip and stays in the page for assistive tools; from a 200 px column
+   the name is shown beside it. Never "Archive..." cut in the middle of a word (#1154, D-43, D-45). */
+@container wt-type (max-width: 175px) {
+  .wt-typecell .wt-clip {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 
 .wt-typecell .wt-clip {

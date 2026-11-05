@@ -184,7 +184,7 @@ test.describe('Matter detail tabs: Summary, Projects, Assets, Productions, butto
 });
 
 test.describe('Shared grid: Columns menu, reorder and row hover (MD-28, MD-29)', () => {
-  test('Tasks tab: move Due left by keyboard, hide Progress and Project, reload keeps it, Reset restores', async ({
+  test('Tasks tab: move Due left by keyboard, add Progress and hide Project, reload keeps it, Reset restores', async ({
     page,
     seed,
   }) => {
@@ -199,17 +199,18 @@ test.describe('Shared grid: Columns menu, reorder and row hover (MD-28, MD-29)',
       );
     await expect(page.locator('mf-task-table tbody tr[data-task]').first()).toBeVisible();
     expect(await heads()).toContain('Project'); // a default column (MD-29)
+    expect(await heads()).not.toContain('Progress'); // off by default so Status and Priority stay whole at 1366 (#1154)
 
     await page.locator('[data-grid-columns]').click();
     const panel = page.locator('[data-grid-columns-panel]');
     await panel.locator('[data-move="due:left"]').focus();
     await page.keyboard.press('Enter');
     await expect(panel.locator('[data-move="due:left"]')).toBeFocused();
-    await panel.locator('[data-column="steps"]').uncheck();
+    await panel.locator('[data-column="steps"]').check();
     await panel.locator('[data-column="project"]').uncheck();
     await page.keyboard.press('Escape');
     const after = await heads();
-    expect(after).not.toContain('Progress');
+    expect(after).toContain('Progress');
     expect(after).not.toContain('Project');
     expect(after.indexOf('Due')).toBeLessThan(after.indexOf('Assignee'));
     await shot(page, 'tasks-columns-1366x768');
@@ -230,7 +231,6 @@ test.describe('Shared grid: Columns menu, reorder and row hover (MD-28, MD-29)',
       'Assignee',
       'Due',
       'Status',
-      'Progress',
     ]);
     await axeClean(page, 'tasks tab with the Columns menu');
   });

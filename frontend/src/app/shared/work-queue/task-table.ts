@@ -292,7 +292,7 @@ const LONG_PRESS_MS = 500;
                 [attr.data-task]="row.taskNumber"
               >
                 @for (col of shownColumns(); track col.key) {
-                  <td [attr.data-col]="col.key">
+                  <td [attr.data-col]="col.key" [class.wt-edit]="EDIT_COLUMNS.has(col.key)">
                     @switch (col.key) {
                       @case ('ref') {
                         @if (row.status === 'ON_HOLD') {
@@ -392,7 +392,7 @@ const LONG_PRESS_MS = 500;
                       }
                       @case ('typeChip') {
                         <!-- The My Matters chip with the type's name beside it (MD-29, #1033). -->
-                        <span class="wt-typecell">
+                        <span class="wt-typecell" [attr.title]="row.taskTypeName">
                           <mf-task-type-chip
                             [iconKey]="row.taskTypeIconKey"
                             [colourKey]="row.taskTypeColourKey"
@@ -431,7 +431,7 @@ const LONG_PRESS_MS = 500;
                       }
                       @case ('type') {
                         <!-- The same chip and name as the Matter grid's Type (LC-03: one Type column on every task list); a compact row takes the 24 px chip. -->
-                        <span class="wt-typecell">
+                        <span class="wt-typecell" [attr.title]="row.taskTypeName">
                           <mf-task-type-chip
                             [size]="density() === 'compact' ? 'sm' : 'md'"
                             [iconKey]="row.taskTypeIconKey"
@@ -655,6 +655,14 @@ const LONG_PRESS_MS = 500;
   `,
 })
 export class TaskTable {
+  /** The columns whose cells hold an inline editor (menu): they keep 4 px side padding so a chip is whole in its D-43 width (#1154). */
+  protected readonly EDIT_COLUMNS: ReadonlySet<string> = new Set([
+    'status',
+    'priority',
+    'assignee',
+    'project',
+  ]);
+
   /** The person as a grid shows them: the display name, or the account without its domain, never `KE\\kekim` (D-62, #1221). */
   protected readonly who = shortAccountName;
 

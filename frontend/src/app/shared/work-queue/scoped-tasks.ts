@@ -75,17 +75,18 @@ const PAGE_SIZES: readonly number[] = [25, 50, 100];
 /** The choice that takes the ticked tasks out of their project. */
 const NO_PROJECT = 'none';
 /**
- * Default widths of this grid (px): the Type and Progress columns (MD-24) come on top of the old set, so a 1366 px window (1098 px box, 200 px for the
- * Title) still holds every column; a width the person changed wins.
+ * Default widths of this grid (px): the D-43 widths (Type 112, Project 140, Priority 112, Assignee 136, Due 136, Status 140), so Priority and Status are never cut
+ * (#1154). With the Title at its 200 px minimum they fill a 1366 px window (1098 px box) without Progress, which is off by default and one click away in the
+ * Columns menu; a width the person changed wins.
  */
 const DEFAULT_WIDTHS_PX: Readonly<Record<string, number>> = {
-  typeChip: 120,
-  project: 116,
-  priority: 104,
-  assignee: 112,
-  due: 120,
-  status: 116,
-  steps: 80,
+  typeChip: 112,
+  project: 140,
+  priority: 112,
+  assignee: 136,
+  due: 136,
+  status: 140,
+  steps: 120,
 };
 
 /** The query parameters of this grid's filters; the Matter page drops them when another tab is chosen. */
@@ -484,7 +485,7 @@ export class ScopedTasks {
     () => this.projectId() === null && (this.projectCount() ?? 1) > 0,
   );
   /**
-   * The columns this grid may have (MD-28/MD-29): the default order is Ref, Type, Title, Project, Priority, Assignee, Due, Status, Progress. Project is
+   * The columns this grid may have (MD-28/MD-29): the default order is Ref, Type, Title, Project, Priority, Assignee, Due, Status (Progress is in the Columns menu, off by default so Status and Priority are whole at 1366, #1154). Project is
    * shown for a Matter that has projects (a Matter without any has nothing to choose, so the column is left out) and can be hidden in the Columns menu; Ref is pinned first and Title cannot be hidden.
    */
   protected readonly gridDefs = computed((): GridColumnDef[] => [
@@ -496,7 +497,7 @@ export class ScopedTasks {
     { key: 'assignee', label: 'Assignee' },
     { key: 'due', label: 'Due' },
     { key: 'status', label: 'Status' },
-    { key: 'steps', label: 'Progress' },
+    { key: 'steps', label: 'Progress', defaultHidden: true },
   ]);
   protected readonly prefs = signal<GridPrefs>(DEFAULT_GRID_PREFS);
   private readonly prefsKey = computed(() =>
