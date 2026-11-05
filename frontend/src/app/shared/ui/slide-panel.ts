@@ -7,6 +7,7 @@ import {
   model,
   output,
   signal,
+  ViewEncapsulation,
 } from '@angular/core';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
@@ -44,102 +45,8 @@ let nextPanel = 0;
   selector: 'mf-slide-panel',
   imports: [Dialog, Button, DialogFocus, ScrollRegion],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styles: `
-    .sp__head {
-      display: grid;
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-    /* A long record name (a 200-character task title) takes at most 2 lines; the whole text is in the tooltip and is the panel's name. */
-    .sp__title {
-      display: -webkit-box;
-      min-width: 0;
-      overflow: hidden;
-      overflow-wrap: anywhere;
-      font-size: var(--mf-fs-lg);
-      font-weight: 600;
-      line-clamp: 2;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-    }
-    .sp__title:focus {
-      outline: none;
-    }
-    .sp__sub {
-      display: block;
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-      font-weight: 400;
-    }
-    .sp__actions {
-      display: inline-flex;
-      flex: none;
-      align-items: center;
-      gap: var(--mf-s1);
-    }
-    .sp__actions:empty {
-      display: none;
-    }
-    .sp__tabs:empty {
-      display: none;
-    }
-    .sp__body {
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow-y: auto;
-      padding: var(--mf-s4);
-    }
-    .sp__foot {
-      display: flex;
-      flex-direction: column;
-      gap: var(--mf-s2);
-      width: 100%;
-    }
-    .sp__buttons {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: var(--mf-s2);
-    }
-    .sp__buttons > :only-child {
-      margin-inline-start: auto;
-    }
-    .sp__error {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--mf-s2);
-      margin: 0;
-      color: var(--mf-danger);
-      font-size: var(--mf-fs-sm);
-      font-weight: 600;
-      overflow-wrap: anywhere;
-    }
-    .sp__error .pi {
-      flex: none;
-      margin-top: 1px;
-      font-size: var(--mf-icon-sm);
-    }
-    .sp__guard {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--mf-s2);
-      padding: var(--mf-s2) var(--mf-s3);
-      border: 1px solid var(--mf-sem-risk-solid);
-      border-radius: var(--mf-radius-md);
-      background: var(--mf-sem-risk-bg);
-      color: var(--mf-sem-risk-fg);
-    }
-    .sp__guard-actions {
-      display: flex;
-      gap: var(--mf-s2);
-    }
-    .sp__busy {
-      opacity: 0.6;
-      cursor: progress;
-    }
-  `,
+  styleUrl: './slide-panel.scss',
+  encapsulation: ViewEncapsulation.None,
   template: `
     <p-dialog
       position="right"
@@ -251,7 +158,7 @@ export class SlidePanel {
   readonly title = input.required<string>();
   /** A quiet line under the title (the CM number). */
   readonly subtitle = input('');
-  /** `default` 520 px; `large` 720 px for a drawer that holds a grid. The width belongs to this component (`styles/_drawers.scss`). */
+  /** `default` 520 px; `large` 720 px for a drawer that holds a grid. The width belongs to this component (`slide-panel.scss`). */
   readonly size = input<'default' | 'large'>('default');
   readonly primaryLabel = input('Save');
   readonly secondaryLabel = input('Cancel');

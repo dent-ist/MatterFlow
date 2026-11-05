@@ -202,7 +202,10 @@ describe('SlidePanel drawer anatomy (D-33, #1142)', () => {
     f.componentInstance.size.set('large');
     f.detectChanges();
     expect(q('.mf-drawer')!.classList.contains('mf-drawer--wide')).toBe(true);
-    const css = readFileSync(join(process.cwd(), 'src', 'styles', '_drawers.scss'), 'utf8');
+    const css = readFileSync(
+      join(process.cwd(), 'src', 'app', 'shared', 'ui', 'slide-panel.scss'),
+      'utf8',
+    );
     expect(css).toMatch(/\.mf-drawer\.p-dialog \{[^}]*width: var\(--mf-drawer-w\);/);
     expect(css).toMatch(/\.mf-drawer--wide\.p-dialog \{\s*width: var\(--mf-drawer-w-wide\);/);
     expect(css).toMatch(/\.mf-drawer \.p-dialog-header \{[^}]*min-height: 56px;/);
