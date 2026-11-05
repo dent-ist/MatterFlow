@@ -32,7 +32,7 @@
   background: var(--mf-selected-bg);
 }
 
-/* The name is the row's one control: a button that looks like the link of the other lists (the drawer opens in place and is in the address). */
+/* The name is the row's one control: a button that looks like the link of the other lists (D-13: link colour, regular weight, underlined) (the drawer opens in place and is in the address). */
 .us-open {
   /* The kit clamps .mf-name (two lines, one under an account line): it is the button itself, so the clamp works on its text. */
   width: fit-content;
@@ -42,13 +42,16 @@
   background: none;
   color: var(--mf-link);
   font: inherit;
-  font-weight: 600;
+  font-weight: 400;
   text-align: left;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
   cursor: pointer;
   overflow-wrap: anywhere;
 
   &:hover {
-    text-decoration: underline;
+    color: var(--mf-primary-hover);
   }
 
   &:focus-visible {

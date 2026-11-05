@@ -601,3 +601,11 @@ Loading shows a skeleton of the grid; an error shows `mf-dash-state` with Retry;
 - A chip never wraps (`white-space: nowrap`) and a chip is never a plain label: a fact such as "Size 159 GB" or a count with no filter behind it is plain label and value text (`.fact` in `mf-work-strip`; `[plain]="true"` makes a whole strip facts, as on the Asset record).
 - `mf-badge` without an `icon` draws its tone's icon (neutral minus-circle, info info-circle, success check-circle, warning exclamation-triangle, danger exclamation-circle), so every status chip has an icon and the word.
 - Private chip classes in feature styles are migrated by the later sweep (#1130); do not add new ones.
+
+### 13.2 Links and text buttons (D-13, #1131)
+
+- One link style, from `styles.scss`: `a:not([class])` (a plain anchor in text) and the global class `.mf-link` read `--mf-link`, weight 400, a 1 px underline always on (offset 2 px), hover `--mf-primary-hover`, no visited colour, the global focus ring, and a 24 px target (`padding-block: 4px; margin-block: -4px`, so the line does not move).
+- Identifier links (Ref, CM Number, matter number) add `.mf-link--id` (`--mf-font-mono`). Title links in grids are regular weight, like the Matter Name link (the bold is gone from the Task Queue, My Work and Pod Work Title).
+- Navigation links have no underline: the menu, tabs, pager and the breadcrumb (which underlines on hover only).
+- Anything that acts (Edit, Delete, Change, Add, Assign, Show all) is `mf-btn mf-btn--text` (link colour, regular weight, no underline at rest, underline on hover; `mf-btn--danger` for Delete). A button that opens a record from a name cell (Administration > Users) looks like the link above.
+- A private link class (`.pg-link`, `.lnk`, `.link-btn`...) is migrated to `.mf-link` by the later sweep (#1132); do not add new ones.

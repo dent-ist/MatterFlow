@@ -44,8 +44,56 @@ input[type='radio']:disabled {
   cursor: default;
 }
 
-a:not([class]) {
+/*
+ * Links (D-13, #1131): a link navigates and looks the same everywhere: `--mf-link`, regular weight, a 1 px underline always on (offset 2 px), hover `--mf-primary-hover`,
+ * no visited colour, the global focus ring. `a:not([class])` is a plain link in running text; `.mf-link` is the same for an anchor that needs a class of its own, and
+ * `.mf-link--id` adds the mono font of an identifier (Ref, CM Number, matter number). The padding and the negative margin give a 24 px target without moving the line.
+ * Navigation links (menu, tabs, breadcrumb, pager) have no underline; the breadcrumb underlines on hover. Anything that acts is `mf-btn mf-btn--text`, never a link.
+ */
+a:not([class]),
+.mf-link {
+  padding-block: 4px;
+  margin-block: -4px;
   color: var(--mf-link);
+  font-weight: 400;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+a:not([class]):visited,
+.mf-link:visited {
+  color: var(--mf-link);
+}
+
+a:not([class]):hover,
+.mf-link:hover {
+  color: var(--mf-primary-hover);
+}
+
+.mf-link--id {
+  font-family: var(--mf-font-mono);
+}
+
+/* The menu, the breadcrumbs and the pager are navigation, not text: no underline, and the box of their own (they already keep a 24 px target). */
+.mf-nav a:not([class]),
+.mf-pager a:not([class]),
+.ph__crumbs a:not([class]),
+.rh__trail a:not([class]),
+.rh__crumbs a:not([class]),
+.mh__crumbs a:not([class]),
+.rk__mh-crumbs a:not([class]) {
+  padding-block: 0;
+  margin-block: 0;
+  text-decoration: none;
+}
+
+.ph__crumbs a:not([class]):hover,
+.rh__trail a:not([class]):hover,
+.rh__crumbs a:not([class]):hover,
+.mh__crumbs a:not([class]):hover,
+.rk__mh-crumbs a:not([class]):hover {
+  text-decoration: underline;
 }
 
 /* Wrapper that takes part in its parent's flex layout (page-header action groups with @if blocks). */

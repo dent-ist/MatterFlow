@@ -97,12 +97,14 @@ button.p-button:disabled {
   background: transparent;
   color: var(--mf-link);
   font-weight: 400;
-  text-decoration: underline;
+  text-decoration: none;
   text-underline-offset: 2px;
 }
 
+/* D-13 (#1131): an action in link colour has no underline at rest; it underlines on hover. */
 .mf-btn--text:hover:not(:disabled, [aria-disabled='true']) {
   background: var(--mf-selected-bg);
+  text-decoration: underline;
 }
 
 .mf-btn--text.mf-btn--danger {

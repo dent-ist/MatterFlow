@@ -211,7 +211,7 @@ th:not([aria-sort]) .wt-sort .pi {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   color: var(--mf-link);
-  font-weight: 600;
+  font-weight: 400;
   /* Two lines are 36 px; a one-line title still has a 24 px target (WCAG 2.2 2.5.8), centred in it. */
   min-height: 24px;
   -webkit-box-pack: center;
