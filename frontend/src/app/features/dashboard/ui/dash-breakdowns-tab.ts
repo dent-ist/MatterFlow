@@ -188,7 +188,7 @@ const PRIORITY_ICONS: Record<string, string> = {
         display: inline-block;
         width: 1.25rem;
         height: 0.625rem;
-        border-radius: 2px;
+        border-radius: var(--mf-radius);
       }
       .sample.plain {
         background: var(--mf-primary);

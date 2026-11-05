@@ -84,7 +84,7 @@ import { ChartFormat, ChartRow, plainFormat } from './chart-types';
         background: var(--bar-colour);
         border: 1px solid var(--mf-text);
         border-bottom: 0;
-        border-radius: 2px 2px 0 0;
+        border-radius: var(--mf-radius) var(--mf-radius) 0 0;
       }
       .cc__label {
         position: absolute;

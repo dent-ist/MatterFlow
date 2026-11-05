@@ -223,7 +223,7 @@ const ATTENTION = [
       height: 14px;
       overflow: hidden;
       gap: 1px;
-      border-radius: 7px;
+      border-radius: var(--mf-radius-pill);
       background: var(--mf-surface-alt);
     }
     .bar i {
@@ -247,7 +247,7 @@ const ATTENTION = [
     .sw {
       width: 10px;
       height: 10px;
-      border-radius: 3px;
+      border-radius: var(--mf-radius);
     }
     .num {
       min-width: 28px;

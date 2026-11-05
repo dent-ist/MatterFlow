@@ -23,7 +23,7 @@ export type TileTone = 'red' | 'amber' | 'violet' | 'slate' | 'blue' | 'teal';
       box-sizing: border-box;
       width: var(--chip);
       height: var(--chip);
-      border-radius: 6px;
+      border-radius: var(--mf-radius-lg);
       background: var(--tone, var(--mf-sem-neutral-solid));
       color: var(--mf-white);
     }

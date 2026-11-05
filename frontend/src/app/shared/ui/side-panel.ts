@@ -159,10 +159,10 @@ export interface SideSection {
       padding: 0 4px;
       box-sizing: border-box;
       border: 2px solid var(--mf-surface);
-      border-radius: 9px;
+      border-radius: var(--mf-radius-pill);
       background: var(--mf-primary);
       color: var(--mf-surface);
-      font-size: 11px;
+      font-size: var(--mf-fs-xs);
       font-weight: 700;
       line-height: 14px;
       text-align: center;

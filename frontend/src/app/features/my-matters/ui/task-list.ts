@@ -492,10 +492,10 @@ export function statusCodes(status: StatusFilter): string[] {
       min-width: 18px;
       padding: 0 5px;
       box-sizing: border-box;
-      border-radius: 9px;
+      border-radius: var(--mf-radius-pill);
       background: var(--mf-primary);
       color: var(--mf-primary-contrast);
-      font-size: 11px;
+      font-size: var(--mf-fs-xs);
       font-weight: 700;
       line-height: 18px;
       text-align: center;
@@ -534,7 +534,7 @@ export function statusCodes(status: StatusFilter): string[] {
       border-radius: 50%;
       background: none;
       color: inherit;
-      font-size: 10px;
+      font-size: var(--mf-fs-xs);
       cursor: pointer;
     }
     .fr {
@@ -629,7 +629,7 @@ export function statusCodes(status: StatusFilter): string[] {
       border-radius: 50%;
       background: var(--mf-sem-info-bg);
       color: var(--mf-primary);
-      font-size: 10px;
+      font-size: var(--mf-fs-xs);
       font-weight: 700;
     }
     .una {

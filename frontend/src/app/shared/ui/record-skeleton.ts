@@ -235,7 +235,7 @@ const ROWS = [0, 1, 2, 3, 4] as const;
     }
     .rk__bar {
       display: inline-block;
-      border-radius: 3px;
+      border-radius: var(--mf-radius);
       background: var(--mf-border);
       opacity: 0.55;
     }

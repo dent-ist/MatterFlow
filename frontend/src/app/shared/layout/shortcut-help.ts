@@ -86,7 +86,7 @@ import { ShortcutRegistry } from './shortcut-registry';
     }
     .sh__heading {
       margin: 0 0 var(--mf-s1);
-      font-size: var(--mf-fs-body);
+      font-size: var(--mf-fs-md);
       font-weight: 600;
     }
     .sh__list {

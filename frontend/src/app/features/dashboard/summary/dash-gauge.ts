@@ -154,7 +154,7 @@ export function arcPath(a0: number, a1: number): string {
       align-items: center;
       gap: var(--mf-s2);
       margin: 0;
-      font-size: 15px;
+      font-size: var(--mf-fs-lg);
       font-weight: 600;
       white-space: nowrap;
     }
@@ -286,7 +286,7 @@ export function arcPath(a0: number, a1: number): string {
     }
     .gcount {
       display: block;
-      font-size: 26px;
+      font-size: var(--mf-fs-figure);
       font-weight: 700;
       line-height: 1;
     }

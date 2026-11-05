@@ -38,7 +38,7 @@ Each rule: **Do** exactly this; **Don't** the listed things; **Ref** the page or
 
 ### 2.1 Foundations
 
-**D-01 Scales.** Type 12 / 13 / 14 (body and controls) / 16 (card, dialog and menu titles) / 18 / 22 (page title) px (`--mf-fs-xs`..`--mf-fs-h2`); figures 24 and 32 px (`--mf-fs-figure`, `--mf-fs-figure-lg`). Weights 400, 600, 700. Spacing 4, 8, 12, 16, 24, 32, 48 (`--mf-s1`..`--mf-s7`): inside a control 0 12, between controls 8, header to toolbar 12, card padding 16, dialog body 16, between fields 16, label to field 4, between sections 24, page gutter 16. Radius: 4 controls (`--mf-radius`), 8 menus, popovers, tooltips and inner boxes (`--mf-radius-lg`), 12 cards, grid frames and dialogs (`--mf-radius-xl`), 6 only the navigation pill, pill for chips, 50% for avatars. Shadow: `--mf-shadow-card` on cards, `--mf-shadow-pop` on menus, popovers and dialogs. Don't: other values, weight 500 or 800, a colour literal, a thick coloured edge. Guards: `check-theme-colours`, `size-tokens.spec`.
+**D-01 Scales.** Type 12 / 13 / 14 (body and controls) / 16 (card, dialog and menu titles) / 18 / 22 (page title) px (`--mf-fs-xs`..`--mf-fs-h2`); figures 24 and 32 px (`--mf-fs-figure`, `--mf-fs-figure-lg`). Weights 400, 600, 700. Spacing 4, 8, 12, 16, 24, 32, 48 (`--mf-s1`..`--mf-s7`): inside a control 0 12, between controls 8, header to toolbar 12, card padding 16, dialog body 16, between fields 16, label to field 4, between sections 24, page gutter 16. Radius: 4 controls (`--mf-radius`), 8 menus, popovers, tooltips and inner boxes (`--mf-radius-lg`), 12 cards, grid frames and dialogs (`--mf-radius-xl`), 6 only the navigation pill, pill for chips, 50% for avatars. Shadow: `--mf-shadow-card` on cards, `--mf-shadow-pop` on menus, popovers and dialogs. Don't: other values, weight 500 or 800, a colour literal, a thick coloured edge, a font size in rem or em, a size token that does not exist (`--mf-fs-body`, `--mf-fs-xl`, `--mf-radius-sm`). Guards: `check-theme-colours`, `check-off-scale` (radius, font size, weight, capitals and undefined size tokens; #1155), `size-tokens.spec`.
 
 **D-02 Control height [OWNER, owner approved 36 px].** Button, segmented switch, dropdown trigger, search, input, textarea row, date and time field, icon button: 36 px (`--mf-ctl-h`; icon buttons 36 x 36). Inside a table cell or the inline filter row: 32 px (`--mf-ctl-h-sm`). Text buttons: 24 px **[OWNER]** (`--mf-target-min`). Targets are never below 24 px. Ref: Dashboard > Users toolbar.
 
@@ -74,7 +74,7 @@ Each rule: **Do** exactly this; **Don't** the listed things; **Ref** the page or
 
 **D-22 Vocabulary** (section 4.4).
 
-**D-23 Uppercase** only for grid column headings (12/700 muted) and the navigation section label "ADMINISTRATION".
+**D-23 Uppercase** only for grid column headings (12/700 muted) and the navigation section label "ADMINISTRATION"; tile captions, group headings ("Data Technician"), menu group labels and calendar weekdays ("Sun") are normal case, 13/600 for a group heading (#1155). `scripts/check-off-scale.mjs` lists the files that may use capitals.
 
 **D-30 Action order.** Primary last. Dialog or drawer with a form: footer `[Cancel] ........ [Primary]` (space between). Routed page form: sticky bar at the bottom, right aligned `[Cancel] [Create and Add Another] [Primary]`, Delete far left. Profile and Settings forms: `[Cancel] [Save Changes]` right, "No unsaved changes" left, primary disabled until dirty. A dialog with no primary action has one `[Close]` right aligned.
 

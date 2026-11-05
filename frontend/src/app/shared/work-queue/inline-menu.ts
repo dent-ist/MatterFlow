@@ -348,10 +348,8 @@ let nextId = 0;
     .im-group {
       padding: var(--mf-s1) var(--mf-s2) 0;
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
+      font-size: var(--mf-fs-sm);
+      font-weight: var(--mf-fw-semibold);
     }
     .im-foot-link {
       min-height: var(--mf-target-min, 1.5rem);
@@ -364,7 +362,7 @@ let nextId = 0;
       cursor: pointer;
     }
     .im-spin {
-      font-size: 0.875rem;
+      font-size: var(--mf-icon-xs);
     }
     .im-sr {
       position: absolute;

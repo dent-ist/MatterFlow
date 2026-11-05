@@ -42,7 +42,7 @@
   gap: 6px;
   align-items: center;
   color: var(--mf-text-muted);
-  font-size: 12.5px;
+  font-size: var(--mf-fs-sm);
 
   i {
     display: inline-block;
@@ -109,7 +109,7 @@
 
 .nt__ptitle {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--mf-fs-h2);
   line-height: 1.25;
   outline: 0;
 
@@ -122,7 +122,7 @@
 .nt__upd {
   margin: -8px 0 0;
   color: var(--mf-text-muted);
-  font-size: 12.5px;
+  font-size: var(--mf-fs-sm);
 
   b {
     color: var(--mf-text);
@@ -136,10 +136,10 @@
   align-items: flex-start;
   margin: 0;
   padding: 12px 14px;
-  border-radius: 10px;
+  border-radius: var(--mf-radius-lg);
   background: var(--mf-sem-info-bg);
   color: var(--mf-sem-info-fg);
-  font-size: 13.5px;
+  font-size: var(--mf-fs-md);
 
   &.nt__banner--warn {
     background: var(--mf-sem-risk-bg);
@@ -214,9 +214,7 @@
     align-items: center;
     margin: 0 0 8px;
     color: var(--mf-text-muted);
-    font-size: 13px;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    font-size: var(--mf-fs-sm);
   }
 
   h4 {
@@ -268,19 +266,18 @@
   .nt__st {
     margin-left: 4px;
     padding: 0 5px;
-    border-radius: 5px;
+    border-radius: var(--mf-radius-pill);
     background: var(--mf-sem-risk-bg);
     color: var(--mf-sem-risk-fg);
-    font-size: 11.5px;
-    letter-spacing: 0.03em;
+    font-size: var(--mf-fs-xs);
     line-height: 1.5;
-    text-transform: uppercase;
+    text-transform: capitalize;
   }
 
   &.is-gone {
     background: var(--mf-surface-2, var(--mf-sem-neutral-bg));
     color: var(--mf-text-muted);
-    font-weight: 500;
+    font-weight: var(--mf-fw-semibold);
     cursor: default;
 
     &:hover {
@@ -359,9 +356,7 @@
   h4 {
     margin: 12px 0 4px;
     color: var(--mf-text-muted);
-    font-size: 11.5px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-size: var(--mf-fs-sm);
   }
 
   ol {

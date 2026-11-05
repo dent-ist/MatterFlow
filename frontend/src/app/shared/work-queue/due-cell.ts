@@ -70,7 +70,7 @@ import { dashDue } from './due-suffix';
     }
     .dc .pi {
       margin-right: var(--mf-s1);
-      font-size: 0.9em;
+      font-size: var(--mf-icon-xs);
     }
     /* Compact: 136 px less the cell padding holds "Overdue 120d"; the date gives way (ellipsis, the full date is the tooltip). */
     .dc--inline {

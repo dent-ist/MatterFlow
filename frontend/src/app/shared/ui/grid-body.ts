@@ -166,7 +166,7 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4] as const;
       display: block;
       max-width: 100%;
       height: 12px;
-      border-radius: 3px;
+      border-radius: var(--mf-radius);
       background: var(--mf-border);
       opacity: 0.55;
     }

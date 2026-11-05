@@ -209,7 +209,7 @@ type BatteryState = 'loading' | 'ready' | 'error';
       align-items: center;
       gap: var(--mf-s2);
       margin: 0;
-      font-size: 15px;
+      font-size: var(--mf-fs-lg);
       font-weight: 600;
       white-space: nowrap;
     }
@@ -270,7 +270,7 @@ type BatteryState = 'loading' | 'ready' | 'error';
     }
     .fill {
       height: 100%;
-      border-radius: var(--mf-radius-sm, 3px);
+      border-radius: var(--mf-radius);
       background: var(--mf-rem);
       transition: width 0.4s ease;
     }
@@ -366,7 +366,7 @@ type BatteryState = 'loading' | 'ready' | 'error';
       line-height: 1.2;
     }
     .lg b {
-      font-size: 17px;
+      font-size: var(--mf-fs-lg);
       line-height: 1.1;
     }
     .lg .t {
@@ -378,8 +378,8 @@ type BatteryState = 'loading' | 'ready' | 'error';
       place-items: center;
       width: 18px;
       height: 18px;
-      border-radius: 3px;
-      font-size: 11px;
+      border-radius: var(--mf-radius);
+      font-size: var(--mf-fs-xs);
     }
     .sw--cap-0 {
       color: var(--mf-cap-0-fg);

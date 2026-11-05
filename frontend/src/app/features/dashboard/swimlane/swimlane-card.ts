@@ -462,7 +462,7 @@ export function initials(name: string): string {
       height: 6px;
       background: var(--mf-surface-alt);
       border: 1px solid var(--mf-border-strong);
-      border-radius: 3px;
+      border-radius: var(--mf-radius);
       overflow: hidden;
     }
     .fill {
@@ -545,7 +545,7 @@ export function initials(name: string): string {
     .line .avatar {
       width: 1.25rem;
       height: 1.25rem;
-      font-size: 0.625rem;
+      font-size: var(--mf-fs-xs);
     }
     .line .avatar:has(.ooo-dot) {
       margin-left: 6px;

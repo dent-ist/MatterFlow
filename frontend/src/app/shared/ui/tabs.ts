@@ -157,7 +157,7 @@ export interface MfTab {
       color: var(--mf-text);
       background: var(--mf-bg);
       border: 0;
-      font-size: 0.75rem;
+      font-size: var(--mf-icon-xs);
       cursor: pointer;
     }
     .cue::after {

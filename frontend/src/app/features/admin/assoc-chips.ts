@@ -125,7 +125,7 @@ export interface AssocItem {
     }
     .ac__star {
       color: var(--mf-text);
-      font-size: 0.6875rem;
+      font-size: var(--mf-fs-xs);
     }
     .ac__tag {
       flex: none;

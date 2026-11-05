@@ -409,8 +409,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
       background: var(--mf-surface-alt);
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-xs);
-      font-weight: 700;
-      text-transform: uppercase;
+      font-weight: var(--mf-fw-semibold);
     }
     .dow span {
       padding: var(--mf-s2) var(--mf-s3);
@@ -569,8 +568,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
     h4 {
       margin-top: var(--mf-s3);
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
-      text-transform: uppercase;
+      font-size: var(--mf-fs-sm);
     }
     .x {
       display: grid;

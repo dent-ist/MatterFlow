@@ -173,7 +173,7 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
       width: 9rem;
       max-width: 100%;
       height: 0.8em;
-      border-radius: 3px;
+      border-radius: var(--mf-radius);
       background: var(--mf-border);
       opacity: 0.55;
       vertical-align: baseline;

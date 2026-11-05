@@ -177,7 +177,7 @@ export const DISPOSITION_CHIPS: Readonly<Record<string, ChipStyle>> = {
       display: block;
       width: 6px;
       height: 11px;
-      border-radius: 2px;
+      border-radius: var(--mf-radius);
       background: var(--mf-status-progress-bg);
     }
     .bar i.on {

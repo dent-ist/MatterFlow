@@ -438,7 +438,7 @@ let nextId = 0;
     .chevron,
     .kind {
       flex: none;
-      font-size: 0.8125rem;
+      font-size: var(--mf-fs-xs);
     }
     .kind {
       color: var(--mf-text-muted);
@@ -452,7 +452,7 @@ let nextId = 0;
     .rows--tree .node--l2 {
       margin-left: var(--mf-s3);
       width: calc(100% - var(--mf-s3));
-      font-weight: 500;
+      font-weight: var(--mf-fw-semibold);
     }
     .rows--tree .leaf {
       margin-left: calc(var(--mf-s3) * 2);

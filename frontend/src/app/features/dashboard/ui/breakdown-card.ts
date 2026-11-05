@@ -34,7 +34,7 @@ export const BD_CARD_CSS = `
     text-overflow: ellipsis;
     white-space: nowrap;
     margin: 0;
-    font-size: var(--mf-fs-xl, 1.25rem);
+    font-size: var(--mf-fs-h3);
     font-weight: 700;
     line-height: 1.25;
   }
@@ -55,7 +55,7 @@ export const BD_CARD_CSS = `
     box-sizing: border-box;
     border: 1px solid var(--mf-border-soft);
     border-radius: var(--mf-radius-md);
-    font-size: 0.875rem;
+    font-size: var(--mf-icon-xs);
   }
   @media (forced-colors: active) {
     .tile {

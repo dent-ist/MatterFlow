@@ -551,9 +551,8 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
       gap: var(--mf-s2);
       margin: var(--mf-s2) 0 var(--mf-s1);
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
-      font-weight: 700;
-      text-transform: uppercase;
+      font-size: var(--mf-fs-sm);
+      font-weight: var(--mf-fw-semibold);
     }
     .people {
       display: grid;

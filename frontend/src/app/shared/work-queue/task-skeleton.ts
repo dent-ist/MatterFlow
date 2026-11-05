@@ -49,7 +49,7 @@ import { ChangeDetectionStrategy, Component, ViewEncapsulation, input } from '@a
       width: 6rem;
       max-width: 100%;
       height: 12px;
-      border-radius: 3px;
+      border-radius: var(--mf-radius);
       background: var(--mf-border);
       opacity: 0.55;
     }
@@ -87,7 +87,7 @@ import { ChangeDetectionStrategy, Component, ViewEncapsulation, input } from '@a
     tr[mfTaskSkeleton] .sk--status {
       width: 5.5rem;
       height: 20px;
-      border-radius: 10px;
+      border-radius: var(--mf-radius-pill);
     }
     @media (prefers-reduced-motion: no-preference) {
       tr[mfTaskSkeleton] .sk {

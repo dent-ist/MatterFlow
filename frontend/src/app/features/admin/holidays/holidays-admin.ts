@@ -505,7 +505,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       border-radius: var(--mf-radius-pill);
       background: var(--hb);
       color: var(--hf);
-      font-size: 0.75rem;
+      font-size: var(--mf-fs-xs);
     }
     .cal__s {
       color: var(--mf-text-muted);

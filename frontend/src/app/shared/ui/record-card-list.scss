@@ -242,7 +242,7 @@
 .rc-sk {
   display: block;
   height: 12px;
-  border-radius: 3px;
+  border-radius: var(--mf-radius);
   background: var(--mf-border);
   opacity: 0.55;
 }

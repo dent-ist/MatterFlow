@@ -148,7 +148,7 @@ const CARDS: readonly CardSpec[] = [
       border-radius: var(--mf-radius-lg);
       color: var(--mf-white);
       background: var(--tone);
-      font-size: 1.1rem;
+      font-size: var(--mf-icon-sm);
     }
     .txt {
       display: flex;
@@ -157,7 +157,7 @@ const CARDS: readonly CardSpec[] = [
     }
     .n {
       font-variant-numeric: tabular-nums;
-      font-size: 28px;
+      font-size: var(--mf-fs-figure);
       font-weight: 700;
       line-height: 1;
     }
@@ -176,7 +176,7 @@ const CARDS: readonly CardSpec[] = [
       border-radius: 50%;
       color: var(--mf-white);
       background: var(--tone);
-      font-size: 0.7rem;
+      font-size: var(--mf-icon-xs);
     }
     .card[aria-pressed='true'] {
       background: var(--tbg);
@@ -203,7 +203,7 @@ const CARDS: readonly CardSpec[] = [
       .ci {
         width: 28px;
         height: 28px;
-        font-size: 0.9rem;
+        font-size: var(--mf-icon-xs);
       }
       .n {
         font-variant-numeric: tabular-nums;

@@ -246,9 +246,8 @@ type LoadState = 'loading' | 'ready' | 'error';
     .al__group {
       margin: var(--mf-s4) 0 var(--mf-s1);
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
-      font-weight: 700;
-      text-transform: uppercase;
+      font-size: var(--mf-fs-sm);
+      font-weight: var(--mf-fw-semibold);
     }
     .al__toggle {
       display: inline-flex;

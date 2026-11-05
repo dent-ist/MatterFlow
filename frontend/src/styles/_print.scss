@@ -61,7 +61,7 @@
     width: 100%;
     min-width: 0;
     table-layout: fixed;
-    font-size: 0.8125rem;
+    font-size: var(--mf-fs-xs);
   }
 
   .wt thead {

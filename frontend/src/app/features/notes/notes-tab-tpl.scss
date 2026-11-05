@@ -39,17 +39,15 @@
   .nt__add {
     height: 24px;
     padding: 0 10px 0 6px;
-    font-size: 12.5px;
+    font-size: var(--mf-fs-sm);
   }
 }
 
 // MD-39 / MD-41: template levels and the compact template edit row
 .nt__grp {
   padding: 6px 12px 2px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: var(--mf-fs-sm);
+  font-weight: var(--mf-fw-semibold);
   color: var(--mf-text-muted);
 }
 

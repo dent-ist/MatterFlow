@@ -85,13 +85,13 @@ import { ChartFormat, ChartRow, plainFormat } from './chart-types';
         display: block;
         height: 1rem;
         background: var(--mf-surface-alt);
-        border-radius: 2px;
+        border-radius: var(--mf-radius);
       }
       .fill {
         display: block;
         height: 100%;
         min-width: 2px;
-        border-radius: 2px;
+        border-radius: var(--mf-radius);
         background: var(--bar-colour);
         border: 1px solid var(--mf-text);
         box-sizing: border-box;

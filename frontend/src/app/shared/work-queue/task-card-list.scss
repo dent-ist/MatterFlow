@@ -233,7 +233,7 @@
   border-radius: 50%;
   background: var(--mf-surface-alt);
   color: var(--mf-text);
-  font-size: 11px;
+  font-size: var(--mf-fs-xs);
   font-weight: 600;
 }
 
@@ -311,7 +311,7 @@
 .tc-sk {
   display: block;
   height: 12px;
-  border-radius: 3px;
+  border-radius: var(--mf-radius);
   background: var(--mf-border);
   opacity: 0.55;
 }
@@ -328,7 +328,7 @@
 .tc-sk--chips {
   width: 90%;
   height: 26px;
-  border-radius: 13px;
+  border-radius: var(--mf-radius-pill);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -372,13 +372,13 @@
   flex: none;
   width: 4.5rem;
   height: 6px;
-  border-radius: 3px;
+  border-radius: var(--mf-radius);
   background: var(--mf-status-progress-bg);
 }
 
 .tc-prog__fill {
   display: block;
   height: 100%;
-  border-radius: 3px;
+  border-radius: var(--mf-radius);
   background: var(--mf-status-progress-fg);
 }

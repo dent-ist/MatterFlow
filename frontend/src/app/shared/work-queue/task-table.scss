@@ -214,7 +214,7 @@ th:not([aria-sort]) .wt-sort .pi {
   max-width: 10rem;
   background: linear-gradient(var(--mf-status-progress-bg), var(--mf-status-progress-bg)) center /
     100% 6px no-repeat;
-  border-radius: 3px;
+  border-radius: var(--mf-radius);
 }
 
 .wt-stepbar__fill {

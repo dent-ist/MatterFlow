@@ -174,7 +174,7 @@ const CHIP_TONES: Readonly<Record<TileTone, ChipTone>> = {
     }
     .value {
       margin-top: var(--mf-s1);
-      font-size: 1.75rem;
+      font-size: var(--mf-fs-figure);
       font-weight: 700;
       line-height: 1.1;
       font-variant-numeric: tabular-nums;
@@ -231,14 +231,14 @@ const CHIP_TONES: Readonly<Record<TileTone, ChipTone>> = {
     }
     /* Needs attention: a slightly bigger number. */
     [data-emphasis='attention'] .value {
-      font-size: 2rem;
+      font-size: var(--mf-fs-figure-lg);
     }
     [data-emphasis='attention'] .label {
       color: var(--mf-text);
     }
     /* Overview: quieter, smaller number. */
     [data-emphasis='quiet'] .value {
-      font-size: 1.5rem;
+      font-size: var(--mf-fs-h2);
     }
     .tile--zero .value {
       color: var(--mf-text-muted);

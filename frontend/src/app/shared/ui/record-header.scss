@@ -151,7 +151,7 @@
 /* The loading state: the same boxes with grey bars. */
 .rh__sk {
   display: inline-block;
-  border-radius: 3px;
+  border-radius: var(--mf-radius);
   background: var(--mf-border);
   opacity: 0.55;
   vertical-align: middle;

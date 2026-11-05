@@ -34,7 +34,7 @@
   height: 30px;
   padding: 0;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--mf-radius);
   background: transparent;
   color: var(--mf-text);
   font: inherit;
@@ -66,7 +66,7 @@
 
 .ne__glyph {
   font-size: var(--mf-icon-sm);
-  font-weight: 800;
+  font-weight: var(--mf-fw-bold);
   line-height: 1;
 }
 
@@ -100,7 +100,7 @@
     height: 28px;
     padding: 0 8px;
     border: 1px solid var(--mf-sem-info-line, var(--mf-border));
-    border-radius: 6px;
+    border-radius: var(--mf-radius);
     background: var(--mf-surface);
     color: var(--mf-text);
     font: inherit;
@@ -150,19 +150,19 @@
 
     h1 {
       margin: 1em 0 0.4em;
-      font-size: 20px;
+      font-size: var(--mf-fs-h2);
       line-height: 1.25;
     }
 
     h2 {
       margin: 1em 0 0.4em;
-      font-size: 17px;
+      font-size: var(--mf-fs-h3);
       line-height: 1.3;
     }
 
     h3 {
       margin: 1em 0 0.3em;
-      font-size: 15px;
+      font-size: var(--mf-fs-lg);
       line-height: 1.3;
     }
 
@@ -210,7 +210,7 @@
       margin: 0;
       border-collapse: collapse;
       table-layout: fixed;
-      font-size: 13.5px;
+      font-size: var(--mf-fs-md);
     }
 
     th,

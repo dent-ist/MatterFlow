@@ -93,7 +93,7 @@ export function taskQueueQuery(
     }
     .pi {
       margin-right: var(--mf-s1);
-      font-size: 0.9em;
+      font-size: var(--mf-icon-xs);
     }
     .tc-sr {
       position: absolute;

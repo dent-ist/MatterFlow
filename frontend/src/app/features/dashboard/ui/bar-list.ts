@@ -494,7 +494,7 @@ let nextId = 0;
         margin-right: var(--mf-s2);
         vertical-align: middle;
         box-sizing: border-box;
-        border-radius: 2px;
+        border-radius: var(--mf-radius);
       }
     `,
   ],

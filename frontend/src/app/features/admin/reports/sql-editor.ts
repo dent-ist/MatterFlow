@@ -172,7 +172,7 @@ export function lineCount(text: string): number {
     }
 
     .ed__mark {
-      border-radius: 2px;
+      border-radius: var(--mf-radius);
       color: transparent;
     }
 

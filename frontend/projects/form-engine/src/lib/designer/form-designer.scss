@@ -79,13 +79,13 @@
 .fd__hint,
 .fd__summary {
   color: var(--mf-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--mf-fs-xs, 12px);
 }
 
 .fd__problems,
 .fd__error {
   color: var(--mf-danger);
-  font-size: 0.875rem;
+  font-size: var(--mf-fs-xs, 12px);
   font-weight: 600;
 }
 
@@ -97,7 +97,7 @@
 
 .fd__warn {
   color: var(--mf-warning);
-  font-size: 0.875rem;
+  font-size: var(--mf-fs-xs, 12px);
 }
 
 .fd__empty {

@@ -195,7 +195,7 @@ table td:is(.mf-col-actions, .mf-col-menu) {
 .mf-resize:focus-visible {
   outline: 2px solid var(--mf-focus, var(--mf-primary));
   outline-offset: -2px;
-  border-radius: 2px;
+  border-radius: var(--mf-radius);
 }
 
 .mf-resize:focus-visible::after {

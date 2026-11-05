@@ -479,10 +479,8 @@ let nextId = 0;
     .gh {
       padding: var(--mf-s2) var(--mf-s3) var(--mf-s1);
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
+      font-size: var(--mf-fs-sm);
+      font-weight: var(--mf-fw-semibold);
     }
     .mute,
     .list li[role='option'].mute {

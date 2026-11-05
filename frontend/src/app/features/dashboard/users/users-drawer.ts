@@ -367,13 +367,11 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
     .counts dt {
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-xs);
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
+      font-weight: var(--mf-fw-semibold);
     }
     .counts dd {
       margin: 0;
-      font-size: 2rem;
+      font-size: var(--mf-fs-figure-lg);
       line-height: 1.1;
       font-weight: 700;
       font-variant-numeric: tabular-nums;

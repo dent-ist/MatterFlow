@@ -246,7 +246,7 @@ const STRIP_GAP = 4;
       min-width: 2em;
       margin-left: 2px;
       color: var(--mf-text);
-      font-size: 0.9em;
+      font-size: var(--mf-fs-sm);
       font-variant-numeric: tabular-nums;
       font-weight: 600;
     }
@@ -269,11 +269,11 @@ const STRIP_GAP = 4;
     .qv-view[aria-pressed='true']:not(.qv-more)::before {
       content: '\\2713';
       margin-right: 3px;
-      font-size: 0.8em;
+      font-size: var(--mf-icon-xs);
     }
     .qv-chevron {
       margin-left: 4px;
-      font-size: 0.7em;
+      font-size: var(--mf-icon-xs);
     }
     .qv-menu {
       margin: 0;

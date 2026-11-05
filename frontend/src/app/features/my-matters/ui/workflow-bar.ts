@@ -74,7 +74,7 @@ const ORDER = [
       width: 168px;
       height: 10px;
       overflow: hidden;
-      border-radius: 5px;
+      border-radius: var(--mf-radius-pill);
       background: var(--mf-surface-alt);
       gap: 1px;
       flex: none;

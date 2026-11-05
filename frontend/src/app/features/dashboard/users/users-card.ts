@@ -239,7 +239,7 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
       gap: var(--mf-s1);
     }
     .n {
-      font-size: 1.5rem;
+      font-size: var(--mf-fs-h2);
       line-height: 1;
       font-variant-numeric: tabular-nums;
     }

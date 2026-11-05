@@ -149,10 +149,8 @@ const SEARCH_ALL = -1;
     .mf-picker__heading {
       padding-bottom: 0;
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
+      font-size: var(--mf-fs-sm);
+      font-weight: var(--mf-fw-semibold);
     }
     .mf-picker__option {
       display: flex;

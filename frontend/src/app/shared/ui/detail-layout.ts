@@ -268,7 +268,7 @@ function savePanelOpen(open: boolean): void {
       left: 50%;
       width: 2px;
       transform: translateX(-50%);
-      border-radius: 1px;
+      border-radius: var(--mf-radius);
       background: var(--mf-border);
       transition: background-color 0.15s;
     }
@@ -277,7 +277,7 @@ function savePanelOpen(open: boolean): void {
       width: 6px;
       height: 2.5rem;
       border: 1px solid var(--mf-border-strong);
-      border-radius: 3px;
+      border-radius: var(--mf-radius);
       background: var(--mf-surface);
     }
     .dl__split:hover::before,

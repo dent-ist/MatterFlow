@@ -1,6 +1,6 @@
 .mf-nav :is(a, .mf-nav-morebtn) > i {
   flex: none;
-  font-size: 19px;
+  font-size: var(--mf-nav-icon);
 }
 
 /* The 56 px icon rail of the app shell (S7, #623; global because the shell component stylesheet is at its 5 kB budget): 21 px icons (19 px in the full panel), the pending count as a dot at the icon's top right corner (the link keeps its accessible
@@ -12,7 +12,7 @@
 
   .mf-nav :is(a, .mf-nav-morebtn) > i {
     /* !important: the shell component's icon rule (the --mf-nav-icon token, 19 px) is more specific than this global sheet; the rail keeps its 21 px (#623). */
-    font-size: 21px !important;
+    font-size: var(--mf-icon-lg);
   }
 
   .mf-nav :is(a, .mf-nav-morebtn) {
@@ -68,7 +68,7 @@
     padding-inline: 0;
     text-align: center;
     white-space: nowrap;
-    font-size: 11px;
+    font-size: var(--mf-fs-xs);
   }
 }
 

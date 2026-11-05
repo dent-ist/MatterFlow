@@ -304,7 +304,7 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
       .swatch {
         width: 0.875rem;
         height: 0.875rem;
-        border-radius: 2px;
+        border-radius: var(--mf-radius);
         box-shadow: inset 0 0 0 1px var(--mf-primary);
       }
       .count {

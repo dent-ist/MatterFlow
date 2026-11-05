@@ -260,7 +260,7 @@ export const cellClass = (level: CalDay['level']): string =>
     }
     .cnt--quiet b {
       font-variant-numeric: tabular-nums;
-      font-weight: 500;
+      font-weight: 400;
     }
     .cnt .short {
       font-variant-numeric: tabular-nums;

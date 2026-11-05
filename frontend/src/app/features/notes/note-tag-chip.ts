@@ -115,7 +115,7 @@ import { isTaskTypeColour } from '../../shared/task-type/task-type-colours';
       text-overflow: ellipsis;
     }
     .ntag__off {
-      font-weight: 500;
+      font-weight: var(--mf-fw-semibold);
     }
     .ntag__x {
       display: grid;

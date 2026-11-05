@@ -16,7 +16,7 @@
   width: 12px;
   height: 12px;
   border: 1px solid var(--mf-border-strong);
-  border-radius: 3px;
+  border-radius: var(--mf-radius);
   background: currentcolor;
 }
 
@@ -42,7 +42,7 @@
   padding: 6px;
   list-style: none;
   border: 1px solid var(--mf-border);
-  border-radius: 10px;
+  border-radius: var(--mf-radius-lg);
   background: var(--mf-surface);
   box-shadow: var(--mf-shadow-pop);
 
@@ -53,7 +53,7 @@
     width: 100%;
     padding: 7px 10px;
     border: 0;
-    border-radius: 6px;
+    border-radius: var(--mf-radius);
     background: none;
     color: var(--mf-text);
     font: inherit;
