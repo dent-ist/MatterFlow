@@ -249,3 +249,44 @@ describe('row navigation (#281, #282, #283)', () => {
     own.nativeElement.remove();
   });
 });
+
+describe('openRowOnClick (a click on a grid row opens its record, #1153)', () => {
+  function table(): HTMLElement {
+    const host = document.createElement('div');
+    host.innerHTML = `<table><tbody>
+      <tr id="a"><td id="plain">Name</td><td><a id="own" href="#x">link</a></td><td><button id="btn">...</button></td>
+        <td class="mf-name"><a data-row-list="clients" data-row-key="1" href="#open" id="primary">Acme</a></td></tr>
+      <tr id="sel"><td><input type="checkbox" /></td><td id="plain2">x</td><td><a data-row-list="clients" data-row-key="2" href="#open2" id="primary2">B</a></td></tr>
+    </tbody></table>`;
+    document.body.appendChild(host);
+    return host;
+  }
+  const click = (el: Element) =>
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0 }));
+
+  it('clicks the row link when a plain cell is clicked, not when a link or a button is', async () => {
+    const { openRowOnClick } = await import('./row-nav');
+    const host = table();
+    const primary = host.querySelector<HTMLAnchorElement>('#primary')!;
+    const spy = vi.fn((e: Event) => e.preventDefault());
+    primary.addEventListener('click', spy);
+    host.addEventListener('click', (e) => openRowOnClick(e as MouseEvent));
+    click(host.querySelector('#plain')!);
+    expect(spy).toHaveBeenCalledTimes(1);
+    click(host.querySelector('#btn')!);
+    click(host.querySelector('#own')!);
+    expect(spy).toHaveBeenCalledTimes(1);
+    host.remove();
+  });
+
+  it('leaves a row with a checkbox (selection mode) alone', async () => {
+    const { openRowOnClick } = await import('./row-nav');
+    const host = table();
+    const spy = vi.fn((e: Event) => e.preventDefault());
+    host.querySelector('#primary2')!.addEventListener('click', spy);
+    host.addEventListener('click', (e) => openRowOnClick(e as MouseEvent));
+    click(host.querySelector('#plain2')!);
+    expect(spy).not.toHaveBeenCalled();
+    host.remove();
+  });
+});

@@ -103,6 +103,7 @@
                       type="button"
                       class="mf-name us-open"
                       data-open
+                      data-row-open
                       [attr.title]="u.displayName"
                       [attr.aria-label]="'Open ' + nameWithAccount(u)"
                       (click)="open(u)"
@@ -176,7 +177,6 @@
                     @if (u.isPending && canManage()) {
                       <p-button
                         label="Grant access"
-                        size="small"
                         data-grant
                         [ariaLabel]="'Grant access to ' + nameWithAccount(u)"
                         (onClick)="open(u)"

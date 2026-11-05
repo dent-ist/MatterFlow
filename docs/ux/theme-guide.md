@@ -646,3 +646,9 @@ Loading shows a skeleton of the grid; an error shows `mf-dash-state` with Retry;
 - Frame: radius 12 (`--mf-radius-xl`) with `--mf-shadow-card`; a grid wider than its frame scrolls sideways inside it and the first (identifier) column stays pinned (`.tt` in `mf-grid-frame`, the Name column of `.mf-grid`, `.wt` Ref).
 - Pager: `mf-pager` with 25 / 50 / 100 (default 50) on every list. The small in-memory Administration lists (Priorities, Status Labels, On-Hold Reasons, Note Tags, Asset Link Roles, Custom Fields) use `LocalPaging` (`shared/ui/local-paging.ts`). Audit Logs still pages by cursor ("Load more"), see the issue comment.
 - Zero in an Overdue, Due Soon (At risk) or On Hold column is `<mf-zero-dash />`: a muted "-" with "0" for a screen reader. Open Tasks and other counts keep "0".
+
+### 13.8 Row actions (D-44, #1153)
+
+- The last cell of a grid is 48 px wide (`mf-cell-actions`, `mf-col-actions`, `mf-col-menu`) and holds ONE `mf-action-menu`: inside a table cell its "..." is an icon-only quiet button, 36 px target, `--mf-icon-md`, no border, `--mf-text-muted` at rest and `--mf-text` while the row is hovered or has focus. In a record header the same menu stays the boxed secondary icon button.
+- Two or more actions go in that menu (Note Tags now does); one obvious action is its own icon button named "Assign work to <name>" (Dashboard Users table). "Grant access" stays a button at 32 px in the cell; "Assign to me" (Pod Work) is a text button (`mf-btn mf-btn--text`).
+- A click anywhere on a row opens its record: `openRowOnClick` (called by the app shell) clicks the row's `a[mfRowLink]` or `[data-row-open]` element; links, buttons, fields, menus and rows with a checkbox keep their own click. Roles has no chevron any more: the whole row is the target.

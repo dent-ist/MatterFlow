@@ -43,6 +43,7 @@ import { NotificationBell } from './notification-bell';
 import { NavTip } from './nav-tip';
 import { versionLabel, versionName } from './app-version';
 import { RouteAnnouncer } from './route-announcer';
+import { openRowOnClick } from '../ui/row-nav';
 
 /**
  * Route data that hides the shell's global "Create task" button because the page's record header has its own, prefilled with the record
@@ -72,6 +73,7 @@ const PHONE_QUERY = '(max-width: 639px)';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:keydown)': 'onKeydown($event)',
+    '(click)': 'onRowClick($event)',
     '[class.mf-shell--fixed]': 'layout.fixed()',
   },
   templateUrl: './app-shell.html',
@@ -224,6 +226,11 @@ export class AppShell {
         nav?.querySelector<HTMLElement>('a');
       target?.focus();
     });
+  }
+
+  /** A click on a grid row opens its record (D-44, #1153). */
+  protected onRowClick(event: MouseEvent): void {
+    openRowOnClick(event);
   }
 
   private forgetMore(): void {

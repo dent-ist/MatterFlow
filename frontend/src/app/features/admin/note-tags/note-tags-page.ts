@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { NoteTagResponse, NoteTagsClient } from '../../../api/generated/api-client';
 import { ApiError } from '../../../core/http/api-error';
@@ -8,9 +7,11 @@ import {
   TASK_TYPE_COLOURS,
   taskTypeChipColours,
 } from '../../../shared/task-type/task-type-colours';
+import { ActionMenu } from '../../../shared/ui/action-menu';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { LocalPaging } from '../../../shared/ui/local-paging';
 import { Pager } from '../../../shared/ui/pager';
+import { rowActions } from '../../../shared/ui/row-actions';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { GridFrame } from '../../../shared/ui/grid-frame';
 import { FormDialog } from '../../../shared/ui/form-dialog';
@@ -23,7 +24,7 @@ import { TextField } from '../../../shared/ui/text-field';
  */
 @Component({
   selector: 'mf-note-tags-page',
-  imports: [Button, ConfirmDialog, Pager, Dropdown, GridFrame, FormDialog, TextField],
+  imports: [ActionMenu, ConfirmDialog, Pager, Dropdown, GridFrame, FormDialog, TextField],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   styleUrl: '../../../shared/ui/page.scss',
@@ -34,11 +35,6 @@ import { TextField } from '../../../shared/ui/text-field';
       border-radius: var(--mf-radius-pill);
       font-size: var(--mf-fs-sm);
       font-weight: 600;
-    }
-    .nt-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--mf-s1);
     }
   `,
   template: `
@@ -60,7 +56,7 @@ import { TextField } from '../../../shared/ui/text-field';
               <th scope="col">Colour</th>
               <th scope="col" class="pg-num">Notes</th>
               <th scope="col">Status</th>
-              <th scope="col"><span class="pg-sr">Actions</span></th>
+              <th scope="col" class="mf-col-actions"><span class="pg-sr">Actions</span></th>
             </tr>
           </thead>
           <tbody>
@@ -77,32 +73,9 @@ import { TextField } from '../../../shared/ui/text-field';
                 <td>{{ colourLabel(t.colourKey) }}</td>
                 <td class="pg-num">{{ t.visibleNoteCount }}</td>
                 <td>{{ t.isActive ? 'Active' : 'Inactive' }}</td>
-                <td>
-                  <span class="nt-actions">
-                    <p-button
-                      label="Edit"
-                      size="small"
-                      severity="secondary"
-                      (onClick)="openEdit(t)"
-                    />
-                    <p-button
-                      [label]="t.isActive ? 'Deactivate' : 'Activate'"
-                      size="small"
-                      severity="secondary"
-                      (onClick)="toggle(t)"
-                    />
-                    <p-button
-                      label="Delete"
-                      size="small"
-                      severity="danger"
-                      [outlined]="true"
-                      [disabled]="t.isInUse"
-                      [title]="
-                        t.isInUse ? 'Notes or templates use this tag. Deactivate it instead.' : ''
-                      "
-                      (onClick)="askDelete(t)"
-                    />
-                  </span>
+                <td class="mf-col-actions">
+                  @let menu = menuFor(t);
+                  <mf-action-menu [floating]="true" [label]="menu.label" [items]="menu.items" />
                 </td>
               </tr>
             }
@@ -182,6 +155,31 @@ export class NoteTagsPage {
 
   constructor() {
     void this.load();
+  }
+
+  /** The row menu (D-44, #1153): Edit, Deactivate / Activate, Delete last and set apart (disabled with its reason while notes use the tag). */
+  protected menuFor(t: NoteTagResponse) {
+    return rowActions(
+      t.name,
+      [
+        { id: 'edit', label: 'Edit', icon: 'pi-pencil', run: () => this.openEdit(t) },
+        {
+          id: 'toggle',
+          label: t.isActive ? 'Deactivate' : 'Activate',
+          kind: 'state',
+          run: () => void this.toggle(t),
+        },
+        {
+          id: 'delete',
+          label: 'Delete',
+          icon: 'pi-trash',
+          danger: true,
+          reason: t.isInUse ? 'Notes or templates use this tag. Deactivate it instead.' : undefined,
+          run: () => this.askDelete(t),
+        },
+      ],
+      { can: () => true },
+    );
   }
 
   protected colours(t: NoteTagResponse): { bg: string; fg: string } {

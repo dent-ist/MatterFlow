@@ -6,7 +6,7 @@
       @if (!editing()) {
         <p class="mf-role-head" aria-hidden="true">
           <span>Name</span><span>Description</span><span class="mf-role-head__n">Members</span
-          ><span class="mf-role-head__n">Permissions</span><span></span>
+          ><span class="mf-role-head__n">Permissions</span>
         </p>
       }
       <ul>
@@ -33,7 +33,6 @@
                 >{{ r.permissionCount }} of {{ totalPermissions()
                 }}<span [class.mf-sr-only]="!editing() && !phone()"> permissions</span></span
               >
-              <i class="pi pi-chevron-right mf-go" aria-hidden="true"></i>
             </button>
           </li>
         }

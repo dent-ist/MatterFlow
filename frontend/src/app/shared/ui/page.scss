@@ -78,6 +78,14 @@
   line-height: 18px;
 }
 
+.pg-table :is(th, td):is(.mf-col-actions, .mf-col-menu) {
+  /* The row action cell (D-44, #1153): 48 px, the 36 px "..." button centred. */
+  width: 48px;
+  min-width: 48px;
+  padding-inline: 0;
+  text-align: center;
+}
+
 .pg-table th {
   /* The heading row is 40 px (--mf-grid-head-h) in every grid (D-42, #1152). */
   height: var(--mf-grid-head-h);

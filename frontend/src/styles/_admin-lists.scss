@@ -215,9 +215,10 @@ table.mf-grid {
 .mf-table-wrap table:is(.mf-has-menu, .mf-grid:has(.mf-cell-actions)) .mf-filter-row td:last-child {
   position: sticky;
   right: 0;
-  width: 1%;
-  padding-inline: var(--mf-s1);
-  border-left: 1px solid var(--mf-border);
+  width: 48px;
+  min-width: 48px;
+  padding-inline: 0;
+  border-left: 1px solid var(--mf-border-soft);
   text-align: center;
   white-space: nowrap;
 }
@@ -242,9 +243,9 @@ table.mf-grid {
   background: var(--mf-surface-alt);
 }
 
-/* One 44 px wide target; the row stays 44 px tall (the button is 36 px, inside the row's 39 px content box). */
+/* The row action cell is 48 px wide and holds one 36 px icon button (D-44, #1153); the row stays 44 px tall. */
 :is(.mf-col-menu, .mf-cell-actions) button[data-overflow] {
-  min-width: 44px;
+  min-width: var(--mf-ctl-h);
   min-height: var(--mf-ctl-h);
   padding: 0;
 }

@@ -49,6 +49,22 @@ describe('one grid anatomy (D-42, #1152)', () => {
     expect(skills).toContain('height: var(--mf-grid-row-h)');
     expect(skills).not.toContain('height: 3rem');
   });
+
+  it('the row action cell is 48 px wide', () => {
+    expect(
+      rule(source('styles/_tables.scss'), 'table th:is(.mf-col-actions, .mf-col-menu)'),
+    ).toContain('width: 48px');
+  });
+
+  it('the "..." of a table cell is a quiet 36 px icon button: no border, muted at rest, full colour on row hover or focus (#1153)', () => {
+    const menu = source('app/shared/ui/action-menu.scss');
+    const quiet = rule(menu, ':host-context(td) button.am__trigger:not(.am__trigger--text) {');
+    expect(quiet).toContain('width: var(--mf-ctl-h)');
+    expect(quiet).toContain('border: 0');
+    expect(quiet).toContain('color: var(--mf-text-muted)');
+    expect(menu).toContain(':host-context(tr:hover) button.am__trigger');
+    expect(menu).toContain(':host-context(tr:focus-within) button.am__trigger');
+  });
 });
 
 describe('LocalPaging (the small Administration lists)', () => {

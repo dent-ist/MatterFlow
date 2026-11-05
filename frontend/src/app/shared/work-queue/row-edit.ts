@@ -96,19 +96,10 @@ const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN
       max-width: 100%;
       white-space: nowrap;
     }
-    .re-link {
-      min-height: var(--mf-target-min, 1.5rem);
-      padding: 0 var(--mf-s1);
-      border: 0;
-      background: transparent;
-      color: var(--mf-primary);
-      font: inherit;
-      text-decoration: underline;
-      cursor: pointer;
-    }
+    /* "Assign to me" is the shared text button (D-44, #1153); only the busy state is local. */
     .re-link[aria-disabled='true'] {
+      color: var(--mf-text-disabled);
       cursor: progress;
-      opacity: 0.7;
     }
   `,
   template: `
@@ -161,7 +152,7 @@ const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN
       <!-- Pod Work: the same "Assign to me" as the menu's first item, next to "Unassigned" so it is one click (#199). -->
       <button
         type="button"
-        class="re-link"
+        class="mf-btn mf-btn--text re-link"
         data-assign-link
         [attr.aria-label]="'Assign ' + r.taskNumber + ' to me'"
         [attr.aria-disabled]="busy() ? 'true' : null"

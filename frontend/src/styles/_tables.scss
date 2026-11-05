@@ -11,11 +11,14 @@
   max-width: 100%;
 }
 
-th.mf-col-actions,
-td.mf-col-actions {
-  width: 1%;
+/* The last cell of a grid, the row action (D-44, #1153): 48 px wide, the one 36 px "..." button centred in it. */
+table th:is(.mf-col-actions, .mf-col-menu),
+table td:is(.mf-col-actions, .mf-col-menu) {
+  width: 48px;
+  min-width: 48px;
+  padding-inline: 0;
   white-space: nowrap;
-  text-align: right;
+  text-align: center;
 }
 
 .mf-row-actions {
@@ -327,4 +330,9 @@ th.mf-drop-start {
 
 th.mf-drop-end {
   box-shadow: inset -3px 0 0 var(--mf-primary);
+}
+
+/* A row with its own record link opens that record when it is clicked anywhere (D-44, #1153; `openRowOnClick` in shared/ui/row-nav.ts). */
+tbody > tr:has(a[data-row-list], [data-row-open]) {
+  cursor: pointer;
 }

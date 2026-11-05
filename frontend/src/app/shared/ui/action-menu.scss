@@ -8,6 +8,30 @@
   padding: 0 var(--mf-s2);
 }
 
+/* The row action (D-44, #1153): in a grid cell the "..." is a quiet icon-only button, a 36 px target with an 18 px icon, no border, muted at rest and in
+   full colour while the row is hovered or has focus. Everywhere else (a record header) it stays the boxed secondary icon button. */
+:host-context(td) button.am__trigger:not(.am__trigger--text) {
+  width: var(--mf-ctl-h);
+  min-width: var(--mf-ctl-h);
+  height: var(--mf-ctl-h);
+  min-height: var(--mf-ctl-h);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--mf-text-muted);
+
+  .pi {
+    font-size: var(--mf-icon-md);
+  }
+}
+
+:host-context(tr:hover) button.am__trigger:not(.am__trigger--text),
+:host-context(tr:focus-within) button.am__trigger:not(.am__trigger--text),
+:host-context(td)
+  button.am__trigger:not(.am__trigger--text):is(:hover, :focus-visible, [aria-expanded='true']) {
+  color: var(--mf-text);
+}
+
 .am__trigger--text {
   display: inline-flex;
   align-items: center;

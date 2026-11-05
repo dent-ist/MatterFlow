@@ -284,3 +284,27 @@ export function registerTableSkip(
   ];
   inject(DestroyRef).onDestroy(() => off.forEach((fn) => fn()));
 }
+
+/** What inside a row keeps its own click: links, buttons, fields and the shared menus and editors. */
+const OWN_CLICK =
+  'a, button, input, select, textarea, label, summary, [role="button"], [role="menuitem"], [role="checkbox"], [role="combobox"], [contenteditable], mf-dropdown, mf-action-menu, mf-inline-menu, mf-row-edit, [data-no-row-open]';
+
+/**
+ * A click anywhere on a grid row opens the record (D-44, #1153): the row's own link (`a[mfRowLink]`, or an element marked `data-row-open`)
+ * is clicked for the person, so Back, focus return and the address work exactly as for a click on the name. Cell links, buttons, fields and
+ * menus keep their own click, a cell that holds a control is left alone, and selecting text in a cell opens nothing. Called by the app shell
+ * for every click on the page; a row without such a link does nothing.
+ */
+export function openRowOnClick(event: MouseEvent): void {
+  if (event.defaultPrevented || !isPlainClick(event)) return;
+  const target = event.target;
+  if (!(target instanceof Element) || target.closest(OWN_CLICK)) return;
+  const row = target.closest<HTMLTableRowElement>('tbody > tr');
+  if (!row) return;
+  // A row with a checkbox is in selection mode (bulk actions): a click on the row is not "open".
+  if (row.querySelector('input[type="checkbox"]')) return;
+  const cell = target.closest('td, th');
+  if (cell?.querySelector('input, select, textarea, button, mf-dropdown, mf-row-edit')) return;
+  if (!window.getSelection()?.isCollapsed) return;
+  row.querySelector<HTMLElement>('a[data-row-list], [data-row-open]')?.click();
+}
