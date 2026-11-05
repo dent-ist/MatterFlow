@@ -187,12 +187,21 @@ type Column = (typeof COLUMNS)[number];
         min-width: 8rem;
       }
     }
+    /* The warning is the icon beside the chip (its words are the tooltip and the accessible text), so a row stays 44 px (D-42, #1152). */
     .as-warn {
-      display: block;
-      margin-top: 2px;
+      display: inline-flex;
+      align-items: center;
+      margin-left: var(--mf-s1);
       color: var(--mf-sem-risk-fg);
-      font-size: var(--mf-fs-sm);
-      white-space: normal;
+      vertical-align: middle;
+    }
+    .as-warn__text {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
     .as-bulk {
       display: flex;
@@ -552,9 +561,13 @@ type Column = (typeof COLUMNS)[number];
                           />
                         }
                         @if (a.inactiveLinked) {
-                          <span class="as-warn" data-inactive-linked>
+                          <span
+                            class="as-warn"
+                            data-inactive-linked
+                            title="Still linked to open tasks"
+                          >
                             <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-                            Still linked to open tasks
+                            <span class="as-warn__text">Still linked to open tasks</span>
                           </span>
                         }
                       </td>

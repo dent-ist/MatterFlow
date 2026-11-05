@@ -346,7 +346,8 @@ type SkillsState = 'loading' | 'ready' | 'error';
       overflow: auto;
       background: var(--mf-surface);
       border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-lg);
+      border-radius: var(--mf-radius-xl);
+      box-shadow: var(--mf-shadow-card);
     }
     .mx {
       border-collapse: separate;
@@ -367,9 +368,12 @@ type SkillsState = 'loading' | 'ready' | 'error';
       vertical-align: bottom;
       color: var(--mf-text-muted);
       background: var(--mf-surface-alt);
+      height: var(--mf-grid-head-h);
       font-size: var(--mf-fs-xs);
-      font-weight: 600;
+      font-weight: 700;
+      letter-spacing: 0.03em;
       text-align: left;
+      text-transform: uppercase;
     }
     .pcol {
       position: sticky;
@@ -429,7 +433,8 @@ type SkillsState = 'loading' | 'ready' | 'error';
       cursor: pointer;
     }
     .mx td {
-      height: 3rem;
+      box-sizing: border-box;
+      height: var(--mf-grid-row-h);
     }
     .cell {
       text-align: center;

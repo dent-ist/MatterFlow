@@ -202,7 +202,9 @@ describe('StatusLabelsPage', () => {
       expect(
         Array.from(el().querySelectorAll('thead th')).map((th) => th.textContent!.trim()),
       ).toEqual(['Status', 'Actions']);
-      expect(el().querySelector('nav, [data-failure], [role="alert"]')).toBeNull();
+      expect(
+        el().querySelector('nav:not([aria-label="Pagination"]), [data-failure], [role="alert"]'),
+      ).toBeNull();
       expect(el().querySelectorAll('[data-row]').length).toBe(5);
     });
   });

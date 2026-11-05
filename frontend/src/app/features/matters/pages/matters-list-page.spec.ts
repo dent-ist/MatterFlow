@@ -199,7 +199,7 @@ describe('MattersListPage', () => {
       'status=ON_HOLD',
     );
     expect(row.querySelector('[data-cell=atRisk] a')).toBeNull();
-    expect(row.querySelector('[data-cell=atRisk]')!.textContent!.trim()).toBe('0');
+    expect(row.querySelector('[data-cell=atRisk]')!.textContent!.trim()).toBe('-0');
     expect(row.querySelector('[data-cell=dataSize]')!.textContent!.trim()).toBe('640.2 GB');
     expect(row.querySelector('[data-cell=pending] a')!.textContent!.trim()).toBe('2');
     expect(row.querySelector('[data-cell=pending] a')!.getAttribute('href')).toContain(

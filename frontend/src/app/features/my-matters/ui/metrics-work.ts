@@ -5,6 +5,7 @@ import { MyMattersFocus } from '../focus';
 import { MmFilters, commonArgs } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
 import { MmApi } from './mm-api';
+import { ZeroDash } from '../../../shared/ui/zero-dash';
 
 const STATUS_BAR = [
   { key: 'new', label: 'New', status: 'new', c: 'var(--mf-status-new-line)' },
@@ -29,7 +30,7 @@ const ATTENTION = [
  */
 @Component({
   selector: 'mf-mm-metrics-work',
-  imports: [TaskTypeChip],
+  imports: [ZeroDash, TaskTypeChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (loads.state() === 'error') {
@@ -139,7 +140,11 @@ const ATTENTION = [
                       [disabled]="t.overdue === 0"
                       (click)="drill.emit({ ttype: '' + t.taskTypeId, show: 'overdue' })"
                     >
-                      {{ t.overdue }}
+                      @if (t.overdue === 0) {
+                        <mf-zero-dash />
+                      } @else {
+                        {{ t.overdue }}
+                      }
                     </button>
                   </td>
                   <td class="n">
@@ -149,7 +154,11 @@ const ATTENTION = [
                       [disabled]="t.atRisk === 0"
                       (click)="drill.emit({ ttype: '' + t.taskTypeId, show: 'risk' })"
                     >
-                      {{ t.atRisk }}
+                      @if (t.atRisk === 0) {
+                        <mf-zero-dash />
+                      } @else {
+                        {{ t.atRisk }}
+                      }
                     </button>
                   </td>
                   <td class="n">
@@ -159,7 +168,11 @@ const ATTENTION = [
                       [disabled]="t.onHold === 0"
                       (click)="drill.emit({ ttype: '' + t.taskTypeId, status: 'hold' })"
                     >
-                      {{ t.onHold }}
+                      @if (t.onHold === 0) {
+                        <mf-zero-dash />
+                      } @else {
+                        {{ t.onHold }}
+                      }
                     </button>
                   </td>
                 </tr>

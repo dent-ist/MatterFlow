@@ -51,7 +51,7 @@ describe('TaskCount', () => {
     TestBed.resetTestingModule();
     const overdue = make('overdue', 0);
     expect(overdue.querySelector('a')).toBeNull();
-    expect(overdue.querySelector('[aria-hidden=true]')!.textContent).toBe('–');
+    expect(overdue.querySelector('[aria-hidden=true]')!.textContent).toBe('-');
     expect(overdue.textContent).toContain('0 overdue tasks in Acme');
   });
 

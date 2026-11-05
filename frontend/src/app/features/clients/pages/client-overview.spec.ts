@@ -75,7 +75,7 @@ describe('ClientOverview', () => {
           .map((c) => text(c))
           .join(' '),
       ),
-    ).toEqual(['00343-00012 Merger Review 4 1 overdue Active', '00343-00013 Audit 5 0 Active']);
+    ).toEqual(['00343-00012 Merger Review 4 1 overdue Active', '00343-00013 Audit 5 -0 Active']);
     expect(el().querySelector('[data-matter="7"] a')!.getAttribute('href')).toBe('/matters/7');
     expect(text(el().querySelector('[data-view-all]'))).toBe('View all 2 matters');
     expect(text(el().querySelector('[data-created-line]'))).toBe('Created Oct 1, 2026');

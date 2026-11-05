@@ -192,7 +192,9 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
     .wrap {
       background: var(--mf-surface);
       border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-lg);
+      border-radius: var(--mf-radius-xl);
+      box-shadow: var(--mf-shadow-card);
+      overflow: clip;
     }
     @media (max-width: 899px) {
       .wrap {
@@ -217,17 +219,24 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
     }
     th,
     td {
+      box-sizing: border-box;
       padding: var(--mf-s1) var(--mf-s2);
-      height: 48px;
+      height: var(--mf-grid-row-h);
       text-align: left;
       vertical-align: middle;
-      border-bottom: 1px solid var(--mf-border);
+      border-bottom: 1px solid var(--mf-border-soft);
+    }
+    tbody tr:hover > * {
+      background: var(--mf-row-hover);
     }
     thead th {
+      height: var(--mf-grid-head-h);
       color: var(--mf-text-muted);
       background: var(--mf-surface-alt);
       font-size: var(--mf-fs-xs);
-      font-weight: 600;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
       /* The header row stays under the sticky tab row while the page scrolls. */
       position: sticky;
       top: var(--mf-dash-sticky-top, 0px);

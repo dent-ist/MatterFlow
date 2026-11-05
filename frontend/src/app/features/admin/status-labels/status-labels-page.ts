@@ -21,6 +21,8 @@ import { ActionMenu } from '../../../shared/ui/action-menu';
 import { AdminCardList, AdminCardSpec } from '../../../shared/ui/admin-card-spec';
 import { adminListState } from '../../../shared/ui/admin-list-state';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
+import { LocalPaging } from '../../../shared/ui/local-paging';
+import { Pager } from '../../../shared/ui/pager';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { LookupDialog } from '../../../shared/ui/lookup-dialog';
 import { phoneCards } from '../../../shared/ui/record-card-list';
@@ -51,6 +53,7 @@ const tasksQuery = (code: string) => ({ status: code });
     ActionMenu,
     AdminCardList,
     GridBody,
+    Pager,
     ScrollArea,
     LookupDialog,
     RowLink,
@@ -62,6 +65,7 @@ const tasksQuery = (code: string) => ({ status: code });
   styleUrl: './status-labels-page.scss',
 })
 export class StatusLabelsPage implements OnInit, HasUnsavedChanges {
+  protected readonly paging = new LocalPaging();
   private readonly api = inject(StatusLabelsClient);
   private readonly lookups = inject(LookupStore);
   private readonly notify = inject(NotificationService);

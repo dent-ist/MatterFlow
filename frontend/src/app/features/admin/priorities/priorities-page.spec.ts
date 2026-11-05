@@ -452,7 +452,9 @@ describe('PrioritiesPage (#605, #609, #614, #618)', () => {
 
     it('loads no status labels, and shows no error or tab strip of its own', () => {
       expect(statusApi.calls).toEqual([]);
-      expect(el().querySelector('nav, [data-failure], [role="alert"]')).toBeNull();
+      expect(
+        el().querySelector('nav:not([aria-label="Pagination"]), [data-failure], [role="alert"]'),
+      ).toBeNull();
       expect(labels().length).toBe(4);
     });
   });

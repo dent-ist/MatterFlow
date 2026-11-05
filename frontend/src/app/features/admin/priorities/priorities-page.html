@@ -47,7 +47,8 @@
           [filtered]="false"
           (retry)="load()"
         >
-          @for (p of rows(); track p.id; let i = $index) {
+          @for (p of paging.slice(rows()); track p.id; let idx = $index) {
+            @let i = paging.offset() + idx;
             <tr
               [attr.data-row]="p.label"
               [class.inactive]="!p.isActive"
@@ -109,6 +110,14 @@
       </table>
     </div>
   </div>
+  <mf-pager
+    [page]="paging.page()"
+    [pageSize]="paging.size()"
+    [pageSizes]="paging.sizes"
+    [total]="rows().length"
+    (pageChange)="paging.goTo($event)"
+    (pageSizeChange)="paging.setSize($event)"
+  />
 }
 
 <mf-priority-dialog

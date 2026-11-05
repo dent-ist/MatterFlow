@@ -321,7 +321,7 @@ describe('PodWorkPage', () => {
       );
     const rows = Array.from(el.querySelectorAll('[data-members] tbody tr')).map(cells);
     expect(rows[0].slice(0, 2)).toEqual(['Not assigned to a person', '6']);
-    expect(rows[1].slice(0, 4)).toEqual(['Tariq M.', '9', '1', '0']);
+    expect(rows[1].slice(0, 4)).toEqual(['Tariq M.', '9', '1', '-0']);
     // Sam K. has nothing open: folded, one click away.
     expect(rows.map((r) => r[0]).join('|')).not.toContain('Sam K.');
     expect(rows[2][0]).toContain('Show 1 member with no open work');

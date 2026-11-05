@@ -9,6 +9,8 @@ import {
   taskTypeChipColours,
 } from '../../../shared/task-type/task-type-colours';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { LocalPaging } from '../../../shared/ui/local-paging';
+import { Pager } from '../../../shared/ui/pager';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { GridFrame } from '../../../shared/ui/grid-frame';
 import { FormDialog } from '../../../shared/ui/form-dialog';
@@ -21,7 +23,7 @@ import { TextField } from '../../../shared/ui/text-field';
  */
 @Component({
   selector: 'mf-note-tags-page',
-  imports: [Button, ConfirmDialog, Dropdown, GridFrame, FormDialog, TextField],
+  imports: [Button, ConfirmDialog, Pager, Dropdown, GridFrame, FormDialog, TextField],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   styleUrl: '../../../shared/ui/page.scss',
@@ -62,7 +64,7 @@ import { TextField } from '../../../shared/ui/text-field';
             </tr>
           </thead>
           <tbody>
-            @for (t of tags(); track t.noteTagId) {
+            @for (t of paging.slice(tags()); track t.noteTagId) {
               <tr data-note-tag-row>
                 <td>
                   <span
@@ -106,6 +108,15 @@ import { TextField } from '../../../shared/ui/text-field';
             }
           </tbody>
         </table>
+        <mf-pager
+          frameFoot
+          [page]="paging.page()"
+          [pageSize]="paging.size()"
+          [pageSizes]="paging.sizes"
+          [total]="tags().length"
+          (pageChange)="paging.goTo($event)"
+          (pageSizeChange)="paging.setSize($event)"
+        />
       </mf-grid-frame>
     }
     <mf-form-dialog
@@ -151,6 +162,7 @@ export class NoteTagsPage {
   private readonly api = inject(NoteTagsClient);
   private readonly notify = inject(NotificationService);
 
+  protected readonly paging = new LocalPaging();
   protected readonly tags = signal<NoteTagResponse[]>([]);
   protected readonly loaded = signal(false);
   protected readonly error = signal('');

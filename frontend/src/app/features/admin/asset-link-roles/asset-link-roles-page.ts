@@ -24,6 +24,8 @@ import { adminListState } from '../../../shared/ui/admin-list-state';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
+import { LocalPaging } from '../../../shared/ui/local-paging';
+import { Pager } from '../../../shared/ui/pager';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { LookupDialog } from '../../../shared/ui/lookup-dialog';
 import { phoneCards } from '../../../shared/ui/record-card-list';
@@ -61,6 +63,7 @@ const TAB = 'link-roles';
     AdminCardList,
     ConfirmDialog,
     GridBody,
+    Pager,
     LookupDialog,
     RouterLink,
     RowLink,
@@ -72,6 +75,7 @@ const TAB = 'link-roles';
   styleUrl: './asset-link-roles-page.scss',
 })
 export class AssetLinkRolesPage implements OnInit, HasUnsavedChanges {
+  protected readonly paging = new LocalPaging();
   private readonly api = inject(AssetLinkRolesClient);
   private readonly notify = inject(NotificationService);
   private readonly auth = inject(AuthStore);

@@ -42,7 +42,7 @@
           [filtered]="false"
           (retry)="load()"
         >
-          @for (row of rows(); track row.code) {
+          @for (row of paging.slice(rows()); track row.code) {
             <tr [attr.data-row]="row.code">
               <td class="mf-cell-name">
                 <span class="sl-name">
@@ -91,6 +91,14 @@
       </table>
     </div>
   </div>
+  <mf-pager
+    [page]="paging.page()"
+    [pageSize]="paging.size()"
+    [pageSizes]="paging.sizes"
+    [total]="rows().length"
+    (pageChange)="paging.goTo($event)"
+    (pageSizeChange)="paging.setSize($event)"
+  />
 }
 
 <mf-lookup-dialog

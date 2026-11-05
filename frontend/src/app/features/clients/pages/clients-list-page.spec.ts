@@ -360,7 +360,7 @@ describe('ClientsListPage', () => {
       expect(overdue.querySelector('.pi-exclamation-circle')).not.toBeNull();
       // Zero work is not an error: 0 and an en dash, no link.
       expect(quiet.querySelector('[data-count=open]')!.textContent!.trim()).toBe('0');
-      expect(quiet.querySelector('[data-count=overdue] [aria-hidden=true]')!.textContent).toBe('–');
+      expect(quiet.querySelector('[data-count=overdue] [aria-hidden=true]')!.textContent).toBe('-');
       expect(quiet.querySelectorAll('[data-count] a')).toHaveLength(0);
     });
 

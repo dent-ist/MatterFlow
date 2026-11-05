@@ -62,6 +62,9 @@ table.mf-grid {
 
 /* The heading row of the theme (TH-06): the same small muted capitals as the grid frame, wherever the grid sits. */
 .mf-grid th {
+  /* The heading row is 40 px (--mf-grid-head-h) in every grid (D-42, #1152). */
+  height: var(--mf-grid-head-h);
+  padding-block: 0;
   background: var(--mf-surface-alt);
   color: var(--mf-text-muted);
   font-size: var(--mf-fs-xs);
@@ -72,7 +75,37 @@ table.mf-grid {
 }
 
 .mf-grid tbody tr:hover > td {
-  background: var(--mf-surface-alt);
+  background: var(--mf-row-hover);
+}
+
+.mf-grid tbody tr:is(.mf-selected, [aria-selected='true']) > td {
+  background: var(--mf-selected-bg);
+}
+
+/* The identifier column stays in view while the grid scrolls sideways (D-42, #1152): the Name column when it is the first one. */
+.mf-table-wrap .mf-grid td.mf-cell-name:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--mf-surface);
+}
+
+.mf-table-wrap .mf-grid th.mf-cell-name:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+}
+
+.mf-table-wrap .mf-grid tbody tr:hover > td.mf-cell-name:first-child {
+  background: var(--mf-row-hover);
+}
+
+.mf-table-wrap
+  .mf-grid
+  tbody
+  tr:is(.mf-selected, [aria-selected='true'])
+  > td.mf-cell-name:first-child {
+  background: var(--mf-selected-bg);
 }
 
 /* The capitals of the heading row are wider than the old words: below 900 px the cells give up a little side padding so the grid still fits (no sideways scroll at 640 to 899 px). */
@@ -84,6 +117,8 @@ table.mf-grid {
 }
 
 .mf-grid td {
+  /* Exactly 44 px including the 1 px line under the row (D-42, #1152). */
+  box-sizing: border-box;
   height: var(--mf-grid-row-h, 44px);
   padding-block: 2px;
   line-height: 18px;
@@ -192,6 +227,10 @@ table.mf-grid {
   background: var(--mf-surface);
 }
 
+.mf-table-wrap table tbody tr:hover > td:is(.mf-col-menu, .mf-cell-actions) {
+  background: var(--mf-row-hover);
+}
+
 /* Above the other sticky headers (the first column's header is 4) where they slide under it. */
 .mf-table-wrap table th:is(.mf-col-menu, .mf-cell-actions) {
   z-index: 5;
@@ -203,10 +242,10 @@ table.mf-grid {
   background: var(--mf-surface-alt);
 }
 
-/* One 44 px wide target; the row stays 44 px tall (the button is as tall as the row's content box). */
+/* One 44 px wide target; the row stays 44 px tall (the button is 36 px, inside the row's 39 px content box). */
 :is(.mf-col-menu, .mf-cell-actions) button[data-overflow] {
   min-width: 44px;
-  min-height: 40px;
+  min-height: var(--mf-ctl-h);
   padding: 0;
 }
 

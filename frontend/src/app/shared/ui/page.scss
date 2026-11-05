@@ -72,12 +72,16 @@
 /* Record lists use the Comfortable row of the work grids (decision U "Rows and lines", WP8 #269): exactly 44 px whatever the cells hold,
    18 px lines, 2 px above and below, the 1 px line under the row; so at most 39 px of content (two name lines, a 26 px badge). */
 .pg-table td {
+  box-sizing: border-box;
   padding-block: 2px;
   height: var(--mf-grid-row-h, 44px);
   line-height: 18px;
 }
 
 .pg-table th {
+  /* The heading row is 40 px (--mf-grid-head-h) in every grid (D-42, #1152). */
+  height: var(--mf-grid-head-h);
+  padding-block: 0;
   background: var(--mf-surface-alt);
   font-size: var(--mf-fs-xs);
   font-weight: var(--mf-fw-bold);

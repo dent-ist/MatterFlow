@@ -73,6 +73,14 @@ td.mf-col-actions {
   padding-inline: 1px;
 }
 
+/* An On Hold row stays 44 px: the 26 px chip trigger and the 13 px hold line are 39 px together (D-42, #1152). */
+.wt td[data-col='status'] .im-trigger {
+  min-height: 26px;
+  padding-block: 0;
+  /* The trigger's 1 px edge sits outside the 26 px chip, not in the row. */
+  margin-block: -1px;
+}
+
 .wt td[data-col='priority'] .im-trigger .pi,
 .wt td[data-col='status'] .im-trigger .pi {
   font-size: var(--mf-icon-sm);

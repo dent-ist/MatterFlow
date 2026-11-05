@@ -29,6 +29,7 @@ import { dateDaysAgo } from '../../../shared/work-queue/queue-filters';
 import { recordStripItems } from '../../../shared/work-queue/record-strip';
 import { DUE_SOON_DAYS } from '../../../shared/work-queue/work-vocabulary';
 import { WorkStrip } from '../../../shared/work-queue/work-strip';
+import { ZeroDash } from '../../../shared/ui/zero-dash';
 
 /** How many matters the table lists (the summary's `topMatters` holds at most this many). */
 export const OVERVIEW_MATTERS = 5;
@@ -80,6 +81,7 @@ export function rowsFromMatters(matters: readonly MatterResponse[]): OverviewMat
 @Component({
   selector: 'mf-client-overview',
   imports: [
+    ZeroDash,
     WorkStrip,
     RouterLink,
     Button,
@@ -174,7 +176,11 @@ export function rowsFromMatters(matters: readonly MatterResponse[]): OverviewMat
                             {{ m.overdue }} overdue
                           </span>
                         } @else {
-                          <span class="ov-muted">{{ m.overdue ?? '--' }}</span>
+                          @if (m.overdue === 0) {
+                            <mf-zero-dash />
+                          } @else {
+                            <span class="ov-muted">--</span>
+                          }
                         }
                       </td>
                     }

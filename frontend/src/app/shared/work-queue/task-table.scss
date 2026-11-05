@@ -38,7 +38,7 @@
 .wt td {
   /* Tight side padding keeps the default columns inside 1280 px for a user with the inline editors (UXR2-01). */
   padding: var(--mf-s2) var(--mf-s2);
-  border-bottom: 1px solid var(--mf-border);
+  border-bottom: 1px solid var(--mf-border-soft);
   text-align: left;
   vertical-align: middle;
   height: var(--mf-row-h);
@@ -47,8 +47,10 @@
 /* Comfortable rows are 44 px whatever the cells hold (#210): 2 px above and below, the 1 px line under the row, and at most 39 px of content
    (two 18 px title lines, the 34 px Matter cell, the 36 px Due cell, a 26 px Status pill with a 13 px hold line). */
 .wt td {
+  box-sizing: border-box;
   padding-block: 2px;
   height: 44px;
+  line-height: var(--mf-grid-line-h);
 }
 
 /* Compact: one 36 px line (title only, Status and Due beside it, one-line title). */
@@ -82,6 +84,7 @@
 }
 
 .wt th {
+  border-bottom-color: var(--mf-border);
   background: var(--mf-surface-alt);
   /* The heading row of every themed grid (mf-grid-frame): small bold capitals in the muted ink; the sorted column turns to the full ink. */
   color: var(--mf-text-muted);
@@ -170,9 +173,19 @@ th:not([aria-sort]) .wt-sort .pi {
 }
 
 .wt-clip {
-  display: block;
+  /* Two lines at most in a Comfortable row (the full text is the tooltip), one in a Compact row: the row stays 44 / 36 px (D-42, #1152). */
+  display: -webkit-box;
   overflow: hidden;
+  overflow-wrap: anywhere;
   text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.wt--compact .wt-clip {
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
 }
 
 /* The Task Type badge (icon in a chip tinted with the type's colour) sits before the title; it never replaces the name. */

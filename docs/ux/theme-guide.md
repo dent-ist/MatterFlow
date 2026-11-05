@@ -639,3 +639,10 @@ Loading shows a skeleton of the grid; an error shows `mf-dash-state` with Retry;
 - Header buttons are always in the order Edit, Activity, the primary action, then the "..." overflow, whatever order the page lists them in. The Matter header has Edit (moved out of the Details card), the New menu (its primary) and More actions; a Matter shows its history in the Activities tab, so it has no Activity button.
 - Primary labels: "New Matter" (Client), "New Task" (Project), "Complete Task" (Task); the plus icon stays.
 - The breadcrumb is 13 px muted with the current page as plain text.
+
+### 13.7 Grid anatomy: one set of numbers for every grid (D-42, #1152)
+
+- Rows: 44 px comfortable (`--mf-grid-row-h`), 36 px compact (work grids only, `--mf-grid-row-h-compact`), including the 1 px line under the row; cells are `box-sizing: border-box` and hold at most two 18 px lines (`--mf-grid-line-h`); a name, Project, Client or Type cell is cut at two lines with the full text as its tooltip. Header row 40 px (`--mf-grid-head-h`), 12 / 700 uppercase `--mf-text-muted` on `--mf-surface-alt`, sort arrow `--mf-icon-sm`. Row line `--mf-border-soft`, hover `--mf-row-hover`, selected `--mf-selected-bg`, no zebra. Applies to `.wt` (work grids), `.mf-grid` (Administration lists, Assets), `.pg-table` (record lists), the Dashboard Users table and the Skills matrix (both were 48 px).
+- Frame: radius 12 (`--mf-radius-xl`) with `--mf-shadow-card`; a grid wider than its frame scrolls sideways inside it and the first (identifier) column stays pinned (`.tt` in `mf-grid-frame`, the Name column of `.mf-grid`, `.wt` Ref).
+- Pager: `mf-pager` with 25 / 50 / 100 (default 50) on every list. The small in-memory Administration lists (Priorities, Status Labels, On-Hold Reasons, Note Tags, Asset Link Roles, Custom Fields) use `LocalPaging` (`shared/ui/local-paging.ts`). Audit Logs still pages by cursor ("Load more"), see the issue comment.
+- Zero in an Overdue, Due Soon (At risk) or On Hold column is `<mf-zero-dash />`: a muted "-" with "0" for a screen reader. Open Tasks and other counts keep "0".

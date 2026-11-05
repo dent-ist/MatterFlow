@@ -8,6 +8,7 @@ import {
   RecordCardList,
   phoneCards,
 } from '../../../shared/ui/record-card-list';
+import { ZeroDash } from '../../../shared/ui/zero-dash';
 
 export type MemberSortKey = 'member' | 'open' | 'overdue' | 'onHold';
 export interface MemberSort {
@@ -88,7 +89,14 @@ type CardItem = { kind: 'unassigned' } | { kind: 'member'; load: PodMemberLoad }
  */
 @Component({
   selector: 'mf-pod-member-table',
-  imports: [AvailabilityChip, NgTemplateOutlet, RecordCard, RecordCardDef, RecordCardList],
+  imports: [
+    ZeroDash,
+    AvailabilityChip,
+    NgTemplateOutlet,
+    RecordCard,
+    RecordCardDef,
+    RecordCardList,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './pod-member-table.scss',
   template: `
@@ -259,8 +267,20 @@ type CardItem = { kind: 'unassigned' } | { kind: 'member'; load: PodMemberLoad }
         <span class="pm-open">{{ m.open }}</span>
         <span class="pm-bar" aria-hidden="true" [style.width.rem]="bar(m.open)"></span>
       </td>
-      <td class="pm-num">{{ m.overdue }}</td>
-      <td class="pm-num">{{ m.onHold }}</td>
+      <td class="pm-num">
+        @if (m.overdue === 0) {
+          <mf-zero-dash />
+        } @else {
+          {{ m.overdue }}
+        }
+      </td>
+      <td class="pm-num">
+        @if (m.onHold === 0) {
+          <mf-zero-dash />
+        } @else {
+          {{ m.onHold }}
+        }
+      </td>
       <td class="pm-act">
         <button
           type="button"

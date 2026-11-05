@@ -25,6 +25,8 @@ import { AdminCardList, AdminCardSpec } from '../../../shared/ui/admin-card-spec
 import { AdminColumn, adminListState } from '../../../shared/ui/admin-list-state';
 import { AdminListShell } from '../../../shared/ui/admin-list-shell';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
+import { LocalPaging } from '../../../shared/ui/local-paging';
+import { Pager } from '../../../shared/ui/pager';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { LoadState } from '../../../shared/ui/data-table';
 import { phoneCards } from '../../../shared/ui/record-card-list';
@@ -76,6 +78,7 @@ const COLUMNS: readonly AdminColumn[] = [
     AdminListShell,
     FormStatusCell,
     GridBody,
+    Pager,
     MfDatePipe,
     RouterLink,
     RowLink,
@@ -131,7 +134,7 @@ const COLUMNS: readonly AdminColumn[] = [
                 [filtered]="false"
                 (retry)="load()"
               >
-                @for (r of rows(); track r.key) {
+                @for (r of paging.slice(rows()); track r.key) {
                   <tr [attr.data-row]="r.label">
                     <td class="mf-cell-name">
                       <a
@@ -179,6 +182,14 @@ const COLUMNS: readonly AdminColumn[] = [
             </table>
           </div>
         </div>
+        <mf-pager
+          [page]="paging.page()"
+          [pageSize]="paging.size()"
+          [pageSizes]="paging.sizes"
+          [total]="rows().length"
+          (pageChange)="paging.goTo($event)"
+          (pageSizeChange)="paging.setSize($event)"
+        />
       }
       @if (activity(); as r) {
         <mf-activity-drawer
@@ -202,6 +213,7 @@ const COLUMNS: readonly AdminColumn[] = [
   `,
 })
 export class CustomFieldsPage implements OnInit {
+  protected readonly paging = new LocalPaging();
   private readonly forms = inject(FormsClient);
   private readonly auth = inject(AuthStore);
   private readonly injector = inject(Injector);

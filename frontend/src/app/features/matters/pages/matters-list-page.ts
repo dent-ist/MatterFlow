@@ -60,6 +60,7 @@ import { Pager } from '../../../shared/ui/pager';
 import { TaskCount } from '../../../shared/ui/task-count';
 import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { ResizableColumns } from '../../../shared/ui/resizable-columns';
+import { ZeroDash } from '../../../shared/ui/zero-dash';
 import { MatterManagersDialog, ManagerTarget } from '../ui/matter-managers-dialog';
 import { MatterFormDialog } from '../ui/matter-form-dialog';
 import { GridColumns } from '../../../shared/ui/grid-columns';
@@ -114,6 +115,7 @@ const BONES: Record<string, string> = {
 @Component({
   selector: 'mf-matters-list-page',
   imports: [
+    ZeroDash,
     FixedPage,
     GridFrame,
     NgTemplateOutlet,
@@ -681,7 +683,7 @@ const BONES: Record<string, string> = {
                                   >{{ m.onHoldTaskCount }}</a
                                 >
                               } @else {
-                                <span class="ml-muted" aria-label="0 on hold">0</span>
+                                <mf-zero-dash />
                               }
                             </td>
                           }
@@ -699,7 +701,7 @@ const BONES: Record<string, string> = {
                                   >{{ m.atRiskTaskCount }}</a
                                 >
                               } @else {
-                                <span class="ml-muted" aria-label="0 at risk">0</span>
+                                <mf-zero-dash />
                               }
                             </td>
                           }

@@ -24,6 +24,8 @@ import { ActiveBadge, Badge } from '../../../shared/ui/badge';
 import { priorityColors, PriorityBadge } from '../../../shared/ui/priority-badge';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
+import { LocalPaging } from '../../../shared/ui/local-paging';
+import { Pager } from '../../../shared/ui/pager';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { phoneCards } from '../../../shared/ui/record-card-list';
 import { RowLink } from '../../../shared/ui/row-nav';
@@ -60,6 +62,7 @@ const DROP_ORDER = 768;
     Badge,
     ConfirmDialog,
     GridBody,
+    Pager,
     ScrollArea,
     PriorityBadge,
     PriorityDialog,
@@ -70,6 +73,7 @@ const DROP_ORDER = 768;
   styleUrl: './priorities-page.scss',
 })
 export class PrioritiesPage implements OnInit, HasUnsavedChanges {
+  protected readonly paging = new LocalPaging();
   private readonly api = inject(PrioritiesClient);
   private readonly lookups = inject(LookupStore);
   private readonly notify = inject(NotificationService);

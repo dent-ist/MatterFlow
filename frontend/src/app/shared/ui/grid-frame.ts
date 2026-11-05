@@ -66,6 +66,22 @@ import { ScrollArea } from './fixed-page';
       text-transform: uppercase;
       color: var(--mf-text-muted);
     }
+    /* The identifier column stays in view while the frame scrolls sideways (D-42, #1152). */
+    :host ::ng-deep .tt th:first-child,
+    :host ::ng-deep .tt td:first-child {
+      position: sticky;
+      left: 0;
+    }
+    :host ::ng-deep .tt th:first-child {
+      z-index: 3;
+    }
+    :host ::ng-deep .tt td:first-child {
+      z-index: 1;
+      background: var(--mf-surface);
+    }
+    :host ::ng-deep .tt tbody tr:hover > td:first-child {
+      background: var(--mf-row-hover);
+    }
     :host ::ng-deep .tt th[aria-sort='ascending'],
     :host ::ng-deep .tt th[aria-sort='descending'] {
       color: var(--mf-text);

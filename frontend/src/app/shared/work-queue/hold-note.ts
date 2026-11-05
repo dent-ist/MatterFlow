@@ -80,6 +80,9 @@ export function holdTitle(
       display: inline-block;
       margin-right: var(--mf-s1);
       color: var(--mf-text-muted);
+      /* The mark never makes the row taller than 44 px (D-42, #1152). */
+      line-height: 1;
+      vertical-align: middle;
     }
     .pi {
       font-size: var(--mf-icon-sm);

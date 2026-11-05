@@ -24,7 +24,7 @@ export function taskQueueQuery(
 
 /**
  * One Open tasks or Overdue cell of the record lists. Open tasks is a right-aligned number, Overdue the shared overdue style (red text,
- * alert icon, "overdue" in the accessible name and the tooltip) only above 0 and a muted en dash at 0. A positive count links to the Task
+ * alert icon, "overdue" in the accessible name and the tooltip) only above 0 and a muted dash "-" at 0. A positive count links to the Task
  * Queue; a zero is plain text (no link to an empty list). A count the viewer may not see is not shown at all: the pages leave the column
  * out without `Task.View`, so `count` is a number here.
  */
@@ -51,7 +51,7 @@ export function taskQueueQuery(
       </a>
     } @else if (kind() === 'overdue') {
       <span class="tc tc-zero" [attr.title]="sentence()">
-        <span aria-hidden="true">–{{ wordText() }}</span
+        <span aria-hidden="true">-{{ wordText() }}</span
         ><span class="tc-sr">{{ sentence() }}</span>
       </span>
     } @else {

@@ -24,6 +24,8 @@ import { adminListState } from '../../../shared/ui/admin-list-state';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
+import { LocalPaging } from '../../../shared/ui/local-paging';
+import { Pager } from '../../../shared/ui/pager';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { LookupDialog } from '../../../shared/ui/lookup-dialog';
 import { phoneCards } from '../../../shared/ui/record-card-list';
@@ -55,6 +57,7 @@ const DROP_ORDER = 768;
     AdminCardList,
     ConfirmDialog,
     GridBody,
+    Pager,
     LookupDialog,
     RouterLink,
     RowLink,
@@ -66,6 +69,7 @@ const DROP_ORDER = 768;
   styleUrl: './on-hold-reasons-page.scss',
 })
 export class OnHoldReasonsPage implements OnInit, HasUnsavedChanges {
+  protected readonly paging = new LocalPaging();
   private readonly api = inject(OnHoldReasonsClient);
   private readonly notify = inject(NotificationService);
   private readonly auth = inject(AuthStore);
