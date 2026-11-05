@@ -48,7 +48,7 @@ test.describe('SH-B: toast de-duplication', () => {
     await me.getByRole('button', { name: /account menu/ }).click();
     await me
       .getByRole('menu', { name: 'Your account' })
-      .getByRole('menuitem', { name: 'Set out of office...' })
+      .getByRole('menuitem', { name: 'Set Out of Office' })
       .click();
     await me
       .getByRole('dialog', { name: 'Set out of office' })

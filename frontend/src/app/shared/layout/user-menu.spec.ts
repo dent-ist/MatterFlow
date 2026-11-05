@@ -112,8 +112,8 @@ describe('UserMenu (header user area)', () => {
     button.click();
     await settle(fixture);
     expect(button.getAttribute('aria-expanded')).toBe('true');
-    expect(items(fixture)).toEqual(['My profile', 'Set out of office...', 'Keyboard shortcuts']);
-    expect(document.activeElement?.textContent).toContain('My profile');
+    expect(items(fixture)).toEqual(['My Profile', 'Set Out of Office', 'Keyboard Shortcuts']);
+    expect(document.activeElement?.textContent).toContain('My Profile');
   });
 
   it('moves with the arrow keys, wraps, and Escape closes and returns focus to the button', async () => {
@@ -123,9 +123,9 @@ describe('UserMenu (header user area)', () => {
     await settle(fixture);
     const menu = fixture.nativeElement.querySelector('[role=menu]')!;
     menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
-    expect(document.activeElement?.textContent).toContain('Keyboard shortcuts');
+    expect(document.activeElement?.textContent).toContain('Keyboard Shortcuts');
     menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
-    expect(document.activeElement?.textContent).toContain('My profile');
+    expect(document.activeElement?.textContent).toContain('My Profile');
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     await settle(fixture);
@@ -137,7 +137,7 @@ describe('UserMenu (header user area)', () => {
     const fixture = await create([]);
     trigger(fixture).click();
     await settle(fixture);
-    expect(items(fixture)).toEqual(['Keyboard shortcuts']);
+    expect(items(fixture)).toEqual(['Keyboard Shortcuts']);
     expect(client.getMyAvailability).not.toHaveBeenCalled();
   });
 
@@ -166,7 +166,7 @@ describe('UserMenu (header user area)', () => {
     expect(trigger(fixture).getAttribute('aria-label')).toContain('Out of office until');
     trigger(fixture).click();
     await settle(fixture);
-    expect(items(fixture)).toEqual(['My profile', "I'm back", 'Keyboard shortcuts']);
+    expect(items(fixture)).toEqual(['My Profile', "I'm Back", 'Keyboard Shortcuts']);
   });
 
   describe('identity row and phone dot (#580, #578)', () => {
@@ -194,7 +194,7 @@ describe('UserMenu (header user area)', () => {
       const menu = el.querySelector('[role=menu]')!;
       expect(menu.contains(row)).toBe(false);
       expect(menu.getAttribute('aria-describedby')).toBe(row.id);
-      expect(items(fixture)).toEqual(['My profile', 'Set out of office...', 'Keyboard shortcuts']);
+      expect(items(fixture)).toEqual(['My Profile', 'Set Out of Office', 'Keyboard Shortcuts']);
       expect(menu.querySelector('[role=separator]')).not.toBeNull();
     });
 
@@ -215,7 +215,7 @@ describe('UserMenu (header user area)', () => {
       await settle(fixture);
       const row = fixture.nativeElement.querySelector('[data-menu-identity]')!;
       expect(row.querySelector('[data-availability-chip]')).toBeNull();
-      expect(items(fixture)).toEqual(['Keyboard shortcuts']);
+      expect(items(fixture)).toEqual(['Keyboard Shortcuts']);
       expect(fixture.nativeElement.querySelector('[role=separator]')).toBeNull();
     });
 

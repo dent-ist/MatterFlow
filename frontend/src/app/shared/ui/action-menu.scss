@@ -39,19 +39,13 @@
   min-height: 32px;
 }
 
+/* The surface and the items are the shared menu anatomy (`mf-menu`, `mf-menu__item`: styles/_menus.scss, D-36); this file only says where the menu opens. */
 .am__menu {
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
   z-index: 1100;
   display: grid;
-  min-width: 14rem;
-  max-width: min(22rem, calc(100vw - 2 * var(--mf-s4)));
-  padding: var(--mf-s1);
-  border: 1px solid var(--mf-border-strong);
-  border-radius: var(--mf-radius);
-  background: var(--mf-surface);
-  box-shadow: var(--mf-shadow-2);
 }
 
 /* A button at the left of its line: the menu opens to the right of its left edge. */
@@ -69,51 +63,9 @@
 }
 
 .am__item {
-  display: flex;
-  align-items: center;
-  gap: var(--mf-s3);
-  min-height: var(--mf-row-h);
-  padding: var(--mf-s1) var(--mf-s3);
-  border: 0;
-  border-radius: var(--mf-radius);
-  background: transparent;
-  color: var(--mf-text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-
-  &:hover,
-  &:focus-visible {
-    background: var(--mf-surface-alt);
+  &[aria-disabled='true'] .am__text > :first-child {
+    opacity: 0.7;
   }
-
-  &[aria-disabled='true'] {
-    cursor: not-allowed;
-
-    .am__text > :first-child {
-      opacity: 0.7;
-    }
-  }
-
-  .pi {
-    flex: none;
-    width: 1rem;
-    color: var(--mf-text-muted);
-  }
-}
-
-/* A set-apart entry (the dangerous one, last): a divider above it. */
-.am__item--sep {
-  margin-top: var(--mf-s1);
-  border-top: 1px solid var(--mf-border);
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
-  padding-top: calc(var(--mf-s1) + 2px);
-}
-
-.am__item--danger,
-.am__item--danger .pi {
-  color: var(--mf-danger);
 }
 
 .am__text {
@@ -130,10 +82,6 @@
 @media (max-width: 639.98px) {
   .am__trigger {
     min-width: 44px;
-    min-height: 44px;
-  }
-
-  .am__item {
     min-height: 44px;
   }
 }

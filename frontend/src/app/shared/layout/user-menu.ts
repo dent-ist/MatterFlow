@@ -32,8 +32,8 @@ interface Item {
 let nextId = 0;
 
 /**
- * The user area of the header, as an accessible menu button (ARIA menu button pattern): the name opens My profile, "Set out of
- * office..." / "I'm back" and Keyboard shortcuts. While the person is out of office a label says so next to the name. Enter, Space
+ * The user area of the header, as an accessible menu button (ARIA menu button pattern): the name opens My Profile, "Set Out of
+ * Office" / "I'm Back" and Keyboard Shortcuts. While the person is out of office a label says so next to the name. Enter, Space
  * or Arrow Down opens; arrows, Home and End move; Esc closes and returns focus to the button; Tab closes.
  */
 @Component({
@@ -77,7 +77,7 @@ let nextId = 0;
       <i class="pi pi-chevron-down um-chevron" aria-hidden="true"></i>
     </button>
     @if (open()) {
-      <div class="um-pop">
+      <div class="um-pop mf-menu">
         <div class="um-id" [id]="uid + '-id'" data-menu-identity>
           <span class="um-id__name" [attr.title]="auth.displayName()">{{
             auth.displayName()
@@ -100,13 +100,13 @@ let nextId = 0;
         >
           @for (item of items(); track item.id) {
             @if (item.id === 'shortcuts' && items().length > 1) {
-              <div class="um-sep" role="separator"></div>
+              <div class="mf-menu__sep" role="separator"></div>
             }
             <button
               #entry
               type="button"
               role="menuitem"
-              class="um-item"
+              class="um-item mf-menu__item"
               tabindex="-1"
               [attr.data-menu-item]="item.id"
               (click)="choose(item)"
@@ -155,14 +155,14 @@ export class UserMenu {
   protected readonly items = computed<Item[]>(() => {
     const list: Item[] = [];
     if (this.hasProfile()) {
-      list.push({ id: 'profile', label: 'My profile', icon: 'pi-user-edit' });
+      list.push({ id: 'profile', label: 'My Profile', icon: 'pi-user-edit' });
       list.push(
         this.mine.isOut()
-          ? { id: 'back', label: "I'm back", icon: 'pi-check-circle' }
-          : { id: 'out', label: 'Set out of office...', icon: 'pi-calendar-minus' },
+          ? { id: 'back', label: "I'm Back", icon: 'pi-check-circle' }
+          : { id: 'out', label: 'Set Out of Office', icon: 'pi-calendar-minus' },
       );
     }
-    list.push({ id: 'shortcuts', label: 'Keyboard shortcuts', icon: 'pi-question-circle' });
+    list.push({ id: 'shortcuts', label: 'Keyboard Shortcuts', icon: 'pi-question-circle' });
     return list;
   });
 

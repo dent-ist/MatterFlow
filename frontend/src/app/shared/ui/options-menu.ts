@@ -65,35 +65,29 @@ import {
       font-size: var(--mf-fs-xs);
       font-weight: 700;
     }
+    /* The surface is the shared menu (mf-menu, D-36); only where it opens and how its controls are laid out are here. */
     .om__panel {
       position: absolute;
       z-index: 30;
       top: calc(100% + 2px);
       right: 0;
+      width: max-content;
+    }
+    .om__body {
       display: grid;
       gap: var(--mf-s2);
-      min-width: 12rem;
-      width: max-content;
-      max-width: min(24rem, 90vw);
-      box-sizing: border-box;
-      padding: var(--mf-s2);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-pop);
     }
     /* A menu that opens under a control at the left of a bar (the Data Area's selection bar) grows to the right, so it never leaves the screen. */
     .om--start .om__panel {
       right: auto;
       left: 0;
     }
-    /* A menu that holds whole controls (the phone's header menu): as wide as the screen allows, so a full-width switch fits. */
+    /* A menu that holds whole controls (the phone's header menu): as wide as the menu allows, so a full-width switch fits. */
     .om--wide .om__panel {
+      width: min(360px, calc(100vw - 2rem));
+    }
+    .om--wide .om__body {
       grid-template-columns: minmax(0, 1fr);
-      width: min(24rem, calc(100vw - 2rem));
-      max-width: none;
-      max-height: calc(100dvh - 8rem);
-      overflow-y: auto;
     }
     @media (max-width: 639.98px) {
       .om__summary {
@@ -123,8 +117,8 @@ import {
           <span class="om__n" aria-hidden="true" data-options-count>{{ active() }}</span>
         }
       </summary>
-      <div class="om__panel" role="group" [attr.aria-label]="label() + ' options'">
-        <ng-content />
+      <div class="om__panel mf-menu" role="group" [attr.aria-label]="label() + ' options'">
+        <div class="om__body mf-menu__body"><ng-content /></div>
       </div>
     </details>
   `,

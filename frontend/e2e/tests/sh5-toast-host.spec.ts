@@ -32,7 +32,7 @@ async function openOutOfOfficeDialog(page: Page): Promise<Locator> {
   await page.getByRole('button', { name: /account menu/ }).click();
   await page
     .getByRole('menu', { name: 'Your account' })
-    .getByRole('menuitem', { name: 'Set out of office...' })
+    .getByRole('menuitem', { name: 'Set Out of Office' })
     .click();
   return page.getByRole('dialog', { name: 'Set out of office' });
 }

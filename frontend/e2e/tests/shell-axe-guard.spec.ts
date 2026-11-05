@@ -105,7 +105,7 @@ for (const size of SIZES) {
       await page.getByTestId('user-menu').click();
       await expect(page.getByRole('menu', { name: 'Your account' })).toBeVisible();
       await guard(page, `user menu at ${size.name}`);
-      await page.getByRole('menuitem', { name: /Set out of office/ }).click();
+      await page.getByRole('menuitem', { name: /Set Out of Office/ }).click();
       await expect(page.getByRole('dialog')).toBeVisible();
       await guard(page, `out of office dialog at ${size.name}`);
       await page.keyboard.press('Escape');

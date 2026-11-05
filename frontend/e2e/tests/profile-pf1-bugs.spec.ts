@@ -18,7 +18,7 @@ async function openMenu(page: Page) {
 /** Name menu > Set out of office... > Set out of office (no date, no note). */
 async function setOutFromMenu(page: Page): Promise<void> {
   const menu = await openMenu(page);
-  await menu.getByRole('menuitem', { name: 'Set out of office...' }).click();
+  await menu.getByRole('menuitem', { name: 'Set Out of Office' }).click();
   const dialog = page.getByRole('dialog', { name: 'Set out of office' });
   await dialog.getByRole('button', { name: 'Set out of office' }).click();
   await expect(dialog).toHaveCount(0);

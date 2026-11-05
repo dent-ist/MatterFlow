@@ -115,7 +115,7 @@ const ALL_ROLES = '';
             data-add-absence
             (click)="openAdd()"
           >
-            <i class="pi pi-plus" aria-hidden="true"></i> Add out of office
+            <i class="pi pi-plus" aria-hidden="true"></i> Add Out of Office
           </button>
         }
       </div>

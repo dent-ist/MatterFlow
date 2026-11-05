@@ -29,12 +29,12 @@ import {
 
 /** Below this width (px) the panel is a full-width sheet under the header (README 4.3). */
 const PHONE_MAX = 639;
-const PANEL_WIDTH = 380;
+const PANEL_WIDTH = 360;
 const GAP = 4;
 
 /**
- * The notification panel (NT-D2, #746): a non-modal dialog under the bell with the ten newest items, "Mark all as read" and "View all
- * notifications". From 640 px a 380 px popover anchored to the bell, below that a full-width sheet under the header with a Close button.
+ * The notification panel (NT-D2, #746): a non-modal dialog under the bell with the ten newest items, "Mark all as read" and "View All
+ * Notifications". From 640 px a 360 px popover (the shared menu surface, D-36, #1143) anchored to the bell, below that a full-width sheet under the header with a Close button.
  * Opening moves focus to the heading; Esc and Close give it back to the bell (the bell does that when this component says `closed`).
  * The message is the server's text, unchanged. Errors show inline with Retry, never as a toast.
  */
@@ -51,7 +51,7 @@ const GAP = 4;
     '[style.right.px]': 'sheet() ? 0 : right()',
   },
   template: `
-    <section class="np" role="dialog" aria-labelledby="np-title" data-notification-panel>
+    <section class="np mf-menu" role="dialog" aria-labelledby="np-title" data-notification-panel>
       <div class="np__head">
         <h2 id="np-title" #title class="np__title" tabindex="-1">Notifications</h2>
         @if (sheet()) {
@@ -83,6 +83,7 @@ const GAP = 4;
           @case ('ready') {
             @if (store.recent().length === 0) {
               <p class="np__empty" data-panel-empty>
+                <i class="pi pi-bell np__empty-icon" aria-hidden="true"></i>
                 <strong>You're all caught up.</strong>
                 <span class="np__muted">New notifications appear here.</span>
               </p>
@@ -160,7 +161,7 @@ const GAP = 4;
       </div>
       <div class="np__foot">
         <a class="np__viewall" data-view-all routerLink="/notifications" (click)="later()"
-          >View all notifications</a
+          >View All Notifications</a
         >
       </div>
     </section>
@@ -177,19 +178,16 @@ const GAP = 4;
       bottom: 0;
       width: auto;
     }
+    /* The surface is the shared menu (mf-menu: radius 8, soft border, pop shadow, padding 4, 200 to 360 wide, 70% of the window high); the list scrolls inside it. */
     .np {
       display: flex;
       flex-direction: column;
-      box-sizing: border-box;
-      max-height: min(32rem, calc(100vh - 6rem));
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      box-shadow: var(--mf-shadow-2);
+      width: 100%;
+      overflow: hidden;
     }
     :host(.np-sheet) .np {
       height: 100%;
+      max-width: none;
       max-height: none;
       border-width: 1px 0 0;
       border-radius: 0;
@@ -200,13 +198,13 @@ const GAP = 4;
       align-items: center;
       gap: var(--mf-s1) var(--mf-s3);
       padding: var(--mf-s2) var(--mf-s3);
-      border-bottom: 1px solid var(--mf-border);
+      border-bottom: 1px solid var(--mf-border-soft);
     }
     .np__title {
       flex: 1 1 auto;
       margin: 0;
-      font-size: var(--mf-fs-md);
-      font-weight: 700;
+      font-size: var(--mf-fs-lg);
+      font-weight: 600;
     }
     .np__title:focus-visible {
       outline-offset: 2px;
@@ -223,20 +221,24 @@ const GAP = 4;
       list-style: none;
     }
     .np__list li + li {
-      border-top: 1px solid var(--mf-border);
+      border-top: 1px solid var(--mf-border-soft);
     }
     .np__item {
       display: flex;
       gap: var(--mf-s2);
       align-items: flex-start;
       box-sizing: border-box;
-      min-height: 44px;
+      min-height: var(--mf-row-h);
       padding: var(--mf-s2) var(--mf-s3);
+      border-radius: var(--mf-radius);
       color: var(--mf-text);
       text-decoration: none;
     }
     .np__item:hover {
-      background: var(--mf-surface-alt);
+      background: var(--mf-row-hover);
+    }
+    .np__item:focus-visible {
+      outline-offset: calc(-1 * var(--mf-focus-width));
     }
     .np__item--unread .np__message {
       font-weight: 700;
@@ -278,16 +280,20 @@ const GAP = 4;
       margin: 0;
       padding: var(--mf-s4) var(--mf-s3);
     }
+    .np__empty-icon {
+      color: var(--mf-text-muted);
+      font-size: var(--mf-icon-lg);
+    }
     .np__muted {
       color: var(--mf-text-muted);
     }
     .np__foot {
-      border-top: 1px solid var(--mf-border);
+      border-top: 1px solid var(--mf-border-soft);
     }
     .np__viewall {
       display: flex;
       align-items: center;
-      min-height: 44px;
+      min-height: var(--mf-row-h);
       padding: 0 var(--mf-s3);
       color: var(--mf-link);
     }

@@ -1,0 +1,93 @@
+/*
+ * One menu and popover anatomy (D-36; #1143). Used by the shared menus: `mf-action-menu` (row and "..." menus, the Export menu), the user menu, the notification panel,
+ * `mf-options-menu`, `mf-views-menu`, the filter popover and the quick-views "More" menu. A menu component puts `mf-menu` on its surface and `mf-menu__item` on each entry;
+ * it keeps only its own position (where it opens) in its stylesheet.
+ *
+ *   surface  radius 8 (`--mf-radius-lg`), 1 px `--mf-border-soft`, `--mf-shadow-pop`, padding 4, width 200 to 360 px (`mf-menu--filter` 320), scrolls inside above 70% of the window
+ *   item     36 px (`--mf-row-h`), 14 px text, icon `--mf-icon-md` + 8 px gap, hover `--mf-row-hover`, inset focus ring, danger `--mf-danger`
+ *   divider  `mf-menu__sep`, 1 px `--mf-border-soft`
+ *   body     `mf-menu__body`: a popover that holds whole controls (options, saved views, filters) keeps its fields 8 px from the edge inside the 4 px surface
+ */
+.mf-menu {
+  box-sizing: border-box;
+  min-width: 200px;
+  max-width: min(360px, calc(100vw - 2 * var(--mf-s4)));
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: var(--mf-s1);
+  border: 1px solid var(--mf-border-soft);
+  border-radius: var(--mf-radius-lg);
+  background: var(--mf-surface);
+  color: var(--mf-text);
+  box-shadow: var(--mf-shadow-pop);
+  font-size: var(--mf-fs-md);
+  font-weight: 400;
+  text-align: left;
+}
+
+.mf-menu--filter {
+  width: 320px;
+  max-width: calc(100vw - 2 * var(--mf-s2));
+}
+
+.mf-menu__body {
+  padding: var(--mf-s2);
+}
+
+.mf-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s2);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--mf-row-h);
+  padding: 0 var(--mf-s3);
+  border: 0;
+  border-radius: var(--mf-radius);
+  background: transparent;
+  color: var(--mf-text);
+  font: inherit;
+  font-size: var(--mf-fs-md);
+  line-height: 1.3;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--mf-row-hover);
+  }
+
+  &:focus-visible {
+    outline: var(--mf-focus-width) solid var(--mf-focus);
+    outline-offset: calc(-1 * var(--mf-focus-width));
+    background: var(--mf-row-hover);
+  }
+
+  &[aria-disabled='true'],
+  &:disabled {
+    cursor: not-allowed;
+  }
+
+  &:disabled {
+    color: var(--mf-text-muted);
+  }
+
+  .pi {
+    flex: none;
+    width: var(--mf-icon-md);
+    color: var(--mf-text-muted);
+    font-size: var(--mf-icon-md);
+  }
+}
+
+.mf-menu__item--danger,
+.mf-menu__item--danger .pi {
+  color: var(--mf-danger);
+}
+
+.mf-menu__sep {
+  height: 0;
+  margin: var(--mf-s1) 0;
+  border: 0;
+  border-top: 1px solid var(--mf-border-soft);
+}

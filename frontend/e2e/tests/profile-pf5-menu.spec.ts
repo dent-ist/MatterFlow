@@ -33,9 +33,9 @@ test.describe('pf5-menu-identity: the account menu starts with who and how (#580
     await expect(row.locator('button, a, [tabindex]')).toHaveCount(0);
     const menu = me.getByRole('menu', { name: 'Your account' });
     await expect(menu.getByRole('menuitem')).toHaveText([
-      /My profile/,
-      /Set out of office/,
-      /Keyboard shortcuts/,
+      /My Profile/,
+      /Set Out of Office/,
+      /Keyboard Shortcuts/,
     ]);
     await expect(menu.getByRole('separator')).toHaveCount(1);
     await expect(menu).toHaveAccessibleDescription(/Pat Example/);
@@ -55,7 +55,7 @@ test.describe('pf5-menu-identity: the account menu starts with who and how (#580
     const me = await asUser(p.username);
     await me.goto('/my-work');
     await menuButton(me).click();
-    await me.getByRole('menuitem', { name: 'Set out of office...' }).click();
+    await me.getByRole('menuitem', { name: 'Set Out of Office' }).click();
     const dialog = me.getByRole('dialog', { name: 'Set out of office' });
     await dialog.getByRole('button', { name: 'Until Monday' }).click();
     await dialog.getByRole('button', { name: 'Set out of office' }).click();
@@ -65,9 +65,9 @@ test.describe('pf5-menu-identity: the account menu starts with who and how (#580
       'Out of office until',
     );
     await expect(me.getByRole('menuitem')).toHaveText([
-      /My profile/,
-      /I'm back/,
-      /Keyboard shortcuts/,
+      /My Profile/,
+      /I'm Back/,
+      /Keyboard Shortcuts/,
     ]);
   });
 
@@ -81,7 +81,7 @@ test.describe('pf5-menu-identity: the account menu starts with who and how (#580
     await menuButton(me).click();
     await expect(me.locator('[data-menu-identity] .um-id__name')).toBeVisible();
     await expect(me.locator('[data-menu-identity] [data-availability-chip]')).toHaveCount(0);
-    await expect(me.getByRole('menuitem')).toHaveText([/Keyboard shortcuts/]);
+    await expect(me.getByRole('menuitem')).toHaveText([/Keyboard Shortcuts/]);
   });
 
   test('a 66-character name is cut with an ellipsis in the row (full name as tooltip); axe and no scroll with the menu open at four sizes', async ({
@@ -120,7 +120,7 @@ test.describe('pf5-phone-dot: the out-of-office dot on the phone icon (#578)', (
     await expect(menuButton(me)).toBeVisible();
     await expect(me.locator('[data-ooo-dot]')).toHaveCount(0);
     await menuButton(me).click();
-    await me.getByRole('menuitem', { name: 'Set out of office...' }).click();
+    await me.getByRole('menuitem', { name: 'Set Out of Office' }).click();
     const dialog = me.getByRole('dialog', { name: 'Set out of office' });
     await dialog.getByRole('button', { name: 'Rest of today' }).click();
     await dialog.getByRole('button', { name: 'Set out of office' }).click();

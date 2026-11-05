@@ -38,19 +38,13 @@ import {
       position: relative;
       display: inline-block;
     }
+    /* The surface is the shared menu (mf-menu, D-36); only where it opens is here. */
     .gc-panel {
       position: absolute;
       z-index: 20;
       top: calc(100% + 4px);
       right: 0;
-      min-width: 17rem;
-      max-height: min(70vh, 28rem);
-      overflow-y: auto;
-      padding: var(--mf-s2) var(--mf-s3);
-      background: var(--mf-surface);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      box-shadow: var(--mf-shadow-2);
+      width: max-content;
     }
     .gc-title {
       margin: 0 0 var(--mf-s1);
@@ -66,7 +60,7 @@ import {
       display: flex;
       align-items: center;
       gap: var(--mf-s2);
-      min-height: 32px;
+      min-height: var(--mf-row-h);
     }
     .gc-label {
       display: flex;
@@ -98,7 +92,7 @@ import {
     </button>
     @if (open()) {
       <div
-        class="gc-panel"
+        class="gc-panel mf-menu"
         role="group"
         aria-label="Columns"
         data-grid-columns-panel
@@ -106,51 +100,53 @@ import {
         [mfDismissable]="btn"
         (dismissed)="open.set(false)"
       >
-        <p class="gc-title">Show, hide and order the columns</p>
-        <ul class="gc-list">
-          @for (c of rows(); track c.def.key) {
-            <li class="gc-row" [attr.data-row]="c.def.key">
-              <label class="gc-label">
-                <input
-                  type="checkbox"
-                  [attr.data-column]="c.def.key"
-                  [checked]="c.shown"
-                  [disabled]="c.def.locked"
-                  (change)="toggle(c.def.key, $any($event.target).checked)"
-                />
-                {{ c.def.label }}
-              </label>
-              @if (c.shown && !c.def.pinned) {
-                <button
-                  type="button"
-                  class="mf-btn mf-btn--icon"
-                  [attr.data-move]="c.def.key + ':left'"
-                  [attr.aria-label]="'Move ' + c.def.label + ' left'"
-                  [attr.aria-disabled]="c.canLeft ? null : 'true'"
-                  (click)="move(c.def.key, -1)"
-                >
-                  <i class="pi pi-arrow-left" aria-hidden="true"></i>
-                </button>
-                <button
-                  type="button"
-                  class="mf-btn mf-btn--icon"
-                  [attr.data-move]="c.def.key + ':right'"
-                  [attr.aria-label]="'Move ' + c.def.label + ' right'"
-                  [attr.aria-disabled]="c.canRight ? null : 'true'"
-                  (click)="move(c.def.key, 1)"
-                >
-                  <i class="pi pi-arrow-right" aria-hidden="true"></i>
-                </button>
-              }
-            </li>
-          }
-        </ul>
-        <div class="gc-foot">
-          <button type="button" class="mf-btn" data-grid-columns-reset (click)="resetAll()">
-            Reset to default
-          </button>
+        <div class="mf-menu__body">
+          <p class="gc-title">Show, hide and order the columns</p>
+          <ul class="gc-list">
+            @for (c of rows(); track c.def.key) {
+              <li class="gc-row" [attr.data-row]="c.def.key">
+                <label class="gc-label">
+                  <input
+                    type="checkbox"
+                    [attr.data-column]="c.def.key"
+                    [checked]="c.shown"
+                    [disabled]="c.def.locked"
+                    (change)="toggle(c.def.key, $any($event.target).checked)"
+                  />
+                  {{ c.def.label }}
+                </label>
+                @if (c.shown && !c.def.pinned) {
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--icon"
+                    [attr.data-move]="c.def.key + ':left'"
+                    [attr.aria-label]="'Move ' + c.def.label + ' left'"
+                    [attr.aria-disabled]="c.canLeft ? null : 'true'"
+                    (click)="move(c.def.key, -1)"
+                  >
+                    <i class="pi pi-arrow-left" aria-hidden="true"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--icon"
+                    [attr.data-move]="c.def.key + ':right'"
+                    [attr.aria-label]="'Move ' + c.def.label + ' right'"
+                    [attr.aria-disabled]="c.canRight ? null : 'true'"
+                    (click)="move(c.def.key, 1)"
+                  >
+                    <i class="pi pi-arrow-right" aria-hidden="true"></i>
+                  </button>
+                }
+              </li>
+            }
+          </ul>
+          <div class="gc-foot">
+            <button type="button" class="mf-btn" data-grid-columns-reset (click)="resetAll()">
+              Reset to default
+            </button>
+          </div>
+          <span class="mf-sr-only" role="status" data-grid-columns-status>{{ status() }}</span>
         </div>
-        <span class="mf-sr-only" role="status" data-grid-columns-status>{{ status() }}</span>
       </div>
     }
   `,

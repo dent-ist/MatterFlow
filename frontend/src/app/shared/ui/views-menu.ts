@@ -51,18 +51,13 @@ function reasonOf(error: unknown): string {
     .vm__summary::-webkit-details-marker {
       display: none;
     }
+    /* The surface is the shared menu (mf-menu, D-36); only where it opens is here. */
     .vm__panel {
       position: absolute;
       z-index: 30;
       top: calc(100% + 2px);
       right: 0;
-      width: min(26rem, 90vw);
-      box-sizing: border-box;
-      padding: var(--mf-s3);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-pop);
+      width: 360px;
     }
     .vm__hint {
       margin: 0 0 var(--mf-s2);
@@ -154,143 +149,149 @@ function reasonOf(error: unknown): string {
           <span class="mf-sr-only">, {{ views().length }} saved</span>
         }
       </summary>
-      <div class="vm__panel" role="group" aria-label="Saved views">
-        <p class="vm__hint">
-          A view keeps this list's filters and sort under a name. Only you can see your views.
-        </p>
-        @if (state() === 'loading') {
-          <p class="vm__hint" role="status">Loading your views.</p>
-        } @else if (state() === 'error') {
-          <p class="vm__error" role="alert" data-views-error>
-            Couldn't load your views.
-            <button type="button" class="mf-btn mf-btn--text" (click)="load()">Retry</button>
+      <div class="vm__panel mf-menu" role="group" aria-label="Saved views">
+        <div class="mf-menu__body">
+          <p class="vm__hint">
+            A view keeps this list's filters and sort under a name. Only you can see your views.
           </p>
-        } @else if (views().length === 0) {
-          <p class="vm__hint" data-views-empty>No saved views yet.</p>
-        } @else {
-          <ul class="vm__list" data-views-list>
-            @for (v of views(); track v.id) {
-              <li class="vm__row" data-view-row [attr.data-view-name]="v.name">
-                @if (renaming()?.id === v.id) {
-                  <span class="vm__inline">
-                    <label class="mf-sr-only" [for]="'vm-rename-' + v.id"
-                      >New name for {{ v.name }}</label
-                    >
-                    <input
-                      type="text"
-                      maxlength="80"
-                      [id]="'vm-rename-' + v.id"
-                      [value]="draft()"
-                      (input)="draft.set($any($event.target).value)"
-                      (keydown.enter)="commitRename(v)"
-                      data-view-rename-input
-                    />
-                    <button
-                      type="button"
-                      class="mf-btn mf-btn--primary"
-                      data-view-rename-save
-                      (click)="commitRename(v)"
-                    >
-                      Rename
+          @if (state() === 'loading') {
+            <p class="vm__hint" role="status">Loading your views.</p>
+          } @else if (state() === 'error') {
+            <p class="vm__error" role="alert" data-views-error>
+              Couldn't load your views.
+              <button type="button" class="mf-btn mf-btn--text" (click)="load()">Retry</button>
+            </p>
+          } @else if (views().length === 0) {
+            <p class="vm__hint" data-views-empty>No saved views yet.</p>
+          } @else {
+            <ul class="vm__list" data-views-list>
+              @for (v of views(); track v.id) {
+                <li class="vm__row" data-view-row [attr.data-view-name]="v.name">
+                  @if (renaming()?.id === v.id) {
+                    <span class="vm__inline">
+                      <label class="mf-sr-only" [for]="'vm-rename-' + v.id"
+                        >New name for {{ v.name }}</label
+                      >
+                      <input
+                        type="text"
+                        maxlength="80"
+                        [id]="'vm-rename-' + v.id"
+                        [value]="draft()"
+                        (input)="draft.set($any($event.target).value)"
+                        (keydown.enter)="commitRename(v)"
+                        data-view-rename-input
+                      />
+                      <button
+                        type="button"
+                        class="mf-btn mf-btn--primary"
+                        data-view-rename-save
+                        (click)="commitRename(v)"
+                      >
+                        Rename
+                      </button>
+                      <button type="button" class="mf-btn" (click)="renaming.set(null)">
+                        Cancel
+                      </button>
+                    </span>
+                  } @else if (deleting()?.id === v.id) {
+                    <span class="vm__inline" role="alert">
+                      Delete "{{ v.name }}"?
+                      <button
+                        type="button"
+                        class="mf-btn mf-btn--primary"
+                        data-view-delete-confirm
+                        (click)="commitDelete(v)"
+                      >
+                        Delete
+                      </button>
+                      <button type="button" class="mf-btn" (click)="deleting.set(null)">
+                        Keep
+                      </button>
+                    </span>
+                  } @else {
+                    <button type="button" class="vm__apply" data-view-apply (click)="applyView(v)">
+                      {{ v.name }}
                     </button>
-                    <button type="button" class="mf-btn" (click)="renaming.set(null)">
-                      Cancel
-                    </button>
-                  </span>
-                } @else if (deleting()?.id === v.id) {
-                  <span class="vm__inline" role="alert">
-                    Delete "{{ v.name }}"?
-                    <button
-                      type="button"
-                      class="mf-btn mf-btn--primary"
-                      data-view-delete-confirm
-                      (click)="commitDelete(v)"
-                    >
-                      Delete
-                    </button>
-                    <button type="button" class="mf-btn" (click)="deleting.set(null)">Keep</button>
-                  </span>
-                } @else {
-                  <button type="button" class="vm__apply" data-view-apply (click)="applyView(v)">
-                    {{ v.name }}
-                  </button>
-                  @if (v.isDefault && defaults()) {
-                    <span class="vm__tag" data-view-default>Default</span>
-                  }
-                  @if (defaults()) {
+                    @if (v.isDefault && defaults()) {
+                      <span class="vm__tag" data-view-default>Default</span>
+                    }
+                    @if (defaults()) {
+                      <button
+                        type="button"
+                        class="vm__icon"
+                        data-view-default-toggle
+                        [attr.aria-label]="
+                          v.isDefault
+                            ? 'Stop opening this list on ' + v.name
+                            : 'Open this list on ' + v.name
+                        "
+                        [attr.title]="
+                          v.isDefault ? 'Stop opening on this view' : 'Open on this view'
+                        "
+                        (click)="toggleDefault(v)"
+                      >
+                        <i
+                          [class]="v.isDefault ? 'pi pi-star-fill' : 'pi pi-star'"
+                          aria-hidden="true"
+                        ></i>
+                      </button>
+                    }
                     <button
                       type="button"
                       class="vm__icon"
-                      data-view-default-toggle
-                      [attr.aria-label]="
-                        v.isDefault
-                          ? 'Stop opening this list on ' + v.name
-                          : 'Open this list on ' + v.name
-                      "
-                      [attr.title]="v.isDefault ? 'Stop opening on this view' : 'Open on this view'"
-                      (click)="toggleDefault(v)"
+                      data-view-rename
+                      [attr.aria-label]="'Rename ' + v.name"
+                      title="Rename"
+                      (click)="startRename(v)"
                     >
-                      <i
-                        [class]="v.isDefault ? 'pi pi-star-fill' : 'pi pi-star'"
-                        aria-hidden="true"
-                      ></i>
+                      <i class="pi pi-pencil" aria-hidden="true"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="vm__icon"
+                      data-view-delete
+                      [attr.aria-label]="'Delete ' + v.name"
+                      title="Delete"
+                      (click)="deleting.set(v)"
+                    >
+                      <i class="pi pi-trash" aria-hidden="true"></i>
                     </button>
                   }
-                  <button
-                    type="button"
-                    class="vm__icon"
-                    data-view-rename
-                    [attr.aria-label]="'Rename ' + v.name"
-                    title="Rename"
-                    (click)="startRename(v)"
-                  >
-                    <i class="pi pi-pencil" aria-hidden="true"></i>
-                  </button>
-                  <button
-                    type="button"
-                    class="vm__icon"
-                    data-view-delete
-                    [attr.aria-label]="'Delete ' + v.name"
-                    title="Delete"
-                    (click)="deleting.set(v)"
-                  >
-                    <i class="pi pi-trash" aria-hidden="true"></i>
-                  </button>
-                }
-              </li>
-            }
-          </ul>
-        }
-        <div class="vm__form">
-          <label for="vm-new-name">Save the current view as</label>
-          <span class="vm__inline">
-            <input
-              id="vm-new-name"
-              type="text"
-              maxlength="80"
-              placeholder="Name"
-              [value]="newName()"
-              (input)="newName.set($any($event.target).value)"
-              (keydown.enter)="create()"
-              data-view-name-input
-            />
-            <button
-              type="button"
-              class="mf-btn mf-btn--primary"
-              data-view-save
-              [disabled]="busy()"
-              (click)="create()"
-            >
-              Save
-            </button>
-          </span>
-          @if (error(); as e) {
-            <p class="vm__error" role="alert" data-view-form-error>{{ e }}</p>
+                </li>
+              }
+            </ul>
           }
+          <div class="vm__form">
+            <label for="vm-new-name">Save the current view as</label>
+            <span class="vm__inline">
+              <input
+                id="vm-new-name"
+                type="text"
+                maxlength="80"
+                placeholder="Name"
+                [value]="newName()"
+                (input)="newName.set($any($event.target).value)"
+                (keydown.enter)="create()"
+                data-view-name-input
+              />
+              <button
+                type="button"
+                class="mf-btn mf-btn--primary"
+                data-view-save
+                [disabled]="busy()"
+                (click)="create()"
+              >
+                Save
+              </button>
+            </span>
+            @if (error(); as e) {
+              <p class="vm__error" role="alert" data-view-form-error>{{ e }}</p>
+            }
+          </div>
+          <span class="mf-sr-only" role="status" aria-live="polite" data-views-status>{{
+            message()
+          }}</span>
         </div>
-        <span class="mf-sr-only" role="status" aria-live="polite" data-views-status>{{
-          message()
-        }}</span>
       </div>
     </details>
   `,

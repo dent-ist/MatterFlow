@@ -88,18 +88,13 @@
   box-sizing: content-box;
 }
 
+/* The surface is the shared menu (`mf-menu`, D-36); only the place it opens is here. */
 .um-pop {
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
   z-index: 1100;
   display: grid;
-  min-width: 15rem;
-  max-width: min(22rem, calc(100vw - 2rem));
-  border: 1px solid var(--mf-border-strong);
-  border-radius: var(--mf-radius);
-  background: var(--mf-surface);
-  box-shadow: var(--mf-shadow-2);
 }
 
 /* The identity row (#580): text, not a menu item; arrows and Tab skip it. */
@@ -107,8 +102,9 @@
   display: grid;
   gap: var(--mf-s1);
   justify-items: start;
+  margin-bottom: var(--mf-s1);
   padding: var(--mf-s3);
-  border-bottom: 1px solid var(--mf-border);
+  border-bottom: 1px solid var(--mf-border-soft);
 }
 
 .um-id__name {
@@ -131,38 +127,6 @@
 
 .um-menu {
   display: grid;
-  padding: var(--mf-s1);
-}
-
-.um-sep {
-  height: 1px;
-  margin: var(--mf-s1) 0;
-  background: var(--mf-border);
-}
-
-.um-item {
-  display: flex;
-  align-items: center;
-  gap: var(--mf-s3);
-  min-height: var(--mf-row-h);
-  padding: 0 var(--mf-s3);
-  border: 0;
-  border-radius: var(--mf-radius);
-  background: transparent;
-  color: var(--mf-text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-
-  &:hover,
-  &:focus-visible {
-    background: var(--mf-surface-alt);
-  }
-
-  .pi {
-    color: var(--mf-text-muted);
-    width: 1rem;
-  }
 }
 
 /* Phones: the menu button shows only the person icon (the name and the label stay for screen readers). */

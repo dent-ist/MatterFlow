@@ -288,7 +288,7 @@ test.describe('Keyboard and focus (#632)', () => {
 
     await page.goto('/my-work');
     await user.click();
-    await page.getByRole('menuitem', { name: /Set out of office/ }).click();
+    await page.getByRole('menuitem', { name: /Set Out of Office/ }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toHaveCount(0);

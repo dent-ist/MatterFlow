@@ -25,6 +25,8 @@ let nextId = 0;
   selector: 'mf-filter-popover',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
+    class: 'mf-menu',
+    '[class.mf-menu--filter]': '!menu()',
     role: 'dialog',
     '[attr.aria-label]': 'label()',
     '[id]': 'panelId',
@@ -33,23 +35,12 @@ let nextId = 0;
     '[style.max-height.px]': 'maxHeight()',
     '(click)': '$event.stopPropagation()',
   },
-  template: `<ng-content />`,
+  template: `<div [class.mf-menu__body]="!menu()"><ng-content /></div>`,
   styles: `
+    /* The surface is the shared menu (mf-menu mf-menu--filter, D-36: 320 wide, scrolls inside above 70% of the window); only the fixed position is here. */
     :host {
       position: fixed;
       z-index: 1100;
-      box-sizing: border-box;
-      min-width: 14rem;
-      max-width: min(22rem, calc(100vw - 16px));
-      overflow-y: auto;
-      padding: var(--mf-s2);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      box-shadow: var(--mf-shadow-1);
-      font-weight: 400;
-      text-align: left;
     }
   `,
 })
@@ -58,6 +49,8 @@ export class FilterPopover {
   readonly anchor = input.required<HTMLElement>();
   /** Accessible name: "Filter by Status". */
   readonly label = input.required<string>();
+  /** A menu of items (the "More views" list) instead of a panel of fields: the items sit in the 4 px surface and the width follows the entries (200 to 360 px). */
+  readonly menu = input(false);
   /** Asks the owner to close (Esc, outside click, scroll). */
   readonly closed = output<void>();
 
@@ -104,7 +97,7 @@ export class FilterPopover {
     const panel = this.el.nativeElement;
     const gap = 4;
     const margin = 8;
-    const wanted = Math.min(panel.scrollHeight + 2, 420);
+    const wanted = Math.min(panel.scrollHeight + 2, Math.round(window.innerHeight * 0.7));
     const below = window.innerHeight - rect.bottom - gap - margin;
     const above = rect.top - gap - margin;
     const flip = below < wanted && above > below;
@@ -112,7 +105,7 @@ export class FilterPopover {
     const height = Math.max(120, Math.min(wanted, room));
     this.maxHeight.set(height);
     this.top.set(flip ? rect.top - gap - height : rect.bottom + gap);
-    const width = panel.offsetWidth || 256;
+    const width = panel.offsetWidth || 320;
     this.left.set(Math.max(margin, Math.min(rect.left, window.innerWidth - width - margin)));
   }
 }

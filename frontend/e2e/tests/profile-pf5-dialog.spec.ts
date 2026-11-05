@@ -37,7 +37,7 @@ async function openDialog(page: Page) {
   await page.getByRole('button', { name: /account menu/ }).click();
   await page
     .getByRole('menu', { name: 'Your account' })
-    .getByRole('menuitem', { name: 'Set out of office...' })
+    .getByRole('menuitem', { name: 'Set Out of Office' })
     .click();
   const dialog = page.getByRole('dialog', { name: 'Set out of office' });
   await expect(dialog).toBeVisible();
@@ -120,7 +120,7 @@ test.describe('pf5-dialog-focus: heading focus and the link to My profile (#539)
     const button = me.getByRole('button', { name: /account menu/ });
     await button.focus();
     await me.keyboard.press('Enter');
-    await me.getByRole('menuitem', { name: 'Set out of office...' }).press('Enter');
+    await me.getByRole('menuitem', { name: 'Set Out of Office' }).press('Enter');
     const dialog = me.getByRole('dialog', { name: 'Set out of office' });
     await expect(dialog).toBeVisible();
     // The shared form dialog puts focus on its first field (the Type list), never on the date field.

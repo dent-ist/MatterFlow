@@ -52,12 +52,12 @@ const CONFIRMS = [
 const MENUS = [
   { id: '1143-user-menu', persona: 'director', route: '/my-work', open: userMenu, sel: '.um-pop' },
   { id: '1143-bell-panel', persona: 'director', route: '/my-work', open: async (p) => { await p.getByRole('button', { name: /Notifications/i }).first().click(); }, sel: '.np' },
-  { id: '1143-row-menu', persona: 'admin', route: '/tasks', open: async (p) => { await p.getByRole('button', { name: /actions|more/i }).first().click(); }, sel: '.am__menu' },
+  { id: '1143-row-menu', persona: 'admin', route: '/matters', open: async (p) => { await p.locator('tbody [data-overflow]').first().click(); }, sel: '.am__menu' },
   { id: '1143-header-menu', persona: 'admin', route: '/matters/1', open: async (p) => { await p.getByRole('button', { name: 'More actions' }).first().click(); }, sel: '.am__menu' },
-  { id: '1143-more-views', persona: 'admin', route: '/tasks', open: async (p) => { await p.getByRole('button', { name: /^More/ }).first().click(); }, sel: '[role=menu], .qv__more, .qv-pop' },
-  { id: '1143-options-menu', persona: 'admin', route: '/matters', open: async (p) => { await p.locator('[data-options-trigger]').first().click(); }, sel: '.om__panel' },
-  { id: '1143-columns-menu', persona: 'admin', route: '/matters', open: async (p) => { await p.getByRole('button', { name: /^Columns/ }).first().click(); }, sel: '[role=dialog], .gc__panel, .cm__panel' },
-  { id: '1143-filter-popover', persona: 'admin', route: '/tasks', open: async (p) => { await p.getByRole('button', { name: /^Filters/ }).first().click(); await wait(p, 500); }, sel: 'mf-filter-popover, [role=dialog]' },
+  { id: '1143-more-views', persona: 'admin', route: '/tasks', open: async (p) => { await p.locator('[data-more-views]').first().click(); await wait(p, 500); }, sel: 'mf-filter-popover' },
+  { id: '1143-options-menu', persona: 'admin', route: '/tasks', open: async (p) => { await p.locator('[data-options-trigger]').first().click(); }, sel: '.om__panel' },
+  { id: '1143-columns-menu', persona: 'admin', route: '/matters', open: async (p) => { await p.locator('[data-grid-columns]').first().click(); }, sel: '[data-grid-columns-panel]' },
+  { id: '1143-filter-popover', persona: 'admin', route: '/tasks', open: async (p) => { await p.locator('.ft-btn').first().click(); await wait(p, 500); }, sel: 'mf-filter-popover' },
   { id: '1143-new-menu', persona: 'admin', route: '/my-matters', open: async (p) => { await p.locator('button', { hasText: /^\s*New\s*$/ }).first().click(); }, sel: '[role=menu]' },
 ];
 

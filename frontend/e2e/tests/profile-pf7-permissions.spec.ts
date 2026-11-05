@@ -69,17 +69,17 @@ test.describe('pf7-permissions: who gets My profile, the menu entries and the di
       const menu = me.getByRole('menu', { name: 'Your account' });
       if (allowed) {
         await expect(menu.getByRole('menuitem')).toHaveText([
-          /My profile/,
-          /Set out of office/,
-          /Keyboard shortcuts/,
+          /My Profile/,
+          /Set Out of Office/,
+          /Keyboard Shortcuts/,
         ]);
-        await menu.getByRole('menuitem', { name: 'Set out of office...' }).click();
+        await menu.getByRole('menuitem', { name: 'Set Out of Office' }).click();
         const dialog = me.getByRole('dialog', { name: 'Set out of office' });
         await expect(dialog).toBeVisible();
         await dialog.getByRole('button', { name: 'Cancel' }).click();
         await expect(dialog).toHaveCount(0);
       } else {
-        await expect(menu.getByRole('menuitem')).toHaveText([/Keyboard shortcuts/]);
+        await expect(menu.getByRole('menuitem')).toHaveText([/Keyboard Shortcuts/]);
         await expect(me.locator('[data-menu-identity] [data-availability-chip]')).toHaveCount(0);
       }
     });

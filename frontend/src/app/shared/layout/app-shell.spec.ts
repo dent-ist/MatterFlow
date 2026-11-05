@@ -330,7 +330,7 @@ describe('AppShell header search', () => {
     expect(help!.textContent).toContain('Ctrl');
     expect(help!.textContent).toContain('Search matters');
     expect(document.body.querySelector('[role=dialog]')!.textContent).toContain(
-      'Keyboard shortcuts',
+      'Keyboard Shortcuts',
     );
   });
 

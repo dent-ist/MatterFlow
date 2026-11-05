@@ -51,13 +51,13 @@ interface Item {
         ><i class="pi pi-angle-down" aria-hidden="true"></i>
       </button>
       @if (open()) {
-        <ul class="menu" role="menu" id="mm-new-menu" aria-labelledby="mm-new-btn">
+        <ul class="menu mf-menu" role="menu" id="mm-new-menu" aria-labelledby="mm-new-btn">
           @for (it of items(); track it.key; let i = $index) {
             <li role="none">
               <button
                 type="button"
                 role="menuitem"
-                class="mi"
+                class="mi mf-menu__item"
                 [attr.data-new]="it.key"
                 [attr.aria-disabled]="it.reason ? true : null"
                 [attr.aria-describedby]="'mm-new-d-' + it.key"
@@ -97,6 +97,7 @@ interface Item {
     .wrap {
       position: relative;
     }
+    /* The surface and the entries are the shared menu (mf-menu, mf-menu__item: D-36); only the place, the width and the two-line entry are here. */
     .menu {
       position: absolute;
       top: calc(100% + 6px);
@@ -104,31 +105,11 @@ interface Item {
       z-index: 70;
       width: 320px;
       margin: 0;
-      padding: var(--mf-s2);
       list-style: none;
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-xl);
-      background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-pop);
     }
     .mi {
-      display: flex;
       align-items: flex-start;
-      gap: var(--mf-s3);
-      width: 100%;
-      box-sizing: border-box;
-      padding: var(--mf-s2) var(--mf-s3);
-      border: 0;
-      border-radius: var(--mf-radius-lg);
-      background: none;
-      color: var(--mf-text);
-      font: inherit;
-      text-align: left;
-      cursor: pointer;
-    }
-    .mi:hover,
-    .mi:focus-visible {
-      background: var(--mf-surface-alt);
+      padding-block: var(--mf-s2);
     }
     .mi[aria-disabled='true'] {
       color: var(--mf-text-muted);

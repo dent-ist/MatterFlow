@@ -159,7 +159,7 @@ test.describe('Review round 5: profile availability, Swimlane and Users', () => 
     const trigger = page.getByRole('button', { name: /account menu/ });
     const openDialog = async () => {
       await trigger.click();
-      await page.getByRole('menuitem', { name: 'Set out of office...' }).click();
+      await page.getByRole('menuitem', { name: 'Set Out of Office' }).click();
       await expect(page.getByRole('dialog', { name: 'Set out of office' })).toBeVisible();
     };
     await openDialog();
@@ -458,7 +458,7 @@ test.describe('review round 5 screenshots', () => {
       await techPage.goto('/my-work');
       await techPage.getByRole('button', { name: /account menu/ }).click();
       await shot(techPage, `05-header-menu-${s(w)}`);
-      await techPage.getByRole('menuitem', { name: 'Set out of office...' }).click();
+      await techPage.getByRole('menuitem', { name: 'Set Out of Office' }).click();
       await shot(techPage, `06-set-out-of-office-dialog-${s(w)}`);
       await techPage.getByRole('button', { name: 'Cancel' }).click();
       await expect(techPage.getByRole('button', { name: /account menu/ })).toBeFocused();

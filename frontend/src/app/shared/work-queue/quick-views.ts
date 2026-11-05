@@ -177,13 +177,18 @@ const STRIP_GAP = 4;
       </button>
     </div>
     @if (menuOpen()) {
-      <mf-filter-popover [anchor]="moreButton" label="More views" (closed)="menuOpen.set(false)">
+      <mf-filter-popover
+        [anchor]="moreButton"
+        label="More views"
+        [menu]="true"
+        (closed)="menuOpen.set(false)"
+      >
         <ul class="qv-menu" data-more-menu>
           @for (view of menu(); track view.key) {
             <li>
               <button
                 type="button"
-                class="qv-item"
+                class="qv-item mf-menu__item"
                 [attr.aria-pressed]="active() === view.key"
                 [attr.data-view]="view.key"
                 [attr.data-count]="count(view.key)"
@@ -275,24 +280,9 @@ const STRIP_GAP = 4;
       padding: 0;
       list-style: none;
     }
+    /* The entry is the shared menu item (mf-menu__item: 36 px, 14 px, row hover); only the count at the right is here. */
     .qv-item {
-      display: flex;
       justify-content: space-between;
-      align-items: center;
-      gap: var(--mf-s2);
-      width: 100%;
-      min-height: 32px;
-      padding: 0 var(--mf-s2);
-      border: 0;
-      border-radius: var(--mf-radius);
-      background: transparent;
-      color: inherit;
-      font: inherit;
-      text-align: left;
-      cursor: pointer;
-    }
-    .qv-item:hover {
-      background: var(--mf-surface-alt);
     }
     .qv-item[aria-pressed='true'] {
       background: var(--mf-selected-bg);

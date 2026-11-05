@@ -66,7 +66,7 @@ let nextId = 0;
       </button>
       @if (open()) {
         <div
-          class="am__menu"
+          class="am__menu mf-menu"
           [class.am__menu--fixed]="pos() !== null"
           [class.am__menu--start]="align() === 'start'"
           [style.top.px]="pos()?.top"
@@ -81,11 +81,15 @@ let nextId = 0;
           (keydown)="onMenuKey($event)"
         >
           @for (item of items(); track item.id) {
+            @if (item.separated) {
+              <div class="mf-menu__sep" role="separator"></div>
+            }
             <button
               #entry
               type="button"
               role="menuitem"
-              class="am__item"
+              class="am__item mf-menu__item"
+              [class.mf-menu__item--danger]="item.danger"
               [class.am__item--danger]="item.danger"
               [class.am__item--sep]="item.separated"
               tabindex="-1"
@@ -159,7 +163,7 @@ export class ActionMenu {
     }
     const rect = button.getBoundingClientRect();
     const right = Math.max(0, window.innerWidth - rect.right);
-    const need = this.items().length * 44 + 12;
+    const need = this.items().length * 36 + this.items().filter((i) => i.separated).length * 9 + 8;
     const below = window.innerHeight - rect.bottom;
     this.pos.set(
       below >= need || rect.top < need

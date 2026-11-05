@@ -85,7 +85,7 @@ test.describe('pf7-keyboard: keyboard-only flows on My profile (#582)', () => {
     await press(me, 'ArrowDown');
     await expect(me.getByRole('menuitem', { name: 'My profile' })).toBeFocused();
     await press(me, 'ArrowDown');
-    await expect(me.getByRole('menuitem', { name: 'Set out of office...' })).toBeFocused();
+    await expect(me.getByRole('menuitem', { name: 'Set Out of Office' })).toBeFocused();
     await press(me, 'Enter');
     const dialog = me.getByRole('dialog', { name: 'Set out of office' });
     await expect(dialog).toBeVisible();

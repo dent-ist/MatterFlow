@@ -24,7 +24,7 @@ import { ColumnMenuId, ColumnMenuItem } from './column-menu-items';
   template: `
     <div
       #menu
-      class="cm"
+      class="cm mf-menu"
       role="menu"
       tabindex="-1"
       data-column-menu
@@ -39,7 +39,7 @@ import { ColumnMenuId, ColumnMenuItem } from './column-menu-items';
         <button
           type="button"
           role="menuitem"
-          class="cm-item"
+          class="cm-item mf-menu__item"
           [attr.data-item]="item.id"
           [attr.aria-label]="item.name"
           [attr.aria-disabled]="item.disabled ? 'true' : null"
@@ -56,35 +56,18 @@ import { ColumnMenuId, ColumnMenuItem } from './column-menu-items';
     </div>
   `,
   styles: `
+    /* The surface and the entries are the shared menu (mf-menu, mf-menu__item: D-36); only the place and the two-line entry are here. */
     .cm {
       position: fixed;
       z-index: 1100;
       display: flex;
       flex-direction: column;
-      min-width: 12rem;
-      padding: var(--mf-s1);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-1);
     }
     .cm-item {
-      display: flex;
       flex-direction: column;
       align-items: flex-start;
-      min-height: var(--mf-target-min);
-      padding: var(--mf-s1) var(--mf-s3);
-      border: 0;
-      border-radius: var(--mf-radius);
-      background: transparent;
-      color: var(--mf-text);
-      font: inherit;
-      text-align: left;
-      cursor: pointer;
-    }
-    .cm-item:hover,
-    .cm-item:focus-visible {
-      background: var(--mf-surface-alt);
+      justify-content: center;
+      gap: 0;
     }
     .cm-item[aria-disabled='true'] {
       color: var(--mf-text-muted);

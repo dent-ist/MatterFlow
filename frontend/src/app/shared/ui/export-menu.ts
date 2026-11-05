@@ -27,7 +27,7 @@ export interface ExportResult {
         @for (i of items(); track i.id) {
           <button
             type="button"
-            class="mf-btn em__item"
+            class="mf-menu__item"
             [attr.data-export]="i.id"
             [disabled]="i.disabled"
             [attr.title]="i.disabled && i.reason ? i.reason : null"
@@ -65,19 +65,10 @@ export interface ExportResult {
       display: grid;
       gap: var(--mf-s1);
     }
-    .em__item {
-      justify-content: flex-start;
-      gap: var(--mf-s2);
-    }
     .em__status {
       min-height: 1.2em;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
-    }
-    @media (max-width: 639.98px) {
-      .em__item {
-        min-height: 44px;
-      }
     }
   `,
   host: { '[class.em--inline]': 'inline()' },
