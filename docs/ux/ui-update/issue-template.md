@@ -50,6 +50,7 @@ One of: an exact description with numbers; an ASCII sketch; or a small HTML snip
 What the agent must not touch (other pages of the same family that have their own issue, behaviour, API, data, permissions, `docs/ux/tokens.css` unless the change list says so, the theme guide).
 
 ## Rules (copy into every issue, do not drop one)
+- UI work must follow `docs/ux/design-guidelines.md` (rules, component catalogue, wording tables, checklist).
 - Tokens only (`docs/ux/tokens.css`); no colour literal, no px icon size; buttons, dialogs, chips, links, tabs, dropdowns come from the shared components.
 - No new or changed keyboard shortcut (#420).
 - Bundle: initial under 700 kB.

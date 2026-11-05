@@ -1,3 +1,5 @@
+> **History.** The normative standard is now `docs/ux/design-guidelines.md`. This file is the record of how the rules were decided (UI update 2); do not follow it where it differs.
+
 # MatterFlow UI standard, round 2 (FINAL after the phase 2 crawl)
 
 Owner: Agent U (UI designer). Branch `ui-update-2`. The owner approved all recommendations in advance, so every rule below is a decision, not a question; the rules the owner may care about are listed in section 0.3. This version is final after the live desktop crawl (1366x768 and 1920x1080; the app is desktop-only). Measured facts are in `screenshots/measurements-*.json`; the findings are in the epic and issue bodies on GitHub.

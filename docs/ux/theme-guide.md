@@ -1,5 +1,7 @@
 # Theme guide
 
+> The UI rules, the component catalogue, wording and the checklist are in `docs/ux/design-guidelines.md`; this guide keeps the token and CSS detail.
+
 Epic #953, issue UI-01 (#954). Owner decision "option A": **one set of design tokens in code**, read by every component, so that a theme editor and a dark theme can be added later without touching components. There is **no dark theme and no editor in this round.**
 
 ## 1. Where the tokens live
