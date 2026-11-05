@@ -268,3 +268,11 @@ Every issue's acceptance list is built from: tokens only (no hex, no px outside 
 4. Whether `pi-objects-column` exists in the installed PrimeIcons.
 5. The Calendar switch and tab look after the latest merges.
 6. Which hand-built dialogs have a dirty guard to preserve when they move to `mf-form-dialog`.
+
+## 14. Designer decisions after review 1 (2026-11-05, answers to the dev agents' open questions)
+
+1. **Dashboard > Users person drawer, facts block (Open, Overdue, Due Soon, On Hold):** BELOW the tab strip, inside the Overview tab. The tab strip stays directly under the drawer header (D-33); the facts describe the current load, so only Overview shows them. Task Types and Trend do not repeat them.
+2. **Profile page title:** change "My profile" to "My Profile" (Title Case, D-20). The H1 is the page name; the person's name, availability chip, role and pod stay on the line under it (D-21 context line). This is what is built; only the capital P changes (cap sweep issue #1149).
+3. **Asset record, second smaller type tile (the "Relativity Workspace" tile under the title):** REMOVE. The record has one tile (D-21). The asset type is written as plain text in the context line under the title, next to the Matter link ("Relativity Workspace . Matter 90001-80001 Demo Smith v. Acme").
+4. **Icon-only switches:** when a segmented switch collapses to icons (card narrower than 17 rem) every segment is 36 x 36 px (`--mf-ctl-h`), icon `--mf-icon-lg` 20 px, same 1 px borders and the same solid selected fill; the label stays as `aria-label` and tooltip.
+5. **Text buttons are 24 px high** (owner decision, kept): `mf-btn--text` keeps `--mf-target-min`; it is the one control that is not 36 px. In a toolbar row a text button sits on the same baseline as 36 px controls.

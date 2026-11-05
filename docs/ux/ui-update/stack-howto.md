@@ -67,3 +67,7 @@ Crawl step "Add priority" created the priority `UI sample`; the profile save ste
 ## After a container restart (happened once on 2026-11-04)
 
 Everything in memory is gone but the worktree, the Docker volume (SQL data) and `node_modules` survive. Recovery took about 3 minutes: `nohup dockerd >/tmp/dockerd.log 2>&1 &`, wait 15 s, `docker compose -f docker-compose.dev.yml up -d --wait sqlserver`, `docs/ux/ui-update/stack-start.sh` (API ready after about 90 s, web after about 3 minutes), no new seed needed. Status when this note was written: API ready on 5080, web 200 on 4200, demo data intact, 5.2 GB free on `/home`.
+
+## Review 1 (2026-11-05)
+
+After another container restart the stack was started from `origin/ui-update-2` tip 1f95bb7 (the dev server compiles the branch code; no new seed). Review scripts: `crawl/crawl.js` to `crawl5.js` and `/home/user/ud-run/axe.js` (axe-core from `frontend/node_modules`). Extra demo data created: none new (the priority "UI sample" from the first crawl remains). The stack is left running: API 5080, web 4200, SQL container `matterflow-sql`.
