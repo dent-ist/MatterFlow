@@ -23,7 +23,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
     }
     .cc {
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
+      font-size: var(--mf-fs-xs);
       font-variant-numeric: tabular-nums;
     }
   `,

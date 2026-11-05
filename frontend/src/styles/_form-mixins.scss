@@ -1,10 +1,10 @@
 /* Mixins behind the form control look (see _forms.scss); component stylesheets use them so nothing global is emitted twice. */
 @mixin mf-control {
   box-sizing: border-box;
-  min-height: var(--mf-row-h);
+  height: var(--mf-ctl-h);
   padding: 0 var(--mf-s3);
   border: 1px solid var(--mf-border-strong);
-  border-radius: var(--mf-radius-md);
+  border-radius: var(--mf-radius);
   background: var(--mf-surface);
   color: var(--mf-text);
   font: inherit;
@@ -22,4 +22,23 @@
     color: var(--mf-text-disabled);
     cursor: not-allowed;
   }
+}
+
+/* A textarea is the same box with at least four lines of text (#1124). */
+@mixin mf-textarea {
+  height: auto;
+  min-height: calc(4lh + 2 * var(--mf-s2) + 2px);
+  padding: var(--mf-s2) var(--mf-s3);
+  line-height: var(--mf-lh, 1.45);
+}
+
+/* A native select: no browser arrow; the chevron is drawn at the right, 16 px (`--mf-icon-sm`), the size and look of the `pi-chevron-down` of mf-dropdown. */
+@mixin mf-select {
+  appearance: none;
+  padding-right: calc(var(--mf-s3) + var(--mf-icon-sm) + var(--mf-s2));
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%234b5563' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 6l4.5 4.5L12.5 6'/%3E%3C/svg%3E"); // theme-colour-ok: an image cannot read a token; this is --mf-text-muted
+  background-repeat: no-repeat;
+  background-position: right var(--mf-s3) center;
+  background-size: var(--mf-icon-sm) var(--mf-icon-sm);
+  text-overflow: ellipsis;
 }

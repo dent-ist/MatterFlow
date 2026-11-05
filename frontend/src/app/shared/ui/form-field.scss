@@ -29,13 +29,12 @@
 }
 
 select.mf-field__input {
+  @include forms.mf-select;
   max-width: 100%;
-  text-overflow: ellipsis;
 }
 
 textarea.mf-field__input {
-  min-height: 0;
-  padding: var(--mf-s2) var(--mf-s3);
+  @include forms.mf-textarea;
 }
 
 .mf-field__input--mono {

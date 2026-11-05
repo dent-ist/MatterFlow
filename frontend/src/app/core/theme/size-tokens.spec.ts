@@ -46,4 +46,20 @@ describe('size tokens (docs/ux/tokens.css)', () => {
     const scss = readFileSync(join(process.cwd(), 'src', 'styles.scss'), 'utf8');
     expect(scss).not.toMatch(/--mf-target-min\s*:/);
   });
+
+  it('form controls are one 36 px, 4 px radius box and the page is en-US (#1124)', () => {
+    const mixins = readFileSync(join(process.cwd(), 'src', 'styles', '_form-mixins.scss'), 'utf8');
+    const box = mixins.slice(
+      mixins.indexOf('@mixin mf-control {'),
+      mixins.indexOf('@mixin mf-control-states'),
+    );
+    expect(box).toContain('height: var(--mf-ctl-h)');
+    expect(box).toContain('border-radius: var(--mf-radius);');
+    expect(box).not.toMatch(/--mf-row-h|--mf-radius-md/);
+    const forms = readFileSync(join(process.cwd(), 'src', 'styles', '_forms.scss'), 'utf8');
+    expect(forms).toContain("input[type='date']");
+    expect(forms).toContain('mf-select');
+    const html = readFileSync(join(process.cwd(), 'src', 'index.html'), 'utf8');
+    expect(html).toMatch(/<html lang="en-US">/);
+  });
 });

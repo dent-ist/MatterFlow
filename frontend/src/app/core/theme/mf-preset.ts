@@ -150,7 +150,7 @@ export const MfPreset = definePreset(AuraLite, {
       offset: 'var(--mf-focus-offset)',
       shadow: 'none',
     },
-    // One control look (UXR-25): 14 px text, 40 px high (the min-height is in styles/_forms.scss) and the same focus ring as the
+    // One control look (UXR-25): 14 px text, 36 px high (--mf-ctl-h; the min-height is in styles/_forms.scss) and the same focus ring as the
     // native controls (.mf-control), so a p-select next to a native select cannot be told apart.
     formField: {
       fontSize: '0.875rem',

@@ -1,7 +1,7 @@
 /*
  * Form controls (UXR-16, UXR-25): one look for every native input, select and textarea, and the values the PrimeNG controls are themed to
- * (core/theme/mf-preset.ts): 40 px high, 14 px text, 1 px strong border, 4 px radius, and the one focus ring from tokens.css
- * (2 px solid --mf-focus, 2 px offset). Use `.mf-control` in templates; `--compact` (32 px) only inside table rows and toolbars.
+ * (core/theme/mf-preset.ts): 36 px high (`--mf-ctl-h`), 14 px text, 1 px strong border, 4 px radius, and the one focus ring from tokens.css
+ * (2 px solid --mf-focus, 2 px offset). Use `.mf-control` in templates; `--compact` (`--mf-ctl-h-sm`, 32 px) only inside table rows and the inline filter row. Native date, time and select fields get the box without the class.
  *
  *   .mf-control        input, select, textarea (`--fill` takes the whole width of its box; the control rule of the admin lists is in _admin-lists.scss)
  *   .mf-label          bold label above a control (13 px in filter bars: add .mf-label--sm)
@@ -18,9 +18,36 @@
 }
 
 textarea.mf-control {
-  min-height: 0;
-  padding: var(--mf-s2) var(--mf-s3);
+  @include m.mf-textarea;
   resize: vertical;
+}
+
+select.mf-control {
+  @include m.mf-select;
+}
+
+/* Date, time and select fields are the same box wherever they appear, with or without the class (#1124). Zero specificity: a class still wins. */
+:where(
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local'],
+  input[type='month'],
+  input[type='week']
+) {
+  @include m.mf-control;
+  @include m.mf-control-states;
+}
+
+:where(select:not([multiple], [size])) {
+  @include m.mf-control;
+  @include m.mf-control-states;
+  @include m.mf-select;
+}
+
+input[type='date']::-webkit-calendar-picker-indicator,
+input[type='time']::-webkit-calendar-picker-indicator,
+input[type='datetime-local']::-webkit-calendar-picker-indicator {
+  cursor: pointer;
 }
 
 .mf-control--fill {
@@ -28,7 +55,7 @@ textarea.mf-control {
 }
 
 .mf-control--compact {
-  min-height: var(--mf-row-h-compact);
+  height: var(--mf-ctl-h-sm);
   padding: 0 var(--mf-s2);
 }
 
@@ -76,7 +103,7 @@ textarea.mf-control {
 .p-select,
 .p-multiselect,
 .p-inputnumber-input {
-  min-height: var(--mf-row-h);
+  min-height: var(--mf-ctl-h);
   box-sizing: border-box;
 }
 
