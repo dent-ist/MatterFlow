@@ -57,7 +57,7 @@ let nextId = 0;
   template: `
     <ng-template #chipList>
       @if (pods().length === 0) {
-        <span class="upc-none" data-no-pod>No pod</span>
+        <span class="upc-none" data-no-pod>No Pod</span>
       } @else {
         <span class="upc-chips">
           @for (p of shown(); track p.podId) {

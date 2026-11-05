@@ -121,7 +121,7 @@ describe('UserPodsCell', () => {
 
     it('says No pod when the person has none', async () => {
       await create([], { canEdit: false });
-      expect(q('[data-no-pod]').textContent).toContain('No pod');
+      expect(q('[data-no-pod]').textContent).toContain('No Pod');
       expect(all('[data-pod-chip]').length).toBe(0);
     });
 

@@ -140,7 +140,7 @@ test.describe('Pods column of the Users grid', () => {
     const { tag, names, ids } = await threePods(seed);
     const person = await seed.user(['Data Technician'], 'assign');
     const row = await gridRow(page, person);
-    await expect(row.locator('[data-no-pod]')).toHaveText('No pod');
+    await expect(row.locator('[data-no-pod]')).toHaveText('No Pod');
     await expect(trigger(row)).toHaveAccessibleName(
       `Pods: none, change pods of ${person.username}`,
     );

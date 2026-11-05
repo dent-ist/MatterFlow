@@ -227,7 +227,7 @@ describe('filter definitions', () => {
       const created: FilterDef = { ...due, key: 'created', label: 'Created', presets: undefined };
       expect(
         buildChips(created, { from: '2026-10-15', to: '2026-10-21' }, false, wed)[0].label,
-      ).toBe('Created: Last 7 days');
+      ).toBe('Created: Last 7 Days');
       expect(printText(due, next7, wed)).toBe('Due Next 7 Days');
     });
 

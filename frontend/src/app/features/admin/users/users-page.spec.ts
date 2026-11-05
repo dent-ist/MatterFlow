@@ -1156,7 +1156,7 @@ describe('UsersPage', () => {
       const priya = cardOf('Priya Patel');
       expect(priya.textContent).toContain('ppatel');
       expect(priya.textContent).toContain('Pending Access');
-      expect(priya.querySelector('[data-card-summary]')!.textContent).toContain('None · No pod');
+      expect(priya.querySelector('[data-card-summary]')!.textContent).toContain('None · No Pod');
       const grant = priya.querySelector<HTMLButtonElement>(
         '[data-card-primary] button, button[data-card-primary]',
       )!;
@@ -1251,7 +1251,7 @@ describe('UsersPage', () => {
     it("shows each user's pods as chips with the primary pod starred, and No pod when empty", async () => {
       await createWith(withPods, 'User.View');
       expect(chipsOf(3)).toEqual(['Processing Primary', 'Review']);
-      expect(podCell(4).textContent).toContain('No pod');
+      expect(podCell(4).textContent).toContain('No Pod');
       expect(
         Array.from(el().querySelectorAll('thead th')).map((th) => th.textContent!.trim()),
       ).toContain('Pods');
@@ -1302,7 +1302,7 @@ describe('UsersPage', () => {
       expect(call).toHaveBeenCalledTimes(1);
       expect(call.mock.calls[0][1]).toMatchObject({ podIds: [], primaryPodId: undefined });
       expect(chipsOf(4)).toEqual([]);
-      expect(podCell(4).textContent).toContain('No pod');
+      expect(podCell(4).textContent).toContain('No Pod');
     });
 
     it('asks for the new primary when the primary pod is removed and blocks Apply until it is chosen', async () => {

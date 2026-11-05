@@ -545,7 +545,7 @@ export class UsersPage implements OnInit {
         {
           text: [
             this.rolesLabel(user),
-            pods === 0 ? 'No pod' : `${pods} ${pods === 1 ? 'pod' : 'pods'}`,
+            pods === 0 ? 'No Pod' : `${pods} ${pods === 1 ? 'pod' : 'pods'}`,
             // Only what informs: Out of office (with its date) and Off hours; nothing for a person who takes no work (#434).
             availabilityShown(user) === 'chip'
               ? availabilityDisplay(user.availability, this.zone).label
