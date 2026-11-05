@@ -1,5 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import { Injectable, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 
 /**
  * Hands the reference id of the latest failed page load to the inline error alert (UXR-18). The HTTP layer reports a
@@ -13,6 +13,11 @@ export class ErrorReferenceStore {
   readonly reference = signal<string | undefined>(undefined);
   private readonly doc = inject(DOCUMENT);
   private readonly pending = new Set<ReturnType<typeof setTimeout>>();
+
+  constructor() {
+    // A held toast never fires into an injector that is already gone (the app was torn down, or a test ended).
+    inject(DestroyRef).onDestroy(() => this.claim());
+  }
 
   /** Remember `reference` and run `showToast` after `delayMs` unless an inline alert claims the error first. */
   report(reference: string | undefined, showToast: () => void, delayMs = 400): void {
