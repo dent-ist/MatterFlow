@@ -78,8 +78,9 @@ describe('DashTabs (WP9b: the tab strip on a phone)', () => {
   it('draws every tab with its icon, decorative, from the shared strip (LC-10)', () => {
     const icons = tabs().map((t) => t.querySelector('i.tab__icon'));
     expect(icons.every((i) => i !== null && i.getAttribute('aria-hidden') === 'true')).toBe(true);
+    // The Summary tab has its own icon, so it does not repeat the Dashboard tile (pi-home, D-17, #1133).
     expect(icons.map((i) => i!.className.match(/pi-[a-z-]+/)![0])).toEqual([
-      'pi-home',
+      'pi-objects-column',
       'pi-chart-pie',
       'pi-chart-line',
       'pi-table',
