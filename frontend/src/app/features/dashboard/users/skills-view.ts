@@ -245,7 +245,6 @@ type SkillsState = 'loading' | 'ready' | 'error';
       white-space: nowrap;
     }
     .bar {
-      --mf-seg-h: var(--mf-ctl-h);
       display: flex;
       flex: none;
       flex-wrap: wrap;

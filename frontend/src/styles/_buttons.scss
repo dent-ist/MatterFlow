@@ -177,8 +177,15 @@ td .mf-btn--icon,
  * control (36 px, 44 px on a phone and on touch), the pressed button is a solid blue fill with white text and bold (no check mark since US-10, #1101: the inverted fill is the signal, so the state is never colour alone).
  */
 .mf-seg {
-  display: inline-flex;
+  /* Equal segments: every column is as wide as the widest label of the switch, never under 112 px (D-16). An icon-only switch keeps square 36 px buttons. */
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(112px, 1fr);
   max-width: 100%;
+}
+
+.mf-seg:has(> .mf-btn--icon) {
+  grid-auto-columns: var(--mf-ctl-h);
 }
 
 .mf-seg > .mf-btn {
@@ -205,7 +212,7 @@ td .mf-btn--icon,
   border-color: var(--mf-primary);
   background: var(--mf-primary);
   color: var(--mf-primary-contrast);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .mf-seg > .mf-btn[aria-pressed='true']:hover:not(:disabled, [aria-disabled='true']) {

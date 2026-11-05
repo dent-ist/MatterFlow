@@ -523,7 +523,6 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
       font-size: var(--mf-fs-sm);
     }
     .bar {
-      --mf-seg-h: var(--mf-ctl-h);
       display: flex;
       flex-wrap: wrap;
       align-items: center;

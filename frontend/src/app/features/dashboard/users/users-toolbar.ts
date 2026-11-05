@@ -93,7 +93,6 @@ import {
     }
     /* One row like the shared list toolbar (theme guide 11.1); it wraps by group on a narrow window. */
     .bar {
-      --mf-seg-h: var(--mf-ctl-h);
       display: flex;
       flex-wrap: wrap;
       align-items: center;

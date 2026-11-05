@@ -19,6 +19,7 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { calendarDayInZone, mfDate } from '../../../core/time/time';
 import { AbsenceDialog, AbsencePerson } from '../../../shared/availability/absences/absence-dialog';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
+import { Segmented } from '../../../shared/ui/segmented';
 import { DashScope } from '../dash-scope';
 import { DashState } from '../ui/dash-state';
 import { DASH_FIXED_QUERY, mediaMatch } from '../ui/dash-media';
@@ -58,7 +59,16 @@ const ALL_ROLES = '';
  */
 @Component({
   selector: 'mf-dash-calendar-tab',
-  imports: [AbsenceDialog, CalInsights, CalMonthGrid, CalPanel, CalWeekGrid, DashState, Dropdown],
+  imports: [
+    AbsenceDialog,
+    CalInsights,
+    CalMonthGrid,
+    CalPanel,
+    CalWeekGrid,
+    DashState,
+    Dropdown,
+    Segmented,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './calendar-coverage.scss',
   host: { class: 'mf-fill' },
@@ -78,10 +88,10 @@ const ALL_ROLES = '';
             [panelWidth]="260"
           />
         }
-        <div class="seg" role="group" aria-label="Calendar view">
+        <div mfSegmented role="group" aria-label="Calendar view">
           <button
             type="button"
-            class="mf-btn seg__b"
+            class="mf-btn"
             data-view-month
             [attr.aria-pressed]="view() === 'month'"
             (click)="setView('month')"
@@ -90,7 +100,7 @@ const ALL_ROLES = '';
           </button>
           <button
             type="button"
-            class="mf-btn seg__b"
+            class="mf-btn"
             data-view-week
             [attr.aria-pressed]="view() === 'week'"
             (click)="setView('week')"
@@ -306,25 +316,6 @@ const ALL_ROLES = '';
     .tb__add {
       margin-left: auto;
     }
-    .seg {
-      display: inline-flex;
-      overflow: hidden;
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-    }
-    .seg__b {
-      border: 0;
-      border-radius: 0;
-    }
-    .seg__b + .seg__b {
-      border-left: 1px solid var(--mf-border-mid);
-    }
-    .seg__b[aria-pressed='true'] {
-      background: var(--mf-selected-bg);
-      color: var(--mf-primary);
-      box-shadow: inset 0 -2px 0 var(--mf-primary);
-      font-weight: 700;
-    }
     .main {
       display: flex;
       gap: var(--mf-s3);
@@ -503,12 +494,8 @@ const ALL_ROLES = '';
         flex-direction: column;
         align-items: stretch;
       }
-      .tb .seg {
+      .tb .mf-seg {
         width: 100%;
-      }
-      .tb .seg__b {
-        flex: 1;
-        justify-content: center;
       }
       .tb__add {
         margin-left: 0;

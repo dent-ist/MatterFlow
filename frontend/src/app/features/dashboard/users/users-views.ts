@@ -32,18 +32,8 @@ import { TabView } from './users-model';
     :host {
       display: inline-block;
     }
-    /* The three buttons are exactly the same width (wide enough for the longest label with its icon), so the switch never changes size. */
-    .mf-btn {
-      flex: 0 0 8.75rem;
-      min-width: 8.75rem;
-      justify-content: center;
-    }
-    /* The same themed switch on all three views; on a small phone the words give way to the icons (the title and the accessible name keep them). */
+    /* The same themed switch on all three views (equal segments come from the shared .mf-seg); on a small phone the words give way to the icons (the title and the accessible name keep them). */
     @media (max-width: 420px) {
-      .mf-btn {
-        flex-basis: 2.75rem;
-        min-width: 2.75rem;
-      }
       .t {
         position: absolute;
         width: 1px;
