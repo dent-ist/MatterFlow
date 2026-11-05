@@ -1,8 +1,9 @@
+import { pageIcon } from '../ui/tab-icons';
 import { ADMIN_NAV_ITEMS, NAV_ITEMS, NavItem } from './nav-items';
 
 /**
  * One source of truth for "which icon belongs to which screen": the icon of a section is the icon it has in the left navigation
- * (`nav-items.ts`), and every page header shows it before the title. Detail, edit and create pages inherit the icon of their section
+ * (`nav-items.ts`), and both read the one icon registry (`shared/ui/tab-icons.ts`, `page-*` concepts), and every page header shows it before the title. Detail, edit and create pages inherit the icon of their section
  * through the path prefix (`/clients/12/edit` is a Clients page). Screens without a navigation item are listed in `EXTRA_SECTIONS`.
  */
 export interface SectionIcon {
@@ -14,14 +15,14 @@ export interface SectionIcon {
 
 /** Screens that are not a left-navigation item. A longer prefix wins, so `/tasks/new` beats the Task Queue's `/tasks`. */
 export const EXTRA_SECTIONS: readonly SectionIcon[] = [
-  { prefix: '/tasks/new', icon: 'pi pi-plus' },
-  { prefix: '/profile', icon: 'pi pi-user-edit' },
-  { prefix: '/notifications', icon: 'pi pi-bell' },
-  { prefix: '/search', icon: 'pi pi-search' },
-  { prefix: '/access-pending', icon: 'pi pi-lock' },
-  { prefix: '/403', icon: 'pi pi-ban' },
-  { prefix: '/404', icon: 'pi pi-compass' },
-  { prefix: '/error', icon: 'pi pi-exclamation-triangle' },
+  { prefix: '/tasks/new', icon: pageIcon('new-task') },
+  { prefix: '/profile', icon: pageIcon('profile') },
+  { prefix: '/notifications', icon: pageIcon('notifications') },
+  { prefix: '/search', icon: pageIcon('search') },
+  { prefix: '/access-pending', icon: pageIcon('access-pending') },
+  { prefix: '/403', icon: pageIcon('forbidden') },
+  { prefix: '/404', icon: pageIcon('not-found') },
+  { prefix: '/error', icon: pageIcon('error') },
 ];
 
 function fromNav(items: readonly NavItem[]): SectionIcon[] {

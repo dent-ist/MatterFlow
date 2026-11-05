@@ -577,7 +577,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
     .empty-icon {
       display: block;
       margin-bottom: var(--mf-s2);
-      font-size: 2rem;
+      font-size: var(--mf-icon-lg);
       color: var(--mf-text-muted);
     }
     .empty {

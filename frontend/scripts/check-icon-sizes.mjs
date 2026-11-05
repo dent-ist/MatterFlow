@@ -1,9 +1,9 @@
-// Icon size guard (US-06, #1097): in shared code (src/app/shared and src/styles) the font-size of an icon (`.pi` or a selector that names an icon) must come from the
+// Icon size guard (US-06, #1097; extended to features by #1133): in shared code and in feature code (src/app/shared, src/app/features and src/styles) the font-size of an icon (`.pi` or a selector that names an icon) must come from the
 // shared icon tokens (`--mf-icon-xs|sm|md|lg` in docs/ux/tokens.css), never a number. Run by `npm run lint`.
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 
-const ROOTS = ['src/app/shared', 'src/styles'];
+const ROOTS = ['src/app/shared', 'src/app/features', 'src/styles'];
 const files = [];
 (function walk(dir) {
   for (const name of readdirSync(dir)) {
@@ -11,14 +11,21 @@ const files = [];
     if (statSync(p).isDirectory()) walk(p);
     else if (/\.(ts|scss)$/.test(name) && !/\.spec\.ts$/.test(name)) files.push(p);
   }
-})(...ROOTS.slice(0, 1));
+})(ROOTS[0]);
+(function walk(dir) {
+  for (const name of readdirSync(dir)) {
+    const p = path.join(dir, name);
+    if (statSync(p).isDirectory()) walk(p);
+    else if (/\.(ts|scss)$/.test(name) && !/\.spec\.ts$/.test(name)) files.push(p);
+  }
+})(ROOTS[1]);
 (function walk(dir) {
   for (const name of readdirSync(dir)) {
     const p = path.join(dir, name);
     if (statSync(p).isDirectory()) walk(p);
     else if (/\.(ts|scss)$/.test(name)) files.push(p);
   }
-})(ROOTS[1]);
+})(ROOTS[2]);
 
 const ICON_SELECTOR = /(\.pi\b|\.pi-|__icon|-icon\b|\bicon\b)/i;
 const offenders = [];

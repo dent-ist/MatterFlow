@@ -80,7 +80,7 @@ const BAD_DATE = 'Enter a valid date, for example Oct 12, 2026 or 10/12/2026.';
     .de-trigger .pi {
       flex: none;
       color: var(--mf-text-muted);
-      font-size: 0.875rem;
+      font-size: var(--mf-icon-xs);
     }
     mf-due-cell {
       min-width: 0;

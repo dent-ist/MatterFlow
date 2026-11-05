@@ -403,7 +403,7 @@ Every tab strip in the app is the shared `mf-tabs` (`shared/ui/tabs.ts`): one he
 
 | Concept | Icon | Where |
 | --- | --- | --- |
-| Summary, Overview | `pi-home` | Matter, Client, Task type, Workflow, Asset type, My Matters |
+| Summary, Overview | `pi-home` | Matter, Client, Task type, Workflow, Asset type, My Matters (the Dashboard's own Summary tab is `pi-objects-column`) |
 | Details | `pi-info-circle` | Project, Asset, Step, Report |
 | Tasks, Linked tasks | `pi-check-square` | Matter, Project, Asset, Client, search results |
 | Projects / Assets | `pi-folder` / `pi-database` | Matter, Task, My Matters, search, Asset type |
@@ -419,7 +419,7 @@ Every tab strip in the app is the shared `mf-tabs` (`shared/ui/tabs.ts`): one he
 | Admin: Users, Roles, Pods; Labels; Task types, Workflows, Steps; Reports | `pi-user`, `pi-shield`, `pi-users`; `pi-flag`, `pi-tag`, `pi-pause`, `pi-hashtag`; `pi-tags`, `pi-sitemap`, `pi-list`; `pi-file`, `pi-folder-open`, `pi-play`, `pi-share-alt`, `pi-heart` | Administration |
 | Settings: Branding, Dashboard | `pi-palette`, `pi-gauge` | Settings |
 
-A new tab adds its concept to `TAB_ICONS` first. The guard `shared/ui/tab-icons.spec.ts` fails when an entry is not a PrimeIcons class, when a file draws its own `role="tab"`, or when a file that uses `mf-tabs` builds tabs without an icon.
+A new tab adds its concept to `ICONS` (the one registry, see 13.3) first. The guard `shared/ui/tab-icons.spec.ts` fails when an entry is not a PrimeIcons class, when a file draws its own `role="tab"`, or when a file that uses `mf-tabs` builds tabs without an icon.
 
 ### 11.4 Dashboard Summary (epic #1063, decision AS; mockup `docs/ux/mockups/dashboard-v4/` on branch `dashboard-mockup-v4`)
 
@@ -490,7 +490,7 @@ Workload | Coverage | Skills is the view switch of the Users tab (Coverage only 
 
 ### 11.9 Icon sizes (US-06, #1097)
 
-Icons grow together through ONE scale in `docs/ux/tokens.css`, used only by the shared components and global styles (no per-page overrides, no px or rem icon sizes in shared code; `scripts/check-icon-sizes.mjs` runs in `npm run lint` and fails on a number):
+Icons grow together through ONE scale in `docs/ux/tokens.css`, used only by the shared components and global styles (no per-page overrides, no px, rem or em icon sizes in shared code or in feature code; `scripts/check-icon-sizes.mjs` runs in `npm run lint` over `src/app/shared`, `src/app/features` and `src/styles`, and fails on a number):
 
 | Token | Size | Used for |
 | --- | --- | --- |
@@ -609,3 +609,11 @@ Loading shows a skeleton of the grid; an error shows `mf-dash-state` with Retry;
 - Navigation links have no underline: the menu, tabs, pager and the breadcrumb (which underlines on hover only).
 - Anything that acts (Edit, Delete, Change, Add, Assign, Show all) is `mf-btn mf-btn--text` (link colour, regular weight, no underline at rest, underline on hover; `mf-btn--danger` for Delete). A button that opens a record from a name cell (Administration > Users) looks like the link above.
 - A private link class (`.pg-link`, `.lnk`, `.link-btn`...) is migrated to `.mf-link` by the later sweep (#1132); do not add new ones.
+
+### 13.3 One icon registry (D-17, #1133)
+
+- `shared/ui/tab-icons.ts` holds `ICONS`, keyed by concept. `page-*` keys are the pages: `pageIcon('dashboard')` gives the navigation item (`nav-items.ts`), and the same icon is the page tile in the page header and on every detail page of the section (`section-icons.ts` reads the navigation). The other keys are tab and view concepts (`tabIcon('assets')`).
+- The Dashboard's Summary tab is `dashboard-summary` = `pi-objects-column`, so it no longer repeats the Dashboard tile (`pi-home`); `pi-home` stays for the Dashboard and for the record Summary and Overview tabs.
+- The Task Types tab uses the Task Types page icon (`pi-file-edit`), not `pi-tags`, which is the Asset Types icon of the menu.
+- A registry icon used by two keys has to be listed in `tab-icons.spec.ts` as one concept under two names, or as a known repeat that the page epics may split; a new repeat fails the guard.
+- Icon sizes in feature styles are only `--mf-icon-xs|sm|md|lg`: tiny marks and sort arrows 12 px (xs), icons beside text 16 px (sm), buttons 18 px (md), tabs and the page tile 20 px (lg). An icon-only control keeps an `aria-label` and a tooltip.

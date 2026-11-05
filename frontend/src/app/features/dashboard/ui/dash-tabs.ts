@@ -123,7 +123,7 @@ export const panelId = () => 'mf-dash-panel';
       border-radius: var(--mf-radius-lg);
       background: var(--mf-primary);
       color: var(--mf-primary-contrast);
-      font-size: 1rem;
+      font-size: var(--mf-icon-sm);
       line-height: 1;
       vertical-align: middle;
     }
@@ -175,7 +175,12 @@ export class DashTabs {
   readonly tabChange = output<string>();
 
   protected readonly items = computed<MfTab[]>(() =>
-    this.tabs().map((t) => ({ key: t.key, label: t.label, icon: tabIcon(t.key) })),
+    this.tabs().map((t) => ({
+      key: t.key,
+      label: t.label,
+      // The Dashboard's Summary tab has its own icon so it does not repeat the Dashboard tile (pi-home, #1133).
+      icon: tabIcon(t.key === 'summary' ? 'dashboard-summary' : t.key),
+    })),
   );
 
   protected choose(key: string): void {

@@ -60,12 +60,12 @@
   }
 
   .pi {
-    font-size: 0.95rem;
+    font-size: var(--mf-icon-xs);
   }
 }
 
 .ne__glyph {
-  font-size: 15px;
+  font-size: var(--mf-icon-sm);
   font-weight: 800;
   line-height: 1;
 }

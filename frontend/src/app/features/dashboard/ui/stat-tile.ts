@@ -150,7 +150,7 @@ const CHIP_TONES: Readonly<Record<TileTone, ChipTone>> = {
     .go-icon {
       flex: none;
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-md);
+      font-size: var(--mf-icon-sm);
       opacity: 0.55;
     }
     a.tile:hover .go-icon {
@@ -197,7 +197,7 @@ const CHIP_TONES: Readonly<Record<TileTone, ChipTone>> = {
     }
     .delta-glyph {
       flex: none;
-      font-size: 0.7rem;
+      font-size: var(--mf-icon-xs);
       line-height: 1.5;
     }
     .delta[data-attention] {
@@ -215,7 +215,7 @@ const CHIP_TONES: Readonly<Record<TileTone, ChipTone>> = {
     }
     .detail .pi {
       margin-top: 1px;
-      font-size: var(--mf-fs-xs);
+      font-size: var(--mf-icon-xs);
     }
     [data-tone='danger'] .detail .pi {
       color: var(--mf-sem-overdue-fg);

@@ -1,8 +1,9 @@
 import { Permission } from '../../core/auth/permissions';
+import { pageIcon } from '../ui/tab-icons';
 
 export interface NavItem {
   label: string;
-  /** PrimeIcons class. */
+  /** PrimeIcons classes, from the one icon registry (`pageIcon`, shared/ui/tab-icons.ts); the page tile shows the same icon. */
   icon: string;
   path: string;
   /** Visible when the user holds ANY of these; empty = every active user. (UX Appendix C) */
@@ -29,7 +30,7 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   {
     label: 'Dashboard',
-    icon: 'pi pi-home',
+    icon: pageIcon('dashboard'),
     path: '/dashboard',
     permissions: ['Dashboard.View'],
     needsDashboardTab: true,
@@ -37,47 +38,46 @@ export const NAV_ITEMS: NavItem[] = [
   {
     // Project Managers' home (#691): above My Work, which stays in the menu. The same three permissions as the route's guard.
     label: 'My Matters',
-    icon: 'pi pi-clipboard',
+    icon: pageIcon('my-matters'),
     path: '/my-matters',
     permissions: ['Matter.BeManager'],
     permissionsAll: ['Matter.BeManager', 'Matter.View', 'Task.View'],
   },
   {
     label: 'My Work',
-    // Not `pi-user`, which is the header user button's glyph (S8, #623).
-    icon: 'pi pi-check-square',
+    icon: pageIcon('my-work'),
     path: '/my-work',
     permissions: ['Task.View'],
   },
   {
     label: 'Clients',
-    icon: 'pi pi-building',
+    icon: pageIcon('clients'),
     path: '/clients',
     permissions: ['Client.View'],
   },
   {
     label: 'Matters',
-    icon: 'pi pi-briefcase',
+    icon: pageIcon('matters'),
     path: '/matters',
     permissions: ['Matter.View'],
   },
   {
     label: 'Projects',
-    icon: 'pi pi-folder',
+    icon: pageIcon('projects'),
     path: '/projects',
     permissions: ['Project.View'],
     child: true,
   },
   {
     label: 'Assets',
-    icon: 'pi pi-database',
+    icon: pageIcon('assets'),
     path: '/assets',
     permissions: ['Asset.View'],
     child: true,
   },
   {
     label: 'Pod Work',
-    icon: 'pi pi-users',
+    icon: pageIcon('pod-work'),
     path: '/pods/work',
     // The page lists tasks, so it needs Task.View as well as Pod.View (UX spec S04): without it the item is hidden, never a dead link.
     permissions: ['Pod.View'],
@@ -86,7 +86,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     label: 'Task Queue',
-    icon: 'pi pi-list-check',
+    icon: pageIcon('task-queue'),
     path: '/tasks',
     permissions: ['Task.View'],
   },
@@ -104,7 +104,7 @@ export function mainNav(items: readonly NavItem[], compact: boolean): NavItem[] 
 export const ADMIN_NAV_ITEMS: NavItem[] = [
   {
     label: 'Users',
-    icon: 'pi pi-id-card',
+    icon: pageIcon('users'),
     path: '/admin/users',
     alsoActive: ['/admin/roles', '/admin/pods'],
     // Users tab: User.View / User.Manage; Roles tab: Role.Manage; Pods tab: Pod.Manage / Pod.ManageMembers.
@@ -116,14 +116,14 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     // their eligible workflows, which are built from the shared step library. Task Types needs TaskType.Manage, the other two
     // Workflow.Manage; a person with only Workflow.Manage lands on the Workflows tab.
     label: 'Task Types',
-    icon: 'pi pi-file-edit',
+    icon: pageIcon('task-types'),
     path: '/admin/task-types',
     alsoActive: ['/admin/workflows', '/admin/steps'],
     permissions: ['TaskType.Manage', 'Workflow.Manage'],
   },
   {
     label: 'Labels',
-    icon: 'pi pi-flag',
+    icon: pageIcon('labels'),
     path: '/admin/priorities',
     alsoActive: ['/admin/status-labels', '/admin/on-hold-reasons', '/admin/note-tags'],
     permissions: ['Priority.Manage', 'StatusLabel.Manage', 'OnHoldReason.Manage'],
@@ -132,14 +132,14 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     // The Asset Types and Asset Link Roles tabs. Not the Assets data records above: the rail says "Asset types" (S5, #620), so the two
     // items differ in words as well as in icon in the 56 px rail and its tooltip. The page's own H1, crumb and tabs keep "Asset Types".
     label: 'Asset types',
-    icon: 'pi pi-tags',
+    icon: pageIcon('asset-types'),
     path: '/admin/asset-types',
     alsoActive: ['/admin/asset-link-roles'],
     permissions: ['AssetType.Manage'],
   },
   {
     label: 'Custom Fields',
-    icon: 'pi pi-sliders-h',
+    icon: pageIcon('custom-fields'),
     path: '/admin/custom-fields',
     permissions: ['CustomField.Manage'],
   },
@@ -147,20 +147,20 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     // The SQL reports page (#712): reports, categories, run log, assignments and the report login. The people-facing list of reports is a
     // separate item that arrives with the user screens.
     label: 'Reports',
-    icon: 'pi pi-chart-bar',
+    icon: pageIcon('reports'),
     path: '/admin/reports',
     permissions: ['Report.Manage'],
   },
   {
     label: 'Audit Logs',
-    icon: 'pi pi-history',
+    icon: pageIcon('audit-logs'),
     path: '/admin/audit',
     permissions: ['Audit.View'],
   },
   {
     // Application settings (epic #850): today the Branding section (application name and icon).
     label: 'Settings',
-    icon: 'pi pi-cog',
+    icon: pageIcon('settings'),
     path: '/admin/settings',
     permissions: ['Settings.Manage'],
   },

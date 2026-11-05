@@ -134,7 +134,7 @@ import { isTaskTypeColour } from '../../shared/task-type/task-type-colours';
       background: color-mix(in srgb, currentcolor 15%, transparent);
     }
     .ntag__x .pi {
-      font-size: 0.65rem;
+      font-size: var(--mf-icon-xs);
     }
   `,
 })

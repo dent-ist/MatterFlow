@@ -251,7 +251,7 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
       color: var(--mf-text);
     }
     .sort .pi {
-      font-size: 0.75rem;
+      font-size: var(--mf-icon-xs);
     }
     th[aria-sort='ascending'] .sort,
     th[aria-sort='descending'] .sort {

@@ -371,7 +371,7 @@ export interface Option {
     }
     .mi i {
       width: 1rem;
-      font-size: 0.8125rem;
+      font-size: var(--mf-icon-xs);
     }
     .mi:hover,
     .mi:focus-visible {

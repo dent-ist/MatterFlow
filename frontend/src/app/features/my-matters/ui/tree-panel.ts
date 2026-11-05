@@ -257,7 +257,7 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
       min-width: 0;
     }
     .legend .pi {
-      font-size: var(--mf-fs-xs);
+      font-size: var(--mf-icon-xs);
     }
     /* A tree narrower than the four labels need (resized, tablet panel): the icons stay, the names are the tooltips and stay for screen readers. */
     @container (max-width: 259px) {

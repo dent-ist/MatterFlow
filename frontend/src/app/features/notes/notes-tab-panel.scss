@@ -115,7 +115,7 @@
 
   .pi {
     color: var(--mf-sem-risk-solid);
-    font-size: 0.8em;
+    font-size: var(--mf-icon-xs);
   }
 }
 
@@ -262,7 +262,7 @@
 
   .pi {
     color: var(--mf-text-muted);
-    font-size: 0.85em;
+    font-size: var(--mf-icon-xs);
   }
 
   .nt__st {

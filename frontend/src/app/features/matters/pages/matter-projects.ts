@@ -67,7 +67,7 @@ import { groupProjects } from './matter-project-groups';
       border-bottom: 1px solid var(--mf-border-strong);
     }
     .mp-group .pi {
-      font-size: var(--mf-fs-xs);
+      font-size: var(--mf-icon-xs);
     }
     .mp-group__count {
       color: var(--mf-text-muted);

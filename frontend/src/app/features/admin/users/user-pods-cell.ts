@@ -307,7 +307,7 @@ let nextId = 0;
       color: var(--mf-text-muted);
     }
     .upc-chip .pi {
-      font-size: var(--mf-fs-xs);
+      font-size: var(--mf-icon-xs);
     }
     .upc-tag {
       font-size: var(--mf-fs-xs);
@@ -349,7 +349,7 @@ let nextId = 0;
     }
     .upc-trigger > .pi {
       color: var(--mf-text-muted);
-      font-size: 0.875rem;
+      font-size: var(--mf-icon-xs);
     }
     .upc-pop {
       position: fixed;

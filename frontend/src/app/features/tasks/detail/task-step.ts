@@ -392,7 +392,7 @@ export function valuesPatch(
     }
     .step__chevron {
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
+      font-size: var(--mf-icon-sm);
     }
     /* Name and tags: the name takes the room it needs and wraps its text; the tags follow it, or drop to the next line. */
     .step__label {
