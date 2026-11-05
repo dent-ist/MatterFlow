@@ -372,8 +372,8 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     }
     @if (deleteCal(); as c) {
       <mf-confirm-dialog
-        title="Delete this calendar?"
-        confirmLabel="Delete"
+        title="Delete Calendar"
+        confirmLabel="Delete Calendar"
         [danger]="true"
         [busy]="deleteBusy()"
         [error]="deleteError()"
@@ -382,15 +382,15 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         (confirmed)="confirmDeleteCalendar(c)"
       >
         <p>
-          {{ c.name }} and its {{ c.holidayCount }} days will be deleted. People who used it fall
-          back to their pod's or the firm's default.
+          {{ c.name }} and its {{ c.holidayCount }} days are deleted, and people who used it fall
+          back to their pod's or the firm's default. This cannot be undone.
         </p>
       </mf-confirm-dialog>
     }
     @if (deleteDay(); as h) {
       <mf-confirm-dialog
-        title="Delete this holiday?"
-        confirmLabel="Delete"
+        title="Delete Holiday"
+        confirmLabel="Delete Holiday"
         [danger]="true"
         [busy]="deleteBusy()"
         [error]="deleteError()"
@@ -398,7 +398,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         (visibleChange)="$event || cancelDelete()"
         (confirmed)="confirmDeleteHoliday(h)"
       >
-        <p>{{ h.name }} will no longer count as a day off on the calendar.</p>
+        <p>{{ h.name }} no longer counts as a day off on the calendar. This cannot be undone.</p>
       </mf-confirm-dialog>
     }
   `,

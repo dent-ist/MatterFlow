@@ -125,7 +125,7 @@ describe('TaskTypeEditPage', () => {
       q<HTMLElement>('[role=menuitem][data-action="deactivate"]').click();
       await settle(fixture);
       const confirm = Array.from(document.querySelectorAll('button')).find(
-        (b) => b.textContent?.trim() === 'Deactivate task type' && b.closest('.p-dialog'),
+        (b) => b.textContent?.trim() === 'Deactivate Task Type' && b.closest('.p-dialog'),
       );
       expect(confirm).toBeDefined();
       confirm!.click();

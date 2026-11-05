@@ -131,7 +131,7 @@ test.describe('Matter header (MD-01)', () => {
     const more = menu(page, 'More actions');
     await more.click();
     await page.getByRole('menuitem', { name: 'Set inactive' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Set inactive' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Set Matter Inactive' }).click();
     await expect(page.locator('[data-inactive-banner]')).toBeVisible();
     // The header no longer carries the Active chip: the inactive banner and the Summary's Status say it.
     await expect(page.locator('[data-summary-details]')).toContainText('Inactive');

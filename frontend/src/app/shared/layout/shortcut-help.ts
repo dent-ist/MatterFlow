@@ -11,7 +11,7 @@ import { ShortcutRegistry } from './shortcut-registry';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-confirm-dialog
-      title="Keyboard shortcuts"
+      title="Keyboard Shortcuts"
       cancelLabel="Close"
       [showConfirm]="false"
       [(visible)]="state.open"

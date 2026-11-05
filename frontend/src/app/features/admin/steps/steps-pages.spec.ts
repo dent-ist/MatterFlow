@@ -556,7 +556,7 @@ describe('StepsListPage row menu', () => {
     el.querySelector<HTMLButtonElement>('[data-action=deactivate]')!.click();
     await settle(fixture);
     const confirm = Array.from(document.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'Deactivate step' && b.closest('p-dialog, .p-dialog'),
+      (b) => b.textContent?.trim() === 'Deactivate Step' && b.closest('p-dialog, .p-dialog'),
     );
     expect(confirm).toBeDefined();
     expect(api.deactivateStepDefinition).not.toHaveBeenCalled();
@@ -705,7 +705,7 @@ describe('StepEditPage', () => {
     menu!.querySelector<HTMLElement>('[data-action="deactivate"]')!.click();
     await settle(fixture);
     const confirm = Array.from(document.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'Deactivate step' && b.closest('p-dialog, .p-dialog'),
+      (b) => b.textContent?.trim() === 'Deactivate Step' && b.closest('p-dialog, .p-dialog'),
     );
     expect(confirm).toBeDefined();
     confirm!.click();

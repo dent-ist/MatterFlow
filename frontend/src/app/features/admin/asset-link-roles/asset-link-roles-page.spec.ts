@@ -132,7 +132,7 @@ describe('AssetLinkRolesPage (#640, #641, #642)', () => {
       expect(document.body.querySelector('.p-dialog')!.textContent).toContain(
         '14 links keep this role.',
       );
-      await click(dialogButton('Deactivate link role'));
+      await click(dialogButton('Deactivate Link Role'));
       expect(api.rows.find((r) => r.name === 'Source')!.isActive).toBe(false);
       expect(row('Source').textContent).toContain('Inactive');
       // Activating is one click, no question.
@@ -142,12 +142,12 @@ describe('AssetLinkRolesPage (#640, #641, #642)', () => {
 
     it('deletes an unused role after one confirmation and reports a server refusal once', async () => {
       await pick('Result', 'delete');
-      expect(document.body.querySelector('.p-dialog')!.textContent).toContain('Delete link role?');
+      expect(document.body.querySelector('.p-dialog')!.textContent).toContain('Delete Link Role');
       expect(document.body.querySelector('.p-dialog')!.textContent).toContain(
         'No link uses this role.',
       );
       api.failNext = apiError(409, 'IN_USE', 'Links use this role.');
-      await click(dialogButton('Delete link role'));
+      await click(dialogButton('Delete Link Role'));
       expect(names()).toContain('Result');
       expect(all('[data-failure]')).toHaveLength(1);
       expect(el().querySelector('[data-failure]')!.textContent).toContain(
@@ -155,7 +155,7 @@ describe('AssetLinkRolesPage (#640, #641, #642)', () => {
       );
 
       await pick('Result', 'delete');
-      await click(dialogButton('Delete link role'));
+      await click(dialogButton('Delete Link Role'));
       expect(names()).not.toContain('Result');
     });
 
@@ -231,7 +231,7 @@ describe('AssetLinkRolesPage (#640, #641, #642)', () => {
 
     it('reports the active count to the tab and announces changes politely', async () => {
       await pick('Subject', 'deactivate');
-      await click(dialogButton('Deactivate link role'));
+      await click(dialogButton('Deactivate Link Role'));
       expect(el().querySelector('[data-announce]')!.textContent).toContain('Subject deactivated.');
       expect(el().querySelector('[data-announce]')!.getAttribute('aria-live')).toBe('polite');
     });

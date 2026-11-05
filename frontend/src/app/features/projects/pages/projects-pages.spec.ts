@@ -626,9 +626,9 @@ describe('Projects pages', () => {
       await settle(fixture);
       const dialog = document.body.querySelector('p-dialog') as HTMLElement;
       expect(dialog.querySelector('[data-toggle-body]')?.textContent).toContain(
-        "Existing tasks keep this project, but new tasks can't select it.",
+        "existing tasks keep it, new tasks can't select it",
       );
-      buttonByLabel(dialog, 'Archive')!.click();
+      buttonByLabel(dialog, 'Archive Project')!.click();
       await settle(fixture);
 
       expect(projects.setProjectActive).toHaveBeenCalledWith(3, {

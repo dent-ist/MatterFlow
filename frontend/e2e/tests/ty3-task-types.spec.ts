@@ -285,7 +285,7 @@ test.describe('Deactivate confirm (#379)', () => {
     const menu = page.getByRole('button', { name: `Actions for ${token} Subject` });
     await menu.click();
     await page.getByRole('menuitem', { name: 'Deactivate' }).click();
-    const dialog = page.getByRole('dialog', { name: 'Deactivate task type?' });
+    const dialog = page.getByRole('dialog', { name: 'Deactivate Task Type' });
     await expect(dialog).toBeVisible();
     await expect(dialog).toContainText(
       `${token} Subject will no longer be offered when people create tasks.`,
@@ -300,7 +300,7 @@ test.describe('Deactivate confirm (#379)', () => {
     if (axeAvailable()) expect(await axeViolations(page), 'dialog open').toEqual([]);
 
     // Keep active: the dialog closes and focus is back on the opener.
-    await dialog.getByRole('button', { name: 'Keep active' }).click();
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
     await expect(dialog).toBeHidden();
     await expect(menu).toBeFocused();
 

@@ -286,7 +286,7 @@ test.describe('the editor (#713 to #715)', () => {
     await expect(page.locator('[data-diff]')).toContainText('Removed');
 
     await page.locator('[data-version="1"]').getByRole('button', { name: 'Restore' }).click();
-    await page.getByRole('button', { name: 'Restore as a new version' }).click();
+    await page.getByRole('button', { name: 'Restore Version' }).click();
     await expect(page.locator('[data-state-line]')).toContainText('Version 3');
     await expect(page.locator('[data-status]')).toHaveText('Inactive');
     await expect(page.locator('[data-activate]')).toHaveCount(0);

@@ -27,8 +27,7 @@ import { TaskDetailStore } from './task-detail.store';
     @let d = store.dialog();
     <mf-confirm-dialog
       [title]="reasonTitle()"
-      [confirmLabel]="reasonKind() === 'CANCEL' ? 'Cancel task' : 'Put on hold'"
-      [cancelLabel]="reasonKind() === 'CANCEL' ? 'Keep task' : 'Close'"
+      [confirmLabel]="reasonKind() === 'CANCEL' ? 'Cancel Task' : 'Put Task on Hold'"
       [danger]="reasonKind() === 'CANCEL'"
       [busy]="store.busy()"
       [visible]="d?.kind === 'reason'"
@@ -37,13 +36,13 @@ import { TaskDetailStore } from './task-detail.store';
     >
       @if (reasonKind() === 'CANCEL') {
         <p data-reason-body>
-          This marks the task Cancelled. Unresolved workflow steps don't block this. You can reopen
-          it later.
+          {{ store.task()?.taskNumber }} is marked Cancelled; unresolved workflow steps don't block
+          this and you can reopen it later.
         </p>
       } @else {
         <p data-reason-body>
-          The task stays On Hold until someone resumes it. Workflow steps can't be changed while it
-          is on hold.
+          {{ store.task()?.taskNumber }} stays On Hold until someone resumes it, and its workflow
+          steps can't be changed meanwhile.
         </p>
       }
       @if (reasonKind() === 'HOLD') {
@@ -97,15 +96,17 @@ import { TaskDetailStore } from './task-detail.store';
     </mf-confirm-dialog>
 
     <mf-confirm-dialog
-      [title]="'Move ' + (store.task()?.taskNumber ?? '') + ' back to In Progress?'"
-      confirmLabel="Reopen"
-      cancelLabel="Keep"
+      title="Reopen Task"
+      confirmLabel="Reopen Task"
       [busy]="store.busy()"
       [visible]="d?.kind === 'reopen'"
       (visibleChange)="closed($event)"
       (confirmed)="store.confirmReopen()"
     >
-      <p data-reopen-body>The task becomes editable again. No reason is needed.</p>
+      <p data-reopen-body>
+        {{ store.task()?.taskNumber }} moves back to In Progress and becomes editable again; no
+        reason is needed.
+      </p>
     </mf-confirm-dialog>
 
     <mf-form-dialog
@@ -234,8 +235,7 @@ export class TaskActionDialogs {
     return d?.kind === 'reason' ? d.action : 'CANCEL';
   });
   protected readonly reasonTitle = computed(() => {
-    const n = this.store.task()?.taskNumber ?? '';
-    return this.reasonKind() === 'CANCEL' ? `Cancel ${n}?` : `Put ${n} on hold?`;
+    return this.reasonKind() === 'CANCEL' ? 'Cancel Task' : 'Put Task on Hold';
   });
 
   private readonly check = computed(() => {

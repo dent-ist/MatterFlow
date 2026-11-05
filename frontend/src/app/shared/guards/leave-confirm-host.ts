@@ -2,16 +2,16 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ConfirmDialog } from '../ui/confirm-dialog';
 import { LeaveConfirmService } from './unsaved-changes.guard';
 
-/** Renders the "Leave without saving?" question asked by the unsaved-changes guard. */
+/** Renders the "Discard Unsaved Changes" question asked by the unsaved-changes guard. */
 @Component({
   selector: 'mf-leave-confirm-host',
   imports: [ConfirmDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-confirm-dialog
-      title="Leave without saving?"
-      confirmLabel="Leave"
-      cancelLabel="Stay"
+      title="Discard Unsaved Changes"
+      confirmLabel="Discard Changes"
+      cancelLabel="Keep Editing"
       [danger]="true"
       [extraLabel]="leave.saveOffer()?.label ?? ''"
       [busy]="leave.saving()"
@@ -20,7 +20,7 @@ import { LeaveConfirmService } from './unsaved-changes.guard';
       (confirmed)="leave.answer(true)"
       (extra)="leave.saveAndLeave()"
     >
-      <p>You have unsaved changes. If you leave now they will be lost.</p>
+      <p>You have unsaved changes and they are lost if you leave now.</p>
     </mf-confirm-dialog>
   `,
 })

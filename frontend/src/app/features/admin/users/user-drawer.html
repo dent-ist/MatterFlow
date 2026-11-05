@@ -385,9 +385,8 @@
 </p-dialog>
 
 <mf-confirm-dialog
-  [title]="'Deactivate ' + name() + '?'"
-  confirmLabel="Deactivate"
-  cancelLabel="Cancel"
+  title="Deactivate User"
+  confirmLabel="Deactivate User"
   [danger]="true"
   [busy]="deactivateBusy()"
   [extraLabel]="openTasks() ? 'View their tasks' : ''"
@@ -395,5 +394,5 @@
   (confirmed)="deactivate()"
   (extra)="viewTasks()"
 >
-  <p data-deactivate-text>They can no longer sign in. {{ deactivateText() }}</p>
+  <p data-deactivate-text>{{ name() }} can no longer sign in. {{ deactivateText() }}</p>
 </mf-confirm-dialog>

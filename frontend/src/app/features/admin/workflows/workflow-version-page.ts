@@ -371,11 +371,8 @@ const LIBRARY_PANE_MIN = 1280;
     </mf-fixed-page>
 
     <mf-confirm-dialog
-      [title]="
-        'Publish ' + (version()?.workflowName ?? '') + ' v' + (version()?.version?.versionNo ?? '')
-      "
+      [title]="'Publish v' + (version()?.version?.versionNo ?? '')"
       [confirmLabel]="'Publish v' + (version()?.version?.versionNo ?? '')"
-      cancelLabel="Back to draft"
       scrollLabel="Changes in this version"
       [busy]="busy() || diffLoading()"
       [error]="publishOpen() ? messages().join(' ') : ''"
@@ -473,16 +470,16 @@ const LIBRARY_PANE_MIN = 1280;
     </mf-confirm-dialog>
 
     <mf-confirm-dialog
-      title="Change execution mode"
-      confirmLabel="Change mode"
+      title="Change Execution Mode"
+      confirmLabel="Change Execution Mode"
       [(visible)]="modeOpen"
       (confirmed)="confirmMode()"
     >
       <p>
         {{
           pendingMode()
-            ? 'Steps must then be resolved in sequence. Numbering will be shown.'
-            : 'Ordered numbering will be hidden; steps can be done in any order.'
+            ? 'Steps must then be resolved in sequence and their numbering is shown; you can change it back.'
+            : 'Ordered numbering is hidden and steps can be done in any order; you can change it back.'
         }}
       </p>
     </mf-confirm-dialog>
@@ -504,8 +501,8 @@ const LIBRARY_PANE_MIN = 1280;
     </mf-confirm-dialog>
 
     <mf-confirm-dialog
-      title="Discard draft"
-      confirmLabel="Discard draft"
+      title="Discard Draft"
+      confirmLabel="Discard Draft"
       [danger]="true"
       [busy]="busy()"
       [error]="discardOpen() ? messages().join(' ') : ''"
@@ -513,7 +510,8 @@ const LIBRARY_PANE_MIN = 1280;
       (confirmed)="discard()"
     >
       <p>
-        The draft and its unpublished steps will be deleted. Published versions are not changed.
+        The draft and its unpublished steps are deleted and published versions are not changed. This
+        cannot be undone.
       </p>
     </mf-confirm-dialog>
   `,

@@ -129,8 +129,7 @@ describe('VersionsPanel (#714)', () => {
     await fixture.whenStable();
     expect(fixture.componentInstance.restored).toBeNull();
     const confirm = Array.from(document.querySelectorAll('button')).find(
-      (b) =>
-        b.textContent?.trim() === 'Restore as a new version' && b.closest('p-dialog, .p-dialog'),
+      (b) => b.textContent?.trim() === 'Restore Version' && b.closest('p-dialog, .p-dialog'),
     );
     expect(confirm).toBeDefined();
     confirm!.click();

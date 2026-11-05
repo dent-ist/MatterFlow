@@ -273,15 +273,17 @@ export function valuesPatch(
 
       @if (reopenOpen()) {
         <mf-confirm-dialog
-          [title]="'Reopen &quot;' + s.title + '&quot;?'"
-          confirmLabel="Reopen step"
-          cancelLabel="Keep as is"
+          title="Reopen Step"
+          confirmLabel="Reopen Step"
           [busy]="busy()"
           [visible]="true"
           (visibleChange)="closeReopen($event)"
           (confirmed)="confirmReopen()"
         >
-          <p>Reopen this step so you can change it? Later steps keep their status.</p>
+          <p>
+            &quot;{{ s.title }}&quot; is reopened so you can change it, and later steps keep their
+            status.
+          </p>
           @if (store.task()?.status === 'COMPLETED') {
             <p data-reopen-task-note>
               This task is Completed. Reopening a step will move the task back to In Progress.

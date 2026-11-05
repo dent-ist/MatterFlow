@@ -288,12 +288,12 @@ describe('MatterFormPage', () => {
       expect(el().querySelector('[data-summary]')).toBeNull();
       expect(navigate).not.toHaveBeenCalled();
       const dialog = lossDialog();
-      expect(dialog.textContent).toContain('You will no longer see this matter');
+      expect(dialog.textContent).toContain('Mark Matter Sensitive');
       expect(dialog.querySelector('[data-loss-warning]')?.textContent).toContain(
-        'only its project managers',
+        'Only its project managers',
       );
 
-      buttonByLabel(dialog, 'Mark sensitive')!.click();
+      buttonByLabel(dialog, 'Mark Matter Sensitive')!.click();
       await settle(fixture);
 
       expect(matters.updateMatter).toHaveBeenCalledTimes(2);
@@ -317,7 +317,7 @@ describe('MatterFormPage', () => {
       el().querySelector<HTMLInputElement>('input[type=checkbox]')!.click();
       await submit();
       const dialog = lossDialog();
-      buttonByLabel(dialog, 'Keep it as it is')!.click();
+      buttonByLabel(dialog, 'Cancel')!.click();
       await settle(fixture);
 
       expect(matters.updateMatter).toHaveBeenCalledTimes(1);
@@ -331,14 +331,14 @@ describe('MatterFormPage', () => {
       await settle(fixture);
       const dialog = document.body.querySelector('p-dialog') as HTMLElement;
       expect(dialog.querySelector('[data-number-warning]')?.textContent).toContain(
-        'This change is recorded.',
+        'the change is recorded.',
       );
       const input = document.body.querySelector<HTMLInputElement>('#new-matter-number')!;
       input.value = '99';
       input.dispatchEvent(new Event('input'));
       input.dispatchEvent(new Event('blur'));
       fixture.detectChanges();
-      buttonByLabel(dialog, 'Change number')!.click();
+      buttonByLabel(dialog, 'Change Matter Number')!.click();
       await settle(fixture);
 
       expect(matters.changeMatterNumber).toHaveBeenCalledWith(7, {

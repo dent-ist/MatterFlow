@@ -115,8 +115,8 @@ const INACTIVE_REASON = 'This client is inactive. Set it active to add matters.'
             }
 
             <mf-confirm-dialog
-              [title]="c.isActive ? 'Set client inactive' : 'Set client active'"
-              [confirmLabel]="c.isActive ? 'Set inactive' : 'Set active'"
+              [title]="c.isActive ? 'Set Client Inactive' : 'Set Client Active'"
+              [confirmLabel]="c.isActive ? 'Set Client Inactive' : 'Set Client Active'"
               [danger]="c.isActive"
               [busy]="busy()"
               [(visible)]="toggleOpen"
@@ -124,13 +124,14 @@ const INACTIVE_REASON = 'This client is inactive. Set it active to add matters.'
             >
               @if (c.isActive) {
                 <p data-toggle-body>
-                  Set {{ c.clientNumber }} {{ c.name }} inactive? New matters can't be created for
-                  an inactive client. Its existing matters and tasks keep working.
+                  {{ c.clientNumber }} {{ c.name }} becomes inactive: new matters can't be created
+                  for it, its existing matters and tasks keep working, and you can set it active
+                  again.
                 </p>
               } @else {
                 <p data-toggle-body>
-                  Set {{ c.clientNumber }} {{ c.name }} active? New matters can be created for it
-                  again.
+                  {{ c.clientNumber }} {{ c.name }} becomes active and new matters can be created
+                  for it again.
                 </p>
               }
             </mf-confirm-dialog>

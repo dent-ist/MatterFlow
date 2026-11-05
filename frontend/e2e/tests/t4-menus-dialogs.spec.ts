@@ -9,7 +9,7 @@ import { TaskApi } from '../support/tasks';
 /**
  * Task Detail review, package T4 "Menus and dialogs" (#303 M1, #304 M2, #305 M3, #306 M4): the status menu has one label per item with
  * Cancel task last behind a divider; Complete stays usable while steps need information, says so, and its dialog's primary button goes to
- * the first blocked step; the Hold and Cancel dialogs use "Close"/"Keep task" and "Reason"; the assignee menu starts with "Assign to me"
+ * the first blocked step; the Hold and Cancel dialogs use "Cancel" and "Reason"; the assignee menu starts with "Assign to me"
  * and shows each candidate's open load. Every test builds its own users and tasks. Screenshots:
  * E2E_SCREENSHOTS=docs/ux/task-detail-review/fixes/t4 (otherwise none are written).
  */
@@ -334,7 +334,7 @@ test.describe('T4: Complete readiness (M2, #304)', () => {
 });
 
 test.describe('T4: dialog wording (M3, #305)', () => {
-  test('Put on hold: "Close" dismisses, the field is "Reason", the empty error is shown; Cancel task keeps "Keep task" and "Reason"', async ({
+  test('Put on hold and Cancel task: "Cancel" dismisses both, the field is "Reason", the empty error is shown', async ({
     page,
     seed,
     admin,
@@ -347,28 +347,28 @@ test.describe('T4: dialog wording (M3, #305)', () => {
 
     await detail.chooseAction('HOLD');
     const dialog = detail.dialog;
-    await expect(dialog.getByRole('button', { name: 'Close', exact: true })).toBeVisible();
-    await expect(dialog.getByRole('button', { name: 'Cancel', exact: true })).toHaveCount(0);
+    await expect(dialog.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Close', exact: true })).toHaveCount(0);
     await expect(dialog.getByRole('textbox', { name: /^Reason/ })).toBeVisible();
-    await dialog.getByRole('button', { name: 'Put on hold' }).click();
+    await dialog.getByRole('button', { name: 'Put Task on Hold' }).click();
     await expect(dialog.locator('[data-reason-error]')).toHaveText(
       'Add a reason for putting this task on hold.',
     );
     await shot(page, 'dialog-hold-error-1366x768');
-    await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
     await expect(dialog).toBeHidden();
     await detail.expectStatus('In Progress');
     await expect(detail.statusMenu).toBeFocused();
 
     await detail.chooseAction('CANCEL');
-    await expect(dialog.getByRole('button', { name: 'Keep task' })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
     await expect(dialog.getByRole('textbox', { name: /^Reason/ })).toBeVisible();
-    await dialog.getByRole('button', { name: 'Cancel task' }).click();
+    await dialog.getByRole('button', { name: 'Cancel Task' }).click();
     await expect(dialog.locator('[data-reason-error]')).toHaveText(
       "Add a reason explaining why you're cancelling.",
     );
     await shot(page, 'dialog-cancel-error-1366x768');
-    await dialog.getByRole('button', { name: 'Keep task' }).click();
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
     await expect(dialog).toBeHidden();
     await detail.expectStatus('In Progress');
   });
@@ -389,7 +389,7 @@ test.describe('T4: dialog wording (M3, #305)', () => {
     await page.locator('[data-option="HOLD"]').press('Enter');
     await expect(detail.dialog).toBeVisible();
     await detail.dialog.getByRole('textbox', { name: /^Reason/ }).fill('Waiting for the vendor');
-    await detail.dialog.getByRole('button', { name: 'Put on hold' }).press('Enter');
+    await detail.dialog.getByRole('button', { name: 'Put Task on Hold' }).press('Enter');
     await expect(detail.dialog).toBeHidden();
     await detail.expectStatus('On Hold');
     await expect(detail.statusMenu).toBeFocused();
@@ -427,7 +427,7 @@ test.describe('T4: dialog wording (M3, #305)', () => {
 
       await detail.chooseAction('HOLD');
       await expect(detail.dialog).toBeVisible();
-      await detail.dialog.getByRole('button', { name: 'Put on hold' }).click();
+      await detail.dialog.getByRole('button', { name: 'Put Task on Hold' }).click();
       await shot(page, `dialog-hold-${size.name}`);
       await checkPage(page, `hold dialog ${size.name}`);
       await detail.dialog.getByRole('button', { name: 'Close', exact: true }).click();

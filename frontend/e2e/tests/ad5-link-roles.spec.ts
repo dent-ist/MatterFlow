@@ -14,7 +14,7 @@ import { toasts } from '../support/toasts';
 const TAB_URL = '/admin/asset-types?tab=link-roles';
 const dialog = (page: Page) => page.getByRole('dialog', { name: /link role/i });
 const field = (page: Page) => page.locator('#link-role-name');
-const ask = (page: Page) => page.getByRole('dialog', { name: 'Leave without saving?' });
+const ask = (page: Page) => page.getByRole('dialog', { name: 'Discard Unsaved Changes' });
 const menu = (page: Page, name: string) =>
   page.getByRole('button', { name: `Actions for ${name}`, exact: true });
 const row = (page: Page, name: string) => page.locator(`tr[data-row="${name}"]`);
@@ -173,12 +173,12 @@ test.describe('New link role and Rename (#640, #642)', () => {
     await field(page).fill(`${name} changed`);
     await page.keyboard.press('Escape');
     await expect(ask(page)).toBeVisible();
-    await expect(ask(page).getByRole('button', { name: 'Stay' })).toBeFocused();
+    await expect(ask(page).getByRole('button', { name: 'Keep Editing' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(ask(page)).toBeHidden();
     await expect(field(page)).toHaveValue(`${name} changed`);
     await dialog(page).getByRole('button', { name: 'Cancel' }).click();
-    await ask(page).getByRole('button', { name: 'Leave' }).click();
+    await ask(page).getByRole('button', { name: 'Discard Changes' }).click();
     await expect(dialog(page)).toBeHidden();
     await expect(link).toBeFocused();
     await expect(row(page, name)).toBeVisible();
@@ -234,7 +234,7 @@ test.describe('Links, Delete only when unused, Move, Deactivate (#641, #640)', (
     // Deactivate says how many links keep the role; Activate is one click.
     await openRowMenu(page, menu(page, used));
     await page.getByRole('menuitem', { name: 'Deactivate' }).click();
-    const confirm = page.getByRole('dialog', { name: 'Deactivate link role?' });
+    const confirm = page.getByRole('dialog', { name: 'Deactivate Link Role' });
     await expect(confirm).toContainText('2 links keep this role.');
     await confirm.getByRole('button', { name: 'Deactivate link role' }).click();
     await expect(row(page, used)).toContainText('Inactive');
@@ -247,7 +247,7 @@ test.describe('Links, Delete only when unused, Move, Deactivate (#641, #640)', (
     // Delete an unused role: one question, then it is gone.
     await openRowMenu(page, menu(page, unused));
     await page.getByRole('menuitem', { name: 'Delete' }).click();
-    const del = page.getByRole('dialog', { name: 'Delete link role?' });
+    const del = page.getByRole('dialog', { name: 'Delete Link Role' });
     await expect(del).toContainText('No link uses this role.');
     await del.getByRole('button', { name: 'Delete link role' }).click();
     await expect(row(page, unused)).toHaveCount(0);
@@ -343,9 +343,9 @@ test.describe('Permissions and accessibility', () => {
 
       await openRowMenu(page, menu(page, name));
       await page.getByRole('menuitem', { name: 'Deactivate' }).click();
-      await expect(page.getByRole('dialog', { name: 'Deactivate link role?' })).toBeVisible();
+      await expect(page.getByRole('dialog', { name: 'Deactivate Link Role' })).toBeVisible();
       expect(await axeViolations(page), `deactivate at ${size.width}`).toEqual([]);
-      await page.getByRole('button', { name: 'Keep active' }).click();
+      await page.getByRole('button', { name: 'Cancel' }).click();
     }
   });
 });

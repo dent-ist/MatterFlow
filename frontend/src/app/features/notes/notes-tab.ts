@@ -1705,8 +1705,8 @@ interface RefChip {
 
     <mf-ai-coming-soon [(visible)]="aiPanel" />
     <mf-confirm-dialog
-      title="Delete this note?"
-      confirmLabel="Delete note"
+      title="Delete Note"
+      confirmLabel="Delete Note"
       [danger]="true"
       [busy]="busy()"
       [(visible)]="confirmDelete"
@@ -1715,13 +1715,12 @@ interface RefChip {
       <p>
         <b>{{ note()?.title }}</b> is removed for everyone who can see this matter{{
           deleteTagText()
-        }}.
+        }}; this cannot be undone from this screen and the deletion is written to the audit log.
       </p>
-      <p>It cannot be undone from this screen. The deletion is written to the audit log.</p>
     </mf-confirm-dialog>
     <mf-confirm-dialog
-      title="Delete this template?"
-      confirmLabel="Delete template"
+      title="Delete Template"
+      confirmLabel="Delete Template"
       [danger]="true"
       [(visible)]="confirmDeleteTpl"
       (confirmed)="deleteTemplate()"
@@ -1737,9 +1736,9 @@ interface RefChip {
       </p>
     </mf-confirm-dialog>
     <mf-confirm-dialog
-      title="Discard unsaved changes?"
-      confirmLabel="Discard changes"
-      cancelLabel="Keep editing"
+      title="Discard Unsaved Changes"
+      confirmLabel="Discard Changes"
+      cancelLabel="Keep Editing"
       [danger]="true"
       [(visible)]="confirmDiscard"
       (confirmed)="proceedDiscard()"

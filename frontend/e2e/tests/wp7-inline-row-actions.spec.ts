@@ -152,7 +152,7 @@ test.describe('WP7: inline row actions', () => {
       fail ? route.abort() : route.continue(),
     );
     await cancelInline(page, myWork.row(keep), false);
-    await page.getByRole('dialog').getByRole('button', { name: 'Keep task' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(myWork.row(keep)).not.toHaveAttribute('data-leaving', 'true');
     await page.waitForTimeout(4500);
@@ -253,7 +253,7 @@ test.describe('WP7: inline row actions', () => {
       await page.locator('[data-option="HOLD"]').click();
       const dialog = page.getByRole('dialog').filter({ has: page.locator('[data-reason-body]') });
       await dialog.getByLabel(/Reason/).fill('Waiting');
-      await dialog.getByRole('button', { name: 'Put on hold' }).click();
+      await dialog.getByRole('button', { name: 'Put Task on Hold' }).click();
       const toast = page.locator('[data-toast]').first();
       await expect(toast).toBeVisible();
       await expectClear(toast, pager, size.name);

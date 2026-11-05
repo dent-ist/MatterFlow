@@ -140,14 +140,14 @@ test.describe('Asset record page (WP-AS2)', () => {
     await page.getByRole('menuitem', { name: 'Set inactive' }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toContainText(`Set ${asset.displayName} inactive?`);
-    await dialog.getByRole('button', { name: 'Set inactive' }).click();
+    await dialog.getByRole('button', { name: 'Set Asset Inactive' }).click();
     await expect(page.getByText('This asset is inactive')).toBeVisible();
     await expect(page.locator('[data-record-header] mf-active-badge')).toContainText('Inactive');
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0);
 
     await page.getByRole('button', { name: 'More actions' }).click();
     await page.getByRole('menuitem', { name: 'Set active' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Set active' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Reactivate Asset' }).click();
     await expect(page.getByText('This asset is inactive')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
   });

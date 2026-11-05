@@ -151,7 +151,7 @@ describe('ReportsListTab (#712)', () => {
       await settle(fixture);
       expect(admin.deactivateReport).not.toHaveBeenCalled();
       const confirm = Array.from(document.querySelectorAll('button')).find(
-        (b) => b.textContent?.trim() === 'Deactivate' && b.closest('p-dialog, .p-dialog'),
+        (b) => b.textContent?.trim() === 'Deactivate Report' && b.closest('p-dialog, .p-dialog'),
       );
       confirm!.click();
       await settle(fixture);

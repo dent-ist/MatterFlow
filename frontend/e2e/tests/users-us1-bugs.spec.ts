@@ -156,15 +156,15 @@ test.describe('BUG-2: focus and Esc', () => {
     const name = page.locator('[data-name]');
     await name.fill('Someone Else Entirely');
     await page.keyboard.press('Escape');
-    const dialog = page.getByRole('dialog', { name: 'Leave without saving?' });
+    const dialog = page.getByRole('dialog', { name: 'Discard Unsaved Changes' });
     await expect(dialog).toBeVisible();
-    await dialog.getByRole('button', { name: 'Stay' }).click();
+    await dialog.getByRole('button', { name: 'Keep Editing' }).click();
     await expect(dialog).toBeHidden();
     await expect(page.locator('[data-panel]')).toBeVisible();
     await expect(name).toHaveValue('Someone Else Entirely');
 
     await page.keyboard.press('Escape');
-    await dialog.getByRole('button', { name: 'Leave' }).click();
+    await dialog.getByRole('button', { name: 'Discard Changes' }).click();
     await expect(page.locator('[data-panel]')).toHaveCount(0);
     await expect(rowButton(page, active.userId)).toBeFocused();
   });

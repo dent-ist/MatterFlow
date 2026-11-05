@@ -16,27 +16,33 @@ describe('dialog wording table (#362)', () => {
     ['retire', retireCopy(2)],
   ];
 
-  it('puts the verb in the primary button and says what is kept in the cancel', () => {
+  it('puts the verb and the thing in the title and the primary button, and always says Cancel (D-34)', () => {
     expect(DIALOG_COPY.deactivateTaskType).toEqual({
-      title: 'Deactivate task type?',
-      confirm: 'Deactivate task type',
-      cancel: 'Keep active',
+      title: 'Deactivate Task Type',
+      confirm: 'Deactivate Task Type',
+      cancel: 'Cancel',
       danger: true,
     });
-    expect(DIALOG_COPY.deactivateWorkflow.confirm).toBe('Deactivate workflow');
-    expect(DIALOG_COPY.deactivateStep.confirm).toBe('Deactivate step');
-    expect(DIALOG_COPY.discardDraft.confirm).toBe('Discard draft');
-    expect(DIALOG_COPY.discardChanges.cancel).toBe('Keep editing');
+    expect(DIALOG_COPY.deactivateWorkflow.confirm).toBe('Deactivate Workflow');
+    expect(DIALOG_COPY.deactivateStep.confirm).toBe('Deactivate Step');
+    expect(DIALOG_COPY.discardDraft.confirm).toBe('Discard Draft');
+    // The unsaved-changes question is the one dialog whose cancel is not "Cancel" (D-34).
+    expect(DIALOG_COPY.discardChanges).toEqual({
+      title: 'Discard Unsaved Changes',
+      confirm: 'Discard Changes',
+      cancel: 'Keep Editing',
+      danger: true,
+    });
     expect(publishCopy(3)).toEqual({
       title: 'Publish v3',
       confirm: 'Publish v3',
-      cancel: 'Back to draft',
+      cancel: 'Cancel',
       danger: false,
     });
     expect(retireCopy(2)).toEqual({
-      title: 'Retire v2?',
+      title: 'Retire v2',
       confirm: 'Retire v2',
-      cancel: 'Keep published',
+      cancel: 'Cancel',
       danger: true,
     });
   });
@@ -45,7 +51,7 @@ describe('dialog wording table (#362)', () => {
     for (const [key, copy] of all) {
       if (key.startsWith('deactivate')) expect(copy.confirm).toMatch(/^Deactivate /);
       if (key === 'retire') expect(copy.confirm).toMatch(/^Retire v/);
-      if (key === 'discardDraft') expect(copy.confirm).toMatch(/^Discard draft/);
+      if (key === 'discardDraft') expect(copy.confirm).toMatch(/^Discard Draft/);
       expect(copy.confirm).not.toMatch(/delete|remove|archive/i);
     }
   });
@@ -197,8 +203,9 @@ describe('admin kit dialogs (#542)', () => {
       expect(c.body, key).toBeTruthy();
       expect(c.confirm, key).toBeTruthy();
       expect(c.cancel, key).toBeTruthy();
-      // The safe button is the cancel one: it says what is kept, or just cancels the form.
-      expect(c.cancel, key).toMatch(/^(Keep |Cancel$)/);
+      // The safe button is always "Cancel" (D-34, #1141), and the title carries no question mark.
+      expect(c.cancel, key).toBe('Cancel');
+      expect(c.title, key).not.toMatch(/\?$/);
     }
   });
 
@@ -238,7 +245,7 @@ describe('admin kit dialogs (#542)', () => {
   it('allows Delete only for the two unused-delete dialogs, and Deactivate everywhere else', () => {
     for (const [key, c] of Object.entries(kit)) {
       if (key.startsWith('deleteUnused')) {
-        expect(c.confirm, key).toMatch(/^Delete (priority|link role)$/);
+        expect(c.confirm, key).toMatch(/^Delete (Priority|Link Role)$/);
         expect(c.danger, key).toBe(true);
       } else {
         expect(c.confirm, key).not.toMatch(/delete|remove|archive/i);
@@ -273,9 +280,9 @@ describe('admin kit dialogs (#542)', () => {
   });
 
   it('sets the default with one calm sentence, and renames a status label without touching its code', () => {
-    expect(kit.setDefaultPriority.title).toBe('Make Normal the default priority?');
+    expect(kit.setDefaultPriority.title).toBe('Set Default Priority');
     expect(kit.setDefaultPriority.body).toBe(
-      'Normal is the default priority. New tasks start with it. High stays available.',
+      'Normal becomes the default priority and new tasks start with it. High stays available.',
     );
     expect(kit.setDefaultPriority.danger).toBe(false);
     expect(dialogCopy.setDefaultPriority().body).toBe('New tasks start with it.');

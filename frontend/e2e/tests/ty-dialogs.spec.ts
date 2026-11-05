@@ -51,10 +51,10 @@ test.describe('Dialog wording and focus (#362)', () => {
     await page.getByRole('menuitem', { name: 'Deactivate' }).click();
     await expect(dialog(page)).toBeVisible();
     await expect(
-      dialog(page).getByText('Deactivate task type?', { exact: true }).first(),
+      dialog(page).getByText('Deactivate Task Type', { exact: true }).first(),
     ).toBeVisible();
     await expect(dialog(page).getByRole('button', { name: 'Deactivate task type' })).toBeVisible();
-    await expect(dialog(page).getByRole('button', { name: 'Keep active' })).toBeVisible();
+    await expect(dialog(page).getByRole('button', { name: 'Cancel' })).toBeVisible();
     await atEverySize(page, 'dialog-deactivate-task-type');
     await page.keyboard.press('Escape');
     await expect(dialog(page)).toHaveCount(0);
@@ -68,7 +68,7 @@ test.describe('Dialog wording and focus (#362)', () => {
     await page.locator('[data-record-header] [data-overflow]').click();
     await page.getByRole('menuitem', { name: 'Deactivate' }).click();
     await expect(dialog(page).getByRole('button', { name: 'Deactivate workflow' })).toBeVisible();
-    await expect(dialog(page).getByRole('button', { name: 'Keep active' })).toBeVisible();
+    await expect(dialog(page).getByRole('button', { name: 'Cancel' })).toBeVisible();
     await atEverySize(page, 'dialog-deactivate-workflow');
 
     const step = await seed.step({ title: `Wording ${uid()}` });
@@ -77,7 +77,7 @@ test.describe('Dialog wording and focus (#362)', () => {
     await page.locator('[data-page-actions] button[data-overflow]').click();
     await page.getByRole('menuitem', { name: 'Deactivate' }).click();
     await expect(dialog(page).getByRole('button', { name: 'Deactivate step' })).toBeVisible();
-    await expect(dialog(page).getByRole('button', { name: 'Keep active' })).toBeVisible();
+    await expect(dialog(page).getByRole('button', { name: 'Cancel' })).toBeVisible();
     await atEverySize(page, 'dialog-deactivate-step');
   });
 
@@ -97,7 +97,7 @@ test.describe('Dialog wording and focus (#362)', () => {
     await expect(d.getByText('Publish v2', { exact: true }).first()).toBeVisible();
     const primary = d.getByRole('button', { name: 'Publish v2' });
     await expect(primary).toBeFocused();
-    await expect(d.getByRole('button', { name: 'Back to draft' })).toBeVisible();
+    await expect(d.getByRole('button', { name: 'Cancel' })).toBeVisible();
     await page.keyboard.press('Shift+Tab');
     await expect(d.getByLabel('Version note')).not.toBeFocused(); // Cancel sits between the note and the primary
     await page.keyboard.press('Shift+Tab');
@@ -108,7 +108,7 @@ test.describe('Dialog wording and focus (#362)', () => {
 
     await page.getByRole('button', { name: 'Retire version' }).click();
     await expect(dialog(page).getByRole('button', { name: 'Retire v2' })).toBeFocused();
-    await expect(dialog(page).getByRole('button', { name: 'Keep published' })).toBeVisible();
+    await expect(dialog(page).getByRole('button', { name: 'Cancel' })).toBeVisible();
     await atEverySize(page, 'dialog-form-retire');
     await page.keyboard.press('Escape');
     await expect(dialog(page)).toHaveCount(0);

@@ -177,7 +177,7 @@ describe('PodsPage', () => {
       item!.click();
       await settle();
       expect(api.updatePod).not.toHaveBeenCalled();
-      expect(document.body.textContent).toContain('Deactivate pod?');
+      expect(document.body.textContent).toContain('Deactivate Pod');
     });
 
     it('has no Deactivate for Pod.ManageMembers alone, and the name and status stay read only', async () => {
@@ -544,11 +544,11 @@ describe('PodsPage', () => {
 
     await click('.pods__actions p-button[type="submit"]');
     expect(api.updatePod).not.toHaveBeenCalled();
-    expect(document.body.textContent).toContain('Deactivate pod?');
-    expect(document.body.textContent).toContain('Keep active');
+    expect(document.body.textContent).toContain('Deactivate Pod');
+    expect(document.body.textContent).toContain('Cancel');
 
     const confirm = Array.from(document.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'Deactivate pod' && b.closest('p-dialog, .p-dialog'),
+      (b) => b.textContent?.trim() === 'Deactivate Pod' && b.closest('p-dialog, .p-dialog'),
     );
     expect(confirm).toBeDefined();
     confirm!.click();
@@ -559,7 +559,7 @@ describe('PodsPage', () => {
       isActive: false,
       rowVersion: 'rv1',
     });
-    expect(document.body.textContent).not.toContain('Deactivate pod?');
+    expect(document.body.textContent).not.toContain('Deactivate Pod');
   });
 
   it('does not allow adding members to an inactive pod', async () => {

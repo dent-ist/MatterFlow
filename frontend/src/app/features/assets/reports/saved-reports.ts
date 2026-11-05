@@ -81,8 +81,8 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
     }
 
     <mf-confirm-dialog
-      title="Rename report"
-      confirmLabel="Rename"
+      title="Rename Report"
+      confirmLabel="Rename Report"
       [busy]="busy()"
       [error]="error()"
       [(visible)]="renameOpen"
@@ -104,8 +104,8 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
     </mf-confirm-dialog>
 
     <mf-confirm-dialog
-      title="Delete report"
-      confirmLabel="Delete"
+      title="Delete Report"
+      confirmLabel="Delete Report"
       [danger]="true"
       [busy]="busy()"
       [error]="error()"
@@ -113,8 +113,8 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
       (confirmed)="remove()"
     >
       <p>
-        Delete <strong>{{ target()?.name }}</strong
-        >? Only the saved settings are removed. Your assets and data are not touched.
+        <strong>{{ target()?.name }}</strong> is deleted: only the saved settings are removed, your
+        assets and data are not touched, and this cannot be undone.
       </p>
     </mf-confirm-dialog>
   `,

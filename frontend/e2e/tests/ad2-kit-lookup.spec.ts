@@ -95,15 +95,15 @@ test.describe('lookup dialog on the Status Labels rename (#564)', () => {
     // Edits: Escape asks; Stay is the default button.
     await field(page).fill(dropped);
     await page.keyboard.press('Escape');
-    const ask = page.getByRole('dialog', { name: 'Leave without saving?' });
+    const ask = page.getByRole('dialog', { name: 'Discard Unsaved Changes' });
     await expect(ask).toBeVisible();
-    await expect(ask.getByRole('button', { name: 'Stay' })).toBeFocused();
+    await expect(ask.getByRole('button', { name: 'Keep Editing' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(ask).toBeHidden();
     await expect(dialog(page)).toBeVisible();
     await expect(field(page)).toHaveValue(dropped);
     await dialog(page).getByRole('button', { name: 'Cancel' }).click();
-    await ask.getByRole('button', { name: 'Leave' }).click();
+    await ask.getByRole('button', { name: 'Discard Changes' }).click();
     await expect(dialog(page)).toBeHidden();
     await expect(page.locator('[data-row="CANCELLED"] mf-status-badge')).not.toContainText(
       'Dropped',
@@ -130,7 +130,7 @@ test.describe('lookup dialog on the Status Labels rename (#564)', () => {
     }
     await page.keyboard.press('Escape');
     await expect(dialog(page)).toBeHidden();
-    await expect(page.getByRole('dialog', { name: 'Leave without saving?' })).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: 'Discard Unsaved Changes' })).toHaveCount(0);
     await expect(rename(page, 'NEW')).toBeFocused();
   });
 

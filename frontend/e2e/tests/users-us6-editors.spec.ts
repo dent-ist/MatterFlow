@@ -192,9 +192,9 @@ test.describe('#451 the pod editor is a record page', () => {
       .getByRole('button', { name: /actions|more/i })
       .click();
     await page.getByRole('menuitem', { name: 'Deactivate pod' }).click();
-    const dialog = page.getByRole('dialog', { name: 'Deactivate pod?' });
+    const dialog = page.getByRole('dialog', { name: 'Deactivate Pod' });
     await expect(dialog).toBeVisible();
-    await dialog.getByRole('button', { name: 'Deactivate pod' }).click();
+    await dialog.getByRole('button', { name: 'Deactivate Pod' }).click();
     await expect(page.locator('[data-record-header]')).toContainText('Inactive');
   });
 
@@ -248,9 +248,9 @@ test.describe('axe and layout with the editors open', () => {
       await shot(page, 'role-editor-changed', width, height);
       // Leave without saving (the guard asks): load the pod page fresh instead.
       await page.goto(`/admin/pods?pod=${podId}`).catch(() => undefined);
-      const leave = page.getByRole('dialog', { name: 'Leave without saving?' });
+      const leave = page.getByRole('dialog', { name: 'Discard Unsaved Changes' });
       if (await leave.isVisible().catch(() => false)) {
-        await leave.getByRole('button', { name: 'Leave' }).click();
+        await leave.getByRole('button', { name: 'Discard Changes' }).click();
       }
       await expect(page.getByRole('heading', { level: 1 })).toContainText(podName);
       expect(await axeClean(page)).toEqual([]);

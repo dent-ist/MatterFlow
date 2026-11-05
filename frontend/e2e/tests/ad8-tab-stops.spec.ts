@@ -185,7 +185,7 @@ test.describe('Keyboard-only flows (#659)', () => {
     await page.keyboard.press('Enter');
     await page.getByRole('menuitem', { name: 'Deactivate' }).focus();
     await page.keyboard.press('Enter');
-    const confirm = page.getByRole('dialog', { name: 'Deactivate link role?' });
+    const confirm = page.getByRole('dialog', { name: 'Deactivate Link Role' });
     await expect(confirm).toBeVisible();
     await page.getByRole('button', { name: 'Deactivate link role' }).focus();
     await page.keyboard.press('Enter');

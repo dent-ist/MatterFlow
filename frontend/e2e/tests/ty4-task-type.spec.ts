@@ -218,7 +218,7 @@ test.describe('Task Type record page', () => {
       await page.setViewportSize({ width: 1366, height: 768 });
       await openType(page, w);
       await menuItem(page, 'Deactivate');
-      const dialog = page.getByRole('dialog', { name: 'Deactivate task type?' });
+      const dialog = page.getByRole('dialog', { name: 'Deactivate Task Type' });
       await expect(dialog).toBeVisible();
       await expect(dialog.locator('[data-impact]')).toContainText(
         'No open tasks use this task type.',
@@ -230,7 +230,7 @@ test.describe('Task Type record page', () => {
         await shot(page, 'deactivate-dialog', size.w);
       }
       await page.setViewportSize({ width: 1366, height: 768 });
-      await dialog.getByRole('button', { name: 'Keep active' }).click();
+      await dialog.getByRole('button', { name: 'Cancel' }).click();
       await expect(dialog).toBeHidden();
       await expect(page.locator('[data-page-actions] button[data-overflow]')).toBeFocused();
 
@@ -262,12 +262,12 @@ test.describe('Task Type record page', () => {
       const open = page.locator('a[data-strip-item=open]');
       await expect(open).toContainText('1');
       await menuItem(page, 'Deactivate');
-      const dialog = page.getByRole('dialog', { name: 'Deactivate task type?' });
+      const dialog = page.getByRole('dialog', { name: 'Deactivate Task Type' });
       await expect(dialog.locator('[data-impact]')).toContainText(
         '1 open task keeps this type. 1 workflow is left without a task type.',
       );
       await expect(dialog.locator('[data-impact-names] li')).toHaveText([world.workflow.name]);
-      await dialog.getByRole('button', { name: 'Keep active' }).click();
+      await dialog.getByRole('button', { name: 'Cancel' }).click();
       await open.click();
       await expect(page).toHaveURL(new RegExp(`/tasks\\?.*type=${world.taskType.id}`));
     });
@@ -311,7 +311,7 @@ test.describe('Task Type record page', () => {
       const dialog = page.getByRole('dialog');
       await expect(dialog).toBeVisible();
       await shot(page, 'leave-tab-dialog', 1366);
-      await dialog.getByRole('button', { name: 'Stay' }).click();
+      await dialog.getByRole('button', { name: 'Keep Editing' }).click();
       await expect(page).not.toHaveURL(/tab=workflows/);
       await expect(page.locator('#tt-description')).toHaveValue('Edited description');
 
@@ -326,7 +326,7 @@ test.describe('Task Type record page', () => {
       await tab(page, 'overview').click();
       await page.locator('#tt-name').fill('Dropped name');
       await tab(page, 'workflows').click();
-      await dialog.getByRole('button', { name: 'Leave', exact: true }).click();
+      await dialog.getByRole('button', { name: 'Discard Changes', exact: true }).click();
       await expect(page).toHaveURL(/tab=workflows/);
       await tab(page, 'overview').click();
       await expect(page.locator('#tt-name')).toHaveValue(w.type.name);
@@ -900,7 +900,10 @@ test.describe('Task Type record page', () => {
       await expect(page.locator('[data-footer]')).toHaveCount(0);
       await page.locator('#tt-name').fill('Not saved either');
       await page.locator('[data-action=edit-form]').click();
-      await page.getByRole('dialog').getByRole('button', { name: 'Leave', exact: true }).click();
+      await page
+        .getByRole('dialog')
+        .getByRole('button', { name: 'Discard Changes', exact: true })
+        .click();
       await expect(page).toHaveURL(new RegExp(`/admin/task-types/${w.type.id}/form$`));
       const saved = (await admin.get(`/api/v1/task-types/${w.type.id}`)) as { name: string };
       expect(saved.name).toBe(w.type.name);

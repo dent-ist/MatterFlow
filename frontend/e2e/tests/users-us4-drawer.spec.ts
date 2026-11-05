@@ -187,13 +187,13 @@ test.describe('#438 the drawer shell', () => {
     const name = page.locator('[data-name]');
     await name.fill('Someone Else Entirely');
     await page.keyboard.press('Escape');
-    const dialog = page.getByRole('dialog', { name: 'Leave without saving?' });
+    const dialog = page.getByRole('dialog', { name: 'Discard Unsaved Changes' });
     await expect(dialog).toBeVisible();
-    await dialog.getByRole('button', { name: 'Stay' }).click();
+    await dialog.getByRole('button', { name: 'Keep Editing' }).click();
     await expect(dialog).toBeHidden();
     await expect(name).toHaveValue('Someone Else Entirely');
     await page.keyboard.press('Escape');
-    await dialog.getByRole('button', { name: 'Leave' }).click();
+    await dialog.getByRole('button', { name: 'Discard Changes' }).click();
     await expect(drawer(page)).toHaveCount(0);
     await expect(nameOf(page, worker.userId)).toBeFocused();
   });

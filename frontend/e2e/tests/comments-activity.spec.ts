@@ -92,7 +92,7 @@ test.describe('Comments and history (SCN-018)', () => {
 
     await panel.locator('[data-delete]').click();
     await expect(detail.dialog.locator('[data-delete-body]')).toBeVisible();
-    await detail.dialog.getByRole('button', { name: 'Keep comment' }).click();
+    await detail.dialog.getByRole('button', { name: 'Cancel' }).click();
     await expect(panel.locator('[data-comment-id]')).toHaveCount(1);
 
     await panel.locator('[data-delete]').click();

@@ -56,7 +56,7 @@ describe('AI placeholder (MD-16, #1017)', () => {
     expect(f.componentInstance.soon()).toBe(false);
   });
 
-  it('the warning dialog lists the reasons and offers Edit (left) and Save anyway (right)', async () => {
+  it('the warning dialog lists the reasons and offers Cancel (left) and Save Note Anyway (right)', async () => {
     const f = await start();
     f.componentInstance.warn.set(true);
     f.detectChanges();
@@ -65,6 +65,6 @@ describe('AI placeholder (MD-16, #1017)', () => {
     const buttons = Array.from(document.body.querySelectorAll('.p-dialog-footer button')).map((b) =>
       b.textContent!.trim(),
     );
-    expect(buttons).toEqual(['Edit', 'Save anyway']);
+    expect(buttons).toEqual(['Cancel', 'Save Note Anyway']);
   });
 });

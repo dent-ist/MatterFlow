@@ -119,10 +119,10 @@ export class OnHoldReasonsPage implements OnInit, HasUnsavedChanges {
 
   protected readonly deactivating = signal<OnHoldReasonView | null>(null);
   protected readonly deactivateCopy = computed(() => ({
-    title: 'Deactivate reason?',
-    body: "It won't be offered when a task is put on hold. Tasks already on hold with it, and the history, keep showing it. You can activate it again.",
-    confirm: 'Deactivate reason',
-    cancel: 'Keep active',
+    title: 'Deactivate Reason',
+    body: 'It is no longer offered when a task is put on hold, tasks already on hold with it keep showing it, and you can activate it again.',
+    confirm: 'Deactivate Reason',
+    cancel: 'Cancel',
     danger: true,
   }));
 

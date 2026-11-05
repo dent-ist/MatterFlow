@@ -342,7 +342,7 @@ describe('ReportEditorPage (#713, #714)', () => {
       q<HTMLButtonElement>('[data-deactivate]').click();
       await settle(fixture);
       const confirm = Array.from(document.querySelectorAll('button')).find(
-        (b) => b.textContent?.trim() === 'Deactivate' && b.closest('p-dialog, .p-dialog'),
+        (b) => b.textContent?.trim() === 'Deactivate Report' && b.closest('p-dialog, .p-dialog'),
       );
       confirm!.click();
       await settle(fixture);

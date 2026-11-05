@@ -181,20 +181,20 @@ test.describe('New priority and Edit priority (#609)', () => {
     await expect(label(page)).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(dialog(page)).toBeHidden();
-    await expect(page.getByRole('dialog', { name: 'Leave without saving?' })).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: 'Discard Unsaved Changes' })).toHaveCount(0);
     await expect(opener).toBeFocused();
 
     await opener.click();
     await label(page).fill('half typed');
     await page.keyboard.press('Escape');
-    const ask = page.getByRole('dialog', { name: 'Leave without saving?' });
+    const ask = page.getByRole('dialog', { name: 'Discard Unsaved Changes' });
     await expect(ask).toBeVisible();
-    await expect(ask.getByRole('button', { name: 'Stay' })).toBeFocused();
+    await expect(ask.getByRole('button', { name: 'Keep Editing' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(ask).toBeHidden();
     await expect(label(page)).toHaveValue('half typed');
     await dialog(page).getByRole('button', { name: 'Cancel' }).click();
-    await ask.getByRole('button', { name: 'Leave' }).click();
+    await ask.getByRole('button', { name: 'Discard Changes' }).click();
     await expect(dialog(page)).toBeHidden();
     await expect(page).not.toHaveURL(/edit=/);
     await expect(opener).toBeFocused();

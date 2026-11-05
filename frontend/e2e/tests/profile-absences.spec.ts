@@ -101,7 +101,7 @@ test.describe('My profile: several Out of office entries', () => {
 
     // Delete the first one after the confirmation.
     await upcoming.first().locator('[data-absence-delete]').click();
-    const confirm = me.getByRole('dialog', { name: 'Delete this entry?' });
+    const confirm = me.getByRole('dialog', { name: 'Delete Out of Office' });
     await expect(confirm).toContainText('Vacation');
     await confirm.getByRole('button', { name: 'Delete' }).click();
     await expect(upcoming).toHaveCount(1);

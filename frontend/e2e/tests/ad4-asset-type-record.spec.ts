@@ -13,7 +13,7 @@ import { uid } from '../support/seed';
 const heading = (page: Page) => page.getByRole('heading', { level: 1 });
 const crumbs = (page: Page) => page.getByRole('navigation', { name: 'Breadcrumb' }).locator('li');
 const name = (page: Page) => page.getByLabel('Name', { exact: false }).first();
-const ask = (page: Page) => page.getByRole('dialog', { name: 'Leave without saving?' });
+const ask = (page: Page) => page.getByRole('dialog', { name: 'Discard Unsaved Changes' });
 const WIDTHS = [
   { width: 1920, height: 1080 },
   { width: 1366, height: 768 },
@@ -161,12 +161,12 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
     await page.getByRole('tab', { name: /^Fields/ }).click();
     await expect(ask(page)).toBeVisible();
     await expect(ask(page).getByRole('button', { name: 'Save and leave' })).toBeVisible();
-    await ask(page).getByRole('button', { name: 'Stay' }).click();
+    await ask(page).getByRole('button', { name: 'Keep Editing' }).click();
     await expect(name(page)).toHaveValue('Half typed');
     // Navigating away asks too.
     await page.getByRole('link', { name: 'Dashboard' }).first().click();
     await expect(ask(page)).toBeVisible();
-    await ask(page).getByRole('button', { name: 'Stay' }).click();
+    await ask(page).getByRole('button', { name: 'Keep Editing' }).click();
     await expect(page).toHaveURL(/\/admin\/asset-types\/\d+$/);
 
     await name(page).fill(`Saved ${token}`);
@@ -275,7 +275,7 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
     await page.goto(`/admin/asset-types/${t.assetTypeId}`);
     await page.locator('[data-page-actions] button[data-overflow]').click();
     await page.getByRole('menuitem', { name: 'Deactivate' }).click();
-    const dialog = page.getByRole('dialog', { name: 'Deactivate asset type?' });
+    const dialog = page.getByRole('dialog', { name: 'Deactivate Asset Type' });
     await expect(dialog).toContainText('1 asset keeps this type.');
     await expect(dialog).toContainText("It won't be offered for new assets.");
     if (axeAvailable()) expect(await axeViolations(page)).toEqual([]);

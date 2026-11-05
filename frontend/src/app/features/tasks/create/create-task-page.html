@@ -569,13 +569,12 @@
 }
 
 <mf-confirm-dialog
-  title="Change task type"
-  confirmLabel="Change"
-  cancelLabel="Keep"
+  title="Change Task Type"
+  confirmLabel="Change Task Type"
   [(visible)]="confirmTypeOpen"
   (confirmed)="confirmTypeChange()"
 >
   <p data-type-warning>
-    Changing the task type clears the request details you entered. The other fields stay.
+    Changing the task type clears the request details you entered and keeps the other fields.
   </p>
 </mf-confirm-dialog>

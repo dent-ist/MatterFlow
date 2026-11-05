@@ -72,12 +72,12 @@ test.describe('the priority row menu (#614, #618)', () => {
       'Deactivate',
     ]);
     await item(page, /^Deactivate/).click();
-    const dialog = page.getByRole('dialog', { name: 'Deactivate priority?' });
+    const dialog = page.getByRole('dialog', { name: 'Deactivate Priority' });
     await expect(dialog).toContainText('31 open tasks keep this priority.');
     await expect(dialog).toContainText("It won't be offered for new or changed tasks.");
-    await expect(dialog.getByRole('button', { name: 'Keep active' })).toBeFocused();
+    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
     await shot(page, 'priority-deactivate');
-    await dialog.getByRole('button', { name: 'Keep active' }).click();
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
     await expect(menuOf(page, used.label)).toBeFocused();
 
     await openRowMenu(page, menuOf(page, extras[0].label));
@@ -94,9 +94,9 @@ test.describe('the priority row menu (#614, #618)', () => {
     const name = extras[2].label;
     await openRowMenu(page, menuOf(page, name));
     await item(page, /^Delete/).click();
-    const dialog = page.getByRole('dialog', { name: 'Delete priority?' });
+    const dialog = page.getByRole('dialog', { name: 'Delete Priority' });
     await expect(dialog).toContainText("No task uses this priority. Deleting it can't be undone.");
-    await expect(dialog.getByRole('button', { name: 'Keep priority' })).toBeFocused();
+    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
     await shot(page, 'priority-delete');
     await page.keyboard.press('Enter');
     await expect(dialog).toBeHidden();
@@ -127,7 +127,7 @@ test.describe('the priority row menu (#614, #618)', () => {
     const world = await seed.world();
     await seed.task(world, { priorityId: extras[1].id });
     await page
-      .getByRole('dialog', { name: 'Delete priority?' })
+      .getByRole('dialog', { name: 'Delete Priority' })
       .getByRole('button', { name: 'Delete priority' })
       .click();
     const failure = page.locator('[data-failure]');
@@ -208,13 +208,13 @@ test.describe('the priority row menu (#614, #618)', () => {
       await openRowMenu(page, menuOf(page, target.label));
       await item(page, /^Set as default/).click();
       const dialog = page.getByRole('dialog', {
-        name: `Make ${target.label} the default priority?`,
+        name: 'Set Default Priority',
       });
       await expect(dialog).toContainText(
-        `${target.label} is the default priority. New tasks start with it.`,
+        `${target.label} becomes the default priority and new tasks start with it.`,
       );
       await expect(dialog).toContainText(`${before.label} stays available.`);
-      await dialog.getByRole('button', { name: 'Set as default' }).click();
+      await dialog.getByRole('button', { name: 'Set Default Priority' }).click();
       await expect(rowOf(page, target.label).locator('[data-default]')).toBeVisible();
       await expect(page.locator('[data-default]')).toHaveCount(1);
       await expect(menuOf(page, target.label)).toBeFocused();
@@ -231,7 +231,7 @@ test.describe('the priority row menu (#614, #618)', () => {
     const name = extras[0].label;
     await openRowMenu(page, menuOf(page, name));
     await item(page, /^Deactivate/).click();
-    const dialog = page.getByRole('dialog', { name: 'Deactivate priority?' });
+    const dialog = page.getByRole('dialog', { name: 'Deactivate Priority' });
     await expect(dialog).toContainText('No open task uses this priority.');
     await dialog.getByRole('button', { name: 'Deactivate priority' }).click();
     await expect(rowOf(page, name).locator('mf-active-badge')).toContainText('Inactive');
@@ -254,11 +254,11 @@ test.describe('the priority row menu (#614, #618)', () => {
       await openRowMenu(page, menu);
       expect(await axeViolations(page), `menu open at ${size.width}`).toEqual([]);
       await item(page, /^Deactivate/).click();
-      const dialog = page.getByRole('dialog', { name: 'Deactivate priority?' });
+      const dialog = page.getByRole('dialog', { name: 'Deactivate Priority' });
       await expect(dialog).toBeVisible();
       await noSideScroll(page, `deactivate dialog at ${size.width}`);
       expect(await axeViolations(page), `deactivate dialog at ${size.width}`).toEqual([]);
-      await dialog.getByRole('button', { name: 'Keep active' }).click();
+      await dialog.getByRole('button', { name: 'Cancel' }).click();
     });
   }
 });

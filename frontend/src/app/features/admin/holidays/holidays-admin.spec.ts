@@ -90,11 +90,11 @@ describe('HolidaysAdmin (Settings > Holidays)', () => {
     qa<HTMLButtonElement>(f, '[data-delete-holiday]')[0].click();
     await settle(f);
     expect(document.querySelector('[data-confirm-body]')?.textContent).toContain(
-      'will no longer count',
+      'no longer counts',
     );
     const confirm = Array.from(
       document.querySelectorAll<HTMLButtonElement>('.p-dialog-footer button'),
-    ).find((b) => b.textContent?.trim() === 'Delete')!;
+    ).find((b) => b.textContent?.trim() === 'Delete Holiday')!;
     confirm.click();
     await settle(f);
     await settle(f);

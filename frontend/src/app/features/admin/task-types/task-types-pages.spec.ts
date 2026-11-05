@@ -479,7 +479,7 @@ describe('TaskTypesPage', () => {
 
     await pick('Data Processing', 'deactivate');
     const confirm = Array.from(document.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'Deactivate task type' && b.closest('p-dialog, .p-dialog'),
+      (b) => b.textContent?.trim() === 'Deactivate Task Type' && b.closest('p-dialog, .p-dialog'),
     );
     expect(confirm).toBeDefined();
     confirm!.click();

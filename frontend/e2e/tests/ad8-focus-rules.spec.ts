@@ -19,7 +19,7 @@ async function notOnBody(page: Page, what: string): Promise<void> {
 const dialog = (page: Page, name: string | RegExp) => page.getByRole('dialog', { name });
 const menu = (page: Page, name: string) =>
   page.getByRole('button', { name: `Actions for ${name}`, exact: true });
-const leave = (page: Page) => page.getByRole('dialog', { name: 'Leave without saving?' });
+const leave = (page: Page) => page.getByRole('dialog', { name: 'Discard Unsaved Changes' });
 
 test.describe('Focus rules: Priorities (#657)', () => {
   test('New priority: focus goes in, a failed submit focuses the first invalid field, Escape returns to the New button', async ({
@@ -63,13 +63,13 @@ test.describe('Focus rules: Priorities (#657)', () => {
 
     await openRowMenu(page, menu(page, a.label));
     await page.getByRole('menuitem', { name: 'Deactivate' }).click();
-    await expect(dialog(page, 'Deactivate priority?')).toBeVisible();
-    await dialog(page, 'Deactivate priority?').getByRole('button', { name: 'Keep active' }).click();
+    await expect(dialog(page, 'Deactivate Priority')).toBeVisible();
+    await dialog(page, 'Deactivate Priority').getByRole('button', { name: 'Cancel' }).click();
     await expect(menu(page, a.label)).toBeFocused();
 
     await openRowMenu(page, menu(page, a.label));
     await page.getByRole('menuitem', { name: 'Deactivate' }).click();
-    await dialog(page, 'Deactivate priority?')
+    await dialog(page, 'Deactivate Priority')
       .getByRole('button', { name: 'Deactivate priority' })
       .click();
     await expect(page.locator(`tr[data-row="${a.label}"]`)).toContainText('Inactive');
@@ -97,7 +97,7 @@ test.describe('Focus rules: Status Labels (#657)', () => {
     await field.fill('Fresh');
     await page.keyboard.press('Escape');
     await expect(leave(page)).toBeVisible();
-    await leave(page).getByRole('button', { name: 'Leave' }).click();
+    await leave(page).getByRole('button', { name: 'Discard Changes' }).click();
     await expect(rename).toBeHidden();
     await expect(link).toBeFocused();
     await notOnBody(page, 'status label rename cancelled');
@@ -126,9 +126,7 @@ test.describe('Focus rules: Link roles (#657)', () => {
 
     await openRowMenu(page, menu(page, name));
     await page.getByRole('menuitem', { name: 'Deactivate' }).click();
-    await dialog(page, 'Deactivate link role?')
-      .getByRole('button', { name: 'Keep active' })
-      .click();
+    await dialog(page, 'Deactivate Link Role').getByRole('button', { name: 'Cancel' }).click();
     await expect(menu(page, name)).toBeFocused();
     await notOnBody(page, 'link role dialogs');
   });
@@ -153,9 +151,7 @@ test.describe('Focus rules: Asset Types (#657)', () => {
 
     await openRowMenu(page, menu(page, name));
     await page.getByRole('menuitem', { name: 'Deactivate' }).click();
-    await dialog(page, 'Deactivate asset type?')
-      .getByRole('button', { name: 'Keep active' })
-      .click();
+    await dialog(page, 'Deactivate Asset Type').getByRole('button', { name: 'Cancel' }).click();
     await expect(menu(page, name)).toBeFocused();
 
     const link = page.locator(`tr[data-row="${name}"] [data-open]`);

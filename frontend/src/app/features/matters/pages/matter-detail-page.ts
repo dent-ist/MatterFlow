@@ -279,8 +279,8 @@ type Tab = MatterTabKey;
             }
 
             <mf-confirm-dialog
-              [title]="m.isActive ? 'Set matter inactive' : 'Reactivate matter'"
-              [confirmLabel]="m.isActive ? 'Set inactive' : 'Set active'"
+              [title]="m.isActive ? 'Set Matter Inactive' : 'Reactivate Matter'"
+              [confirmLabel]="m.isActive ? 'Set Matter Inactive' : 'Reactivate Matter'"
               [danger]="m.isActive"
               [busy]="busy()"
               [(visible)]="toggleOpen"
@@ -288,18 +288,18 @@ type Tab = MatterTabKey;
             >
               @if (m.isActive) {
                 <p data-toggle-body>
-                  Set {{ m.matterRef }} inactive? New tasks can't be created and completed or
-                  cancelled tasks can't be reopened until it's active again.
+                  {{ m.matterRef }} becomes inactive: new tasks can't be created and completed or
+                  cancelled tasks can't be reopened until you reactivate it.
                 </p>
               } @else {
                 <p data-toggle-body>
-                  Reactivate {{ m.matterRef }}? New tasks can be created for it again.
+                  {{ m.matterRef }} becomes active and new tasks can be created for it again.
                 </p>
               }
             </mf-confirm-dialog>
 
             <mf-confirm-dialog
-              title="Can't set this matter inactive"
+              title="Can't Set Matter Inactive"
               cancelLabel="Close"
               [showConfirm]="false"
               [(visible)]="blockedOpen"

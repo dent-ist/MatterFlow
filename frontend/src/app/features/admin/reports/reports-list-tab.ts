@@ -207,9 +207,8 @@ const COLUMN_SPEC: Record<Column, AdminColumn> = {
     }
 
     <mf-confirm-dialog
-      title="Deactivate this report?"
-      confirmLabel="Deactivate"
-      cancelLabel="Cancel"
+      title="Deactivate Report"
+      confirmLabel="Deactivate Report"
       [danger]="true"
       [busy]="busy()"
       [visible]="deactivating() !== null"
@@ -217,8 +216,8 @@ const COLUMN_SPEC: Record<Column, AdminColumn> = {
       (confirmed)="confirmDeactivate()"
     >
       <p data-deactivate-body>
-        People can no longer see or run {{ deactivating()?.name }}. Its versions, history and role
-        assignments stay, and you can activate it again after a preview.
+        People can no longer see or run {{ deactivating()?.name }}; its versions and history stay,
+        and you can activate it again after a preview.
       </p>
     </mf-confirm-dialog>
   `,

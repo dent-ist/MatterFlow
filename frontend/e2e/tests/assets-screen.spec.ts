@@ -257,7 +257,7 @@ test.describe('Assets list: column filters and the record page link', () => {
 
     await page.getByRole('button', { name: 'More actions' }).click();
     await page.getByRole('menuitem', { name: 'Set inactive' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Set inactive' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Set Asset Inactive' }).click();
     await expect(page.getByText('This asset is inactive')).toBeVisible();
     await expect(page.locator('[data-record-header]').getByText('Inactive')).toBeVisible();
   });

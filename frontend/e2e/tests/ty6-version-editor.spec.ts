@@ -500,7 +500,7 @@ test.describe('Version editor: execution mode in the bar (VP4, #397)', () => {
       await expect(page.locator('[data-dirty]')).toHaveCount(0);
       await page.getByRole('button', { name: 'Execution mode: Ordered' }).click();
       await pop.getByRole('radio', { name: /^Unordered/ }).click();
-      await confirm.getByRole('button', { name: 'Change mode' }).click();
+      await confirm.getByRole('button', { name: 'Change Execution Mode' }).click();
       await expect(page.getByRole('button', { name: 'Execution mode: Unordered' })).toBeVisible();
       await expect(page.locator('.wsr__no')).toHaveCount(0);
       await expect(page.locator('[data-dirty]')).toBeVisible();

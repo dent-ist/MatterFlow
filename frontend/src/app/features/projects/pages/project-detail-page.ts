@@ -164,8 +164,8 @@ import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
             }
 
             <mf-confirm-dialog
-              [title]="p.isActive ? 'Archive project' : 'Restore project'"
-              [confirmLabel]="p.isActive ? 'Archive' : 'Restore'"
+              [title]="p.isActive ? 'Archive Project' : 'Restore Project'"
+              [confirmLabel]="p.isActive ? 'Archive Project' : 'Restore Project'"
               [danger]="p.isActive"
               [busy]="busy()"
               [(visible)]="toggleOpen"
@@ -173,11 +173,11 @@ import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
             >
               @if (p.isActive) {
                 <p data-toggle-body>
-                  Archive {{ p.name }}? Existing tasks keep this project, but new tasks can't select
-                  it.
+                  {{ p.name }} is archived: existing tasks keep it, new tasks can't select it, and
+                  you can restore it.
                 </p>
               } @else {
-                <p data-toggle-body>Restore {{ p.name }}? New tasks can select it again.</p>
+                <p data-toggle-body>{{ p.name }} is restored and new tasks can select it again.</p>
               }
             </mf-confirm-dialog>
           }

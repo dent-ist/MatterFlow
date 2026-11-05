@@ -109,7 +109,7 @@ describe('AssetTypesPage (#634, #637)', () => {
 
   const confirmDeactivation = (): void => {
     const confirm = Array.from(document.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'Deactivate asset type' && b.closest('p-dialog, .p-dialog'),
+      (b) => b.textContent?.trim() === 'Deactivate Asset Type' && b.closest('p-dialog, .p-dialog'),
     );
     expect(confirm).toBeDefined();
     confirm!.click();
@@ -221,7 +221,7 @@ describe('AssetTypesPage (#634, #637)', () => {
       const items = await menuOf('Document Set');
       items.find((i) => i.getAttribute('data-action') === 'deactivate')!.click();
       await settle(fixture);
-      expect(document.body.textContent).toContain('Deactivate asset type?');
+      expect(document.body.textContent).toContain('Deactivate Asset Type');
       expect(document.body.textContent).toContain('12 assets keep this type.');
       expect(api.updateAssetType).not.toHaveBeenCalled();
       confirmDeactivation();

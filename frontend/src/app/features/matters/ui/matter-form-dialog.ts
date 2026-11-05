@@ -277,28 +277,27 @@ function clientOption(c: ClientResponse): PickerOption {
     </mf-form-dialog>
 
     <mf-confirm-dialog
-      title="Change the matter number?"
-      confirmLabel="Unlock the matter number"
+      title="Unlock Matter Number"
+      confirmLabel="Unlock Matter Number"
       [(visible)]="askUnlock"
       (confirmed)="unlockNumber()"
     >
       <p data-unlock-body>
         The matter number is part of the CM Number {{ matter()?.matterRef }}, which is used in
-        references everywhere (tasks, assets, reports). Change it only to correct a mistake.
-        Continue?
+        references everywhere (tasks, assets, reports), so change it only to correct a mistake.
       </p>
     </mf-confirm-dialog>
 
     <mf-confirm-dialog
-      title="Change the CM Number?"
+      title="Change CM Number"
       confirmLabel="Change CM Number"
       [busy]="busy()"
       [(visible)]="askNumberChange"
       (confirmed)="confirmNumberChange()"
     >
       <p data-number-change-body>
-        The CM Number changes from {{ matter()?.matterRef }} to {{ newCm() }}. It is used in
-        references everywhere. Continue?
+        The CM Number changes from {{ matter()?.matterRef }} to {{ newCm() }}, and it is used in
+        references everywhere.
       </p>
     </mf-confirm-dialog>
   `,

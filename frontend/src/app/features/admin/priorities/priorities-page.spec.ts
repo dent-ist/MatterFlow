@@ -208,14 +208,14 @@ describe('PrioritiesPage (#605, #609, #614, #618)', () => {
     it('deactivates after a confirm that names the open tasks that keep the priority, and keeps showing the row', async () => {
       await pick('High', 'deactivate');
       const dialog = document.body.querySelector('.p-dialog')!;
-      expect(dialog.textContent).toContain('Deactivate priority?');
+      expect(dialog.textContent).toContain('Deactivate Priority');
       expect(dialog.textContent).toContain('31 open tasks keep this priority.');
 
-      await click(dialogButton('Keep active'));
+      await click(dialogButton('Cancel'));
       expect(api.calls).not.toContain('update:2');
 
       await pick('High', 'deactivate');
-      await click(dialogButton('Deactivate priority'));
+      await click(dialogButton('Deactivate Priority'));
 
       expect(api.calls).toContain('update:2');
       expect(row('High').textContent).toContain('Inactive');
@@ -225,7 +225,7 @@ describe('PrioritiesPage (#605, #609, #614, #618)', () => {
 
     it('activates at once, without a question', async () => {
       await pick('Low', 'deactivate');
-      await click(dialogButton('Deactivate priority'));
+      await click(dialogButton('Deactivate Priority'));
       await pick('Low', 'activate');
 
       expect(document.body.querySelector('.p-dialog')).toBeNull();
@@ -236,17 +236,17 @@ describe('PrioritiesPage (#605, #609, #614, #618)', () => {
     it('makes another priority the default after a one-line confirm', async () => {
       await pick('High', 'default');
       const dialog = document.body.querySelector('.p-dialog')!;
-      expect(dialog.textContent).toContain('Make High the default priority?');
+      expect(dialog.textContent).toContain('Set Default Priority');
       expect(dialog.textContent).toContain(
-        'High is the default priority. New tasks start with it.',
+        'High becomes the default priority and new tasks start with it.',
       );
       expect(dialog.textContent).toContain('Normal stays available.');
 
-      await click(dialogButton('Keep current default'));
+      await click(dialogButton('Cancel'));
       expect(api.calls).not.toContain('default:2');
 
       await pick('High', 'default');
-      await click(dialogButton('Set as default'));
+      await click(dialogButton('Set Default Priority'));
 
       expect(api.calls).toContain('default:2');
       expect(row('High').querySelector('[data-default]')).not.toBeNull();
@@ -257,16 +257,16 @@ describe('PrioritiesPage (#605, #609, #614, #618)', () => {
     it('asks before deleting an unused priority and deletes it', async () => {
       await pick('Low', 'delete');
       const dialog = document.body.querySelector('.p-dialog')!;
-      expect(dialog.textContent).toContain('Delete priority?');
+      expect(dialog.textContent).toContain('Delete Priority');
       expect(dialog.textContent).toContain(
         "No task uses this priority. Deleting it can't be undone.",
       );
 
-      await click(dialogButton('Keep priority'));
+      await click(dialogButton('Cancel'));
       expect(api.calls).not.toContain('delete:4');
 
       await pick('Low', 'delete');
-      await click(dialogButton('Delete priority'));
+      await click(dialogButton('Delete Priority'));
       expect(labels()).not.toContain('Low');
       expect(el().querySelector('[data-announce]')!.textContent).toContain('Low deleted.');
     });
@@ -275,7 +275,7 @@ describe('PrioritiesPage (#605, #609, #614, #618)', () => {
       const toast = vi.spyOn(TestBed.inject(NotificationService), 'success');
       await pick('Low', 'delete');
       api.failNext = apiError(409, 'IN_USE', 'Tasks use this priority.');
-      await click(dialogButton('Delete priority'));
+      await click(dialogButton('Delete Priority'));
 
       expect(labels()).toContain('Low');
       const failures = all('[data-failure]');
@@ -291,7 +291,7 @@ describe('PrioritiesPage (#605, #609, #614, #618)', () => {
       const listsBefore = api.calls.filter((c) => c === 'list').length;
 
       await pick('Low', 'deactivate');
-      await click(dialogButton('Deactivate priority'));
+      await click(dialogButton('Deactivate Priority'));
 
       expect(el().querySelector('[data-failure]')!.textContent).toContain('Someone else changed');
       expect(api.calls.filter((c) => c === 'list').length).toBe(listsBefore + 1);

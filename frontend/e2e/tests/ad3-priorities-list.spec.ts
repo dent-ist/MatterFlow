@@ -263,10 +263,10 @@ test.describe('the Priorities list (#605)', () => {
     // The unknown count leaves its number out of the Deactivate sentence.
     await openRowMenu(page, unused.getByRole('button', { name: /^Actions for / }));
     await page.getByRole('menuitem', { name: /^Deactivate/ }).click();
-    const dialog = page.getByRole('dialog', { name: 'Deactivate priority?' });
+    const dialog = page.getByRole('dialog', { name: 'Deactivate Priority' });
     await expect(dialog).toBeVisible();
     await expect(dialog).not.toContainText(/\d+ open task/);
-    await dialog.getByRole('button', { name: 'Keep active' }).click();
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
   });
 
   for (const size of SIZES) {

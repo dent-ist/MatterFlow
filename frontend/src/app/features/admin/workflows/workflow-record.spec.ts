@@ -352,7 +352,7 @@ describe('WorkflowEditPage record page (WP-TY5)', () => {
     expect(
       Array.from(body.querySelectorAll('[data-impact-names] li')).map((l) => l.textContent),
     ).toEqual(['Billing request 02', 'Refunds']);
-    buttonByLabel(body, 'Deactivate workflow')!.click();
+    buttonByLabel(body, 'Deactivate Workflow')!.click();
     await settle(fixture);
     expect(api.updateWorkflow).toHaveBeenCalledWith(1, {
       name: 'Billing request',

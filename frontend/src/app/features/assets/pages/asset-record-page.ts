@@ -208,9 +208,13 @@ type Tab = 'details' | 'tasks' | 'history';
               (confirmed)="toggleActive()"
             >
               @if (a.isActive) {
-                <p data-toggle-body>Set {{ a.displayName }} inactive? {{ toggleCopy().body }}</p>
+                <p data-toggle-body>
+                  {{ a.displayName }} becomes inactive. {{ toggleCopy().body }}
+                </p>
               } @else {
-                <p data-toggle-body>Reactivate {{ a.displayName }}?</p>
+                <p data-toggle-body>
+                  {{ a.displayName }} can be edited and linked to new tasks again.
+                </p>
               }
             </mf-confirm-dialog>
 
@@ -362,9 +366,9 @@ export class AssetRecordPage {
           openTasks: this.canTasks() ? (a.openLinkedTaskCount ?? null) : null,
         })
       : {
-          title: 'Reactivate asset',
+          title: 'Reactivate Asset',
           body: '',
-          confirm: 'Set active',
+          confirm: 'Reactivate Asset',
           cancel: 'Cancel',
           danger: false,
         };

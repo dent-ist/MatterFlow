@@ -492,7 +492,7 @@ describe('MatterDetailPage', () => {
     await settle(fixture);
     const body = document.body.querySelector('[data-number-change-body]')!;
     expect(body.textContent!.replace(/\s+/g, ' ')).toContain(
-      'The CM Number changes from 00343-00012 to 00343-00099.',
+      'The CM Number changes from 00343-00012 to 00343-00099,',
     );
     expect(matters.changeMatterNumber).not.toHaveBeenCalled();
     const confirms = document.body.querySelectorAll<HTMLButtonElement>(
@@ -811,11 +811,11 @@ describe('MatterDetailPage', () => {
     await settle(fixture);
     const dialog = document.body.querySelector('p-dialog') as HTMLElement;
     expect(dialog.querySelector('[data-toggle-body]')?.textContent).toContain(
-      "Set 00343-00012 inactive? New tasks can't be created and completed or cancelled tasks can't be reopened until it's active again.",
+      "00343-00012 becomes inactive: new tasks can't be created and completed or cancelled tasks can't be reopened until you reactivate it.",
     );
     expect(matters.setMatterActive).not.toHaveBeenCalled();
 
-    buttonByLabel(dialog, 'Set inactive')!.click();
+    buttonByLabel(dialog, 'Set Matter Inactive')!.click();
     await settle(fixture);
     expect(matters.setMatterActive).toHaveBeenCalledWith(7, {
       isActive: false,
@@ -847,7 +847,10 @@ describe('MatterDetailPage', () => {
     await openOverflow(fixture);
     buttonByLabel(el(), 'Set Inactive')!.click();
     await settle(fixture);
-    buttonByLabel(document.body.querySelector('p-dialog') as HTMLElement, 'Set inactive')!.click();
+    buttonByLabel(
+      document.body.querySelector('p-dialog') as HTMLElement,
+      'Set Matter Inactive',
+    )!.click();
     await settle(fixture);
 
     const blocked = document.body.querySelector('[data-blocked-body]')!;

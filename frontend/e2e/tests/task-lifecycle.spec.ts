@@ -37,14 +37,14 @@ test.describe('Status changes and closed tasks', () => {
     await detail.open(task.taskId);
 
     await detail.chooseAction('HOLD');
-    await detail.dialog.getByRole('button', { name: 'Put on hold' }).click();
+    await detail.dialog.getByRole('button', { name: 'Put Task on Hold' }).click();
     await expect(detail.dialog.locator('[data-reason-error]')).toHaveText(
       'Add a reason for putting this task on hold.',
     );
     await detail.expectStatus('In Progress');
 
     await detail.submitReason(
-      'Put on hold',
+      'Put Task on Hold',
       'Waiting for the client to confirm the custodian list',
     );
     await expect(detail.dialog).toBeHidden();

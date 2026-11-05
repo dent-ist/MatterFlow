@@ -351,11 +351,11 @@ describe('ClientDetailPage', () => {
     await settle(fixture);
     const dialog = document.body.querySelector('p-dialog') as HTMLElement;
     expect(dialog.querySelector('[data-toggle-body]')?.textContent).toContain(
-      "New matters can't be created for an inactive client.",
+      "new matters can't be created for it",
     );
     expect(clients.updateClient).not.toHaveBeenCalled();
 
-    buttonByLabel(dialog, 'Set inactive')!.click();
+    buttonByLabel(dialog, 'Set Client Inactive')!.click();
     await settle(fixture);
     expect(clients.updateClient).toHaveBeenCalledWith(1, {
       name: 'Acme Corp',

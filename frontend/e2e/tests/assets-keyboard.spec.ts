@@ -223,7 +223,7 @@ test.describe('Assets keyboard audit (WP-AS6)', () => {
     await page.keyboard.press('Enter');
     await page.getByRole('menuitem', { name: 'Set inactive' }).focus();
     await page.keyboard.press('Enter');
-    await page.getByRole('dialog').getByRole('button', { name: 'Set inactive' }).focus();
+    await page.getByRole('dialog').getByRole('button', { name: 'Set Asset Inactive' }).focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-record-header] mf-active-badge')).toContainText('Inactive');
     await expect(page.locator('[data-page-title]')).toBeFocused();

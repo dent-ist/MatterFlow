@@ -404,9 +404,8 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
       />
     }
     <mf-confirm-dialog
-      title="Deactivate workflow?"
-      confirmLabel="Deactivate workflow"
-      cancelLabel="Keep active"
+      title="Deactivate Workflow"
+      confirmLabel="Deactivate Workflow"
       [danger]="true"
       [busy]="busy()"
       [error]="dialogError()"

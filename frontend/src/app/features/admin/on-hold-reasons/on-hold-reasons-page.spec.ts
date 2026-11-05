@@ -106,7 +106,7 @@ describe('OnHoldReasonsPage (#876)', () => {
     await settle();
     const confirm = Array.from(
       document.body.querySelectorAll<HTMLButtonElement>('.p-dialog button'),
-    ).find((b) => b.textContent!.trim() === 'Deactivate reason')!;
+    ).find((b) => b.textContent!.trim() === 'Deactivate Reason')!;
     confirm.click();
     await settle();
     expect(api.updateOnHoldReason).toHaveBeenCalledWith(2, {

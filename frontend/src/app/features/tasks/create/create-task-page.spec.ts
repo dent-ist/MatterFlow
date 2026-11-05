@@ -572,11 +572,11 @@ describe('CreateTaskPage', () => {
       await new Promise((r) => setTimeout(r, 50)); // an open dialog never lets the fixture settle in tests
       h.fixture.detectChanges();
       expect(document.body.textContent).toContain(
-        'Changing the task type clears the request details you entered.',
+        'Changing the task type clears the request details you entered',
       );
       expect(field(h, '[data-type-chooser]')).toBeNull();
 
-      buttonByLabel(document.querySelector('[role=dialog]')!, 'Change')!.click();
+      buttonByLabel(document.querySelector('[role=dialog]')!, 'Change Task Type')!.click();
       await new Promise((r) => setTimeout(r, 50)); // the closing dialog animation never settles in tests
       h.fixture.detectChanges();
       expect(field(h, '[data-type-chooser]')).not.toBeNull();

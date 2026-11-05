@@ -42,7 +42,7 @@ test.describe('Axe and reflow of the administration areas, overlays open (#660)'
       await page.getByRole('menuitem', { name: 'Set as default' }).click();
       await expect(page.getByRole('dialog')).toBeVisible();
       await check(page, 'default question', size.width);
-      await page.getByRole('button', { name: 'Keep current default' }).click();
+      await page.getByRole('button', { name: 'Cancel' }).click();
       await openRowMenu(page, page.getByRole('button', { name: `Actions for ${label}` }));
       await page.getByRole('menuitem', { name: 'Edit priority' }).click();
       await expect(page.getByRole('dialog', { name: 'Edit priority' })).toBeVisible();

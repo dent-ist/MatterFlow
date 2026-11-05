@@ -98,7 +98,7 @@ test.describe('Sensitive matters: the screens', () => {
     await page.setViewportSize({ width: 1440, height: 900 });
 
     // Keep it as it is: nothing was saved.
-    await dialog.getByRole('button', { name: 'Keep it as it is' }).click();
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
     await expect(dialog).toBeHidden();
     expect((await admin.get<Json>(`/api/v1/matters/${matter.matterId}`)).isSensitive).toBe(false);
 
@@ -106,7 +106,7 @@ test.describe('Sensitive matters: the screens', () => {
     await page.getByRole('button', { name: 'Save changes' }).click();
     await page
       .getByRole('dialog', { name: 'You will no longer see this matter' })
-      .getByRole('button', { name: 'Mark sensitive' })
+      .getByRole('button', { name: 'Mark Matter Sensitive' })
       .click();
     await expect(page).toHaveURL(/\/matters(\?scope=mine)?$/); // the list opens on the person's own matters (epic #758)
     await expect(toasts(page).first()).toContainText('you no longer see it');

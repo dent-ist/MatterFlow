@@ -789,7 +789,7 @@ describe('WorkflowsListPage row menu', () => {
     el.querySelector<HTMLButtonElement>('[data-action=deactivate]')!.click();
     await settle(fixture);
     const confirm = Array.from(document.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'Deactivate workflow' && b.closest('p-dialog, .p-dialog'),
+      (b) => b.textContent?.trim() === 'Deactivate Workflow' && b.closest('p-dialog, .p-dialog'),
     );
     expect(confirm).toBeDefined();
     expect(api.updateWorkflow).not.toHaveBeenCalled();
@@ -1170,13 +1170,13 @@ describe('WorkflowVersionPage draft editor', () => {
     click(el, '[data-mode="unordered"]');
     await settle(fixture);
     expect(document.body.textContent).toContain(
-      'Ordered numbering will be hidden; steps can be done in any order.',
+      'Ordered numbering is hidden and steps can be done in any order',
     );
     // Not applied until confirmed.
     expect(button().textContent).toContain('Ordered');
     expect(button().textContent).not.toContain('Unordered');
     const confirm = Array.from(document.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'Change mode',
+      (b) => b.textContent?.trim() === 'Change Execution Mode',
     )!;
     confirm.click();
     await settle(fixture);
@@ -1523,7 +1523,7 @@ describe('WorkflowVersionPage tabs, switcher and impact lines (WP-TY6)', () => {
     expect(document.body.querySelector('[data-retire-impact]')?.textContent).toBe(
       'Billing request 02 has no other published workflow. 14 open tasks keep running on v2. New tasks cannot use it.',
     );
-    expect(buttonByLabel(document.body, 'Keep published')).toBeDefined();
+    expect(buttonByLabel(document.body, 'Cancel')).toBeDefined();
     buttonByLabel(document.body, 'Retire v2')!.click();
     await settle(fixture);
     expect(workflows.retireWorkflowVersion).toHaveBeenCalled();

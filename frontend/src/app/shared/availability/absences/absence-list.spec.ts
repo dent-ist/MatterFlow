@@ -131,7 +131,7 @@ describe('AbsenceList (Profile > Out of office)', () => {
     await settle(f);
     expect(text(q('[data-confirm-body]'))).toContain('Vacation');
     Array.from(document.querySelectorAll<HTMLButtonElement>('.p-dialog-footer button'))
-      .find((b) => text(b) === 'Delete')!
+      .find((b) => text(b) === 'Delete Out of Office')!
       .click();
     await settle(f);
     await settle(f);

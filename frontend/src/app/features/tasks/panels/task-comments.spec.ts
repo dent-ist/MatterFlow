@@ -395,12 +395,12 @@ describe('TaskComments', () => {
 
     const dialog = document.body.querySelector('p-dialog') as HTMLElement;
     expect(dialog.textContent).toContain(
-      'Delete this comment? It will be hidden from view but kept in the audit record.',
+      'The comment is hidden from view but kept in the audit record.',
     );
     expect(api.deleteTaskComment).not.toHaveBeenCalled();
 
     api.listTaskComments.mockReturnValue(ok({ items: [], total: 0 }));
-    buttonByLabel(dialog, 'Delete comment')!.click();
+    buttonByLabel(dialog, 'Delete Comment')!.click();
     await settle(fixture);
 
     expect(api.deleteTaskComment).toHaveBeenCalledWith(42, 1);
@@ -412,7 +412,7 @@ describe('TaskComments', () => {
     await create();
     q<HTMLButtonElement>('[data-delete]').click();
     await settle(fixture);
-    buttonByLabel(document.body.querySelector('p-dialog') as HTMLElement, 'Keep comment')!.click();
+    buttonByLabel(document.body.querySelector('p-dialog') as HTMLElement, 'Cancel')!.click();
     await settle(fixture);
     expect(api.deleteTaskComment).not.toHaveBeenCalled();
     expect(el().querySelector('[data-comment-id]')).not.toBeNull();

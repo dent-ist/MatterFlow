@@ -120,14 +120,14 @@ import { TextField } from '../../../shared/ui/text-field';
       }
     </mf-form-dialog>
     <mf-confirm-dialog
-      title="Delete this tag?"
-      confirmLabel="Delete tag"
+      title="Delete Tag"
+      confirmLabel="Delete Tag"
       [danger]="true"
       [busy]="busy()"
       [(visible)]="confirmDelete"
       (confirmed)="remove()"
     >
-      <p>{{ target()?.name }} will be deleted. No note or template uses it.</p>
+      <p>{{ target()?.name }} is deleted; no note or template uses it. This cannot be undone.</p>
     </mf-confirm-dialog>
   `,
 })

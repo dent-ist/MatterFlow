@@ -245,10 +245,10 @@ describe('AssetTypeRecordPage', () => {
       await settle(fixture);
       q<HTMLElement>('[role=menuitem][data-action="deactivate"]').click();
       await settle(fixture);
-      expect(document.body.textContent).toContain('Deactivate asset type?');
+      expect(document.body.textContent).toContain('Deactivate Asset Type');
       expect(document.body.textContent).toContain('12 assets keep this type.');
       const confirm = Array.from(document.querySelectorAll('button')).find(
-        (b) => b.textContent?.trim() === 'Deactivate asset type' && b.closest('.p-dialog'),
+        (b) => b.textContent?.trim() === 'Deactivate Asset Type' && b.closest('.p-dialog'),
       );
       confirm!.click();
       await settle(fixture);

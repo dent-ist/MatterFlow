@@ -223,16 +223,16 @@ function clientOption(c: ClientResponse): PickerOption {
     }
 
     <mf-confirm-dialog
-      title="Change matter number"
-      confirmLabel="Change number"
+      title="Change Matter Number"
+      confirmLabel="Change Matter Number"
       [danger]="true"
       [busy]="busy()"
       [(visible)]="changeNumberOpen"
       (confirmed)="changeNumber()"
     >
       <p data-number-warning>
-        Changing this number changes how this matter is named in emails, workspaces and folders.
-        This change is recorded.
+        Changing this number changes how this matter is named in emails, workspaces and folders, and
+        the change is recorded.
       </p>
       <mf-number-input
         inputId="new-matter-number"
@@ -245,18 +245,17 @@ function clientOption(c: ClientResponse): PickerOption {
     </mf-confirm-dialog>
 
     <mf-confirm-dialog
-      title="You will no longer see this matter"
-      confirmLabel="Mark sensitive"
-      cancelLabel="Keep it as it is"
+      title="Mark Matter Sensitive"
+      confirmLabel="Mark Matter Sensitive"
       [danger]="true"
       [busy]="busy()"
       [(visible)]="lossOpen"
       (confirmed)="save(true)"
     >
       <p data-loss-warning>
-        Once this matter is marked sensitive, only its project managers, people assigned one of its
-        tasks and people who may see all sensitive matters can see it. You are none of these, so you
-        will no longer see this matter or its tasks and assets after you save.
+        Only its project managers, people assigned one of its tasks and people who may see all
+        sensitive matters can see a sensitive matter, so you will no longer see this matter or its
+        tasks and assets after you save.
       </p>
     </mf-confirm-dialog>
   `,

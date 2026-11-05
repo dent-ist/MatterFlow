@@ -218,16 +218,15 @@ export const ASSETS_CLOSED_NOTE =
       </div>
 
       <mf-confirm-dialog
-        title="Remove link"
-        confirmLabel="Remove link"
-        cancelLabel="Keep link"
+        title="Remove Link"
+        confirmLabel="Remove Link"
         [danger]="true"
         [busy]="busy()"
         [(visible)]="unlinkOpen"
         (confirmed)="confirmUnlink()"
       >
         <p data-unlink-body>
-          Remove the link to {{ unlinking?.displayName }}? The asset itself is not deleted.
+          The link to {{ unlinking?.displayName }} is removed, but the asset itself is not deleted.
         </p>
       </mf-confirm-dialog>
     </section>

@@ -425,7 +425,7 @@ describe('RolesPage', () => {
     await press('Delete role'); // opens the confirmation
     const confirm = Array.from(
       document.body.querySelectorAll<HTMLButtonElement>('.p-dialog button'),
-    ).find((b) => b.textContent!.trim() === 'Delete role')!;
+    ).find((b) => b.textContent!.trim() === 'Delete Role')!;
     confirm.click();
     await settle();
   }
@@ -435,7 +435,7 @@ describe('RolesPage', () => {
     await settle();
     await press('Delete role');
     expect(api.roles.some((r) => r.roleId === 5)).toBe(true);
-    expect(document.body.querySelector('.p-dialog')?.textContent).toContain('Delete role?');
+    expect(document.body.querySelector('.p-dialog')?.textContent).toContain('Delete Role');
     await confirmDelete();
     expect(q('[data-error]').textContent).toMatch(
       /has this role\. Remove them from it before deleting/,

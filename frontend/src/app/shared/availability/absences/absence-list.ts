@@ -207,8 +207,8 @@ type LoadState = 'loading' | 'ready' | 'error';
     }
     @if (deleting(); as d) {
       <mf-confirm-dialog
-        title="Delete this entry?"
-        confirmLabel="Delete"
+        title="Delete Out of Office"
+        confirmLabel="Delete Out of Office"
         [danger]="true"
         [busy]="deleteBusy()"
         [error]="deleteError()"
@@ -217,7 +217,8 @@ type LoadState = 'loading' | 'ready' | 'error';
         (confirmed)="confirmDelete(d)"
       >
         <p>
-          {{ label(d) }}, {{ spoken(d) }}. Colleagues will see you as available on those days again.
+          {{ label(d) }}, {{ spoken(d) }}, is deleted and colleagues see you as available on those
+          days again.
         </p>
       </mf-confirm-dialog>
     }

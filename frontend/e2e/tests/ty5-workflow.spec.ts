@@ -274,7 +274,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
       await page.getByRole('menuitem', { name: 'Retire v2' }).click();
       const d = page.getByRole('dialog');
       await expect(d).toContainText('2 open tasks keep running on v2.');
-      await expect(d.getByRole('button', { name: 'Keep published' })).toBeVisible();
+      await expect(d.getByRole('button', { name: 'Cancel' })).toBeVisible();
       for (const size of SIZES) {
         await page.setViewportSize({ width: size.w, height: size.h });
         if (axeAvailable()) expect(await axeViolations(page), `axe at ${size.w}`).toEqual([]);
@@ -347,7 +347,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
       await tab(page, 'Versions').click();
       const d = page.getByRole('dialog');
       await expect(d).toBeVisible();
-      await d.getByRole('button', { name: 'Stay' }).click();
+      await d.getByRole('button', { name: 'Keep Editing' }).click();
       await expect(tab(page, 'Overview')).toHaveAttribute('aria-selected', 'true');
       await expect(name).toHaveValue(`${s.workflow.name} edited`);
       await tab(page, 'Versions').click();

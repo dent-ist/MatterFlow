@@ -369,16 +369,15 @@
 }
 
 <mf-confirm-dialog
-  title="Deactivate pod?"
-  confirmLabel="Deactivate pod"
-  cancelLabel="Keep active"
+  title="Deactivate Pod"
+  confirmLabel="Deactivate Pod"
   [danger]="true"
   [busy]="busy()"
   [(visible)]="deactivateOpen"
   (confirmed)="confirmDeactivation()"
 >
   <p>
-    {{ name().trim() }} will no longer be offered for new assignments. It keeps its members and
-    history, and tasks that already reference it keep it. You can activate it again later.
+    {{ name().trim() }} is no longer offered for new assignments, but it keeps its members and
+    history, and you can activate it again later.
   </p>
 </mf-confirm-dialog>

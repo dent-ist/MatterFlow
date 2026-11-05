@@ -110,9 +110,8 @@ export class AiComingSoon {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-confirm-dialog
-      title="AI policy warning"
-      cancelLabel="Edit"
-      confirmLabel="Save anyway"
+      title="Save Note Anyway"
+      confirmLabel="Save Note Anyway"
       [(visible)]="visible"
       (confirmed)="saveAnyway.emit()"
     >

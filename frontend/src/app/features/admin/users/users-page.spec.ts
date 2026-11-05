@@ -519,11 +519,13 @@ describe('UsersPage', () => {
     expect(button('Save changes')!.disabled).toBe(true);
     q('[data-deactivate]').click();
     await settle();
-    expect(q('[data-deactivate-text]').textContent).toContain('They can no longer sign in.');
-    expect(question().textContent).toContain('Deactivate Dana Director?');
+    expect(q('[data-deactivate-text]').textContent).toContain(
+      'Dana Director can no longer sign in.',
+    );
+    expect(question().textContent).toContain('Deactivate User');
     expect(api.users.find((u) => u.userId === 2)!.isActive).toBe(true);
 
-    questionButton('Deactivate')!.click();
+    questionButton('Deactivate User')!.click();
     await settle();
     expect(api.users.find((u) => u.userId === 2)!.isActive).toBe(false);
     // The drawer stays, now showing an Inactive person with Activate; the segment counts followed.
@@ -1100,7 +1102,7 @@ describe('UsersPage', () => {
       await settle();
       expect(q('[data-panel-heading]').textContent).toContain('Dana Director');
       expect(q('[data-deactivate-text]')).not.toBeNull();
-      expect(question().textContent).toContain('Deactivate Dana Director?');
+      expect(question().textContent).toContain('Deactivate User');
     });
 
     it('Activate from the menu activates the person at once (no question is needed)', async () => {

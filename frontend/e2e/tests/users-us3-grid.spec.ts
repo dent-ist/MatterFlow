@@ -379,8 +379,8 @@ test.describe('#433 one action per row', () => {
     await page.locator('[data-name]').fill('Changed Name');
     await page.keyboard.press('Escape');
     await page
-      .getByRole('dialog', { name: 'Leave without saving?' })
-      .getByRole('button', { name: 'Leave' })
+      .getByRole('dialog', { name: 'Discard Unsaved Changes' })
+      .getByRole('button', { name: 'Discard Changes' })
       .click();
     await expect(page.locator('[data-panel]')).toHaveCount(0);
     // Focus goes back to the menu button that opened the drawer (after the question's dialog has left).

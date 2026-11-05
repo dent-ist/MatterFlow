@@ -263,12 +263,12 @@
     }
   </div>
   <mf-confirm-dialog
-    title="Delete role?"
-    confirmLabel="Delete role"
+    title="Delete Role"
+    confirmLabel="Delete Role"
     [danger]="true"
     [(visible)]="confirmingDelete"
     (confirmed)="remove()"
   >
-    <p>{{ selected()?.name }} will be removed. This can't be undone.</p>
+    <p>{{ selected()?.name }} is removed. This cannot be undone.</p>
   </mf-confirm-dialog>
 }

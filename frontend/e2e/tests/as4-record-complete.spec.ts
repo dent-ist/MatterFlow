@@ -138,12 +138,12 @@ test.describe('Asset record page, complete (WP-AS4)', () => {
     const dialog = page.getByRole('dialog');
     await expect(dialog).toContainText('3 open tasks keep this link.');
     await shot(page, 'as4-inactive-dialog');
-    await dialog.getByRole('button', { name: 'Keep active' }).click();
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
     await expect(page.getByRole('button', { name: 'More actions' })).toBeFocused();
 
     await page.getByRole('button', { name: 'More actions' }).click();
     await page.getByRole('menuitem', { name: 'Set inactive' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Set inactive' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Set Asset Inactive' }).click();
     await expect(page.locator('[data-record-header] mf-active-badge')).toContainText('Inactive');
     await expect(page.locator('[data-page-title]')).toBeFocused();
   });

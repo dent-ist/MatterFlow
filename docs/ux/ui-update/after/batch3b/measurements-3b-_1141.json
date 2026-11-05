@@ -1,0 +1,748 @@
+{
+ "1141-priority-deactivate-1366": {
+  "dialog": {
+   "w": 416,
+   "h": 213
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Deactivate Priority",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Deactivate Priority"
+  ],
+  "overflowX": false
+ },
+ "1141-priority-deactivate-1920": {
+  "dialog": {
+   "w": 416,
+   "h": 213
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Deactivate Priority",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Deactivate Priority"
+  ],
+  "overflowX": false
+ },
+ "1141-priority-default-1366": {
+  "dialog": {
+   "w": 416,
+   "h": 213
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Set Default Priority",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Set Default Priority"
+  ],
+  "overflowX": false
+ },
+ "1141-priority-default-1920": {
+  "dialog": {
+   "w": 416,
+   "h": 213
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Set Default Priority",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Set Default Priority"
+  ],
+  "overflowX": false
+ },
+ "1141-link-role-deactivate-1366": {
+  "dialog": {
+   "w": 416,
+   "h": 213
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Deactivate Link Role",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Deactivate Link Role"
+  ],
+  "overflowX": false
+ },
+ "1141-link-role-deactivate-1920": {
+  "dialog": {
+   "w": 416,
+   "h": 213
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Deactivate Link Role",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Deactivate Link Role"
+  ],
+  "overflowX": false
+ },
+ "1141-asset-type-deactivate-1366": {
+  "dialog": {
+   "w": 416,
+   "h": 230
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Deactivate Asset Type",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Deactivate Asset Type"
+  ],
+  "overflowX": false
+ },
+ "1141-asset-type-deactivate-1920": {
+  "dialog": {
+   "w": 416,
+   "h": 230
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Deactivate Asset Type",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Deactivate Asset Type"
+  ],
+  "overflowX": false
+ },
+ "1141-step-deactivate-1366": {
+  "dialog": {
+   "w": 416,
+   "h": 230
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Deactivate Step",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Deactivate Step"
+  ],
+  "overflowX": false
+ },
+ "1141-step-deactivate-1920": {
+  "dialog": {
+   "w": 416,
+   "h": 230
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Deactivate Step",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Deactivate Step"
+  ],
+  "overflowX": false
+ },
+ "1141-workflow-deactivate-1366": {
+  "dialog": {
+   "w": 416,
+   "h": 230
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Deactivate Workflow",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Deactivate Workflow"
+  ],
+  "overflowX": false
+ },
+ "1141-workflow-deactivate-1920": {
+  "dialog": {
+   "w": 416,
+   "h": 230
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Deactivate Workflow",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Deactivate Workflow"
+  ],
+  "overflowX": false
+ },
+ "1141-task-type-deactivate-1366": {
+  "dialog": {
+   "w": 416,
+   "h": 275
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Deactivate Task Type",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Deactivate Task Type"
+  ],
+  "overflowX": false
+ },
+ "1141-task-type-deactivate-1920": {
+  "dialog": {
+   "w": 416,
+   "h": 275
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Deactivate Task Type",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Deactivate Task Type"
+  ],
+  "overflowX": false
+ },
+ "1141-report-deactivate-1366": {
+  "dialog": {
+   "w": 416,
+   "h": 230
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Deactivate Report",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Deactivate Report"
+  ],
+  "overflowX": false
+ },
+ "1141-report-deactivate-1920": {
+  "dialog": {
+   "w": 416,
+   "h": 230
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Deactivate Report",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Deactivate Report"
+  ],
+  "overflowX": false
+ },
+ "1141-on-hold-reason-deactivate-1366": {
+  "dialog": {
+   "w": 416,
+   "h": 230
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Deactivate Reason",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Deactivate Reason"
+  ],
+  "overflowX": false
+ },
+ "1141-on-hold-reason-deactivate-1920": {
+  "dialog": {
+   "w": 416,
+   "h": 230
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Deactivate Reason",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Deactivate Reason"
+  ],
+  "overflowX": false
+ },
+ "1141-user-deactivate-1366": {
+  "dialog": {
+   "w": 480,
+   "h": 768
+  },
+  "header": {
+   "w": 478,
+   "h": 145.5
+  },
+  "footer": {
+   "w": 478,
+   "h": 51.8
+  },
+  "close": null,
+  "closeBg": "rgb(255, 255, 255)",
+  "closeColor": "rgb(51, 65, 85)",
+  "titleSize": null,
+  "buttons": [
+   "Save changes",
+   "Cancel"
+  ],
+  "overflowX": false
+ },
+ "1141-user-deactivate-1920": {
+  "dialog": {
+   "w": 480,
+   "h": 1080
+  },
+  "header": {
+   "w": 478,
+   "h": 145.5
+  },
+  "footer": {
+   "w": 478,
+   "h": 51.8
+  },
+  "close": null,
+  "closeBg": "rgb(255, 255, 255)",
+  "closeColor": "rgb(51, 65, 85)",
+  "titleSize": null,
+  "buttons": [
+   "Save changes",
+   "Cancel"
+  ],
+  "overflowX": false
+ },
+ "1141-client-inactive-1366": {
+  "dialog": {
+   "w": 416,
+   "h": 230
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Set Client Inactive",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Set Client Inactive"
+  ],
+  "overflowX": false
+ },
+ "1141-client-inactive-1920": {
+  "dialog": {
+   "w": 416,
+   "h": 230
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Set Client Inactive",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Set Client Inactive"
+  ],
+  "overflowX": false
+ },
+ "1141-project-archive-1366": {
+  "dialog": {
+   "w": 416,
+   "h": 213
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Archive Project",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Archive Project"
+  ],
+  "overflowX": false
+ },
+ "1141-project-archive-1920": {
+  "dialog": {
+   "w": 416,
+   "h": 213
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Archive Project",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Archive Project"
+  ],
+  "overflowX": false
+ },
+ "1141-asset-inactive-1366": {
+  "dialog": {
+   "w": 416,
+   "h": 247
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Set Asset Inactive",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Set Asset Inactive"
+  ],
+  "overflowX": false
+ },
+ "1141-asset-inactive-1920": {
+  "dialog": {
+   "w": 416,
+   "h": 247
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Set Asset Inactive",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Set Asset Inactive"
+  ],
+  "overflowX": false
+ },
+ "1141-shortcuts-1366": {
+  "dialog": {
+   "w": 416,
+   "h": 654.2
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Keyboard Shortcuts",
+  "titleSize": "16px",
+  "buttons": [
+   "Close"
+  ],
+  "overflowX": false
+ },
+ "1141-shortcuts-1920": {
+  "dialog": {
+   "w": 416,
+   "h": 935
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Keyboard Shortcuts",
+  "titleSize": "16px",
+  "buttons": [
+   "Close"
+  ],
+  "overflowX": false
+ }
+}

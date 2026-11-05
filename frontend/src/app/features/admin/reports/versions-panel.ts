@@ -116,17 +116,16 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
     </section>
 
     <mf-confirm-dialog
-      title="Restore this version?"
-      confirmLabel="Restore as a new version"
-      cancelLabel="Cancel"
+      title="Restore Version"
+      confirmLabel="Restore Version"
       [busy]="busy()"
       [visible]="restoring() !== null"
       (visibleChange)="!$event && restoring.set(null)"
       (confirmed)="restore()"
     >
       <p data-restore-body>
-        Version {{ restoring()?.versionNo }} is copied into a new version. The history stays as it
-        is. The report is deactivated until the restored version has been previewed again.
+        Version {{ restoring()?.versionNo }} is copied into a new version and the report is
+        deactivated until that version has been previewed; the history stays as it is.
       </p>
     </mf-confirm-dialog>
   `,

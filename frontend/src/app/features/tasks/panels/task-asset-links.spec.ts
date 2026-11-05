@@ -228,11 +228,11 @@ describe('TaskAssetLinks', () => {
     q<HTMLButtonElement>('[data-unlink]').click();
     await settle(fixture);
     const dialog = document.body.querySelector('p-dialog') as HTMLElement;
-    expect(dialog.textContent).toContain('Remove the link to Contract bundle?');
+    expect(dialog.textContent).toContain('The link to Contract bundle is removed');
     expect(api.unlinkTaskAsset).not.toHaveBeenCalled();
 
     api.listTaskAssets.mockReturnValue(ok({ items: [], canEdit: true }));
-    buttonByLabel(dialog, 'Remove link')!.click();
+    buttonByLabel(dialog, 'Remove Link')!.click();
     await settle(fixture);
 
     expect(api.unlinkTaskAsset).toHaveBeenCalledWith(42, 9);
@@ -250,7 +250,7 @@ describe('TaskAssetLinks', () => {
     );
     q<HTMLButtonElement>('[data-unlink]').click();
     await settle(fixture);
-    buttonByLabel(document.body.querySelector('p-dialog') as HTMLElement, 'Remove link')!.click();
+    buttonByLabel(document.body.querySelector('p-dialog') as HTMLElement, 'Remove Link')!.click();
     await settle(fixture);
 
     expect(q('[data-row-error]').textContent).toContain("can't be changed");

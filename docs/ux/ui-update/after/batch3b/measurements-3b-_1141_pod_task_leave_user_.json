@@ -1,0 +1,272 @@
+{
+ "1141-pod-deactivate-1366": {
+  "dialog": {
+   "w": 416,
+   "h": 230
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Deactivate Pod",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Deactivate Pod"
+  ],
+  "overflowX": false
+ },
+ "1141-pod-deactivate-1920": {
+  "dialog": {
+   "w": 416,
+   "h": 230
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Deactivate Pod",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Deactivate Pod"
+  ],
+  "overflowX": false
+ },
+ "1141-task-type-deactivate-1366": {
+  "dialog": {
+   "w": 416,
+   "h": 275
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Deactivate Task Type",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Deactivate Task Type"
+  ],
+  "overflowX": false
+ },
+ "1141-task-type-deactivate-1920": {
+  "dialog": {
+   "w": 416,
+   "h": 275
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Deactivate Task Type",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Deactivate Task Type"
+  ],
+  "overflowX": false
+ },
+ "1141-user-deactivate-1366": {
+  "dialog": {
+   "w": 416,
+   "h": 213
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Deactivate User",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Deactivate User"
+  ],
+  "overflowX": false
+ },
+ "1141-user-deactivate-1920": {
+  "dialog": {
+   "w": 416,
+   "h": 213
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Deactivate User",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Deactivate User"
+  ],
+  "overflowX": false
+ },
+ "1141-task-hold-1366": {
+  "dialog": {
+   "w": 416,
+   "h": 390.2
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Put Task on Hold",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Put Task on Hold"
+  ],
+  "overflowX": false
+ },
+ "1141-task-hold-1920": {
+  "dialog": {
+   "w": 416,
+   "h": 390.2
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Put Task on Hold",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Put Task on Hold"
+  ],
+  "overflowX": false
+ },
+ "1141-task-cancel-1366": {
+  "dialog": {
+   "w": 416,
+   "h": 333.2
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Cancel Task",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Cancel Task"
+  ],
+  "overflowX": false
+ },
+ "1141-task-cancel-1920": {
+  "dialog": {
+   "w": 416,
+   "h": 333.2
+  },
+  "header": {
+   "w": 414,
+   "h": 56
+  },
+  "footer": {
+   "w": 414,
+   "h": 61
+  },
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Cancel Task",
+  "titleSize": "16px",
+  "buttons": [
+   "Cancel",
+   "Cancel Task"
+  ],
+  "overflowX": false
+ }
+}

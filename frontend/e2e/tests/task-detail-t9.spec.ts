@@ -494,7 +494,7 @@ test.describe('T9 #328: focus after Complete, Hold, Resume, Reopen and Cancel', 
         .getByRole('dialog')
         .getByRole('textbox', { name: /Reason/ })
         .fill('Waiting for the custodian');
-      await page.getByRole('dialog').getByRole('button', { name: 'Put on hold' }).click();
+      await page.getByRole('dialog').getByRole('button', { name: 'Put Task on Hold' }).click();
       await detail.expectStatus('On Hold');
       await onStatus('after Put on hold');
       await shot(page, 'focus-after-hold');

@@ -344,7 +344,7 @@ test.describe('Step record page', () => {
       const dialog = page.getByRole('dialog');
       await expect(dialog).toBeVisible();
       await shot(page, 'leave-tab-dialog', 1366);
-      await dialog.getByRole('button', { name: 'Stay' }).click();
+      await dialog.getByRole('button', { name: 'Keep Editing' }).click();
       await expect(page).not.toHaveURL(/tab=inputs/);
       await expect(page.locator('#step-description')).toHaveValue('Edited description');
 
@@ -359,7 +359,7 @@ test.describe('Step record page', () => {
       await tab(page, 'details').click();
       await page.locator('#step-description').fill('Dropped');
       await tab(page, 'used-by').click();
-      await dialog.getByRole('button', { name: 'Leave', exact: true }).click();
+      await dialog.getByRole('button', { name: 'Discard Changes', exact: true }).click();
       await expect(page).toHaveURL(/tab=used-by/);
       await tab(page, 'details').click();
       await expect(page.locator('#step-description')).toHaveValue('Edited description');
@@ -605,11 +605,11 @@ test.describe('Step record page', () => {
       await expect(page.locator('[data-footer] button')).toHaveText(['Save changes', 'Cancel']);
       await page.locator('[data-cancel]').click();
       await menuItem(page, 'Deactivate');
-      const dialog = page.getByRole('dialog', { name: 'Deactivate step?' });
+      const dialog = page.getByRole('dialog', { name: 'Deactivate Step' });
       await expect(dialog.locator('[data-impact]')).toHaveText(
         'No workflow draft contains this step. No published workflow version uses it.',
       );
-      await dialog.getByRole('button', { name: 'Keep active' }).click();
+      await dialog.getByRole('button', { name: 'Cancel' }).click();
       await expect(dialog).toBeHidden();
       await expect(overflowButton(page)).toBeFocused();
     });
@@ -626,11 +626,11 @@ test.describe('Step record page', () => {
       await page.setViewportSize({ width: 1366, height: 768 });
       await openStep(page, step.id);
       await menuItem(page, 'Deactivate');
-      const dialog = page.getByRole('dialog', { name: 'Deactivate step?' });
+      const dialog = page.getByRole('dialog', { name: 'Deactivate Step' });
       await expect(dialog.locator('[data-impact]')).toHaveText(
         '1 workflow draft contains this step; it keeps it. 2 published workflow versions use it and are not changed.',
       );
-      await dialog.getByRole('button', { name: 'Keep active' }).click();
+      await dialog.getByRole('button', { name: 'Cancel' }).click();
       await openDraft(admin, wfs[1].id);
       await openStep(page, step.id);
       await menuItem(page, 'Deactivate');
@@ -663,7 +663,7 @@ test.describe('Step record page', () => {
       await page.locator('#step-description').fill('Typed, not saved');
       await menuItem(page, 'Deactivate');
       await page
-        .getByRole('dialog', { name: 'Deactivate step?' })
+        .getByRole('dialog', { name: 'Deactivate Step' })
         .getByRole('button', { name: 'Deactivate step' })
         .click();
       await expect(page.locator('[data-record-header]')).toContainText('Inactive');

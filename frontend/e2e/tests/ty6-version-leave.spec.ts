@@ -17,7 +17,7 @@ test.describe('Version editor: leaving a dirty draft (VP8, #398)', () => {
   }
   const crumb = (page: Page, name: string) =>
     page.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('link', { name });
-  const ask = (page: Page) => page.getByRole('dialog', { name: 'Leave without saving?' });
+  const ask = (page: Page) => page.getByRole('dialog', { name: 'Discard Unsaved Changes' });
 
   test('a breadcrumb offers Stay (default), Leave and Save draft and leave; Save draft and leave saves, then goes', async ({
     page,
@@ -31,7 +31,7 @@ test.describe('Version editor: leaving a dirty draft (VP8, #398)', () => {
     await makeDirty(page, a);
     await crumb(page, 'Workflows').click();
     await expect(ask(page)).toBeVisible();
-    await expect(ask(page).getByRole('button', { name: 'Stay' })).toBeFocused();
+    await expect(ask(page).getByRole('button', { name: 'Keep Editing' })).toBeFocused();
     const buttons = await ask(page).getByRole('button').allTextContents();
     expect(buttons.map((t) => t.trim()).filter((t) => t && t !== 'Close dialog')).toEqual([
       'Stay',
@@ -44,7 +44,7 @@ test.describe('Version editor: leaving a dirty draft (VP8, #398)', () => {
       await shoot(page, 'leave-dialog', size);
     }
     // Stay: the page and the unsaved work are kept.
-    await ask(page).getByRole('button', { name: 'Stay' }).click();
+    await ask(page).getByRole('button', { name: 'Keep Editing' }).click();
     await expect(ask(page)).toHaveCount(0);
     await expect(page.locator('[data-dirty]')).toBeVisible();
     expect((await titlesOf(page)).slice(0, 2)).toEqual([b, a]);
@@ -68,7 +68,7 @@ test.describe('Version editor: leaving a dirty draft (VP8, #398)', () => {
     await page.goto(world.url);
     await makeDirty(page, world.wf.stepTitles[0]);
     await crumb(page, 'Workflows').click();
-    await ask(page).getByRole('button', { name: 'Leave', exact: true }).click();
+    await ask(page).getByRole('button', { name: 'Discard Changes', exact: true }).click();
     await expect(page).not.toHaveURL(/versions/);
     const saved = await admin.get(
       `/api/v1/workflows/${world.wf.workflowDefinitionId}/versions/${world.draftId}`,
@@ -111,7 +111,7 @@ test.describe('Version editor: leaving a dirty draft (VP8, #398)', () => {
     // Back from this page (the browser button) is guarded as well.
     await page.goBack();
     await expect(ask(page)).toBeVisible();
-    await ask(page).getByRole('button', { name: 'Stay' }).click();
+    await ask(page).getByRole('button', { name: 'Keep Editing' }).click();
     await expect(page).toHaveURL(/versions/);
   });
 

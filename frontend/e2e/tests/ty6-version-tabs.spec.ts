@@ -102,7 +102,7 @@ test.describe('Version page tabs and switcher (#399)', () => {
     await page.getByRole('menuitem', { name: /^v2 Published/ }).click();
     const d = page.getByRole('dialog');
     await expect(d).toBeVisible();
-    await d.getByRole('button', { name: 'Stay' }).click();
+    await d.getByRole('button', { name: 'Keep Editing' }).click();
     await expect(page).toHaveURL(new RegExp(`/versions/${ids.v3}`));
 
     // A clean page switches, on the same tab (keyboard: Enter on the entry).
@@ -206,7 +206,7 @@ test.describe('Read-only states and the retire dialog (#400)', () => {
       await clean(page, 'retire dialog', size.w);
       await shot(page, 'retire-dialog', size.w);
     }
-    await d.getByRole('button', { name: 'Keep published' }).click();
+    await d.getByRole('button', { name: 'Cancel' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(page.locator('[data-status]')).toContainText('Published');
     await page.getByRole('button', { name: 'More version actions' }).click();

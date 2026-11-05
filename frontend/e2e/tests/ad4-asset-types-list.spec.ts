@@ -235,10 +235,10 @@ test.describe('Asset Types list (#634, #637)', () => {
     await filterToken(page, s.token);
     await menuButton(page, s.none.name).click();
     await page.getByRole('menuitem', { name: /Deactivate/ }).click();
-    const dialog = page.getByRole('dialog', { name: 'Deactivate asset type?' });
+    const dialog = page.getByRole('dialog', { name: 'Deactivate Asset Type' });
     await expect(dialog).toContainText('No asset has this type.');
     await expect(dialog).toContainText("It won't be offered for new assets.");
-    await expect(dialog.getByRole('button', { name: 'Keep active' })).toBeFocused();
+    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
     await dialog.getByRole('button', { name: 'Deactivate asset type' }).click();
     await expect(dialog).toHaveCount(0);
     await expect(row(page, s.none.name).locator('mf-active-badge')).toContainText('Inactive');
@@ -319,11 +319,11 @@ test.describe('Asset Types list (#634, #637)', () => {
       if (axeAvailable()) expect(await axeViolations(page), `menu at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
       await page.getByRole('menuitem', { name: /Deactivate/ }).click();
-      const dialog = page.getByRole('dialog', { name: 'Deactivate asset type?' });
+      const dialog = page.getByRole('dialog', { name: 'Deactivate Asset Type' });
       await expect(dialog).toBeVisible();
       if (axeAvailable()) expect(await axeViolations(page), `dialog at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
-      await dialog.getByRole('button', { name: 'Keep active' }).click();
+      await dialog.getByRole('button', { name: 'Cancel' }).click();
       await expect(dialog).toHaveCount(0);
     }
   });

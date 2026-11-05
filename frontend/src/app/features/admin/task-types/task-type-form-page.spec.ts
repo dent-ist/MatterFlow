@@ -194,11 +194,11 @@ describe('TaskTypeFormPage', () => {
     await settle();
     await chooseVersion('v1');
     expect(q('[data-dialog="discard"]', document.body)).not.toBeNull();
-    await press('Keep editing', document.body);
+    await press('Keep Editing', document.body);
     expect(q('[data-status]').textContent).toContain('Draft v2');
 
     await chooseVersion('v1');
-    await press('Discard changes', document.body);
+    await press('Discard Changes', document.body);
     expect(q('[data-status]').textContent).toContain('Published v1');
   });
 

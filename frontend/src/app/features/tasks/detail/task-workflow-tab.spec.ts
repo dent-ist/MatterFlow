@@ -374,12 +374,12 @@ describe('Workflow tab: step actions and skip rules', () => {
     await click(fixture, q(el, '[data-step-id="101"]  .step__toggle'));
     await click(fixture, q(el, '[data-step-id="101"] [data-reopen]'));
 
-    expect(body().textContent).toContain('Later steps keep their status.');
+    expect(body().textContent).toContain('later steps keep their status.');
     expect(q(body(), '[data-reopen-task-note]')!.textContent).toContain(
       'move the task back to In Progress',
     );
     expect(body().querySelector('textarea')).toBeNull();
-    await click(fixture, dialogButton('Reopen step')!);
+    await click(fixture, dialogButton('Reopen Step')!);
     expect(fakes.workflow['reopenTaskStep']).toHaveBeenCalledWith(1042, 101, { rowVersion: 'WF1' });
   });
 

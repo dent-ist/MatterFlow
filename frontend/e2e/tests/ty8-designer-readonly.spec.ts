@@ -146,7 +146,7 @@ test.describe('FD2 and FD3: Versions dialog, long names and permissions', () => 
     await versions.click();
     await dialog.getByRole('button', { name: 'v1' }).click();
     await expect(page.getByRole('dialog', { name: /Discard/ })).toBeVisible();
-    await page.getByRole('button', { name: 'Keep editing' }).click();
+    await page.getByRole('button', { name: 'Keep Editing' }).click();
     await expect(badge(page)).toHaveText('Draft v2');
     await expect(page.locator('[data-dirty]')).toBeVisible();
   });

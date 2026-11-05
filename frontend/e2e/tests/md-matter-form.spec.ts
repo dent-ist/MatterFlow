@@ -77,20 +77,20 @@ test.describe('Matter form (MD-43)', () => {
     // Cancel keeps it locked.
     await dialog.locator('[data-change-number]').click();
     await page
-      .getByRole('dialog', { name: 'Change the matter number?' })
+      .getByRole('dialog', { name: 'Unlock Matter Number' })
       .getByRole('button', { name: 'Cancel' })
       .click();
     await expect(dialog.locator('#matter-number')).toBeDisabled();
 
     await dialog.locator('[data-change-number]').click();
     await page
-      .getByRole('dialog', { name: 'Change the matter number?' })
-      .getByRole('button', { name: 'Unlock the matter number' })
+      .getByRole('dialog', { name: 'Unlock Matter Number' })
+      .getByRole('button', { name: 'Unlock Matter Number' })
       .click();
     await expect(dialog.locator('#matter-number')).toBeEnabled();
     await dialog.locator('#matter-number').fill('00022');
     await dialog.getByRole('button', { name: 'Save changes' }).click();
-    const confirm = page.getByRole('dialog', { name: 'Change the CM Number?' });
+    const confirm = page.getByRole('dialog', { name: 'Change CM Number' });
     await expect(confirm).toContainText(`from ${matter.matterRef} to ${client.clientNumber}-00022`);
     await confirm.getByRole('button', { name: 'Change CM Number' }).click();
     await expect(page.locator('[data-summary-details] .mf-ref')).toHaveText(

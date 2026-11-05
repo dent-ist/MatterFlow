@@ -170,7 +170,7 @@ describe('ClientFormPage', () => {
       await settle(fixture);
       const dialog = document.body.querySelector('p-dialog')!;
       expect(dialog.querySelector('[data-number-warning]')?.textContent).toContain(
-        'Changing this number changes how matters are named in emails, workspaces and folders. This change is recorded.',
+        'Changing this number changes how matters are named in emails, workspaces and folders, and the change is recorded.',
       );
 
       const input = document.body.querySelector<HTMLInputElement>('#new-client-number')!;
@@ -178,7 +178,7 @@ describe('ClientFormPage', () => {
       input.dispatchEvent(new Event('input'));
       input.dispatchEvent(new Event('blur'));
       fixture.detectChanges();
-      buttonByLabel(dialog as HTMLElement, 'Change number')!.click();
+      buttonByLabel(dialog as HTMLElement, 'Change Client Number')!.click();
       await settle(fixture);
 
       expect(api.changeClientNumber).toHaveBeenCalledWith(1, {
@@ -206,7 +206,7 @@ describe('ClientFormPage', () => {
       input.dispatchEvent(new Event('input'));
       buttonByLabel(
         document.body.querySelector('p-dialog') as HTMLElement,
-        'Change number',
+        'Change Client Number',
       )!.click();
       await settle(fixture);
 

@@ -36,8 +36,7 @@ import { countNew, latestOf, readSeen, saveSeen } from './section-state';
 export const COMMENTS_INTERNAL_NOTE = 'Internal only. Visible to people who can view tasks.';
 export const COMMENTS_PRIVILEGE_NOTE =
   'Privilege reminder: comments are saved with the task. Do not record anything that should not be stored here.';
-export const COMMENT_DELETE_BODY =
-  'Delete this comment? It will be hidden from view but kept in the audit record.';
+export const COMMENT_DELETE_BODY = 'The comment is hidden from view but kept in the audit record.';
 /** The server returns at most this many comments per request (`take`); longer threads are fetched page by page (SEC2-10). */
 export const COMMENTS_PAGE_SIZE = 200;
 
@@ -342,9 +341,8 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
       </div>
 
       <mf-confirm-dialog
-        title="Delete comment"
-        confirmLabel="Delete comment"
-        cancelLabel="Keep comment"
+        title="Delete Comment"
+        confirmLabel="Delete Comment"
         [danger]="true"
         [busy]="saving()"
         [(visible)]="deleteOpen"

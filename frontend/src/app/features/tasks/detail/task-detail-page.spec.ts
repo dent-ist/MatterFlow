@@ -308,14 +308,14 @@ describe('TaskDetailPage header', () => {
     await openMenu(fixture, el);
     await click(fixture, q(el, '[data-option=HOLD]'));
 
-    await click(fixture, dialogButton('Put on hold')!);
+    await click(fixture, dialogButton('Put Task on Hold')!);
     expect(q(body(), '[data-reason-error]')!.textContent).toContain('Add a reason');
     expect(fakes.tasks['changeTaskStatus']).not.toHaveBeenCalled();
 
     const area = body().querySelector<HTMLTextAreaElement>('#task-reason')!;
     area.value = 'Waiting for the vendor';
     area.dispatchEvent(new Event('input'));
-    await click(fixture, dialogButton('Put on hold')!);
+    await click(fixture, dialogButton('Put Task on Hold')!);
     expect(fakes.tasks['changeTaskStatus']).toHaveBeenCalledWith(1042, {
       rowVersion: 'RV1',
       status: 'ON_HOLD',
@@ -341,7 +341,7 @@ describe('TaskDetailPage header', () => {
     const area = body().querySelector<HTMLTextAreaElement>('#task-reason')!;
     area.value = 'Waiting for the vendor';
     area.dispatchEvent(new Event('input'));
-    await click(fixture, dialogButton('Put on hold')!);
+    await click(fixture, dialogButton('Put Task on Hold')!);
     expect(fakes.tasks['changeTaskStatus']).toHaveBeenCalledWith(1042, {
       rowVersion: 'RV1',
       status: 'ON_HOLD',
@@ -350,21 +350,22 @@ describe('TaskDetailPage header', () => {
     });
   });
 
-  it('dialog wording (#305): Hold dismisses with "Close", Cancel keeps "Keep task", both ask for a "Reason"', async () => {
+  it('dialog wording (#305, #1141): both dialogs dismiss with "Cancel", confirm with the verb and the thing, and ask for a "Reason"', async () => {
     const { fixture, el } = await mountTaskPage(aTask());
     await openMenu(fixture, el);
     await click(fixture, q(el, '[data-option=HOLD]'));
-    expect(dialogButton('Close')).toBeDefined();
-    expect(dialogButton('Cancel')).toBeUndefined();
+    expect(dialogButton('Cancel')).toBeDefined();
+    expect(dialogButton('Close')).toBeUndefined();
     expect(q(body(), 'label[for=task-reason]')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
       'Reason (required)',
     );
-    await click(fixture, dialogButton('Close')!);
+    await click(fixture, dialogButton('Cancel')!);
     expect(q(body(), '[data-reason-body]')).toBeNull();
 
     await openMenu(fixture, el);
     await click(fixture, q(el, '[data-option=CANCEL]'));
-    expect(dialogButton('Keep task')).toBeDefined();
+    expect(dialogButton('Cancel')).toBeDefined();
+    expect(dialogButton('Cancel Task')).toBeDefined();
     expect(q(body(), '.reason label')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
       'Reason (required)',
     );
@@ -375,10 +376,10 @@ describe('TaskDetailPage header', () => {
     await openMenu(fixture, el);
     await click(fixture, q(el, '[data-option=CANCEL]'));
     expect(body().querySelector('[data-reason-body]')!.textContent).toContain(
-      "Unresolved workflow steps don't block",
+      "unresolved workflow steps don't block",
     );
 
-    await click(fixture, dialogButton('Cancel task')!);
+    await click(fixture, dialogButton('Cancel Task')!);
     expect(q(body(), '[data-reason-error]')!.textContent).toContain(
       "Add a reason explaining why you're cancelling.",
     );
@@ -387,7 +388,7 @@ describe('TaskDetailPage header', () => {
     const area = body().querySelector<HTMLTextAreaElement>('#task-reason')!;
     area.value = 'Client withdrew';
     area.dispatchEvent(new Event('input'));
-    await click(fixture, dialogButton('Cancel task')!);
+    await click(fixture, dialogButton('Cancel Task')!);
     expect(fakes.tasks['cancelTask']).toHaveBeenCalledWith(1042, {
       rowVersion: 'RV1',
       comment: 'Client withdrew',
@@ -420,7 +421,7 @@ describe('TaskDetailPage header', () => {
 
     await click(fixture, q(el, '[data-action="reopen"]'));
     expect(body().querySelector('[data-reopen-body]')).not.toBeNull();
-    await click(fixture, dialogButton('Reopen')!);
+    await click(fixture, dialogButton('Reopen Task')!);
     expect(fakes.tasks['reopenTask']).toHaveBeenCalledWith(1042, { rowVersion: 'RV1' });
   });
 
@@ -1004,7 +1005,7 @@ describe('TaskDetailPage layout and states', () => {
     const area = body().querySelector<HTMLTextAreaElement>('#task-reason')!;
     area.value = 'Because';
     area.dispatchEvent(new Event('input'));
-    await click(fixture, dialogButton('Put on hold')!);
+    await click(fixture, dialogButton('Put Task on Hold')!);
 
     expect(fakes.tasks['changeTaskStatus']).toHaveBeenCalled();
     expect(q(el, '[data-conflict-banner]')!.textContent).toContain('changed by someone else');

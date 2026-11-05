@@ -312,9 +312,8 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
       />
     }
     <mf-confirm-dialog
-      title="Deactivate step?"
-      confirmLabel="Deactivate step"
-      cancelLabel="Keep active"
+      title="Deactivate Step"
+      confirmLabel="Deactivate Step"
       [danger]="true"
       [busy]="busy()"
       [error]="dialogError()"

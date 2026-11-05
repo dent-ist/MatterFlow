@@ -988,21 +988,21 @@ const emptySpec = (): SpecDraft => ({
     </mf-form-dialog>
 
     <mf-confirm-dialog
-      title="Delete this production?"
-      confirmLabel="Delete production"
+      title="Delete Production"
+      confirmLabel="Delete Production"
       [danger]="true"
       [busy]="busy()"
       [(visible)]="confirmDelete"
       (confirmed)="deleteProduction()"
     >
       <p>
-        {{ current()?.name }} and its comments will be deleted for good. The history keeps a line
+        {{ current()?.name }} and its comments are deleted for good, and the history keeps a line
         that it was deleted.
       </p>
     </mf-confirm-dialog>
     <mf-confirm-dialog
-      title="Retire this spec?"
-      confirmLabel="Retire spec"
+      title="Retire Spec"
+      confirmLabel="Retire Spec"
       [danger]="true"
       [busy]="busy()"
       [(visible)]="confirmRetire"

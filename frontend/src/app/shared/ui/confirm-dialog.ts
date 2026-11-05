@@ -14,7 +14,7 @@ import { ScrollRegion } from './scroll-region';
  *    the right, body padding 16, footer with a top border; radius 12, `--mf-shadow-pop`;
  *  - the width is the `size` input (small 416 px by default, default 576 px, large 768 px);
  *  - the footer puts the secondary action on the left and the primary on the right; a destructive primary is red; an error sits above the buttons;
- *  - the secondary is "Cancel", unless that would read as the action itself (a named alternative such as "Keep task" then).
+ *  - the secondary is always "Cancel" (D-34, #1141); only the unsaved-changes question says "Keep Editing" / "Discard Changes". The title is the verb and the thing in Title Case without a question mark ("Delete Note"), the body one sentence with the consequence, the confirm button repeats the title.
  */
 @Component({
   selector: 'mf-confirm-dialog',

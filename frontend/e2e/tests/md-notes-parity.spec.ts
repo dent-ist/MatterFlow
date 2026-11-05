@@ -126,9 +126,9 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await page.locator('.ProseMirror').click();
     await page.keyboard.type('x');
     await page.locator('[data-note-cancel]').click();
-    const dialog = page.getByRole('dialog', { name: 'Discard unsaved changes?' });
+    const dialog = page.getByRole('dialog', { name: 'Discard Unsaved Changes' });
     await expect(dialog).toContainText('If you leave now they are lost.');
-    await dialog.getByRole('button', { name: 'Keep editing' }).click();
+    await dialog.getByRole('button', { name: 'Keep Editing' }).click();
     await expect(page.locator('[data-editor-toolbar]')).toBeVisible();
     await page.locator('[data-note-cancel]').click();
     await page.getByRole('dialog').getByRole('button', { name: 'Discard changes' }).click();

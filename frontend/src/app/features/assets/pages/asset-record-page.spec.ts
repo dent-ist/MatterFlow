@@ -255,10 +255,10 @@ describe('AssetRecordPage', () => {
       .click();
     await settle(fixture);
     const dialog = document.body.querySelector('p-dialog') as HTMLElement;
-    expect(dialog.textContent).toContain('Set Contract bundle inactive?');
+    expect(dialog.textContent).toContain('Set Asset Inactive');
     expect(assets.setAssetActive).not.toHaveBeenCalled();
 
-    buttonByLabel(dialog, 'Set inactive')!.click();
+    buttonByLabel(dialog, 'Set Asset Inactive')!.click();
     await settle(fixture);
     expect(assets.setAssetActive).toHaveBeenCalledWith(9, { isActive: false, rowVersion: 'AAAA' });
     expect(el().querySelector('[data-record-header] mf-active-badge')?.textContent).toContain(
@@ -292,7 +292,7 @@ describe('AssetRecordPage', () => {
     await fixture.componentInstance.load();
     await settle(fixture);
     body = (await openDialog()).querySelector('[data-toggle-body]')!.textContent!;
-    expect(body).toBe('Reactivate Contract bundle?');
+    expect(body.trim()).toBe('Contract bundle can be edited and linked to new tasks again.');
   });
 
   it('after a confirmed Set inactive the heading has focus and the badge says Inactive (#507)', async () => {
@@ -302,7 +302,10 @@ describe('AssetRecordPage', () => {
       .find((i) => i.textContent!.includes('Set Inactive'))!
       .click();
     await settle(fixture);
-    buttonByLabel(document.body.querySelector('p-dialog') as HTMLElement, 'Set inactive')!.click();
+    buttonByLabel(
+      document.body.querySelector('p-dialog') as HTMLElement,
+      'Set Asset Inactive',
+    )!.click();
     await settle(fixture);
     // The heading is focused once the closing dialog is gone (it polls for the dialog mask).
     const heading = el().querySelector('[data-page-title]');

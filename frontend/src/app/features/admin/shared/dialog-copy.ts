@@ -1,7 +1,7 @@
 /**
  * The wording of the Task Types administration dialogs (#362), in one place. The vocabulary of the review (section 3 item 5):
  * published things are **retired**, records are **deactivated**, drafts are **discarded**. The verb is in the primary button
- * ("Deactivate task type", "Publish v3", "Retire v2"), the cancel says what is kept ("Keep active", "Back to draft"), and only the
+ * ("Deactivate Task Type", "Publish v3", "Retire v2"), the cancel is always "Cancel" (D-34, #1141; only the unsaved-changes dialog says "Keep Editing"), and only the
  * destructive ones are `danger`. Dialogs read this table; none spells its own title or button text.
  */
 export interface DialogCopy {
@@ -16,39 +16,39 @@ export interface DialogCopy {
 
 export const DIALOG_COPY = {
   deactivateTaskType: {
-    title: 'Deactivate task type?',
-    confirm: 'Deactivate task type',
-    cancel: 'Keep active',
+    title: 'Deactivate Task Type',
+    confirm: 'Deactivate Task Type',
+    cancel: 'Cancel',
     danger: true,
   },
   deactivateWorkflow: {
-    title: 'Deactivate workflow?',
-    confirm: 'Deactivate workflow',
-    cancel: 'Keep active',
+    title: 'Deactivate Workflow',
+    confirm: 'Deactivate Workflow',
+    cancel: 'Cancel',
     danger: true,
   },
   deactivateStep: {
-    title: 'Deactivate step?',
-    confirm: 'Deactivate step',
-    cancel: 'Keep active',
+    title: 'Deactivate Step',
+    confirm: 'Deactivate Step',
+    cancel: 'Cancel',
     danger: true,
   },
   discardDraft: {
-    title: 'Discard draft?',
-    confirm: 'Discard draft',
-    cancel: 'Keep draft',
+    title: 'Discard Draft',
+    confirm: 'Discard Draft',
+    cancel: 'Cancel',
     danger: true,
   },
   discardChanges: {
-    title: 'Discard unsaved changes?',
-    confirm: 'Discard changes',
-    cancel: 'Keep editing',
+    title: 'Discard Unsaved Changes',
+    confirm: 'Discard Changes',
+    cancel: 'Keep Editing',
     danger: true,
   },
   changeMode: {
-    title: 'Change execution mode?',
-    confirm: 'Change mode',
-    cancel: 'Keep mode',
+    title: 'Change Execution Mode',
+    confirm: 'Change Execution Mode',
+    cancel: 'Cancel',
     danger: false,
   },
   conflict: {
@@ -59,84 +59,82 @@ export const DIALOG_COPY = {
   },
 } as const satisfies Record<string, DialogCopy>;
 
-/** Publish a version: "Publish v3" in the title and on the button, "Back to draft" to leave. */
+/** Publish a version: "Publish v3" in the title and on the button, "Cancel" to leave. */
 export function publishCopy(versionNo: number | string): DialogCopy {
   return {
     title: `Publish v${versionNo}`,
     confirm: `Publish v${versionNo}`,
-    cancel: 'Back to draft',
+    cancel: 'Cancel',
     danger: false,
   };
 }
 
-/** Retire a published version: "Retire v2", "Keep published" to leave. */
+/** Retire a published version: "Retire v2", "Cancel" to leave. */
 export function retireCopy(versionNo: number | string): DialogCopy {
   return {
-    title: `Retire v${versionNo}?`,
+    title: `Retire v${versionNo}`,
     confirm: `Retire v${versionNo}`,
-    cancel: 'Keep published',
+    cancel: 'Cancel',
     danger: true,
   };
 }
 
 /**
  * The dialogs of the admin list kit (#542): every one has a title, a body, a confirm label and a cancel label. The safe button is the
- * cancel one ("Keep ...") and takes the default focus. The body is the `impactLine` of the same kind, so a number the API did not return
+ * "Cancel" one and takes the default focus. The body is the `impactLine` of the same kind, so a number the API did not return
  * leaves its sentence out. Vocabulary: Deactivate/Activate everywhere; Delete only for Priorities and Link roles, only when unused, only
  * from the row overflow. Pages call `dialogCopy.deactivatePriority({ openTasks })` and never spell dialog text themselves.
  */
 export const dialogCopy = {
   /** Set an Asset inactive (#507): the open tasks linked to it keep the link; the sentence is dropped when the count is not known. */
   deactivateAsset: (facts: ImpactFacts = {}): DialogCopy => ({
-    title: 'Set asset inactive',
+    title: 'Set Asset Inactive',
     body: impactLine('deactivateAsset', facts).text,
-    confirm: 'Set inactive',
-    cancel: 'Keep active',
+    confirm: 'Set Asset Inactive',
+    cancel: 'Cancel',
     danger: true,
   }),
   deactivateAssetType: (facts: ImpactFacts = {}): DialogCopy => ({
-    title: 'Deactivate asset type?',
+    title: 'Deactivate Asset Type',
     body: impactLine('deactivateAssetType', facts).text,
-    confirm: 'Deactivate asset type',
-    cancel: 'Keep active',
+    confirm: 'Deactivate Asset Type',
+    cancel: 'Cancel',
     danger: true,
   }),
   deactivatePriority: (facts: ImpactFacts = {}): DialogCopy => ({
-    title: 'Deactivate priority?',
+    title: 'Deactivate Priority',
     body: impactLine('deactivatePriority', facts).text,
-    confirm: 'Deactivate priority',
-    cancel: 'Keep active',
+    confirm: 'Deactivate Priority',
+    cancel: 'Cancel',
     danger: true,
   }),
   deactivateLinkRole: (facts: ImpactFacts = {}): DialogCopy => ({
-    title: 'Deactivate link role?',
+    title: 'Deactivate Link Role',
     body: impactLine('deactivateLinkRole', facts).text,
-    confirm: 'Deactivate link role',
-    cancel: 'Keep active',
+    confirm: 'Deactivate Link Role',
+    cancel: 'Cancel',
     danger: true,
   }),
   deleteUnusedPriority: (facts: ImpactFacts = {}): DialogCopy => ({
-    title: 'Delete priority?',
+    title: 'Delete Priority',
     body: impactLine('deleteUnusedPriority', facts).text,
-    confirm: 'Delete priority',
-    cancel: 'Keep priority',
+    confirm: 'Delete Priority',
+    cancel: 'Cancel',
     danger: true,
   }),
   deleteUnusedLinkRole: (facts: ImpactFacts = {}): DialogCopy => ({
-    title: 'Delete link role?',
+    title: 'Delete Link Role',
     body: impactLine('deleteUnusedLinkRole', facts).text,
-    confirm: 'Delete link role',
-    cancel: 'Keep link role',
+    confirm: 'Delete Link Role',
+    cancel: 'Cancel',
     danger: true,
   }),
   /** One-line confirm; not destructive. */
   setDefaultPriority: (facts: ImpactFacts = {}): DialogCopy => ({
-    title: facts.name
-      ? `Make ${facts.name} the default priority?`
-      : 'Make this the default priority?',
+    title: 'Set Default Priority',
     body: impactLine('setDefaultPriority', facts).text,
-    confirm: 'Set as default',
-    cancel: 'Keep current default',
+    confirm: 'Set Default Priority',
+    cancel: 'Cancel',
     danger: false,
   }),
   /** The rename dialog's helper text is the body; Cancel just closes the form. */
@@ -363,7 +361,7 @@ export function impactLine(kind: ImpactKind, facts: ImpactFacts): Impact {
     case 'setDefaultPriority':
       parts.push(
         facts.name
-          ? `${facts.name} is the default priority. New tasks start with it.`
+          ? `${facts.name} becomes the default priority and new tasks start with it.`
           : 'New tasks start with it.',
       );
       if (facts.previousName) parts.push(`${facts.previousName} stays available.`);

@@ -193,9 +193,9 @@ test.describe('Row overflow menu on the three lists (#355)', () => {
     await menuButton(page, workflow.name).click();
     await expect(page.getByRole('menuitem')).toHaveText(['Deactivate']);
     await page.getByRole('menuitem', { name: 'Deactivate' }).click();
-    const dialog = page.getByRole('dialog', { name: 'Deactivate workflow?' });
+    const dialog = page.getByRole('dialog', { name: 'Deactivate Workflow' });
     await expect(dialog).toBeVisible();
-    await dialog.getByRole('button', { name: 'Keep active' }).click();
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
     await expect(dialog).toBeHidden();
     await expect(rowOf(page, workflow.name)).toBeVisible();
     await menuButton(page, workflow.name).click();

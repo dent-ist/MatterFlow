@@ -434,9 +434,8 @@
 }
 
 <mf-confirm-dialog
-  title="Deactivate this report?"
-  confirmLabel="Deactivate"
-  cancelLabel="Cancel"
+  title="Deactivate Report"
+  confirmLabel="Deactivate Report"
   [danger]="true"
   [busy]="busy()"
   [visible]="deactivateOpen()"
@@ -444,7 +443,7 @@
   (confirmed)="deactivate()"
 >
   <p data-deactivate-body>
-    People can no longer see or run {{ report()?.name }}. Its versions, history and role assignments
-    stay, and you can activate it again after a preview.
+    People can no longer see or run {{ report()?.name }}; its versions and history stay, and you can
+    activate it again after a preview.
   </p>
 </mf-confirm-dialog>
