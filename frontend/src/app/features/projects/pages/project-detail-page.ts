@@ -229,7 +229,7 @@ export class ProjectDetailPage {
   protected readonly busy = signal(false);
   protected readonly canSeeActivity = computed(() => this.auth.has('Audit.View'));
   protected readonly canLinkMatter = computed(() => this.auth.canLink('matter'));
-  /** The header's actions (C3, #255): Edit, Activity, the primary Create task and, in the overflow, Archive / Restore. */
+  /** The header's actions (C3, #255): Edit, Activity, the primary New Task and, in the overflow, Archive / Restore. */
   protected readonly headerActions = computed<RecordAction[]>(() => {
     const p = this.project();
     if (!p) return [];
@@ -255,7 +255,7 @@ export class ProjectDetailPage {
       list.push({
         id: 'create-task',
         role: 'primary',
-        label: 'Create Task',
+        label: 'New Task',
         icon: 'pi-plus',
         disabled: !p.isActive,
         reason: "This project is archived. New tasks can't select it.",

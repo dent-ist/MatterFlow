@@ -1,18 +1,19 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatterResponse } from '../../../api/generated/api-client';
 import { ActionMenu, MenuAction } from '../../../shared/ui/action-menu';
+import { TitleIcon } from '../../../shared/ui/page-header';
 import { SENSITIVE_LEAD, SENSITIVE_TEXT } from '../../../shared/ui/record-header';
 
 /**
  * The compact header of the Matter page (MD-01, #1002; simplified in MD-42, #1060): the breadcrumb `Matters > {matter name}`, the title `{Client} > {Matter name}`
- * and two menus, **New** (Task, Project, Asset, ...) and **More actions**. The CM number, the Active, Sensitive and AI chips are shown in the Summary's Details, not here.
+ * and the actions: **Edit** (for a person who may edit), the **New** menu (Task, Project, Asset, ...; the primary action) and **More actions**. The CM number, the Active, Sensitive and AI chips are shown in the Summary's Details, not here.
  * Two things that carry access or read-only information stay: the sensitive information bar under the title (the page keeps the inactive-matter and inactive-client
  * banners below the header). No task counts and no status buttons. The page builds both menus from the viewer's permissions.
  */
 @Component({
   selector: 'mf-matter-header',
-  imports: [RouterLink, ActionMenu],
+  imports: [RouterLink, ActionMenu, TitleIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -48,7 +49,7 @@ import { SENSITIVE_LEAD, SENSITIVE_TEXT } from '../../../shared/ui/record-header
     .mh__title {
       display: flex;
       align-items: center;
-      gap: var(--mf-s2);
+      gap: 0;
       flex: 1 1 18rem;
       min-width: 0;
       margin: 0;
@@ -62,9 +63,6 @@ import { SENSITIVE_LEAD, SENSITIVE_TEXT } from '../../../shared/ui/record-header
       .mh__title {
         font-size: var(--mf-fs-h3);
       }
-    }
-    .mh__title .pi {
-      color: var(--mf-text-muted);
     }
     /* At most two lines; the whole name is in the tooltip and stays in the page text. */
     .mh__name {
@@ -117,7 +115,7 @@ import { SENSITIVE_LEAD, SENSITIVE_TEXT } from '../../../shared/ui/record-header
       </nav>
       <div class="mh__row">
         <h1 class="mh__title" data-page-title>
-          <i class="pi pi-briefcase" aria-hidden="true" data-page-icon></i>
+          <mf-title-icon icon="pi pi-briefcase" />
           <span
             class="mh__name"
             data-name
@@ -127,6 +125,17 @@ import { SENSITIVE_LEAD, SENSITIVE_TEXT } from '../../../shared/ui/record-header
           >
         </h1>
         <div class="mh__actions" data-page-actions>
+          @if (canEdit()) {
+            <button
+              type="button"
+              class="mf-btn"
+              data-action="edit"
+              data-edit-matter
+              (click)="edit.emit()"
+            >
+              Edit
+            </button>
+          }
           <mf-action-menu label="Create" triggerText="New" [items]="newItems()" />
           <mf-action-menu label="More actions" [items]="moreItems()" />
         </div>
@@ -149,4 +158,7 @@ export class MatterHeader {
   readonly matter = input.required<MatterResponse>();
   readonly newItems = input<readonly MenuAction[]>([]);
   readonly moreItems = input<readonly MenuAction[]>([]);
+  /** Edit is a header button (D-21, #1136), first in the row: Edit, the New menu (the primary), the overflow. */
+  readonly canEdit = input(false);
+  readonly edit = output<void>();
 }

@@ -362,7 +362,11 @@ export class PageHeader {
     <span class="rt__name" data-name [attr.title]="clamp() ? name() : null">{{ name() }}</span>
     <span class="rt__extra"><ng-content /></span>
   `,
-  host: { '[class.rt--clamp]': 'clamp()', '[class.rt--stack]': 'stack()' },
+  host: {
+    '[class.rt--clamp]': 'clamp()',
+    '[class.rt--stack]': 'stack()',
+    '[class.rt--bold]': 'bold()',
+  },
   styles: `
     :host {
       display: inline-flex;
@@ -376,6 +380,11 @@ export class PageHeader {
     }
     .rt__name {
       font-weight: 400;
+    }
+    /* A record's own header (D-21, #1136): the whole title, reference and name, is 700. */
+    :host(.rt--bold) .rt__ref,
+    :host(.rt--bold) .rt__name {
+      font-weight: 700;
     }
     .rt__extra {
       display: inline-flex;
@@ -433,19 +442,26 @@ export class RecordTitle {
   readonly clamp = input(false);
   /** With `clamp`, on phones the name goes under the reference and the badges (a record that has a reference). */
   readonly stack = input(false);
+  /** The reference and the name in 700 (the title of a record header); a title elsewhere keeps the regular name. */
+  readonly bold = input(false);
 }
 
-/** The same decorative section icon for the few screens that have their own H1 instead of `mf-page-header` (403, 404, error, access pending). */
+/**
+ * The 32 px icon tile of a page or record title (D-21, #1135, #1136): white icon on a rounded `--mf-primary` square. Used by `mf-record-header`,
+ * `mf-matter-header` and the few screens that have their own H1 instead of `mf-page-header` (403, 404, error, access pending). Give a
+ * PrimeIcons class in `icon`, or project another glyph (the Task page's task type icon); it is drawn at `--mf-icon-lg`.
+ */
 @Component({
   selector: 'mf-title-icon',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<i [class]="icon()" aria-hidden="true" data-page-icon></i>`,
+  template: `<ng-content><i [class]="icon()" aria-hidden="true" data-page-icon></i></ng-content>`,
   styles: `
     :host {
       display: inline-grid;
+      flex: none;
       place-items: center;
-      width: 32px;
-      height: 32px;
+      width: var(--mf-tile-size);
+      height: var(--mf-tile-size);
       margin-right: var(--mf-s2);
       border-radius: var(--mf-radius-lg);
       background: var(--mf-primary);
@@ -454,9 +470,14 @@ export class RecordTitle {
       line-height: 1;
       vertical-align: middle;
     }
+    :host ::ng-deep mf-task-type-icon {
+      width: var(--mf-icon-lg);
+      height: var(--mf-icon-lg);
+      color: inherit;
+    }
   `,
 })
 export class TitleIcon {
   /** PrimeIcons classes, for example `pi pi-ban`. */
-  readonly icon = input.required<string>();
+  readonly icon = input('');
 }

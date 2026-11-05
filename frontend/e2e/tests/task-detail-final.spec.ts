@@ -178,7 +178,7 @@ const SHAPES: Shape[] = [
   {
     key: 'tsk123-long',
     label: 'TSK-123 long title, 205-character matter, sensitive',
-    primary: /Complete task/,
+    primary: /Complete Task/,
     make: async (seed, admin) =>
       seeded(seed, admin, {
         matter: { name: LONG_MATTER },
@@ -189,13 +189,13 @@ const SHAPES: Shape[] = [
   {
     key: 'tsk124-overdue',
     label: 'TSK-124 overdue',
-    primary: /Complete task/,
+    primary: /Complete Task/,
     make: async (seed, admin) => seeded(seed, admin),
   },
   {
     key: 'tsk126-unassigned',
     label: 'TSK-126 unassigned',
-    primary: /Complete task/,
+    primary: /Complete Task/,
     make: async (seed, admin) => seeded(seed, admin, { assign: false }),
   },
   {

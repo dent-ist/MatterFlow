@@ -125,7 +125,13 @@ type Tab = MatterTabKey;
         }
         @case ('ready') {
           @if (matter(); as m) {
-            <mf-matter-header [matter]="m" [newItems]="newItems()" [moreItems]="moreItems()" />
+            <mf-matter-header
+              [matter]="m"
+              [newItems]="newItems()"
+              [moreItems]="moreItems()"
+              [canEdit]="canEdit()"
+              (edit)="openEdit()"
+            />
 
             @if (!m.isActive) {
               <div class="pg-banner" role="note" data-inactive-banner>
@@ -157,11 +163,9 @@ type Tab = MatterTabKey;
                   <mf-matter-summary
                     [matter]="m"
                     [reload]="reloadTick()"
-                    [canEdit]="canEdit()"
                     [canAssign]="canAssign()"
                     [canLinkClient]="canLinkClient()"
                     data-details-tab
-                    (edit)="openEdit()"
                     (changeManagers)="managersOpen.set(true)"
                     (newAsset)="go('/assets/new?matterId=' + m.matterId)"
                   />

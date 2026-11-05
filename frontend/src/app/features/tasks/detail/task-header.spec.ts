@@ -122,7 +122,7 @@ describe('Task header actions (#298)', () => {
     expect(actionIds(el)).toEqual(['edit', 'activity', 'complete']);
     const complete = q(el, '[data-action="complete"]')!;
     expect(complete.classList).toContain('mf-btn--primary');
-    expect(complete.textContent).toContain('Complete task');
+    expect(complete.textContent).toContain('Complete Task');
     expect(await overflow(fixture, el)).toEqual(['hold', 'copy-link', 'cancel']);
     const cancel = q(el, '[role=menuitem][data-action="cancel"]')!;
     expect(cancel.classList).toContain('am__item--danger');

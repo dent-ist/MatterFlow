@@ -74,6 +74,27 @@ describe('mf-record-header', () => {
     expect(q('[data-ctx]')?.textContent).toBe('Client 00107 Hartwell');
   });
 
+  it('draws the 32 px icon tile before the title and the whole title in 700 (#1136)', async () => {
+    await create();
+    expect(q('h1 mf-title-icon [data-page-icon]')).not.toBeNull();
+    expect(q('h1 mf-record-title')?.classList.contains('rt--bold')).toBe(true);
+  });
+
+  it('lists the buttons in one order whatever order the page gives: Edit, Activity, the primary action (#1136)', async () => {
+    await create((h) =>
+      h.actions.set([
+        action('create', 'primary'),
+        action('activity', 'activity'),
+        action('edit', 'edit'),
+        action('archive', 'state'),
+      ]),
+    );
+    const ids = Array.from(el().querySelectorAll('[data-page-actions] > button')).map((b) =>
+      b.getAttribute('data-action'),
+    );
+    expect(ids).toEqual(['edit', 'activity', 'create']);
+  });
+
   it('puts extra state badges in their own wrapping line under the title (mfBadges)', async () => {
     await create();
     const line = q('[data-record-badges]');

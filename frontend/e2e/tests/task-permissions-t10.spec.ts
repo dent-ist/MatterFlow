@@ -366,7 +366,7 @@ test.describe('#329: Task page permission matrix, no dead links', () => {
       expect(
         (await detail.header.locator('[data-record-header] [data-action="complete"]').count()) >
           0 || (await detail.header.locator('[data-action="complete"]').count()) > 0,
-        'Complete task',
+        'Complete Task',
       ).toBe(offered.some((o) => o.action === 'COMPLETE'));
       expect(
         (await page.locator('[data-facts] [data-status] [data-inline-trigger]').count()) > 0,

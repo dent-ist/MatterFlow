@@ -757,7 +757,7 @@ describe('MatterDetailPage', () => {
     expect(navigateByUrl).not.toHaveBeenCalled();
   });
 
-  it('puts New (Task, Project, Asset) and More actions (Set inactive) in the header and nothing else', async () => {
+  it('puts Edit, New (Task, Project, Asset) and More actions (Set inactive) in the header and nothing else', async () => {
     await create([
       'Matter.View',
       'Matter.Edit',
@@ -767,7 +767,12 @@ describe('MatterDetailPage', () => {
       'Task.Create',
       'Audit.View',
     ]);
-    expect(el().querySelectorAll('[data-page-actions] > button').length).toBe(0);
+    // Edit is the one button of the header (#1136); New and More actions are menus.
+    expect(
+      Array.from(el().querySelectorAll('[data-page-actions] > button')).map((b) =>
+        b.getAttribute('data-action'),
+      ),
+    ).toEqual(['edit']);
     const menus = el().querySelectorAll<HTMLButtonElement>('[data-overflow]');
     expect(menus.length).toBe(2);
     menus[0].click();

@@ -18,7 +18,7 @@ import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { MATTER_INACTIVE_TEXT } from '../../../shared/work-queue/inline-edit';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
-import { Crumb } from '../../../shared/ui/page-header';
+import { Crumb, TitleIcon } from '../../../shared/ui/page-header';
 import { TaskDetailStore } from './task-detail.store';
 import { TaskFacts } from './task-facts';
 
@@ -43,7 +43,7 @@ function blockedText(action: string, reason: string | undefined): string {
  */
 @Component({
   selector: 'mf-task-header',
-  imports: [RecordHeader, RouterLink, MatterRef, TaskTypeIcon, TaskFacts],
+  imports: [RecordHeader, RouterLink, MatterRef, TaskTypeIcon, TaskFacts, TitleIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
@@ -59,14 +59,14 @@ function blockedText(action: string, reason: string | undefined): string {
           [backTo]="backTo()"
           [actions]="actions()"
         >
-          <mf-task-type-icon
-            mfIcon
-            class="th__icon"
-            size="md"
-            [iconKey]="t.taskType.iconKey"
-            [attr.title]="t.taskType.name"
-            data-title-icon
-          />
+          <mf-title-icon mfIcon>
+            <mf-task-type-icon
+              size="md"
+              [iconKey]="t.taskType.iconKey"
+              [attr.title]="t.taskType.name"
+              data-title-icon
+            />
+          </mf-title-icon>
           <span mfContext class="th__ctx" data-context [attr.title]="contextText()">
             <span data-matter
               >Matter
@@ -119,11 +119,6 @@ function blockedText(action: string, reason: string | undefined): string {
       .th {
         margin-bottom: var(--mf-s1);
       }
-    }
-    /* The type icon is centred on the first line of the title (the title is 1.3 times its font size tall). */
-    .th__icon {
-      margin-top: calc((var(--rh-fs, 22px) * 1.3 - 1.25rem) / 2);
-      color: var(--mf-text-muted);
     }
     .th__sep {
       margin: 0 var(--mf-s2);
@@ -309,7 +304,7 @@ export class TaskHeader {
         ...this.statusAction('COMPLETE', {
           id: 'complete',
           role: 'primary',
-          label: 'Complete task',
+          label: 'Complete Task',
           icon: 'pi-check-circle',
           hint: this.store.completeHint(),
         }),

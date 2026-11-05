@@ -625,3 +625,17 @@ Loading shows a skeleton of the grid; an error shows `mf-dash-state` with Retry;
 - A card that opens something is ONE button or link with `.mf-card--clickable` (hover `--mf-row-hover`); the selected one adds `.mf-card--selected` (a 2 px inset `--mf-primary` ring, never a coloured edge).
 - Cards now on the class: Profile (Out of office, Work hours, Holidays, Account, Notifications), the Task page Details panel (`mf-detail-layout`), Matter Summary (Details card and the asset tiles), `mf-stat-tile` (radius 12, was 8), the Search result sections (heading 16 / 600) and the Task facts strip (`.mf-facts`, soft edge and card shadow). `.pg-form` (Task Type, Workflow and Step forms) has the 16 px padding.
 - Not yet on the class (page epics): the Dashboard panels and its own `stat-tile`, the My Matters tiles, chart cards, record cards of Clients, Projects and Assets.
+
+### 13.5 Page header: one component on every page (D-21, #1135)
+
+- Every list and workspace page is `mf-page-header`: breadcrumb row (non-top-level pages only), then the 36 px title row (the 32 px tile `--mf-tile-size`, radius 8, `--mf-primary` fill, white icon `--mf-icon-lg`; the H1 22 / 700; on a list the count as `mf-count-chip`; the actions at the right `[secondary] [Filters] [primary]`), then the optional one-line context line. The first row sits 12 px below the top of the main area.
+- The Dashboard (`mf-dash-tabs`), My Matters, Profile and Create Task use it too; none draws its own `<h1>`. A chip beside the title goes in the `mfTitleExtra` slot (My Matters' scope chip). Extra controls (stale text, Scope, Refresh) go into `mfActions`; the header controls are 36 px.
+- Profile: the title is "My profile"; the person's name, availability chip and roles / Pod are the context line (`mfDescription`). Create Task: the plus is the page icon of `/tasks/new`, the chosen task type is the context line.
+- The H1 receives focus from script after a navigation (screen readers) and never draws an outline (`h1[data-page-title]:focus` in `styles.scss`, also the 403 page and the record pages).
+
+### 13.6 Record header: tile, bold title, one action order (D-21, D-40, #1136)
+
+- `mf-record-header` (Client, Project, Asset, Task and the Administration records) and `mf-matter-header` start with the same 32 px tile (`mf-title-icon`: the icon of the record's section, the Task page puts its task type icon in it); the whole title, reference and name, is 700 (`mf-record-title [bold]`).
+- Header buttons are always in the order Edit, Activity, the primary action, then the "..." overflow, whatever order the page lists them in. The Matter header has Edit (moved out of the Details card), the New menu (its primary) and More actions; a Matter shows its history in the Activities tab, so it has no Activity button.
+- Primary labels: "New Matter" (Client), "New Task" (Project), "Complete Task" (Task); the plus icon stays.
+- The breadcrumb is 13 px muted with the current page as plain text.

@@ -67,31 +67,24 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--mf-s3);
-  min-height: 32px;
+  min-height: var(--mf-tile-size);
 }
 
 .rh__title {
   display: flex;
   flex: 1 1 0;
-  align-items: flex-start;
-  gap: var(--mf-s2);
+  align-items: center;
+  gap: 0;
   min-width: 0;
   margin: 0;
   font-size: var(--rh-fs);
+  font-weight: 700;
   line-height: 1.3;
 }
 
 .rh__title > mf-record-title {
   flex: 1 1 0;
   min-width: 0;
-}
-
-/* The section icon (the one in the left navigation): neutral, a little smaller than the text, centred on the first line. */
-.rh__icon {
-  flex: none;
-  color: var(--mf-text-muted);
-  font-size: var(--mf-icon-md);
-  line-height: calc(var(--rh-fs) * 1.3);
 }
 
 .rh__actions {

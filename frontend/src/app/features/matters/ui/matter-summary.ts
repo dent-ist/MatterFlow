@@ -17,7 +17,7 @@ import { aiLabel } from './matter-ai';
  * The Summary tab of the Matter page (MD-03 #1004, redesigned in MD-42 #1060; mockup `docs/ux/mockups/matter-summary`). The page never scrolls on desktop:
  *
  *   Assets by type: equal tiles, one per type, that scroll sideways instead of wrapping; each opens the Assets tab for the type  [Asset.View]
- *   Details: ONE full-width card that fits its content, sits at the top and scrolls inside itself when it is taller than the room; one Edit button.
+ *   Details: ONE full-width card that fits its content, sits at the top and scrolls inside itself when it is taller than the room; its Edit button is in the page header.
  *     Small muted labels over values in a grid of 3 columns (card 1100 px and wider), 2 (700 px and wider) or 1: CM number (one highlighted line), Client, Matter number,
  *     Matter name, Status, Sensitive (only when sensitive), Primary PM, Secondary PM, AI allowed, Created, Last changed, then the custom fields (no heading).
  *
@@ -246,11 +246,6 @@ import { aiLabel } from './matter-ai';
       <section class="ms__card mf-card" aria-labelledby="ms-details-h" data-summary-details>
         <div class="ms__head">
           <h2 class="ms__title mf-card__title" id="ms-details-h">Details</h2>
-          @if (canEdit()) {
-            <button type="button" class="mf-btn" data-edit-matter (click)="edit.emit()">
-              <i class="pi pi-pencil" aria-hidden="true"></i> Edit
-            </button>
-          }
         </div>
         <div class="ms__scroll" tabindex="0" role="region" aria-label="Matter details, scrollable">
           <dl class="ms__fields">
@@ -390,10 +385,8 @@ export class MatterSummary {
   readonly matter = input.required<MatterResponse>();
   /** Counts the changes that make the asset tiles load again (a save, a new project). */
   readonly reload = input(0);
-  readonly canEdit = input(false);
   readonly canAssign = input(false);
   readonly canLinkClient = input(false);
-  readonly edit = output<void>();
   readonly changeManagers = output<void>();
   /** The empty asset bar's New Asset button. */
   readonly newAsset = output<void>();

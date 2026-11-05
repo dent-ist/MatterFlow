@@ -13,7 +13,7 @@ import { iconForPath } from '../layout/section-icons';
 import { ActionMenu, MenuAction } from './action-menu';
 import { ActiveBadge, Badge, BadgeTone, SensitiveBadge } from './badge';
 import { MatterRef } from './matter-ref';
-import { CRUMB_MAX, Crumb, RecordTitle, truncateCrumb } from './page-header';
+import { CRUMB_MAX, Crumb, RecordTitle, TitleIcon, truncateCrumb } from './page-header';
 import { RecordKind } from './record-state';
 import { DrillReturn } from '../work-queue/drill';
 import { RETURN_STATE } from './row-nav';
@@ -84,6 +84,7 @@ let nextId = 0;
     NgTemplateOutlet,
     RouterLink,
     RecordTitle,
+    TitleIcon,
     ActiveBadge,
     Badge,
     SensitiveBadge,
@@ -135,20 +136,26 @@ let nextId = 0;
       </nav>
       <div class="rh__row">
         <h1 class="rh__title" data-page-title>
-          <!-- The Task page puts its task type icon here (mfIcon); the other records show the icon of their section. -->
+          <!-- The 32 px tile (D-21, #1136): the icon of the record's section; the Task page puts its task type icon here (mfIcon). -->
           <ng-content select="[mfIcon]">
-            <i class="rh__icon" [class]="icon()" aria-hidden="true" data-page-icon></i>
+            <mf-title-icon [icon]="icon()" />
           </ng-content>
           @if (skeleton()) {
             <span class="rh__sk rh__sk--title" data-title-skeleton></span>
           } @else {
             @if (kind() === 'matter') {
-              <mf-record-title [name]="name()" [clamp]="true" [stack]="true">
+              <mf-record-title [name]="name()" [clamp]="true" [stack]="true" [bold]="true">
                 <mf-matter-ref mfRef [value]="ref()" />
                 <ng-container *ngTemplateOutlet="badges" />
               </mf-record-title>
             } @else {
-              <mf-record-title [ref]="ref()" [name]="name()" [clamp]="true" [stack]="!!ref()">
+              <mf-record-title
+                [ref]="ref()"
+                [name]="name()"
+                [clamp]="true"
+                [stack]="!!ref()"
+                [bold]="true"
+              >
                 <ng-container *ngTemplateOutlet="badges" />
               </mf-record-title>
             }
@@ -297,7 +304,10 @@ export class RecordHeader {
         .flatMap((role) => all.filter((a) => a.role === role))
         .slice(0, room),
     );
-    return all.filter((a) => keep.has(a));
+    // One order on every record page (D-21, #1136): Edit, Activity, the primary action; the overflow "..." follows.
+    return ['edit', 'activity', 'primary'].flatMap((role) =>
+      all.filter((a) => a.role === role && keep.has(a)),
+    );
   });
 
   protected readonly menu = computed<MenuAction[]>(() => {

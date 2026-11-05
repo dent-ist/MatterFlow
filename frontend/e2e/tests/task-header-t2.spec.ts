@@ -430,12 +430,12 @@ test.describe('Task header T2: primary action and overflow (#298)', () => {
     await expect(page.locator('[data-page-actions] > button')).toHaveText([
       'Edit',
       /Activity/,
-      /Complete task/,
+      /Complete Task/,
     ]);
     await expect(page.locator('[data-action="complete"]')).toHaveClass(/mf-btn--primary/);
     // Nothing of that is left in the Workflow section or in a banner.
     await expect(page.locator('[data-workflow-tab] [data-complete-task-button]')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Complete task' })).toHaveCount(1);
+    await expect(page.getByRole('button', { name: 'Complete Task' })).toHaveCount(1);
 
     const trigger = page.locator('[data-overflow]');
     await trigger.focus();
@@ -576,7 +576,7 @@ test.describe('Task header T2: primary action and overflow (#298)', () => {
     await expect(page.locator('[data-page-actions] > button')).toHaveText([
       'Edit',
       /Activity/,
-      /Complete task/,
+      /Complete Task/,
     ]);
 
     // The assignee Data Technician: may edit, complete and reopen, but not cancel or put on hold (no Task.ChangeStatus / Task.Cancel).
@@ -586,7 +586,7 @@ test.describe('Task header T2: primary action and overflow (#298)', () => {
     await expect(techPage.locator('[data-page-actions] > button')).toHaveText([
       'Edit',
       /Activity/,
-      /Complete task/,
+      /Complete Task/,
     ]);
     await techPage.locator('[data-overflow]').click();
     await expect(techPage.getByRole('menuitem')).toHaveText([/Copy link/]);
@@ -643,7 +643,7 @@ test.describe('Task header T2: phone header (#300)', () => {
     expect(primary.height).toBeGreaterThanOrEqual(43.5);
     expect(menu.height).toBeGreaterThanOrEqual(43.5);
     expect(menu.width).toBeGreaterThanOrEqual(43.5);
-    await expect(page.locator('[data-page-actions] > button')).toHaveText([/Complete task/]);
+    await expect(page.locator('[data-page-actions] > button')).toHaveText([/Complete Task/]);
     await page.locator('[data-overflow]').click();
     await expect(page.getByRole('menuitem')).toHaveText([
       /Edit/,
