@@ -7,7 +7,8 @@ let nextId = 0;
  * "Showing 101-150 of 442", "Page 3 of 9" and First, Previous, Next, Last (UX 5.2, #237). Page numbers are 1-based like the API. Disabled
  * buttons keep their place. Below 640 px it is one row (Previous, "Page 3 of 9", Next): the size select, the range and the edge buttons go.
  * From 640 px the facts (rows per page, range, note) and the controls ("Page 3 of 9" and the buttons): when both do not
- * fit on one line the controls wrap as a whole, so there are at most two rows and never a lone button (#280).
+ * fit on one line the controls wrap as a whole, so there are at most two rows and never a lone button (#280). In a frame narrower than
+ * 760 px (a card) the "Rows per page" label goes and the select stays, so the pager keeps one row (#1214).
  */
 @Component({
   selector: 'mf-pager',
@@ -84,6 +85,11 @@ let nextId = 0;
     </nav>
   `,
   styles: `
+    /* The frame decides (a card is narrower than the window): a container query, not a media query (#1214). */
+    :host {
+      display: block;
+      container-type: inline-size;
+    }
     .mf-pager {
       display: flex;
       flex-wrap: wrap;
@@ -122,6 +128,13 @@ let nextId = 0;
     /* The hidden-records hint (#271) is the muted second part of the range; below 640 px, where the range is gone, it takes a row of its own. */
     .mf-pager__hint {
       min-width: 0;
+    }
+    /* In a narrow frame (the Dashboard Summary card, 718 px) the size select keeps its place without the "Rows per page" label, so the
+       pager stays on one row; the select keeps the label as its accessible name (#1214). */
+    @container (max-width: 759.98px) {
+      .mf-pager__size-lbl {
+        display: none;
+      }
     }
     @media (max-width: 639.98px) {
       .mf-pager {

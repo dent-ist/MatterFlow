@@ -67,6 +67,35 @@ describe('one grid anatomy (D-42, #1152)', () => {
   });
 });
 
+describe('the grids #1152 missed (#1214)', () => {
+  it('the pager keeps one row in a narrow frame: below 760 px of its own width the "Rows per page" label goes, the select keeps the name', () => {
+    const pager = source('app/shared/ui/pager.ts');
+    expect(pager).toContain('container-type: inline-size');
+    expect(pager).toMatch(
+      /@container \(max-width: 759\.98px\) \{\s*\.mf-pager__size-lbl \{\s*display: none/,
+    );
+    expect(pager).toContain('label="Rows per page"');
+  });
+
+  it('Matter Activities uses the record grid (pg-table, 44 px rows, 40 px header) and stops the What cell at two lines', () => {
+    const ts = source('app/features/matters/ui/matter-activities.ts');
+    expect(ts).toContain('class="pg-table tt"');
+    expect(ts).toContain("styleUrl: '../../../shared/ui/page.scss'");
+    expect(ts).toContain('class="pg-name"');
+  });
+
+  it('Pod Work By Member and Settings > Holidays use the row and heading tokens', () => {
+    const pod = source('app/features/pod-work/ui/pod-member-table.scss');
+    expect(pod).toMatch(
+      /\.pm-table td \{\s*box-sizing: border-box;\s*height: var\(--mf-grid-row-h\)/,
+    );
+    expect(rule(pod, '.pm-table thead th {')).toContain('height: var(--mf-grid-head-h)');
+    const ha = source('app/features/admin/holidays/holidays-admin.ts');
+    expect(rule(ha, '.ha__t td,')).toContain('height: var(--mf-grid-row-h)');
+    expect(rule(ha, '.ha__t thead th {')).toContain('height: var(--mf-grid-head-h)');
+  });
+});
+
 describe('LocalPaging (the small Administration lists)', () => {
   const rows = Array.from({ length: 120 }, (_, i) => i);
 

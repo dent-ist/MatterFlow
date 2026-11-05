@@ -52,6 +52,7 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
   imports: [GridFrame, Dropdown, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
+  styleUrl: '../../../shared/ui/page.scss',
   styles: `
     /* The tab's control row above the frame, like every Matter tab (LC-08, theme guide 11.2): the only control is the Kind dropdown. */
     .ma__bar {
@@ -68,24 +69,6 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
       background: var(--mf-sem-info-bg);
       color: var(--mf-sem-info-fg);
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    th,
-    td {
-      padding: var(--mf-s2) var(--mf-s3);
-      border-bottom: 1px solid var(--mf-border-soft);
-      text-align: left;
-      vertical-align: top;
-    }
-    th {
-      position: sticky;
-      top: 0;
-      background: var(--mf-surface);
-      color: var(--mf-text-muted);
-      font-weight: 600;
-    }
     td.ma__when {
       white-space: nowrap;
       color: var(--mf-text-muted);
@@ -101,6 +84,7 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
       color: var(--mf-sem-info-fg);
       font-size: var(--mf-fs-xs);
     }
+    /* The columns are the shared record grid (pg-table, 44 px rows, 40 px header; #1214): the What cell stops at two lines. */
     .ma__muted {
       margin: 0;
       padding: var(--mf-s3);
@@ -140,7 +124,7 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
           @if (items().length === 0) {
             <p class="ma__muted" data-empty>No activity recorded yet.</p>
           } @else {
-            <table data-activities>
+            <table class="pg-table tt" data-activities>
               <caption class="mf-sr-only">
                 Activities of this matter, newest first
               </caption>
@@ -158,21 +142,23 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
                       <time [attr.datetime]="e.occurredAtUtc">{{ stamp(e) }}</time>
                     </td>
                     <td>
-                      {{ what(e) }}
-                      @if (link(e); as l) {
-                        <a
-                          class="pg-link ma__obj"
-                          data-object-link
-                          [routerLink]="l.commands"
-                          [queryParams]="l.queryParams"
-                          >{{ objectText(e) }}</a
-                        >
-                      } @else {
-                        <span class="ma__obj" data-object-text>{{ objectText(e) }}</span>
-                      }
-                      @if (isNew(e)) {
-                        <span class="ma__new" data-new>New</span>
-                      }
+                      <div class="pg-name" [attr.title]="what(e) + ' ' + objectText(e)">
+                        {{ what(e) }}
+                        @if (link(e); as l) {
+                          <a
+                            class="pg-link ma__obj"
+                            data-object-link
+                            [routerLink]="l.commands"
+                            [queryParams]="l.queryParams"
+                            >{{ objectText(e) }}</a
+                          >
+                        } @else {
+                          <span class="ma__obj" data-object-text>{{ objectText(e) }}</span>
+                        }
+                        @if (isNew(e)) {
+                          <span class="ma__new" data-new>New</span>
+                        }
+                      </div>
                     </td>
                     <td>{{ e.actor.displayName }}</td>
                   </tr>

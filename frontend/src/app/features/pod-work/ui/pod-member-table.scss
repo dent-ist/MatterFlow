@@ -42,9 +42,24 @@
   vertical-align: middle;
 }
 
+/* The grid anatomy of every grid (D-42, #1214): 44 px rows including the line, a 40 px heading row of 12 / 700 muted capitals. */
+.pm-table td {
+  box-sizing: border-box;
+  height: var(--mf-grid-row-h);
+  padding-block: 2px;
+  line-height: var(--mf-grid-line-h);
+}
+
 .pm-table thead th {
+  height: var(--mf-grid-head-h);
+  padding-block: 0;
   background: var(--mf-surface-alt);
-  font-weight: 600;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-xs);
+  font-weight: var(--mf-fw-bold);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .pm-table tbody th {
@@ -93,7 +108,9 @@
   align-items: center;
   gap: var(--mf-s1);
   min-height: 28px;
-  font-weight: 600;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
 }
 
 .pm-sort .pi {

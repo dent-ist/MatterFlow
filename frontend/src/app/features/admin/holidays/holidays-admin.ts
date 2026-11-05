@@ -284,7 +284,9 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                       <tbody>
                         @for (r of rows(); track r.h.holidayId) {
                           <tr [attr.data-holiday]="r.h.holidayId">
-                            <th scope="row" class="ha__name">{{ r.h.name }}</th>
+                            <th scope="row" class="ha__name">
+                              <div class="ha__c" [attr.title]="r.h.name">{{ r.h.name }}</div>
+                            </th>
                             <td>
                               @if (r.p; as p) {
                                 <span class="ha__d"
@@ -294,7 +296,14 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                                   }
                                 </span>
                                 @if (p.observedFrom) {
-                                  <span class="ha__o"
+                                  <span
+                                    class="ha__o"
+                                    [attr.title]="
+                                      'Observed on ' +
+                                      weekday(p.observedFrom) +
+                                      ' ' +
+                                      p.observedFrom
+                                    "
                                     >(observed; falls on {{ weekday(p.observedFrom) }}
                                     {{ p.observedFrom | mfNum }})</span
                                   >
@@ -303,8 +312,14 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                                 <span class="ha__o">Not in {{ year() }}</span>
                               }
                             </td>
-                            <td>{{ rule(r.h) }}</td>
-                            <td>{{ r.h.regionNote || '-' }}</td>
+                            <td>
+                              <div class="ha__c" [attr.title]="rule(r.h)">{{ rule(r.h) }}</div>
+                            </td>
+                            <td>
+                              <div class="ha__c" [attr.title]="r.h.regionNote">
+                                {{ r.h.regionNote || '-' }}
+                              </div>
+                            </td>
                             <td>
                               <span class="ha__chip"
                                 ><i class="pi pi-moon" aria-hidden="true"></i> Non-working day</span
@@ -615,15 +630,28 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       padding: var(--mf-s2) var(--mf-s3);
       border-bottom: 1px solid var(--mf-border-soft);
       text-align: left;
-      vertical-align: top;
+      vertical-align: middle;
+    }
+    /* The grid anatomy of every grid (D-42, #1214): 44 px rows including the line, a 40 px heading row of 12 / 700 muted capitals. */
+    .ha__t td,
+    .ha__t tbody th {
+      box-sizing: border-box;
+      height: var(--mf-grid-row-h);
+      padding-block: 2px;
+      line-height: var(--mf-grid-line-h);
     }
     .ha__t thead th {
       position: sticky;
       top: 0;
+      height: var(--mf-grid-head-h);
+      padding-block: 0;
       background: var(--mf-surface-alt);
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-xs);
+      font-weight: var(--mf-fw-bold);
+      letter-spacing: 0.03em;
       text-transform: uppercase;
+      white-space: nowrap;
     }
     .ha__name {
       font-weight: 700;
@@ -632,10 +660,24 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       display: block;
       white-space: nowrap;
     }
+    /* A cell holds at most two lines (the full text is the tooltip), so a row stays 44 px (D-42, #1214). */
+    .ha__c {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+    }
     .ha__o {
       display: block;
+      max-width: 14rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-xs);
+      line-height: var(--mf-grid-line-h);
     }
     .ha__chip {
       display: inline-flex;
