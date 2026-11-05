@@ -51,3 +51,22 @@ Axe on 10 changed pages at both sizes: 0 violations (`../review-2/axe-review2.js
 | #1123 #1125 #1126 #1129 #1135 #1136 #1137 #1140 #1141 #1143 #1152 | PASS | the notes of review 1 are fixed (numbers above); #1126 Clients Columns belongs to #1179 |
 | Icon-only switch extra | FAIL | Breakdowns Bars / Pie / Table is cut at 1366 in Priority, Status, Age (fix #1219) |
 | Other 32 px toolbar dropdowns | NOTE | Activities Kind, Productions filter, Trends period 32 px; Assign confirmation buttons; Holidays names break mid-word (fix #1220) |
+
+## Review 3: batch 4 (tip fd8be47, 2026-11-05, screenshots in `../review-3/`)
+
+Real stack, 1366x768 and 1920x1080, 460 screenshots, `../review-3/measurements-review3.json`; axe on 26 pages at both sizes: 0 violations; text scans `scan-review3.json` (month-name and ISO dates, raw accounts, browser tab titles) and `crawl/caps.js` (Title Case).
+
+| Issue | Result | Evidence |
+| --- | --- | --- |
+| #1144 toasts | PASS WITH NOTES | "Priority added / Review sample", "Availability saved", "Couldn't copy the link." follow the pattern. Note: a failed list load still raises "Couldn't complete the request. x3" next to the inline block (fix #1223) |
+| #1145 states | PASS WITH NOTES | Matters filtered-empty and error blocks with icon, Notifications centred, missing task on the state card, skeleton. Notes: admin Note Tags empty is still a plain line, 403 not converted (System epic), icon 24 px token (fix #1223) |
+| #1146 dates part 1 | PASS | Matter Summary `11/04 10:54 PM`, Last Updated, Task details `10/11 09:57 PM`, Task Due `10/17 +19d` |
+| #1147 dates part 2 | FAIL | Due cells still print month names (`Nov 4, 5:00 PM`, `Nov 25`) on Task Queue, My Work, Pod Work, Matter and Project Tasks, Swimlane; Asset custom date `Nov 6, 2026`; saved reports `d MMM y` (fix #1221). Decision: the Due date is part of #1147, the `+9d` suffix stays with #1168 |
+| #1148 numbers and names | PASS WITH NOTES | counts, sizes, durations fine; raw `KE\kekim` in Task Information and My Matters activity (fix #1221) |
+| #1149 capitalisation | PASS WITH NOTES | buttons, menus, dialog titles, tabs, chips Title Case; leftovers "Link asset", "Add holiday", "Edit calendar", "Import / paste list", dropdown options (decision spec 15.1, fix #1222) |
+| #1150 nav, routes, tabs | PASS | tab titles "Users: Roles - MatterFlow", "Labels: Status Labels - MatterFlow", "Search Results: All"; nav "Asset Types"; tabs "Note Tags", "On-Hold Reasons" |
+| #1151 vocabulary | PASS | Last Updated, Primary PM, AI Allowed, Matter Number, CM Number, Off Hours |
+| #1219 Breakdowns switch | PASS | icon-only, three whole segments in Priority, Status, Age at 1366 |
+| #1220 dropdowns, Assign, Holidays | PASS | Activities Kind, Productions, Trends dropdowns 36 px; Holiday names wrap by word; Assign confirmation step not reachable by the script (not checked) |
+
+Regressions seen: Task Queue, My Work and Pod Work show the top-bar "New Task" and the page "New Task" side by side (they were "Create task" and "New Task" before); the Tasks epic issue #1167 already says to hide the top-bar button there. No truncation introduced by the longer Title Case labels; toolbars at 1366 do not overflow; "Clear Filters" blocks fit.
