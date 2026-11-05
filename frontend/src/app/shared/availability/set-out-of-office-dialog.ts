@@ -33,7 +33,7 @@ import {
 } from './absences/absence-contract';
 
 /**
- * "Set out of office..." from the header menu: an until date (optional) and a note (optional), out of office from now. Everything else
+ * "Set out of office..." from the header menu: an until date and a note (both can be left empty, no mark), out of office from now. Everything else
  * (work hours, time zone) stays as it is; the profile screen has the full form.
  */
 @Component({
@@ -77,7 +77,7 @@ import {
           </select>
         </div>
         <div class="ooo__field">
-          <label class="ooo__label" for="ooo-until" id="ooo-until-label">Until (optional)</label>
+          <label class="ooo__label" for="ooo-until" id="ooo-until-label">Until</label>
           <div class="ooo__chips" role="group" aria-labelledby="ooo-until-label" data-ooo-presets>
             @for (p of presets; track p.id) {
               <button
@@ -107,7 +107,7 @@ import {
           }
         </div>
         <div class="ooo__field">
-          <label class="ooo__label" for="ooo-note">Note (optional)</label>
+          <label class="ooo__label" for="ooo-note">Note</label>
           <textarea
             id="ooo-note"
             class="mf-control ooo__note"

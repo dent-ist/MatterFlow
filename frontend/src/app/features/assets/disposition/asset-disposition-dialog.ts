@@ -183,8 +183,6 @@ export interface DispositionOutcome {
               >Note
               @if (needsNote()) {
                 <span data-note-required>(required)</span>
-              } @else {
-                <span>(optional)</span>
               }
             </label>
             <textarea

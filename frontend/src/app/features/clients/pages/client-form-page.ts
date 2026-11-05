@@ -159,12 +159,12 @@ type LoadState = 'loading' | 'ready' | 'error';
         />
 
         <div class="pg-actions mf-form-actions--sticky">
+          <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
           <p-button
             type="submit"
             [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create client'"
             [disabled]="busy()"
           />
-          <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
         </div>
       </form>
     }

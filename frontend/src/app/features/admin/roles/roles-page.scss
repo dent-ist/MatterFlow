@@ -228,15 +228,16 @@
 
 /*
  * The form part of the editor is one 640 px column (like .mf-form-card): every label sits above its control, every control fills the
- * column, and Search permissions and Copy from role share one row (one column on a phone). Labels use the shared .mf-label (14 px bold).
+ * column, and Search permissions and Copy from role share one row (one column on a phone). Labels use the shared .mf-label (13 px, 600).
  */
 .mf-fld {
   display: grid;
   gap: var(--mf-s1);
   align-content: start;
   min-width: 0;
-  max-width: 640px;
-  margin-bottom: var(--mf-s3);
+  /* One field is 480 px at most, 16 px from the next (D-35, #1156). */
+  max-width: var(--mf-field-max, 480px);
+  margin-bottom: var(--mf-s4);
 
   .mf-control {
     box-sizing: border-box;
@@ -246,18 +247,19 @@
 
 .mf-tools {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* One column; two (16 px apart) only on a page 1100 px wide and more (D-35, #1156). */
+  grid-template-columns: minmax(0, 1fr);
   gap: 0 var(--mf-s4);
   max-width: 640px;
 
   .mf-fld {
-    margin-bottom: var(--mf-s3);
+    margin-bottom: var(--mf-s4);
   }
 }
 
-@media (max-width: 640px) {
+@media (min-width: 1100px) {
   .mf-tools {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

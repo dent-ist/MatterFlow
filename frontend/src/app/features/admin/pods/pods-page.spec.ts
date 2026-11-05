@@ -236,7 +236,7 @@ describe('PodsPage', () => {
       const router = TestBed.inject(Router);
       const navigate = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
       await openEditor(1);
-      await click('[data-editor] .mf-form-actions p-button:last-of-type');
+      await click('[data-editor] .mf-form-actions p-button:first-of-type');
       expect(navigate).toHaveBeenCalled();
       const back = navigate.mock.calls.find((c) => (c[1] as { state?: unknown })?.state);
       expect(String(back![0])).toContain('/admin/pods');
@@ -452,15 +452,15 @@ describe('PodsPage', () => {
       Array.from(el().querySelectorAll('.pods__actions p-button')).map((b) =>
         b.textContent!.trim(),
       ),
-    ).toEqual(['Create pod', 'Cancel']);
+    ).toEqual(['Cancel', 'Create pod']);
 
-    await click('.pods__actions p-button');
+    await click('.pods__actions p-button[type="submit"]');
     expect(text('[data-name-error]')).toBe('Enter a pod name.');
     expect(api.createPod).not.toHaveBeenCalled();
 
     await type('input[data-name]', '  Pod C ');
     await type('[data-description]', 'New work');
-    await click('.pods__actions p-button');
+    await click('.pods__actions p-button[type="submit"]');
 
     expect(api.createPod).toHaveBeenCalledWith({ name: 'Pod C', description: 'New work' });
     expect(text('[data-page-title]')).toContain('Pod C');
@@ -485,7 +485,7 @@ describe('PodsPage', () => {
     await openNew();
     await type('input[data-name]', 'Pod A');
 
-    await click('.pods__actions p-button');
+    await click('.pods__actions p-button[type="submit"]');
 
     expect(text('[data-name-error]')).toBe("A pod named 'Pod A' already exists.");
     expect(q('input[data-name]').getAttribute('aria-invalid')).toBe('true');
@@ -542,7 +542,7 @@ describe('PodsPage', () => {
     await settle();
     expect(text('[data-deactivate-note]')).toContain('keeps its members and history');
 
-    await click('.pods__actions p-button');
+    await click('.pods__actions p-button[type="submit"]');
     expect(api.updatePod).not.toHaveBeenCalled();
     expect(document.body.textContent).toContain('Deactivate pod?');
     expect(document.body.textContent).toContain('Keep active');
@@ -587,7 +587,7 @@ describe('PodsPage', () => {
     await openEditor();
     await type('input[data-name]', 'Pod Alpha');
 
-    await click('.pods__actions p-button');
+    await click('.pods__actions p-button[type="submit"]');
     expect(text('[data-failure]')).toContain('Someone else changed this pod');
 
     await click('[data-failure] p-button');

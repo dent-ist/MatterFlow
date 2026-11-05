@@ -156,7 +156,7 @@ import {
           <div class="ds__levels">
             @for (h of form().levelHours; track $index) {
               <label class="ds__lv">
-                <span>Level {{ $index + 1 }}</span>
+                <span class="mf-field__label">Level {{ $index + 1 }}</span>
                 <input
                   class="mf-field__input"
                   type="number"
@@ -254,13 +254,21 @@ import {
         </p>
       }
 
-      <div class="ds__actions">
+      <div class="ds__actions mf-form-actions--sticky">
         <p-button
-          type="submit"
-          [label]="busy() ? 'Saving...' : 'Save changes'"
-          data-save
-          [disabled]="busy() || !dirty() || hasErrors()"
+          type="button"
+          label="Reset to default"
+          severity="secondary"
+          [outlined]="true"
+          data-reset
+          [disabled]="busy() || isDefault()"
+          (onClick)="reset()"
         />
+        @if (!dirty()) {
+          <p class="mf-form-actions__note" data-no-changes>No unsaved changes</p>
+        } @else {
+          <span class="mf-form-actions__note"></span>
+        }
         <p-button
           type="button"
           label="Cancel"
@@ -270,13 +278,10 @@ import {
           (onClick)="cancel()"
         />
         <p-button
-          type="button"
-          label="Reset to default"
-          severity="secondary"
-          [outlined]="true"
-          data-reset
-          [disabled]="busy() || isDefault()"
-          (onClick)="reset()"
+          type="submit"
+          [label]="busy() ? 'Saving...' : 'Save Changes'"
+          data-save
+          [disabled]="busy() || !dirty() || hasErrors()"
         />
       </div>
       <p class="sr-only" role="status" aria-live="polite" data-ds-live>{{ live() }}</p>
@@ -305,11 +310,12 @@ import {
       border: 0;
       border-bottom: 1px solid var(--mf-border);
     }
+    /* A section heading: 16 / 600, the card rule (D-11, #1156). */
     legend {
       padding: 0;
       margin-bottom: var(--mf-s2);
-      font-size: var(--mf-fs-h3);
-      font-weight: 600;
+      font-size: var(--mf-fs-lg);
+      font-weight: var(--mf-fw-semibold);
     }
     .ds__row {
       display: flex;
@@ -342,11 +348,6 @@ import {
       width: 100%;
       min-width: 0;
     }
-    .ds__actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--mf-s2);
-    }
     .sr-only {
       position: absolute;
       width: 1px;
@@ -354,11 +355,6 @@ import {
       overflow: hidden;
       clip: rect(0 0 0 0);
       white-space: nowrap;
-    }
-    @media (max-width: 639.98px) {
-      .ds__actions {
-        display: grid;
-      }
     }
   `,
 })

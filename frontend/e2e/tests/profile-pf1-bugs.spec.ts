@@ -53,7 +53,7 @@ test.describe('pf1-follow-menu: the open profile page follows the header menu (#
       await expect(me.locator('[data-updated-note]')).toHaveText(/Your availability was updated\./);
       await expect(me.locator('[data-updated-note]')).toHaveAttribute('aria-live', 'polite');
       await expect(me.getByRole('button', { name: 'Save changes' })).toBeDisabled();
-      await expect(me.getByRole('button', { name: 'Discard changes' })).toBeDisabled();
+      await expect(me.getByRole('button', { name: 'Cancel' })).toBeDisabled();
       await expect(me.locator('[data-stale]')).toHaveCount(0);
 
       await imBackFromMenu(me);

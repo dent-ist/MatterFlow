@@ -270,7 +270,7 @@ describe('AvailabilityForm', () => {
     await type('#av-hours-start', '08:30');
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
     const discard = Array.from(el().querySelectorAll<HTMLButtonElement>('button')).find(
-      (b) => b.textContent!.trim() === 'Discard changes',
+      (b) => b.textContent!.trim() === 'Cancel',
     )!;
     discard.click();
     await settle(fixture);

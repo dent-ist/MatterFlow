@@ -334,9 +334,8 @@ describe('TaskDetailPage header', () => {
       'Choose a reason',
       'Waiting for client data',
     ]);
-    expect(body().querySelector('[data-hold-reason-field] label')!.textContent).toContain(
-      '(optional)',
-    );
+    // An optional field carries no mark (D-35, #1156).
+    expect(body().querySelector('[data-hold-reason-field] label')!.textContent).not.toContain('(');
     select.value = '3';
     select.dispatchEvent(new Event('change'));
     const area = body().querySelector<HTMLTextAreaElement>('#task-reason')!;

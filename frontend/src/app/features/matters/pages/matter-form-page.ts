@@ -212,12 +212,12 @@ function clientOption(c: ClientResponse): PickerOption {
         />
 
         <div class="pg-actions mf-form-actions--sticky">
+          <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
           <p-button
             type="submit"
             [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create matter'"
             [disabled]="busy()"
           />
-          <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
         </div>
       </form>
     }

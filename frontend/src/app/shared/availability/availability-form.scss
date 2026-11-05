@@ -266,7 +266,7 @@
   gap: var(--mf-s2);
 }
 
-/* My profile (#531): the shared sticky bar (white, top shadow) at the width of its column, as a card; the state text sits on the right. */
+/* My profile (#531): the shared sticky bar (white, top shadow) at the width of its column, as a card; the state text sits on the left, Cancel and Save Changes on the right (#1156). */
 .av-actions--page {
   margin: 0;
   padding: var(--mf-s3) var(--mf-s4);
@@ -275,7 +275,7 @@
 }
 
 .av-actions__state {
-  margin-left: auto;
+  margin: 0 auto 0 0;
   color: var(--mf-text-muted);
   font-size: var(--mf-fs-sm);
 }

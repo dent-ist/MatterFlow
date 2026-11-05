@@ -5,22 +5,16 @@
 }
 
 .mf-field {
-  display: grid;
-  /* One column that is never wider than the field: a select's width is its longest option (a Pod with a 76-character name), which would
-     otherwise widen the column and push the dialog sideways on a phone. */
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--mf-s1);
   /* A form that wants one width for all its fields sets --mf-field-max on its container (Create task: the whole column). */
-  max-width: var(--mf-field-max, 480px);
+  @include forms.mf-field-stack;
 }
 
 .mf-field__label {
-  font-weight: 600;
+  @include forms.mf-field-label;
 }
 
 .mf-field__req {
-  font-weight: 400;
-  color: var(--mf-text-muted);
+  @include forms.mf-field-req;
 }
 
 .mf-field__input {
@@ -44,13 +38,9 @@ textarea.mf-field__input {
 
 .mf-field__preview,
 .mf-field__help {
-  margin: 0;
-  color: var(--mf-text-muted);
-  font-size: var(--mf-fs-sm);
+  @include forms.mf-field-help;
 }
 
 .mf-field__error {
-  margin: 0;
-  color: var(--mf-danger);
-  font-size: var(--mf-fs-sm);
+  @include forms.mf-field-error;
 }

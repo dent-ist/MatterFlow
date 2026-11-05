@@ -159,12 +159,12 @@ const NAMES_SHOWN = 8;
             <p class="pg-reason">You can change this later while the version is a draft.</p>
           </fieldset>
           <div class="pg-actions mf-form-actions--sticky">
+            <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
             <p-button
               type="submit"
               [label]="busy() ? 'Saving...' : 'Create workflow'"
               [disabled]="busy()"
             />
-            <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
           </div>
         </form>
       </div>
@@ -288,12 +288,12 @@ const NAMES_SHOWN = 8;
                     </div>
                   </dl>
                   <div class="pg-actions mf-form-actions--sticky">
+                    <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
                     <p-button
                       type="submit"
                       [label]="busy() ? 'Saving...' : 'Save changes'"
                       [disabled]="busy()"
                     />
-                    <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
                   </div>
                 </form>
               }

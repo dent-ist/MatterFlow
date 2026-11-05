@@ -49,7 +49,9 @@ import { TaskDetailStore } from './task-detail.store';
         <div class="reason" data-hold-reason-field>
           <label for="task-hold-reason">
             Why is it on hold?
-            <span class="req">{{ reasonRequired() ? '(required)' : '(optional)' }}</span>
+            @if (reasonRequired()) {
+              <span class="req">(required)</span>
+            }
           </label>
           <select
             id="task-hold-reason"

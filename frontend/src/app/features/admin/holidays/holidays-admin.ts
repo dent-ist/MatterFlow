@@ -117,7 +117,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                     </select>
                   </div>
                   <fieldset class="ha__pods">
-                    <legend class="ha__l">Pod defaults (optional)</legend>
+                    <legend class="ha__l">Pod defaults</legend>
                     @for (p of pods(); track p.podId) {
                       <div class="ha__pod">
                         <label [for]="'ha-pod-' + p.podId">{{ p.name }}</label>

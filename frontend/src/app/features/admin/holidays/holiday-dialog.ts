@@ -244,7 +244,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
             </div>
           </div>
           <div class="hd__f">
-            <label class="hd__l" for="hd-plus">Plus days (optional)</label>
+            <label class="hd__l" for="hd-plus">Plus days</label>
             <input
               id="hd-plus"
               class="mf-control"
@@ -336,7 +336,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
           </div>
         }
         <div class="hd__f">
-          <label class="hd__l" for="hd-note">Region note (optional)</label>
+          <label class="hd__l" for="hd-note">Region note</label>
           <input
             id="hd-note"
             class="mf-control mf-control--fill"

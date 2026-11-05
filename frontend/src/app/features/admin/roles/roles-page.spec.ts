@@ -404,13 +404,13 @@ describe('RolesPage', () => {
     expect(q('[data-name-error]').textContent).toContain('already exists');
   });
 
-  it('marks the name required, offers Cancel after the primary button and tracks unsaved edits', async () => {
+  it('marks the name required, offers Cancel before the primary button (the primary is last) and tracks unsaved edits', async () => {
     await press('New role');
     expect(q('label[for="role-name"]').textContent).toContain('(required)');
     const labels = Array.from(el().querySelectorAll('.mf-actions p-button')).map((b) =>
       b.textContent!.trim(),
     );
-    expect(labels.slice(0, 2)).toEqual(['Create role', 'Cancel']);
+    expect(labels.slice(0, 2)).toEqual(['Cancel', 'Create role']);
 
     const page = fixture.componentInstance;
     expect(page.hasUnsavedChanges()).toBe(false);

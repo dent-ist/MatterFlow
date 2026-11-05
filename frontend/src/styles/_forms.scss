@@ -7,7 +7,7 @@
  *   .mf-label          bold label above a control (13 px in filter bars: add .mf-label--sm)
  *   .mf-req            the "(required)" marker after a label; optional fields are not marked
  *   .mf-form-card      white card surface for a page form, 640 px at most
- *   .mf-form-actions   buttons at the end of a page form: primary first, then Cancel
+ *   .mf-form-actions   buttons at the end of a page form, right aligned: Cancel, the second choice, the primary last; Delete far left
  *   .mf-form-error     inline field error with icon
  */
 @use './form-mixins' as m;
@@ -60,8 +60,7 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator {
 }
 
 .mf-label {
-  font-weight: 600;
-  font-size: var(--mf-fs-md);
+  @include m.mf-field-label;
 }
 
 .mf-label--sm {
@@ -69,8 +68,72 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator {
 }
 
 .mf-req {
-  font-weight: 400;
-  color: var(--mf-text-muted);
+  @include m.mf-field-req;
+}
+
+/* Plain-markup fields (D-35, #1156): the same anatomy as mf-text-field. `.mf-form-fields` puts 16 px between the fields of a form. */
+.mf-field {
+  @include m.mf-field-stack;
+}
+
+.mf-field__label {
+  @include m.mf-field-label;
+}
+
+.mf-field__req {
+  @include m.mf-field-req;
+}
+
+.mf-field__input {
+  @include m.mf-control;
+  @include m.mf-control-states;
+}
+
+select.mf-field__input {
+  @include m.mf-select;
+  max-width: 100%;
+}
+
+textarea.mf-field__input {
+  @include m.mf-textarea;
+}
+
+.mf-field__help {
+  @include m.mf-field-help;
+}
+
+.mf-field__error {
+  @include m.mf-field-error;
+}
+
+.mf-form-fields {
+  display: grid;
+  gap: var(--mf-s4);
+}
+
+/* One column up to 480 px per field (`.mf-form-grid`); two columns (16 px apart) only in a Large dialog (`--lg`) or on a page 1100 px wide and more (`--page`) (D-35). */
+.mf-form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--mf-s4);
+}
+
+@media (min-width: 1100px) {
+  .mf-form-grid--page {
+    grid-template-columns: repeat(2, minmax(0, var(--mf-field-max, 480px)));
+  }
+}
+
+/* Inside a Large dialog (768 px) the two columns are always on. */
+.mf-form-grid--lg {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* A section heading inside a form: 16 / 600, the card rule (D-11). */
+.mf-form-section {
+  margin: 0;
+  font-size: var(--mf-fs-lg);
+  font-weight: var(--mf-fw-semibold);
 }
 
 .mf-form-card {

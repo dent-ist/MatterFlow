@@ -247,7 +247,7 @@ test.describe('pf7-keyboard: keyboard-only flows on My profile (#582)', () => {
         .map((s) => s.label),
       'stops without a visible focus indicator',
     ).toEqual([]);
-    const toSave = stops.findIndex((s) => s.label === 'Save changes') + 1;
+    const toSave = stops.findIndex((s) => s.label === 'Save Changes') + 1;
     expect(toSave).toBeGreaterThan(0);
     expect(toSave, 'Tab stops from Status to Save').toBeLessThanOrEqual(18);
     evidence('pf7-tab-sweep-1366.json', {

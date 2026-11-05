@@ -240,21 +240,21 @@
             @if (!locked()) {
               <p class="mf-muted">Changes apply on each user's next request.</p>
               <div class="mf-actions mf-form-actions--sticky">
+                @if (canDelete()) {
+                  <p-button
+                    class="mf-actions__danger mf-form-actions__start"
+                    label="Delete role"
+                    severity="danger"
+                    (onClick)="confirmingDelete.set(true)"
+                  />
+                }
+                <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
                 <p-button
                   data-save
                   [label]="selected() ? 'Save changes' : 'Create role'"
                   [disabled]="saving()"
                   (onClick)="save()"
                 />
-                <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
-                @if (canDelete()) {
-                  <p-button
-                    class="mf-actions__danger"
-                    label="Delete role"
-                    severity="danger"
-                    (onClick)="confirmingDelete.set(true)"
-                  />
-                }
               </div>
             }
           </div>

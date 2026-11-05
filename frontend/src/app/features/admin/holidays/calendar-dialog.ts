@@ -60,7 +60,7 @@ const label = (key: string): string => key.charAt(0).toUpperCase() + key.slice(1
           }
         </div>
         <div class="cd__f">
-          <label class="cd__l" for="cd-note">Region or country note (optional)</label>
+          <label class="cd__l" for="cd-note">Region or country note</label>
           <input
             id="cd-note"
             class="mf-control mf-control--fill"

@@ -254,12 +254,9 @@ export function brandingOf(view: BrandingAdminView): Branding {
           }
 
           <div class="pg-actions mf-form-actions--sticky st__actions">
-            <p-button
-              type="submit"
-              [label]="busy() ? 'Saving...' : 'Save changes'"
-              data-save
-              [disabled]="busy() || !dirty()"
-            />
+            @if (!dirty()) {
+              <p class="mf-form-actions__note" data-no-changes>No unsaved changes</p>
+            }
             <p-button
               type="button"
               label="Cancel"
@@ -267,6 +264,12 @@ export function brandingOf(view: BrandingAdminView): Branding {
               data-cancel
               [disabled]="busy() || !dirty()"
               (onClick)="cancel()"
+            />
+            <p-button
+              type="submit"
+              [label]="busy() ? 'Saving...' : 'Save Changes'"
+              data-save
+              [disabled]="busy() || !dirty()"
             />
           </div>
         </form>

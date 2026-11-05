@@ -89,15 +89,15 @@
       }
       <div class="mf-form-actions mf-form-actions--sticky pods__actions">
         <p-button
+          [label]="auth.has('Pod.Manage') ? 'Cancel' : 'Back to pods'"
+          severity="secondary"
+          (onClick)="close()"
+        />
+        <p-button
           *mfHasPermission="'Pod.Manage'"
           type="submit"
           [label]="isNew() ? 'Create pod' : 'Save changes'"
           [disabled]="busy()"
-        />
-        <p-button
-          [label]="auth.has('Pod.Manage') ? 'Cancel' : 'Back to pods'"
-          severity="secondary"
-          (onClick)="close()"
         />
       </div>
     </form>

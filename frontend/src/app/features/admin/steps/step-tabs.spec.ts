@@ -303,7 +303,7 @@ describe('Step page, Deactivate (#406)', () => {
     await settle(fixture);
     const footer = el.querySelector('[data-footer]')!;
     expect(Array.from(footer.querySelectorAll('button')).map((b) => b.textContent!.trim())).toEqual(
-      ['Save changes', 'Cancel'],
+      ['Cancel', 'Save changes'],
     );
   });
 });

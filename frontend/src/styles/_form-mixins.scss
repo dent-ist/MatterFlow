@@ -42,3 +42,45 @@
   background-size: var(--mf-icon-sm) var(--mf-icon-sm);
   text-overflow: ellipsis;
 }
+
+/*
+ * The field anatomy of every form, dialog or page (D-35, #1156): the label above the control (13 / 600 `--mf-text`), 4 px between label, control,
+ * help and error; "(required)" after the label in muted regular type (an optional field carries no mark); help 13 muted; error 13 `--mf-danger`
+ * with the `pi-exclamation-circle` icon and `role="alert"`; the fields of a form are 16 px apart (`--mf-s4`) and at most `--mf-field-max` (480 px) wide.
+ * `mf-text-field` and every component that loads `form-field.scss` get them from here, `_forms.scss` gives them to plain markup
+ * (`.mf-field`, `.mf-field__label`, `.mf-field__req`, `.mf-field__help`, `.mf-field__error`, `.mf-form-fields`).
+ */
+@mixin mf-field-stack {
+  display: grid;
+  /* One column that is never wider than the field: a select's width is its longest option, which would otherwise widen the column. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--mf-s1);
+  max-width: var(--mf-field-max, 480px);
+}
+
+@mixin mf-field-label {
+  color: var(--mf-text);
+  font-size: var(--mf-fs-sm);
+  font-weight: var(--mf-fw-semibold);
+  line-height: 1.3;
+}
+
+@mixin mf-field-req {
+  color: var(--mf-text-muted);
+  font-weight: 400;
+}
+
+@mixin mf-field-help {
+  margin: 0;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+@mixin mf-field-error {
+  display: flex;
+  gap: var(--mf-s1);
+  align-items: baseline;
+  margin: 0;
+  color: var(--mf-danger);
+  font-size: var(--mf-fs-sm);
+}

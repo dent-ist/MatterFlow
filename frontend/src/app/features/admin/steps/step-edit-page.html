@@ -125,15 +125,6 @@
           @if (showFooter()) {
             <div class="pg-actions mf-form-actions--sticky" data-footer>
               <button
-                type="submit"
-                form="step-details-form"
-                class="mf-btn mf-btn--primary"
-                [disabled]="busy()"
-                data-save
-              >
-                {{ busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create step' }}
-              </button>
-              <button
                 type="button"
                 class="mf-btn"
                 [disabled]="busy()"
@@ -141,6 +132,15 @@
                 data-cancel
               >
                 Cancel
+              </button>
+              <button
+                type="submit"
+                form="step-details-form"
+                class="mf-btn mf-btn--primary"
+                [disabled]="busy()"
+                data-save
+              >
+                {{ busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create step' }}
               </button>
             </div>
           }

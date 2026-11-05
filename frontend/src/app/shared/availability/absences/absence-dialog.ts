@@ -120,7 +120,7 @@ export function overlapOf(err: ApiError): AbsenceOverlap | null {
             }
           </div>
           <div class="ad__field">
-            <label class="ad__label" for="ad-end">Last day out (optional)</label>
+            <label class="ad__label" for="ad-end">Last day out</label>
             <mf-date-input
               inputId="ad-end"
               label="Last day out"
@@ -154,7 +154,7 @@ export function overlapOf(err: ApiError): AbsenceOverlap | null {
           </p>
         }
         <div class="ad__field">
-          <label class="ad__label" for="ad-note">Note (optional)</label>
+          <label class="ad__label" for="ad-note">Note</label>
           <textarea
             id="ad-note"
             class="mf-control mf-control--fill ad__note"

@@ -111,7 +111,7 @@ export function validateThresholds(
           </div>
         </div>
         <fieldset class="th__set">
-          <legend>Minimum people per pod (optional)</legend>
+          <legend>Minimum people per pod</legend>
           <p class="mf-field__help">
             When set, it replaces the percentage for that pod. Leave empty to use the pod minimum
             above.

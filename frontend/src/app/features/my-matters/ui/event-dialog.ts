@@ -144,9 +144,7 @@ interface Errors {
             }
           </div>
           <div class="fld">
-            <label for="ev-time" title="Leave blank for an all-day item."
-              >Time <span class="opt">(optional)</span></label
-            >
+            <label for="ev-time" title="Leave blank for an all-day item.">Time</label>
             <input
               id="ev-time"
               name="time"
@@ -163,7 +161,7 @@ interface Errors {
         </div>
 
         <div class="fld">
-          <label for="ev-note">Note <span class="opt">(optional)</span></label>
+          <label for="ev-note">Note</label>
           <textarea
             id="ev-note"
             name="note"
@@ -287,13 +285,8 @@ interface Errors {
       opacity: 0;
       pointer-events: none;
     }
-    .lbl,
-    .opt {
+    .lbl {
       font-size: var(--mf-fs-sm);
-    }
-    .opt {
-      color: var(--mf-text-muted);
-      font-weight: 400;
     }
     .row {
       align-items: end;

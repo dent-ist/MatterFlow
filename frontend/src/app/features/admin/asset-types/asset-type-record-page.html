@@ -308,6 +308,9 @@
 
       @if (showFooter()) {
         <div class="at__footer mf-form-actions--sticky" data-footer>
+          <button type="button" class="mf-btn" [disabled]="busy()" (click)="cancel()" data-cancel>
+            Cancel
+          </button>
           <button
             class="mf-btn mf-btn--primary"
             type="submit"
@@ -316,9 +319,6 @@
             data-save
           >
             {{ isNew() ? 'Create asset type' : 'Save changes' }}
-          </button>
-          <button type="button" class="mf-btn" [disabled]="busy()" (click)="cancel()" data-cancel>
-            Cancel
           </button>
         </div>
       }

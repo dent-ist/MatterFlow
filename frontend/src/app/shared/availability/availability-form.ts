@@ -259,25 +259,28 @@ interface Problem {
           [class.av-actions--page]="mode() === 'page'"
           data-actions
         >
-          <p-button
-            type="submit"
-            [label]="busy() ? 'Saving...' : 'Save changes'"
-            [disabled]="busy() || !dirty()"
-            data-save
-          />
-          @if (mode() === 'dialog') {
-            <p-button label="Cancel" severity="secondary" (onClick)="closed.emit()" />
-          } @else {
+          @if (mode() === 'page') {
+            <span
+              class="av-actions__state mf-form-actions__note"
+              role="status"
+              data-actions-state
+              >{{ dirty() ? 'Unsaved changes' : 'No unsaved changes' }}</span
+            >
             <p-button
-              label="Discard changes"
+              label="Cancel"
               severity="secondary"
               [disabled]="busy() || !dirty()"
               (onClick)="discard()"
             />
-            <span class="av-actions__state" role="status" data-actions-state>{{
-              dirty() ? 'Unsaved changes' : 'No unsaved changes'
-            }}</span>
+          } @else {
+            <p-button label="Cancel" severity="secondary" (onClick)="closed.emit()" />
           }
+          <p-button
+            type="submit"
+            [label]="busy() ? 'Saving...' : mode() === 'page' ? 'Save Changes' : 'Save changes'"
+            [disabled]="busy() || !dirty()"
+            data-save
+          />
         </div>
       </form>
     }

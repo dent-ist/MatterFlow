@@ -549,18 +549,18 @@
           </section>
 
           <div class="pg-actions mf-form-actions--sticky">
-            <p-button
-              type="submit"
-              [label]="busy() ? 'Creating...' : 'Create task'"
-              [disabled]="busy()"
-            />
+            <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
             <p-button
               label="Create and add another"
               severity="secondary"
               [disabled]="busy()"
               (onClick)="submit(true)"
             />
-            <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
+            <p-button
+              type="submit"
+              [label]="busy() ? 'Creating...' : 'Create task'"
+              [disabled]="busy()"
+            />
           </div>
         </form>
       }

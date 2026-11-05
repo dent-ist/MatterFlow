@@ -76,11 +76,19 @@ import { NotificationService } from '../../../core/notify/notification.service';
 
       <div class="cs__actions">
         <p-button
-          type="submit"
-          [label]="busy() ? 'Saving...' : 'Save changes'"
-          data-capacity-save
-          [disabled]="busy() || !dirty()"
+          type="button"
+          label="Reset to default"
+          severity="secondary"
+          [outlined]="true"
+          data-capacity-reset
+          [disabled]="busy() || isDefault()"
+          (onClick)="reset()"
         />
+        @if (!dirty()) {
+          <p class="mf-form-actions__note" data-no-changes>No unsaved changes</p>
+        } @else {
+          <span class="mf-form-actions__note"></span>
+        }
         <p-button
           type="button"
           label="Cancel"
@@ -90,13 +98,10 @@ import { NotificationService } from '../../../core/notify/notification.service';
           (onClick)="cancel()"
         />
         <p-button
-          type="button"
-          label="Reset to default"
-          severity="secondary"
-          [outlined]="true"
-          data-capacity-reset
-          [disabled]="busy() || isDefault()"
-          (onClick)="reset()"
+          type="submit"
+          [label]="busy() ? 'Saving...' : 'Save Changes'"
+          data-capacity-save
+          [disabled]="busy() || !dirty()"
         />
       </div>
       <p class="sr-only" role="status" aria-live="polite" data-capacity-live>{{ live() }}</p>
@@ -122,11 +127,12 @@ import { NotificationService } from '../../../core/notify/notification.service';
       border: 0;
       border-bottom: 1px solid var(--mf-border);
     }
+    /* A section heading: 16 / 600, the card rule (D-11, #1156). */
     legend {
       padding: 0;
       margin-bottom: var(--mf-s2);
-      font-size: var(--mf-fs-h3);
-      font-weight: 600;
+      font-size: var(--mf-fs-lg);
+      font-weight: var(--mf-fw-semibold);
     }
     .cs__check {
       display: inline-flex;
@@ -139,10 +145,13 @@ import { NotificationService } from '../../../core/notify/notification.service';
       margin: 0;
       color: var(--mf-text-muted);
     }
+    /* [Reset] [No unsaved changes] ... [Cancel] [Save Changes]: the primary last (D-30, #1156). */
     .cs__actions {
       display: flex;
       flex-wrap: wrap;
       gap: var(--mf-s2);
+      align-items: center;
+      justify-content: flex-end;
     }
     .sr-only {
       position: absolute;
@@ -151,11 +160,6 @@ import { NotificationService } from '../../../core/notify/notification.service';
       overflow: hidden;
       clip: rect(0 0 0 0);
       white-space: nowrap;
-    }
-    @media (max-width: 639.98px) {
-      .cs__actions {
-        display: grid;
-      }
     }
   `,
 })

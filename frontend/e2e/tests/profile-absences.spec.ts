@@ -43,7 +43,7 @@ async function addEntry(
   if (opts.type) await dialog.getByLabel('Type').selectOption({ label: opts.type });
   await fillDate(dialog.locator('#ad-start'), opts.start);
   if (opts.end) await fillDate(dialog.locator('#ad-end'), opts.end);
-  if (opts.note) await dialog.getByLabel('Note (optional)').fill(opts.note);
+  if (opts.note) await dialog.getByLabel('Note').fill(opts.note);
   return dialog;
 }
 
@@ -92,7 +92,7 @@ test.describe('My profile: several Out of office entries', () => {
     // Edit the second entry: the note.
     await upcoming.nth(1).locator('[data-absence-edit]').click();
     const edit = me.getByRole('dialog', { name: 'Edit out of office' });
-    await edit.getByLabel('Note (optional)').fill('Certification course');
+    await edit.getByLabel('Note').fill('Certification course');
     await edit.getByRole('button', { name: 'Save' }).click();
     await expect(edit).toBeHidden();
     await expect(upcoming.nth(1)).toContainText('Certification course');
