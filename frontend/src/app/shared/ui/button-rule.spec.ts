@@ -105,7 +105,8 @@ describe('button rule (theme guide section 9)', () => {
       '',
     );
     const touch = css.indexOf('@media');
-    const heights = (touch < 0 ? css : css.slice(0, touch)).match(/(?<![-\w])(min-)?height:\s*[^;]+;/g) ?? [];
+    const heights =
+      (touch < 0 ? css : css.slice(0, touch)).match(/(?<![-\w])(min-)?height:\s*[^;]+;/g) ?? [];
     for (const h of heights) expect(h, h).toMatch(/var\(--mf-/);
     expect(css).not.toMatch(/opacity:\s*0?\.\d/);
   });
