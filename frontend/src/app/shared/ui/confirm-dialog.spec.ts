@@ -138,3 +138,20 @@ describe('ConfirmDialog failure and busy (TY-K, #414)', () => {
     expect(fixture.componentInstance.log).toEqual(['confirmed']);
   });
 });
+
+describe('ConfirmDialog anatomy (D-31, D-32, #1137)', () => {
+  it('is the small dialog with the shared close icon and Cancel left of the primary', async () => {
+    const fixture = TestBed.createComponent(FailHost);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const dlg = document.body.querySelector<HTMLElement>('.mf-dlg');
+    expect(dlg?.style.width).toBe('var(--mf-dialog-w-sm)');
+    expect(dlg?.querySelector('.p-dialog-close-button .pi-times')).not.toBeNull();
+    expect(dlg?.querySelector('.mf-dlg__buttons')).not.toBeNull();
+    fixture.componentInstance.error.set('It failed');
+    fixture.detectChanges();
+    expect(
+      dlg?.querySelector('.p-dialog-footer [data-confirm-error] .pi-exclamation-circle'),
+    ).not.toBeNull();
+  });
+});

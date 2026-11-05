@@ -10,6 +10,8 @@ export const MfPreset = definePreset(AuraLite, {
   components: {
     // The dialog and drawer rule (S18, #619): a title is 16 px / 600 in every dialog and in the Activity drawer (Aura's 18 px is too loud
     // next to the 14 px body); one close button style; the footer has the secondary action on the left and the primary on the right.
+    // The frame of a dialog (radius 12, shadow, header / body / footer padding) is set for `.mf-dlg` in styles/_dialogs.scss (D-31, #1137), so the
+    // drawers, which are p-dialogs too, keep their own.
     dialog: {
       title: { fontSize: 'var(--mf-fs-lg)', fontWeight: '600' },
     },
@@ -150,6 +152,8 @@ export const MfPreset = definePreset(AuraLite, {
       offset: 'var(--mf-focus-offset)',
       shadow: 'none',
     },
+    // The scrim behind a dialog (D-31).
+    mask: { background: 'var(--mf-scrim)' },
     // One control look (UXR-25): 14 px text, 36 px high (--mf-ctl-h; the min-height is in styles/_forms.scss) and the same focus ring as the
     // native controls (.mf-control), so a p-select next to a native select cannot be told apart.
     formField: {

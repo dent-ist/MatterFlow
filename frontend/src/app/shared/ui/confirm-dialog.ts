@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, input, model, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, model, output } from '@angular/core';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { DialogFocus } from './dialog-focus';
+import { DIALOG_WIDTHS } from './form-dialog';
 import { ScrollRegion } from './scroll-region';
 
 /**
@@ -9,9 +10,10 @@ import { ScrollRegion } from './scroll-region';
  * Set `showConfirm` to false for an information-only dialog with just the close button.
  *
  * The dialog and drawer rule (S18, #619; the same for the Activity drawer, the phone filter sheet and every drawer a page adds):
- *  - the title is 16 px / 600 (the PrimeNG dialog theme in `core/theme/mf-preset.ts`);
- *  - one close button style: the round icon-only X at the right of the title, named "Close ...";
- *  - the footer puts the secondary action on the left and the primary on the right; a destructive primary is red;
+ *  - the anatomy is the one of every dialog (`styles/_dialogs.scss`, D-31, #1137): header 56 px with the title 16 / 600, the 36 x 36 icon-only X at
+ *    the right, body padding 16, footer with a top border; radius 12, `--mf-shadow-pop`;
+ *  - the width is the `size` input (small 416 px by default, default 576 px, large 768 px);
+ *  - the footer puts the secondary action on the left and the primary on the right; a destructive primary is red; an error sits above the buttons;
  *  - the secondary is "Cancel", unless that would read as the action itself (a named alternative such as "Keep task" then).
  */
 @Component({
@@ -46,56 +48,67 @@ import { ScrollRegion } from './scroll-region';
       clip-path: inset(50%);
       white-space: nowrap;
     }
-    /* A failed confirm stays in the dialog (TY-K, #414): the message is read here, where focus is. */
-    .mf-confirm__error {
-      margin: 0.75rem 0 0;
-      color: var(--mf-danger);
-      font-weight: 600;
-      overflow-wrap: anywhere;
-    }
   `,
   template: `
     <p-dialog
+      styleClass="mf-dlg mf-confirmdlg"
       [header]="title()"
       [modal]="true"
       [closable]="true"
+      closeIcon="pi pi-times"
       closeAriaLabel="Close dialog"
       [mfDialogFocus]="visible()"
       [draggable]="false"
       [resizable]="false"
       [visible]="visible()"
       (visibleChange)="visible.set($event)"
-      [style]="{ width: '32rem', maxWidth: '95vw', whiteSpace: 'normal' }"
+      [style]="{ width: width(), whiteSpace: 'normal' }"
     >
-      <div class="mf-confirm__body" data-confirm-body [mfScrollRegion]="scrollLabel()">
-        <ng-content />
+      <div class="mf-dlg__body">
+        <div class="mf-confirm__body" data-confirm-body [mfScrollRegion]="scrollLabel()">
+          <ng-content />
+        </div>
+        <span class="mf-confirm__sr" role="status">{{ busy() ? 'Working...' : '' }}</span>
       </div>
-      <span class="mf-confirm__sr" role="status">{{ busy() ? 'Working...' : '' }}</span>
-      @if (error()) {
-        <p class="mf-confirm__error" role="alert" data-confirm-error>{{ error() }}</p>
-      }
       <ng-template #footer>
-        <p-button [label]="cancelLabel()" severity="secondary" (onClick)="visible.set(false)" />
-        @if (showConfirm()) {
-          <p-button
-            [label]="confirmLabel()"
-            [severity]="danger() ? 'danger' : 'primary'"
-            [outlined]="extraLabel() !== '' && danger()"
-            [styleClass]="danger() && extraLabel() === '' ? 'mf-btn--solid' : ''"
-            data-confirm-primary
-            [class.mf-confirm__busy]="busy()"
-            (onClick)="busy() || confirmed.emit()"
-          />
-        }
-        @if (extraLabel() !== '') {
-          <p-button
-            [label]="extraLabel()"
-            severity="primary"
-            data-extra
-            [class.mf-confirm__busy]="busy()"
-            (onClick)="busy() || extra.emit()"
-          />
-        }
+        <div class="mf-dlg__foot">
+          <!-- A failed confirm stays in the dialog (TY-K, #414): the message is read here, where focus is. -->
+          @if (error()) {
+            <p class="mf-dlg__error" role="alert" data-confirm-error>
+              <i class="pi pi-exclamation-circle" aria-hidden="true"></i>{{ error() }}
+            </p>
+          }
+          <div
+            class="mf-dlg__buttons"
+            [class.mf-dlg__buttons--end]="!showConfirm() && extraLabel() === ''"
+          >
+            <p-button [label]="cancelLabel()" severity="secondary" (onClick)="visible.set(false)" />
+            @if (showConfirm() || extraLabel() !== '') {
+              <span class="mf-dlg__buttons-end">
+                @if (showConfirm()) {
+                  <p-button
+                    [label]="confirmLabel()"
+                    [severity]="danger() ? 'danger' : 'primary'"
+                    [outlined]="extraLabel() !== '' && danger()"
+                    [styleClass]="danger() && extraLabel() === '' ? 'mf-btn--solid' : ''"
+                    data-confirm-primary
+                    [class.mf-confirm__busy]="busy()"
+                    (onClick)="busy() || confirmed.emit()"
+                  />
+                }
+                @if (extraLabel() !== '') {
+                  <p-button
+                    [label]="extraLabel()"
+                    severity="primary"
+                    data-extra
+                    [class.mf-confirm__busy]="busy()"
+                    (onClick)="busy() || extra.emit()"
+                  />
+                }
+              </span>
+            }
+          </div>
+        </div>
       </ng-template>
     </p-dialog>
   `,
@@ -122,6 +135,11 @@ export class ConfirmDialog {
    * secondary danger choice (an outline) and the extra button is the primary one. Empty: no extra button.
    */
   readonly extraLabel = input('');
+
+  /** Width: `small` 416 px (the default, a confirmation), `default` 576 px, `large` 768 px (D-32). */
+  readonly size = input<'small' | 'default' | 'large'>('small');
+
+  protected readonly width = computed(() => DIALOG_WIDTHS[this.size()]);
 
   readonly visible = model(false);
   readonly confirmed = output<void>();

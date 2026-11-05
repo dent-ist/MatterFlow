@@ -4,6 +4,7 @@ import {
   ElementRef,
   Injector,
   afterNextRender,
+  computed,
   effect,
   inject,
   input,
@@ -17,6 +18,7 @@ import { Dialog } from 'primeng/dialog';
 import { focusFirstInvalid } from '../forms/focus-invalid';
 import { LeaveConfirmService } from '../guards/unsaved-changes.guard';
 import { DialogFocus } from './dialog-focus';
+import { DIALOG_WIDTHS } from './form-dialog';
 
 /**
  * The lookup dialog (#564): the "short form is a dialog" rule of ux-spec 5.4 for the small admin records (a priority, a link role, a status
@@ -44,43 +46,12 @@ import { DialogFocus } from './dialog-focus';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown.escape)': 'onEscape($event)' },
   styles: `
-    .ld-head {
-      display: flex;
-      flex: 1;
-      gap: var(--mf-s3);
-      align-items: center;
-      justify-content: space-between;
-      min-width: 0;
-    }
-    .ld-title {
-      min-width: 0;
-      font-size: var(--mf-fs-lg);
-      font-weight: 700;
-      overflow-wrap: anywhere;
-    }
-    .ld-close {
-      display: inline-flex;
-      flex: none;
-      align-items: center;
-      justify-content: center;
-      width: 44px;
-      height: 44px;
-      border: 0;
-      border-radius: var(--mf-radius);
-      background: transparent;
-      color: var(--mf-text);
-      cursor: pointer;
-    }
-    .ld-close:hover {
-      background: var(--mf-surface-alt);
-    }
     .ld-form {
       display: grid;
       gap: var(--mf-s4);
       overflow-wrap: anywhere;
     }
-    .ld-summary,
-    .ld-error {
+    .ld-summary {
       margin: 0;
       padding: var(--mf-s3) var(--mf-s4);
       border: 1px solid var(--mf-danger);
@@ -124,6 +95,7 @@ import { DialogFocus } from './dialog-focus';
   `,
   template: `
     <p-dialog
+      styleClass="mf-dlg mf-lookupdlg"
       [modal]="true"
       [closable]="false"
       [mfDialogFocus]="visible()"
@@ -132,25 +104,29 @@ import { DialogFocus } from './dialog-focus';
       [visible]="visible()"
       (visibleChange)="request($event)"
       (onShow)="focusFirstField()"
-      [style]="{ width: '30rem', maxWidth: '95vw', whiteSpace: 'normal' }"
+      [style]="{ width: width(), whiteSpace: 'normal' }"
     >
       <!-- PrimeNG closes a dialog by itself on Escape and on the X, which would leave it hidden after "Stay"; this dialog closes through
            request() only, so it has its own header (the title names the dialog) and handles Escape itself. -->
       <ng-template #header let-labelId="ariaLabelledBy">
-        <div class="ld-head">
-          <span class="ld-title" [id]="labelId" data-lookup-title>{{ title() }}</span>
-          <button
-            type="button"
-            class="ld-close"
-            aria-label="Close dialog"
-            data-lookup-close
-            (click)="request(false)"
-          >
-            <i class="pi pi-times" aria-hidden="true"></i>
-          </button>
-        </div>
+        <span class="mf-dlg__title" [id]="labelId" data-lookup-title>{{ title() }}</span>
+        <button
+          type="button"
+          class="mf-dlg__x"
+          aria-label="Close dialog"
+          data-lookup-close
+          (click)="request(false)"
+        >
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
       </ng-template>
-      <form #form class="ld-form" novalidate data-lookup-form (submit)="submit($event)">
+      <form
+        #form
+        class="ld-form mf-dlg__body"
+        novalidate
+        data-lookup-form
+        (submit)="submit($event)"
+      >
         @if (summary().length > 0) {
           <div class="ld-summary" role="alert" data-summary>
             Fix the following to save:
@@ -161,9 +137,6 @@ import { DialogFocus } from './dialog-focus';
             </ul>
           </div>
         }
-        @if (error()) {
-          <p class="ld-error" role="alert" data-lookup-error>{{ error() }}</p>
-        }
         <ng-content />
         <fieldset class="ld-preview" data-preview>
           <legend>Preview</legend>
@@ -172,20 +145,29 @@ import { DialogFocus } from './dialog-focus';
         <span class="ld-sr" role="status">{{ saving() ? 'Saving...' : '' }}</span>
       </form>
       <ng-template #footer>
-        <p-button
-          [label]="cancelLabel()"
-          severity="secondary"
-          data-lookup-cancel
-          (onClick)="request(false)"
-        />
-        <p-button
-          [label]="submitLabel()"
-          severity="primary"
-          data-lookup-submit
-          [class.ld-busy]="saving()"
-          [attr.aria-busy]="saving() ? 'true' : null"
-          (onClick)="submit()"
-        />
+        <div class="mf-dlg__foot">
+          @if (error()) {
+            <p class="mf-dlg__error" role="alert" data-lookup-error>
+              <i class="pi pi-exclamation-circle" aria-hidden="true"></i>{{ error() }}
+            </p>
+          }
+          <div class="mf-dlg__buttons">
+            <p-button
+              [label]="cancelLabel()"
+              severity="secondary"
+              data-lookup-cancel
+              (onClick)="request(false)"
+            />
+            <p-button
+              [label]="submitLabel()"
+              severity="primary"
+              data-lookup-submit
+              [class.ld-busy]="saving()"
+              [attr.aria-busy]="saving() ? 'true' : null"
+              (onClick)="submit()"
+            />
+          </div>
+        </div>
       </ng-template>
     </p-dialog>
   `,
@@ -206,6 +188,9 @@ export class LookupDialog {
   readonly error = input('');
   /** The validation messages ("Enter a name."); non-empty shows the summary and moves focus to the first invalid field. */
   readonly summary = input<readonly string[]>([]);
+  /** Width: `small` 416 px (the default), `default` 576 px or `large` 768 px (D-32). */
+  readonly size = input<'small' | 'default' | 'large'>('small');
+  protected readonly width = computed(() => DIALOG_WIDTHS[this.size()]);
   readonly submitLabel = input('Save');
   readonly cancelLabel = input('Cancel');
 

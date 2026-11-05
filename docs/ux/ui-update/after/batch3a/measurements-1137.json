@@ -1,0 +1,98 @@
+{
+  "1137-new-matter-1366x768": {
+    "dialog": "768x634",
+    "radius": "12px",
+    "header": "766x56",
+    "footer": "766x61",
+    "close": "36x36",
+    "titleSize": "16px",
+    "footerBorder": "1px",
+    "buttons": [
+      "Cancel",
+      "Create matter"
+    ],
+    "bodyScrollsSideways": false,
+    "pageOverflowX": 0,
+    "viewportFit": true
+  },
+  "1137-new-matter-1920x1080": {
+    "dialog": "768x634",
+    "radius": "12px",
+    "header": "766x56",
+    "footer": "766x61",
+    "close": "36x36",
+    "titleSize": "16px",
+    "footerBorder": "1px",
+    "buttons": [
+      "Cancel",
+      "Create matter"
+    ],
+    "bodyScrollsSideways": false,
+    "pageOverflowX": 0,
+    "viewportFit": true
+  },
+  "1137-new-priority-1366x768": {
+    "dialog": "416x356",
+    "radius": "12px",
+    "header": "414x56",
+    "footer": "414x61",
+    "close": "36x36",
+    "titleSize": "16px",
+    "footerBorder": "1px",
+    "buttons": [
+      "Cancel",
+      "Add Priority"
+    ],
+    "bodyScrollsSideways": false,
+    "pageOverflowX": 0,
+    "viewportFit": true
+  },
+  "1137-new-priority-1920x1080": {
+    "dialog": "416x356",
+    "radius": "12px",
+    "header": "414x56",
+    "footer": "414x61",
+    "close": "36x36",
+    "titleSize": "16px",
+    "footerBorder": "1px",
+    "buttons": [
+      "Cancel",
+      "Add Priority"
+    ],
+    "bodyScrollsSideways": false,
+    "pageOverflowX": 0,
+    "viewportFit": true
+  },
+  "1137-confirm-1366x768": {
+    "dialog": "416x213",
+    "radius": "12px",
+    "header": "414x56",
+    "footer": "414x61",
+    "close": "36x36",
+    "titleSize": "16px",
+    "footerBorder": "1px",
+    "buttons": [
+      "Keep active",
+      "Deactivate priority"
+    ],
+    "bodyScrollsSideways": false,
+    "pageOverflowX": 0,
+    "viewportFit": true
+  },
+  "1137-confirm-1920x1080": {
+    "dialog": "416x213",
+    "radius": "12px",
+    "header": "414x56",
+    "footer": "414x61",
+    "close": "36x36",
+    "titleSize": "16px",
+    "footerBorder": "1px",
+    "buttons": [
+      "Keep active",
+      "Deactivate priority"
+    ],
+    "bodyScrollsSideways": false,
+    "pageOverflowX": 0,
+    "viewportFit": true
+  }
+}

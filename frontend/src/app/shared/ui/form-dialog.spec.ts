@@ -119,7 +119,25 @@ describe('FormDialog (MD-22, #1026)', () => {
     expect(dlg).not.toBeNull();
     expect(q('.mf-slide')).toBeNull();
     expect(q('.p-dialog-right')).toBeNull();
-    expect(dlg?.style.width).toBe('36rem');
+    expect(dlg?.style.width).toBe('var(--mf-dialog-w)');
+  });
+
+  it('uses the shared anatomy: close icon button, Keep Editing / Discard Changes, error with icon', async () => {
+    const f = await start();
+    expect(q('.mf-dlg')).not.toBeNull();
+    expect(q('[data-panel-close]')?.classList.contains('mf-dlg__x')).toBe(true);
+    expect(q('[data-panel-close] .pi-times')).not.toBeNull();
+    f.componentInstance.error.set('Could not save');
+    f.componentInstance.dirty.set(true);
+    f.detectChanges();
+    expect(q('[data-panel-error] .pi-exclamation-circle')).not.toBeNull();
+    q('[data-panel-cancel] button')!.click();
+    f.detectChanges();
+    expect(q('[data-panel-guard]')?.textContent).toContain(
+      'You have unsaved changes. Discard them?',
+    );
+    expect(q('[data-guard-keep] button')?.textContent?.trim()).toBe('Keep Editing');
+    expect(q('[data-guard-discard] button')?.textContent?.trim()).toBe('Discard Changes');
   });
 
   it('is a modal dialog with an accessible name', async () => {
