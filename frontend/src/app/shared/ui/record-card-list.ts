@@ -24,6 +24,7 @@ import { CopyPart, CopyParts } from './copy-parts';
 import { LoadState } from './data-table';
 import { RowLink } from './row-nav';
 import { ErrorReference } from './error-reference';
+import { StateBlock } from './state-block';
 import { StillLoading } from './still-loading';
 import type { ListFilters } from '../filters/list-filters';
 
@@ -83,7 +84,7 @@ export class RecordCardDef<T = unknown> {
  */
 @Component({
   selector: 'mf-record-card-list',
-  imports: [NgTemplateOutlet, CopyParts, ErrorReference, StillLoading],
+  imports: [NgTemplateOutlet, CopyParts, ErrorReference, StateBlock, StillLoading],
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
   styleUrl: './record-card-list.scss',
@@ -105,46 +106,52 @@ export class RecordCardDef<T = unknown> {
       }
       @case ('forbidden') {
         <div class="rc-state" data-forbidden>
-          <div class="rc-alert" role="alert">You don't have access to {{ noun() }}.</div>
+          <mf-state-block [announce]="true" icon="pi-lock"
+            >You don't have access to {{ noun() }}.</mf-state-block
+          >
         </div>
       }
       @case ('error') {
         <div class="rc-state" data-error>
-          <div class="rc-alert" role="alert">
+          <mf-state-block kind="error">
             Couldn't load {{ noun() }}.
-            <mf-error-reference [reference]="errorRef()" />
-          </div>
-          <button type="button" class="mf-btn" (click)="onRetry()">Retry</button>
+            <mf-error-reference mfStateReason [reference]="errorRef()" />
+            <button mfStateAction type="button" class="mf-btn" (click)="onRetry()">Retry</button>
+          </mf-state-block>
         </div>
       }
       @default {
         @if (empty()) {
           <div class="rc-state" [attr.data-empty]="filtered() ? 'filtered' : 'none'">
             @if (filtered()) {
-              <p>No {{ noun() }} match these filters</p>
-              @if (hidden() > 0) {
-                <p class="rc-hint" data-hidden-hint>
-                  {{ hidden() }} {{ hiddenLabel() }} hidden
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--text"
-                    data-show-all
-                    (click)="showAll.emit()"
-                  >
-                    Show all
-                  </button>
-                </p>
-              }
-              <button type="button" class="mf-btn" (click)="clear.emit()">Clear filters</button>
+              <mf-state-block>
+                No {{ noun() }} match these filters.
+                @if (hidden() > 0) {
+                  <span mfStateReason class="rc-hint" data-hidden-hint>
+                    {{ hidden() }} {{ hiddenLabel() }} hidden
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--text"
+                      data-show-all
+                      (click)="showAll.emit()"
+                    >
+                      Show All
+                    </button>
+                  </span>
+                }
+                <button mfStateAction type="button" class="mf-btn" (click)="clear.emit()">
+                  Clear Filters
+                </button>
+              </mf-state-block>
             } @else {
-              <p>
+              <mf-state-block>
                 @if (emptyParts(); as parts) {
                   <mf-copy-parts [parts]="parts" />
                 } @else {
                   {{ emptyText() || 'No ' + noun() + ' yet.' }}
                 }
-              </p>
-              <ng-content select="[mfEmptyAction]" />
+                <span mfStateAction><ng-content select="[mfEmptyAction]" /></span>
+              </mf-state-block>
             }
           </div>
         } @else {

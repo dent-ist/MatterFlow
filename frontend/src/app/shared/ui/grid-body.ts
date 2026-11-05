@@ -16,6 +16,7 @@ import { CopyParts, CopyPart } from './copy-parts';
 import type { AdminColumn } from './admin-list-state';
 import { LoadState } from './data-table';
 import { ErrorReference } from './error-reference';
+import { StateBlock } from './state-block';
 import { StillLoading } from './still-loading';
 import type { ListFilters } from '../filters/list-filters';
 
@@ -41,7 +42,7 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4] as const;
   // An attribute selector on the native <tbody>, so the table keeps its semantics.
   // eslint-disable-next-line @angular-eslint/component-selector
   selector: 'tbody[mfGridBody]',
-  imports: [Button, ErrorReference, CopyParts, StillLoading],
+  imports: [Button, ErrorReference, CopyParts, StateBlock, StillLoading],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[attr.aria-busy]': "state() === 'loading' ? 'true' : null" },
   template: `
@@ -74,18 +75,20 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4] as const;
       @case ('forbidden') {
         <tr class="gb-state">
           <td [attr.colspan]="colCount()" data-forbidden>
-            <div class="gb-alert" role="alert">You don't have access to {{ noun() }}.</div>
+            <mf-state-block [announce]="true" icon="pi-lock"
+              >You don't have access to {{ noun() }}.</mf-state-block
+            >
           </td>
         </tr>
       }
       @case ('error') {
         <tr class="gb-state">
           <td [attr.colspan]="colCount()" data-error>
-            <div class="gb-alert" role="alert">
+            <mf-state-block kind="error">
               Couldn't load {{ noun() }}.
-              <mf-error-reference [reference]="errorRef()" />
-            </div>
-            <p-button label="Retry" severity="secondary" (onClick)="onRetry()" />
+              <mf-error-reference mfStateReason [reference]="errorRef()" />
+              <p-button mfStateAction label="Retry" severity="secondary" (onClick)="onRetry()" />
+            </mf-state-block>
           </td>
         </tr>
       }
@@ -94,30 +97,41 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4] as const;
           <tr class="gb-state">
             <td [attr.colspan]="colCount()" [attr.data-empty]="filtered() ? 'filtered' : 'none'">
               @if (filtered()) {
-                <p>No {{ noun() }} match these filters</p>
-                @if (hidden() > 0) {
-                  <p class="gb-hint" data-hidden-hint>
-                    {{ hidden() }} {{ hiddenLabel() }} hidden
-                    <button
-                      type="button"
-                      class="mf-btn mf-btn--text"
-                      data-show-all
-                      (click)="showAll.emit()"
-                    >
-                      Show all
-                    </button>
-                  </p>
-                }
-                <p-button label="Clear filters" severity="secondary" (onClick)="clear.emit()" />
+                <mf-state-block>
+                  @if (searched(); as text) {
+                    No results for "{{ text }}".
+                  } @else {
+                    No {{ noun() }} match these filters.
+                  }
+                  @if (hidden() > 0) {
+                    <span mfStateReason class="gb-hint" data-hidden-hint>
+                      {{ hidden() }} {{ hiddenLabel() }} hidden
+                      <button
+                        type="button"
+                        class="mf-btn mf-btn--text"
+                        data-show-all
+                        (click)="showAll.emit()"
+                      >
+                        Show All
+                      </button>
+                    </span>
+                  }
+                  <p-button
+                    mfStateAction
+                    label="Clear Filters"
+                    severity="secondary"
+                    (onClick)="clear.emit()"
+                  />
+                </mf-state-block>
               } @else {
-                <p>
+                <mf-state-block>
                   @if (emptyParts(); as parts) {
                     <mf-copy-parts [parts]="parts" />
                   } @else {
                     {{ emptyText() || 'No ' + noun() + ' yet.' }}
                   }
-                </p>
-                <ng-content select="[mfEmptyAction]" />
+                  <span mfStateAction><ng-content select="[mfEmptyAction]" /></span>
+                </mf-state-block>
               }
             </td>
           </tr>
@@ -134,15 +148,8 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4] as const;
       text-align: center;
       background: var(--mf-surface);
     }
-    .gb-state p {
-      margin: 0 0 var(--mf-s2);
-    }
     .gb-hint {
       color: var(--mf-text-muted);
-    }
-    .gb-alert {
-      margin-bottom: var(--mf-s2);
-      color: var(--mf-danger);
     }
     .gb-still td {
       height: auto;
@@ -213,6 +220,14 @@ export class GridBody {
   /** CSS classes of the skeleton cell of each column (the classes the loaded cell has), so a column that is sized by its class keeps its width while loading. */
   readonly skeletonCells = input<readonly string[]>([]);
 
+  /** The text of the list's Search box while it is the only filter on: the empty list then reads `No results for "text".` (D-51). */
+  protected readonly searched = computed(() => {
+    const f = this.filters();
+    if (!f || typeof f.defs !== 'function' || (f.activeCount?.() ?? 0) > 1) return '';
+    const def = f.defs().find((d) => d.search);
+    const value = def ? f.values()[def.key] : undefined;
+    return typeof value === 'string' ? value.trim() : '';
+  });
   protected readonly skeletonRows = SKELETON_ROWS;
   protected readonly colCount = computed(() => this.columnSpec()?.length ?? this.columns());
   protected readonly cellClasses = computed(() => {

@@ -43,7 +43,7 @@ import { TextField } from '../../../shared/ui/text-field';
         {{ error() }} <button type="button" (click)="load()">Try again</button>
       </p>
     } @else if (loaded() && tags().length === 0) {
-      <p class="pg-reason" data-note-tags-empty>No tags yet. Use New Tag.</p>
+      <p class="pg-reason" data-note-tags-empty>No tags yet.</p>
     } @else {
       <mf-grid-frame scrollLabel="Note Tags">
         <table class="pg-table" data-note-tags-table>
@@ -195,7 +195,7 @@ export class NoteTagsPage {
       this.tags.set(await firstValueFrom(this.api.listNoteTags(true)));
       this.error.set('');
     } catch {
-      this.error.set('The tags could not be loaded.');
+      this.error.set("Couldn't load the tags.");
     } finally {
       this.loaded.set(true);
     }
@@ -264,7 +264,7 @@ export class NoteTagsPage {
       );
       await this.load();
     } catch (e) {
-      this.notify.error(this.message(e, 'The tag could not be changed.'));
+      this.notify.error("Couldn't change the tag.", this.reason(e));
       await this.load();
     }
   }
@@ -285,7 +285,7 @@ export class NoteTagsPage {
       await this.load();
     } catch (e) {
       this.confirmDelete.set(false);
-      this.notify.error(this.message(e, 'The tag could not be deleted.'));
+      this.notify.error("Couldn't delete the tag.", this.reason(e));
       await this.load();
     } finally {
       this.busy.set(false);

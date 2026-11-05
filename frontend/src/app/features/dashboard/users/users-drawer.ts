@@ -223,7 +223,7 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
                 @switch (state()) {
                   @case ('loading') {
                     <div class="bones" role="status" aria-busy="true">
-                      <span class="sr-only">Loading open tasks...</span>
+                      <span class="sr-only">Loading open tasks</span>
                       @for (n of bones; track n) {
                         <span class="bone" aria-hidden="true"></span>
                       }
@@ -231,7 +231,7 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
                   }
                   @case ('error') {
                     <div class="alert" role="alert" data-drawer-error>
-                      <span>The open tasks could not be loaded.</span>
+                      <span>Couldn't load the open tasks.</span>
                       <mf-error-reference />
                       <button
                         type="button"

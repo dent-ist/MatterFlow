@@ -17,6 +17,7 @@ import { calendarDayInZone, mfDate } from '../../core/time/time';
 import { CopyParts, CopyPart } from '../ui/copy-parts';
 import { retryWhenBackOnline } from '../../core/http/connectivity';
 import { ErrorReference } from '../ui/error-reference';
+import { StateBlock } from '../ui/state-block';
 import { LoadState } from '../ui/data-table';
 import { MatterRef } from '../ui/matter-ref';
 import { loudPriority, loudStatus } from './quiet-badges';
@@ -58,6 +59,7 @@ export function initialsOf(name: string): string {
     CopyParts,
     DueCell,
     ErrorReference,
+    StateBlock,
     HoldNote,
     MatterRef,
     PriorityFlag,
@@ -73,16 +75,16 @@ export function initialsOf(name: string): string {
     @switch (state()) {
       @case ('error') {
         <div class="tc-state" data-error>
-          <div class="tc-alert" role="alert">
+          <mf-state-block kind="error">
             Couldn't load tasks.
-            <mf-error-reference />
-          </div>
-          <button type="button" class="mf-btn" (click)="retry.emit()">Retry</button>
+            <mf-error-reference mfStateReason />
+            <button mfStateAction type="button" class="mf-btn" (click)="retry.emit()">Retry</button>
+          </mf-state-block>
         </div>
       }
       @default {
         @if (skeleton()) {
-          <p class="mf-sr-only" role="status" aria-busy="true" data-loading>Loading tasks...</p>
+          <p class="mf-sr-only" role="status" aria-busy="true" data-loading>Loading tasks</p>
           <ul class="tc-list" aria-hidden="true">
             @for (n of skeletonCards; track n) {
               <li class="tc tc--sk" data-skeleton>
@@ -95,19 +97,23 @@ export function initialsOf(name: string): string {
         } @else if (empty()) {
           <div class="tc-state" [attr.data-empty]="filtered() ? 'filtered' : 'none'">
             @if (filtered()) {
-              <p>No tasks match these filters</p>
-              <button type="button" class="mf-btn" (click)="clear.emit()">Clear filters</button>
+              <mf-state-block>
+                No tasks match these filters.
+                <button mfStateAction type="button" class="mf-btn" (click)="clear.emit()">
+                  Clear Filters
+                </button>
+              </mf-state-block>
             } @else {
-              <p>
+              <mf-state-block>
                 @if (emptyParts(); as parts) {
                   <mf-copy-parts [parts]="parts" />
                 } @else {
                   {{ emptyText() || 'No tasks yet.' }}
                 }
-              </p>
-              @if (emptyAction(); as tpl) {
-                <ng-container [ngTemplateOutlet]="tpl" />
-              }
+                @if (emptyAction(); as tpl) {
+                  <span mfStateAction><ng-container [ngTemplateOutlet]="tpl" /></span>
+                }
+              </mf-state-block>
             }
           </div>
         } @else {

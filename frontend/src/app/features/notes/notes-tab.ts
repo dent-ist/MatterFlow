@@ -43,6 +43,7 @@ import { NumericDatePipe } from '../../shared/ui/numeric-date';
 import { SearchBox } from '../../shared/ui/search-box';
 import { FormDialog } from '../../shared/ui/form-dialog';
 import { SlidePanel } from '../../shared/ui/slide-panel';
+import { StateBlock } from '../../shared/ui/state-block';
 import { TextField } from '../../shared/ui/text-field';
 import { EmbedContent, NoteEditor, RefInfo, SuggestItem, SuggestKind } from './note-editor';
 import { NoteTagChip } from './note-tag-chip';
@@ -122,6 +123,7 @@ interface RefChip {
     RouterLink,
     SearchBox,
     SlidePanel,
+    StateBlock,
     TextField,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -394,48 +396,41 @@ interface RefChip {
                     }
                   </ul>
                 } @else {
-                  <div class="nt__empty">
-                    <span class="nt__eic"><i class="pi pi-search" aria-hidden="true"></i></span>
-                    <h3>No templates {{ query() ? 'match' : 'yet' }}</h3>
-                    <p>
-                      {{
-                        query()
-                          ? 'Try other words.'
-                          : 'Create one from a note: open it and use More actions, Save as template.'
-                      }}
-                    </p>
-                  </div>
+                  <mf-state-block icon="pi-search">
+                    {{ query() ? 'No results for "' + query() + '".' : 'No templates yet.' }}
+                    @if (!query()) {
+                      <span mfStateReason
+                        >Create one from a note: open it and use More actions, Save as
+                        template.</span
+                      >
+                    }
+                  </mf-state-block>
                 }
               } @else if (totalCount() === 0 && !query() && !filterValues().length) {
-                <div class="nt__empty" data-notes-empty>
-                  <span class="nt__eic"><i class="pi pi-file" aria-hidden="true"></i></span>
-                  <h3>No notes on this matter yet</h3>
-                  <p>
-                    Notes keep what the team knows in one place: decisions, call summaries,
-                    protocols, tables and links. Group them with tags and everyone sees the latest
-                    version.
-                  </p>
+                <mf-state-block icon="pi-file" data-notes-empty>
+                  {{ canEdit() ? 'No notes yet.' : 'No notes.' }}
                   @if (canEdit()) {
-                    <button type="button" class="mf-btn mf-btn--primary" (click)="newNote()">
-                      <i class="pi pi-plus" aria-hidden="true"></i>Add the first note
+                    <button
+                      mfStateAction
+                      type="button"
+                      class="mf-btn mf-btn--primary"
+                      (click)="newNote()"
+                    >
+                      <i class="pi pi-plus" aria-hidden="true"></i>New Note
                     </button>
-                  } @else {
-                    No notes.
                   }
-                </div>
+                </mf-state-block>
               } @else if (items().length === 0) {
-                <div class="nt__empty" data-notes-nomatch>
-                  <span class="nt__eic"><i class="pi pi-search" aria-hidden="true"></i></span>
-                  <h3>No notes match</h3>
-                  <p>
-                    Nothing matches
-                    {{ query() ? '“' + query() + '”' : 'the chosen tags' }}. Try other words or
-                    remove a filter.
-                  </p>
-                  <button type="button" class="mf-btn" (click)="clearFilters()">
-                    Clear search and filters
+                <mf-state-block icon="pi-search" data-notes-nomatch>
+                  @if (query() && !filterValues().length) {
+                    No results for "{{ query() }}".
+                  } @else {
+                    No notes match these filters.
+                  }
+                  <button mfStateAction type="button" class="mf-btn" (click)="clearFilters()">
+                    Clear Filters
                   </button>
-                </div>
+                </mf-state-block>
               } @else if (view() === 'tag') {
                 @for (g of groups(); track g.id) {
                   <section
@@ -661,7 +656,7 @@ interface RefChip {
                         (notice)="notify.info($event)"
                       />
                     } @placeholder {
-                      <p class="nt__byline" role="status">Loading the editor...</p>
+                      <p class="nt__byline" role="status">Loading editor</p>
                     }
                   </div>
                 </div>
@@ -1013,7 +1008,7 @@ interface RefChip {
                         (ready)="onEditorReady()"
                       />
                     } @placeholder {
-                      <p class="nt__byline" role="status">Loading the editor...</p>
+                      <p class="nt__byline" role="status">Loading editor</p>
                     }
                   </div>
                 } @else if (note(); as n) {
@@ -1090,7 +1085,7 @@ interface RefChip {
                           (refOpen)="openRef($event)"
                         />
                       } @placeholder {
-                        <p class="nt__byline" role="status">Loading the note...</p>
+                        <p class="nt__byline" role="status">Loading note</p>
                       }
                     </div>
                   </div>
@@ -2524,7 +2519,7 @@ export class NotesTab {
         void this.openNow(wanted, true);
       }
     } catch {
-      this.listError.set('The notes could not be loaded.');
+      this.listError.set("Couldn't load the notes.");
     } finally {
       this.loaded.set(true);
     }
@@ -2563,9 +2558,8 @@ export class NotesTab {
       if (focusTitle || this.stacked()) this.focusTitle();
     } catch (e) {
       this.notify.error(
-        e instanceof ApiError && e.status === 404
-          ? 'That note is no longer available.'
-          : 'The note could not be loaded.',
+        "Couldn't load the note.",
+        e instanceof ApiError && e.status === 404 ? 'It is no longer available.' : undefined,
       );
       void this.loadList();
     }
@@ -2991,7 +2985,7 @@ export class NotesTab {
       );
     } catch (e) {
       this.confirmDelete.set(false);
-      this.notify.error(e instanceof ApiError ? e.message : 'The note could not be deleted.');
+      this.notify.error("Couldn't delete the note.", e instanceof ApiError ? e.message : undefined);
     } finally {
       this.busy.set(false);
     }
@@ -3107,7 +3101,7 @@ export class NotesTab {
       );
     } catch {
       this.templates.set([]);
-      this.notify.error('The templates could not be loaded.');
+      this.notify.error("Couldn't load the templates.");
     }
   }
 
@@ -3231,7 +3225,10 @@ export class NotesTab {
       await this.loadTemplates();
     } catch (e) {
       this.confirmDeleteTpl.set(false);
-      this.notify.error(e instanceof ApiError ? e.message : 'The template could not be deleted.');
+      this.notify.error(
+        "Couldn't delete the template.",
+        e instanceof ApiError ? e.message : undefined,
+      );
     }
   }
 

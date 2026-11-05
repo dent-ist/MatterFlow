@@ -115,14 +115,14 @@ describe('mf-record-state', () => {
     const crumbs = () =>
       Array.from(el.querySelectorAll('nav li')).map((li) => li.textContent!.trim());
     expect(crumbs()).toEqual(['Administration', 'Asset Types', 'Asset type']);
-    expect(el.querySelector('h1')!.textContent).toBe("We couldn't find that asset type.");
+    expect(el.querySelector('h1')!.textContent?.trim()).toBe("We couldn't find that asset type.");
     expect(el.querySelector('[data-back-link]')!.getAttribute('href')).toBe('/admin/asset-types');
     expect(el.querySelector('[data-back-link]')!.textContent).toContain('Go to Asset Types');
 
     host.kind.set('customField');
     await settle();
     expect(crumbs()).toEqual(['Administration', 'Custom Fields', 'Object']);
-    expect(el.querySelector('h1')!.textContent).toBe("We couldn't find that object.");
+    expect(el.querySelector('h1')!.textContent?.trim()).toBe("We couldn't find that object.");
     expect(el.querySelector('[data-back-link]')!.getAttribute('href')).toBe('/admin/custom-fields');
     expect(el.textContent).not.toContain('99999');
   });

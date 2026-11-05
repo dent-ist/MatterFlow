@@ -247,7 +247,9 @@ export class CalendarDialog {
           'This calendar was changed by someone else. Close this window and open it again.',
         );
       else
-        this.error.set(err instanceof ApiError ? err.message : 'Something went wrong. Try again.');
+        this.error.set(
+          err instanceof ApiError ? err.message : "Couldn't save the calendar. Try again.",
+        );
     } finally {
       this.busy.set(false);
     }

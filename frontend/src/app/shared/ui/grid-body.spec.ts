@@ -174,7 +174,7 @@ describe('GridBody', () => {
     expect(cell.textContent).toContain('No clients match these filters');
     expect(cell.textContent).not.toContain('New client');
     Array.from(cell.querySelectorAll('button'))
-      .find((b) => b.textContent?.includes('Clear filters'))!
+      .find((b) => b.textContent?.includes('Clear Filters'))!
       .click();
     expect(f.componentInstance.cleared).toBe(1);
   });

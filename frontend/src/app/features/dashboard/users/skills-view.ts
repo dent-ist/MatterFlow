@@ -106,7 +106,7 @@ type SkillsState = 'loading' | 'ready' | 'error';
       @case ('error') {
         <mf-dash-state
           variant="error"
-          message="The skills matrix could not be loaded."
+          message="Couldn't load the skills matrix."
           (retry)="load()"
         />
       }

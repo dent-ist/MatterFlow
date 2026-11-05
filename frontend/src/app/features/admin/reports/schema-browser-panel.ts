@@ -287,7 +287,7 @@ export class SchemaBrowserPanel implements OnDestroy {
       this.failure.set(
         e instanceof ApiError && e.status === 503
           ? 'Reports are not available right now.'
-          : 'The schema could not be loaded.',
+          : "Couldn't load the schema.",
       );
     } finally {
       if (id === this.requestId) this.loading.set(false);

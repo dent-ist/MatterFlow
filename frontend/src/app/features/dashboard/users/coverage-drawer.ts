@@ -96,7 +96,7 @@ export function targetQueueParams(t: CoverageTarget): Record<string, string | st
           @switch (state()) {
             @case ('loading') {
               <div class="bones" role="status" aria-busy="true">
-                <span class="sr-only">Loading completed tasks...</span>
+                <span class="sr-only">Loading completed tasks</span>
                 @for (n of bones; track n) {
                   <span class="bone" aria-hidden="true"></span>
                 }
@@ -104,7 +104,7 @@ export function targetQueueParams(t: CoverageTarget): Record<string, string | st
             }
             @case ('error') {
               <div class="alert" role="alert" data-coverage-error>
-                <span>The completed tasks could not be loaded.</span>
+                <span>Couldn't load the completed tasks.</span>
                 <mf-error-reference />
                 <button type="button" class="mf-btn" data-coverage-retry (click)="load()">
                   Retry

@@ -50,7 +50,7 @@ import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
           </button>
         </p>
       } @else if (!failure()) {
-        <p data-loading>Loading...</p>
+        <p data-loading>Loading report state</p>
       }
     </section>
   `,
@@ -118,7 +118,7 @@ export class ReportsHealthTab {
         s.enabled ? 'Reports are ready.' : `Reports are not ready: ${s.message}`,
       );
     } catch (e) {
-      this.failure.set(e instanceof ApiError ? e.message : 'The state could not be read.');
+      this.failure.set(e instanceof ApiError ? e.message : "Couldn't read the state.");
     } finally {
       this.busy.set(false);
     }

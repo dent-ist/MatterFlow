@@ -83,7 +83,7 @@ type BatteryState = 'loading' | 'ready' | 'error';
         }
         @case ('error') {
           <div class="msg" role="alert" data-battery-error>
-            <b>Team capacity could not be loaded.</b>
+            <b>Couldn't load team capacity.</b>
             <button type="button" class="mf-btn" data-battery-retry (click)="load(true)">
               Retry
             </button>
@@ -94,7 +94,7 @@ type BatteryState = 'loading' | 'ready' | 'error';
             @if (stale()) {
               <p class="stale" data-battery-stale>
                 <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-                Could not refresh. Showing the last figures.
+                Couldn't refresh. Showing earlier data.
                 <button type="button" class="mf-btn mf-btn--text" (click)="load(true)">
                   Retry
                 </button>

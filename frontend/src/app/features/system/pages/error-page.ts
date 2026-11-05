@@ -19,7 +19,7 @@ import { StatePage } from '../../../shared/ui/state-page';
     <main class="mf-error">
       <mf-state-page
         icon="pi pi-exclamation-triangle"
-        heading="Something went wrong. Try again."
+        heading="Couldn't load your account."
         [reason]="reason()"
       >
         <mf-error-reference />

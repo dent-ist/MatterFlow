@@ -484,7 +484,7 @@ describe('AssetTypeRecordPage', () => {
         published(),
         apiError(500, { title: 'Error', status: 500 }),
       );
-      expect(q('h1').textContent).toBe("Couldn't load this asset type.");
+      expect(q('h1').textContent?.trim()).toBe("Couldn't load this asset type.");
       expect(q('[data-retry]')).not.toBeNull();
     });
   });

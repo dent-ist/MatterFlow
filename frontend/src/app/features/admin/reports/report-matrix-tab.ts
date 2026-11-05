@@ -70,7 +70,7 @@ import {
         </div>
       }
     } @else if (!failure()) {
-      <p data-loading>Loading...</p>
+      <p data-loading>Loading overview</p>
     }
   `,
   styles: `
@@ -114,7 +114,7 @@ export class ReportMatrixTab {
   constructor() {
     firstValueFrom(this.api.getReportAssignmentMatrix()).then(
       (m) => this.matrix.set(m),
-      () => this.failure.set('The overview could not be loaded.'),
+      () => this.failure.set("Couldn't load the overview."),
     );
   }
 

@@ -431,7 +431,7 @@ export class AbsenceDialog {
 
   private onError(err: unknown): void {
     if (!(err instanceof ApiError)) {
-      this.generalError.set('Something went wrong. Try again.');
+      this.generalError.set("Couldn't save the out of office entry. Try again.");
       return;
     }
     const other = err.status === 409 ? overlapOf(err) : null;
@@ -464,7 +464,7 @@ export class AbsenceDialog {
         this.generalError.set('A past entry cannot be changed.');
         break;
       default:
-        this.generalError.set(err.message || 'Something went wrong. Try again.');
+        this.generalError.set(err.message || "Couldn't save the out of office entry. Try again.");
     }
   }
 }

@@ -293,7 +293,7 @@ describe('UserPodsCell', () => {
       expect(q('[role="dialog"]').textContent).toContain('Loading');
       fixture.componentRef.setInput('catalogFailed', true);
       await settle();
-      expect(q('[data-pods-failed]').textContent).toContain('could not be loaded');
+      expect(q('[data-pods-failed]').textContent).toContain("Couldn't load pods");
     });
 
     it('does not open while a save runs', async () => {

@@ -116,7 +116,7 @@ export function brandingOf(view: BrandingAdminView): Branding {
       } @else if (tab() === 'holidays') {
         <mf-holidays-admin />
       } @else if (state() === 'loading') {
-        <div class="pg-state" role="status" aria-busy="true">Loading...</div>
+        <div class="pg-state" role="status" aria-busy="true">Loading settings</div>
       } @else if (state() === 'error') {
         <div class="pg-alert" role="alert" data-load-error>
           We couldn't load the settings.

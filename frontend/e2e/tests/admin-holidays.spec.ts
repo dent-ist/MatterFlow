@@ -119,17 +119,13 @@ test.describe('Settings > Holidays', () => {
     await expect(box).toBeChecked();
     await box.uncheck();
     await form.locator('p-button[data-capacity-save] button').click();
-    await expect(
-      page.getByText('Saved. The capacity battery uses the new rule').first(),
-    ).toBeVisible();
+    await expect(page.getByText('Capacity setting saved').first()).toBeVisible();
     await page.reload();
     await page.getByRole('tab', { name: 'Dashboard' }).click();
     await expect(box).not.toBeChecked();
     await box.check();
     await form.locator('p-button[data-capacity-save] button').click();
-    await expect(
-      page.getByText('Saved. The capacity battery uses the new rule').first(),
-    ).toBeVisible();
+    await expect(page.getByText('Capacity setting saved').first()).toBeVisible();
     await expect(box).toBeChecked();
   });
 

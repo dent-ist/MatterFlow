@@ -184,7 +184,7 @@ describe('TaskComments', () => {
     await new Promise((r) => setTimeout(r, 400));
     await settle(fixture);
     expect(el().querySelectorAll('[data-comment-id]').length).toBe(0);
-    expect(q('[data-no-match]').textContent).toContain('No comments match');
+    expect(q('[data-no-match]').textContent).toContain('No results for');
 
     el().querySelector<HTMLButtonElement>('[data-no-match] button')!.click();
     await settle(fixture);
@@ -437,7 +437,7 @@ describe('TaskComments', () => {
     await create();
     api.listTaskComments.mockReturnValue(apiError(500, { status: 500, title: 'x' }));
     await reloadFromServer();
-    expect(q('[data-load-error]').textContent).toContain('Something went wrong. Try again.');
+    expect(q('[data-load-error]').textContent).toContain("Couldn't load comments.");
 
     api.listTaskComments.mockReturnValue(ok({ items: [aComment()], total: 1 }));
     q<HTMLButtonElement>('[data-load-error] button').click();

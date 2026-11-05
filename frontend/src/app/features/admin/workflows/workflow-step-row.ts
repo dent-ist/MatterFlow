@@ -151,7 +151,7 @@ export function ruleBadge(row: Pick<PlacementRow, 'isSkippable' | 'skipCommentRe
         }
         @switch (p.state) {
           @case ('loading') {
-            <p role="status">Loading inputs...</p>
+            <p role="status">Loading inputs</p>
           }
           @case ('error') {
             <p role="alert">We couldn't load the inputs for this step.</p>

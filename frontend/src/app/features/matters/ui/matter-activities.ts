@@ -18,6 +18,7 @@ import { GridFrame } from '../../../shared/ui/grid-frame';
 import { friendlyText } from '../../../shared/ui/audit-format';
 import { auditObjectLink, auditObjectText } from '../../admin/audit/audit-links';
 import { stampText } from '../../admin/audit/audit-rows';
+import { StateBlock } from '../../../shared/ui/state-block';
 
 /**
  * The Kind dropdown of the Activities tab: a word for the audit object types that belong together. The choice is sent to the server as the object type filter, so paging
@@ -49,7 +50,7 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
  */
 @Component({
   selector: 'mf-matter-activities',
-  imports: [GridFrame, Dropdown, RouterLink],
+  imports: [StateBlock, GridFrame, Dropdown, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   styleUrl: '../../../shared/ui/page.scss',
@@ -114,14 +115,17 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
       </div>
       @switch (state()) {
         @case ('loading') {
-          <p class="ma__muted" role="status" aria-busy="true">Loading activities...</p>
+          <p class="ma__muted" role="status" aria-busy="true">Loading activities</p>
         }
         @case ('error') {
-          <p class="ma__muted" role="alert" data-error>We couldn't load the activities.</p>
+          <mf-state-block kind="error" data-error>
+            Couldn't load activities.
+            <button mfStateAction type="button" class="mf-btn" (click)="fetch(true)">Retry</button>
+          </mf-state-block>
         }
         @default {
           @if (items().length === 0) {
-            <p class="ma__muted" data-empty>No activity recorded yet.</p>
+            <mf-state-block data-empty>No activity yet.</mf-state-block>
           } @else {
             <table class="pg-table tt" data-activities>
               <caption class="mf-sr-only">

@@ -679,8 +679,8 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     const w = await world(seed);
     await open(page, w.matter.matterId);
     const empty = page.locator('[data-notes-empty]');
-    await expect(empty).toContainText('No notes on this matter yet');
-    await expect(empty.getByRole('button', { name: 'Add the first note' })).toBeVisible();
+    await expect(empty).toContainText('No notes yet.');
+    await expect(empty.getByRole('button', { name: 'New Note' })).toBeVisible();
     // one plain button: no caret, no dropdown, no From template picker
     await expect(page.locator('[data-new-menu]')).toHaveCount(0);
     await page.locator('[data-new-note]').click();

@@ -90,7 +90,7 @@ const PAGE = 50;
             } @empty {
               <tr>
                 <td colspan="8" data-empty>
-                  {{ loading() ? 'Loading the run log...' : 'No runs yet.' }}
+                  {{ loading() ? 'Loading run log' : 'No runs yet.' }}
                 </td>
               </tr>
             }
@@ -206,7 +206,7 @@ export class ReportRunsTab {
       this.failure.set(
         e instanceof ApiError && e.status === 403
           ? 'You may not see the run log.'
-          : 'The run log could not be loaded.',
+          : "Couldn't load the run log.",
       );
     } finally {
       this.loading.set(false);

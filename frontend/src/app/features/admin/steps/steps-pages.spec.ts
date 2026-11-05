@@ -169,7 +169,7 @@ describe('StepsListPage', () => {
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector('[data-empty="none"]')).not.toBeNull();
     // The one way to add is the page header's New step button: the empty state says so and has no second button (#370).
-    expect(el.querySelector('[data-empty="none"]')!.textContent).toContain('New step');
+    expect(el.querySelector('[data-empty="none"]')!.textContent).toContain('No steps yet.');
     expect(el.querySelector('[data-empty="none"] button, [data-empty="none"] a')).toBeNull();
   });
 
@@ -894,7 +894,7 @@ describe('StepsListPage tags', () => {
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector('td[data-empty="filtered"]')).not.toBeNull();
     expect(el.querySelector('thead th')).not.toBeNull(); // the headers stay
-    buttonByLabel(el, 'Clear filters')!.click();
+    buttonByLabel(el, 'Clear Filters')!.click();
     await settle(fixture);
     expect(navigate).toHaveBeenCalled();
     expect(navigate.mock.lastCall?.[1]).toMatchObject({

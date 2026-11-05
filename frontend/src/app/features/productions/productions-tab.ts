@@ -45,6 +45,7 @@ import {
   parseCount,
   partyLabel,
 } from './production-ui';
+import { StateBlock } from '../../shared/ui/state-block';
 
 type View = 'productions' | 'specs';
 type Panel = 'none' | 'production' | 'production-form' | 'spec' | 'spec-form';
@@ -129,6 +130,7 @@ const emptySpec = (): SpecDraft => ({
 @Component({
   selector: 'mf-productions-tab',
   imports: [
+    StateBlock,
     Button,
     ConfirmDialog,
     GridFrame,
@@ -342,9 +344,11 @@ const emptySpec = (): SpecDraft => ({
         </p>
       } @else if (view() === 'productions') {
         @if (loaded() && productions().length === 0) {
-          <p class="pg-reason" data-productions-empty>
-            {{ query() || direction() ? 'No productions match.' : 'No productions yet.' }}
-          </p>
+          <mf-state-block data-productions-empty>
+            {{
+              query() || direction() ? 'No productions match these filters.' : 'No productions yet.'
+            }}
+          </mf-state-block>
         } @else {
           <mf-grid-frame scrollLabel="Productions" [resetKey]="page()">
             <table class="pg-table" data-productions-table>
@@ -416,13 +420,12 @@ const emptySpec = (): SpecDraft => ({
         />
       } @else {
         @if (loaded() && specs().length === 0) {
-          <p class="pg-reason" data-specs-empty>
-            {{
-              query() || specStatus()
-                ? 'No specs match.'
-                : 'No specs yet. A spec is the agreed format of the productions.'
-            }}
-          </p>
+          <mf-state-block data-specs-empty>
+            {{ query() || specStatus() ? 'No specs match these filters.' : 'No specs yet.' }}
+            @if (!query() && !specStatus()) {
+              <span mfStateReason>A spec is the agreed format of the productions.</span>
+            }
+          </mf-state-block>
         } @else {
           <mf-grid-frame scrollLabel="Production specs" [resetKey]="page()">
             <table class="pg-table" data-specs-table>
@@ -1202,7 +1205,7 @@ export class ProductionsTab {
       }
       this.error.set('');
     } catch {
-      this.error.set('The list could not be loaded.');
+      this.error.set("Couldn't load the list.");
     } finally {
       this.loaded.set(true);
     }
@@ -1240,7 +1243,7 @@ export class ProductionsTab {
       this.comments.set(comments);
       this.history.set(history.items);
     } catch (e) {
-      this.fail(e, 'The production could not be loaded.');
+      this.fail(e, "Couldn't load the production.");
     }
   }
 
@@ -1385,7 +1388,7 @@ export class ProductionsTab {
       await Promise.all([this.load(), this.loadTotals(this.matterId())]);
     } catch (e) {
       this.confirmDelete.set(false);
-      this.fail(e, 'The production could not be deleted.');
+      this.fail(e, "Couldn't delete the production.");
     } finally {
       this.busy.set(false);
     }
@@ -1401,7 +1404,7 @@ export class ProductionsTab {
       this.newComment.set('');
       await Promise.all([this.refreshProduction(p.productionId), this.load()]);
     } catch (e) {
-      this.fail(e, 'The comment could not be added.');
+      this.fail(e, "Couldn't add the comment.");
     }
   }
 
@@ -1423,7 +1426,7 @@ export class ProductionsTab {
       this.editingComment.set(null);
       await this.refreshProduction(c.productionId);
     } catch (e) {
-      this.fail(e, 'The comment could not be saved.');
+      this.fail(e, "Couldn't save the comment.");
     }
   }
 
@@ -1434,7 +1437,7 @@ export class ProductionsTab {
       );
       await Promise.all([this.refreshProduction(c.productionId), this.load()]);
     } catch (e) {
-      this.fail(e, 'The comment could not be deleted.');
+      this.fail(e, "Couldn't delete the comment.");
     }
   }
 
@@ -1456,7 +1459,7 @@ export class ProductionsTab {
       this.currentSpec.set(fresh);
       this.history.set(history.items);
     } catch (e) {
-      this.fail(e, 'The spec could not be loaded.');
+      this.fail(e, "Couldn't load the spec.");
     }
   }
 
@@ -1613,7 +1616,7 @@ export class ProductionsTab {
       ]);
     } catch (e) {
       this.confirmRetire.set(false);
-      this.fail(e, 'The spec could not be changed.');
+      this.fail(e, "Couldn't change the spec.");
     } finally {
       this.busy.set(false);
     }

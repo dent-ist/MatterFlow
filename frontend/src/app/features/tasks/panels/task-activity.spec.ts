@@ -135,7 +135,7 @@ describe('TaskActivity', () => {
     q<HTMLButtonElement>('[data-filter=ALL]').click();
     fixture.componentRef.setInput('refresh', 2);
     await settle(fixture);
-    expect(q('[data-load-error]').textContent).toContain('Something went wrong. Try again.');
+    expect(q('[data-load-error]').textContent).toContain("Couldn't load activity.");
 
     api.getTaskActivity.mockReturnValue(
       ok({ items: [first], nextCursor: undefined, canViewChanges: true }),
@@ -147,7 +147,7 @@ describe('TaskActivity', () => {
 
   it('shows the empty state', async () => {
     await create({ items: [], nextCursor: undefined, canViewChanges: false });
-    expect(q('[data-empty]').textContent).toContain('No activity recorded yet.');
+    expect(q('[data-empty]').textContent).toContain('No activity yet.');
   });
 
   it('shows dates as Oct 15, 2026 in the sentence and in View changes (BUG-5)', async () => {

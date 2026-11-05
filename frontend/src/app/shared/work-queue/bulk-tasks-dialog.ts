@@ -108,7 +108,7 @@ export function bulkWarning(code: string): string {
     <mf-form-dialog
       [title]="title()"
       [primaryLabel]="confirmLabel()"
-      busyLabel="Working..."
+      busyLabel="Saving..."
       [secondaryLabel]="phase() === 'result' ? 'Close' : 'Cancel'"
       [showPrimary]="phase() === 'form'"
       [busy]="busy()"

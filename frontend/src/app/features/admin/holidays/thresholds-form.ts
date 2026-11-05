@@ -44,7 +44,7 @@ export function validateThresholds(
         available. These limits decide where Good ends and Watch, Low and Critical begin.
       </p>
       @if (state() === 'loading') {
-        <p role="status" aria-busy="true" class="th__m">Loading...</p>
+        <p role="status" aria-busy="true" class="th__m">Loading calendar coverage</p>
       } @else if (state() === 'error') {
         <p class="th__e" role="alert" data-th-load-error>
           We could not load the thresholds.
@@ -336,7 +336,7 @@ export class CalendarThresholdsForm implements OnInit {
         await this.load();
       } else
         this.serverError.set(
-          err instanceof ApiError ? err.message : 'Something went wrong. Try again.',
+          err instanceof ApiError ? err.message : "Couldn't save the calendar coverage. Try again.",
         );
     } finally {
       this.busy.set(false);

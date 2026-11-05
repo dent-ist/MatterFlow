@@ -134,7 +134,7 @@ function dueKey(t: AssetTaskLink): number | null {
       @switch (state()) {
         @case ('loading') {
           <div class="pg-state" role="status" aria-busy="true" data-loading>
-            Loading linked tasks...
+            Loading linked tasks
           </div>
         }
         @case ('error') {

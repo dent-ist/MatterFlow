@@ -198,7 +198,7 @@ export function assignHint(
             @switch (state()) {
               @case ('loading') {
                 <div class="bones" role="status" aria-busy="true">
-                  <span class="sr-only">Loading unassigned tasks...</span>
+                  <span class="sr-only">Loading unassigned tasks</span>
                   @for (n of bones; track n) {
                     <span class="bone" aria-hidden="true"></span>
                   }
@@ -206,7 +206,7 @@ export function assignHint(
               }
               @case ('error') {
                 <div class="alert" role="alert" data-assign-error>
-                  <span>The unassigned tasks could not be loaded.</span>
+                  <span>Couldn't load the unassigned tasks.</span>
                   <mf-error-reference />
                   <button
                     type="button"
@@ -718,7 +718,8 @@ export class UsersAssign {
       this.load();
       if (failed.length > 0) {
         this.notify.error(
-          `${plural(failed.length, 'task')} could not be assigned: ${failed.map((f) => numberOf(f.taskId)).join(', ')}.`,
+          `Couldn't assign ${plural(failed.length, 'task')}.`,
+          `${failed.map((f) => numberOf(f.taskId)).join(', ')}.`,
         );
       }
       afterNextRender(

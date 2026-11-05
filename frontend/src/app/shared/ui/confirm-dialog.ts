@@ -76,7 +76,7 @@ import { ScrollRegion } from './scroll-region';
         <div class="mf-confirm__body" data-confirm-body [mfScrollRegion]="scrollLabel()">
           <ng-content />
         </div>
-        <span class="mf-confirm__sr" role="status">{{ busy() ? 'Working...' : '' }}</span>
+        <span class="mf-confirm__sr" role="status">{{ busy() ? 'Saving...' : '' }}</span>
       </div>
       <ng-template #footer>
         <div class="mf-dlg__foot">

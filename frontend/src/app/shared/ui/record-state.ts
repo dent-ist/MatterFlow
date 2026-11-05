@@ -11,7 +11,6 @@ import {
   signal,
 } from '@angular/core';
 import { Button } from 'primeng/button';
-import { RouterLink } from '@angular/router';
 import { AuthStore } from '../../core/auth/auth.store';
 import { LandingLink, landingLink } from '../../core/auth/guards';
 import { Permission } from '../../core/auth/permissions';
@@ -20,6 +19,8 @@ import { retryWhenBackOnline } from '../../core/http/connectivity';
 import { QuietRequests } from '../../core/http/interceptors';
 import { ErrorReference } from './error-reference';
 import { Crumb, PageHeader } from './page-header';
+import { StateBlock } from './state-block';
+import { StatePage } from './state-page';
 
 /** The record pages that share these states. */
 export type RecordKind =
@@ -294,63 +295,59 @@ export class RecordLoadFlow {
  */
 @Component({
   selector: 'mf-record-state',
-  imports: [PageHeader, RouterLink, Button, ErrorReference],
+  imports: [PageHeader, Button, ErrorReference, StateBlock, StatePage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <mf-page-header
-      [crumbs]="crumbs()"
-      [heading]="kind() === 'profile' ? 'My Profile' : text()"
-      [description]="kind() === 'profile' ? text() : ''"
-      [icon]="kind() === 'profile' ? null : ''"
-    />
-    <div class="rs" [attr.data-record-state]="failure()">
-      @if (failure() === 'error') {
-        <div class="rs__alert" role="alert" data-record-error>
-          Something went wrong. Try again.
-          <mf-error-reference />
-        </div>
-        <div class="rs__act">
-          <p-button
-            label="Retry"
-            severity="secondary"
-            data-retry
-            [attr.aria-busy]="busy() ? 'true' : null"
-            (onClick)="retry()"
-          />
-          @if (busy()) {
-            <span class="rs__busy" aria-hidden="true">Retrying...</span>
-          }
-        </div>
-      } @else {
-        @if (back(); as b) {
-          <a class="rs__link" [routerLink]="b.path" data-back-link>Go to {{ b.name }}</a>
-        }
-      }
-    </div>
+    @if (failure() === 'error') {
+      <mf-page-header
+        [crumbs]="crumbs()"
+        [heading]="kind() === 'profile' ? 'My Profile' : text()"
+        [description]="kind() === 'profile' ? text() : ''"
+        [icon]="kind() === 'profile' ? null : ''"
+      />
+      <div class="rs" [attr.data-record-state]="failure()">
+        <!-- The sentence ("Couldn't load this task.") is the page title above; the block adds the icon, the reference and Retry. -->
+        <mf-state-block kind="error" data-record-error>
+          <mf-error-reference mfStateReason />
+          <span mfStateAction class="rs__act">
+            <p-button
+              label="Retry"
+              severity="secondary"
+              data-retry
+              [attr.aria-busy]="busy() ? 'true' : null"
+              (onClick)="retry()"
+            />
+            @if (busy()) {
+              <span class="rs__busy" aria-hidden="true">Retrying...</span>
+            }
+          </span>
+        </mf-state-block>
+      </div>
+    } @else {
+      <!-- A missing record or no access (D-47, D-53): the same state-page card as the 403 and 404 pages, inside the shell, the breadcrumb above it
+           and one "Go to <List>" button. -->
+      <mf-page-header [crumbs]="crumbs()" [crumbsOnly]="true" />
+      <div class="rs" [attr.data-record-state]="failure()">
+        <mf-state-page
+          icon="pi pi-search"
+          [heading]="text()"
+          [primary]="back()"
+          [showBrand]="false"
+          [focusOnArrival]="false"
+        />
+      </div>
+    }
   `,
   styles: `
-    .rs {
-      max-width: 40rem;
-    }
-    .rs__alert {
-      margin-bottom: var(--mf-s3);
-      padding: var(--mf-s3) var(--mf-s4);
-      border: 1px solid var(--mf-danger);
-      border-radius: var(--mf-radius);
-      background: var(--mf-danger-bg);
-      color: var(--mf-danger);
-    }
     .rs__act {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
+      justify-content: center;
       gap: var(--mf-s3);
     }
     .rs__busy {
       color: var(--mf-text-muted);
-    }
-    .rs__link {
-      color: var(--mf-link);
     }
   `,
 })
@@ -389,6 +386,7 @@ export class RecordState {
     return s === 'notFound' || s === 'forbidden' ? s : 'error';
   });
   protected readonly text = computed(() => recordStateText(this.kind(), this.failure()));
+
   protected readonly crumbs = computed<Crumb[]>(() => {
     const info = this.info();
     const id = this.recordId();

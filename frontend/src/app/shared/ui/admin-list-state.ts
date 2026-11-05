@@ -5,7 +5,7 @@ import type { LoadState } from './data-table';
 /**
  * What an admin list shows in its body (#575). The grid body and the phone cards draw the same six views, so a page never decides them twice:
  *
- *  - `loading`   five skeleton rows of the page's real columns and one polite "Loading ..."
+ *  - `loading`   five skeleton rows of the page's real columns and one polite "Loading "
  *  - `forbidden` "You don't have access to ..." (a 403 on the list's own request; no Retry)
  *  - `error`     "Couldn't load ..." with the error reference and Retry
  *  - `empty`     the first-run text; the New action lives in the page header only (no second button in the body)

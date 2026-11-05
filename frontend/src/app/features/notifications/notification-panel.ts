@@ -155,7 +155,7 @@ const GAP = 4;
             }
           }
           @default {
-            <p class="np__note np__muted" data-panel-loading>Loading notifications...</p>
+            <p class="np__note np__muted" data-panel-loading>Loading notifications</p>
           }
         }
       </div>

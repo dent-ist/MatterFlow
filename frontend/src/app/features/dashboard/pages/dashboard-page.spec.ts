@@ -1218,7 +1218,7 @@ describe('DashboardPage', () => {
     el.querySelector<HTMLButtonElement>('[data-refresh]')!.click();
     await settle();
     expect(el.querySelector('[data-dash-state="stale"]')!.textContent).toContain(
-      'Could not refresh.',
+      "Couldn't refresh.",
     );
     expect(el.querySelector('[data-dash-state="error"]')).toBeNull();
     expect(el.querySelector('[data-dash-cards]')).not.toBeNull();
@@ -1287,7 +1287,7 @@ describe('DashboardPage', () => {
   it('shows an error with Retry that loads again', async () => {
     const el = await open(throwError(() => new Error('boom')));
     expect(el.querySelector('[data-dash-state="error"]')!.textContent).toContain(
-      'The dashboard could not be loaded.',
+      "Couldn't load the dashboard.",
     );
 
     getDashboard.mockReturnValue(of(summary()));
@@ -1321,7 +1321,7 @@ describe('DashboardPage', () => {
       expect(el.querySelectorAll('[role="alert"]').length).toBe(1);
       expect(tabRow(el)).not.toBeNull();
       expect(el.querySelector('mf-dash-tabs [data-refresh]')).not.toBeNull();
-      expect(text(panel)).toContain('The dashboard could not be loaded.');
+      expect(text(panel)).toContain("Couldn't load the dashboard.");
       // The other tabs are one click away and keep their own panels.
       getDashboard.mockReturnValue(of(summary()));
       el.querySelector<HTMLButtonElement>('[data-dash-state="error"] [data-dash-retry]')!.click();

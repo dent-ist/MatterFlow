@@ -917,7 +917,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       expect(el().querySelector('thead tr:first-child th')).not.toBeNull();
       expect(filterRow()).not.toBeNull();
       const empty = el().querySelector('[data-empty=filtered]')!;
-      expect(empty.textContent).toContain('No assets match these filters');
+      expect(empty.textContent).toContain('No results for "zzzz"');
       empty.querySelector('button')!.click();
       expect(navigate).toHaveBeenLastCalledWith(
         [],

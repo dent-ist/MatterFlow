@@ -292,7 +292,7 @@ describe('ClientsListPage', () => {
     expect(el.querySelector('[data-filter-row]')).not.toBeNull(); // opened by the filter in the address
     expect(
       el.querySelector('[data-empty=filtered]') &&
-        buttonByLabel(el.querySelector('[data-empty=filtered]')!, 'Clear filters'),
+        buttonByLabel(el.querySelector('[data-empty=filtered]')!, 'Clear Filters'),
     ).toBeDefined();
   });
 

@@ -53,7 +53,7 @@ type HistoryState = 'loading' | 'ready' | 'error' | 'missing';
       }
       @case ('error') {
         <div class="alert" role="alert" data-history-error>
-          <span>The history could not be loaded.</span>
+          <span>Couldn't load the history.</span>
           <button type="button" class="mf-btn" data-history-retry (click)="load()">Retry</button>
         </div>
       }

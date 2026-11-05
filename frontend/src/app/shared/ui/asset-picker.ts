@@ -89,7 +89,7 @@ const toChoice = (a: AssetLookupItem): Choice => ({
         }
       </div>
     } @else if (value() && !loadFailed()) {
-      <span class="ap__muted" role="status">Loading asset...</span>
+      <span class="ap__muted" role="status">Loading asset</span>
     } @else {
       <div class="ap__box">
         <input
@@ -312,7 +312,7 @@ export class AssetPicker implements OnDestroy {
 
   protected readOnlyFallback(): string {
     if (!this.value()) return 'Not provided';
-    return this.loadFailed() ? `Asset ${this.value()} (not available)` : 'Loading asset...';
+    return this.loadFailed() ? `Asset ${this.value()} (not available)` : 'Loading asset';
   }
 
   protected openAsset(event: MouseEvent, id: number): void {

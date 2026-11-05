@@ -352,7 +352,7 @@ export class TaskHeader {
       await navigator.clipboard.writeText(url);
       this.notify.success('Link copied');
     } catch {
-      this.notify.error('The link could not be copied.', url);
+      this.notify.error("Couldn't copy the link.", url);
     }
   }
 }

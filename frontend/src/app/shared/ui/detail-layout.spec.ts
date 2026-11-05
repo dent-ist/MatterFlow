@@ -473,7 +473,7 @@ describe('ActivityDrawer', () => {
     expect(dialog.getAttribute('role')).toBe('dialog');
     expect(dialog.getAttribute('aria-modal')).toBe('true');
     expect(dialog.textContent).toContain('Activity: Acme Corp');
-    expect(dialog.textContent).toContain('No activity recorded yet.');
+    expect(dialog.textContent).toContain('No activity yet.');
     // Every Activity drawer opens on its Close button (UXR4-20).
     expect(document.activeElement).toBe(
       dialog.querySelector('button[aria-label="Close activity"]'),

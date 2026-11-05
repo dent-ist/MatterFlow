@@ -142,7 +142,7 @@ describe('ConfirmDialog failure and busy (TY-K, #414)', () => {
     confirmButton().click();
     expect(fixture.componentInstance.log).toEqual([]);
     expect(document.body.querySelector('.p-dialog [role="status"]')!.textContent).toContain(
-      'Working',
+      'Saving',
     );
     fixture.componentInstance.busy.set(false);
     fixture.detectChanges();

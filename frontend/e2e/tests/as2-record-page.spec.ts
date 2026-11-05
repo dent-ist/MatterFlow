@@ -179,7 +179,9 @@ test.describe('Asset record page (WP-AS2)', () => {
     await page.goto(`/assets/${asset.assetId}`);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText("Couldn't load this asset.");
     await expect(page.locator('[data-record-error]')).toContainText('e2e-500-trace');
-    await expect(page.getByRole('alert').filter({ hasText: 'Something went wrong' })).toBeVisible();
+    await expect(
+      page.getByRole('alert').filter({ has: page.getByRole('button', { name: 'Retry' }) }),
+    ).toBeVisible();
     await shot(page, 'as2-record-error');
     await page.getByRole('button', { name: 'Retry' }).click();
     await expect(page.getByRole('heading', { level: 1, name: asset.displayName })).toBeFocused();

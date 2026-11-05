@@ -20,14 +20,14 @@ import { describeAuditEvent, isNoise } from './audit-format';
   template: `
     @switch (state()) {
       @case ('loading') {
-        <p class="mf-activity__muted" role="status" aria-busy="true">Loading activity...</p>
+        <p class="mf-activity__muted" role="status" aria-busy="true">Loading activity</p>
       }
       @case ('error') {
         <p class="mf-activity__muted" role="alert">We couldn't load the activity.</p>
       }
       @default {
         @if (events().length === 0) {
-          <p class="mf-activity__muted">No activity recorded yet.</p>
+          <p class="mf-activity__muted">No activity yet.</p>
         } @else {
           <ol class="mf-activity" [class.mf-activity--compact]="compact()" aria-label="Activity">
             @for (e of events(); track e.auditEventId) {

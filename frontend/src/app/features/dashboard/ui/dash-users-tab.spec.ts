@@ -724,7 +724,7 @@ describe('DashUsersTab', () => {
 
     it('shows an error with Retry, and the cards after a retry', async () => {
       await open(throwError(() => new Error('boom')));
-      expect(text(q('[data-dash-state="error"]'))).toContain('could not be loaded');
+      expect(text(q('[data-dash-state="error"]'))).toContain("Couldn't load");
       getWorkload.mockReturnValue(of(board()));
       q<HTMLButtonElement>('[data-dash-retry]').click();
       await settle();
@@ -755,7 +755,7 @@ describe('DashUsersTab', () => {
       refreshTab();
       await settle();
       expect(qa('[data-user-card]').length).toBe(6);
-      expect(text(q('[data-dash-state="stale"]'))).toContain('Could not refresh.');
+      expect(text(q('[data-dash-state="stale"]'))).toContain("Couldn't refresh.");
       getWorkload.mockReturnValue(of(board()));
       q<HTMLButtonElement>('[data-dash-state="stale"] [data-dash-retry]').click();
       await settle();
@@ -1726,7 +1726,7 @@ describe('DashUsersTab', () => {
       refreshTab();
       await settle();
       expect(qa('[data-type-name]').length).toBe(3);
-      expect(text(q('[data-dash-state="stale"]'))).toContain('Could not refresh.');
+      expect(text(q('[data-dash-state="stale"]'))).toContain("Couldn't refresh.");
     });
   });
 });

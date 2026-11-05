@@ -10,7 +10,7 @@ import { atEverySize, noHorizontalScroll, shot, SIZES } from '../support/screens
  */
 const FORBIDDEN = "You don't have permission to view this.";
 const NOT_FOUND = "We couldn't find that.";
-const ERROR_TITLE = 'Something went wrong. Try again.';
+const ERROR_TITLE = "Couldn't load your account.";
 
 interface Card {
   fontSize: number;

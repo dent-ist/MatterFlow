@@ -6,7 +6,7 @@ import { atEverySize, shot } from '../support/screens';
  * S11 (#608): the error page (the account cannot be loaded) shows the Reference of the failed call with Copy, the brand line, and Retry
  * reloads the page the person was on; "Go to home" appears only after Retry has failed as well.
  */
-const TITLE = 'Something went wrong. Try again.';
+const TITLE = "Couldn't load your account.";
 
 test.describe('The error page (#608)', () => {
   test.setTimeout(240_000);

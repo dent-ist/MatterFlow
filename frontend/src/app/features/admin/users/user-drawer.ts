@@ -488,7 +488,7 @@ export class UserDrawer {
 
   private async handleError(err: unknown, userId: number): Promise<void> {
     if (!(err instanceof ApiError)) {
-      this.panelError.set('Something went wrong. Try again.');
+      this.panelError.set("Couldn't save the user. Try again.");
       return;
     }
     if (err.code === 'LAST_ADMIN') {

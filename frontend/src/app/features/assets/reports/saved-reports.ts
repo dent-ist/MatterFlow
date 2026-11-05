@@ -21,7 +21,7 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
       <p class="sr-note" role="status" data-saved-loading>Loading your saved reports.</p>
     } @else if (state() === 'error') {
       <p class="sr-note sr-note--error" role="alert" data-saved-error>
-        Your saved reports could not be loaded.
+        Couldn't load your saved reports.
         <button type="button" class="mf-btn" (click)="retry.emit()">Retry</button>
       </p>
     } @else if (reports().length === 0) {

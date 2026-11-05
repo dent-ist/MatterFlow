@@ -610,7 +610,9 @@ export class HolidayDialog {
           'This holiday was changed by someone else. Close this window and open it again.',
         );
       else
-        this.error.set(err instanceof ApiError ? err.message : 'Something went wrong. Try again.');
+        this.error.set(
+          err instanceof ApiError ? err.message : "Couldn't save the holiday. Try again.",
+        );
     } finally {
       this.busy.set(false);
     }

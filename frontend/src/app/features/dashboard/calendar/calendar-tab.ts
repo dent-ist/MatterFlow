@@ -188,7 +188,7 @@ const ALL_ROLES = '';
               <div class="gc__state">
                 <mf-dash-state
                   variant="error"
-                  message="The calendar could not be loaded."
+                  message="Couldn't load the calendar."
                   (retry)="reload()"
                 />
               </div>

@@ -95,7 +95,7 @@ describe('data table pieces', () => {
       const loading = el().querySelector('[data-loading]')!;
       expect(loading.getAttribute('role')).toBe('status');
       expect(loading.getAttribute('aria-busy')).toBe('true');
-      expect(loading.textContent).toContain('Loading things...');
+      expect(loading.textContent).toContain('Loading things');
       expect(loading.querySelectorAll('.ls__row').length).toBe(5);
     });
 
@@ -123,7 +123,7 @@ describe('data table pieces', () => {
       const empty = el().querySelector('[data-empty=filtered]')!;
       expect(empty.textContent).toContain('No things match these filters.');
       Array.from(empty.querySelectorAll('button'))
-        .find((b) => b.textContent?.includes('Clear filters'))!
+        .find((b) => b.textContent?.includes('Clear Filters'))!
         .click();
       expect(host().clears).toBe(1);
     });

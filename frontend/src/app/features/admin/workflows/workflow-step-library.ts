@@ -135,7 +135,7 @@ export class StepLibraryModel {
         @switch (model().state()) {
           @case ('loading') {
             @if (model().items().length === 0) {
-              <p class="pg-muted" role="status">Loading steps...</p>
+              <p class="pg-muted" role="status">Loading steps</p>
             }
           }
           @case ('error') {

@@ -114,7 +114,7 @@ const LIBRARY_PANE_MIN = 1280;
             { label: 'Version' },
           ]"
         />
-        <div class="pg-state" role="status" aria-busy="true">Loading the workflow version...</div>
+        <div class="pg-state" role="status" aria-busy="true">Loading workflow version</div>
       } @else if (version(); as v) {
         <mf-page-header
           [crumbs]="[

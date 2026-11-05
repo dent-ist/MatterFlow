@@ -143,9 +143,9 @@ let nextId = 0;
           />
           @if (catalog() === null) {
             @if (catalogFailed()) {
-              <p class="upc-note" role="alert" data-pods-failed>Pods could not be loaded.</p>
+              <p class="upc-note" role="alert" data-pods-failed>Couldn't load pods.</p>
             } @else {
-              <p class="upc-note" role="status">Loading...</p>
+              <p class="upc-note" role="status">Loading pods</p>
             }
           } @else if (visibleRows().length === 0) {
             <p class="upc-note" role="status" data-pods-empty>

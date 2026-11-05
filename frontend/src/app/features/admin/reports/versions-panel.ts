@@ -259,7 +259,7 @@ export class VersionsPanel {
     try {
       this.versions.set(await firstValueFrom(this.api.listReportVersions(this.reportId())));
     } catch {
-      this.failure.set('The version history could not be loaded.');
+      this.failure.set("Couldn't load the version history.");
     }
   }
 

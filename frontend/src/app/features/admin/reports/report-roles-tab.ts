@@ -41,7 +41,7 @@ export const peopleText = (n: number): string => (n === 1 ? '1 person' : `${n} p
         <p class="rrt__error" role="alert" data-failure>{{ f }}</p>
       }
       @if (loading()) {
-        <p class="rrt__hint" data-loading>Loading the roles...</p>
+        <p class="rrt__hint" data-loading>Loading roles</p>
       } @else {
         <mf-assignment-checklist
           #list
@@ -122,7 +122,7 @@ export class ReportRolesTab {
       this.roles.set(await firstValueFrom(this.api.getRolesOfReport(this.reportId())));
       this.loaded = true;
     } catch {
-      this.failure.set('The roles could not be loaded.');
+      this.failure.set("Couldn't load the roles.");
     } finally {
       this.loading.set(false);
     }

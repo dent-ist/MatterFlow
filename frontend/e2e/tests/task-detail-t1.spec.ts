@@ -431,11 +431,9 @@ test.describe('Task detail T1: Activity drawer (BUG-5 #293, BUG-8 #294) and docu
     await detail.open(task.taskId);
     const drawer = await detail.openActivity();
     await expect(drawer.locator('[data-load-error]')).toHaveCount(1);
-    await expect(drawer.locator('[data-load-error]')).toContainText(
-      'Something went wrong. Try again.',
-    );
+    await expect(drawer.locator('[data-load-error]')).toContainText("Couldn't load activity.");
     await expectNoToast(page);
-    await expect(page.getByText('Something went wrong. Try again.')).toHaveCount(1);
+    await expect(page.getByText("Couldn't load activity.")).toHaveCount(1);
     await atEverySize(page, 'state-offline-activity', async () => {
       await expect(drawer).toBeVisible();
     });

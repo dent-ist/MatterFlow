@@ -263,7 +263,7 @@ export class AuditPage {
   protected readonly operationId = computed(() => this.filters.text('correlationId'));
   protected readonly announcement = computed(() => {
     if (this.state() === 'loading') return 'Loading audit events';
-    if (this.state() === 'error') return 'Could not load audit events';
+    if (this.state() === 'error') return "Couldn't load audit events";
     const n = this.items().length;
     return n === 0
       ? 'No audit events'

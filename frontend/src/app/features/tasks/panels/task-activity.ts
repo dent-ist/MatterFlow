@@ -17,6 +17,7 @@ import { USER_TIME_ZONE } from '../../../core/time/clock';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { ActivityText, activityText, friendlyText } from '../../../shared/ui/audit-format';
 import { ActivityGroupRow, ActivityRow, formatRange, groupActivity } from './activity-groups';
+import { StateBlock } from '../../../shared/ui/state-block';
 
 interface Filter {
   readonly key: string;
@@ -45,7 +46,7 @@ const PAGE_SIZE = 25;
  */
 @Component({
   selector: 'mf-task-activity',
-  imports: [MfDatePipe, NgTemplateOutlet],
+  imports: [StateBlock, MfDatePipe, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="ta" [class.ta--compact]="compact()" aria-label="Activity">
@@ -65,23 +66,19 @@ const PAGE_SIZE = 25;
 
       @switch (state()) {
         @case ('loading') {
-          <p class="ta__muted" role="status" aria-busy="true">Loading activity...</p>
+          <p class="ta__muted" role="status" aria-busy="true">Loading activity</p>
         }
         @case ('error') {
-          <p class="ta__alert" role="alert" data-load-error>
-            Something went wrong. Try again.
-            <button type="button" class="ta__link" (click)="reload()">Retry</button>
-          </p>
+          <mf-state-block kind="error" data-load-error>
+            Couldn't load activity.
+            <button mfStateAction type="button" class="mf-btn" (click)="reload()">Retry</button>
+          </mf-state-block>
         }
         @default {
           @if (visible().length === 0) {
-            <p class="ta__muted" data-empty>
-              {{
-                filter() === 'ALL'
-                  ? 'No activity recorded yet.'
-                  : 'No activity of this type has been loaded.'
-              }}
-            </p>
+            <mf-state-block data-empty>
+              {{ filter() === 'ALL' ? 'No activity yet.' : 'No activity of this type.' }}
+            </mf-state-block>
           } @else {
             <ol class="ta__list">
               @for (row of rows(); track trackKey(row)) {
@@ -181,7 +178,7 @@ const PAGE_SIZE = 25;
             </ol>
           }
           @if (moreFailed()) {
-            <p class="ta__alert" role="alert" data-more-error>Something went wrong. Try again.</p>
+            <p class="ta__alert" role="alert" data-more-error>Couldn't load more activity.</p>
           }
           @if (nextCursor() !== null) {
             <button

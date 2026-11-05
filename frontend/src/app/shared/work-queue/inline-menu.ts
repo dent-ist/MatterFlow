@@ -122,7 +122,7 @@ let nextId = 0;
         }
         <!-- The notes sit outside role="menu": a menu may only contain items (axe aria-required-children). -->
         @if (loading()) {
-          <p class="im-note" role="status">Loading...</p>
+          <p class="im-note" role="status">Loading options</p>
         } @else if (options().length === 0) {
           <p class="im-note" role="status">{{ emptyText() }}</p>
         }

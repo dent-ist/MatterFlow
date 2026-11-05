@@ -209,7 +209,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
             >
               <mf-dash-state
                 variant="error"
-                message="The dashboard could not be loaded."
+                message="Couldn't load the dashboard."
                 (retry)="retryFirstLoad()"
               />
             </div>

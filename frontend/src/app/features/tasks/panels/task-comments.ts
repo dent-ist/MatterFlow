@@ -32,6 +32,7 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { COMMENT_MAX_TEXT, decorateLinks, htmlToText, isBlankHtml } from './rich-text';
 import { RichTextEditor } from './rich-text-editor';
 import { countNew, latestOf, readSeen, saveSeen } from './section-state';
+import { StateBlock } from '../../../shared/ui/state-block';
 
 export const COMMENTS_INTERNAL_NOTE = 'Internal only. Visible to people who can view tasks.';
 export const COMMENTS_PRIVILEGE_NOTE =
@@ -91,7 +92,15 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
  */
 @Component({
   selector: 'mf-task-comments',
-  imports: [MfDatePipe, NgTemplateOutlet, RichTextEditor, ConfirmDialog, SearchBox, PanelScroll],
+  imports: [
+    StateBlock,
+    MfDatePipe,
+    NgTemplateOutlet,
+    RichTextEditor,
+    ConfirmDialog,
+    SearchBox,
+    PanelScroll,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="tc" aria-label="Comments">
@@ -137,22 +146,24 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
 
         @switch (state()) {
           @case ('loading') {
-            <p class="tc__muted" role="status" aria-busy="true">Loading comments...</p>
+            <p class="tc__muted" role="status" aria-busy="true">Loading comments</p>
           }
           @case ('error') {
-            <p class="tc__alert" role="alert" data-load-error>
-              Something went wrong. Try again.
-              <button type="button" class="tc__link" (click)="reload()">Retry</button>
-            </p>
+            <mf-state-block kind="error" data-load-error>
+              Couldn't load comments.
+              <button mfStateAction type="button" class="mf-btn" (click)="reload()">Retry</button>
+            </mf-state-block>
           }
           @default {
             @if (items().length === 0) {
-              <p class="tc__muted" data-empty>No comments yet.</p>
+              <mf-state-block data-empty>No comments yet.</mf-state-block>
             } @else if (visibleItems().length === 0) {
-              <p class="tc__muted" data-no-match role="status">
-                No comments match "{{ query() }}".
-                <button type="button" class="tc__link" (click)="query.set('')">Clear search</button>
-              </p>
+              <mf-state-block data-no-match [announce]="true">
+                No results for "{{ query() }}".
+                <button mfStateAction type="button" class="mf-btn" (click)="query.set('')">
+                  Clear Search
+                </button>
+              </mf-state-block>
             } @else {
               @if (query()) {
                 <p class="tc__muted" data-match-count role="status">
@@ -290,7 +301,7 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
                           @if (historyId() === c.commentId) {
                             <div class="tc__history" data-history>
                               @if (history() === null) {
-                                <p class="tc__muted" role="status">Loading edit history...</p>
+                                <p class="tc__muted" role="status">Loading edit history</p>
                               } @else {
                                 @for (r of history(); track r.revisionId) {
                                   <div class="tc__rev">
@@ -1075,5 +1086,5 @@ export class TaskComments {
 function messageOf(error: unknown): string {
   return error instanceof ApiError && error.message
     ? error.message
-    : 'Something went wrong. Try again.';
+    : "Couldn't save the comment. Try again.";
 }

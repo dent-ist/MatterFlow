@@ -9,71 +9,89 @@ import {
   output,
 } from '@angular/core';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { StateBlock } from '../../../shared/ui/state-block';
 
 export type DashStateVariant = 'error' | 'stale' | 'empty-filtered' | 'empty';
 
 /**
  * The one state block of every Dashboard tab (UX review 2, P7):
- *  - `error`: a first load failed. Inline, `role="alert"`, a plain message, the error reference when the API sent one, and a text Retry.
- *  - `stale`: a refresh failed and the figures on screen are older. `role="status"` ("Could not refresh. Showing data from 10:42 AM."), Retry.
- *  - `empty-filtered`: filters hide everything; "Clear filters" undoes them (the sentence can be the tab's own).
- *  - `empty`: nothing to show; the tab passes its own message and, optionally, one action that widens the view.
+ *  - `error`: a first load failed. The shared state block (`mf-state-block`, D-51): red triangle, "Couldn't load ...", the error reference when the API sent one, a secondary Retry.
+ *  - `stale`: a refresh failed and the figures on screen are older. A banner, `role="status"`: "Couldn't refresh. Showing earlier data." (the time of those figures is its tooltip), Retry.
+ *  - `empty-filtered`: filters hide everything; the state block with "Clear Filters" (the sentence can be the tab's own).
+ *  - `empty`: nothing to show; the state block with the tab's own message and, optionally, one action that widens the view.
  * It renders inside the tab panel, so the tab row, the Refresh button and the page header stay. Selectors: `[data-dash-state="error|stale|empty"]`
  * and the button `[data-dash-retry]`. The variants are one element at a time (exactly one `role="alert"` is on screen).
  */
 @Component({
   selector: 'mf-dash-state',
-  imports: [ErrorReference],
+  imports: [ErrorReference, StateBlock],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @switch (variant()) {
       @case ('error') {
-        <div class="state state--error" role="alert" data-dash-state="error">
-          <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
-          <div class="body">
-            <span>{{ message() }}</span>
-            <mf-error-reference />
-          </div>
-          <button type="button" class="mf-btn" data-dash-retry (click)="retry.emit()">Retry</button>
+        <div role="alert" data-dash-state="error">
+          <mf-state-block kind="error" [announce]="false">
+            {{ message() }}
+            <mf-error-reference mfStateReason />
+            <button
+              mfStateAction
+              type="button"
+              class="mf-btn"
+              data-dash-retry
+              (click)="retry.emit()"
+            >
+              Retry
+            </button>
+          </mf-state-block>
         </div>
       }
       @case ('stale') {
-        <div class="state state--stale" role="status" data-dash-state="stale">
+        <div
+          class="state state--stale"
+          role="status"
+          data-dash-state="stale"
+          [attr.title]="updated() ? 'Figures from ' + updated() : null"
+        >
           <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
           <div class="body">
-            <span
-              >Could not refresh.
-              @if (updated()) {
-                Showing data from {{ updated() }}.
-              }
-            </span>
+            <span>Couldn't refresh. Showing earlier data.</span>
             <mf-error-reference />
           </div>
           <button type="button" class="mf-btn" data-dash-retry (click)="retry.emit()">Retry</button>
         </div>
       }
       @case ('empty-filtered') {
-        <div class="state state--empty" role="status" data-dash-state="empty">
-          <i class="pi pi-filter" aria-hidden="true"></i>
-          <div class="body">
-            <span>{{ filteredText() || 'Nothing matches these filters.' }}</span>
-          </div>
-          <button type="button" class="mf-btn" data-dash-clear (click)="clear.emit()">
-            Clear filters
-          </button>
+        <div role="status" data-dash-state="empty">
+          <mf-state-block icon="pi-filter">
+            {{ filteredText() || 'No results match these filters.' }}
+            <button
+              mfStateAction
+              type="button"
+              class="mf-btn"
+              data-dash-clear
+              (click)="clear.emit()"
+            >
+              Clear Filters
+            </button>
+          </mf-state-block>
         </div>
       }
       @case ('empty') {
-        <div class="state state--empty" role="status" data-dash-state="empty">
-          <i class="pi pi-inbox" aria-hidden="true"></i>
-          <div class="body">
-            <span>{{ message() }}</span>
-          </div>
-          @if (actionLabel(); as label) {
-            <button type="button" class="mf-btn" data-dash-action (click)="action.emit()">
-              {{ label }}
-            </button>
-          }
+        <div role="status" data-dash-state="empty">
+          <mf-state-block>
+            {{ message() }}
+            @if (actionLabel(); as label) {
+              <button
+                mfStateAction
+                type="button"
+                class="mf-btn"
+                data-dash-action
+                (click)="action.emit()"
+              >
+                {{ label }}
+              </button>
+            }
+          </mf-state-block>
         </div>
       }
     }
@@ -100,20 +118,10 @@ export type DashStateVariant = 'error' | 'stale' | 'empty-filtered' | 'empty';
     .body span {
       overflow-wrap: anywhere;
     }
-    .state--error {
-      color: var(--mf-danger);
-      background: var(--mf-danger-bg);
-      border-color: var(--mf-danger);
-    }
     .state--stale {
       color: var(--mf-warning);
       background: var(--mf-warning-bg);
       border-color: var(--mf-warning);
-    }
-    .state--empty {
-      color: var(--mf-text-muted);
-      background: var(--mf-surface);
-      border-color: var(--mf-border);
     }
     button {
       min-height: 1.75rem;

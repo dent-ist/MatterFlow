@@ -140,7 +140,7 @@ export function rowsFromMatters(matters: readonly MatterResponse[]): OverviewMat
               }
             </div>
           } @else if (failed()) {
-            <p class="ov-muted" data-matters-unavailable>The matters could not be loaded.</p>
+            <p class="ov-muted" data-matters-unavailable>Couldn't load the matters.</p>
           } @else if (rows().length === 0) {
             <p class="ov-empty" data-no-open>No matter has open tasks.</p>
           } @else {

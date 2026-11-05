@@ -81,7 +81,7 @@ export const UNASSIGNED_PAGE = 50;
           @switch (state()) {
             @case ('loading') {
               <div class="bones" role="status" aria-busy="true" data-unassigned-loading>
-                <span class="sr-only">Loading unassigned tasks...</span>
+                <span class="sr-only">Loading unassigned tasks</span>
                 @for (n of bones; track n) {
                   <span class="bone" aria-hidden="true"></span>
                 }
@@ -89,7 +89,7 @@ export const UNASSIGNED_PAGE = 50;
             }
             @case ('error') {
               <div class="alert" role="alert" data-unassigned-error>
-                <span>The unassigned tasks could not be loaded.</span>
+                <span>Couldn't load the unassigned tasks.</span>
                 <mf-error-reference />
                 <button type="button" class="mf-btn" data-unassigned-retry (click)="load()">
                   Retry

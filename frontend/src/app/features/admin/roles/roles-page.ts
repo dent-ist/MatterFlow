@@ -377,7 +377,7 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
 
   private handleError(err: unknown): void {
     if (!(err instanceof ApiError)) {
-      this.error.set('Something went wrong. Try again.');
+      this.error.set("Couldn't save the role. Try again.");
     } else if (err.code === 'DUPLICATE_NAME') {
       this.nameError.set('A role with this name already exists.');
     } else if (err.code === 'ROLE_IN_USE') {

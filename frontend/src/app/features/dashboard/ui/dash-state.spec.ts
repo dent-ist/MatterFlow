@@ -9,7 +9,7 @@ import { DashState, DashStateVariant, focusAfterRetry } from './dash-state';
   template: `
     <mf-dash-state
       [variant]="variant()"
-      message="The thing could not be loaded."
+      message="Couldn't load the thing."
       updated="10:42 AM"
       (retry)="retries = retries + 1"
       (clear)="clears = clears + 1"
@@ -40,7 +40,7 @@ describe('mf-dash-state', () => {
     const block = el.querySelector('[data-dash-state="error"]')!;
     expect(block.getAttribute('role')).toBe('alert');
     expect(el.querySelectorAll('[role="alert"]').length).toBe(1);
-    expect(block.textContent).toContain('The thing could not be loaded.');
+    expect(block.textContent).toContain("Couldn't load the thing.");
     const retry = el.querySelector<HTMLButtonElement>('[data-dash-retry]')!;
     expect(retry.textContent!.trim()).toBe('Retry');
     retry.click();
@@ -56,8 +56,8 @@ describe('mf-dash-state', () => {
     const { el } = await render('stale');
     const block = el.querySelector('[data-dash-state="stale"]')!;
     expect(block.getAttribute('role')).toBe('status');
-    expect(block.textContent).toContain('Could not refresh.');
-    expect(block.textContent).toContain('Showing data from 10:42 AM.');
+    expect(block.textContent).toContain("Couldn't refresh.");
+    expect(block.textContent).toContain('Showing earlier data.');
     expect(el.querySelector('[data-dash-retry]')?.textContent!.trim()).toBe('Retry');
     expect(el.querySelectorAll('[role="alert"]').length).toBe(0);
   });
@@ -65,14 +65,14 @@ describe('mf-dash-state', () => {
   it('empty-filtered: Clear filters emits; empty shows the tab message', async () => {
     const { fixture, el } = await render('empty-filtered');
     expect(el.querySelector('[data-dash-state="empty"]')!.textContent).toContain(
-      'Nothing matches these filters',
+      'No results match these filters.',
     );
     el.querySelector<HTMLButtonElement>('[data-dash-clear]')!.click();
     expect(fixture.componentInstance.clears).toBe(1);
     fixture.componentInstance.variant.set('empty');
     fixture.detectChanges();
     expect(el.querySelector('[data-dash-state="empty"]')!.textContent).toContain(
-      'The thing could not be loaded.',
+      "Couldn't load the thing.",
     );
     expect(el.querySelector('[data-dash-clear]')).toBeNull();
   });

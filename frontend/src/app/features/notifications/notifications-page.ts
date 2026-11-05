@@ -20,6 +20,7 @@ import { FixedPage } from '../../shared/ui/fixed-page';
 import { GridFrame } from '../../shared/ui/grid-frame';
 import { PageHeader } from '../../shared/ui/page-header';
 import { Pager } from '../../shared/ui/pager';
+import { StateBlock } from '../../shared/ui/state-block';
 import { NotificationStore } from './notification-store';
 import {
   NotificationGroup,
@@ -44,7 +45,7 @@ type Filter = 'all' | 'unread';
  */
 @Component({
   selector: 'mf-notifications-page',
-  imports: [PageHeader, Pager, RouterLink, FixedPage, FilterChips, GridFrame],
+  imports: [PageHeader, Pager, RouterLink, FixedPage, FilterChips, GridFrame, StateBlock],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-fixed-page>
@@ -84,30 +85,29 @@ type Filter = 'all' | 'unread';
       >
         @switch (state()) {
           @case ('error') {
-            <p class="npg__note" role="alert" data-page-error>
-              <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+            <mf-state-block kind="error" [fill]="true" data-page-error>
               Couldn't load notifications.
-              <button type="button" class="mf-btn mf-btn--text" data-page-retry (click)="load()">
+              <button mfStateAction type="button" class="mf-btn" data-page-retry (click)="load()">
                 Retry
               </button>
-            </p>
+            </mf-state-block>
           }
           @case ('ready') {
             @if (items().length === 0) {
-              <p class="npg__note" data-page-empty>
-                <i class="pi pi-bell" aria-hidden="true"></i>
-                {{ filter() === 'unread' ? 'No unread notifications.' : 'No notifications yet.' }}
+              <mf-state-block icon="pi-bell" [fill]="true" data-page-empty>
+                {{ filter() === 'unread' ? 'No unread notifications.' : 'No notifications.' }}
                 @if (filter() === 'unread') {
                   <button
+                    mfStateAction
                     type="button"
-                    class="mf-btn mf-btn--text"
+                    class="mf-btn"
                     data-show-all
                     (click)="setFilter('all')"
                   >
-                    Show all
+                    Show All
                   </button>
                 }
-              </p>
+              </mf-state-block>
             } @else {
               <ul class="npg__list" data-page-list>
                 @for (
@@ -217,7 +217,7 @@ type Filter = 'all' | 'unread';
           }
           @default {
             <p class="npg__note npg__muted" data-page-loading>
-              <i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Loading notifications...
+              <i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Loading notifications
             </p>
           }
         }

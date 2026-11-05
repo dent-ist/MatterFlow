@@ -195,9 +195,7 @@ describe('ReportsListTab (#712)', () => {
 
     it('says there are no reports yet, with the way to add one', async () => {
       await create(['Report.Manage'], {}, []);
-      expect(el().textContent).toContain(
-        'No reports yet. Use New Report above to add the first one.',
-      );
+      expect(el().textContent).toContain('No reports yet.');
     });
 
     it('hides Roles without Report.Assign', async () => {

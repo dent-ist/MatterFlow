@@ -62,7 +62,7 @@ import { DRAFT_INPUTS_NOTE, InputRow, InputsFacts, inputRows } from './step-reco
         }
 
         @if (loading()) {
-          <p class="st__muted" role="status" data-inputs-loading>Loading the inputs...</p>
+          <p class="st__muted" role="status" data-inputs-loading>Loading inputs</p>
         } @else if (denied()) {
           <p class="st__muted" data-inputs-denied>
             You don't have permission to see the inputs of this step.

@@ -813,7 +813,7 @@ export class ScopedTasks {
         }),
       );
       if (answer.failed > 0) {
-        this.notify.warn(answer.results[0]?.message ?? "The task's project could not be changed.");
+        this.notify.warn("Couldn't change the project.", answer.results[0]?.message);
         return;
       }
       const name = this.projectOptions().find((o) => o.value === String(e.projectId))?.label;
@@ -841,7 +841,10 @@ export class ScopedTasks {
       );
       this.bulkFinished(answer);
       if (answer.failed > 0) {
-        this.notify.warn(`${answer.changed} tasks changed, ${answer.failed} could not be changed.`);
+        this.notify.warn(
+          `${answer.changed} tasks changed`,
+          `${answer.failed} could not be changed.`,
+        );
       } else {
         this.notify.success(
           target === NO_PROJECT

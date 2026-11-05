@@ -117,8 +117,8 @@ export function riskSentence(risk: CalSummary['risk']): string {
         </section>
       } @else if (error()) {
         <p class="soft" role="status" data-insights-error>
-          <i class="pi pi-exclamation-circle" aria-hidden="true"></i> The risk banner and the
-          forecast could not be loaded.
+          <i class="pi pi-exclamation-circle" aria-hidden="true"></i> Couldn't load the risk banner
+          and the forecast.
           <button type="button" class="mf-btn mf-btn--text" (click)="retry.emit()">Retry</button>
         </p>
       } @else {

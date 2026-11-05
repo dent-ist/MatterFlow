@@ -345,7 +345,7 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
       },
     );
     if (this.flow.failed() && !this.recordKind())
-      this.failure.set('Something went wrong. Try again.');
+      this.failure.set("Couldn't load the form. Try again.");
   }
 
   protected retry(): void {
@@ -359,7 +359,7 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
   }
 
   private messageOf(e: unknown): string {
-    return e instanceof Error ? e.message : 'Something went wrong. Try again.';
+    return e instanceof Error ? e.message : "Couldn't save the form. Try again.";
   }
 
   private isConflict(e: unknown): boolean {

@@ -133,7 +133,7 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
       <mf-admin-card-list
         noun="steps"
         label="Workflow Steps"
-        emptyText="No steps yet. Use New step above to add the first reusable one."
+        emptyText="No steps yet."
         [items]="rows()"
         [spec]="cardOf"
         [filters]="filters"
@@ -204,7 +204,7 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
             <tbody
               mfGridBody
               noun="steps"
-              emptyText="No steps yet. Use New step above to add the first reusable one."
+              emptyText="No steps yet."
               [state]="state()"
               [empty]="rows().length === 0"
               [filtered]="filters.activeCount() > 0"
@@ -565,7 +565,7 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
           : this.api.deactivateStepDefinition(s.stepDefinitionId, body),
       );
       this.announcement.set(`${s.title} ${isActive ? 'activated' : 'deactivated'}.`);
-      this.notify.success('Saved.');
+      this.notify.success(isActive ? 'Step activated' : 'Step deactivated', s.title);
       await this.load();
       focusListAfterAction(this.injector, `Actions for ${s.title}`);
       return 'done';

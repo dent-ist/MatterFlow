@@ -31,7 +31,9 @@ import { TitleIcon } from './page-header';
       <h1 class="sp__title" data-page-title tabindex="-1">
         <mf-title-icon [icon]="icon()" />{{ heading() }}
       </h1>
-      <p class="sp__reason" data-state-reason>{{ reason() }}</p>
+      @if (reason()) {
+        <p class="sp__reason" data-state-reason>{{ reason() }}</p>
+      }
       <div class="sp__detail"><ng-content /></div>
       <div class="sp__actions" data-state-actions>
         @if (primary(); as l) {
@@ -43,7 +45,9 @@ import { TitleIcon } from './page-header';
         <div class="sp__secondary" data-state-secondary><ng-content select="[mfSecondary]" /></div>
       </div>
     </section>
-    <p class="sp__brand" data-state-brand>{{ brand.appName() }}</p>
+    @if (showBrand()) {
+      <p class="sp__brand" data-state-brand>{{ brand.appName() }}</p>
+    }
   `,
   styles: `
     :host {
@@ -123,14 +127,19 @@ export class StatePage {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   constructor() {
-    afterNextRender(() =>
-      this.host.nativeElement.querySelector<HTMLElement>('[data-page-title]')?.focus(),
-    );
+    afterNextRender(() => {
+      if (!this.focusOnArrival()) return;
+      this.host.nativeElement.querySelector<HTMLElement>('[data-page-title]')?.focus();
+    });
   }
 
   readonly icon = input.required<string>();
   readonly heading = input.required<string>();
   readonly reason = input('');
+  /** The application name under the card (the route-level pages); a record's missing state inside the shell has none (D-47). */
+  readonly showBrand = input(true);
+  /** The title takes focus once on arrival; false where the owner of the page moves focus itself (`mf-record-state`). */
+  readonly focusOnArrival = input(true);
   /** The "Go to ..." target from the landing rule; none shows no link (a link to a page that answers 403 is worse than none). */
   readonly primary = input<LandingLink | null>(null);
 }

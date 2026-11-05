@@ -264,7 +264,7 @@ const LONG_PRESS_MS = 500;
                   aria-busy="true"
                   data-loading
                 >
-                  Loading tasks...
+                  Loading tasks
                 </td>
               </tr>
               @for (n of skeletonRows; track n) {

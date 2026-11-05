@@ -180,13 +180,13 @@ export function toastFor(err: ApiError): { summary: string; detail?: string } | 
   if (err.code === 'SENSITIVE_CONFIRMATION_REQUIRED') return null; // the matter form asks "You will no longer see this matter" in a dialog (epic #788)
   const reference = err.traceId ? `Reference: ${err.traceId}` : undefined;
   if (err.isNetworkError || err.status >= 500) {
-    return { summary: 'Something went wrong. Try again.', detail: reference };
+    return { summary: "Couldn't complete the request.", detail: reference };
   }
   if (err.status === 401) return null; // one sign-in banner with "Reload page" (S14, #612)
   if (err.status === 403) return { summary: "You don't have permission to do that." };
   if (err.status === 404) return { summary: "We couldn't find that." };
   return {
-    summary: err.problem?.detail ?? err.problem?.title ?? 'Something went wrong. Try again.',
+    summary: err.problem?.detail ?? err.problem?.title ?? "Couldn't complete the request.",
     // A 4xx explains itself; the trace reference is only useful for server faults.
   };
 }

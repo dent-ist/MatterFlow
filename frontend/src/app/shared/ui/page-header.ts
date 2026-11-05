@@ -81,32 +81,34 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
           </ol>
         </nav>
       }
-      <div class="ph__row">
-        <div class="ph__head">
-          <h1 class="ph__title" data-page-title [attr.id]="titleId()">
-            @if (iconClass(); as ic) {
-              <i class="ph__icon" [class]="ic" aria-hidden="true" data-page-icon></i>
+      @if (!crumbsOnly()) {
+        <div class="ph__row">
+          <div class="ph__head">
+            <h1 class="ph__title" data-page-title [attr.id]="titleId()">
+              @if (iconClass(); as ic) {
+                <i class="ph__icon" [class]="ic" aria-hidden="true" data-page-icon></i>
+              }
+              <ng-content select="[mfTitle]">{{ heading() }}</ng-content>
+            </h1>
+            @if (count() !== null) {
+              <mf-count-chip data-list-count
+                ><span class="mf-sr-only">Total: </span>{{ countText() }}</mf-count-chip
+              >
             }
-            <ng-content select="[mfTitle]">{{ heading() }}</ng-content>
-          </h1>
-          @if (count() !== null) {
-            <mf-count-chip data-list-count
-              ><span class="mf-sr-only">Total: </span>{{ countText() }}</mf-count-chip
-            >
+            <ng-content select="[mfTitleExtra]" />
+          </div>
+          <div class="ph__actions" data-page-actions>
+            <ng-content select="[mfActions]" />
+          </div>
+        </div>
+        <p class="ph__desc" data-page-description [attr.title]="description() || null">
+          @if (description()) {
+            {{ description() }}
           }
-          <ng-content select="[mfTitleExtra]" />
-        </div>
-        <div class="ph__actions" data-page-actions>
-          <ng-content select="[mfActions]" />
-        </div>
-      </div>
-      <p class="ph__desc" data-page-description [attr.title]="description() || null">
-        @if (description()) {
-          {{ description() }}
-        }
-        <ng-content select="[mfDescription]" />
-      </p>
-      <div class="ph__extra"><ng-content /></div>
+          <ng-content select="[mfDescription]" />
+        </p>
+        <div class="ph__extra"><ng-content /></div>
+      }
     </header>
   `,
   styles: `
@@ -313,6 +315,8 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
 export class PageHeader {
   /** Plain-text H1; use the `mfTitle` slot instead for rich content. */
   readonly heading = input('');
+  /** Only the breadcrumb, no title row: above a `mf-state-page` card, whose own H1 is the page's title (D-47). */
+  readonly crumbsOnly = input(false);
   readonly crumbs = input<readonly Crumb[]>([]);
   readonly description = input('');
   /**

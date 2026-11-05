@@ -633,7 +633,7 @@ export class AssetFormPage implements HasUnsavedChanges {
       case 'FORM_NOT_PUBLISHED':
         return "This asset type's fields are not published yet.";
       default:
-        return 'Something went wrong. Try again.';
+        return "Couldn't save the asset. Try again.";
     }
   }
 

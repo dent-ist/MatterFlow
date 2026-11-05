@@ -62,7 +62,7 @@ interface Problem {
   template: `
     @if (state() === 'loading') {
       @if (mode() === 'dialog') {
-        <div class="av-state" role="status" aria-busy="true">Loading...</div>
+        <div class="av-state" role="status" aria-busy="true">Loading availability</div>
       }
     } @else if (state() === 'error') {
       @if (mode() === 'dialog') {
@@ -608,7 +608,8 @@ export class AvailabilityForm {
 
   private async onSaveError(err: unknown): Promise<void> {
     const code = err instanceof ApiError ? err.code : undefined;
-    const message = err instanceof ApiError ? err.message : 'Something went wrong. Try again.';
+    const message =
+      err instanceof ApiError ? err.message : "Couldn't save your availability. Try again.";
     switch (code) {
       case 'CONCURRENCY_CONFLICT':
         await this.load();

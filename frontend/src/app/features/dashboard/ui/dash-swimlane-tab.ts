@@ -109,7 +109,7 @@ const EDIT_REFRESH_DELAY_MS = 900;
     @if (state() === 'error') {
       <mf-dash-state
         variant="error"
-        message="The swimlane board could not be loaded."
+        message="Couldn't load the swimlane board."
         (retry)="retry()"
       />
     } @else {

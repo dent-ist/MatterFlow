@@ -156,7 +156,7 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
       <mf-record-card-list
         noun="workflows"
         label="Workflows"
-        emptyText="No workflows yet. Use New workflow above to add the first one."
+        emptyText="No workflows yet."
         [state]="state()"
         [empty]="rows().length === 0"
         [filtered]="filters.activeCount() > 0"
@@ -256,7 +256,7 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
             <tbody
               mfGridBody
               noun="workflows"
-              emptyText="No workflows yet. Use New workflow above to add the first one."
+              emptyText="No workflows yet."
               [state]="state()"
               [empty]="rows().length === 0"
               [filtered]="filters.activeCount() > 0"
@@ -739,7 +739,7 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
         }),
       );
       this.announcement.set(`${w.name} ${isActive ? 'activated' : 'deactivated'}.`);
-      this.notify.success('Saved.');
+      this.notify.success(isActive ? 'Workflow activated' : 'Workflow deactivated', w.name);
       await this.load();
       focusListAfterAction(this.injector, `Actions for ${w.name}`);
       return 'done';

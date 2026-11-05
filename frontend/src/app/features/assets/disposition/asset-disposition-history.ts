@@ -53,9 +53,7 @@ import { dispositionLabel } from './asset-disposition';
     @if (items().length === 0) {
       <p class="dh__none" data-disposition-history-empty>
         {{
-          failed()
-            ? 'The disposition history could not be loaded.'
-            : 'The disposition has not changed.'
+          failed() ? "Couldn't load the disposition history." : 'The disposition has not changed.'
         }}
       </p>
     } @else {

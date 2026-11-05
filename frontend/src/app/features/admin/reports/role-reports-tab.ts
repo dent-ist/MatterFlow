@@ -42,7 +42,7 @@ import { AssignmentChecklist, ChecklistItem, diffMessage } from './assignment-ch
         <p class="rrt__error" role="alert" data-failure>{{ f }}</p>
       }
       @if (loading()) {
-        <p class="rrt__hint" data-loading>Loading the reports...</p>
+        <p class="rrt__hint" data-loading>Loading reports</p>
       } @else {
         <mf-assignment-checklist
           noun="report"
@@ -124,7 +124,7 @@ export class RoleReportsTab {
       this.reports.set(await firstValueFrom(this.api.getReportsOfRole(this.roleId())));
       this.loaded = true;
     } catch {
-      this.failure.set('The reports could not be loaded.');
+      this.failure.set("Couldn't load the reports.");
     } finally {
       this.loading.set(false);
     }

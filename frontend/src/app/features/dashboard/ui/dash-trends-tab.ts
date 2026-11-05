@@ -104,7 +104,7 @@ let nextId = 0;
       </header>
 
       @if (state() === 'error') {
-        <mf-dash-state variant="error" message="The trend could not be loaded." (retry)="retry()" />
+        <mf-dash-state variant="error" message="Couldn't load the trend." (retry)="retry()" />
       } @else if (data(); as d) {
         <div class="layout">
           <div class="main">

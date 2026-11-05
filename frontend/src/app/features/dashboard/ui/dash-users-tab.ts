@@ -166,7 +166,7 @@ export const USERS_PAGE = 200;
           @case ('error') {
             <mf-dash-state
               variant="error"
-              message="The team workload could not be loaded."
+              message="Couldn't load the team workload."
               (retry)="retry()"
             />
           }

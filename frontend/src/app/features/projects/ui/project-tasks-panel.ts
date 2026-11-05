@@ -327,7 +327,7 @@ export class ProjectTasksPanel {
         }),
       );
       if (done.failed > 0) {
-        this.notify.warn(`${done.changed} tasks ${word}, ${done.failed} could not be changed.`);
+        this.notify.warn(`${done.changed} tasks ${word}`, `${done.failed} could not be changed.`);
       } else {
         this.notify.success(`${done.changed} ${done.changed === 1 ? 'task' : 'tasks'} ${word}`);
       }

@@ -484,7 +484,7 @@ describe('TaskQueuePage', () => {
     });
     let empty = el.querySelector('tbody [data-empty]')!;
     expect(empty.textContent).toContain('Nothing is overdue.');
-    expect(empty.textContent).not.toContain('Clear filters');
+    expect(empty.textContent).not.toContain('Clear Filters');
 
     TestBed.resetTestingModule();
     el = await open('/tasks?overdue=true&priority=1&status=NEW&status=IN_PROGRESS&status=ON_HOLD', {
@@ -492,7 +492,7 @@ describe('TaskQueuePage', () => {
     });
     empty = el.querySelector('tbody [data-empty]')!;
     expect(empty.textContent).toContain('No tasks match these filters');
-    expect(empty.textContent).toContain('Clear filters');
+    expect(empty.textContent).toContain('Clear Filters');
 
     TestBed.resetTestingModule();
     el = await open('/tasks?sort=due', { rows: [], permissions: ['Task.View'] });

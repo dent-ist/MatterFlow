@@ -98,7 +98,7 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
           @case ('error') {
             <div class="err" role="alert" data-panel-error>
               <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
-              <span>This day could not be loaded.</span>
+              <span>Couldn't load this day.</span>
               <button type="button" class="mf-btn" (click)="load()">Retry</button>
             </div>
           }

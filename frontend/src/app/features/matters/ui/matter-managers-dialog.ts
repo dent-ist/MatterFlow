@@ -141,7 +141,7 @@ const CONCURRENCY = 3;
         }
         @if (loadFailed()) {
           <p class="mmd__error" role="alert" data-managers-load-failed>
-            The list of people could not be loaded. Close this and try again.
+            Couldn't load the list of people. Close this and try again.
           </p>
         }
         @if (failed().length > 0) {

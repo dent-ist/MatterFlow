@@ -4,6 +4,7 @@ import { retryWhenBackOnline } from '../../core/http/connectivity';
 import { Dropdown, DropdownItem } from './dropdown';
 import { ErrorReference } from './error-reference';
 import { FixedPage } from './fixed-page';
+import { StateBlock } from './state-block';
 import { StatusFilter as StatusFilterValue, ariaSort, nextSort } from './list-helpers';
 
 /** `forbidden` is a 403 on the list's own request: the text names the missing access and offers no Retry. */
@@ -145,7 +146,7 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
  */
 @Component({
   selector: 'mf-list-state',
-  imports: [Button, ErrorReference],
+  imports: [Button, ErrorReference, StateBlock],
   changeDetection: ChangeDetectionStrategy.OnPush,
   // `mf-fill`: inside a fixed-header page the state fills what is left, so the projected grid scrolls and the pager stays pinned.
   host: { class: 'mf-fill' },
@@ -153,7 +154,7 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
     @switch (state()) {
       @case ('loading') {
         <div class="ls__skeleton" role="status" aria-busy="true" data-loading>
-          <span class="ls__sr">Loading {{ noun() }}...</span>
+          <span class="ls__sr">Loading {{ noun() }}</span>
           @for (n of rows; track n) {
             <div class="ls__row" aria-hidden="true">
               @for (c of cols(); track c) {
@@ -164,28 +165,41 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
         </div>
       }
       @case ('error') {
-        <div class="pg-alert" role="alert" data-error>
-          Couldn't load {{ noun() }}.
-          <mf-error-reference />
-          <p-button label="Retry" severity="secondary" (onClick)="retry.emit()" />
+        <div data-error>
+          <mf-state-block kind="error">
+            Couldn't load {{ noun() }}.
+            <mf-error-reference mfStateReason />
+            <p-button mfStateAction label="Retry" severity="secondary" (onClick)="retry.emit()" />
+          </mf-state-block>
         </div>
       }
       @case ('forbidden') {
-        <div class="pg-alert" role="alert" data-forbidden>
-          You don't have access to {{ noun() }}.
+        <div data-forbidden>
+          <mf-state-block [announce]="true" icon="pi-lock"
+            >You don't have access to {{ noun() }}.</mf-state-block
+          >
         </div>
       }
       @case ('ready') {
         @if (empty()) {
           @if (filtered()) {
-            <div class="pg-state" data-empty="filtered">
-              <p>No {{ noun() }} match these filters.</p>
-              <p-button label="Clear filters" severity="secondary" (onClick)="clear.emit()" />
+            <div data-empty="filtered">
+              <mf-state-block>
+                No {{ noun() }} match these filters.
+                <p-button
+                  mfStateAction
+                  label="Clear Filters"
+                  severity="secondary"
+                  (onClick)="clear.emit()"
+                />
+              </mf-state-block>
             </div>
           } @else {
-            <div class="pg-state" data-empty="none">
-              <p>{{ emptyText() || 'No ' + noun() + ' yet.' }}</p>
-              <ng-content select="[mfEmptyAction]" />
+            <div data-empty="none">
+              <mf-state-block>
+                {{ emptyText() || 'No ' + noun() + ' yet.' }}
+                <span mfStateAction><ng-content select="[mfEmptyAction]" /></span>
+              </mf-state-block>
             </div>
           }
         } @else {

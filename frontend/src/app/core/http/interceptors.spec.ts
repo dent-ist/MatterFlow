@@ -191,7 +191,7 @@ describe('HTTP interceptors', () => {
     ctrl.expectOne('/y').error(new ProgressEvent('error'));
     // Both failures map to the same message: the second is folded into the first (BUG-4), not stacked.
     expect(toasts()).toEqual([
-      expect.objectContaining({ summary: 'Something went wrong. Try again.', count: 2 }),
+      expect.objectContaining({ summary: "Couldn't complete the request.", count: 2 }),
     ]);
   });
 

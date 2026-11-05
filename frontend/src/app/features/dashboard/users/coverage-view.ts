@@ -217,7 +217,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
       @case ('error') {
         <mf-dash-state
           variant="error"
-          message="The task type coverage could not be loaded."
+          message="Couldn't load the task type coverage."
           (retry)="retry()"
         />
       }

@@ -58,7 +58,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     />
 
     @if (state() === 'loading') {
-      <div class="pg-state" role="status" aria-busy="true">Loading the client...</div>
+      <div class="pg-state" role="status" aria-busy="true">Loading client</div>
     } @else if (state() === 'error') {
       <div class="pg-alert" role="alert">
         We couldn't load that client.

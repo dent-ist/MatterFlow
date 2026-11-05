@@ -401,7 +401,7 @@ describe('DashSwimlaneTab', () => {
     await open(throwError(() => new Error('down')));
     const alert = q('[data-dash-state="error"]');
     expect(alert.getAttribute('role')).toBe('alert');
-    expect(text(alert)).toContain('could not be loaded');
+    expect(text(alert)).toContain("Couldn't load");
     getBoard.mockReturnValue(of(board()));
     alert.querySelector<HTMLButtonElement>('[data-dash-retry]')!.click();
     await settle();
@@ -415,7 +415,7 @@ describe('DashSwimlaneTab', () => {
     (harness.routeDebugElement!.componentInstance as DashSwimlaneTab).refresh();
     await settle();
     expect(qa('mf-swimlane-card').length).toBe(4);
-    expect(text(q('[data-dash-state="stale"]'))).toContain('Could not refresh.');
+    expect(text(q('[data-dash-state="stale"]'))).toContain("Couldn't refresh.");
     getBoard.mockReturnValue(of(board()));
     q<HTMLButtonElement>('[data-dash-state="stale"] [data-dash-retry]').click();
     await settle();

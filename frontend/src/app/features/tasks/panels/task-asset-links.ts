@@ -122,11 +122,11 @@ export const ASSETS_CLOSED_NOTE =
         @if (canSee()) {
           @switch (state()) {
             @case ('loading') {
-              <p class="tl__muted" role="status" aria-busy="true">Loading assets...</p>
+              <p class="tl__muted" role="status" aria-busy="true">Loading assets</p>
             }
             @case ('error') {
               <p class="tl__alert" role="alert" data-load-error>
-                Something went wrong. Try again.
+                Couldn't load assets.
                 <button type="button" class="tl__link" (click)="reload()">Retry</button>
               </p>
             }
@@ -533,5 +533,5 @@ export class TaskAssetLinks {
 function messageOf(error: unknown): string {
   return error instanceof ApiError && error.message
     ? error.message
-    : 'Something went wrong. Try again.';
+    : "Couldn't update the asset links. Try again.";
 }

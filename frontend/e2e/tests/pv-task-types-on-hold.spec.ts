@@ -40,7 +40,7 @@ test.describe('Task type colour, target and the badge', () => {
     await expect(page.locator('[data-target-error]')).toContainText('from 1 to 365');
     await page.locator('[data-target-input]').fill('4');
     await page.locator('[data-save]').click();
-    await expect(page.getByText('Saved.').first()).toBeVisible();
+    await expect(page.getByText('Task type saved').first()).toBeVisible();
 
     const saved = await admin.get(`/api/v1/task-types/${world.taskType.id}`);
     expect(saved.colourKey).toBe('teal');
@@ -71,7 +71,7 @@ test.describe('Task type colour, target and the badge', () => {
     await page.locator('[data-colour-select]').selectOption('');
     await page.locator('[data-target-input]').fill('');
     await page.locator('[data-save]').click();
-    await expect(page.getByText('Saved.').first()).toBeVisible();
+    await expect(page.getByText('Task type saved').first()).toBeVisible();
     const cleared = await admin.get(`/api/v1/task-types/${world.taskType.id}`);
     expect(cleared.colourKey ?? null).toBeNull();
     expect(cleared.targetDays ?? null).toBeNull();

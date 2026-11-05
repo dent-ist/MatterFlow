@@ -202,7 +202,7 @@ describe('AdminCardList (#579)', () => {
     state.querySelector<HTMLButtonElement>('[data-show-all]')!.click();
     expect(f.componentInstance.shownAll).toBe(1);
     Array.from(state.querySelectorAll('button'))
-      .find((b) => b.textContent?.includes('Clear filters'))!
+      .find((b) => b.textContent?.includes('Clear Filters'))!
       .click();
     expect(f.componentInstance.cleared).toBe(1);
 

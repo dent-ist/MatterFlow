@@ -46,10 +46,10 @@ interface Draft {
       <p class="rc__error" role="alert" data-failure>{{ f }}</p>
     }
     @if (state() === 'loading') {
-      <p class="rc__hint" data-loading>Loading the categories...</p>
+      <p class="rc__hint" data-loading>Loading categories</p>
     } @else if (state() === 'error') {
       <p class="rc__error" role="alert" data-error>
-        The categories could not be loaded.
+        Couldn't load the categories.
         <button type="button" class="mf-btn mf-btn--text" (click)="load()">Try again</button>
       </p>
     } @else {
@@ -103,9 +103,7 @@ interface Draft {
               } @empty {
                 @if (!draft()) {
                   <tr>
-                    <td colspan="5" data-empty>
-                      No categories yet. Use New category above to add the first one.
-                    </td>
+                    <td colspan="5" data-empty>No categories yet.</td>
                   </tr>
                 }
               }

@@ -171,14 +171,14 @@ export const PEEK_COMMENTS = 3;
           @switch (state()) {
             @case ('loading') {
               <div class="bones" role="status" aria-busy="true">
-                <span class="sr-only">Loading the task...</span>
+                <span class="sr-only">Loading task</span>
                 <span class="bone" aria-hidden="true"></span>
                 <span class="bone" aria-hidden="true"></span>
               </div>
             }
             @case ('error') {
               <div class="alert" role="alert" data-peek-error>
-                <span>The task details could not be loaded.</span>
+                <span>Couldn't load the task details.</span>
                 <mf-error-reference />
                 <button type="button" class="mf-btn" data-peek-retry (click)="load()">Retry</button>
               </div>

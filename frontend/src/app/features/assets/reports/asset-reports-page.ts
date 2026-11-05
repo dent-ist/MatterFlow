@@ -265,7 +265,7 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
       </div>
     } @else if (typesState() === 'error') {
       <div class="pg-alert" role="alert" data-load-error>
-        The report builder could not be loaded.
+        Couldn't load the report builder.
         <mf-error-reference />
         <button type="button" class="mf-btn" data-retry (click)="init()">Retry</button>
       </div>
@@ -430,8 +430,8 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
 
               @if (fieldsError()) {
                 <p class="ar__alert ar__wide" role="alert" data-fields-error>
-                  The choices for this asset type could not be loaded. Choose the asset type again
-                  to retry.
+                  Couldn't load the choices for this asset type. Choose the asset type again to
+                  retry.
                 </p>
               }
 
