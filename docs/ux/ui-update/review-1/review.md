@@ -36,3 +36,18 @@ Counts (23 issues): 12 PASS, 11 PASS WITH NOTES, 0 FAIL, plus one regression (Da
 PASS issues (the PM may close): #1122 #1124 #1127 #1128 #1131 #1133 #1134 #1138 #1139 #1142 #1153 #1156. PASS WITH NOTES (close once the named fix issue is done): #1123 #1125 (#1215) #1126 #1129 #1135 (#1216) #1136 (#1216) #1152 (#1214) #1137 (#1216) #1140 (#1217) #1141 (#1217) #1143 (#1218).
 
 Not checked: hover states by pointer, the Coverage drawer and the Matters header New menu (the capture script missed them), keyboard focus order beyond axe, 1920 only for dialogs that open the same at both sizes.
+
+## Re-check after batch 3c (tip 478413a, 2026-11-05, screenshots in `../review-2/`)
+
+Axe on 10 changed pages at both sizes: 0 violations (`../review-2/axe-review2.json`). Measurements: `../review-2/measurements-review2.json`.
+
+| Issue | Result | Evidence |
+| --- | --- | --- |
+| #1214 pager and grids | PASS | Dashboard Summary pager on one row; Matter Activities rows 44 (50 measured), Pod Work By Member rows 44, Settings Holidays rows 44, headers 40 |
+| #1215 dropdown and pods | PASS | My Matters "Show" dropdowns 36 px; Users "No pod" on one line; pods popover Cancel then Apply |
+| #1216 titles and tiles | PASS | "My Profile"; Asset record one tile, type text under the title; New and Edit Matter dialogs 576 px |
+| #1217 dialog leftovers | PASS | Assign Work footer `[Cancel] [Assign 0 selected] [Assign the next 3]` (accepted); icon picker uses the shared dialog (768 px); confirm band gone, Cancel / Deactivate Priority |
+| #1218 menus | PASS | disabled "Move up" one line, menu text aligned; search headings "Matters (12)", See all as links |
+| #1123 #1125 #1126 #1129 #1135 #1136 #1137 #1140 #1141 #1143 #1152 | PASS | the notes of review 1 are fixed (numbers above); #1126 Clients Columns belongs to #1179 |
+| Icon-only switch extra | FAIL | Breakdowns Bars / Pie / Table is cut at 1366 in Priority, Status, Age (fix #1219) |
+| Other 32 px toolbar dropdowns | NOTE | Activities Kind, Productions filter, Trends period 32 px; Assign confirmation buttons; Holidays names break mid-word (fix #1220) |
