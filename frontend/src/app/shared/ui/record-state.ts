@@ -299,7 +299,7 @@ export class RecordLoadFlow {
   template: `
     <mf-page-header
       [crumbs]="crumbs()"
-      [heading]="kind() === 'profile' ? 'My profile' : text()"
+      [heading]="kind() === 'profile' ? 'My Profile' : text()"
       [description]="kind() === 'profile' ? text() : ''"
       [icon]="kind() === 'profile' ? null : ''"
     />

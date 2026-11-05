@@ -180,8 +180,8 @@ test.describe("pf8-final: the final contract over the review's persons at four s
       });
       await me.goto('/profile');
       await expect(me.locator('[data-record-state]')).toBeVisible();
-      // The state is the header and the shared record state: the header is the plain "My profile" (no person action).
-      await expect(me.locator('main h1')).toHaveText('My profile');
+      // The state is the header and the shared record state: the header is the plain "My Profile" (no person action).
+      await expect(me.locator('main h1')).toHaveText('My Profile');
       await measure(me, 'load error', 0);
       await shot(me, 'final-load-error');
       await unfail();

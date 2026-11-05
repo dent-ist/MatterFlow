@@ -114,7 +114,6 @@ function clientOption(c: ClientResponse): PickerOption {
     <mf-form-dialog
       [title]="isEdit() ? 'Edit matter' : 'New matter'"
       [subtitle]="matter()?.matterRef ?? ''"
-      size="large"
       [primaryLabel]="isEdit() ? 'Save changes' : 'Create matter'"
       [busy]="busy()"
       [error]="error()"

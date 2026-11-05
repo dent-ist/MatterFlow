@@ -126,7 +126,7 @@ const TABLE: Row[] = [
     title: 'Edit project - MatterFlow',
   },
   { set: 'projects', routes: PROJECTS_ROUTES, key: ':projectId', title: 'Project - MatterFlow' },
-  { set: 'profile', routes: PROFILE_ROUTES, key: '', title: 'My profile - MatterFlow' },
+  { set: 'profile', routes: PROFILE_ROUTES, key: '', title: 'My Profile - MatterFlow' },
   {
     set: 'notifications',
     routes: NOTIFICATIONS_ROUTES,

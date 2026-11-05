@@ -30,7 +30,7 @@ interface Geometry {
 async function geometry(page: Page, name: string | RegExp): Promise<Geometry> {
   // My profile's H1 is the person's name (#528), so that page is found by its place, not by its text.
   const h1 =
-    name === 'My profile'
+    name === 'My Profile'
       ? page.locator('main h1').first()
       : page.getByRole('heading', { name, level: 1 });
   await expect(h1).toBeVisible();
@@ -166,7 +166,7 @@ test.describe('Page-header contract (#600)', () => {
     const MORE = [
       { path: '/dashboard', name: 'Dashboard' },
       { path: '/search?q=acme', name: 'Search results' },
-      { path: '/profile', name: 'My profile' },
+      { path: '/profile', name: 'My Profile' },
     ] as const;
     for (const size of SIZES) {
       await page.setViewportSize(size);
@@ -269,7 +269,7 @@ test.describe('Page-header contract (#600)', () => {
       { who: 'complianceAuditor' as const, path: '/matters', name: 'Matters' },
       { who: 'intakeCoordinator' as const, path: '/projects', name: 'Projects' },
       { who: 'taskViewOnly' as const, path: '/search?q=acme', name: 'Search results' },
-      { who: 'technician' as const, path: '/profile', name: 'My profile' },
+      { who: 'technician' as const, path: '/profile', name: 'My Profile' },
     ];
     for (const c of cases) {
       const person = await personas.named(c.who);

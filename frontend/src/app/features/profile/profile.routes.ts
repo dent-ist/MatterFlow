@@ -6,7 +6,7 @@ import { ProfilePage } from './profile-page';
 export const PROFILE_ROUTES: Routes = [
   {
     path: '',
-    title: 'My profile',
+    title: 'My Profile',
     component: ProfilePage,
     canDeactivate: [unsavedChangesGuard],
   },

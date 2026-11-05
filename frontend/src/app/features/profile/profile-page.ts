@@ -59,7 +59,7 @@ import { RecordState, recordStateTitle } from '../../shared/ui/record-state';
         (retried)="retry()"
       />
     } @else {
-      <mf-page-header heading="My profile" data-profile-header>
+      <mf-page-header heading="My Profile" data-profile-header>
         <!-- The person's name and availability are the context line under the title (D-21, #1135). -->
         <span mfDescription class="pp__who" data-profile-who>
           <span class="pp__name" data-name>{{ name() }}</span>

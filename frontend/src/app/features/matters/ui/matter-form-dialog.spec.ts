@@ -104,6 +104,15 @@ describe('MatterFormDialog: one form for New and Edit (MD-43, #1061)', () => {
     }
   });
 
+  it('New and Edit open at the default 576 px width, not the large 768 px (D-32, #1216)', async () => {
+    await start(false);
+    expect(q('.p-dialog')!.style.width).toBe('var(--mf-dialog-w)');
+    TestBed.resetTestingModule();
+    document.body.querySelectorAll('.p-dialog-mask').forEach((e) => e.remove());
+    await start(true);
+    expect(q('.p-dialog')!.style.width).toBe('var(--mf-dialog-w)');
+  });
+
   it('shows the CM Number as a read-only preview that follows the client and the matter number', async () => {
     const f = await start(false);
     expect((q('#matter-number') as HTMLInputElement).disabled).toBe(false); // New: both inputs are editable

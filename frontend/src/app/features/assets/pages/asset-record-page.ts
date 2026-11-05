@@ -21,7 +21,6 @@ import { AssetResponse, AssetsClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { PageTitle, recordTitle } from '../../../core/title/page-title';
-import { AssetTypeChip } from '../../../shared/ui/asset-type-chip';
 import { StatusChip } from '../../../shared/ui/status-chip';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { EntityActivity } from '../../../shared/ui/entity-activity';
@@ -48,7 +47,7 @@ type Tab = 'details' | 'tasks' | 'history';
 
 /**
  * The asset record page (UX S08, #490): `/assets/:id`, like Clients, Matters and Projects. The shared record header (crumb, clamped name,
- * type badge, Active/Inactive badge, the matter on the context line), the action rule Edit, Activity, overflow (Set inactive / Set active;
+ * Active/Inactive badge; one tile, the type is plain text on the context line before the matter, #1216), the action rule Edit, Activity, overflow (Set inactive / Set active;
  * no primary action, linking is made from the Task page), and `mf-tabs` Details | Linked tasks (n) | History in `?tab=`. The shared record
  * states answer 404, 403 and failures (#491); focus goes to the heading when the page opens, or to the selected tab when the person comes
  * back to it (#494). Assets are deactivated, never deleted.
@@ -62,7 +61,6 @@ type Tab = 'details' | 'tasks' | 'history';
     RecordState,
     RecordSkeleton,
     Tabs,
-    AssetTypeChip,
     StatusChip,
     MatterRef,
     ConfirmDialog,
@@ -79,12 +77,6 @@ type Tab = 'details' | 'tasks' | 'history';
     [data-matter] ::ng-deep a.mf-ref {
       margin-block: -5px;
       padding-block: 5px;
-    }
-    .ar-type {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      font-weight: var(--mf-fw-semibold);
     }
   `,
   template: `
@@ -106,16 +98,6 @@ type Tab = 'details' | 'tasks' | 'history';
               [actions]="headerActions()"
             >
               <span mfBadges>
-                <span class="ar-type" data-type-badge
-                  ><mf-asset-type-chip
-                    size="sm"
-                    [decorative]="true"
-                    [iconKey]="a.assetTypeIconKey"
-                    [colourKey]="a.assetTypeColourKey"
-                    [typeId]="a.assetTypeId"
-                    [name]="a.assetTypeName"
-                  />{{ a.assetTypeName }}</span
-                >
                 @if (
                   a.dispositionCode === 'PENDING_DISPOSITION' || a.dispositionCode === 'DISPOSED'
                 ) {
@@ -127,7 +109,7 @@ type Tab = 'details' | 'tasks' | 'history';
                 }
               </span>
               <span mfContext data-matter
-                >Matter
+                ><span data-type-badge>{{ a.assetTypeName }}</span> &middot; Matter
                 <mf-matter-ref [value]="a.matterRef" [link]="matterLink()" [copy]="false" />
                 {{ a.matterName }}
               </span>

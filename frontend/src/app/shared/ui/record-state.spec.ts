@@ -157,12 +157,12 @@ describe('mf-record-state', () => {
     expect(host.retries).toBe(1);
   });
 
-  it('profile (#532): the header stays "My profile", the reason is its context line, no crumbs, Retry on a failure', async () => {
+  it('profile (#532): the header stays "My Profile", the reason is its context line, no crumbs, Retry on a failure', async () => {
     const { el, host, settle } = await render();
     host.kind.set('profile');
     host.state.set('error');
     await settle();
-    expect(el.querySelector('h1')?.textContent?.trim()).toBe('My profile');
+    expect(el.querySelector('h1')?.textContent?.trim()).toBe('My Profile');
     expect(el.querySelector('[data-page-description]')?.textContent?.trim()).toBe(
       "Couldn't load this profile.",
     );

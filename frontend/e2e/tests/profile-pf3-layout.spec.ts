@@ -52,7 +52,7 @@ test.describe('pf2-header: name, context line, status chip and ONE primary actio
     const actions = me.locator('[data-page-actions] button');
     await expect(actions).toHaveCount(1);
     await expect(actions).toHaveText('Set out of office...');
-    await expect(me).toHaveTitle('My profile - MatterFlow');
+    await expect(me).toHaveTitle('My Profile - MatterFlow');
 
     await actions.click();
     const dialog = me.getByRole('dialog', { name: 'Set out of office' });
@@ -371,7 +371,7 @@ test.describe('pf3-states: skeleton while loading and the shared record state on
       await me.goto('/profile');
       const state = me.locator('[data-record-state]');
       await expect(state).toBeVisible();
-      await expect(me.locator('main h1')).toHaveText('My profile');
+      await expect(me.locator('main h1')).toHaveText('My Profile');
       await expect(me.locator('main h1')).toBeFocused();
       await expect(me.locator('[data-page-description]')).toHaveText("Couldn't load this profile.");
       await expect(

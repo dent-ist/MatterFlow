@@ -60,7 +60,7 @@ describe('ProfilePage', () => {
 
   it('has the page title, a section icon, the form and the Account card', async () => {
     const { root } = await create();
-    expect(PROFILE_ROUTES[0].title).toBe('My profile');
+    expect(PROFILE_ROUTES[0].title).toBe('My Profile');
     expect(iconForPath('/profile')).toBe('pi pi-user-edit');
     expect(root.querySelector('mf-availability-form fieldset legend')?.textContent).toContain(
       'Work hours',
@@ -72,8 +72,8 @@ describe('ProfilePage', () => {
 
   it('the header names the person, gives roles and primary Pod and the chip (P11)', async () => {
     const { root } = await create();
-    // The title is the page ("My profile"); the person's name, availability chip, roles and Pod are the context line under it (#1135).
-    expect(text(root, 'h1')).toBe('My profile');
+    // The title is the page ("My Profile"); the person's name, availability chip, roles and Pod are the context line under it (#1135).
+    expect(text(root, 'h1')).toBe('My Profile');
     expect(text(root, '[data-profile-who] [data-name]')).toBe('Kim Admin');
     expect(
       root.querySelector('[data-profile-who] [data-availability-chip]')?.textContent,
@@ -125,7 +125,7 @@ describe('ProfilePage', () => {
       .mockReturnValue(ok(dto()));
     const { fixture, root } = await create({ get });
     expect(root.querySelector('[data-record-state]')).not.toBeNull();
-    expect(text(root, 'h1')).toBe('My profile');
+    expect(text(root, 'h1')).toBe('My Profile');
     expect(text(root, '[data-page-description]')).toBe("Couldn't load this profile.");
     expect(root.querySelector('[data-primary-action]')).toBeNull();
     root.querySelector<HTMLButtonElement>('[data-retry] button, button[data-retry]')!.click();
