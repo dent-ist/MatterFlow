@@ -12,12 +12,10 @@ import {
   untracked,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Button } from 'primeng/button';
-import { Dialog } from 'primeng/dialog';
 import { NotificationService } from '../../../core/notify/notification.service';
-import { DialogFocus } from '../../../shared/ui/dialog-focus';
 import { EVENT_TYPES, EventIcon } from '../../../shared/ui/event-type';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
+import { FormDialog } from '../../../shared/ui/form-dialog';
 import { MmApi } from './mm-api';
 import { MatterEvent, MatterTree } from './mm-models';
 
@@ -38,20 +36,16 @@ interface Errors {
  */
 @Component({
   selector: 'mf-mm-event-dialog',
-  imports: [Button, Dialog, DialogFocus, Dropdown, EventIcon, FormsModule],
+  imports: [FormDialog, Dropdown, EventIcon, FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <p-dialog
-      [header]="event() ? 'Edit calendar item' : 'New calendar item'"
-      [modal]="true"
-      [closable]="true"
-      closeAriaLabel="Close dialog"
-      [mfDialogFocus]="visible()"
-      [draggable]="false"
-      [resizable]="false"
-      [visible]="visible()"
-      (visibleChange)="visible.set($event)"
-      [style]="{ width: '34rem', maxWidth: '95vw' }"
+    <mf-form-dialog
+      [title]="event() ? 'Edit Event' : 'Add Event'"
+      [primaryLabel]="event() ? 'Save Changes' : 'Add Event'"
+      [deleteLabel]="event() ? 'Delete' : ''"
+      [(visible)]="visible"
+      (submitted)="save()"
+      (deleted)="remove()"
     >
       <form class="f" (ngSubmit)="save()" novalidate id="mm-event-form">
         <div class="fld">
@@ -114,6 +108,7 @@ interface Errors {
           <label for="ev-title">Title</label>
           <input
             id="ev-title"
+            class="mf-control"
             name="title"
             type="text"
             maxlength="200"
@@ -132,6 +127,7 @@ interface Errors {
             <label for="ev-date">Date</label>
             <input
               id="ev-date"
+              class="mf-control"
               name="date"
               type="date"
               [ngModel]="date()"
@@ -147,6 +143,7 @@ interface Errors {
             <label for="ev-time" title="Leave blank for an all-day item.">Time</label>
             <input
               id="ev-time"
+              class="mf-control"
               name="time"
               type="time"
               [ngModel]="time()"
@@ -164,6 +161,7 @@ interface Errors {
           <label for="ev-note">Note</label>
           <textarea
             id="ev-note"
+            class="mf-control"
             name="note"
             rows="3"
             maxlength="2000"
@@ -188,14 +186,7 @@ interface Errors {
           <p class="err" role="alert" data-event-error>{{ errors().form }}</p>
         }
       </form>
-      <ng-template #footer>
-        @if (event()) {
-          <p-button label="Delete" severity="danger" [outlined]="true" (onClick)="remove()" />
-        }
-        <p-button label="Cancel" severity="secondary" (onClick)="visible.set(false)" />
-        <p-button [label]="event() ? 'Save' : 'Add item'" (onClick)="save()" [disabled]="false" />
-      </ng-template>
-    </p-dialog>
+    </mf-form-dialog>
   `,
   styles: `
     .f {
@@ -218,25 +209,6 @@ interface Errors {
       font-weight: 600;
       font-size: var(--mf-fs-sm);
       padding: 0;
-    }
-    input[type='text'],
-    input[type='date'],
-    input[type='time'],
-    select,
-    textarea {
-      box-sizing: border-box;
-      width: 100%;
-      min-height: 36px;
-      padding: var(--mf-s1) var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-    }
-    input[aria-invalid='true'],
-    select[aria-invalid='true'] {
-      border-color: var(--mf-danger);
     }
     .row {
       display: grid;

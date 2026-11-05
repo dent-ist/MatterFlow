@@ -90,7 +90,7 @@ describe('SetOutOfOfficeDialog', () => {
     expect(q('[data-ooo-summary]').textContent).toContain(
       'You will show as out of office from now, until you set yourself available again.',
     );
-    await type(fixture, '#ooo-until', 'Oct 20, 2026');
+    await type(fixture, '#ooo-until', '2026-10-20');
     expect(q('[data-ooo-summary]').textContent).toContain(
       'until Oct 20 and as available again on Oct 21',
     );
@@ -98,19 +98,18 @@ describe('SetOutOfOfficeDialog', () => {
 
   it('refuses an Until date in the past', async () => {
     const { fixture } = await open();
-    await type(fixture, '#ooo-until', 'Oct 10, 2026');
+    await type(fixture, '#ooo-until', '2026-10-10');
     expect(q('[data-until-error]').textContent).toContain('on or after');
-    expect(
-      q<HTMLButtonElement>('[data-ooo-confirm] button, button[data-ooo-confirm]').disabled,
-    ).toBe(true);
+    // The shared form dialog marks its primary button aria-disabled (it stays focusable) and ignores the click.
+    expect(q('[data-panel-primary]').getAttribute('aria-disabled')).toBe('true');
   });
 
   it('creates an entry that starts today', async () => {
     const { fixture, api } = await open();
     const success = vi.spyOn(TestBed.inject(NotificationService), 'success');
-    await type(fixture, '#ooo-until', 'Oct 20, 2026');
+    await type(fixture, '#ooo-until', '2026-10-20');
     await type(fixture, '#ooo-note', 'Covering: Dana');
-    q<HTMLButtonElement>('[data-ooo-confirm] button, button[data-ooo-confirm]').click();
+    q<HTMLButtonElement>('[data-panel-primary] button').click();
     // The first save loads the API client module with a dynamic import (MyAvailability.client), which a fixed number of timer ticks does not
     // always outlast on a busy machine: wait for the call instead of for a moment.
     await vi.waitFor(() => expect(api.create).toHaveBeenCalled());
@@ -132,7 +131,7 @@ describe('SetOutOfOfficeDialog', () => {
 
   it('opens again, with empty fields, after it closed itself (Esc, Cancel, the X): the header menu item must not go dead (UXR5-15)', async () => {
     const { fixture } = await open();
-    await type(fixture, '#ooo-until', 'Oct 20, 2026');
+    await type(fixture, '#ooo-until', '2026-10-20');
     await type(fixture, '#ooo-note', 'Back soon');
     // The dialog closes by writing its own `visible` model, which is what ComponentRef.setInput('visible', true) cannot undo.
     fixture.componentInstance.visible.set(false);
@@ -175,7 +174,7 @@ describe('SetOutOfOfficeDialog', () => {
       const { fixture } = await open();
       chip('tomorrow').click();
       await settle(fixture);
-      await type(fixture, '#ooo-until', 'Oct 20, 2026');
+      await type(fixture, '#ooo-until', '2026-10-20');
       expect(chip('tomorrow').getAttribute('aria-pressed')).toBe('false');
       expect(q('[data-ooo-summary]').textContent).toContain('until Oct 20');
 
@@ -199,7 +198,7 @@ describe('SetOutOfOfficeDialog', () => {
       ]);
       chip('monday').click();
       await settle(fixture);
-      q<HTMLButtonElement>('[data-ooo-confirm] button, button[data-ooo-confirm]').click();
+      q<HTMLButtonElement>('[data-panel-primary] button').click();
       await vi.waitFor(() => expect(api.create).toHaveBeenCalled());
       expect(api.create).toHaveBeenCalledWith(
         expect.any(Number),
@@ -219,13 +218,13 @@ describe('SetOutOfOfficeDialog', () => {
       expect(fixture.componentInstance['until']()).toBe('2026-10-16');
     });
 
-    it('opens on the heading, not on the date field, and has the link to My profile', async () => {
+    it('opens on its first field (the Type list), not on the date field, and has the link to My profile', async () => {
       await open();
       await new Promise((r) => setTimeout(r, 50));
-      const title = q('.p-dialog-title');
-      expect(document.activeElement).toBe(title);
-      expect(title.getAttribute('tabindex')).toBe('-1');
+      // The shared form dialog (#1139) focuses its first field; it is never the date field (no on-screen keyboard on a phone).
+      expect(document.activeElement).toBe(q('#ooo-type'));
       expect(document.activeElement).not.toBe(q('#ooo-until'));
+      expect(q('.mf-dlg__title').textContent).toContain('Set Out of Office');
       expect(q('[data-ooo-more]').getAttribute('href')).toBe('/profile');
       expect(q('[data-ooo-more]').textContent).toContain('More options on My profile');
     });

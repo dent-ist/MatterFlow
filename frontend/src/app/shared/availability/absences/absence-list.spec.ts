@@ -76,9 +76,9 @@ describe('AbsenceList (Profile > Out of office)', () => {
       text(b),
     );
     expect(buttons[0]).toBe('Cancel');
-    expect(buttons[buttons.length - 1]).toBe('Add out of office');
-    await typeInto(f, '#ad-start', '11/18/2026');
-    await typeInto(f, '#ad-end', '11/19/2026');
+    expect(buttons[buttons.length - 1]).toBe('Add Out of Office');
+    await typeInto(f, '#ad-start', '2026-11-18');
+    await typeInto(f, '#ad-end', '2026-11-19');
     Array.from(document.querySelectorAll<HTMLButtonElement>('.p-dialog-footer button'))
       .pop()!
       .click();
@@ -96,8 +96,8 @@ describe('AbsenceList (Profile > Out of office)', () => {
       .querySelector<HTMLButtonElement>('[data-add-absence]')!
       .click();
     await settle(f);
-    await typeInto(f, '#ad-start', '12/07/2026');
-    await typeInto(f, '#ad-end', '12/08/2026');
+    await typeInto(f, '#ad-start', '2026-12-07');
+    await typeInto(f, '#ad-end', '2026-12-08');
     Array.from(document.querySelectorAll<HTMLButtonElement>('.p-dialog-footer button'))
       .pop()!
       .click();
@@ -116,7 +116,7 @@ describe('AbsenceList (Profile > Out of office)', () => {
       .querySelector<HTMLButtonElement>('[data-add-absence]')!
       .click();
     await settle(f);
-    await typeInto(f, '#ad-start', '10/20/2026');
+    await typeInto(f, '#ad-start', '2026-10-20');
     Array.from(document.querySelectorAll<HTMLButtonElement>('.p-dialog-footer button'))
       .pop()!
       .click();

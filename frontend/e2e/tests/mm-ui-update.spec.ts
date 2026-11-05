@@ -308,7 +308,7 @@ test.describe('My Matters: review round 2 (UI-20)', () => {
     await day.focus();
     await expect(day).toBeVisible();
     await day.click();
-    const dialog = page.getByRole('dialog', { name: 'New calendar item' });
+    const dialog = page.getByRole('dialog', { name: 'Add Event' });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByLabel('Date')).not.toHaveValue('');
   });
@@ -354,7 +354,7 @@ test.describe('My Matters: review round 3 (UI-21)', () => {
     const page = await asUser(w.pm.username);
     await page.goto(`/my-matters?tab=calendar&matterId=${a.matterId}`);
     await page.locator('[data-add-event]').click();
-    const dialog = page.getByRole('dialog', { name: 'New calendar item' });
+    const dialog = page.getByRole('dialog', { name: 'Add Event' });
     await expect(dialog).toBeVisible();
     const order = await dialog.locator('mf-dropdown button').evaluateAll((b) => b.map((x) => x.id));
     expect(order.slice(0, 2)).toEqual(['ev-client', 'ev-matter']);
@@ -443,15 +443,15 @@ test.describe('My Matters: calendar events, assets and activity (need the UI-03 
       `/my-matters?tab=calendar&month=${inDays(2).slice(0, 7)}&matterId=${a.matterId}`,
     );
     await page.locator('[data-add-event]').click();
-    const dialog = page.getByRole('dialog', { name: 'New calendar item' });
+    const dialog = page.getByRole('dialog', { name: 'Add Event' });
     await expect(dialog).toBeVisible();
     // An empty form says what is missing, under the fields.
-    await dialog.getByRole('button', { name: 'Add item' }).click();
+    await dialog.getByRole('button', { name: 'Add Event' }).click();
     await expect(dialog.getByRole('alert').first()).toBeVisible();
     await dialog.getByLabel('Court hearing').check({ force: true });
     await dialog.getByLabel('Title').fill('Motion hearing');
     await dialog.getByLabel('Date').fill(inDays(2));
-    await dialog.getByRole('button', { name: 'Add item' }).click();
+    await dialog.getByRole('button', { name: 'Add Event' }).click();
     await expect(dialog).toBeHidden();
     await expect(page.locator(`[data-day="${inDays(2)}"]`)).toHaveAttribute(
       'aria-label',

@@ -1,0 +1,162 @@
+{
+  "1139-set-out-of-office-1366x768": {
+    "dialog": "416x599",
+    "radius": "12px",
+    "header": "414x56",
+    "footer": "414x61",
+    "close": "36x36",
+    "titleSize": "16px",
+    "footerBorder": "1px",
+    "buttons": [
+      "Cancel",
+      "Set Out of Office"
+    ],
+    "bodyScrollsSideways": false,
+    "pageOverflowX": 0,
+    "viewportFit": true
+  },
+  "1139-set-out-of-office-1920x1080": {
+    "dialog": "416x599",
+    "radius": "12px",
+    "header": "414x56",
+    "footer": "414x61",
+    "close": "36x36",
+    "titleSize": "16px",
+    "footerBorder": "1px",
+    "buttons": [
+      "Cancel",
+      "Set Out of Office"
+    ],
+    "bodyScrollsSideways": false,
+    "pageOverflowX": 0,
+    "viewportFit": true
+  },
+  "1139-add-out-of-office-1366x768": {
+    "dialog": "576x587",
+    "radius": "12px",
+    "header": "574x56",
+    "footer": "574x61",
+    "close": "36x36",
+    "titleSize": "16px",
+    "footerBorder": "1px",
+    "buttons": [
+      "Cancel",
+      "Add Out of Office"
+    ],
+    "bodyScrollsSideways": false,
+    "pageOverflowX": 0,
+    "viewportFit": true
+  },
+  "1139-add-out-of-office-1920x1080": {
+    "dialog": "576x587",
+    "radius": "12px",
+    "header": "574x56",
+    "footer": "574x61",
+    "close": "36x36",
+    "titleSize": "16px",
+    "footerBorder": "1px",
+    "buttons": [
+      "Cancel",
+      "Add Out of Office"
+    ],
+    "bodyScrollsSideways": false,
+    "pageOverflowX": 0,
+    "viewportFit": true
+  },
+  "1139-add-event-1366x768": {
+    "dialog": "576x691",
+    "radius": "12px",
+    "header": "574x56",
+    "footer": "574x61",
+    "close": "36x36",
+    "titleSize": "16px",
+    "footerBorder": "1px",
+    "buttons": [
+      "Cancel",
+      "Add Event"
+    ],
+    "bodyScrollsSideways": false,
+    "pageOverflowX": 0,
+    "viewportFit": true
+  },
+  "1139-add-event-1920x1080": {
+    "dialog": "576x844",
+    "radius": "12px",
+    "header": "574x56",
+    "footer": "574x61",
+    "close": "36x36",
+    "titleSize": "16px",
+    "footerBorder": "1px",
+    "buttons": [
+      "Cancel",
+      "Add Event"
+    ],
+    "bodyScrollsSideways": false,
+    "pageOverflowX": 0,
+    "viewportFit": true
+  },
+  "1139-change-managers-1366x768": {
+    "dialog": "576x349",
+    "radius": "12px",
+    "header": "574x56",
+    "footer": "574x61",
+    "close": "36x36",
+    "titleSize": "16px",
+    "footerBorder": "1px",
+    "buttons": [
+      "Cancel",
+      "Save"
+    ],
+    "bodyScrollsSideways": false,
+    "pageOverflowX": 0,
+    "viewportFit": true
+  },
+  "1139-change-managers-1920x1080": {
+    "dialog": "576x349",
+    "radius": "12px",
+    "header": "574x56",
+    "footer": "574x61",
+    "close": "36x36",
+    "titleSize": "16px",
+    "footerBorder": "1px",
+    "buttons": [
+      "Cancel",
+      "Save"
+    ],
+    "bodyScrollsSideways": false,
+    "pageOverflowX": 0,
+    "viewportFit": true
+  },
+  "1139-availability-1366x768": {
+    "dialog": "576x580",
+    "radius": "12px",
+    "header": "574x56",
+    "footer": "574x61",
+    "close": "36x36",
+    "titleSize": "16px",
+    "footerBorder": "1px",
+    "buttons": [
+      "Cancel",
+      "Save Changes"
+    ],
+    "bodyScrollsSideways": false,
+    "pageOverflowX": 0,
+    "viewportFit": true
+  },
+  "1139-availability-1920x1080": {
+    "dialog": "576x580",
+    "radius": "12px",
+    "header": "574x56",
+    "footer": "574x61",
+    "close": "36x36",
+    "titleSize": "16px",
+    "footerBorder": "1px",
+    "buttons": [
+      "Cancel",
+      "Save Changes"
+    ],
+    "bodyScrollsSideways": false,
+    "pageOverflowX": 0,
+    "viewportFit": true
+  }
+}

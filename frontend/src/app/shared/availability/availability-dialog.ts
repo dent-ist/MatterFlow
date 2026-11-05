@@ -1,38 +1,25 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  input,
-  model,
-  output,
-  viewChild,
-} from '@angular/core';
-import { Dialog } from 'primeng/dialog';
+import { ChangeDetectionStrategy, Component, input, model, output, viewChild } from '@angular/core';
 import { UserAvailabilityDto } from '../../api/generated/api-client';
-import { LeaveConfirmService } from '../guards/unsaved-changes.guard';
-import { DialogFocus } from '../ui/dialog-focus';
+import { FormDialog } from '../ui/form-dialog';
 import { AvailabilityForm } from './availability-form';
 
 /**
- * "Edit availability" for someone else (needs User.Manage): the same form as My profile, in a dialog. Closing with unsaved edits asks
- * first.
+ * "Edit availability" for someone else (needs User.Manage): the same form as My profile, in the shared form dialog. The footer (Cancel, Save Changes) and the
+ * question on closing with unsaved edits are the dialog's own.
  */
 @Component({
   selector: 'mf-availability-dialog',
-  imports: [Dialog, DialogFocus, AvailabilityForm],
+  imports: [FormDialog, AvailabilityForm],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <p-dialog
-      [header]="'Availability of ' + displayName()"
-      [modal]="true"
-      [closable]="true"
-      closeAriaLabel="Close dialog"
-      [mfDialogFocus]="visible()"
-      [draggable]="false"
-      [resizable]="false"
-      [visible]="visible()"
-      (visibleChange)="request($event)"
-      [style]="{ width: '50rem', maxWidth: '95vw' }"
+    <mf-form-dialog
+      [title]="'Availability of ' + displayName()"
+      primaryLabel="Save Changes"
+      [dirty]="form()?.dirty() ?? false"
+      [canSubmit]="form()?.dirty() ?? false"
+      [busy]="form()?.busy() ?? false"
+      [(visible)]="visible"
+      (submitted)="form()?.save()"
     >
       @if (visible() && userId() !== null) {
         <mf-availability-form
@@ -40,10 +27,9 @@ import { AvailabilityForm } from './availability-form';
           [userId]="userId()"
           [displayName]="displayName()"
           (saved)="saved.emit($event); visible.set(false)"
-          (closed)="request(false)"
         />
       }
-    </p-dialog>
+    </mf-form-dialog>
   `,
 })
 export class AvailabilityDialog {
@@ -52,19 +38,5 @@ export class AvailabilityDialog {
   readonly displayName = input('');
   readonly saved = output<UserAvailabilityDto>();
 
-  private readonly leave = inject(LeaveConfirmService);
-  private readonly form = viewChild(AvailabilityForm);
-
-  protected async request(open: boolean): Promise<void> {
-    if (open) {
-      this.visible.set(true);
-      return;
-    }
-    const dirty = this.formDirty();
-    if (!dirty || (await this.leave.ask())) this.visible.set(false);
-  }
-
-  private formDirty(): boolean {
-    return this.form()?.hasUnsavedChanges() ?? false;
-  }
+  protected readonly form = viewChild(AvailabilityForm);
 }

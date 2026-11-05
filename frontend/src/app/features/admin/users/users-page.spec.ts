@@ -788,11 +788,8 @@ describe('UsersPage', () => {
       expect(q('[data-availability-sentence]').textContent).toContain('Conference');
       q('[data-edit-availability]').click();
       await settle();
-      expect(
-        document.querySelector(
-          'mf-availability-dialog .p-dialog, .p-dialog [data-availability-form]',
-        ),
-      ).not.toBeNull();
+      // The shared form dialog is drawn in the page body, not inside the component.
+      expect(document.querySelector('.mf-formdlg')).not.toBeNull();
     });
 
     it('says in muted lines which parts save at once and which with Save changes', async () => {

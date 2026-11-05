@@ -93,7 +93,7 @@ test.describe('Matters list: project managers', () => {
     await dialog
       .locator('[data-manager-select=primary]')
       .selectOption({ label: `PM Bravo ${fx.token}` });
-    await page.locator('[data-confirm-primary]').click();
+    await page.locator('[data-panel-primary] button').click();
     await expect(toasts(page).first()).toContainText('Project managers set on 2 matters');
     await expect(rowOf(page, 'No manager two').locator('[data-primary-manager]')).toContainText(
       'PM Bravo',
@@ -179,7 +179,7 @@ test.describe('Matter page: project managers', () => {
     await page
       .locator('[data-manager-select=secondary]')
       .selectOption({ label: `PM Bravo ${fx.token}` });
-    await page.locator('[data-confirm-primary]').click();
+    await page.locator('[data-panel-primary] button').click();
     await expect(page.locator('[data-secondary-manager]')).toContainText('PM Bravo');
 
     const events = await admin.get<{

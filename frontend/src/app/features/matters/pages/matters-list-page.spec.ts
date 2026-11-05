@@ -771,11 +771,7 @@ describe('MattersListPage', () => {
       secondary.value = '12';
       secondary.dispatchEvent(new Event('change'));
       await settle(fixture);
-      document.body
-        .querySelector<HTMLButtonElement>(
-          '[data-confirm-primary] button, button[data-confirm-primary]',
-        )!
-        .click();
+      document.body.querySelector<HTMLButtonElement>('[data-panel-primary] button')!.click();
       await settle(fixture);
 
       // The Primary stays what each matter has; the Secondary is Bob on both; each call carries its matter's own row version.

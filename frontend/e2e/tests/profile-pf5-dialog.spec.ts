@@ -13,7 +13,7 @@ import { SIZES, noHorizontalScroll, shot } from '../support/screens';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /** A calendar day in the firm zone (the suite runs in America/New_York): today plus `plus` days. */
-function inDays(plus: number): { text: string; short: string } {
+function inDays(plus: number): { text: string; iso: string; short: string } {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/New_York',
     year: 'numeric',
@@ -23,7 +23,8 @@ function inDays(plus: number): { text: string; short: string } {
   const get = (t: string) => Number(parts.find((p) => p.type === t)!.value);
   const d = new Date(Date.UTC(get('year'), get('month') - 1, get('day') + plus));
   const [y, m, day] = [d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()];
-  return { text: `${MONTHS[m]} ${day}, ${y}`, short: `${MONTHS[m]} ${day}` };
+  const iso = `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  return { text: `${MONTHS[m]} ${day}, ${y}`, iso, short: `${MONTHS[m]} ${day}` };
 }
 
 /** Days from today to the next Monday after today (a Monday means the following one). */
@@ -67,7 +68,7 @@ test.describe('pf5-dialog-presets: quick choices fill Until (#538)', () => {
       ];
       for (const c of cases) {
         await dialog.locator(`[data-preset="${c.id}"]`).click();
-        await expect(dialog.locator('#ooo-until')).toHaveValue(inDays(c.plus).text);
+        await expect(dialog.locator('#ooo-until')).toHaveValue(inDays(c.plus).iso);
         await expect(dialog.locator(`[data-preset="${c.id}"]`)).toHaveAttribute(
           'aria-pressed',
           'true',
@@ -89,7 +90,7 @@ test.describe('pf5-dialog-presets: quick choices fill Until (#538)', () => {
     await me.goto('/my-work');
     const dialog = await openDialog(me);
     await dialog.locator('[data-preset="tomorrow"]').click();
-    await dialog.locator('#ooo-until').fill(inDays(3).text);
+    await dialog.locator('#ooo-until').fill(inDays(3).iso);
     await dialog.locator('#ooo-until').blur();
     await expect(dialog.locator('[aria-pressed="true"]')).toHaveCount(0);
     await dialog.getByRole('button', { name: 'Pick a date' }).click();
@@ -109,7 +110,7 @@ test.describe('pf5-dialog-presets: quick choices fill Until (#538)', () => {
 });
 
 test.describe('pf5-dialog-focus: heading focus and the link to My profile (#539)', () => {
-  test('opens on the heading (no focus ring on the date field), Tab reaches everything, Esc returns to the menu button', async ({
+  test('opens on the first field, the Type list (no focus ring on the date field), Tab reaches everything, Esc returns to the menu button', async ({
     personas,
     asUser,
   }) => {
@@ -122,7 +123,8 @@ test.describe('pf5-dialog-focus: heading focus and the link to My profile (#539)
     await me.getByRole('menuitem', { name: 'Set out of office...' }).press('Enter');
     const dialog = me.getByRole('dialog', { name: 'Set out of office' });
     await expect(dialog).toBeVisible();
-    await expect(dialog.locator('.p-dialog-title')).toBeFocused();
+    // The shared form dialog puts focus on its first field (the Type list), never on the date field.
+    await expect(dialog.locator('#ooo-type')).toBeFocused();
     await expect(dialog.locator('#ooo-until')).not.toBeFocused();
 
     // Tab reaches the chips, the date, the note, the link and the buttons.

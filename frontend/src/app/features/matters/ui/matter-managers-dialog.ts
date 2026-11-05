@@ -20,7 +20,7 @@ import {
 import { ApiError } from '../../../core/http/api-error';
 import { QuietRequests } from '../../../core/http/interceptors';
 import { NotificationService } from '../../../core/notify/notification.service';
-import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { FormDialog } from '../../../shared/ui/form-dialog';
 
 /** One matter the dialog changes: its id, how it reads in the result list, the row version last read and the managers it has now. */
 export interface ManagerTarget {
@@ -51,7 +51,7 @@ const CONCURRENCY = 3;
  */
 @Component({
   selector: 'mf-matter-managers-dialog',
-  imports: [ConfirmDialog],
+  imports: [FormDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .mmd {
@@ -82,14 +82,14 @@ const CONCURRENCY = 3;
     }
   `,
   template: `
-    <mf-confirm-dialog
+    <mf-form-dialog
       [title]="title()"
-      [confirmLabel]="failed().length > 0 ? 'Try the rest again' : 'Save'"
-      [showConfirm]="canSave()"
+      [primaryLabel]="failed().length > 0 ? 'Try the rest again' : 'Save'"
+      [canSubmit]="canSave()"
       [busy]="busy()"
       [error]="error()"
       [(visible)]="visible"
-      (confirmed)="save()"
+      (submitted)="save()"
     >
       <div class="mmd" data-managers-dialog>
         @if (bulk()) {
@@ -157,7 +157,7 @@ const CONCURRENCY = 3;
           </div>
         }
       </div>
-    </mf-confirm-dialog>
+    </mf-form-dialog>
   `,
 })
 export class MatterManagersDialog {
@@ -174,7 +174,7 @@ export class MatterManagersDialog {
   protected readonly uid = `mmd${Math.random().toString(36).slice(2, 8)}`;
   protected readonly bulk = computed(() => this.targets().length > 1);
   protected readonly title = computed(() =>
-    this.bulk() ? 'Set project managers' : 'Change project managers',
+    this.bulk() ? 'Set Project Managers' : 'Change Managers',
   );
   protected readonly primaryChoice = signal(NONE);
   protected readonly secondaryChoice = signal(NONE);

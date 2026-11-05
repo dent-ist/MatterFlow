@@ -253,13 +253,9 @@ interface Problem {
           </fieldset>
         </section>
 
-        <div
-          class="av-actions mf-form-actions--sticky"
-          [class.av-actions--dialog]="mode() === 'dialog'"
-          [class.av-actions--page]="mode() === 'page'"
-          data-actions
-        >
-          @if (mode() === 'page') {
+        <!-- In a dialog the dialog's own footer saves and cancels (mf-form-dialog); the page keeps this bar. -->
+        @if (mode() === 'page') {
+          <div class="av-actions mf-form-actions--sticky av-actions--page" data-actions>
             <span
               class="av-actions__state mf-form-actions__note"
               role="status"
@@ -272,16 +268,14 @@ interface Problem {
               [disabled]="busy() || !dirty()"
               (onClick)="discard()"
             />
-          } @else {
-            <p-button label="Cancel" severity="secondary" (onClick)="closed.emit()" />
-          }
-          <p-button
-            type="submit"
-            [label]="busy() ? 'Saving...' : mode() === 'page' ? 'Save Changes' : 'Save changes'"
-            [disabled]="busy() || !dirty()"
-            data-save
-          />
-        </div>
+            <p-button
+              type="submit"
+              [label]="busy() ? 'Saving...' : 'Save Changes'"
+              [disabled]="busy() || !dirty()"
+              data-save
+            />
+          </div>
+        }
       </form>
     }
   `,
@@ -322,7 +316,8 @@ export class AvailabilityForm {
   /** The working days all share one pair of times (the compact control can show the week). */
   protected readonly uniform = computed(() => hasUniformHours(this.week()));
   protected readonly tz = signal('');
-  protected readonly busy = signal(false);
+  /** A save is running (the dialog's footer reads it). */
+  readonly busy = signal(false);
   protected readonly conflict = signal(false);
   /** The profile the header menu saved while this form had unsaved edits: kept aside until the person loads it (own availability only). */
   protected readonly stale = signal<UserAvailabilityDto | null>(null);
@@ -385,9 +380,8 @@ export class AvailabilityForm {
     return list;
   });
 
-  protected readonly dirty = computed(
-    () => this.state() === 'ready' && this.signature() !== this.baseline(),
-  );
+  /** Unsaved edits (the dialog's footer reads it). */
+  readonly dirty = computed(() => this.state() === 'ready' && this.signature() !== this.baseline());
 
   protected readonly preview = computed<AvailabilityDisplay | null>(() => {
     const d = this.dto();
@@ -569,7 +563,8 @@ export class AvailabilityForm {
     target?.focus();
   }
 
-  protected async save(): Promise<void> {
+  /** Saves the edits: the form's own button on a page, the dialog's footer button in a dialog. */
+  async save(): Promise<void> {
     const d = this.dto();
     if (!d || this.busy() || !this.dirty()) return;
     this.showSummary.set(true);

@@ -27,8 +27,10 @@ function inDays(plus: number): { text: string; iso: string } {
   };
 }
 
+/** The Start and End fields are native date inputs: they take `yyyy-MM-dd`; the callers pass `Nov 4, 2026`. */
 async function fillDate(input: Locator, text: string): Promise<void> {
-  await input.fill(text);
+  const iso = new Date(`${text} 12:00:00 UTC`).toISOString().slice(0, 10);
+  await input.fill(iso);
   await input.blur();
 }
 
@@ -71,7 +73,7 @@ test.describe('My profile: several Out of office entries', () => {
         .map((b) => b.trim())
         .filter(Boolean)
         .slice(-2),
-    ).toEqual(['Cancel', 'Add out of office']);
+    ).toEqual(['Cancel', 'Add Out of Office']);
     await dialog.getByRole('button', { name: 'Add out of office' }).click();
     await expect(dialog).toBeHidden();
 

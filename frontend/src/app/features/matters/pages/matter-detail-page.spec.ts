@@ -1130,11 +1130,7 @@ describe('MatterDetailPage', () => {
       secondary.value = '';
       secondary.dispatchEvent(new Event('change'));
       await settle(fixture);
-      document.body
-        .querySelector<HTMLButtonElement>(
-          '[data-confirm-primary] button, button[data-confirm-primary]',
-        )!
-        .click();
+      document.body.querySelector<HTMLButtonElement>('[data-panel-primary] button')!.click();
       await settle(fixture);
 
       expect(matters.setMatterManagers).toHaveBeenCalledWith(7, {

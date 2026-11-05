@@ -10,7 +10,6 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { DateInput } from 'form-engine';
 import { NOTE_MAX } from '../../../core/availability/availability';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
@@ -45,20 +44,20 @@ export function overlapOf(err: ApiError): AbsenceOverlap | null {
 }
 
 /**
- * Add or edit one Out of office entry (epic #1074, CAL-05) in the app's pop-up dialog standard: Cancel on the left, the primary action on the right, "Discard changes?"
+ * Add or edit one Out of office entry (epic #1074, CAL-05) in the app's pop-up dialog standard: Cancel on the left, the primary action on the right, "You have unsaved changes. Discard them?"
  * on a dirty close. Type, Start, End (the last day out, included; empty = open-ended), Note (200 characters, "no medical details") and, for people who may
  * manage availability, a Person field. The form checks what it can; the server decides again, and its messages (overlap names the other entry, a start in the past) sit
  * under the dates. The pod-below-minimum answer of `/check` is advice shown under the dates and never blocks the save.
  */
 @Component({
   selector: 'mf-absence-dialog',
-  imports: [FormDialog, DateInput],
+  imports: [FormDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-form-dialog
-      [title]="entry() ? 'Edit out of office' : 'Add out of office'"
+      [title]="entry() ? 'Edit Out of Office' : 'Add Out of Office'"
       [subtitle]="subtitle()"
-      [primaryLabel]="entry() ? 'Save' : 'Add out of office'"
+      [primaryLabel]="entry() ? 'Save' : 'Add Out of Office'"
       size="default"
       [dirty]="dirty()"
       [busy]="busy()"
@@ -103,15 +102,14 @@ export function overlapOf(err: ApiError): AbsenceOverlap | null {
         <div class="ad__dates">
           <div class="ad__field">
             <label class="ad__label" for="ad-start">First day out</label>
-            <mf-date-input
-              inputId="ad-start"
-              label="First day out"
-              [showHint]="false"
-              describedBy="ad-dates-help"
-              [isoValue]="start()"
-              [invalid]="!!problems().startDate"
-              (isoChange)="start.set($event); clearServer()"
-              (textInvalid)="startBad.set($event)"
+            <input
+              id="ad-start"
+              type="date"
+              class="mf-control mf-control--fill"
+              aria-describedby="ad-dates-help"
+              [value]="start() ?? ''"
+              [attr.aria-invalid]="problems().startDate ? 'true' : null"
+              (input)="start.set($any($event.target).value || null); clearServer()"
             />
             @if (problems().startDate; as e) {
               <p class="ad__error" role="alert" data-ad-start-error>
@@ -121,15 +119,14 @@ export function overlapOf(err: ApiError): AbsenceOverlap | null {
           </div>
           <div class="ad__field">
             <label class="ad__label" for="ad-end">Last day out</label>
-            <mf-date-input
-              inputId="ad-end"
-              label="Last day out"
-              [showHint]="false"
-              describedBy="ad-dates-help"
-              [isoValue]="end()"
-              [invalid]="!!problems().endDate"
-              (isoChange)="end.set($event); clearServer()"
-              (textInvalid)="endBad.set($event)"
+            <input
+              id="ad-end"
+              type="date"
+              class="mf-control mf-control--fill"
+              aria-describedby="ad-dates-help"
+              [value]="end() ?? ''"
+              [attr.aria-invalid]="problems().endDate ? 'true' : null"
+              (input)="end.set($any($event.target).value || null); clearServer()"
             />
             @if (problems().endDate; as e) {
               <p class="ad__error" role="alert" data-ad-end-error>
@@ -271,8 +268,6 @@ export class AbsenceDialog {
   protected readonly start = signal<string | null>(null);
   protected readonly end = signal<string | null>(null);
   protected readonly note = signal('');
-  protected readonly startBad = signal(false);
-  protected readonly endBad = signal(false);
   protected readonly busy = signal(false);
   protected readonly generalError = signal('');
   protected readonly server = signal<{
@@ -312,8 +307,6 @@ export class AbsenceDialog {
       { today: this.today(), canBackdate: this.canBackdate() },
       !!this.entry(),
     );
-    if (this.startBad()) found.startDate = 'Enter a valid first day.';
-    if (this.endBad()) found.endDate = 'Enter a valid last day.';
     return {
       ...found,
       startDate: found.startDate ?? this.server().start,
@@ -373,8 +366,6 @@ export class AbsenceDialog {
     this.start.set(e?.startDate ?? this.initialStart() ?? this.today());
     this.end.set(e?.endDate ?? null);
     this.note.set(e?.note ?? '');
-    this.startBad.set(false);
-    this.endBad.set(false);
     this.server.set({});
     this.generalError.set('');
     this.check.set(null);

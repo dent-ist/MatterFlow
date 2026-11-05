@@ -8,9 +8,6 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Button } from 'primeng/button';
-import { Dialog } from 'primeng/dialog';
-import { DateInput } from 'form-engine';
 import { NOTE_MAX } from '../../core/availability/availability';
 import {
   UNTIL_PRESETS,
@@ -24,7 +21,7 @@ import { ApiError } from '../../core/http/api-error';
 import { NotificationService } from '../../core/notify/notification.service';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { calendarDayInZone } from '../../core/time/time';
-import { DialogFocus } from '../ui/dialog-focus';
+import { FormDialog } from '../ui/form-dialog';
 import {
   ABSENCE_TYPES,
   ABSENCE_TYPE_LABELS,
@@ -38,27 +35,21 @@ import {
  */
 @Component({
   selector: 'mf-set-out-of-office-dialog',
-  imports: [Dialog, Button, DateInput, DialogFocus, RouterLink],
+  imports: [FormDialog, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <p-dialog
-      header="Set out of office"
-      [modal]="true"
-      [closable]="true"
-      closeAriaLabel="Close dialog"
-      [mfDialogFocus]="visible()"
-      [draggable]="false"
-      [resizable]="false"
+    <mf-form-dialog
+      title="Set Out of Office"
+      primaryLabel="Set Out of Office"
+      size="small"
+      [canSubmit]="!untilError()"
+      [busy]="busy()"
+      [error]="error()"
       [visible]="visible()"
-      [focusOnShow]="false"
-      (onShow)="focusHeading()"
       (visibleChange)="onVisible($event)"
-      [style]="{ width: '30rem', maxWidth: '95vw' }"
+      (submitted)="save()"
     >
       <form class="ooo" novalidate (submit)="$event.preventDefault(); save()" data-ooo-dialog>
-        @if (error()) {
-          <p class="ooo__error" role="alert">{{ error() }}</p>
-        }
         <p class="ooo__help">
           You will show as out of office from today. Work can still be assigned to you.
         </p>
@@ -94,13 +85,13 @@ import {
               Pick a date
             </button>
           </div>
-          <mf-date-input
-            inputId="ooo-until"
-            label="Until date"
-            [isoValue]="until()"
-            [invalid]="!!untilError()"
-            (isoChange)="onUntilTyped($event)"
-            (textInvalid)="untilBad.set($event)"
+          <input
+            id="ooo-until"
+            type="date"
+            class="mf-control mf-control--fill"
+            [value]="until() ?? ''"
+            [attr.aria-invalid]="untilError() ? 'true' : null"
+            (input)="onUntilTyped($any($event.target).value || null)"
           />
           @if (untilError(); as e) {
             <p class="ooo__error" role="alert" data-until-error>{{ e }}</p>
@@ -127,16 +118,7 @@ import {
           >
         </p>
       </form>
-      <ng-template #footer>
-        <p-button label="Cancel" severity="secondary" (onClick)="visible.set(false)" />
-        <p-button
-          label="Set out of office"
-          data-ooo-confirm
-          [disabled]="busy() || !!untilError()"
-          (onClick)="save()"
-        />
-      </ng-template>
-    </p-dialog>
+    </mf-form-dialog>
   `,
   styles: `
     .ooo {
@@ -235,13 +217,11 @@ export class SetOutOfOfficeDialog {
   private readonly preset = signal<UntilPresetId | null>(null);
   protected readonly noteMax = NOTE_MAX;
   protected readonly until = signal<string | null>(null);
-  protected readonly untilBad = signal(false);
   protected readonly note = signal('');
   protected readonly busy = signal(false);
   protected readonly error = signal('');
 
   protected readonly untilError = computed(() => {
-    if (this.untilBad()) return 'Enter a valid Until date, for example Oct 20, 2026.';
     const until = this.until();
     if (!until) return null;
     const today = this.today();
@@ -262,7 +242,6 @@ export class SetOutOfOfficeDialog {
 
   protected choosePreset(id: UntilPresetId): void {
     this.preset.set(id);
-    this.untilBad.set(false);
     this.until.set(presetUntil(id, this.today()));
   }
 
@@ -275,16 +254,6 @@ export class SetOutOfOfficeDialog {
   /** "Pick a date": the chips are for common answers, this one hands over to the date field. */
   protected pickDate(): void {
     this.host.nativeElement.ownerDocument.getElementById('ooo-until')?.focus();
-  }
-
-  /** The dialog opens on its heading, not on the date field: no on-screen keyboard on a phone, and a stray Enter applies nothing. */
-  protected focusHeading(): void {
-    const title = this.host.nativeElement.ownerDocument.querySelector<HTMLElement>(
-      '.p-dialog-mask .p-dialog-title',
-    );
-    if (!title) return;
-    title.setAttribute('tabindex', '-1');
-    title.focus({ preventScroll: true });
   }
 
   /**
@@ -302,7 +271,6 @@ export class SetOutOfOfficeDialog {
       this.until.set(null);
       this.type.set('VACATION');
       this.preset.set(null);
-      this.untilBad.set(false);
       void this.store.ensureLoaded();
       this.note.set('');
       this.error.set('');

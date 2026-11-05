@@ -317,7 +317,10 @@ describe('AvailabilityForm', () => {
 
     others.saveUserAvailability.mockReturnValue(ok(profile({ userId: 9, rowVersion: 'V1' })));
     await type('#av-hours-start', '08:30');
-    await save();
+    // In a dialog the footer of mf-form-dialog saves (it calls `save()`); the form has no button of its own there.
+    expect(el().querySelector('[data-save]')).toBeNull();
+    await fixture.componentInstance.save();
+    await settle(fixture);
     expect(others.saveUserAvailability).toHaveBeenCalledWith(
       9,
       expect.objectContaining({
