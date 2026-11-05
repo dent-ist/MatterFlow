@@ -34,6 +34,7 @@ import { CLOSED_STATUSES } from './queue-filters';
 import { RowEdit } from './row-edit';
 import { personInitials } from '../ui/person-initials';
 import { IntPipe } from '../ui/number-format';
+import { shortAccountName } from '../ui/person-name';
 
 /** Below this width (the same 640 px as the navigation rail and the pager) a work list is cards instead of a table (#192). */
 export const PHONE_CARDS_QUERY = '(max-width: 639.98px)';
@@ -302,7 +303,7 @@ export function initialsOf(name: string): string {
                           />
                         } @else if (row.assignedUser; as user) {
                           <span class="tc-name">
-                            {{ user.displayName }}
+                            {{ who(user.displayName) }}
                             @if (!user.isActive) {
                               <span class="tc-muted">(inactive)</span>
                             }
@@ -346,6 +347,9 @@ export function initialsOf(name: string): string {
   `,
 })
 export class TaskCardList {
+  /** The person as a grid shows them: the display name, or the account without its domain, never `KE\\kekim` (D-62, #1221). */
+  protected readonly who = shortAccountName;
+
   private readonly auth = inject(AuthStore);
   private readonly zone = inject(USER_TIME_ZONE);
   private readonly clock = inject(Clock);

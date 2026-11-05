@@ -142,7 +142,10 @@ export class EntityActivity {
       missing.map(async (id) => {
         try {
           const user = await firstValueFrom(this.users.getUser(id));
-          return [id, user.displayName?.trim() || shortAccountName(user.windowsAccount)] as const;
+          return [
+            id,
+            shortAccountName(user.displayName) || shortAccountName(user.windowsAccount),
+          ] as const;
         } catch {
           return null;
         }

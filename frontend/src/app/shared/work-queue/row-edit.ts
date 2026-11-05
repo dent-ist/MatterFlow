@@ -37,6 +37,7 @@ import { STATE_META, stateHint } from '../availability/capacity-state';
 import { InlineMenu, MenuOption } from './inline-menu';
 import { InlineStatusFlow } from './inline-status-flow';
 import { stepQueryParams } from './step-link';
+import { shortAccountName } from '../ui/person-name';
 
 const UNASSIGNED = 'none';
 
@@ -138,7 +139,7 @@ const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN
         }
         @case ('assignee') {
           @if (r.assignedUser; as user) {
-            {{ user.displayName }}
+            {{ who(user.displayName) }}
             @if (!user.isActive) {
               (inactive)
             }
@@ -173,6 +174,9 @@ const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN
   `,
 })
 export class RowEdit {
+  /** The person as a grid shows them: the display name, or the account without its domain, never `KE\\kekim` (D-62, #1221). */
+  protected readonly who = shortAccountName;
+
   private readonly auth = inject(AuthStore);
   private readonly lookups = inject(LookupStore);
   private readonly tasks = inject(TasksClient);
@@ -255,7 +259,9 @@ export class RowEdit {
           // Starts with the visible text (WCAG 2.5.3) and carries the task number.
           return `${this.emptyLabel()} ${r.taskNumber}`;
         }
-        const shown = user ? user.displayName + (user.isActive ? '' : ' (inactive)') : 'Unassigned';
+        const shown = user
+          ? this.who(user.displayName) + (user.isActive ? '' : ' (inactive)')
+          : 'Unassigned';
         return `${shown}, change assignee of ${r.taskNumber}`;
       }
     }

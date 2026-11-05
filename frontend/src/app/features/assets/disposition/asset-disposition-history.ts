@@ -11,6 +11,7 @@ import { firstValueFrom } from 'rxjs';
 import { AssetDispositionChange, AssetsClient } from '../../../api/generated/api-client';
 import { dispositionLabel } from './asset-disposition';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
+import { shortAccountName } from '../../../shared/ui/person-name';
 
 /**
  * The disposition history of an asset (epic #851, issue #866): who moved it from which state to which, when and why, newest first. It comes from its own endpoint, so a person
@@ -62,7 +63,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
           <li class="dh__row" data-disposition-change>
             <span class="dh__change">{{ label(c.fromCode) }} to {{ label(c.toCode) }}</span>
             <span class="dh__meta"
-              >{{ c.actorName || 'The system' }}, {{ c.occurredAtUtc | mfNum }}</span
+              >{{ who(c.actorName) || 'The system' }}, {{ c.occurredAtUtc | mfNum }}</span
             >
             @if (c.note) {
               <span class="dh__note">&ldquo;{{ c.note }}&rdquo;</span>
@@ -74,6 +75,9 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
   `,
 })
 export class AssetDispositionHistory {
+  /** The person as a list names them: the display name, or the account without its domain, never `KE\\kekim` (D-62, #1221). */
+  protected readonly who = shortAccountName;
+
   readonly assetId = input.required<number>();
   /** Changes whenever the disposition changes, so the list reloads (the asset's row version or change time). */
   readonly version = input<string | undefined>(undefined);

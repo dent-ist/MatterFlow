@@ -445,6 +445,15 @@ describe('TaskTable', () => {
     expect(assignees[2].textContent).toContain('(inactive)');
   });
 
+  it('never shows a Windows account in the Assignee cell: "KE\\kekim" reads "kekim" (D-62, #1221)', async () => {
+    await create(
+      [aRow({ assignedUser: { userId: 9, displayName: 'KE\\kekim', isActive: true } })],
+      ['assignee'],
+    );
+    expect(cell('assignee').textContent).toContain('kekim');
+    expect(cell('assignee').textContent).not.toContain('KE\\');
+  });
+
   it('shows priority and status badges with their labels', async () => {
     await create([aRow()], ['priority', 'status']);
     expect(cell('priority').querySelector('mf-priority-flag')?.textContent).toContain('Critical');

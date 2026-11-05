@@ -4,6 +4,7 @@ import { UsersLookupClient } from '../../api/generated/api-client';
 import { outOfOfficeText } from '../../core/availability/availability';
 import { USER_TIME_ZONE } from '../../core/time/clock';
 import { CapacityState, isCapacityState } from '../availability/capacity-state';
+import { shortAccountName } from '../ui/person-name';
 
 /** The short Suggested list holds at most this many people (owner decision: 5 to 8). */
 export const SUGGESTION_COUNT = 6;
@@ -149,7 +150,7 @@ export class AssigneeList {
       const withState = isCapacityState(state) && typeof load === 'number';
       return {
         id: u.userId,
-        name: u.displayName,
+        name: shortAccountName(u.displayName),
         openTaskCount: u.openTaskCount,
         hint: openHint(u.openTaskCount),
         reason: u.reason,

@@ -78,6 +78,7 @@ import { PHONE_CARDS_QUERY, TaskCardList } from './task-card-list';
 import { Dropdown, DropdownItem } from '../ui/dropdown';
 import { NumericDatePipe, numericInstant } from '../ui/numeric-date';
 import { IntPipe } from '../ui/number-format';
+import { shortAccountName } from '../ui/person-name';
 
 const NARROW_BELOW = 760;
 /** A touch held this long on a header opens its column menu (PM ruling on #207). */
@@ -513,8 +514,8 @@ const LONG_PRESS_MS = 500;
                             (rowChange)="rowChange.emit($event)"
                           />
                         } @else if (row.assignedUser; as user) {
-                          <span class="wt-clip" [attr.title]="user.displayName">
-                            {{ user.displayName }}
+                          <span class="wt-clip" [attr.title]="who(user.displayName)">
+                            {{ who(user.displayName) }}
                             @if (!user.isActive) {
                               <span class="wt-muted">(inactive)</span>
                             }
@@ -524,8 +525,8 @@ const LONG_PRESS_MS = 500;
                         }
                       }
                       @case ('creator') {
-                        <span class="wt-clip" [attr.title]="row.createdBy?.displayName">{{
-                          row.createdBy?.displayName ?? '-'
+                        <span class="wt-clip" [attr.title]="who(row.createdBy?.displayName)">{{
+                          who(row.createdBy?.displayName) || '-'
                         }}</span>
                       }
                       @case ('requestor') {
@@ -654,6 +655,9 @@ const LONG_PRESS_MS = 500;
   `,
 })
 export class TaskTable {
+  /** The person as a grid shows them: the display name, or the account without its domain, never `KE\\kekim` (D-62, #1221). */
+  protected readonly who = shortAccountName;
+
   private readonly clock = inject(Clock);
   protected readonly auth = inject(AuthStore);
   private readonly shortcuts = inject(KeyboardShortcuts);
