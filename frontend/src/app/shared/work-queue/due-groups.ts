@@ -9,7 +9,7 @@ export const DUE_BUCKETS: readonly { key: BucketKey; label: string }[] = [
   { key: 'overdue', label: 'Overdue' },
   { key: 'today', label: 'Today' },
   { key: 'tomorrow', label: 'Tomorrow' },
-  { key: 'thisWeek', label: 'This week' },
+  { key: 'thisWeek', label: 'This Week' },
   { key: 'later', label: 'Later' },
   { key: 'closed', label: 'Closed' },
 ];

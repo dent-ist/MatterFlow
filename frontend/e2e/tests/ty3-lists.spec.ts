@@ -48,7 +48,7 @@ const LISTS = {
   types: (w: World) => ({
     url: `/admin/task-types?name=${w.token}`,
     name: w.type.name,
-    items: ['Edit form', 'Deactivate'],
+    items: ['Edit Form', 'Deactivate'],
   }),
   workflows: (w: World) => ({
     url: `/admin/workflows?name=${w.token}`,
@@ -58,7 +58,7 @@ const LISTS = {
   steps: (w: World) => ({
     url: `/admin/steps?title=${w.token}`,
     name: w.step.title,
-    items: ['Edit inputs', 'Deactivate'],
+    items: ['Edit Inputs', 'Deactivate'],
   }),
 };
 
@@ -159,7 +159,7 @@ test.describe('Row overflow menu on the three lists (#355)', () => {
     const w = await world(seed, admin);
     await page.goto(LISTS.types(w).url);
     await menuButton(page, w.type.name).click();
-    await page.getByRole('menuitem', { name: 'Edit form' }).click();
+    await page.getByRole('menuitem', { name: 'Edit Form' }).click();
     await expect(page).toHaveURL(new RegExp(`/admin/task-types/${w.type.id}/form$`));
 
     await page.goto(LISTS.workflows(w).url);
@@ -171,7 +171,7 @@ test.describe('Row overflow menu on the three lists (#355)', () => {
 
     await page.goto(LISTS.steps(w).url);
     await menuButton(page, w.step.title).click();
-    await page.getByRole('menuitem', { name: 'Edit inputs' }).click();
+    await page.getByRole('menuitem', { name: 'Edit Inputs' }).click();
     await expect(page).toHaveURL(new RegExp(`/admin/steps/${w.step.id}/form$`));
 
     await page.goto(LISTS.steps(w).url);
@@ -218,7 +218,7 @@ test.describe('Row overflow menu on the three lists (#355)', () => {
     await expect(rowOf(page, step.title)).toHaveCount(0);
     await page.goto(`/admin/steps?title=${token}&status=all`);
     await menuButton(page, step.title).click();
-    await expect(page.getByRole('menuitem')).toHaveText(['Edit inputs', 'Activate']);
+    await expect(page.getByRole('menuitem')).toHaveText(['Edit Inputs', 'Activate']);
     await page.getByRole('menuitem', { name: 'Activate' }).click();
     await expect(page.locator('[data-announce]')).toContainText('activated');
 
@@ -230,7 +230,7 @@ test.describe('Row overflow menu on the three lists (#355)', () => {
     await expect(rowOf(page, type.name)).toHaveCount(0);
     await page.goto(`/admin/task-types?name=${token}&status=all`);
     await menuButton(page, type.name).click();
-    await expect(page.getByRole('menuitem')).toHaveText(['Edit form', 'Activate']);
+    await expect(page.getByRole('menuitem')).toHaveText(['Edit Form', 'Activate']);
     await page.getByRole('menuitem', { name: 'Activate' }).click();
     await expect(page.locator('[data-announce]')).toContainText('activated');
   });
@@ -401,7 +401,7 @@ test.describe('Row overflow menu on the three lists (#355)', () => {
       await wfPage.keyboard.press('Escape');
       await wfPage.goto(LISTS.steps(w).url);
       await menuButton(wfPage, w.step.title).click();
-      await expect(wfPage.getByRole('menuitem')).toHaveText(['Edit inputs', 'Deactivate']);
+      await expect(wfPage.getByRole('menuitem')).toHaveText(['Edit Inputs', 'Deactivate']);
       await wfPage.goto('/admin/task-types');
       await expect(wfPage).toHaveURL(/\/admin\/workflows$/);
       await expect(wfPage.locator('table[data-task-types]')).toHaveCount(0);
@@ -411,7 +411,7 @@ test.describe('Row overflow menu on the three lists (#355)', () => {
       const ttPage = await asUser(ttUser.username);
       await ttPage.goto(LISTS.types(w).url);
       await menuButton(ttPage, w.type.name).click();
-      await expect(ttPage.getByRole('menuitem')).toHaveText(['Edit form', 'Deactivate']);
+      await expect(ttPage.getByRole('menuitem')).toHaveText(['Edit Form', 'Deactivate']);
       await ttPage.goto('/admin/workflows');
       await expect(ttPage).toHaveURL(/\/admin\/task-types$/);
       await expect(ttPage.locator('table[data-workflows], table[data-steps]')).toHaveCount(0);

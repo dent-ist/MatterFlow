@@ -62,11 +62,11 @@ test.describe('the administrator changes the name and the icon', () => {
     await expect(page.locator('[data-icon-file]')).toContainText('logo.png');
     await shot(page, 'settings-edited');
 
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
     await expect(toasts(page)).toContainText(SAVED);
     await expect(page.locator('.mf-logo [data-app-name]')).toHaveText('Smith & Co Legal');
     await expect(page).toHaveTitle('Settings: Branding - Smith & Co Legal');
-    await expect(page.locator('[data-last-changed]')).toContainText('Last changed');
+    await expect(page.locator('[data-last-changed]')).toContainText('Last Changed');
 
     await page.reload();
     await expect(page.locator('.mf-logo [data-app-name]')).toHaveText('Smith & Co Legal');
@@ -98,7 +98,7 @@ test.describe('the administrator changes the name and the icon', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/admin/settings');
     await page.locator('[data-icon-input]').setInputFiles(tempFile('dark.svg', GOOD_SVG));
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
     await expect(toasts(page)).toContainText(SAVED);
     await page.reload();
     const tile = page.locator('.mf-logo picture.mf-logo__pic--tile');
@@ -124,7 +124,7 @@ test.describe('the administrator changes the name and the icon', () => {
   test('an SVG icon is used as the tab icon without an apple-touch-icon', async ({ page }) => {
     await page.goto('/admin/settings');
     await page.locator('[data-icon-input]').setInputFiles(tempFile('mark.svg', GOOD_SVG));
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
     await expect(toasts(page)).toContainText(SAVED);
     await page.reload();
     await expect(page.locator('link[rel="icon"]').first()).toHaveAttribute('type', 'image/svg+xml');
@@ -168,7 +168,7 @@ test.describe('the administrator changes the name and the icon', () => {
     await setBrandingName(admin, 'Temporary Name');
     await page.goto('/admin/settings');
     await page.locator('[data-icon-input]').setInputFiles(tempFile('logo.png', makePng(64)));
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
     await expect(toasts(page)).toContainText(SAVED);
     await expect(page.locator('.mf-logo [data-app-name]')).toHaveText('Temporary Name');
 
@@ -179,7 +179,7 @@ test.describe('the administrator changes the name and the icon', () => {
     // Not saved yet: everyone still sees the custom values.
     expect((await publicBranding()).appName).toBe('Temporary Name');
 
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
     // The "Saved" toast of the first save may still be on screen (identical toasts are folded), so wait for the server's state, not the toast.
     await expect
       .poll(async () => {
@@ -204,7 +204,7 @@ test.describe('refusals', () => {
   }) => {
     await page.goto('/admin/settings');
     await page.locator('[data-icon-input]').setInputFiles(tempFile('evil.svg', UNSAFE_SVG));
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
     await expect(page.locator('[data-icon-error]')).toContainText('This SVG cannot be used');
     await expect(page.locator('[data-summary]')).toBeVisible();
     await expect(toasts(page)).toHaveCount(0);
@@ -216,7 +216,7 @@ test.describe('refusals', () => {
     await page
       .locator('[data-icon-input]')
       .setInputFiles(tempFile('logo.png', 'this is plain text, not a picture'));
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
     await expect(page.locator('[data-icon-error]')).toContainText('Use a PNG, SVG or ICO file.');
     expect((await publicBranding()).iconUrl).toBeNull();
   });
@@ -247,7 +247,7 @@ test.describe('refusals', () => {
   test('a name with markup is refused under the field', async ({ page }) => {
     await page.goto('/admin/settings');
     await page.getByLabel('Application name (required)').fill('<b>Bold</b>');
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
     await expect(page.locator('#st-name-error')).toContainText('cannot contain');
     await expect(page.getByLabel('Application name (required)')).toHaveAttribute(
       'aria-invalid',
@@ -309,7 +309,7 @@ test.describe('keyboard', () => {
     await page.getByLabel('Application name (required)').focus();
     await page.keyboard.press('Control+A');
     await page.keyboard.type('Keyboard Firm');
-    await page.getByRole('button', { name: 'Save changes' }).focus();
+    await page.getByRole('button', { name: 'Save Changes' }).focus();
     await page.keyboard.press('Enter');
     await expect(toasts(page)).toContainText(SAVED);
     expect((await publicBranding()).appName).toBe('Keyboard Firm');
@@ -342,7 +342,7 @@ test.describe('accessibility and reflow', () => {
       await check('settings with a chosen file', size.width);
 
       await page.locator('[data-icon-input]').setInputFiles(tempFile('evil.svg', UNSAFE_SVG));
-      await page.getByRole('button', { name: 'Save changes' }).click();
+      await page.getByRole('button', { name: 'Save Changes' }).click();
       await expect(page.locator('[data-icon-error]')).toBeVisible();
       await check('settings with errors', size.width);
       await shot(page, 'settings-errors');

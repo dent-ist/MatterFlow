@@ -199,10 +199,10 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
   /** The phone's Sort by select: the sortable columns (the headers' keys). */
   protected readonly sortOptions: readonly SortOption[] = [
     { value: 'name', label: 'Name' },
-    { value: 'defaultWorkflow', label: 'Default workflow' },
-    { value: 'form', label: 'Request form' },
+    { value: 'defaultWorkflow', label: 'Default Workflow' },
+    { value: 'form', label: 'Request Form' },
     { value: 'workflows', label: 'Workflows' },
-    { value: 'openTasks', label: 'Open tasks', descFirst: true },
+    { value: 'openTasks', label: 'Open Tasks', descFirst: true },
     { value: 'status', label: 'Status' },
   ];
 
@@ -221,7 +221,7 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
       { key: 'name', label: 'Name', column: 'name', type: 'text' },
       {
         key: 'form',
-        label: 'Request form',
+        label: 'Request Form',
         column: 'form',
         type: 'select',
         allLabel: 'All forms',
@@ -229,9 +229,9 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
       },
       statusDef(),
       {
-        // The health strip's "Not usable" (#367): no control, a removable chip.
+        // The health strip's "Not Usable" (#367): no control, a removable chip.
         key: 'usable',
-        label: 'Can create tasks',
+        label: 'Can Create Tasks',
         type: 'text',
         noControl: true,
         normalize: (v) => (v === 'no' ? v : null),
@@ -339,7 +339,7 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
     return !form || this.formKey(t) === form;
   }
 
-  /** An active type users cannot create tasks of (the red line of its row, the "Not usable" of the strip). */
+  /** An active type users cannot create tasks of (the red line of its row, the "Not Usable" of the strip). */
   private isNotUsable(t: TaskTypeView): boolean {
     return t.isActive && t.usabilityIssues.some((i) => i !== 'INACTIVE');
   }
@@ -352,14 +352,14 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
     { key: 'active', label: 'Active', matches: (t) => t.isActive, params: { status: null } },
     {
       key: 'notUsable',
-      label: 'Not usable',
+      label: 'Not Usable',
       hint: "Active task types users can't create tasks of",
       matches: (t) => this.isNotUsable(t),
       params: { status: null, usable: 'no' },
     },
     {
       key: 'formDraft',
-      label: 'Form in draft',
+      label: 'Form in Draft',
       hint: 'Active task types whose request form is a draft',
       matches: (t) => t.isActive && this.formKey(t) === 'draft',
       params: { status: null, form: 'draft' },
@@ -513,7 +513,7 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
     return { name: names[0] ?? '', more: Math.max(0, names.length - 1), all: names.join(', ') };
   }
 
-  /** Why an active type cannot be used for new tasks (the tooltip and the spoken description of its "Not usable" badge). */
+  /** Why an active type cannot be used for new tasks (the tooltip and the spoken description of its "Not Usable" badge). */
   protected notUsableReason(t: TaskTypeView): string {
     return this.warning(t);
   }
@@ -528,7 +528,7 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
     return [
       {
         id: 'edit-form',
-        label: 'Edit form',
+        label: 'Edit Form',
         icon: 'pi-file-edit',
         run: () => this.open(t, ['/admin/task-types', t.id, 'form']),
       },

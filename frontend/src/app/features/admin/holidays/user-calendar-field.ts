@@ -27,7 +27,7 @@ import { HolidayCalendar, PreviewRow } from './holiday-contract';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="uc" data-user-calendar>
-      <label class="uc__l" for="uc-select">Holiday calendar</label>
+      <label class="uc__l" for="uc-select">Holiday Calendar</label>
       @if (state(); as s) {
         @if (canManage()) {
           <select

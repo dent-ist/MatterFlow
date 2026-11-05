@@ -31,7 +31,7 @@ test.describe('Comments and history (SCN-018)', () => {
     await page.keyboard.type('load file');
     await panel.getByRole('button', { name: 'Italic' }).click();
     await page.keyboard.press('Enter');
-    await panel.getByRole('button', { name: 'Bulleted list' }).click();
+    await panel.getByRole('button', { name: 'Bulleted List' }).click();
     await page.keyboard.type('first item');
     await panel.locator('[data-post]').click();
 
@@ -67,7 +67,7 @@ test.describe('Comments and history (SCN-018)', () => {
     const panel = comments(page);
 
     await panel.locator('[data-edit]').click();
-    const editor = panel.getByRole('textbox', { name: 'Edit comment' });
+    const editor = panel.getByRole('textbox', { name: 'Edit Comment' });
     await editor.click();
     await page.keyboard.press('ControlOrMeta+A');
     await page.keyboard.type('Final wording of the note');

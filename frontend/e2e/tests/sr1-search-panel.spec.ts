@@ -69,7 +69,7 @@ test.describe('Search suggestion panel (WP-SR1)', () => {
       // BUG-6: one named lock per option of a sensitive matter, never the full badge, and no requestor.
       const task = panel.getByRole('option', { name: new RegExp(`${s.token} task`) });
       await expect(task.locator('[data-sensitive-marker]')).toHaveCount(1);
-      await expect(task.getByRole('img', { name: 'Sensitive matter' })).toHaveCount(1);
+      await expect(task.getByRole('img', { name: 'Sensitive Matter' })).toHaveCount(1);
       await expect(task.locator('mf-sensitive-badge')).toHaveCount(0);
       await expect(panel).not.toContainText('Rita Requestor');
 

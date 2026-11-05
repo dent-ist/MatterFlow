@@ -50,10 +50,10 @@ test.describe('Version page tabs and switcher (#399)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(vurl(s, ids.v3));
     await expect(tab(page, 'Steps')).toHaveAccessibleName(/Steps.*3/);
-    await expect(tab(page, 'Used by')).toHaveAccessibleName(/Used by.*3/);
+    await expect(tab(page, 'Used By')).toHaveAccessibleName(/Used by.*3/);
     await expect(page.getByRole('tab', { name: /Versions/ })).toHaveCount(0);
     await expect(page.locator('[data-steps]')).toBeVisible();
-    await tab(page, 'Used by').click();
+    await tab(page, 'Used By').click();
     await expect(page).toHaveURL(/tab=used-by/);
     await expect(page.locator('[data-task-type]')).toHaveCount(3);
     await expect(page.locator('[data-steps]')).toHaveCount(0);
@@ -64,7 +64,7 @@ test.describe('Version page tabs and switcher (#399)', () => {
     // Arrow keys move between the two tabs.
     await tab(page, 'Steps').focus();
     await page.keyboard.press('ArrowRight');
-    await expect(tab(page, 'Used by')).toHaveAttribute('aria-selected', 'true');
+    await expect(tab(page, 'Used By')).toHaveAttribute('aria-selected', 'true');
     await page.keyboard.press('ArrowLeft');
     await expect(tab(page, 'Steps')).toHaveAttribute('aria-selected', 'true');
     // The count of Steps follows the draft live.
@@ -97,7 +97,7 @@ test.describe('Version page tabs and switcher (#399)', () => {
     const row = page.locator('[data-step-row]').first();
     await row.getByRole('button', { name: /^Actions for / }).focus();
     await page.keyboard.press('Alt+ArrowDown');
-    await expect(page.locator('[data-dirty]')).toContainText('Unsaved changes');
+    await expect(page.locator('[data-dirty]')).toContainText('Unsaved Changes');
     await switcher(page).click();
     await page.getByRole('menuitem', { name: /^v2 Published/ }).click();
     const d = page.getByRole('dialog');
@@ -113,7 +113,7 @@ test.describe('Version page tabs and switcher (#399)', () => {
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(new RegExp(`/versions/${ids.v1}\\?tab=used-by`));
     await expect(switcher(page)).toContainText('v1 Retired');
-    await expect(tab(page, 'Used by')).toHaveAttribute('aria-selected', 'true');
+    await expect(tab(page, 'Used By')).toHaveAttribute('aria-selected', 'true');
   });
 
   for (const size of SIZES) {
@@ -195,7 +195,7 @@ test.describe('Read-only states and the retire dialog (#400)', () => {
     const ids = await versionIds(admin, s);
     await page.goto(vurl(s, ids.v2));
     await page.getByRole('button', { name: 'More version actions' }).click();
-    await page.getByRole('menuitem', { name: 'Retire version' }).click();
+    await page.getByRole('menuitem', { name: 'Retire Version' }).click();
     const d = page.getByRole('dialog');
     await expect(d).toContainText('Retire v2?');
     await expect(d.locator('[data-retire-impact]')).toHaveText(
@@ -210,7 +210,7 @@ test.describe('Read-only states and the retire dialog (#400)', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(page.locator('[data-status]')).toContainText('Published');
     await page.getByRole('button', { name: 'More version actions' }).click();
-    await page.getByRole('menuitem', { name: 'Retire version' }).click();
+    await page.getByRole('menuitem', { name: 'Retire Version' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Retire v2' }).click();
     await expect(page.locator('[data-status]')).toContainText('Retired');
   });
@@ -227,7 +227,7 @@ test.describe('Read-only states and the retire dialog (#400)', () => {
     const page = await asUser(user.username);
     await page.goto(vurl(s, ids.v2));
     await page.getByRole('button', { name: 'More version actions' }).click();
-    await page.getByRole('menuitem', { name: 'Retire version' }).click();
+    await page.getByRole('menuitem', { name: 'Retire Version' }).click();
     await expect(page.getByRole('dialog').locator('[data-retire-impact]')).toHaveText(
       'New tasks cannot use it.',
     );

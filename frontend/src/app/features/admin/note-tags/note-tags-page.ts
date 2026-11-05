@@ -41,7 +41,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
   template: `
     @if (error()) {
       <p class="pg-reason" role="alert">
-        {{ error() }} <button type="button" (click)="load()">Try again</button>
+        {{ error() }} <button type="button" (click)="load()">Try Again</button>
       </p>
     } @else if (loaded() && tags().length === 0) {
       <p class="pg-reason" data-note-tags-empty>No tags yet.</p>
@@ -94,8 +94,8 @@ import { IntPipe } from '../../../shared/ui/number-format';
       </mf-grid-frame>
     }
     <mf-form-dialog
-      [title]="editing() ? 'Edit tag' : 'New tag'"
-      [primaryLabel]="editing() ? 'Save tag' : 'Create tag'"
+      [title]="editing() ? 'Edit Tag' : 'New Tag'"
+      [primaryLabel]="editing() ? 'Save Tag' : 'Create Tag'"
       [busy]="busy()"
       [error]="formError()"
       [dirty]="false"

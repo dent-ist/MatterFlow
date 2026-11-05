@@ -31,8 +31,8 @@ export const USER_STATE_WORDS: Readonly<Record<UserStateKey, string>> = {
   light: 'Light',
   normal: 'Normal',
   heavy: 'Heavy',
-  out: 'Out of office',
-  off: 'Off hours',
+  out: 'Out of Office',
+  off: 'Off Hours',
 };
 
 /**

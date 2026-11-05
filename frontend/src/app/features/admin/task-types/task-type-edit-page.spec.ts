@@ -180,7 +180,7 @@ describe('TaskTypeEditPage', () => {
       const form = q('[data-tab="form"]');
       expect(form.getAttribute('aria-disabled')).toBe('true');
       expect(el().textContent).toContain('Save the task type first');
-      expect(q('[data-save]').textContent).toContain('Create task type');
+      expect(q('[data-save]').textContent).toContain('Create Task Type');
     });
 
     it('creates the type with its workflows and lands on the Workflows tab', async () => {
@@ -246,7 +246,7 @@ describe('TaskTypeEditPage', () => {
     it('saves the Overview edits and leaves the workflows as they were saved', async () => {
       await type('[data-description]', 'Edited');
       expect(q('[data-footer]')).not.toBeNull();
-      expect(q('[data-save]').textContent).toContain('Save changes');
+      expect(q('[data-save]').textContent).toContain('Save Changes');
       await save();
       const t = await saved(1);
       expect(t.description).toBe('Edited');
@@ -463,7 +463,7 @@ describe('TaskTypeEditPage', () => {
       expect(q('[data-reason=NO_ELIGIBLE_WORKFLOW] [data-note-fix]').textContent).toContain(
         'Add one',
       );
-      expect(q('[data-status-badge]').textContent).toContain('Not usable');
+      expect(q('[data-status-badge]').textContent).toContain('Not Usable');
     });
   });
 
@@ -471,7 +471,7 @@ describe('TaskTypeEditPage', () => {
     it('shows the published version, the Edit form button and no old link wording', async () => {
       await open('1', 'form');
       expect(q('[data-form-published]').textContent).toContain('Published v1');
-      expect(q('[data-open-form]').textContent).toContain('Edit form');
+      expect(q('[data-open-form]').textContent).toContain('Edit Form');
       expect(el().textContent).not.toContain('Open the form designer');
       q<HTMLButtonElement>('[data-open-form]').click();
       await settle(fixture);
@@ -483,7 +483,7 @@ describe('TaskTypeEditPage', () => {
     it('says there is no form yet and offers Create form', async () => {
       await open('2', 'form', undefined, addCollection);
       expect(q('[data-form-none]').textContent).toContain('No form yet');
-      expect(q('[data-open-form]').textContent).toContain('Create form');
+      expect(q('[data-open-form]').textContent).toContain('Create Form');
     });
   });
 

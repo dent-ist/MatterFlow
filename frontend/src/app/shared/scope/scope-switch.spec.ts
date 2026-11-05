@@ -29,7 +29,7 @@ describe('ScopeSwitch', () => {
 
   it('is a toggle group: text states the scope, aria-pressed marks it', () => {
     const { button } = setup();
-    expect(button('mine').textContent?.trim()).toBe('My matters');
+    expect(button('mine').textContent?.trim()).toBe('My Matters');
     expect(button('all').textContent?.trim()).toBe('All');
     expect(button('mine').getAttribute('aria-pressed')).toBe('true');
     expect(button('all').getAttribute('aria-pressed')).toBe('false');

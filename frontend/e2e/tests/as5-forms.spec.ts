@@ -68,7 +68,7 @@ test.describe('Asset forms (WP-AS5)', () => {
     expect(Math.abs(after.y - before.y)).toBeLessThan(2);
 
     // Blocking validation: the summary, and the first field with an error has focus.
-    await page.getByRole('button', { name: 'Create asset' }).click();
+    await page.getByRole('button', { name: 'Create Asset' }).click();
     await expect(page.locator('[data-summary]')).toContainText('Select a matter.');
     await expect(page.locator('#asset-matter')).toBeFocused();
     await shot(page, 'as5-new-asset');
@@ -94,7 +94,7 @@ test.describe('Asset forms (WP-AS5)', () => {
     await expect(page).toHaveURL(/\/assets\/new/);
     await expect(page.locator('#asset-name')).toHaveValue(`Created ${token}`);
 
-    await page.getByRole('button', { name: 'Create asset' }).click();
+    await page.getByRole('button', { name: 'Create Asset' }).click();
     await expect(page).toHaveURL(/\/assets\/\d+$/);
     await expect(page.getByRole('heading', { level: 1, name: `Created ${token}` })).toBeVisible();
     await expect(page.getByText(`Asset Created ${token} saved`)).toBeVisible();
@@ -129,7 +129,7 @@ test.describe('Asset forms (WP-AS5)', () => {
     await expect(page.locator('[data-type-reason]')).toContainText("can't be changed");
     await expect(page.locator('[data-chosen]')).toContainText(matter.matterRef);
     await expect(page.locator('[data-fields-title]')).toContainText('fields (2)');
-    const save = page.getByRole('button', { name: 'Save changes' });
+    const save = page.getByRole('button', { name: 'Save Changes' });
     await expect(save).toBeDisabled();
     await shot(page, 'as5-edit-asset');
 
@@ -166,10 +166,10 @@ test.describe('Asset forms (WP-AS5)', () => {
       rowVersion: asset.rowVersion,
     });
     await page.locator('#asset-name').fill(`Mine ${token}`);
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
     const conflict = page.locator('[data-conflict]');
     await expect(conflict).toBeVisible();
-    await expect(conflict.getByRole('button', { name: 'Reload latest' })).toBeVisible();
+    await expect(conflict.getByRole('button', { name: 'Reload Latest' })).toBeVisible();
     await expect(page.locator('#asset-name')).toHaveValue(`Mine ${token}`);
     await shot(page, 'as5-edit-conflict');
 
@@ -229,7 +229,7 @@ test.describe('Asset forms (WP-AS5)', () => {
     );
     expect(requests.filter((u) => /\/forms\/versions\//.test(u))).toEqual([]);
     await e.locator('#asset-name').fill(`Perm edited ${token}`);
-    await e.getByRole('button', { name: 'Save changes' }).click();
+    await e.getByRole('button', { name: 'Save Changes' }).click();
     await expect(e).toHaveURL(new RegExp(`/assets/${asset.assetId}$`));
     const saved = await admin.get(`/api/v1/assets/${asset.assetId}`);
     expect(saved.displayName).toBe(`Perm edited ${token}`);
@@ -255,7 +255,7 @@ test.describe('Asset forms (WP-AS5)', () => {
       await expect(page.locator('[data-type-fields]')).toBeVisible();
       expect(await axeViolations(page), `new at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
-      await page.getByRole('button', { name: 'Create asset' }).click(); // the summary and inline errors are on screen
+      await page.getByRole('button', { name: 'Create Asset' }).click(); // the summary and inline errors are on screen
       await expect(page.locator('[data-summary]')).toBeVisible();
       expect(await axeViolations(page), `new with errors at ${size.width}`).toEqual([]);
       if (size.width === 375) await shot(page, 'as5-new-asset-errors');

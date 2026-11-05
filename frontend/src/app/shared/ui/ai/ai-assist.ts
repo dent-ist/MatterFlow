@@ -84,7 +84,7 @@ export class AiButton {
   imports: [SlidePanel],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <mf-slide-panel title="AI assistant" [showFooter]="false" [(visible)]="visible">
+    <mf-slide-panel title="AI Assistant" [showFooter]="false" [(visible)]="visible">
       <p data-ai-soon>AI assistant is coming soon.</p>
       <p class="ai__hint">When it arrives it will follow the AI allowed setting of this matter.</p>
     </mf-slide-panel>

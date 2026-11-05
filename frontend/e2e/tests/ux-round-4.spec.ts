@@ -172,7 +172,7 @@ test.describe('Round 4: layout and responsive', () => {
     await expect(page.locator('[data-editor]')).toBeVisible();
   });
 
-  test('UXR4-06: Create and Edit say "Due date" and "Time (zone)" the same way', async ({
+  test('UXR4-06: Create and Edit say "Due Date" and "Time (zone)" the same way', async ({
     page,
     seed,
   }) => {
@@ -182,13 +182,13 @@ test.describe('Round 4: layout and responsive', () => {
     await create.open();
     await create.chooseTaskType(world.taskType.name);
     await create.openWhen(); // collapsed by default (#349)
-    await expect(page.getByLabel('Due date', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Due Date', { exact: true })).toBeVisible();
     await expect(page.getByLabel(/^Time \(\w+\)$/)).toBeVisible();
     await page.goto(`/tasks/${task.taskId}`);
     await page.getByRole('button', { name: 'Edit', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'Edit Task' });
     await dialog.locator('[data-when-toggle]').click(); // collapsed by default (#350)
-    await expect(dialog.getByLabel('Due date', { exact: true })).toBeVisible();
+    await expect(dialog.getByLabel('Due Date', { exact: true })).toBeVisible();
     await expect(dialog.getByLabel(/^Time \(\w+\)$/)).toBeVisible();
     const [date, time] = [
       (await dialog.locator('label[for="td-due-date"]').boundingBox())!,
@@ -203,7 +203,7 @@ test.describe('Round 4: task type icons', () => {
   async function openPicker(page: Page, taskTypeId: number): Promise<void> {
     await page.goto(`/admin/task-types/${taskTypeId}`);
     await page.locator('[data-icon-trigger]').click();
-    await expect(page.getByRole('dialog', { name: 'Choose an icon' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Choose an Icon' })).toBeVisible();
   }
 
   test('UXR4-07/08/11: a tall picker with category buttons, Esc returns focus to the opener, and the button name contains its visible text', async ({
@@ -214,10 +214,10 @@ test.describe('Round 4: task type icons', () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto(`/admin/task-types/${world.taskType.id}`);
     const trigger = page.locator('[data-icon-trigger]');
-    // UXR4-11: the accessible name holds the visible words "Document" and "Change icon".
+    // UXR4-11: the accessible name holds the visible words "Document" and "Change Icon".
     await expect(trigger).toHaveAccessibleName(/Icon.*Document.*Change icon/);
     await trigger.click();
-    const dialog = page.getByRole('dialog', { name: 'Choose an icon' });
+    const dialog = page.getByRole('dialog', { name: 'Choose an Icon' });
     await expect(dialog).toBeVisible();
 
     const scroll = dialog.locator('[data-icon-scroll]');
@@ -242,7 +242,7 @@ test.describe('Round 4: task type icons', () => {
     // The keyboard path too: open with Enter, close with Esc from the search box.
     await trigger.press('Enter');
     await expect(dialog).toBeVisible();
-    await dialog.getByRole('searchbox', { name: 'Search icons' }).fill('mail');
+    await dialog.getByRole('searchbox', { name: 'Search Icons' }).fill('mail');
     await page.keyboard.press('Escape');
     await expect(dialog).toHaveCount(0);
     await expect(trigger).toBeFocused();
@@ -254,8 +254,8 @@ test.describe('Round 4: task type icons', () => {
   }) => {
     const world = await seed.world();
     await openPicker(page, world.taskType.id);
-    const dialog = page.getByRole('dialog', { name: 'Choose an icon' });
-    await dialog.getByRole('searchbox', { name: 'Search icons' }).fill('tar');
+    const dialog = page.getByRole('dialog', { name: 'Choose an Icon' });
+    await dialog.getByRole('searchbox', { name: 'Search Icons' }).fill('tar');
     const keys = await dialog
       .locator('[role=radio]')
       .evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset['key']!));
@@ -263,7 +263,7 @@ test.describe('Round 4: task type icons', () => {
     for (const weak of ['rocket', 'star']) {
       expect(keys.indexOf(weak), weak).toBeGreaterThan(keys.indexOf('target'));
     }
-    await dialog.getByRole('searchbox', { name: 'Search icons' }).fill('email');
+    await dialog.getByRole('searchbox', { name: 'Search Icons' }).fill('email');
     const email = await dialog
       .locator('[role=radio]')
       .evaluateAll((els) => els.slice(0, 3).map((e) => (e as HTMLElement).dataset['key']!));
@@ -278,7 +278,7 @@ test.describe('Round 4: task type icons', () => {
   }) => {
     const world = await seed.world();
     await openPicker(page, world.taskType.id);
-    const dialog = page.getByRole('dialog', { name: 'Choose an icon' });
+    const dialog = page.getByRole('dialog', { name: 'Choose an Icon' });
     const items = await dialog
       .locator('[role=radio]')
       .evaluateAll((els) =>
@@ -428,8 +428,8 @@ test.describe('Round 4: administration naming', () => {
     await page.goto('/admin/audit');
     // The filter row is open from the start (Audit redesign, #650); the Filters button would close it.
     await expect(page.locator('[data-filter-row]')).toBeVisible();
-    await filterDropdown(page, 'Object type').selectOption('Task');
-    await page.getByRole('textbox', { name: 'Filter by Object id' }).fill(String(task.taskId));
+    await filterDropdown(page, 'Object Type').selectOption('Task');
+    await page.getByRole('textbox', { name: 'Filter by Object ID' }).fill(String(task.taskId));
     const group = page.locator('tr[data-group]').first();
     await expect(group).toBeVisible();
     const object = group.locator('[data-group-object]');
@@ -481,12 +481,12 @@ test.describe('Round 4: queues, wording and accessibility', () => {
   }) => {
     for (let i = 0; i < 2; i++) await seed.task(await seed.world());
     await page.goto('/dashboard?tab=breakdowns');
-    const card = page.getByRole('region', { name: 'Task type' });
+    const card = page.getByRole('region', { name: 'Task Type' });
     await expect(card.locator('li').first()).toBeVisible();
     expect(await card.locator('li').count()).toBeLessThanOrEqual(9);
   });
 
-  test('UXR4-18: a task due today reads "Due today" in the header like the queues, and a Title or Ref filter sits in the filter row, not in a chip', async ({
+  test('UXR4-18: a task due today reads "Due Today" in the header like the queues, and a Title or Ref filter sits in the filter row, not in a chip', async ({
     page,
     seed,
   }) => {
@@ -496,8 +496,8 @@ test.describe('Round 4: queues, wording and accessibility', () => {
     );
     const task = await seed.task(world, { dueDate: today });
     await page.goto(`/tasks/${task.taskId}`);
-    await expect(page.locator('[data-due]')).toContainText('Due today');
-    await expect(page.locator('[data-due]')).not.toContainText('Due soon');
+    await expect(page.locator('[data-due]')).toContainText('Due Today');
+    await expect(page.locator('[data-due]')).not.toContainText('Due Soon');
 
     await page.goto(`/tasks?q=${encodeURIComponent(task.taskNumber)}`);
     // A link with a filter and no status asks for every status: the filter and "Status: All" are the two filters it carries.

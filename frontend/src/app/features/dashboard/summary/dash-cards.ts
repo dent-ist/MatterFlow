@@ -48,7 +48,7 @@ const CARDS: readonly CardSpec[] = [
   },
   {
     key: 'onHold',
-    label: 'On hold',
+    label: 'On Hold',
     icon: 'pi-pause-circle',
     tone: 'slate',
     hint: 'Waiting on client, custodian or internal',

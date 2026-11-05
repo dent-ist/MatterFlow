@@ -35,7 +35,7 @@ test.describe('Asset Type designer: the whole lifecycle in the shared layout', (
     await page.goto(world.url);
     await expect(page.getByRole('heading', { level: 1 })).toContainText(`Form: ${world.name}`);
     await expect(page.getByText('This asset type has no form yet.')).toBeVisible();
-    await page.getByRole('button', { name: 'Create new draft' }).click();
+    await page.getByRole('button', { name: 'Create New Draft' }).click();
     await expect(badge(page)).toHaveText('Draft v1');
 
     // Draft: three panes, tabs, sticky buttons.
@@ -45,7 +45,7 @@ test.describe('Asset Type designer: the whole lifecycle in the shared layout', (
     await noPageScroll(page);
     await expectNoViolations(page, 'asset type draft');
     await shoot(page, 'assettype-draft', { w: 1366, h: 768 });
-    await page.getByRole('button', { name: 'Save draft' }).click();
+    await page.getByRole('button', { name: 'Save Draft' }).click();
     await expect(page.locator('[data-notice]')).toContainText('Draft v1 saved.');
     await page.getByRole('button', { name: 'Publish...' }).click();
     const dialog = page.getByRole('dialog');
@@ -63,13 +63,13 @@ test.describe('Asset Type designer: the whole lifecycle in the shared layout', (
     await shoot(page, 'assettype-published', { w: 1366, h: 768 });
     await expectNoViolations(page, 'asset type published');
 
-    await page.getByRole('button', { name: 'Create new draft' }).click();
+    await page.getByRole('button', { name: 'Create New Draft' }).click();
     await expect(badge(page)).toHaveText('Draft v2');
     await expect(page.locator('[data-published-note]')).toHaveText('(published: v1)');
     await page.getByRole('button', { name: 'Versions (2)' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'v1' }).click();
     await expect(badge(page)).toHaveText('Published v1');
-    await page.getByRole('button', { name: 'Retire version' }).click();
+    await page.getByRole('button', { name: 'Retire Version' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Retire v1' }).click();
     await expect(badge(page)).toHaveText('Retired v1');
     await expect(page.getByRole('button', { name: 'Open draft v2' })).toBeVisible();
@@ -139,7 +139,7 @@ test.describe('Custom Fields designer (Client, Matter, Project)', () => {
             await expect(publish).toBeFocused();
           }
         }
-        const retire = page.getByRole('button', { name: 'Retire version' });
+        const retire = page.getByRole('button', { name: 'Retire Version' });
         if (await retire.isVisible()) {
           await retire.click();
           await expect(page.getByRole('dialog')).toBeVisible();
@@ -169,7 +169,7 @@ test.describe('permissions of the shared designer', () => {
 
     const assetRole = await seed.role(
       ['AssetType.Manage', 'Asset.View', 'Task.View'],
-      'Asset types',
+      'Asset Types',
     );
     const assetPage = await asUser((await seed.user([assetRole.name], 'tt-assets')).username);
     await assetPage.goto(asset.url);
@@ -178,7 +178,7 @@ test.describe('permissions of the shared designer', () => {
     await assetPage.goto(custom.url);
     await forbidden(assetPage);
 
-    const customRole = await seed.role(['CustomField.Manage', 'Task.View'], 'Custom fields');
+    const customRole = await seed.role(['CustomField.Manage', 'Task.View'], 'Custom Fields');
     const customPage = await asUser((await seed.user([customRole.name], 'tt-custom')).username);
     await customPage.goto(custom.url);
     await expect(customPage.getByRole('tab', { name: 'Validation' })).toBeVisible();

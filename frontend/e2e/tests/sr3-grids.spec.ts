@@ -34,7 +34,7 @@ test.describe('Search results grids and cards (WP-SR3, WP-SR4)', () => {
     await expect(page.locator('[data-section=asset] [data-hit-row]')).toHaveCount(5);
     await expect(page.locator('[data-section=project] [data-hit-row]')).toHaveCount(1);
     await expect(page.locator('[data-section=project] [data-see-all]')).toHaveCount(0);
-    await expect(page.getByText('Show more')).toHaveCount(0);
+    await expect(page.getByText('Show More')).toHaveCount(0);
     // The heading counts are the tab counts.
     await expect(page.getByRole('region', { name: 'Assets (58)' })).toBeVisible();
     await expect(tab(page, /^Assets, 58 results/)).toBeVisible();
@@ -73,7 +73,7 @@ test.describe('Search results grids and cards (WP-SR3, WP-SR4)', () => {
       await expect(page.getByRole('columnheader')).toHaveText([
         'Name',
         'Type',
-        'Matter number',
+        'Matter Number',
         'Size',
         'Disposition',
       ]);

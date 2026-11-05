@@ -134,7 +134,7 @@ function targets(): Target[] {
       tabs: true,
     },
     { name: 'New task type', url: '/admin/task-types/new', need: TT },
-    { name: 'Task type', url: `/admin/task-types/${type.id}`, need: TT },
+    { name: 'Task Type', url: `/admin/task-types/${type.id}`, need: TT },
     {
       name: 'Task type, Workflows tab',
       url: `/admin/task-types/${type.id}?tab=workflows`,
@@ -147,7 +147,7 @@ function targets(): Target[] {
       need: TT,
     },
     { name: 'Task type form', url: type.url, need: TT },
-    { name: 'New workflow', url: '/admin/workflows/new', need: WF },
+    { name: 'New Workflow', url: '/admin/workflows/new', need: WF },
     { name: 'Workflow', url: `/admin/workflows/${wfId}`, need: WF },
     { name: 'Workflow, Versions tab', url: `/admin/workflows/${wfId}?tab=versions`, need: WF },
     { name: 'Workflow, Task types tab', url: `/admin/workflows/${wfId}?tab=task-types`, need: WF },
@@ -174,7 +174,7 @@ function targets(): Target[] {
       url: '/admin/asset-types?tab=link-roles',
       need: ['AssetType.Manage'],
     },
-    { name: 'Asset type', url: `/admin/asset-types/${assetType.id}`, need: ['AssetType.Manage'] },
+    { name: 'Asset Type', url: `/admin/asset-types/${assetType.id}`, need: ['AssetType.Manage'] },
     {
       name: 'Asset type, Fields tab',
       url: `/admin/asset-types/${assetType.id}?tab=fields`,
@@ -326,7 +326,7 @@ test.describe('#417: permission matrix of the Task Types area', () => {
           stops[role.key][t.url] = await tabStopsToFirst(page, first);
         if (
           axeAvailable() &&
-          ['Task Types list', 'Task type', 'Workflow', 'Step', 'Published version'].includes(t.name)
+          ['Task Types list', 'Task Type', 'Workflow', 'Step', 'Published version'].includes(t.name)
         ) {
           const v = await axeViolations(page);
           if (v.length > 0) problems.push(`${t.name}: axe ${JSON.stringify(v).slice(0, 300)}`);

@@ -129,7 +129,7 @@ describe('mf-action-menu', () => {
   it('shows a danger entry in red and a set-apart entry with a divider above it', async () => {
     fixture.componentInstance.items.set([
       { id: 'a', label: 'Alpha', run: run.a },
-      { id: 'x', label: 'Cancel task', danger: true, separated: true, run: vi.fn() },
+      { id: 'x', label: 'Cancel Task', danger: true, separated: true, run: vi.fn() },
     ]);
     await settle(fixture);
     trigger().click();

@@ -311,7 +311,7 @@ type Tab = MatterTabKey;
               </p>
               <p-button
                 *mfHasPermission="'Task.View'"
-                label="View open tasks"
+                label="View Open Tasks"
                 severity="secondary"
                 (onClick)="go('/tasks?matterId=' + m.matterId)"
               />

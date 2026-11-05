@@ -211,7 +211,7 @@ export type ShowFilter = 'everything' | 'overdue' | 'risk' | 'unassigned' | 'cri
 export const SHOW_FILTERS: readonly { key: ShowFilter; label: string }[] = [
   { key: 'everything', label: 'Everything' },
   { key: 'overdue', label: 'Overdue' },
-  { key: 'risk', label: 'At risk' },
+  { key: 'risk', label: 'At Risk' },
   { key: 'unassigned', label: 'Unassigned' },
   { key: 'critical', label: 'Critical' },
   { key: 'due7', label: 'Due in 7 days' },
@@ -224,7 +224,7 @@ export const STATUS_FILTERS: readonly {
   label: string;
   codes: readonly string[];
 }[] = [
-  { key: 'open', label: 'All open', codes: ['NEW', 'IN_PROGRESS', 'ON_HOLD'] },
+  { key: 'open', label: 'All Open', codes: ['NEW', 'IN_PROGRESS', 'ON_HOLD'] },
   { key: 'new', label: 'New', codes: ['NEW'] },
   { key: 'progress', label: 'In Progress', codes: ['IN_PROGRESS'] },
   { key: 'hold', label: 'On Hold', codes: ['ON_HOLD'] },
@@ -233,10 +233,10 @@ export const STATUS_FILTERS: readonly {
 ];
 
 export const FEED_KINDS: readonly { kind: FeedKind; label: string }[] = [
-  { kind: 'NEW_ASSETS', label: 'New assets' },
-  { kind: 'NEW_COMMENTS', label: 'New comments' },
-  { kind: 'NEW_STATUS_UPDATES', label: 'New status updates' },
-  { kind: 'ON_HOLD', label: 'On hold' },
+  { kind: 'NEW_ASSETS', label: 'New Assets' },
+  { kind: 'NEW_COMMENTS', label: 'New Comments' },
+  { kind: 'NEW_STATUS_UPDATES', label: 'New Status Updates' },
+  { kind: 'ON_HOLD', label: 'On Hold' },
   { kind: 'OVERDUE', label: 'Overdue' },
-  { kind: 'DUE_DATE_UPDATED', label: 'Due date updated' },
+  { kind: 'DUE_DATE_UPDATED', label: 'Due Date Updated' },
 ];

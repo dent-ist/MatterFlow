@@ -395,17 +395,17 @@ describe('MatterDetailPage', () => {
     const summary = panel.querySelector('[data-details-tab]')!;
     const rows = Array.from(summary.querySelectorAll('dt')).map((t) => t.textContent!.trim());
     expect(rows).toEqual([
-      'CM number',
+      'CM Number',
       'Client',
-      'Matter number',
-      'Matter name',
+      'Matter Number',
+      'Matter Name',
       'Status',
       'Sensitive',
       'Primary PM',
       'Secondary PM',
-      'AI allowed',
+      'AI Allowed',
       'Created',
-      'Last changed',
+      'Last Changed',
     ]);
     expect(summary.querySelector('dl')!.textContent).toContain('00343-00012');
     expect(summary.querySelector('[data-ai-value]')!.textContent!.trim()).toBe('No');
@@ -452,7 +452,7 @@ describe('MatterDetailPage', () => {
     el().querySelector<HTMLButtonElement>('[data-edit-matter]')!.click();
     await settle(fixture);
     const panel = document.body.querySelector('.mf-formdlg')!;
-    expect(panel.textContent).toContain('Edit matter');
+    expect(panel.textContent).toContain('Edit Matter');
     expect(panel.querySelector('#matter-name')).not.toBeNull();
     expect(panel.querySelector('[data-ai-allowed]')).not.toBeNull();
     expect(navigateByUrl).not.toHaveBeenCalled();
@@ -753,7 +753,7 @@ describe('MatterDetailPage', () => {
     await create(['Matter.View', 'Matter.Edit', 'Project.Create']);
     // New > Project opens the side panel and leaves the page where it is.
     await pick('Create', 'new-project');
-    expect(document.body.querySelector('.mf-formdlg')?.textContent).toContain('New project');
+    expect(document.body.querySelector('.mf-formdlg')?.textContent).toContain('New Project');
     expect(navigateByUrl).not.toHaveBeenCalled();
   });
 
@@ -800,7 +800,7 @@ describe('MatterDetailPage', () => {
     await openTab('projects');
     el().querySelector<HTMLButtonElement>('[data-empty-new-project] button')!.click();
     await settle(fixture);
-    expect(document.body.querySelector('.mf-formdlg')?.textContent).toContain('New project');
+    expect(document.body.querySelector('.mf-formdlg')?.textContent).toContain('New Project');
   });
 
   it('confirms before deactivating and saves with the row version', async () => {
@@ -857,7 +857,7 @@ describe('MatterDetailPage', () => {
     expect(blocked.textContent).toContain(
       "This matter has 2 tasks that aren't Completed or Cancelled. Finish or cancel them first.",
     );
-    buttonByLabel(blocked.closest('p-dialog') as HTMLElement, 'View open tasks')!.click();
+    buttonByLabel(blocked.closest('p-dialog') as HTMLElement, 'View Open Tasks')!.click();
     expect(navigateByUrl).toHaveBeenCalledWith('/tasks?matterId=7');
     expect(el().querySelector('[data-inactive-banner]')).toBeNull(); // still active
   });
@@ -959,7 +959,7 @@ describe('MatterDetailPage', () => {
       await openTab('projects');
       expect(
         Array.from(el().querySelectorAll('thead th')).map((h) => h.textContent!.trim()),
-      ).toEqual(['Name', 'Open tasks', 'Overdue', 'Status']);
+      ).toEqual(['Name', 'Open Tasks', 'Overdue', 'Status']);
       const cells = el().querySelectorAll('tbody tr')[0].querySelectorAll('td');
       expect(cells[1].querySelector('a')?.getAttribute('aria-label')).toBe('4 open tasks in Alpha');
       expect(cells[2].querySelector('a')?.getAttribute('aria-label')).toBe(

@@ -117,8 +117,8 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
       'all',
     );
     expect(Array.from(el.querySelectorAll('[data-panel] h3')).map((h) => text(h))).toEqual([
-      'Created and completed',
-      'Backlog at end of day',
+      'Created and Completed',
+      'Backlog at End of Day',
     ]);
     expect(panelLines('flows').length).toBe(2);
     expect(panelLines('backlog').length).toBe(2); // Open and Overdue
@@ -142,9 +142,9 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     ).toBe(true);
     // One title per panel; the card has no title of its own (the page's section heading names the tab).
     expect(Array.from(el.querySelectorAll('h3')).map((h) => text(h))).toEqual([
-      'Created and completed',
-      'Backlog at end of day',
-      'Compare task types',
+      'Created and Completed',
+      'Backlog at End of Day',
+      'Compare Task Types',
     ]);
     // The old Due dates group and Show radios are gone.
     expect(el.querySelector('[data-group="due-dates"], [data-show], [data-due]')).toBeNull();
@@ -188,7 +188,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     // All task types is hidden by default while types are compared (T2): one line per panel, the type's.
     expect(panelLines('flows').length).toBe(1);
     expect(panelLines('backlog').length).toBe(1);
-    expect(text(el.querySelector('[data-panel=flows] h3'))).toBe('Created and completed');
+    expect(text(el.querySelector('[data-panel=flows] h3'))).toBe('Created and Completed');
     expect(url()).toBe('/trends?types=5&metric=created&bmetric=open');
     expect(stored()).toEqual({ types: [5], all: 'auto', metric: 'created', bmetric: 'open' });
     expect(live()).toBe('Showing Created and Open to compare task types.');
@@ -262,7 +262,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     await choose('flows', 'late');
     expect(getTrend).toHaveBeenCalledTimes(1);
     expect(panelLines('flows').length).toBe(1);
-    expect(text(el.querySelector('[data-panel=flows] h3'))).toBe('Created and completed');
+    expect(text(el.querySelector('[data-panel=flows] h3'))).toBe('Created and Completed');
     expect(url()).toBe('/trends?metric=late');
     // Back to the two-line view: the default is not written.
     await choose('flows', 'both');
@@ -287,7 +287,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     const group = el.querySelector('[data-measure=flows]')!;
     expect(group.getAttribute('role')).toBe('radiogroup');
     expect(Array.from(group.querySelectorAll('label span:last-child')).map((l) => text(l))).toEqual(
-      ['Created and completed', 'Created', 'Completed', 'On time', 'Completed late'],
+      ['Created and Completed', 'Created', 'Completed', 'On time', 'Completed late'],
     );
     expect(el.querySelector('[data-measure-select=flows]')).not.toBeNull();
     // The select (below 600 px) works the same.
@@ -304,11 +304,11 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
   it('hides and shows the backlog panel, remembered in the browser but not in the address', async () => {
     await open();
     const toggle = () => el.querySelector<HTMLButtonElement>('[data-backlog-toggle]')!;
-    expect(text(toggle())).toBe('Hide backlog');
+    expect(text(toggle())).toBe('Hide Backlog');
     toggle().click();
     await settle();
     expect(el.querySelector('[data-panel=backlog]')).toBeNull();
-    expect(text(toggle())).toBe('Show backlog');
+    expect(text(toggle())).toBe('Show Backlog');
     expect(url()).toBe('/trends');
     expect(localStorage.getItem('mf.dashboard.trends.backlog.v1.1')).toBe('hidden');
     TestBed.resetTestingModule();
@@ -415,12 +415,12 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     expect(tip).not.toContain('All task types');
     expect(tip).toContain('Alpha 3');
     expect(tip).toContain('Beta 2');
-    expect(tip).toContain('Backlog at end of day');
-    expect(text(el.querySelector('[data-readout]'))).toContain('Backlog at end of day: Alpha');
+    expect(tip).toContain('Backlog at End of Day');
+    expect(text(el.querySelector('[data-readout]'))).toContain('Backlog at End of Day: Alpha');
     el.querySelector<HTMLButtonElement>('[data-backlog-toggle] ~ .toggle')!.click();
     harness.detectChanges();
     expect(Array.from(el.querySelectorAll('thead th[scope=colgroup]')).map((t) => text(t))).toEqual(
-      ['Created and completed', 'Backlog at end of day'],
+      ['Created and Completed', 'Backlog at End of Day'],
     );
     expect(Array.from(el.querySelectorAll('thead th[data-col]')).map((t) => text(t))).toEqual([
       'Alpha',
@@ -457,7 +457,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
         true,
       );
       expect(panelLines('flows').length).toBe(2);
-      expect(text(el.querySelector('[data-panel=flows] h3'))).toBe('Created and completed');
+      expect(text(el.querySelector('[data-panel=flows] h3'))).toBe('Created and Completed');
     });
 
     it('without parameters the remembered view is restored and the address completed', async () => {
@@ -608,7 +608,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
       await open();
       const btn = el.querySelector<HTMLButtonElement>('[data-compare-toggle]')!;
       expect(btn).not.toBeNull();
-      expect(text(btn)).toContain('Compare task types');
+      expect(text(btn)).toContain('Compare task types ▼');
       expect(text(btn)).not.toContain('(');
       expect(btn.getAttribute('aria-expanded')).toBe('false');
       expect(el.querySelector('mf-trend-legend')).toBeNull();

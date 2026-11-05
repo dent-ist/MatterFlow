@@ -342,7 +342,7 @@ const emptySpec = (): SpecDraft => ({
       @if (error()) {
         <p class="pg-reason" role="alert" data-productions-error>
           {{ error() }}
-          <button type="button" class="mf-btn mf-btn--text" (click)="reload()">Try again</button>
+          <button type="button" class="mf-btn mf-btn--text" (click)="reload()">Try Again</button>
         </p>
       } @else if (view() === 'productions') {
         @if (loaded() && productions().length === 0) {
@@ -360,11 +360,11 @@ const emptySpec = (): SpecDraft => ({
               <thead>
                 <tr>
                   <th scope="col">Production</th>
-                  <th scope="col">Direction and party</th>
-                  <th scope="col">Bates range</th>
+                  <th scope="col">Direction and Party</th>
+                  <th scope="col">Bates Range</th>
                   <th scope="col" class="pg-num">Documents</th>
                   <th scope="col">Spec</th>
-                  <th scope="col">Delivered or due</th>
+                  <th scope="col">Delivered or Due</th>
                 </tr>
               </thead>
               <tbody>
@@ -438,9 +438,9 @@ const emptySpec = (): SpecDraft => ({
                 <tr>
                   <th scope="col">Spec</th>
                   <th scope="col">Status</th>
-                  <th scope="col">Images and text</th>
-                  <th scope="col">Load file</th>
-                  <th scope="col" class="pg-num">Used by</th>
+                  <th scope="col">Images and Text</th>
+                  <th scope="col">Load File</th>
+                  <th scope="col" class="pg-num">Used By</th>
                   <th scope="col">Updated</th>
                 </tr>
               </thead>
@@ -542,7 +542,7 @@ const emptySpec = (): SpecDraft => ({
           <dd>{{ count(p.docCount) || 'Not set' }}</dd>
           <dt>Pages</dt>
           <dd>{{ count(p.pageCount) || 'Not set' }}</dd>
-          <dt>Delivered or due</dt>
+          <dt>Delivered or Due</dt>
           <dd>{{ p.deliveredOrDueOn ? (p.deliveredOrDueOn | mfNum: 'date') : 'Not set' }}</dd>
           <dt>Notes</dt>
           <dd>{{ p.notes || 'None' }}</dd>
@@ -556,7 +556,7 @@ const emptySpec = (): SpecDraft => ({
                 <div class="pt__comment-form">
                   <mf-text-field
                     inputId="pt-comment-edit"
-                    label="Edit comment"
+                    label="Edit Comment"
                     [multiline]="true"
                     [maxLength]="4000"
                     [(value)]="commentText"
@@ -567,7 +567,7 @@ const emptySpec = (): SpecDraft => ({
                       severity="secondary"
                       (onClick)="editingComment.set(null)"
                     />
-                    <p-button label="Save comment" data-comment-save (onClick)="saveComment(c)" />
+                    <p-button label="Save Comment" data-comment-save (onClick)="saveComment(c)" />
                   </div>
                 </div>
               } @else {
@@ -597,13 +597,13 @@ const emptySpec = (): SpecDraft => ({
           <div class="pt__comment-form">
             <mf-text-field
               inputId="pt-comment"
-              label="Add a comment"
+              label="Add a Comment"
               [multiline]="true"
               [maxLength]="4000"
               [(value)]="newComment"
             />
             <div class="pt__actions">
-              <p-button label="Add comment" data-comment-add (onClick)="addComment(p)" />
+              <p-button label="Add Comment" data-comment-add (onClick)="addComment(p)" />
             </div>
           </div>
         }
@@ -624,9 +624,9 @@ const emptySpec = (): SpecDraft => ({
 
     <!-- New or edit production -->
     <mf-form-dialog
-      [title]="draftId() ? 'Edit production' : 'New production'"
+      [title]="draftId() ? 'Edit Production' : 'New Production'"
       size="large"
-      [primaryLabel]="draftId() ? 'Save production' : 'Create production'"
+      [primaryLabel]="draftId() ? 'Save Production' : 'Create Production'"
       [busy]="busy()"
       [error]="formError()"
       [dirty]="dirty()"
@@ -685,7 +685,7 @@ const emptySpec = (): SpecDraft => ({
           <div class="pt__row">
             <mf-text-field
               inputId="pf-bates-begin"
-              label="Bates begin"
+              label="Bates Begin"
               help="For example ABC000001"
               [maxLength]="50"
               [value]="pd().batesBegin"
@@ -693,7 +693,7 @@ const emptySpec = (): SpecDraft => ({
             />
             <mf-text-field
               inputId="pf-bates-end"
-              label="Bates end"
+              label="Bates End"
               [maxLength]="50"
               [value]="pd().batesEnd"
               (valueChange)="setP('batesEnd', $event)"
@@ -716,7 +716,7 @@ const emptySpec = (): SpecDraft => ({
             />
           </div>
           <div>
-            <label class="pt__label" for="pf-date">Delivered or due date</label>
+            <label class="pt__label" for="pf-date">Delivered or Due Date</label>
             <input
               id="pf-date"
               type="date"
@@ -739,7 +739,7 @@ const emptySpec = (): SpecDraft => ({
 
     <!-- A spec -->
     <mf-slide-panel
-      [title]="currentSpec()?.name ?? 'Production spec'"
+      [title]="currentSpec()?.name ?? 'Production Spec'"
       [subtitle]="currentSpec()?.status ?? ''"
       size="large"
       [showFooter]="false"
@@ -792,9 +792,9 @@ const emptySpec = (): SpecDraft => ({
           <dd>{{ s.textMode || 'Not set' }}</dd>
           <dt>Natives</dt>
           <dd>{{ s.nativesRule || 'Not set' }}</dd>
-          <dt>Load file</dt>
+          <dt>Load File</dt>
           <dd>{{ s.loadFile || 'Not set' }}</dd>
-          <dt>Metadata fields</dt>
+          <dt>Metadata Fields</dt>
           <dd>{{ s.metadataFields.length ? s.metadataFields.join(', ') : 'None' }}</dd>
           <dt>Redactions</dt>
           <dd>{{ s.redactionRule || 'Not set' }}</dd>
@@ -802,7 +802,7 @@ const emptySpec = (): SpecDraft => ({
           <dd>{{ s.privilegeRule || 'Not set' }}</dd>
           <dt>De-duplication</dt>
           <dd>{{ s.dedupRule || 'Not set' }}</dd>
-          <dt>Dates and time</dt>
+          <dt>Dates and Time</dt>
           <dd>{{ s.dateTimeRule || 'Not set' }}</dd>
           <dt>Numbering</dt>
           <dd>{{ s.numberingRule || 'Not set' }}</dd>
@@ -811,7 +811,7 @@ const emptySpec = (): SpecDraft => ({
           <dt>Notes</dt>
           <dd>{{ s.notes || 'None' }}</dd>
         </dl>
-        <h3 class="pt__h">Used by</h3>
+        <h3 class="pt__h">Used By</h3>
         <ul class="pt__list" data-spec-used-by>
           @for (u of s.usedBy; track u.productionId) {
             <li>
@@ -841,7 +841,7 @@ const emptySpec = (): SpecDraft => ({
       [title]="specFormTitle()"
       subtitle="A spec is the agreed format of productions: what you deliver and how."
       size="large"
-      [primaryLabel]="draftId() ? 'Save spec' : 'Create spec'"
+      [primaryLabel]="draftId() ? 'Save Spec' : 'Create Spec'"
       [busy]="busy()"
       [error]="formError()"
       [dirty]="dirty()"
@@ -853,7 +853,7 @@ const emptySpec = (): SpecDraft => ({
         <form class="pt__form" (submit)="$event.preventDefault()" data-spec-form>
           <mf-text-field
             inputId="sf-name"
-            label="Spec name"
+            label="Spec Name"
             [required]="true"
             [maxLength]="200"
             [error]="fieldError('name')"
@@ -862,7 +862,7 @@ const emptySpec = (): SpecDraft => ({
           />
           <mf-text-field
             inputId="sf-source"
-            label="Source of the agreement"
+            label="Source of the Agreement"
             help="Court order, ESI protocol, email, request letter"
             [maxLength]="300"
             [value]="sd().sourceOfAgreement"
@@ -879,7 +879,7 @@ const emptySpec = (): SpecDraft => ({
           <div class="pt__row">
             <mf-text-field
               inputId="sf-image"
-              label="Image format"
+              label="Image Format"
               [maxLength]="100"
               [value]="sd().imageFormat"
               (valueChange)="setS('imageFormat', $event)"
@@ -901,27 +901,27 @@ const emptySpec = (): SpecDraft => ({
           </div>
           <mf-text-field
             inputId="sf-natives"
-            label="Files produced natively"
+            label="Files Produced Natively"
             [maxLength]="300"
             [value]="sd().nativesRule"
             (valueChange)="setS('nativesRule', $event)"
           />
           <mf-text-field
             inputId="sf-load"
-            label="Load file"
+            label="Load File"
             [maxLength]="100"
             [value]="sd().loadFile"
             (valueChange)="setS('loadFile', $event)"
           />
           <fieldset class="pt__fieldset">
-            <legend class="pt__label">Metadata fields ({{ sd().metadataFields.length }})</legend>
+            <legend class="pt__label">Metadata Fields ({{ sd().metadataFields.length }})</legend>
             <div class="pt__actions">
               <p-button
-                label="Minimum set"
+                label="Minimum Set"
                 severity="secondary"
                 (onClick)="setFields(minimumFields)"
               />
-              <p-button label="All fields" severity="secondary" (onClick)="setFields(allFields)" />
+              <p-button label="All Fields" severity="secondary" (onClick)="setFields(allFields)" />
             </div>
             <div class="pt__chk">
               @for (f of allFields; track f) {
@@ -959,7 +959,7 @@ const emptySpec = (): SpecDraft => ({
           />
           <mf-text-field
             inputId="sf-dates"
-            label="Dates and time"
+            label="Dates and Time"
             help="Format and time zone in the load file"
             [maxLength]="200"
             [value]="sd().dateTimeRule"
@@ -974,7 +974,7 @@ const emptySpec = (): SpecDraft => ({
           />
           <mf-text-field
             inputId="sf-delivery"
-            label="Encryption and delivery"
+            label="Encryption and Delivery"
             [maxLength]="300"
             [value]="sd().deliveryRule"
             (valueChange)="setS('deliveryRule', $event)"

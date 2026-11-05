@@ -16,7 +16,7 @@
     @if (canManage()) {
       <p-button label="Cancel" severity="secondary" data-cancel (onClick)="requestClose()" />
       <p-button
-        label="Save changes"
+        label="Save Changes"
         data-save
         [disabled]="!dirty() || saving()"
         (onClick)="save()"
@@ -33,7 +33,7 @@
           <div class="ud-facts">
             @if (u.isPending) {
               <mf-badge data-drawer-status tone="warning" icon="pi-user-plus"
-                >Pending access</mf-badge
+                >Pending Access</mf-badge
               >
             } @else if (u.isActive) {
               <mf-badge data-drawer-status tone="success" icon="pi-check-circle">Active</mf-badge>
@@ -271,7 +271,7 @@
                     [attr.aria-label]="'Edit availability of ' + u.displayName"
                     (click)="editAvailability.emit()"
                   >
-                    Edit availability
+                    Edit Availability
                   </button>
                 }
                 <p class="ud-note" data-availability-note>
@@ -308,7 +308,7 @@
                 <fieldset class="ud-fields" [disabled]="!canManage()">
                   <legend class="mf-sr-only">Profile</legend>
                   <div class="mf-fld">
-                    <label for="user-name">Display name</label>
+                    <label for="user-name">Display Name</label>
                     <input
                       id="user-name"
                       type="text"
@@ -333,9 +333,9 @@
                   </div>
                 </fieldset>
                 <dl class="ud-dl">
-                  <dt>Windows account</dt>
+                  <dt>Windows Account</dt>
                   <dd class="ud-mono">{{ u.windowsAccount }}</dd>
-                  <dt>First seen</dt>
+                  <dt>First Seen</dt>
                   <dd data-first-seen>{{ u.registeredAtUtc | mfNum: 'date' }}</dd>
                 </dl>
                 @if (canManage()) {

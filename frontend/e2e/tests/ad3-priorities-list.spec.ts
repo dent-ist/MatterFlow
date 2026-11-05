@@ -65,7 +65,7 @@ test.describe('the Priorities list (#605)', () => {
       'Order',
       'Priority',
       'Color',
-      'Open tasks',
+      'Open Tasks',
       'Status',
       'Actions',
     ]);
@@ -226,16 +226,16 @@ test.describe('the Priorities list (#605)', () => {
     await expect(card.locator('[data-card-open-tasks]')).toContainText('3 open tasks');
     await openRowMenu(page, card.getByRole('button', { name: /^Actions for / }));
     await expect(page.getByRole('menuitem')).toContainText([
-      'Edit priority',
-      'Move up',
-      'Move down',
-      'Set as default',
+      'Edit Priority',
+      'Move Up',
+      'Move Down',
+      'Set as Default',
       'Deactivate',
     ]);
     // The card's link opens the same dialog as the table's.
     await page.keyboard.press('Escape');
     await card.getByRole('link', { name: used.label }).click();
-    await expect(page.getByRole('dialog', { name: 'Edit priority' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Edit Priority' })).toBeVisible();
   });
 
   test('a person with Priority.Manage but not Task.View has no Open tasks column and no Delete', async ({

@@ -62,7 +62,7 @@ function matterOption(m: MatterResponse): PickerOption {
         { label: 'Projects', link: '/projects' },
         { label: isEdit() ? original()?.name || 'Edit' : 'New' },
       ]"
-      [heading]="isEdit() ? 'Edit project' : 'New project'"
+      [heading]="isEdit() ? 'Edit Project' : 'New Project'"
     />
 
     @if (state() === 'loading') {
@@ -77,7 +77,7 @@ function matterOption(m: MatterResponse): PickerOption {
       @if (conflict()) {
         <div class="pg-alert" role="alert" data-conflict>
           This project was changed by someone else.
-          <p-button label="Reload latest" severity="secondary" (onClick)="load()" />
+          <p-button label="Reload Latest" severity="secondary" (onClick)="load()" />
         </div>
       }
       @if (summary().length > 0) {
@@ -89,7 +89,7 @@ function matterOption(m: MatterResponse): PickerOption {
             }
           </ul>
           @if (existingId(); as existing) {
-            <a class="pg-link" [routerLink]="['/projects', existing]">View the existing project</a>
+            <a class="pg-link" [routerLink]="['/projects', existing]">View the Existing Project</a>
           }
         </div>
       }
@@ -108,7 +108,7 @@ function matterOption(m: MatterResponse): PickerOption {
 
         <mf-text-field
           inputId="project-name"
-          label="Project name"
+          label="Project Name"
           [required]="true"
           [maxLength]="200"
           [error]="nameError()"
@@ -135,7 +135,7 @@ function matterOption(m: MatterResponse): PickerOption {
           <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
           <p-button
             type="submit"
-            [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create project'"
+            [label]="busy() ? 'Saving...' : isEdit() ? 'Save Changes' : 'Create Project'"
             [disabled]="busy()"
           />
         </div>

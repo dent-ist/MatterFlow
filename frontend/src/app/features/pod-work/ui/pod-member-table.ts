@@ -20,7 +20,7 @@ const NAMES: Record<MemberSortKey, string> = {
   member: 'Member',
   open: 'Open',
   overdue: 'Overdue',
-  onHold: 'On hold',
+  onHold: 'On Hold',
 };
 
 /**
@@ -193,7 +193,7 @@ type CardItem = { kind: 'unassigned' } | { kind: 'member'; load: PodMemberLoad }
                 </button>
               </th>
             }
-            <th scope="col"><span class="pm-sr">View tasks</span></th>
+            <th scope="col"><span class="pm-sr">View Tasks</span></th>
           </tr>
         </thead>
         <tbody>

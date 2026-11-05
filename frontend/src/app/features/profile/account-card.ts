@@ -21,7 +21,7 @@ import { CopyButton } from '../../shared/ui/copy-button';
           <dd class="ac__value" data-ac-name>{{ name() }}</dd>
         </div>
         <div class="ac__row" data-ac-row="account">
-          <dt>Windows account</dt>
+          <dt>Windows Account</dt>
           <dd class="ac__value ac__value--copy">
             @if (account(); as a) {
               <span data-ac-account>{{ a }}</span>

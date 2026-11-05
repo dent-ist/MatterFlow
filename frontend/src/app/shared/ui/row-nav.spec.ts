@@ -204,11 +204,11 @@ describe('row navigation (#281, #282, #283)', () => {
     }
   });
 
-  it('offers "Skip to table" and lists it in the help while the list is open, and takes both away after', async () => {
+  it('offers "Skip to Table" and lists it in the help while the list is open, and takes both away after', async () => {
     await create(false);
     const skip = TestBed.inject(SkipTarget);
     const registry = TestBed.inject(ShortcutRegistry);
-    expect(skip.target()?.label).toBe('Skip to table');
+    expect(skip.target()?.label).toBe('Skip to Table');
     const ids = registry.all().map((s) => s.id);
     expect(ids).toContain('skip-table');
     expect(ids).toContain('row-copy');

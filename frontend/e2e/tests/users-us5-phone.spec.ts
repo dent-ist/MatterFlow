@@ -85,7 +85,7 @@ test.describe('#445 phone cards', () => {
     await expect(goneCard.locator('mf-badge')).toContainText('Inactive');
 
     const waitingCard = page.locator('li.rc', { hasText: waiting.username.slice(0, 20) });
-    await expect(waitingCard.locator('mf-badge')).toContainText('Pending access');
+    await expect(waitingCard.locator('mf-badge')).toContainText('Pending Access');
     await expect(waitingCard.getByRole('button', { name: /^Grant access to/ })).toBeVisible();
     await expect(waitingCard.locator('button[data-overflow]')).toHaveCount(0);
 
@@ -152,7 +152,7 @@ test.describe('#445 phone cards', () => {
       .click();
     await expect(page.getByRole('menuitem')).toHaveText([
       'Open',
-      'Edit availability',
+      'Edit Availability',
       'Deactivate',
     ]);
     if (axeAvailable()) expect(await axeClean(page)).toEqual([]);
@@ -168,7 +168,7 @@ test.describe('#445 phone cards', () => {
     await expect(page.locator('[data-empty="filtered"]')).toContainText(
       'No users match these filters',
     );
-    await expect(page.getByRole('button', { name: 'Clear filters' }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Clear Filters' }).first()).toBeVisible();
     expect(await noSideScroll(page)).toBe(true);
     await shot(page, 'users-cards-empty');
   });

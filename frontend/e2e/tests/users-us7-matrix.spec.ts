@@ -195,7 +195,7 @@ test.describe('#453: permission matrix of the Users area', () => {
         await settle(page);
         const heading = page.locator('[data-panel-heading]');
         await expect(heading).toBeVisible();
-        const hasSave = (await page.getByRole('button', { name: 'Save changes' }).count()) > 0;
+        const hasSave = (await page.getByRole('button', { name: 'Save Changes' }).count()) > 0;
         if (hasSave !== v.drawer.edit)
           problems.push(`drawer: Save changes ${hasSave}, expected ${v.drawer.edit}`);
         const hasDeactivate = (await page.locator('[data-deactivate]').count()) > 0;

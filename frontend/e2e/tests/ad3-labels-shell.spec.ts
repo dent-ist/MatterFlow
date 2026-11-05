@@ -4,7 +4,7 @@ import { SIZES, noSideScroll, shot } from '../support/labels';
 
 /**
  * WP-AD3 #593: the Labels page on the admin list shell: crumb Administration > Labels, title, one-line description per tab, counted tabs
- * Priorities (n), Status Labels (n) and On-Hold Reasons (n) with the arrow keys, the "Skip to table" first Tab stop, one tab and no tab strip for a person with
+ * Priorities (n), Status Labels (n) and On-Hold Reasons (n) with the arrow keys, the "Skip to Table" first Tab stop, one tab and no tab strip for a person with
  * one permission. Screenshots go to E2E_SCREENSHOTS (docs/ux/admin-pages-review/fixes/ad3-labels).
  */
 test.describe('the Labels page on the admin list shell (#593)', () => {
@@ -90,7 +90,7 @@ test.describe('the Labels page on the admin list shell (#593)', () => {
     );
   });
 
-  test('"Skip to table" is the first Tab stop on both tabs, visible on focus, and moves focus into the table', async ({
+  test('"Skip to Table" is the first Tab stop on both tabs, visible on focus, and moves focus into the table', async ({
     page,
   }) => {
     await page.setViewportSize(SIZES[1]);

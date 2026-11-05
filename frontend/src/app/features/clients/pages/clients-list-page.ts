@@ -157,7 +157,7 @@ const BONES: Record<string, string> = {
                 data-show-all-matters
                 (click)="scope.set('all')"
               >
-                Show all matters
+                Show All Matters
               </button>
             }
             <p-button
@@ -222,7 +222,7 @@ const BONES: Record<string, string> = {
                       [defaultSort]="defaultSort"
                       (sorted)="setSort($event)"
                     >
-                      Client number
+                      Client Number
                     </th>
                     <th
                       mfSort="name"
@@ -234,7 +234,7 @@ const BONES: Record<string, string> = {
                     </th>
                     <th scope="col" class="pg-num">Matters</th>
                     @if (myCount()) {
-                      <th scope="col" class="pg-num" data-my-matters-col>My matters</th>
+                      <th scope="col" class="pg-num" data-my-matters-col>My Matters</th>
                     }
                     @if (counts()) {
                       <th
@@ -245,7 +245,7 @@ const BONES: Record<string, string> = {
                         [defaultSort]="defaultSort"
                         (sorted)="setSort($event)"
                       >
-                        Open tasks
+                        Open Tasks
                       </th>
                       <th
                         class="pg-num"
@@ -292,7 +292,7 @@ const BONES: Record<string, string> = {
                       data-show-all-matters
                       (click)="scope.set('all')"
                     >
-                      Show all matters
+                      Show All Matters
                     </button>
                   }
                   <p-button
@@ -400,11 +400,11 @@ export class ClientsListPage extends ServerListPage<ClientResponse> {
   protected readonly phone = phoneCards();
   /** The phone's Sort by select: the sortable columns, counts only with Task.View (the headers' keys). */
   protected readonly sortOptions = computed((): SortOption[] => [
-    { value: 'clientNumber', label: 'Client number' },
+    { value: 'clientNumber', label: 'Client Number' },
     { value: 'name', label: 'Name' },
     ...(this.counts()
       ? [
-          { value: 'openTasks', label: 'Open tasks', descFirst: true },
+          { value: 'openTasks', label: 'Open Tasks', descFirst: true },
           { value: 'overdue', label: 'Overdue', descFirst: true },
         ]
       : []),
@@ -431,7 +431,7 @@ export class ClientsListPage extends ServerListPage<ClientResponse> {
 
   /** One definition per filter: the row, the sheet, the chips, the count, the URL and the API arguments all come from it. */
   private readonly defs = computed((): FilterDef[] => [
-    { key: 'clientNumber', label: 'Client number', column: 'clientNumber', type: 'text' },
+    { key: 'clientNumber', label: 'Client Number', column: 'clientNumber', type: 'text' },
     { key: 'name', label: 'Name', column: 'name', type: 'text', search: true },
     statusDef(),
   ]);

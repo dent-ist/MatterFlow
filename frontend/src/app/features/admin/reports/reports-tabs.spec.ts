@@ -278,7 +278,7 @@ describe('ReportMatrixTab (#717)', () => {
         },
         {
           reportId: 6,
-          name: 'Open tasks',
+          name: 'Open Tasks',
           categoryId: 1,
           categoryName: 'Task follow-up',
           categorySortOrder: 1,

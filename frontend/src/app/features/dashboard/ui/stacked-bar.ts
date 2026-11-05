@@ -44,7 +44,7 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
 
 /**
  * One segmented (100% stacked) bar plus a legend (UX `mf-stacked-bar`): the length of a segment is its share of the total. Every segment
- * and every legend row is a link to the Task Queue, the legend states label, count and percent, and "View as table" shows the same numbers.
+ * and every legend row is a link to the Task Queue, the legend states label, count and percent, and "View as Table" shows the same numbers.
  */
 @Component({
   selector: 'mf-stacked-bar',

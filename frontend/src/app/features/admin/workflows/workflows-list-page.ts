@@ -224,7 +224,7 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
                     [defaultSort]="defaultSort"
                     (sorted)="setSort($event)"
                   >
-                    Task types
+                    Task Types
                   </th>
                 }
                 @if (publishedShown()) {
@@ -235,7 +235,7 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
                     [defaultSort]="defaultSort"
                     (sorted)="setSort($event)"
                   >
-                    Last published
+                    Last Published
                   </th>
                 }
                 <th
@@ -305,7 +305,7 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
                           icon="pi-minus-circle"
                           data-not-published
                           [attr.title]="'No version is published: new tasks cannot use this workflow.'"
-                          >Not published</mf-badge
+                          >Not Published</mf-badge
                         >
                       }
                       @if (w.draftVersionNo && w.draftVersionId) {
@@ -467,8 +467,8 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   /** The phone's Sort by select: the sortable columns (the headers' keys). */
   protected readonly sortOptions: readonly SortOption[] = [
     { value: 'name', label: 'Name' },
-    { value: 'publishedAtUtc', label: 'Last published', descFirst: true },
-    { value: 'taskTypeCount', label: 'Task types', descFirst: true },
+    { value: 'publishedAtUtc', label: 'Last Published', descFirst: true },
+    { value: 'taskTypeCount', label: 'Task Types', descFirst: true },
     { value: 'status', label: 'Status' },
   ];
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
@@ -495,8 +495,8 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
         allLabel: 'Any',
         options: [
           { value: 'published', label: 'Published' },
-          { value: 'draft', label: 'Draft in progress' },
-          { value: 'notPublished', label: 'Not published' },
+          { value: 'draft', label: 'Draft in Progress' },
+          { value: 'notPublished', label: 'Not Published' },
         ],
         paramMap: {
           published: { hasPublished: 'true' },
@@ -561,8 +561,8 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
     const s = this.summary();
     return [
       { key: 'published', label: 'Published', count: s?.published ?? null },
-      { key: 'draft', label: 'Draft in progress', count: s?.draftInProgress ?? null },
-      { key: 'notPublished', label: 'Not published', count: s?.notPublished ?? null },
+      { key: 'draft', label: 'Draft in Progress', count: s?.draftInProgress ?? null },
+      { key: 'notPublished', label: 'Not Published', count: s?.notPublished ?? null },
       { key: 'inactive', label: 'Inactive', count: s?.inactive ?? null },
     ];
   });
@@ -766,7 +766,7 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   protected publishedLine(w: WorkflowSummary): string {
     return w.publishedVersionNo
       ? `Published v${w.publishedVersionNo} (${this.stepsLabel(w.publishedStepCount)})`
-      : 'Not published';
+      : 'Not Published';
   }
 
   /** The second fact line of a card: the draft in progress and how many task types may use the workflow. */

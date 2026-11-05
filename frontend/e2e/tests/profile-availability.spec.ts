@@ -11,7 +11,7 @@ import { dropdownById, filterDropdown } from '../support/dropdown';
 
 /**
  * My profile (availability and work hours, epic #68 / issue #70): setting out of office from the profile and the header, the
- * availability chip and filter on the Users administration screen, "I'm back", work-hours validation, the unsaved-changes guard,
+ * availability chip and filter on the Users administration screen, "I'm Back", work-hours validation, the unsaved-changes guard,
  * an admin editing on behalf, the out-of-office flag on assignee pickers, and axe at 1366x768 and 375.
  */
 
@@ -58,7 +58,7 @@ test.describe('My profile: availability and work hours', () => {
     await expect(button).toHaveAttribute('aria-haspopup', 'menu');
     await button.focus();
     await me.keyboard.press('ArrowDown');
-    await expect(me.getByRole('menuitem', { name: 'My profile' })).toBeFocused();
+    await expect(me.getByRole('menuitem', { name: 'My Profile' })).toBeFocused();
     await me.keyboard.press('End');
     await expect(me.getByRole('menuitem', { name: 'Keyboard shortcuts' })).toBeFocused();
     await me.keyboard.press('Escape');
@@ -66,7 +66,7 @@ test.describe('My profile: availability and work hours', () => {
     await expect(button).toBeFocused();
 
     await button.press('Enter');
-    await me.getByRole('menuitem', { name: 'My profile' }).press('Enter');
+    await me.getByRole('menuitem', { name: 'My Profile' }).press('Enter');
     await expect(me).toHaveURL(/\/profile$/);
   });
 
@@ -78,13 +78,13 @@ test.describe('My profile: availability and work hours', () => {
     const me = await asUser(username);
     await me.goto('/profile');
 
-    await me.getByRole('button', { name: 'Different hours on some days' }).click();
+    await me.getByRole('button', { name: 'Different Hours on Some Days' }).click();
     // An end time before the start time is reported at once, in the summary on Save, and nothing is sent.
     await me.getByLabel('Tuesday end time').fill('08:00');
     await expect(me.locator('[data-day-error]')).toContainText(
       'Tuesday: the end time must be after the start time.',
     );
-    await me.getByRole('button', { name: 'Save changes' }).click();
+    await me.getByRole('button', { name: 'Save Changes' }).click();
     const summary = me.locator('[data-summary]');
     await expect(summary).toContainText('Fix the following to save');
     await expect(summary).toContainText('Tuesday: the end time must be after the start time.');
@@ -95,13 +95,13 @@ test.describe('My profile: availability and work hours', () => {
     // Fix it with Copy to all weekdays: Monday 08:00-16:00 everywhere Monday to Friday, Friday off is kept by switching Saturday on.
     await me.getByLabel('Monday start time').fill('08:00');
     await me.getByLabel('Monday end time').fill('16:00');
-    await me.getByRole('button', { name: 'Copy Monday to all weekdays' }).click();
+    await me.getByRole('button', { name: 'Copy Monday to All Weekdays' }).click();
     await expect(me.getByLabel('Thursday end time')).toHaveValue('16:00');
     await expect(me.locator('[data-day-error]')).toHaveCount(0);
     await me.getByLabel('Saturday', { exact: true }).check();
     await me.getByLabel('Saturday start time').fill('10:00');
     await me.getByLabel('Saturday end time').fill('12:00');
-    await me.getByRole('button', { name: 'Save changes' }).click();
+    await me.getByRole('button', { name: 'Save Changes' }).click();
     await expect(me.getByText('Availability saved').first()).toBeVisible();
 
     await me.reload();
@@ -124,7 +124,7 @@ test.describe('My profile: availability and work hours', () => {
     await expect(me.locator('[data-tz-error]')).toContainText('is not a time zone we know');
     await me.locator('#av-tz-other').fill('Asia/Tokyo');
     await expect(me.locator('[data-tz-error]')).toHaveCount(0);
-    await me.getByRole('button', { name: 'Save changes' }).click();
+    await me.getByRole('button', { name: 'Save Changes' }).click();
     await expect(me.getByText('Availability saved').first()).toBeVisible();
     await me.reload();
     // A saved zone that is not a US zone stays selectable as an extra option (#540).
@@ -176,7 +176,7 @@ test.describe('My profile: availability and work hours', () => {
     const task = await seed.task(world, { title: `Flag ${name}` });
     await new TaskDetailPage(page).open(task.taskId);
     await page.locator('[data-assignee] [data-inline-trigger]').click();
-    await page.getByRole('textbox', { name: 'Search people' }).fill(name);
+    await page.getByRole('textbox', { name: 'Search People' }).fill(name);
     await expect(page.getByRole('menuitemradio', { name })).toHaveCount(0);
   });
 });
@@ -206,20 +206,20 @@ test.describe('My profile: accessibility (axe wcag2a, wcag2aa, wcag21aa)', () =>
       expect(await axeViolations(me)).toEqual([]);
 
       // The Add dialog is clean too (epic #1074, CAL-05), and nothing scrolls sideways.
-      await me.getByRole('button', { name: 'Add out of office' }).first().click();
-      await expect(me.getByRole('dialog', { name: 'Add out of office' })).toBeVisible();
+      await me.getByRole('button', { name: 'Add Out of Office' }).first().click();
+      await expect(me.getByRole('dialog', { name: 'Add Out of Office' })).toBeVisible();
       expect(await axeViolations(me)).toEqual([]);
       await me.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
       expect(
         await me.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
       ).toBeLessThanOrEqual(0);
       await me.getByLabel('End time', { exact: true }).fill('07:00'); // an error summary on screen
-      await me.getByRole('button', { name: 'Save changes' }).click();
+      await me.getByRole('button', { name: 'Save Changes' }).click();
       await expect(me.locator('[data-summary]')).toBeVisible();
       expect(await axeViolations(me)).toEqual([]);
 
       await me.getByLabel('End time', { exact: true }).fill('16:00');
-      await me.getByRole('button', { name: 'Save changes' }).click();
+      await me.getByRole('button', { name: 'Save Changes' }).click();
       await expect(me.getByText('Availability saved').first()).toBeVisible();
       await me.getByRole('button', { name: /account menu/ }).click();
       await expect(me.getByRole('menu')).toBeVisible();

@@ -161,14 +161,14 @@ describe('AuditPage', () => {
     expect(el().querySelector('[data-filter-row]')).not.toBeNull();
     expect(el().querySelector('[data-filters-toggle]')).not.toBeNull(); // the Filters button is in the page header
     // The event and object types come from the facets; the object id waits for a type.
-    const events = Array.from(ddSelect(document.body, 'Filter by Event type').options).map((o) =>
+    const events = Array.from(ddSelect(document.body, 'Filter by Event Type').options).map((o) =>
       o.textContent?.trim(),
     );
     expect(events).toEqual(['Any event', 'Field changed', 'Task created']); // the code stays the value (#650)
     expect(
-      Array.from(ddSelect(document.body, 'Filter by Event type').options).map((o) => o.value),
+      Array.from(ddSelect(document.body, 'Filter by Event Type').options).map((o) => o.value),
     ).toEqual(['', 'FIELD_CHANGED', 'TASK_CREATED']);
-    const objects = Array.from(ddSelect(document.body, 'Filter by Object type').options).map((o) =>
+    const objects = Array.from(ddSelect(document.body, 'Filter by Object Type').options).map((o) =>
       o.textContent?.trim(),
     );
     expect(objects).toEqual([
@@ -178,8 +178,8 @@ describe('AuditPage', () => {
       'Matter',
       'Task',
     ]);
-    expect(control<HTMLInputElement>('Object id').disabled).toBe(true);
-    expect(control<HTMLInputElement>('Summary or field')).not.toBeNull();
+    expect(control<HTMLInputElement>('Object ID').disabled).toBe(true);
+    expect(control<HTMLInputElement>('Summary or Field')).not.toBeNull();
   });
 
   it('sends every filter of the address to the API (live, no Apply button)', async () => {
@@ -205,15 +205,15 @@ describe('AuditPage', () => {
       50,
     ]);
     // A link that carries filters opens the row with the values in it and counts them (the date range is one filter).
-    expect(control<HTMLInputElement>('Object id').value).toBe('1042');
-    expect(control<HTMLInputElement>('Summary or field').value).toBe('status');
+    expect(control<HTMLInputElement>('Object ID').value).toBe('1042');
+    expect(control<HTMLInputElement>('Summary or Field').value).toBe('status');
     expect(el().querySelector('[data-filter-count]')?.textContent).toBe('(5)');
   });
 
   it('writes a changed filter to the address (and reloads when the address changes)', async () => {
     await create(['Audit.View']);
 
-    const type = ddSelect(document.body, 'Filter by Event type');
+    const type = ddSelect(document.body, 'Filter by Event Type');
     type.value = 'TASK_CREATED';
     type.dispatchEvent(new Event('change'));
     expect(navigate).toHaveBeenLastCalledWith([], {
@@ -302,7 +302,7 @@ describe('AuditPage', () => {
     expect(detail.querySelector('[data-field]')?.textContent).toBe('Api token');
     expect(detail.querySelector('[data-show-operation]')?.textContent).toContain('3 events');
     expect(toggle.getAttribute('aria-controls')).toBe('au-detail-100');
-    // The code, field key and operation id wait behind "Technical details" (#652).
+    // The code, field key and operation id wait behind "Technical Details" (#652).
     expect(detail.querySelector('[data-tech]')).toBeNull();
     expect(detail.textContent).not.toContain('TASK_STATUS_CHANGED');
     detail.querySelector<HTMLButtonElement>('[data-tech-toggle]')!.click();
@@ -360,12 +360,12 @@ describe('AuditPage', () => {
     expect(el().textContent).toContain('Owner kind set to workflow step');
     expect(el().textContent).not.toContain('StepInstance');
 
-    // "Show only this operation" is in the details of an event (and the row menu), not repeated on every group row (#651).
+    // "Show Only This Operation" is in the details of an event (and the row menu), not repeated on every group row (#651).
     expect(el().querySelector(`[data-group="${BULK}"] button.mf-btn--text`)).toBeNull();
     el().querySelector<HTMLElement>('tr[data-event="12"] .au-toggle')!.click();
     await settle(fixture);
     el().querySelector<HTMLElement>('[data-show-operation]')!.click();
-    // "Show only this operation" replaces the filters with the operation (one removable chip) and the address reloads the list.
+    // "Show Only This Operation" replaces the filters with the operation (one removable chip) and the address reloads the list.
     expect(navigate).toHaveBeenLastCalledWith([], {
       queryParams: expect.objectContaining({ correlationId: BULK, page: null }),
       queryParamsHandling: 'merge',
@@ -521,7 +521,7 @@ describe('AuditPage', () => {
     );
     expect(detail.querySelector('[data-field]')?.textContent).toBe('Description');
     expect(detail.querySelector('[data-old]')?.textContent).toBe('(empty)');
-    // A long value starts clamped and "Show full" opens it.
+    // A long value starts clamped and "Show Full" opens it.
     expect(detail.querySelector('[data-new]')?.classList.contains('au-clamped')).toBe(true);
     detail.querySelector<HTMLButtonElement>('[data-show-full="new"]')!.click();
     await settle(fixture);

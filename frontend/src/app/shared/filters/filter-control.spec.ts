@@ -87,14 +87,14 @@ describe('filter control', { timeout: 20_000 }, () => {
     await mount('/list', [
       {
         key: 'objectId',
-        label: 'Object id',
+        label: 'Object ID',
         type: 'text',
         disabledReason: () => 'Choose an object type first',
       },
     ]);
     const off = cell('objectId').querySelector<HTMLInputElement>('[data-filter-disabled] input')!;
     expect(off.disabled).toBe(true);
-    expect(off.getAttribute('placeholder')).toBe('Object id');
+    expect(off.getAttribute('placeholder')).toBe('Object ID');
   });
 
   it('shows a disabled stand-in with the reason when the filter is unavailable', async () => {

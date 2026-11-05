@@ -79,14 +79,14 @@ describe('PhoneSort', () => {
     const { el, picks } = create({
       options: [
         { value: 'name', label: 'Name' },
-        { value: 'openTasks', label: 'Open tasks', descFirst: true },
+        { value: 'openTasks', label: 'Open Tasks', descFirst: true },
       ],
       defaultField: 'name',
     });
     const select = ddSelect(el.querySelector('[data-sort-select]')!);
     expect(Array.from(select.options).map((o) => o.textContent?.trim())).toEqual([
       'Name',
-      'Open tasks',
+      'Open Tasks',
     ]);
     expect(select.value).toBe('name');
     const order = () => ddSelect(el.querySelector('[data-dir-select]')!);

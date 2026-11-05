@@ -82,7 +82,7 @@ export class ScopeControl {
       : []),
     ...(this.other().length > 0
       ? [
-          { value: '', label: 'Other pods', heading: true },
+          { value: '', label: 'Other Pods', heading: true },
           ...this.other().map((o) => ({ value: o.value, label: o.label })),
         ]
       : []),

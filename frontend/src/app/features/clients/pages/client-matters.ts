@@ -211,7 +211,7 @@ const BONES: Record<string, string> = {
                       [defaultSort]="defaultSort"
                       (sorted)="setSort($event)"
                     >
-                      Open tasks
+                      Open Tasks
                     </th>
                     <th
                       class="pg-num"
@@ -357,7 +357,7 @@ export class ClientMatters extends ServerListPage<MatterResponse> {
     { value: 'name', label: 'Name' },
     ...(this.counts()
       ? [
-          { value: 'openTasks', label: 'Open tasks', descFirst: true },
+          { value: 'openTasks', label: 'Open Tasks', descFirst: true },
           { value: 'overdue', label: 'Overdue', descFirst: true },
         ]
       : []),

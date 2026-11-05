@@ -136,7 +136,7 @@ import { TileChip, TileTone } from './tile-chip';
 export class StatTile {
   /** The number as shown ("1,234", "989.98"). */
   readonly value = input.required<string>();
-  /** The plain label ("Pending disposition"). */
+  /** The plain label ("Pending Disposition"). */
   readonly label = input.required<string>();
   /** The unit of the value, shown once beside it ("GB"). */
   readonly unit = input('');

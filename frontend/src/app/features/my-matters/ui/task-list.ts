@@ -199,7 +199,7 @@ export function statusCodes(status: StatusFilter): string[] {
                 </span>
               }
               <button type="button" class="lnk" data-clear-filters (click)="clearFilters()">
-                Clear filters
+                Clear Filters
               </button>
             </div>
           }

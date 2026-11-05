@@ -140,7 +140,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
                       <dt>Created</dt>
                       <dd>{{ p.createdAtUtc | mfNum }}</dd>
                       @if (p.modifiedAtUtc) {
-                        <dt>Last changed</dt>
+                        <dt>Last Changed</dt>
                         <dd>{{ p.modifiedAtUtc | mfNum }}</dd>
                       }
                     </dl>

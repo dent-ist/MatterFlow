@@ -85,7 +85,7 @@ const CONCURRENCY = 3;
   template: `
     <mf-form-dialog
       [title]="title()"
-      [primaryLabel]="failed().length > 0 ? 'Try the rest again' : 'Save'"
+      [primaryLabel]="failed().length > 0 ? 'Try the Rest Again' : 'Save'"
       [canSubmit]="canSave()"
       [busy]="busy()"
       [error]="error()"
@@ -100,7 +100,7 @@ const CONCURRENCY = 3;
           </p>
         }
         <div class="mmd__field">
-          <label class="mmd__label" [for]="uid + '-primary'">Primary project manager</label>
+          <label class="mmd__label" [for]="uid + '-primary'">Primary Project Manager</label>
           <select
             class="mf-control"
             [id]="uid + '-primary'"
@@ -116,7 +116,7 @@ const CONCURRENCY = 3;
           </select>
         </div>
         <div class="mmd__field">
-          <label class="mmd__label" [for]="uid + '-secondary'">Secondary project manager</label>
+          <label class="mmd__label" [for]="uid + '-secondary'">Secondary Project Manager</label>
           <select
             class="mf-control"
             [id]="uid + '-secondary'"

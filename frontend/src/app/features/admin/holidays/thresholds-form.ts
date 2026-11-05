@@ -38,7 +38,7 @@ export function validateThresholds(
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form class="th" novalidate (submit)="$event.preventDefault(); save()" data-calendar-thresholds>
-      <h2 class="th__h">Calendar coverage</h2>
+      <h2 class="th__h">Calendar Coverage</h2>
       <p class="th__i">
         The Dashboard Calendar colours each day by how many of the people expected to work are
         available. These limits decide where Good ends and Watch, Low and Critical begin.
@@ -62,7 +62,7 @@ export function validateThresholds(
         }
         <div class="th__row">
           <div class="mf-field">
-            <label class="mf-field__label" for="th-min">Firm minimum coverage (%)</label>
+            <label class="mf-field__label" for="th-min">Firm Minimum Coverage (%)</label>
             <input
               id="th-min"
               class="mf-field__input"
@@ -86,7 +86,7 @@ export function validateThresholds(
             }
           </div>
           <div class="mf-field">
-            <label class="mf-field__label" for="th-pod">Pod minimum (%)</label>
+            <label class="mf-field__label" for="th-pod">Pod Minimum (%)</label>
             <input
               id="th-pod"
               class="mf-field__input"
@@ -111,7 +111,7 @@ export function validateThresholds(
           </div>
         </div>
         <fieldset class="th__set">
-          <legend>Minimum people per pod</legend>
+          <legend>Minimum People Per Pod</legend>
           <p class="mf-field__help">
             When set, it replaces the percentage for that pod. Leave empty to use the pod minimum
             above.
@@ -147,7 +147,7 @@ export function validateThresholds(
             {{ busy() ? 'Saving...' : 'Save' }}
           </button>
           <button type="button" class="mf-btn" data-th-reset [disabled]="busy()" (click)="reset()">
-            Reset to default
+            Reset to Default
           </button>
         </div>
       }

@@ -104,7 +104,7 @@ describe('TaskCardList', () => {
 
   it('marks a sensitive matter with a labelled icon', async () => {
     await create([aRow({ matterIsSensitive: true })], DEFAULT);
-    expect(el().querySelector('[aria-label="Sensitive matter"]')).not.toBeNull();
+    expect(el().querySelector('[aria-label="Sensitive Matter"]')).not.toBeNull();
   });
 
   it('shows the three chips: Priority, the two-line Due and Status (text where the person cannot edit)', async () => {
@@ -209,7 +209,7 @@ describe('TaskCardList', () => {
     await create([aRow({ assignedUser: undefined })], DEFAULT, { assignLink: true }, [
       'Task.Assign',
     ]);
-    expect(el().querySelector('[data-assign-link]')!.textContent?.trim()).toBe('Assign to me');
+    expect(el().querySelector('[data-assign-link]')!.textContent?.trim()).toBe('Assign to Me');
   });
 
   it('puts the task number on line 2 when the tab has no assignee line', async () => {

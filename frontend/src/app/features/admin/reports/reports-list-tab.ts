@@ -126,7 +126,7 @@ const COLUMN_SPEC: Record<Column, AdminColumn> = {
                 <th class="mf-cell-badge" scope="col">Category</th>
                 @if (roomy()) {
                   <th class="mf-cell-num" scope="col">Roles</th>
-                  <th class="mf-cell-badge" scope="col">Last run</th>
+                  <th class="mf-cell-badge" scope="col">Last Run</th>
                 }
                 <th class="mf-cell-badge" scope="col">Status</th>
                 <th class="mf-cell-actions" scope="col"><span class="mf-sr-only">Actions</span></th>

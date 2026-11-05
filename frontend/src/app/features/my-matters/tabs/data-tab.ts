@@ -104,7 +104,7 @@ const DISPOSITION_COLUMNS: readonly {
   {
     key: 'pendingDisposition',
     status: 'pending',
-    label: 'Pending disposition',
+    label: 'Pending Disposition',
     noun: 'pending disposition',
     icon: 'pi-hourglass',
     tone: 'violet',
@@ -402,7 +402,7 @@ function plural(n: number, one: string, many: string): string {
           }
           @if (showTypes()) {
             <mf-data-pick
-              label="Asset types"
+              label="Asset Types"
               allText="All asset types"
               one="asset type"
               many="asset types"
@@ -470,7 +470,7 @@ function plural(n: number, one: string, many: string): string {
             @if (!everything()) {
               <p data-no-match>No assets match this selection.</p>
               <button type="button" class="mf-btn" data-clear-selection (click)="clearSelection()">
-                Clear the selection
+                Clear the Selection
               </button>
             } @else if (filters().scope === 'all') {
               <p>There are no assets on these matters yet.</p>
@@ -478,7 +478,7 @@ function plural(n: number, one: string, many: string): string {
               <p>There are no assets on the matters you manage yet.</p>
               @if (canAll()) {
                 <button type="button" class="mf-btn" data-show-all (click)="showAll.emit()">
-                  Show all matters
+                  Show All Matters
                 </button>
               }
             }
@@ -535,12 +535,12 @@ function plural(n: number, one: string, many: string): string {
                   data-clear-status
                   (click)="pickStatus(null)"
                 >
-                  Show all
+                  Show All
                 </button>
               </p>
             }
             <mf-chart-panel
-              heading="Assets by asset type"
+              heading="Assets By Asset Type"
               labelHeader="Asset type"
               [valueHeader]="valueHeader()"
               [rows]="chartData()"
@@ -637,7 +637,7 @@ function plural(n: number, one: string, many: string): string {
                     </caption>
                     <thead>
                       <tr>
-                        <th scope="col">Asset type</th>
+                        <th scope="col">Asset Type</th>
                         <th scope="col" class="num">
                           {{ status() ? statusLabel(status()!) : 'Assets' }}
                         </th>
@@ -709,7 +709,7 @@ function plural(n: number, one: string, many: string): string {
     @if (showVolume()) {
       <mf-mm-panel
         name="data-volume"
-        title="Data volume over time"
+        title="Data Volume Over Time"
         [state]="volume.state()"
         [busy]="volume.busy()"
         (retry)="volume.load()"
@@ -769,7 +769,7 @@ function plural(n: number, one: string, many: string): string {
                 <thead>
                   <tr>
                     <th scope="col">Month</th>
-                    <th scope="col" class="num">Assets held</th>
+                    <th scope="col" class="num">Assets Held</th>
                     <th scope="col" class="num">Size held ({{ unitShown() }})</th>
                     <th scope="col" class="num">Added</th>
                     <th scope="col" class="num">Disposed</th>
@@ -1247,7 +1247,7 @@ export class DataTab {
     const out: DataTile[] = [
       {
         key: 'assets',
-        label: 'Total assets',
+        label: 'Total Assets',
         value: this.count(t.assets),
         unit: '',
         note: '',
@@ -1262,7 +1262,7 @@ export class DataTab {
       const one = sizes[0];
       out.push({
         key: 'size',
-        label: 'Total size',
+        label: 'Total Size',
         value: one ? this.fmt(one.value) : 'None',
         unit: one?.unit ?? '',
         note: one ? '' : 'no size recorded',

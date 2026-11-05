@@ -228,16 +228,16 @@ test.describe('WP1: dialogs, popovers, shortcut list', () => {
     await queue.open();
     await queue.search(`Rule ${token}`);
 
-    const more = page.getByRole('button', { name: 'Other filters' });
+    const more = page.getByRole('button', { name: 'Other Filters' });
     await more.click();
-    await expect(page.getByRole('dialog', { name: 'Other filters' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Other Filters' })).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('dialog', { name: 'Other filters' })).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: 'Other Filters' })).toHaveCount(0);
     await expect(more).toBeFocused();
 
     await more.click();
     await columnsButton(page).click();
-    await expect(page.getByRole('dialog', { name: 'Other filters' })).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: 'Other Filters' })).toHaveCount(0);
     await expect(columnsPanel(page)).toBeVisible();
     await page.keyboard.press('Escape');
 

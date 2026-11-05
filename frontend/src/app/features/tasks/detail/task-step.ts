@@ -29,12 +29,12 @@ const STATUS_NOTE_STATES: readonly string[] = ['ON_HOLD', 'COMPLETED', 'CANCELLE
 
 const STATUS_TEXT: Readonly<Record<string, { text: string; icon: string; tone: BadgeTone }>> = {
   PENDING: { text: 'Pending', icon: 'pi-circle', tone: 'neutral' },
-  IN_PROGRESS: { text: 'In progress', icon: 'pi-play-circle', tone: 'info' },
+  IN_PROGRESS: { text: 'In Progress', icon: 'pi-play-circle', tone: 'info' },
   COMPLETED: { text: 'Completed', icon: 'pi-check-circle', tone: 'success' },
   SKIPPED: { text: 'Skipped', icon: 'pi-minus-circle', tone: 'neutral' },
 };
 
-const UP_NEXT = { text: 'Up next', icon: 'pi-arrow-circle-right', tone: 'info' as BadgeTone };
+const UP_NEXT = { text: 'Up Next', icon: 'pi-arrow-circle-right', tone: 'info' as BadgeTone };
 
 /** Patch of `current` against `original`: changed values, and `null` for values the user cleared. */
 export function valuesPatch(
@@ -112,12 +112,12 @@ export function valuesPatch(
                   [disabled]="busy()"
                   (click)="start()"
                 >
-                  Start step
+                  Start Step
                 </button>
               }
               @if (schema()) {
                 <button type="button" class="mf-btn" data-save [disabled]="busy()" (click)="save()">
-                  Save inputs
+                  Save Inputs
                 </button>
               }
               <button
@@ -128,7 +128,7 @@ export function valuesPatch(
                 [attr.aria-describedby]="s.isSkippable ? null : 'step-noskip-' + s.stepInstanceId"
                 (click)="skipOpen.set(true)"
               >
-                Skip step
+                Skip Step
               </button>
               <button
                 type="button"
@@ -137,7 +137,7 @@ export function valuesPatch(
                 [disabled]="busy()"
                 (click)="complete()"
               >
-                Mark complete
+                Mark Complete
               </button>
             }
             @if (canReopen()) {
@@ -148,7 +148,7 @@ export function valuesPatch(
                 [disabled]="busy()"
                 (click)="reopenOpen.set(true)"
               >
-                Reopen step
+                Reopen Step
               </button>
             }
           </div>

@@ -139,7 +139,7 @@ describe('WorkList', () => {
     expect(el().querySelector('[data-near-empty]')).toBeNull();
   });
 
-  it('offers "Skip to task list" while it is on screen; it focuses the first row title, else the list (#181)', async () => {
+  it('offers "Skip to Task List" while it is on screen; it focuses the first row title, else the list (#181)', async () => {
     await create([aRow({ taskId: 5 }), aRow({ taskId: 6 })]);
     const skip = TestBed.inject(SkipTarget);
     expect(skip.target()?.label).toBe('Skip to task list');

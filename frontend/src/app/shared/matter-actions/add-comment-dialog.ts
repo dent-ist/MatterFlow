@@ -92,7 +92,7 @@ interface OpenTask {
         can view tasks.
       </p>
       <div class="ac__field">
-        <label for="ac-search">Find an open task</label>
+        <label for="ac-search">Find an Open Task</label>
         <input
           id="ac-search"
           type="search"

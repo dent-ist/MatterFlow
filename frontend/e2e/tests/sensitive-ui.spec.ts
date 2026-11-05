@@ -86,7 +86,7 @@ test.describe('Sensitive matters: the screens', () => {
     await page.getByRole('checkbox', { name: /Sensitive matter/ }).check();
     // The wording says what the flag does now.
     await expect(page.locator('form')).toContainText('Everyone else does not see it at all');
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
 
     const dialog = page.getByRole('dialog', { name: 'You will no longer see this matter' });
     await expect(dialog).toBeVisible();
@@ -103,7 +103,7 @@ test.describe('Sensitive matters: the screens', () => {
     expect((await admin.get<Json>(`/api/v1/matters/${matter.matterId}`)).isSensitive).toBe(false);
 
     // Confirm: saved, the list opens (the matter page would be "not found" now), and the editor no longer sees the matter.
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
     await page
       .getByRole('dialog', { name: 'You will no longer see this matter' })
       .getByRole('button', { name: 'Mark Matter Sensitive' })
@@ -133,14 +133,14 @@ test.describe('Sensitive matters: the screens', () => {
     await page.locator('#matter-number').fill('00032');
     await page.locator('#matter-name').fill(`Needs-${u.tag} manager`);
     await page.getByRole('checkbox', { name: /Sensitive matter/ }).check();
-    await page.getByRole('button', { name: 'Create matter' }).click();
+    await page.getByRole('button', { name: 'Create Matter' }).click();
     const error = page.locator('#matter-sensitive-error');
     await expect(error).toContainText('needs a project manager');
     await expect(page.getByRole('checkbox', { name: /Sensitive matter/ })).toHaveAttribute(
       'aria-invalid',
       'true',
     );
-    await expect(page.getByRole('dialog', { name: 'New matter' })).toBeVisible(); // still the pop-up (MD-22)
+    await expect(page.getByRole('dialog', { name: 'New Matter' })).toBeVisible(); // still the pop-up (MD-22)
     await axeAtEverySize(page, 'new matter with the sensitive refusal');
 
     // The holder of Matter.ViewSensitive may create it without a manager, and opens it straight away.
@@ -151,7 +151,7 @@ test.describe('Sensitive matters: the screens', () => {
     await p4.locator('#matter-number').fill('00033');
     await p4.locator('#matter-name').fill(`Holder-${u.tag} matter`);
     await p4.getByRole('checkbox', { name: /Sensitive matter/ }).check();
-    await p4.getByRole('button', { name: 'Create matter' }).click();
+    await p4.getByRole('button', { name: 'Create Matter' }).click();
     await expect(p4).toHaveURL(/\/matters\/\d+$/);
     await expect(p4.locator('[data-sensitive-banner]')).toBeVisible();
   });

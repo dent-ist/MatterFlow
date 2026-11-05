@@ -19,7 +19,7 @@ test.describe('Linking assets to a task (SCN-016)', () => {
 
     const link = async (displayName: string, relationship: string) => {
       await panel.locator('[data-link-open]').click();
-      await panel.getByRole('combobox', { name: 'Asset to link' }).fill(displayName);
+      await panel.getByRole('combobox', { name: 'Asset to Link' }).fill(displayName);
       await page.getByRole('option', { name: new RegExp(displayName) }).click();
       await panel.locator('[data-link-role]').selectOption({ label: relationship });
       await panel.locator('[data-link-submit]').click();
@@ -47,7 +47,7 @@ test.describe('Linking assets to a task (SCN-016)', () => {
       .toBe('Result');
 
     await panel.locator(`li[data-asset-id="${source.assetId}"] [data-unlink]`).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Remove link' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Remove Link' }).click();
     await expect(panel.locator(`li[data-asset-id="${source.assetId}"]`)).toHaveCount(0);
     await expect(detail.tab('Assets')).toHaveText(/\(1\)/);
   });
@@ -66,7 +66,7 @@ test.describe('Linking assets to a task (SCN-016)', () => {
     await detail.showSection('Assets');
     const panel = page.getByRole('region', { name: 'Assets', exact: true });
     await panel.locator('[data-link-open]').click();
-    const picker = panel.getByRole('combobox', { name: 'Asset to link' });
+    const picker = panel.getByRole('combobox', { name: 'Asset to Link' });
 
     await picker.fill(foreign.displayName);
     // With no option the list is a plain list holding the note, not an empty listbox (T1 a11y fix, #289 package).

@@ -43,7 +43,7 @@ const PAGE = 50;
     @if (failure(); as f) {
       <p class="rr__error" role="alert" data-failure>
         {{ f }}
-        <button type="button" class="mf-btn mf-btn--text" (click)="reload()">Try again</button>
+        <button type="button" class="mf-btn mf-btn--text" (click)="reload()">Try Again</button>
       </p>
     }
     <div class="mf-table-wrap" mfScrollArea="Run Log">
@@ -101,7 +101,7 @@ const PAGE = 50;
     @if (next() !== null) {
       <p>
         <button type="button" class="mf-btn" (click)="more()" [disabled]="loading()" data-more>
-          Show older runs
+          Show Older Runs
         </button>
       </p>
     }

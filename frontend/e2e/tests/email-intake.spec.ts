@@ -32,7 +32,7 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
     await create.pasteBox.fill(PASTED);
     await create.fillFromPasted.click();
     await expect(page.locator('[data-review]')).toBeVisible();
-    await page.getByRole('button', { name: 'Fill the task' }).click();
+    await page.getByRole('button', { name: 'Fill the Task' }).click();
 
     // Nothing the email cannot decide is chosen for the user: the type chooser stays up, with a note that the email details are ready.
     await expect(create.chooser).toBeVisible();
@@ -65,7 +65,7 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
     await create.showEmailPanel();
     await create.pasteBox.fill(PASTED);
     await create.fillFromPasted.click();
-    await page.getByRole('button', { name: 'Fill the task' }).click();
+    await page.getByRole('button', { name: 'Fill the Task' }).click();
 
     await create.chooseTaskType(world.taskType.name);
     await create.pickMatter(world.matter.matterRef, world.matter.matterRef);
@@ -91,7 +91,7 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
       .getByLabel('Choose an .eml or .msg file')
       .setInputFiles(path.join(SAMPLES, '03-multipart-attachment.eml'));
     await expect(page.locator('[data-review]')).toBeVisible();
-    await page.getByRole('button', { name: 'Fill the task' }).click();
+    await page.getByRole('button', { name: 'Fill the Task' }).click();
 
     await expect(create.title).toHaveValue('Search term report attached');
     await expect(create.requestorName).toHaveValue('Raj Patel');
@@ -114,7 +114,7 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
     await page
       .getByLabel('Choose an .eml or .msg file')
       .setInputFiles(path.join(SAMPLES, '01-plain.eml'));
-    await page.getByRole('button', { name: 'Fill the task' }).click();
+    await page.getByRole('button', { name: 'Fill the Task' }).click();
 
     await expect(create.title).toHaveValue('Production volume 7 - request for load file');
     await expect(create.requestorName).toHaveValue('Jane Doe');

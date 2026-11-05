@@ -4,7 +4,7 @@ import { expect, test } from '../support/fixtures';
 
 /**
  * My profile > Out of office (epic #1074, CAL-05, issue #1079): a person keeps SEVERAL entries (Now, Upcoming, Past), adds and edits them in a pop-up dialog
- * (Cancel left, primary right), deletes with a confirmation, presses "I'm back" on a running entry, and gets the server's messages for an overlap (naming the other
+ * (Cancel left, primary right), deletes with a confirmation, presses "I'm Back" on a running entry, and gets the server's messages for an overlap (naming the other
  * entry) and for a first day in the past. A Pod Lead (User.ManageAvailability) adds an entry for a member of their pod. axe at 1366x768 and 375x812.
  */
 
@@ -39,8 +39,8 @@ async function addEntry(
   page: Page,
   opts: { start: string; end?: string; note?: string; type?: string },
 ): Promise<Locator> {
-  await page.getByRole('button', { name: 'Add out of office' }).first().click();
-  const dialog = page.getByRole('dialog', { name: 'Add out of office' });
+  await page.getByRole('button', { name: 'Add Out of Office' }).first().click();
+  const dialog = page.getByRole('dialog', { name: 'Add Out of Office' });
   await expect(dialog).toBeVisible();
   if (opts.type) await dialog.getByLabel('Type').selectOption({ label: opts.type });
   await fillDate(dialog.locator('#ad-start'), opts.start);
@@ -74,7 +74,7 @@ test.describe('My profile: several Out of office entries', () => {
         .filter(Boolean)
         .slice(-2),
     ).toEqual(['Cancel', 'Add Out of Office']);
-    await dialog.getByRole('button', { name: 'Add out of office' }).click();
+    await dialog.getByRole('button', { name: 'Add Out of Office' }).click();
     await expect(dialog).toBeHidden();
 
     const second = await addEntry(me, {
@@ -82,7 +82,7 @@ test.describe('My profile: several Out of office entries', () => {
       end: inDays(20).text,
       type: 'Training',
     });
-    await second.getByRole('button', { name: 'Add out of office' }).click();
+    await second.getByRole('button', { name: 'Add Out of Office' }).click();
     await expect(second).toBeHidden();
 
     const upcoming = me.locator('[data-group="upcoming"] [data-absence]');
@@ -119,7 +119,7 @@ test.describe('My profile: several Out of office entries', () => {
       end: inDays(34).text,
       type: 'Vacation',
     });
-    await base.getByRole('button', { name: 'Add out of office' }).click();
+    await base.getByRole('button', { name: 'Add Out of Office' }).click();
     await expect(base).toBeHidden();
 
     const overlap = await addEntry(me, {
@@ -127,7 +127,7 @@ test.describe('My profile: several Out of office entries', () => {
       end: inDays(33).text,
       type: 'Sick',
     });
-    await overlap.getByRole('button', { name: 'Add out of office' }).click();
+    await overlap.getByRole('button', { name: 'Add Out of Office' }).click();
     await expect(overlap.locator('[data-ad-overlap]')).toContainText(
       'overlap another entry: Vacation',
     );
@@ -135,7 +135,7 @@ test.describe('My profile: several Out of office entries', () => {
     await overlap.getByRole('button', { name: 'Cancel' }).click();
 
     const past = await addEntry(me, { start: inDays(-40).text, type: 'Vacation' });
-    await past.getByRole('button', { name: 'Add out of office' }).click();
+    await past.getByRole('button', { name: 'Add Out of Office' }).click();
     await expect(past.locator('[data-ad-start-error]')).toBeVisible();
     await past.getByRole('button', { name: 'Cancel' }).click();
   });
@@ -167,8 +167,8 @@ test.describe('My profile: several Out of office entries', () => {
     const page = await asUser(lead.username);
     await page.goto(`/dashboard?tab=calendar&day=${inDays(1).iso}`);
     await expect(page.locator('[data-cal-panel]')).toBeVisible();
-    await page.getByRole('button', { name: 'Add out of office' }).first().click();
-    const dialog = page.getByRole('dialog', { name: 'Add out of office' });
+    await page.getByRole('button', { name: 'Add Out of Office' }).first().click();
+    const dialog = page.getByRole('dialog', { name: 'Add Out of Office' });
     await expect(dialog.locator('[data-ad-person]')).toBeVisible();
   });
 });
@@ -195,8 +195,8 @@ test.describe('My profile: Out of office, accessibility (axe wcag2a, wcag2aa, wc
       expect(
         await me.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
       ).toBeLessThanOrEqual(0);
-      await me.getByRole('button', { name: 'Add out of office' }).first().click();
-      await expect(me.getByRole('dialog', { name: 'Add out of office' })).toBeVisible();
+      await me.getByRole('button', { name: 'Add Out of Office' }).first().click();
+      await expect(me.getByRole('dialog', { name: 'Add Out of Office' })).toBeVisible();
       expect(await axeViolations(me)).toEqual([]);
     });
   }

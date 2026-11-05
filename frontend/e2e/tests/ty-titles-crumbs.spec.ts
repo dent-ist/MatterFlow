@@ -83,7 +83,7 @@ test.describe('Document titles and crumb targets (#359, #360)', () => {
     await expect(page).toHaveTitle(`${tt.name} - MatterFlow`);
     const renamed = `${tt.name} renamed`;
     await page.locator('#tt-name').fill(renamed);
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
     await expect(page).toHaveTitle(`${renamed} - MatterFlow`);
   });
 

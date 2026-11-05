@@ -58,7 +58,7 @@ test.describe('SH-B: toast de-duplication', () => {
     await me.getByRole('button', { name: /account menu/ }).click();
     await me
       .getByRole('menu', { name: 'Your account' })
-      .getByRole('menuitem', { name: "I'm back" })
+      .getByRole('menuitem', { name: "I'm Back" })
       .click();
     await expect(me.getByText('Welcome back')).toBeVisible();
     await expect(me.getByText('Out of office set')).toHaveCount(0);

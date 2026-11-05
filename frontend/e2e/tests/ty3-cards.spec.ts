@@ -167,7 +167,7 @@ test.describe('phone cards below 640 px (#374, #375)', () => {
       await expect(dialog).toBeVisible();
       await axeClean(page, `${kind} sheet`);
       await shot(page, `p374-${kind}-sheet`);
-      await labelledDropdown(dialog, 'Sort by').selectOption({ label: 'Status' });
+      await labelledDropdown(dialog, 'Sort By').selectOption({ label: 'Status' });
       await expect(page).toHaveURL(/sort=status/);
       await page.keyboard.press('Escape');
       await expect(cards(page).nth(0)).toContainText('Active');
@@ -313,7 +313,7 @@ test.describe('narrow-window columns: the grid never scrolls sideways and the ro
     await page.setViewportSize({ width: 768, height: 900 });
     await page.goto(`/admin/workflows?name=${token}&hasPublished=false`);
     await expect(tableRows(page)).toHaveCount(2);
-    await expect(page.getByText('Not published', { exact: false }).first()).toBeVisible();
+    await expect(page.getByText('Not Published', { exact: false }).first()).toBeVisible();
     await page.setViewportSize({ width: 1366, height: 900 });
     await expect(page.locator('[aria-label^="Filter by Versions"]')).toBeVisible();
   });

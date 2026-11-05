@@ -114,7 +114,7 @@ const LIST_SIZE: Record<ListKind, number> = { unassigned: 5, overdue: 5, dueSoon
 const CARD_LABELS: Record<CardKey, string> = {
   overdue: 'Overdue',
   unassigned: 'Unassigned',
-  onHold: 'On hold',
+  onHold: 'On Hold',
 };
 const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
 
@@ -221,7 +221,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                   <i class="pi pi-inbox empty-icon" aria-hidden="true"></i>
                   <p>No open tasks, and none were created or completed in this period.</p>
                   <a *mfHasPermission="'Task.Create'" class="cta" routerLink="/tasks/new">
-                    Create the first task
+                    Create the First Task
                   </a>
                 </div>
               } @else {
@@ -332,7 +332,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                       [id]="panelId()"
                       [attr.aria-labelledby]="labelledBy()"
                     >
-                      <mf-dash-section class="mf-fill" heading="Tasks over time" name="trend">
+                      <mf-dash-section class="mf-fill" heading="Tasks Over Time" name="trend">
                         <span mfSectionActions class="head-period" data-trend-period>
                           <mf-period-control [period]="period()" />
                         </span>
@@ -711,7 +711,7 @@ export class DashboardPage implements OnInit {
       return {
         kind: 'scope',
         message: `Nothing is unassigned in ${this.scope.label()}.`,
-        actionLabel: 'Show all pods',
+        actionLabel: 'Show All Pods',
       };
     }
     return null;

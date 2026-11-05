@@ -62,7 +62,7 @@ const HEADINGS: Record<string, string> = {
           }
           @if (others().length > 0) {
             <details class="np__other" data-prefs-other>
-              <summary>Other events</summary>
+              <summary>Other Events</summary>
               <p class="np__muted">
                 For roles you do not hold today. They are on by default, so you are covered if that
                 changes.

@@ -157,7 +157,7 @@ describe('MattersListPage', () => {
       Array.from(plain.nativeElement.querySelectorAll('thead th')).map((t) =>
         (t as HTMLElement).textContent!.trim(),
       );
-    expect(heads()).not.toContain('On hold');
+    expect(heads()).not.toContain('On Hold');
     expect(myMatters.getMyMattersData).not.toHaveBeenCalled();
 
     (plain.nativeElement.querySelector('[data-grid-columns]') as HTMLButtonElement).click();
@@ -175,7 +175,7 @@ describe('MattersListPage', () => {
     boxes[0].checked = true;
     boxes[0].dispatchEvent(new Event('change'));
     await settle(plain);
-    expect(heads()).toContain('On hold');
+    expect(heads()).toContain('On Hold');
     const stored = JSON.parse(
       localStorage.getItem(
         `mf.grid.v1.matters.${TestBed.inject(AuthStore).profile()?.userId ?? 'anon'}`,
@@ -433,8 +433,8 @@ describe('MattersListPage', () => {
 
     const dialog = document.body.querySelector('.mf-formdlg');
     expect(dialog).not.toBeNull();
-    expect(dialog?.textContent).toContain('New matter');
-    expect(dialog?.querySelector('[data-panel-primary]')?.textContent).toContain('Create matter');
+    expect(dialog?.textContent).toContain('New Matter');
+    expect(dialog?.querySelector('[data-panel-primary]')?.textContent).toContain('Create Matter');
     expect(navigate).not.toHaveBeenCalledWith(['/matters/new']);
   });
 
@@ -502,7 +502,7 @@ describe('MattersListPage', () => {
         'Client',
         'Primary PM',
         'Secondary PM',
-        'Open tasks',
+        'Open Tasks',
         'Overdue',
         'Status',
         'Actions', // the row's quick actions (epic #758), for people who can see tasks, from 900 px

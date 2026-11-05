@@ -32,7 +32,7 @@ export function statusBadgeOf(t: Pick<TaskTypeView, 'isActive' | 'isUsable'>): {
   icon: string;
 } {
   if (!t.isActive) return { label: 'Inactive', tone: 'neutral', icon: 'pi-minus-circle' };
-  if (!t.isUsable) return { label: 'Not usable', tone: 'neutral', icon: 'pi-info-circle' };
+  if (!t.isUsable) return { label: 'Not Usable', tone: 'neutral', icon: 'pi-info-circle' };
   return { label: 'Active', tone: 'success', icon: 'pi-check-circle' };
 }
 
@@ -94,7 +94,7 @@ export function taskTypeStripItems(
     },
     {
       key: 'default',
-      label: 'Default workflow',
+      label: 'Default Workflow',
       count: null,
       value: def,
       hint: `Default workflow: ${def}`,
@@ -103,7 +103,7 @@ export function taskTypeStripItems(
   if (t.openTaskCount !== undefined && t.openTaskCount !== null) {
     items.push({
       key: 'open',
-      label: 'Open tasks',
+      label: 'Open Tasks',
       count: t.openTaskCount,
       hint: 'Open tasks of this type in the Task Queue',
       link: { path: '/tasks', queryParams: { type: String(t.id), status: [...OPEN_STATUSES] } },

@@ -30,7 +30,7 @@ test.describe('PM v2 page fixes: Search hits (#885)', () => {
     await page.goto(`/search?q=${encodeURIComponent(`Pending ${d.token}`)}&type=asset`);
     const asset = page.locator('[data-hit-row]').first();
     await expect(asset.locator('[data-cell="size"]')).toContainText('5.5 GB');
-    await expect(asset.locator('[data-cell="disposition"]')).toContainText('Pending disposition');
+    await expect(asset.locator('[data-cell="disposition"]')).toContainText('Pending Disposition');
     for (const size of SIZES) {
       await page.setViewportSize(size);
       await expect(page.locator('[data-hit-row], mf-search-hit-card').first()).toBeVisible();

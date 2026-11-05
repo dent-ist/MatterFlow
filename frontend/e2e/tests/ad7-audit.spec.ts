@@ -65,7 +65,7 @@ const filterTo = async (page: Page, query: string, grouped = false) => {
   await page.goto(`/admin/audit?${query}`);
   await expect(anyRow(page).first()).toBeVisible();
   if (!grouped) {
-    await page.getByLabel('Group events of one operation').uncheck();
+    await page.getByLabel('Group Events of One Operation').uncheck();
     await expect(rows(page).first()).toBeVisible();
   }
 };
@@ -90,23 +90,23 @@ test.describe('Audit Logs chrome (#646)', () => {
     await expect(header.getByRole('button', { name: /^Filters/ })).toBeVisible();
     // The filter row is open from the start (from 640 px) and the grouping is a small toggle above the grid, not a row of its own.
     await expect(page.locator('[data-filter-row]')).toBeVisible();
-    await expect(page.getByLabel('Group events of one operation')).toBeVisible();
+    await expect(page.getByLabel('Group Events of One Operation')).toBeVisible();
 
     // One Clear filters, in the header: it appears with a filter and goes with it.
-    await expect(header.getByRole('button', { name: 'Clear filters' })).toHaveCount(0);
+    await expect(header.getByRole('button', { name: 'Clear Filters' })).toHaveCount(0);
     await page.goto(`/admin/audit?objectType=AssetType&objectId=${s.assetType.id}`);
-    await expect(header.getByRole('button', { name: 'Clear filters' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Clear filters' })).toHaveCount(1);
-    await header.getByRole('button', { name: 'Clear filters' }).click();
+    await expect(header.getByRole('button', { name: 'Clear Filters' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Clear Filters' })).toHaveCount(1);
+    await header.getByRole('button', { name: 'Clear Filters' }).click();
     await expect(page).toHaveURL(/\/admin\/audit$/);
     await shot(page, 'audit-chrome');
   });
 
-  test('"Skip to table" is the first Tab stop and moves focus to the table', async ({ page }) => {
+  test('"Skip to Table" is the first Tab stop and moves focus to the table', async ({ page }) => {
     await page.goto('/admin/audit');
     await expect(anyRow(page).first()).toBeVisible();
     await page.keyboard.press('Tab');
-    const skip = page.getByRole('link', { name: 'Skip to table' });
+    const skip = page.getByRole('link', { name: 'Skip to Table' });
     await expect(skip).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.locator('#audit-table')).toBeFocused();
@@ -137,7 +137,7 @@ test.describe('Audit grid, cards, dividers and counter (#647, #651, #653, #655)'
       'Details',
       'When',
       'Who',
-      'What happened',
+      'What Happened',
       'Object',
       'Actions',
     ]);
@@ -155,7 +155,7 @@ test.describe('Audit grid, cards, dividers and counter (#647, #651, #653, #655)'
     await expect(page.locator('#audit-table thead th')).toHaveText([
       'Details',
       'When',
-      'What happened',
+      'What Happened',
       'Object',
       'Actions',
     ]);
@@ -180,7 +180,7 @@ test.describe('Audit grid, cards, dividers and counter (#647, #651, #653, #655)'
     await shot(page, 'audit-cards');
   });
 
-  test('"Show only this operation" is in the details, moves focus to the chip, and there is no banner', async ({
+  test('"Show Only This Operation" is in the details, moves focus to the chip, and there is no banner', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
@@ -196,7 +196,7 @@ test.describe('Audit grid, cards, dividers and counter (#647, #651, #653, #655)'
     await expect(page.locator('[data-chip="correlationId"] button')).toBeFocused();
     await expect(page.locator('[data-operation-banner]')).toHaveCount(0);
     await expect(
-      page.locator('mf-page-header').getByRole('button', { name: 'Clear filters' }),
+      page.locator('mf-page-header').getByRole('button', { name: 'Clear Filters' }),
     ).toHaveCount(1);
   });
 
@@ -275,12 +275,12 @@ test.describe('Friendly filters and quick views (#650, #654)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/admin/audit');
     await expect(anyRow(page).first()).toBeVisible();
-    const events = filterDropdown(page, 'Event type');
+    const events = filterDropdown(page, 'Event Type');
     expect(await events.optionTexts()).toContain('Task created');
     expect(await events.optionValues()).toContain('TASK_CREATED');
     expect((await events.optionTexts()).filter((t) => /^[A-Z]+_[A-Z_]+$/.test(t))).toEqual([]);
-    const objects = filterDropdown(page, 'Object type');
-    expect(await objects.optionTexts()).toContain('Asset type');
+    const objects = filterDropdown(page, 'Object Type');
+    expect(await objects.optionTexts()).toContain('Asset Type');
     expect(await objects.optionValues()).toContain('AssetType');
     expect((await objects.optionTexts()).filter((t) => t === 'Configuration changes')).toHaveLength(
       1,
@@ -292,7 +292,7 @@ test.describe('Friendly filters and quick views (#650, #654)', () => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/admin/audit?eventType=TASK_CREATED&objectType=AssetType');
     await expect(page.locator('[data-chip="eventType"]')).toContainText('Task created');
-    await expect(page.locator('[data-chip="objectType"]')).toContainText('Asset type');
+    await expect(page.locator('[data-chip="objectType"]')).toContainText('Asset Type');
   });
 
   test('the four quick views set address filters, show the pressed one and clear it', async ({
@@ -344,10 +344,10 @@ test.describe('Details (#652) and Who without User.View (#656)', () => {
     await expect(detail.locator('[data-field]')).toHaveText('Description');
     await expect(detail.locator('[data-old]')).toHaveText('(empty)');
     await expect(detail.locator('[data-new]')).toHaveText('Updated description');
-    // The code and the ids are behind "Technical details", a real disclosure.
+    // The code and the ids are behind "Technical Details", a real disclosure.
     await expect(detail.locator('[data-tech]')).toHaveCount(0);
     await expect(detail).not.toContainText('FIELD_CHANGED');
-    const tech = detail.getByRole('button', { name: 'Technical details' });
+    const tech = detail.getByRole('button', { name: 'Technical Details' });
     await expect(tech).toHaveAttribute('aria-expanded', 'false');
     await tech.focus();
     await page.keyboard.press('Enter');
@@ -378,9 +378,9 @@ test.describe('Details (#652) and Who without User.View (#656)', () => {
     await page.locator('tr[data-event] .au-toggle').first().click();
     const value = page.locator('tr.au-detail [data-new]');
     await expect(value).toHaveClass(/au-clamped/);
-    await page.getByRole('button', { name: 'Show full' }).click();
+    await page.getByRole('button', { name: 'Show Full' }).click();
     await expect(value).not.toHaveClass(/au-clamped/);
-    await expect(page.getByRole('button', { name: 'Show less' })).toHaveAttribute(
+    await expect(page.getByRole('button', { name: 'Show Less' })).toHaveAttribute(
       'aria-expanded',
       'true',
     );

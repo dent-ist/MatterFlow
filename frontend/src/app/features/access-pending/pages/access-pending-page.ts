@@ -39,7 +39,7 @@ export class AccessPendingPage implements AfterViewInit {
     return account && !sameIdentity(account, displayName) ? ` (${account})` : '';
   }
   protected readonly checking = signal(false);
-  /** Polite live-region text after "Check again". */
+  /** Polite live-region text after "Check Again". */
   protected readonly message = signal('');
 
   ngAfterViewInit(): void {

@@ -39,7 +39,7 @@ describe('mf-number-input', () => {
 
   beforeEach(async () => {
     fixture = TestBed.createComponent(NumberInput);
-    fixture.componentRef.setInput('label', 'Client number');
+    fixture.componentRef.setInput('label', 'Client Number');
     fixture.componentRef.setInput('noun', 'client number');
     fixture.componentRef.setInput('inputId', 'client-number');
     await fixture.whenStable();

@@ -164,7 +164,7 @@ describe('ClientDetailPage', () => {
     const details = el().querySelector('[role=tabpanel] [data-details-tab]')!;
     expect(details.querySelector('[data-client-overview]')).not.toBeNull();
     expect(details.querySelector('dl')).toBeNull(); // the duplicated rows are gone
-    expect(details.textContent).not.toContain('Client number');
+    expect(details.textContent).not.toContain('Client Number');
     expect(details.textContent).toContain('Created 10/01');
     expect(details.querySelector('[data-top-matters]')).not.toBeNull();
     expect(clients.getClientSummary).toHaveBeenCalledWith(1);
@@ -301,7 +301,7 @@ describe('ClientDetailPage', () => {
   it('starts a matter for this client, prefilled', async () => {
     await create(['Client.View', 'Matter.View', 'Matter.Create'], 'matters');
 
-    expect(buttonByLabel(el(), 'Create matter')).toBeUndefined();
+    expect(buttonByLabel(el(), 'Create Matter')).toBeUndefined();
     buttonByLabel(el(), 'New Matter')!.click();
     expect(navigateByUrl).toHaveBeenCalledWith('/matters/new?clientId=1');
   });

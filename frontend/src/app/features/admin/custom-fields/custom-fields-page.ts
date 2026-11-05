@@ -286,7 +286,7 @@ export class CustomFieldsPage implements OnInit {
           [
             {
               id: 'fields',
-              label: 'Edit fields',
+              label: 'Edit Fields',
               icon: 'pi-pencil',
               permission: 'CustomField.Manage',
               run: () => this.go(r),
@@ -340,7 +340,7 @@ export class CustomFieldsPage implements OnInit {
   private publishedLine(r: Row): string {
     const s = r.summary;
     if (s?.publishedVersion == null)
-      return s?.draftVersion != null ? `Draft v${s.draftVersion} in progress` : 'Not published';
+      return s?.draftVersion != null ? `Draft v${s.draftVersion} in progress` : 'Not Published';
     return s.draftVersion != null
       ? `Draft v${s.draftVersion} in progress`
       : `Version ${s.publishedVersion}`;

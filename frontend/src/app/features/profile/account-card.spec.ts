@@ -44,7 +44,7 @@ describe('AccountCard', () => {
     expect(region.getAttribute('aria-labelledby')).toBe('ac-title');
     expect(text(root, '#ac-title')).toBe('Account');
     expect(root.querySelector('dl')).not.toBeNull();
-    expect(all(root, 'dt')).toEqual(['Name', 'Windows account', 'Email', 'Roles', 'Pods']);
+    expect(all(root, 'dt')).toEqual(['Name', 'Windows Account', 'Email', 'Roles', 'Pods']);
     expect(text(root, '[data-ac-name]')).toBe('Kim Admin');
     expect(text(root, '[data-ac-account]')).toBe('KE\\kekim');
     expect(text(root, '[data-ac-email]')).toBe('kim@example.test');
@@ -70,7 +70,7 @@ describe('AccountCard', () => {
     const root = await create({ email: undefined, pods: [], roles: ['Read-Only Observer'] });
     expect(text(root, '[data-ac-email]')).toBe('Not set');
     expect(text(root, '[data-ac-pods-none]')).toBe('No pods yet');
-    expect(all(root, 'dt')).toEqual(['Name', 'Windows account', 'Email', 'Role', 'Pods']);
+    expect(all(root, 'dt')).toEqual(['Name', 'Windows Account', 'Email', 'Role', 'Pods']);
     expect(all(root, '[data-ac-role]')).toEqual(['Read-Only Observer']);
   });
 

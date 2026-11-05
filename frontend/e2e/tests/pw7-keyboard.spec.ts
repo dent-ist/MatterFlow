@@ -198,8 +198,8 @@ test.describe('Pod Work keyboard', () => {
     const record: Record<string, number> = {};
     for (const [name, view] of [
       ['Unassigned', 'queue'],
-      ['By member', 'members'],
-      ['All open', 'all'],
+      ['By Member', 'members'],
+      ['All Open', 'all'],
     ] as const) {
       await page.goto(`/pods/work?podId=${fx.busy.podId}&view=${view}`);
       await expect(page.locator('[data-strip-item="overdue"]')).toBeVisible();
@@ -238,8 +238,8 @@ test.describe('Pod Work keyboard', () => {
       const base = `/pods/work?podId=${fx.busy.podId}`;
       const states: [string, string][] = [
         ['Unassigned', `${base}`],
-        ['By member', `${base}&view=members`],
-        ['All open', `${base}&view=all`],
+        ['By Member', `${base}&view=members`],
+        ['All Open', `${base}&view=all`],
         ['All open, Overdue', `${base}&view=all&overdue=true`],
         ['All open, On hold', `${base}&view=all&status=ON_HOLD`],
         ['By member, a person', `${base}&view=members&assignee=${fx.busy.withWork[0]}`],

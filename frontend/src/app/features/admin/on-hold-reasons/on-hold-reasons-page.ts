@@ -395,7 +395,7 @@ export class OnHoldReasonsPage implements OnInit, HasUnsavedChanges {
             },
             {
               id: 'up',
-              label: 'Move up',
+              label: 'Move Up',
               icon: 'pi-arrow-up',
               permission: 'OnHoldReason.Manage',
               reason: i === 0 ? 'Already first.' : undefined,
@@ -403,7 +403,7 @@ export class OnHoldReasonsPage implements OnInit, HasUnsavedChanges {
             },
             {
               id: 'down',
-              label: 'Move down',
+              label: 'Move Down',
               icon: 'pi-arrow-down',
               permission: 'OnHoldReason.Manage',
               reason: i === list.length - 1 ? 'Already last.' : undefined,

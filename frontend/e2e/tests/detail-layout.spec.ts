@@ -59,9 +59,9 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     expect(grid.width).toBeGreaterThan(1280 - 300); // the whole page width (less the menu), not beside a panel
 
     // The primary action of the header (the Matters tab has its own button too until the list package drops it).
-    await page.locator('[data-page-actions]').getByRole('button', { name: 'New matter' }).click();
+    await page.locator('[data-page-actions]').getByRole('button', { name: 'New Matter' }).click();
     // The pop-up of the Matters list opens with this client (MD-22): the old address redirects there.
-    await expect(page.getByRole('dialog', { name: 'New matter' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'New Matter' })).toBeVisible();
     await expect(page).toHaveURL(/\/matters$/);
   });
 

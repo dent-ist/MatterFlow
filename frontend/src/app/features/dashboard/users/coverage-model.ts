@@ -191,7 +191,7 @@ export const isOrientation = (v: unknown): v is Orientation =>
 export const DEFAULT_ORIENTATION: Orientation = 'type';
 export const ORIENTATION_PARAM = 'cov';
 
-/** Bounded rendering: the matrix draws this many people and task types at first, "Show more" adds the same again (500 people x 30 types stays quick). */
+/** Bounded rendering: the matrix draws this many people and task types at first, "Show More" adds the same again (500 people x 30 types stays quick). */
 export const MATRIX_COLS = 30;
 export const MATRIX_ROWS = 60;
 export const TYPE_ROWS = 60;

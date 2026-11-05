@@ -68,7 +68,7 @@ test.describe('FD1: the form designer is three fixed panes', () => {
         await expect(page.locator('[data-row="44"]')).toHaveCount(1);
         await noPageScroll(page);
         await noSideScroll(page);
-        await inView(page, 'Save draft');
+        await inView(page, 'Save Draft');
         await inView(page, 'Publish...');
 
         // The Fields pane is its own scroll area: the last field is reached by scrolling it, and the buttons never move.
@@ -147,7 +147,7 @@ test.describe('FD1: the form designer is three fixed panes', () => {
       )
       .toBeGreaterThan(300);
     await inView(page, 'Publish...');
-    await inView(page, 'Save draft');
+    await inView(page, 'Save Draft');
   });
 
   test('keyboard: Tab reaches the buttons, the palette, the scrolling Fields list and its controls; focus is visible', async ({

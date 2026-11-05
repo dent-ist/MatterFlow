@@ -288,7 +288,7 @@ test.describe('Task T6: Details heading, alignment and Request details (#312, #3
           description.top - heading.bottom,
           'no empty row between the heading and the first sub-heading',
         ).toBeLessThanOrEqual(24);
-        const info = await rect(p.getByRole('heading', { name: 'Task information' }));
+        const info = await rect(p.getByRole('heading', { name: 'Task Information' }));
         const request = await rect(p.locator('[data-request-form] .rs__text'));
         expect(Math.abs(info.left - description.left)).toBeLessThanOrEqual(1);
         expect(
@@ -387,7 +387,7 @@ test.describe('Task T6: long Description is cut at about 12 lines (#314)', () =>
       await openDetails(page);
       const box = page.locator('[data-description]');
       const more = page.locator('[data-description-more]');
-      await expect(more).toHaveText('Show more');
+      await expect(more).toHaveText('Show More');
       await expect(more).toHaveAttribute('aria-expanded', 'false');
       const cut = await box.evaluate((el) => ({
         height: el.getBoundingClientRect().height,
@@ -400,7 +400,7 @@ test.describe('Task T6: long Description is cut at about 12 lines (#314)', () =>
 
       await more.focus();
       await page.keyboard.press('Enter');
-      await expect(more).toHaveText('Show less');
+      await expect(more).toHaveText('Show Less');
       await expect(more).toHaveAttribute('aria-expanded', 'true');
       await expect(more).toBeFocused();
       const open = await box.evaluate((el) => el.getBoundingClientRect().height);
@@ -411,7 +411,7 @@ test.describe('Task T6: long Description is cut at about 12 lines (#314)', () =>
       await check(page, 'description-expanded');
 
       await page.keyboard.press('Space');
-      await expect(more).toHaveText('Show more');
+      await expect(more).toHaveText('Show More');
       await expect(more).toBeFocused();
     }
 
@@ -425,7 +425,7 @@ test.describe('Task T6: long Description is cut at about 12 lines (#314)', () =>
       await page.setViewportSize(size);
       await openFresh(page, long.task.taskId);
       await openDetails(page);
-      await expect(page.locator('[data-description-more]')).toHaveText('Show more');
+      await expect(page.locator('[data-description-more]')).toHaveText('Show More');
       await check(page, 'description-clamped-narrow');
     }
   });

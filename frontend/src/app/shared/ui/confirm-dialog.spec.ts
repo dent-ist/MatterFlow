@@ -10,7 +10,7 @@ import { ConfirmDialog } from './confirm-dialog';
     <tbody>
       <tr>
         <td style="white-space: nowrap">
-          <mf-confirm-dialog title="Put on hold" [visible]="true">
+          <mf-confirm-dialog title="Put on Hold" [visible]="true">
             <p data-text>
               The task stays On Hold until someone resumes it. Workflow steps can't be changed.
             </p>

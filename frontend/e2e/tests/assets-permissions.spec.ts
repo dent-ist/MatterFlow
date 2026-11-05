@@ -133,7 +133,7 @@ test.describe('Assets permission matrix (WP-AS6)', () => {
         await expect(forbidden).toHaveCount(0);
         expect(await deadLinks(page, variant.permissions), 'dead links in the list').toEqual([]);
         // The Linked tasks column and the New asset button follow the permissions.
-        await expect(page.getByRole('columnheader', { name: 'Linked tasks' })).toHaveCount(
+        await expect(page.getByRole('columnheader', { name: 'Linked Tasks' })).toHaveCount(
           variant.permissions.includes('Task.View') ? 1 : 0,
         );
         await expect(page.getByRole('button', { name: 'New asset' })).toHaveCount(
@@ -153,7 +153,7 @@ test.describe('Assets permission matrix (WP-AS6)', () => {
         }
         await expect(forbidden).toHaveCount(0);
         // History without Audit.View falls back to Details (it has no tab either).
-        const expected = tab === 'tasks' ? 'Linked tasks' : 'Details';
+        const expected = tab === 'tasks' ? 'Linked Tasks' : 'Details';
         await expect(page.getByRole('tab', { selected: true })).toContainText(expected);
         await expect(page.getByRole('tab', { name: 'History' })).toHaveCount(0);
         if (tab === 'tasks') {

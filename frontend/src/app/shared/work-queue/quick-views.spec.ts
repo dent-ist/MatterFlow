@@ -29,14 +29,14 @@ describe('QuickViews', () => {
     expect(
       Array.from(el.querySelectorAll('.qv > button')).map((b) => b.getAttribute('aria-label')),
     ).toEqual([
-      'All open',
+      'All Open',
       'Unassigned',
       'Overdue',
-      'Due soon',
+      'Due Soon',
       'ASAP',
-      'On hold',
-      'My pod',
-      'Created by me',
+      'On Hold',
+      'My Pod',
+      'Created By Me',
       'More views',
     ]);
   });
@@ -131,11 +131,11 @@ describe('QuickViews', () => {
       more(el).click();
       fixture.detectChanges();
       expect(more(el).getAttribute('aria-expanded')).toBe('true');
-      expect(el.querySelector('mf-filter-popover')!.getAttribute('aria-label')).toBe('More views');
+      expect(el.querySelector('mf-filter-popover')!.getAttribute('aria-label')).toBe('More Views');
       const item = el.querySelector<HTMLButtonElement>(
         'mf-filter-popover [data-view="recentlyCompleted"]',
       )!;
-      expect(item.textContent).toContain('Recently completed');
+      expect(item.textContent).toContain('Recently Completed');
       item.click();
       fixture.detectChanges();
       expect(chosen).toEqual(['recentlyCompleted']);
@@ -159,8 +159,8 @@ describe('QuickViews', () => {
       fixture.detectChanges();
       const el = fixture.nativeElement as HTMLElement;
       expect(more(el).getAttribute('aria-pressed')).toBe('true');
-      expect(more(el).textContent!.replace(/\s+/g, ' ').trim()).toBe('Recently completed 153');
-      expect(more(el).getAttribute('aria-label')).toBe('Recently completed, 153 tasks');
+      expect(more(el).textContent!.replace(/\s+/g, ' ').trim()).toBe('Recently Completed 153');
+      expect(more(el).getAttribute('aria-label')).toBe('Recently Completed, 153 tasks');
       expect(more(el).getAttribute('data-view-in-more')).toBe('recentlyCompleted');
       expect(el.querySelector('.qv > [aria-pressed="true"]')).toBe(more(el));
     });
@@ -207,12 +207,12 @@ describe('QuickViews', () => {
       expect(button(el, 'overdue').getAttribute('aria-label')).toBe('Overdue, 101 tasks');
       expect(button(el, 'overdue').textContent!.replace(/\s+/g, ' ').trim()).toBe('Overdue 101');
       expect(button(el, 'allOpen').getAttribute('data-count')).toBe('442');
-      expect(button(el, 'createdByMe').getAttribute('aria-label')).toBe('Created by me, 1 task');
-      expect(button(el, 'onHold').getAttribute('aria-label')).toBe('On hold, 64 tasks');
+      expect(button(el, 'createdByMe').getAttribute('aria-label')).toBe('Created By Me, 1 task');
+      expect(button(el, 'onHold').getAttribute('aria-label')).toBe('On Hold, 64 tasks');
       expect(button(el, 'dueSoon').getAttribute('data-count')).toBe('96');
       fixture.componentRef.setInput('counts', { ...counts, open: 1442 });
       fixture.detectChanges();
-      expect(button(el, 'allOpen').getAttribute('aria-label')).toBe('All open, 1,442 tasks');
+      expect(button(el, 'allOpen').getAttribute('aria-label')).toBe('All Open, 1,442 tasks');
     });
 
     it('maps the new views to their counts', () => {

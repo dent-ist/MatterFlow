@@ -86,7 +86,7 @@ test.describe('BUG-1 / BUG-5: status badges and the scroll hint', () => {
       // A badge only when the person is not simply Active (#432): Pending access and Inactive here, none for the active person.
       expect(await badges.allTextContents()).toEqual(
         expect.arrayContaining([
-          expect.stringContaining('Pending access'),
+          expect.stringContaining('Pending Access'),
           expect.stringContaining('Inactive'),
         ]),
       );
@@ -139,7 +139,7 @@ test.describe('BUG-2: focus and Esc', () => {
   test('Close does the same, and Grant access for a pending person too', async ({ page }) => {
     await openList(page);
     const grant = grantButton(page, pending.userId);
-    await expect(grant).toHaveText('Grant access');
+    await expect(grant).toHaveText('Grant Access');
     await grant.focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-panel-heading]')).toBeFocused();
@@ -196,7 +196,7 @@ test.describe('BUG-2: focus and Esc', () => {
     await button.focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-panel-heading]')).toBeFocused();
-    await expect(page.getByRole('button', { name: 'Save changes' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Save Changes' })).toHaveCount(0);
     await page.keyboard.press('Escape');
     await expect(page.locator('[data-panel]')).toHaveCount(0);
     await expect(button).toBeFocused();
@@ -217,7 +217,7 @@ test.describe('BUG-3: the deactivation question', () => {
   }) => {
     await openList(page, 1366, 768);
     await rowButton(page, active.userId).click();
-    await expect(page.getByRole('button', { name: 'Save changes' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Save Changes' })).toBeVisible();
 
     const deactivate = page.getByRole('button', { name: /^Deactivate / });
     await deactivate.click();
@@ -236,7 +236,7 @@ test.describe('BUG-3: the deactivation question', () => {
     await page.keyboard.press('Enter');
     await expect(dialog).toBeHidden();
     await expect(deactivate).toBeFocused();
-    await expect(page.getByRole('button', { name: 'Save changes' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Save Changes' })).toBeVisible();
   });
 
   test('Deactivate saves; the person is Inactive in the list', async ({ page, personas }) => {

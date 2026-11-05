@@ -280,15 +280,15 @@ describe('built-in views', () => {
 
   it('defines the views in the order of the row, the Dashboard tiles first', () => {
     expect(BUILT_IN_VIEWS.map((v) => v.label)).toEqual([
-      'All open',
+      'All Open',
       'Unassigned',
       'Overdue',
-      'Due soon',
+      'Due Soon',
       'ASAP',
-      'On hold',
-      'My pod',
-      'Created by me',
-      'Recently completed',
+      'On Hold',
+      'My Pod',
+      'Created By Me',
+      'Recently Completed',
     ]);
   });
 
@@ -399,7 +399,7 @@ describe('matching a link to a view by shape (#221)', () => {
   it('leaves everything else alone, All open included', () => {
     expect(matchBuiltIn(link('priority=1'), ctx)).toBeNull();
     expect(matchBuiltIn(link('status=NEW&priority=1'), ctx)).toBeNull();
-    // Open statuses with a priority are not "All open": it matches exactly only.
+    // Open statuses with a priority are not "All Open": it matches exactly only.
     expect(
       matchBuiltIn(link('status=NEW&status=IN_PROGRESS&status=ON_HOLD&priority=1'), ctx),
     ).toBeNull();

@@ -80,7 +80,7 @@ test.describe('Review round 5: profile availability, Swimlane and Users', () => 
         await page.locator(id).fill(text);
         await page.locator(id).blur();
       }
-      await page.getByRole('button', { name: 'Save changes' }).click();
+      await page.getByRole('button', { name: 'Save Changes' }).click();
       const summary = page.locator('[data-summary]');
       await expect(summary).toBeFocused();
       const link = summary.getByRole('link', { name: /Until must be on or after From/ });
@@ -90,7 +90,7 @@ test.describe('Review round 5: profile availability, Swimlane and Users', () => 
       // The link still moves focus to its field.
       await link.click();
       await expect(page.locator('#av-until')).toBeFocused();
-      await page.getByRole('button', { name: 'Discard changes' }).click();
+      await page.getByRole('button', { name: 'Discard Changes' }).click();
     }
   });
 
@@ -123,7 +123,7 @@ test.describe('Review round 5: profile availability, Swimlane and Users', () => 
     await expectNoAxeViolations(page, 'swimlane at 1024');
   });
 
-  test('UXR5-03: in the "Edit availability" dialog the Save bar sits flush with the bottom of the dialog (no form rows show under it)', async ({
+  test('UXR5-03: in the "Edit Availability" dialog the Save bar sits flush with the bottom of the dialog (no form rows show under it)', async ({
     page,
     seed,
   }) => {
@@ -301,7 +301,7 @@ test.describe('Review round 5: profile availability, Swimlane and Users', () => 
     // Own availability: allowed.
     await page.goto('/profile');
     await page.getByRole('radio', { name: /Out of office/ }).check();
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
     await expect(page.getByText('Availability saved').first()).toBeVisible();
     // Somebody else's: not through the API, and no menu item or admin screen in the UI.
     const asRo = await Api.as(ro.username);
@@ -443,11 +443,11 @@ test.describe('review round 5 screenshots', () => {
     await techPage.locator('#av-until').blur();
     await dropdownById(techPage, 'av-tz').selectOption('__other__');
     await techPage.locator('#av-tz-other').fill('Mars/Olympus');
-    await techPage.getByRole('button', { name: 'Save changes' }).click();
+    await techPage.getByRole('button', { name: 'Save Changes' }).click();
     await shot(techPage, '03-profile-validation-1366');
     await at(techPage, 375, 812);
     await shot(techPage, '04-profile-validation-375');
-    await techPage.getByRole('button', { name: 'Discard changes' }).click();
+    await techPage.getByRole('button', { name: 'Discard Changes' }).click();
 
     // Header menu and the Set out of office dialog.
     for (const [w, h] of [

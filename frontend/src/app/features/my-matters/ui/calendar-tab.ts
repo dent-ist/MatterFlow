@@ -298,7 +298,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
             </ul>
           }
           @if (d.tasks.length > 0) {
-            <h4>Tasks due</h4>
+            <h4>Tasks Due</h4>
             <ul class="dl">
               @for (t of d.tasks; track t.taskId) {
                 <li>

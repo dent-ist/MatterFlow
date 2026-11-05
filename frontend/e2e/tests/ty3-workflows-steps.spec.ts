@@ -67,8 +67,8 @@ test.describe('Workflows columns (#376, #377)', () => {
       'Name',
       'Versions',
       'Steps',
-      'Task types',
-      'Last published',
+      'Task Types',
+      'Last Published',
       'Status',
       'Actions',
     ]);
@@ -85,7 +85,7 @@ test.describe('Workflows columns (#376, #377)', () => {
     );
     await expect(row('Draft only').locator('[data-last-published]')).toHaveText('–');
     await expect(row('Draft only').locator('[data-steps]')).toHaveText('–');
-    await expect(row('Draft only').locator('[data-not-published]')).toContainText('Not published');
+    await expect(row('Draft only').locator('[data-not-published]')).toContainText('Not Published');
     await shot(page, 'p376-workflows');
 
     // 44 px rows with the new cells.
@@ -96,7 +96,7 @@ test.describe('Workflows columns (#376, #377)', () => {
     }
 
     // Last published sorts newest first on the first click; Task types busiest first.
-    const published = page.getByRole('columnheader', { name: 'Last published' });
+    const published = page.getByRole('columnheader', { name: 'Last Published' });
     await published.getByRole('button').click();
     await expect(page).toHaveURL(/sort=-publishedAtUtc/);
     await expect(published).toHaveAttribute('aria-sort', 'descending');
@@ -104,7 +104,7 @@ test.describe('Workflows columns (#376, #377)', () => {
       'data-row',
       `${token} Draft only`,
     ); // never-published workflows come last in both directions
-    const types = page.getByRole('columnheader', { name: 'Task types' });
+    const types = page.getByRole('columnheader', { name: 'Task Types' });
     await types.getByRole('button').click();
     await expect(page).toHaveURL(/sort=-taskTypeCount/);
     await expect(page.locator('tbody tr[data-row]').first()).toHaveAttribute(
@@ -156,7 +156,7 @@ test.describe('Workflows columns (#376, #377)', () => {
     });
     await page.goto(`/admin/workflows?name=${token}%20Bare`);
     const badge = page.locator(`[data-row="${token} Bare"] [data-not-published]`);
-    await expect(badge).toContainText('Not published');
+    await expect(badge).toContainText('Not Published');
     await expect(badge.locator('[data-tone="neutral"]')).toHaveCount(1);
     expect(bare.workflow.workflowDefinitionId).toBeGreaterThan(0);
   });
@@ -166,12 +166,12 @@ test.describe('Workflows columns (#376, #377)', () => {
     seed,
     asUser,
   }) => {
-    const all = ['Name', 'Versions', 'Steps', 'Task types', 'Last published', 'Status', 'Actions'];
+    const all = ['Name', 'Versions', 'Steps', 'Task Types', 'Last Published', 'Status', 'Actions'];
     const expected: [number, string[]][] = [
       [1920, all],
       [1366, all],
-      [1280, all.filter((h) => h !== 'Last published')],
-      [1200, all.filter((h) => h !== 'Last published')],
+      [1280, all.filter((h) => h !== 'Last Published')],
+      [1200, all.filter((h) => h !== 'Last Published')],
       [1180, ['Name', 'Versions', 'Steps', 'Status', 'Actions']],
       [1100, ['Name', 'Versions', 'Steps', 'Status', 'Actions']],
       [1000, ['Name', 'Versions', 'Steps', 'Status', 'Actions']],

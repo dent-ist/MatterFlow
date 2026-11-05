@@ -1,5 +1,5 @@
 <mf-page-header
-  [heading]="isNew() ? 'New report' : (report()?.name ?? 'Report')"
+  [heading]="isNew() ? 'New Report' : (report()?.name ?? 'Report')"
   icon="pi pi-chart-bar"
   [crumbs]="crumbs()"
 >
@@ -67,7 +67,7 @@
   @case ('error') {
     <div class="rep__state" role="alert" data-error>
       <h2>The report could not be loaded</h2>
-      <button type="button" class="mf-btn" (click)="retry()">Try again</button>
+      <button type="button" class="mf-btn" (click)="retry()">Try Again</button>
     </div>
   }
   @case ('ready') {
@@ -90,7 +90,7 @@
         <p class="rep__error" role="alert" data-conflict>
           Someone else saved this report.
           <button type="button" class="mf-btn mf-btn--text" (click)="reload()" data-reload>
-            Reload the latest version
+            Reload the Latest Version
           </button>
           (your unsaved edits are discarded).
         </p>
@@ -197,7 +197,7 @@
                 <p class="rep__hint">One line that people see in the list of their reports.</p>
               </div>
               <div class="rep__field">
-                <label class="mf-label" for="rep-help">Help text</label>
+                <label class="mf-label" for="rep-help">Help Text</label>
                 <textarea
                   id="rep-help"
                   class="mf-control mf-control--fill"
@@ -210,7 +210,7 @@
               </div>
               <div class="rep__row">
                 <div class="rep__field">
-                  <label class="mf-label" for="rep-order">Order in its category</label>
+                  <label class="mf-label" for="rep-order">Order in Its Category</label>
                   <input
                     id="rep-order"
                     class="mf-control mf-control--fill"
@@ -221,7 +221,7 @@
                   />
                 </div>
                 <div class="rep__field">
-                  <label class="mf-label" for="rep-timeout">Time limit (seconds)</label>
+                  <label class="mf-label" for="rep-timeout">Time Limit (seconds)</label>
                   <input
                     id="rep-timeout"
                     class="mf-control mf-control--fill"
@@ -235,7 +235,7 @@
                   />
                 </div>
                 <div class="rep__field">
-                  <label class="mf-label" for="rep-rows">Row limit</label>
+                  <label class="mf-label" for="rep-rows">Row Limit</label>
                   <input
                     id="rep-rows"
                     class="mf-control mf-control--fill"
@@ -255,7 +255,7 @@
                 </p>
               }
               <div class="rep__field">
-                <label class="mf-label" for="rep-note">Note about this change</label>
+                <label class="mf-label" for="rep-note">Note About This Change</label>
                 <input
                   id="rep-note"
                   class="mf-control mf-control--fill"

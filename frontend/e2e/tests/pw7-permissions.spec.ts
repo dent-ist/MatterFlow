@@ -9,8 +9,8 @@ import { toasts } from '../support/toasts';
 
 /**
  * Pod Work permission matrix (epic #546, package WP-PW7, #574): for every kind of person the page's controls are exactly what their
- * permissions allow: the rail item and the page need Pod.View and Task.View (else the 403 page with no request); "Assign to me" needs
- * Task.Assign; "Add members" needs Pod.ManageMembers; "Create a pod" needs Pod.Manage. A control a person may not use is hidden, never
+ * permissions allow: the rail item and the page need Pod.View and Task.View (else the 403 page with no request); "Assign to Me" needs
+ * Task.Assign; "Add Members" needs Pod.ManageMembers; "Create a pod" needs Pod.Manage. A control a person may not use is hidden, never
  * disabled. On every allowed path no request is answered 403, no toast appears and nothing on the page looks disabled. The table of the
  * result is docs/ux/pod-work-review/fixes/pw7-access/permissions.md. axe runs on the main states and the suite fails without axe.
  */
@@ -163,10 +163,10 @@ test.describe('Pod Work permission matrix', () => {
         expect(await pageSideScroll(page)).toBeLessThanOrEqual(0);
       }
 
-      // An empty pod: "Add members" only with Pod.ManageMembers.
+      // An empty pod: "Add Members" only with Pod.ManageMembers.
       await page.goto(`/pods/work?podId=${fx.empty.podId}&view=members`);
       await expect(page.getByText('No members yet.'), who).toBeVisible();
-      await expect(page.getByRole('link', { name: 'Add members' }), who).toHaveCount(
+      await expect(page.getByRole('link', { name: 'Add Members' }), who).toHaveCount(
         can.has('Pod.ManageMembers') ? 1 : 0,
       );
 

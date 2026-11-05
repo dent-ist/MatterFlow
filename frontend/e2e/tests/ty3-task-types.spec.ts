@@ -79,7 +79,7 @@ test.describe('Task Types rows and columns (#371)', () => {
       await expect(page.locator('tbody .chip')).toHaveCount(0);
       await expect(page.locator('[data-assoc-chip]')).toHaveCount(0);
       const badge = page.locator(`[data-row="${token} Bare"] [data-not-usable]`);
-      await expect(badge).toContainText('Not usable');
+      await expect(badge).toContainText('Not Usable');
       await expect(badge.locator('.pi')).toHaveCount(1);
       const describedBy = await badge.locator('.badge').getAttribute('aria-describedby');
       await expect(page.locator(`#${describedBy}`)).toContainText("users can't create tasks");
@@ -99,17 +99,17 @@ test.describe('Task Types rows and columns (#371)', () => {
   }) => {
     const all = [
       'Name',
-      'Default workflow',
+      'Default Workflow',
       'Target (days)',
-      'Request form',
+      'Request Form',
       'Workflows',
-      'Open tasks',
+      'Open Tasks',
       'Status',
       'Actions',
     ];
-    const noTasks = all.filter((h) => h !== 'Open tasks');
+    const noTasks = all.filter((h) => h !== 'Open Tasks');
     const noWorkflows = noTasks.filter((h) => h !== 'Workflows');
-    const noForm = noWorkflows.filter((h) => h !== 'Request form');
+    const noForm = noWorkflows.filter((h) => h !== 'Request Form');
     const expected: [number, string[]][] = [
       [1920, all],
       [1366, all],
@@ -121,9 +121,9 @@ test.describe('Task Types rows and columns (#371)', () => {
       [1099, noForm],
       [1000, noForm],
       [900, noForm.filter((h) => h !== 'Target (days)')],
-      [768, ['Name', 'Default workflow', 'Status', 'Actions']],
+      [768, ['Name', 'Default Workflow', 'Status', 'Actions']],
       // Target (days) drops last of the optional columns (PM v2 #853): at 640 px it made the table wider than its box.
-      [640, ['Name', 'Default workflow', 'Status', 'Actions']],
+      [640, ['Name', 'Default Workflow', 'Status', 'Actions']],
     ];
     for (const [width, names] of expected) {
       await page.setViewportSize({ width, height: 900 });
@@ -197,7 +197,7 @@ test.describe('Open tasks (#373)', () => {
     await shot(page, 'p373-open-tasks');
 
     // Sorted by Open tasks: the first click is busiest first, and aria-sort says so.
-    const header = page.getByRole('columnheader', { name: 'Open tasks' });
+    const header = page.getByRole('columnheader', { name: 'Open Tasks' });
     await header.getByRole('button').click();
     await expect(page).toHaveURL(/sort=-openTasks/);
     await expect(header).toHaveAttribute('aria-sort', 'descending');

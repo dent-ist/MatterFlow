@@ -6,8 +6,8 @@ export type PillKind = 'critical' | 'high' | 'hold' | 'risk' | 'overdue';
 const PILLS: Readonly<Record<PillKind, { icon: string; label: string }>> = {
   critical: { icon: 'pi-exclamation-triangle', label: 'Critical' },
   high: { icon: 'pi-arrow-up', label: 'High' },
-  hold: { icon: 'pi-pause', label: 'On hold' },
-  risk: { icon: 'pi-clock', label: 'At risk' },
+  hold: { icon: 'pi-pause', label: 'On Hold' },
+  risk: { icon: 'pi-clock', label: 'At Risk' },
   overdue: { icon: 'pi-exclamation-circle', label: 'Overdue' },
 };
 

@@ -236,7 +236,7 @@ describe('MatterFormPage', () => {
       expect(el().querySelector('[data-locked-client]')?.textContent).toContain('00343');
       expect(el().querySelector('[data-locked-number]')?.textContent).toContain('00012');
       expect(el().querySelector('#matter-number')).toBeNull();
-      expect(buttonByLabel(el(), 'Change number')).toBeUndefined();
+      expect(buttonByLabel(el(), 'Change Number')).toBeUndefined();
 
       type('#matter-name', 'Renamed');
       el().querySelector<HTMLInputElement>('input[type=checkbox]')!.click();
@@ -327,7 +327,7 @@ describe('MatterFormPage', () => {
     it('changes the number behind a confirmation when permitted', async () => {
       await create({ matterId: '7' }, ['Matter.View', 'Matter.Edit', 'Matter.EditNumber']);
 
-      buttonByLabel(el(), 'Change number')!.click();
+      buttonByLabel(el(), 'Change Number')!.click();
       await settle(fixture);
       const dialog = document.body.querySelector('p-dialog') as HTMLElement;
       expect(dialog.querySelector('[data-number-warning]')?.textContent).toContain(

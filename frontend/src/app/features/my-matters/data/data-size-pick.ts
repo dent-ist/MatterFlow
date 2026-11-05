@@ -94,9 +94,9 @@ export function sizeGroups(types: readonly AssetDataTypeRow[]): SizeGroup[] {
     }
   `,
   template: `
-    <span class="sp__label">Size fields</span>
+    <span class="sp__label">Size Fields</span>
     <mf-options-menu
-      label="Size fields"
+      label="Size Fields"
       [text]="summary()"
       [triggerName]="summary() + ', choose size fields'"
       icon="pi-chevron-down"

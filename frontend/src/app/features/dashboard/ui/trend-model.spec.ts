@@ -261,21 +261,21 @@ describe('trend model', () => {
       ]);
       expect(v.flows.lines[0].style).toBe(MEASURE_STYLES.created);
       expect(v.flows.height).toBe(320);
-      expect(v.flows.title).toBe('Created and completed');
+      expect(v.flows.title).toBe('Created and Completed');
       expect(v.backlog.lines.map((l) => [l.key, l.panel, l.values.join()])).toEqual([
         ['backlog-all-open', 'backlog', '101,102'],
         ['backlog-all-overdue', 'backlog', '3,4'],
       ]);
       expect(v.backlog.lines[0].style).toBe(MEASURE_STYLES.open);
       expect(v.backlog.height).toBe(200);
-      expect(v.backlog.title).toBe('Backlog at end of day');
+      expect(v.backlog.title).toBe('Backlog at End of Day');
       expect(v.flows.measureNote).toBeNull();
     });
 
     it('a single flow measure draws one line of All; On time and Completed late are flow measures', () => {
       const v = buildView({ ...DEFAULT_CHOICE, metric: 'onTime' }, DATA, new Map(), DATA.types);
       expect(v.flows.lines.map((l) => [l.name, l.values.join()])).toEqual([['On time', '4,5']]);
-      expect(v.flows.title).toBe('Created and completed');
+      expect(v.flows.title).toBe('Created and Completed');
       const hidden = buildView({ ...DEFAULT_CHOICE, all: 'off' }, DATA, new Map(), DATA.types);
       expect(hidden.flows.lines).toEqual([]);
       expect(hidden.backlog.lines).toEqual([]);

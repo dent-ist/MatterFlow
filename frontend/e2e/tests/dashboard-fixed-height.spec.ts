@@ -176,7 +176,7 @@ test.describe('regions inside the tabs scroll (#137)', () => {
     page,
   }) => {
     await open(page, TABS[2], { width: 1366, height: 768 });
-    await page.getByRole('button', { name: 'Select all' }).click();
+    await page.getByRole('button', { name: 'Select All' }).click();
     await expect(page.locator('[data-plot] polyline.series:not(.partial)').first()).toBeAttached();
     const ticked = await page.locator('[data-type-box]:checked').count();
     expect(ticked).toBeGreaterThanOrEqual(8);

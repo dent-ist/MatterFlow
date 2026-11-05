@@ -9,7 +9,7 @@ import { TaskApi } from '../support/tasks';
 /**
  * Task Detail review, package T4 "Menus and dialogs" (#303 M1, #304 M2, #305 M3, #306 M4): the status menu has one label per item with
  * Cancel task last behind a divider; Complete stays usable while steps need information, says so, and its dialog's primary button goes to
- * the first blocked step; the Hold and Cancel dialogs use "Cancel" and "Reason"; the assignee menu starts with "Assign to me"
+ * the first blocked step; the Hold and Cancel dialogs use "Cancel" and "Reason"; the assignee menu starts with "Assign to Me"
  * and shows each candidate's open load. Every test builds its own users and tasks. Screenshots:
  * E2E_SCREENSHOTS=docs/ux/task-detail-review/fixes/t4 (otherwise none are written).
  */
@@ -68,9 +68,9 @@ test.describe('T4: status menu (M1, #303)', () => {
 
     const detail = new TaskDetailPage(page);
     const expected: [number, string, string[]][] = [
-      [fresh.taskId, 'New', ['Start', 'Put on hold', 'Complete', 'Cancel task']],
-      [working.taskId, 'In Progress', ['Put on hold', 'Complete', 'Cancel task']],
-      [held.taskId, 'On Hold', ['Resume', 'Cancel task']],
+      [fresh.taskId, 'New', ['Start', 'Put on Hold', 'Complete', 'Cancel Task']],
+      [working.taskId, 'In Progress', ['Put on Hold', 'Complete', 'Cancel Task']],
+      [held.taskId, 'On Hold', ['Resume', 'Cancel Task']],
       [done.taskId, 'Completed', ['Reopen']],
       [cancelled.taskId, 'Cancelled', ['Reopen']],
     ];
@@ -84,7 +84,7 @@ test.describe('T4: status menu (M1, #303)', () => {
       const first = page.locator('.im-pop [role=menuitemradio]').first();
       await expect(first, status).toHaveAttribute('title', /\S/);
       const cancel = page.locator('[data-option="CANCEL"]');
-      if (labels.includes('Cancel task')) {
+      if (labels.includes('Cancel Task')) {
         await expect(cancel).toHaveClass(/im-danger/);
         await expect(cancel).toHaveClass(/im-sep/);
         const items = page.locator('.im-pop [role=menuitemradio]');
@@ -163,7 +163,7 @@ test.describe('T4: status menu (M1, #303)', () => {
       .row(`Mine ${token}`)
       .getByRole('button', { name: /change status of/ })
       .click();
-    expect(await itemLabels(page)).toEqual(expect.arrayContaining(['Put on hold', 'Cancel task']));
+    expect(await itemLabels(page)).toEqual(expect.arrayContaining(['Put on Hold', 'Cancel Task']));
     await expect(page.locator('.im-pop .im-hint')).toHaveCount(0);
     await expect(page.locator('.im-pop [role=menuitemradio]').last()).toHaveAttribute(
       'data-option',
@@ -442,7 +442,7 @@ test.describe('T4: dialog wording (M3, #305)', () => {
 });
 
 test.describe('T4: assignee menu (M4, #306)', () => {
-  test('System Admin: "Assign to me" is the first item, the Pod members show their open load, one click assigns and focus returns to the Assignee control', async ({
+  test('System Admin: "Assign to Me" is the first item, the Pod members show their open load, one click assigns and focus returns to the Assignee control', async ({
     page,
     seed,
     admin,
@@ -471,7 +471,7 @@ test.describe('T4: assignee menu (M4, #306)', () => {
     const pop = page.locator('.im-pop');
     await expect(pop).toBeVisible();
     const lead = pop.locator('[data-lead]');
-    await expect(lead).toHaveText('Assign to me');
+    await expect(lead).toHaveText('Assign to Me');
     await expect(lead).toHaveAccessibleName(`Assign ${task.taskNumber} to me`);
     // First in the menu: above the search box and the people.
     expect(
@@ -529,7 +529,7 @@ test.describe('T4: assignee menu (M4, #306)', () => {
     await expect(page.locator('.im-pop [data-lead]')).toHaveCount(0);
   });
 
-  test('Task.View only (no Asset.View, Matter.View, Client.View): no menus, no Complete, no "Assign to me"; no Task.View: the page is refused', async ({
+  test('Task.View only (no Asset.View, Matter.View, Client.View): no menus, no Complete, no "Assign to Me"; no Task.View: the page is refused', async ({
     seed,
     asUser,
   }) => {

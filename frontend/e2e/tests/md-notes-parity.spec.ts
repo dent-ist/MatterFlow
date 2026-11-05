@@ -49,7 +49,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     const controls = page.locator('[data-notes-list] [data-notes-controls]');
     await expect(controls.getByRole('searchbox')).toBeVisible();
     await expect(controls.getByRole('button', { name: /View options/ })).toBeVisible();
-    for (const v of ['By tag', 'Latest first', 'Templates'])
+    for (const v of ['By Tag', 'Latest First', 'Templates'])
       await expect(controls.getByRole('button', { name: v, exact: true })).toBeVisible();
     await expect(controls.locator('[data-new-note]')).toBeVisible();
     // view options: sort, tags filter (as a removable chip) and collapse all
@@ -110,7 +110,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await page.locator('.ProseMirror').click();
     await page.keyboard.press('Control+End');
     await page.keyboard.type(' More words.');
-    await expect(page.locator('[data-note-state]')).toContainText('Unsaved changes');
+    await expect(page.locator('[data-note-state]')).toContainText('Unsaved Changes');
     await expect(page.locator('[data-note-save]')).toBeEnabled();
     await page.locator('[data-note-save]').click();
     await expect(page.locator('[data-editor-toolbar]')).toHaveCount(0);
@@ -131,7 +131,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await dialog.getByRole('button', { name: 'Keep Editing' }).click();
     await expect(page.locator('[data-editor-toolbar]')).toBeVisible();
     await page.locator('[data-note-cancel]').click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Discard changes' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Discard Changes' }).click();
     await expect(page.locator('[data-editor-toolbar]')).toHaveCount(0);
   });
 
@@ -148,8 +148,8 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
       'Bold',
       'Italic',
       'Underline',
-      'Bulleted list',
-      'Numbered list',
+      'Bulleted List',
+      'Numbered List',
       'Quote',
       'Link',
       'Insert table, 3 by 3',
@@ -170,7 +170,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await expect(tools).toBeVisible();
     await tools.getByRole('button', { name: 'Add row below' }).click();
     await expect(page.locator('.ProseMirror table tr')).toHaveCount(4);
-    await tools.getByRole('button', { name: 'Delete table' }).click();
+    await tools.getByRole('button', { name: 'Delete Table' }).click();
     await expect(page.locator('.ProseMirror table')).toHaveCount(0);
     // the link dialog: https or onenote:https only
     await page.keyboard.type('word');
@@ -182,7 +182,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
       'Enter an address that starts with https:// or onenote:https://',
     );
     await dlg.getByLabel('Address').fill('onenote:https://example.test/notebooks/x');
-    await dlg.getByLabel('Text to show').fill('Notebook');
+    await dlg.getByLabel('Text to Show').fill('Notebook');
     await dlg.getByRole('button', { name: 'Apply' }).click();
     await expect(page.locator('.ProseMirror a[href^="onenote:https://"]')).toHaveText('Notebook');
     await bar.getByRole('button', { name: 'Undo' }).click();
@@ -374,7 +374,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await page.keyboard.type('X');
     await expect(page.locator('.ProseMirror p').first()).toHaveText('abXc');
     await page.locator('[data-note-cancel]').click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Discard changes' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Discard Changes' }).click();
     // an existing note: the title line (first line) in the middle
     await page.locator('[data-note-item]', { hasText: 'Existing' }).first().click();
     await page.locator('[data-note-edit]').click();
@@ -386,7 +386,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await page.keyboard.type('-');
     await expect(page.locator('.ProseMirror > :first-child')).toContainText('1-2Existing');
     await page.locator('[data-note-cancel]').click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Discard changes' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Discard Changes' }).click();
     // a template: the first line inside the editor, and the Name field above it
     await page.getByRole('button', { name: 'Templates', exact: true }).click();
     await page.locator('[data-template-list] li', { hasText: tplName }).getByRole('button').click();
@@ -408,7 +408,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await name.press('ArrowLeft');
     await name.pressSequentially('-');
     await expect(name).toHaveValue(`${tplName}x-y`);
-    await expect(page.locator('[data-note-state]')).toContainText('Unsaved changes');
+    await expect(page.locator('[data-note-state]')).toContainText('Unsaved Changes');
   });
 
   test('tags: a side panel picks up to five, chips show in the editor, Add tag opens the panel', async ({
@@ -550,7 +550,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     expect(save!.x - (cancel!.x + cancel!.width)).toBeLessThan(16);
     await expect(page.locator('[data-template-save]')).toBeDisabled();
     await page.getByLabel('Name').fill(`${name} v2`);
-    await expect(page.locator('[data-note-state]')).toContainText('Unsaved changes');
+    await expect(page.locator('[data-note-state]')).toContainText('Unsaved Changes');
     await page.locator('[data-template-save]').click();
     await expect(page.locator('[data-note-pane]')).toContainText(`${name} v2`);
     // delete with the same confirmation as a note
@@ -658,17 +658,17 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await page.locator('[data-note-item]').first().click();
     await page.locator('[data-note-actions]').click();
     await page.getByRole('menuitem', { name: 'Save as template...' }).click();
-    const dlg = page.getByRole('dialog', { name: 'Save as template' });
+    const dlg = page.getByRole('dialog', { name: 'Save as Template' });
     await expect(dlg).toContainText('Level (who can use it)');
-    await expect(dlg.getByLabel('Template name')).not.toHaveValue('');
-    await dlg.getByRole('button', { name: 'Save template' }).click();
+    await expect(dlg.getByLabel('Template Name')).not.toHaveValue('');
+    await dlg.getByRole('button', { name: 'Save Template' }).click();
     await page.locator('[data-new-note]').click();
     await page.locator('.ProseMirror').click();
     await page.keyboard.type(`/template ${source}`);
     await expect(page.locator('[data-suggest-menu] [role=option]')).toHaveCount(1);
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-template-tags]')).toContainText('Template tags');
-    await page.locator('[data-template-tags]').getByRole('button', { name: 'Apply tags' }).click();
+    await page.locator('[data-template-tags]').getByRole('button', { name: 'Apply Tags' }).click();
     await expect(page.locator('[data-note-tag-chips] mf-note-tag')).toHaveCount(1);
   });
 

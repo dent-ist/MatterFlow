@@ -259,7 +259,7 @@ test.describe('Fixed layout (#200)', () => {
         `${key} before and after the rows`,
       ).toBeLessThanOrEqual(1);
   });
-  test('Pod Work: "Unassigned" and "Assign to me" fit the Assignee column and no width depends on the rows', async ({
+  test('Pod Work: "Unassigned" and "Assign to Me" fit the Assignee column and no width depends on the rows', async ({
     seed,
     asUser,
   }) => {

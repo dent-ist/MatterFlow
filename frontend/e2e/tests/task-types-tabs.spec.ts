@@ -247,7 +247,7 @@ test.describe('Task type, workflow and step cross-links', () => {
     await expect(bare.locator('[data-workflows]')).toHaveText('0');
     await expect(bare.locator('[data-workflows-link]')).toHaveCount(0);
     // The reason is a neutral badge, not a red box.
-    await expect(bare.locator('[data-not-usable]')).toContainText('Not usable');
+    await expect(bare.locator('[data-not-usable]')).toContainText('Not Usable');
     await expect(page.locator('tbody .chip')).toHaveCount(0);
   });
 
@@ -343,7 +343,7 @@ test.describe('Task type, workflow and step cross-links', () => {
     const sharedRow = page.locator(`[data-row="${shared.title}"]`);
     await expect(sharedRow.locator('[data-used-in]')).toHaveText('2');
     const spareRow = page.locator(`[data-row="${spare.title}"]`);
-    await expect(spareRow.locator('[data-used-in]')).toHaveText('Not used');
+    await expect(spareRow.locator('[data-used-in]')).toHaveText('Not Used');
     await expect(spareRow.locator('[data-used-in] a')).toHaveCount(0);
 
     await sharedRow.locator('[data-used-in-link]').click();

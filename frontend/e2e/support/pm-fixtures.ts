@@ -187,7 +187,7 @@ async function build(seed: Seeder, personas: Personas): Promise<PmFixtures> {
     otherClient: null as unknown as PmMatter,
   };
 
-  // A client whose only matter nobody manages: the Clients list in "My matters" must not show it.
+  // A client whose only matter nobody manages: the Clients list in "My Matters" must not show it.
   const other = await seed.client({ name: `Other Client ${token}` });
   const otherMatter = await seed.matter({
     client: other,

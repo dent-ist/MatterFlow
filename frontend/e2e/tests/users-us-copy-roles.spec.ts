@@ -76,8 +76,8 @@ test.describe('#428 Access Pending copy', () => {
       // The heading is focused on load; Copy and Check again are unchanged.
       await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
       await expect(page.getByRole('button', { name: /Copy/ })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Check again' })).toBeVisible();
-      await page.getByRole('button', { name: 'Check again' }).click();
+      await expect(page.getByRole('button', { name: 'Check Again' })).toBeVisible();
+      await page.getByRole('button', { name: 'Check Again' }).click();
       await expect(page.locator('.mf-status')).toContainText('Still pending');
 
       expect(await noSideScroll(page)).toBe(true);

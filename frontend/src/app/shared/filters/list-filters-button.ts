@@ -28,7 +28,7 @@ import { ListFilters } from './list-filters';
         data-clear-filters
         (click)="filters().clear(clearAlso())"
       >
-        Clear filters
+        Clear Filters
       </button>
     }
     <mf-filters-toggle

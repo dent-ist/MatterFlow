@@ -125,7 +125,7 @@ describe('DashCalendarTab', () => {
 
   it('the forecast is Free task slots with real dates, and the risk bar is slim', async () => {
     await open();
-    expect(text(q('[data-forecast]'))).toContain('Free task slots, next 4 weeks');
+    expect(text(q('[data-forecast]'))).toContain('Free Task Slots, Next 4 Weeks');
     expect(text(q('[data-forecast]'))).not.toContain('Wk ');
     expect(text(q('[data-forecast] [data-week]'))).toMatch(
       /[A-Z][a-z]{2} \d+ to (\d+|[A-Z][a-z]{2} \d+)/,
@@ -253,7 +253,7 @@ describe('DashCalendarTab', () => {
 
   it('the Role filter narrows the month to that role and is kept in the address', async () => {
     await open();
-    ddChoose(host, 'Filter by role', 'Data Scientist');
+    ddChoose(host, 'Filter By Role', 'Data Scientist');
     await settle();
     expect(url()).toContain('role=1');
     expect(cell('2026-11-03').getAttribute('title')).toContain('5 in view');

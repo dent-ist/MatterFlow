@@ -83,7 +83,7 @@ test.describe('Column widths in the Columns panel (#206)', () => {
     expect(await gridWidth(page, 'due')).toBe(136);
 
     await openPanel(page);
-    await expect(page.locator('[data-widths-set] legend')).toHaveText('Column widths');
+    await expect(page.locator('[data-widths-set] legend')).toHaveText('Column Widths');
     await expect(row(page, 'title')).toContainText('Fills the space left');
     await expect(row(page, 'title').locator('input')).toHaveCount(0);
 
@@ -189,7 +189,7 @@ test.describe('Column widths in the Columns panel (#206)', () => {
     // Hiding and showing a column keeps its width; Reset columns does not touch widths.
     await page.getByRole('checkbox', { name: 'Status' }).uncheck();
     await expect(row(page, 'status')).toHaveCount(0);
-    await page.getByRole('button', { name: 'Reset columns' }).click();
+    await page.getByRole('button', { name: 'Reset Columns' }).click();
     await expect(row(page, 'status')).toHaveCount(1);
     expect(Object.values(await stored(page))[0]).toEqual({ matterName: fitted });
 
@@ -291,7 +291,7 @@ test('375 px: the grid is cards, so there is no Columns button (and no Column wi
   await expect(page.locator('[data-widths-set]')).toHaveCount(0);
   await page.getByRole('button', { name: /^Filters/ }).click();
   await expect(
-    labelledDropdown(page.getByRole('dialog', { name: 'Filters' }), 'Sort by'),
+    labelledDropdown(page.getByRole('dialog', { name: 'Filters' }), 'Sort By'),
   ).toBeVisible();
   await axeClean(page, 'filters sheet 375');
 });

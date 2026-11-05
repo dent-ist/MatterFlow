@@ -403,7 +403,7 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
   protected readonly podItems = computed<DropdownItem[]>(() => [
     ...(this.yourPods().length > 0
       ? [
-          { value: '', label: 'Your pods', heading: true },
+          { value: '', label: 'Your Pods', heading: true },
           ...this.yourPods().map((p) => ({
             value: String(p.podId),
             label: `${p.name}${p.isPrimary ? ' (primary)' : ''}`,
@@ -412,7 +412,7 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
       : []),
     ...(this.otherPods().length > 0
       ? [
-          { value: '', label: 'Other pods', heading: true },
+          { value: '', label: 'Other Pods', heading: true },
           ...this.otherPods().map((p) => ({ value: String(p.podId), label: p.name })),
         ]
       : []),
@@ -508,8 +508,8 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
     const counts = this.data()?.counts;
     return [
       { key: 'queue', label: 'Unassigned', count: counts?.queue ?? null },
-      { key: 'members', label: 'By member', count: counts?.membersWithWork ?? null },
-      { key: 'all', label: 'All open', count: counts?.all ?? null },
+      { key: 'members', label: 'By Member', count: counts?.membersWithWork ?? null },
+      { key: 'all', label: 'All Open', count: counts?.all ?? null },
     ];
   });
 

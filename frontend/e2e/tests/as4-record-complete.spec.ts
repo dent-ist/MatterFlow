@@ -171,12 +171,12 @@ test.describe('Asset record page, complete (WP-AS4)', () => {
       });
     expect(await lines()).toBeLessThanOrEqual(6);
     const toggle = page.locator('[data-description-toggle]');
-    await expect(toggle).toHaveText('Show more');
+    await expect(toggle).toHaveText('Show More');
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(await lines()).toBeGreaterThan(6);
     await toggle.click();
-    await expect(toggle).toHaveText('Show more');
+    await expect(toggle).toHaveText('Show More');
 
     const reference = page.locator('[data-external-reference] .ad__ref-text');
     await expect(reference).toHaveAttribute('title', LONG_URL);

@@ -348,7 +348,7 @@ export class AssetTypesPage extends LocalListPage<AssetTypeResponse> {
         type: 'text',
         noControl: true,
         normalize: (v) => (v === 'none' ? v : null),
-        valueLabel: () => 'No published fields',
+        valueLabel: () => 'No Published Fields',
       },
     ]),
   });
@@ -410,7 +410,7 @@ export class AssetTypesPage extends LocalListPage<AssetTypeResponse> {
     { key: 'active', label: 'Active', matches: (t) => t.isActive, params: { status: null } },
     {
       key: 'noFields',
-      label: 'No published fields',
+      label: 'No Published Fields',
       hint: 'Active asset types with no published form, so assets of the type have no fields',
       matches: (t) => t.isActive && this.hasNoFields(t),
       params: { status: null, fields: 'none' },
@@ -490,7 +490,7 @@ export class AssetTypesPage extends LocalListPage<AssetTypeResponse> {
             },
             {
               id: 'fields',
-              label: 'Edit fields',
+              label: 'Edit Fields',
               icon: 'pi-list',
               permission: 'AssetType.Manage',
               run: () => void this.openFields(t),
@@ -504,7 +504,7 @@ export class AssetTypesPage extends LocalListPage<AssetTypeResponse> {
             },
             {
               id: 'up',
-              label: 'Move up',
+              label: 'Move Up',
               icon: 'pi-arrow-up',
               permission: 'AssetType.Manage',
               reason: i === 0 ? 'Already first.' : undefined,
@@ -512,7 +512,7 @@ export class AssetTypesPage extends LocalListPage<AssetTypeResponse> {
             },
             {
               id: 'down',
-              label: 'Move down',
+              label: 'Move Down',
               icon: 'pi-arrow-down',
               permission: 'AssetType.Manage',
               reason: i === list.length - 1 ? 'Already last.' : undefined,

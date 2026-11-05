@@ -76,7 +76,7 @@ test.describe('Task Queue Assignee and Client sorts', () => {
     await expect(header('assignee')).toHaveAttribute('aria-sort', 'descending');
     await expect.poll(async () => (await column(page, 'client'))[2]).toBe(`apple ${tag}`);
 
-    await page.getByRole('button', { name: 'Reset sort' }).click();
+    await page.getByRole('button', { name: 'Reset Sort' }).click();
     await expect(page).not.toHaveURL(/sort=/);
     await expect(header('assignee')).toHaveAttribute('aria-sort', 'none');
 

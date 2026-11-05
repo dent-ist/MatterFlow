@@ -80,7 +80,7 @@ interface Section {
   styleUrl: '../../shared/ui/page.scss',
   template: `
     <mf-admin-list-shell
-      heading="Search results"
+      heading="Search Results"
       [crumbs]="[]"
       [description]="echo()"
       [tabs]="tabs()"

@@ -123,15 +123,15 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
                   <dd>{{ p.counts.available }}</dd>
                 </div>
                 <div class="ct" data-count="out">
-                  <dt><i class="pi pi-user-minus" aria-hidden="true"></i> Out of office</dt>
+                  <dt><i class="pi pi-user-minus" aria-hidden="true"></i> Out of Office</dt>
                   <dd>{{ p.counts.outOfOffice }}</dd>
                 </div>
                 <div class="ct" data-count="holiday">
-                  <dt><i class="pi pi-flag" aria-hidden="true"></i> On holiday</dt>
+                  <dt><i class="pi pi-flag" aria-hidden="true"></i> On Holiday</dt>
                   <dd>{{ p.counts.onHoliday }}</dd>
                 </div>
                 <div class="ct" data-count="off">
-                  <dt><i class="pi pi-moon" aria-hidden="true"></i> Off hours</dt>
+                  <dt><i class="pi pi-moon" aria-hidden="true"></i> Off Hours</dt>
                   <dd>{{ p.counts.offHours }}</dd>
                 </div>
               </dl>
@@ -158,7 +158,7 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
                         [class]="podsOpen() ? 'pi-chevron-down' : 'pi-chevron-right'"
                         aria-hidden="true"
                       ></i>
-                      Coverage by pod
+                      Coverage By Pod
                       <span class="n">{{ p.pods.length }}</span>
                     </button>
                   </h3>
@@ -196,7 +196,7 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
               }
 
               <div class="find">
-                <label class="sr-only" for="cp-search">Search people</label>
+                <label class="sr-only" for="cp-search">Search People</label>
                 <i class="pi pi-search" aria-hidden="true"></i>
                 <input
                   id="cp-search"
@@ -753,7 +753,7 @@ export class CalPanel {
       ? 'Holiday'
       : p.reason === 'NOT_WORKING'
         ? 'Not working'
-        : 'Out of office';
+        : 'Out of Office';
   }
   protected reasonIcon(p: DayPerson): string {
     return p.reason === 'HOLIDAY' ? 'pi-flag' : p.reason === 'NOT_WORKING' ? 'pi-moon' : 'pi-ban';

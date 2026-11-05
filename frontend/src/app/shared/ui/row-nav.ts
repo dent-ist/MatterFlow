@@ -240,7 +240,7 @@ export function registerTableSkip(
   const shortcuts = inject(ShortcutRegistry);
   const off = [
     skip.register({
-      label: 'Skip to table',
+      label: 'Skip to Table',
       element: host.nativeElement,
       focus: () => {
         const root = host.nativeElement;

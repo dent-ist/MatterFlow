@@ -271,12 +271,12 @@ describe('DataTab', () => {
     expect(
       Array.from(table.querySelectorAll('thead th')).map((h) => h.textContent!.trim()),
     ).toEqual([
-      'Asset type',
+      'Asset Type',
       'Assets',
       'Size',
       'Active',
       'Inactive',
-      'Pending disposition',
+      'Pending Disposition',
       'Disposed',
     ]);
     const rows = table.querySelectorAll('[data-type-row]');
@@ -329,7 +329,7 @@ describe('DataTab', () => {
     const headers = Array.from(el().querySelectorAll('[data-types-table] thead th')).map((h) =>
       h.textContent!.trim(),
     );
-    expect(headers).toEqual(['Asset type', 'Pending disposition', 'Size']);
+    expect(headers).toEqual(['Asset Type', 'Pending Disposition', 'Size']);
     const first = q('[data-type-row]');
     expect(first.querySelector('td a')!.textContent!.trim()).toBe('2');
     expect(first.querySelector('td a')!.getAttribute('href')).toContain('status=pending');

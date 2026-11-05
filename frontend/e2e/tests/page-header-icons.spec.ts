@@ -34,7 +34,7 @@ test.describe('Page header icons', () => {
     ).toHaveClass(/pi-plus/);
     await page.goto('/search?q=a');
     await expect(
-      page.getByRole('heading', { name: 'Search results', level: 1 }).locator('i[data-page-icon]'),
+      page.getByRole('heading', { name: 'Search Results', level: 1 }).locator('i[data-page-icon]'),
     ).toHaveClass(/pi-search/);
     await page.goto('/this-page-does-not-exist');
     await expect(page.getByRole('heading', { level: 1 }).locator('i[data-page-icon]')).toHaveClass(

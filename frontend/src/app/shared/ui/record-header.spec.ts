@@ -123,9 +123,9 @@ describe('mf-record-header', () => {
 
     TestBed.resetTestingModule();
     await create((h) =>
-      h.badge.set({ label: 'Not usable', tone: 'neutral', icon: 'pi-info-circle' }),
+      h.badge.set({ label: 'Not Usable', tone: 'neutral', icon: 'pi-info-circle' }),
     );
-    expect(q('[data-status-badge]')?.textContent).toContain('Not usable');
+    expect(q('[data-status-badge]')?.textContent).toContain('Not Usable');
     expect(q('mf-active-badge')).toBeNull();
 
     TestBed.resetTestingModule();

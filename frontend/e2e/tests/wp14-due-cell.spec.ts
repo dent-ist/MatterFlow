@@ -61,7 +61,7 @@ const STATES: State[] = [
   { key: 'overdue6h', line2: 'Overdue 6h', icon: 'pi-exclamation-circle', tone: 'overdue' },
   { key: 'overdue3d', line2: 'Overdue 3d', icon: 'pi-exclamation-circle', tone: 'overdue' },
   { key: 'overdue120d', line2: 'Overdue 120d', icon: 'pi-exclamation-circle', tone: 'overdue' },
-  { key: 'today', line2: 'Due today', icon: 'pi-clock', tone: 'today' },
+  { key: 'today', line2: 'Due Today', icon: 'pi-clock', tone: 'today' },
   { key: 'tomorrow', line2: 'Tomorrow', icon: null, tone: 'soon' },
   { key: 'in2', line2: 'In 2 days', icon: null, tone: 'soon' },
   { key: 'later', line2: null, icon: null, tone: 'none' },

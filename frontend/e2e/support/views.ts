@@ -16,15 +16,15 @@ export type ViewKey =
   | 'recentlyCompleted';
 
 export const VIEW_LABEL: Record<ViewKey, string> = {
-  allOpen: 'All open',
+  allOpen: 'All Open',
   unassigned: 'Unassigned',
   overdue: 'Overdue',
-  dueSoon: 'Due soon',
+  dueSoon: 'Due Soon',
   asap: 'ASAP',
-  onHold: 'On hold',
-  myPod: 'My pod',
-  createdByMe: 'Created by me',
-  recentlyCompleted: 'Recently completed',
+  onHold: 'On Hold',
+  myPod: 'My Pod',
+  createdByMe: 'Created By Me',
+  recentlyCompleted: 'Recently Completed',
 };
 
 /** The `views` field of the response that holds a view's count. */

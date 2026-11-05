@@ -54,7 +54,7 @@ type LoadState = 'loading' | 'ready' | 'error';
         { label: 'Clients', link: '/clients' },
         { label: isEdit() ? original()?.name || 'Edit' : 'New' },
       ]"
-      [heading]="isEdit() ? 'Edit client' : 'New client'"
+      [heading]="isEdit() ? 'Edit Client' : 'New Client'"
     />
 
     @if (state() === 'loading') {
@@ -69,7 +69,7 @@ type LoadState = 'loading' | 'ready' | 'error';
       @if (conflict()) {
         <div class="pg-alert" role="alert" data-conflict>
           This client was changed by someone else.
-          <p-button label="Reload latest" severity="secondary" (onClick)="load()" />
+          <p-button label="Reload Latest" severity="secondary" (onClick)="load()" />
         </div>
       }
       @if (summary().length > 0) {
@@ -81,7 +81,7 @@ type LoadState = 'loading' | 'ready' | 'error';
             }
           </ul>
           @if (existingId(); as existing) {
-            <a class="pg-link" [routerLink]="['/clients', existing]">View the existing client</a>
+            <a class="pg-link" [routerLink]="['/clients', existing]">View the Existing Client</a>
           }
         </div>
       }
@@ -94,7 +94,7 @@ type LoadState = 'loading' | 'ready' | 'error';
             <span class="pg-reason">Locked after creation.</span>
             <p-button
               *mfHasPermission="'Client.EditNumber'"
-              label="Change number"
+              label="Change Number"
               severity="secondary"
               size="small"
               (onClick)="openChangeNumber()"
@@ -103,7 +103,7 @@ type LoadState = 'loading' | 'ready' | 'error';
         } @else {
           <mf-number-input
             inputId="client-number"
-            label="Client number"
+            label="Client Number"
             noun="client number"
             help="Enter 1 to 5 digits, as issued by the firm's main system."
             [showErrors]="submitted()"
@@ -114,7 +114,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 
         <mf-text-field
           inputId="client-name"
-          label="Client name"
+          label="Client Name"
           [required]="true"
           [maxLength]="200"
           [error]="nameError()"
@@ -162,7 +162,7 @@ type LoadState = 'loading' | 'ready' | 'error';
           <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
           <p-button
             type="submit"
-            [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create client'"
+            [label]="busy() ? 'Saving...' : isEdit() ? 'Save Changes' : 'Create Client'"
             [disabled]="busy()"
           />
         </div>
@@ -183,7 +183,7 @@ type LoadState = 'loading' | 'ready' | 'error';
       </p>
       <mf-number-input
         inputId="new-client-number"
-        label="New client number"
+        label="New Client Number"
         noun="client number"
         [showErrors]="numberSubmitted()"
         [serverError]="fieldError('number')"

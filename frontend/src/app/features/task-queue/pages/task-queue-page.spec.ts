@@ -418,7 +418,7 @@ describe('TaskQueuePage', () => {
     await settle();
     expect(query()['dir']).toBe('desc');
 
-    // The Sorted by line and "Reset sort" are at the right end of row 3 (LC-01).
+    // The Sorted by line and "Reset Sort" are at the right end of row 3 (LC-01).
     expect(el.querySelector('[data-reset-sort]')).not.toBeNull();
     expect(el.querySelector('.mf-pager [data-sort-note]')).toBeNull();
     expect(el.querySelector('[data-sort-note]')!.textContent).toContain('Sorted by Priority');
@@ -498,7 +498,7 @@ describe('TaskQueuePage', () => {
     el = await open('/tasks?sort=due', { rows: [], permissions: ['Task.View'] });
     empty = el.querySelector('tbody [data-empty]')!;
     expect(empty.textContent).toContain('No tasks yet.');
-    expect(empty.textContent).not.toContain('Create task');
+    expect(empty.textContent).not.toContain('New Task');
   });
 
   it('applies a quick view as a preset that replaces the filters', async () => {
@@ -570,7 +570,7 @@ describe('TaskQueuePage', () => {
     expect(harness.routeNativeElement!.querySelectorAll('tbody tr[data-task]').length).toBe(2);
   });
 
-  it('"My pod" filters on the primary Pod and is hidden, not disabled, without one (#223)', async () => {
+  it('"My Pod" filters on the primary Pod and is hidden, not disabled, without one (#223)', async () => {
     let el = await open('/tasks?status=NEW', { primaryPod: 5 });
     const myPod = () => el.querySelector<HTMLButtonElement>('[data-view="myPod"]')!;
     expect(myPod().disabled).toBe(false);
@@ -593,7 +593,7 @@ describe('TaskQueuePage', () => {
     expect(lastArgs()[ARG.pod]).toEqual([5]);
   });
 
-  it('hides "Created by me" without Task.Create, and the link still filters (#223)', async () => {
+  it('hides "Created By Me" without Task.Create, and the link still filters (#223)', async () => {
     let el = await open('/tasks', { permissions: ['Task.View'] });
     expect(el.querySelector('[data-view="createdByMe"]')).toBeNull();
     TestBed.resetTestingModule();
@@ -649,7 +649,7 @@ describe('TaskQueuePage', () => {
     expect(view().getAttribute('aria-pressed')).toBe('true');
     expect(chips(el)).toEqual([]);
     expect(el.querySelector('mf-filters-toggle')!.textContent).not.toMatch(/\(\d\)/);
-    expect(document.title).toBe('Task Queue: Due soon - MatterFlow');
+    expect(document.title).toBe('Task Queue: Due Soon - MatterFlow');
 
     TestBed.resetTestingModule();
     el = await open(`/tasks${dueSoon}&dueTo=2026-10-16&priority=1`);
@@ -758,12 +758,12 @@ describe('TaskQueuePage', () => {
     empty = el.querySelector('tbody [data-empty]')!;
     expect(empty.getAttribute('data-empty')).toBe('none');
     expect(empty.textContent).toContain('No tasks yet.');
-    expect(empty.textContent).toContain('Create task');
+    expect(empty.textContent).toContain('New Task');
   });
 
   it('leaves the one global Create task button to the app header (UXR-23)', async () => {
     const el = await open('/tasks?status=NEW');
-    expect(el.querySelector('mf-page-header')!.textContent).not.toContain('Create task');
+    expect(el.querySelector('mf-page-header')!.textContent).not.toContain('Create Task');
   });
 
   it('remembers the chosen columns and density for the user', async () => {

@@ -87,10 +87,10 @@ describe('MatterFormDialog: one form for New and Edit (MD-43, #1061)', () => {
     expect(edited).toEqual(created);
     expect(created.slice(0, 5)).toEqual([
       'Client',
-      'Matter number',
+      'Matter Number',
       'CM Number',
-      'Matter name',
-      'AI allowed',
+      'Matter Name',
+      'AI Allowed',
     ]);
     const editHelp = q('.mf-formdlg')!.textContent!;
     for (const text of [

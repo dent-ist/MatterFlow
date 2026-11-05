@@ -70,7 +70,7 @@
             icon="pi-info-circle"
             [describedBy]="'tt-nu-' + t.id"
             data-not-usable
-            >Not usable</mf-badge
+            >Not Usable</mf-badge
           >
         }
         @if (notUsableReason(t); as why) {
@@ -123,7 +123,7 @@
               [defaultSort]="defaultSort"
               (sorted)="setSort($event)"
             >
-              Default workflow
+              Default Workflow
             </th>
             @if (targetShown()) {
               <th scope="col" class="num" data-target-col>Target (days)</th>
@@ -135,7 +135,7 @@
                 [defaultSort]="defaultSort"
                 (sorted)="setSort($event)"
               >
-                Request form
+                Request Form
               </th>
             }
             @if (workflowsShown()) {
@@ -158,7 +158,7 @@
                 [defaultSort]="defaultSort"
                 (sorted)="setSort($event)"
               >
-                Open tasks
+                Open Tasks
               </th>
             }
             <th
@@ -295,7 +295,7 @@
                       icon="pi-info-circle"
                       [describedBy]="'tt-nu-' + t.id"
                       data-not-usable
-                      >Not usable</mf-badge
+                      >Not Usable</mf-badge
                     >
                     <span class="sr-only" [id]="'tt-nu-' + t.id" data-warning>{{ why }}</span>
                   }

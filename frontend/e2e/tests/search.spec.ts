@@ -29,7 +29,7 @@ test.describe('Search by combined matter number (SCN-020)', () => {
     await box.press('Enter');
 
     await expect(page).toHaveURL(/\/search\?q=/);
-    await expect(page.getByRole('heading', { name: 'Search results', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Search Results', level: 1 })).toBeVisible();
     await expect(page.getByText('Showing results for')).toContainText(s.matter.matterRef);
     await expect(page.getByText('Showing results for')).toContainText(`you typed "${s.typed}"`);
 
@@ -103,7 +103,7 @@ test.describe('Search by combined matter number (SCN-020)', () => {
 
   test('a query that matches nothing says so', async ({ page }) => {
     await page.goto(`/search?q=zzz-no-such-${uid()}`);
-    await expect(page.getByRole('heading', { name: 'Search results', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Search Results', level: 1 })).toBeVisible();
     await expect(
       page.getByRole('status').filter({ hasText: /no results|0 results/i }),
     ).toBeVisible();

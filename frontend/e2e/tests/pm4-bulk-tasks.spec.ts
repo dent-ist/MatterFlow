@@ -63,7 +63,7 @@ test.describe('Bulk change in the matter grid', () => {
     // Nothing chosen: the dialog asks, and changes nothing.
     await dialog.getByRole('button', { name: 'Re-assign 3 tasks' }).click();
     await expect(dialog.locator('[data-panel-error]')).toContainText('Choose a person or a pod.');
-    await dialog.getByRole('combobox', { name: 'Assign to' }).fill(`Bulk Technician ${token}`);
+    await dialog.getByRole('combobox', { name: 'Assign To' }).fill(`Bulk Technician ${token}`);
     await dialog.getByRole('option', { name: new RegExp(`Bulk Technician ${token}`) }).click();
     await dialog.getByRole('button', { name: 'Re-assign 3 tasks' }).click();
     await expect(dialog.locator('[data-bulk-summary]')).toContainText('3 tasks changed.');
@@ -117,7 +117,7 @@ test.describe('Bulk change in the matter grid', () => {
     });
     await page.getByRole('button', { name: 'Re-assign...' }).click();
     const dialog = page.getByRole('dialog');
-    await dialog.getByRole('combobox', { name: 'Assign to' }).fill(`Partial Technician ${token}`);
+    await dialog.getByRole('combobox', { name: 'Assign To' }).fill(`Partial Technician ${token}`);
     await dialog.getByRole('option', { name: new RegExp(`Partial Technician ${token}`) }).click();
     await dialog.getByRole('button', { name: 'Re-assign 3 tasks' }).click();
     await expect(dialog.locator('[data-bulk-summary]')).toContainText(
@@ -284,7 +284,7 @@ test.describe('Bulk change in the matter grid', () => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.getByRole('button', { name: 'Re-assign...' }).click();
     const dialog = page.getByRole('dialog');
-    await dialog.getByRole('combobox', { name: 'Assign to' }).fill(`Phone Technician ${token}`);
+    await dialog.getByRole('combobox', { name: 'Assign To' }).fill(`Phone Technician ${token}`);
     await dialog.getByRole('option', { name: new RegExp(`Phone Technician ${token}`) }).click();
     await dialog.getByRole('button', { name: 'Re-assign 2 tasks' }).click();
     await expect(dialog.locator('[data-bulk-summary]')).toContainText('2 tasks changed.');

@@ -74,7 +74,7 @@ const UPCOMING_DAYS = 14;
     <ng-template #events>
       <section class="card ev" data-section="events" aria-labelledby="mm-ev-h">
         <div class="ch">
-          <h2 id="mm-ev-h" tabindex="-1" data-section-focus>Upcoming events</h2>
+          <h2 id="mm-ev-h" tabindex="-1" data-section-focus>Upcoming Events</h2>
           <span class="sub">next {{ days }} days</span>
         </div>
         <div class="list" [attr.aria-busy]="upcoming.busy()">
@@ -120,7 +120,7 @@ const UPCOMING_DAYS = 14;
         </div>
         <div class="cf">
           <button type="button" class="lnk" data-view-calendar (click)="viewCalendar.emit(null)">
-            Open the calendar
+            Open the Calendar
           </button>
         </div>
       </section>
@@ -129,7 +129,7 @@ const UPCOMING_DAYS = 14;
     <ng-template #activity>
       <section class="card ac" data-section="activity" aria-labelledby="mm-ac-h">
         <div class="ch">
-          <h2 id="mm-ac-h" tabindex="-1" data-section-focus>Recent activity</h2>
+          <h2 id="mm-ac-h" tabindex="-1" data-section-focus>Recent Activity</h2>
           @if (feed.data(); as f) {
             @if (f.unreadCount > 0) {
               <span class="unread">{{ f.unreadCount | mfInt }} unread</span>
@@ -139,7 +139,7 @@ const UPCOMING_DAYS = 14;
         <div class="kc">
           <mf-dropdown
             buttonId="mm-feed-kind"
-            label="Kind of activity"
+            label="Kind of Activity"
             prefix="Show:"
             [items]="kindItems()"
             [value]="kind()"
@@ -191,7 +191,7 @@ const UPCOMING_DAYS = 14;
           }
         </div>
         <div class="cf">
-          <button type="button" class="lnk" data-view-activity (click)="viewAll()">View all</button>
+          <button type="button" class="lnk" data-view-activity (click)="viewAll()">View All</button>
         </div>
       </section>
     </ng-template>
@@ -506,13 +506,13 @@ export class MmOverview {
   protected readonly sections = computed<SideSection[]>(() => [
     {
       key: 'events',
-      label: 'Upcoming events',
+      label: 'Upcoming Events',
       icon: 'pi-calendar',
       count: this.upcoming.data()?.total ?? 0,
     },
     {
       key: 'activity',
-      label: 'Recent activity',
+      label: 'Recent Activity',
       icon: 'pi-bell',
       count: this.feed.data()?.unreadCount ?? 0,
       alert: true,

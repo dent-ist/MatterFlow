@@ -58,7 +58,7 @@
       @case ('ready') {
         @if (!current()) {
           <p class="ttf__muted">This {{ ownerLabel().toLowerCase() }} has no form yet.</p>
-          <p-button label="Create new draft" (onClick)="createDraft()" />
+          <p-button label="Create New Draft" (onClick)="createDraft()" />
         } @else {
           @if (readOnly()) {
             <p class="ttf__banner" data-readonly-banner>
@@ -86,7 +86,7 @@
     }
 
     <mf-form-dialog
-      title="Form versions"
+      title="Form Versions"
       secondaryLabel="Close"
       [showPrimary]="false"
       [visible]="dialog() === 'versions'"
@@ -185,7 +185,7 @@
               }
               Published versions can't be edited.
             </p>
-            <label for="ttf-note">Version note</label>
+            <label for="ttf-note">Version Note</label>
             <textarea
               id="ttf-note"
               rows="2"

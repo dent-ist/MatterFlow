@@ -18,7 +18,7 @@ import { WorkStrip, WorkStripItem } from './work-strip';
 class Host {
   readonly items = signal<WorkStripItem[]>([
     { key: 'a', label: 'Overdue', count: 4, alert: true },
-    { key: 'b', label: 'Due today', count: 0 },
+    { key: 'b', label: 'Due Today', count: 0 },
     { key: 'c', label: 'ASAP', count: null },
   ]);
   readonly interactive = signal(true);
@@ -36,7 +36,7 @@ describe('WorkStrip', () => {
 
   it('shows label and count per item, -- for an unknown count and the zero muted', () => {
     const { el } = create();
-    expect(el.textContent!.replace(/\s+/g, ' ').trim()).toBe('Overdue 4 Due today 0 ASAP --');
+    expect(el.textContent!.replace(/\s+/g, ' ').trim()).toBe('Overdue 4 Due Today 0 ASAP --');
     expect(el.querySelector('[data-strip-item="b"]')!.classList).toContain('zero');
     expect(el.querySelector('[data-strip-item="a"]')!.classList).toContain('alert');
     expect(el.querySelector('[data-strip-item="a"] .pi')).not.toBeNull();
@@ -45,7 +45,7 @@ describe('WorkStrip', () => {
   it('shows a word or phrase in place of the number, cut with an ellipsis through CSS and whole in the tooltip (#380)', () => {
     const { f, el } = create();
     f.componentInstance.items.set([
-      { key: 'form', label: 'Form', count: null, value: 'Published v2', hint: 'Request form' },
+      { key: 'form', label: 'Form', count: null, value: 'Published v2', hint: 'Request Form' },
       { key: 'n', label: 'Workflows', count: 3 },
     ]);
     f.detectChanges();
@@ -53,7 +53,7 @@ describe('WorkStrip', () => {
     expect(el.querySelector('[data-strip-item="form"] .v')).not.toBeNull();
     expect(el.querySelector('[data-strip-item="n"] .v')).toBeNull();
     expect(el.querySelector('[data-strip-item="form"]')!.getAttribute('title')).toBe(
-      'Request form',
+      'Request Form',
     );
   });
 
@@ -70,14 +70,14 @@ describe('WorkStrip', () => {
     const { f, el } = create();
     f.componentInstance.items.set([
       { key: 'a', label: 'Active', count: 4 },
-      { key: 'b', label: 'Inputs in draft', count: 2, inert: true },
+      { key: 'b', label: 'Inputs in Draft', count: 2, inert: true },
     ]);
     f.detectChanges();
     expect(el.querySelectorAll('button').length).toBe(1);
     const inert = el.querySelector('[data-strip-item="b"]')!;
     expect(inert.tagName).toBe('SPAN');
     expect(inert.hasAttribute('aria-pressed')).toBe(false);
-    expect(inert.textContent!.replace(/\s+/g, ' ').trim()).toBe('Inputs in draft 2');
+    expect(inert.textContent!.replace(/\s+/g, ' ').trim()).toBe('Inputs in Draft 2');
   });
 
   it('draws a value item as plain label and value text, never as a chip (#1129)', () => {
@@ -136,7 +136,7 @@ describe('WorkStrip', () => {
           count: 0,
           link: { path: '/tasks', queryParams: { asap: 'true' } },
         },
-        { key: 'hold', label: 'On hold', count: null, link: { path: '/tasks' } },
+        { key: 'hold', label: 'On Hold', count: null, link: { path: '/tasks' } },
       ]);
     }
 
@@ -164,7 +164,7 @@ describe('WorkStrip', () => {
     it('keeps the zero muted in place, the overdue alert with icon and word, and -- for unknown', () => {
       const { el } = link();
       expect(el.textContent!.replace(/\s+/g, ' ').trim()).toBe(
-        'Open 12 Overdue 3 ASAP 0 On hold --',
+        'Open 12 Overdue 3 ASAP 0 On Hold --',
       );
       expect(el.querySelector('[data-strip-item="asap"]')!.classList).toContain('zero');
       const overdue = el.querySelector('[data-strip-item="overdue"]')!;
@@ -241,7 +241,7 @@ describe('WorkStrip', () => {
     it('tints an item only while its count is above zero', () => {
       const { f, el } = create();
       f.componentInstance.items.set([
-        { key: 'w', label: 'Pending access', count: 3, tinted: true },
+        { key: 'w', label: 'Pending Access', count: 3, tinted: true },
         { key: 'x', label: 'Waiting too', count: 0, tinted: true },
       ]);
       f.detectChanges();

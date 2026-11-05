@@ -83,7 +83,7 @@ describe('column filter row', { timeout: 20_000 }, () => {
 
   it('stacks several filters of one column', async () => {
     const defs: FilterDef[] = [
-      { key: 'event', label: 'Event type', column: 'name', type: 'select', options: [] },
+      { key: 'event', label: 'Event Type', column: 'name', type: 'select', options: [] },
       { key: 'summary', label: 'Summary', column: 'name', type: 'text' },
     ];
     m = await mountFilters(Host, { defs });

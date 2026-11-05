@@ -90,13 +90,13 @@ test.describe('Status changes and closed tasks', () => {
     await detail.open(task.taskId);
 
     await detail.chooseAction('CANCEL');
-    await detail.dialog.getByRole('button', { name: 'Cancel task' }).click();
+    await detail.dialog.getByRole('button', { name: 'Cancel Task' }).click();
     await expect(detail.dialog.locator('[data-reason-error]')).toHaveText(
       "Add a reason explaining why you're cancelling.",
     );
     await detail.expectStatus('New');
 
-    await detail.submitReason('Cancel task', 'Wrong task type, recreated as another task');
+    await detail.submitReason('Cancel Task', 'Wrong task type, recreated as another task');
     await expect(detail.dialog).toBeHidden();
     await detail.expectStatus('Cancelled');
     await expect(page.locator('[data-status-note]')).toContainText('Wrong task type');
@@ -145,7 +145,7 @@ test.describe('Status changes and closed tasks', () => {
     await detail.expectStatus('In Progress');
     await page.locator('[data-task-header] [data-action="edit"]').click();
     await page.getByLabel('Title (required)').fill('Edited after reopening');
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
     await expect(detail.titleText).toHaveText('Edited after reopening');
   });
 
@@ -167,7 +167,7 @@ test.describe('Status changes and closed tasks', () => {
     );
     await page.getByLabel('Title (required)').fill('Renamed by the requestor');
     await page.getByLabel('Requestor name (required)').fill('Rita Renamed');
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
     await expect(detail.titleText).toHaveText('Renamed by the requestor');
     await expect(page.locator('[data-view]')).toContainText('Rita Renamed');
   });
@@ -202,7 +202,7 @@ test.describe('Sensitive matter banner', () => {
     const queue = new TaskQueuePage(page);
     await queue.open(`?matter=${world.matter.matterId}`);
     await expect(
-      queue.row(task.taskNumber).getByRole('img', { name: 'Sensitive matter' }),
+      queue.row(task.taskNumber).getByRole('img', { name: 'Sensitive Matter' }),
     ).toBeVisible();
   });
 

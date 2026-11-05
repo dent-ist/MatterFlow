@@ -187,7 +187,7 @@ describe('Projects pages', () => {
         h.textContent!.trim(),
       );
       expect(heads.slice(0, 2)).toEqual(['Name', 'Matter']);
-      expect(heads.slice(-3)).toEqual(['Open tasks', 'Overdue', 'Status']);
+      expect(heads.slice(-3)).toEqual(['Open Tasks', 'Overdue', 'Status']);
       const row = el.querySelector('tbody tr')!;
       // The shared two-line Matter cell: reference over name, tooltip Client . Matter, a link with Matter.View.
       const cell = row.querySelector('mf-matter-cell')!;

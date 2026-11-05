@@ -112,7 +112,7 @@ const FLOW_URL: Record<FlowMeasure, string> = {
 };
 
 export const FLOW_CHOICE_LABEL: Record<FlowChoice, string> = {
-  both: 'Created and completed',
+  both: 'Created and Completed',
   created: 'Created',
   completed: 'Completed',
   onTime: 'On time',
@@ -124,8 +124,8 @@ export const BACKLOG_CHOICE_LABEL: Record<BacklogChoice, string> = {
   overdue: 'Overdue',
 };
 
-export const FLOWS_TITLE = 'Created and completed';
-export const BACKLOG_TITLE = 'Backlog at end of day';
+export const FLOWS_TITLE = 'Created and Completed';
+export const BACKLOG_TITLE = 'Backlog at End of Day';
 
 /**
  * Line styles of the default chart (measures), in semantic tokens (info, healthy, overdue, person, success, risk): Created is the brand blue, solid, round markers; Completed

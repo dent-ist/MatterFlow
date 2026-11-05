@@ -23,7 +23,7 @@ test.describe('Dashboard drill-through', () => {
       'No Dashboard tab is turned on for your role',
     );
     await expect(page.getByRole('tablist')).toHaveCount(0);
-    await expect(page.getByRole('group', { name: 'Needs attention' })).toHaveCount(0);
+    await expect(page.getByRole('group', { name: 'Needs Attention' })).toHaveCount(0);
     await page.locator('[data-no-tabs-note]').getByRole('link', { name: 'My Work' }).click();
     await expect(page).toHaveURL(/\/my-work/);
   });
@@ -208,7 +208,7 @@ test.describe('Dashboard actions and click-through', () => {
     );
     // A link with ?tab= wins.
     await page.goto('/dashboard?tab=trends');
-    await expect(page.getByRole('heading', { name: 'Created and completed' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Created and Completed' })).toBeVisible();
     // An unknown tab falls back to a valid one.
     await page.goto('/dashboard?tab=nonsense');
     await expect(page).toHaveURL(/tab=summary$/);
@@ -263,7 +263,7 @@ test.describe('Dashboard actions and click-through', () => {
     const world = await seed.world();
     await seed.task(world, { title: `Trend ${uid()}` });
     await page.goto('/dashboard?tab=trends');
-    const trend = page.getByRole('region', { name: 'Tasks over time', exact: true });
+    const trend = page.getByRole('region', { name: 'Tasks Over Time', exact: true });
     await expect(trend.getByRole('group', { name: /created and completed/i })).toBeVisible();
     await trend.getByRole('button', { name: /View as table/ }).click();
     await expect(trend.getByRole('table')).toBeVisible();
@@ -282,8 +282,8 @@ test.describe('Audit Logs browser (smoke)', () => {
     await page.goto('/admin/audit');
     await expect(page.getByRole('heading', { name: 'Audit Logs', level: 1 })).toBeVisible();
     // The filter row is open from the start (AD7, #646).
-    await filterDropdown(page, 'Object type').selectOption('Task');
-    await page.getByRole('textbox', { name: 'Filter by Object id' }).fill(String(task.taskId));
+    await filterDropdown(page, 'Object Type').selectOption('Task');
+    await page.getByRole('textbox', { name: 'Filter by Object ID' }).fill(String(task.taskId));
     // The id applies live after a pause and reloads the list, which closes an opened row: wait for that load before opening one.
     await expect(page).toHaveURL(new RegExp(`objectId=${task.taskId}(&|$)`));
     await expect(page.locator('tr[data-event]')).toHaveCount(1); // only this task's own event is left once the id has applied
@@ -295,7 +295,7 @@ test.describe('Audit Logs browser (smoke)', () => {
     await expect(created).toContainText('ke\\kekim');
     await created.getByRole('button', { name: /^Show details: / }).click();
     // The event code is a technical detail, behind its own disclosure (#652).
-    await page.locator('tr.au-detail').getByRole('button', { name: 'Technical details' }).click();
+    await page.locator('tr.au-detail').getByRole('button', { name: 'Technical Details' }).click();
     await expect(page.locator('tr.au-detail')).toContainText('TASK_CREATED');
     await created.getByRole('link', { name: new RegExp(task.taskNumber) }).click();
     await expect(page).toHaveURL(new RegExp(`/tasks/${task.taskId}$`));
@@ -308,16 +308,16 @@ test.describe('Audit Logs browser (smoke)', () => {
     const client = await seed.client();
 
     await page.goto('/admin/audit');
-    await filterDropdown(page, 'Event type').selectOption('CLIENT_CREATED');
+    await filterDropdown(page, 'Event Type').selectOption('CLIENT_CREATED');
     await page
-      .getByRole('textbox', { name: 'Filter by Summary or field' })
+      .getByRole('textbox', { name: 'Filter by Summary or Field' })
       .fill(client.clientNumber);
     const rows = page.locator('tr[data-event]');
     await expect(rows).toHaveCount(1);
     await expect(rows.first()).toContainText(`Client ${client.clientNumber} created`);
 
-    await page.getByRole('button', { name: 'Clear filters' }).click();
-    await expect(filterDropdown(page, 'Event type')).toHaveAttribute('data-value', '');
+    await page.getByRole('button', { name: 'Clear Filters' }).click();
+    await expect(filterDropdown(page, 'Event Type')).toHaveAttribute('data-value', '');
   });
 
   test('the log is read only: there is no export, edit or delete action', async ({ page }) => {

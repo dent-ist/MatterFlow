@@ -485,7 +485,7 @@ test.describe('Final verification (#240)', () => {
       await page.reload();
       await expect(page.locator('main [data-task]')).toHaveCount(3);
       await page.keyboard.press('Tab');
-      await expect(page.getByRole('link', { name: 'Skip to task list' })).toBeFocused();
+      await expect(page.getByRole('link', { name: 'Skip to Task List' })).toBeFocused();
       await page.keyboard.press('Enter');
       await expect(page.locator('tbody a.wt-title').first()).toBeFocused();
       await page.reload();

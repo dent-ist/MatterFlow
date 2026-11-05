@@ -254,7 +254,7 @@ export function previewDisplay(draft: AvailabilityDraft, now: Date): Availabilit
         state: 'OUT_OF_OFFICE',
         tone: 'warning',
         icon: 'pi-calendar-minus',
-        label: until ? `Out of office until ${shortDay(until, today)}` : 'Out of office',
+        label: until ? `Out of Office until ${shortDay(until, today)}` : 'Out of Office',
       };
     }
   }

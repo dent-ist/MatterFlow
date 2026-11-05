@@ -18,7 +18,7 @@ test.describe('Settings > Holidays', () => {
     const name = `US Holiday ${Date.now() % 100000}`;
     await page.locator('[data-new-calendar]').click();
     const calendar = page.getByRole('dialog', { name: 'New holiday calendar' });
-    await calendar.getByLabel('Category name').fill(name);
+    await calendar.getByLabel('Category Name').fill(name);
     await calendar.getByRole('button', { name: 'Create' }).click();
     await expect(calendar).toBeHidden();
     await expect(page.locator('[data-calendar]', { hasText: name })).toBeVisible();
@@ -26,7 +26,7 @@ test.describe('Settings > Holidays', () => {
     await page.locator('[data-add-holiday]').click();
     const holiday = page.getByRole('dialog', { name: 'Add holiday' });
     await holiday.getByLabel('Name').fill('Thanksgiving');
-    await holiday.getByLabel('Date rule').selectOption('NTH_WEEKDAY');
+    await holiday.getByLabel('Date Rule').selectOption('NTH_WEEKDAY');
     await holiday.getByLabel('Which').selectOption({ label: '4th' });
     await holiday.getByLabel('Weekday').selectOption({ label: 'Thursday' });
     await holiday.locator('#hd-nmonth').selectOption({ label: 'November' });
@@ -50,7 +50,7 @@ test.describe('Settings > Holidays', () => {
     const name = `Firm closure ${Date.now() % 100000}`;
     await page.locator('[data-new-calendar]').click();
     const calendar = page.getByRole('dialog', { name: 'New holiday calendar' });
-    await calendar.getByLabel('Category name').fill(name);
+    await calendar.getByLabel('Category Name').fill(name);
     await calendar.getByLabel(/Applies to everyone/).check();
     await calendar.getByRole('button', { name: 'Create' }).click();
     await expect(calendar).toBeHidden();

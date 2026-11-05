@@ -20,7 +20,7 @@ test.describe('Matters list: columns and resize (MD-21)', () => {
     expect(texts).toContain('Primary PM');
     expect(texts).toContain('Secondary PM');
     expect(texts).not.toContain('Matter reference');
-    expect(texts).not.toContain('Project manager');
+    expect(texts).not.toContain('Project Manager');
     await shot(page, 'matters-list-1366x768');
 
     const name = page.getByRole('separator', { name: 'Resize Name column' });
@@ -74,13 +74,13 @@ test.describe('New matter pop-up (MD-22)', () => {
     const client = await seed.client();
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/matters');
-    await page.getByRole('button', { name: 'New matter' }).first().click();
-    const dialog = page.getByRole('dialog', { name: 'New matter' });
+    await page.getByRole('button', { name: 'New Matter' }).first().click();
+    const dialog = page.getByRole('dialog', { name: 'New Matter' });
     await expect(dialog).toBeVisible();
     await expect(page).toHaveURL(/\/matters$/);
     const buttons = dialog.locator('[data-panel-footer] button');
     await expect(buttons.first()).toHaveText('Cancel');
-    await expect(buttons.last()).toHaveText('Create matter');
+    await expect(buttons.last()).toHaveText('Create Matter');
     const b = (await dialog.boundingBox())!;
     expect(Math.abs(b.x + b.width / 2 - 683)).toBeLessThan(160); // centred in the window, not docked right
     await shot(page, 'new-matter-dialog-1366x768');
@@ -93,8 +93,8 @@ test.describe('New matter pop-up (MD-22)', () => {
     await expect(dialog).toHaveCount(0);
 
     await page.goto(`/matters/new?clientId=${client.clientId}`);
-    await expect(page.getByRole('dialog', { name: 'New matter' })).toBeVisible();
-    await expect(page.getByRole('dialog', { name: 'New matter' })).toContainText(
+    await expect(page.getByRole('dialog', { name: 'New Matter' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'New Matter' })).toContainText(
       client.clientNumber,
     );
     await expect(page).toHaveURL(/\/matters$/);
@@ -103,8 +103,8 @@ test.describe('New matter pop-up (MD-22)', () => {
   test('a phone gets the dialog full screen', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/matters');
-    await page.getByRole('button', { name: 'New matter' }).first().click();
-    const b = (await page.getByRole('dialog', { name: 'New matter' }).boundingBox())!;
+    await page.getByRole('button', { name: 'New Matter' }).first().click();
+    const b = (await page.getByRole('dialog', { name: 'New Matter' }).boundingBox())!;
     expect(b.width).toBeGreaterThanOrEqual(374);
     expect(b.height).toBeGreaterThanOrEqual(800);
   });
@@ -127,7 +127,7 @@ test.describe('Matter detail tabs: Summary, Projects, Assets, Productions, butto
     await expect(page.locator('[data-add-event]')).toHaveCount(0);
     await shot(page, 'summary-1366x768');
     await page.locator('[data-edit-matter]').click();
-    await expect(page.locator('.mf-formdlg')).toContainText('Edit matter');
+    await expect(page.locator('.mf-formdlg')).toContainText('Edit Matter');
     await expect(page.locator('.mf-slide')).toHaveCount(0);
   });
 
@@ -139,7 +139,7 @@ test.describe('Matter detail tabs: Summary, Projects, Assets, Productions, butto
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/matters/${world.matter.matterId}?tab=projects`);
     await page.getByRole('button', { name: /New Project/ }).click();
-    await expect(page.locator('.mf-formdlg')).toContainText('New project');
+    await expect(page.locator('.mf-formdlg')).toContainText('New Project');
     await page.keyboard.press('Escape');
 
     await seed.asset(world.matter);

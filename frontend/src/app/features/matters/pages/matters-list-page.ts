@@ -277,10 +277,10 @@ const BONES: Record<string, string> = {
             [disabled]="selected().size === 0"
             (click)="bulkOpen.set(true)"
           >
-            Set project managers
+            Set Project Managers
           </button>
           <button type="button" class="mf-btn mf-btn--text" (click)="selected.set(emptySelection)">
-            Clear selection
+            Clear Selection
           </button>
           <button
             type="button"
@@ -323,7 +323,7 @@ const BONES: Record<string, string> = {
                 data-show-all-matters
                 (click)="scope.set('all')"
               >
-                Show all matters
+                Show All Matters
               </button>
             }
             <p-button
@@ -495,7 +495,7 @@ const BONES: Record<string, string> = {
                             [defaultSort]="defaultSort"
                             (sorted)="setSort($event)"
                           >
-                            Open tasks
+                            Open Tasks
                           </th>
                         }
                         @case ('overdue') {
@@ -513,12 +513,12 @@ const BONES: Record<string, string> = {
                         }
                         @case ('onHold') {
                           <th scope="col" class="pg-num" data-col="onHold" data-col-head="onHold">
-                            On hold
+                            On Hold
                           </th>
                         }
                         @case ('atRisk') {
                           <th scope="col" class="pg-num" data-col="atRisk" data-col-head="atRisk">
-                            At risk
+                            At Risk
                           </th>
                         }
                         @case ('dataSize') {
@@ -528,12 +528,12 @@ const BONES: Record<string, string> = {
                             data-col="dataSize"
                             data-col-head="dataSize"
                           >
-                            Data size
+                            Data Size
                           </th>
                         }
                         @case ('pending') {
                           <th scope="col" class="pg-num" data-col="pending" data-col-head="pending">
-                            Pending disposition
+                            Pending Disposition
                           </th>
                         }
                         @case ('status') {
@@ -579,7 +579,7 @@ const BONES: Record<string, string> = {
                       data-show-all-matters
                       (click)="scope.set('all')"
                     >
-                      Show all matters
+                      Show All Matters
                     </button>
                   }
                   <p-button
@@ -823,15 +823,15 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
   protected readonly extraChoices = computed((): MatterExtraColumnChoice[] => [
     ...(this.counts()
       ? [
-          { key: 'onHold' as const, label: 'On hold' },
-          { key: 'atRisk' as const, label: 'At risk' },
+          { key: 'onHold' as const, label: 'On Hold' },
+          { key: 'atRisk' as const, label: 'At Risk' },
         ]
       : []),
     // The numbers come from the Data API, which is for people who manage matters and may see tasks and assets (My Matters' own rule).
     ...(this.canData()
       ? [
-          { key: 'dataSize' as const, label: 'Data size' },
-          { key: 'pending' as const, label: 'Pending disposition' },
+          { key: 'dataSize' as const, label: 'Data Size' },
+          { key: 'pending' as const, label: 'Pending Disposition' },
         ]
       : []),
   ]);
@@ -866,7 +866,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
       { key: 'secondaryManager', label: 'Secondary PM' },
       ...(this.counts()
         ? [
-            { key: 'openTasks', label: 'Open tasks' },
+            { key: 'openTasks', label: 'Open Tasks' },
             { key: 'overdue', label: 'Overdue' },
           ]
         : []),
@@ -1006,7 +1006,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
     { value: 'primaryManager', label: 'Primary PM' },
     ...(this.counts()
       ? [
-          { value: 'openTasks', label: 'Open tasks', descFirst: true },
+          { value: 'openTasks', label: 'Open Tasks', descFirst: true },
           { value: 'overdue', label: 'Overdue', descFirst: true },
         ]
       : []),

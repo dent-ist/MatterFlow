@@ -177,7 +177,7 @@ test.describe('More views (WP16)', () => {
     // Opens, names itself, closes on Esc with focus back, and on a press outside.
     await moreButton(page).click();
     await expect(moreButton(page)).toHaveAttribute('aria-expanded', 'true');
-    const panel = page.getByRole('dialog', { name: 'More views' });
+    const panel = page.getByRole('dialog', { name: 'More Views' });
     await expect(panel).toBeVisible();
     await expect(panel.locator('[data-view="recentlyCompleted"]')).toBeVisible();
     await expect(panel.locator('[data-view="recentlyCompleted"]')).toHaveAttribute(
@@ -217,7 +217,7 @@ test.describe('More views (WP16)', () => {
     await expect(panel).toHaveCount(0);
     // The pressed view is in More: the button shows its name and count and counts as pressed.
     await expect(moreButton(page)).toHaveAttribute('aria-pressed', 'true');
-    await expect(moreButton(page)).toContainText('Recently completed');
+    await expect(moreButton(page)).toContainText('Recently Completed');
     await expect(moreButton(page).locator('.qv-n')).toHaveText(body.total.toLocaleString('en-US'));
     await shot(page, 'more-pressed-1920x1080');
   });
@@ -702,7 +702,7 @@ test.describe('Views by person (WP16, #223)', () => {
       await expect(page.locator('.qv .qv-n:not([data-count-pending])').first()).toBeVisible();
       expect(await axeViolations(page), `default at ${w}`).toEqual([]);
       await moreButton(page).click();
-      await expect(page.getByRole('dialog', { name: 'More views' })).toBeVisible();
+      await expect(page.getByRole('dialog', { name: 'More Views' })).toBeVisible();
       expect(await axeViolations(page), `More open at ${w}`).toEqual([]);
       await page.keyboard.press('Escape');
       await chooseView(page, 'dueSoon');

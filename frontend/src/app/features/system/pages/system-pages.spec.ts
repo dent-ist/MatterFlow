@@ -139,7 +139,7 @@ describe('the state pages are one family', () => {
   });
 });
 
-/** S11 (#608): the error page shows the Reference with Copy, and Retry offers "Go to home" only after it failed too. */
+/** S11 (#608): the error page shows the Reference with Copy, and Retry offers "Go to Home" only after it failed too. */
 describe('the error page', () => {
   async function render(me: ConstructorParameters<typeof FakeMeApi>[0]) {
     TestBed.configureTestingModule({
@@ -153,7 +153,7 @@ describe('the error page', () => {
     return { fixture, el: fixture.nativeElement as HTMLElement };
   }
 
-  it('shows the Reference of the failed call with a Copy button, and no "Go to home" at first', async () => {
+  it('shows the Reference of the failed call with a Copy button, and no "Go to Home" at first', async () => {
     const { el } = await render(ApiError.from(new HttpErrorResponse({ status: 500 })));
     const ref = el.querySelector('[data-error-reference]')!;
     expect(ref.textContent).toContain('trace-abc-123');
@@ -162,7 +162,7 @@ describe('the error page', () => {
     expect(el.querySelector('[data-retry]')).not.toBeNull();
   });
 
-  it('after a Retry that fails again it says so and offers "Go to home"', async () => {
+  it('after a Retry that fails again it says so and offers "Go to Home"', async () => {
     const { fixture, el } = await render(ApiError.from(new HttpErrorResponse({ status: 500 })));
     el.querySelector<HTMLButtonElement>('[data-retry]')!.click();
     await settle(fixture);

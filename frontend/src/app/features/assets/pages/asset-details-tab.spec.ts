@@ -44,7 +44,7 @@ describe('AssetDetailsTab', () => {
     expect(el().querySelector('[data-section="asset"] h3')?.textContent).toContain('Asset');
     const fieldCount = aFormVersion().fields.length;
     expect(el().querySelector('[data-type-fields-title]')?.textContent?.replace(/\s+/g, ' ')).toBe(
-      ` Document Set fields (${fieldCount}) `,
+      ` Document Set Fields (${fieldCount}) `,
     );
     expect(el().querySelector('[data-type-fields]')?.textContent).toContain('WS-8841');
     expect(el().querySelector('[data-matter] a.mf-ref')?.getAttribute('href')).toBe('/matters/7');
@@ -101,7 +101,7 @@ describe('AssetDetailsTab', () => {
     );
     expect(el().querySelector('[data-external-reference] a')).toBeNull();
     expect(el().querySelector('[data-external-reference] .pg-mono')?.textContent).toBe('REL-77');
-    expect(el().textContent).not.toContain('Last changed');
+    expect(el().textContent).not.toContain('Last Changed');
   });
 
   describe('long text (#508)', () => {
@@ -127,7 +127,7 @@ describe('AssetDetailsTab', () => {
       const box = el().querySelector<HTMLElement>('[data-description]')!;
       expect(box.classList.contains('ad__desc--clamped')).toBe(true);
       const toggle = el().querySelector<HTMLButtonElement>('[data-description-toggle]')!;
-      expect(toggle.textContent?.trim()).toBe('Show more');
+      expect(toggle.textContent?.trim()).toBe('Show More');
       expect(toggle.getAttribute('aria-expanded')).toBe('false');
       expect(toggle.getAttribute('aria-controls')).toBe('ad-description');
 
@@ -135,7 +135,7 @@ describe('AssetDetailsTab', () => {
       await settle(fixture);
       expect(box.classList.contains('ad__desc--clamped')).toBe(false);
       expect(toggle.getAttribute('aria-expanded')).toBe('true');
-      expect(toggle.textContent?.trim()).toBe('Show less');
+      expect(toggle.textContent?.trim()).toBe('Show Less');
       expect(box.textContent).toContain(long.trim());
     });
 

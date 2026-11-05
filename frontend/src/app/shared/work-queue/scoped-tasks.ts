@@ -105,7 +105,7 @@ const SCOPED_VIEW_NAMES = {
   overdue: 'Overdue',
   dueSoon: 'Due soon',
   asap: 'ASAP',
-  onHold: 'On hold',
+  onHold: 'On Hold',
 } as const;
 
 const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
@@ -285,7 +285,7 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
               "
               (click)="linkSelected()"
             >
-              {{ linkTarget() === NO_PROJECT ? 'Unlink' : 'Link to project' }}
+              {{ linkTarget() === NO_PROJECT ? 'Unlink' : 'Link to Project' }}
             </button>
           }
           <button
@@ -295,7 +295,7 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
             [disabled]="selected().size === 0"
             (click)="clearSelection()"
           >
-            Clear selection
+            Clear Selection
           </button>
           <button type="button" class="mf-btn" data-selection-done (click)="endSelecting()">
             Done
@@ -703,7 +703,7 @@ export class ScopedTasks {
       if (!this.skipLink() || !this.canView()) return;
       onCleanup(
         skip.register({
-          label: 'Skip to task list',
+          label: 'Skip to Task List',
           element: host.nativeElement,
           focus: () =>
             (

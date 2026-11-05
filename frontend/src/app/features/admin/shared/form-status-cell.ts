@@ -29,7 +29,7 @@ import { Badge } from '../../../shared/ui/badge';
           >Published v{{ publishedVersion() }}</mf-badge
         >
       } @else {
-        <mf-badge tone="neutral" icon="pi-info-circle" data-none>No published fields</mf-badge>
+        <mf-badge tone="neutral" icon="pi-info-circle" data-none>No Published Fields</mf-badge>
       }
       @if (draftVersion() !== null) {
         <mf-badge tone="warning" icon="pi-file-edit" data-draft
@@ -95,7 +95,7 @@ export class FormStatusCell {
     parts.push(
       this.publishedVersion() != null
         ? `Published version ${this.publishedVersion()}`
-        : 'No published fields',
+        : 'No Published Fields',
     );
     if (this.draftVersion() != null) parts.push(`draft version ${this.draftVersion()}`);
     const n = this.fieldCount();

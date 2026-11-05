@@ -185,7 +185,7 @@ test.describe('Task detail: single page layout', () => {
     expect(await page.evaluate(() => document.body.style.userSelect)).toBe('');
     await expect(handle).toHaveAttribute('aria-valuenow', '40');
     expect(await leftShare()).toBeLessThan(0.42);
-    await expect(page.getByRole('button', { name: 'Reset layout' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Reset Layout' })).toBeVisible();
 
     // Remembered: a reload opens at 40 % without a jump.
     await page.reload();
@@ -213,9 +213,9 @@ test.describe('Task detail: single page layout', () => {
     await handle.dblclick();
     await expect(handle).toHaveAttribute('aria-valuenow', '60');
     await page.keyboard.press('Home');
-    await page.getByRole('button', { name: 'Reset layout' }).click();
+    await page.getByRole('button', { name: 'Reset Layout' }).click();
     await expect(handle).toHaveAttribute('aria-valuenow', '60');
-    await expect(page.getByRole('button', { name: 'Reset layout' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Reset Layout' })).toHaveCount(0);
     await noHorizontalScroll(page);
   });
 
@@ -544,7 +544,7 @@ test.describe('Task detail: single page layout', () => {
     const requestor = dialog.getByLabel('Requestor name (required)');
     await requestor.fill('Rita Panel');
     await expect(requestor).toHaveValue('Rita Panel');
-    await dialog.getByRole('button', { name: 'Save changes' }).click();
+    await dialog.getByRole('button', { name: 'Save Changes' }).click();
     await expect(dialog).toBeHidden();
     await expect(page).toHaveURL(new RegExp(`/tasks/${task.taskId}$`));
     await expect(detail.detailsPanel).toContainText('Rita Panel');

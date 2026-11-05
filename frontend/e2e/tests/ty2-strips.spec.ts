@@ -264,7 +264,7 @@ test.describe('health strips (#367, #368)', () => {
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/usable=no/);
     await expect(page.getByRole('list', { name: 'Active filters' })).toContainText(
-      'Can create tasks',
+      'Can Create Tasks',
     );
   });
 

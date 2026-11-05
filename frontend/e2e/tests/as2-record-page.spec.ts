@@ -110,7 +110,7 @@ test.describe('Asset record page (WP-AS2)', () => {
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Activity' })).toHaveCount(0);
     await expect(page.getByRole('tab', { name: 'History' })).toHaveCount(0);
-    await expect(page.getByRole('tab', { name: 'Linked tasks', exact: true })).toBeVisible(); // no count without Task.View
+    await expect(page.getByRole('tab', { name: 'Linked Tasks', exact: true })).toBeVisible(); // no count without Task.View
     await expect(page.locator('[data-matter] a')).toHaveCount(0); // no Matter.View: plain text
     await page.goto(`/assets/${asset.assetId}?tab=history`);
     await expect(page.getByRole('tab', { name: 'Details' })).toHaveAttribute(

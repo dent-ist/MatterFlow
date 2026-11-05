@@ -145,9 +145,9 @@ describe('PodWorkPage', () => {
 
   it('names the tab in the browser title, the table caption and the live region (M8)', async () => {
     const el = await open('/pods/work?view=all');
-    expect(document.title).toBe('Pod Work: Pod A: All open - MatterFlow');
-    expect(el.querySelector('caption')!.textContent!.trim()).toMatch(/^Pod Work: All open/);
-    expect(el.querySelector('.wl-sr')!.textContent).toContain('All open: ');
+    expect(document.title).toBe('Pod Work: Pod A: All Open - MatterFlow');
+    expect(el.querySelector('caption')!.textContent!.trim()).toMatch(/^Pod Work: All Open/);
+    expect(el.querySelector('.wl-sr')!.textContent).toContain('All Open: 1 task');
   });
 
   it('asks for the default Pod (the server picks the primary one) and the Pod queue', async () => {
@@ -162,9 +162,9 @@ describe('PodWorkPage', () => {
     const el = await open('/pods/work?x=1');
     const strip = el.querySelector('[data-strip]')!.textContent!.replace(/\s+/g, ' ');
     expect(strip).toContain('Overdue 3');
-    expect(strip).toContain('Due today 2');
+    expect(strip).toContain('Due Today 2');
     expect(strip).toContain('ASAP 1');
-    expect(strip).toContain('On hold 4');
+    expect(strip).toContain('On Hold 4');
     expect(strip).not.toContain('Assigned');
     expect(strip).not.toContain('Unassigned');
 
@@ -172,7 +172,7 @@ describe('PodWorkPage', () => {
       t.textContent?.replace(/\s+/g, ' ').trim(),
     );
     // By member counts the people with open work, not their tasks; Overdue and on hold is the strip's now.
-    expect(tabs).toEqual(['Unassigned (6)', 'By member (7)', 'All open (37)']);
+    expect(tabs).toEqual(['Unassigned (6)', 'By Member (7)', 'All Open (37)']);
   });
 
   describe('the strip is four filters on All open (W5, #561)', () => {
@@ -195,7 +195,7 @@ describe('PodWorkPage', () => {
       expect(query()).toMatchObject({ podId: '5', view: 'all', overdue: 'true' });
       expect(lastArgs()[ARG.view]).toBe('all');
       expect(item(el, 'overdue').getAttribute('aria-pressed')).toBe('true');
-      expect(tab(el, 'All open').getAttribute('aria-selected')).toBe('true');
+      expect(tab(el, 'All Open').getAttribute('aria-selected')).toBe('true');
 
       item(el, 'overdue').click();
       await settle();
@@ -251,7 +251,7 @@ describe('PodWorkPage', () => {
   it('the old Overdue and on hold address opens All open with the Overdue filter, replacing the address (W6, BUG-7, #562)', async () => {
     const el = await open('/pods/work?podId=5&view=attention');
     expect(query()).toMatchObject({ podId: '5', view: 'all', overdue: 'true' });
-    expect(tab(el, 'All open').getAttribute('aria-selected')).toBe('true');
+    expect(tab(el, 'All Open').getAttribute('aria-selected')).toBe('true');
     expect(el.querySelector('[data-strip-item="overdue"]')!.getAttribute('aria-pressed')).toBe(
       'true',
     );
@@ -304,7 +304,7 @@ describe('PodWorkPage', () => {
 
   it('switches tabs through the URL and drops the member selection', async () => {
     const el = await open('/pods/work?podId=5&assignee=9');
-    tab(el, 'All open').click();
+    tab(el, 'All Open').click();
     await settle();
 
     expect(query()['view']).toBe('all');
@@ -376,7 +376,7 @@ describe('PodWorkPage', () => {
     );
   });
 
-  it('"Skip to member table" focuses the first member row on By member; the other tabs keep "Skip to task list" (BUG-5, #553)', async () => {
+  it('"Skip to member table" focuses the first member row on By member; the other tabs keep "Skip to Task List" (BUG-5, #553)', async () => {
     const skip = () => TestBed.inject(SkipTarget);
     let el = await open('/pods/work?podId=5&view=members');
     expect(skip().target()?.label).toBe('Skip to member table');
@@ -455,11 +455,11 @@ describe('PodWorkPage', () => {
 
   const link = (el: HTMLElement) => el.querySelector<HTMLButtonElement>('[data-assign-link]');
 
-  it('has no Actions column: "Assign to me" sits in the Assignee cell, named with the task number (#199)', async () => {
+  it('has no Actions column: "Assign to Me" sits in the Assignee cell, named with the task number (#199)', async () => {
     const el = await open('/pods/work?podId=5');
     expect(el.querySelector('th.wt-actions, td.wt-actions')).toBeNull();
     const button = link(el)!;
-    expect(button.textContent!.trim()).toBe('Assign to me');
+    expect(button.textContent!.trim()).toBe('Assign to Me');
     expect(button.getAttribute('aria-label')).toBe('Assign TSK-1042 to me');
     expect(button.closest('td')!.getAttribute('data-col')).toBe('assignee');
     expect(button.closest('td')!.textContent).toContain('Unassigned');
@@ -515,7 +515,7 @@ describe('PodWorkPage', () => {
     ]);
   });
 
-  it('hides "Assign to me" without Task.Assign and on the By member tab', async () => {
+  it('hides "Assign to Me" without Task.Assign and on the By member tab', async () => {
     let el = await open('/pods/work?podId=5', { permissions: ['Task.View', 'Pod.View'] });
     expect(link(el)).toBeNull();
 
@@ -527,7 +527,7 @@ describe('PodWorkPage', () => {
   it("the tab counts follow an assignment, with the same numbers as the server's (BUG-3, #552)", async () => {
     const el = await open('/pods/work?podId=5');
     expect(tab(el, 'Unassigned').textContent).toContain('(6)');
-    expect(tab(el, 'By member').textContent).toContain('(7)');
+    expect(tab(el, 'By Member').textContent).toContain('(7)');
 
     // The server's answer after the assignment: one fewer unassigned task, one more person holding work.
     getPodWork.mockReturnValue(
@@ -549,7 +549,7 @@ describe('PodWorkPage', () => {
     await settle();
 
     expect(tab(el, 'Unassigned').textContent).toContain('(5)');
-    expect(tab(el, 'By member').textContent).toContain('(8)');
+    expect(tab(el, 'By Member').textContent).toContain('(8)');
   });
 
   describe('header (BUG-1, #548)', () => {
@@ -675,13 +675,13 @@ describe('PodWorkPage', () => {
       }));
       expect(groups).toEqual([
         {
-          label: 'Your pods',
+          label: 'Your Pods',
           rows: [
             'Pod A 23 members \u00b7 4 unassigned',
             'Pod B 3 members \u00b7 4 unassigned \u00b7 2 overdue',
           ],
         },
-        { label: 'Other pods', rows: ['Pod C 1 member \u00b7 4 unassigned'] },
+        { label: 'Other Pods', rows: ['Pod C 1 member \u00b7 4 unassigned'] },
       ]);
       expect(el.querySelector('#pw-pod')).not.toBeNull();
     });

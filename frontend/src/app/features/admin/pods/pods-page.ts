@@ -190,7 +190,7 @@ export class PodsPage extends ServerListPage<PodSummary> implements OnDestroy, H
       ? [
           {
             id: 'deactivate',
-            label: 'Deactivate pod',
+            label: 'Deactivate Pod',
             icon: 'pi-ban',
             role: 'state',
             run: () => this.changeStatus(false),
@@ -199,7 +199,7 @@ export class PodsPage extends ServerListPage<PodSummary> implements OnDestroy, H
       : [
           {
             id: 'activate',
-            label: 'Activate pod',
+            label: 'Activate Pod',
             icon: 'pi-check-circle',
             role: 'state',
             run: () => this.changeStatus(true),
@@ -258,7 +258,7 @@ export class PodsPage extends ServerListPage<PodSummary> implements OnDestroy, H
     // "Skip to table" (#450): the first Tab stop of the list; it lands on the name of the first pod.
     const host = inject<ElementRef<HTMLElement>>(ElementRef);
     const offSkip = inject(SkipTarget).register({
-      label: 'Skip to table',
+      label: 'Skip to Table',
       element: host.nativeElement,
       focus: () => {
         const root = host.nativeElement;

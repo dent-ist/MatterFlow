@@ -58,7 +58,7 @@ describe('Details tab', () => {
     expect(view).toContain('Jane Roe');
     // Task type, Pod and Due are in the header (the context line and the facts strip), not in the panel again (#297).
     expect(view).not.toContain('Data Processing');
-    expect(view).not.toContain('Task type');
+    expect(view).not.toContain('Task Type');
     expect(q(el, '[data-view] a[href="mailto:jane.roe@client.com"]')).not.toBeNull();
     expect(q(el, '[data-request-form]')!.textContent).toContain(
       'Request details (Data Processing, form 3)',

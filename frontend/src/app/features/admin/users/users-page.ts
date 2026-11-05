@@ -87,7 +87,7 @@ const COLUMNS = ['name', 'roles', 'pods', 'availability', 'lastSeen', 'status', 
 const SEGMENT_DEFS: readonly StripDef<never>[] = [
   {
     key: 'pending',
-    label: 'Pending access',
+    label: 'Pending Access',
     hint: 'People who signed in and have no role yet',
     params: { status: 'pending' },
   },
@@ -104,8 +104,8 @@ const SEGMENT_DEFS: readonly StripDef<never>[] = [
 /** The availability filter. Off hours is a soft state; "Available" means available right now. The server works the state out. */
 const AVAILABILITY_OPTIONS = [
   { value: 'AVAILABLE', label: 'Available' },
-  { value: 'OUT_OF_OFFICE', label: 'Out of office' },
-  { value: 'OFF_HOURS', label: 'Off hours' },
+  { value: 'OUT_OF_OFFICE', label: 'Out of Office' },
+  { value: 'OFF_HOURS', label: 'Off Hours' },
 ] as const;
 
 /**
@@ -223,10 +223,10 @@ export class UsersPage implements OnInit {
     visibleColumns: this.visibleColumns,
     defs: computed((): FilterDef[] => [
       { key: 'name', label: 'Name', column: 'name', type: 'text' },
-      { key: 'account', label: 'Windows account', column: 'account', type: 'text' },
+      { key: 'account', label: 'Windows Account', column: 'account', type: 'text' },
       {
         key: 'registered',
-        label: 'First seen',
+        label: 'First Seen',
         column: 'registered',
         type: 'dateRange',
         presets: ['today', 'last7', 'last30', 'thisMonth'],
@@ -315,8 +315,8 @@ export class UsersPage implements OnInit {
   protected readonly pageSizes = PAGE_SIZES;
   protected readonly sortOptions: readonly SortOption[] = [
     { value: 'name', label: 'Name' },
-    { value: 'lastSeen', label: 'Last seen' },
-    { value: 'firstSeen', label: 'First seen' },
+    { value: 'lastSeen', label: 'Last Seen' },
+    { value: 'firstSeen', label: 'First Seen' },
   ];
   protected readonly listState = computed<'loading' | 'ready' | 'error'>(() =>
     this.loadError() ? 'error' : this.loading() && this.users().length === 0 ? 'loading' : 'ready',
@@ -335,7 +335,7 @@ export class UsersPage implements OnInit {
     AdminShellFilters.register({ filters: this.filters, controls: 'user-filter-row' });
     // "Skip to table" (#452): the page's first Tab stop; it lands on the name of the first row (the filter row and the segments are skipped).
     const offSkip = inject(SkipTarget).register({
-      label: 'Skip to table',
+      label: 'Skip to Table',
       element: this.host.nativeElement,
       focus: () => this.focusFirstRow(),
     });
@@ -499,7 +499,7 @@ export class UsersPage implements OnInit {
         { id: 'open', label: 'Open', icon: 'pi-user', run: () => this.open(user) },
         {
           id: 'availability',
-          label: 'Edit availability',
+          label: 'Edit Availability',
           icon: 'pi-calendar',
           permission: 'User.Manage',
           run: () => this.editAvailability(user),
@@ -537,7 +537,7 @@ export class UsersPage implements OnInit {
       rowKey: user.userId,
       subtitle: this.accountLine(user),
       badges: user.isPending
-        ? [{ text: 'Pending access', tone: 'warning', icon: 'pi-user-plus' }]
+        ? [{ text: 'Pending Access', tone: 'warning', icon: 'pi-user-plus' }]
         : user.isActive
           ? []
           : [{ text: 'Inactive', tone: 'neutral' }],
@@ -558,7 +558,7 @@ export class UsersPage implements OnInit {
       ],
       primary: waiting
         ? {
-            label: 'Grant access',
+            label: 'Grant Access',
             ariaLabel: `Grant access to ${this.nameWithAccount(user)}`,
             run: () => this.open(user),
           }

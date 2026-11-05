@@ -230,7 +230,7 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
       await expect(page.locator('[data-request-body]')).toBeVisible();
       await settled(page);
       // The labels start inside the dialog (BUG-3 cut "(required)" and "Description" at the left edge).
-      for (const label of ['Title', 'Requestor name', 'Requestor email', 'Project']) {
+      for (const label of ['Title', 'Requestor Name', 'Requestor Email', 'Project']) {
         const el = dialog.locator('label', { hasText: label }).first();
         const b = (await el.boundingBox())!;
         expect(b.x, `${label} label`).toBeGreaterThanOrEqual(box.x - 1);

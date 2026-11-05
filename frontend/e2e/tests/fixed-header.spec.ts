@@ -232,7 +232,7 @@ test.describe('Fixed-header screens at 1366x768', () => {
     const region = page.getByRole('region', { name: 'Audit events list, scrollable' });
     await expect(region.locator('tbody tr').first()).toBeVisible();
     // The filter row is open from the start (Audit redesign, #650): measure it open, then close it with Filters.
-    await expect(page.getByRole('textbox', { name: 'Filter by Summary or field' })).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Filter by Summary or Field' })).toBeVisible();
     const open = await box(region);
     await page.getByRole('button', { name: /^Filters/ }).click();
     await expect(page.locator('[data-filter-row]')).toHaveCount(0);
@@ -314,11 +314,11 @@ test.describe('Fixed-header screens at 1366x768', () => {
 
     await page.goto('/clients');
     await expect(page.getByRole('heading', { name: 'Clients', level: 1 })).toBeVisible();
-    // The list's own "Skip to table" (#283) comes first, then the global skip link.
+    // The list's own "Skip to Table" (#283) comes first, then the global skip link.
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('link', { name: 'Skip to table' })).toBeFocused();
+    await expect(page.getByRole('link', { name: 'Skip to Table' })).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused();
+    await expect(page.getByRole('link', { name: 'Skip to Main Content' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.locator('#mf-main')).toBeFocused();
   });
@@ -372,7 +372,7 @@ test.describe('Fixed-header screens at 1366x768', () => {
   }) => {
     await page.goto('/tasks/new');
     await page.getByRole('radio').first().click();
-    const create = page.getByRole('button', { name: 'Create task', exact: true }).last();
+    const create = page.getByRole('button', { name: 'Create Task', exact: true }).last();
     await expect(create).toBeVisible();
     const b = await box(create);
     expect(b.y + b.height).toBeLessThanOrEqual(768);

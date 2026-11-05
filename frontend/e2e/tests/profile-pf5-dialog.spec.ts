@@ -93,7 +93,7 @@ test.describe('pf5-dialog-presets: quick choices fill Until (#538)', () => {
     await dialog.locator('#ooo-until').fill(inDays(3).iso);
     await dialog.locator('#ooo-until').blur();
     await expect(dialog.locator('[aria-pressed="true"]')).toHaveCount(0);
-    await dialog.getByRole('button', { name: 'Pick a date' }).click();
+    await dialog.getByRole('button', { name: 'Pick a Date' }).click();
     await expect(dialog.locator('#ooo-until')).toBeFocused();
 
     // Keyboard only: Space on a chip, then Tab to the confirm button and Enter.
@@ -140,7 +140,7 @@ test.describe('pf5-dialog-focus: heading focus and the link to My profile (#539)
     for (const want of ['today', 'tomorrow', 'monday', 'week', 'pick', 'ooo-until', 'ooo-note']) {
       expect(reached, `Tab reaches ${want}`).toContain(want);
     }
-    expect([...reached].join('|')).toContain('More options on My profile');
+    expect([...reached].join('|')).toContain('More Options on My Profile');
     expect([...reached].join('|')).toContain('Cancel');
 
     await me.keyboard.press('Escape');
@@ -153,7 +153,7 @@ test.describe('pf5-dialog-focus: heading focus and the link to My profile (#539)
     const me = await asUser(p.username);
     await me.goto('/my-work');
     const dialog = await openDialog(me);
-    await dialog.getByRole('link', { name: 'More options on My profile' }).click();
+    await dialog.getByRole('link', { name: 'More Options on My Profile' }).click();
     await expect(me).toHaveURL(/\/profile$/);
     await expect(dialog).toHaveCount(0);
     await expect(me.locator('[data-profile-header] h1')).toBeVisible();

@@ -97,8 +97,8 @@ test.describe('Custom Fields list (#644)', () => {
         await expect(r.locator('[data-status]')).toContainText(`Published v${s.publishedVersion}`);
       } else {
         await expect(r.locator('[data-fields]')).toContainText('No fields yet');
-        await expect(r.locator('[data-published]')).toContainText('Not published');
-        await expect(r.locator('[data-status]')).toContainText('No published fields');
+        await expect(r.locator('[data-published]')).toContainText('Not Published');
+        await expect(r.locator('[data-status]')).toContainText('No Published Fields');
       }
       if (s.draftVersion !== null) {
         await expect(r.locator('[data-status]')).toContainText(`Draft v${s.draftVersion}`);

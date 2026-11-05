@@ -12,7 +12,7 @@ import { labelledDropdown } from '../support/dropdown';
  *    name, a 90-character role and two pods, no sideways scroll of the page or the table from 1366 px, the optional columns leave in the kit
  *    order (Pods below 1280 px, Roles below 1100 px), no "Scroll sideways" hint;
  *  - the name is the one control of the Name cell and opens the panel; focus returns to it; the accessible names carry the account;
- *  - Status is a badge only when the person is not simply Active; Email and First seen are filters in "Other filters" only;
+ *  - Status is a badge only when the person is not simply Active; Email and First seen are filters in "Other Filters" only;
  *  - one Tab stop for the name and one for the action (Grant access on a pending row, the row menu on every other); the menu offers Open,
  *    Edit availability and Activate / Deactivate with User.Manage and only Open without it; arrows, Esc and focus return.
  * Screenshots for docs/ux/users-review/fixes/us3-grid/ are written when E2E_SCREENSHOTS is set to the output folder.
@@ -132,7 +132,7 @@ test.describe('#432 the grid', () => {
         'Roles',
         'Pods',
         'Availability',
-        'Last seen',
+        'Last Seen',
         'Status',
         'Actions',
       ]);
@@ -169,7 +169,7 @@ test.describe('#432 the grid', () => {
         'Roles',
         'Pods',
         'Availability',
-        'Last seen',
+        'Last Seen',
         'Status',
         'Actions',
       ]);
@@ -191,7 +191,7 @@ test.describe('#432 the grid', () => {
     await openList(page, 1366, 768);
     await expect(
       page.locator(`tr[data-user="${pendingLong.userId}"] [data-status] mf-badge`),
-    ).toContainText('Pending access');
+    ).toContainText('Pending Access');
     await expect(
       page.locator(`tr[data-user="${gone.userId}"] [data-status] mf-badge`),
     ).toContainText('Inactive');
@@ -208,9 +208,9 @@ test.describe('#432 the grid', () => {
   }) => {
     await openList(page, 1366, 768);
     await expect(page.getByRole('columnheader', { name: 'Email' })).toHaveCount(0);
-    await expect(page.getByRole('columnheader', { name: 'First seen' })).toHaveCount(0);
+    await expect(page.getByRole('columnheader', { name: 'First Seen' })).toHaveCount(0);
     await page.locator('[data-more-filters]').click();
-    for (const label of ['Windows account', 'First seen', 'Email']) {
+    for (const label of ['Windows Account', 'First Seen', 'Email']) {
       await expect(page.getByRole('button', { name: new RegExp(`^${label}`) })).toBeVisible();
     }
     await page.keyboard.press('Escape');
@@ -263,7 +263,7 @@ test.describe('#432 the grid', () => {
     await expect(busyRow.locator('[data-pods-cell]')).toContainText(`Processing ${TAG}`);
     await expect(
       page.locator(`tr[data-user="${away.userId}"] [data-availability-chip]`),
-    ).toContainText('Out of office');
+    ).toContainText('Out of Office');
   });
 
   test('#434 availability informs only where it matters: chip for Out of office, nothing for Pending or Inactive', async ({
@@ -340,12 +340,12 @@ test.describe('#433 one action per row', () => {
     await expect(menu).toBeVisible();
     await expect(menu.getByRole('menuitem')).toHaveText([
       'Open',
-      'Edit availability',
+      'Edit Availability',
       'Deactivate',
     ]);
     await expect(menu.getByRole('menuitem').first()).toBeFocused();
     await page.keyboard.press('ArrowDown');
-    await expect(menu.getByRole('menuitem', { name: 'Edit availability' })).toBeFocused();
+    await expect(menu.getByRole('menuitem', { name: 'Edit Availability' })).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(menu).toHaveCount(0);
     await expect(trigger).toBeFocused();
@@ -362,7 +362,7 @@ test.describe('#433 one action per row', () => {
     });
     await openList(page, 1366, 768);
     await menuButton(page, busy.userId).click();
-    await page.getByRole('menuitem', { name: 'Edit availability' }).click();
+    await page.getByRole('menuitem', { name: 'Edit Availability' }).click();
     await expect(page.getByRole('dialog')).toContainText('Availability of');
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -392,7 +392,7 @@ test.describe('#433 one action per row', () => {
     await expect(async () => {
       await menuButton(page, revived.userId).click();
       await expect(page.getByRole('menuitem')).toHaveText(
-        ['Open', 'Edit availability', 'Activate'],
+        ['Open', 'Edit Availability', 'Activate'],
         { timeout: 1500 },
       );
     }).toPass();
@@ -407,7 +407,7 @@ test.describe('#433 one action per row', () => {
   }) => {
     await openList(page, 1920, 1080);
     const name = page.getByRole('columnheader', { name: 'Name' });
-    const lastSeen = page.getByRole('columnheader', { name: 'Last seen' });
+    const lastSeen = page.getByRole('columnheader', { name: 'Last Seen' });
     await expect(name).toHaveAttribute('aria-sort', 'none');
     await name.getByRole('button').click();
     await expect(page).toHaveURL(/sort=name(&|$)/);
@@ -432,7 +432,7 @@ test.describe('#433 one action per row', () => {
     await expect(name).toHaveAttribute('aria-sort', 'none');
     // Reload keeps the sort; Back returns to the previous one.
     await page.reload();
-    await expect(page.getByRole('columnheader', { name: 'Last seen' })).toHaveAttribute(
+    await expect(page.getByRole('columnheader', { name: 'Last Seen' })).toHaveAttribute(
       'aria-sort',
       'ascending',
     );
@@ -466,13 +466,13 @@ test.describe('#433 one action per row', () => {
     await expect(page.locator('[data-strip-item="pending"]')).toBeVisible();
     await page.getByRole('button', { name: /^Filters/ }).click();
     const sheet = page.getByRole('dialog').last();
-    const select = labelledDropdown(sheet, 'Sort by');
+    const select = labelledDropdown(sheet, 'Sort By');
     await expect(select).toBeVisible();
     expect((await select.optionTexts()).map((t) => t.trim())).toEqual([
       'Waiting people first (default order)',
       'Name',
-      'Last seen',
-      'First seen',
+      'Last Seen',
+      'First Seen',
     ]);
     // The segments are not in the sheet.
     await expect(sheet.locator('[data-strip-item]')).toHaveCount(0);
@@ -492,7 +492,7 @@ test.describe('#433 one action per row', () => {
     await expect(page.getByRole('menuitem')).toHaveText(['Open']);
     await page.getByRole('menuitem', { name: 'Open' }).click();
     await expect(page.locator('[data-panel-heading]')).toBeFocused();
-    await expect(page.getByRole('button', { name: 'Save changes' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Save Changes' })).toHaveCount(0);
     await page.keyboard.press('Escape');
     await expect(menuButton(page, busy.userId)).toBeFocused();
   });

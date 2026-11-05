@@ -50,7 +50,7 @@ let nextId = 0;
           <i class="pi pi-times" aria-hidden="true"></i>
         </button>
       </div>
-      <label class="sr-only" [for]="uid + '-q'">Search people</label>
+      <label class="sr-only" [for]="uid + '-q'">Search People</label>
       <input
         #search
         class="mf-control q"

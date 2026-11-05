@@ -55,7 +55,7 @@ type Filter = 'all' | 'unread';
       >
         @if (store.unreadCount() > 0) {
           <button mfActions type="button" class="mf-btn" data-mark-all-read (click)="markAll()">
-            Mark all as read
+            Mark All as Read
           </button>
         }
       </mf-page-header>

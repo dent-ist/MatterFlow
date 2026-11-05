@@ -100,9 +100,9 @@ type HistoryState = 'loading' | 'ready' | 'error' | 'missing';
                   </caption>
                   <thead>
                     <tr>
-                      <th scope="col">Task type</th>
+                      <th scope="col">Task Type</th>
                       <th scope="col" class="num">Done</th>
-                      <th scope="col">vs firm</th>
+                      <th scope="col">vs Firm</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -155,7 +155,7 @@ type HistoryState = 'loading' | 'ready' | 'error' | 'missing';
             }
           } @else {
             <section aria-labelledby="uh-trend">
-              <h3 id="uh-trend" class="h">Completed per month</h3>
+              <h3 id="uh-trend" class="h">Completed Per Month</h3>
               <p class="note">
                 {{ h.totalCompleted }} completed tasks in the last {{ h.windowMonths }} months; the
                 bars show the last 12 months.
@@ -178,7 +178,7 @@ type HistoryState = 'loading' | 'ready' | 'error' | 'missing';
                 <i class="pi pi-clock" aria-hidden="true"></i> {{ onTime() }}
               </p>
               <details class="tableview">
-                <summary>Table of the same figures</summary>
+                <summary>Table of the Same Figures</summary>
                 <table class="tbl" data-trend-table>
                   <caption class="sr-only">
                     Completed tasks per month

@@ -60,7 +60,7 @@ describe('ConnectionBanner (#611)', () => {
     fixture.detectChanges();
     const bar = el.querySelector('[data-signin-banner]')!;
     expect(bar.textContent).toContain("We couldn't verify your sign-in.");
-    expect(bar.querySelector('button')!.textContent!.trim()).toBe('Reload page');
+    expect(bar.querySelector('button')!.textContent!.trim()).toBe('Reload Page');
     expect(el.querySelector('[data-offline-banner]')).toBeNull();
     // Other requests that still work do not hide it: only reloading the page does.
     c.reachable();

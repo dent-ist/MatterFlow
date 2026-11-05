@@ -132,8 +132,8 @@ describe('DueCell At risk (PM v2, #878)', () => {
 
   it('says At risk in words and in the spoken name, and keeps quiet when it is not', () => {
     const el = render(true, { dueDate: '2026-10-30' });
-    expect(el.querySelector('[data-at-risk]')?.textContent).toContain('At risk');
-    expect(el.querySelector('.dc-sr')?.textContent).toContain('At risk');
+    expect(el.querySelector('[data-at-risk]')?.textContent).toContain('At Risk');
+    expect(el.querySelector('.dc-sr')?.textContent).toContain('Due Oct 30. At risk');
     expect(render(false, { dueDate: '2026-10-30' }).querySelector('[data-at-risk]')).toBeNull();
   });
 

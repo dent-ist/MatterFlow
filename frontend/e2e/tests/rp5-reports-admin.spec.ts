@@ -309,7 +309,7 @@ test.describe('the editor (#713 to #715)', () => {
     await page.locator('#rep-description').fill('Changed in the first editor');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.locator('[data-conflict]')).toBeVisible();
-    await page.getByRole('button', { name: 'Reload the latest version' }).click();
+    await page.getByRole('button', { name: 'Reload the Latest Version' }).click();
     await expect(page.locator('[data-conflict]')).toHaveCount(0);
   });
 
@@ -321,7 +321,7 @@ test.describe('the editor (#713 to #715)', () => {
     await page.goto(`/admin/reports/${id}?tab=query`);
     const editor = page.locator('#sql-editor');
     await editor.fill('SELECT * FROM ');
-    await page.getByRole('button', { name: 'Schema browser' }).click();
+    await page.getByRole('button', { name: 'Schema Browser' }).click();
     const panel = page.locator('[data-schema-panel]');
     await panel.getByRole('searchbox').fill('PodMember');
     await expect(panel.locator('[data-table="dbo.PodMember"]')).toBeVisible();
@@ -484,7 +484,7 @@ test.describe('accessibility at four sizes (#712 to #717)', () => {
     await page.goto(`/admin/reports/${id}?tab=query`);
     await page.getByRole('button', { name: 'Preview', exact: true }).click();
     await expect(page.locator('[data-preview-ok]')).toBeVisible();
-    await page.getByRole('button', { name: 'Schema browser' }).click();
+    await page.getByRole('button', { name: 'Schema Browser' }).click();
     await expect(page.locator('[data-schema-panel] [data-table]').first()).toBeVisible();
     await page.locator('[data-schema-panel] [data-table]').first().locator('.sb__toggle').click();
     await check(page, 'rp5-editor-query-schema', async () => {

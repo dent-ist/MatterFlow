@@ -177,7 +177,7 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
                   [defaultSort]="defaultSort"
                   (sorted)="setSort($event)"
                 >
-                  Used in
+                  Used In
                 </th>
                 @if (showInputs()) {
                   <th scope="col">Inputs</th>
@@ -244,7 +244,7 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
                   }
                   <td data-used-in class="pg-num">
                     @if (s.usedInWorkflows === 0) {
-                      <span class="pg-muted">Not used</span>
+                      <span class="pg-muted">Not Used</span>
                     } @else {
                       <a
                         class="pg-link"
@@ -349,7 +349,7 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
   /** The phone's Sort by select: the sortable columns (the headers' keys); the count sorts descending first, like its header. */
   protected readonly sortOptions: readonly SortOption[] = [
     { value: 'title', label: 'Title' },
-    { value: 'usedInWorkflows', label: 'Used in', descFirst: true },
+    { value: 'usedInWorkflows', label: 'Used In', descFirst: true },
     { value: 'status', label: 'Status' },
   ];
   /** The Tags column (two chips and "+n") is left out below 1100 px, its filter moving under "Other filters", so the grid fits a 768 px window (#375). */
@@ -380,10 +380,10 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
     const s = this.summary();
     return [
       { key: 'active', label: 'Active', count: s?.active ?? null },
-      { key: 'notUsed', label: 'Not used', count: s?.notUsed ?? null },
+      { key: 'notUsed', label: 'Not Used', count: s?.notUsed ?? null },
       {
         key: 'inputsDraft',
-        label: 'Inputs in draft',
+        label: 'Inputs in Draft',
         count: s?.inputsInDraft ?? null,
         inert: true,
       },
@@ -446,7 +446,7 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
       {
         // Under the Tags control: whether a step must carry all the chosen tags or any of them. Idle until a tag is chosen.
         key: 'tagMatch',
-        label: 'Tag match',
+        label: 'Tag Match',
         column: 'tags',
         type: 'select',
         default: 'all',
@@ -459,13 +459,13 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
       },
       {
         key: 'used',
-        label: 'Used in',
+        label: 'Used In',
         column: 'usedIn',
         type: 'triState',
         options: [
           { value: '', label: 'Any' },
           { value: 'true', label: 'Used in a workflow' },
-          { value: 'false', label: 'Not used' },
+          { value: 'false', label: 'Not Used' },
         ],
       },
       statusDef(),
@@ -505,7 +505,7 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
     return [
       {
         id: 'edit-inputs',
-        label: 'Edit inputs',
+        label: 'Edit Inputs',
         icon: 'pi-file-edit',
         run: () => {
           this.drill.leaveRow(this.listId, s.stepDefinitionId);

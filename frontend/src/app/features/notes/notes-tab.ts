@@ -213,7 +213,7 @@ interface RefChip {
                       [attr.aria-expanded]="viewOptionsOpen()"
                       (click)="toggleViewOptions()"
                     >
-                      <i class="pi pi-sliders-h" aria-hidden="true"></i>View options
+                      <i class="pi pi-sliders-h" aria-hidden="true"></i>View Options
                     </button>
                     @if (viewOptionsOpen()) {
                       <ul
@@ -331,7 +331,7 @@ interface RefChip {
               @if (listError()) {
                 <p class="nt__error" role="alert" data-notes-error>
                   <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>{{ listError() }}
-                  <button type="button" class="mf-btn" (click)="loadList()">Try again</button>
+                  <button type="button" class="mf-btn" (click)="loadList()">Try Again</button>
                 </p>
               } @else if (!loaded()) {
                 <div class="nt__skel" aria-busy="true" role="status" data-notes-loading>
@@ -941,7 +941,7 @@ interface RefChip {
                                 data-note-keep
                                 (click)="keepMine.set(true)"
                               >
-                                Keep mine
+                                Keep Mine
                               </button>
                             }
                           </div>
@@ -963,10 +963,10 @@ interface RefChip {
                         }
                         <span class="nt__grow"></span>
                         <button type="button" class="mf-btn" (click)="applyTplTags()">
-                          Apply tags
+                          Apply Tags
                         </button>
                         <button type="button" class="mf-btn" (click)="tplBanner.set([])">
-                          No thanks
+                          No Thanks
                         </button>
                       </div>
                     }
@@ -1118,13 +1118,13 @@ interface RefChip {
                     <aside
                       class="nt__phist"
                       [style.--hw]="histWidth() + 'px'"
-                      [attr.aria-label]="sideOpen() === 'refs' ? 'Referenced items' : 'History'"
+                      [attr.aria-label]="sideOpen() === 'refs' ? 'Referenced Items' : 'History'"
                       data-history-rail-open
                       [attr.data-side]="sideOpen()"
                     >
                       <div class="nt__hh">
                         <h3 id="nt-hh3">
-                          {{ sideOpen() === 'refs' ? 'Referenced items' : 'History' }}
+                          {{ sideOpen() === 'refs' ? 'Referenced Items' : 'History' }}
                           <span class="nt__cnt">{{
                             sideOpen() === 'refs' ? refChips().length : history().length
                           }}</span>
@@ -1192,8 +1192,8 @@ interface RefChip {
                         type="button"
                         class="mf-btn mf-btn--icon"
                         data-refs-rail
-                        aria-label="Referenced items"
-                        title="Referenced items"
+                        aria-label="Referenced Items"
+                        title="Referenced Items"
                         [attr.aria-expanded]="sideOpen() === 'refs'"
                         [attr.aria-pressed]="sideOpen() === 'refs'"
                         (click)="toggleSide('refs')"
@@ -1418,7 +1418,7 @@ interface RefChip {
                         data-note-refs-button
                         (click)="onMenu('', 'refs')"
                       >
-                        <i class="pi pi-link" aria-hidden="true"></i>Referenced items
+                        <i class="pi pi-link" aria-hidden="true"></i>Referenced Items
                       </button>
                     </li>
                   }
@@ -1536,7 +1536,7 @@ interface RefChip {
       <div data-tags-panel>
         <mf-text-field
           inputId="nt-tag-search"
-          label="Search tags"
+          label="Search Tags"
           [maxLength]="40"
           [(value)]="tagQuery"
         />
@@ -1605,7 +1605,7 @@ interface RefChip {
 
     <!-- References as a side panel when the note area is narrow -->
     <mf-slide-panel
-      title="Referenced items"
+      title="Referenced Items"
       [visible]="panel() === 'refs'"
       (visibleChange)="!$event && panel.set('none')"
       [showFooter]="false"
@@ -1617,8 +1617,8 @@ interface RefChip {
     </mf-slide-panel>
 
     <mf-form-dialog
-      title="Save as template"
-      primaryLabel="Save template"
+      title="Save as Template"
+      primaryLabel="Save Template"
       [busy]="busy()"
       [error]="tplError()"
       [visible]="panel() === 'save-template'"
@@ -1629,7 +1629,7 @@ interface RefChip {
         <div class="nt__panel-form">
           <mf-text-field
             inputId="tpl-name"
-            label="Template name"
+            label="Template Name"
             [required]="true"
             [maxLength]="100"
             [(value)]="tplName"
@@ -1795,8 +1795,8 @@ export class NotesTab {
   protected readonly historyText = noteHistoryText;
   protected readonly skeleton = ['46%', '92%', '70%', '46%', '92%', '70%', '46%'];
   protected readonly views: { id: NoteView; label: string; short: string; icon: string }[] = [
-    { id: 'tag', label: 'By tag', short: 'By tag', icon: 'pi-align-left' },
-    { id: 'latest', label: 'Latest first', short: 'Latest', icon: 'pi-list' },
+    { id: 'tag', label: 'By Tag', short: 'By Tag', icon: 'pi-align-left' },
+    { id: 'latest', label: 'Latest First', short: 'Latest', icon: 'pi-list' },
     { id: 'templates', label: 'Templates', short: 'Templates', icon: 'pi-clone' },
   ];
   protected readonly sortItems: DropdownItem[] = [
@@ -2591,7 +2591,7 @@ export class NotesTab {
     void this.resolveRefs(n);
   }
 
-  /** What the reader may do with each reference of the note: the chips and the "Referenced items" list follow the answer (Removed, Restricted, state tags). */
+  /** What the reader may do with each reference of the note: the chips and the "Referenced Items" list follow the answer (Removed, Restricted, state tags). */
   private async resolveRefs(n: NoteResponse): Promise<void> {
     const refs = (n.references ?? []).filter((r) => r.kind !== 'user');
     if (refs.length === 0) {

@@ -101,7 +101,7 @@ export function overlapOf(err: ApiError): AbsenceOverlap | null {
         </div>
         <div class="ad__dates">
           <div class="ad__field">
-            <label class="ad__label" for="ad-start">First day out</label>
+            <label class="ad__label" for="ad-start">First Day Out</label>
             <input
               id="ad-start"
               type="date"
@@ -118,7 +118,7 @@ export function overlapOf(err: ApiError): AbsenceOverlap | null {
             }
           </div>
           <div class="ad__field">
-            <label class="ad__label" for="ad-end">Last day out</label>
+            <label class="ad__label" for="ad-end">Last Day Out</label>
             <input
               id="ad-end"
               type="date"
@@ -440,7 +440,7 @@ export class AbsenceDialog {
         ? `${numericDate(other.startDate, this.clock.now(), this.zone)} to ${numericDate(other.endDate, this.clock.now(), this.zone)}`
         : `from ${numericDate(other.startDate, this.clock.now(), this.zone)}`;
       this.server.set({
-        dates: overlapMessage(ABSENCE_TYPE_LABELS[other.type] ?? 'Out of office', range),
+        dates: overlapMessage(ABSENCE_TYPE_LABELS[other.type] ?? 'Out of Office', range),
       });
       return;
     }

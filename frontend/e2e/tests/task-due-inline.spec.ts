@@ -11,7 +11,7 @@ import { FIRM_ZONE, dateInZone } from '../support/time';
 
 /**
  * Task page: edit the Due date inline from the Due tile (#664), like the Status, Priority and Assignee tiles. The tile is a button that opens
- * a small popover with the shared Due date and Time inputs, Save, Cancel and "Clear due date (ASAP)". The rules are the Edit dialog's.
+ * a small popover with the shared Due date and Time inputs, Save, Cancel and "Clear Due Date (ASAP)". The rules are the Edit dialog's.
  * Screenshots go to E2E_SCREENSHOTS when it is set (docs/ux/task-detail-review/fixes/due-inline).
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
@@ -177,7 +177,7 @@ test.describe('Task page: inline Due date (#664)', () => {
     expect((await admin.get(`/api/v1/tasks/${task.taskId}`)).dueDate ?? null).toBeNull();
   });
 
-  test('ASAP and overdue styling follow the date; "Clear due date (ASAP)" empties it', async ({
+  test('ASAP and overdue styling follow the date; "Clear Due Date (ASAP)" empties it', async ({
     seed,
     admin,
     page,

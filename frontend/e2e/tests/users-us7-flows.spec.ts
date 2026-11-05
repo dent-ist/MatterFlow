@@ -11,7 +11,7 @@ import { userName, userRow } from '../support/users-grid';
  * with every overlay open at 375, 768, 1366 and 1920.
  *
  * The six flows, each without a pointer: grant access, deactivate, edit availability, edit pods, edit a role, edit a pod. A flow starts from
- * the first Tab stop of the page ("Skip to table") and moves with Tab, Shift+Tab, arrows, Enter, Space and Esc only. Focus never lands on
+ * the first Tab stop of the page ("Skip to Table") and moves with Tab, Shift+Tab, arrows, Enter, Space and Esc only. Focus never lands on
  * `body`. The Tab stops from the top of the page to the first row action are recorded in `keyboard-evidence.json` (E2E_SCREENSHOTS,
  * docs/ux/users-review/fixes/us7-keyboard). axe is required here: a missing axe-core fails the file. No shortcut is involved (Phase 2, #420).
  */
@@ -98,11 +98,11 @@ async function shiftTabTo(page: Page, target: Locator, max?: number): Promise<nu
   throw new Error(`Shift+Tab never reached ${target}`);
 }
 
-/** From the top of the page: the first Tab stop is "Skip to table"; Enter on it moves focus into the list. */
+/** From the top of the page: the first Tab stop is "Skip to Table"; Enter on it moves focus into the list. */
 async function viaSkipLink(page: Page): Promise<void> {
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.keyboard.press('Tab');
-  await expect(page.getByRole('link', { name: 'Skip to table' })).toBeFocused();
+  await expect(page.getByRole('link', { name: 'Skip to Table' })).toBeFocused();
   await page.keyboard.press('Enter');
   expect(await onBody(page), 'focus landed on body after the skip link').toBe(false);
 }
@@ -148,7 +148,7 @@ test.describe('#454 the six keyboard flows', () => {
     await tabTo(page, role);
     await page.keyboard.press('Space');
     await expect(role).toBeChecked();
-    await tabTo(page, page.getByRole('button', { name: 'Save changes' }));
+    await tabTo(page, page.getByRole('button', { name: 'Save Changes' }));
     await page.keyboard.press('Enter');
     // The drawer closed, the person left the Pending segment, and focus is on the list (not on body).
     await expect(page.locator('.mf-user-drawer')).toHaveCount(0);
@@ -259,7 +259,7 @@ test.describe('#454 the six keyboard flows', () => {
     expect(await onBody(page)).toBe(false);
     await box.focus();
     await page.keyboard.press('Space');
-    await tabTo(page, page.getByRole('button', { name: 'Save changes' }));
+    await tabTo(page, page.getByRole('button', { name: 'Save Changes' }));
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-changes]')).toHaveCount(0);
     expect(await onBody(page)).toBe(false);
@@ -280,7 +280,7 @@ test.describe('#454 the six keyboard flows', () => {
     await tabTo(page, name, 60);
     await page.keyboard.press('End');
     await page.keyboard.type(' v2');
-    await tabTo(page, page.getByRole('button', { name: 'Save changes' }), 60);
+    await tabTo(page, page.getByRole('button', { name: 'Save Changes' }), 60);
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-page-title]')).toContainText('v2');
     const crumb = page.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('link', {

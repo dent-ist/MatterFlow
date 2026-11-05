@@ -53,7 +53,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
     await expect(header(page)).toContainText('Published v2');
     await expect(header(page)).toContainText('Draft v3 in progress');
     await expect(header(page).getByRole('button', { name: 'Open draft v3' })).toBeVisible();
-    await expect(header(page).getByRole('button', { name: 'Create new draft' })).toHaveCount(0);
+    await expect(header(page).getByRole('button', { name: 'Create New Draft' })).toHaveCount(0);
 
     const strip = page.locator('[data-strip]');
     await expect(strip.locator('[data-strip-item="published"]')).toContainText('v2');
@@ -68,7 +68,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
 
     await expect(tab(page, 'Overview')).toHaveAttribute('aria-selected', 'true');
     await expect(tab(page, 'Versions')).toHaveAccessibleName(/Versions.*3/);
-    await expect(tab(page, 'Task types')).toHaveAccessibleName(/Task types.*3/);
+    await expect(tab(page, 'Task Types')).toHaveAccessibleName(/Task types.*3/);
     // The status checkbox is gone on an existing workflow; the mode is read-only.
     await expect(page.locator('#wf-active')).toHaveCount(0);
     await expect(page.locator('[data-mode-read]')).toContainText('Ordered');
@@ -83,7 +83,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
     const wf = await seed.workflow({ name: `Plain ${uid()}`, stepCount: 2 });
     await page.goto(`/admin/workflows/${wf.workflowDefinitionId}`);
     await expect(header(page).getByRole('button', { name: /Open draft/ })).toHaveCount(0);
-    await header(page).getByRole('button', { name: 'Create new draft' }).click();
+    await header(page).getByRole('button', { name: 'Create New Draft' }).click();
     await expect(page).toHaveURL(
       new RegExp(`/admin/workflows/${wf.workflowDefinitionId}/versions/\\d+`),
     );
@@ -102,7 +102,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
     await tab(page, 'Versions').click();
     await expect(page).toHaveURL(/tab=versions/);
     await expect(page).toHaveTitle(/: Versions/);
-    await tab(page, 'Task types').click();
+    await tab(page, 'Task Types').click();
     await expect(page).toHaveURL(/tab=task-types/);
     await tab(page, 'Overview').click();
     await expect(page).not.toHaveURL(/tab=/);
@@ -122,7 +122,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
     await page.keyboard.press('ArrowRight');
     await expect(tab(page, 'Versions')).toHaveAttribute('aria-selected', 'true');
     await page.keyboard.press('ArrowRight');
-    await expect(tab(page, 'Task types')).toHaveAttribute('aria-selected', 'true');
+    await expect(tab(page, 'Task Types')).toHaveAttribute('aria-selected', 'true');
     await page.keyboard.press('Home');
     await expect(tab(page, 'Overview')).toHaveAttribute('aria-selected', 'true');
 
@@ -152,7 +152,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
       const rows = page.locator('[data-task-type]');
       await expect(rows).toHaveCount(22);
       await expect(page.locator('[data-default]')).toHaveCount(22);
-      await expect(tab(page, 'Task types')).toHaveAccessibleName(/Task types.*22/);
+      await expect(tab(page, 'Task Types')).toHaveAccessibleName(/Task types.*22/);
       await expect(rows.first().getByRole('link')).toHaveAttribute(
         'href',
         /\/admin\/task-types\/\d+/,
@@ -175,7 +175,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
       await expect(page.locator('[data-no-task-types]')).toHaveText(
         'No task type uses this workflow.',
       );
-      await expect(tab(page, 'Task types')).toHaveAccessibleName(/Task types.*0/);
+      await expect(tab(page, 'Task Types')).toHaveAccessibleName(/Task types.*0/);
 
       const a = await seed.taskType({ name: `Active ${uid()}`, workflows: [wf] });
       const b = await seed.taskType({ name: `Inactive ${uid()}`, workflows: [wf] });
@@ -186,7 +186,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
       await expect(rows).toHaveCount(2);
       await expect(rows.nth(0)).toContainText(a.name);
       await expect(rows.nth(1)).toContainText('Inactive');
-      await expect(tab(page, 'Task types')).toHaveAccessibleName(/Task types.*1/);
+      await expect(tab(page, 'Task Types')).toHaveAccessibleName(/Task types.*1/);
     });
   });
 
@@ -290,7 +290,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
       const wf = await seed.workflow({ name: `Draftless ${uid()}`, stepCount: 2 });
       await page.goto(`/admin/workflows/${wf.workflowDefinitionId}?tab=versions`);
       await page.getByRole('button', { name: 'Actions for v1' }).click();
-      await page.getByRole('menuitem', { name: 'Create draft from this version' }).click();
+      await page.getByRole('menuitem', { name: 'Create Draft From This Version' }).click();
       await expect(page).toHaveURL(/\/versions\/\d+/);
     });
   });
@@ -368,10 +368,10 @@ test.describe('Workflow record page (WP-TY5)', () => {
       page,
     }) => {
       await page.goto('/admin/workflows/new');
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText('New workflow');
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('New Workflow');
       await page.locator('#wf-name').fill(`Created ${uid()}`);
       await page.locator('[data-mode="unordered"]').check();
-      await page.getByRole('button', { name: 'Create workflow' }).click();
+      await page.getByRole('button', { name: 'Create Workflow' }).click();
       await expect(page).toHaveURL(/\/versions\/\d+/);
     });
   });
@@ -395,7 +395,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
         for (const [tabLabel, query] of [
           ['Overview', ''],
           ['Versions', '?tab=versions'],
-          ['Task types', '?tab=task-types'],
+          ['Task Types', '?tab=task-types'],
         ] as const) {
           await page.goto(`/admin/workflows/${s.workflow.workflowDefinitionId}${query}`);
           await expect(tab(page, tabLabel)).toHaveAttribute('aria-selected', 'true');
@@ -425,7 +425,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
         isOrdered: true,
       });
       await page.goto(`/admin/workflows/${created.workflow.workflowDefinitionId}`);
-      await expect(header(page)).toContainText('Not published');
+      await expect(header(page)).toContainText('Not Published');
       await expect(header(page)).toContainText('Draft v1 in progress');
       await expect(page.locator('[data-strip-item="published"]')).toContainText('None');
       await expect(page.locator('[data-strip-item="open-tasks"]')).toHaveCount(0);

@@ -29,7 +29,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="vp" aria-labelledby="vp-title" data-versions-panel>
-      <h2 id="vp-title" class="vp__title">Version history</h2>
+      <h2 id="vp-title" class="vp__title">Version History</h2>
       @if (failure(); as f) {
         <p class="vp__error" role="alert">{{ f }}</p>
       }

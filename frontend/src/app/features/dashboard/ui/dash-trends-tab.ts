@@ -86,7 +86,7 @@ let nextId = 0;
               [attr.aria-pressed]="backlogShown()"
               (click)="toggleBacklog()"
             >
-              {{ backlogShown() ? 'Hide backlog' : 'Show backlog' }}
+              {{ backlogShown() ? 'Hide Backlog' : 'Show Backlog' }}
             </button>
           }
           @if (hasLines() && !noActivity()) {
@@ -96,7 +96,7 @@ let nextId = 0;
               [attr.aria-pressed]="asTable()"
               (click)="toggleTable()"
             >
-              {{ asTable() ? 'View as chart' : 'View as table'
+              {{ asTable() ? 'View as Chart' : 'View as Table'
               }}<span class="sr-only"> for {{ heading }}</span>
             </button>
           }

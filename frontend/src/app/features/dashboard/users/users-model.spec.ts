@@ -65,7 +65,7 @@ describe('users model', () => {
       });
       expect(bandOf(renamed).label).toBe('Highest priority: Rush');
       expect(bandOf(cy).label).toBe('No open tasks');
-      expect(bandOf(dee).label).toBe('Out of office');
+      expect(bandOf(dee).label).toBe('Out of Office');
     });
 
     it('reads the load level and falls back to Free for an unknown one', () => {
@@ -313,7 +313,7 @@ describe('users model', () => {
       expect(
         cardSummary(aUser(8, 'Hal Moe', [0, 0, 1, 0], { dueSoon: 1, onHold: 2 }), 'Available'),
       ).toBe('Hal Moe. 1 open task, highest priority Normal, 1 due soon, 2 on hold, light load');
-      expect(cardSummary(eve, 'Off hours')).toContain('Eve Kim. Off hours. 2 open tasks');
+      expect(cardSummary(eve, 'Off Hours')).toContain('Eve Kim. Off Hours. 2 open tasks');
     });
 
     it('says when someone is back: the day of the last absence plus one, in the viewer zone', () => {

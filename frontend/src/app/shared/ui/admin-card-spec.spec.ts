@@ -91,7 +91,7 @@ let ran: string[] = [];
   template: `
     <mf-admin-card-list
       noun="asset types"
-      label="Asset types"
+      label="Asset Types"
       [items]="rows()"
       [spec]="cardOf"
       [state]="state()"
@@ -125,7 +125,7 @@ class Host {
     ],
     meta: [
       r.used === 0
-        ? 'Not used'
+        ? 'Not Used'
         : {
             text: `${r.used} assets`,
             link: { commands: ['/assets'], queryParams: { type: r.id } },
@@ -246,7 +246,7 @@ class NoAddressHost {
     primary:
       n === 1
         ? {
-            label: 'Grant access',
+            label: 'Grant Access',
             ariaLabel: 'Grant access to Person 1',
             run: () => activated.push('grant 1'),
           }

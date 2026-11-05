@@ -53,20 +53,20 @@ const ROUTES: Route[] = [
   {
     key: 'task-type',
     noun: 'task type',
-    title: 'Task type',
+    title: 'Task Type',
     url: '/admin/task-types/99999999',
     api: '**/api/v1/task-types/99999999',
     list: 'Task Types',
-    crumbs: ['Administration', 'Task Types', 'Task type'],
+    crumbs: ['Administration', 'Task Types', 'Task Type'],
   },
   {
     key: 'task-type-form',
     noun: 'task type',
-    title: 'Task type',
+    title: 'Task Type',
     url: '/admin/task-types/99999999/form',
     api: '**/api/v1/task-types/99999999',
     list: 'Task Types',
-    crumbs: ['Administration', 'Task Types', 'Task type'],
+    crumbs: ['Administration', 'Task Types', 'Task Type'],
   },
   {
     key: 'workflow',
@@ -80,7 +80,7 @@ const ROUTES: Route[] = [
   {
     key: 'version',
     noun: 'workflow version',
-    title: 'Workflow version',
+    title: 'Workflow Version',
     url: '/admin/workflows/99999999/versions/99999999',
     api: '**/api/v1/workflows/99999999{,/versions/99999999}',
     list: 'Workflows',

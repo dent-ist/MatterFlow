@@ -169,8 +169,8 @@ test.describe('Version editor: row overflow and skip rules (VP2, #395)', () => {
     // Move down with the menu: Enter opens, Arrow Down to Move down, Enter picks; focus is back on the row's overflow.
     await rowMenu(page, a).focus();
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('menuitem', { name: 'Move up' })).toHaveCount(0); // the first row cannot move up
-    await expect(page.getByRole('menuitem', { name: 'Move down' })).toBeFocused();
+    await expect(page.getByRole('menuitem', { name: 'Move Up' })).toHaveCount(0); // the first row cannot move up
+    await expect(page.getByRole('menuitem', { name: 'Move Down' })).toBeFocused();
     await page.keyboard.press('Enter');
     expect((await titlesOf(page)).slice(0, 2)).toEqual([b, a]);
     await expect(rowMenu(page, a)).toBeFocused();
@@ -229,7 +229,7 @@ test.describe('Version editor: row overflow and skip rules (VP2, #395)', () => {
     expect((await titlesOf(page)).slice(0, 2)).toEqual([b, a]);
 
     // Save, and the server has the order and the rules.
-    await page.getByRole('button', { name: 'Save draft' }).click();
+    await page.getByRole('button', { name: 'Save Draft' }).click();
     await expect(page.locator('[data-dirty]')).toHaveCount(0);
     const saved = await admin.get(
       `/api/v1/workflows/${world.wf.workflowDefinitionId}/versions/${world.draftId}`,
@@ -406,7 +406,7 @@ test.describe('Version editor: steps first, library pane or drawer (VP3, #396)',
 
       const addStep = page.getByRole('button', { name: /Add step$/ });
       await addStep.click();
-      const drawer = page.getByRole('dialog', { name: 'Add steps' });
+      const drawer = page.getByRole('dialog', { name: 'Add Steps' });
       await expect(drawer).toBeVisible();
       await expect(drawer.locator('#wf-lib-search')).toBeFocused();
       await expect(drawer.locator('[data-lib-count]')).toBeVisible();
@@ -474,7 +474,7 @@ test.describe('Version editor: execution mode in the bar (VP4, #397)', () => {
       await expect(page.locator('[data-mode-box]')).toHaveCount(0); // the 130 px card is gone
       await button.focus();
       await page.keyboard.press('Enter');
-      const pop = page.getByRole('dialog', { name: 'Execution mode' });
+      const pop = page.getByRole('dialog', { name: 'Execution Mode' });
       await expect(pop).toBeVisible();
       await expect(pop.getByRole('radio', { name: /^Ordered/ })).toBeFocused();
       await expect(pop.locator('[data-mode-help]')).toContainText(

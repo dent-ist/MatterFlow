@@ -40,7 +40,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     <section class="al mf-card" aria-labelledby="al-title" data-absence-list>
       <header class="al__head">
         <div>
-          <h2 class="al__title mf-card__title" id="al-title">Out of office</h2>
+          <h2 class="al__title mf-card__title" id="al-title">Out of Office</h2>
           <p class="al__desc">
             {{
               self()
@@ -56,7 +56,7 @@ type LoadState = 'loading' | 'ready' | 'error';
           [disabled]="state() !== 'ready'"
           (click)="openAdd()"
         >
-          <i class="pi pi-plus" aria-hidden="true"></i> Add out of office
+          <i class="pi pi-plus" aria-hidden="true"></i> Add Out of Office
         </button>
       </header>
 
@@ -168,7 +168,7 @@ type LoadState = 'loading' | 'ready' | 'error';
                 [disabled]="busyId() === e.absenceId"
                 (click)="back(e)"
               >
-                I'm back
+                I'm Back
               </button>
             }
             <button

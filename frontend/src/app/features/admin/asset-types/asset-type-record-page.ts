@@ -257,7 +257,7 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
     list.push({
       id: 'edit-fields',
       role: 'primary',
-      label: 'Edit fields',
+      label: 'Edit Fields',
       icon: 'pi-pencil',
       run: () => void this.openFields(),
     });

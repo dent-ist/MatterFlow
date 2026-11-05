@@ -104,9 +104,9 @@ test.describe('Task type icons and the type-first Create Task', () => {
     await expect(page.locator('[data-icon-current]')).toHaveText('Document');
 
     await page.locator('[data-icon-trigger]').click();
-    const dialog = page.getByRole('dialog', { name: 'Choose an icon' });
+    const dialog = page.getByRole('dialog', { name: 'Choose an Icon' });
     await expect(dialog).toBeVisible();
-    await dialog.getByRole('searchbox', { name: 'Search icons' }).fill('email');
+    await dialog.getByRole('searchbox', { name: 'Search Icons' }).fill('email');
     await dialog.getByRole('radio', { name: 'Email', exact: true }).click();
     await expect(dialog).toHaveCount(0);
     await expect(page.locator('[data-icon-current]')).toHaveText('Email');

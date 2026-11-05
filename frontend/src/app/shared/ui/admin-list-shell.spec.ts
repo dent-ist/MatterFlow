@@ -153,7 +153,7 @@ describe('mf-admin-list-shell (#544)', { timeout: 20_000 }, () => {
     expect(body.querySelector('[data-strip]')).not.toBeNull();
   });
 
-  it('offers "Skip to table" and moves focus to the table, made focusable and named', async () => {
+  it('offers "Skip to Table" and moves focus to the table, made focusable and named', async () => {
     await mount();
     const skip = TestBed.inject(SkipTarget);
     expect(skip.target()?.label).toBe('Skip to table');

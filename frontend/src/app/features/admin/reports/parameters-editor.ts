@@ -98,7 +98,7 @@ export function parseDefault(def: ParamDef, text: string): unknown {
             />
           </div>
           <div class="pe__field">
-            <label class="mf-label mf-label--sm" [for]="id(i, 'help')">Help text</label>
+            <label class="mf-label mf-label--sm" [for]="id(i, 'help')">Help Text</label>
             <input
               class="mf-control mf-control--fill"
               type="text"
@@ -142,7 +142,7 @@ export function parseDefault(def: ParamDef, text: string): unknown {
           @case ('number') {
             <div class="pe__grid" data-number-settings>
               <div class="pe__field">
-                <label class="mf-label mf-label--sm" [for]="id(i, 'min')">Lowest value</label>
+                <label class="mf-label mf-label--sm" [for]="id(i, 'min')">Lowest Value</label>
                 <input
                   class="mf-control mf-control--fill"
                   type="number"
@@ -152,7 +152,7 @@ export function parseDefault(def: ParamDef, text: string): unknown {
                 />
               </div>
               <div class="pe__field">
-                <label class="mf-label mf-label--sm" [for]="id(i, 'max')">Highest value</label>
+                <label class="mf-label mf-label--sm" [for]="id(i, 'max')">Highest Value</label>
                 <input
                   class="mf-control mf-control--fill"
                   type="number"
@@ -226,7 +226,7 @@ export function parseDefault(def: ParamDef, text: string): unknown {
     <ng-template #choice let-d="d" let-i="i">
       <div class="pe__grid" data-choice-settings>
         <div class="pe__field">
-          <label class="mf-label mf-label--sm" [for]="id(i, 'source')">Choices come from</label>
+          <label class="mf-label mf-label--sm" [for]="id(i, 'source')">Choices Come From</label>
           <select
             class="mf-control mf-control--fill"
             [id]="id(i, 'source')"
@@ -237,7 +237,7 @@ export function parseDefault(def: ParamDef, text: string): unknown {
           </select>
         </div>
         <div class="pe__field">
-          <label class="mf-label mf-label--sm" [for]="id(i, 'vtype')">Value is</label>
+          <label class="mf-label mf-label--sm" [for]="id(i, 'vtype')">Value Is</label>
           <select
             class="mf-control mf-control--fill"
             [id]="id(i, 'vtype')"

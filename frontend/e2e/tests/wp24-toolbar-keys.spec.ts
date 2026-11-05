@@ -110,7 +110,7 @@ test.describe('Quick views are one toolbar (#236)', () => {
     await expect(page.locator('[data-task]').first()).toBeVisible();
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('link', { name: 'Skip to task list' })).toBeFocused();
+    await expect(page.getByRole('link', { name: 'Skip to Task List' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.locator('tbody a.wt-title').first()).toBeFocused();
     await queue.open(`?q=${tag}`);

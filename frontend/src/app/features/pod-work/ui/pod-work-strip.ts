@@ -8,9 +8,9 @@ export type PodStripKey = 'overdue' | 'dueToday' | 'asap' | 'onHold';
 
 const ITEMS: readonly { key: PodStripKey; label: string; alert?: boolean }[] = [
   { key: 'overdue', label: 'Overdue', alert: true },
-  { key: 'dueToday', label: 'Due today' },
+  { key: 'dueToday', label: 'Due Today' },
   { key: 'asap', label: 'ASAP' },
-  { key: 'onHold', label: 'On hold' },
+  { key: 'onHold', label: 'On Hold' },
 ];
 
 /** The filter an item applies on the All open tab (the same filters as the matching My Work item). `today` is the calendar day (yyyy-mm-dd) in the viewer's zone. */

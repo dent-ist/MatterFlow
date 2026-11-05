@@ -11,7 +11,7 @@ const nav = (page: Page) => page.getByRole('navigation', { name: 'Main' });
 
 test.describe('Global Create task (#625)', () => {
   const global = (page: Page) => page.locator('header .mf-create');
-  const create = (page: Page) => page.getByRole('button', { name: 'Create task' });
+  const create = (page: Page) => page.getByRole('button', { name: 'New Task' });
 
   test("Matter and Project records show one Create task (the record header's); Client and lists show the global one", async ({
     page,

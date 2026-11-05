@@ -420,12 +420,12 @@ describe('RowEdit', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     const flag = option('4')!.querySelector('[data-option-flag]');
-    expect(flag?.textContent).toMatch(/Out of office until Mar 2[01], 2099/);
+    expect(flag?.textContent).toMatch(/Out of Office until Mar 2[01], 2099/);
     await pick('4');
     expect(tasks['assignTask']).toHaveBeenCalled();
   });
 
-  it('assignee: "Assign to me" is the first choice of the menu when asked for and the task is not already the signed-in user\'s, and assigns them', async () => {
+  it('assignee: "Assign to Me" is the first choice of the menu when asked for and the task is not already the signed-in user\'s, and assigns them', async () => {
     const unassigned = aRow({ status: 'NEW', assignedUser: undefined });
     await create('assignee', unassigned);
     await open();
@@ -460,7 +460,7 @@ describe('RowEdit', () => {
     await open();
     const lead = el().querySelector<HTMLButtonElement>('[data-lead]')!;
     expect(lead.getAttribute('aria-label')).toBe('Assign TSK-1042 to me');
-    expect(lead.textContent!.trim()).toBe('Assign to me');
+    expect(lead.textContent!.trim()).toBe('Assign to Me');
     // First in the menu: above the search box and the people.
     const pop = el().querySelector('.im-pop')!;
     expect(pop.firstElementChild).toBe(lead);
@@ -475,7 +475,7 @@ describe('RowEdit', () => {
     expect(undo.current()?.message).toContain('Assigned to you.');
   });
 
-  it('assignee: the "Assign to me" link-button is the same action as the menu item, with an Undo toast', async () => {
+  it('assignee: the "Assign to Me" link-button is the same action as the menu item, with an Undo toast', async () => {
     const unassigned = aRow({ status: 'IN_PROGRESS', assignedUser: undefined });
     await create('assignee', unassigned);
     expect(el().querySelector('[data-assign-link]')).toBeNull();
@@ -484,7 +484,7 @@ describe('RowEdit', () => {
     fixture.detectChanges();
     const link = el().querySelector<HTMLButtonElement>('[data-assign-link]')!;
     expect(link.getAttribute('aria-label')).toBe('Assign TSK-1042 to me');
-    expect(link.textContent!.trim()).toBe('Assign to me');
+    expect(link.textContent!.trim()).toBe('Assign to Me');
     link.click();
     await fixture.whenStable();
     expect(tasks['assignTask']).toHaveBeenCalledWith(1042, {

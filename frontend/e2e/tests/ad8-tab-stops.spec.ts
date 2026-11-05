@@ -141,23 +141,23 @@ test.describe('Keyboard-only flows (#659)', () => {
     await expect(page.locator('table.mf-grid tbody tr[data-row]').first()).toBeVisible();
 
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('link', { name: 'Skip to table' })).toBeFocused();
+    await expect(page.getByRole('link', { name: 'Skip to Table' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.locator('#labels-table')).toBeFocused();
 
     const link = page.locator(`tr[data-row="${a.label}"] [data-edit]`);
     await link.focus();
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('dialog', { name: 'Edit priority' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Edit Priority' })).toBeVisible();
     await expect(page.locator('#priority-label')).toBeFocused();
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('dialog', { name: 'Edit priority' })).toBeHidden();
+    await expect(page.getByRole('dialog', { name: 'Edit Priority' })).toBeHidden();
     await expect(link).toBeFocused();
 
     const menu = page.getByRole('button', { name: `Actions for ${a.label}` });
     await menu.focus();
     await page.keyboard.press('Enter');
-    await page.getByRole('menuitem', { name: 'Move down' }).focus();
+    await page.getByRole('menuitem', { name: 'Move Down' }).focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-announce]')).toContainText('moved to position');
     await expect(menu).toBeFocused();
@@ -172,12 +172,12 @@ test.describe('Keyboard-only flows (#659)', () => {
     await admin.post('/api/v1/asset-link-roles', { name, isActive: true });
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/admin/asset-types?tab=link-roles');
-    const opener = page.getByRole('button', { name: 'New link role' });
+    const opener = page.getByRole('button', { name: 'New Link Role' });
     await opener.focus();
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('dialog', { name: 'New link role' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'New Link Role' })).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('dialog', { name: 'New link role' })).toBeHidden();
+    await expect(page.getByRole('dialog', { name: 'New Link Role' })).toBeHidden();
     await expect(opener).toBeFocused();
 
     const menu = page.getByRole('button', { name: `Actions for ${name}` });
@@ -227,7 +227,7 @@ test.describe('Keyboard-only flows (#659)', () => {
     });
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/admin/audit?objectType=AssetType&objectId=${type.assetTypeId}`);
-    await page.getByLabel('Group events of one operation').uncheck();
+    await page.getByLabel('Group Events of One Operation').uncheck();
     const toggle = page.locator('tr[data-event] .au-toggle').first();
     await expect(toggle).toBeVisible();
     await toggle.focus();

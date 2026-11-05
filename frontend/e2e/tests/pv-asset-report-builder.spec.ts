@@ -147,7 +147,7 @@ test.describe('Asset report builder (PM v2)', () => {
     const page = await asUser(k.fx.pmA.username);
     await page.goto('/assets/reports');
     await expect(page).toHaveTitle('Assets: Reports - MatterFlow');
-    await expect(page.getByRole('heading', { level: 1, name: 'Asset reports' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Asset Reports' })).toBeVisible();
     await expect(page.locator('[data-result-idle]')).toBeVisible();
 
     const steps = new Steps(page);
@@ -171,10 +171,10 @@ test.describe('Asset report builder (PM v2)', () => {
 
     await steps.click('[data-show-pie]');
     await expect(page.locator('mf-pie-chart')).toBeVisible();
-    await expect(labelledDropdown(page, 'Graph field')).toHaveAttribute('data-value', '1');
+    await expect(labelledDropdown(page, 'Graph Field')).toHaveAttribute('data-value', '1');
     await steps.click('[data-save]');
     await expect(page.locator('[data-saved-item]')).toHaveCount(1);
-    await expect(page.locator('[data-save]')).toHaveText('Save changes');
+    await expect(page.locator('[data-save]')).toHaveText('Save Changes');
     expect(steps.n).toBeLessThanOrEqual(8);
 
     // The saved report opens from its link with the chart it was saved with, and runs again.
@@ -203,7 +203,7 @@ test.describe('Asset report builder (PM v2)', () => {
     await page.locator('[data-show-bar]').click();
     await expect(page.locator('mf-bar-chart')).toBeVisible();
     await expect(page.locator('mf-bar-chart')).toContainText('40');
-    await labelledDropdown(page, 'Graph field').selectOption('0');
+    await labelledDropdown(page, 'Graph Field').selectOption('0');
     await expect(page.locator('mf-bar-chart')).toContainText('2');
     await expect(page.locator('mf-bar-chart')).not.toContainText('40');
     await page.locator('[data-show-table]').click();
@@ -227,7 +227,7 @@ test.describe('Asset report builder (PM v2)', () => {
     await page.locator('[data-run]').click();
     await expect(resultRows(page)).toHaveCount(2);
     await page.locator('[data-export-menu] [data-overflow]').click();
-    await expect(page.getByRole('menuitem', { name: 'Copy as text' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Copy as Text' })).toBeVisible();
 
     const download = page.waitForEvent('download');
     await page.getByRole('menuitem', { name: 'Download CSV' }).click();
@@ -265,7 +265,7 @@ test.describe('Asset report builder (PM v2)', () => {
     await expect(warning).toContainText('Check the units');
     await expect(warning).toContainText('mixes units');
     await expect(page.locator('[data-result-table] thead th')).toContainText([
-      'Asset type',
+      'Asset Type',
       'Assets',
       'Sum of Size (GB)',
       'Sum of Size (Items)',

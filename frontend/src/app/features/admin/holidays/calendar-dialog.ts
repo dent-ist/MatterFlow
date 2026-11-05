@@ -42,7 +42,7 @@ const label = (key: string): string => key.charAt(0).toUpperCase() + key.slice(1
     >
       <form class="cd" novalidate (submit)="$event.preventDefault(); save()">
         <div class="cd__f">
-          <label class="cd__l" for="cd-name">Category name</label>
+          <label class="cd__l" for="cd-name">Category Name</label>
           <input
             id="cd-name"
             class="mf-control mf-control--fill"
@@ -60,7 +60,7 @@ const label = (key: string): string => key.charAt(0).toUpperCase() + key.slice(1
           }
         </div>
         <div class="cd__f">
-          <label class="cd__l" for="cd-note">Region or country note</label>
+          <label class="cd__l" for="cd-note">Region or Country Note</label>
           <input
             id="cd-note"
             class="mf-control mf-control--fill"

@@ -79,7 +79,7 @@ const ALL_ROLES = '';
         @if (roleItems().length > 1) {
           <mf-dropdown
             buttonId="cal-role"
-            label="Filter by role"
+            label="Filter By Role"
             prefix="Role:"
             icon="pi-filter"
             [items]="roleItems()"

@@ -37,7 +37,7 @@
       <p class="at__error" role="alert" data-conflict>
         Someone else changed this asset type.
         <button type="button" class="mf-btn mf-btn--text" (click)="reload()" data-reload>
-          Reload the latest version
+          Reload the Latest Version
         </button>
         (your unsaved edits will be discarded).
       </p>
@@ -112,7 +112,7 @@
                 Optional. The same icons as task types. Without one, lists show a default icon.
                 @if (model().iconKey) {
                   <button type="button" class="mf-linkbtn" (click)="patch({ iconKey: '' })">
-                    Clear the icon
+                    Clear the Icon
                   </button>
                 }
               </p>
@@ -208,7 +208,7 @@
                 </p>
                 <div class="at__size">
                   <div class="at__size-field">
-                    <label class="at__label" for="at-size-field">Size field</label>
+                    <label class="at__label" for="at-size-field">Size Field</label>
                     <select
                       id="at-size-field"
                       class="mf-control"
@@ -256,7 +256,7 @@
                     (click)="saveSize()"
                     data-size-save
                   >
-                    Save size field
+                    Save Size Field
                   </button>
                   <button
                     type="button"
@@ -265,7 +265,7 @@
                     (click)="reindex()"
                     data-reindex
                   >
-                    Rebuild the index
+                    Rebuild the Index
                   </button>
                 </div>
                 <p class="at__hint">
@@ -318,7 +318,7 @@
             [disabled]="busy()"
             data-save
           >
-            {{ isNew() ? 'Create asset type' : 'Save changes' }}
+            {{ isNew() ? 'Create Asset Type' : 'Save Changes' }}
           </button>
         </div>
       }

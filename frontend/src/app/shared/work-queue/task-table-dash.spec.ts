@@ -121,7 +121,7 @@ describe('TaskTable, Dashboard Summary cells', () => {
     const heads = Array.from(el().querySelectorAll('thead tr:first-child th')).map((th) =>
       th.textContent?.trim(),
     );
-    expect(heads).toContain('Unassigned for');
+    expect(heads).toContain('Unassigned For');
   });
 
   it('lists each person in the Assign menu with the state icon, the state word and the load', async () => {
@@ -140,7 +140,7 @@ describe('TaskTable, Dashboard Summary cells', () => {
     const hints = Array.from(document.querySelectorAll('.im-pop [data-option-hint]')).map((h) =>
       h.textContent?.replace(/\s+/g, ' ').trim(),
     );
-    expect(hints).toEqual(['Busy, 2 open', 'Out of office, 1 open']);
+    expect(hints).toEqual(['Busy, 2 open', 'Out of Office, 1 open']);
     expect(document.querySelectorAll('.im-pop .im-hint-icon')).toHaveLength(2);
   });
 });

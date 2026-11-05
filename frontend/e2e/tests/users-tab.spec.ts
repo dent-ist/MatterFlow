@@ -106,7 +106,7 @@ test.describe('Users tab: workload', () => {
       const name = await open.getAttribute('aria-label');
       expect(name).toContain(u.displayName);
       expect(name).toContain(`${u.openTotal} open task`);
-      if (ooo) expect(name).toContain('Out of office');
+      if (ooo) expect(name).toContain('Out of Office');
     }
   });
 
@@ -214,7 +214,7 @@ test.describe('Users tab: workload', () => {
     expect(names).toEqual(
       [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
     );
-    await labelledDropdown(page, 'Sort').selectOption({ label: 'Open tasks' });
+    await labelledDropdown(page, 'Sort').selectOption({ label: 'Open Tasks' });
     await expect(page.locator('[data-user-card]').first()).toHaveAttribute('data-load', 'HEAVY');
     // The choice is remembered across a reload.
     await page.reload();
@@ -246,7 +246,7 @@ test.describe('Users tab: workload', () => {
     await expect(page.locator('[data-users-empty]')).toContainText(
       'No people match these filters.',
     );
-    await page.getByRole('button', { name: 'Clear filters' }).first().click();
+    await page.getByRole('button', { name: 'Clear Filters' }).first().click();
     await expect(page.locator('[data-user-card]').first()).toBeVisible();
   });
 
@@ -549,7 +549,7 @@ test.describe('Users tab: workload', () => {
 
     const ref = (await rows.first().locator('.mf-ref').first().textContent())!.trim();
     await drawer.getByRole('button', { name: `Reassign ${ref}` }).click();
-    await page.getByRole('textbox', { name: 'Search people' }).fill(person('idle').displayName);
+    await page.getByRole('textbox', { name: 'Search People' }).fill(person('idle').displayName);
     await page.getByRole('menuitemradio', { name: person('idle').displayName }).click();
     await expect(drawer.locator('[data-drawer-live]')).toContainText(
       `${ref} reassigned to ${person('idle').displayName}`,
@@ -726,7 +726,7 @@ test.describe('Users tab: coverage', () => {
   const cell = (page: Page, p: Person, typeId: number) =>
     page.locator(`[data-cell="${p.userId}:${typeId}"]`);
   /**
-   * Opens the matrix with every task type drawn. It draws the first 60 task types alphabetically and offers "Show more", and the shared
+   * Opens the matrix with every task type drawn. It draws the first 60 task types alphabetically and offers "Show More", and the shared
    * database holds hundreds of them (every spec adds its own), so the seeded types are on the first screen only in an empty database;
    * the column totals also follow the rows that are drawn.
    */
@@ -825,7 +825,7 @@ test.describe('Users tab: coverage', () => {
     await expect(
       cell(page, a, cov.typeIds.production).locator('xpath=ancestor::td'),
     ).toHaveAttribute('data-step', '4');
-    await page.getByLabel('Colour scale').selectOption('absolute');
+    await page.getByLabel('Colour Scale').selectOption('absolute');
     await expect(
       cell(page, a, cov.typeIds.production).locator('xpath=ancestor::td'),
     ).toHaveAttribute('data-step', '2');

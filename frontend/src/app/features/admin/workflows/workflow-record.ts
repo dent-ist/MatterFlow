@@ -61,7 +61,7 @@ export function workflowStateBadges(w: WorkflowDetail['workflow']): WorkflowBadg
   list.push(
     w.publishedVersionNo
       ? { label: `Published v${w.publishedVersionNo}`, tone: 'success', icon: 'pi-check-circle' }
-      : { label: 'Not published', tone: 'neutral' },
+      : { label: 'Not Published', tone: 'neutral' },
   );
   if (w.draftVersionNo) {
     list.push({
@@ -128,7 +128,7 @@ export function workflowStripItems(d: WorkflowDetail, canSeeTasks: boolean): Wor
     },
     {
       key: 'task-types',
-      label: 'Task types',
+      label: 'Task Types',
       count: activeTaskTypes(d).length,
       hint: 'Active task types that offer this workflow',
     },
@@ -137,7 +137,7 @@ export function workflowStripItems(d: WorkflowDetail, canSeeTasks: boolean): Wor
   if (canSeeTasks && open !== null) {
     items.push({
       key: 'open-tasks',
-      label: 'Open tasks',
+      label: 'Open Tasks',
       count: open,
       hint: w.publishedVersionNo
         ? `Open tasks running on the published version, v${w.publishedVersionNo}`

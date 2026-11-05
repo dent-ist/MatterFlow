@@ -103,7 +103,7 @@ test.describe('the filter row is open from 640 px and the Filters button sits in
         // The button is one of the page header's actions, not a row of its own above the grid.
         const header = page.locator('mf-page-header');
         await expect(header.locator('[data-filters-toggle]')).toBeVisible();
-        // No row of its own for the button. A narrow window that leaves a column out may keep a row with the one "Other filters" button.
+        // No row of its own for the button. A narrow window that leaves a column out may keep a row with the one "Other Filters" button.
         const toolbar = page.locator('[data-grid-toolbar]');
         if ((await toolbar.count()) > 0) {
           await expect(toolbar).toHaveText(/^\s*Other filters\s*$/);

@@ -6,7 +6,7 @@ import { expect, test } from '../support/fixtures';
 
 /**
  * Users epic #422, WP-US6 #450 (U11 list, BUG-6): the Pods tab on the admin list kit.
- *  - the header has Filters with its count and the one Clear filters (open by default from 640 px), "Skip to table" is the first Tab stop;
+ *  - the header has Filters with its count and the one Clear filters (open by default from 640 px), "Skip to Table" is the first Tab stop;
  *  - rows are 44 px, the name is the one link of a row and puts the pod in the address (`?pod=`), there is no Edit link and no actions column;
  *  - "n inactive hidden - Show all": the count equals the inactive pods, Show all reveals them and the address records it;
  *  - the word is Inactive across the tab and the editor (the members' badge too); phone cards below 640 px;
@@ -139,7 +139,7 @@ test.describe('#450 Pods list on the kit', () => {
     const hint = page.locator('[data-hidden-hint]');
     await expect(hint).toContainText(`${inactive.total} inactive hidden`);
     await expect(podRow(page, inactivePodId)).toHaveCount(0);
-    await hint.getByRole('button', { name: 'Show all' }).click();
+    await hint.getByRole('button', { name: 'Show All' }).click();
     await expect(page).toHaveURL(/status=all/);
     await expect(page.locator('[data-hidden-hint]')).toHaveCount(0);
     await page.goto(`/admin/pods?status=all&name=${encodeURIComponent(inactiveName)}`);
@@ -147,7 +147,7 @@ test.describe('#450 Pods list on the kit', () => {
     await expect(podRow(page, inactivePodId)).toContainText('Inactive');
   });
 
-  test('"Skip to table" is the first Tab stop and lands on the name of the first pod', async ({
+  test('"Skip to Table" is the first Tab stop and lands on the name of the first pod', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
@@ -155,7 +155,7 @@ test.describe('#450 Pods list on the kit', () => {
     await expect(podRow(page, activePodId)).toBeVisible();
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
     await page.keyboard.press('Tab');
-    const skip = page.getByRole('link', { name: 'Skip to table' });
+    const skip = page.getByRole('link', { name: 'Skip to Table' });
     await expect(skip).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.locator('tbody tr[data-pod] a').first()).toBeFocused();

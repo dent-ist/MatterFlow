@@ -98,7 +98,7 @@ const PAGE_SIZE = 25;
             <tr>
               <th scope="col" class="c-w">When</th>
               <th scope="col" class="c-k">What</th>
-              <th scope="col" class="c-t">Task or asset</th>
+              <th scope="col" class="c-t">Task or Asset</th>
               <th scope="col" class="c-who">Who</th>
               <th scope="col" class="c-m">Matter</th>
             </tr>

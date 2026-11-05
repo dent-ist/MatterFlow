@@ -137,7 +137,7 @@ describe('MyWorkPage', () => {
       const el = await open('/my-work');
       const strip = el.querySelector('[data-strip]')!;
       expect(strip.textContent!.replace(/\s+/g, ' ').trim()).toBe(
-        'Overdue 9 Due today 3 ASAP 14 On hold 0',
+        'Overdue 9 Due Today 3 ASAP 14 On Hold 0',
       );
       expect(strip.getAttribute('title')).toBe(
         'All your open tasks, not affected by the filters below',
@@ -271,7 +271,7 @@ describe('MyWorkPage', () => {
     expect(el.querySelector('[data-tab-help-text]')!.textContent).toContain('last 90 days');
 
     const older = Array.from(el.querySelectorAll<HTMLButtonElement>('button')).find(
-      (b) => b.textContent?.trim() === 'Show older',
+      (b) => b.textContent?.trim() === 'Show Older',
     )!;
     older.click();
     await settle();
@@ -281,7 +281,7 @@ describe('MyWorkPage', () => {
     expect(lastArgs()[ARG.completedFrom]).toBeUndefined();
     expect(chips(el)).toContain('Closed: all time');
     expect(
-      Array.from(el.querySelectorAll('button')).some((b) => b.textContent?.trim() === 'Show older'),
+      Array.from(el.querySelectorAll('button')).some((b) => b.textContent?.trim() === 'Show Older'),
     ).toBe(false);
     el.querySelector<HTMLButtonElement>('[data-tab-help] button')!.click();
     await settle();
@@ -565,7 +565,7 @@ describe('MyWorkPage', () => {
         ),
       });
       expect(el.querySelector('[data-strip]')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
-        'Overdue 9 Due today 3 ASAP 14 On hold 0 New 1',
+        'Overdue 9 Due Today 3 ASAP 14 On Hold 0 New 1',
       );
       expect(lastArgs()[ARG.newSince]).toBe(new Date(SINCE).toISOString());
       expect(lastArgs()[ARG.assignedFrom]).toBeUndefined();
@@ -803,7 +803,7 @@ describe('MyWorkPage', () => {
     expect(el.querySelector('tbody [data-empty]')!.textContent).toContain(
       'You have no open tasks you created.',
     );
-    expect(link?.textContent).toContain('Create task');
+    expect(link?.textContent).toContain('New Task');
     expect(link?.getAttribute('href')).toBe('/tasks/new');
 
     TestBed.resetTestingModule();
@@ -817,7 +817,7 @@ describe('MyWorkPage', () => {
   describe('Created by me starts on Open (B2)', () => {
     const empty = { response: of(pageOf([], { counts: COUNTS })) };
 
-    it('says Open without a chip, sends no status, and offers "Show closed tasks" when nothing is open', async () => {
+    it('says Open without a chip, sends no status, and offers "Show Closed Tasks" when nothing is open', async () => {
       const el = await open('/my-work?view=createdByMe', empty);
       expect(lastArgs()[ARG.status]).toBeUndefined();
       expect(el.querySelector('tbody [data-empty]')!.textContent).toContain(
@@ -1021,7 +1021,7 @@ describe('MyWorkPage', () => {
     expect(el.querySelector('th[data-col="progress"]')).toBeNull();
     expect(el.querySelector('th[data-col="closed"]')).not.toBeNull();
 
-    // Back on Active the choice is kept; "Reset columns" brings the default back.
+    // Back on Active the choice is kept; "Reset Columns" brings the default back.
     tab(el, 'Active').click();
     await settle();
     expect(el.querySelector('th[data-col="progress"]')).toBeNull();

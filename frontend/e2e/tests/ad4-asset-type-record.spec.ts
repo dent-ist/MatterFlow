@@ -49,7 +49,7 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
 
     // A blank name: one summary at the top, one message, focus on the field.
-    await page.getByRole('button', { name: 'Create asset type' }).click();
+    await page.getByRole('button', { name: 'Create Asset Type' }).click();
     const summary = page.locator('[data-summary]');
     await expect(summary).toContainText('Enter a name.');
     expect((await summary.innerText()).match(/Enter a name\./g)).toHaveLength(1);
@@ -61,7 +61,7 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
     const existing = `Dup ${uid()}`;
     await admin.post('/api/v1/asset-types', { name: existing, description: null });
     await name(page).fill(existing);
-    await page.getByRole('button', { name: 'Create asset type' }).click();
+    await page.getByRole('button', { name: 'Create Asset Type' }).click();
     await expect(summary).toContainText('already exists');
     await expect(name(page)).toBeFocused();
 
@@ -71,7 +71,7 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
     await page.getByLabel('Description').fill('Created in a test');
     await expect(page.getByText('100 / 100')).toBeVisible();
     await expect(page.getByText('17 / 500')).toBeVisible();
-    await page.getByRole('button', { name: 'Create asset type' }).click();
+    await page.getByRole('button', { name: 'Create Asset Type' }).click();
     await expect(page).toHaveURL(/\/admin\/asset-types\/\d+\?tab=fields$/);
     await expect(heading(page)).toContainText(longName.slice(0, 20));
     expect((await heading(page).boundingBox())!.height).toBeLessThanOrEqual(80);
@@ -119,7 +119,7 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/admin/asset-types?name=${token}`);
     await page.getByRole('link', { name: `Deep ${token}` }).click();
-    await page.locator('[data-page-actions]').getByRole('button', { name: 'Edit fields' }).click();
+    await page.locator('[data-page-actions]').getByRole('button', { name: 'Edit Fields' }).click();
     await expect(page).toHaveURL(new RegExp(`/admin/asset-types/${t.assetTypeId}/form$`));
     await crumbs(page).filter({ hasText: 'Asset Types' }).getByRole('link').click();
     await expect(page).toHaveURL(new RegExp(`name=${token}`));
@@ -170,7 +170,7 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
     await expect(page).toHaveURL(/\/admin\/asset-types\/\d+$/);
 
     await name(page).fill(`Saved ${token}`);
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
     await expect(heading(page)).toContainText(`Saved ${token}`);
     await expect(page.locator('[data-footer]')).toHaveCount(0);
     const saved = await admin.get(`/api/v1/asset-types/${t.assetTypeId}`);
@@ -212,11 +212,11 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
 
     await page.goto(`/admin/asset-types/${draftOnly.id}?tab=fields`);
     await expect(page.locator('[data-form-draft]')).toContainText('Draft v1 is in progress.');
-    await expect(page.getByRole('button', { name: 'Edit fields' }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Edit Fields' }).first()).toBeVisible();
 
     // Edit fields (the primary action of the header) opens the designer; the crumb names the record and links back to it.
     await page.goto(`/admin/asset-types/${published.id}`);
-    await page.locator('[data-page-actions]').getByRole('button', { name: 'Edit fields' }).click();
+    await page.locator('[data-page-actions]').getByRole('button', { name: 'Edit Fields' }).click();
     await expect(page).toHaveURL(new RegExp(`/admin/asset-types/${published.id}/form$`));
     await expect(crumbs(page)).toHaveText([
       /Administration/,

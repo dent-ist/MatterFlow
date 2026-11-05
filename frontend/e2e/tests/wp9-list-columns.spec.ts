@@ -224,7 +224,7 @@ test.describe('WP9 list columns', () => {
       page,
     }) => {
       await page.goto(`/clients?name=Wp9 sort ${w.token}`);
-      const head = grid(page, 'Clients list').getByRole('columnheader', { name: 'Open tasks' });
+      const head = grid(page, 'Clients list').getByRole('columnheader', { name: 'Open Tasks' });
       await head.getByRole('button').click();
       await expect(page).toHaveURL(/sort=-openTasks/);
       await expect(head).toHaveAttribute('aria-sort', 'descending');
@@ -389,7 +389,7 @@ test.describe('WP9 list columns', () => {
       expect(heads.map((h) => h.trim())).toEqual([
         'Matter',
         'Name',
-        'Open tasks',
+        'Open Tasks',
         'Overdue',
         'Status',
       ]);
@@ -414,7 +414,7 @@ test.describe('WP9 list columns', () => {
         [
           `/clients?name=${w.token}`,
           'Clients list',
-          ['Client number', 'Name', 'Matters', 'Status'],
+          ['Client Number', 'Name', 'Matters', 'Status'],
         ],
         [
           `/matters?name=${w.token}`,

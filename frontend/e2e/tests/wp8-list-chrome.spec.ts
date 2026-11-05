@@ -12,7 +12,7 @@ import { filterDropdown } from '../support/dropdown';
  * lists and the client's Matters tab: every body row is 44 px whatever the name length, names clamp at two lines with the full text as
  * tooltip, the filter row is open by default from 640 px and remembered, one chip rule with exactly one Clear filters, the default
  * Status is neither counted nor chipped, the pager says how many inactive records are hidden, and Sensitive is a select in the filter
- * row (no "Other filters"). axe finds nothing and the page never scrolls sideways at 1366x768, 1920x1080, 768x1024 and 375x812.
+ * row (no "Other Filters"). axe finds nothing and the page never scrolls sideways at 1366x768, 1920x1080, 768x1024 and 375x812.
  * Screenshots go to E2E_SCREENSHOTS when it is set (docs/ux/clients-review/fixes/wp8).
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
@@ -333,16 +333,16 @@ test.describe('WP8 list chrome', () => {
       // Open: counter 2, no chips, exactly one Clear filters (in the header).
       await expect(toggle(page)).toContainText('(2)');
       await expect(page.locator('[data-chip]')).toHaveCount(0);
-      await expect(page.getByRole('button', { name: 'Clear filters' })).toHaveCount(1);
+      await expect(page.getByRole('button', { name: 'Clear Filters' })).toHaveCount(1);
       await expect(page.locator('[data-page-actions] [data-clear-filters]')).toHaveCount(1);
 
       // Closed: chips for the two filters changed, still exactly one Clear filters (with the chips).
       await toggle(page).click();
       await expect(page.locator('[data-chip]')).toHaveCount(2);
-      await expect(page.getByRole('button', { name: 'Clear filters' })).toHaveCount(1);
+      await expect(page.getByRole('button', { name: 'Clear Filters' })).toHaveCount(1);
       await expect(page.locator('[data-grid-toolbar] [data-clear-filters]')).toHaveCount(1);
       await shot(page, 'clients-filters-closed-chips');
-      await page.getByRole('button', { name: 'Clear filters' }).click();
+      await page.getByRole('button', { name: 'Clear Filters' }).click();
       // The default again (Active), not All: nothing in the address, nothing counted.
       await expect(page).not.toHaveURL(/status=|name=/);
       await expect(page.locator('[data-chip]')).toHaveCount(0);
@@ -357,9 +357,9 @@ test.describe('WP8 list chrome', () => {
       await page.goto(`/clients?name=${uid()}-nothing&sort=-name`);
       const region = grid(page, 'Clients list');
       await expect(region.locator('td[data-empty="filtered"]')).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Clear filters' })).toHaveCount(1);
+      await expect(page.getByRole('button', { name: 'Clear Filters' })).toHaveCount(1);
       await toggle(page).click();
-      await expect(page.getByRole('button', { name: 'Clear filters' })).toHaveCount(1);
+      await expect(page.getByRole('button', { name: 'Clear Filters' })).toHaveCount(1);
       await page.reload();
       await expect(page).toHaveURL(/name=.*-nothing&sort=-name/);
     });
@@ -419,7 +419,7 @@ test.describe('WP8 list chrome', () => {
       await expect(pager.locator('[data-range]')).toHaveText('Showing 1-3 of 3 active');
       await expect(pager.locator('[data-hidden-hint]')).toContainText('- 2 inactive hidden');
       await shot(page, 'clients-hidden-hint');
-      await pager.getByRole('button', { name: 'Show all' }).click();
+      await pager.getByRole('button', { name: 'Show All' }).click();
       await expect(page).toHaveURL(/status=all/);
       await expect(rows).toHaveCount(5);
       await expect(pager.locator('[data-hidden-hint]')).toHaveCount(0);
@@ -451,7 +451,7 @@ test.describe('WP8 list chrome', () => {
       await expect(page.locator('[data-hidden-hint]')).toContainText('- 2 inactive hidden');
       await page.goto(`/clients/${scoped.client.clientId}?tab=matters&name=${scoped.token}`);
       await expect(page.locator('[data-hidden-hint]')).toContainText('- 2 inactive hidden');
-      await page.getByRole('button', { name: 'Show all' }).click();
+      await page.getByRole('button', { name: 'Show All' }).click();
       await expect(page).toHaveURL(/status=all/);
       await page.goto(`/projects?name=${scoped.token}`);
       await expect(page.locator('[data-range]')).toHaveText('Showing 1-3 of 3 active');
@@ -505,13 +505,13 @@ test.describe('WP8 list chrome', () => {
   });
 
   test.describe('Sensitive in the filter row (#272)', () => {
-    test('Matters: no "Other filters"; Sensitive Yes lists the sensitive matters and equals the API total', async ({
+    test('Matters: no "Other Filters"; Sensitive Yes lists the sensitive matters and equals the API total', async ({
       page,
       admin,
     }) => {
       await page.setViewportSize({ width: 1366, height: 768 });
       await page.goto(`/matters?name=${w.token}`);
-      await expect(page.getByRole('button', { name: 'Other filters' })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Other Filters' })).toHaveCount(0);
       const sensitive = select(page, 'Sensitive');
       await expect(sensitive).toHaveAttribute('data-value', '');
       // Up to 1499 px the two stack in the Status cell (PM v2, #881: side by side they took the room of Name and Client): under Status, same column.
@@ -557,19 +557,19 @@ test.describe('WP8 list chrome', () => {
       await expect(page.getByRole('list', { name: 'Active filters' })).toContainText(
         'Sensitive: Yes',
       );
-      await expect(page.getByRole('button', { name: 'Other filters' })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Other Filters' })).toHaveCount(0);
     });
 
-    test('the client Matters tab has Sensitive too; Clients and Projects have no "Other filters"', async ({
+    test('the client Matters tab has Sensitive too; Clients and Projects have no "Other Filters"', async ({
       page,
     }) => {
       await page.setViewportSize({ width: 1366, height: 768 });
       await page.goto(`/clients/${w.client.clientId}?tab=matters&name=${w.token}`);
       await expect(select(page, 'Sensitive')).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Other filters' })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Other Filters' })).toHaveCount(0);
       for (const url of ['/clients', '/projects']) {
         await page.goto(url);
-        await expect(page.getByRole('button', { name: 'Other filters' })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: 'Other Filters' })).toHaveCount(0);
         await expect(select(page, 'Sensitive')).toHaveCount(0);
       }
     });

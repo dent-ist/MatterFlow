@@ -170,7 +170,7 @@ test.describe('Step record page', () => {
       await expect(page.locator('[data-page-actions] button[data-action]')).toHaveText([
         'Edit',
         'Activity',
-        'Edit inputs',
+        'Edit Inputs',
       ]);
       await expect(page.locator('[data-action=edit-inputs]')).toHaveClass(/mf-btn--primary/);
       await page.locator('[data-action=edit]').click();
@@ -189,7 +189,7 @@ test.describe('Step record page', () => {
       await page.setViewportSize({ width: 375, height: 812 });
       await openStep(page, step.id);
       await expect(page.locator('[data-page-actions] button[data-action]')).toHaveText([
-        'Edit inputs',
+        'Edit Inputs',
       ]);
       await overflowButton(page).click();
       await expect(page.getByRole('menuitem')).toHaveText(['Edit', 'Activity', 'Deactivate']);
@@ -268,7 +268,7 @@ test.describe('Step record page', () => {
       await clean(page, 'new step');
       const title = `New step ${uid()}`;
       await page.locator('#step-title').fill(title);
-      await page.getByRole('button', { name: 'Create step' }).click();
+      await page.getByRole('button', { name: 'Create Step' }).click();
       await expect(page).toHaveURL(/\/admin\/steps\/\d+\?tab=inputs$/);
       await expect(page.locator('h1')).toContainText(title);
       await expect(page.locator('[data-inputs-none]')).toBeVisible();
@@ -315,7 +315,7 @@ test.describe('Step record page', () => {
       await expect(page.locator('[data-footer]')).toHaveCount(0);
       await page.locator('#step-description').fill('Edited description');
       await expect(page.locator('[data-footer]')).toBeVisible();
-      await expect(page.locator('[data-footer] button')).toHaveText(['Save changes', 'Cancel']);
+      await expect(page.locator('[data-footer] button')).toHaveText(['Save Changes', 'Cancel']);
       await page.locator('[data-cancel]').click();
       await expect(page.locator('#step-description')).toHaveValue('');
       await expect(page.locator('[data-footer]')).toHaveCount(0);
@@ -324,7 +324,7 @@ test.describe('Step record page', () => {
       await expect(page.locator('h1')).toContainText(step.title);
       await expect(page.locator('h1')).not.toContainText('renamed');
       await shot(page, 'details-edited', 1366);
-      await page.getByRole('button', { name: 'Save changes' }).click();
+      await page.getByRole('button', { name: 'Save Changes' }).click();
       await expect(page.locator('h1')).toContainText('renamed');
       await expect(page.locator('[data-footer]')).toHaveCount(0);
       const saved = (await admin.get(`/api/v1/step-definitions/${step.id}`)) as { title: string };
@@ -393,7 +393,7 @@ test.describe('Step record page', () => {
       const step = await makeStep(admin, seed);
       await openStep(page, step.id);
       await page.locator('#step-title').fill('');
-      await page.getByRole('button', { name: 'Save changes' }).click();
+      await page.getByRole('button', { name: 'Save Changes' }).click();
       await expect(page.locator('[data-summary]')).toContainText('Enter a title.');
       await expect(page.locator('#step-title')).toBeFocused();
       await expect(page.locator('h1')).toContainText(step.title);
@@ -469,9 +469,9 @@ test.describe('Step record page', () => {
       const step = await makeStep(admin, seed);
       await page.setViewportSize({ width: 1366, height: 768 });
       await openStep(page, step.id, 'used-by');
-      await expect(page.locator('[data-not-used]')).toContainText('Not used');
+      await expect(page.locator('[data-not-used]')).toContainText('Not Used');
       await expect(page.locator('[data-used-note]')).toHaveCount(0);
-      await expect(page.locator('[data-strip-item=used]')).toContainText('Not used');
+      await expect(page.locator('[data-strip-item=used]')).toContainText('Not Used');
       await expect(tab(page, 'used-by')).toContainText('(0)');
       for (const size of SIZES) {
         await page.setViewportSize({ width: size.w, height: size.h });
@@ -602,7 +602,7 @@ test.describe('Step record page', () => {
       await page.setViewportSize({ width: 1366, height: 768 });
       await openStep(page, step.id);
       await page.locator('#step-title').fill(`${step.title} x`);
-      await expect(page.locator('[data-footer] button')).toHaveText(['Save changes', 'Cancel']);
+      await expect(page.locator('[data-footer] button')).toHaveText(['Save Changes', 'Cancel']);
       await page.locator('[data-cancel]').click();
       await menuItem(page, 'Deactivate');
       const dialog = page.getByRole('dialog', { name: 'Deactivate Step' });

@@ -34,7 +34,7 @@ describe('UsersTable', () => {
       'Workload',
       'Highest priority',
       'Overdue',
-      'Next due',
+      'Next Due',
     ]);
     // No Availability column and no avatar (US-10).
     expect(heads).not.toContain('Availability');
@@ -48,9 +48,9 @@ describe('UsersTable', () => {
       'Heavy: 10 open (2 Critical, 5 High, 3 Normal)',
     );
     // No separate Open tasks column and no signal icons with digits.
-    expect(heads).not.toContain('Open tasks');
-    expect(heads).not.toContain('Due soon');
-    expect(heads).not.toContain('On hold');
+    expect(heads).not.toContain('Open Tasks');
+    expect(heads).not.toContain('Due Soon');
+    expect(heads).not.toContain('On Hold');
     expect(heads).not.toContain('Open by priority');
   });
 
@@ -67,7 +67,7 @@ describe('UsersTable', () => {
       }),
     ]);
     f.detectChanges();
-    expect(el.querySelector('tbody .chip')!.textContent).toContain('Out of office');
+    expect(el.querySelector('tbody .chip')!.textContent).toContain('Out of Office');
     // The chip sits beside the name, in the Person cell.
     expect(el.querySelector('tbody th.person .chip')).not.toBeNull();
     expect(el.querySelector('tbody td.warn')!.textContent!.trim()).toBe('2');

@@ -115,7 +115,7 @@ describe('workflow record helpers', () => {
       workflowStateBadges(
         summary({ publishedVersionId: undefined, publishedVersionNo: undefined }),
       ).map((b) => [b.label, b.tone]),
-    ).toEqual([['Not published', 'neutral']]);
+    ).toEqual([['Not Published', 'neutral']]);
   });
 
   it('shows only the open-task numbers the API returned', () => {
@@ -221,7 +221,7 @@ describe('WorkflowEditPage record page (WP-TY5)', () => {
     let { el } = await open('task-types');
     let rows = Array.from(el.querySelectorAll('[data-task-type]'));
     expect(rows.map((r) => r.getAttribute('data-task-type'))).toEqual(['1', '2']);
-    expect(rows[0].textContent).toContain('Default workflow');
+    expect(rows[0].textContent).toContain('Default Workflow');
     expect(rows[1].textContent).toContain('Inactive');
     expect(el.querySelector('[data-task-types-tab] a')).toBeNull();
     expect(el.querySelector('[data-summary-line]')?.textContent).toContain(
@@ -399,7 +399,7 @@ describe('WorkflowEditPage record page (WP-TY5)', () => {
     const input = el.querySelector<HTMLInputElement>('#wf-name')!;
     input.value = 'X';
     input.dispatchEvent(new Event('input'));
-    buttonByLabel(el, 'Save changes')!.click();
+    buttonByLabel(el, 'Save Changes')!.click();
     await settle(fixture);
     expect(el.querySelector('[data-conflict]')).not.toBeNull();
   });

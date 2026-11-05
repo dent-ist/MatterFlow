@@ -31,7 +31,7 @@
           [checked]="grouped()"
           (change)="grouped.set($any($event.target).checked)"
         />
-        Group events of one operation
+        Group Events of One Operation
       </label>
     </div>
 
@@ -82,7 +82,7 @@
                   @if (whoShown()) {
                     <th class="au-cell-who" scope="col">Who</th>
                   }
-                  <th class="mf-cell-name" scope="col">What happened</th>
+                  <th class="mf-cell-name" scope="col">What Happened</th>
                   <th class="au-cell-object" scope="col">Object</th>
                   <th class="mf-cell-actions" scope="col">
                     <span class="mf-sr-only">Actions</span>
@@ -240,7 +240,7 @@
                   data-narrow
                   (click)="narrowDates()"
                 >
-                  Change dates
+                  Change Dates
                 </button>
               </span>
             }
@@ -253,7 +253,7 @@
               [disabled]="loadingMore()"
               (click)="loadMore()"
             >
-              {{ loadingMore() ? 'Loading...' : 'Load more' }}
+              {{ loadingMore() ? 'Loading...' : 'Load More' }}
             </button>
           } @else {
             <span class="au-muted" data-end>End of the results.</span>
@@ -361,7 +361,7 @@
                 [attr.aria-expanded]="isFull(item, 'old')"
                 (click)="toggleFull(item, 'old')"
               >
-                {{ isFull(item, 'old') ? 'Show less' : 'Show full' }}
+                {{ isFull(item, 'old') ? 'Show Less' : 'Show Full' }}
               </button>
             }
             @if (item.oldValueTruncated) {
@@ -387,7 +387,7 @@
                 [attr.aria-expanded]="isFull(item, 'new')"
                 (click)="toggleFull(item, 'new')"
               >
-                {{ isFull(item, 'new') ? 'Show less' : 'Show full' }}
+                {{ isFull(item, 'new') ? 'Show Less' : 'Show Full' }}
               </button>
             }
             @if (item.newValueTruncated) {
@@ -419,7 +419,7 @@
         [attr.aria-controls]="'au-tech-' + item.auditEventId"
         (click)="toggleTech(item)"
       >
-        Technical details
+        Technical Details
       </button>
     </div>
     @if (isTechOpen(item)) {
@@ -427,14 +427,14 @@
         <dt>Event</dt>
         <dd class="au-mono">{{ item.eventType }}</dd>
         @if (item.fieldKey) {
-          <dt>Field key</dt>
+          <dt>Field Key</dt>
           <dd class="au-mono">{{ item.fieldKey }}</dd>
         }
         <dt>Object</dt>
         <dd class="au-mono">{{ item.object.type }} {{ item.object.id }}</dd>
         <dt>Operation</dt>
         <dd class="au-mono">{{ item.correlationId }}</dd>
-        <dt>Event number</dt>
+        <dt>Event Number</dt>
         <dd class="au-mono">{{ item.auditEventId }}</dd>
       </dl>
     }

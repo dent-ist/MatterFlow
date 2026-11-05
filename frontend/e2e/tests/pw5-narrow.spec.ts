@@ -24,8 +24,8 @@ test.describe('Pod Work first screen on a phone (#570)', () => {
 
   for (const [name, view, selector] of [
     ['Unassigned', 'queue', 'li[data-task]'],
-    ['By member', 'members', '[data-member-row]'],
-    ['All open', 'all', 'li[data-task]'],
+    ['By Member', 'members', '[data-member-row]'],
+    ['All Open', 'all', 'li[data-task]'],
   ] as const) {
     test(`375x812, ${name}: the first card starts within 200 px of the page title, no sideways scroll, axe 0`, async ({
       seed,

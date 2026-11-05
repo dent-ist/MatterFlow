@@ -195,7 +195,7 @@ describe('RolesPage', () => {
     expect(q('[data-locked]').textContent).toContain('cannot be edited or deleted');
     expect(q<HTMLInputElement>('[data-name]').disabled).toBe(true);
     expect(button('Save')).toBeUndefined();
-    expect(button('Delete role')).toBeUndefined();
+    expect(button('Delete Role')).toBeUndefined();
   });
 
   it('creates a role from the grouped catalog and auto-selects the View prerequisite', async () => {
@@ -206,7 +206,7 @@ describe('RolesPage', () => {
     expect(q<HTMLInputElement>('[data-perm="Task.View"]').checked).toBe(true);
     expect(q('[data-note]').textContent).toContain('Task.View was also selected');
 
-    await press('Create role');
+    await press('Create Role');
     const created = api.roles.find((r) => r.name === 'Auditor')!;
     expect(created.permissionCodes.sort()).toEqual(['Task.Assign', 'Task.View']);
     expect(
@@ -329,7 +329,7 @@ describe('RolesPage', () => {
       expect(q<HTMLInputElement>('[data-perm="Task.Create"]').checked).toBe(false);
       expect(q('#role-changes-h').textContent!.trim()).toBe('Changed (1)');
 
-      await press('Save changes');
+      await press('Save Changes');
       expect(el().querySelector('[data-changes]')).toBeNull();
     });
 
@@ -394,13 +394,13 @@ describe('RolesPage', () => {
 
   it('requires a name and reports a duplicate name on the field', async () => {
     await press('New role');
-    await press('Create role');
+    await press('Create Role');
     expect(q('[data-name-error]').textContent).toContain('Enter a name.');
     expect(q('#role-name').getAttribute('aria-invalid')).toBe('true');
     expect(q('#role-name').getAttribute('aria-describedby')).toBe('role-name-error');
 
     await type('[data-name]', 'Pod Lead');
-    await press('Create role');
+    await press('Create Role');
     expect(q('[data-name-error]').textContent).toContain('already exists');
   });
 
@@ -410,7 +410,7 @@ describe('RolesPage', () => {
     const labels = Array.from(el().querySelectorAll('.mf-actions p-button')).map((b) =>
       b.textContent!.trim(),
     );
-    expect(labels.slice(0, 2)).toEqual(['Cancel', 'Create role']);
+    expect(labels.slice(0, 2)).toEqual(['Cancel', 'Create Role']);
 
     const page = fixture.componentInstance;
     expect(page.hasUnsavedChanges()).toBe(false);
@@ -422,7 +422,7 @@ describe('RolesPage', () => {
   });
 
   async function confirmDelete(): Promise<void> {
-    await press('Delete role'); // opens the confirmation
+    await press('Delete Role'); // opens the confirmation
     const confirm = Array.from(
       document.body.querySelectorAll<HTMLButtonElement>('.p-dialog button'),
     ).find((b) => b.textContent!.trim() === 'Delete Role')!;
@@ -433,7 +433,7 @@ describe('RolesPage', () => {
   it('asks for confirmation, blocks deleting a role in use and deletes an unused one', async () => {
     q('[data-role="5"]').click(); // Data Technician has a member
     await settle();
-    await press('Delete role');
+    await press('Delete Role');
     expect(api.roles.some((r) => r.roleId === 5)).toBe(true);
     expect(document.body.querySelector('.p-dialog')?.textContent).toContain('Delete Role');
     await confirmDelete();

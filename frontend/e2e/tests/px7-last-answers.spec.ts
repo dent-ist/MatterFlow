@@ -80,7 +80,7 @@ test.describe('Same as my last task of this type', () => {
       clicks += 2; // open the list, choose
       await pick(page, field, option);
     };
-    const create = page.getByRole('button', { name: 'Create task', exact: true });
+    const create = page.getByRole('button', { name: 'Create Task', exact: true });
     const title = page.getByRole('textbox', { name: 'Title (required)' });
     const requestor = page.getByRole('textbox', { name: 'Requestor name (required)' });
 
@@ -148,7 +148,7 @@ test.describe('Same as my last task of this type', () => {
     test.setTimeout(120_000);
     const { w, alpha, bravo, type } = await setup(seed, personas, 'scope');
     const page = await asUser(w.pm.username);
-    const create = page.getByRole('button', { name: 'Create task', exact: true });
+    const create = page.getByRole('button', { name: 'Create Task', exact: true });
     await page.goto(`/tasks/new?matterId=${alpha.matterId}&taskType=${type.id}`);
     await page.getByRole('textbox', { name: 'Title (required)' }).fill('Mine, first');
     await page.getByRole('textbox', { name: 'Requestor name (required)' }).fill('Jane Doe');
@@ -186,7 +186,7 @@ test.describe('Same as my last task of this type', () => {
       await page.getByRole('textbox', { name: 'Requestor name (required)' }).fill('Rita');
       await pick(page, /Category/, 'Legal');
       await pick(page, /What is driving the due date/, 'Client request');
-      await page.getByRole('button', { name: 'Create task', exact: true }).click();
+      await page.getByRole('button', { name: 'Create Task', exact: true }).click();
       await expect(page).toHaveURL(/\/tasks\/\d+/);
 
       await page.goto(`/tasks/new?matterId=${alpha.matterId}&taskType=${type.id}`);

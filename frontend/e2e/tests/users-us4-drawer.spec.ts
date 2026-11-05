@@ -108,7 +108,7 @@ test.describe('#438 the drawer shell', () => {
     const role = page.locator('[data-panel] [data-role]').first();
     const roleBox = await role.boundingBox();
     expect(roleBox!.y + roleBox!.height).toBeLessThanOrEqual(768);
-    await expect(page.getByRole('button', { name: 'Save changes' })).toBeInViewport();
+    await expect(page.getByRole('button', { name: 'Save Changes' })).toBeInViewport();
     await expect(page.getByRole('button', { name: 'Cancel' })).toBeInViewport();
     // The content scrolls inside the drawer, never the page.
     expect(await noSideScroll(page)).toBe(true);
@@ -213,7 +213,7 @@ test.describe('#438 the drawer shell', () => {
     // Pending: its own badge, no Deactivate offered for a person who cannot sign in yet? (they can be deactivated), Activate not shown.
     await page.keyboard.press('Escape');
     await openDrawer(page, pending.userId);
-    await expect(head.locator('[data-drawer-status]')).toContainText('Pending access');
+    await expect(head.locator('[data-drawer-status]')).toContainText('Pending Access');
     await page.keyboard.press('Escape');
     // Inactive: Activate instead of Deactivate.
     await openDrawer(page, gone.userId);
@@ -328,9 +328,9 @@ test.describe('#440 Pods, Availability and Profile', () => {
     await expect(page.locator('[data-first-seen]')).toHaveText(/\w{3} \d{1,2}, \d{4}/);
     await page.locator('[data-name]').fill('Renamed Drawer Person');
     await page.locator('[data-email]').fill('renamed@firm.test');
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
     await expect(page.locator('[data-panel-heading]')).toContainText('Renamed Drawer Person');
-    await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Save Changes' })).toBeDisabled();
   });
 });
 
@@ -427,7 +427,7 @@ test.describe('#442 a first grant of access', () => {
     await grant.click();
     await expect(page.locator('[data-panel-heading]')).toBeFocused();
     await page.getByRole('checkbox', { name: /^Data Technician/ }).check();
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
     await expect(drawer(page)).toHaveCount(0);
     const toast = page.getByRole('status').filter({ hasText: 'now has access (Data Technician)' });
     await expect(toast).toBeVisible();
@@ -459,7 +459,7 @@ test.describe('#443 read-only variants and #444 conflicts', () => {
       await expect(page.locator(sel)).toHaveCount(0);
     }
     await expect(drawer(page).locator('[data-pods-trigger]')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Save changes' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Save Changes' })).toHaveCount(0);
     await expect(drawer(page).getByRole('button', { name: 'Close', exact: true })).toBeVisible();
     await expect(page.locator('[data-role]').first()).toBeDisabled();
     await expect(page.locator('[data-name]')).toBeDisabled();
@@ -508,7 +508,7 @@ test.describe('#443 read-only variants and #444 conflicts', () => {
       rowVersion: detail.rowVersion,
     });
     await page.locator('[data-email]').fill('mine@firm.test');
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
     await expect(page.locator('[data-panel-error]')).toContainText(
       'This user was changed by someone else. The latest values are shown.',
     );
@@ -527,7 +527,7 @@ test.describe('axe and layout at four sizes with the drawer open', () => {
       expect(await axeClean(page)).toEqual([]);
       expect(await noSideScroll(page)).toBe(true);
       // The footer stays in view whatever the window.
-      await expect(page.getByRole('button', { name: 'Save changes' })).toBeInViewport();
+      await expect(page.getByRole('button', { name: 'Save Changes' })).toBeInViewport();
       await page.getByRole('button', { name: /^Deactivate / }).click();
       const dialog = page.getByRole('dialog', { name: /^Deactivate / });
       await expect(dialog).toBeVisible();

@@ -91,13 +91,13 @@ describe('mf-dash-state', () => {
     empty.detectChanges();
     const el = empty.nativeElement as HTMLElement;
     expect(el.querySelector('[data-dash-action]')).toBeNull();
-    empty.componentRef.setInput('actionLabel', 'Show all pods');
+    empty.componentRef.setInput('actionLabel', 'Show All Pods');
     empty.detectChanges();
     let actions = 0;
     empty.componentInstance.action.subscribe(() => actions++);
     el.querySelector<HTMLButtonElement>('[data-dash-action]')!.click();
     expect(actions).toBe(1);
-    expect(el.querySelector('[data-dash-action]')!.textContent!.trim()).toBe('Show all pods');
+    expect(el.querySelector('[data-dash-action]')!.textContent!.trim()).toBe('Show All Pods');
   });
 
   it('focusAfterRetry: Retry after a failure, the first control of the content after success', async () => {

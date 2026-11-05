@@ -3,7 +3,7 @@
     skipTarget.target()?.label
   }}</a>
 }
-<a class="mf-skip" href="#mf-main" (click)="skipToMain($event)">Skip to main content</a>
+<a class="mf-skip" href="#mf-main" (click)="skipToMain($event)">Skip to Main Content</a>
 
 <!-- Says the new page's title after a navigation (S9a, #624); never moves focus. -->
 <mf-route-announcer />
@@ -67,8 +67,8 @@
       @if (!onCreateTaskPage()) {
         <p-button
           *mfHasPermission="'Task.Create'"
-          label="Create task"
-          ariaLabel="Create task"
+          label="New Task"
+          ariaLabel="New Task"
           styleClass="mf-create"
           icon="pi pi-plus"
           (onClick)="createTask()"

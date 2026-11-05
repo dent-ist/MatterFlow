@@ -94,13 +94,13 @@ import { WorkflowModeControl } from './workflow-mode-control';
           />
         }
         @if (editable() && dirty()) {
-          <mf-badge tone="warning" icon="pi-pencil" data-dirty>Unsaved changes</mf-badge>
+          <mf-badge tone="warning" icon="pi-pencil" data-dirty>Unsaved Changes</mf-badge>
         }
       </div>
       <div class="wvb__actions">
         @if (editable()) {
           <p-button
-            label="Save draft"
+            label="Save Draft"
             severity="secondary"
             [disabled]="busy() || !dirty()"
             (onClick)="save.emit()"
@@ -119,7 +119,7 @@ import { WorkflowModeControl } from './workflow-mode-control';
           >
         } @else {
           <p-button
-            [label]="'Create new draft from v' + versionNo()"
+            [label]="'Create New Draft From v' + versionNo()"
             [disabled]="busy()"
             (onClick)="newDraft.emit()"
           />
@@ -159,7 +159,7 @@ export class WorkflowVersionBar {
       return [
         {
           id: 'discard',
-          label: 'Discard draft',
+          label: 'Discard Draft',
           icon: 'pi-trash',
           danger: true,
           disabled: this.busy(),
@@ -171,7 +171,7 @@ export class WorkflowVersionBar {
       ? [
           {
             id: 'retire',
-            label: 'Retire version',
+            label: 'Retire Version',
             icon: 'pi-ban',
             danger: true,
             disabled: this.busy(),

@@ -169,7 +169,7 @@ type Tab = 'details' | 'tasks' | 'history';
                 }
                 @case ('tasks') {
                   <div class="mf-scroll-area" mfScrollArea="Linked tasks" data-tasks-tab>
-                    <h2 class="pg-sr">Linked tasks</h2>
+                    <h2 class="pg-sr">Linked Tasks</h2>
                     <mf-asset-linked-tasks [assetId]="a.assetId" (loaded)="totals.set($event)" />
                   </div>
                 }

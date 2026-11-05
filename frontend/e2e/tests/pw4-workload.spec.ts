@@ -306,7 +306,7 @@ test.describe('Pod Work workload table', () => {
         b.localeCompare(a, undefined, { sensitivity: 'base' }),
       );
       expect(idleNames).toEqual(check);
-      for (const name of ['Overdue', 'On hold']) {
+      for (const name of ['Overdue', 'On Hold']) {
         await page.getByRole('button', { name, exact: true }).click();
         await expect(page.locator('thead th', { hasText: name })).toHaveAttribute(
           'aria-sort',
@@ -380,7 +380,7 @@ test.describe('Pod Work workload table', () => {
       await page.goto(`/pods/work?podId=${fx.busy.podId}&view=members`);
       await expect(page.locator('table[data-members]')).toBeVisible();
       expect(await pageSideScroll(page)).toBeLessThanOrEqual(0);
-      await expect(page.locator('[data-member-row] .pm-view').first()).toContainText('View tasks');
+      await expect(page.locator('[data-member-row] .pm-view').first()).toContainText('View Tasks');
       await shot(page, 'members-768x1024');
       await axeClean(page, 'axe at 768');
     });

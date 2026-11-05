@@ -52,7 +52,7 @@ test.describe('pf4-hours: compact work hours (#534)', () => {
     await me.getByLabel('End time', { exact: true }).fill('16:00');
     await me.getByRole('button', { name: 'Saturday', exact: true }).click();
     await me.getByRole('button', { name: 'Friday', exact: true }).click();
-    await me.getByRole('button', { name: 'Save changes' }).click();
+    await me.getByRole('button', { name: 'Save Changes' }).click();
     await expect(me.getByText('Availability saved').first()).toBeVisible();
 
     const saved = await me.evaluate(async () => {
@@ -89,7 +89,7 @@ test.describe('pf4-hours: compact work hours (#534)', () => {
     await expect(me.locator('[data-hours-error]')).toContainText(
       'the end time must be after the start time',
     );
-    await me.getByRole('button', { name: 'Save changes' }).click();
+    await me.getByRole('button', { name: 'Save Changes' }).click();
     const summary = me.locator('[data-summary]');
     await expect(summary.locator('li')).toHaveCount(1);
     await summary.getByRole('link', { name: /Work hours/ }).click();
@@ -159,7 +159,7 @@ test.describe('pf4-hours: compact work hours (#534)', () => {
       await shot(me, 'pf4-compact');
       const toggle = await me.locator('[data-day-toggle]').first().boundingBox();
       expect(toggle!.height).toBeGreaterThanOrEqual(32);
-      await me.getByRole('button', { name: 'Different hours on some days' }).click();
+      await me.getByRole('button', { name: 'Different Hours on Some Days' }).click();
       await expect(me.locator('[data-hours-grid]')).toBeVisible();
       await noHorizontalScroll(me);
       await axeClean(me, `grid at ${size.width}`);
@@ -182,7 +182,7 @@ test.describe('pf4-grid: Different hours on some days (#535) and the quiet butto
     await me.keyboard.press('Enter');
     await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
     await expect(disclosure).toBeFocused();
-    await expect(disclosure).toHaveText('Use the same hours on all days');
+    await expect(disclosure).toHaveText('Use the Same Hours on All Days');
     await expect(me.locator('[data-hours-grid]')).toBeVisible();
 
     const copy = me.locator('[data-copy-weekdays]');
@@ -219,9 +219,9 @@ test.describe('pf4-grid: Different hours on some days (#535) and the quiet butto
     const p = await personas.create({ ...PERSONAS.technician, label: 'pf4differ' });
     const me = await asUser(p.username);
     await me.goto('/profile');
-    await me.getByRole('button', { name: 'Different hours on some days' }).click();
+    await me.getByRole('button', { name: 'Different Hours on Some Days' }).click();
     await me.getByLabel('Wednesday end time').fill('13:00');
-    await me.getByRole('button', { name: 'Save changes' }).click();
+    await me.getByRole('button', { name: 'Save Changes' }).click();
     await expect(me.getByText('Availability saved').first()).toBeVisible();
 
     await me.reload();
@@ -267,7 +267,7 @@ test.describe('pf6-zone: the Time zone select (#540) and the local time sentence
     await select.selectOption('America/Chicago');
     await expect(me.locator('[data-tz-live]')).toContainText('Time zone set. It is');
     await expect(me.locator('[data-tz-note]')).toContainText('(America/New_York)');
-    await me.getByRole('button', { name: 'Save changes' }).click();
+    await me.getByRole('button', { name: 'Save Changes' }).click();
     await expect(me.getByText('Availability saved').first()).toBeVisible();
     await me.reload();
     await expect(dropdownById(me, 'av-tz')).toHaveAttribute('data-value', 'America/Chicago');
@@ -275,7 +275,7 @@ test.describe('pf6-zone: the Time zone select (#540) and the local time sentence
     await dropdownById(me, 'av-tz').selectOption('__other__');
     await me.locator('#av-tz-other').fill('Asia/Tokyo');
     await expect(me.locator('[data-tz-error]')).toHaveCount(0);
-    await me.getByRole('button', { name: 'Save changes' }).click();
+    await me.getByRole('button', { name: 'Save Changes' }).click();
     await expect(me.getByText('Availability saved').first()).toBeVisible();
     await me.reload();
     // The saved zone stays selectable as an extra first option; it is never lost behind Other zones.
@@ -295,7 +295,7 @@ test.describe('pf6-zone: the Time zone select (#540) and the local time sentence
     await dropdownById(me, 'av-tz').selectOption('__other__');
     await me.locator('#av-tz-other').fill('Mars/Olympus');
     await expect(me.locator('[data-tz-error]')).toContainText('is not a time zone we know');
-    await me.getByRole('button', { name: 'Save changes' }).click();
+    await me.getByRole('button', { name: 'Save Changes' }).click();
     await me
       .locator('[data-summary]')
       .getByRole('link', { name: /Mars\/Olympus/ })

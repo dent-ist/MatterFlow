@@ -489,7 +489,7 @@ test.describe('T9 #328: focus after Complete, Hold, Resume, Reopen and Cancel', 
       const a = await seededTask(seed, admin);
       const detail = new TaskDetailPage(page);
       await detail.open(a.task.taskId);
-      await openAction(page, 'Put on hold');
+      await openAction(page, 'Put on Hold');
       await page
         .getByRole('dialog')
         .getByRole('textbox', { name: /Reason/ })
@@ -505,12 +505,12 @@ test.describe('T9 #328: focus after Complete, Hold, Resume, Reopen and Cancel', 
       await onStatus('after Resume');
 
       // Cancel task: overflow, reason dialog.
-      await openAction(page, 'Cancel task');
+      await openAction(page, 'Cancel Task');
       await page
         .getByRole('dialog')
         .getByRole('textbox', { name: /Reason/ })
         .fill('Duplicate request');
-      await page.getByRole('dialog').getByRole('button', { name: 'Cancel task' }).click();
+      await page.getByRole('dialog').getByRole('button', { name: 'Cancel Task' }).click();
       await detail.expectStatus('Cancelled');
       await onStatus('after Cancel task');
 
@@ -589,7 +589,7 @@ test.describe('T9 #327: shortcuts C, A and S behind the "Keyboard shortcuts" swi
     await expect(page.locator('.im-pop')).toBeVisible();
     // The Comments tab is showing: the menu still comes up where it can be seen (the button is scrolled into view first).
     await expect(page.locator('.im-pop')).toBeInViewport();
-    await expect(page.getByRole('textbox', { name: 'Search people' })).toBeFocused();
+    await expect(page.getByRole('textbox', { name: 'Search People' })).toBeFocused();
     await shot(page, 'shortcut-assignee-menu');
     await page.keyboard.press('Escape');
     await expect(page.locator('.im-pop')).toHaveCount(0);

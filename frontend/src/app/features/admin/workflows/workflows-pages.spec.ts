@@ -201,7 +201,7 @@ describe('WorkflowsListPage', () => {
     // One Versions cell of badges (text and icon): the published version, or a neutral Not published, and the draft (#376, #377).
     expect(rows[0].querySelector('[data-versions]')!.textContent).toContain('Published v2');
     expect(rows[0].querySelector('[data-steps]')!.textContent!.trim()).toBe('3');
-    expect(rows[1].querySelector('[data-not-published]')!.textContent).toContain('Not published');
+    expect(rows[1].querySelector('[data-not-published]')!.textContent).toContain('Not Published');
     expect(rows[1].querySelector('[data-versions]')!.textContent).toContain('Draft v1');
     expect(rows[1].querySelector('[data-steps]')!.textContent!.trim()).toBe('–');
     expect(rows[1].textContent).toContain('Inactive');
@@ -696,7 +696,7 @@ describe('WorkflowsListPage phone cards and narrow columns (#375)', () => {
     const second = Array.from(cards[1].querySelectorAll('[data-card-meta]')).map((p) =>
       p.textContent!.trim(),
     );
-    expect(second).toEqual(['Not published', '2 task types']);
+    expect(second).toEqual(['Not Published', '2 task types']);
     expect(cards[1].textContent).toContain('Inactive');
     expect(cards[0].querySelector('button[data-overflow]')!.getAttribute('aria-label')).toBe(
       'Actions for Standard Processing',
@@ -712,8 +712,8 @@ describe('WorkflowsListPage phone cards and narrow columns (#375)', () => {
       'Name',
       'Versions',
       'Steps',
-      'Task types',
-      'Last published',
+      'Task Types',
+      'Last Published',
       'Status',
       'Actions',
     ];
@@ -837,7 +837,7 @@ describe('WorkflowEditPage', () => {
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
 
-    buttonByLabel(el, 'Create workflow')!.click();
+    buttonByLabel(el, 'Create Workflow')!.click();
     await settle(fixture);
     expect(el.querySelector('[data-summary]')?.textContent).toContain('Enter a name.');
     expect(api.createWorkflow).not.toHaveBeenCalled();
@@ -845,7 +845,7 @@ describe('WorkflowEditPage', () => {
     type(el, '#wf-name', ' Review ');
     el.querySelector<HTMLInputElement>('[data-mode="unordered"]')!.click();
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
-    buttonByLabel(el, 'Create workflow')!.click();
+    buttonByLabel(el, 'Create Workflow')!.click();
     await settle(fixture);
     expect(api.createWorkflow).toHaveBeenCalledWith({
       name: 'Review',
@@ -914,7 +914,7 @@ describe('WorkflowEditPage', () => {
     const el: HTMLElement = fixture.nativeElement;
 
     type(el, '#wf-name', 'Std');
-    buttonByLabel(el, 'Save changes')!.click();
+    buttonByLabel(el, 'Save Changes')!.click();
     await settle(fixture);
     expect(api.updateWorkflow).toHaveBeenCalledWith(1, {
       name: 'Std',
@@ -928,7 +928,7 @@ describe('WorkflowEditPage', () => {
       apiError(409, { status: 409, title: 'Conflict', code: 'CONCURRENCY_CONFLICT' }),
     );
     type(el, '#wf-name', 'Std 2');
-    buttonByLabel(el, 'Save changes')!.click();
+    buttonByLabel(el, 'Save Changes')!.click();
     await settle(fixture);
     expect(el.querySelector('[data-conflict]')).not.toBeNull();
   });
@@ -1146,7 +1146,7 @@ describe('WorkflowVersionPage draft editor', () => {
     await settle(fixture);
     click(el, '[data-comment="1"]');
     await settle(fixture);
-    buttonByLabel(el, 'Save draft')!.click();
+    buttonByLabel(el, 'Save Draft')!.click();
     await settle(fixture);
     expect(a.workflows['saveWorkflowDraft']).toHaveBeenCalledWith(1, 12, {
       isOrdered: true,
@@ -1287,10 +1287,10 @@ describe('WorkflowVersionPage draft editor', () => {
         ),
     });
     await pickRowAction(fixture, el, 'Load', 'remove');
-    buttonByLabel(el, 'Save draft')!.click();
+    buttonByLabel(el, 'Save Draft')!.click();
     await settle(fixture);
     expect(el.querySelector('[data-conflict]')).not.toBeNull();
-    expect(buttonByLabel(el, 'Reload latest')).toBeDefined();
+    expect(buttonByLabel(el, 'Reload Latest')).toBeDefined();
   });
 
   it('shows an empty message when the draft has no steps', async () => {
@@ -1349,7 +1349,7 @@ describe('WorkflowVersionPage published version', () => {
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
 
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
-    buttonByLabel(el, 'Create new draft from v2')!.click();
+    buttonByLabel(el, 'Create New Draft From v2')!.click();
     await settle(fixture);
     expect(workflows.createWorkflowDraft).toHaveBeenCalledWith(1, { fromVersionId: 11 });
     expect(navigate).toHaveBeenCalledWith(['/admin/workflows', 1, 'versions', 12], {
@@ -1457,7 +1457,7 @@ describe('WorkflowVersionPage tabs, switcher and impact lines (WP-TY6)', () => {
     const tabs = Array.from(el.querySelectorAll('[role="tab"]')).map((t) =>
       t.textContent!.replace(/\s+/g, ' ').trim(),
     );
-    expect(tabs).toEqual(['Steps (2)', 'Used by (2)']);
+    expect(tabs).toEqual(['Steps (2)', 'Used By (2)']);
     expect(el.querySelector('[data-steps]')).not.toBeNull();
     expect(el.querySelector('[data-used-by-panel]')).toBeNull();
   });

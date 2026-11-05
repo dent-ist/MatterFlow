@@ -53,8 +53,8 @@ export const DIALOG_COPY = {
   },
   conflict: {
     title: 'This draft was changed by someone else',
-    confirm: 'Keep my changes',
-    cancel: 'Reload latest',
+    confirm: 'Keep My Changes',
+    cancel: 'Reload Latest',
     danger: false,
   },
 } as const satisfies Record<string, DialogCopy>;
@@ -139,9 +139,9 @@ export const dialogCopy = {
   }),
   /** The rename dialog's helper text is the body; Cancel just closes the form. */
   renameStatusLabel: (facts: ImpactFacts = {}): DialogCopy => ({
-    title: 'Rename status label',
+    title: 'Rename Status Label',
     body: impactLine('renameStatusLabel', facts).text,
-    confirm: 'Save name',
+    confirm: 'Save Name',
     cancel: 'Cancel',
     danger: false,
   }),

@@ -12,7 +12,7 @@ export interface AvailabilitySubject {
 
 /**
  * Availability informs only where it can change what you do (#434, U6):
- *  - nothing for a person who is Pending access or Inactive (they take no work, so "Off hours" there is noise);
+ *  - nothing for a person who is Pending access or Inactive (they take no work, so "Off Hours" there is noise);
  *  - the chip for Out of office (with the end date) and for Off hours (the server reports it only when work hours are set);
  *  - plain muted text "Available" for an active person with nothing to report, so the Availability filter still has a visible answer.
  * The chip text is the one of the shared availability chip (Dashboard, My Work); colour is never the only signal.

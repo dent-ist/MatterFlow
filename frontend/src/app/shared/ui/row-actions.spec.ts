@@ -10,7 +10,7 @@ const specs: RowActionSpec[] = [
   { id: 'delete', label: 'Delete', danger: true, run },
   { id: 'deactivate', label: 'Deactivate', kind: 'state', run },
   { id: 'rename', label: 'Rename', run },
-  { id: 'up', label: 'Move up', run },
+  { id: 'up', label: 'Move Up', run },
 ];
 
 describe('rowActions (#554)', () => {

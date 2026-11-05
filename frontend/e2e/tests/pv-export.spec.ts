@@ -22,7 +22,7 @@ test.describe('Export (#879)', () => {
     await trigger.focus();
     await page.keyboard.press('Enter');
     await expect(page.getByRole('menuitem', { name: 'Download CSV' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'Copy as text' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Copy as Text' })).toBeVisible();
     const download = page.waitForEvent('download');
     await page.getByRole('menuitem', { name: 'Download CSV' }).click();
     const file = await download;
@@ -42,7 +42,7 @@ test.describe('Export (#879)', () => {
     await expect(page.locator('[data-export-status]')).toContainText('Downloaded 3 rows.');
 
     await trigger.click();
-    await page.getByRole('menuitem', { name: 'Copy as text' }).click();
+    await page.getByRole('menuitem', { name: 'Copy as Text' }).click();
     await expect(page.locator('[data-export-status]')).toContainText('Copied 3 rows.');
     const pasted = await page.evaluate(() => navigator.clipboard.readText());
     const rows = pasted.split('\n').filter(Boolean);

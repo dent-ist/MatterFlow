@@ -143,7 +143,7 @@ const GROUPS: readonly { label: string; keys: readonly string[] }[] = [
               </fieldset>
               @if (groupable()) {
                 <fieldset class="cc-set" data-group-set>
-                  <legend>Group by</legend>
+                  <legend>Group By</legend>
                   <label class="cc-check">
                     <input
                       type="radio"
@@ -185,7 +185,7 @@ const GROUPS: readonly { label: string; keys: readonly string[] }[] = [
                 [disabled]="isDefault()"
                 (click)="reset(def)"
               >
-                Reset columns
+                Reset Columns
               </button>
             }
             @if (widthScope()) {
@@ -196,7 +196,7 @@ const GROUPS: readonly { label: string; keys: readonly string[] }[] = [
                 [attr.aria-disabled]="hasWidths() ? null : 'true'"
                 (click)="resetWidths()"
               >
-                Reset all widths
+                Reset All Widths
               </button>
             }
             <button type="button" class="mf-btn cc-done" data-columns-close (click)="close()">

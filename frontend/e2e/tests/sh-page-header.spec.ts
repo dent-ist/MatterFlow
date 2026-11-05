@@ -165,7 +165,7 @@ test.describe('Page-header contract (#600)', () => {
   }) => {
     const MORE = [
       { path: '/dashboard', name: 'Dashboard' },
-      { path: '/search?q=acme', name: 'Search results' },
+      { path: '/search?q=acme', name: 'Search Results' },
       { path: '/profile', name: 'My Profile' },
     ] as const;
     for (const size of SIZES) {
@@ -204,7 +204,7 @@ test.describe('Page-header contract (#600)', () => {
       await page.goto(`/matters/${matter.matterId}`);
       const record = { ...(await geometry(page, /./)), ...(await top()) };
       await page.goto('/tasks/new');
-      const create = { ...(await geometry(page, 'Create task')), ...(await top()) };
+      const create = { ...(await geometry(page, 'Create Task')), ...(await top()) };
       expect(create.fontSize).toBe(record.fontSize);
       // The header (breadcrumb row, then the title) starts at the same height as a record page's: 12 px below the top of the main area.
       expect(create.top, `header top at ${size.width}`).toBeCloseTo(record.top, 0);
@@ -268,7 +268,7 @@ test.describe('Page-header contract (#600)', () => {
       { who: 'readOnlyObserver' as const, path: '/clients', name: 'Clients' },
       { who: 'complianceAuditor' as const, path: '/matters', name: 'Matters' },
       { who: 'intakeCoordinator' as const, path: '/projects', name: 'Projects' },
-      { who: 'taskViewOnly' as const, path: '/search?q=acme', name: 'Search results' },
+      { who: 'taskViewOnly' as const, path: '/search?q=acme', name: 'Search Results' },
       { who: 'technician' as const, path: '/profile', name: 'My Profile' },
     ];
     for (const c of cases) {

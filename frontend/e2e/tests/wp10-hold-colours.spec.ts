@@ -105,7 +105,7 @@ test.describe('WP10 hold reason and colours', () => {
         }
       } else {
         const mark = heldRow.locator('[data-hold-mark]');
-        await expect(mark).toHaveAttribute('aria-label', 'On hold');
+        await expect(mark).toHaveAttribute('aria-label', 'On Hold');
         await expect(heldRow.locator('[data-hold-reason]')).toHaveText(REASON);
         await expect(heldRow.locator('[data-col="status"] > div')).toHaveAttribute(
           'title',

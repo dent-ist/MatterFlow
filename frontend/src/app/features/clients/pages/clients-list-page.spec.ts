@@ -88,7 +88,7 @@ describe('ClientsListPage', () => {
     expect(el.querySelector('mf-page-header [data-filters-toggle]')).toBeNull();
     expect(el.querySelector('mf-list-toolbar [data-filters-toggle]')).not.toBeNull();
     expect(el.querySelector('mf-page-header [data-list-count]')?.textContent).toContain('1');
-    expect(control<HTMLInputElement>(el, 'Client number')).not.toBeNull();
+    expect(control<HTMLInputElement>(el, 'Client Number')).not.toBeNull();
     // Name is the Search box, not a cell of the filter row.
     expect(control<HTMLInputElement>(el, 'Name')).toBeNull();
     // Active is the default: shown, not counted, not chipped, no Clear filters.
@@ -228,7 +228,7 @@ describe('ClientsListPage', () => {
     );
     // A deep link with filters opens the row and shows the values and the count (status All is a change from the default).
     const el: HTMLElement = fixture.nativeElement;
-    expect(control<HTMLInputElement>(el, 'Client number').value).toBe('343');
+    expect(control<HTMLInputElement>(el, 'Client Number').value).toBe('343');
     expect(search(el).value).toBe('acme');
     // The Search text is not counted on the button: the number and the status.
     expect(el.querySelector('[data-filter-count]')?.textContent).toBe('(2)');
@@ -338,10 +338,10 @@ describe('ClientsListPage', () => {
         h.textContent!.trim(),
       );
       expect(heads).toEqual([
-        'Client number',
+        'Client Number',
         'Name',
         'Matters',
-        'Open tasks',
+        'Open Tasks',
         'Overdue',
         'Status',
       ]);
@@ -370,7 +370,7 @@ describe('ClientsListPage', () => {
       const heads = Array.from(el.querySelectorAll('thead tr:first-child th')).map((h) =>
         h.textContent!.trim(),
       );
-      expect(heads).toEqual(['Client number', 'Name', 'Matters', 'Status']);
+      expect(heads).toEqual(['Client Number', 'Name', 'Matters', 'Status']);
       expect(el.querySelector('[data-count]')).toBeNull();
     });
 
@@ -380,7 +380,7 @@ describe('ClientsListPage', () => {
       await settle(fixture);
       const el: HTMLElement = fixture.nativeElement;
       const th = Array.from(el.querySelectorAll('thead th')).find((h) =>
-        h.textContent!.includes('Open tasks'),
+        h.textContent!.includes('Open Tasks'),
       )!;
       expect(th.getAttribute('aria-sort')).toBe('descending');
       const overdue = Array.from(el.querySelectorAll('thead th')).find((h) =>
@@ -449,7 +449,7 @@ describe('ClientsListPage', () => {
       const fixture = TestBed.createComponent(ClientsListPage);
       await settle(fixture);
       const el: HTMLElement = fixture.nativeElement;
-      expect(el.querySelector('[data-my-matters-col]')?.textContent).toContain('My matters');
+      expect(el.querySelector('[data-my-matters-col]')?.textContent).toContain('My Matters');
       expect(el.querySelector('[data-my-matters-cell]')?.textContent?.trim()).toBe('2');
 
       TestBed.resetTestingModule();

@@ -5,7 +5,7 @@ import { SIZES, noHorizontalScroll, shot } from '../support/screens';
 import { openEditAvailability, userRow } from '../support/users-grid';
 
 /**
- * My profile epic #520, WP-PF7: #589 (regression). Administration > Users "Edit availability" shares `mf-availability-form` with My profile:
+ * My profile epic #520, WP-PF7: #589 (regression). Administration > Users "Edit Availability" shares `mf-availability-form` with My profile:
  * the compact hours, the per-day grid, the Time zone select and the conflict handling must work there, the profile's two-column layout and
  * cards must not leak into the dialog, and the dialog must not scroll sideways. Screenshots for docs/ux/profile-review/fixes/pf7-audit/.
  */
@@ -34,7 +34,7 @@ test.describe('pf7-users-dialog: Edit availability with the shared form (#589)',
       expect(box!.x + box!.width).toBeLessThanOrEqual(size.width);
       if (axeAvailable()) expect(await axeViolations(page), `dialog at ${size.width}`).toEqual([]);
       await shot(page, 'pf7-users-dialog');
-      await dialog.getByRole('button', { name: 'Different hours on some days' }).click();
+      await dialog.getByRole('button', { name: 'Different Hours on Some Days' }).click();
       await expect(dialog.locator('[data-hours-grid]')).toBeVisible();
       await noHorizontalScroll(page);
       if (axeAvailable())
@@ -50,7 +50,7 @@ test.describe('pf7-users-dialog: Edit availability with the shared form (#589)',
     await dialog.getByLabel('Start time', { exact: true }).fill('08:00');
     await dialog.getByRole('button', { name: 'Saturday', exact: true }).click();
     await dropdownById(dialog, 'av-tz').selectOption('America/Chicago');
-    await dialog.getByRole('button', { name: 'Save changes' }).click();
+    await dialog.getByRole('button', { name: 'Save Changes' }).click();
     await expect(dialog).toBeHidden();
     const saved = await admin.get(`/api/v1/users/${userId}/availability`);
     expect(saved.timeZoneId).toBe('America/Chicago');
@@ -73,7 +73,7 @@ test.describe('pf7-users-dialog: Edit availability with the shared form (#589)',
     await expect(dialog.locator('[data-day-toggle]').first()).toBeVisible();
     await seed.outOfOffice(userId, { note: 'Changed elsewhere' });
     await dialog.getByLabel('Start time', { exact: true }).fill('07:00');
-    await dialog.getByRole('button', { name: 'Save changes' }).click();
+    await dialog.getByRole('button', { name: 'Save Changes' }).click();
     await expect(dialog.locator('[data-conflict]')).toContainText(
       `${name}'s availability was changed somewhere else`,
     );

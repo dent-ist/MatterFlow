@@ -11,7 +11,7 @@ import { toasts } from '../support/toasts';
 
 /**
  * Pod Work, first release (epic #546, package WP-PW1): BUG-1 and W4 (#548, the title and the capped Pod select), BUG-2 (#549, Pod.View
- * without Task.View), W9 and W14 (#550, "Assign to me" in view from 640 to 899 px), BUG-4 (#551, no page-level sideways scroll at 375 px) and
+ * without Task.View), W9 and W14 (#550, "Assign to Me" in view from 640 to 899 px), BUG-4 (#551, no page-level sideways scroll at 375 px) and
  * BUG-3 (#552, the strip follows assignments). Data: the fixtures of #547 (`support/pod-work-fixtures.ts`). Screenshots go to
  * `E2E_SCREENSHOTS_PW` when it is set (docs/ux/pod-work-review/fixes/pw1-bugs). axe runs at the four sizes and the suite fails, never skips,
  * when axe is not available (set E2E_AXE_PATH to a copy of axe.min.js).
@@ -224,7 +224,7 @@ test.describe('Pod Work first release', () => {
     });
   });
 
-  test.describe('#550 W9 / W14: "Assign to me" in view from 640 to 899 px', () => {
+  test.describe('#550 W9 / W14: "Assign to Me" in view from 640 to 899 px', () => {
     for (const width of [640, 768, 899]) {
       test(`${width}x1024: the link of the first row is inside the grid without scrolling; Matter Number is a column of the chooser`, async ({
         seed,

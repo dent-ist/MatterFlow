@@ -5,10 +5,10 @@ import { Locator, Page } from '@playwright/test';
  * pending person, otherwise the row menu). Helpers for the older specs that used the buttons the nine-column grid had in every row.
  */
 
-/** Opens the row menu of a Users row and picks "Edit availability" (needs User.Manage). */
+/** Opens the row menu of a Users row and picks "Edit Availability" (needs User.Manage). */
 export async function openEditAvailability(row: Locator): Promise<void> {
   await row.locator('button[data-overflow]').click();
-  await row.page().getByRole('menuitem', { name: 'Edit availability' }).click();
+  await row.page().getByRole('menuitem', { name: 'Edit Availability' }).click();
 }
 
 /** The names of the items of the row menu of a Users row (the menu is left open). */

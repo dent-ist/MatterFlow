@@ -148,7 +148,7 @@ type RichTools = typeof import('./rich-tools');
             />
             Header row
           </label>
-          <button type="submit" class="mf-btn" data-table-insert>Insert table</button>
+          <button type="submit" class="mf-btn" data-table-insert>Insert Table</button>
           <button type="button" class="mf-btn" (click)="closeTable()">Cancel</button>
           <span class="rte__hint" [id]="tableId + '-hint'">Up to 8 rows and 8 columns.</span>
           @if (tableError()) {
@@ -159,7 +159,7 @@ type RichTools = typeof import('./rich-tools');
 
       @if (linkOpen()) {
         <form class="rte__link" data-link-form (submit)="applyLink($event)">
-          <label class="rte__link-label" [for]="linkId">Link address</label>
+          <label class="rte__link-label" [for]="linkId">Link Address</label>
           <input
             #linkInput
             class="rte__link-input"
@@ -174,7 +174,7 @@ type RichTools = typeof import('./rich-tools');
             (input)="linkText.set($any($event.target).value); linkError.set(false)"
             (keydown.escape)="closeLink()"
           />
-          <button type="submit" class="mf-btn">Add link</button>
+          <button type="submit" class="mf-btn">Add Link</button>
           <button type="button" class="mf-btn" (click)="closeLink()">Cancel</button>
           @if (linkError()) {
             <span class="rte__error" role="alert" [id]="linkId + '-error'" data-link-error
@@ -410,20 +410,20 @@ export class RichTextEditor {
     label: string;
     danger?: boolean;
   }[] = [
-    { action: 'row-above', label: 'Row above' },
-    { action: 'row-below', label: 'Row below' },
-    { action: 'row-delete', label: 'Delete row', danger: true },
-    { action: 'column-left', label: 'Column left' },
-    { action: 'column-right', label: 'Column right' },
-    { action: 'column-delete', label: 'Delete column', danger: true },
-    { action: 'table-delete', label: 'Delete table', danger: true },
+    { action: 'row-above', label: 'Row Above' },
+    { action: 'row-below', label: 'Row Below' },
+    { action: 'row-delete', label: 'Delete Row', danger: true },
+    { action: 'column-left', label: 'Column Left' },
+    { action: 'column-right', label: 'Column Right' },
+    { action: 'column-delete', label: 'Delete Column', danger: true },
+    { action: 'table-delete', label: 'Delete Table', danger: true },
   ];
 
   protected readonly buttons: readonly { command: Command; label: string; icon: string }[] = [
     { command: 'bold', label: 'Bold', icon: 'pi-bold' },
     { command: 'italic', label: 'Italic', icon: 'pi-italic' },
-    { command: 'insertUnorderedList', label: 'Bulleted list', icon: 'pi-list' },
-    { command: 'insertOrderedList', label: 'Numbered list', icon: 'pi-sort-numeric-down' },
+    { command: 'insertUnorderedList', label: 'Bulleted List', icon: 'pi-list' },
+    { command: 'insertOrderedList', label: 'Numbered List', icon: 'pi-sort-numeric-down' },
   ];
 
   private readonly sanitizer = inject(DomSanitizer);

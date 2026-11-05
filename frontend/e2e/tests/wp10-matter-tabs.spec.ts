@@ -163,7 +163,7 @@ test.describe('WP10 matter tabs', () => {
       const table = page.locator('[data-matter-projects]');
       await expect(table.locator('thead th')).toHaveText([
         'Name',
-        'Open tasks',
+        'Open Tasks',
         'Overdue',
         'Status',
       ]);
@@ -269,7 +269,7 @@ test.describe('WP10 matter tabs', () => {
       );
       await page.locator('[data-empty-new-project]').click();
       // The pop-up dialog opens and the page stays where it is (MD-22).
-      await expect(page.locator('.mf-formdlg')).toContainText('New project');
+      await expect(page.locator('.mf-formdlg')).toContainText('New Project');
       await expect(page).toHaveURL(new RegExp(`/matters/${w.empty.matterId}`));
     });
 

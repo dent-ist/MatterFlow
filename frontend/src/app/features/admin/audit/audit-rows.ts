@@ -50,7 +50,7 @@ export function eventPhrase(item: AuditSearchItem): string {
   return `${what} by ${item.actor.displayName}`;
 }
 
-/** A value longer than this starts clamped with "Show full" (#652). */
+/** A value longer than this starts clamped with "Show Full" (#652). */
 export const LONG_VALUE = 200;
 
 /** True when a value should start clamped: long text, or text the server shortened. */

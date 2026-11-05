@@ -76,7 +76,7 @@ async function noSideScroll(page: Page, label: string): Promise<void> {
   expect(over, `${label}: page scrolls sideways`).toBeLessThanOrEqual(0);
 }
 
-/** Stops from the first Tab to the one before focus comes round to "Skip to main content" or "Skip to table" again. */
+/** Stops from the first Tab to the one before focus comes round to "Skip to Main Content" or "Skip to Table" again. */
 async function walkPage(page: Page): Promise<{ total: number; shell: number; hidden: string[] }> {
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   const seen: string[] = [];
@@ -232,7 +232,7 @@ const SCENARIOS: Scenario[] = [
     name: 'steps list: tags filter popover',
     url: () => '/admin/steps',
     open: async (p) => {
-      // The Tags filter is a column filter; narrower than its column it moves under "Other filters" or into the Filters sheet.
+      // The Tags filter is a column filter; narrower than its column it moves under "Other Filters" or into the Filters sheet.
       const tags = p.getByRole('button', { name: /^Filter by Tags,/ });
       const other = p.getByRole('button', { name: /^(Other filters|Filters)/ }).first();
       const b = (await tags.isVisible()) ? tags : other;
@@ -308,7 +308,7 @@ const SCENARIOS: Scenario[] = [
   {
     name: 'version page: discard dialog',
     url: () => `/admin/workflows/${world.wfId}/versions/${world.v.v3}`,
-    open: (p) => viaMenu('More version actions', 'Discard draft')(p),
+    open: (p) => viaMenu('More version actions', 'Discard Draft')(p),
   },
   {
     name: 'version page: skip rules popover',
@@ -349,7 +349,7 @@ const SCENARIOS: Scenario[] = [
   {
     name: 'designer: retire dialog',
     url: () => world.published.url,
-    open: button('Retire version', true),
+    open: button('Retire Version', true),
   },
 ];
 

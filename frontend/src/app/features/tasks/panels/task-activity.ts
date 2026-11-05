@@ -40,7 +40,7 @@ const PAGE_SIZE = 25;
 /**
  * The Activity tab of a Task (UX S10): a read-only, newest-first timeline of what happened to the Task, its steps, comments and asset links,
  * with the actor, the time in the viewer's zone (UTC in the tooltip) and a readable sentence. "View changes" shows old and new values when
- * the server includes them (callers with Audit.View). Filter by type; "Load more" pages back through the history.
+ * the server includes them (callers with Audit.View). Filter by type; "Load More" pages back through the history.
  *
  * Inputs: `taskId` (required) and `refresh` (change the number to reload, for example after a status change elsewhere on the page).
  */
@@ -188,7 +188,7 @@ const PAGE_SIZE = 25;
               [disabled]="loadingMore()"
               (click)="more()"
             >
-              Load more
+              Load More
             </button>
           }
         }
@@ -353,7 +353,7 @@ export class TaskActivity {
   protected readonly events = signal<TaskActivityItem[]>([]);
   protected readonly nextCursor = signal<string | null>(null);
   protected readonly loadingMore = signal(false);
-  /** Loading older rows failed: one inline message, and "Load more" tries again. */
+  /** Loading older rows failed: one inline message, and "Load More" tries again. */
   protected readonly moreFailed = signal(false);
   protected readonly filter = signal('ALL');
   private readonly texts = new WeakMap<TaskActivityItem, ActivityText>();
@@ -441,7 +441,7 @@ export class TaskActivity {
     if (cursor !== null) this.loadingMore.set(true);
     this.moreFailed.set(false);
     try {
-      // The drawer shows its own failure (the message with Retry, or under the list for "Load more"): the request is quiet, so no toast says it twice.
+      // The drawer shows its own failure (the message with Retry, or under the list for "Load More"): the request is quiet, so no toast says it twice.
       const page = await this.quiet.run(() =>
         firstValueFrom(this.api.getTaskActivity(taskId, cursor ?? undefined, PAGE_SIZE)),
       );

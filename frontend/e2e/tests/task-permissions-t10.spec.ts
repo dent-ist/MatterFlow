@@ -236,7 +236,7 @@ async function menuItems(page: Page, trigger: ReturnType<Page['locator']>): Prom
     '[role=menu]:visible [role=menuitem], [role=menu]:visible [role=menuitemradio]',
   );
   await expect(items.first()).toBeVisible();
-  // "Assign to me" is the lead button above the people, not a menu item.
+  // "Assign to Me" is the lead button above the people, not a menu item.
   const lead = page.locator('[data-lead]:visible');
   const first = (await lead.count())
     ? [`LEAD:${((await lead.first().textContent()) ?? '').trim()}`]
@@ -458,7 +458,7 @@ test.describe('#329: Task page permission matrix, no dead links', () => {
       }
       if (menus['assignee'] && known(role)) expect(menus['assignee'][0]).toBe('LEAD:Assign to me');
       if (menus['overflow']) {
-        expect(menus['overflow']).toContain('Copy link');
+        expect(menus['overflow']).toContain('Copy Link');
         expect(menus['overflow'].some((i) => /^Cancel task/.test(i))).toBe(
           offered.some((o) => o.action === 'CANCEL'),
         );
@@ -482,7 +482,7 @@ test.describe('#329: Task page permission matrix, no dead links', () => {
         await detail.openEdit();
         const dialog = page.getByRole('dialog', { name: 'Edit Task' });
         await settle(page);
-        await expect(dialog.getByRole('button', { name: 'Save changes' })).toBeVisible();
+        await expect(dialog.getByRole('button', { name: 'Save Changes' })).toBeVisible();
         // Pod and assignee only with Task.Assign; the project select only with Project.View.
         if (known(role)) {
           expect(
@@ -556,7 +556,7 @@ test.describe('#329: Task page permission matrix, no dead links', () => {
       await expect(page.locator('[data-status-note]')).toBeVisible();
       if (known(role)) {
         const reopen = page.locator('[data-action="reopen"]');
-        expect((await reopen.count()) > 0, 'Reopen task').toBe(has(role, 'Task.Reopen'));
+        expect((await reopen.count()) > 0, 'Reopen Task').toBe(has(role, 'Task.Reopen'));
       }
 
       // --- visible controls that do nothing -----------------------------------------------------------------------------

@@ -113,7 +113,7 @@ test.describe('titles and crumbs on the administration routes (#588)', () => {
     await page.goto('/admin/asset-types');
     const nav = page.getByRole('navigation', { name: /main|primary|sidebar/i }).first();
     await expect(
-      page.getByRole('link', { name: 'Asset types', exact: true }).first(),
+      page.getByRole('link', { name: 'Asset Types', exact: true }).first(),
     ).toBeVisible();
     await expect(page.getByRole('link', { name: 'Assets', exact: true })).toHaveCount(1);
     void nav;

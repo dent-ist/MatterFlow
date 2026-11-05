@@ -429,7 +429,7 @@ describe('AppShell header search', () => {
       const skip = TestBed.inject(SkipTarget);
       const focus = vi.fn();
       const host = document.createElement('section');
-      const off = skip.register({ label: 'Skip to task list', focus, element: host });
+      const off = skip.register({ label: 'Skip to Task List', focus, element: host });
       await settle(fixture);
       // The element exists but is not in the document yet: no link.
       expect(link(fixture)).toBeNull();
@@ -453,7 +453,7 @@ describe('AppShell header search', () => {
       const host = document.createElement('section');
       document.body.appendChild(host);
       const off = skip.register({
-        label: 'Skip to table',
+        label: 'Skip to Table',
         id: 'users-table',
         element: host,
         focus: vi.fn(),

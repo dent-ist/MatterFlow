@@ -15,12 +15,12 @@
     <span class="tip__name" [id]="nameId()" data-icon-current>{{
       current()?.label ?? value()
     }}</span>
-    <span class="tip__hint" [id]="hintId()">Change icon</span>
+    <span class="tip__hint" [id]="hintId()">Change Icon</span>
   </span>
 </button>
 
 <mf-form-dialog
-  title="Choose an icon"
+  title="Choose an Icon"
   size="large"
   secondaryLabel="Close"
   [showPrimary]="false"
@@ -29,7 +29,7 @@
 >
   <div class="tip__body" data-icon-dialog>
     <div class="tip__search">
-      <label for="tip-search">Search icons</label>
+      <label for="tip-search">Search Icons</label>
       <input
         id="tip-search"
         class="tip__input"
@@ -71,7 +71,7 @@
       }
     </p>
     @if (loadFailed()) {
-      <button type="button" class="tip__retry" (click)="loadCatalog()">Try again</button>
+      <button type="button" class="tip__retry" (click)="loadCatalog()">Try Again</button>
     } @else if (matchCount() === 0) {
       <p class="tip__empty" data-icon-empty>No icon matches "{{ query() }}". Try another word.</p>
     }

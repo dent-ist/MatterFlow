@@ -27,9 +27,9 @@ describe('recordStripItems', () => {
     expect(items.map((i) => [i.key, i.label, i.count])).toEqual([
       ['open', 'Open', 12],
       ['overdue', 'Overdue', 3],
-      ['dueSoon', 'Due soon', 2],
+      ['dueSoon', 'Due Soon', 2],
       ['asap', 'ASAP', 4],
-      ['onHold', 'On hold', 1],
+      ['onHold', 'On Hold', 1],
     ]);
     expect(items.map((i) => i.hint)).toEqual([
       VIEW_TIPS.allOpen,

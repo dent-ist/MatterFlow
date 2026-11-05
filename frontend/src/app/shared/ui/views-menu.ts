@@ -226,7 +226,7 @@ function reasonOf(error: unknown): string {
                             : 'Open this list on ' + v.name
                         "
                         [attr.title]="
-                          v.isDefault ? 'Stop opening on this view' : 'Open on this view'
+                          v.isDefault ? 'Stop Opening on This View' : 'Open on This View'
                         "
                         (click)="toggleDefault(v)"
                       >
@@ -262,7 +262,7 @@ function reasonOf(error: unknown): string {
             </ul>
           }
           <div class="vm__form">
-            <label for="vm-new-name">Save the current view as</label>
+            <label for="vm-new-name">Save the Current View As</label>
             <span class="vm__inline">
               <input
                 id="vm-new-name"

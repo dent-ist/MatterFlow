@@ -70,9 +70,9 @@ const numbered = (n: number): RegExp => new RegExp(`Comment number ${n}(?!\\d)`)
 const commentsRegion = (page: Page): Locator => page.getByRole('region', { name: 'Comments' });
 const drawer = (page: Page): Locator => page.getByRole('dialog', { name: /^Activity:/ });
 
-/** Presses "Load more" in the Activity drawer until the whole history is there. */
+/** Presses "Load More" in the Activity drawer until the whole history is there. */
 async function loadAllActivity(dlg: Locator, page: Page): Promise<void> {
-  // The first page must be there: before it arrives there is no "Load more" yet, and the loop would end at once (flaky under load).
+  // The first page must be there: before it arrives there is no "Load More" yet, and the loop would end at once (flaky under load).
   await expect(dlg.locator('[data-event-id]').first()).toBeVisible();
   while (await dlg.locator('[data-more]').count()) {
     await dlg.locator('[data-more]').click();

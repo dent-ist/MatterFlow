@@ -138,7 +138,7 @@ test.describe('Pod Work final verification', () => {
         await expect(lead.getByText(`Nothing waiting in ${fx.empty.name}.`)).toBeVisible();
         await lead.goto(`/pods/work?podId=${fx.empty.podId}&view=members`);
         await expect(lead.getByText('No members yet.')).toHaveCount(1);
-        await expect(lead.getByRole('link', { name: 'Add members' })).toHaveCount(1);
+        await expect(lead.getByRole('link', { name: 'Add Members' })).toHaveCount(1);
         expect(await pageSideScroll(lead)).toBeLessThanOrEqual(0);
         await shot(lead, `empty-pod-${size.name}`);
         await axeClean(lead, `axe, empty pod, ${size.name}`);

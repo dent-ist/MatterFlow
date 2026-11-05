@@ -23,8 +23,8 @@ test.describe('Ordered workflow rules (SCN-010, SCN-011, SCN-012, SCN-013)', () 
     await detail.open(task.taskId);
     await detail.showSection('Workflow');
 
-    // One status per step (#666): the current step is "Up next" until somebody starts it; only later steps are "Pending".
-    await expect(detail.step(intake).state).toHaveText('Up next');
+    // One status per step (#666): the current step is "Up Next" until somebody starts it; only later steps are "Pending".
+    await expect(detail.step(intake).state).toHaveText('Up Next');
     for (const title of [validate, load, report]) {
       await expect(detail.step(title).state).toHaveText('Pending');
       await expect(detail.step(title).locked).toContainText(
@@ -67,19 +67,19 @@ test.describe('Ordered workflow rules (SCN-010, SCN-011, SCN-012, SCN-013)', () 
     await step.expand();
     await step.skipButton.click();
     const dialog = detail.dialog;
-    await dialog.getByRole('button', { name: 'Skip step' }).click();
+    await dialog.getByRole('button', { name: 'Skip Step' }).click();
     await expect(dialog.locator('[data-skip-error]')).toHaveText(
       'Add a comment to skip this step.',
     );
 
     await dialog.getByRole('textbox', { name: /Comment/ }).fill('   ');
-    await dialog.getByRole('button', { name: 'Skip step' }).click();
+    await dialog.getByRole('button', { name: 'Skip Step' }).click();
     await expect(dialog.locator('[data-skip-error]')).toHaveText(
       'Add a comment to skip this step.',
     );
 
     await dialog.getByRole('textbox', { name: /Comment/ }).fill('Data already validated upstream');
-    await dialog.getByRole('button', { name: 'Skip step' }).click();
+    await dialog.getByRole('button', { name: 'Skip Step' }).click();
     await expect(dialog).toBeHidden();
     await expect(step.state).toHaveText('Skipped');
     await expect(step.root.locator('[data-skip-comment]')).toContainText(
@@ -149,7 +149,7 @@ test.describe('Ordered workflow rules (SCN-010, SCN-011, SCN-012, SCN-013)', () 
     await detail.showSection('Workflow');
     await detail.step(validate).reopen();
 
-    await expect(detail.step(validate).state).toHaveText('In progress');
+    await expect(detail.step(validate).state).toHaveText('In Progress');
     await expect(detail.step(validate).reopenedFlag).toBeVisible();
     await expect(detail.step(validate).root.locator('[data-reopened-note]')).toContainText(
       'Later steps are unchanged',

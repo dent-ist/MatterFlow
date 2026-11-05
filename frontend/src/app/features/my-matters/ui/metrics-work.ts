@@ -17,7 +17,7 @@ const STATUS_BAR = [
 
 const ATTENTION = [
   { key: 'overdue', label: 'Overdue', tone: 'over' },
-  { key: 'risk', label: 'At risk', tone: 'risk' },
+  { key: 'risk', label: 'At Risk', tone: 'risk' },
   { key: 'unassigned', label: 'Unassigned', tone: '' },
   { key: 'critical', label: 'Critical', tone: '' },
   { key: 'due7', label: 'Due in 7 days', tone: '' },
@@ -41,7 +41,7 @@ const ATTENTION = [
     }
     <div class="grid">
       <section class="card" aria-labelledby="mw-st">
-        <h3 id="mw-st">Status mix</h3>
+        <h3 id="mw-st">Status Mix</h3>
         @if (mix(); as m) {
           <div class="bar" role="img" [attr.aria-label]="m.name">
             @for (s of m.parts; track s.key) {
@@ -73,7 +73,7 @@ const ATTENTION = [
       </section>
 
       <section class="card" aria-labelledby="mw-att">
-        <h3 id="mw-att">Needs attention</h3>
+        <h3 id="mw-att">Needs Attention</h3>
         <ul class="tiles">
           @for (a of attention(); track a.key) {
             <li [class]="'tile ' + a.tone">
@@ -93,18 +93,18 @@ const ATTENTION = [
       </section>
 
       <section class="card wide" aria-labelledby="mw-ty">
-        <h3 id="mw-ty">Open work by task type</h3>
+        <h3 id="mw-ty">Open Work By Task Type</h3>
         @if (types().length === 0) {
           <p class="msg">{{ typesLoad.state() === 'loading' ? 'Loading' : 'No open tasks.' }}</p>
         } @else {
           <table class="tt2">
             <thead>
               <tr>
-                <th scope="col">Task type</th>
+                <th scope="col">Task Type</th>
                 <th scope="col" class="n">Open</th>
                 <th scope="col" class="n">Overdue</th>
-                <th scope="col" class="n">At risk</th>
-                <th scope="col" class="n">On hold</th>
+                <th scope="col" class="n">At Risk</th>
+                <th scope="col" class="n">On Hold</th>
               </tr>
             </thead>
             <tbody>

@@ -9,7 +9,7 @@ import { TaskApi } from '../support/tasks';
  * Screenshot run for docs/ux/column-filters (Batch 3 screens; not a test: skipped unless E2E_SCREENSHOTS is set to the output folder):
  *   E2E_SCREENSHOTS=docs/ux/column-filters/screenshots frontend/e2e/run-local.sh -g "column filters work lists screenshots"
  * Task Queue, My Work, Pod Work and the Matter's Tasks at 1366x768 (open, presets, filtered, hidden-column chip, empty, notice) and at
- * 375x812 (closed, the sheet); the Users Availability select that used to clip "Out of office".
+ * 375x812 (closed, the sheet); the Users Availability select that used to clip "Out of Office".
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
 
@@ -73,7 +73,7 @@ test.describe('column filters work lists screenshots', () => {
     await page.getByRole('button', { name: /^Filter by Due/ }).click();
     await shot(page, 'work-queue-due-daterange');
     await page.keyboard.press('Escape');
-    await page.getByRole('button', { name: 'Other filters' }).click();
+    await page.getByRole('button', { name: 'Other Filters' }).click();
     await shot(page, 'work-queue-more-filters');
     await page.keyboard.press('Escape');
 
@@ -166,7 +166,7 @@ test.describe('column filters work lists screenshots', () => {
     await expect(page.locator('mf-scoped-tasks [data-task]').first()).toBeVisible();
     await shot(page, 'matter-tasks-filtered');
 
-    // Users: the Availability select shows "Out of office" in full.
+    // Users: the Availability select shows "Out of Office" in full.
     await page.goto(`/admin/users?status=all&account=${token}`);
     await page.goto(`/admin/users?status=all&availability=OUT_OF_OFFICE&name=shot-away-${token}`);
     await expect(page.locator('tbody tr').first()).toBeVisible();

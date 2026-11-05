@@ -178,9 +178,9 @@ test.describe('Column filters on the work lists', () => {
       await expect(toggle(page)).toHaveText(/\(3\)/);
 
       // All open is the plain link.
-      await view(page, 'All open').click();
+      await view(page, 'All Open').click();
       await expect(page).toHaveURL(/\/tasks$/);
-      await expect(view(page, 'All open')).toHaveAttribute('aria-pressed', 'true');
+      await expect(view(page, 'All Open')).toHaveAttribute('aria-pressed', 'true');
     });
 
     test('a plain /tasks restores the last view with a visible notice, and Reset to default undoes it', async ({
@@ -202,7 +202,7 @@ test.describe('Column filters on the work lists', () => {
       await page.goto('/tasks');
       await expect(page.locator('[data-restored-notice]')).toContainText('Restored your last view');
       await expect(page).toHaveURL(/priority=1/);
-      await page.getByRole('button', { name: 'Reset to default' }).click();
+      await page.getByRole('button', { name: 'Reset to Default' }).click();
       await expect(page).toHaveURL(/\/tasks$/);
       await expect(page.locator('[data-restored-notice]')).toHaveCount(0);
       await expect(toggle(page)).toHaveText(/^\s*Filters\s*$/);
@@ -239,7 +239,7 @@ test.describe('Column filters on the work lists', () => {
       await queue.expectListed(touched.title);
       await queue.expectNotListed(untouched.title);
       await expect(chips(page)).toContainText('Updated: from');
-      await page.getByRole('button', { name: 'Other filters' }).click();
+      await page.getByRole('button', { name: 'Other Filters' }).click();
       for (const key of ['completed', 'asap', 'overdue', 'created', 'updated'])
         await expect(page.locator(`[data-more-filter="${key}"]`), key).toBeVisible();
     });
@@ -272,7 +272,7 @@ test.describe('Column filters on the work lists', () => {
       );
       await expect(page.locator('thead th').first()).toBeVisible();
       await expect(text(page, 'Title or Ref')).toBeVisible();
-      await page.locator('tbody').getByRole('button', { name: 'Clear filters' }).click();
+      await page.locator('tbody').getByRole('button', { name: 'Clear Filters' }).click();
       await expect(page).toHaveURL(/\/tasks$/);
 
       // Error: the request fails; Retry in the body loads again.
@@ -414,7 +414,7 @@ test.describe('Column filters on the work lists', () => {
       await podWork.expectListed(`Pooled ${token}`);
 
       await expect(page.getByRole('textbox', { name: 'Filter by Pod' })).toHaveCount(0);
-      await page.getByRole('button', { name: 'Other filters' }).click();
+      await page.getByRole('button', { name: 'Other Filters' }).click();
       await expect(page.getByRole('button', { name: 'Pod', exact: true })).toHaveCount(0);
       await page.keyboard.press('Escape');
       // Not an empty grey box: the cell says what the tab decides (re-review, as the My Work tabs do).

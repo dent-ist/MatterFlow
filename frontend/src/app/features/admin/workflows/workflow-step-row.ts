@@ -190,7 +190,7 @@ export class WorkflowStepRow {
     if (this.index() > 0) {
       items.push({
         id: 'up',
-        label: 'Move up',
+        label: 'Move Up',
         icon: 'pi-arrow-up',
         run: () => this.move.emit(-1),
       });
@@ -198,7 +198,7 @@ export class WorkflowStepRow {
     if (!this.last()) {
       items.push({
         id: 'down',
-        label: 'Move down',
+        label: 'Move Down',
         icon: 'pi-arrow-down',
         run: () => this.move.emit(1),
       });

@@ -277,8 +277,8 @@ describe('filter definitions', () => {
       allLabel: 'Any',
       options: [
         { value: 'published', label: 'Published' },
-        { value: 'draft', label: 'Draft in progress' },
-        { value: 'notPublished', label: 'Not published' },
+        { value: 'draft', label: 'Draft in Progress' },
+        { value: 'notPublished', label: 'Not Published' },
       ],
       paramMap: {
         published: { hasPublished: 'true' },
@@ -312,13 +312,13 @@ describe('filter definitions', () => {
 
     it('makes one chip, "Versions: Draft in progress", and reads the link-only combination in words', () => {
       expect(buildChips(VERSIONS, 'draft', false).map((c) => c.label)).toEqual([
-        'Versions: Draft in progress',
+        'Versions: Draft in Progress',
       ]);
       expect(buildChips(VERSIONS, 'both', false).map((c) => c.label)).toEqual([
         'Versions: Published, with a draft',
       ]);
       expect(isActive(VERSIONS, '')).toBe(false);
-      expect(printText(VERSIONS, 'notPublished')).toBe('Versions Not published');
+      expect(printText(VERSIONS, 'notPublished')).toBe('Versions Not Published');
     });
   });
 });

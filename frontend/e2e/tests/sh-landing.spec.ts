@@ -5,7 +5,7 @@ import { atEverySize } from '../support/screens';
 /**
  * S4a (#628): the landing rule. My Work if the person has Task.View and any pod membership or assignment; else the Dashboard if they hold
  * a Dashboard tab permission; else Task Queue; else the first page they can open; else Access Pending. The home address, the logo, the
- * 403 and 404 "Go to ..." link and Access Pending's "Check again" use the same rule.
+ * 403 and 404 "Go to ..." link and Access Pending's "Check Again" use the same rule.
  */
 test.describe('Landing for oversight roles (#628)', () => {
   test.setTimeout(300_000);
@@ -176,7 +176,7 @@ test.describe('Landing for oversight roles (#628)', () => {
     await expect(bothPage).toHaveURL(/\/my-matters/);
   });
 
-  test('Access Pending "Check again" lands by the same rule once access is granted', async ({
+  test('Access Pending "Check Again" lands by the same rule once access is granted', async ({
     personas,
     asUser,
     seed,
@@ -188,7 +188,7 @@ test.describe('Landing for oversight roles (#628)', () => {
       page.getByRole('heading', { name: 'Your access is pending', level: 1 }),
     ).toBeVisible();
     await seed.grantRoles(pending.userId, ['Director']);
-    await page.getByRole('button', { name: 'Check again' }).click();
+    await page.getByRole('button', { name: 'Check Again' }).click();
     await expect(page).toHaveURL(/\/dashboard/);
   });
 

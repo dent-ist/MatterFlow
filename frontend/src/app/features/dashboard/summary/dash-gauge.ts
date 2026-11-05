@@ -49,7 +49,7 @@ export function arcPath(a0: number, a1: number): string {
     >
       <p class="sr-only" role="status" aria-live="polite" data-gauge-live>{{ announcement() }}</p>
       <div class="ph">
-        <h2 id="dg-h"><i class="pi pi-gauge" aria-hidden="true"></i>Unassigned wait</h2>
+        <h2 id="dg-h"><i class="pi pi-gauge" aria-hidden="true"></i>Unassigned Wait</h2>
         <span
           class="lvl"
           [class]="'lvl L' + (v.clear ? 'c' : v.level)"
@@ -92,7 +92,7 @@ export function arcPath(a0: number, a1: number): string {
       <p class="gdo" data-gauge-do>{{ v.doLine }}</p>
       @if (!v.clear) {
         <button type="button" class="mf-btn go" data-gauge-go (click)="show.emit()">
-          <i class="pi pi-user-minus" aria-hidden="true"></i>Show them, longest waiting first
+          <i class="pi pi-user-minus" aria-hidden="true"></i>Show Them, Longest Waiting First
         </button>
       }
     </section>

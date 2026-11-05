@@ -183,8 +183,8 @@ test.describe('Task detail: Comments and Assets panes in the tabs', () => {
 
     await detail.selectTab('Assets');
     await expect(detail.section('Assets').locator('[data-empty]')).toBeVisible();
-    await detail.section('Assets').getByRole('button', { name: 'Link asset' }).click();
-    const picker = detail.section('Assets').getByRole('combobox', { name: 'Asset to link' });
+    await detail.section('Assets').getByRole('button', { name: 'Link Asset' }).click();
+    const picker = detail.section('Assets').getByRole('combobox', { name: 'Asset to Link' });
     await expect(picker).toBeFocused();
     await picker.fill(asset.displayName);
     await page.getByRole('option', { name: new RegExp(asset.displayName) }).click();

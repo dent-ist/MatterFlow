@@ -36,7 +36,7 @@ describe('TaskComments', () => {
     select.dispatchEvent(new Event('change'));
   };
 
-  /** Uses the "Show all" / "Show latest 3" link under the thread head. */
+  /** Uses the "Show All" / "Show latest 3" link under the thread head. */
   const setLimit = (limit: '3' | 'all'): void => {
     q<HTMLButtonElement>(limit === 'all' ? '[data-show-all]' : '[data-show-latest]').click();
   };
@@ -462,9 +462,9 @@ describe('TaskComments', () => {
       expect(counts.at(-1)).toBe(12);
       expect(shownIds()).toEqual([10, 11, 12]);
       expect(q('[data-limit-note]').textContent!.replace(/\s+/g, ' ').trim()).toBe(
-        'Showing latest 3 of 12. Show all',
+        'Showing latest 3 of 12. Show All',
       );
-      expect(q('[data-show-all]').textContent).toContain('Show all');
+      expect(q('[data-show-all]').textContent).toContain('Show All');
       expect(el().querySelector('[data-limit-select]')).toBeNull();
     });
 

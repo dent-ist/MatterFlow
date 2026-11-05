@@ -68,7 +68,7 @@ let nextId = 0;
  * panels share one x scale and one cursor, each has its own y axis (`niceScale`). The drawing is measured (ResizeObserver) and redrawn at
  * its real pixel size. Every line differs by colour, dash pattern and marker shape (the list next to it is the control and shows the same
  * samples), the tooltip and the live read-out list the values of every visible line of both panels for the hovered or focused day, grouped
- * by panel, and "View as table" gives one column per visible line with a group header per panel and a link from each day's count to the
+ * by panel, and "View as Table" gives one column per visible line with a group header per panel and a link from each day's count to the
  * Task Queue. A panel with 4 or fewer lines names each line at its last point (aria-hidden duplicates of the read-out), markers are drawn at the
  * ends and on the hovered day when a line has more than 14 points, the x axis has a label on every Monday (week starts when the points are
  * weeks) and a tap on a day shows the tooltip. Operational counts only.
@@ -159,7 +159,7 @@ let nextId = 0;
           }
           @if (notes().more.length > 0) {
             <details class="more" data-more>
-              <summary>How these are counted</summary>
+              <summary>How These Are Counted</summary>
               @for (n of notes().more; track n) {
                 <p>{{ n }}</p>
               }
@@ -380,7 +380,7 @@ let nextId = 0;
         }
         @if (notes().more.length > 0) {
           <details class="more" data-more>
-            <summary>How these are counted</summary>
+            <summary>How These Are Counted</summary>
             @for (n of notes().more; track n) {
               <p>{{ n }}</p>
             }

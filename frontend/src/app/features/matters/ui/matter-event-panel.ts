@@ -28,9 +28,9 @@ import { TextField } from '../../../shared/ui/text-field';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-form-dialog
-      title="Add event"
+      title="Add Event"
       [subtitle]="matterLabel()"
-      primaryLabel="Add event"
+      primaryLabel="Add Event"
       [busy]="busy()"
       [error]="error()"
       [dirty]="dirty()"

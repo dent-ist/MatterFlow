@@ -409,9 +409,9 @@ test.describe('WP12 phone cards', () => {
       await expect(sheet).toBeVisible();
       const select = dropdownByAttr(sheet, 'data-sort-select');
       expect((await select.optionTexts()).map((t) => t.trim())).toEqual([
-        'Client number',
+        'Client Number',
         'Name',
-        'Open tasks',
+        'Open Tasks',
         'Overdue',
       ]);
       await expect(select).toHaveAttribute('data-value', 'clientNumber');
@@ -581,7 +581,7 @@ test.describe('WP12 phone cards', () => {
       const sheet = page.locator('[data-filter-sheet]');
       expect(
         (await dropdownByAttr(sheet, 'data-sort-select').optionTexts()).map((t) => t.trim()),
-      ).toEqual(['CM Number', 'Name', 'Client', 'Primary PM', 'Open tasks', 'Overdue']);
+      ).toEqual(['CM Number', 'Name', 'Client', 'Primary PM', 'Open Tasks', 'Overdue']);
       // The sheet also carries Status and Sensitive (#272).
       await expect(filterDropdown(sheet, 'Sensitive')).toBeVisible();
       await expect(filterDropdown(sheet, 'Status')).toBeVisible();
@@ -613,7 +613,7 @@ test.describe('WP12 phone cards', () => {
       const sheet = page.locator('[data-filter-sheet]');
       expect(
         (await dropdownByAttr(sheet, 'data-sort-select').optionTexts()).map((t) => t.trim()),
-      ).toEqual(['Reference', 'Name', 'Open tasks', 'Overdue']);
+      ).toEqual(['Reference', 'Name', 'Open Tasks', 'Overdue']);
       await axeClean(page, 'client matters sheet open');
       await shot(page, 'client-matters-sheet');
       await page.keyboard.press('Escape');
@@ -669,7 +669,7 @@ test.describe('WP12 phone cards', () => {
       const sheet = page.locator('[data-filter-sheet]');
       expect(
         (await dropdownByAttr(sheet, 'data-sort-select').optionTexts()).map((t) => t.trim()),
-      ).toEqual(['Name', 'Matter', 'Open tasks', 'Overdue']);
+      ).toEqual(['Name', 'Matter', 'Open Tasks', 'Overdue']);
       await axeClean(page, 'projects sheet open');
       await dropdownByAttr(sheet, 'data-sort-select').selectOption('matterRef');
       await expect(page).toHaveURL(/sort=matterRef/);
@@ -764,7 +764,7 @@ test.describe('WP12 phone cards', () => {
         await page.goto(`${list.url}?name=zzz-none`);
         const filtered = page.locator('[data-empty=filtered]');
         await expect(filtered).toContainText(`No ${list.noun} match these filters`);
-        await filtered.getByRole('button', { name: 'Clear filters' }).click();
+        await filtered.getByRole('button', { name: 'Clear Filters' }).click();
         await expect(page).not.toHaveURL(/name=/);
         await page.unrouteAll({ behavior: 'ignoreErrors' });
       });

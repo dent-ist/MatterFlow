@@ -34,9 +34,9 @@ test.describe('Matter form (MD-43)', () => {
 
     await page.goto(`/matters/new?clientId=${client.clientId}`);
     const dialog = page.locator('.mf-formdlg');
-    await expect(dialog).toContainText('New matter');
+    await expect(dialog).toContainText('New Matter');
     const created = await fieldLabels(page);
-    expect(created.slice(0, 4)).toEqual(['Client', 'Matter number', 'CM Number', 'Matter name']);
+    expect(created.slice(0, 4)).toEqual(['Client', 'Matter Number', 'CM Number', 'Matter Name']);
     await expect(dialog.locator('[data-cm-value]')).toHaveJSProperty('tagName', 'OUTPUT');
     await dialog.locator('#matter-number').fill('12');
     await expect(dialog.locator('[data-cm-value]')).toHaveText(`${client.clientNumber}-00012`);
@@ -51,7 +51,7 @@ test.describe('Matter form (MD-43)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/matters/${matter.matterId}`);
     await page.locator('[data-edit-matter]').click();
-    await expect(dialog).toContainText('Edit matter');
+    await expect(dialog).toContainText('Edit Matter');
     expect(await fieldLabels(page)).toEqual(created);
     // Client and Matter number are in the same places, locked; the CM Number shows the current one.
     await expect(dialog.locator('#matter-number')).toBeDisabled();
@@ -89,7 +89,7 @@ test.describe('Matter form (MD-43)', () => {
       .click();
     await expect(dialog.locator('#matter-number')).toBeEnabled();
     await dialog.locator('#matter-number').fill('00022');
-    await dialog.getByRole('button', { name: 'Save changes' }).click();
+    await dialog.getByRole('button', { name: 'Save Changes' }).click();
     const confirm = page.getByRole('dialog', { name: 'Change CM Number' });
     await expect(confirm).toContainText(`from ${matter.matterRef} to ${client.clientNumber}-00022`);
     await confirm.getByRole('button', { name: 'Change CM Number' }).click();

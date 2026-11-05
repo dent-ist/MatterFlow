@@ -44,7 +44,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
         }
 
         <section class="dt__info" aria-labelledby="td-info-h" data-view>
-          <h3 id="td-info-h" class="dt__sub">Task information</h3>
+          <h3 id="td-info-h" class="dt__sub">Task Information</h3>
           <dl class="pg-dl dt__facts">
             <dt>Requestor</dt>
             <dd>
@@ -57,7 +57,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
               }
             </dd>
             @if (t.requestedAtUtc) {
-              <dt>Request sent</dt>
+              <dt>Request Sent</dt>
               <dd>{{ t.requestedAtUtc | mfNum }}</dd>
             }
             <dt>Project</dt>
@@ -67,7 +67,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
               <dt>Created</dt>
               <dd>{{ t.createdBy?.displayName ?? 'Unknown' }}, {{ t.createdAtUtc | mfNum }}</dd>
               @if (t.modifiedAtUtc) {
-                <dt class="dt__pair-gap">Last updated</dt>
+                <dt class="dt__pair-gap">Last Updated</dt>
                 <dd>{{ t.modifiedAtUtc | mfNum }}</dd>
               }
             </div>

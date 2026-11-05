@@ -10,7 +10,7 @@ import { Seeder, uid } from '../support/seed';
 /**
  * Per-tab columns of My Work (WP6b): Active and Due soon and overdue lose the Matter column and carry the reference in the line under the
  * title (A2, #174), workflow progress is one text line (A3, #175), Created by me gets Assignee, Priority, Due, Status and Age (B1/B3, #173,
- * #185) and starts on Open (B2, #186, with "Show closed tasks"), Closed shows Ref, Title, Matter, Closed and Status with a muted priority
+ * #185) and starts on Open (B2, #186, with "Show Closed Tasks"), Closed shows Ref, Title, Matter, Closed and Status with a muted priority
  * (C2, #184). Every test uses its own users and tagged tasks, so nothing depends on global counts. Screenshots go to E2E_SCREENSHOTS when it
  * is set (docs/ux/my-work-review/fixes/wp6b).
  */
@@ -316,7 +316,7 @@ test.describe('My Work per-tab columns', () => {
     await expect(cell.locator('button, select, [role="combobox"]')).toHaveCount(0);
   });
 
-  test('B2, B4: with nothing open, Created by me offers "Show closed tasks"', async ({
+  test('B2, B4: with nothing open, Created by me offers "Show Closed Tasks"', async ({
     seed,
     asUser,
   }) => {
@@ -339,7 +339,7 @@ test.describe('My Work per-tab columns', () => {
     await expect(none).toContainText('You have no open tasks you created.');
     await expect(myWork.tab(/^Created by me/)).toContainText('(0)');
     await shot(page, 'b2-created-by-me-no-open-1366x768');
-    await none.getByRole('button', { name: 'Show closed tasks' }).click();
+    await none.getByRole('button', { name: 'Show Closed Tasks' }).click();
     await expect(page).toHaveURL(/status=(&|$)/);
     await expect(myWork.row(`Old ${tag}`)).toHaveCount(1);
     await expect(myWork.tab(/^Created by me/)).toContainText('(1)');

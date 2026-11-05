@@ -72,7 +72,7 @@ export interface CollectedCustomFields {
   template: `
     @if (schema(); as definition) {
       <fieldset class="cf-fields" data-custom-fields>
-        <legend>Custom fields</legend>
+        <legend>Custom Fields</legend>
         <mf-dynamic-form
           [definition]="definition"
           [values]="values()"
@@ -166,7 +166,7 @@ export class CustomFieldsEditor {
         data-custom-fields
       >
         @if (heading()) {
-          <h3 id="custom-fields-h" class="cf-title">Custom fields</h3>
+          <h3 id="custom-fields-h" class="cf-title">Custom Fields</h3>
         }
         <mf-dynamic-form [definition]="definition" [values]="values()" [readOnly]="true" />
       </section>

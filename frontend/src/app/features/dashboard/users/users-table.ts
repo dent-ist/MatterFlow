@@ -63,9 +63,9 @@ import { IntPipe } from '../../../shared/ui/number-format';
               </button>
             </th>
             <th scope="col" class="num c-over">Overdue</th>
-            <th scope="col" class="c-next">Next due</th>
+            <th scope="col" class="c-next">Next Due</th>
             @if (canAssign()) {
-              <th scope="col" class="act"><span class="sr-only">Assign work</span></th>
+              <th scope="col" class="act"><span class="sr-only">Assign Work</span></th>
             }
           </tr>
         </thead>

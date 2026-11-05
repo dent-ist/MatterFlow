@@ -84,7 +84,7 @@ describe('mf-tag-filter', () => {
       'Match any',
     ]);
     expect(radios.map((r) => r.checked)).toEqual([true, false]);
-    expect(el.querySelector('legend')?.textContent).toContain('Tag matching');
+    expect(el.querySelector('legend')?.textContent).toContain('Tag Matching');
     radios[1].click();
     await flush();
     expect(host.match()).toBe('any');

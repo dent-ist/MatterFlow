@@ -49,7 +49,7 @@ describe('ExportMenu', () => {
     await open(f);
     expect(
       Array.from(el(f).querySelectorAll('[role=menuitem]')).map((b) => b.textContent!.trim()),
-    ).toEqual(['Download CSV', 'Copy as text']);
+    ).toEqual(['Download CSV', 'Copy as Text']);
   });
 
   it('inline (inside an Options menu) draws the two choices as buttons and says what happened in words (#894)', async () => {
@@ -64,7 +64,7 @@ describe('ExportMenu', () => {
     expect(el(f).querySelector('[data-overflow]')).toBeNull();
     expect(
       Array.from(el(f).querySelectorAll('[data-export]')).map((b) => b.textContent!.trim()),
-    ).toEqual(['Download CSV', 'Copy as text']);
+    ).toEqual(['Download CSV', 'Copy as Text']);
     el(f).querySelector<HTMLButtonElement>('[data-export=copy]')!.click();
     await f.whenStable();
     f.detectChanges();
@@ -80,7 +80,7 @@ describe('ExportMenu', () => {
     const run = vi.fn().mockResolvedValue({ text: 'a\tb\n', rows: 1 });
     const f = mount(run);
     await open(f);
-    item(f, 'Copy as text').click();
+    item(f, 'Copy as Text').click();
     await f.whenStable();
     f.detectChanges();
     expect(run).toHaveBeenCalledWith('text');

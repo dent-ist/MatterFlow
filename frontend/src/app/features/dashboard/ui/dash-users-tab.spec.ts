@@ -247,8 +247,8 @@ describe('DashUsersTab', () => {
     }
     const labels: Record<string, string> = {
       '[data-coverage-row-order]': 'Order',
-      '[data-coverage-scale]': 'Colour scale',
-      '[data-coverage-type-order]': 'Task types',
+      '[data-coverage-scale]': 'Colour Scale',
+      '[data-coverage-type-order]': 'Task Types',
       '[data-coverage-user-order]': 'People',
     };
     if (!labels[selector]) {
@@ -307,7 +307,7 @@ describe('DashUsersTab', () => {
       await open(of(board()), '/dashboard?tab=users&uavail=out&uq=ann');
       // An old address (uavail=out) opens as the Out of office state; the states are applied on the page, the API is asked for everyone.
       expect(getWorkload).toHaveBeenCalledWith(undefined, 'all', 'ann', 'all', false);
-      expect(ddText(host, 'State')).toBe('Out of office');
+      expect(ddText(host, 'State')).toBe('Out of Office');
     });
 
     it('draws one card per person in the default order: available, off hours, out of office; lighter first', async () => {
@@ -362,7 +362,7 @@ describe('DashUsersTab', () => {
       expect(ooo.querySelector('[data-ooo-band]')).toBeNull();
       expect(text(ooo.querySelector('[data-back-on]'))).toBe('Back Oct 21');
       expect(ooo.querySelector('[data-user-open]')!.getAttribute('title')).toContain(
-        'Out of office until Oct 20',
+        'Out of Office until Oct 20',
       );
       // The workload is still there.
       expect(text(ooo.querySelector('[data-open-total]'))).toBe('1');
@@ -370,7 +370,7 @@ describe('DashUsersTab', () => {
         'Dee Fox, 1 open task, ',
       );
       expect(ooo.querySelector('[data-user-open]')!.getAttribute('aria-label')).toContain(
-        'Out of office until Oct 20',
+        'Out of Office until Oct 20',
       );
       expect(OUT_UNTIL).toBeTruthy();
       const eve = card('Eve Kim');
@@ -379,7 +379,7 @@ describe('DashUsersTab', () => {
         eve.querySelector('[data-availability-line], .chip, [data-ooo-band], [data-back-on]'),
       ).toBeNull();
       expect(eve.querySelector('[data-user-open]')!.getAttribute('aria-label')).toContain(
-        'Off hours',
+        'Off Hours',
       );
     });
 
@@ -563,8 +563,8 @@ describe('DashUsersTab', () => {
         'Light 3',
         'Normal 1',
         'Heavy 1',
-        'Out of office 1',
-        'Off hours 1',
+        'Out of Office 1',
+        'Off Hours 1',
       ]);
       expect(ddText(host, 'State')).toBe('All states');
       // The six buttons, the Filters button and the legend icon in the toolbar are gone.
@@ -578,7 +578,7 @@ describe('DashUsersTab', () => {
       expect(names()).toEqual(['Dee Fox']);
       expect(url()).toContain('ustate=out');
       expect(getWorkload).toHaveBeenCalledTimes(1);
-      expect(ddText(host, 'State')).toBe('Out of office');
+      expect(ddText(host, 'State')).toBe('Out of Office');
       await pickStates('out');
       expect(url()).not.toContain('ustate');
       expect(names().length).toBe(6);
@@ -676,7 +676,7 @@ describe('DashUsersTab', () => {
       expect(qa('tbody tr').length).toBe(6);
       const row = q('[data-user-row="4"]');
       expect(row.getAttribute('data-state')).toBe('ooo');
-      expect(text(row)).toContain('Out of office until Oct 20');
+      expect(text(row)).toContain('Out of Office until Oct 20');
       expect(text(q('[data-user-row="3"]'))).not.toMatch(/No open tasks|Not available/);
       // Highest priority only for a person with open tasks: nobody (Cy Tan) has no pill at all.
       expect(q('[data-user-row="3"] .state')).toBeNull();
@@ -707,8 +707,8 @@ describe('DashUsersTab', () => {
         'Light 1 to 3 open tasks',
         'Normal 4 to 8 open tasks',
         'Heavy 9 or more open tasks',
-        'Out of office Away; the day they are back is on the card',
-        'Off hours Outside their working hours right now',
+        'Out of Office Away; the day they are back is on the card',
+        'Off Hours Outside their working hours right now',
       ]);
       // Nothing else: no priority signals, columns glossary or framing text.
       expect(q('[data-legend-priorities], [data-legend-marks], [data-load-help]')).toBeNull();
@@ -923,7 +923,7 @@ describe('DashUsersTab', () => {
       getQueue.mockReturnValue(of(pageOf([])));
       await openPicker('Cy Tan');
       expect(text(dialog().querySelector('[data-assign-empty]'))).toContain(
-        "No unassigned tasks in Cy's pods. Show all pods",
+        "No unassigned tasks in Cy's pods. Show All Pods",
       );
       document.querySelector<HTMLButtonElement>('.mf-formdlg [data-panel-close]')!.click();
       await settle();
@@ -1496,8 +1496,8 @@ describe('DashUsersTab', () => {
       ]);
       await choose('[data-coverage-user-order]', 'total');
       expect(qa('thead th[data-person]')[0].getAttribute('data-person')).toBe('3');
-      expect(ddText(host, 'Task types')).toContain('By total completed');
-      expect(ddText(host, 'Task types')).not.toMatch(/best|worst|top|rank/i);
+      expect(ddText(host, 'Task Types')).toContain('By total completed');
+      expect(ddText(host, 'Task Types')).not.toMatch(/best|worst|top|rank/i);
     });
 
     it('the Training gaps toggle outlines the possible gaps with a count, and every row stays', async () => {

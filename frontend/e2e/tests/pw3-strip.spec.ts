@@ -226,7 +226,7 @@ test.describe('Pod Work strip and tabs', () => {
       await expect(page).toHaveTitle(
         new RegExp(`^Pod Work: ${fx.busy.name}: All open - MatterFlow$`),
       );
-      await expect(page.getByRole('table').first().locator('caption')).toContainText('All open');
+      await expect(page.getByRole('table').first().locator('caption')).toContainText('All Open');
       // The bookmark of the old tab with no filters at all: All open.
       await page.goto(`/pods/work?view=all&podId=${fx.busy.podId}`);
       await expect(pw.tab(/^All open/)).toHaveAttribute('aria-selected', 'true');

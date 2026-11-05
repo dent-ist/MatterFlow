@@ -239,7 +239,7 @@ type Column = (typeof COLUMNS)[number];
           routerLink="/assets/reports"
           data-build-report
           *mfHasPermission="'Asset.View'"
-          >Build a report</a
+          >Build a Report</a
         >
         <p-button
           mfActions
@@ -274,7 +274,7 @@ type Column = (typeof COLUMNS)[number];
             data-bulk-disposition
             (click)="dispositionOpen.set(true)"
           >
-            Change disposition
+            Change Disposition
           </button>
           <button
             type="button"
@@ -282,7 +282,7 @@ type Column = (typeof COLUMNS)[number];
             data-bulk-clear
             (click)="clearSelection()"
           >
-            Clear selection
+            Clear Selection
           </button>
         </div>
         <mf-record-sort
@@ -330,7 +330,7 @@ type Column = (typeof COLUMNS)[number];
                 data-show-all-matters
                 (click)="scope.set('all')"
               >
-                Show all matters
+                Show All Matters
               </button>
             }
           </mf-admin-card-list>
@@ -451,7 +451,7 @@ type Column = (typeof COLUMNS)[number];
                       data-show-all-matters
                       (click)="scope.set('all')"
                     >
-                      Show all matters
+                      Show All Matters
                     </button>
                   }
                   @for (a of rows(); track a.assetId) {
@@ -776,14 +776,14 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     // `?inactiveLinked=true` and `?role=` (links from the Data tab of My Matters, #870): no control, a removable chip, so the count there and the list agree.
     {
       key: 'inactiveLinked',
-      label: 'Not active',
+      label: 'Not Active',
       type: 'text',
       noControl: true,
       valueLabel: (): string => 'still linked to open tasks',
     },
     {
       key: 'role',
-      label: 'My role',
+      label: 'My Role',
       type: 'text',
       noControl: true,
       valueLabel: (v: string): string =>

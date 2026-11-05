@@ -68,9 +68,9 @@ const ITEMS: readonly {
     count: (s) => s.overdue,
     alert: true,
   },
-  { key: 'dueSoon', label: 'Due soon', hint: VIEW_TIPS.dueSoon, count: (s) => s.dueSoon },
+  { key: 'dueSoon', label: 'Due Soon', hint: VIEW_TIPS.dueSoon, count: (s) => s.dueSoon },
   { key: 'asap', label: 'ASAP', hint: VIEW_TIPS.asap, count: (s) => s.asap },
-  { key: 'onHold', label: 'On hold', hint: VIEW_TIPS.onHold, count: (s) => s.onHold },
+  { key: 'onHold', label: 'On Hold', hint: VIEW_TIPS.onHold, count: (s) => s.onHold },
 ];
 
 /**

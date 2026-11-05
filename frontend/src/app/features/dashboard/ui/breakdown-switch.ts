@@ -11,7 +11,7 @@ const VIEWS: readonly { mode: BreakdownMode; label: string; icon: string }[] = [
 
 /**
  * The view switch in the header of a Breakdowns card: the shared segmented control (`mfSegmented`: one Tab stop, arrow keys inside the group, the pressed
- * button solid blue and bold, equal segments, 36 px). It replaces the old "View as table" link; the table keeps the accessible data table. The group is named for the card.
+ * button solid blue and bold, equal segments, 36 px). It replaces the old "View as Table" link; the table keeps the accessible data table. The group is named for the card.
  */
 @Component({
   selector: 'mf-bd-switch',

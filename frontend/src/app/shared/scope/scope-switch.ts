@@ -58,7 +58,7 @@ const NUDGE = String.fromCharCode(0x200b);
           [attr.aria-pressed]="scope() === 'mine'"
           (click)="pick('mine')"
         >
-          My matters
+          My Matters
         </button>
         <button
           type="button"

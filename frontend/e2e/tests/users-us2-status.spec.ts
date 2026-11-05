@@ -76,7 +76,7 @@ test.describe('#429 status segments', () => {
     }
 
     await page.goto('/admin/users');
-    await expect(segment(page, 'pending')).toContainText('Pending access');
+    await expect(segment(page, 'pending')).toContainText('Pending Access');
     await expect(segment(page, 'pending')).toContainText(String(c.pending));
     await expect(segment(page, 'active')).toContainText(String(c.active));
     await expect(segment(page, 'inactive')).toContainText(String(c.inactive));
@@ -187,7 +187,7 @@ test.describe('#429 status segments', () => {
     await page.goto('/admin/users');
     await expect(page.locator('[data-strip-item]')).toHaveCount(4);
     await expect(pressed(page)).toHaveCount(1);
-    await expect(page.getByRole('button', { name: 'Grant access' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Grant Access' })).toHaveCount(0);
 
     const other = await personas.named('taskViewOnly');
     const denied = await asUser(other.username);

@@ -121,7 +121,7 @@ export function diffMessage(
           [disabled]="busy() || !dirty()"
           data-checklist-reset
         >
-          Discard changes
+          Discard Changes
         </button>
         @if (!dirty()) {
           <span class="ac__hint" data-checklist-clean>No changes to save.</span>

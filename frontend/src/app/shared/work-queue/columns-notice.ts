@@ -16,7 +16,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       </p>
       @if (offerMatter()) {
         <button type="button" class="mf-btn" data-add-matter (click)="addMatter.emit()">
-          Add CM Number column
+          Add CM Number Column
         </button>
       }
       <button type="button" class="mf-btn cn-close" data-dismiss-notice (click)="dismiss.emit()">

@@ -60,7 +60,7 @@ describe('task type record helpers', () => {
       tone: 'neutral',
     });
     expect(statusBadgeOf({ isActive: true, isUsable: false })).toMatchObject({
-      label: 'Not usable',
+      label: 'Not Usable',
       tone: 'neutral',
     });
     expect(statusBadgeOf({ isActive: true, isUsable: true })).toMatchObject({

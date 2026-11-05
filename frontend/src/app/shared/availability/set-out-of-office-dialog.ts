@@ -82,7 +82,7 @@ import {
               </button>
             }
             <button type="button" class="ooo__chip" data-preset="pick" (click)="pickDate()">
-              Pick a date
+              Pick a Date
             </button>
           </div>
           <input
@@ -114,7 +114,7 @@ import {
         <p class="ooo__sentence" role="status" data-ooo-summary>{{ sentence() }}</p>
         <p class="ooo__more">
           <a routerLink="/profile" data-ooo-more (click)="visible.set(false)"
-            >More options on My profile</a
+            >More Options on My Profile</a
           >
         </p>
       </form>

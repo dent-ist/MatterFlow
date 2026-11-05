@@ -78,7 +78,7 @@ test.describe('Hit links lead only where the person may go (#461)', () => {
 
       // The results page: only the viewable types, and no link to anything else.
       await page.goto(`/search?q=${encodeURIComponent(ref)}`);
-      await expect(page.getByRole('heading', { name: 'Search results', level: 1 })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Search Results', level: 1 })).toBeVisible();
       await expect.poll(async () => (await hitHrefs(page)).length).toBeGreaterThan(0);
       const hrefs = await hitHrefs(page);
       const kinds = [...new Set(hrefs.map(kindOf))].sort();

@@ -54,7 +54,7 @@ export const WHO_IS_COUNTED =
               (dismissed)="whoOpen.set(false)"
             >
               <section class="sec" aria-labelledby="wl-states-h" data-legend>
-                <h3 id="wl-states-h">What the states mean</h3>
+                <h3 id="wl-states-h">What the States Mean</h3>
                 <ul class="states" data-legend-states>
                   @for (st of states(); track st.key) {
                     <li [attr.data-state]="st.key">
@@ -66,7 +66,7 @@ export const WHO_IS_COUNTED =
                 </ul>
               </section>
               <section class="sec" aria-labelledby="wl-who-h">
-                <h3 id="wl-who-h">Who is counted</h3>
+                <h3 id="wl-who-h">Who Is Counted</h3>
                 <p class="wt" data-who-text>{{ who }}</p>
                 @if (population(); as line) {
                   <p class="pop" data-users-population>

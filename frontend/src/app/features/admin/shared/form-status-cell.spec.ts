@@ -55,18 +55,18 @@ describe('FormStatusCell (#631)', () => {
     expect(text(el)).toContain('Published v3');
   });
 
-  it('nothing published: a neutral "No published fields" badge with an icon, no count or date; a draft may follow', () => {
+  it('nothing published: a neutral "No Published Fields" badge with an icon, no count or date; a draft may follow', () => {
     const { f, el } = create();
     f.componentInstance.pub.set(null);
     f.componentInstance.draft.set(1);
     f.detectChanges();
     const none = el.querySelector('[data-none]')!;
-    expect(none.textContent!.trim()).toBe('No published fields');
+    expect(none.textContent!.trim()).toBe('No Published Fields');
     expect(none.querySelector('[data-tone=neutral]')).not.toBeNull();
     expect(none.querySelector('.pi')).not.toBeNull();
     expect(el.querySelector('[data-facts]')).toBeNull();
     expect(Array.from(el.querySelectorAll('mf-badge')).map((b) => b.textContent!.trim())).toEqual([
-      'No published fields',
+      'No Published Fields',
       'Draft v1',
     ]);
   });

@@ -121,7 +121,7 @@ describe('UsersPage', () => {
   it('opens on the pending queue with counts, and publishes the pending count for the nav badge', async () => {
     await create('User.View', 'User.Manage');
 
-    expect(segmentText('pending')).toBe('Pending access 2');
+    expect(segmentText('pending')).toBe('Pending Access 2');
     expect(pressed()).toBe('pending');
     // The default rule is written into the address, so a reload keeps it.
     expect(TestBed.inject(Router).url).toContain('status=pending');
@@ -149,7 +149,7 @@ describe('UsersPage', () => {
     await chooseStatus('all');
     expect(
       Array.from(el().querySelectorAll('thead th')).map((th) => th.textContent!.trim()),
-    ).toEqual(['Name', 'Roles', 'Pods', 'Availability', 'Last seen', 'Status', 'Actions']);
+    ).toEqual(['Name', 'Roles', 'Pods', 'Availability', 'Last Seen', 'Status', 'Actions']);
   });
 
   describe('sorting and page size (#437)', () => {
@@ -179,14 +179,14 @@ describe('UsersPage', () => {
     it('keeps the sort in the address on a reload and ignores a field the server does not know', async () => {
       startUrl = '/admin/users?status=all&sort=-lastSeen';
       await create('User.View', 'User.Manage');
-      expect(header('Last seen').getAttribute('aria-sort')).toBe('descending');
+      expect(header('Last Seen').getAttribute('aria-sort')).toBe('descending');
       expect(header('Name').getAttribute('aria-sort')).toBe('none');
       fixture.destroy();
       TestBed.resetTestingModule();
       startUrl = '/admin/users?status=all&sort=bogus';
       await create('User.View', 'User.Manage');
       expect(header('Name').getAttribute('aria-sort')).toBe('none');
-      expect(header('Last seen').getAttribute('aria-sort')).toBe('none');
+      expect(header('Last Seen').getAttribute('aria-sort')).toBe('none');
     });
 
     it('hides the Last seen column when no listed person has a last-seen time', async () => {
@@ -198,7 +198,7 @@ describe('UsersPage', () => {
       await chooseStatus('all');
       expect(
         Array.from(el().querySelectorAll('thead th')).map((th) => th.textContent!.trim()),
-      ).not.toContain('Last seen');
+      ).not.toContain('Last Seen');
     });
 
     it('shows the day in the Last seen cell, the instant as its tooltip, and "Never" for a person who never signed in', async () => {
@@ -239,7 +239,7 @@ describe('UsersPage', () => {
   it('shows a status badge only when the person is not simply Active', async () => {
     await create('User.View', 'User.Manage');
     await chooseStatus('all');
-    expect(q('[data-user="4"] [data-status] mf-badge').textContent).toContain('Pending access');
+    expect(q('[data-user="4"] [data-status] mf-badge').textContent).toContain('Pending Access');
     expect(q('[data-user="5"] [data-status] mf-badge').textContent).toContain('Inactive');
     expect(el().querySelector('[data-user="2"] [data-status] mf-badge')).toBeNull();
     expect(q('[data-user="2"] [data-status]').textContent).toContain('Active'); // for a screen reader
@@ -253,7 +253,7 @@ describe('UsersPage', () => {
 
     expect(pressed()).toBe('active');
     expect(TestBed.inject(Router).url).toContain('status=active');
-    expect(segmentText('pending')).toBe('Pending access 0');
+    expect(segmentText('pending')).toBe('Pending Access 0');
     expect(el().querySelector('[data-pending-cue]')).toBeNull();
   });
 
@@ -262,7 +262,7 @@ describe('UsersPage', () => {
     expect(segment('pending').getAttribute('aria-pressed')).toBe('true');
     await chooseStatus('active');
     expect(pressed()).toBe('active');
-    expect(segmentText('pending')).toBe('Pending access 2');
+    expect(segmentText('pending')).toBe('Pending Access 2');
     expect(el().querySelector('[data-pending-cue]')).toBeNull();
 
     await chooseStatus('all');
@@ -328,14 +328,14 @@ describe('UsersPage', () => {
       el().querySelector('#users-search, #users-status, #users-availability, mf-search-box'),
     ).toBeNull();
     expect(el().querySelector('[data-filter-row]')).not.toBeNull();
-    // The filters of the columns on screen are in the row; the others (Windows account, First seen, Email) are in "Other filters".
+    // The filters of the columns on screen are in the row; the others (Windows account, First seen, Email) are in "Other Filters".
     for (const column of ['Name', 'Roles', 'Availability']) {
       expect(
         el().querySelector(`[aria-label^="Filter by ${column}"]`),
         `Filter by ${column}`,
       ).not.toBeNull();
     }
-    for (const column of ['Windows account', 'First seen', 'Email']) {
+    for (const column of ['Windows Account', 'First Seen', 'Email']) {
       expect(el().querySelector(`[aria-label^="Filter by ${column}"]`), column).toBeNull();
     }
     expect(el().querySelector('[data-more-filters]')).not.toBeNull();
@@ -344,7 +344,7 @@ describe('UsersPage', () => {
     expect(
       Array.from(el().querySelectorAll('thead th')).map((th) => th.textContent!.trim()),
     ).toContain('Status');
-    expect(q('[data-user="4"] [data-status]').textContent).toContain('Pending access');
+    expect(q('[data-user="4"] [data-status]').textContent).toContain('Pending Access');
   });
 
   it('filters by name, as you type or on Enter, and writes it to the address', async () => {
@@ -431,24 +431,24 @@ describe('UsersPage', () => {
   it('grants a role to a pending user: the drawer saves, closes, offers Undo, and the queue shrinks', async () => {
     await create('User.View', 'User.Manage');
 
-    await press('Grant access'); // first row: Priya Patel (the one action of a pending row)
+    await press('Grant Access'); // first row: Priya Patel (the one action of a pending row)
     expect(q('[data-panel-heading]').textContent).toContain('Priya Patel');
     expect(urlOf()).toContain('user=4');
-    expect(button('Save changes')!.disabled).toBe(true);
+    expect(button('Save Changes')!.disabled).toBe(true);
 
     const role = q<HTMLInputElement>('[data-role="5"]'); // Data Technician
     role.checked = true;
     role.dispatchEvent(new Event('change'));
     await settle();
-    expect(button('Save changes')!.disabled).toBe(false);
+    expect(button('Save Changes')!.disabled).toBe(false);
     // The summary shows what the ticked roles give, grouped like the Roles tab, and says it applies after the save (#439).
     expect(q('[data-permissions-preview]').textContent).toContain('after you save');
     expect(q('[data-permissions]').textContent).toContain('Task (');
 
-    await press('Save changes');
+    await press('Save Changes');
     await settle();
     expect(api.users.find((u) => u.userId === 4)!.roleIds).toEqual([5]);
-    expect(segmentText('pending')).toBe('Pending access 1');
+    expect(segmentText('pending')).toBe('Pending Access 1');
     expect(TestBed.inject(PendingUsersStore).count()).toBe(1);
     await afterClose();
     // A first grant closes the drawer (the person leaves the queue) and offers one Undo (#442).
@@ -461,17 +461,17 @@ describe('UsersPage', () => {
     await TestBed.inject(UndoService).run();
     await settle();
     expect(api.users.find((u) => u.userId === 4)!.roleIds).toEqual([]);
-    expect(segmentText('pending')).toBe('Pending access 2');
+    expect(segmentText('pending')).toBe('Pending Access 2');
   });
 
   it('does not overwrite a change made by someone else when Undo of a grant runs (#442)', async () => {
     await create('User.View', 'User.Manage');
-    await press('Grant access');
+    await press('Grant Access');
     const role = q<HTMLInputElement>('[data-role="5"]');
     role.checked = true;
     role.dispatchEvent(new Event('change'));
     await settle();
-    await press('Save changes');
+    await press('Save Changes');
     await settle();
     // Somebody else gives Priya another role in the meantime: the row version moves on.
     const stored = api.users.find((u) => u.userId === 4)!;
@@ -486,7 +486,7 @@ describe('UsersPage', () => {
 
   it('shows no success toast and keeps the drawer when the save of a grant fails (#442)', async () => {
     await create('User.View', 'User.Manage');
-    await press('Grant access');
+    await press('Grant Access');
     const role = q<HTMLInputElement>('[data-role="5"]');
     role.checked = true;
     role.dispatchEvent(new Event('change'));
@@ -502,7 +502,7 @@ describe('UsersPage', () => {
             new HttpErrorResponse({ status: 500 }),
           ),
       );
-    await press('Save changes');
+    await press('Save Changes');
     await settle();
     expect(TestBed.inject(UndoService).current()).toBeNull();
     expect(q('[data-panel-error]')).not.toBeNull();
@@ -516,7 +516,7 @@ describe('UsersPage', () => {
 
     // No radio, no relabelled Save: the header has a Deactivate control and Save changes is untouched (#441).
     expect(el().querySelector('[data-status-inactive]')).toBeNull();
-    expect(button('Save changes')!.disabled).toBe(true);
+    expect(button('Save Changes')!.disabled).toBe(true);
     q('[data-deactivate]').click();
     await settle();
     expect(q('[data-deactivate-text]').textContent).toContain(
@@ -675,7 +675,7 @@ describe('UsersPage', () => {
       await chooseStatus('active');
       await openRow(2);
       expect(button('Close')).toBeDefined();
-      expect(button('Save changes')).toBeUndefined();
+      expect(button('Save Changes')).toBeUndefined();
       await press('Close');
       await afterClose();
       expect(document.querySelector('[data-panel]')).toBeNull();
@@ -785,7 +785,7 @@ describe('UsersPage', () => {
       await chooseStatus('active');
       await openRow(2);
       expect(q('[data-availability-sentence]').textContent).toContain(
-        'Out of office until Mar 20, 2027',
+        'Out of Office until Mar 20, 2027. Conference',
       );
       expect(q('[data-availability-sentence]').textContent).toContain('Conference');
       q('[data-edit-availability]').click();
@@ -887,7 +887,7 @@ describe('UsersPage', () => {
         );
         expect(document.querySelector('[data-deactivate], [data-activate]')).toBeNull();
         expect(document.querySelector('[data-edit-availability]')).toBeNull();
-        expect(button('Save changes')).toBeUndefined();
+        expect(button('Save Changes')).toBeUndefined();
         expect(button('Close')).toBeDefined();
         expect(q<HTMLInputElement>('[data-role="2"]').closest('fieldset')!.disabled).toBe(true);
         expect(q<HTMLInputElement>('[data-name]').closest('fieldset')!.disabled).toBe(true);
@@ -904,7 +904,7 @@ describe('UsersPage', () => {
         expect(q<HTMLInputElement>('[data-role="2"]').closest('fieldset')!.disabled).toBe(true);
         expect(document.querySelector('[data-deactivate]')).toBeNull();
         expect(document.querySelector('[data-edit-availability]')).toBeNull();
-        expect(button('Save changes')).toBeUndefined();
+        expect(button('Save Changes')).toBeUndefined();
       });
 
       it('User.Manage: no reason line, all controls present', async () => {
@@ -929,7 +929,7 @@ describe('UsersPage', () => {
     adminRole.checked = false;
     adminRole.dispatchEvent(new Event('change'));
     await settle();
-    await press('Save changes');
+    await press('Save Changes');
 
     expect(q('[data-panel-error]').textContent).toContain('At least one active System Admin');
     expect(api.users.find((u) => u.userId === 1)!.roleIds).toEqual([1]);
@@ -940,7 +940,7 @@ describe('UsersPage', () => {
     nameButton(4).click(); // the first pending person
     await settle();
 
-    expect(button('Save changes')).toBeUndefined();
+    expect(button('Save Changes')).toBeUndefined();
     expect(q<HTMLInputElement>('[data-role="5"]').closest('fieldset')!.disabled).toBe(true);
   });
 
@@ -964,7 +964,7 @@ describe('UsersPage', () => {
         'User.Manage',
       );
       await chooseStatus('active');
-      expect(chips()).toEqual(['Out of office until Mar 20, 2027', 'Off hours']);
+      expect(chips()).toEqual(['Out of Office until Mar 20, 2027', 'Off Hours']);
       // Pending and Inactive people take no work: their cell is empty, even when the server reports Off hours.
       await chooseStatus('pending');
       expect(chips().every((c) => c === '')).toBe(true);
@@ -1001,8 +1001,8 @@ describe('UsersPage', () => {
       expect(Array.from(select.options).map((o) => o.textContent!.trim())).toEqual([
         'Any',
         'Available',
-        'Out of office',
-        'Off hours',
+        'Out of Office',
+        'Off Hours',
       ]);
       select.value = 'OUT_OF_OFFICE';
       select.dispatchEvent(new Event('change'));
@@ -1030,7 +1030,7 @@ describe('UsersPage', () => {
     it("offers the link as the page's skip target and moves focus to the name of the first row", async () => {
       await create('User.View', 'User.Manage');
       const target = TestBed.inject(SkipTarget).target()!;
-      expect(target.label).toBe('Skip to table');
+      expect(target.label).toBe('Skip to Table');
       target.focus();
       expect(document.activeElement).toBe(
         el().querySelector('tbody tr[data-user] button[data-open]'),
@@ -1076,14 +1076,14 @@ describe('UsersPage', () => {
         'Actions for Dana Director (KE\\ddirector)',
       );
       await openMenu(2);
-      expect(menuItems()).toEqual(['Open', 'Edit availability', 'Deactivate']);
+      expect(menuItems()).toEqual(['Open', 'Edit Availability', 'Deactivate']);
     });
 
     it('offers Activate for an inactive person', async () => {
       await create('User.View', 'User.Manage');
       await chooseStatus('inactive');
       await openMenu(5);
-      expect(menuItems()).toEqual(['Open', 'Edit availability', 'Activate']);
+      expect(menuItems()).toEqual(['Open', 'Edit Availability', 'Activate']);
     });
 
     it('offers only Open without User.Manage: nothing that edits, and no Grant access', async () => {
@@ -1153,7 +1153,7 @@ describe('UsersPage', () => {
       expect(cards().length).toBe(2); // the two people waiting
       const priya = cardOf('Priya Patel');
       expect(priya.textContent).toContain('ppatel');
-      expect(priya.textContent).toContain('Pending access');
+      expect(priya.textContent).toContain('Pending Access');
       expect(priya.querySelector('[data-card-summary]')!.textContent).toContain('None · No pod');
       const grant = priya.querySelector<HTMLButtonElement>(
         '[data-card-primary] button, button[data-card-primary]',

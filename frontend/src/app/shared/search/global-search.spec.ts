@@ -138,7 +138,7 @@ describe('mf-global-search (header typeahead)', () => {
     expect(api.search).toHaveBeenCalledWith('acme', expect.any(Array), 3);
   });
 
-  it('moves with Arrow keys through hits and "View all", exposing the active option to assistive technology', async () => {
+  it('moves with Arrow keys through hits and "View All", exposing the active option to assistive technology', async () => {
     await create();
     await type('343');
 
@@ -153,7 +153,7 @@ describe('mf-global-search (header typeahead)', () => {
     expect(options().at(-1)!.id).toBe(box().getAttribute('aria-activedescendant'));
     key('ArrowDown'); // wraps to the first hit
     expect(box().getAttribute('aria-activedescendant')).toBe(options()[0].id);
-    key('ArrowUp'); // and back to "View all"
+    key('ArrowUp'); // and back to "View All"
     expect(box().getAttribute('aria-activedescendant')).toBe(options().at(-1)!.id);
     key('Home');
     expect(box().getAttribute('aria-activedescendant')).toBe(options()[0].id);
@@ -281,7 +281,7 @@ describe('mf-global-search (header typeahead)', () => {
     expect(box().getAttribute('aria-expanded')).toBe('false');
   });
 
-  it('goes to the results page with Enter when no hit is active, and from the "View all" row', async () => {
+  it('goes to the results page with Enter when no hit is active, and from the "View All" row', async () => {
     await create();
     await type('  343 ');
 

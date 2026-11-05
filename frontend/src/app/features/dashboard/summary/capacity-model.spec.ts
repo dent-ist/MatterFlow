@@ -69,12 +69,12 @@ describe('batteryView', () => {
       'Occupied',
       'Busy',
       'Overloaded',
-      'Out of office',
+      'Out of Office',
       'Outside work hours, still counted',
     ]);
     // With the setting off the word is the plain one.
     expect(batteryView(capacityOf(people, 3, { countOffHours: false })).legend.at(-1)!.label).toBe(
-      'Off hours',
+      'Off Hours',
     );
     expect(v.legend.reduce((n, l) => n + l.count, 0)).toBe(12);
     expect(v.legend.map((l) => l.count)).toEqual([3, 3, 2, 1, 2, 1]);
@@ -191,7 +191,7 @@ describe('People list', () => {
     expect(personDetail({ ...people[2], state: 'BUSY', load: 2 })).toBe('Busy, 2 open');
     expect(
       personDetail({ ...people[0], state: 'OUT_OF_OFFICE', load: 1, outUntil: '2026-11-06' }),
-    ).toBe('Out of office until 11/06');
-    expect(STATE_META.OFF_HOURS.label).toBe('Off hours');
+    ).toBe('Out of Office until 11/06');
+    expect(STATE_META.OFF_HOURS.label).toBe('Off Hours');
   });
 });

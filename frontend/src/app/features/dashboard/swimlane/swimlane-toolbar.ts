@@ -169,7 +169,7 @@ export interface Option {
                 data-expand-all
                 (click)="run(expandAll)"
               >
-                <i class="pi pi-plus" aria-hidden="true"></i>Expand all
+                <i class="pi pi-plus" aria-hidden="true"></i>Expand All
               </button>
               <button
                 type="button"
@@ -179,7 +179,7 @@ export interface Option {
                 data-collapse-all
                 (click)="run(collapseAll)"
               >
-                <i class="pi pi-minus" aria-hidden="true"></i>Collapse all
+                <i class="pi pi-minus" aria-hidden="true"></i>Collapse All
               </button>
             }
           </div>
@@ -237,11 +237,11 @@ export interface Option {
           />
         </div>
         <div class="fld fld--col">
-          <label class="lbl" for="sl-type">Task type</label>
+          <label class="lbl" for="sl-type">Task Type</label>
           <mf-dropdown
             data-filter="type"
             buttonId="sl-type"
-            label="Task type"
+            label="Task Type"
             [items]="typeItems()"
             [value]="v.type === null ? '' : '' + v.type"
             (valueChange)="viewChange.emit({ type: num($event) })"
@@ -274,7 +274,7 @@ export interface Option {
           [attr.aria-disabled]="count() === 0 && !v.q && !v.mine ? 'true' : null"
           (click)="clear()"
         >
-          Clear filters
+          Clear Filters
         </button>
       </div>
     }

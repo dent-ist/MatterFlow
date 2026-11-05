@@ -15,11 +15,11 @@ describe('dispositions', () => {
     expect(DISPOSITIONS.map((d) => d.label)).toEqual([
       'Active',
       'Inactive',
-      'Pending disposition',
+      'Pending Disposition',
       'Disposed',
     ]);
     expect(new Set(DISPOSITIONS.map((d) => d.icon)).size).toBe(4);
-    expect(dispositionLabel('PENDING_DISPOSITION')).toBe('Pending disposition');
+    expect(dispositionLabel('PENDING_DISPOSITION')).toBe('Pending Disposition');
     expect(dispositionLabel(undefined)).toBe('Active');
     expect(dispositionLabel('SOMETHING_NEW')).toBe('Active');
   });

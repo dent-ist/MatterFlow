@@ -227,7 +227,7 @@ export function groupPeople(people: readonly CapacityPerson[], query: string): P
   })).filter((g) => g.people.length > 0);
 }
 
-/** `Busy, 2 open` / `Out of office until 11/06`: the line of one person in the People list. */
+/** `Busy, 2 open` / `Out of Office until 11/06`: the line of one person in the People list. */
 export function personDetail(p: CapacityPerson): string {
   const meta = isCapacityState(p.state) ? STATE_META[p.state].label : p.state;
   if (p.state === 'OUT_OF_OFFICE' && p.outUntil) {

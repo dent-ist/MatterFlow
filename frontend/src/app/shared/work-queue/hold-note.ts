@@ -38,7 +38,7 @@ export function holdTitle(
 
 /**
  * What an On Hold row says about the hold (#165, #182), one component for the three places it shows:
- * `mark` is the pause icon at the start of the Ref cell ("On hold" for assistive technology); `reason` is the muted one-line reason under
+ * `mark` is the pause icon at the start of the Ref cell ("On Hold" for assistive technology); `reason` is the muted one-line reason under
  * the Status pill (hidden visually in Compact density, but still read out: the tooltip carries it); `chip` is the reason's own line on a
  * phone card (pause icon and the reason; the "Waiting: ..." line under the title is gone since the cards, #192).
  */
@@ -52,7 +52,7 @@ export function holdTitle(
         <i
           class="pi pi-pause"
           role="img"
-          aria-label="On hold"
+          aria-label="On Hold"
           [attr.title]="title()"
           data-hold-mark
         ></i>

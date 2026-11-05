@@ -203,7 +203,7 @@ function savePanelOpen(open: boolean): void {
           }
           @if (splitting() && pct() !== splitDefault) {
             <button type="button" class="dl__reset" data-split-reset (click)="resetSplit()">
-              Reset layout
+              Reset Layout
             </button>
           }
         </div>

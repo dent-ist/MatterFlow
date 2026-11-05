@@ -242,7 +242,7 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
   `,
   template: `
     <mf-page-header
-      heading="Asset reports"
+      heading="Asset Reports"
       [crumbs]="crumbs"
       description="Count, add up or average the data of your assets, then draw it. Your saved reports are yours alone."
     >
@@ -274,14 +274,14 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
         <div class="ar__main">
           <section class="ar__card" aria-labelledby="ar-define-h" data-define>
             <h2 id="ar-define-h">
-              {{ openReport() ? 'Report: ' + openReport()!.name : 'Define the report' }}
+              {{ openReport() ? 'Report: ' + openReport()!.name : 'Define the Report' }}
             </h2>
             @if (notice()) {
               <p class="ar__alert" role="alert" data-notice>{{ notice() }}</p>
             }
             <form class="ar__fields" novalidate (submit)="$event.preventDefault(); run()">
               <div class="mf-field ar__wide">
-                <label class="mf-field__label" for="ar-name">Report name</label>
+                <label class="mf-field__label" for="ar-name">Report Name</label>
                 <input
                   id="ar-name"
                   class="mf-field__input"
@@ -306,11 +306,11 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
               </div>
 
               <div class="mf-field">
-                <label class="mf-field__label" for="ar-type">Asset type</label>
+                <label class="mf-field__label" for="ar-type">Asset Type</label>
                 <mf-dropdown
                   data-type
                   buttonId="ar-type"
-                  label="Asset type"
+                  label="Asset Type"
                   [items]="typeItems()"
                   [value]="draft().typeId === null ? '' : '' + draft().typeId"
                   [neutralValue]="null"
@@ -319,11 +319,11 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
               </div>
 
               <div class="mf-field">
-                <label class="mf-field__label" for="ar-group">Group by</label>
+                <label class="mf-field__label" for="ar-group">Group By</label>
                 <mf-dropdown
                   data-group
                   buttonId="ar-group"
-                  label="Group by"
+                  label="Group By"
                   [items]="groupItems()"
                   [value]="draft().groupBy"
                   [neutralValue]="null"
@@ -363,11 +363,11 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
                   </p>
                 } @else {
                   <div class="mf-field">
-                    <label class="mf-field__label" for="ar-number">Number field</label>
+                    <label class="mf-field__label" for="ar-number">Number Field</label>
                     <mf-dropdown
                       data-number-field
                       buttonId="ar-number"
-                      label="Number field"
+                      label="Number Field"
                       [items]="numberItems()"
                       [value]="draft().numberField"
                       [neutralValue]="null"
@@ -381,11 +381,11 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
                   </div>
                   @if (needsUnit()) {
                     <div class="mf-field">
-                      <label class="mf-field__label" for="ar-unit">Unit of this field</label>
+                      <label class="mf-field__label" for="ar-unit">Unit of This Field</label>
                       <mf-dropdown
                         data-number-unit
                         buttonId="ar-unit"
-                        label="Unit of this field"
+                        label="Unit of This Field"
                         [items]="unitItems()"
                         [value]="draft().numberUnit"
                         [neutralValue]="null"
@@ -451,11 +451,11 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
                   [attr.aria-disabled]="saving() ? 'true' : null"
                   (click)="save(false)"
                 >
-                  {{ openReport() ? 'Save changes' : 'Save' }}
+                  {{ openReport() ? 'Save Changes' : 'Save' }}
                 </button>
                 @if (openReport()) {
                   <button type="button" class="mf-btn" data-save-new (click)="save(true)">
-                    Save as new report
+                    Save as New Report
                   </button>
                 }
               </div>
@@ -485,7 +485,7 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
                   {{ runError() }}
                   <mf-error-reference />
                   <button type="button" class="mf-btn" data-run-retry (click)="run()">
-                    Try again
+                    Try Again
                   </button>
                 </div>
               }
@@ -524,11 +524,11 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
                       />
                       @if (kind() !== 'table' && r.columns.length > 1) {
                         <div class="ar__graph">
-                          <label class="pg-label" for="ar-graph">Graph field</label>
+                          <label class="pg-label" for="ar-graph">Graph Field</label>
                           <mf-dropdown
                             data-graph-field
                             buttonId="ar-graph"
-                            label="Graph field"
+                            label="Graph Field"
                             [items]="graphItems()"
                             [value]="'' + graphIndex()"
                             [neutralValue]="null"
@@ -605,7 +605,7 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
         </div>
 
         <aside class="ar__card ar__saved" aria-labelledby="ar-saved-h" data-saved>
-          <h2 id="ar-saved-h">Saved reports</h2>
+          <h2 id="ar-saved-h">Saved Reports</h2>
           <mf-saved-reports
             [reports]="saved()"
             [openId]="openReport()?.assetReportId ?? null"
@@ -705,7 +705,7 @@ export class AssetReportsPage {
         { key: 'disposition', label: 'Disposition' },
         { key: 'matter', label: 'Matter' },
         { key: 'client', label: 'Client' },
-        { key: 'assetType', label: 'Asset type' },
+        { key: 'assetType', label: 'Asset Type' },
       ],
   );
   protected readonly needsUnit = computed(() => {

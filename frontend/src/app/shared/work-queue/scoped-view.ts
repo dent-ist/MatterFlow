@@ -46,7 +46,7 @@ export const VIEW_FIXED: Readonly<Record<ScopedView, { status: string; due?: str
   overdue: { status: 'Open' },
   dueSoon: { status: 'Open', due: 'Next 2 days' },
   asap: { status: 'Open' },
-  onHold: { status: 'On hold' },
+  onHold: { status: 'On Hold' },
 };
 
 /** The empty-grid sentence of a pressed view. */

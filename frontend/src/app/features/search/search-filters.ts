@@ -153,10 +153,10 @@ import { DEFAULT_STATUS_LABELS } from '../../core/lookups/lookup-store';
             }
             @case ('assetType') {
               <div class="sf-field">
-                <label for="sf-asset-type">Asset type</label>
+                <label for="sf-asset-type">Asset Type</label>
                 <mf-dropdown
                   buttonId="sf-asset-type"
-                  label="Asset type"
+                  label="Asset Type"
                   [items]="assetTypeItems()"
                   [value]="'' + (values().assetType ?? '')"
                   [panelWidth]="260"
@@ -179,7 +179,7 @@ import { DEFAULT_STATUS_LABELS } from '../../core/lookups/lookup-store';
             }
             @case ('sensitive') {
               <div class="sf-field">
-                <label for="sf-sensitive">Sensitive matter</label>
+                <label for="sf-sensitive">Sensitive Matter</label>
                 <mf-dropdown
                   buttonId="sf-sensitive"
                   label="Sensitive"
@@ -191,7 +191,7 @@ import { DEFAULT_STATUS_LABELS } from '../../core/lookups/lookup-store';
             }
             @case ('status') {
               <fieldset class="sf-statuses">
-                <legend>Task status</legend>
+                <legend>Task Status</legend>
                 @for (code of statusCodes; track code) {
                   <label>
                     <input
@@ -241,7 +241,7 @@ import { DEFAULT_STATUS_LABELS } from '../../core/lookups/lookup-store';
         }
         <li>
           <button type="button" class="mf-btn mf-btn--text" data-clear-filters (click)="clear()">
-            Clear filters
+            Clear Filters
           </button>
         </li>
       </ul>

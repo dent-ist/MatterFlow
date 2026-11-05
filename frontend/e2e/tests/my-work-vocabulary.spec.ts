@@ -9,7 +9,7 @@ import { dateInZone, FIRM_ZONE } from '../support/time';
 
 /**
  * One vocabulary and the tab rules of My Work (WP5a): the tab names, tooltips and URL values (M5, #171), the Due soon and overdue order
- * (D1, #154), the Closed window and "Show older" as an all-time state (C4, #187), the info button and the empty copy (D4/D6, #188), and the
+ * (D1, #154), the Closed window and "Show Older" as an all-time state (C4, #187), the info button and the empty copy (D4/D6, #188), and the
  * title, caption and live region naming the tab (M8, #161). Every test uses its own user and tagged tasks, so nothing depends on global
  * counts. Screenshots go to E2E_SCREENSHOTS when it is set (docs/ux/my-work-review/fixes/wp5a).
  */
@@ -115,7 +115,7 @@ test.describe('My Work vocabulary and tab rules', () => {
       .click();
     await expect(page).toHaveURL(/sort=priority/);
     await expect(page.locator('[data-sort-note]')).toContainText('Sorted by Priority');
-    await page.getByRole('button', { name: 'Reset sort' }).click();
+    await page.getByRole('button', { name: 'Reset Sort' }).click();
     await expect(page).not.toHaveURL(/sort=/);
     expect(await titles()).toEqual(['Over13', 'Over5', 'Over1', 'Today', 'Tomorrow']);
 
@@ -187,7 +187,7 @@ test.describe('My Work vocabulary and tab rules', () => {
     await myWork.expectNotListed(`Old ${tag}`);
     await expect(page.locator('[data-filter-chips] [data-chip]')).toHaveCount(0);
 
-    await page.getByRole('button', { name: 'Show older' }).first().click();
+    await page.getByRole('button', { name: 'Show Older' }).first().click();
     await expect(page).toHaveURL(/closed=all/);
     await expect(page).not.toHaveURL(/completedFrom/);
     await expect(myWork.tab(/^Closed/)).toContainText('(2)');
@@ -195,7 +195,7 @@ test.describe('My Work vocabulary and tab rules', () => {
     const chip = page.locator('[data-filter-chips] [data-chip]');
     await expect(chip).toHaveCount(1);
     await expect(chip).toContainText('Closed: all time');
-    await expect(page.getByRole('button', { name: 'Show older' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Show Older' })).toHaveCount(0);
     await page.getByRole('button', { name: 'About this tab' }).click();
     await expect(page.locator('[data-tab-help-text]')).toContainText('all time');
     await shot(page, 'show-older-all-time-1366x768');

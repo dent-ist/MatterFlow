@@ -17,7 +17,7 @@ import { Connectivity } from '../../core/http/connectivity';
           <i class="pi pi-lock" aria-hidden="true"></i>
           <span class="cb__text">We couldn't verify your sign-in.</span>
           <button type="button" class="mf-btn cb__retry" data-signin-reload (click)="reload()">
-            Reload page
+            Reload Page
           </button>
         </div>
       } @else if (connectivity.offline()) {

@@ -262,7 +262,7 @@ describe('Task facts strip (#297)', () => {
   it('keeps Type, Pod and Due out of the Details panel (once on the page)', async () => {
     const { el } = await mountTaskPage(aTask(), PERMS);
     const panel = q(el, '[data-section="details"]')!.textContent!;
-    expect(panel).not.toContain('Task type');
+    expect(panel).not.toContain('Task Type');
     expect(panel).not.toContain('Pod A');
     expect(panel).not.toContain('Due');
     expect(panel).toContain('Project');

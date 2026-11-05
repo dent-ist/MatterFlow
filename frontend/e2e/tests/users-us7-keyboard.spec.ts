@@ -6,7 +6,7 @@ import { expect, test } from '../support/fixtures';
 import { Persona } from '../support/personas';
 
 /**
- * Users epic #422, WP-US7 #452 (U14): "Skip to table" is the first Tab stop and lands on the first row, one Tab stop for the name and one for the
+ * Users epic #422, WP-US7 #452 (U14): "Skip to Table" is the first Tab stop and lands on the first row, one Tab stop for the name and one for the
  * action of a row, accessible names with the Windows account. The Tab-stop counts of the page are measured with real Tab presses and written to
  * `tab-stops.json` (recorded, never gated) in the folder E2E_SCREENSHOTS names (docs/ux/users-review/fixes/us7-keyboard/).
  * No keyboard shortcut is added or changed: the skip link, focus order and the row menu's own arrows are the standard ones.
@@ -26,7 +26,7 @@ test.beforeAll(async ({ personas }) => {
 });
 
 const listUrl = (extra = '') => `/admin/users?status=all${extra}`;
-const skipLink = (page: Page) => page.getByRole('link', { name: 'Skip to table' });
+const skipLink = (page: Page) => page.getByRole('link', { name: 'Skip to Table' });
 /** The name of each person: the table's name button, below 640 px the card's. */
 const names = (page: Page) =>
   page.locator('tbody tr[data-user] button[data-open], li.rc button[data-card-name]');

@@ -145,7 +145,7 @@ describe('mf-task-type-icon-picker', () => {
     const ids = trigger.getAttribute('aria-labelledby')!.split(' ');
     const text = ids.map((id) => document.getElementById(id)?.textContent?.trim()).join(' ');
     expect(text).toContain('Document');
-    expect(text).toContain('Change icon');
+    expect(text).toContain('Change Icon');
   });
 
   it('gives focus back to the opener button when the dialog closes (UXR4-08)', async () => {

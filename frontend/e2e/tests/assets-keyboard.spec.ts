@@ -70,7 +70,7 @@ test.describe('Assets keyboard audit (WP-AS6)', () => {
     await expect(page.locator('tbody tr[data-asset-id]')).toHaveCount(3);
 
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('link', { name: 'Skip to table' })).toBeFocused();
+    await expect(page.getByRole('link', { name: 'Skip to Table' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.locator('tbody a.mf-name').first()).toBeFocused();
 
@@ -97,7 +97,7 @@ test.describe('Assets keyboard audit (WP-AS6)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/assets?name=${token}`);
     await expect(page.locator('#asset-filter-row')).toBeVisible();
-    await page.getByRole('link', { name: 'Skip to table' }).focus();
+    await page.getByRole('link', { name: 'Skip to Table' }).focus();
     // The Name text is the Search box (LC-01); the filter controls of the row follow the columns left to right, from the Type filter to Disposition.
     await expect(page.getByRole('searchbox', { name: 'Search assets' })).toBeVisible();
     await page.getByRole('button', { name: /^Filter by Type/ }).focus();
@@ -193,7 +193,7 @@ test.describe('Assets keyboard audit (WP-AS6)', () => {
     await name.focus();
     await page.keyboard.press('Control+A');
     await page.keyboard.type(`Renamed ${token}`);
-    const save = page.getByRole('button', { name: 'Save changes' });
+    const save = page.getByRole('button', { name: 'Save Changes' });
     await save.focus();
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(new RegExp(`/assets/${assets[0].assetId}$`));
@@ -247,7 +247,7 @@ test.describe('Assets keyboard audit (WP-AS6)', () => {
     await page.keyboard.press('e');
     await page.keyboard.press('n');
     expect(page.url()).toBe(url);
-    await page.getByRole('button', { name: 'Create asset' }).focus();
+    await page.getByRole('button', { name: 'Create Asset' }).focus();
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/\/assets\/\d+$/);
     await expect(page.locator('[data-page-title]')).toBeFocused();

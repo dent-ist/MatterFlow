@@ -161,14 +161,14 @@ export function stepStripItems(
     used === 0
       ? {
           key: 'used',
-          label: 'Used in workflows',
+          label: 'Used in Workflows',
           count: null,
-          value: 'Not used',
+          value: 'Not Used',
           hint: 'No workflow uses this step',
         }
       : {
           key: 'used',
-          label: 'Used in workflows',
+          label: 'Used in Workflows',
           count: used,
           hint:
             used === null

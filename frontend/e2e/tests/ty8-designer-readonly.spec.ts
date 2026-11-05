@@ -32,8 +32,8 @@ for (const size of SIZES) {
       await expect(badge(page)).toHaveText('Published v1');
       await expect(badge(page).locator('i.pi')).toHaveCount(1);
       await expect(page.locator('[data-published-note]')).toHaveCount(0);
-      await expect(page.getByRole('button', { name: 'Retire version' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Create new draft' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Retire Version' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Create New Draft' })).toBeVisible();
       await expect(page.locator('[data-readonly-banner]')).toContainText("can't be edited");
       await noSideScroll(page);
       if (size.w >= 768) await noPageScroll(page);
@@ -95,10 +95,10 @@ for (const size of SIZES) {
 
       // Open the published version from the Versions dialog: read-only, with a link back to the draft instead of a second draft.
       await page.getByRole('button', { name: 'Versions (2)' }).click();
-      const dialog = page.getByRole('dialog', { name: 'Form versions' });
+      const dialog = page.getByRole('dialog', { name: 'Form Versions' });
       await dialog.getByRole('button', { name: 'v1' }).click();
       await expect(badge(page)).toHaveText('Published v1');
-      await expect(page.getByRole('button', { name: 'Create new draft' })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Create New Draft' })).toHaveCount(0);
       await expect(page.locator('[data-readonly-banner]')).toContainText('Open the draft');
       await page.getByRole('button', { name: 'Open draft v2' }).click();
       await expect(badge(page)).toHaveText('Draft v2');
@@ -108,14 +108,14 @@ for (const size of SIZES) {
     test('retired: neutral badge with its icon, read-only', async ({ page, seed, admin }) => {
       const world = await typeWorld(seed, admin, { published: true, fields: manyFields(5) });
       await page.goto(world.url);
-      await page.getByRole('button', { name: 'Retire version' }).click();
+      await page.getByRole('button', { name: 'Retire Version' }).click();
       await page
         .getByRole('dialog')
         .getByRole('button', { name: /^Retire v1/ })
         .click();
       await expect(badge(page)).toHaveText('Retired v1');
       await expect(badge(page).locator('i.pi')).toHaveCount(1);
-      await expect(page.getByRole('button', { name: 'Retire version' })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Retire Version' })).toHaveCount(0);
       await shoot(page, 'readonly-retired', size);
       await expectNoViolations(page, 'retired');
     });
@@ -134,7 +134,7 @@ test.describe('FD2 and FD3: Versions dialog, long names and permissions', () => 
     const versions = page.getByRole('button', { name: 'Versions (2)' });
     await versions.focus();
     await page.keyboard.press('Enter');
-    const dialog = page.getByRole('dialog', { name: 'Form versions' });
+    const dialog = page.getByRole('dialog', { name: 'Form Versions' });
     await expect(dialog.getByRole('row')).toHaveCount(3);
     await expectNoViolations(page, 'versions dialog');
     await page.keyboard.press('Escape');

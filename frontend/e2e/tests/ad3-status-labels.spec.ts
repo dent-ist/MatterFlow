@@ -11,7 +11,7 @@ import { uid } from '../support/seed';
  * and where the name shows, phone cards below 640 px. Screenshots: E2E_SCREENSHOTS (fixes/ad3-labels).
  */
 const rows = (page: Page) => page.locator('table.mf-grid tbody tr[data-row]');
-const dialog = (page: Page) => page.getByRole('dialog', { name: 'Rename status label' });
+const dialog = (page: Page) => page.getByRole('dialog', { name: 'Rename Status Label' });
 const field = (page: Page) => page.locator('#status-label-name');
 const badgeOf = (page: Page, code: string) => page.locator(`[data-row="${code}"] mf-status-badge`);
 

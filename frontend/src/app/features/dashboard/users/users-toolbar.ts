@@ -60,7 +60,7 @@ import {
             data-reset-sort
             (click)="sortChange.emit('load')"
           >
-            Reset sort
+            Reset Sort
           </button>
         }
       </p>

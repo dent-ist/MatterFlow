@@ -30,10 +30,10 @@ let nextId = 0;
       (click)="toggle()"
     >
       <i class="pi pi-plus" aria-hidden="true"></i>
-      Other filters
+      Other Filters
     </button>
     @if (open()) {
-      <mf-filter-popover [anchor]="btn" label="Other filters" (closed)="close()">
+      <mf-filter-popover [anchor]="btn" label="Other Filters" (closed)="close()">
         <div [id]="uid" class="mfm">
           @if (picked(); as d) {
             <button type="button" class="mf-btn mf-btn--text" (click)="picked.set(null)">
@@ -156,7 +156,7 @@ export class MoreFilters {
               data-clear-filters
               (click)="filters().clear(clearAlso())"
             >
-              Clear filters
+              Clear Filters
             </button>
           }
         }
@@ -195,7 +195,7 @@ export class MoreFilters {
               data-clear-filters
               (click)="filters().clear(clearAlso())"
             >
-              Clear filters
+              Clear Filters
             </button>
           }
         }

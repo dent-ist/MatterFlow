@@ -73,12 +73,12 @@ describe('mf-search-filters (#474, #475, #476)', () => {
 
   it('offers the controls of each type and nothing else', async () => {
     expect(labels((await create('client')).el)).toEqual(['Status']);
-    expect(labels((await create('matter')).el)).toEqual(['Client', 'Status', 'Sensitive matter']);
+    expect(labels((await create('matter')).el)).toEqual(['Client', 'Status', 'Sensitive Matter']);
     expect(labels((await create('project')).el)).toEqual(['Matter', 'Status']);
     expect(labels((await create('task')).el)).toEqual([
       'Client',
       'Matter',
-      'Task status',
+      'Task Status',
       'New',
       'In Progress',
       'On Hold',
@@ -86,13 +86,13 @@ describe('mf-search-filters (#474, #475, #476)', () => {
       'Cancelled',
       'Requestor',
     ]);
-    expect(labels((await create('asset')).el)).toEqual(['Matter', 'Asset type', 'Status']);
+    expect(labels((await create('asset')).el)).toEqual(['Matter', 'Asset Type', 'Status']);
   });
 
   it('offers no record picker to a person who may not view those records (Task.View only)', async () => {
     const { el } = await create('task', NO_FILTERS, true, ['Task.View']);
     expect(labels(el)).toEqual([
-      'Task status',
+      'Task Status',
       'New',
       'In Progress',
       'On Hold',
@@ -165,7 +165,7 @@ describe('mf-search-filters (#474, #475, #476)', () => {
 
   it('loads the asset types for the Asset type filter and names the chip from them', async () => {
     const { el } = await create('asset', { ...NO_FILTERS, assetType: 7 });
-    const select = ddSelect(el, 'Asset type');
+    const select = ddSelect(el, 'Asset Type');
     expect(select.options.map((o) => o.textContent)).toEqual(['Any type', 'Production']);
     expect(select.value).toBe('7');
     expect(el.querySelector('[data-filter-chip]')!.textContent).toContain('Asset type: Production');

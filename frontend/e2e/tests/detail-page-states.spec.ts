@@ -8,7 +8,7 @@ import { uid } from '../support/seed';
 
 /**
  * Detail-page bugs and states (WP1, #246 to #250): the load failures and the skeleton of the Client, Matter and Project pages, the
- * document title, "New matter" and the inactive-client rule, and the natural order of a matter's Projects tab. Every test seeds its own
+ * document title, "New Matter" and the inactive-client rule, and the natural order of a matter's Projects tab. Every test seeds its own
  * records. Screenshots go to E2E_SCREENSHOTS when it is set (docs/ux/clients-review/fixes/wp1).
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
@@ -400,8 +400,8 @@ test.describe('Client Matters tab: New matter and the inactive-client rule (#250
     const empty = await seed.client();
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/clients/${empty.clientId}?tab=matters`);
-    await expect(page.getByRole('button', { name: 'New matter' })).toHaveCount(2); // the header (WP3) and the empty state; no toolbar button (WP9)
-    await expect(page.getByRole('button', { name: 'Create matter' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'New Matter' })).toHaveCount(2); // the header (WP3) and the empty state; no toolbar button (WP9)
+    await expect(page.getByRole('button', { name: 'Create Matter' })).toHaveCount(0);
     await expect(page.locator('[data-create-matter]')).toHaveCount(0);
     await expect(page.locator('[data-empty-new-matter]')).not.toHaveAttribute(
       'aria-disabled',
@@ -413,9 +413,9 @@ test.describe('Client Matters tab: New matter and the inactive-client rule (#250
     const withMatter = await seed.client();
     await seed.matter({ client: withMatter });
     await page.goto(`/clients/${withMatter.clientId}?tab=matters`);
-    await expect(page.getByRole('button', { name: 'New matter' })).toHaveCount(1); // the header only
+    await expect(page.getByRole('button', { name: 'New Matter' })).toHaveCount(1); // the header only
     await page.locator('[data-page-actions] [data-action="new-matter"]').click();
-    await expect(page.getByRole('dialog', { name: 'New matter' })).toBeVisible(); // MD-22
+    await expect(page.getByRole('dialog', { name: 'New Matter' })).toBeVisible(); // MD-22
     await expect(page).toHaveURL(/\/matters$/);
   });
 

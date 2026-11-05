@@ -50,7 +50,7 @@ let nextId = 0;
             data-clear-filters
             (click)="cleared.emit()"
           >
-            Clear filters
+            Clear Filters
           </button>
         }
       </div>

@@ -20,7 +20,7 @@ class Host {
     {
       key: 'c',
       icon: 'pi-circle',
-      label: 'Request form',
+      label: 'Request Form',
       disabledReason: 'Save the task type first',
     },
   ]);

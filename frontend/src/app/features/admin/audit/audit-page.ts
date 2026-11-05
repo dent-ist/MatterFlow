@@ -90,7 +90,7 @@ const ACCESS_VALUE = ACCESS_OBJECT_TYPES.join(',');
  * `correlationId`). Results newest first on the grid contract (#647): a day divider ("Today", "Oct 19") and the time alone in the When column
  * (#655), Who joining the When cell below 1100 px, phone cards below 640 px; one readable sentence per event, an optional grouping of the
  * events of one operation, details with the Old -> New pair and the technical facts on request (#652), links to the audited object only
- * where the viewer may open it (#648), four quick views (#654), the count of what is loaded (#653) and cursor paging ("Load more").
+ * where the viewer may open it (#648), four quick views (#654), the count of what is loaded (#653) and cursor paging ("Load More").
  * Read only: there is no export.
  */
 @Component({
@@ -195,7 +195,7 @@ export class AuditPage {
       },
       {
         key: 'eventType',
-        label: 'Event type',
+        label: 'Event Type',
         column: 'what',
         type: 'select',
         allLabel: 'Any event',
@@ -203,10 +203,10 @@ export class AuditPage {
           .eventTypes.map((t) => ({ value: t, label: eventTypeLabel(t) }))
           .sort((a, b) => a.label.localeCompare(b.label)),
       },
-      { key: 'q', label: 'Summary or field', column: 'what', type: 'text' },
+      { key: 'q', label: 'Summary or Field', column: 'what', type: 'text' },
       {
         key: 'objectType',
-        label: 'Object type',
+        label: 'Object Type',
         column: 'object',
         type: 'select',
         allLabel: 'Any object',
@@ -221,7 +221,7 @@ export class AuditPage {
       },
       {
         key: 'objectId',
-        label: 'Object id',
+        label: 'Object ID',
         column: 'object',
         type: 'text',
         maxLength: 40,
@@ -305,7 +305,7 @@ export class AuditPage {
     for (const g of this.groups()) {
       const operation = (item: AuditSearchItem) => ({
         id: 'operation',
-        label: 'Show only this operation',
+        label: 'Show Only This Operation',
         icon: 'pi-filter',
         run: () => this.showOperation(item),
       });
@@ -336,7 +336,7 @@ export class AuditPage {
             [
               {
                 id: 'details',
-                label: expanded.has(item.auditEventId) ? 'Hide details' : 'Show details',
+                label: expanded.has(item.auditEventId) ? 'Hide Details' : 'Show Details',
                 icon: 'pi-info-circle',
                 run: () => this.toggle(item),
               },

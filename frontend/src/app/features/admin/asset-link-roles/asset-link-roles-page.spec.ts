@@ -185,10 +185,10 @@ describe('AssetLinkRolesPage (#640, #641, #642)', () => {
 
     it('adds a role in the New link role dialog with a counter of 50, and shows the duplicate message with the field', async () => {
       await setEdit('new');
-      expect(document.body.querySelector('.p-dialog')!.textContent).toContain('New link role');
+      expect(document.body.querySelector('.p-dialog')!.textContent).toContain('New Link Role');
       expect(document.body.querySelector('.p-dialog')!.textContent).toContain('0 / 50');
       await type('Related');
-      await click(dialogButton('Add link role'));
+      await click(dialogButton('Add Link Role'));
       expect(names()).toEqual(['Source', 'Destination', 'Subject', 'Result', 'Related']);
       expect(api.calls).toContain('create');
 
@@ -197,7 +197,7 @@ describe('AssetLinkRolesPage (#640, #641, #642)', () => {
       api.failNext = apiError(409, 'DUPLICATE_NAME', "A link role named 'source' exists.", {
         name: [{ code: 'DUPLICATE', message: "A link role named 'source' exists." }],
       });
-      await click(dialogButton('Add link role'));
+      await click(dialogButton('Add Link Role'));
       expect(document.body.querySelector('.p-dialog')!.textContent).toContain(
         "A link role named 'source' exists.",
       );
@@ -206,17 +206,17 @@ describe('AssetLinkRolesPage (#640, #641, #642)', () => {
 
     it('asks for a name before it sends anything', async () => {
       await setEdit('new');
-      await click(dialogButton('Add link role'));
+      await click(dialogButton('Add Link Role'));
       expect(api.calls).not.toContain('create');
       expect(document.body.querySelector('.p-dialog')!.textContent).toContain('Enter a name.');
     });
 
     it('renames in the same dialog, starting from the current name', async () => {
       await setEdit('4');
-      expect(document.body.querySelector('.p-dialog')!.textContent).toContain('Rename link role');
+      expect(document.body.querySelector('.p-dialog')!.textContent).toContain('Rename Link Role');
       expect(nameInput().value).toBe('Result');
       await type('Output');
-      await click(dialogButton('Save name'));
+      await click(dialogButton('Save Name'));
       expect(names()).toContain('Output');
     });
 

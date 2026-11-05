@@ -218,8 +218,8 @@ function allTitles(): { where: string; title: string }[] {
 describe('document titles by route (S21, #606)', () => {
   it('pageTab joins page and tab with a colon', () => {
     expect(pageTab('Users', 'Roles')).toBe('Users: Roles');
-    expect(documentTitle(pageTab('Task Types', 'New workflow'))).toBe(
-      'Task Types: New workflow - MatterFlow',
+    expect(documentTitle(pageTab('Task Types', 'New Workflow'))).toBe(
+      'Task Types: New Workflow - MatterFlow',
     );
   });
 

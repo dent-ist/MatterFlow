@@ -58,7 +58,7 @@ export type TagMatch = 'all' | 'any';
           ></i>
         </button>
         <fieldset class="tf__match" [disabled]="false">
-          <legend class="tf__sr">Tag matching</legend>
+          <legend class="tf__sr">Tag Matching</legend>
           <label class="tf__radio">
             <input
               type="radio"
@@ -138,7 +138,7 @@ export type TagMatch = 'all' | 'any';
           }
           @if (selected().length > 0) {
             <button type="button" class="tf__clear" (click)="selectedChange.emit([])">
-              Clear tags
+              Clear Tags
             </button>
           }
         </div>

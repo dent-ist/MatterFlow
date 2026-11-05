@@ -171,7 +171,7 @@ let nextId = 0;
   styleUrl: './task-type-workflows-tab.scss',
   template: `
     <section class="wt" aria-labelledby="tt-wf-h" data-workflows-tab>
-      <h2 id="tt-wf-h" class="wt__h">Eligible workflows</h2>
+      <h2 id="tt-wf-h" class="wt__h">Eligible Workflows</h2>
       <p class="muted wt__lead">
         People choose one of these when they create a task of this type. A type needs at least one
         published, active workflow to be usable.
@@ -179,7 +179,7 @@ let nextId = 0;
 
       @if (canAdd()) {
         <div class="wt__add" data-add-workflow>
-          <label class="wt__add-label" [for]="uid + '-add'">Add workflow</label>
+          <label class="wt__add-label" [for]="uid + '-add'">Add Workflow</label>
           <div class="wt__box">
             <input
               #search
@@ -307,7 +307,7 @@ let nextId = 0;
                       r.publishedVersionNo
                     }}
                   } @else {
-                    <mf-badge data-not-published>Not published</mf-badge>
+                    <mf-badge data-not-published>Not Published</mf-badge>
                   }
                 </td>
                 <td class="wt__steps">

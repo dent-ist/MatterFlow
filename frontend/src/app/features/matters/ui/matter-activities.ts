@@ -175,7 +175,7 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
       <div frameFoot>
         @if (nextCursor() !== null) {
           <button type="button" class="mf-btn" data-show-more (click)="fetch(false)">
-            Show more
+            Show More
           </button>
         }
       </div>

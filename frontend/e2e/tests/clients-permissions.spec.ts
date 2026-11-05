@@ -155,15 +155,15 @@ test.describe('#285: permission matrix, no dead links', () => {
       if (has(role, 'Client.View')) {
         await visit(`/clients?name=${encodeURIComponent(`Perm ${tag}`)}`, 'clients list');
         await expect(page.locator('#mf-main a[data-row-list="clients"]').first()).toBeVisible();
-        expect((await links(page, 'th:has-text("Open tasks")')) > 0, 'Open tasks column').toBe(
+        expect((await links(page, 'th:has-text("Open Tasks")')) > 0, 'Open tasks column').toBe(
           has(role, 'Task.View'),
         );
         expect((await links(page, 'a[href^="/tasks?"]')) > 0, 'count links').toBe(
           has(role, 'Task.View'),
         );
         expect(
-          (await page.getByRole('button', { name: 'New client' }).count()) > 0,
-          'New client',
+          (await page.getByRole('button', { name: 'New Client' }).count()) > 0,
+          'New Client',
         ).toBe(role.perms === null);
         if (role.key === 'client-only') await shot(page, 'permissions-client-only-clients');
 
@@ -193,7 +193,7 @@ test.describe('#285: permission matrix, no dead links', () => {
         if (has(role, 'Matter.View')) {
           await visit(`/clients/${c.clientId}?tab=matters`, 'client matters');
           expect(
-            (await links(page, 'th:has-text("Open tasks")')) > 0,
+            (await links(page, 'th:has-text("Open Tasks")')) > 0,
             'Open tasks column on the tab',
           ).toBe(has(role, 'Task.View'));
         } else {
@@ -214,12 +214,12 @@ test.describe('#285: permission matrix, no dead links', () => {
           (await links(page, 'a[href^="/clients/"]')) > 0,
           'client links in the Matters list',
         ).toBe(has(role, 'Client.View'));
-        expect((await links(page, 'th:has-text("Open tasks")')) > 0, 'Open tasks column').toBe(
+        expect((await links(page, 'th:has-text("Open Tasks")')) > 0, 'Open tasks column').toBe(
           has(role, 'Task.View'),
         );
         expect(
-          (await page.getByRole('button', { name: 'New matter' }).count()) > 0,
-          'New matter',
+          (await page.getByRole('button', { name: 'New Matter' }).count()) > 0,
+          'New Matter',
         ).toBe(role.perms === null);
         if (role.key === 'matter-no-client') await shot(page, 'permissions-matter-no-client-list');
 
@@ -269,7 +269,7 @@ test.describe('#285: permission matrix, no dead links', () => {
           (await links(page, 'a[href^="/matters/"]')) > 0,
           'matter links in the Projects list',
         ).toBe(has(role, 'Matter.View'));
-        expect((await links(page, 'th:has-text("Open tasks")')) > 0, 'Open tasks column').toBe(
+        expect((await links(page, 'th:has-text("Open Tasks")')) > 0, 'Open tasks column').toBe(
           has(role, 'Task.View'),
         );
 

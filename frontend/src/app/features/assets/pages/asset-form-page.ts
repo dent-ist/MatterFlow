@@ -118,7 +118,7 @@ export function externalReferenceError(text: string): string | null {
     } @else if (original() && !original()!.isActive) {
       <div class="pg-banner af__main" role="note" data-inactive-banner>
         This asset is inactive, so it can't be edited. Reactivate it on its asset page first.
-        <a class="pg-link" [routerLink]="recordUrl()" data-record-link>Open the asset</a>
+        <a class="pg-link" [routerLink]="recordUrl()" data-record-link>Open the Asset</a>
       </div>
     } @else {
       <div class="af__main">
@@ -126,7 +126,7 @@ export function externalReferenceError(text: string): string | null {
           <div class="pg-alert" role="alert" data-conflict>
             {{ conflictText() }}
             @if (assetId()) {
-              <p-button label="Reload latest" severity="secondary" (onClick)="load()" />
+              <p-button label="Reload Latest" severity="secondary" (onClick)="load()" />
             }
           </div>
         }
@@ -189,7 +189,7 @@ export function externalReferenceError(text: string): string | null {
 
             <mf-text-field
               inputId="asset-name"
-              label="Display name"
+              label="Display Name"
               [required]="true"
               [maxLength]="300"
               [error]="nameError()"
@@ -198,7 +198,7 @@ export function externalReferenceError(text: string): string | null {
 
             <mf-text-field
               inputId="asset-reference"
-              label="External reference / URL"
+              label="External Reference / URL"
               help="A URL, workspace id or media label that identifies the asset elsewhere."
               [maxLength]="1000"
               [error]="referenceError()"
@@ -218,7 +218,7 @@ export function externalReferenceError(text: string): string | null {
           <section class="af__section" aria-labelledby="af-h-fields" data-section="fields">
             @if (schema(); as definition) {
               <h2 id="af-h-fields" class="af__h" data-fields-title>
-                {{ typeName() }} fields ({{ definition.fields.length }})
+                {{ typeName() }} Fields ({{ definition.fields.length }})
               </h2>
               <div data-type-fields>
                 <mf-dynamic-form
@@ -246,7 +246,7 @@ export function externalReferenceError(text: string): string | null {
             <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
             <p-button
               type="submit"
-              [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create asset'"
+              [label]="busy() ? 'Saving...' : isEdit() ? 'Save Changes' : 'Create Asset'"
               [disabled]="busy() || (isEdit() && !dirty())"
             />
           </div>

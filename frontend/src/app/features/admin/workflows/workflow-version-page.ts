@@ -106,7 +106,7 @@ const LIBRARY_PANE_MIN = 1280;
         />
       } @else if (state() === 'loading') {
         <mf-page-header
-          heading="Workflow version"
+          heading="Workflow Version"
           [crumbs]="[
             { label: 'Administration' },
             { label: 'Task Types', link: '/admin/task-types' },
@@ -204,7 +204,7 @@ const LIBRARY_PANE_MIN = 1280;
             @if (conflict()) {
               <div class="pg-alert" role="alert" data-conflict>
                 This workflow was changed by someone else.
-                <p-button label="Reload latest" severity="secondary" (onClick)="load()" />
+                <p-button label="Reload Latest" severity="secondary" (onClick)="load()" />
               </div>
             }
             @if (messages().length > 0) {
@@ -267,7 +267,7 @@ const LIBRARY_PANE_MIN = 1280;
                   <h2 id="wf-steps-heading">Steps in this version ({{ rows().length }})</h2>
                   @if (editable() && !libraryPane()) {
                     <p-button
-                      label="Add step"
+                      label="Add Step"
                       icon="pi pi-plus"
                       severity="secondary"
                       data-add-step
@@ -329,7 +329,7 @@ const LIBRARY_PANE_MIN = 1280;
 
         @if (editable() && !libraryPane()) {
           <mf-slide-panel
-            title="Add steps"
+            title="Add Steps"
             closeLabel="Close step library"
             initialFocus="none"
             [showFooter]="false"
@@ -404,7 +404,7 @@ const LIBRARY_PANE_MIN = 1280;
               }
               @for (t of d.skipRuleChanged; track t) {
                 <li>
-                  <mf-badge tone="warning" icon="pi-forward">Skip rule changed</mf-badge>
+                  <mf-badge tone="warning" icon="pi-forward">Skip Rule Changed</mf-badge>
                   <span class="wf-diff__title" [attr.title]="t">"{{ t }}"</span>
                 </li>
               }
@@ -596,7 +596,7 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
       { key: 'steps', label: 'Steps', icon: tabIcon('steps'), count: this.rows().length },
       {
         key: 'used-by',
-        label: 'Used by',
+        label: 'Used By',
         icon: tabIcon('used-by'),
         count: w ? activeTaskTypes({ workflow: w }).length : 0,
       },

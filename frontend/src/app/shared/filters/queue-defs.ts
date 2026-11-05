@@ -34,7 +34,7 @@ export interface QueueDefOptions {
   statuses?: () => readonly FilterOption[];
   /** The statuses a plain link starts on (Task Queue: the open ones). A link with other filters and no status asks for every status. */
   defaultStatus?: readonly string[];
-  /** My Work, Closed tab: adds the "Closed: all time" chip of `closed=all` ("Show older"; removing it returns to the 90-day window). */
+  /** My Work, Closed tab: adds the "Closed: all time" chip of `closed=all` ("Show Older"; removing it returns to the 90-day window). */
   closedWindow?: boolean;
   /** My Work: adds the "New since your last visit" chip of `new=1` (the strip's New item; removing the chip lists every task again). */
   newSince?: boolean;
@@ -101,7 +101,7 @@ export function queueFilterDefs(
     { key: 'projectText', label: 'Project', column: 'project', type: 'text' },
     {
       key: 'type',
-      label: 'Task type',
+      label: 'Task Type',
       column: 'type',
       type: 'multiSelect',
       options: list(lookups.types),
@@ -263,7 +263,7 @@ export function queueFilterDefs(
     // is not matched and nothing says so.
     {
       key: 'managedByMe',
-      label: 'Managed by me',
+      label: 'Managed By Me',
       type: 'select',
       param: 'managedByMe',
       noControl: true,
@@ -273,7 +273,7 @@ export function queueFilterDefs(
     },
     {
       key: 'managerId',
-      label: 'Project manager',
+      label: 'Project Manager',
       type: 'text',
       noControl: true,
       normalize: asId,
@@ -296,7 +296,7 @@ export function queueFilterDefs(
     },
     {
       key: 'dueWithin',
-      label: 'Due within',
+      label: 'Due Within',
       type: 'select',
       param: 'dueWithin',
       noControl: true,
@@ -310,7 +310,7 @@ export function queueFilterDefs(
     // reason of a hold (the On-hold reason column, beside Status).
     {
       key: 'atRisk',
-      label: 'At risk',
+      label: 'At Risk',
       type: 'select',
       param: 'atRisk',
       allLabel: 'Any',
@@ -321,7 +321,7 @@ export function queueFilterDefs(
     // Issue #905: the Overview's "View all" (overdue, at risk, due today, unassigned and due soon, on hold too long).
     {
       key: 'needsAttention',
-      label: 'Needs attention',
+      label: 'Needs Attention',
       type: 'select',
       param: 'needsAttention',
       allLabel: 'Any',
@@ -331,7 +331,7 @@ export function queueFilterDefs(
     },
     {
       key: 'onHoldReason',
-      label: 'On-hold reason',
+      label: 'On-Hold Reason',
       column: 'onHoldReason',
       type: 'multiSelect',
       param: 'onHoldReason',

@@ -89,7 +89,7 @@ export const PEEK_COMMENTS = 3;
           </p>
 
           <section aria-labelledby="pk-actions" class="sec">
-            <h3 id="pk-actions" class="sr-only">Quick actions</h3>
+            <h3 id="pk-actions" class="sr-only">Quick Actions</h3>
             <dl class="facts">
               <div class="fact">
                 <dt>Status</dt>
@@ -136,7 +136,7 @@ export const PEEK_COMMENTS = 3;
                   }
                   @if (c.assignee?.availability?.state === 'OUT_OF_OFFICE') {
                     <span class="ooo"
-                      ><i class="pi pi-calendar-minus" aria-hidden="true"></i>Out of office</span
+                      ><i class="pi pi-calendar-minus" aria-hidden="true"></i>Out of Office</span
                     >
                   }
                 </dd>
@@ -148,7 +148,7 @@ export const PEEK_COMMENTS = 3;
                 </dd>
               </div>
               <div class="fact">
-                <dt>Task type</dt>
+                <dt>Task Type</dt>
                 <dd>{{ c.taskTypeName }}</dd>
               </div>
               <div class="fact">
@@ -216,7 +216,7 @@ export const PEEK_COMMENTS = 3;
                   }
                 </section>
                 <section class="sec" aria-labelledby="pk-comments">
-                  <h3 id="pk-comments">Latest comments</h3>
+                  <h3 id="pk-comments">Latest Comments</h3>
                   @if (comments().length === 0) {
                     <p class="muted" data-peek-no-comments>No comments yet.</p>
                   } @else {

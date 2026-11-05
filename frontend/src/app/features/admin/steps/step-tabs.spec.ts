@@ -125,7 +125,7 @@ describe('Step page, Used by tab (#404)', () => {
     const { el } = await open(detail({ usage: [] }), 'used-by');
     expect(el.querySelector('[data-not-used]')?.textContent).toContain('Not used');
     expect(el.querySelector('[data-used-note]')).toBeNull();
-    expect(el.querySelector('[data-strip-item="used"]')?.textContent).toContain('Not used');
+    expect(el.querySelector('[data-strip-item="used"]')?.textContent).toContain('Not Used');
   });
 
   it('counts the active workflows on the tab and marks one that was deactivated', async () => {
@@ -224,7 +224,7 @@ describe('Step page, Inputs tab (#405)', () => {
     const { el } = await open(detail(), 'inputs');
     expect(el.querySelector('[data-inputs-none]')?.textContent).toContain('no inputs yet');
     expect(el.querySelector('[data-inputs-table]')).toBeNull();
-    expect(el.querySelector('[data-open-inputs]')?.textContent).toContain('Edit inputs');
+    expect(el.querySelector('[data-open-inputs]')?.textContent).toContain('Edit Inputs');
   });
 
   it('explains instead of failing when reading the form is not allowed, and shows no toast', async () => {
@@ -303,7 +303,7 @@ describe('Step page, Deactivate (#406)', () => {
     await settle(fixture);
     const footer = el.querySelector('[data-footer]')!;
     expect(Array.from(footer.querySelectorAll('button')).map((b) => b.textContent!.trim())).toEqual(
-      ['Cancel', 'Save changes'],
+      ['Cancel', 'Save Changes'],
     );
   });
 });

@@ -93,7 +93,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
               </ul>
 
               <section class="ha__def" aria-labelledby="ha-def-h" data-defaults>
-                <h3 class="ha__h3" id="ha-def-h">Who uses which calendar</h3>
+                <h3 class="ha__h3" id="ha-def-h">Who Uses Which Calendar</h3>
                 <p class="ha__p">
                   A person has one calendar: their own choice (on the person), else their pod's
                   default, else the firm default. Calendars that apply to everyone, such as a firm
@@ -101,7 +101,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                 </p>
                 @if (defaults(); as d) {
                   <div class="ha__f">
-                    <label class="ha__l" for="ha-firm">Firm default</label>
+                    <label class="ha__l" for="ha-firm">Firm Default</label>
                     <select
                       id="ha-firm"
                       class="mf-control mf-control--fill"
@@ -118,7 +118,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                     </select>
                   </div>
                   <fieldset class="ha__pods">
-                    <legend class="ha__l">Pod defaults</legend>
+                    <legend class="ha__l">Pod Defaults</legend>
                     @for (p of pods(); track p.podId) {
                       <div class="ha__pod">
                         <label [for]="'ha-pod-' + p.podId">{{ p.name }}</label>
@@ -203,7 +203,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                 <div class="ha__tb">
                   <div class="ha__s">
                     <i class="pi pi-search" aria-hidden="true"></i>
-                    <label class="mf-sr-only" for="ha-q">Search holidays</label>
+                    <label class="mf-sr-only" for="ha-q">Search Holidays</label>
                     <input
                       id="ha-q"
                       class="mf-control mf-control--fill"
@@ -277,8 +277,8 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                           <th scope="col">Holiday</th>
                           <th scope="col">Date in {{ year() }}</th>
                           <th scope="col">Repeats</th>
-                          <th scope="col">Region note</th>
-                          <th scope="col">Counts as</th>
+                          <th scope="col">Region Note</th>
+                          <th scope="col">Counts As</th>
                           <th scope="col"><span class="mf-sr-only">Actions</span></th>
                         </tr>
                       </thead>
@@ -323,7 +323,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                             </td>
                             <td>
                               <span class="ha__chip"
-                                ><i class="pi pi-moon" aria-hidden="true"></i> Non-working day</span
+                                ><i class="pi pi-moon" aria-hidden="true"></i> Non-Working Day</span
                               >
                             </td>
                             <td class="ha__acts">

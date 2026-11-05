@@ -37,12 +37,12 @@ import { directionWords } from './sort-sentences';
             data-ungroup
             (click)="groupChange.emit(null)"
           >
-            Remove grouping
+            Remove Grouping
           </button>
         } @else if (sort(); as s) {
           <span class="vc-label">Sorted by {{ sortLabel() }}, {{ words() }}</span>
           <button type="button" class="mf-btn mf-btn--text" (click)="resetSort.emit()">
-            Reset sort
+            Reset Sort
           </button>
         } @else {
           <span class="vc-label">Sorted by {{ defaultLabel() }}</span>

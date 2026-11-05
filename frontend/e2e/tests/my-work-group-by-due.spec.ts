@@ -150,7 +150,7 @@ test.describe('My Work: Group by due', () => {
     await expect(headers).toHaveCount(0);
   });
 
-  test('M12.1: the grouped counts follow the filters, and "Remove grouping" returns to the default order', async ({
+  test('M12.1: the grouped counts follow the filters, and "Remove Grouping" returns to the default order', async ({
     seed,
     asUser,
   }) => {
@@ -164,7 +164,7 @@ test.describe('My Work: Group by due', () => {
     await expect(headers.first()).toContainText('Overdue (9');
     await expect(page.locator('[data-task]')).toHaveCount(9);
 
-    await page.getByRole('button', { name: 'Remove grouping' }).click();
+    await page.getByRole('button', { name: 'Remove Grouping' }).click();
     await expect(page).not.toHaveURL(/group=due/);
     await expect(headers).toHaveCount(0);
     await expect(page.locator('[data-task]')).toHaveCount(9);

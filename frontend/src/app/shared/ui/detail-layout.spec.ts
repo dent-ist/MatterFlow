@@ -264,7 +264,7 @@ describe('DetailLayout', () => {
 
       await key(h, 'End');
       const reset = el.querySelector<HTMLButtonElement>('[data-split-reset]')!;
-      expect(reset.textContent).toContain('Reset layout');
+      expect(reset.textContent).toContain('Reset Layout');
       reset.click();
       await settle(splitFixture);
       expect(now(h)).toBe('60');

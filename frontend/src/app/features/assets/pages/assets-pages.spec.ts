@@ -403,7 +403,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         expect(rowOf(11)!.querySelector('td[data-size]')?.textContent?.trim()).toBe('26,400 Items');
         expect(rowOf(9)!.querySelector('[data-status] mf-status-chip')).toBeNull();
         expect(rowOf(10)!.querySelector('[data-disposition-badge]')?.textContent).toContain(
-          'Pending disposition',
+          'Pending Disposition',
         );
         expect(rowOf(11)!.querySelector('[data-disposition-badge]')?.textContent).toContain(
           'Disposed',
@@ -573,7 +573,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     it('offers Skip to table as the first stop of the page and it lands on the first name link (A9, #503)', async () => {
       await create(['Asset.View']);
       const target = TestBed.inject(SkipTarget).target()!;
-      expect(target.label).toBe('Skip to table');
+      expect(target.label).toBe('Skip to Table');
       document.body.appendChild(el());
       target.focus();
       expect(document.activeElement).toBe(rowOf(9)!.querySelector('a.mf-name'));
@@ -1207,7 +1207,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       const fields = aFormVersion().fields.length;
       expect(
         el().querySelector('[data-fields-title]')?.textContent?.replace(/\s+/g, ' ').trim(),
-      ).toBe(`Document Set fields (${fields})`);
+      ).toBe(`Document Set Fields (${fields})`);
       expect(el().querySelector('[data-fields-pending]')).toBeNull();
     });
 
@@ -1263,11 +1263,11 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         "can't be changed after the asset is created",
       );
       expect(el().textContent).toContain("The matter can't be changed after the asset is created.");
-      expect(buttonByLabel(el(), 'Save changes')!.disabled).toBe(true);
+      expect(buttonByLabel(el(), 'Save Changes')!.disabled).toBe(true);
 
       type('#asset-name', 'Contract bundle v2');
       await settle(fixture);
-      expect(buttonByLabel(el(), 'Save changes')!.disabled).toBe(false);
+      expect(buttonByLabel(el(), 'Save Changes')!.disabled).toBe(false);
       buttonByLabel(el(), 'Cancel')!.click();
       expect(navigateByUrl).toHaveBeenCalledWith('/assets/9');
     });
@@ -1298,7 +1298,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       expect(conflict.textContent).toContain(
         'Another change was saved at the same time. Try again.',
       );
-      expect(buttonByLabel(conflict, 'Reload latest')).toBeUndefined();
+      expect(buttonByLabel(conflict, 'Reload Latest')).toBeUndefined();
       expect(el().querySelector<HTMLInputElement>('#asset-name')!.value).toBe('Typed name');
       expect(el().querySelector<HTMLInputElement>('#asset-reference')!.value).toBe('REF-1');
       expect(navigate).not.toHaveBeenCalledWith(['/assets', expect.anything()]);
@@ -1316,7 +1316,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         'This asset was changed by someone else.',
       );
       expect(
-        buttonByLabel(el().querySelector('[data-conflict]') as HTMLElement, 'Reload latest'),
+        buttonByLabel(el().querySelector('[data-conflict]') as HTMLElement, 'Reload Latest'),
       ).toBeDefined();
 
       TestBed.resetTestingModule();
@@ -1330,7 +1330,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       );
       expect(el().querySelector('[data-record-link]')?.getAttribute('href')).toBe('/assets/9');
       expect(el().querySelector('form')).toBeNull(); // read-only: no fields to change
-      expect(buttonByLabel(el(), 'Save changes')).toBeUndefined();
+      expect(buttonByLabel(el(), 'Save Changes')).toBeUndefined();
     });
 
     it('reports unsaved changes and none after a save', async () => {

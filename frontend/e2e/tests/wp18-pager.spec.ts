@@ -223,15 +223,15 @@ test.describe('Microcopy (#228, #229)', () => {
         'aria-label',
         'Filter by CM Number',
       );
-      await expect(page.getByRole('button', { name: 'Other filters' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Other Filters' })).toBeVisible();
       await expect(page.getByText('More filters')).toHaveCount(0);
       await page.screenshot({
         path: OUT ? path.join(OUT, `filters-copy-${w}x${h}.png`) : undefined,
       });
     }
     await page.setViewportSize({ width: 1366, height: 768 });
-    await page.getByRole('button', { name: 'Other filters' }).click();
-    await expect(page.getByRole('dialog', { name: 'Other filters' })).toBeVisible();
+    await page.getByRole('button', { name: 'Other Filters' }).click();
+    await expect(page.getByRole('dialog', { name: 'Other Filters' })).toBeVisible();
   });
 
   test('the placeholder is cut with an ellipsis in a narrow cell and never wraps', async ({

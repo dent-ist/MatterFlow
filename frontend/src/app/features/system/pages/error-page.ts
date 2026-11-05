@@ -39,7 +39,7 @@ import { StatePage } from '../../../shared/ui/state-page';
           <i class="pi pi-refresh" aria-hidden="true"></i>Retry
         </button>
         @if (failedAgain()) {
-          <a mfSecondary class="mf-btn" href="/" data-go-home>Go to home</a>
+          <a mfSecondary class="mf-btn" href="/" data-go-home>Go to Home</a>
         }
       </mf-state-page>
     </main>

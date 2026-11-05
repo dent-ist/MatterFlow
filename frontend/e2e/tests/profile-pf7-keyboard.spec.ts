@@ -65,7 +65,7 @@ test.describe('pf7-keyboard: keyboard-only flows on My profile (#582)', () => {
     await dialog.getByRole('button', { name: 'Set out of office' }).focus();
     await press(me, 'Enter');
     await expect(dialog).toHaveCount(0);
-    await expect(action).toHaveText("I'm back");
+    await expect(action).toHaveText("I'm Back");
     await expect(action).toBeFocused();
     await expect(me.locator('[data-status-ooo]')).toBeChecked();
     await press(me, 'Enter');
@@ -83,7 +83,7 @@ test.describe('pf7-keyboard: keyboard-only flows on My profile (#582)', () => {
     const button = me.getByRole('button', { name: /account menu/ });
     await button.focus();
     await press(me, 'ArrowDown');
-    await expect(me.getByRole('menuitem', { name: 'My profile' })).toBeFocused();
+    await expect(me.getByRole('menuitem', { name: 'My Profile' })).toBeFocused();
     await press(me, 'ArrowDown');
     await expect(me.getByRole('menuitem', { name: 'Set Out of Office' })).toBeFocused();
     await press(me, 'Enter');
@@ -305,7 +305,7 @@ test.describe('pf7-axe: axe 0 and no sideways scroll at four sizes for every sta
       await me.locator('#av-from').fill('Oct 20, 2030');
       await me.locator('#av-until').fill('Oct 10, 2030');
       await me.locator('#av-until').blur();
-      await me.getByRole('button', { name: 'Save changes' }).click();
+      await me.getByRole('button', { name: 'Save Changes' }).click();
       await expect(me.locator('[data-summary]')).toBeVisible();
       await check('errors', size);
       if (size.width === 1366 || size.width === 375) await shot(me, 'pf7-errors');
@@ -323,7 +323,7 @@ test.describe('pf7-axe: axe 0 and no sideways scroll at four sizes for every sta
       const undelay = await delayApi(me, '**/api/v1/me/availability', 2500);
       await me.goto('/my-work');
       await me.getByRole('button', { name: /account menu/ }).click();
-      await me.getByRole('menuitem', { name: 'My profile' }).click();
+      await me.getByRole('menuitem', { name: 'My Profile' }).click();
       await expect(me.locator('[data-profile-skeleton]')).toBeVisible();
       await check('loading', size);
       await expect(me.locator('[data-profile-skeleton]')).toHaveCount(0, { timeout: 15_000 });

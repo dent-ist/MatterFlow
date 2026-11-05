@@ -153,7 +153,7 @@ describe('AssetReportsPage', () => {
 
   it('shows the define form, an idle result and the saved reports', async () => {
     await create();
-    expect(q('h1').textContent).toContain('Asset reports');
+    expect(q('h1').textContent).toContain('Asset Reports');
     expect(q('[data-result-idle]')).toBeTruthy();
     expect(el().querySelectorAll('[data-saved-item]')).toHaveLength(1);
     expect(ddOptionValues(q('[data-type]'))).toHaveLength(3);
@@ -217,7 +217,7 @@ describe('AssetReportsPage', () => {
     expect(el().querySelector('mf-pie-chart')).toBeTruthy();
     const graph = q('[data-graph-field]');
     expect(ddOptionValues(graph)).toHaveLength(2);
-    expect(q('label[for="ar-graph"]').textContent).toContain('Graph field');
+    expect(q('label[for="ar-graph"]').textContent).toContain('Graph Field');
     expect(ddValue(graph)).toBe('1');
     expect(q('mf-chart-panel').textContent).toContain('412');
     await choose('[data-graph-field]', '0');
@@ -304,7 +304,7 @@ describe('AssetReportsPage', () => {
     expect(reports['createAssetReport']).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'My report' }),
     );
-    expect(q('[data-save]').textContent).toContain('Save changes');
+    expect(q('[data-save]').textContent).toContain('Save Changes');
     await click_('[data-save]');
     expect(reports['updateAssetReport']).toHaveBeenCalledWith(
       8,

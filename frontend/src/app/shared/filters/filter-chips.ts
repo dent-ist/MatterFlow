@@ -30,7 +30,7 @@ import { restoreSummary } from './restore-summary';
                 [attr.aria-label]="'Show column for ' + c.label"
                 (click)="showColumn.emit(c.column)"
               >
-                Show column
+                Show Column
               </button>
             }
             <button
@@ -51,7 +51,7 @@ import { restoreSummary } from './restore-summary';
               [attr.aria-expanded]="expanded()"
               (click)="expanded.set(!expanded())"
             >
-              {{ expanded() ? 'Show fewer' : '+' + hiddenCount() + ' more' }}
+              {{ expanded() ? 'Show Fewer' : '+' + hiddenCount() + ' more' }}
             </button>
           </li>
         }
@@ -166,7 +166,7 @@ export class FilterChips {
         <span data-restored-text>{{ text() }}</span>
         @if (!filters().noticeMessage()) {
           <button type="button" class="mf-btn mf-btn--text" (click)="filters().resetToDefault()">
-            Reset to default
+            Reset to Default
           </button>
         }
         <button

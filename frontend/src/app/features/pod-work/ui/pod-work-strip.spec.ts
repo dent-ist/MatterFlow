@@ -100,9 +100,9 @@ describe('PodWorkStrip', () => {
     const f = mount();
     const text = el(f).querySelector('[data-strip]')!.textContent!.replace(/\s+/g, ' ');
     expect(text).toContain('Overdue 4');
-    expect(text).toContain('Due today 2');
+    expect(text).toContain('Due Today 2');
     expect(text).toContain('ASAP 3');
-    expect(text).toContain('On hold 6');
+    expect(text).toContain('On Hold 6');
     expect(el(f).querySelector('[data-strip]')!.classList).toContain('row');
   });
 

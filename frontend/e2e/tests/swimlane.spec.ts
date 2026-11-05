@@ -120,14 +120,14 @@ test.describe('Swimlane tab', () => {
   }) => {
     await openBoard(page);
     const oooCard = page.locator('[data-ooo]').first();
-    await expect(oooCard).toContainText('Out of office');
+    await expect(oooCard).toContainText('Out of Office');
     // Grouped by assignee the group header carries the flag and the cards do not repeat it.
     await openBoard(page, '&group=assignee');
     await expect(page.locator('mf-swimlane-card [data-ooo]')).toHaveCount(0);
     const group = page
       .locator('[data-lane="IN_PROGRESS"] .grp-btn')
       .filter({ hasText: board.outOfOfficeUser.displayName });
-    await expect(group).toContainText('Out of office');
+    await expect(group).toContainText('Out of Office');
   });
 
   test('sorts by priority, due date, client / matter and created like the server does', async ({
@@ -135,7 +135,7 @@ test.describe('Swimlane tab', () => {
   }) => {
     await openBoard(page);
     for (const [key, label] of [
-      ['due', 'Due date'],
+      ['due', 'Due Date'],
       ['created', 'Created'],
       ['clientMatter', 'Client / matter'],
       ['priority', 'Priority'],
@@ -205,9 +205,9 @@ test.describe('Swimlane tab', () => {
     await expect(clients.first()).toHaveAttribute('aria-expanded', 'false');
     expect(await matters.count()).toBeLessThan(matterCount);
 
-    await menuPick(page, 'menuitem', 'Expand all');
+    await menuPick(page, 'menuitem', 'Expand All');
     await expect(matters).toHaveCount(matterCount);
-    await menuPick(page, 'menuitem', 'Collapse all');
+    await menuPick(page, 'menuitem', 'Collapse All');
     await expect(matters).toHaveCount(0);
     await expect(clients.first()).toHaveAttribute('aria-expanded', 'false');
   });
@@ -279,7 +279,7 @@ test.describe('Swimlane tab', () => {
     await page.reload();
     await expect(page.locator('[data-filter-count]')).toHaveText('(2)');
     await page.getByRole('button', { name: /^Filters/ }).click();
-    await page.getByRole('button', { name: 'Clear filters' }).click();
+    await page.getByRole('button', { name: 'Clear Filters' }).click();
     await expect(page.locator('[data-filter-count]')).toHaveCount(0);
     await expect(page).not.toHaveURL(/priority=|overdue=/);
 
@@ -344,7 +344,7 @@ test.describe('Swimlane tab', () => {
     await expect(drawer).toBeVisible();
     await expect(drawer).toContainText(`Task ${ref}`);
     await expect(drawer.locator('[data-peek-steps] li')).toHaveCount(4);
-    await expect(drawer.getByText('Latest comments')).toBeVisible();
+    await expect(drawer.getByText('Latest Comments')).toBeVisible();
     await expect(drawer.getByRole('link', { name: /Open full task/ })).toHaveAttribute(
       'href',
       /\/tasks\/\d+/,
@@ -426,7 +426,7 @@ test.describe('Swimlane tab', () => {
     const ref = (await card.locator('[data-card-ref]').textContent())!.trim();
     await card.locator('[data-field="assignee"] [data-inline-trigger]').click();
     const user = board.users[1];
-    await page.getByRole('textbox', { name: 'Search people' }).fill(user.displayName.slice(0, 12));
+    await page.getByRole('textbox', { name: 'Search People' }).fill(user.displayName.slice(0, 12));
     await page
       .getByRole('menuitemradio', { name: user.displayName.slice(0, 12) })
       .first()
@@ -475,7 +475,7 @@ test.describe('Swimlane tab', () => {
     );
   });
 
-  test('stays quick with 800 cards: a lane draws 40 at a time and "Show all" draws the rest', async ({
+  test('stays quick with 800 cards: a lane draws 40 at a time and "Show All" draws the rest', async ({
     page,
   }) => {
     const priority = { priorityId: 2, label: 'High', color: 'high', rank: 2 };

@@ -189,9 +189,9 @@ test.describe('list loading, error and empty states follow the grid-body pattern
       await page.goto(`${info.list}?${info.filter}=zz-no-such-${uid()}`);
       const none = page.locator('[data-empty="filtered"]');
       await expect(none).toContainText(`No ${info.noun} match these filters`);
-      await expect(none.getByRole('button', { name: 'Clear filters' })).toBeVisible();
+      await expect(none.getByRole('button', { name: 'Clear Filters' })).toBeVisible();
       await shot(page, `p370-${kind}-no-match`);
-      await none.getByRole('button', { name: 'Clear filters' }).click();
+      await none.getByRole('button', { name: 'Clear Filters' }).click();
       await expect(dataRows(page).first()).toBeVisible();
     });
   }

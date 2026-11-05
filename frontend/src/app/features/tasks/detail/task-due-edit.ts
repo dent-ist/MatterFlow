@@ -221,9 +221,9 @@ const BAD_DATE = 'Enter a valid date, for example Oct 12, 2026 or 10/12/2026.';
         <p class="de-title" aria-hidden="true">Due date</p>
         <form class="de-form" novalidate (submit)="save($event)">
           <fieldset class="de-fields">
-            <legend class="de-sr">Due date and time</legend>
+            <legend class="de-sr">Due Date and Time</legend>
             <div class="mf-field">
-              <label class="mf-field__label" [for]="uid + '-date'">Due date</label>
+              <label class="mf-field__label" [for]="uid + '-date'">Due Date</label>
               <mf-date-input
                 [inputId]="uid + '-date'"
                 label="due date"
@@ -297,7 +297,7 @@ const BAD_DATE = 'Enter a valid date, for example Oct 12, 2026 or 10/12/2026.';
               [attr.aria-disabled]="busy() ? 'true' : null"
               (click)="clear()"
             >
-              Clear due date (ASAP)
+              Clear Due Date (ASAP)
             </button>
           }
         </form>

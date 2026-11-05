@@ -27,7 +27,7 @@ test.describe('Workflow version page: sticky action bar (VP1, #357)', () => {
       const { url } = await draftWorld(seed, admin, 26);
       await page.setViewportSize({ width: size.w, height: size.h });
       await page.goto(url);
-      const save = page.getByRole('button', { name: 'Save draft' });
+      const save = page.getByRole('button', { name: 'Save Draft' });
       const publish = page.getByRole('button', { name: 'Publish...' });
       await expect(publish).toBeVisible();
       await expect(page.locator('[data-step-row]')).toHaveCount(26);
@@ -89,8 +89,8 @@ test.describe('Workflow version page: sticky action bar (VP1, #357)', () => {
 
       // The overflow menu open (Discard draft), still in view and axe clean.
       await page.getByRole('button', { name: 'More version actions' }).click();
-      await expect(page.getByRole('menuitem', { name: 'Discard draft' })).toBeVisible();
-      await expect(page.getByRole('menuitem', { name: 'Discard draft' })).toBeInViewport();
+      await expect(page.getByRole('menuitem', { name: 'Discard Draft' })).toBeVisible();
+      await expect(page.getByRole('menuitem', { name: 'Discard Draft' })).toBeInViewport();
       await noSideScroll(page);
       await shoot(page, 'draft-overflow-open', size);
       await expectNoViolations(page, 'overflow open');
@@ -117,7 +117,7 @@ test.describe('Workflow version page: sticky action bar (VP1, #357)', () => {
     test.setTimeout(120_000);
     const { url, wf } = await draftWorld(seed, admin, 4);
     await page.goto(url);
-    const save = page.getByRole('button', { name: 'Save draft' });
+    const save = page.getByRole('button', { name: 'Save Draft' });
     await expect(save).toBeDisabled();
     await expect(page.locator('[data-dirty]')).toHaveCount(0);
 
@@ -125,7 +125,7 @@ test.describe('Workflow version page: sticky action bar (VP1, #357)', () => {
     const first = page.locator('[data-step-row]').first();
     await first.getByRole('button', { name: /^Actions for / }).focus();
     await page.keyboard.press('Alt+ArrowDown');
-    await expect(page.locator('[data-dirty]')).toContainText('Unsaved changes');
+    await expect(page.locator('[data-dirty]')).toContainText('Unsaved Changes');
     await expect(bar(page).locator('[data-dirty]')).toBeVisible();
     await expect(save).toBeEnabled();
 
@@ -150,9 +150,9 @@ test.describe('Workflow version page: sticky action bar (VP1, #357)', () => {
     const more = page.getByRole('button', { name: 'More version actions' });
     await more.focus();
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('menuitem', { name: 'Discard draft' })).toBeFocused();
+    await expect(page.getByRole('menuitem', { name: 'Discard Draft' })).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('dialog', { name: 'Discard draft' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Discard Draft' })).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(more).toBeFocused();
 
@@ -184,7 +184,7 @@ test.describe('Workflow version page: sticky action bar (VP1, #357)', () => {
     await expect(bar(page).getByRole('button', { name: 'Create new draft from v1' })).toBeEnabled();
     await expect(page.getByRole('button', { name: 'Publish...' })).toHaveCount(0);
     await bar(page).getByRole('button', { name: 'More version actions' }).click();
-    await expect(page.getByRole('menuitem', { name: 'Retire version' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Retire Version' })).toBeVisible();
     await page.keyboard.press('Escape');
 
     // With a draft open, the second draft is replaced by a link to the first.
@@ -232,7 +232,7 @@ test.describe('Workflow version page: sticky action bar (VP1, #357)', () => {
     );
     await expect(bar(page).getByRole('button', { name: 'Publish...' })).toBeDisabled();
     await expect(page.locator('[data-publish-hint]')).toBeVisible();
-    await expect(bar(page).getByRole('button', { name: 'Save draft' })).toBeDisabled();
+    await expect(bar(page).getByRole('button', { name: 'Save Draft' })).toBeDisabled();
   });
 
   test('permissions: Workflow.Manage alone gets the bar; TaskType.Manage and Task.View only get the 403 page', async ({
@@ -248,7 +248,7 @@ test.describe('Workflow version page: sticky action bar (VP1, #357)', () => {
     const wfPage = await asUser(wfUser.username);
     await wfPage.goto(url);
     await expect(wfPage.getByRole('button', { name: 'Publish...' })).toBeVisible();
-    await expect(bar(wfPage).getByRole('button', { name: 'Save draft' })).toBeVisible();
+    await expect(bar(wfPage).getByRole('button', { name: 'Save Draft' })).toBeVisible();
     await expect(bar(wfPage).getByRole('button', { name: 'More version actions' })).toBeVisible();
 
     const ttRole = await seed.role(['TaskType.Manage', 'Task.View'], 'Type only');

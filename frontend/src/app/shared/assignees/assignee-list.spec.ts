@@ -110,7 +110,7 @@ describe('AssigneeList (the one logic behind the three assignee pickers)', () =>
     );
     const list = make();
     await list.search('x');
-    expect(list.items()[0].flag).toMatch(/^Out of office until Mar 2[01], 2099$/);
+    expect(list.items()[0].flag).toMatch(/^Out of Office until Mar 2[01], 2099$/);
   });
 
   it('only the answer to the latest request is shown, and a failed lookup shows an empty list', async () => {

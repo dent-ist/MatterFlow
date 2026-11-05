@@ -120,7 +120,7 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
   // PM v2 (#877): the structured reason of a hold and its age; in the chooser only, the first to drop out of a narrow box.
   {
     key: 'onHoldReason',
-    label: 'On-hold reason',
+    label: 'On-Hold Reason',
     sortField: 'onHoldSince',
     width: 176,
     minWidth: 120,
@@ -130,7 +130,7 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
   // Dashboard Summary only (epic #1063): how long an unassigned task has waited; shown while the Unassigned card is on. Never in a chooser or a default set.
   {
     key: 'unassignedFor',
-    label: 'Unassigned for',
+    label: 'Unassigned For',
     sortField: 'unassignedSince',
     width: 152,
     minWidth: 120,

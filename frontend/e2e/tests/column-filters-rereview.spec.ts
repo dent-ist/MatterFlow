@@ -9,7 +9,7 @@ import { filterDropdown } from '../support/dropdown';
  * no Angular error in the console of the Task Queue (RR-01), one Clear filters at a time on every filtered empty list (RR-02),
  * the Users list rows and row actions at 1366 px (RR-03), an empty filtered list that says what the default Status hides (RR-04).
  */
-const clearButtons = (page: Page) => page.getByRole('button', { name: 'Clear filters' });
+const clearButtons = (page: Page) => page.getByRole('button', { name: 'Clear Filters' });
 
 test.describe('Column filters re-review', () => {
   test('the Task Queue opens without an Angular error in the console (RR-01)', async ({ page }) => {
@@ -96,7 +96,7 @@ test.describe('Column filters re-review', () => {
     await expect(empty).toContainText('No projects match these filters');
     await expect(empty.locator('[data-hidden-hint]')).toContainText('1 archived hidden');
     if (axeAvailable()) expect(await axeViolations(page)).toEqual([]);
-    await empty.getByRole('button', { name: 'Show all' }).click();
+    await empty.getByRole('button', { name: 'Show All' }).click();
     await expect(page).toHaveURL(/status=all/);
     await expect(page.locator('tbody tr').filter({ hasText: name })).toHaveCount(1);
     await expect(page.locator('[data-hidden-hint]')).toHaveCount(0);
@@ -106,7 +106,7 @@ test.describe('Column filters re-review', () => {
     await page.goto(`/projects?name=${name}`);
     const cards = page.locator('[data-empty="filtered"]');
     await expect(cards).toContainText('1 archived hidden');
-    await cards.getByRole('button', { name: 'Show all' }).click();
+    await cards.getByRole('button', { name: 'Show All' }).click();
     await expect(page.locator('[data-record-card]').filter({ hasText: name })).toHaveCount(1);
   });
 
@@ -120,9 +120,9 @@ test.describe('Column filters re-review', () => {
     await expect(page.locator('tr[data-filter-row] mf-dropdown')).toHaveCount(2); // Versions and Status
     // Audit: the Object id box says what it is before an object type is chosen.
     await page.goto('/admin/audit'); // the row is open from the start (AD7, #646)
-    const objectId = page.getByRole('textbox', { name: 'Filter by Object id' });
+    const objectId = page.getByRole('textbox', { name: 'Filter by Object ID' });
     await expect(objectId).toBeDisabled();
-    await expect(objectId).toHaveAttribute('placeholder', 'Object id');
+    await expect(objectId).toHaveAttribute('placeholder', 'Object ID');
     // Every cell that holds more than one visible control: each one has its own text (a name in the box or on the button).
     for (const url of ['/matters', '/admin/steps', '/admin/audit']) {
       await page.goto(url);

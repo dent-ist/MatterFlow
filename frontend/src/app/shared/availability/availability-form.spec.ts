@@ -155,11 +155,11 @@ describe('AvailabilityForm', () => {
     await create();
     const button = q<HTMLButtonElement>('[data-hours-disclosure]');
     expect(button.getAttribute('aria-expanded')).toBe('false');
-    expect(button.textContent!.trim()).toBe('Different hours on some days');
+    expect(button.textContent!.trim()).toBe('Different Hours on Some Days');
     await openGrid();
     expect(button.getAttribute('aria-expanded')).toBe('true');
     expect(button.getAttribute('aria-controls')).toBe('av-hours-grid');
-    expect(button.textContent!.trim()).toBe('Use the same hours on all days');
+    expect(button.textContent!.trim()).toBe('Use the Same Hours on All Days');
     expect(el().querySelector('mf-work-hours-compact')).toBeNull();
     await type('#av-day-2-end', '08:00');
     expect(q('[data-day-error]').textContent).toContain(
@@ -339,7 +339,7 @@ describe('AvailabilityForm', () => {
   it('page: Work hours is a card with its own heading (P2)', async () => {
     await create();
     const cards = Array.from(el().querySelectorAll('.av-card'));
-    expect(cards.map((c) => c.querySelector('h2')?.textContent?.trim())).toEqual(['Work hours']);
+    expect(cards.map((c) => c.querySelector('h2')?.textContent?.trim())).toEqual(['Work Hours']);
   });
 
   it('page: the action bar says No unsaved changes while clean and Unsaved changes otherwise (P8)', async () => {

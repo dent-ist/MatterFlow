@@ -29,7 +29,7 @@ export const peopleText = (n: number): string => (n === 1 ? '1 person' : `${n} p
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="rrt" aria-labelledby="rrt-title" data-roles-tab>
-      <h2 id="rrt-title" class="rrt__title">Roles that can run this report</h2>
+      <h2 id="rrt-title" class="rrt__title">Roles That Can Run This Report</h2>
       <p class="rrt__hint">
         A person runs the report when it is active, they hold the permission to run reports and one
         of their roles is checked here.

@@ -96,7 +96,7 @@ let nextId = 0;
               data-clear-filters
               (click)="filters().clear(clearAlso())"
             >
-              Clear filters
+              Clear Filters
             </button>
           }
         }

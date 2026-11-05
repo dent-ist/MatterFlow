@@ -8,7 +8,7 @@ import {
 
 export type MyWorkTabKey = 'active' | 'dueSoon' | 'completed' | 'createdByMe';
 
-/** The Closed tab shows the last 90 days unless "Show older" or a closed-date range says otherwise (the API's default window). */
+/** The Closed tab shows the last 90 days unless "Show Older" or a closed-date range says otherwise (the API's default window). */
 export const CLOSED_WINDOW_DAYS = 90;
 /** Due soon means an explicit due date today or within this many days (the API's window). */
 export const DUE_SOON_DAYS = 2;

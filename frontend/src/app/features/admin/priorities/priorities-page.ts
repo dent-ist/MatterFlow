@@ -434,7 +434,7 @@ export class PrioritiesPage implements OnInit, HasUnsavedChanges {
           [
             {
               id: 'edit',
-              label: 'Edit priority',
+              label: 'Edit Priority',
               icon: 'pi-pencil',
               permission: 'Priority.Manage',
               run: () =>
@@ -445,7 +445,7 @@ export class PrioritiesPage implements OnInit, HasUnsavedChanges {
             },
             {
               id: 'up',
-              label: 'Move up',
+              label: 'Move Up',
               icon: 'pi-arrow-up',
               permission: 'Priority.Manage',
               reason: i === 0 ? 'Already the most urgent.' : undefined,
@@ -453,7 +453,7 @@ export class PrioritiesPage implements OnInit, HasUnsavedChanges {
             },
             {
               id: 'down',
-              label: 'Move down',
+              label: 'Move Down',
               icon: 'pi-arrow-down',
               permission: 'Priority.Manage',
               reason: i === list.length - 1 ? 'Already the least urgent.' : undefined,
@@ -464,7 +464,7 @@ export class PrioritiesPage implements OnInit, HasUnsavedChanges {
               : [
                   {
                     id: 'default',
-                    label: 'Set as default',
+                    label: 'Set as Default',
                     icon: 'pi-star',
                     permission: 'Priority.Manage',
                     reason: p.isActive ? undefined : 'Activate it first.',

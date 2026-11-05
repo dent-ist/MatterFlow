@@ -61,7 +61,7 @@ let nextId = 0;
       <span class="um-iconwrap">
         <i class="pi pi-user um-icon" aria-hidden="true"></i>
         @if (outLabel()) {
-          <span class="um-dot" title="Out of office" data-ooo-dot aria-hidden="true"></span>
+          <span class="um-dot" title="Out of Office" data-ooo-dot aria-hidden="true"></span>
         }
       </span>
       <span class="um-text">
@@ -277,7 +277,7 @@ export class UserMenu {
         } catch (err) {
           this.notify.error(
             "Couldn't update your status.",
-            err instanceof ApiError ? err.message : 'Try again from My profile.',
+            err instanceof ApiError ? err.message : 'Try again from My Profile.',
           );
         }
         return;

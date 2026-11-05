@@ -77,7 +77,7 @@ describe('Workflow tab: ordered stepper', () => {
     expect(items[0].getAttribute('aria-current')).toBeNull();
 
     const state = (n: number) => items[n].querySelector('[data-state]')!.textContent!.trim();
-    expect([0, 1, 2, 3].map(state)).toEqual(['Completed', 'Skipped', 'In progress', 'Pending']);
+    expect([0, 1, 2, 3].map(state)).toEqual(['Completed', 'Skipped', 'In Progress', 'Pending']);
     expect(items[1].querySelector('[data-skip-comment]')!.textContent).toContain(
       'Already loaded by vendor',
     );
@@ -114,12 +114,12 @@ describe('Workflow tab: ordered stepper', () => {
     expect(q(el, '[data-step-id="102"]')!.getAttribute('data-step-status')).toBe('SKIPPED');
   });
 
-  it('the current step says "Up next" until somebody starts it and "In progress" after; later steps stay "Pending"', async () => {
+  it('the current step says "Up Next" until somebody starts it and "In Progress" after; later steps stay "Pending"', async () => {
     const steps = orderedSteps();
     steps[2] = aStep({ ...steps[2], status: 'PENDING' });
     const { el } = await mountWorkflow(aTask({ workflow: { steps } as never }));
     const state = (id: number) => q(el, `[data-step-id="${id}"] [data-state]`)!.textContent!.trim();
-    expect(state(103)).toBe('Up next');
+    expect(state(103)).toBe('Up Next');
     expect(state(104)).toBe('Pending');
     expect(q(el, '[data-step-id="103"] [data-current]')).not.toBeNull();
   });

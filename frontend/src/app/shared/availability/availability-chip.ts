@@ -4,7 +4,7 @@ import { USER_TIME_ZONE } from '../../core/time/clock';
 import { Badge } from '../ui/badge';
 
 /**
- * A person's availability as a badge: `Available`, `Off hours` or `Out of office until Oct 20`. Colour, icon and text always say the
+ * A person's availability as a badge: `Available`, `Off Hours` or `Out of Office until Oct 20`. Colour, icon and text always say the
  * same thing. Off hours is a soft state (neutral), never "unavailable". The out-of-office note is the tooltip.
  */
 @Component({

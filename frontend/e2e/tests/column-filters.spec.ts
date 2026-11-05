@@ -62,9 +62,9 @@ test.describe('Column filters on the Assets screen', () => {
     await expect(names(page)).toHaveText([`Alpha ${token}`, `Beta ${token}`, `Gamma ${token}`]);
 
     // The search text still counts as an active filter for Clear filters.
-    await page.getByRole('button', { name: 'Clear filters' }).click();
+    await page.getByRole('button', { name: 'Clear Filters' }).click();
     await expect(filter(page, 'Name')).toHaveValue('');
-    await expect(page.getByRole('button', { name: 'Clear filters' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Clear Filters' })).toHaveCount(0);
   });
 
   test('a live region announces the result count after a filter change, not while typing', async ({
@@ -194,7 +194,7 @@ test.describe('Column filters on the Assets screen', () => {
 
     // Clear filters from the sheet.
     await toggle(page).click();
-    await sheet(page).getByRole('button', { name: 'Clear filters' }).click();
+    await sheet(page).getByRole('button', { name: 'Clear Filters' }).click();
     await expect(page).not.toHaveURL(/matter=/);
     await page.keyboard.press('Escape');
     await expect(sheet(page)).toHaveCount(0);

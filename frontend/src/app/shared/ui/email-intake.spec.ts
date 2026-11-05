@@ -73,7 +73,7 @@ describe('EmailIntake', () => {
     box.value = text;
     box.dispatchEvent(new Event('input'));
     await settle(fixture);
-    buttonByLabel(el(), 'Fill from pasted text')!.click();
+    buttonByLabel(el(), 'Fill From Pasted Text')!.click();
     await settle(fixture);
   }
 
@@ -110,14 +110,14 @@ describe('EmailIntake', () => {
     expect(q('[data-privilege-note]').textContent).toContain('Privilege reminder');
     expect(q('[data-dropzone]').textContent).toContain('may not work');
     expect(q('textarea')).toBeTruthy();
-    expect(buttonByLabel(el(), 'Choose .eml/.msg file')).toBeTruthy();
+    expect(buttonByLabel(el(), 'Choose .eml/.msg File')).toBeTruthy();
     expect(q<HTMLInputElement>('input[type=file]').accept).toBe('.eml,.msg');
   });
 
   it('keeps the paste button disabled until there is text', async () => {
     await create();
 
-    expect(buttonByLabel(el(), 'Fill from pasted text')!.disabled).toBe(true);
+    expect(buttonByLabel(el(), 'Fill From Pasted Text')!.disabled).toBe(true);
   });
 
   it('reads pasted text through the API, shows the values for review and emits the edited prefill', async () => {
@@ -138,7 +138,7 @@ describe('EmailIntake', () => {
     field('ei-f-title').value = 'Volume 7 load file';
     field('ei-f-title').dispatchEvent(new Event('input'));
     await settle(fixture);
-    buttonByLabel(el(), 'Fill the task')!.click();
+    buttonByLabel(el(), 'Fill the Task')!.click();
     await settle(fixture);
 
     expect(emitted).toEqual([
@@ -183,7 +183,7 @@ describe('EmailIntake', () => {
     await settle(fixture);
     expect(q('[data-loading]').textContent).toContain('Reading the email');
     expect(q('[aria-busy=true]')).toBeTruthy();
-    expect(buttonByLabel(el(), 'Choose .eml/.msg file')!.disabled).toBe(true);
+    expect(buttonByLabel(el(), 'Choose .eml/.msg File')!.disabled).toBe(true);
 
     release(parsed());
     await settle(fixture);
@@ -278,7 +278,7 @@ describe('EmailIntake', () => {
     expect(box('requestorEmail').checked).toBe(true);
     expect(el().textContent).toContain('Replace the current title');
 
-    buttonByLabel(el(), 'Fill the task')!.click();
+    buttonByLabel(el(), 'Fill the Task')!.click();
     await settle(fixture);
     expect(emitted[0].title).toBeUndefined();
     expect(emitted[0].requestorName).toBeUndefined();
@@ -294,7 +294,7 @@ describe('EmailIntake', () => {
     await settle(fixture);
 
     expect(el().textContent).toContain('Enter a valid email address.');
-    expect(buttonByLabel(el(), 'Fill the task')!.disabled).toBe(true);
+    expect(buttonByLabel(el(), 'Fill the Task')!.disabled).toBe(true);
   });
 
   it('clears the panel', async () => {
@@ -400,7 +400,7 @@ describe('EmailIntake', () => {
       await create(['Task.Create'], { expanded: false });
 
       expect(el().querySelector('textarea')).toBeNull();
-      expect(toggle().textContent).toContain('Fill from email');
+      expect(toggle().textContent).toContain('Fill From Email');
       expect(toggle().getAttribute('aria-expanded')).toBe('false');
       toggle().click();
       await settle(fixture);
@@ -474,7 +474,7 @@ describe('EmailIntake', () => {
       expect(el().textContent).toContain('Formatting and tables from the email are kept');
       expect(q('[data-privilege-note]').textContent).toContain('Privilege reminder');
 
-      buttonByLabel(el(), 'Fill the task')!.click();
+      buttonByLabel(el(), 'Fill the Task')!.click();
       await settle(fixture);
       expect(emitted[0].description).toBe(table);
     });
@@ -510,7 +510,7 @@ describe('EmailIntake', () => {
       const box = q<HTMLTextAreaElement>('textarea');
       pasteWithHtml(box, 'Name\tQty\nDisk\t2', '<table><tr><td>Name</td><td>Qty</td></tr></table>');
       await settle(fixture);
-      buttonByLabel(el(), 'Fill from pasted text')!.click();
+      buttonByLabel(el(), 'Fill From Pasted Text')!.click();
       await settle(fixture);
 
       expect(api.parseEmailText).toHaveBeenCalledWith({
@@ -526,7 +526,7 @@ describe('EmailIntake', () => {
       box.value = 'pasted and edited';
       box.dispatchEvent(new Event('input'));
       await settle(fixture);
-      buttonByLabel(el(), 'Fill from pasted text')!.click();
+      buttonByLabel(el(), 'Fill From Pasted Text')!.click();
       await settle(fixture);
       expect(api.parseEmailText.mock.calls[0][0].pastedHtml).toBeUndefined();
 

@@ -80,7 +80,7 @@ export const ASSETS_CLOSED_NOTE =
               <label for="tl-asset">Asset</label>
               <mf-asset-picker
                 inputId="tl-asset"
-                label="Asset to link"
+                label="Asset to Link"
                 [matterId]="matterId()"
                 [(value)]="pickedAssetId"
               />
@@ -107,7 +107,7 @@ export const ASSETS_CLOSED_NOTE =
                 data-link-submit
                 [disabled]="busy() || pickedAssetId() === null"
               >
-                Link asset
+                Link Asset
               </button>
               <button type="button" class="mf-btn" data-link-cancel (click)="closeLinking()">
                 Cancel
@@ -195,7 +195,7 @@ export const ASSETS_CLOSED_NOTE =
                               [disabled]="busy()"
                               (click)="askUnlink(a)"
                             >
-                              Remove link
+                              Remove Link
                             </button>
                           } @else {
                             <span class="tl__meta"

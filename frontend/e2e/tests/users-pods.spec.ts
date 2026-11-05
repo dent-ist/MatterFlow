@@ -116,9 +116,9 @@ test.describe('Pods tab on the Users page', () => {
     const pod = await seed.pod(`Members ${uid()}`, []);
     await page.goto(`/admin/pods?pod=${pod.podId}`);
     await expect(page.locator('[data-editor] [data-record-header]')).toBeVisible();
-    await page.getByRole('searchbox', { name: 'Add members' }).fill(person.username.slice(-12));
+    await page.getByRole('searchbox', { name: 'Add Members' }).fill(person.username.slice(-12));
     await page.locator(`[data-candidate="${person.userId}"]`).check();
-    await page.getByRole('button', { name: 'Add selected' }).click();
+    await page.getByRole('button', { name: 'Add Selected' }).click();
     const member = page.locator(`[data-member="${person.userId}"]`);
     await expect(member).toBeVisible();
     await member.getByRole('button', { name: /Make primary pod for/ }).click();

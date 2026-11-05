@@ -63,7 +63,7 @@ const ASSIGNEE_PX = 200;
 const CARD_NAMES: Record<CardKey, string> = {
   overdue: 'Overdue',
   unassigned: 'Unassigned',
-  onHold: 'On hold',
+  onHold: 'On Hold',
 };
 const EMPTY_TEXT: Record<CardKey, string> = {
   overdue: 'Nothing is overdue.',
@@ -89,7 +89,7 @@ const OWNED_BY_CARD: Record<CardKey, readonly string[]> = {
 
 /**
  * The task grid of the Dashboard Summary (epic #1063, DB-03): the shared list standard (theme guide 11.1) over the Task Queue endpoint. The base query is the card's (`Overdue`,
- * `Unassigned`, `On hold`: the server's own query for that count, scope included) or the scope's open tasks when no card is on; Search and Filters narrow it further and never change
+ * `Unassigned`, `On Hold`: the server's own query for that count, scope included) or the scope's open tasks when no card is on; Search and Filters narrow it further and never change
  * the cards' counts. Standard column order (Ref, Type, Title, CM Number, Matter Name, Project, Priority, Assignee, Due, Status, Progress), 50 rows a page, the frame scrolls sideways
  * with Ref pinned. The Type column is the standard chip and name, Due shows `+9d` on one line, an unassigned task's Assignee cell is "Unassigned" with a chevron (the one control), and while the Unassigned card is on an
  * extra "Unassigned for" column shows and the grid sorts longest waiting first. An assignment is reported (`assigned`) so the page can refresh the cards, the gauge and the battery.
@@ -365,7 +365,7 @@ export class DashGrid {
     // The pressed card as a removable chip ("Needs attention: Overdue") with the others; Clear filters removes it too.
     const card: FilterDef = {
       key: 'card',
-      label: 'Needs attention',
+      label: 'Needs Attention',
       type: 'select',
       param: 'card',
       noControl: true,

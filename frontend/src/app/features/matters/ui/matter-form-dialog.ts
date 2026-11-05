@@ -112,9 +112,9 @@ function clientOption(c: ClientResponse): PickerOption {
   `,
   template: `
     <mf-form-dialog
-      [title]="isEdit() ? 'Edit matter' : 'New matter'"
+      [title]="isEdit() ? 'Edit Matter' : 'New Matter'"
       [subtitle]="matter()?.matterRef ?? ''"
-      [primaryLabel]="isEdit() ? 'Save changes' : 'Create matter'"
+      [primaryLabel]="isEdit() ? 'Save Changes' : 'Create Matter'"
       [busy]="busy()"
       [error]="error()"
       [dirty]="dirty()"
@@ -130,7 +130,7 @@ function clientOption(c: ClientResponse): PickerOption {
             }
           </ul>
           @if (existingId(); as existing) {
-            <a class="pg-link" [routerLink]="['/matters', existing]">View the existing matter</a>
+            <a class="pg-link" [routerLink]="['/matters', existing]">View the Existing Matter</a>
           }
         </div>
       }
@@ -156,7 +156,7 @@ function clientOption(c: ClientResponse): PickerOption {
         <div>
           <mf-number-input
             inputId="matter-number"
-            label="Matter number"
+            label="Matter Number"
             noun="matter number"
             help="Enter 1 to 5 digits, as issued by the firm's main system. It must not be used by another matter of the same client."
             [disabled]="isEdit() && numberLocked()"
@@ -184,7 +184,7 @@ function clientOption(c: ClientResponse): PickerOption {
                   data-keep-number
                   (click)="keepNumber()"
                 >
-                  Keep the current number
+                  Keep the Current Number
                 </button>
               }
             </p>
@@ -213,7 +213,7 @@ function clientOption(c: ClientResponse): PickerOption {
 
         <mf-text-field
           inputId="matter-name"
-          label="Matter name"
+          label="Matter Name"
           [required]="true"
           [maxLength]="300"
           [error]="nameError()"
@@ -249,7 +249,7 @@ function clientOption(c: ClientResponse): PickerOption {
         </label>
 
         <div class="pg-field">
-          <label class="mf-label" for="matter-ai">AI allowed</label>
+          <label class="mf-label" for="matter-ai">AI Allowed</label>
           <select
             id="matter-ai"
             class="mf-control"

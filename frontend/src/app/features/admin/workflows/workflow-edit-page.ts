@@ -104,7 +104,7 @@ const NAMES_SHOWN = 8;
           listCrumb,
           { label: 'New' },
         ]"
-        heading="New workflow"
+        heading="New Workflow"
       />
       <div class="wf-stack">
         @if (messages().length > 0) {
@@ -135,7 +135,7 @@ const NAMES_SHOWN = 8;
             [(value)]="description"
           />
           <fieldset>
-            <legend>Execution mode</legend>
+            <legend>Execution Mode</legend>
             <label class="pg-radio">
               <input
                 type="radio"
@@ -162,7 +162,7 @@ const NAMES_SHOWN = 8;
             <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
             <p-button
               type="submit"
-              [label]="busy() ? 'Saving...' : 'Create workflow'"
+              [label]="busy() ? 'Saving...' : 'Create Workflow'"
               [disabled]="busy()"
             />
           </div>
@@ -212,7 +212,7 @@ const NAMES_SHOWN = 8;
           @if (conflict()) {
             <div class="pg-alert" role="alert" data-conflict>
               This workflow was changed by someone else.
-              <p-button label="Reload latest" severity="secondary" (onClick)="load()" />
+              <p-button label="Reload Latest" severity="secondary" (onClick)="load()" />
             </div>
           }
           @if (messages().length > 0) {
@@ -278,7 +278,7 @@ const NAMES_SHOWN = 8;
                       </dd>
                     </div>
                     <div>
-                      <dt>Execution mode</dt>
+                      <dt>Execution Mode</dt>
                       <dd data-mode-read>
                         {{ modeText() }}
                         <span class="pg-reason"
@@ -291,7 +291,7 @@ const NAMES_SHOWN = 8;
                     <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
                     <p-button
                       type="submit"
-                      [label]="busy() ? 'Saving...' : 'Save changes'"
+                      [label]="busy() ? 'Saving...' : 'Save Changes'"
                       [disabled]="busy()"
                     />
                   </div>
@@ -511,7 +511,7 @@ export class WorkflowEditPage implements HasUnsavedChanges {
         list.push({
           id: 'new-draft',
           role: 'primary',
-          label: 'Create new draft',
+          label: 'Create New Draft',
           icon: 'pi-plus',
           disabled: this.busy(),
           run: () => void this.newDraft(from),

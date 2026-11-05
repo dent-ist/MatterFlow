@@ -63,7 +63,7 @@ describe('ProfilePage', () => {
     expect(PROFILE_ROUTES[0].title).toBe('My Profile');
     expect(iconForPath('/profile')).toBe('pi pi-user-edit');
     expect(root.querySelector('mf-availability-form fieldset legend')?.textContent).toContain(
-      'Work hours',
+      'Work Hours',
     );
     expect(root.querySelector('mf-absence-list [data-absence-list]')).not.toBeNull();
     expect(root.querySelector('mf-account-card')).not.toBeNull();

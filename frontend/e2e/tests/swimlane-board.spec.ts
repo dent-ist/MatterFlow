@@ -195,7 +195,7 @@ test.describe('Swimlane board (WP9a)', () => {
     ]);
     await expect(menu.getByRole('menuitemcheckbox', { name: 'Only mine' })).toBeVisible();
     // Not grouped: no Expand all.
-    await expect(menu.getByRole('menuitem', { name: 'Expand all' })).toHaveCount(0);
+    await expect(menu.getByRole('menuitem', { name: 'Expand All' })).toHaveCount(0);
     await shot(page, '05-more-menu-1366');
     await page.keyboard.press('Escape');
     // The Filters sheet keeps Assignee, Task type, Priority and Overdue only; no Pod.
@@ -222,7 +222,7 @@ test.describe('Swimlane board (WP9a)', () => {
     await page.keyboard.press('ArrowDown');
     await expect(items.nth(1)).toBeFocused();
     await page.keyboard.press('End');
-    await expect(menu.getByRole('menuitem', { name: 'Collapse all' })).toBeFocused();
+    await expect(menu.getByRole('menuitem', { name: 'Collapse All' })).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(menu).toHaveCount(0);
     await expect(trigger).toBeFocused();

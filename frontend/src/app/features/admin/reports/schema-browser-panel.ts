@@ -34,8 +34,8 @@ const SEARCH_DELAY_MS = 300;
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="sb" aria-labelledby="sb-title" data-schema-browser>
-      <h2 id="sb-title" class="sb__title">Schema browser</h2>
-      <label class="mf-label mf-label--sm" for="sb-search">Search tables and columns</label>
+      <h2 id="sb-title" class="sb__title">Schema Browser</h2>
+      <label class="mf-label mf-label--sm" for="sb-search">Search Tables and Columns</label>
       <input
         id="sb-search"
         class="mf-control mf-control--fill"
@@ -49,7 +49,7 @@ const SEARCH_DELAY_MS = 300;
       @if (failure(); as f) {
         <p class="sb__error" role="alert" data-schema-failure>
           {{ f }}
-          <button type="button" class="mf-btn mf-btn--text" (click)="reload()">Try again</button>
+          <button type="button" class="mf-btn mf-btn--text" (click)="reload()">Try Again</button>
         </p>
       }
       <ul class="sb__tables">

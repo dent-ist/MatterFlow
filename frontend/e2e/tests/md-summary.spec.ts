@@ -26,7 +26,7 @@ test('Summary: asset strip, fit-to-content Details in 3, 2 or 1 columns, no Rece
     const details = page.locator('[data-summary-details]');
     await expect(details).toBeVisible();
     await expect(page.locator('[data-summary-assets]')).toBeVisible();
-    await expect(page.getByText('Recent activity')).toHaveCount(0);
+    await expect(page.getByText('Recent Activity')).toHaveCount(0);
     await page.waitForLoadState('networkidle');
 
     const m = await page.evaluate(() => {

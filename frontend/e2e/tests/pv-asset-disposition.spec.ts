@@ -37,7 +37,7 @@ test.describe('Asset disposition (PM v2)', () => {
     const page = await asUser(pm.username);
     await page.goto(`/assets/${asset.assetId}`);
     await page.getByRole('button', { name: 'More actions' }).click();
-    await page.getByRole('menuitem', { name: 'Change disposition' }).click();
+    await page.getByRole('menuitem', { name: 'Change Disposition' }).click();
 
     const dialog = page.getByRole('dialog');
     await expect(dialog).toContainText(asset.displayName);
@@ -48,7 +48,7 @@ test.describe('Asset disposition (PM v2)', () => {
     await dialog.getByLabel(/^Note/).fill('Matter closed 12 Oct');
     await dialog.getByRole('button', { name: 'Change Disposition' }).click();
 
-    await expect(page.locator('[data-disposition-badge]')).toContainText('Pending disposition');
+    await expect(page.locator('[data-disposition-badge]')).toContainText('Pending Disposition');
     await expect(page.locator('[data-inactive-banner]')).toContainText('pending disposition');
     await expect(page.locator('[data-inactive-linked-banner]')).toContainText('2 open tasks');
     await expect(page.locator('[data-disposition-change]').first()).toContainText(
@@ -78,7 +78,7 @@ test.describe('Asset disposition (PM v2)', () => {
     const plain = await asUser(editor.username);
     await plain.goto(`/assets/${asset.assetId}`);
     await plain.getByRole('button', { name: 'More actions' }).click();
-    await plain.getByRole('menuitem', { name: 'Change disposition' }).click();
+    await plain.getByRole('menuitem', { name: 'Change Disposition' }).click();
     await expect(plain.getByRole('radio', { name: /^Disposed/ })).toBeDisabled();
     await expect(plain.getByRole('dialog')).toContainText('needs the permission to dispose assets');
     await plain.keyboard.press('Escape');
@@ -86,7 +86,7 @@ test.describe('Asset disposition (PM v2)', () => {
     const page = await asUser(disposer.username);
     await page.goto(`/assets/${asset.assetId}`);
     await page.getByRole('button', { name: 'More actions' }).click();
-    await page.getByRole('menuitem', { name: 'Change disposition' }).click();
+    await page.getByRole('menuitem', { name: 'Change Disposition' }).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByRole('radio', { name: /^Disposed/ }).check();
     await dialog.getByRole('button', { name: 'Change Disposition' }).click();
@@ -96,7 +96,7 @@ test.describe('Asset disposition (PM v2)', () => {
     await expect(page.locator('[data-disposition-badge]')).toContainText('Disposed');
 
     await page.getByRole('button', { name: 'More actions' }).click();
-    await page.getByRole('menuitem', { name: 'Change disposition' }).click();
+    await page.getByRole('menuitem', { name: 'Change Disposition' }).click();
     await expect(page.getByRole('radio', { name: /^Active/ })).toBeDisabled();
     await expect(page.getByRole('radio', { name: /^Pending disposition/ })).toBeDisabled();
     await page.getByRole('radio', { name: /^Inactive/ }).check();
@@ -121,7 +121,7 @@ test.describe('Asset disposition (PM v2)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/assets?name=${token}&status=all`);
     const row = page.locator(`tr[data-asset-id="${asset.assetId}"]`);
-    await expect(row.locator('[data-disposition-badge]')).toContainText('Pending disposition');
+    await expect(row.locator('[data-disposition-badge]')).toContainText('Pending Disposition');
     await expect(row.locator('[data-inactive-linked]')).toContainText('Still linked to open tasks');
 
     await page.goto(`/assets?name=${token}&status=pending`);
@@ -157,7 +157,7 @@ test.describe('Asset disposition (PM v2)', () => {
       await noHorizontalScroll(page);
 
       await page.getByRole('button', { name: 'More actions' }).click();
-      await page.getByRole('menuitem', { name: 'Change disposition' }).click();
+      await page.getByRole('menuitem', { name: 'Change Disposition' }).click();
       await page.getByRole('radio', { name: /^Pending disposition/ }).check();
       await expect(page.getByRole('dialog')).toBeVisible();
       expect(await axeViolations(page), `dialog at ${size.width}`).toEqual([]);

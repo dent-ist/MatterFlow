@@ -106,7 +106,7 @@ test.describe('Task status note T3 (#301, #302)', () => {
     await atEverySize(page, detail, task.taskId, 'cancelled');
   });
 
-  test('On Hold with a three-sentence reason: clamped to two lines with Show more / Show less; "On hold" is said once; Resume is in the overflow, not in the note', async ({
+  test('On Hold with a three-sentence reason: clamped to two lines with Show more / Show less; "On Hold" is said once; Resume is in the overflow, not in the note', async ({
     seed,
     admin,
     page,
@@ -122,17 +122,17 @@ test.describe('Task status note T3 (#301, #302)', () => {
       const more = note.locator('[data-note-more]');
       // The reason is three sentences: it needs more than two lines at 375 and at 768, and may fit two at the wide sizes.
       if (size.width <= 768) {
-        await expect(more).toHaveText('Show more');
+        await expect(more).toHaveText('Show More');
         expect(await noteHeight(page), `folded at ${size.width}`).toBeLessThanOrEqual(80);
         const folded = await noteHeight(page);
         await more.click();
-        await expect(more).toHaveText('Show less');
+        await expect(more).toHaveText('Show Less');
         await expect(more).toHaveAttribute('aria-expanded', 'true');
         expect(await noteHeight(page)).toBeGreaterThan(folded);
         if (axeAvailable()) expect(await axeViolations(page), `open at ${size.width}`).toEqual([]);
         await shot(page, 'on-hold-open');
         await more.click();
-        await expect(more).toHaveText('Show more');
+        await expect(more).toHaveText('Show More');
       }
       await expect(page.locator('[data-note-text]')).toHaveAttribute(
         'title',
@@ -144,7 +144,7 @@ test.describe('Task status note T3 (#301, #302)', () => {
       if (axeAvailable()) expect(await axeViolations(page), `on hold at ${size.width}`).toEqual([]);
       await shot(page, 'on-hold');
     }
-    // "On hold" appears in the status tile and the note only, never in the Workflow.
+    // "On Hold" appears in the status tile and the note only, never in the Workflow.
     await expect(page.locator('[data-workflow-tab]')).not.toContainText(/on hold/i);
     // Resume is the header's action (overflow) and works from there.
     await page.setViewportSize({ width: 1366, height: 768 });

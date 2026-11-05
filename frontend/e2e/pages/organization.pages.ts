@@ -9,16 +9,16 @@ export class ClientFormPage {
   readonly numberError: Locator;
 
   constructor(readonly page: Page) {
-    this.number = page.getByRole('textbox', { name: 'Client number' });
+    this.number = page.getByRole('textbox', { name: 'Client Number' });
     this.numberError = page.locator('#client-number-error');
-    this.name = page.getByRole('textbox', { name: 'Client name' });
-    this.save = page.getByRole('button', { name: 'Create client' });
+    this.name = page.getByRole('textbox', { name: 'Client Name' });
+    this.save = page.getByRole('button', { name: 'Create Client' });
     this.summary = page.locator('[data-summary]');
   }
 
   async open(): Promise<void> {
     await this.page.goto('/clients/new');
-    await expect(this.page.getByRole('heading', { name: 'New client' })).toBeVisible();
+    await expect(this.page.getByRole('heading', { name: 'New Client' })).toBeVisible();
   }
 
   async fill(number: string, name: string): Promise<void> {
@@ -44,17 +44,17 @@ export class MatterFormPage {
 
   constructor(readonly page: Page) {
     this.client = page.getByRole('combobox', { name: 'Client (required)' });
-    this.number = page.getByRole('textbox', { name: 'Matter number' });
-    this.name = page.getByRole('textbox', { name: 'Matter name' });
+    this.number = page.getByRole('textbox', { name: 'Matter Number' });
+    this.name = page.getByRole('textbox', { name: 'Matter Name' });
     this.sensitive = page.getByRole('checkbox', { name: /Sensitive matter/ });
-    this.save = page.getByRole('button', { name: 'Create matter' });
+    this.save = page.getByRole('button', { name: 'Create Matter' });
     this.summary = page.locator('[data-summary]');
   }
 
   async open(): Promise<void> {
     // The old address opens the New matter pop-up on the Matters list (MD-22).
     await this.page.goto('/matters/new');
-    await expect(this.page.getByRole('dialog', { name: 'New matter' })).toBeVisible();
+    await expect(this.page.getByRole('dialog', { name: 'New Matter' })).toBeVisible();
   }
 
   /** Picks the client by typing its number and choosing the suggestion. */

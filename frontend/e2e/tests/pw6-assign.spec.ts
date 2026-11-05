@@ -76,9 +76,9 @@ test.describe('Pod Work assign flow', () => {
         await expect(menu.getByRole('menuitemradio', { name: outsider.username })).toHaveCount(0);
 
         // Searching for the outsider by name finds nobody: the list is the pod's members.
-        await menu.getByRole('textbox', { name: 'Search people' }).fill(outsider.username);
+        await menu.getByRole('textbox', { name: 'Search People' }).fill(outsider.username);
         await expect(menu.getByRole('menuitemradio', { name: outsider.username })).toHaveCount(0);
-        await menu.getByRole('textbox', { name: 'Search people' }).fill('');
+        await menu.getByRole('textbox', { name: 'Search People' }).fill('');
         await shot(page, `picker-members-only-${size.name}`);
 
         const found = await axeBestPractice(page);

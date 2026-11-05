@@ -28,7 +28,7 @@ const MATRIX = [
     types: ['task'],
     placeholder: 'Search tasks... (Ctrl+K)',
     searchedIn: 'Searched in: Tasks',
-    filters: ['Task status', 'Requestor'],
+    filters: ['Task Status', 'Requestor'],
   },
   {
     key: 'client-matter',
@@ -36,7 +36,7 @@ const MATRIX = [
     types: ['matter', 'client'],
     placeholder: 'Search clients, matters... (Ctrl+K)',
     searchedIn: 'Searched in: Matters and Clients',
-    filters: ['Client', 'Status', 'Sensitive matter'],
+    filters: ['Client', 'Status', 'Sensitive Matter'],
   },
   {
     key: 'asset-only',
@@ -44,7 +44,7 @@ const MATRIX = [
     types: ['asset'],
     placeholder: 'Search assets... (Ctrl+K)',
     searchedIn: 'Searched in: Assets',
-    filters: ['Asset type', 'Status'],
+    filters: ['Asset Type', 'Status'],
   },
 ] as const;
 

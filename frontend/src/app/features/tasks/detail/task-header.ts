@@ -295,7 +295,7 @@ export class TaskHeader {
         ...this.statusAction('REOPEN', {
           id: 'reopen',
           role: 'primary',
-          label: 'Reopen task',
+          label: 'Reopen Task',
           icon: 'pi-replay',
         }),
       );
@@ -314,7 +314,7 @@ export class TaskHeader {
       ...this.statusAction('HOLD', {
         id: 'hold',
         role: 'secondary',
-        label: 'Put on hold',
+        label: 'Put on Hold',
         icon: 'pi-pause',
       }),
       ...this.statusAction('RESUME', {
@@ -326,14 +326,14 @@ export class TaskHeader {
       {
         id: 'copy-link',
         role: 'secondary',
-        label: 'Copy link',
+        label: 'Copy Link',
         icon: 'pi-link',
         run: () => void this.copyLink(t.taskId),
       },
       ...this.statusAction('CANCEL', {
         id: 'cancel',
         role: 'state',
-        label: 'Cancel task',
+        label: 'Cancel Task',
         icon: 'pi-times-circle',
         danger: true,
         separated: true,

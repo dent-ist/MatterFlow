@@ -96,7 +96,7 @@ test.describe('FD4: phone order', () => {
     await expect(row).toContainText('Matter reference');
     await expect(row).toBeFocused();
     await expect(page.locator('[data-dirty]')).toBeVisible();
-    await page.getByRole('button', { name: 'Save draft' }).click();
+    await page.getByRole('button', { name: 'Save Draft' }).click();
     await expect(page.locator('[data-notice]')).toContainText('saved');
   });
 

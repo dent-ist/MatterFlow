@@ -204,7 +204,7 @@ describe('TaskDetailPage header', () => {
     expect(items[1].classList.contains('im-sep')).toBe(false);
   });
 
-  it('assignee menu: "Assign to me" is the first item, assigns in one click and returns focus to the Assignee control (#306)', async () => {
+  it('assignee menu: "Assign to Me" is the first item, assigns in one click and returns focus to the Assignee control (#306)', async () => {
     const { fixture, el, fakes } = await mountTaskPage(aTask({ assignedUser: undefined }), [
       ...PERMS,
       'Task.Assign',
@@ -214,7 +214,7 @@ describe('TaskDetailPage header', () => {
     await click(fixture, trigger);
     await settle(fixture);
     const lead = q(el, '[data-assignee] [data-lead]')!;
-    expect(lead.textContent!.trim()).toBe('Assign to me');
+    expect(lead.textContent!.trim()).toBe('Assign to Me');
     expect(lead.getAttribute('aria-label')).toBe('Assign TSK-1042 to me');
     expect(q(el, '[data-assignee] .im-pop')!.firstElementChild).toBe(lead);
     // The Pod's open load sits next to each candidate.
@@ -225,7 +225,7 @@ describe('TaskDetailPage header', () => {
     expect(document.activeElement).toBe(trigger);
   });
 
-  it('assignee menu: no "Assign to me" for the current assignee, and no menu without Task.Assign (#306)', async () => {
+  it('assignee menu: no "Assign to Me" for the current assignee, and no menu without Task.Assign (#306)', async () => {
     const me = { userId: 1, displayName: 'Test User', isActive: true };
     const { fixture, el } = await mountTaskPage(aTask({ assignedUser: me }), [
       ...PERMS,

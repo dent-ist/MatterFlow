@@ -273,7 +273,7 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
     list.push({
       id: 'edit-form',
       role: 'primary',
-      label: 'Edit form',
+      label: 'Edit Form',
       icon: 'pi-pencil',
       run: () => void this.openForm(),
     });

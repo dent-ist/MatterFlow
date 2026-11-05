@@ -83,7 +83,7 @@ describe('SkillsView', () => {
   it('shows growth candidates for the chosen task type and opens one', async () => {
     const { f, el, opened } = create();
     expect(el.querySelector('[data-growth]')).toBeNull();
-    ddChoose(el, 'Task type', '2');
+    ddChoose(el, 'Task Type', '2');
     await f.whenStable();
     f.detectChanges();
     const names = [...el.querySelectorAll('[data-growth-person]')].map((b) =>

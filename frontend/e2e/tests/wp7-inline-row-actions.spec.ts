@@ -61,7 +61,7 @@ async function cancelInline(page: Page, row: Locator, expectClosed = true): Prom
   await page.locator('[data-option="CANCEL"]').click();
   const dialog = page.getByRole('dialog').filter({ has: page.locator('[data-reason-body]') });
   await dialog.getByLabel(/Reason/).fill('No longer needed');
-  await dialog.getByRole('button', { name: 'Cancel task' }).click();
+  await dialog.getByRole('button', { name: 'Cancel Task' }).click();
   if (expectClosed) await expect(dialog).toHaveCount(0);
 }
 

@@ -40,7 +40,7 @@ const RECORD_TABS = {
   ],
   asset: [
     { key: 'details', label: 'Details' },
-    { key: 'tasks', label: 'Linked tasks', counted: true },
+    { key: 'tasks', label: 'Linked Tasks', counted: true },
     { key: 'history', label: 'History' },
   ],
 } as const;
@@ -431,14 +431,14 @@ export class RecordSkeleton {
       return [
         { key: 'overview', label: 'Overview', icon: tabIcon('overview') },
         { key: 'workflows', label: 'Workflows', icon: tabIcon('workflows'), count: '--' },
-        { key: 'form', label: 'Request form', icon: tabIcon('form') },
+        { key: 'form', label: 'Request Form', icon: tabIcon('form') },
       ];
     }
     if (kind === 'step') {
       return [
         { key: 'details', label: 'Details', icon: tabIcon('details') },
         { key: 'inputs', label: 'Inputs', icon: tabIcon('inputs') },
-        { key: 'used-by', label: 'Used by', icon: tabIcon('used-by'), count: '--' },
+        { key: 'used-by', label: 'Used By', icon: tabIcon('used-by'), count: '--' },
       ];
     }
     if (kind !== 'client' && kind !== 'matter' && kind !== 'project' && kind !== 'asset') return [];

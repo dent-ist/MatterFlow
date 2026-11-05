@@ -8,7 +8,7 @@ import { TaskApi } from '../support/tasks';
 
 /**
  * Task detail Workflow tab (#666): the step tags and the status are plain text (nothing that is not a control looks like a button), each
- * step shows exactly one status (the current step is "Up next" or "In progress", only later steps are "Pending"), and the step actions are
+ * step shows exactly one status (the current step is "Up Next" or "In Progress", only later steps are "Pending"), and the step actions are
  * in the step header at the top right, right after the title in tab order. No keyboard shortcut is added or changed (Phase 2, #420).
  * Screenshots go to E2E_SCREENSHOTS when it is set (docs/ux/task-detail-review/fixes/wf-666).
  */
@@ -45,7 +45,7 @@ async function check(page: Page, name: string): Promise<void> {
 }
 
 test.describe('Task Workflow tab: step status and actions (#666)', () => {
-  test('tags and status are plain text, one status per step, the current step is "Up next"; actions at the top right at 375, 768, 1366 and 1920', async ({
+  test('tags and status are plain text, one status per step, the current step is "Up Next"; actions at the top right at 375, 768, 1366 and 1920', async ({
     page,
     seed,
     admin,
@@ -60,8 +60,8 @@ test.describe('Task Workflow tab: step status and actions (#666)', () => {
       await detail.open(task.taskId);
       await expect(page.locator('[data-workflow-tab]')).toBeVisible();
 
-      // One status per step: the current step is "Up next" (nobody started it), later steps are "Pending".
-      await expect(detail.step(intake).state).toHaveText('Up next');
+      // One status per step: the current step is "Up Next" (nobody started it), later steps are "Pending".
+      await expect(detail.step(intake).state).toHaveText('Up Next');
       for (const title of [validate, load, report]) {
         await expect(detail.step(title).state).toHaveText('Pending');
       }
@@ -96,11 +96,11 @@ test.describe('Task Workflow tab: step status and actions (#666)', () => {
       const step = detail.step(intake).root;
       const actions = step.locator('[data-step-actions]');
       await expect(actions.getByRole('button')).toHaveText([
-        'Start step',
-        'Skip step',
-        'Mark complete',
+        'Start Step',
+        'Skip Step',
+        'Mark Complete',
       ]);
-      await expect(actions.locator('.mf-btn--primary')).toHaveText('Mark complete');
+      await expect(actions.locator('.mf-btn--primary')).toHaveText('Mark Complete');
       await expect(
         step.locator('.step__body [data-complete], .step__body [data-skip]'),
       ).toHaveCount(0);
@@ -123,7 +123,7 @@ test.describe('Task Workflow tab: step status and actions (#666)', () => {
     }
   });
 
-  test('Start step makes the current step "In progress"; the next Tab stop after the title is its first action; Reopen is in the header of a completed step', async ({
+  test('Start step makes the current step "In Progress"; the next Tab stop after the title is its first action; Reopen is in the header of a completed step', async ({
     page,
     seed,
     admin,
@@ -139,7 +139,7 @@ test.describe('Task Workflow tab: step status and actions (#666)', () => {
     await page.keyboard.press('Tab');
     await expect(detail.step(intake).startButton).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(detail.step(intake).state).toHaveText('In progress');
+    await expect(detail.step(intake).state).toHaveText('In Progress');
     await expect(detail.step(intake).root.locator('[data-current]')).toHaveText('Current');
     await expect(detail.step(intake).startButton).toHaveCount(0);
     await check(page, 'workflow-steps-in-progress');
@@ -147,11 +147,11 @@ test.describe('Task Workflow tab: step status and actions (#666)', () => {
     await new TaskApi(admin, task.taskId).completeSteps(1);
     await detail.open(task.taskId);
     await expect(detail.step(intake).state).toHaveText('Completed');
-    await expect(detail.step(validate).state).toHaveText('Up next');
+    await expect(detail.step(validate).state).toHaveText('Up Next');
     await detail.step(intake).expand();
     const reopen = detail.step(intake).root.locator('[data-step-actions] [data-reopen]');
     await expect(reopen).toBeVisible();
-    await expect(reopen).toHaveText('Reopen step');
+    await expect(reopen).toHaveText('Reopen Step');
     await expect(reopen).toBeInViewport();
     await check(page, 'workflow-steps-completed-reopen');
   });

@@ -121,7 +121,7 @@ test.describe("pf8-final: the final contract over the review's persons at four s
       await dialog.getByRole('button', { name: 'Until Monday' }).click();
       await dialog.getByRole('button', { name: 'Set out of office' }).click();
       await expect(dialog).toHaveCount(0);
-      await expect(me.locator('[data-primary-action] button')).toHaveText("I'm back");
+      await expect(me.locator('[data-primary-action] button')).toHaveText("I'm Back");
       await measure(me, 'out of office', 1);
       await shot(me, 'final-out-of-office');
       await me.locator('[data-primary-action] button').click();
@@ -131,7 +131,7 @@ test.describe("pf8-final: the final contract over the review's persons at four s
       await me.locator('#av-from').fill('Oct 20, 2030');
       await me.locator('#av-until').fill('Oct 10, 2030');
       await me.locator('#av-until').blur();
-      await me.getByRole('button', { name: 'Save changes' }).click();
+      await me.getByRole('button', { name: 'Save Changes' }).click();
       await expect(me.locator('[data-summary]')).toBeVisible();
       const err = await measure(me, 'errors', 1);
       if (size.width >= 1100) {
@@ -167,7 +167,7 @@ test.describe("pf8-final: the final contract over the review's persons at four s
       await me.goto('/my-work');
       const undelay = await delayApi(me, '**/api/v1/me/availability', 2500);
       await me.getByRole('button', { name: /account menu/ }).click();
-      await me.getByRole('menuitem', { name: 'My profile' }).click();
+      await me.getByRole('menuitem', { name: 'My Profile' }).click();
       await expect(me.locator('[data-profile-skeleton]')).toBeVisible();
       await measure(me, 'loading', 0);
       await shot(me, 'final-loading');

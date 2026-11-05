@@ -16,7 +16,7 @@ import { SortedLine, sortSentence } from './sorted-line';
 })
 class Host {
   sort = signal<string | null>(null);
-  labels = { clientNumber: 'Client Number', name: 'Name', openTasks: 'Open tasks' };
+  labels = { clientNumber: 'Client Number', name: 'Name', openTasks: 'Open Tasks' };
   resets = 0;
 }
 

@@ -44,7 +44,7 @@ export function sortSentence(
           data-ungroup
           (click)="groupChange.emit(null)"
         >
-          Remove grouping
+          Remove Grouping
         </button>
       } @else {
         <span class="sl__text" data-sorted-text [attr.title]="sentence()">{{
@@ -60,7 +60,7 @@ export function sortSentence(
           data-reset-sort
           (click)="resetSort.emit()"
         >
-          Reset sort
+          Reset Sort
         </button>
       } @else if (rule()) {
         <button

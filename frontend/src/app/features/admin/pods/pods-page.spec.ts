@@ -173,7 +173,7 @@ describe('PodsPage', () => {
       q('[data-record-header] [data-overflow]').click();
       await settle();
       const item = document.querySelector<HTMLElement>('[data-action="deactivate"]');
-      expect(item?.textContent).toContain('Deactivate pod');
+      expect(item?.textContent).toContain('Deactivate Pod');
       item!.click();
       await settle();
       expect(api.updatePod).not.toHaveBeenCalled();
@@ -287,7 +287,7 @@ describe('PodsPage', () => {
     expect(el().textContent).toContain('3 inactive hidden');
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     const showAll = Array.from(el().querySelectorAll('button')).find((b) =>
-      b.textContent!.includes('Show all'),
+      b.textContent!.includes('Show All'),
     )!;
     showAll.click();
     await settle();
@@ -319,10 +319,10 @@ describe('PodsPage', () => {
     );
   });
 
-  it('offers "Skip to table" and lands on the name of the first pod (#450)', async () => {
+  it('offers "Skip to Table" and lands on the name of the first pod (#450)', async () => {
     await create('Pod.View', 'Pod.Manage');
     const target = TestBed.inject(SkipTarget).target()!;
-    expect(target.label).toBe('Skip to table');
+    expect(target.label).toBe('Skip to Table');
     target.focus();
     expect(document.activeElement).toBe(q('[data-pod="1"] a'));
   });
@@ -452,7 +452,7 @@ describe('PodsPage', () => {
       Array.from(el().querySelectorAll('.pods__actions p-button')).map((b) =>
         b.textContent!.trim(),
       ),
-    ).toEqual(['Cancel', 'Create pod']);
+    ).toEqual(['Cancel', 'Create Pod']);
 
     await click('.pods__actions p-button[type="submit"]');
     expect(text('[data-name-error]')).toBe('Enter a pod name.');

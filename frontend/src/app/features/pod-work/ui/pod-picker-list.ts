@@ -20,8 +20,8 @@ export function podFacts(pod: Pick<PodChoice, 'memberCount' | 'unassignedCount' 
 export function groupPods(pods: readonly PodChoice[]): { label: string; pods: PodChoice[] }[] {
   const byName = (a: PodChoice, b: PodChoice) => a.name.localeCompare(b.name);
   const groups = [
-    { label: 'Your pods', pods: pods.filter((p) => p.isMember).sort(byName) },
-    { label: 'Other pods', pods: pods.filter((p) => !p.isMember).sort(byName) },
+    { label: 'Your Pods', pods: pods.filter((p) => p.isMember).sort(byName) },
+    { label: 'Other Pods', pods: pods.filter((p) => !p.isMember).sort(byName) },
   ];
   return groups.filter((g) => g.pods.length > 0);
 }

@@ -229,7 +229,7 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
           <p-button
             empty-action
             *mfHasPermission="'Task.Create'"
-            label="Create task"
+            label="New Task"
             icon="pi pi-plus"
             (onClick)="go('/tasks/new')"
           />

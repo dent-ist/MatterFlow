@@ -11,7 +11,7 @@ test.describe('Administration menu and tabbed admin pages', () => {
       'Users',
       'Task Types',
       'Labels',
-      'Asset types',
+      'Asset Types',
       'Custom Fields',
       'Reports',
       'Audit Logs',

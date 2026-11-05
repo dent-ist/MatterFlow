@@ -9,7 +9,7 @@ import { TagInput, hasControlCharacters, normalizeTagText } from './tag-input';
     <mf-tag-input
       inputId="t"
       label="Tags"
-      help="Help text"
+      help="Help Text"
       [suggestions]="suggestions()"
       (queryChange)="queries.push($event)"
       [(value)]="tags"
@@ -201,7 +201,7 @@ describe('mf-tag-input', () => {
     const { el, input } = await setup();
     expect(el.querySelector('label[for="t"]')?.textContent).toContain('Tags');
     expect(input.getAttribute('aria-describedby')).toContain('t-help');
-    expect(el.querySelector('#t-help')?.textContent).toContain('Help text');
+    expect(el.querySelector('#t-help')?.textContent).toContain('Help Text');
   });
 });
 

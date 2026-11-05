@@ -11,7 +11,7 @@ import {
   viewChild,
 } from '@angular/core';
 
-/** The description shows this many lines before "Show more" (#314). */
+/** The description shows this many lines before "Show More" (#314). */
 export const CLAMP_LINES = 12;
 
 /** True when content of `contentHeight` px does not fit in `lines` lines of `lineHeight` px (a pixel of rounding is allowed). */
@@ -46,7 +46,7 @@ export function overflowsLines(contentHeight: number, lineHeight: number, lines:
         [attr.aria-expanded]="expanded()"
         (click)="expanded.set(!expanded())"
       >
-        {{ expanded() ? 'Show less' : 'Show more' }}
+        {{ expanded() ? 'Show Less' : 'Show More' }}
       </button>
     }
   `,

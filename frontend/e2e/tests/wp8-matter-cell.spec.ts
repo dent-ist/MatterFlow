@@ -9,7 +9,7 @@ import { Seeder, uid } from '../support/seed';
 /**
  * Matter cell and default columns (TQ-WP8, #197, #198, #348): the Matter Number cell is the reference only (one line), the Matter Name
  * column shows the name (one line, ellipsis, tooltip, shown without Matter.View), the Client column is one line, and a Task Queue user who
- * removed Matter keeps that choice with a one-time notice that offers "Add CM Number column". Own users and tagged data only. Screenshots go to E2E_SCREENSHOTS when it is set
+ * removed Matter keeps that choice with a one-time notice that offers "Add CM Number Column". Own users and tagged data only. Screenshots go to E2E_SCREENSHOTS when it is set
  * (docs/ux/task-queue-review/fixes/wp-matter).
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
@@ -74,14 +74,14 @@ test.describe('Matter Number and Matter Name cells (#197, #348)', () => {
         await expect(cell.locator('.mf-ref')).toHaveText(String(w.matterLong.matterRef));
         // #348: the Matter Number cell holds the reference and nothing else; the name has its own column.
         await expect(cell.locator('[data-matter-name]')).toHaveCount(0);
-        await expect(cell).not.toContainText('Matter name');
+        await expect(cell).not.toContainText('Matter Name');
         await expect(cell.locator('[title]').first()).toHaveAttribute(
           'title',
           `${w.client.name} · ${w.longName}`,
         );
         // LC-09: Matter Name stays at every width (the frame scrolls sideways).
         const nameCell = longRow.locator('td[data-col="matterName"]');
-        await expect(nameCell).toContainText('Matter name');
+        await expect(nameCell).toContainText('Matter Name');
         await expect(nameCell.locator('a')).toHaveCount(0);
         await expect(nameCell.locator('.mn')).toHaveAttribute('title', w.longName);
         const name = nameCell.locator('.mn');

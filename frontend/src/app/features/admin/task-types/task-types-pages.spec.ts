@@ -207,9 +207,9 @@ describe('TaskTypesPage phone cards and narrow columns (#374)', () => {
       const fixture = await open(width);
       expect(heads(fixture), `at ${width}`).toEqual([
         'Name',
-        'Default workflow',
+        'Default Workflow',
         'Target (days)',
-        'Request form',
+        'Request Form',
         'Workflows',
         'Status',
         'Actions',
@@ -362,7 +362,9 @@ describe('TaskTypesPage', () => {
       queryParamsHandling: 'merge',
     });
     await settle(fixture);
-    expect(el().querySelector('[data-announce]')!.textContent).toContain('Not usable: 1');
+    expect(el().querySelector('[data-announce]')!.textContent).toContain(
+      'Not Usable: 1 task types.',
+    );
     item('inactive').dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(navigate).toHaveBeenLastCalledWith([], {
       queryParams: { status: 'inactive', form: null, usable: null, page: null },
@@ -448,7 +450,7 @@ describe('TaskTypesPage', () => {
     await TestBed.inject(Router).navigateByUrl('/admin/task-types?form=published');
     await settle(fixture);
     expect(names()).toEqual(['Data Processing']);
-    expect(ddSelect(el(), 'Filter by Request form').value).toBe('published');
+    expect(ddSelect(el(), 'Filter by Request Form').value).toBe('published');
   });
 
   it('marks a type without an eligible workflow with a neutral Not usable badge, and deactivates and reactivates', async () => {
@@ -460,7 +462,7 @@ describe('TaskTypesPage', () => {
 
     // A neutral badge in Status (text and icon, the reason is its description), not a red box in the name cell.
     const badge = row('Collection').querySelector('[data-not-usable]')!;
-    expect(badge.textContent!.trim()).toBe('Not usable');
+    expect(badge.textContent!.trim()).toBe('Not Usable');
     expect(badge.querySelector('.pi')).not.toBeNull();
     expect(badge.querySelector('[data-tone="neutral"]')).not.toBeNull();
     const why = row('Collection').querySelector('[data-warning]')!;

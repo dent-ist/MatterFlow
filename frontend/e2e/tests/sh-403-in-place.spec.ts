@@ -82,9 +82,9 @@ test.describe('The 403 page keeps the address (#598)', () => {
     await page.goto('/admin/audit?from=2026-01-01');
     await expect(page.getByRole('heading', { name: FORBIDDEN, level: 1 })).toBeVisible();
 
-    const copy = page.getByRole('button', { name: 'Copy link' });
+    const copy = page.getByRole('button', { name: 'Copy Link' });
     await expect(copy).toBeVisible();
-    await expect(copy).toContainText('Copy link');
+    await expect(copy).toContainText('Copy Link');
     // Keyboard only: Tab from the page heading reaches the primary "Go to ..." link, then Copy link (#607: primary first, secondary second).
     await page.locator('h1').evaluate((h) => {
       h.setAttribute('tabindex', '-1');

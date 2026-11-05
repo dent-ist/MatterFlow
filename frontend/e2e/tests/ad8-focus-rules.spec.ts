@@ -57,7 +57,7 @@ test.describe('Focus rules: Priorities (#657)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/admin/priorities');
     await openRowMenu(page, menu(page, a.label));
-    await page.getByRole('menuitem', { name: 'Move down' }).click();
+    await page.getByRole('menuitem', { name: 'Move Down' }).click();
     await expect(page.locator('[data-announce]')).toContainText(`${a.label} moved to position`);
     await expect(menu(page, a.label)).toBeFocused();
 
@@ -87,7 +87,7 @@ test.describe('Focus rules: Status Labels (#657)', () => {
     await page.goto('/admin/status-labels');
     const link = page.locator('tr[data-row="NEW"] [data-edit]');
     await link.click();
-    const rename = dialog(page, 'Rename status label');
+    const rename = dialog(page, 'Rename Status Label');
     const field = page.locator('#status-label-name');
     await expect(field).toBeFocused();
     await field.fill('');
@@ -110,17 +110,17 @@ test.describe('Focus rules: Link roles (#657)', () => {
     await admin.post('/api/v1/asset-link-roles', { name, isActive: true });
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/admin/asset-types?tab=link-roles');
-    const opener = page.getByRole('button', { name: 'New link role' });
+    const opener = page.getByRole('button', { name: 'New Link Role' });
     await opener.click();
     const field = page.locator('#link-role-name');
     await expect(field).toBeFocused();
-    await dialog(page, 'New link role').getByRole('button', { name: 'Add link role' }).click();
+    await dialog(page, 'New Link Role').getByRole('button', { name: 'Add link role' }).click();
     await expect(field).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(opener).toBeFocused();
 
     await openRowMenu(page, menu(page, name));
-    await page.getByRole('menuitem', { name: 'Move up' }).click();
+    await page.getByRole('menuitem', { name: 'Move Up' }).click();
     await expect(page.locator('[data-announce]')).toContainText(`${name} moved to position`);
     await expect(menu(page, name)).toBeFocused();
 
@@ -145,7 +145,7 @@ test.describe('Focus rules: Asset Types (#657)', () => {
     await expect(page.locator(`tr[data-row="${name}"]`)).toBeVisible();
 
     await openRowMenu(page, menu(page, `${name} 2`));
-    await page.getByRole('menuitem', { name: 'Move up' }).click();
+    await page.getByRole('menuitem', { name: 'Move Up' }).click();
     await expect(page.locator('[data-announce]')).toContainText('moved to position');
     await expect(menu(page, `${name} 2`)).toBeFocused();
 
@@ -162,7 +162,7 @@ test.describe('Focus rules: Asset Types (#657)', () => {
 
     await page.goto('/admin/asset-types/new');
     const nameField = page.getByLabel('Name', { exact: false }).first();
-    await page.getByRole('button', { name: 'Create asset type' }).click();
+    await page.getByRole('button', { name: 'Create Asset Type' }).click();
     await expect(nameField).toHaveAttribute('aria-invalid', 'true');
     await expect(nameField).toBeFocused();
     await notOnBody(page, 'asset type record, failed save');

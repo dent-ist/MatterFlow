@@ -75,7 +75,7 @@ export function assignHint(
 ): string | null {
   const ooo = outOfOfficeText(u.availability, zone, now);
   if (ooo) {
-    return `${u.displayName} is not available (${ooo.charAt(0).toLowerCase()}${ooo.slice(1)}). You can still assign work.`;
+    return `${u.displayName} is not available (${ooo.replace(/^Out of Office/, 'out of office')}). You can still assign work.`;
   }
   if (loadLevelOf(u) === 'HEAVY') {
     return `${u.displayName} already has a heavy load (${plural(u.openTotal, 'open task')}, more than ${thresholds?.normalMax ?? 8}). You can still assign work.`;
@@ -236,7 +236,7 @@ export function assignHint(
                         data-assign-show-all
                         (click)="setAllPods(true)"
                       >
-                        Show all pods
+                        Show All Pods
                       </button>
                     } @else {
                       There are no unassigned tasks.

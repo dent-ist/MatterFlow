@@ -271,7 +271,7 @@ describe('AssetTypeRecordPage', () => {
       expect(text).toContain('Draft v3');
       expect(q('[data-form-draft]').textContent).toContain('Draft v3 is in progress.');
       expect(el().querySelector('[data-no-fields]')).toBeNull();
-      expect(q('[data-open-fields]').textContent).toContain('Edit fields');
+      expect(q('[data-open-fields]').textContent).toContain(' Edit fields ');
     });
 
     it('says so, neutrally, when nothing is published', async () => {
@@ -410,7 +410,7 @@ describe('AssetTypeRecordPage', () => {
       expect(q('[data-page-title]').textContent).toContain('New asset type');
       expect(el().querySelector('[role=tab]')).toBeNull();
       expect(el().querySelector('[data-page-actions] button[data-action]')).toBeNull();
-      expect(q('[data-save]').textContent).toContain('Create asset type');
+      expect(q('[data-save]').textContent).toContain('Create Asset Type');
       expect(api.getAssetType).not.toHaveBeenCalled();
     });
 

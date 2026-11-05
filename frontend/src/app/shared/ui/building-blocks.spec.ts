@@ -44,14 +44,14 @@ import { Tree, TreeNode, filterTree } from './tree';
 })
 class Host {
   readonly chips: FilterChip[] = [
-    { key: 'all', label: 'All open', count: 5 },
+    { key: 'all', label: 'All Open', count: 5 },
     { key: 'new', label: 'New', count: 2 },
   ];
   readonly chip = signal('all');
   readonly open = signal(true);
   readonly sections: SideSection[] = [
-    { key: 'events', label: 'Upcoming events', icon: 'pi-calendar', count: 3 },
-    { key: 'activity', label: 'Recent activity', icon: 'pi-bell', count: 0 },
+    { key: 'events', label: 'Upcoming Events', icon: 'pi-calendar', count: 3 },
+    { key: 'activity', label: 'Recent Activity', icon: 'pi-bell', count: 0 },
   ];
   readonly nodes: TreeNode[] = [
     {

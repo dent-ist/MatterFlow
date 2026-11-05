@@ -37,7 +37,7 @@ const row = (label: string, value: number, link = false): ChartRow => ({
 class PanelHost {
   rows = signal<ChartRow[]>([
     row('Active', 12, true),
-    row('Pending disposition', 3),
+    row('Pending Disposition', 3),
     row('Disposed', 1),
   ]);
   kind = signal<ChartKind>('table');

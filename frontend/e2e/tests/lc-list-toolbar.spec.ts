@@ -60,7 +60,7 @@ test.describe('List toolbar on Clients (record list)', () => {
     await expect(page.locator('[data-sorted-text]')).toHaveText('Sorted by Name, A to Z');
     await page.locator('[data-reset-sort]').click();
     await expect(page).not.toHaveURL(/sort=/);
-    await expect(page.locator('[data-sorted-text]')).toContainText('Client number');
+    await expect(page.locator('[data-sorted-text]')).toContainText('Client Number');
 
     // Typing in Search writes the same `name` parameter as before; Clear filters empties it.
     await search.fill(`Apple ${token}`);

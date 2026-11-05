@@ -23,12 +23,12 @@ test.describe('Sign-in banner (#612)', () => {
     await page.waitForTimeout(1500);
     await expect(banner).toHaveCount(1);
     await expect(toasts(page)).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Reload page' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Reload Page' })).toBeVisible();
     await shot(page, 'signin-banner');
 
     await unfail();
     // Keyboard only: focus the button and press Enter.
-    await page.getByRole('button', { name: 'Reload page' }).focus();
+    await page.getByRole('button', { name: 'Reload Page' }).focus();
     await Promise.all([page.waitForEvent('load'), page.keyboard.press('Enter')]);
     await expect(page.getByRole('heading', { name: 'Task Queue', level: 1 })).toBeVisible();
     await expect(page.locator('[data-signin-banner]')).toHaveCount(0);

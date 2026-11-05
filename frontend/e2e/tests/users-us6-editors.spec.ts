@@ -110,7 +110,7 @@ test.describe('#448 select all / none and the Changed (n) row', () => {
     await row.getByRole('button', { name: 'Undo: removed Matter.View' }).click();
     await expect(page.locator('[data-perm="Matter.View"]')).toBeChecked();
     await expect(row.getByRole('button', { name: 'Undo: removed Matter.View' })).toHaveCount(0);
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
     await expect(page.locator('[data-changes]')).toHaveCount(0);
     await expect(page.locator('[data-perm="Asset.View"]')).toBeChecked();
   });
@@ -140,7 +140,7 @@ test.describe('#449 the description', () => {
     // All 500 characters are visible: the box grew to fit (no inner scroll).
     expect(await box.evaluate((el) => el.scrollHeight <= el.clientHeight + 2)).toBe(true);
     await box.fill('Reads and comments.');
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
     await expect(page.locator('[data-changes]')).toHaveCount(0);
   });
 });
@@ -171,7 +171,7 @@ test.describe('#451 the pod editor is a record page', () => {
     await expect(page.getByRole('tablist')).toHaveCount(0);
 
     await header.getByRole('button', { name: /actions|more/i }).click();
-    await expect(page.getByRole('menuitem', { name: 'Deactivate pod' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Deactivate Pod' })).toBeVisible();
     await page.keyboard.press('Escape');
 
     // The crumb returns to the list as it was: the Name filter and the status are still there, and focus is on the row.
@@ -191,7 +191,7 @@ test.describe('#451 the pod editor is a record page', () => {
       .locator('[data-record-header]')
       .getByRole('button', { name: /actions|more/i })
       .click();
-    await page.getByRole('menuitem', { name: 'Deactivate pod' }).click();
+    await page.getByRole('menuitem', { name: 'Deactivate Pod' }).click();
     const dialog = page.getByRole('dialog', { name: 'Deactivate Pod' });
     await expect(dialog).toBeVisible();
     await dialog.getByRole('button', { name: 'Deactivate Pod' }).click();
@@ -228,7 +228,7 @@ test.describe('#451 the pod editor is a record page', () => {
       .getByRole('button', { name: /actions|more/i });
     if (await menu.count()) {
       await menu.click();
-      await expect(page.getByRole('menuitem', { name: 'Deactivate pod' })).toHaveCount(0);
+      await expect(page.getByRole('menuitem', { name: 'Deactivate Pod' })).toHaveCount(0);
     }
   });
 });

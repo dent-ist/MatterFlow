@@ -24,7 +24,7 @@ describe('DashCards (decision AS item 1)', () => {
     const names = Array.from(el().querySelectorAll('[data-card]')).map((b) =>
       b.querySelector('.l')?.textContent?.trim(),
     );
-    expect(names).toEqual(['Overdue', 'Unassigned', 'On hold']);
+    expect(names).toEqual(['Overdue', 'Unassigned', 'On Hold']);
     expect(el().textContent).not.toContain('ASAP open');
     expect(el().querySelector('[data-card="asap"]')).toBeNull();
   });

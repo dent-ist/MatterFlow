@@ -29,14 +29,14 @@ const PAGE_SIZE = 25;
 export const ASSET_STATUS: Readonly<Record<AssetStatusCode, { label: string; icon: string }>> = {
   ACTIVE: { label: 'Active', icon: 'pi-check-circle' },
   INACTIVE: { label: 'Inactive', icon: 'pi-minus-circle' },
-  PENDING_DISPOSITION: { label: 'Pending disposition', icon: 'pi-clock' },
+  PENDING_DISPOSITION: { label: 'Pending Disposition', icon: 'pi-clock' },
   DISPOSED: { label: 'Disposed', icon: 'pi-trash' },
 };
 
 const HEADS = [
   { label: 'Client', sort: 'client', cls: 'c-cl' },
   { label: 'Matter', sort: 'matter', cls: 'c-ma' },
-  { label: 'Asset type', sort: 'assetType', cls: 'c-ty' },
+  { label: 'Asset Type', sort: 'assetType', cls: 'c-ty' },
   { label: 'Created', sort: 'created', cls: 'c-cr' },
   { label: 'Updated', sort: 'updated', cls: 'c-up' },
   { label: 'Status', sort: 'status', cls: 'c-st' },
@@ -84,7 +84,7 @@ const HEADS = [
         <div frameStatus class="flt" role="group" aria-label="Asset filters">
           <mf-dropdown
             buttonId="mm-asset-type"
-            label="Asset type"
+            label="Asset Type"
             prefix="Type:"
             [items]="typeItems()"
             [value]="type()"
@@ -146,7 +146,7 @@ const HEADS = [
           }
           @if (filtered()) {
             <button type="button" class="lnk" data-clear-filters (click)="clearFilters()">
-              Clear filters
+              Clear Filters
             </button>
           }
         </div>
@@ -264,7 +264,7 @@ const HEADS = [
               <dd>{{ d.clientName }}</dd>
               <dt>Matter</dt>
               <dd>{{ d.matterRef }} {{ d.matterName }}</dd>
-              <dt>Asset type</dt>
+              <dt>Asset Type</dt>
               <dd>{{ d.assetTypeName }}</dd>
               <dt>Status</dt>
               <dd>
@@ -290,8 +290,8 @@ const HEADS = [
                 <dd>{{ d.description }}</dd>
               }
             </dl>
-            <p><a class="lnk" [routerLink]="['/assets', d.assetId]">Open the asset</a></p>
-            <h3>Linked tasks</h3>
+            <p><a class="lnk" [routerLink]="['/assets', d.assetId]">Open the Asset</a></p>
+            <h3>Linked Tasks</h3>
             @if (d.linkedTasks.length === 0) {
               <p class="msg">No tasks are linked to this asset.</p>
             } @else {

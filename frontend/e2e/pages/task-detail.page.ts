@@ -60,13 +60,13 @@ export class StepPanel {
     await this.skipButton.click();
     const dialog = this.page.getByRole('dialog');
     if (comment !== undefined) await dialog.getByRole('textbox', { name: /Comment/ }).fill(comment);
-    await dialog.getByRole('button', { name: 'Skip step' }).click();
+    await dialog.getByRole('button', { name: 'Skip Step' }).click();
   }
 
   async reopen(): Promise<void> {
     await this.expand();
     await this.reopenButton.click();
-    await this.page.getByRole('dialog').getByRole('button', { name: 'Reopen step' }).click();
+    await this.page.getByRole('dialog').getByRole('button', { name: 'Reopen Step' }).click();
   }
 }
 
@@ -112,7 +112,7 @@ export class TaskDetailPage {
     return this.page.getByRole('separator', { name: 'Resize Details panel' });
   }
 
-  /** The "Show all" link of a long Comments thread ("Showing latest 3 of 48. Show all"). */
+  /** The "Show All" link of a long Comments thread ("Showing latest 3 of 48. Show all"). */
   get showAllComments(): Locator {
     return this.section('Comments').locator('[data-show-all]');
   }

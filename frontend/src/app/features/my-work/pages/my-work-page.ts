@@ -126,9 +126,9 @@ const STATUSES: Readonly<Record<TabKey, readonly string[]>> = {
 /** The needs-attention items in their order; the counts come from the response (`attention`), Overdue is the only red one. */
 const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
   { key: 'overdue', label: 'Overdue', alert: true },
-  { key: 'dueToday', label: 'Due today' },
+  { key: 'dueToday', label: 'Due Today' },
   { key: 'asap', label: 'ASAP' },
-  { key: 'onHold', label: 'On hold' },
+  { key: 'onHold', label: 'On Hold' },
   { key: 'new', label: 'New', hint: 'Assigned to you since your last visit' },
 ];
 
@@ -240,7 +240,7 @@ const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
             }
             @if (windowed()) {
               <button tab-actions type="button" class="mf-btn mf-btn--text" (click)="showOlder()">
-                Show older
+                Show Older
               </button>
             }
           </mf-work-view-controls>
@@ -318,15 +318,15 @@ const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
               data-show-closed
               (click)="showClosedTasks()"
             >
-              Show closed tasks
+              Show Closed Tasks
             </button>
           }
           @if (emptyCopy().createTask) {
-            <a empty-action class="mf-btn mf-btn--primary" routerLink="/tasks/new">Create task</a>
+            <a empty-action class="mf-btn mf-btn--primary" routerLink="/tasks/new">New Task</a>
           }
           @if (windowed()) {
             <button empty-action type="button" class="mf-btn mf-btn--text" (click)="showOlder()">
-              Show older
+              Show Older
             </button>
           }
           <p near-empty data-everything>
@@ -747,7 +747,7 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
   }
 
   protected override fetch(state: QueueState): Observable<MyWorkData> {
-    // The Closed tab's 90-day window is the API's default; "Show older" asks for all time. A closed-date range wins over both.
+    // The Closed tab's 90-day window is the API's default; "Show Older" asks for all time. A closed-date range wins over both.
     const closedWindow = this.tab() === 'completed' && state.closedAll ? 'all' : undefined;
     // The visit start travels as an instant; the address only says `new=1`. With no visit on record nothing is new, so a shared `new=1` link
     // lists nothing instead of everything.
@@ -831,7 +831,7 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
     }
   }
 
-  /** "Show older": an explicit all-time state (`closed=all`, chip "Closed: all time"), not a date in the year 2000. */
+  /** "Show Older": an explicit all-time state (`closed=all`, chip "Closed: all time"), not a date in the year 2000. */
   protected showOlder(): void {
     const s = this.state();
     this.navigate({

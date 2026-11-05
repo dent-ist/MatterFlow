@@ -35,10 +35,10 @@ describe('the pod list (#558)', () => {
       pod({ podId: 4, name: 'Charlie', isMember: false, openCount: 0 }),
     ]);
     expect(groups.map((g) => [g.label, g.pods.map((p) => p.name)])).toEqual([
-      ['Your pods', ['Bravo', 'Zulu']],
-      ['Other pods', ['Alpha', 'Charlie']],
+      ['Your Pods', ['Bravo', 'Zulu']],
+      ['Other Pods', ['Alpha', 'Charlie']],
     ]);
-    expect(groupPods([pod({ isMember: false })]).map((g) => g.label)).toEqual(['Other pods']);
+    expect(groupPods([pod({ isMember: false })]).map((g) => g.label)).toEqual(['Other Pods']);
     expect(groupPods([])).toEqual([]);
   });
 });

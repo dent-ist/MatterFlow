@@ -42,7 +42,7 @@ const LISTS: ListSpec[] = [
     url: () => '/clients',
     noun: 'clients',
     none: /No clients yet\./,
-    action: 'New client',
+    action: 'New Client',
   },
   {
     name: 'matters',
@@ -50,7 +50,7 @@ const LISTS: ListSpec[] = [
     url: () => '/matters',
     noun: 'matters',
     none: /No matters yet\./,
-    action: 'New matter',
+    action: 'New Matter',
   },
   {
     name: 'projects',
@@ -267,7 +267,7 @@ test.describe('WP2 list states (#251)', () => {
           await page.goto(`${list.url(clientId)}${sep}name=zzz-no-match`);
           const filtered = page.locator('[data-empty=filtered]');
           await expect(filtered).toContainText(`No ${list.noun} match these filters`);
-          await expect(filtered.getByRole('button', { name: 'Clear filters' })).toBeVisible();
+          await expect(filtered.getByRole('button', { name: 'Clear Filters' })).toBeVisible();
           await axeClean(page, `${list.name} filtered-empty ${w}`);
           await noSideways(page, `${list.name} filtered-empty ${w}`);
           await shot(page, `${list.name}-filtered-empty`);

@@ -94,7 +94,7 @@ test.describe('rich description screenshots', () => {
 
       const insert = page
         .locator('[data-description-field]')
-        .getByRole('button', { name: 'Insert table' });
+        .getByRole('button', { name: 'Insert Table' });
       await insert.click();
       await shoot(page, `create-insert-table-${size.name}`);
       await page.keyboard.press('Escape');

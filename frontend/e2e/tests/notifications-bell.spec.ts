@@ -356,7 +356,7 @@ test.describe('My profile: Notifications section', () => {
     await expect(section.locator('input[role=switch]')).toHaveCount(8);
     await expect(section.locator('input[role=switch]:checked')).toHaveCount(8);
     await expect(section).toContainText('nothing is sent by email');
-    // A technician holds the Technician group; the others sit under "Other events".
+    // A technician holds the Technician group; the others sit under "Other Events".
     await expect(section.locator('[data-prefs-other] [data-prefs-group=Technician]')).toHaveCount(
       0,
     );

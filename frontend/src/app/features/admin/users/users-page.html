@@ -67,7 +67,7 @@
                     defaultSort=""
                     (sorted)="setSort($event)"
                   >
-                    Last seen
+                    Last Seen
                   </th>
                 }
                 <th class="mf-cell-badge" scope="col">Status</th>
@@ -165,7 +165,7 @@
                   }
                   <td class="mf-cell-badge" data-status>
                     @if (u.isPending) {
-                      <mf-badge tone="warning" icon="pi-user-plus">Pending access</mf-badge>
+                      <mf-badge tone="warning" icon="pi-user-plus">Pending Access</mf-badge>
                     } @else if (u.isActive) {
                       <!-- Active is the ordinary state: no badge, only the words for a screen reader. -->
                       <span class="mf-sr-only">Active</span>
@@ -176,7 +176,7 @@
                   <td class="mf-cell-actions">
                     @if (u.isPending && canManage()) {
                       <p-button
-                        label="Grant access"
+                        label="Grant Access"
                         data-grant
                         [ariaLabel]="'Grant access to ' + nameWithAccount(u)"
                         (onClick)="open(u)"

@@ -30,7 +30,7 @@ describe('mf-status-chip, disposition kind (TH-06, #988)', () => {
     expect(chip('a').textContent).toContain('Active');
     expect(chip('a').dataset['tone']).toBe('disp-active');
     expect(chip('a').querySelector('i.pi-check-circle')?.getAttribute('aria-hidden')).toBe('true');
-    expect(chip('p').textContent).toContain('Pending disposition');
+    expect(chip('p').textContent).toContain('Pending Disposition');
     expect(chip('p').querySelector('i.pi-clock')).not.toBeNull();
     expect(chip('d').textContent).toContain('Disposed');
     expect(chip('d').querySelector('i.pi-trash')).not.toBeNull();

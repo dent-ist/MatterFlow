@@ -142,7 +142,7 @@ import {
           </ul>
           <div class="gc-foot">
             <button type="button" class="mf-btn" data-grid-columns-reset (click)="resetAll()">
-              Reset to default
+              Reset to Default
             </button>
           </div>
           <span class="mf-sr-only" role="status" data-grid-columns-status>{{ status() }}</span>

@@ -10,7 +10,7 @@ import { TextField } from './text-field';
   template: `
     <button type="button" id="opener" (click)="open.set(true)">New</button>
     <mf-lookup-dialog
-      title="New link role"
+      title="New Link Role"
       submitLabel="Add role"
       [(visible)]="open"
       [dirty]="name() !== ''"
@@ -84,7 +84,7 @@ describe('LookupDialog (#564)', () => {
 
   it('opens with the title, the field, the counter, the preview and the two buttons; focus goes to the first field', async () => {
     const f = await create();
-    expect(q('[data-lookup-title]')!.textContent).toContain('New link role');
+    expect(q('[data-lookup-title]')!.textContent).toContain('New Link Role');
     expect(q('#lr-name')).not.toBeNull();
     expect(q('[data-char-count]')!.textContent!.trim()).toBe('0 / 50');
     expect(q('[data-preview] legend')!.textContent).toContain('Preview');

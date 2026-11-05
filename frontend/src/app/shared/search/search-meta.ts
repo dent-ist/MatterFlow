@@ -79,7 +79,7 @@ export function searchedInLine(
   return `Searched in: ${joinWords(labels)}`;
 }
 
-/** The copy deck of the search area's links: "See all" is the only verb for more results (never "Show more"). */
+/** The copy deck of the search area's links: "See all" is the only verb for more results (never "Show More"). */
 export const SEARCH_COPY = {
   /** The link of a group or section that holds more hits than are shown: `See all 24`. */
   seeAll: (count: string) => `See all ${count}`,

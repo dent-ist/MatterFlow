@@ -306,7 +306,7 @@ test.describe('Task header T2: facts strip, context line, Details trimmed (#297)
           `${once} at ${size.width}`,
         ).toHaveCount(1);
       }
-      await expect(page.locator('[data-section="details"]')).not.toContainText('Task type');
+      await expect(page.locator('[data-section="details"]')).not.toContainText('Task Type');
       await expect(page.locator('[data-facts] [data-due]')).toContainText('Overdue');
     }
     await page.setViewportSize({ width: 1366, height: 768 });
@@ -500,7 +500,7 @@ test.describe('Task header T2: primary action and overflow (#298)', () => {
     await page.getByRole('menuitem', { name: /Cancel task/ }).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByRole('textbox').fill('Duplicate of an earlier request');
-    await dialog.getByRole('button', { name: 'Cancel task' }).click();
+    await dialog.getByRole('button', { name: 'Cancel Task' }).click();
     await expect(page.locator(STATUS)).toContainText('Cancelled');
     await expect(page.locator('[data-action="reopen"]')).toBeVisible();
     await waitForToastsToGo(page);

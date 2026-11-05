@@ -103,7 +103,7 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-slide-panel
-      [title]="user() ? user()!.displayName : 'Team member'"
+      [title]="user() ? user()!.displayName : 'Team Member'"
       closeLabel="Close person details"
       panelClass="mf-users-drawer"
       initialFocus="close"
@@ -201,11 +201,11 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
                   <dd [class.late]="u.overdue > 0">{{ u.overdue }}</dd>
                 </div>
                 <div>
-                  <dt>Due soon</dt>
+                  <dt>Due Soon</dt>
                   <dd>{{ u.dueSoon }}</dd>
                 </div>
                 <div>
-                  <dt>On hold</dt>
+                  <dt>On Hold</dt>
                   <dd>{{ u.onHold }}</dd>
                 </div>
               </dl>

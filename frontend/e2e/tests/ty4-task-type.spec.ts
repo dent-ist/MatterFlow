@@ -136,7 +136,7 @@ test.describe('Task Type record page', () => {
         await expect(page.locator('[role=tab]')).toHaveText([
           'Overview',
           'Workflows (2)',
-          'Request form',
+          'Request Form',
         ]);
         await clean(page, 'overview');
         await shot(page, 'overview', size.w);
@@ -161,7 +161,7 @@ test.describe('Task Type record page', () => {
       await page.setViewportSize({ width: 1366, height: 768 });
       await openType(page, w, 'workflows');
       const actions = page.locator('[data-page-actions] button[data-action]');
-      await expect(actions).toHaveText(['Edit', 'Activity', 'Edit form']);
+      await expect(actions).toHaveText(['Edit', 'Activity', 'Edit Form']);
       await expect(page.locator('[data-action=edit-form]')).toHaveClass(/mf-btn--primary/);
       // Edit leaves the page where it is, shows the Overview and puts focus on the name.
       await page.locator('[data-action=edit]').click();
@@ -677,8 +677,8 @@ test.describe('Task Type record page', () => {
         "The request form isn't published. Open the form",
         'No eligible published workflow. Add one',
       ]);
-      await expect(page.locator('[data-record-header] h1')).toContainText('Not usable');
-      await expect(page.locator('[data-strip-item=status]')).toContainText('Not usable');
+      await expect(page.locator('[data-record-header] h1')).toContainText('Not Usable');
+      await expect(page.locator('[data-strip-item=status]')).toContainText('Not Usable');
       // Grey, never warning colours.
       const same = await page.evaluate(() => {
         const note = document.querySelector('[data-status-note]') as HTMLElement;
@@ -774,14 +774,14 @@ test.describe('Task Type record page', () => {
       const none = await make('none');
       await page.goto(`/admin/task-types/${none}?tab=form`);
       await expect(page.locator('[data-form-none]')).toContainText('No form yet');
-      await expect(page.locator('[data-open-form]')).toHaveText('Create form');
+      await expect(page.locator('[data-open-form]')).toHaveText('Create Form');
       await shot(page, 'form-none', 1366);
 
       const draft = await make('draft');
       await page.goto(`/admin/task-types/${draft}?tab=form`);
       await expect(page.locator('[data-form-draft]')).toHaveText(/Draft v1 in progress/);
       await expect(page.locator('[data-form-published]')).toHaveCount(0);
-      await expect(page.locator('[data-open-form]')).toHaveText('Edit form');
+      await expect(page.locator('[data-open-form]')).toHaveText('Edit Form');
 
       const published = await make('published');
       await page.goto(`/admin/task-types/${published}?tab=form`);
@@ -924,7 +924,7 @@ test.describe('Task Type record page', () => {
       await expect(ttPage.locator('[data-task-type-page]')).toBeVisible();
       await expect(ttPage.locator('[data-page-actions] button[data-action]')).toHaveText([
         'Edit',
-        'Edit form',
+        'Edit Form',
       ]);
       // Task.View gives the Open tasks number as a link; the default workflow is named (TY-P: TaskType.Manage reads the workflow list) but is not a link.
       await expect(ttPage.locator('a[data-strip-item=open]')).toBeVisible();
@@ -952,7 +952,7 @@ test.describe('Task Type record page', () => {
       await expect(auditPage.locator('[data-page-actions] button[data-action]')).toHaveText([
         'Edit',
         'Activity',
-        'Edit form',
+        'Edit Form',
       ]);
       await expect(auditPage.locator('[data-wf-link]').first()).toBeVisible();
       await expect(auditPage.locator('[data-add-input]')).toBeVisible();

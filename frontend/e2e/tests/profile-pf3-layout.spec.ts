@@ -61,8 +61,8 @@ test.describe('pf2-header: name, context line, status chip and ONE primary actio
     await dialog.getByRole('button', { name: 'Set out of office' }).click();
     await expect(dialog).toHaveCount(0);
     // Same store as the menu: chip, label and the page follow; the focus is back on the action.
-    await expect(h1.locator('[data-availability-chip]')).toContainText('Out of office');
-    await expect(actions).toHaveText("I'm back");
+    await expect(h1.locator('[data-availability-chip]')).toContainText('Out of Office');
+    await expect(actions).toHaveText("I'm Back");
     await expect(actions).toBeFocused();
     await expect(me.locator('[data-preview]')).toHaveCount(0);
 
@@ -127,10 +127,10 @@ test.describe('pf2-header: name, context line, status chip and ONE primary actio
     await me.getByRole('radio', { name: /Out of office/ }).check();
     const preview = me.locator('[data-status-set] [data-preview]');
     await expect(preview).toContainText('Preview of your changes:');
-    await expect(preview.locator('[data-preview-chip]')).toContainText('Out of office');
+    await expect(preview.locator('[data-preview-chip]')).toContainText('Out of Office');
     // The header chip is the saved state until Save; both say so in words, not colour alone.
     await expect(me.locator('h1 [data-availability-chip]')).toHaveText(/Available|Off hours/);
-    await me.getByRole('button', { name: 'Discard changes' }).click();
+    await me.getByRole('button', { name: 'Discard Changes' }).click();
     await expect(me.locator('[data-preview]')).toHaveCount(0);
   });
 });
@@ -218,7 +218,7 @@ test.describe('pf3-columns: two columns from 1100 px, one card style, one width 
       await me.locator('#av-from').fill('Oct 20, 2030');
       await me.locator('#av-until').fill('Oct 10, 2030');
       await me.locator('#av-until').blur();
-      await me.getByRole('button', { name: 'Save changes' }).click();
+      await me.getByRole('button', { name: 'Save Changes' }).click();
       const summary = await box(me, '[data-summary]');
       const avail = await box(me, '[data-card="availability"]');
       expect(Math.abs(summary.width - avail.width), `summary at ${size.width}`).toBeLessThan(1);
@@ -266,11 +266,11 @@ test.describe('pf3-bar: the action bar (#531)', () => {
     const state = me.locator('[data-actions-state]');
     await expect(state).toHaveText('No unsaved changes');
     await expect(state).toHaveAttribute('role', 'status');
-    await expect(me.getByRole('button', { name: 'Save changes' })).toBeDisabled();
-    await expect(me.getByRole('button', { name: 'Discard changes' })).toBeDisabled();
+    await expect(me.getByRole('button', { name: 'Save Changes' })).toBeDisabled();
+    await expect(me.getByRole('button', { name: 'Discard Changes' })).toBeDisabled();
     await me.getByRole('radio', { name: /Out of office/ }).check();
-    await expect(state).toHaveText('Unsaved changes');
-    await expect(me.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+    await expect(state).toHaveText('Unsaved Changes');
+    await expect(me.getByRole('button', { name: 'Save Changes' })).toBeEnabled();
   });
 
   test('at 375 the last field (Time zone) scrolls fully above the bar, and a focused field is not left behind it', async ({
@@ -342,7 +342,7 @@ test.describe('pf3-states: skeleton while loading and the shared record state on
     });
     // Client-side navigation keeps the observer: open the profile through the account menu.
     await me.getByRole('button', { name: /account menu/ }).click();
-    await me.getByRole('menuitem', { name: 'My profile' }).click();
+    await me.getByRole('menuitem', { name: 'My Profile' }).click();
     const skeleton = me.locator('[data-profile-skeleton]');
     await expect(skeleton).toBeVisible();
     await expect(me.locator('[data-loading]')).toHaveText('Loading profile');

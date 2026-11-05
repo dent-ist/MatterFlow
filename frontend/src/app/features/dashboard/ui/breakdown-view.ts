@@ -14,7 +14,7 @@ export const NEXT_MODE: Record<BreakdownMode, BreakdownMode> = {
   pie: 'table',
 };
 
-/** The toggle names the view it will show next: "View as pie" on the bars, "View as table" on the pie, "View as bars" on the table. */
+/** The toggle names the view it will show next: "View as pie" on the bars, "View as Table" on the pie, "View as bars" on the table. */
 export function nextModeLabel(mode: BreakdownMode): string {
   return `View as ${NEXT_MODE[mode]}`;
 }

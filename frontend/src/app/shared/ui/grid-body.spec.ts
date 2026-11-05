@@ -161,7 +161,7 @@ describe('GridBody', () => {
     f.detectChanges();
     const cell = el(f).querySelector('td[data-empty=none]')!;
     expect(cell.textContent).toContain('No clients yet.');
-    expect(cell.textContent).toContain('New client');
+    expect(cell.textContent).toContain(' No clients yet. New client');
     expect(el(f).querySelector('thead th')).not.toBeNull();
   });
 
@@ -172,7 +172,7 @@ describe('GridBody', () => {
     f.detectChanges();
     const cell = el(f).querySelector('td[data-empty=filtered]')!;
     expect(cell.textContent).toContain('No clients match these filters');
-    expect(cell.textContent).not.toContain('New client');
+    expect(cell.textContent).not.toContain('New Client');
     Array.from(cell.querySelectorAll('button'))
       .find((b) => b.textContent?.includes('Clear Filters'))!
       .click();

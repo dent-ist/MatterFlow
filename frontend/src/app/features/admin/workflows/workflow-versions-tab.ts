@@ -29,7 +29,7 @@ export const DRAFT_EXISTS_REASON = 'A draft is already in progress. Open it or d
   template: `
     <section class="wv" aria-labelledby="wv-heading" data-versions-tab>
       <div class="wv__head">
-        <h2 id="wv-heading" class="wv__title">Version history</h2>
+        <h2 id="wv-heading" class="wv__title">Version History</h2>
         <p class="wv__help">
           Tasks run on a published version. Published versions cannot be edited; create a new draft
           to make changes.
@@ -225,7 +225,7 @@ export class WorkflowVersionsTab {
     if (w.draftVersionId) {
       items.push({
         id: 'create-draft',
-        label: 'Create draft from this version',
+        label: 'Create Draft From This Version',
         icon: 'pi-plus',
         disabled: true,
         reason: DRAFT_EXISTS_REASON,
@@ -244,7 +244,7 @@ export class WorkflowVersionsTab {
     } else {
       items.push({
         id: 'create-draft',
-        label: 'Create draft from this version',
+        label: 'Create Draft From This Version',
         icon: 'pi-plus',
         disabled: this.busy(),
         run: () => this.newDraft.emit(v),

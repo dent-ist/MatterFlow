@@ -121,9 +121,9 @@ export type TypePick = Pick<CoverageTarget, 'user' | 'type' | 'count'>;
           </caption>
           <thead>
             <tr>
-              <th scope="col" class="tog-col"><span class="sr-only">Show people</span></th>
-              <th scope="col" class="type-col">Task type</th>
-              <th scope="col">Handled by</th>
+              <th scope="col" class="tog-col"><span class="sr-only">Show People</span></th>
+              <th scope="col" class="type-col">Task Type</th>
+              <th scope="col">Handled By</th>
               <th scope="col" class="num">Completed</th>
               @if (anyStatus()) {
                 <th scope="col">Status</th>

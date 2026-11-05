@@ -59,7 +59,7 @@ describe('TaskTable', () => {
     expect(name.getAttribute('href')).toBe('/matters/7');
     expect(name.getAttribute('title')).toBe('Merger Review');
     expect(cell('matter').querySelector('button')).toBeNull();
-    expect(cell('matter').querySelector('[aria-label="Sensitive matter"]')).toBeNull();
+    expect(cell('matter').querySelector('[aria-label="Sensitive Matter"]')).toBeNull();
   });
 
   it('shows the matter reference as plain text, not a link, without Matter.View (BUG-7)', async () => {
@@ -98,7 +98,7 @@ describe('TaskTable', () => {
 
   it('marks a sensitive matter with an icon that has a text alternative', async () => {
     await create([aRow({ matterIsSensitive: true })], ['matter']);
-    expect(cell('matter').querySelector('[aria-label="Sensitive matter"]')).not.toBeNull();
+    expect(cell('matter').querySelector('[aria-label="Sensitive Matter"]')).not.toBeNull();
   });
 
   it('always shows Ref and Title, even when the saved columns omit them', async () => {
@@ -125,7 +125,7 @@ describe('TaskTable', () => {
         /^On hold for \d+ days\nWaiting for the custodian$/,
       );
       const mark = cell('ref').querySelector('[data-hold-mark]')!;
-      expect(mark.getAttribute('aria-label')).toBe('On hold');
+      expect(mark.getAttribute('aria-label')).toBe('On Hold');
       expect(mark.getAttribute('role')).toBe('img');
       // The "Waiting: ..." line under the title is gone (phone cards carry the reason, #192).
       expect(cell('title').querySelector('[data-hold-hint]')).toBeNull();
@@ -371,7 +371,7 @@ describe('TaskTable', () => {
     );
   });
 
-  it('has no Actions column: Pod Work\'s "Assign to me" lives in the Assignee cell (#199)', async () => {
+  it('has no Actions column: Pod Work\'s "Assign to Me" lives in the Assignee cell (#199)', async () => {
     await create([aRow({ assignedUser: undefined, status: 'NEW' })], ['ref', 'title', 'assignee'], {
       assignLink: true,
     });
@@ -385,7 +385,7 @@ describe('TaskTable', () => {
     expect(hint.classList).not.toContain('wt-hint--show');
   });
 
-  it('says "Due today" with a clock icon, "Tomorrow" in words, and shows later dates plainly (viewer zone)', async () => {
+  it('says "Due Today" with a clock icon, "Tomorrow" in words, and shows later dates plainly (viewer zone)', async () => {
     await create(
       [
         aRow({ taskId: 1, isAsap: false, dueDate: '2026-10-14' }),
@@ -655,7 +655,7 @@ describe('TaskTable', () => {
     expect(el().querySelector('.wt-wrap')!.classList).toContain('wt-dim');
   });
 
-  it('shows the "Assign to me" link-button only in the Assignee cell of unassigned open rows', async () => {
+  it('shows the "Assign to Me" link-button only in the Assignee cell of unassigned open rows', async () => {
     await create(
       [
         aRow({ taskId: 1, assignedUser: undefined, status: 'NEW' }),

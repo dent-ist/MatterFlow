@@ -95,9 +95,9 @@ describe('ScopedTasks', () => {
     expect(ddOptionTexts(el(), 'View')).toEqual([
       'Open 9',
       'Overdue 3',
-      'Due soon 1',
+      'Due Soon 1',
       'ASAP 1',
-      'On hold 1',
+      'On Hold 1',
     ]);
     // Open is the grid's default and is the chosen value.
     expect(ddValue(el(), 'View')).toBe('open');

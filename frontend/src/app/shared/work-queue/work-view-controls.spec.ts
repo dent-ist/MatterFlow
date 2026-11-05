@@ -52,7 +52,7 @@ describe('WorkViewControls', () => {
   it('leaves the sorted-by note to the page when asked (Task Queue footer, #216)', async () => {
     await create({ sortNote: false, sort: 'due' });
     expect(el().querySelector('[data-sort-note]')).toBeNull();
-    expect(el().textContent).not.toContain('Reset sort');
+    expect(el().textContent).not.toContain('Reset Sort');
     expect(el().querySelector('.cc-button')).not.toBeNull();
   });
 

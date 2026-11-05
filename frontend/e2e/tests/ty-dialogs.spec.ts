@@ -91,7 +91,7 @@ test.describe('Dialog wording and focus (#362)', () => {
       fields: [{ key: 'ref', label: 'Reference', control: 'TEXT' }],
     });
     await page.goto(`/admin/task-types/${tt.id}/form`);
-    await page.getByRole('button', { name: 'Create new draft' }).click();
+    await page.getByRole('button', { name: 'Create New Draft' }).click();
     await page.getByRole('button', { name: 'Publish...' }).click();
     const d = dialog(page);
     await expect(d.getByText('Publish v2', { exact: true }).first()).toBeVisible();
@@ -99,14 +99,14 @@ test.describe('Dialog wording and focus (#362)', () => {
     await expect(primary).toBeFocused();
     await expect(d.getByRole('button', { name: 'Cancel' })).toBeVisible();
     await page.keyboard.press('Shift+Tab');
-    await expect(d.getByLabel('Version note')).not.toBeFocused(); // Cancel sits between the note and the primary
+    await expect(d.getByLabel('Version Note')).not.toBeFocused(); // Cancel sits between the note and the primary
     await page.keyboard.press('Shift+Tab');
-    await expect(d.getByLabel('Version note')).toBeFocused();
+    await expect(d.getByLabel('Version Note')).toBeFocused();
     await atEverySize(page, 'dialog-form-publish');
     await d.getByRole('button', { name: 'Publish v2' }).click();
     await expect(page.locator('[data-status]')).toContainText('Published v2');
 
-    await page.getByRole('button', { name: 'Retire version' }).click();
+    await page.getByRole('button', { name: 'Retire Version' }).click();
     await expect(dialog(page).getByRole('button', { name: 'Retire v2' })).toBeFocused();
     await expect(dialog(page).getByRole('button', { name: 'Cancel' })).toBeVisible();
     await atEverySize(page, 'dialog-form-retire');

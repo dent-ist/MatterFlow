@@ -135,14 +135,14 @@ describe('StepsListPage', () => {
     const rows = Array.from(el.querySelectorAll('tbody tr'));
     expect(rows.map((r) => r.getAttribute('data-row'))).toEqual(['Deduplicate', 'OCR']);
     expect(rows[0].querySelector('a')?.getAttribute('href')).toBe('/admin/steps/4');
-    // "Used in n workflows" opens the Workflows tab filtered to the step; 0 says "Not used" (muted, no link).
+    // "Used in n workflows" opens the Workflows tab filtered to the step; 0 says "Not Used" (muted, no link).
     const used = rows[0].querySelector<HTMLAnchorElement>('[data-used-in-link]')!;
     expect(used.textContent!.trim()).toBe('2');
     expect(used.getAttribute('aria-label')).toBe('Used in 2 workflows');
     expect(used.getAttribute('href')).toBe('/admin/workflows?step=4');
     expect(rows[1].querySelector('[data-used-in-link]')).toBeNull();
-    expect(rows[1].querySelector('[data-used-in] .pg-muted')!.textContent).toBe('Not used');
-    expect(rows[1].textContent).toContain('Not used');
+    expect(rows[1].querySelector('[data-used-in] .pg-muted')!.textContent).toBe('Not Used');
+    expect(rows[1].textContent).toContain('Not Used');
     expect(rows[1].textContent).toContain('Inactive');
     expect(api.listStepDefinitions).toHaveBeenCalledWith(
       undefined,
@@ -286,7 +286,7 @@ describe('StepsListPage', () => {
     // Open by default (from 640 px, #365); the Filters button sits in the page header, not in this tab.
     expect(el.querySelector('[data-filter-row]')).not.toBeNull();
     expect(el.querySelector('[data-filters-toggle]')).toBeNull();
-    for (const column of ['Title', 'Description', 'Used in', 'Status']) {
+    for (const column of ['Title', 'Description', 'Used In', 'Status']) {
       expect(el.querySelector(`[aria-label^="Filter by ${column}"]`)).not.toBeNull();
     }
     expect(el.querySelector('button[data-filter="tags"]')).not.toBeNull();
@@ -310,7 +310,7 @@ describe('StepsListPage narrow window (#356)', () => {
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
     expect(Array.from(el.querySelectorAll('thead th')).map((th) => th.textContent!.trim())).toEqual(
-      ['Title', 'Description', 'Tags', 'Used in', 'Inputs', 'Status', 'Actions'],
+      ['Title', 'Description', 'Tags', 'Used In', 'Inputs', 'Status', 'Actions'],
     );
     const row = el.querySelector('tbody tr[data-row="Deduplicate"]')!;
     expect(row.querySelectorAll('td')).toHaveLength(7);
@@ -382,7 +382,7 @@ describe('StepsListPage phone cards and narrow columns (#375)', () => {
       'Title',
       'Description',
       'Tags',
-      'Used in',
+      'Used In',
       'Inputs',
       'Status',
       'Actions',
@@ -396,7 +396,7 @@ describe('StepsListPage phone cards and narrow columns (#375)', () => {
       'Title',
       'Description',
       'Tags',
-      'Used in',
+      'Used In',
       'Inputs',
       'Status',
       'Actions',
@@ -449,7 +449,7 @@ describe('StepsListPage Inputs column (#378)', () => {
     expect(narrow.nativeElement.querySelector('[data-inputs]')).not.toBeNull(); // LC-09: no column leaves by width
   });
 
-  it('adds an "Inputs in draft" line to the card of a step whose inputs are a draft', async () => {
+  it('adds an "Inputs in Draft" line to the card of a step whose inputs are a draft', async () => {
     viewport(375);
     const api = {
       listStepDefinitions: vi
@@ -589,20 +589,20 @@ describe('StepEditPage', () => {
       'true',
     );
 
-    buttonByLabel(el, 'Create step')!.click();
+    buttonByLabel(el, 'Create Step')!.click();
     await settle(fixture);
     expect(el.querySelector('[data-summary]')?.textContent).toContain('Enter a title.');
     expect(api.createStepDefinition).not.toHaveBeenCalled();
 
     type('step-title', ' Deduplicate ');
     type('step-url', 'not a url');
-    buttonByLabel(el, 'Create step')!.click();
+    buttonByLabel(el, 'Create Step')!.click();
     await settle(fixture);
     expect(el.querySelector('[data-summary]')?.textContent).toContain('http');
     expect(api.createStepDefinition).not.toHaveBeenCalled();
 
     type('step-url', 'https://sharepoint.example.firm/dedupe');
-    buttonByLabel(el, 'Create step')!.click();
+    buttonByLabel(el, 'Create Step')!.click();
     await settle(fixture);
     expect(api.createStepDefinition).toHaveBeenCalledWith({
       title: 'Deduplicate',
@@ -659,7 +659,7 @@ describe('StepEditPage', () => {
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
     await settle(fixture);
 
-    buttonByLabel(el, 'Save changes')!.click();
+    buttonByLabel(el, 'Save Changes')!.click();
     await settle(fixture);
     expect(api.updateStepDefinition).toHaveBeenCalledWith(4, {
       title: 'Dedupe',
@@ -683,7 +683,7 @@ describe('StepEditPage', () => {
     title.value = 'Dedupe 2';
     title.dispatchEvent(new Event('input'));
     await settle(fixture);
-    buttonByLabel(el, 'Save changes')!.click();
+    buttonByLabel(el, 'Save Changes')!.click();
     await settle(fixture);
     expect(el.querySelector('[data-conflict]')).not.toBeNull();
   });
@@ -767,7 +767,7 @@ describe('StepsListPage tags', () => {
     const el: HTMLElement = fixture.nativeElement;
 
     expect(Array.from(el.querySelectorAll('thead th')).map((th) => th.textContent!.trim())).toEqual(
-      ['Title', 'Description', 'Tags', 'Used in', 'Inputs', 'Status', 'Actions'],
+      ['Title', 'Description', 'Tags', 'Used In', 'Inputs', 'Status', 'Actions'],
     );
     const first = el.querySelector('tbody tr[data-row="Deduplicate"]')!;
     expect(
@@ -864,7 +864,7 @@ describe('StepsListPage tags', () => {
       50,
     ]);
     const el: HTMLElement = fixture.nativeElement;
-    expect(ddSelect(el, 'Filter by Tag match').value).toBe('any');
+    expect(ddSelect(el, 'Filter by Tag Match').value).toBe('any');
   });
 
   it('treats a tag in the address as filtering, and Clear filters resets the tags too', async () => {
@@ -954,7 +954,7 @@ describe('StepEditPage tags', () => {
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
     await settle(fixture);
 
-    buttonByLabel(el, 'Save changes')!.click();
+    buttonByLabel(el, 'Save Changes')!.click();
     await settle(fixture);
     expect(api.updateStepDefinition).toHaveBeenCalledWith(
       4,
@@ -987,7 +987,7 @@ describe('StepEditPage tags', () => {
     title.value = 'Dedupe';
     title.dispatchEvent(new Event('input'));
     await settle(fixture);
-    buttonByLabel(el, 'Save changes')!.click();
+    buttonByLabel(el, 'Save Changes')!.click();
     await settle(fixture);
     expect(el.querySelector('#step-tags-error')?.textContent).toContain('at most 40 characters');
   });

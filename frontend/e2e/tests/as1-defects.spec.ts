@@ -186,17 +186,17 @@ test.describe('Assets list defects (WP-AS1)', () => {
     await page.locator('#asset-type').selectOption(String(typeId));
     await page.locator('#asset-name').fill(`Raced ${token}`);
     await page.locator('#asset-reference').fill(`REF-${token}`);
-    await page.getByRole('button', { name: 'Create asset' }).click();
+    await page.getByRole('button', { name: 'Create Asset' }).click();
 
     const conflict = page.locator('[data-conflict]');
     await expect(conflict).toContainText('Another change was saved at the same time. Try again.');
-    await expect(conflict.getByRole('button', { name: 'Reload latest' })).toHaveCount(0);
+    await expect(conflict.getByRole('button', { name: 'Reload Latest' })).toHaveCount(0);
     await expect(page.locator('#asset-name')).toHaveValue(`Raced ${token}`);
     await expect(page.locator('#asset-reference')).toHaveValue(`REF-${token}`);
     await shot(page, 'bug6-conflict');
 
     // The same click again goes through.
-    await page.getByRole('button', { name: 'Create asset' }).click();
+    await page.getByRole('button', { name: 'Create Asset' }).click();
     await expect(page).toHaveURL(/\/assets\/\d+$/);
     await expect(page.getByRole('heading', { level: 1, name: `Raced ${token}` })).toBeVisible();
   });
@@ -210,7 +210,7 @@ test.describe('Assets list defects (WP-AS1)', () => {
     await page.goto(`/assets?name=${token}&size=25`);
     await expect(page.locator('tbody tr[data-asset-id]')).toHaveCount(3);
     await atEverySize(page, 'as1-assets-list', async (size) => {
-      await expect(page.getByRole('columnheader', { name: 'External reference' })).toHaveCount(
+      await expect(page.getByRole('columnheader', { name: 'External Reference' })).toHaveCount(
         size.width >= 640 ? 1 : 0,
       );
       await expect(

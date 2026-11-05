@@ -237,7 +237,7 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
         50,
       ]);
       // The address opens the filter row with the tags chosen and Match any selected.
-      expect(ddSelect(el(), 'Filter by Tag match')?.value).toBe('any');
+      expect(ddSelect(el(), 'Filter by Tag Match')?.value).toBe('any');
     },
     SLOW,
   );

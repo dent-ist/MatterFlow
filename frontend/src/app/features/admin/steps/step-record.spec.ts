@@ -151,7 +151,7 @@ describe('inputsStripValue and the strip', () => {
     expect(items[1].count).toBe(3);
     expect(items[1].hint).toBe('Used in 3 workflows');
     expect(items[3].value).toBe('Relativity, QC');
-    expect(stepStripItems(s, 0, inputsFacts(s, null))[1].value).toBe('Not used');
+    expect(stepStripItems(s, 0, inputsFacts(s, null))[1].value).toBe('Not Used');
     expect(stepStripItems(s, null, inputsFacts(s, null))[1].count).toBeNull();
     expect(stepStripItems(step({ isActive: false }), 1, inputsFacts(s, null))[0].value).toBe(
       'Inactive',

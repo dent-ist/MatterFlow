@@ -68,7 +68,7 @@ test.describe('#757: assignee picker suggestions', () => {
     await expect(pop.locator(`[data-option="${away.userId}"]`)).toHaveCount(0);
 
     // Search covers everyone eligible: the busy person with the count; the absent one is hidden here too.
-    const search = pop.getByRole('textbox', { name: 'Search people' });
+    const search = pop.getByRole('textbox', { name: 'Search People' });
     await search.fill(`as-busy-${token}`);
     await expect(pop.locator(`[data-option="${busy.userId}"] .im-hint`)).toHaveText('3 open');
     await expect(pop.locator('[data-menu-group]')).toHaveCount(0);
@@ -127,9 +127,9 @@ test.describe('#757: assignee picker suggestions', () => {
     await expect(pop.locator('[data-menu-note]')).toContainText('members of AS Pod');
 
     await pop.getByRole('button', { name: 'Search all users' }).click();
-    await expect(pop.getByRole('textbox', { name: 'Search people' })).toBeFocused();
+    await expect(pop.getByRole('textbox', { name: 'Search People' })).toBeFocused();
     await expect(pop.locator('[data-menu-group]')).toHaveText('Suggested');
-    await pop.getByRole('textbox', { name: 'Search people' }).fill(`as-outsider-${token}`);
+    await pop.getByRole('textbox', { name: 'Search People' }).fill(`as-outsider-${token}`);
     await expect(pop.locator(`[data-option="${outsider.userId}"]`)).toBeVisible();
   });
 
@@ -152,12 +152,12 @@ test.describe('#757: assignee picker suggestions', () => {
 
     await assigneeTrigger(page).click();
     const pop = page.locator('.im-pop');
-    await pop.getByRole('textbox', { name: 'Search people' }).fill(stem);
+    await pop.getByRole('textbox', { name: 'Search People' }).fill(stem);
     await expect(pop.locator('[data-option]')).toHaveCount(12);
     // The list scrolls inside the menu when it is taller than the space.
     const scrolls = await pop.evaluate((el) => el.scrollHeight >= el.clientHeight);
     expect(scrolls).toBe(true);
-    await pop.getByRole('textbox', { name: 'Search people' }).fill(`${stem} 12`);
+    await pop.getByRole('textbox', { name: 'Search People' }).fill(`${stem} 12`);
     await expect(pop.locator('[data-option]')).toHaveCount(1);
   });
 

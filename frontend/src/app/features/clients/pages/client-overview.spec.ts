@@ -60,14 +60,14 @@ describe('ClientOverview', () => {
     expect(strip.map((a) => text(a))).toEqual([
       'Open 9',
       'Overdue 2',
-      'Due soon 2',
+      'Due Soon 2',
       'ASAP 3',
-      'On hold 1',
+      'On Hold 1',
     ]);
     expect(strip.every((a) => a.getAttribute('href')!.startsWith('/tasks?client=1'))).toBe(true);
     expect(strip[1].getAttribute('href')).toContain('overdue=true');
 
-    expect(text(el().querySelector('.ov-h'))).toBe('Matters with the most open tasks');
+    expect(text(el().querySelector('.ov-h'))).toBe('Matters With the Most Open Tasks');
     const rows = Array.from(el().querySelectorAll('[data-top-matters] tbody tr'));
     expect(
       rows.map((r) =>

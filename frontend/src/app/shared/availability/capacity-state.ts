@@ -26,8 +26,8 @@ export const STATE_META: Record<CapacityState, StateMeta> = {
   OCCUPIED: { label: 'Occupied', icon: 'pi-circle', swatch: 'cap-1' },
   BUSY: { label: 'Busy', icon: 'pi-minus-circle', swatch: 'cap-2' },
   OVERLOADED: { label: 'Overloaded', icon: 'pi-exclamation-triangle', swatch: 'cap-3' },
-  OUT_OF_OFFICE: { label: 'Out of office', icon: 'pi-ban', swatch: 'out' },
-  OFF_HOURS: { label: 'Off hours', icon: 'pi-moon', swatch: 'off' },
+  OUT_OF_OFFICE: { label: 'Out of Office', icon: 'pi-ban', swatch: 'out' },
+  OFF_HOURS: { label: 'Off Hours', icon: 'pi-moon', swatch: 'off' },
 };
 
 export function isCapacityState(value: unknown): value is CapacityState {

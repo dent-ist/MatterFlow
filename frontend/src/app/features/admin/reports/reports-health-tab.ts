@@ -16,7 +16,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
   host: { class: 'mf-fill' },
   template: `
     <section class="rh" aria-labelledby="rh-title" data-health>
-      <h2 id="rh-title" class="rh__title">Report login</h2>
+      <h2 id="rh-title" class="rh__title">Report Login</h2>
       <p class="mf-sr-only" role="status" aria-live="polite">{{ announcement() }}</p>
       @if (failure(); as f) {
         <p class="rh__bad" role="alert" data-failure>{{ f }}</p>
@@ -34,11 +34,11 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
             <dd>{{ l.loginName }}</dd>
             <dt>Writes</dt>
             <dd>{{ l.writesDenied ? 'Denied' : 'Not denied' }}</dd>
-            <dt>Audit and credential tables</dt>
+            <dt>Audit and Credential Tables</dt>
             <dd>{{ l.auditTablesDenied ? 'Denied' : 'Not denied' }}</dd>
-            <dt>Tables it can read</dt>
+            <dt>Tables It Can Read</dt>
             <dd>{{ l.readableTables }}</dd>
-            <dt>Database compatibility level</dt>
+            <dt>Database Compatibility Level</dt>
             <dd>{{ l.compatibilityLevel }}</dd>
             <dt>Checked</dt>
             <dd>{{ l.checkedAtUtc | mfNum }}</dd>
@@ -46,7 +46,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
         }
         <p>
           <button type="button" class="mf-btn" (click)="check()" [disabled]="busy()" data-check>
-            {{ busy() ? 'Checking...' : 'Check again' }}
+            {{ busy() ? 'Checking...' : 'Check Again' }}
           </button>
         </p>
       } @else if (!failure()) {

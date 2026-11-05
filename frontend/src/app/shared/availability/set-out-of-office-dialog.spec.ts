@@ -123,7 +123,7 @@ describe('SetOutOfOfficeDialog', () => {
       note: 'Covering: Dana',
     });
     await vi.waitFor(() => expect(fixture.componentInstance.visible()).toBe(false));
-    // #525: the toast carries the shared availability key, so "I'm back" replaces it.
+    // #525: the toast carries the shared availability key, so "I'm Back" replaces it.
     expect(success).toHaveBeenCalledWith('Out of office set', expect.any(String), {
       key: 'availability',
     });
@@ -194,7 +194,7 @@ describe('SetOutOfOfficeDialog', () => {
         'Until tomorrow',
         'Until Monday',
         '1 week',
-        'Pick a date',
+        'Pick a Date',
       ]);
       chip('monday').click();
       await settle(fixture);
@@ -226,7 +226,7 @@ describe('SetOutOfOfficeDialog', () => {
       expect(document.activeElement).not.toBe(q('#ooo-until'));
       expect(q('.mf-dlg__title').textContent).toContain('Set Out of Office');
       expect(q('[data-ooo-more]').getAttribute('href')).toBe('/profile');
-      expect(q('[data-ooo-more]').textContent).toContain('More options on My profile');
+      expect(q('[data-ooo-more]').textContent).toContain('More Options on My Profile');
     });
 
     it('the link closes the dialog', async () => {

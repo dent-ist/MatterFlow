@@ -66,7 +66,7 @@ const GAP = 4;
             data-mark-all-read
             (click)="markAll()"
           >
-            Mark all as read
+            Mark All as Read
           </button>
         }
       </div>

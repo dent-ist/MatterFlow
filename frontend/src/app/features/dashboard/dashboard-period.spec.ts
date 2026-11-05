@@ -30,7 +30,7 @@ describe('the period vocabulary', () => {
       'Last 6 months',
       'Last 12 months',
     ]);
-    expect(ALL_PRESETS.some((p) => p.label === 'This week')).toBe(false);
+    expect(ALL_PRESETS.some((p) => p.label === 'This Week')).toBe(false);
   });
 
   it('recognises only the current keys', () => {

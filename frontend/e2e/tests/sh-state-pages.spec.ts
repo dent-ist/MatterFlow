@@ -96,7 +96,7 @@ test.describe('State pages are one family (#607)', () => {
     await page.keyboard.type('acme');
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/\/search\?q=acme/);
-    await expect(page.getByRole('heading', { name: 'Search results', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Search Results', level: 1 })).toBeVisible();
   });
 
   test('the 403 uses the same card: primary "Go to", Copy link as the secondary action, no search box', async ({
@@ -173,7 +173,7 @@ test.describe('State pages are one family (#607)', () => {
     await page.keyboard.press('Tab');
     await expect(page.locator('[data-back-link]')).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('button', { name: 'Copy link' })).toBeFocused();
+    await expect(page.getByRole('button', { name: 'Copy Link' })).toBeFocused();
   });
 
   test('permission variants: the 404 link follows the landing rule for every kind of person', async ({

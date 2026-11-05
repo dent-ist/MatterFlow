@@ -282,7 +282,7 @@ export class StepEditPage implements HasUnsavedChanges {
     list.push({
       id: 'edit-inputs',
       role: 'primary',
-      label: 'Edit inputs',
+      label: 'Edit Inputs',
       icon: 'pi-pencil',
       run: () => void this.openInputs(),
     });

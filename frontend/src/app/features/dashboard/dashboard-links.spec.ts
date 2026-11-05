@@ -31,7 +31,7 @@ describe('queueParams', () => {
     expect(queueParams(undefined)).toEqual({});
   });
 
-  it('adds the sort of a list to its "View all" link', () => {
+  it('adds the sort of a list to its "View All" link', () => {
     expect(queueParamsSorted('status=NEW&unassigned=true', 'created', 'asc')).toEqual({
       status: 'NEW',
       unassigned: 'true',
@@ -187,13 +187,13 @@ describe('every dashboard link opens the Task Queue with matching filters and ch
       'task type',
       `${OPEN}&type=7`,
       (s) => expect(s.filters.type).toEqual([7]),
-      ['Status: Open', 'Task type: Type 7'],
+      ['Status: Open', 'Task Type: Type 7'],
     ],
     [
       'other task types',
       `${OPEN}&type=8&type=9`,
       (s) => expect(s.filters.type).toEqual([8, 9]),
-      ['Status: Open', 'Task type: Type 8', 'Task type: Type 9'],
+      ['Status: Open', 'Task Type: Type 8', 'Task Type: Type 9'],
     ],
     [
       'status bar',

@@ -83,7 +83,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
             </div>
           }
           <div class="ad__f" data-external-reference>
-            <dt>External reference</dt>
+            <dt>External Reference</dt>
             <dd>
               @if (!asset().externalReference) {
                 Not provided
@@ -113,7 +113,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
             <dt>Description</dt>
             <dd>
               @if (asset().description) {
-                <!-- Six lines, then "Show more" (only when the text is longer than that). -->
+                <!-- Six lines, then "Show More" (only when the text is longer than that). -->
                 <div
                   #description
                   id="ad-description"
@@ -132,7 +132,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
                     data-description-toggle
                     (click)="expanded.set(!expanded())"
                   >
-                    {{ expanded() ? 'Show less' : 'Show more' }}
+                    {{ expanded() ? 'Show Less' : 'Show More' }}
                   </button>
                 }
               } @else {
@@ -141,7 +141,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
             </dd>
           </div>
           <div class="ad__f" data-disposition-history-row>
-            <dt>Disposition history</dt>
+            <dt>Disposition History</dt>
             <dd>
               <mf-asset-disposition-history
                 [assetId]="asset().assetId"
@@ -155,7 +155,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
           </div>
           @if (asset().modifiedAtUtc) {
             <div class="ad__f">
-              <dt>Last changed</dt>
+              <dt>Last Changed</dt>
               <dd>{{ asset().modifiedAtUtc | mfNum }}</dd>
             </div>
           }
@@ -164,7 +164,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
       <section class="ad__sec" aria-labelledby="ad-values-h" data-section="fields">
         @if (schema(); as definition) {
           <h3 id="ad-values-h" class="ad__subtitle" data-type-fields-title>
-            {{ asset().assetTypeName }} fields ({{ definition.fields.length }})
+            {{ asset().assetTypeName }} Fields ({{ definition.fields.length }})
           </h3>
           <div data-type-fields>
             <mf-dynamic-form [definition]="definition" [values]="values()" [readOnly]="true" />

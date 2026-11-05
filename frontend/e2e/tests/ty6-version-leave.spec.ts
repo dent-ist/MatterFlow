@@ -131,7 +131,7 @@ test.describe('Version editor: leaving a dirty draft (VP8, #398)', () => {
     expect(await asks()).toBe(false);
     await makeDirty(page, world.wf.stepTitles[0]);
     expect(await asks()).toBe(true);
-    await page.getByRole('button', { name: 'Save draft' }).click();
+    await page.getByRole('button', { name: 'Save Draft' }).click();
     await expect(page.locator('[data-dirty]')).toHaveCount(0);
     expect(await asks()).toBe(false);
   });

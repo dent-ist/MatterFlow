@@ -127,7 +127,7 @@ export function brandingOf(view: BrandingAdminView): Branding {
           <div class="pg-alert st__wide" role="alert" data-conflict>
             Someone else changed the branding while you were editing. Reload to see the latest
             values; your changes on this page are not saved.
-            <p-button label="Reload latest" severity="secondary" (onClick)="load()" />
+            <p-button label="Reload Latest" severity="secondary" (onClick)="load()" />
           </div>
         }
         @if (summary().length > 0) {
@@ -143,12 +143,12 @@ export function brandingOf(view: BrandingAdminView): Branding {
 
         <form class="pg-form st__form" novalidate (submit)="$event.preventDefault(); save()">
           <section class="st__section" aria-labelledby="st-h-name" data-section="name">
-            <h2 id="st-h-name" class="st__h">Application name</h2>
+            <h2 id="st-h-name" class="st__h">Application Name</h2>
             <div class="st__row">
               <div class="st__grow">
                 <mf-text-field
                   inputId="st-name"
-                  label="Application name"
+                  label="Application Name"
                   [required]="true"
                   [maxLength]="v.limits.appNameMaxLength"
                   [counter]="true"
@@ -160,7 +160,7 @@ export function brandingOf(view: BrandingAdminView): Branding {
               </div>
               <p-button
                 type="button"
-                label="Reset to default"
+                label="Reset to Default"
                 severity="secondary"
                 [outlined]="true"
                 class="st__reset"
@@ -172,7 +172,7 @@ export function brandingOf(view: BrandingAdminView): Branding {
           </section>
 
           <section class="st__section" aria-labelledby="st-h-icon" data-section="icon">
-            <h2 id="st-h-icon" class="st__h">Application icon</h2>
+            <h2 id="st-h-icon" class="st__h">Application Icon</h2>
             <div class="st__icon">
               <div class="st__thumb" aria-hidden="true">
                 <img [src]="iconPreview()" alt="" width="64" height="64" data-icon-thumb />
@@ -194,7 +194,7 @@ export function brandingOf(view: BrandingAdminView): Branding {
                   />
                   <p-button
                     type="button"
-                    label="Reset to default"
+                    label="Reset to Default"
                     severity="secondary"
                     [outlined]="true"
                     class="st__reset"

@@ -97,11 +97,11 @@ test.describe('Matter header (MD-01)', () => {
     await expect(page.getByRole('menuitem')).toContainText(['Task', 'Project', 'Asset']);
     await page.getByRole('menuitem', { name: 'Project' }).click();
     const panel = page.locator('.mf-formdlg');
-    await expect(panel).toContainText('New project'); // a centred pop-up dialog (MD-22)
+    await expect(panel).toContainText('New Project'); // a centred pop-up dialog (MD-22)
     // Cancel is on the left and the primary action on the right.
     const buttons = panel.locator('[data-panel-footer] button');
     await expect(buttons.first()).toHaveText('Cancel');
-    await expect(buttons.last()).toHaveText('Create project');
+    await expect(buttons.last()).toHaveText('Create Project');
     await expect(page).toHaveURL(new RegExp(`/matters/${world.matter.matterId}$`));
     await page.keyboard.press('Escape');
     await expect(panel).toHaveCount(0);

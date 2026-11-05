@@ -12,12 +12,12 @@ export interface KindLook {
 
 /** Icon and tone of each activity kind. Colour is never alone: every item carries the icon and the kind's word. */
 export const KIND_LOOK: Readonly<Record<FeedKind, KindLook>> = {
-  NEW_ASSETS: { label: 'New assets', icon: 'pi-box', tone: 'info' },
-  NEW_COMMENTS: { label: 'New comments', icon: 'pi-comment', tone: 'neutral' },
-  NEW_STATUS_UPDATES: { label: 'New status updates', icon: 'pi-sync', tone: 'accent' },
-  ON_HOLD: { label: 'On hold', icon: 'pi-pause-circle', tone: 'neutral' },
+  NEW_ASSETS: { label: 'New Assets', icon: 'pi-box', tone: 'info' },
+  NEW_COMMENTS: { label: 'New Comments', icon: 'pi-comment', tone: 'neutral' },
+  NEW_STATUS_UPDATES: { label: 'New Status Updates', icon: 'pi-sync', tone: 'accent' },
+  ON_HOLD: { label: 'On Hold', icon: 'pi-pause-circle', tone: 'neutral' },
   OVERDUE: { label: 'Overdue', icon: 'pi-exclamation-circle', tone: 'danger' },
-  DUE_DATE_UPDATED: { label: 'Due date updated', icon: 'pi-calendar-clock', tone: 'warning' },
+  DUE_DATE_UPDATED: { label: 'Due Date Updated', icon: 'pi-calendar-clock', tone: 'warning' },
 };
 
 export const KIND_ORDER: readonly FeedKind[] = FEED_KINDS.map((k) => k.kind);

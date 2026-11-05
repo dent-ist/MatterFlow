@@ -23,7 +23,7 @@ export function stepWidth(def: ColumnDef, current: number, px: number): number {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <fieldset class="cw" data-widths-set>
-      <legend>Column widths</legend>
+      <legend>Column Widths</legend>
       @for (row of rows(); track row.def.key) {
         @if (row.fill) {
           <div class="cw-row" [attr.data-width-row]="row.def.key">
@@ -86,7 +86,7 @@ export function stepWidth(def: ColumnDef, current: number, px: number): number {
               [attr.aria-disabled]="row.stored ? null : 'true'"
               (click)="reset(row.def, row.stored)"
             >
-              Reset width
+              Reset Width
             </button>
           </div>
         }

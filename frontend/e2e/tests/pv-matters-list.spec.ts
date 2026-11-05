@@ -39,7 +39,7 @@ test.describe('PM v2 page fixes: Matters list columns (#881)', () => {
       .first()
       .evaluate((s) => s.scrollWidth - s.clientWidth);
     expect(wide).toBeLessThanOrEqual(0);
-    await expect(page.locator('thead th', { hasText: 'On hold' })).toHaveCount(0);
+    await expect(page.locator('thead th', { hasText: 'On Hold' })).toHaveCount(0);
 
     await page.locator('[data-grid-columns]').click();
     for (const key of ['onHold', 'atRisk', 'dataSize', 'pending']) {
@@ -55,7 +55,7 @@ test.describe('PM v2 page fixes: Matters list columns (#881)', () => {
     await expect(rowB.locator('[data-cell=pending]')).toHaveText('0');
     // The choice is remembered.
     await page.reload();
-    await expect(page.locator('thead th', { hasText: 'On hold' })).toBeVisible();
+    await expect(page.locator('thead th', { hasText: 'On Hold' })).toBeVisible();
 
     for (const size of SIZES) {
       await page.setViewportSize(size);

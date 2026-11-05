@@ -214,7 +214,7 @@ test.describe('Two statements (C3, #136)', () => {
 });
 
 test.describe('Bounded rendering', () => {
-  // 500 people x 30 task types answered by the API stub: the matrix draws the first 30 people and 30 types, "Show more" adds the rest in steps.
+  // 500 people x 30 task types answered by the API stub: the matrix draws the first 30 people and 30 types, "Show More" adds the rest in steps.
   function bigBoard(): Json {
     const types = Array.from({ length: 30 }, (_, i) => ({
       taskTypeId: 1000 + i,

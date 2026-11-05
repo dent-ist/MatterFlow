@@ -48,9 +48,9 @@ test.describe('Assets list contract (WP-AS3)', () => {
     const box = (await page.locator(`tr[data-asset-id="${busy.assetId}"]`).boundingBox())!;
     expect(Math.round(box.height)).toBeLessThanOrEqual(45);
 
-    await page.getByRole('columnheader', { name: 'Linked tasks' }).getByRole('button').click();
+    await page.getByRole('columnheader', { name: 'Linked Tasks' }).getByRole('button').click();
     await expect(page).toHaveURL(/sort=-linkedTaskCount/);
-    await expect(page.getByRole('columnheader', { name: 'Linked tasks' })).toHaveAttribute(
+    await expect(page.getByRole('columnheader', { name: 'Linked Tasks' })).toHaveAttribute(
       'aria-sort',
       'descending',
     );
@@ -59,21 +59,21 @@ test.describe('Assets list contract (WP-AS3)', () => {
       String(busy.assetId),
     );
     await page.reload();
-    await expect(page.getByRole('columnheader', { name: 'Linked tasks' })).toHaveAttribute(
+    await expect(page.getByRole('columnheader', { name: 'Linked Tasks' })).toHaveAttribute(
       'aria-sort',
       'descending',
     );
 
     // LC-09: it stays at 768 px (the frame scrolls sideways).
     await page.setViewportSize({ width: 768, height: 1024 });
-    await expect(page.getByRole('columnheader', { name: 'Linked tasks' })).toHaveCount(1);
+    await expect(page.getByRole('columnheader', { name: 'Linked Tasks' })).toHaveCount(1);
 
     const viewer = await personas.create({ label: 'assetonly', permissions: ['Asset.View'] });
     const plain = await asUser(viewer.username);
     await plain.setViewportSize({ width: 1366, height: 768 });
     await plain.goto(`/assets?name=${token}`);
     await expect(plain.locator('tbody tr[data-asset-id]')).toHaveCount(2);
-    await expect(plain.getByRole('columnheader', { name: 'Linked tasks' })).toHaveCount(0);
+    await expect(plain.getByRole('columnheader', { name: 'Linked Tasks' })).toHaveCount(0);
     await expect(plain.locator('td[data-linked]')).toHaveCount(0);
   });
 
@@ -92,7 +92,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
       expect(await toggle.evaluate((e) => !!e.closest('mf-list-toolbar'))).toBe(true);
       // The Name filter is the Search box now (not counted on the Filters button).
       await expect(page.getByPlaceholder('Search assets')).toHaveValue(token);
-      await expect(page.getByRole('button', { name: 'Clear filters' }).first()).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Clear Filters' }).first()).toBeVisible();
       await noHorizontalScroll(page);
     }
     await page.setViewportSize({ width: 375, height: 812 });
@@ -135,7 +135,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
     await page.goto(`/assets?name=${token}-nothing`);
     await expect(page.locator('[data-empty="filtered"]')).toContainText('No assets match');
     await expect(
-      page.locator('[data-empty] ').getByRole('button', { name: 'Clear filters' }),
+      page.locator('[data-empty] ').getByRole('button', { name: 'Clear Filters' }),
     ).toBeVisible();
     await expect(
       page.locator('[data-empty] a, [data-empty] button:has-text("New asset")'),
@@ -202,7 +202,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
     // LC-09: no column is dropped by width; the frame scrolls sideways and the page does not.
     expect(await wrap.evaluate((e) => e.scrollWidth - e.clientWidth)).toBeGreaterThan(0);
     await noHorizontalScroll(page);
-    await expect(page.getByRole('columnheader', { name: 'External reference' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'External Reference' })).toBeVisible();
     await shot(page, 'as3-768');
   });
 
@@ -218,7 +218,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
     await page.goto(`/assets?name=${token}`);
     await expect(page.locator('tbody tr[data-asset-id]').first()).toBeVisible();
     await page.keyboard.press('Tab');
-    const skip = page.getByRole('link', { name: 'Skip to table' });
+    const skip = page.getByRole('link', { name: 'Skip to Table' });
     await expect(skip).toBeFocused();
     await expect(skip).toBeVisible();
     await page.keyboard.press('Enter');

@@ -103,7 +103,7 @@ describe('SearchResultsPage', () => {
     const el: HTMLElement = fixture.nativeElement;
 
     expect(el.querySelector('mf-fixed-page')).not.toBeNull();
-    expect(el.querySelector('h1')!.textContent).toContain('Search results');
+    expect(el.querySelector('h1')!.textContent).toContain('Search Results');
     expect(el.querySelector('[role=tablist]')!.getAttribute('aria-label')).toBe(
       'Search results by type',
     );
@@ -155,7 +155,7 @@ describe('SearchResultsPage', () => {
       'See all 1,000+ assets',
     ]);
     expect(more[0].getAttribute('href')).toContain('type=task');
-    expect(el.textContent).not.toContain('Show more');
+    expect(el.textContent).not.toContain('Show More');
   });
 
   it('says what was searched, never what was left out (#471)', async () => {

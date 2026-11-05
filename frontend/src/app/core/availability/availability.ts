@@ -17,7 +17,7 @@ export interface AvailabilityDisplay {
   tone: AvailabilityTone;
   /** PrimeIcons class; the text always says the same thing (colour and icon are never the only cue). */
   icon: string;
-  /** Chip text: `Available`, `Off hours`, `Out of office until Oct 20`. */
+  /** Chip text: `Available`, `Off Hours`, `Out of Office until Oct 20`. */
   label: string;
 }
 
@@ -47,7 +47,7 @@ export function lastOutDay(outUntil: string | Date, zone: string): CalendarDay |
   return calendarDayInZone(new Date(end.getTime() - 60_000), zone);
 }
 
-/** `Out of office until Oct 20` (or just `Out of office` when it has no end), or null when the person is not out of office. */
+/** `Out of Office until Oct 20` (or just `Out of Office` when it has no end), or null when the person is not out of office. */
 export function outOfOfficeText(
   a: AvailabilityLike | null | undefined,
   zone: string,
@@ -56,8 +56,8 @@ export function outOfOfficeText(
   if (a?.state !== 'OUT_OF_OFFICE') return null;
   const last = a.outUntil ? lastOutDay(a.outUntil, zone) : null;
   return last
-    ? `Out of office until ${shortDay(last, calendarDayInZone(now, zone))}`
-    : 'Out of office';
+    ? `Out of Office until ${shortDay(last, calendarDayInZone(now, zone))}`
+    : 'Out of Office';
 }
 
 /** Icon, tone and text for the availability chip. Unknown or missing state reads as Available. */
@@ -71,11 +71,11 @@ export function availabilityDisplay(
       state: 'OUT_OF_OFFICE',
       tone: 'warning',
       icon: 'pi-calendar-minus',
-      label: outOfOfficeText(a, zone, now) ?? 'Out of office',
+      label: outOfOfficeText(a, zone, now) ?? 'Out of Office',
     };
   }
   if (a?.state === 'OFF_HOURS') {
-    return { state: 'OFF_HOURS', tone: 'neutral', icon: 'pi-moon', label: 'Off hours' };
+    return { state: 'OFF_HOURS', tone: 'neutral', icon: 'pi-moon', label: 'Off Hours' };
   }
   return { state: 'AVAILABLE', tone: 'success', icon: 'pi-check-circle', label: 'Available' };
 }

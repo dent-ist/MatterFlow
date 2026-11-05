@@ -117,7 +117,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
 
         @if (yearly() && shape() === 'day') {
           <div class="hd__f">
-            <label class="hd__l" for="hd-pattern">Date rule</label>
+            <label class="hd__l" for="hd-pattern">Date Rule</label>
             <select
               id="hd-pattern"
               class="mf-control mf-control--fill"
@@ -172,7 +172,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
         @if (yearly() && shape() === 'range') {
           <div class="hd__row">
             <div class="hd__f">
-              <label class="hd__l" for="hd-emonth">Last day: month</label>
+              <label class="hd__l" for="hd-emonth">Last Day: Month</label>
               <select
                 id="hd-emonth"
                 class="mf-control mf-control--fill"
@@ -187,7 +187,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
               </select>
             </div>
             <div class="hd__f">
-              <label class="hd__l" for="hd-eday">Last day: day</label>
+              <label class="hd__l" for="hd-eday">Last Day: Day</label>
               <input
                 id="hd-eday"
                 class="mf-control mf-control--fill"
@@ -244,7 +244,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
             </div>
           </div>
           <div class="hd__f">
-            <label class="hd__l" for="hd-plus">Plus days</label>
+            <label class="hd__l" for="hd-plus">Plus Days</label>
             <input
               id="hd-plus"
               class="mf-control"
@@ -263,7 +263,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
         }
         @if (yearly() && shape() === 'day' && pattern() === 'EASTER_OFFSET') {
           <div class="hd__f">
-            <label class="hd__l" for="hd-easter">Days from Easter Sunday</label>
+            <label class="hd__l" for="hd-easter">Days From Easter Sunday</label>
             <input
               id="hd-easter"
               class="mf-control"
@@ -289,7 +289,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
               <mf-date-input
                 inputId="hd-once"
                 [showHint]="false"
-                label="First day"
+                label="First Day"
                 [isoValue]="once()"
                 (isoChange)="once.set($event)"
                 (textInvalid)="onceBad.set($event)"
@@ -297,11 +297,11 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
             </div>
             @if (shape() === 'range') {
               <div class="hd__f">
-                <label class="hd__l" for="hd-onceend">Last day</label>
+                <label class="hd__l" for="hd-onceend">Last Day</label>
                 <mf-date-input
                   inputId="hd-onceend"
                   [showHint]="false"
-                  label="Last day"
+                  label="Last Day"
                   [isoValue]="onceEnd()"
                   (isoChange)="onceEnd.set($event)"
                   (textInvalid)="onceEndBad.set($event)"
@@ -318,7 +318,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
 
         @if (yearly() && shape() === 'day' && pattern() === 'FIXED') {
           <div class="hd__f">
-            <label class="hd__l" for="hd-weekend">When it falls on a weekend</label>
+            <label class="hd__l" for="hd-weekend">When It Falls on a Weekend</label>
             <select
               id="hd-weekend"
               class="mf-control mf-control--fill"
@@ -336,7 +336,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
           </div>
         }
         <div class="hd__f">
-          <label class="hd__l" for="hd-note">Region note</label>
+          <label class="hd__l" for="hd-note">Region Note</label>
           <input
             id="hd-note"
             class="mf-control mf-control--fill"

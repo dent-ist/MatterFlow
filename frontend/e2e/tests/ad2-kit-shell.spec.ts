@@ -94,7 +94,7 @@ test.describe('the shell on the Task Types administration (#544, #545)', () => {
     }
   });
 
-  test('"Skip to table" is the first Tab stop on every tab, visible on focus, and moves focus to the first row', async ({
+  test('"Skip to Table" is the first Tab stop on every tab, visible on focus, and moves focus to the first row', async ({
     page,
     admin,
   }) => {
@@ -105,7 +105,7 @@ test.describe('the shell on the Task Types administration (#544, #545)', () => {
       await expect(page.locator(`${tab.table} tbody tr[data-row]`).first()).toBeVisible();
       await page.keyboard.press('Tab');
       await expect(skip(page)).toBeFocused();
-      await expect(skip(page)).toHaveText('Skip to table');
+      await expect(skip(page)).toHaveText('Skip to Table');
       const rect = await skip(page).boundingBox();
       expect(rect && rect.width > 0 && rect.height > 0, 'the link is visible when focused').toBe(
         true,

@@ -45,9 +45,9 @@ describe('SummaryStrip', () => {
     expect(items.map((a) => text(a))).toEqual([
       'Open 5',
       'Overdue 2',
-      'Due soon 1',
+      'Due Soon 1',
       'ASAP 0',
-      'On hold 3',
+      'On Hold 3',
     ]);
     expect(items[0].getAttribute('href')).toBe('/matters/7?tab=tasks');
     expect(items[4].getAttribute('href')).toBe('/matters/7?tab=tasks&view=onHold');

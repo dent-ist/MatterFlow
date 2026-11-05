@@ -126,9 +126,11 @@ describe('CustomFieldsPage (#644)', () => {
   it('shows the three states: none, published with a draft, only a draft', async () => {
     await open();
     expect(row('Client').querySelector('[data-fields]')!.textContent).toContain('No fields yet');
-    expect(row('Client').querySelector('[data-published]')!.textContent).toContain('Not published');
+    expect(row('Client').querySelector('[data-published]')!.textContent).toContain(
+      ' Not published ',
+    );
     expect(row('Client').querySelector('[data-status]')!.textContent).toContain(
-      'No published fields',
+      'No Published Fields',
     );
 
     expect(row('Matter').querySelector('[data-fields]')!.textContent).toContain(

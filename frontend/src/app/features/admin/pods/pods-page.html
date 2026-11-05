@@ -89,14 +89,14 @@
       }
       <div class="mf-form-actions mf-form-actions--sticky pods__actions">
         <p-button
-          [label]="auth.has('Pod.Manage') ? 'Cancel' : 'Back to pods'"
+          [label]="auth.has('Pod.Manage') ? 'Cancel' : 'Back to Pods'"
           severity="secondary"
           (onClick)="close()"
         />
         <p-button
           *mfHasPermission="'Pod.Manage'"
           type="submit"
-          [label]="isNew() ? 'Create pod' : 'Save changes'"
+          [label]="isNew() ? 'Create Pod' : 'Save Changes'"
           [disabled]="busy()"
         />
       </div>
@@ -117,7 +117,7 @@
                 <tr>
                   <th scope="col">Name</th>
                   <th scope="col">Roles</th>
-                  <th scope="col">Primary pod</th>
+                  <th scope="col">Primary Pod</th>
                   <th scope="col" class="mf-col-actions"><span class="pods__sr">Actions</span></th>
                 </tr>
               </thead>
@@ -183,7 +183,7 @@
       <div *mfHasPermission="'Pod.ManageMembers'" class="pods__add">
         @if (detail()!.pod.isActive) {
           <div class="pods__field">
-            <label for="pod-candidate-search">Add members</label>
+            <label for="pod-candidate-search">Add Members</label>
             <input
               id="pod-candidate-search"
               type="search"
@@ -214,7 +214,7 @@
               }
             </ul>
             <p-button
-              label="Add selected"
+              label="Add Selected"
               icon="pi pi-user-plus"
               [disabled]="busy() || selected().length === 0"
               (onClick)="addSelected()"

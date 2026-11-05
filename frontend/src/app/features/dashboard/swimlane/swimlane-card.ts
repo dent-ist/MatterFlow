@@ -116,7 +116,7 @@ export function initials(name: string): string {
               @if (outOfOffice()) {
                 <span class="ooo-dot" data-ooo [title]="oooTitle()">
                   <i class="pi pi-calendar-minus" aria-hidden="true"></i>
-                  <span class="sr-only">Out of office</span>
+                  <span class="sr-only">Out of Office</span>
                 </span>
               }
             </span>
@@ -211,7 +211,7 @@ export function initials(name: string): string {
               @if (outOfOffice()) {
                 <span class="mark mark--ooo" data-ooo [title]="oooTitle()">
                   <i class="pi pi-calendar-minus" aria-hidden="true"></i>
-                  <span class="mark-text">Out of office</span>
+                  <span class="mark-text">Out of Office</span>
                 </span>
               }
             </div>
@@ -635,7 +635,7 @@ export class SwimlaneCardView {
   protected readonly oooTitle = computed(() => {
     const a = this.card().assignee?.availability;
     if (!a) return '';
-    return a.note ? `Out of office: ${a.note}` : 'Out of office';
+    return a.note ? `Out of office: ${a.note}` : 'Out of Office';
   });
   protected readonly initialsOf = initials;
   /** A date without its year ("10/18"), for the one-line card. */

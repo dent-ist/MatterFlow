@@ -375,7 +375,7 @@ export function bandOf(u: WorkloadUser): Band {
     case 'ooo':
       return {
         icon: 'pi-calendar-minus',
-        label: 'Out of office',
+        label: 'Out of Office',
         bg: 'var(--mf-surface-alt)',
         fg: 'var(--mf-text)',
       };

@@ -61,11 +61,11 @@ test.describe('Phone navigation (below 640 px)', () => {
     await expect(menu).toHaveAttribute('aria-expanded', 'false');
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeHidden();
 
-    // Tab order: the skip links ("Skip to task list" on a work page, #181, then "Skip to main content"), then Menu.
+    // Tab order: the skip links ("Skip to Task List" on a work page, #181, then "Skip to Main Content"), then Menu.
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('link', { name: 'Skip to task list' })).toBeFocused();
+    await expect(page.getByRole('link', { name: 'Skip to Task List' })).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused();
+    await expect(page.getByRole('link', { name: 'Skip to Main Content' })).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(menu).toBeFocused();
 
@@ -85,14 +85,14 @@ test.describe('Phone navigation (below 640 px)', () => {
     page,
   }) => {
     await page.goto('/my-work');
-    await expect(page.getByRole('button', { name: 'Create task' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'New Task' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Search', exact: true })).toBeVisible();
     await expect(page.getByTestId('user-menu')).toBeVisible();
     await expect(page.getByRole('combobox', { name: /Search clients/ })).toBeHidden();
     // Everything fits in one row inside the screen.
     for (const loc of [
       page.getByRole('button', { name: 'Menu', exact: true }),
-      page.getByRole('button', { name: 'Create task' }),
+      page.getByRole('button', { name: 'New Task' }),
       page.getByRole('button', { name: 'Search', exact: true }),
       page.getByTestId('user-menu'),
     ]) {

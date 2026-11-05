@@ -41,7 +41,7 @@ describe('scoped views of the Matter and Project Tasks grids', () => {
     expect(scopedViewOwns('overdue')).toEqual(['status']);
     expect(scopedViewOwns('onHold')).toEqual(['status']);
     expect(scopedViewOwns('dueSoon')).toEqual(['status', 'due']);
-    expect(VIEW_FIXED.onHold.status).toBe('On hold');
+    expect(VIEW_FIXED.onHold.status).toBe('On Hold');
     expect(VIEW_FIXED.dueSoon.due).toBe('Next 2 days');
     for (const v of SCOPED_VIEWS) expect(VIEW_EMPTY[v]).toMatch(/\.$/);
   });

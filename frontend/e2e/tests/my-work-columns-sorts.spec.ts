@@ -8,7 +8,7 @@ import { Seeder, uid } from '../support/seed';
 
 /**
  * Sorts, the Closed column and the column framework of My Work (WP6a): sortable Title, Matter, Updated and Age headers (G3, #156), the
- * Closed column sorted newest first on the Closed tab (C1, #172) and one remembered column choice per tab with "Reset columns" (X1, #152).
+ * Closed column sorted newest first on the Closed tab (C1, #172) and one remembered column choice per tab with "Reset Columns" (X1, #152).
  * Every test uses its own user and tagged tasks, so nothing depends on global counts. Screenshots go to E2E_SCREENSHOTS when it is set
  * (docs/ux/my-work-review/fixes/wp6a). The Closed dates are set with SQL (the container of run-local.sh), so those tests skip without it.
  */
@@ -90,7 +90,7 @@ test.describe('My Work sorts, Closed column and column sets', () => {
       .toEqual(['Banana', 'apple', 'Étude', 'Echo', 'Cherry']);
 
     // Reset sort returns to the default.
-    await page.getByRole('button', { name: 'Reset sort' }).click();
+    await page.getByRole('button', { name: 'Reset Sort' }).click();
     await expect(page).not.toHaveURL(/sort=/);
   });
 
@@ -137,7 +137,7 @@ test.describe('My Work sorts, Closed column and column sets', () => {
     await expect(closed).toHaveAttribute('aria-sort', 'ascending');
     await expect.poll(() => order(page, tag)).toEqual(['Oldest', 'Mid', 'Newest']);
     await expect(page.locator('[data-sort-note]')).toContainText('Sorted by Closed');
-    await page.getByRole('button', { name: 'Reset sort' }).click();
+    await page.getByRole('button', { name: 'Reset Sort' }).click();
     await expect(closed).toHaveAttribute('aria-sort', 'descending');
     await expect.poll(() => order(page, tag)).toEqual(['Newest', 'Mid', 'Oldest']);
 
@@ -184,7 +184,7 @@ test.describe('My Work sorts, Closed column and column sets', () => {
     await myWork.tab(/^Active/).click();
     await expect(col('progress')).toHaveCount(0);
     await columns.click();
-    await page.getByRole('button', { name: 'Reset columns' }).click();
+    await page.getByRole('button', { name: 'Reset Columns' }).click();
     await expect(col('progress')).toBeVisible();
     await expect(
       page.getByRole('status').filter({ hasText: 'Columns reset to the default set.' }),

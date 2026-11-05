@@ -143,7 +143,7 @@ describe('AssetTypesPage (#634, #637)', () => {
       expect(row.textContent).toContain('Active');
       expect(row.querySelectorAll('button[data-overflow]')).toHaveLength(1);
       const draft = q('tr[data-row="Data Room"] [data-fields]').textContent!.replace(/\s+/g, ' ');
-      expect(draft).toContain('No published fields');
+      expect(draft).toContain('No Published Fields');
       expect(draft).toContain('Draft v1');
     });
 
@@ -156,7 +156,7 @@ describe('AssetTypesPage (#634, #637)', () => {
 
     it('counts the strip over the whole list: Active 2, No published fields 1, Inactive 1', () => {
       const strip = all('[data-strip-item]').map((i) => i.textContent!.replace(/\s+/g, ' ').trim());
-      expect(strip).toEqual(['Active 2', 'No published fields 1', 'Inactive 1']);
+      expect(strip).toEqual(['Active 2', 'No Published Fields 1', 'Inactive 1']);
     });
 
     it('says how many inactive types are hidden and Show all puts Status = All in the address', () => {

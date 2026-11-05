@@ -28,12 +28,12 @@ const OTHER = '__other__';
   imports: [Dropdown],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <span class="tz__label" aria-hidden="true">Time zone</span>
+    <span class="tz__label" aria-hidden="true">Time Zone</span>
     <mf-dropdown
       buttonId="av-tz"
       class="tz__select"
       data-tz-select
-      label="Time zone"
+      label="Time Zone"
       [describedBy]="'av-tz-time av-tz-note'"
       [items]="items()"
       [value]="other() ? '__other__' : value()"

@@ -56,7 +56,7 @@ describe('ClampedRich', () => {
   it('clamps a long text and expands it in place with Show more / Show less, keeping focus on the button', async () => {
     const { f, el } = await mount(700);
     const more = el.querySelector<HTMLButtonElement>('[data-description-more]')!;
-    expect(more.textContent!.trim()).toBe('Show more');
+    expect(more.textContent!.trim()).toBe('Show More');
     expect(more.getAttribute('aria-expanded')).toBe('false');
     expect(el.querySelector('.cl__box--clamped')).not.toBeNull();
     // The whole text is in the page even when it is cut.
@@ -66,7 +66,7 @@ describe('ClampedRich', () => {
     more.click();
     await settle(f);
     expect(more.getAttribute('aria-expanded')).toBe('true');
-    expect(more.textContent!.trim()).toBe('Show less');
+    expect(more.textContent!.trim()).toBe('Show Less');
     expect(el.querySelector('.cl__box--clamped')).toBeNull();
     expect(document.activeElement).toBe(more);
     expect(el.querySelector('[data-description-more]')).toBe(more);

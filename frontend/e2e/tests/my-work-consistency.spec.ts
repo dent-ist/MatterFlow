@@ -37,7 +37,7 @@ interface Filters {
   label: string;
   /** Query string appended to both My Work and the Task Queue (no leading `&`). */
   query: string;
-  /** The Task Queue status parameters for the "Created by me" tab: a request with no filter at all means open tasks only. */
+  /** The Task Queue status parameters for the "Created By Me" tab: a request with no filter at all means open tasks only. */
   createdStatus: string[];
 }
 

@@ -260,7 +260,7 @@ test.describe('Rich text description with tables (issue #80)', () => {
     expect(await pwned(page)).toBeUndefined();
     // The privilege reminder stays.
     await expect(page.locator('[data-privilege-note]')).toContainText('Privilege reminder');
-    await page.getByRole('button', { name: 'Fill the task' }).click();
+    await page.getByRole('button', { name: 'Fill the Task' }).click();
 
     await create.pickMatter(world.matter.matterRef, world.matter.matterRef);
     await create.requestorName.fill('Linda Cho');
@@ -402,7 +402,7 @@ test.describe('Rich text description with tables (issue #80)', () => {
     await page.keyboard.press('Control+End');
 
     const toolbar = dialog.getByRole('toolbar', { name: 'Formatting' });
-    await toolbar.getByRole('button', { name: 'Insert table' }).focus();
+    await toolbar.getByRole('button', { name: 'Insert Table' }).focus();
     await page.keyboard.press('Enter');
     const rows = dialog.getByLabel('Rows');
     await expect(rows).toBeFocused();
@@ -428,7 +428,7 @@ test.describe('Rich text description with tables (issue #80)', () => {
     // Add a row below with the table toolbar, reached by keyboard.
     await dialog
       .getByRole('toolbar', { name: 'Table' })
-      .getByRole('button', { name: 'Row below' })
+      .getByRole('button', { name: 'Row Below' })
       .focus();
     await page.keyboard.press('Enter');
     await expect(editor.locator('tr')).toHaveCount(3);
@@ -482,11 +482,11 @@ test.describe('Rich text description with tables (issue #80)', () => {
     await detail.open(task.taskId);
     await detail.showSection('Comments');
     const comments = page.getByRole('region', { name: 'Comments' });
-    const editor = comments.getByRole('textbox', { name: 'Add a comment' });
+    const editor = comments.getByRole('textbox', { name: 'Add a Comment' });
     await editor.click();
     await pasteInto(
       page,
-      '[aria-label="Add a comment"]',
+      '[aria-label="Add a Comment"]',
       '<table class=MsoTableGrid><tr><td style="x">Disk</td><td onclick="alert(1)">2</td></tr></table>',
       'Disk 2',
     );

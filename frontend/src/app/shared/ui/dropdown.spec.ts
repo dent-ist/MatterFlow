@@ -39,7 +39,7 @@ class Host {
   readonly items: DropdownItem[] = [
     { value: 'all', label: 'Everything', count: 10 },
     { value: 'over', label: 'Overdue', count: 3 },
-    { value: 'risk', label: 'At risk', count: 0 },
+    { value: 'risk', label: 'At Risk', count: 0 },
   ];
   readonly many: DropdownItem[] = Array.from({ length: 8 }, (_, i) => ({
     value: `c${i}`,

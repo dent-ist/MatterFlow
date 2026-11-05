@@ -60,8 +60,8 @@ describe('RichTextEditor', () => {
     expect(labels).toEqual([
       'Bold',
       'Italic',
-      'Bulleted list',
-      'Numbered list',
+      'Bulleted List',
+      'Numbered List',
       'Link',
       'Insert table',
     ]);
@@ -338,13 +338,13 @@ describe('RichTextEditor', () => {
           b.textContent!.trim(),
         ),
       ).toEqual([
-        'Row above',
-        'Row below',
-        'Delete row',
-        'Column left',
-        'Column right',
-        'Delete column',
-        'Delete table',
+        'Row Above',
+        'Row Below',
+        'Delete Row',
+        'Column Left',
+        'Column Right',
+        'Delete Column',
+        'Delete Table',
       ]);
 
       placeCaret(area().querySelector('p')!, document.getSelection());

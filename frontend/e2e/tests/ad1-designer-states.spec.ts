@@ -33,12 +33,12 @@ const ROUTES: DesignerRoute[] = [
   {
     key: 'asset-type-form',
     noun: 'asset type',
-    title: 'Asset type',
+    title: 'Asset Type',
     url: '/admin/asset-types/99999999/form',
     api: '**/api/v1/asset-types/99999999',
     method: 'GET',
     list: 'Asset Types',
-    crumbs: ['Administration', 'Asset Types', 'Asset type'],
+    crumbs: ['Administration', 'Asset Types', 'Asset Type'],
     listUrl: /\/admin\/asset-types$/,
   },
   {

@@ -10,7 +10,7 @@ import { dateInZone, FIRM_ZONE } from '../support/time';
 
 /**
  * WP13c (#238, inside #192): the Task Queue and Pod Work as cards below 640 px, and the phone chrome around them. Card content: the
- * assignee line (name, or "Unassigned" with "Assign to me"), the toolbar of at most two rows (quick views with counts, one Filters button; no
+ * assignee line (name, or "Unassigned" with "Assign to Me"), the toolbar of at most two rows (quick views with counts, one Filters button; no
  * Columns, no Other filters), the Sort by select in the Filters sheet with the same URL parameters as the headers, Group by in the sheet
  * of My Work, "Open in Task Queue" in its footer. Counts and order are compared with the table of the same address at 1366 px. Every test has
  * its own user and tagged tasks (the lists are filtered with `q=<tag>`). Screenshots: E2E_SCREENSHOTS_TQ (docs/ux/task-queue-review/fixes/wp-cards)
@@ -109,7 +109,7 @@ test.describe('WP13c: Task Queue and Pod Work cards', () => {
       expect(await pageSideScroll(page)).toBe(false);
       // The toolbar: the quick views and one Filters button, in two rows at most; no Columns, no Other filters, no sideways hint.
       await expect(page.getByRole('button', { name: 'Columns', exact: true })).toHaveCount(0);
-      await expect(page.getByRole('button', { name: 'Other filters' })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Other Filters' })).toHaveCount(0);
       await expect(page.getByRole('button', { name: /^Filters/ })).toBeVisible();
       const rows = await page.evaluate(() => {
         const bar = document.querySelector('[data-grid-toolbar]')!;
@@ -188,7 +188,7 @@ test.describe('WP13c: Task Queue and Pod Work cards', () => {
     const sheet = page.getByRole('dialog', { name: 'Filters' });
     await expect(sheet).toBeVisible();
     // The sort control is the first thing in the sheet, 44 px, naming the default order.
-    const select = labelledDropdown(sheet, 'Sort by');
+    const select = labelledDropdown(sheet, 'Sort By');
     await expect(select).toHaveAttribute('data-value', '');
     await expect(select).toContainText('(default order)');
     expect((await select.boundingBox())!.height).toBeGreaterThanOrEqual(44);
@@ -232,12 +232,12 @@ test.describe('WP13c: Task Queue and Pod Work cards', () => {
     await box.press('Enter');
     await expect(cards(page)).toHaveCount(1);
     await expect(cards(page).first()).toContainText(px.titles[3]);
-    await sheet.getByRole('button', { name: 'Clear filters' }).click();
+    await sheet.getByRole('button', { name: 'Clear Filters' }).click();
     await sheet.getByRole('button', { name: /^Show/ }).click();
     await expect(page).not.toHaveURL(/q=/);
   });
 
-  test('Task Queue: Unassigned has "Assign to me" in the Assignee menu of the card; it assigns and Undo puts the card back', async ({
+  test('Task Queue: Unassigned has "Assign to Me" in the Assignee menu of the card; it assigns and Undo puts the card back', async ({
     asUser,
     admin,
     seed,
@@ -267,7 +267,7 @@ test.describe('WP13c: Task Queue and Pod Work cards', () => {
     await expect(card.locator('[data-card-meta]')).toContainText('Unassigned');
   });
 
-  test('Pod Work: cards with "Assign to me" next to Unassigned and the Assignee menu ("Assign to"), counts as on the table', async ({
+  test('Pod Work: cards with "Assign to Me" next to Unassigned and the Assignee menu ("Assign To"), counts as on the table', async ({
     asUser,
   }) => {
     const page = await asUser(px.username);
@@ -280,14 +280,14 @@ test.describe('WP13c: Task Queue and Pod Work cards', () => {
     await expect(page.locator('table.wt')).toHaveCount(0);
     const card = cards(page).filter({ hasText: px.titles[2] });
     const link = card.locator('[data-assign-link]');
-    await expect(link).toHaveText('Assign to me');
+    await expect(link).toHaveText('Assign to Me');
     expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     expect(await pageSideScroll(page)).toBe(false);
     await axeClean(page, 'pod work cards at 375');
     await shot(page, 'pod-work-375x812');
     // The menu is "Assign to ..." with the Pod's members.
     await card.getByRole('button', { name: /^Unassigned, change assignee of/ }).click();
-    await expect(page.locator('.im-pop').getByRole('menu', { name: 'Assign to' })).toBeVisible();
+    await expect(page.locator('.im-pop').getByRole('menu', { name: 'Assign To' })).toBeVisible();
     await page.keyboard.press('Escape');
     // Assign to me from the link: the Undo toast, the same call as on the table.
     await link.click();
@@ -330,14 +330,14 @@ test.describe('WP13c: Task Queue and Pod Work cards', () => {
     const sheet = page.getByRole('dialog', { name: 'Filters' });
     await expect(sheet.getByRole('link', { name: 'Open in Task Queue' })).toBeVisible();
     await shot(page, 'my-work-filters-sheet-375x812', OUT_MW);
-    await labelledDropdown(sheet, 'Group by').selectOption('due');
+    await labelledDropdown(sheet, 'Group By').selectOption('due');
     await expect(page).toHaveURL(/group=due/);
     await expect(page.locator('li.tc-group').first()).toBeVisible();
-    await labelledDropdown(sheet, 'Sort by').selectOption('title');
+    await labelledDropdown(sheet, 'Sort By').selectOption('title');
     await expect(page).toHaveURL(/sort=title/);
     await expect(page).not.toHaveURL(/group=due/);
     await expect(page.locator('li.tc-group')).toHaveCount(0);
-    await expect(labelledDropdown(sheet, 'Group by')).toHaveAttribute('data-value', '');
+    await expect(labelledDropdown(sheet, 'Group By')).toHaveAttribute('data-value', '');
     await axeClean(page, 'my work sheet at 375');
   });
 

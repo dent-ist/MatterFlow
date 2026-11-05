@@ -92,7 +92,7 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
             Active only</label
           >
           <button type="button" class="lnk" data-tree-expand (click)="toggleAll()">
-            {{ allOpen() ? 'Collapse all' : 'Expand all' }}
+            {{ allOpen() ? 'Collapse All' : 'Expand All' }}
           </button>
         </div>
       </div>

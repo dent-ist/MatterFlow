@@ -7,7 +7,7 @@ import { expect, test } from '../support/fixtures';
 import { Seeder, uid } from '../support/seed';
 
 /**
- * Keyboard on the work lists (WP12b, #181): "Skip to task list" as the first Tab stop, J / K and the arrows between rows, S and P for
+ * Keyboard on the work lists (WP12b, #181): "Skip to Task List" as the first Tab stop, J / K and the arrows between rows, S and P for
  * the Status and Priority menus, `g` then `m` / `t` / `p` between the work pages, and the per-user "Keyboard shortcuts" switch in the help
  * (WCAG 2.1.4). Every test has its own user and tagged tasks, so nothing depends on global counts. Screenshots go to E2E_SCREENSHOTS
  * when it is set (docs/ux/my-work-review/fixes/wp12b).
@@ -66,7 +66,7 @@ async function tabsToFirstRow(page: Page): Promise<number> {
 }
 
 test.describe('Keyboard: skip link, rows and sequences (#181)', () => {
-  test('Tab then Enter on "Skip to task list" lands on the first row; J 19 times is row 20; Enter opens it with from=', async ({
+  test('Tab then Enter on "Skip to Task List" lands on the first row; J 19 times is row 20; Enter opens it with from=', async ({
     seed,
     asUser,
   }) => {
@@ -78,7 +78,7 @@ test.describe('Keyboard: skip link, rows and sequences (#181)', () => {
     await expect(titles(page)).toHaveCount(22);
 
     await page.keyboard.press('Tab');
-    const skip = page.getByRole('link', { name: 'Skip to task list' });
+    const skip = page.getByRole('link', { name: 'Skip to Task List' });
     await expect(skip).toBeFocused();
     await shot(page, 'skip-link-focused-1366');
     await page.keyboard.press('Enter');
@@ -86,12 +86,12 @@ test.describe('Keyboard: skip link, rows and sequences (#181)', () => {
     expect(await focusedRowIndex(page)).toBe(0);
     await shot(page, 'first-row-after-skip-1366');
 
-    // The skip link stays ahead of "Skip to main content": two Tab stops before anything else.
+    // The skip link stays ahead of "Skip to Main Content": two Tab stops before anything else.
     await page.reload();
     await expect(titles(page)).toHaveCount(22);
     await page.keyboard.press('Tab');
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused();
+    await expect(page.getByRole('link', { name: 'Skip to Main Content' })).toBeFocused();
 
     // J 19 times from the first row.
     await myWork.open();
@@ -137,7 +137,7 @@ test.describe('Keyboard: skip link, rows and sequences (#181)', () => {
     await expect(titles(page)).toHaveCount(3);
     // With the skip link: Tab, Enter. (The target of the issue is at most three Tab stops.)
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('link', { name: 'Skip to task list' })).toBeFocused();
+    await expect(page.getByRole('link', { name: 'Skip to Task List' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(titles(page).first()).toBeFocused();
     // Without it, the number is recorded in the test report (it depends on the rail and the toolbar, not on this package).
@@ -343,7 +343,7 @@ test.describe('Keyboard: skip link, rows and sequences (#181)', () => {
     await new TaskQueuePage(page).open();
     await expect(titles(page).first()).toBeVisible();
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('link', { name: 'Skip to task list' })).toBeFocused();
+    await expect(page.getByRole('link', { name: 'Skip to Task List' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(titles(page).first()).toBeFocused();
     await page.keyboard.press('j');
@@ -356,7 +356,7 @@ test.describe('Keyboard: skip link, rows and sequences (#181)', () => {
     await expect(page.getByRole('heading', { name: 'Pod Work', level: 1 })).toBeVisible();
     await expect(titles(page)).toHaveCount(5);
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('link', { name: 'Skip to task list' })).toBeFocused();
+    await expect(page.getByRole('link', { name: 'Skip to Task List' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(titles(page).first()).toBeFocused();
     await page.keyboard.press('j');
@@ -365,15 +365,15 @@ test.describe('Keyboard: skip link, rows and sequences (#181)', () => {
     await expect(page).toHaveURL(/\/tasks\/\d+\?from=pod-work/);
   });
 
-  test('a page without a task list has only "Skip to main content"', async ({ seed, asUser }) => {
+  test('a page without a task list has only "Skip to Main Content"', async ({ seed, asUser }) => {
     const { me } = await worker(seed, 1);
     const page = await asUser(me.username);
-    // Matters has its own "Skip to table" since #283; the account page has no list.
+    // Matters has its own "Skip to Table" since #283; the account page has no list.
     await page.goto('/profile');
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused();
-    await expect(page.getByRole('link', { name: 'Skip to task list' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Skip to Main Content' })).toBeFocused();
+    await expect(page.getByRole('link', { name: 'Skip to Task List' })).toHaveCount(0);
   });
 
   for (const [width, height] of [
@@ -393,7 +393,7 @@ test.describe('Keyboard: skip link, rows and sequences (#181)', () => {
       await new MyWorkPage(page).open();
       await expect(titles(page)).toHaveCount(6);
       await page.keyboard.press('Tab');
-      const skip = page.getByRole('link', { name: 'Skip to task list' });
+      const skip = page.getByRole('link', { name: 'Skip to Task List' });
       await expect(skip).toBeFocused();
       const box = (await skip.boundingBox())!;
       expect(box.y, 'the focused skip link is on screen').toBeGreaterThanOrEqual(0);

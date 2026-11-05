@@ -39,7 +39,7 @@ let nextId = 0;
           <span class="mf-pager__dash" aria-hidden="true">-</span>
           {{ hidden() }} {{ hiddenLabel() }} hidden
           <button type="button" class="mf-btn mf-btn--text" data-show-all (click)="showAll.emit()">
-            Show all
+            Show All
           </button>
         </span>
       }

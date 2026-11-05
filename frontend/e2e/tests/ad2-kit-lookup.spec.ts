@@ -35,7 +35,7 @@ async function noSideScroll(page: Page, what: string): Promise<void> {
 
 const rename = (page: Page, code: string) =>
   page.locator(`[data-row="${code}"]`).locator('[data-edit]');
-const dialog = (page: Page) => page.getByRole('dialog', { name: 'Rename status label' });
+const dialog = (page: Page) => page.getByRole('dialog', { name: 'Rename Status Label' });
 const field = (page: Page) => page.locator('#status-label-name');
 
 test.describe('lookup dialog on the Status Labels rename (#564)', () => {

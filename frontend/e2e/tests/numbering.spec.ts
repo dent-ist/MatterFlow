@@ -33,7 +33,7 @@ test.describe('Client and matter numbering (SCN-001, SCN-002, SCN-003)', () => {
 
     await expect(form.summary).toContainText(/already|exists|in use/i);
     await expect(
-      form.summary.getByRole('link', { name: 'View the existing client' }),
+      form.summary.getByRole('link', { name: 'View the Existing Client' }),
     ).toBeVisible();
     await expect(page).toHaveURL(/\/clients\/new$/);
 

@@ -106,7 +106,7 @@ const scopeSelect = (page: Page) => labelledDropdown(page, 'Scope');
 const CARDS: Record<string, string> = {
   Overdue: 'overdue',
   Unassigned: 'unassigned',
-  'On hold': 'onHold',
+  'On Hold': 'onHold',
 };
 const tile = (page: Page, label: string) => page.locator(`[data-card="${CARDS[label]}"]`);
 const tileValue = async (page: Page, label: string) => {
@@ -348,7 +348,7 @@ test.describe('Dashboard Scope', () => {
     await expect(hint).toContainText(`${n} unassigned tasks have no pod.`);
     // None of them is in the lists under a pod scope.
     await expect(page.getByText(s.titles.n1)).toHaveCount(0);
-    await hint.getByRole('link', { name: 'Show all pods' }).click();
+    await hint.getByRole('link', { name: 'Show All Pods' }).click();
     await expect(page).toHaveURL(/pod=all/);
     await expect(scopeSelect(page)).toHaveAttribute('data-value', 'all');
     await expect(page.locator('[data-no-pod-hint]')).toHaveCount(0);

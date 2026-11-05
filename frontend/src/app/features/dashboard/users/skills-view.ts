@@ -65,7 +65,7 @@ type SkillsState = 'loading' | 'ready' | 'error';
       <mf-dropdown
         class="typedd"
         buttonId="sk-type"
-        label="Task type"
+        label="Task Type"
         prefix="Task type:"
         data-skills-type
         [items]="typeItems()"

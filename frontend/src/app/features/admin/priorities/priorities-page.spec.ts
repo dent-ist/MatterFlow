@@ -95,7 +95,7 @@ describe('PrioritiesPage (#605, #609, #614, #618)', () => {
         'Order',
         'Priority',
         'Color',
-        'Open tasks',
+        'Open Tasks',
         'Status',
         'Actions',
       ]);
@@ -437,7 +437,7 @@ describe('PrioritiesPage (#605, #609, #614, #618)', () => {
     beforeEach(() => open(false, 'Priority.Manage'));
 
     it('has no Open tasks column and never offers Delete (the count is unknown)', async () => {
-      expect(all('thead th').map((th) => th.textContent!.trim())).not.toContain('Open tasks');
+      expect(all('thead th').map((th) => th.textContent!.trim())).not.toContain('Open Tasks');
       expect(el().querySelector('[data-open-tasks]')).toBeNull();
       await openMenu('Low');
       expect(menuIds('Low')).toEqual(['edit', 'up', 'down', 'default', 'deactivate']);

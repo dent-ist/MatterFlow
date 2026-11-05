@@ -234,7 +234,7 @@ test.describe('Open in Task Queue', () => {
     ['Active', /^Active/, 'active'],
     ['Due soon and overdue', /^Due soon and overdue/, 'dueSoon'],
     ['Closed', /^Closed/, 'completed'],
-    ['Created by me', /^Created by me/, 'createdByMe'],
+    ['Created By Me', /^Created by me/, 'createdByMe'],
   ] as const;
 
   async function tabCount(page: Page, tab: RegExp): Promise<number> {

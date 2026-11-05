@@ -82,7 +82,7 @@ interface Problem {
             edits are kept. Load latest replaces them with the new values.</span
           >
           <p-button
-            label="Load latest"
+            label="Load Latest"
             severity="secondary"
             size="small"
             data-load-latest
@@ -136,7 +136,7 @@ interface Problem {
           <fieldset class="av-set" data-hours-set>
             <legend>
               @if (mode() === 'page') {
-                <h2 class="av-card__title mf-card__title">Work hours</h2>
+                <h2 class="av-card__title mf-card__title">Work Hours</h2>
               } @else {
                 Work hours
               }
@@ -210,7 +210,7 @@ interface Problem {
                 [attr.aria-describedby]="showGrid() && !uniform() ? 'av-hours-differ' : null"
                 (click)="toggleGrid()"
               >
-                {{ showGrid() ? 'Use the same hours on all days' : 'Different hours on some days' }}
+                {{ showGrid() ? 'Use the Same Hours on All Days' : 'Different Hours on Some Days' }}
               </button>
               @if (showGrid()) {
                 <button
@@ -219,7 +219,7 @@ interface Problem {
                   data-copy-weekdays
                   (click)="copyToWeekdays()"
                 >
-                  Copy Monday to all weekdays
+                  Copy Monday to All Weekdays
                 </button>
               }
               <button
@@ -530,7 +530,7 @@ export class AvailabilityForm {
     });
   }
 
-  /** "Different hours on some days" / "Use the same hours on all days". The second one waits while the days differ. */
+  /** "Different Hours on Some Days" / "Use the Same Hours on All Days". The second one waits while the days differ. */
   protected toggleGrid(): void {
     if (!this.showGrid()) this.showGrid.set(true);
     else if (this.uniform()) this.showGrid.set(false);

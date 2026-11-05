@@ -65,10 +65,10 @@ test.describe('the priority row menu (#614, #618)', () => {
     await openRowMenu(page, menuOf(page, used.label));
     await expect(item(page, /^Delete/)).toHaveCount(0);
     await expect(page.getByRole('menuitem')).toContainText([
-      'Edit priority',
-      'Move up',
-      'Move down',
-      'Set as default',
+      'Edit Priority',
+      'Move Up',
+      'Move Down',
+      'Set as Default',
       'Deactivate',
     ]);
     await item(page, /^Deactivate/).click();

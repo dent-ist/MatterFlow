@@ -53,11 +53,11 @@ test.describe('Column filters on the administration lists', () => {
 
       await page.goto(`/admin/users?status=all&account=${token}`);
       // The Windows account is not a column of the grid (#432): the address applies it and it shows as a chip.
-      await expect(chips(page)).toContainText('Windows account');
+      await expect(chips(page)).toContainText('Windows Account');
       await expect(rows).toHaveCount(3);
 
       // The waiting person is Pending access.
-      await expect(rows.filter({ hasText: waiting.username })).toContainText('Pending access');
+      await expect(rows.filter({ hasText: waiting.username })).toContainText('Pending Access');
       // Pending access is the default while someone waits (this stack has waiting people): written into the address on first load (#429).
       await page.goto(`/admin/users?account=${token}`);
       await expect(page).toHaveURL(/status=pending/);
@@ -88,11 +88,11 @@ test.describe('Column filters on the administration lists', () => {
 
       // Name and Email narrow it further, with no match the headers and the row stay.
       await select(page, 'Availability').selectOption('');
-      // Email is in "Other filters" (not a column of the grid).
+      // Email is in "Other Filters" (not a column of the grid).
       await page.locator('[data-more-filters]').click();
       await page.locator('[data-more-filter="email"]').click();
       await page
-        .getByRole('dialog', { name: 'Other filters' })
+        .getByRole('dialog', { name: 'Other Filters' })
         .getByRole('textbox')
         .fill(`nobody-${token}`);
       await expect(page).toHaveURL(/email=/);
@@ -102,7 +102,7 @@ test.describe('Column filters on the administration lists', () => {
       );
       await expect(grid(page, 'Users list').locator('thead th').first()).toBeVisible();
       await expect(text(page, 'Name')).toBeVisible();
-      await grid(page, 'Users list').getByRole('button', { name: 'Clear filters' }).click();
+      await grid(page, 'Users list').getByRole('button', { name: 'Clear Filters' }).click();
       await expect(page).not.toHaveURL(/email=|account=/);
     });
 
@@ -219,11 +219,11 @@ test.describe('Column filters on the administration lists', () => {
       await text(page, 'Name').fill(token);
       const rows = grid(page, 'Task types list').locator('tbody tr');
       await expect(rows).toHaveCount(2);
-      await select(page, 'Request form').selectOption('published');
+      await select(page, 'Request Form').selectOption('published');
       await expect(page).toHaveURL(/form=published/);
       await expect(rows).toHaveCount(1);
       await expect(rows.first()).toContainText(`With form ${token}`);
-      await select(page, 'Request form').selectOption('none');
+      await select(page, 'Request Form').selectOption('none');
       await expect(rows.first()).toContainText(`Without form ${token}`);
 
       // A link from a workflow: a chip with the workflow's name and the sentence above the grid.
@@ -259,8 +259,8 @@ test.describe('Column filters on the administration lists', () => {
       expect(await select(page, 'Versions').optionTexts()).toEqual([
         'Any',
         'Published',
-        'Draft in progress',
-        'Not published',
+        'Draft in Progress',
+        'Not Published',
       ]);
 
       await select(page, 'Versions').selectOption('notPublished');
@@ -312,23 +312,23 @@ test.describe('Column filters on the administration lists', () => {
       await page.goto(`/admin/steps?title=${token}&tags=red-${token}&tags=blue-${token}`);
       await expect(rows).toHaveCount(1);
       await expect(rows.first()).toContainText(`Alpha ${token}`);
-      await select(page, 'Tag match').selectOption('any');
+      await select(page, 'Tag Match').selectOption('any');
       await expect(page).toHaveURL(/tagMatch=any/);
       await expect(rows).toHaveCount(2);
       await expect(multi(page, 'Tags')).toContainText('2 selected');
 
       // Used in: only Alpha is in a workflow.
       await page.goto(`/admin/steps?title=${token}`);
-      await select(page, 'Used in').selectOption('true');
+      await select(page, 'Used In').selectOption('true');
       await expect(page).toHaveURL(/used=true/);
       await expect(rows).toHaveCount(1);
       await expect(rows.first()).toContainText(`Alpha ${token}`);
-      await select(page, 'Used in').selectOption('false');
+      await select(page, 'Used In').selectOption('false');
       await expect(rows).toHaveCount(1);
       await expect(rows.first()).toContainText(`Beta ${token}`);
 
       // Description has its own box.
-      await select(page, 'Used in').selectOption('');
+      await select(page, 'Used In').selectOption('');
       await text(page, 'Description').fill(`nothing-${token}`);
       await expect(grid(page, 'Steps list').locator('td[data-empty="filtered"]')).toBeVisible();
       await expect(text(page, 'Title')).toBeVisible();
@@ -393,19 +393,19 @@ test.describe('Column filters on the administration lists', () => {
       await expect(page.getByRole('search', { name: 'Filter audit events' })).toHaveCount(0);
       await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true');
 
-      await select(page, 'Event type').selectOption('CLIENT_CREATED');
+      await select(page, 'Event Type').selectOption('CLIENT_CREATED');
       await expect(page).toHaveURL(/eventType=CLIENT_CREATED/);
-      await text(page, 'Summary or field').fill(client.clientNumber);
+      await text(page, 'Summary or Field').fill(client.clientNumber);
       await expect(page).toHaveURL(new RegExp(`q=${client.clientNumber}`));
       await expect(rows).toHaveCount(1);
       await expect(rows.first()).toContainText(`Client ${client.clientNumber} created`);
 
       // Object type enables the object id.
-      await select(page, 'Event type').selectOption('');
-      await text(page, 'Summary or field').fill('');
-      await expect(text(page, 'Object id')).toBeDisabled();
-      await select(page, 'Object type').selectOption('Client');
-      await expect(text(page, 'Object id')).toBeEnabled();
+      await select(page, 'Event Type').selectOption('');
+      await text(page, 'Summary or Field').fill('');
+      await expect(text(page, 'Object ID')).toBeDisabled();
+      await select(page, 'Object Type').selectOption('Client');
+      await expect(text(page, 'Object ID')).toBeEnabled();
       await expect(page).toHaveURL(/objectType=Client/);
 
       // When: a preset in the viewer's zone writes absolute dates.
@@ -418,12 +418,12 @@ test.describe('Column filters on the administration lists', () => {
 
       // A filtered address restores the view; with no match the headers and the row stay.
       await page.goto('/admin/audit?q=zz-nothing-like-this');
-      await expect(text(page, 'Summary or field')).toHaveValue('zz-nothing-like-this');
+      await expect(text(page, 'Summary or Field')).toHaveValue('zz-nothing-like-this');
       await expect(
         grid(page, 'Audit events list').locator('td[data-empty="filtered"]'),
       ).toBeVisible();
       await expect(grid(page, 'Audit events list').locator('thead th').first()).toBeVisible();
-      await grid(page, 'Audit events list').getByRole('button', { name: 'Clear filters' }).click();
+      await grid(page, 'Audit events list').getByRole('button', { name: 'Clear Filters' }).click();
       await expect(page).not.toHaveURL(/q=/);
     });
 
@@ -468,7 +468,7 @@ test.describe('Column filters on the administration lists', () => {
       ['/admin/workflows', 'Workflows list', 'Name'],
       ['/admin/steps', 'Steps list', 'Title'],
       ['/admin/asset-types', 'Asset types list', 'Name'],
-      ['/admin/audit', 'Audit events list', 'Summary or field'],
+      ['/admin/audit', 'Audit events list', 'Summary or Field'],
     ] as const;
     for (const [url, region, column] of screens) {
       await page.goto(url);

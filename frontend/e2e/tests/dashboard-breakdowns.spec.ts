@@ -107,12 +107,12 @@ test.describe('Dashboard Breakdowns', () => {
     await expect(plain.locator('.od')).toHaveCount(0);
   });
 
-  test('one title per card: a hidden "Open tasks" H2 and the cards as H3, no "Open by" headings', async ({
+  test('one title per card: a hidden "Open Tasks" H2 and the cards as H3, no "Open by" headings', async ({
     page,
   }) => {
     const section = await openBreakdowns(page);
     await expect(section.getByRole('heading', { level: 2 })).toHaveCount(1);
-    await expect(section.getByRole('heading', { level: 2 })).toHaveText('Open tasks');
+    await expect(section.getByRole('heading', { level: 2 })).toHaveText('Open Tasks');
     await expect(section.getByRole('heading', { level: 3 })).toHaveText([
       'Priority',
       'Status',

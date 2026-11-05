@@ -63,7 +63,7 @@ export interface QueueState {
   pageSize: number;
   /** Tab of My Work / Pod Work. */
   view: string | null;
-  /** My Work, Closed tab: "Show older" is an explicit all-time state (`closed=all`), not a date. A closed-date range wins over it. */
+  /** My Work, Closed tab: "Show Older" is an explicit all-time state (`closed=all`), not a date. A closed-date range wins over it. */
   closedAll: boolean;
   /** My Work: only tasks assigned since the start of the viewer's visit (`new=1`). The address carries the flag, never the instant. */
   newOnly: boolean;
@@ -401,15 +401,15 @@ export interface BuiltInView {
  * On hold), then My pod and Created by me; Recently completed is last and lives in the "More" menu.
  */
 export const BUILT_IN_VIEWS: readonly BuiltInView[] = [
-  { key: 'allOpen', label: 'All open' },
+  { key: 'allOpen', label: 'All Open' },
   { key: 'unassigned', label: 'Unassigned' },
   { key: 'overdue', label: 'Overdue' },
-  { key: 'dueSoon', label: 'Due soon' },
+  { key: 'dueSoon', label: 'Due Soon' },
   { key: 'asap', label: 'ASAP' },
-  { key: 'onHold', label: 'On hold' },
-  { key: 'myPod', label: 'My pod' },
-  { key: 'createdByMe', label: 'Created by me' },
-  { key: 'recentlyCompleted', label: 'Recently completed' },
+  { key: 'onHold', label: 'On Hold' },
+  { key: 'myPod', label: 'My Pod' },
+  { key: 'createdByMe', label: 'Created By Me' },
+  { key: 'recentlyCompleted', label: 'Recently Completed' },
 ];
 
 /** The view that is always kept behind the "More" menu, whatever the width. */

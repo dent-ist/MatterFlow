@@ -148,8 +148,8 @@ const KINDS: Record<
   },
   profile: {
     noun: 'profile',
-    list: 'My profile',
-    label: 'My profile',
+    list: 'My Profile',
+    label: 'My Profile',
     path: '/profile',
     view: 'Task.View',
   },

@@ -40,7 +40,7 @@ import { shortAccountName } from './person-name';
             }
           </ol>
           @if (hasMore()) {
-            <button type="button" class="mf-activity__more" (click)="more()">Show more</button>
+            <button type="button" class="mf-activity__more" (click)="more()">Show More</button>
           }
         }
       }

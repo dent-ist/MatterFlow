@@ -9,8 +9,8 @@ import { FormDialog } from './form-dialog';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<button id="opener" type="button">Open</button>
     <mf-form-dialog
-      title="New project"
-      primaryLabel="Create project"
+      title="New Project"
+      primaryLabel="Create Project"
       [dirty]="dirty()"
       [busy]="busy()"
       [error]="error()"
@@ -42,7 +42,7 @@ describe('FormDialog (MD-22, #1026)', () => {
     const names = Array.from(
       document.body.querySelectorAll<HTMLElement>('[data-panel-footer] button'),
     ).map((b) => b.textContent?.trim());
-    expect(names).toEqual(['Cancel', 'Create project']);
+    expect(names).toEqual(['Cancel', 'Create Project']);
   });
 
   it('submits from the primary button and ignores it while busy', async () => {

@@ -29,7 +29,7 @@ export const DISPOSITIONS: readonly { value: string; label: string }[] = [
   { value: '', label: 'Any disposition' },
   { value: 'ACTIVE', label: 'Active' },
   { value: 'INACTIVE', label: 'Inactive' },
-  { value: 'PENDING_DISPOSITION', label: 'Pending disposition' },
+  { value: 'PENDING_DISPOSITION', label: 'Pending Disposition' },
   { value: 'DISPOSED', label: 'Disposed' },
 ];
 

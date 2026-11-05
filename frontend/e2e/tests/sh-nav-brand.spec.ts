@@ -4,7 +4,7 @@ import { expect, test } from '../support/fixtures';
 import { noHorizontalScroll, shot, SIZES } from '../support/screens';
 
 /**
- * S5 (#620), S6 (#621), S2 / S22 (#626): the rail says "Asset types" for the administrator's page next to "Assets" for the records, the
+ * S5 (#620), S6 (#621), S2 / S22 (#626): the rail says "Asset Types" for the administrator's page next to "Assets" for the records, the
  * main items are one list in one order with Projects and Assets indented under Matters (MM-59, a small gap in the 56 px rail), and the header carries the MatterFlow mark, which is also the favicon.
  */
 const nav = (page: Page) => page.getByRole('navigation', { name: 'Main' });
@@ -19,7 +19,7 @@ async function openMenuIfPhone(page: Page): Promise<void> {
 test.describe('The menu: order, indent and names (#620, #621, MM-59)', () => {
   test.setTimeout(300_000);
 
-  test('one main list in one order, Projects and Assets indented under Matters, for a System Admin, at every width; "Asset types" differs from "Assets"', async ({
+  test('one main list in one order, Projects and Assets indented under Matters, for a System Admin, at every width; "Asset Types" differs from "Assets"', async ({
     page,
   }) => {
     expect(axeAvailable(), 'set E2E_AXE_PATH to axe.min.js').toBe(true);
@@ -63,20 +63,20 @@ test.describe('The menu: order, indent and names (#620, #621, MM-59)', () => {
         expect(await left('Assets')).toBe(await left('Projects'));
       }
       const admin = nav(page).getByRole('list', { name: 'Administration' });
-      await expect(admin.getByRole('link', { name: 'Asset types' })).toHaveAttribute(
+      await expect(admin.getByRole('link', { name: 'Asset Types' })).toHaveAttribute(
         'href',
         '/admin/asset-types',
       );
-      await expect(admin.getByRole('link', { name: 'Asset types' })).toHaveAttribute(
+      await expect(admin.getByRole('link', { name: 'Asset Types' })).toHaveAttribute(
         'data-tip',
-        'Asset types',
+        'Asset Types',
       );
       await expect(main.getByRole('link', { name: 'Assets', exact: true })).toHaveAttribute(
         'href',
         '/assets',
       );
       await expect(nav(page).getByRole('link', { name: 'Assets', exact: true })).toHaveCount(1);
-      await expect(nav(page).getByRole('link', { name: 'Asset types', exact: true })).toHaveCount(
+      await expect(nav(page).getByRole('link', { name: 'Asset Types', exact: true })).toHaveCount(
         1,
       );
 
@@ -111,15 +111,15 @@ test.describe('The menu: order, indent and names (#620, #621, MM-59)', () => {
       );
       await expect(nav(page).getByRole('button', { name: 'More' }), c.who).toHaveCount(0);
     }
-    // A person with an Asset Types page but no Assets records sees "Asset types" and no "Assets".
+    // A person with an Asset Types page but no Assets records sees "Asset Types" and no "Assets".
     const config = await personas.named('configurationAdmin');
     const page = await asUser(config.username);
     await page.goto('/');
-    await expect(nav(page).getByRole('link', { name: 'Asset types', exact: true })).toHaveCount(1);
+    await expect(nav(page).getByRole('link', { name: 'Asset Types', exact: true })).toHaveCount(1);
     await expect(nav(page).getByRole('link', { name: 'Assets', exact: true })).toHaveCount(0);
   });
 
-  test('keyboard: Tab follows the visual order (Clients, Matters, Projects, Assets, Pod Work), and Enter on "Asset types" opens it', async ({
+  test('keyboard: Tab follows the visual order (Clients, Matters, Projects, Assets, Pod Work), and Enter on "Asset Types" opens it', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
@@ -133,7 +133,7 @@ test.describe('The menu: order, indent and names (#620, #621, MM-59)', () => {
     await expect(nav(page).getByRole('link', { name: 'Assets', exact: true })).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(nav(page).getByRole('link', { name: 'Pod Work', exact: true })).toBeFocused();
-    await nav(page).getByRole('link', { name: 'Asset types', exact: true }).focus();
+    await nav(page).getByRole('link', { name: 'Asset Types', exact: true }).focus();
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/\/admin\/asset-types/);
   });

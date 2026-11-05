@@ -83,7 +83,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
  * the task type (default) or absolute. The person is the assignee of the completed task. Two statements above both orientations: types nobody
  * handled (neutral, collapsed) and types handled by only one person (amber, a status region).
  * Keyboard: the matrix is one tab stop; arrow keys, Home and End move between cells, Enter or Space opens the cell's tasks.
- * Bounded rendering: at first 30 people and 60 task types are drawn, "Show more" adds the same again.
+ * Bounded rendering: at first 30 people and 60 task types are drawn, "Show More" adds the same again.
  * Not a ranking: ordering by total is labelled neutrally, there is no score, and the heading says what the view is for.
  */
 @Component({
@@ -141,7 +141,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
             <span>Colour scale</span>
             <mf-dropdown
               buttonId="cv-scale"
-              label="Colour scale"
+              label="Colour Scale"
               data-coverage-scale
               [items]="scaleItems"
               [value]="scale()"
@@ -153,7 +153,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
             <span>Task types</span>
             <mf-dropdown
               buttonId="cv-rows"
-              label="Task types"
+              label="Task Types"
               data-coverage-type-order
               [items]="nameTotalItems"
               [value]="typeOrder()"
@@ -356,7 +356,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
                 </caption>
                 <thead>
                   <tr>
-                    <th scope="col" class="corner">Task type</th>
+                    <th scope="col" class="corner">Task Type</th>
                     @for (u of visCols(); track u.userId) {
                       <th scope="col" class="person" [attr.data-person]="u.userId">
                         <span class="avatar" aria-hidden="true">{{ u.initials }}</span>
@@ -366,13 +366,13 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
                         }
                         @if (u.availability.state === 'OUT_OF_OFFICE') {
                           <span class="tag tag--ooo" data-ooo-marker>
-                            <i class="pi pi-calendar-minus" aria-hidden="true"></i>Out of office
+                            <i class="pi pi-calendar-minus" aria-hidden="true"></i>Out of Office
                           </span>
                         }
                       </th>
                     }
                     <th scope="col" class="num">Total</th>
-                    <th scope="col" class="num">People who handled it</th>
+                    <th scope="col" class="num">People Who Handled It</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -906,7 +906,7 @@ export class CoverageView implements OnInit {
   protected readonly scopeLabel = computed(
     () => this.scope.options().find((o) => o.value === this.scope.scope())?.label ?? 'this pod',
   );
-  // Bounded rendering: 500 people x 30 types is 15,000 cells, so the matrix draws the first people and task types and offers "Show more".
+  // Bounded rendering: 500 people x 30 types is 15,000 cells, so the matrix draws the first people and task types and offers "Show More".
   protected readonly visCols = computed(() => this.matrix()?.cols.slice(0, this.colLimit()) ?? []);
   protected readonly visRows = computed(() => this.matrix()?.rows.slice(0, this.rowLimit()) ?? []);
   protected readonly visColTotals = computed(

@@ -349,7 +349,7 @@ function toNode(
   };
 }
 
-/** Keys of every group that can be collapsed in the board (all of them, for "Collapse all"). */
+/** Keys of every group that can be collapsed in the board (all of them, for "Collapse All"). */
 export function allGroupKeys(groups: readonly SwimlaneGroup[]): string[] {
   const keys: string[] = [];
   const walk = (list: readonly SwimlaneGroup[]) => {

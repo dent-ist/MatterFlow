@@ -89,7 +89,7 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
       (confirmed)="rename()"
     >
       <div class="sr-field">
-        <label for="sr-rename" class="sr-label">Report name</label>
+        <label for="sr-rename" class="sr-label">Report Name</label>
         <input
           id="sr-rename"
           class="mf-control"

@@ -389,7 +389,7 @@ describe('ReportEditorPage (#713, #714)', () => {
 
     it('creates a new report with the starter query and goes to its page', async () => {
       await create(['Report.Manage'], undefined);
-      expect(q('[data-page-title]').textContent).toContain('New report');
+      expect(q('[data-page-title]').textContent).toContain('New Report');
       expect(el().querySelector('[data-preview]')).toBeNull();
       type('#rep-name', 'My report');
       q<HTMLButtonElement>('[data-save]').click();

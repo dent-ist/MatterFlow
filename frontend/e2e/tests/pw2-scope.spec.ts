@@ -99,7 +99,7 @@ test.describe('Pod Work pod scope', () => {
       const first = fx.multi.pods[0];
       await page.goto(`/pods/work?podId=${first.podId}`);
       await expect(page).toHaveTitle(`Pod Work: ${first.name}: Unassigned - MatterFlow`);
-      await pw.tab('By member').click();
+      await pw.tab('By Member').click();
       await expect(page).toHaveTitle(`Pod Work: ${first.name}: By member - MatterFlow`);
 
       const second = fx.multi.pods[1];
@@ -146,9 +146,9 @@ test.describe('Pod Work pod scope', () => {
         await expect(row).toContainText(
           `${busy.memberCount} members${DOT}${busy.unassignedCount} unassigned${overdue}`,
         );
-        // No membership: everything is under "Other pods".
-        await expect(list.getByRole('heading', { name: 'Your pods' })).toHaveCount(0);
-        await expect(list.getByRole('heading', { name: 'Other pods' })).toBeVisible();
+        // No membership: everything is under "Other Pods".
+        await expect(list.getByRole('heading', { name: 'Your Pods' })).toHaveCount(0);
+        await expect(list.getByRole('heading', { name: 'Other Pods' })).toBeVisible();
         await shot(page, `pod-list-${who}-1366x768`);
       });
     }

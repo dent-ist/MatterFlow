@@ -79,7 +79,7 @@ async function openTrends(page: Page): Promise<void> {
 
 /** Narrows a legend that other tests' types may have made long to the task types whose names contain `text`. */
 async function search(page: Page, text: string): Promise<void> {
-  const field = page.getByRole('searchbox', { name: 'Search task types' });
+  const field = page.getByRole('searchbox', { name: 'Search Task Types' });
   if (await field.count()) await field.fill(text);
 }
 
@@ -89,11 +89,11 @@ test.describe('Trends by task type', () => {
   }) => {
     await openTrends(page);
     await expect(page.getByRole('group', { name: /tasks over time/i })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Backlog at end of day' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Backlog at End of Day' })).toBeVisible();
     await expect(lines(page)).toHaveCount(4); // Created and Completed + Open and Overdue
     await expect(page.getByRole('checkbox', { name: 'All task types' })).toBeChecked();
     await expect(page.locator('input:disabled, select:disabled')).toHaveCount(0);
-    await expect(page.getByRole('radio', { name: 'Created and completed' })).toBeChecked();
+    await expect(page.getByRole('radio', { name: 'Created and Completed' })).toBeChecked();
 
     // The first type is the seeded world's own; search by its name when the list is long.
     await search(page, types[0].name);
@@ -101,7 +101,7 @@ test.describe('Trends by task type', () => {
     await expect(lines(page)).toHaveCount(2); // the type in each panel; All task types is hidden for scale
     await expect(page.getByRole('checkbox', { name: /All task types/ })).not.toBeChecked();
     await expect(page).toHaveURL(new RegExp(`types=${types[0].id}`));
-    await expect(page.getByRole('heading', { name: 'Created and completed' })).toHaveCount(1);
+    await expect(page.getByRole('heading', { name: 'Created and Completed' })).toHaveCount(1);
     await expect(page.getByRole('radio', { name: 'Created', exact: true })).toBeChecked();
     await expect(page.locator('[data-trend-live]')).toHaveText(/Showing Created/);
 
@@ -183,7 +183,7 @@ test.describe('Trends by task type', () => {
     // Tooltip: the keyboard moves through the days and the live read-out lists every line.
     await page.locator('[data-plot]').focus();
     await expect(trendTip(page)).toContainText('All task types');
-    await expect(trendTip(page)).toContainText('Backlog at end of day');
+    await expect(trendTip(page)).toContainText('Backlog at End of Day');
     for (const t of mine.slice(0, 3)) await expect(trendTip(page)).toContainText(t.name);
     await page.keyboard.press('ArrowLeft');
     await expect(page.locator('[data-readout]')).toContainText('All task types');
@@ -247,13 +247,13 @@ test.describe('Trends by task type', () => {
     page,
   }) => {
     await openTrends(page);
-    await page.getByRole('button', { name: 'Hide backlog' }).click();
+    await page.getByRole('button', { name: 'Hide Backlog' }).click();
     await expect(page.locator('[data-panel="backlog"]')).toHaveCount(0);
     await expect(lines(page)).toHaveCount(2);
     await expect(page).not.toHaveURL(/backlog/);
     await page.reload();
     await expect(page.locator('[data-panel="backlog"]')).toHaveCount(0);
-    await page.getByRole('button', { name: 'Show backlog' }).click();
+    await page.getByRole('button', { name: 'Show Backlog' }).click();
     await expect(page.locator('[data-panel="backlog"]')).toBeVisible();
   });
 
@@ -415,7 +415,7 @@ test.describe('Trends backlog and labels', () => {
     // The read-out says the same numbers; the labels are aria-hidden duplicates.
     await expect(labels.first()).toHaveAttribute('aria-hidden', 'true');
     await page.locator('[data-plot]').focus();
-    await expect(page.locator('[data-readout]')).toContainText('Backlog at end of day');
+    await expect(page.locator('[data-readout]')).toContainText('Backlog at End of Day');
     await expect(page.locator('[data-readout]')).toContainText(
       new RegExp(`${texts[2].replace(/\D+/g, '')} open`),
     );
@@ -565,8 +565,8 @@ test.describe('Trends on a phone', () => {
     expect(total).toBeLessThan(812 * 1.5);
 
     // One title each; the old sentence is gone.
-    await expect(page.getByRole('heading', { name: 'Created and completed' })).toHaveCount(1);
-    await expect(page.getByRole('heading', { name: 'Backlog at end of day' })).toHaveCount(1);
+    await expect(page.getByRole('heading', { name: 'Created and Completed' })).toHaveCount(1);
+    await expect(page.getByRole('heading', { name: 'Backlog at End of Day' })).toHaveCount(1);
     await expect(page.getByRole('heading', { name: /per day/ })).toHaveCount(0);
 
     // A tap on a day shows the tooltip with the values, and it stays after the finger lifts.

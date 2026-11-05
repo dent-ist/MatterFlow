@@ -62,7 +62,7 @@ let nextId = 0;
 
 /**
  * Accessible horizontal bar list (UX `BarListChart`): every bar has its label, count and share of the total as text, so color is never
- * the only carrier, and "View as table" swaps the bars for a plain table of the same numbers. The longest bar fills the track, the others
+ * the only carrier, and "View as Table" swaps the bars for a plain table of the same numbers. The longest bar fills the track, the others
  * are in proportion to it, and the percentage next to each is its share of all tasks in the list. Rows with a query are links to the Task Queue.
  */
 @Component({

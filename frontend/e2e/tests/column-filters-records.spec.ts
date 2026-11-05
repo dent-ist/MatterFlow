@@ -51,7 +51,7 @@ test.describe('Column filters on the record lists', () => {
       await expect(rows.first()).toContainText(a.clientNumber);
 
       await search(page).fill('');
-      await text(page, 'Client number').fill(b.clientNumber);
+      await text(page, 'Client Number').fill(b.clientNumber);
       await expect(page).toHaveURL(/clientNumber=/);
       await expect(rows.filter({ hasText: `Beta ${token}` })).toHaveCount(1);
       await expect(toggle(page)).toContainText('(1)');
@@ -73,7 +73,7 @@ test.describe('Column filters on the record lists', () => {
       // Row closed: the search text is still in the box (it is not a chip).
       await toggle(page).click();
       await expect(search(page)).toHaveValue(/-nothing$/);
-      await region.getByRole('button', { name: 'Clear filters' }).click();
+      await region.getByRole('button', { name: 'Clear Filters' }).click();
       await expect(page).not.toHaveURL(/name=/);
       await expect(region.locator('tbody tr').first()).toBeVisible();
       await expect(region.locator('td[data-empty]')).toHaveCount(0);
@@ -119,7 +119,7 @@ test.describe('Column filters on the record lists', () => {
       await expect(page.locator('table.pg-table')).toHaveCount(0);
       await toggle(page).click();
       await expect(sheet(page)).toBeVisible();
-      for (const column of ['Client number', 'Status']) {
+      for (const column of ['Client Number', 'Status']) {
         await expect(sheet(page).getByLabel(`Filter by ${column}`)).toBeVisible();
       }
       // Search stays in the toolbar on a phone; the sheet has no Name field (LC-01).
@@ -179,7 +179,7 @@ test.describe('Column filters on the record lists', () => {
       await text(page, 'CM Number').fill('');
 
       // Sensitive is a select in the row (WP8 #272), then a chip when the row is closed.
-      await expect(page.getByRole('button', { name: 'Other filters' })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Other Filters' })).toHaveCount(0);
       await select(page, 'Sensitive').selectOption('true');
       await expect(page).toHaveURL(/isSensitive=true/);
       await expect(rows).toHaveCount(1);
@@ -289,7 +289,7 @@ test.describe('Column filters on the record lists', () => {
       await expect(region.locator('td[data-empty="filtered"]')).toBeVisible();
       await expect(region.locator('thead th').first()).toBeVisible();
       await expect(text(page, 'Matter')).toBeVisible();
-      await region.getByRole('button', { name: 'Clear filters' }).click();
+      await region.getByRole('button', { name: 'Clear Filters' }).click();
       await expect(rows).toHaveCount(2);
     });
   });
@@ -335,11 +335,11 @@ test.describe('Column filters on the record lists', () => {
       await expect(page).toHaveURL(/tab=assets/);
       await expect(rows).toHaveCount(1);
       await assetSearch(page).fill('');
-      await text(page, 'External reference').fill('srv');
+      await text(page, 'External Reference').fill('srv');
       await expect(page).toHaveURL(/extref=srv/);
       await expect(rows).toHaveCount(1);
       await expect(rows.first()).toContainText(`Server ${token}`);
-      await text(page, 'External reference').fill('');
+      await text(page, 'External Reference').fill('');
 
       // Type is a multi-select.
       await page.getByRole('button', { name: /^Filter by Type/ }).click();

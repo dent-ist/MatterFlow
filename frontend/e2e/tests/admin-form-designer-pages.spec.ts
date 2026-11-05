@@ -4,7 +4,7 @@ import { expect, test } from '../support/fixtures';
 /**
  * The shared form designer page (`TaskTypeFormPage`) is reached through the real router from Custom Fields, Task Types and
  * Workflow Steps. A route without the `parentCrumbs` data key used to leave that input `undefined` and the page threw
- * ("this.parentCrumbs is not a function or its return value is not iterable"), so "Edit fields" did nothing.
+ * ("this.parentCrumbs is not a function or its return value is not iterable"), so "Edit Fields" did nothing.
  */
 function collectErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -23,7 +23,7 @@ test.describe('Form designer pages open from their lists', () => {
       .getByRole('button', { name: /^Actions for / })
       .first()
       .click();
-    await page.getByRole('menuitem', { name: 'Edit fields' }).click();
+    await page.getByRole('menuitem', { name: 'Edit Fields' }).click();
     await expect(page).toHaveURL(/\/admin\/custom-fields\/.+\/form/);
     await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toBeVisible();
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
@@ -39,7 +39,7 @@ test.describe('Form designer pages open from their lists', () => {
       .getByRole('button', { name: /^Actions for / })
       .first()
       .click();
-    await page.getByRole('menuitem', { name: 'Edit form' }).click();
+    await page.getByRole('menuitem', { name: 'Edit Form' }).click();
     await expect(page).toHaveURL(/\/admin\/task-types\/.+\/form/);
     await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toBeVisible();
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
@@ -53,7 +53,7 @@ test.describe('Form designer pages open from their lists', () => {
       .getByRole('button', { name: /^Actions for / })
       .first()
       .click();
-    await page.getByRole('menuitem', { name: 'Edit fields' }).click();
+    await page.getByRole('menuitem', { name: 'Edit Fields' }).click();
     await expect(page).toHaveURL(/\/admin\/asset-types\/.+\/form/);
     await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toBeVisible();
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();

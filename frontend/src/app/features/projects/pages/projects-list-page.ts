@@ -159,7 +159,7 @@ const BONES: Record<string, string> = {
                 data-show-all-matters
                 (click)="scope.set('all')"
               >
-                Show all matters
+                Show All Matters
               </button>
             }
             <ng-template [mfRecordCard]="rows()" let-p>
@@ -248,7 +248,7 @@ const BONES: Record<string, string> = {
                         [defaultSort]="defaultSort"
                         (sorted)="setSort($event)"
                       >
-                        Open tasks
+                        Open Tasks
                       </th>
                       <th
                         class="pg-num"
@@ -296,7 +296,7 @@ const BONES: Record<string, string> = {
                       data-show-all-matters
                       (click)="scope.set('all')"
                     >
-                      Show all matters
+                      Show All Matters
                     </button>
                   }
                   @for (p of rows(); track p.projectId) {
@@ -392,7 +392,7 @@ export class ProjectsListPage extends ServerListPage<ProjectResponse> {
     { value: 'matterRef', label: 'Matter' },
     ...(this.counts()
       ? [
-          { value: 'openTasks', label: 'Open tasks', descFirst: true },
+          { value: 'openTasks', label: 'Open Tasks', descFirst: true },
           { value: 'overdue', label: 'Overdue', descFirst: true },
         ]
       : []),

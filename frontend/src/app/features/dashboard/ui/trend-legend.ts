@@ -37,10 +37,10 @@ export const SEARCH_ABOVE = 8;
   template: `
     <div class="group" role="group" [attr.aria-labelledby]="id + '-types'" data-group="task-types">
       <div class="group-head">
-        <h3 [id]="id + '-types'">Compare task types</h3>
+        <h3 [id]="id + '-types'">Compare Task Types</h3>
         <span class="actions">
           <button type="button" class="link" data-select-all (click)="selectTop.emit()">
-            Select all
+            Select All
           </button>
           <button
             type="button"

@@ -8,7 +8,7 @@ import { Seeder, uid } from '../support/seed';
 
 /**
  * Clients UX epic, WP13 keyboard and focus (#281 focus returns to the row on Back, #282 the copy button is not a Tab stop of its own,
- * #283 "Skip to table", #284 the keyboard audit). Screenshots go to E2E_SCREENSHOTS when it is set (docs/ux/clients-review/fixes/wp13);
+ * #283 "Skip to Table", #284 the keyboard audit). Screenshots go to E2E_SCREENSHOTS when it is set (docs/ux/clients-review/fixes/wp13);
  * the Tab-stop counts before the first row are written to `tab-stops.json` there (recorded, not gated).
  *
  * Data (all names carry a per-run tag so the lists can be filtered to them):
@@ -407,7 +407,7 @@ test.describe('#282: the copy button is not a Tab stop (the right arrow reaches 
 interface Origin {
   name: string;
   url: () => string;
-  /** The first stop of the list that Enter on "Skip to table" must reach. */
+  /** The first stop of the list that Enter on "Skip to Table" must reach. */
   first: string;
   label: string;
   /** Tab stops before the first row, as the Clients UX review counted them before this epic (1366 px). */
@@ -419,42 +419,42 @@ const ORIGINS: Origin[] = [
     name: 'clients',
     url: () => `/clients?name=${encodeURIComponent(`Kbd ${tag}`)}`,
     first: 'a[data-row-list="clients"]',
-    label: 'Skip to table',
+    label: 'Skip to Table',
     before: 26,
   },
   {
     name: 'matters',
     url: () => `/matters?name=${encodeURIComponent(`Kbd ${tag} M`)}`,
     first: 'a[data-row-list="matters"]',
-    label: 'Skip to table',
+    label: 'Skip to Table',
     before: 28,
   },
   {
     name: 'projects',
     url: () => `/projects?name=${encodeURIComponent(`Kbd ${tag} P`)}`,
     first: 'a[data-row-list="projects"]',
-    label: 'Skip to table',
+    label: 'Skip to Table',
     before: 26,
   },
   {
     name: 'client-matters',
     url: () => `/clients/${data.big.clientId}?tab=matters`,
     first: 'a[data-row-list="client-matters"]',
-    label: 'Skip to table',
+    label: 'Skip to Table',
     before: 30,
   },
   {
     name: 'matter-projects',
     url: () => `/matters/${data.m28.matterId}?tab=projects`,
     first: 'a[data-row-list="matter-projects"]',
-    label: 'Skip to table',
+    label: 'Skip to Table',
     before: 30,
   },
   {
     name: 'matter-tasks',
     url: () => `/matters/${data.m28.matterId}?tab=tasks`,
     first: 'a.wt-title, .wt-wrap',
-    label: 'Skip to task list',
+    label: 'Skip to Task List',
     before: 36,
   },
 ];
@@ -487,15 +487,15 @@ test.describe('#283: Skip to table, the page-specific first Tab stop', () => {
     }
   }
 
-  test('with no rows Enter lands on the empty message; a second Tab is still "Skip to main content"', async ({
+  test('with no rows Enter lands on the empty message; a second Tab is still "Skip to Main Content"', async ({
     page,
   }) => {
     await page.goto(`/clients?name=${encodeURIComponent(`no such client ${tag}`)}`);
     await expect(page.locator('[data-empty]')).toBeVisible();
     await page.keyboard.press('Tab');
-    await expect(page.locator('a.mf-skip[data-skip-list]')).toHaveText('Skip to table');
+    await expect(page.locator('a.mf-skip[data-skip-list]')).toHaveText('Skip to Table');
     await page.keyboard.press('Tab');
-    await expect(page.locator('a.mf-skip').nth(1)).toHaveText('Skip to main content');
+    await expect(page.locator('a.mf-skip').nth(1)).toHaveText('Skip to Main Content');
     await page.keyboard.press('Shift+Tab');
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-empty]')).toBeFocused();
@@ -508,7 +508,7 @@ test.describe('#283: Skip to table, the page-specific first Tab stop', () => {
     await page.goto(`/matters/${data.m28.matterId}?tab=assets`);
     await expect(page.locator('[data-empty]')).toBeVisible();
     await page.keyboard.press('Tab');
-    await expect(page.locator('a.mf-skip[data-skip-list]')).toHaveText('Skip to table');
+    await expect(page.locator('a.mf-skip[data-skip-list]')).toHaveText('Skip to Table');
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-empty]')).toBeFocused();
 
@@ -516,7 +516,7 @@ test.describe('#283: Skip to table, the page-specific first Tab stop', () => {
     await page.goto(`/projects/${data.projects[0].projectId}`);
     await expect(page.locator('mf-scoped-tasks')).toBeVisible();
     await page.keyboard.press('Tab');
-    await expect(page.locator('a.mf-skip[data-skip-list]')).toHaveText('Skip to task list');
+    await expect(page.locator('a.mf-skip[data-skip-list]')).toHaveText('Skip to Task List');
     await page.goto(`/projects/${data.projects[0].projectId}?tab=details`);
     await expect(page.locator('[data-details-tab]')).toBeVisible();
     await expect(page.locator('a.mf-skip[data-skip-list]')).toHaveCount(0);
@@ -529,7 +529,7 @@ test.describe('#283: Skip to table, the page-specific first Tab stop', () => {
     await page.locator('h1').click(); // a place that is not an input
     await page.keyboard.press('?');
     const help = page.locator('[data-shortcut-help]');
-    await expect(help).toContainText('Skip to table');
+    await expect(help).toContainText('Skip to Table');
     await expect(help).toContainText('Copy button');
     await axeClean(page, 'shortcut help');
     await page.keyboard.press('Escape');

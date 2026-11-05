@@ -299,7 +299,7 @@ export const SHELL_ROUTES: readonly ShellRoute[] = [
   { path: '/matters/:id', heading: /./, shape: 'C', anyOf: ['Matter.View'], record: 'matter' },
   { path: '/projects/:id', heading: /./, shape: 'C', anyOf: ['Project.View'], record: 'project' },
   { path: '/tasks/:id', heading: /./, shape: 'C', anyOf: ['Task.View'], record: 'task' },
-  { path: '/search', heading: 'Search results', shape: 'A', anyOf: [] },
+  { path: '/search', heading: 'Search Results', shape: 'A', anyOf: [] },
   // The H1 is the person's name (My profile epic #520, #528), so it is a pattern like a record's.
   { path: '/profile', heading: /./, shape: 'C', anyOf: ['Task.View'] },
   { path: '/admin/users', heading: 'Users', shape: 'D', anyOf: ['User.View', 'User.Manage'] },

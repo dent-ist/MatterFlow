@@ -20,7 +20,7 @@ import { TaskDetailStore } from './task-detail.store';
 const STATES: Readonly<Record<string, { icon: string; lead: string; label: string }>> = {
   COMPLETED: { icon: 'pi-check-circle', lead: 'Completed', label: 'Completed' },
   CANCELLED: { icon: 'pi-times-circle', lead: 'Cancelled', label: 'Cancelled' },
-  ON_HOLD: { icon: 'pi-pause', lead: 'On hold since', label: 'On hold' },
+  ON_HOLD: { icon: 'pi-pause', lead: 'On hold since', label: 'On Hold' },
 };
 
 /** What the note says, as data: the words that go before the reason, and the reason as plain text. Pure, so it is unit tested in two zones. */
@@ -62,7 +62,7 @@ export function statusNoteOf(
  * The one status note of the Task page (B1, B2, #301, #302): a Completed, Cancelled or On Hold task says who changed it, when, and (for On
  * Hold and Cancelled) why, in one neutral line under the header: `Cancelled Oct 18, 4:03 PM by KE\kekim: Duplicate of an earlier request`.
  * It replaces the closed banner, the reason banner and the two notices of the Workflow. It has no buttons: Reopen task and Resume are the header's
- * actions. A reason longer than two lines is cut with "Show more" (the whole reason is the tooltip and is in the Activity). The one extra
+ * actions. A reason longer than two lines is cut with "Show More" (the whole reason is the tooltip and is in the Activity). The one extra
  * sentence is for a closed task in an inactive Matter, which cannot be reopened.
  */
 @Component({
@@ -101,7 +101,7 @@ export function statusNoteOf(
             [attr.aria-expanded]="expanded()"
             (click)="expanded.set(!expanded())"
           >
-            {{ expanded() ? 'Show less' : 'Show more' }}
+            {{ expanded() ? 'Show Less' : 'Show More' }}
           </button>
         }
       </div>
@@ -196,7 +196,7 @@ export class TaskStatusNote {
     source: () => this.note()?.tooltip ?? '',
     computation: () => false,
   });
-  /** True while the text is longer than its two lines (or is open): only then "Show more" is offered. */
+  /** True while the text is longer than its two lines (or is open): only then "Show More" is offered. */
   protected readonly clampable = signal(false);
   private readonly text = viewChild<ElementRef<HTMLElement>>('text');
 

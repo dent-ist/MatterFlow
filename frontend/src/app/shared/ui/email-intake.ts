@@ -92,7 +92,7 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
     @if (allowed()) {
       <section class="ei" aria-labelledby="ei-title" data-email-intake>
         <div class="ei__head">
-          <h2 class="ei__title" id="ei-title">Quick fill from email</h2>
+          <h2 class="ei__title" id="ei-title">Quick Fill From Email</h2>
           <button
             type="button"
             class="mf-btn"
@@ -104,7 +104,7 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
             @if (!open()) {
               <i class="pi pi-envelope" aria-hidden="true"></i>
             }
-            {{ open() ? 'Hide' : 'Fill from email' }}
+            {{ open() ? 'Hide' : 'Fill From Email' }}
           </button>
         </div>
 
@@ -142,7 +142,7 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
             </div>
 
             <div class="ei__paste">
-              <label class="ei__label" for="ei-paste">Paste email text</label>
+              <label class="ei__label" for="ei-paste">Paste Email Text</label>
               <textarea
                 #pasteBox
                 id="ei-paste"
@@ -158,14 +158,14 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
 
             <div class="ei__actions">
               <p-button
-                label="Fill from pasted text"
+                label="Fill From Pasted Text"
                 icon="pi pi-clipboard"
                 severity="secondary"
                 [disabled]="phase() === 'loading' || !pasted().trim()"
                 (onClick)="readPasted()"
               />
               <p-button
-                label="Choose .eml/.msg file"
+                label="Choose .eml/.msg File"
                 icon="pi pi-folder-open"
                 severity="secondary"
                 [disabled]="phase() === 'loading'"
@@ -215,7 +215,7 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
                       <i class="pi pi-exclamation-triangle" aria-hidden="true"></i> {{ w }}
                     </p>
                   }
-                  <h3 class="ei__subtitle">Review before filling the task</h3>
+                  <h3 class="ei__subtitle">Review Before Filling the Task</h3>
 
                   <mf-text-field
                     label="Title"
@@ -259,7 +259,7 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
                   </label>
 
                   <mf-text-field
-                    label="Requestor name"
+                    label="Requestor Name"
                     inputId="ei-f-name"
                     [maxLength]="200"
                     [(value)]="requestorName"
@@ -276,7 +276,7 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
                   </label>
 
                   <mf-text-field
-                    label="Requestor email"
+                    label="Requestor Email"
                     inputId="ei-f-email"
                     [maxLength]="320"
                     [(value)]="requestorEmail"
@@ -303,7 +303,7 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
 
                   <div class="ei__actions">
                     <p-button
-                      label="Fill the task"
+                      label="Fill the Task"
                       icon="pi pi-check"
                       [disabled]="!!emailError()"
                       (onClick)="apply()"

@@ -30,7 +30,7 @@ export const DISPOSITIONS: readonly DispositionOption[] = [
   },
   {
     code: 'PENDING_DISPOSITION',
-    label: 'Pending disposition',
+    label: 'Pending Disposition',
     hint: 'Waiting for a decision to dispose of it. Cannot be newly linked or edited.',
     tone: 'warning',
     icon: 'pi-clock',

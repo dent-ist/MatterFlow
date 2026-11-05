@@ -81,7 +81,7 @@ const PRIORITY_ICONS: Record<string, string> = {
   host: { class: 'mf-fill' },
   template: `
     <section class="bd mf-fill" aria-labelledby="mf-bd-h" data-section="breakdowns">
-      <h2 id="mf-bd-h" class="sr-only" tabindex="-1" data-skip-target>Open tasks</h2>
+      <h2 id="mf-bd-h" class="sr-only" tabindex="-1" data-skip-target>Open Tasks</h2>
       <p class="caption" data-bd-caption>
         <span class="info"
           ><i class="pi pi-info-circle" aria-hidden="true"></i>Open tasks, now. Not affected by the

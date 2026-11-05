@@ -119,7 +119,7 @@ describe('NotificationPanel', () => {
     expect(closed).toHaveBeenCalledWith(false);
   });
 
-  it('hides "Mark all as read" when nothing is unread, and marks all read', async () => {
+  it('hides "Mark All as Read" when nothing is unread, and marks all read', async () => {
     const fixture = await create([item(2), item(1)]);
     client['pollNotifications'].mockReturnValue(of({ unreadCount: 0, latestId: 9, items: [] }));
     const button = el(fixture).querySelector<HTMLButtonElement>('[data-mark-all-read]')!;

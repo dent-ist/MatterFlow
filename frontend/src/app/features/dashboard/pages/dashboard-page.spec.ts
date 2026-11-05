@@ -301,7 +301,7 @@ describe('DashboardPage', () => {
     return harness.routeNativeElement as HTMLElement;
   }
 
-  /** Opens the assignee menu of the first row under `scope` and picks its first choice, "Assign to me". */
+  /** Opens the assignee menu of the first row under `scope` and picks its first choice, "Assign to Me". */
   function assignToMe(scope: Element) {
     scope.querySelector<HTMLButtonElement>('mf-row-edit [data-inline-trigger]')!.click();
     harness.detectChanges();
@@ -907,7 +907,7 @@ describe('DashboardPage', () => {
     expect(due.querySelector('.dc--inline')).not.toBeNull();
     expect(due.querySelector('.dc')!.getAttribute('title')).toContain('Created 10 d ago');
     expect(row.querySelector('mf-row-edit [data-inline-trigger]')).not.toBeNull();
-    // "Assign to me" is the first choice of that menu, not a link of its own; the menu sits before the client column (the other lists' order plus the menu).
+    // "Assign to Me" is the first choice of that menu, not a link of its own; the menu sits before the client column (the other lists' order plus the menu).
     expect(row.querySelector('[data-assign-me]')).toBeNull();
     const cells = Array.from(row.children).map((c) => c.className.split(' ')[0]);
     expect(cells).toEqual(['main', 'assign', 'client', 'prio', 'when']);
@@ -935,7 +935,7 @@ describe('DashboardPage', () => {
     ];
     const el = await open(of(summary()), TECH_QUEUE);
     const row = el.querySelector('[data-panel="unassigned"] li')!;
-    // Task link and the assignee menu ("Assign to me" is inside it); no matter link and no copy button.
+    // Task link and the assignee menu ("Assign to Me" is inside it); no matter link and no copy button.
     expect(row.querySelectorAll('a').length).toBe(1);
     expect(row.querySelectorAll('button').length).toBe(1);
     expect(row.querySelector('mf-matter-ref a')).toBeNull();
@@ -1014,14 +1014,14 @@ describe('DashboardPage', () => {
     const el = await open(of(summary()), ALL, '/dashboard?tab=breakdowns');
     const bars = el.querySelector('[data-section="breakdowns"]')!;
     const lists = Array.from(bars.querySelectorAll('mf-bar-list'));
-    // One title per card (H3), under a visually hidden H2 "Open tasks"; the unit is said once in the caption (Breakdowns B5).
+    // One title per card (H3), under a visually hidden H2 "Open Tasks"; the unit is said once in the caption (Breakdowns B5).
     expect(lists.map((l) => text(l.querySelector('h3')))).toEqual([
       'Priority',
       'Status',
       'Task Type',
     ]);
     expect(text(bars.querySelector('mf-stacked-bar h3'))).toBe('Age');
-    expect(text(bars.querySelector('h2.sr-only'))).toBe('Open tasks');
+    expect(text(bars.querySelector('h2.sr-only'))).toBe('Open Tasks');
     expect(bars.querySelectorAll('h2').length).toBe(1);
     expect(text(bars.querySelector('[data-bd-caption]'))).toContain(
       'Open tasks, now. Not affected by the period.',
@@ -1255,7 +1255,7 @@ describe('DashboardPage', () => {
     TestBed.resetTestingModule();
     el = await open(of(empty), ['Task.View', 'Task.Create', ...DATA_TABS]);
     expect(el.querySelector('a[href="/tasks/new"]')!.textContent).toContain(
-      'Create the first task',
+      'Create the First Task',
     );
   });
 

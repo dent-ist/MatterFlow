@@ -115,7 +115,7 @@ test.describe('On-Hold Reasons', () => {
 
     const name = `Waiting for counsel ${Date.now() % 100000}`;
     await page.locator('[data-new]').click();
-    const dialog = page.getByRole('dialog', { name: 'New reason' });
+    const dialog = page.getByRole('dialog', { name: 'New Reason' });
     await dialog.locator('#on-hold-reason-name').fill(name);
     await dialog.getByRole('button', { name: 'Add reason' }).click();
     await expect(page.locator(`[data-row="${name}"]`)).toBeVisible();

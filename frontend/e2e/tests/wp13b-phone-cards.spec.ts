@@ -198,7 +198,7 @@ test.describe('WP13b: phone cards on My Work', () => {
     await expect(chips.locator('[data-col="status"]')).toContainText('In Progress');
     await expect(overdue.locator('.tc-num')).toHaveText(/^\s*TSK-\d+\s*$/);
     await expect(card(page, fx.titles.today).locator('[data-col="due"]')).toContainText(
-      'Due today',
+      'Due Today',
     );
     await expect(card(page, fx.titles.asap).locator('[data-col="due"]')).toContainText('ASAP');
     await expect(card(page, fx.titles.tomorrow).locator('[data-col="due"]')).toContainText(
@@ -405,7 +405,7 @@ test.describe('WP13b: phone cards on My Work', () => {
     await expect(page.locator('[data-empty="filtered"]')).toContainText(
       'No tasks match these filters',
     );
-    await page.getByRole('button', { name: 'Clear filters' }).last().click();
+    await page.getByRole('button', { name: 'Clear Filters' }).last().click();
     await expect(cards(page).first()).toBeVisible();
   });
 

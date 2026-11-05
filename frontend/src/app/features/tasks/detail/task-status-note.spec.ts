@@ -98,7 +98,7 @@ describe('TaskStatusNote on the page', () => {
     expect(q(hold.el, '[data-closed-banner]')).toBeNull();
     expect(q(hold.el, '[data-workflow-notice]')).toBeNull();
     expect(q(hold.el, '[data-blocked-reason]')).toBeNull();
-    // "On hold" is said once on the page's note, and "Resume it" nowhere in the Workflow.
+    // "On Hold" is said once on the page's note, and "Resume it" nowhere in the Workflow.
     expect(hold.el.textContent).not.toContain('Resume it');
   });
 

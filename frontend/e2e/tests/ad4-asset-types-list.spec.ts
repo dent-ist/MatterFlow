@@ -112,11 +112,11 @@ test.describe('Asset Types page chrome (#633)', () => {
     await shot(page, 'asset-types-link-roles-tab');
   });
 
-  test('"Skip to table" is the first Tab stop and moves focus to the table', async ({ page }) => {
+  test('"Skip to Table" is the first Tab stop and moves focus to the table', async ({ page }) => {
     await page.goto('/admin/asset-types');
     await expect(page.locator('[data-types] tbody tr[data-row]').first()).toBeVisible();
     await page.keyboard.press('Tab');
-    const skip = page.getByRole('link', { name: 'Skip to table' });
+    const skip = page.getByRole('link', { name: 'Skip to Table' });
     await expect(skip).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.locator('#asset-types-table')).toBeFocused();
@@ -160,11 +160,11 @@ test.describe('Asset Types list (#634, #637)', () => {
     await expect(published).toContainText('8 fields');
     await expect(published).toContainText(/Updated [A-Z][a-z]{2} \d{1,2}/);
     await expect(row(page, s.draft.name).locator('[data-fields]')).toContainText(
-      'No published fields',
+      'No Published Fields',
     );
     await expect(row(page, s.draft.name).locator('[data-fields]')).toContainText('Draft v1');
     await expect(row(page, s.none.name).locator('[data-fields]')).toContainText(
-      'No published fields',
+      'No Published Fields',
     );
     await expect(row(page, s.none.name).locator('[data-fields]')).not.toContainText('Draft');
   });
@@ -179,7 +179,7 @@ test.describe('Asset Types list (#634, #637)', () => {
     await expect(row(page, s.inactive.name)).toHaveCount(0);
     const hint = page.locator('[data-hidden-hint]');
     await expect(hint).toContainText('1 inactive hidden');
-    await hint.getByRole('button', { name: 'Show all' }).click();
+    await hint.getByRole('button', { name: 'Show All' }).click();
     await expect(row(page, s.inactive.name)).toBeVisible();
     await expect(page).toHaveURL(/status=all/);
 
@@ -204,7 +204,7 @@ test.describe('Asset Types list (#634, #637)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/admin/asset-types?name=zzzz-nothing-' + uid());
     await expect(page.locator('td[data-empty="filtered"]')).toContainText('No asset types match');
-    await page.getByRole('button', { name: 'Clear filters' }).first().click();
+    await page.getByRole('button', { name: 'Clear Filters' }).first().click();
     await expect(page.locator('[data-types] tbody tr[data-row]').first()).toBeVisible();
   });
 

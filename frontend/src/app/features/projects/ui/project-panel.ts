@@ -35,9 +35,9 @@ import { TextField } from '../../../shared/ui/text-field';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-form-dialog
-      [title]="project() ? 'Edit project' : 'New project'"
+      [title]="project() ? 'Edit Project' : 'New Project'"
       [subtitle]="matterLabel()"
-      [primaryLabel]="project() ? 'Save changes' : 'Create project'"
+      [primaryLabel]="project() ? 'Save Changes' : 'Create Project'"
       [busy]="busy()"
       [error]="error()"
       [dirty]="dirty()"
@@ -57,7 +57,7 @@ import { TextField } from '../../../shared/ui/text-field';
       <form class="pp__form" novalidate (submit)="$event.preventDefault(); save()">
         <mf-text-field
           inputId="project-name"
-          label="Project name"
+          label="Project Name"
           [required]="true"
           [maxLength]="200"
           [error]="nameError()"

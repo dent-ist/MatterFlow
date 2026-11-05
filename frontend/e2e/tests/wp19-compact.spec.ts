@@ -225,7 +225,7 @@ test.describe('Fixed 36 px Compact rows (#211)', () => {
     await myWork.open();
     const row = page.locator('[data-task]').filter({ hasText: new RegExp(`Held ${tag}`) });
     // The pause marker stays; the reason is not drawn but the status cell tooltip and the accessible text carry it.
-    await expect(row.locator('[data-hold-mark]')).toHaveAccessibleName('On hold');
+    await expect(row.locator('[data-hold-mark]')).toHaveAccessibleName('On Hold');
     await expect(row.locator('td[data-col="status"] > div')).toHaveAttribute(
       'title',
       /privilege log, which will take a while/,

@@ -43,7 +43,7 @@ describe('custom fields editor and view', () => {
 
     expect(forms.getFormVersionSchema).toHaveBeenCalledWith(21);
     const section = el().querySelector('fieldset[data-custom-fields]')!;
-    expect(section.textContent).toContain('Custom fields');
+    expect(section.textContent).toContain('Custom Fields');
     expect(section.textContent).toContain('Workspace ID');
   });
 
@@ -117,7 +117,7 @@ describe('custom fields editor and view', () => {
     await create(21, { workspace_id: 'WS-9' });
 
     const view = el().querySelector('[data-view]')!;
-    expect(view.textContent).toContain('Custom fields');
+    expect(view.textContent).toContain('Custom Fields');
     expect(view.textContent).toContain('WS-9');
     expect(view.querySelector('input')).toBeNull();
   });

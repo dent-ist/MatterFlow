@@ -6,7 +6,7 @@ import { USED_BY_NOTE, UsedWorkflow } from './step-record';
 /**
  * The Used by tab of the Step page (SE1, SE2, #404): every workflow version that contains the step, one 44 px line each, the line is a link
  * to the version page with its status badge (the page needs `Workflow.Manage`, like the Step page). The one muted sentence about published
- * workflows sits above the list and only when the step is used; an unused step says "Not used".
+ * workflows sits above the list and only when the step is used; an unused step says "Not Used".
  */
 @Component({
   selector: 'mf-step-used-by-tab',
@@ -15,7 +15,7 @@ import { USED_BY_NOTE, UsedWorkflow } from './step-record';
   styleUrl: './step-tabs.scss',
   template: `
     <section class="st" aria-labelledby="st-used-h" data-used-tab>
-      <h2 id="st-used-h" class="st__h">Used by</h2>
+      <h2 id="st-used-h" class="st__h">Used By</h2>
       @if (workflows().length === 0) {
         <p class="st__muted" data-not-used>Not used. No workflow contains this step yet.</p>
       } @else {
@@ -34,7 +34,7 @@ import { USED_BY_NOTE, UsedWorkflow } from './step-record';
                 <span class="ub__badges">
                   <mf-badge [tone]="tone(v.status)" data-used-status>{{ v.status }}</mf-badge>
                   @if (w.active === false) {
-                    <mf-badge data-used-inactive>Workflow inactive</mf-badge>
+                    <mf-badge data-used-inactive>Workflow Inactive</mf-badge>
                   }
                 </span>
               </li>

@@ -36,7 +36,7 @@ describe('UserMenu (header user area)', () => {
     getMyAvailability: ReturnType<typeof vi.fn>;
     saveMyAvailability: ReturnType<typeof vi.fn>;
   };
-  // The Out of office entries (epic #1074): "I'm back" ends the current one.
+  // The Out of office entries (epic #1074): "I'm Back" ends the current one.
   let absences: { list: ReturnType<typeof vi.fn>; back: ReturnType<typeof vi.fn> };
 
   async function create(
@@ -161,9 +161,9 @@ describe('UserMenu (header user area)', () => {
     });
     const fixture = await create(['Task.View'], out);
     expect(fixture.nativeElement.querySelector('[data-ooo-label]').textContent).toContain(
-      'Out of office until',
+      ' Out of Office until Nov 8 ',
     );
-    expect(trigger(fixture).getAttribute('aria-label')).toContain('Out of office until');
+    expect(trigger(fixture).getAttribute('aria-label')).toContain('Out of Office until');
     trigger(fixture).click();
     await settle(fixture);
     expect(items(fixture)).toEqual(['My Profile', "I'm Back", 'Keyboard Shortcuts']);
@@ -204,7 +204,7 @@ describe('UserMenu (header user area)', () => {
       await settle(fixture);
       const row = fixture.nativeElement.querySelector('[data-menu-identity]')!;
       expect(row.querySelector('[data-availability-chip]')!.textContent).toContain(
-        'Out of office until',
+        'Out of Office until Nov 8',
       );
       expect(row.querySelector('.um-id__account')).toBeNull();
     });
@@ -222,8 +222,8 @@ describe('UserMenu (header user area)', () => {
     it('the dot sits on the icon only while out of office, with a tooltip; the trigger name says so', async () => {
       const out = await create(['Task.View'], outDto());
       const dot = out.nativeElement.querySelector('[data-ooo-dot]');
-      expect(dot?.getAttribute('title')).toBe('Out of office');
-      expect(trigger(out).getAttribute('aria-label')).toContain('Out of office until');
+      expect(dot?.getAttribute('title')).toBe('Out of Office');
+      expect(trigger(out).getAttribute('aria-label')).toContain('Out of Office until');
       TestBed.resetTestingModule();
       const here = await create(['Task.View']);
       expect(here.nativeElement.querySelector('[data-ooo-dot]')).toBeNull();

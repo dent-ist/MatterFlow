@@ -55,7 +55,7 @@ test.describe('Assignment by a technician (SCN-006)', () => {
     await page.getByRole('button', { name: 'Change', exact: true }).click();
     await page.getByRole('combobox', { name: 'Assignee' }).fill(colleague.username);
     await page.getByRole('option', { name: colleague.username }).click();
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
 
     await expect(detail.assignee).toContainText(colleague.username);
     await detail.expectStatus('In Progress');
@@ -84,7 +84,7 @@ test.describe('Known application defects (docs/qa/e2e-findings.md)', () => {
     await page.getByRole('button', { name: 'Change', exact: true }).click();
     await page.getByRole('combobox', { name: 'Assignee' }).fill(colleague.username);
     await page.getByRole('option', { name: colleague.username }).click();
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
     await expect(detail.assignee).toContainText(colleague.username);
   });
 });

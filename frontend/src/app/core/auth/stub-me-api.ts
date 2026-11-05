@@ -151,7 +151,7 @@ export const STUB_SCENARIOS: Record<string, MeProfile & { label: string }> = {
 /**
  * Typed in-memory /me provider so the app runs without a backend. The scenario is selectable by
  * `environment.stubScenario`, persisted in localStorage and switchable from the dev-auth banner.
- * `grant()` lets the "Check again" flow be exercised.
+ * `grant()` lets the "Check Again" flow be exercised.
  */
 @Injectable()
 export class StubMeApi extends MeApi {

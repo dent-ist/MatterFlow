@@ -111,7 +111,7 @@ import { groupProjects } from './matter-project-groups';
             <tr>
               <th scope="col">Name</th>
               @if (counts()) {
-                <th scope="col" class="pg-num">Open tasks</th>
+                <th scope="col" class="pg-num">Open Tasks</th>
                 <th scope="col" class="pg-num">Overdue</th>
               }
               <th scope="col">Status</th>

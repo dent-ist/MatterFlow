@@ -26,7 +26,7 @@ const LANDING_FALLBACKS: readonly { path: string; permissions: Permission[] }[] 
 
 /**
  * Default landing, the one rule behind the home address, the logo, the "Go to ..." link of the 403 and 404 pages and Access Pending's
- * "Check again" (S4a, #628; UX 2.2 amended; Project Managers, #691):
+ * "Check Again" (S4a, #628; UX 2.2 amended; Project Managers, #691):
  *   0. My Matters, if the person can be a matter's project manager (`Matter.BeManager`) and may see matters and tasks (`Matter.View`,
  *      `Task.View`): the marker permission decides; My Work stays in the menu. The System Admin holds every permission implicitly, so the
  *      permissions say nothing about them: they keep the landing below unless they also hold the Project Manager role (`landsOnMyMatters`);

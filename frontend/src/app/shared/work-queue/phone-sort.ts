@@ -58,7 +58,7 @@ export interface SortOption {
         <mf-dropdown
           [buttonId]="uid + '-sort'"
           data-sort-select
-          label="Sort by"
+          label="Sort By"
           [items]="sortItems()"
           [value]="current()"
           [neutralValue]="null"
@@ -90,7 +90,7 @@ export interface SortOption {
           <mf-dropdown
             [buttonId]="uid + '-group'"
             data-group-select
-            label="Group by"
+            label="Group By"
             [items]="groupItems"
             [value]="grouped() ? 'due' : ''"
             [neutralValue]="null"

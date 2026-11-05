@@ -249,13 +249,13 @@ export function legendStates(t: WorkloadThresholds | null | undefined): LegendSt
     },
     {
       key: 'out',
-      word: 'Out of office',
+      word: 'Out of Office',
       icon: 'pi-calendar-minus',
       line: 'Away; the day they are back is on the card',
     },
     {
       key: 'off',
-      word: 'Off hours',
+      word: 'Off Hours',
       icon: 'pi-moon',
       line: 'Outside their working hours right now',
     },
@@ -414,7 +414,7 @@ export function plural(n: number, one: string, many = one + 's'): string {
 
 /**
  * Everything a tile says, as sentences for the tile's accessible name and its tooltip: the name, the availability when it is not the usual
- * ("Out of office until Oct 20", "Off hours") and the work ("No open tasks", or the open count, highest priority, overdue, due soon, on hold
+ * ("Out of office until Oct 20", "Off Hours") and the work ("No open tasks", or the open count, highest priority, overdue, due soon, on hold
  * and load). The tiles themselves carry no such words; colours and icons stand for them.
  */
 export function cardSummary(u: WorkloadUser, availabilityText: string): string {

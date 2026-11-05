@@ -121,7 +121,7 @@ test.describe('Summary v4', () => {
     const assign = row.getByRole('button', { name: 'Unassigned: assign this task' });
     await assign.focus();
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('textbox', { name: 'Search people' })).toBeFocused();
+    await expect(page.getByRole('textbox', { name: 'Search People' })).toBeFocused();
     // Each person shows the state and the load.
     await expect(page.locator('.im-pop [data-option-hint]').first()).toContainText(/open/);
     await page.keyboard.press('ArrowDown');
@@ -178,7 +178,7 @@ test.describe('Summary v4', () => {
       await people.click();
       const dialog = page.getByRole('dialog', { name: /People/ });
       await expect(dialog).toBeVisible();
-      await expect(dialog.getByRole('searchbox', { name: 'Search people' })).toBeFocused();
+      await expect(dialog.getByRole('searchbox', { name: 'Search People' })).toBeFocused();
       await page.keyboard.press('Escape');
       await expect(dialog).toHaveCount(0);
       await expect(people).toBeFocused();

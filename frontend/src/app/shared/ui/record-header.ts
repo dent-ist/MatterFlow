@@ -61,7 +61,7 @@ const LIST: Record<RecordKind, { label: string; link: string }> = {
   assetType: { label: 'Asset Types', link: '/admin/asset-types' },
   customField: { label: 'Custom Fields', link: '/admin/custom-fields' },
   pod: { label: 'Pods', link: '/admin/pods' },
-  profile: { label: 'My profile', link: '/profile' },
+  profile: { label: 'My Profile', link: '/profile' },
 };
 const LIST_PATHS = ['/clients', '/matters', '/projects', '/assets'];
 
@@ -227,7 +227,7 @@ export class RecordHeader {
   /** `Archived` for a project. */
   readonly inactiveLabel = input('Inactive');
   readonly sensitive = input(false);
-  /** A derived state instead of Active / Inactive, for example the neutral `Not usable` of a Task Type (#380). */
+  /** A derived state instead of Active / Inactive, for example the neutral `Not Usable` of a Task Type (#380). */
   /** False for a record that does not exist yet (Create): no Active badge. */
   readonly showStatus = input(true);
   readonly statusBadge = input<{ label: string; tone?: BadgeTone; icon?: string } | null>(null);

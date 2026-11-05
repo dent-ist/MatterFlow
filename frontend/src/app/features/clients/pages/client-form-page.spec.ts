@@ -127,7 +127,7 @@ describe('ClientFormPage', () => {
 
       expect(el().querySelector('[data-locked-number]')?.textContent).toContain('00343');
       expect(el().querySelector('#client-number')).toBeNull();
-      expect(buttonByLabel(el(), 'Change number')).toBeUndefined();
+      expect(buttonByLabel(el(), 'Change Number')).toBeUndefined();
     });
 
     it('saves name and status with the row version', async () => {
@@ -158,7 +158,7 @@ describe('ClientFormPage', () => {
 
       expect(el().querySelector('[data-conflict]')).not.toBeNull();
       api.getClient.mockReturnValue(ok(aClient({ name: 'Server name', rowVersion: 'ZZ' })));
-      buttonByLabel(el().querySelector('[data-conflict]')!, 'Reload latest')!.click();
+      buttonByLabel(el().querySelector('[data-conflict]')!, 'Reload Latest')!.click();
       await settle(fixture);
       expect(el().querySelector<HTMLInputElement>('#client-name')!.value).toBe('Server name');
     });
@@ -166,7 +166,7 @@ describe('ClientFormPage', () => {
     it('changes the number through a confirmation dialog that explains the consequence', async () => {
       await create('1', ['Client.View', 'Client.Edit', 'Client.EditNumber']);
 
-      buttonByLabel(el(), 'Change number')!.click();
+      buttonByLabel(el(), 'Change Number')!.click();
       await settle(fixture);
       const dialog = document.body.querySelector('p-dialog')!;
       expect(dialog.querySelector('[data-number-warning]')?.textContent).toContain(
@@ -199,7 +199,7 @@ describe('ClientFormPage', () => {
           },
         }),
       );
-      buttonByLabel(el(), 'Change number')!.click();
+      buttonByLabel(el(), 'Change Number')!.click();
       await settle(fixture);
       const input = document.body.querySelector<HTMLInputElement>('#new-client-number')!;
       input.value = '500';

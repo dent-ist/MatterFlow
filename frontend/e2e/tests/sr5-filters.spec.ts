@@ -93,7 +93,7 @@ test.describe('Search filters and the Advanced search redirect (WP-SR5)', () => 
     await expect(rows(page)).toHaveCount(3);
 
     // One Clear filters: everything is dropped and focus is back on the Filters button.
-    await page.getByRole('button', { name: 'Clear filters' }).click();
+    await page.getByRole('button', { name: 'Clear Filters' }).click();
     await expect(rows(page)).toHaveCount(5);
     await expect(page).not.toHaveURL(/matter=/);
     await expect(button).toBeFocused();

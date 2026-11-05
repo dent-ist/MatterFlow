@@ -165,7 +165,7 @@ test.describe('My Work page state', () => {
     await expect(notice).toBeVisible();
 
     // Reset to default: plain URL, Active, no filters, notice gone, heading focused; the next plain visit is quiet.
-    await notice.getByRole('button', { name: 'Reset to default' }).click();
+    await notice.getByRole('button', { name: 'Reset to Default' }).click();
     await expect(notice).toHaveCount(0);
     await expect(page).toHaveURL(/\/my-work$/);
     await expect(myWork.tab(/^Active/)).toHaveAttribute('aria-selected', 'true');
@@ -194,7 +194,7 @@ test.describe('My Work page state', () => {
     await page.goto('/tasks');
     const notice = page.locator('[data-restored-notice]');
     await expect(notice).toContainText('Restored your last view');
-    await notice.getByRole('button', { name: 'Reset to default' }).click();
+    await notice.getByRole('button', { name: 'Reset to Default' }).click();
     await expect(notice).toHaveCount(0);
     await expect(page).toHaveURL(/\/tasks$/);
     await page.goto('/tasks');
@@ -242,7 +242,7 @@ test.describe('My Work page state', () => {
     await expect(myWork.tab(/^Created by me/)).toHaveAttribute('aria-selected', 'true');
     const notice = page.locator('[data-restored-notice]');
     await expect(notice).toContainText('Nothing is assigned to you, so this opens Created by me.');
-    await expect(notice.getByRole('button', { name: 'Reset to default' })).toHaveCount(0);
+    await expect(notice.getByRole('button', { name: 'Reset to Default' })).toHaveCount(0);
     await myWork.expectListed(title);
     await shot(page, 'm4-opens-created-by-me-1366x768');
     if (axeAvailable()) expect(await axeViolations(page), 'landing notice').toEqual([]);

@@ -36,7 +36,7 @@ export const STATUS_CHIPS: Readonly<Record<string, ChipStyle>> = {
 export const DISPOSITION_CHIPS: Readonly<Record<string, ChipStyle>> = {
   ACTIVE: { tone: 'disp-active', icon: 'pi-check-circle', label: 'Active' },
   INACTIVE: { tone: 'disp-inactive', icon: 'pi-minus-circle', label: 'Inactive' },
-  PENDING_DISPOSITION: { tone: 'disp-pending', icon: 'pi-clock', label: 'Pending disposition' },
+  PENDING_DISPOSITION: { tone: 'disp-pending', icon: 'pi-clock', label: 'Pending Disposition' },
   DISPOSED: { tone: 'disp-disposed', icon: 'pi-trash', label: 'Disposed' },
 };
 

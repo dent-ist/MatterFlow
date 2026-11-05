@@ -73,10 +73,10 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
     // S12a (#610): the heading says it, the sentence only says what to do, once.
     expect(text.match(/account is disabled/gi)).toHaveLength(1);
     expect(text).toContain('Contact the administrator to have it enabled again.');
-    expect(page.textContent).not.toContain('Check again');
+    expect(page.textContent).not.toContain('Check Again');
   });
 
-  it('lets a pending user pass after access is granted ("Check again")', async () => {
+  it('lets a pending user pass after access is granted ("Check Again")', async () => {
     const { harness, router } = await open('pending');
     const stub = TestBed.inject(MeApi) as StubMeApi;
     const page = harness.routeNativeElement as HTMLElement;
@@ -114,7 +114,7 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
     expect(document.querySelector('input[type=search]')?.getAttribute('placeholder')).toContain(
       'Search',
     );
-    expect(document.body.textContent).toContain('Create task');
+    expect(document.body.textContent).toContain('New Task');
   });
 
   it('hides the header Create task button on the Create task page itself (UXR-23)', async () => {
@@ -152,7 +152,7 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl('/');
     expect(navLabels(document.body)).toEqual(['My Work', 'Clients', 'Task Queue']);
-    expect(document.body.textContent).not.toContain('Create task');
+    expect(document.body.textContent).not.toContain('New Task');
   });
 
   it('shows the Dashboard item only with Dashboard.View and a tab permission', async () => {

@@ -21,7 +21,7 @@ test.describe('Access Pending and role grant', () => {
     await expect(pendingPage.locator('main')).toContainText(newcomer.username);
     await pendingPage.goto('/tasks');
     await expect(pendingPage).toHaveURL(/\/access-pending$/);
-    await pendingPage.getByRole('button', { name: 'Check again' }).click();
+    await pendingPage.getByRole('button', { name: 'Check Again' }).click();
     await expect(
       pendingPage.getByRole('status').filter({ hasText: 'Still pending' }),
     ).toBeVisible();
@@ -30,15 +30,15 @@ test.describe('Access Pending and role grant', () => {
     await page.goto(`/admin/users?account=${encodeURIComponent(newcomer.username)}`);
     const row = page.locator(`tr[data-user="${newcomer.userId}"]`);
     await expect(row).toBeVisible();
-    await row.getByRole('button', { name: 'Grant access' }).click();
+    await row.getByRole('button', { name: 'Grant Access' }).click();
     const panel = page.locator('.mf-user-drawer');
     await panel.getByRole('checkbox', { name: /^Data Technician/ }).check();
-    await panel.getByRole('button', { name: 'Save changes', exact: true }).click();
+    await panel.getByRole('button', { name: 'Save Changes', exact: true }).click();
     // A first grant closes the drawer (the person leaves the Pending queue).
     await expect(panel).toHaveCount(0);
     await expect(row).toHaveCount(0);
 
-    await pendingPage.getByRole('button', { name: 'Check again' }).click();
+    await pendingPage.getByRole('button', { name: 'Check Again' }).click();
     await expect(pendingPage).not.toHaveURL(/access-pending/);
     await expect(pendingPage.getByRole('navigation', { name: 'Main' })).toBeVisible();
     await pendingPage.goto('/tasks');
@@ -158,7 +158,7 @@ test.describe('Permission denial in the UI and the API (SCN-019)', () => {
 
     const queue = new TaskQueuePage(page);
     await queue.open();
-    await expect(page.getByRole('button', { name: 'Create task' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'New Task' })).toHaveCount(0);
 
     await page.goto('/tasks/new');
     await expect(

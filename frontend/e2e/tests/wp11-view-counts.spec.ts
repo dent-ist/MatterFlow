@@ -51,15 +51,15 @@ const FIELD: Record<Key, string> = {
   recentlyCompleted: 'recentlyCompleted',
 };
 const LABEL: Record<Key, string> = {
-  allOpen: 'All open',
+  allOpen: 'All Open',
   unassigned: 'Unassigned',
-  myPod: 'My pod',
-  createdByMe: 'Created by me',
+  myPod: 'My Pod',
+  createdByMe: 'Created By Me',
   overdue: 'Overdue',
-  dueSoon: 'Due soon',
+  dueSoon: 'Due Soon',
   asap: 'ASAP',
-  onHold: 'On hold',
-  recentlyCompleted: 'Recently completed',
+  onHold: 'On Hold',
+  recentlyCompleted: 'Recently Completed',
 };
 
 const view = (page: Page, key: Key) => page.locator(`[data-view="${key}"]`);

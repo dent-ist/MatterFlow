@@ -40,7 +40,7 @@ test.describe('pf5-menu-identity: the account menu starts with who and how (#580
     await expect(menu.getByRole('separator')).toHaveCount(1);
     await expect(menu).toHaveAccessibleDescription(/Pat Example/);
     // The first menu item has focus; Up from it wraps past the row to the last item.
-    await expect(menu.getByRole('menuitem', { name: 'My profile' })).toBeFocused();
+    await expect(menu.getByRole('menuitem', { name: 'My Profile' })).toBeFocused();
     await me.keyboard.press('ArrowUp');
     await expect(menu.getByRole('menuitem', { name: 'Keyboard shortcuts' })).toBeFocused();
     await me.keyboard.press('Escape');
@@ -127,7 +127,7 @@ test.describe('pf5-phone-dot: the out-of-office dot on the phone icon (#578)', (
     await expect(dialog).toHaveCount(0);
     const dot = me.locator('[data-ooo-dot]');
     await expect(dot).toBeVisible();
-    await expect(dot).toHaveAttribute('title', 'Out of office');
+    await expect(dot).toHaveAttribute('title', 'Out of Office');
     await expect(menuButton(me)).toHaveAccessibleName(/Out of office until/);
     await noHorizontalScroll(me);
     if (axeAvailable()) expect(await axeViolations(me), 'dot at 375').toEqual([]);
@@ -138,7 +138,7 @@ test.describe('pf5-phone-dot: the out-of-office dot on the phone icon (#578)', (
     // I'm back removes the dot.
     await me.setViewportSize({ width: 375, height: 812 });
     await menuButton(me).click();
-    await me.getByRole('menuitem', { name: "I'm back" }).click();
+    await me.getByRole('menuitem', { name: "I'm Back" }).click();
     await expect(me.locator('[data-ooo-dot]')).toHaveCount(0);
   });
 });

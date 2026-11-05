@@ -54,9 +54,9 @@ test.describe('grid-body states on the real columns (#575)', () => {
         const none = page.locator('[data-empty="filtered"]');
         await expect(none).toContainText(`No ${info.noun} match these filters`);
         await expect(none.locator('[data-hidden-hint]')).toContainText('2 inactive hidden');
-        await expect(none.getByRole('button', { name: 'Show all' })).toBeVisible();
+        await expect(none.getByRole('button', { name: 'Show All' })).toBeVisible();
         // One Clear filters at a time: the body's, not a second one in the bar.
-        await expect(page.getByRole('button', { name: 'Clear filters' })).toHaveCount(1);
+        await expect(page.getByRole('button', { name: 'Clear Filters' })).toHaveCount(1);
         await axeClean(page, `${kind} no-match at ${size.width}`);
         await noSideScroll(page, `${kind} no-match at ${size.width}`);
         await shot(page, `states-${kind}-hidden`);
@@ -65,7 +65,7 @@ test.describe('grid-body states on the real columns (#575)', () => {
       await page.goto(`${info.list}?${info.filter}=${token}`);
       await page
         .locator('[data-empty="filtered"]')
-        .getByRole('button', { name: 'Show all' })
+        .getByRole('button', { name: 'Show All' })
         .click();
       await expect(page).toHaveURL(/status=all/);
       await expect(

@@ -189,7 +189,7 @@ test.describe('WP6: Client Overview (#261) and tab counts (#262)', () => {
 
     // Number, name and status are in the header only; the old rows are gone.
     await expect(overview.locator('dl')).toHaveCount(0);
-    await expect(overview.getByText('Client number')).toHaveCount(0);
+    await expect(overview.getByText('Client Number')).toHaveCount(0);
     await expect(overview.locator('[data-created-line]')).toContainText(
       /^\s*Created [A-Z][a-z]{2} \d{1,2}, \d{4}/,
     );

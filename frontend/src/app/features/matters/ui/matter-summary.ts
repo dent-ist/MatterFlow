@@ -252,7 +252,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
         <div class="ms__scroll" tabindex="0" role="region" aria-label="Matter details, scrollable">
           <dl class="ms__fields">
             <div class="ms__f ms__f--cm">
-              <dt>CM number</dt>
+              <dt>CM Number</dt>
               <dd><mf-matter-ref [value]="matter().matterRef" /></dd>
             </div>
             <div class="ms__f">
@@ -272,11 +272,11 @@ import { IntPipe } from '../../../shared/ui/number-format';
               </dd>
             </div>
             <div class="ms__f">
-              <dt>Matter number</dt>
+              <dt>Matter Number</dt>
               <dd class="pg-mono">{{ matter().matterNumber }}</dd>
             </div>
             <div class="ms__f">
-              <dt>Matter name</dt>
+              <dt>Matter Name</dt>
               <dd data-matter-name>{{ matter().name }}</dd>
             </div>
             <div class="ms__f">
@@ -349,7 +349,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
               </dd>
             </div>
             <div class="ms__f">
-              <dt>AI allowed</dt>
+              <dt>AI Allowed</dt>
               <dd data-ai-value>
                 <mf-badge tone="neutral" icon="pi-sparkles">{{ ai() }}</mf-badge>
               </dd>
@@ -361,7 +361,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
               </dd>
             </div>
             <div class="ms__f">
-              <dt>Last changed</dt>
+              <dt>Last Changed</dt>
               <dd [attr.title]="long(matter().modifiedAtUtc)" data-modified>
                 @if (matter().modifiedAtUtc; as m) {
                   {{ stamp(m) }}

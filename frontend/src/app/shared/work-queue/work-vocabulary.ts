@@ -14,7 +14,7 @@
 export const DUE_SOON_DAYS = 2;
 /** The days of the Task Queue's "Recently completed" window, today included: the Dashboard's Completed tile (30 days). */
 export const RECENT_WINDOW_DAYS = 30;
-/** The days of the closed window the My Work Closed tab shows until "Show older". */
+/** The days of the closed window the My Work Closed tab shows until "Show Older". */
 export const CLOSED_WINDOW_DAYS = 90;
 
 export const DUE_SOON_LABEL = 'Due soon';

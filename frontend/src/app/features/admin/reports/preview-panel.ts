@@ -62,7 +62,7 @@ export function sampleValuesOf(
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="pp" aria-labelledby="pp-title" data-preview-panel>
-      <h2 id="pp-title" class="pp__title">Preview with sample values</h2>
+      <h2 id="pp-title" class="pp__title">Preview With Sample Values</h2>
       @if (defs().length > 0) {
         <div class="pp__samples">
           @for (d of defs(); track d.name) {

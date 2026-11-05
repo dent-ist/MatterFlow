@@ -124,7 +124,7 @@ export function bulkWarning(code: string): string {
           @if (mode() === 'assign') {
             <div class="bd__field">
               <mf-entity-picker
-                label="Assign to"
+                label="Assign To"
                 inputId="bulk-person"
                 placeholder="Search people (leave empty to keep the person)"
                 [search]="searchPeople"

@@ -99,25 +99,25 @@ test.describe('Task Queue copy', () => {
       if (!(await viewAvailable(page, view))) continue; // My pod needs a primary Pod
       await chooseView(page, view);
       await expect(empty, view).toContainText(text);
-      await expect(empty, view).not.toContainText('Clear filters');
+      await expect(empty, view).not.toContainText('Clear Filters');
       await expect(page.locator('thead th').first()).toBeVisible();
       if (view === 'overdue') await shot(page, 'empty-overdue-1366x768');
     }
 
     // Created by me offers Create task (Task.Create is held).
     await chooseView(page, 'createdByMe');
-    await expect(empty.getByRole('button', { name: 'Create task' })).toBeVisible();
+    await expect(empty.getByRole('button', { name: 'New Task' })).toBeVisible();
 
     // A view plus another filter is a search that found nothing.
     await page.goto('/tasks?overdue=true&q=zzz&status=NEW&status=IN_PROGRESS&status=ON_HOLD');
     await expect(empty).toContainText('No tasks match these filters');
-    await expect(empty.getByRole('button', { name: 'Clear filters' })).toBeVisible();
+    await expect(empty.getByRole('button', { name: 'Clear Filters' })).toBeVisible();
     await shot(page, 'empty-no-match-1366x768');
 
     // Nothing at all.
     await page.goto('/tasks?sort=due');
     await expect(empty).toContainText('No tasks yet.');
-    await expect(empty.getByRole('button', { name: 'Create task' })).toBeVisible();
+    await expect(empty.getByRole('button', { name: 'New Task' })).toBeVisible();
   });
 
   test('#227: title, caption and one live message name the view', async ({ page }) => {

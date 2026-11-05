@@ -50,7 +50,7 @@ test.describe('Search results: counted tabs on a fixed page (#466)', () => {
     expect(total('task')).toBe(s.tasks);
 
     await page.goto(`/search?q=${s.token}`);
-    await expect(page.getByRole('heading', { name: 'Search results', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Search Results', level: 1 })).toBeVisible();
     await expect(tabs(page).getByRole('tab', { name: /^All/ })).toHaveAttribute(
       'aria-selected',
       'true',
@@ -244,7 +244,7 @@ test.describe('Search results: counted tabs on a fixed page (#466)', () => {
           if (size.width >= 768) {
             // Fixed mode: the page never scrolls, the grid does, and the header, echo line and tabs do not move.
             expect(await pageScroll(page), `page scroll at ${where}`).toBeLessThanOrEqual(0);
-            const h1 = page.getByRole('heading', { name: 'Search results', level: 1 });
+            const h1 = page.getByRole('heading', { name: 'Search Results', level: 1 });
             const before = (await h1.boundingBox())!;
             const tabBefore = (await tabs(page).boundingBox())!;
             const area = page.locator('.mf-scroll-area').first();

@@ -204,7 +204,7 @@ test.describe('Fixed 44 px rows (#210)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await new MyWorkPage(page).open();
     const row = page.locator('[data-task]').filter({ hasText: new RegExp(`Held ${tag}`) });
-    await expect(row.locator('[data-hold-mark]')).toHaveAccessibleName('On hold');
+    await expect(row.locator('[data-hold-mark]')).toHaveAccessibleName('On Hold');
     const reason = row.locator('[data-hold-reason]');
     await expect(reason).toHaveText(/^Waiting for the custodian/);
     await expect(reason).toHaveAttribute('title', /privilege log, which will take a while$/);
@@ -230,7 +230,7 @@ test.describe('Fixed 44 px rows (#210)', () => {
       await seed.task(world, { title: `Row ${i} ${tag}`, assignedUserId: me.userId });
     const page = await asUser(me.username);
     await page.setViewportSize({ width: 1366, height: 768 });
-    // The default Task Queue (no filter, so no "Clear filters" line in the toolbar); the shared database holds more than 11 open tasks.
+    // The default Task Queue (no filter, so no "Clear Filters" line in the toolbar); the shared database holds more than 11 open tasks.
     await new TaskQueuePage(page).open();
     await expect(page.locator('[data-task]').nth(11)).toBeVisible();
     const queue = await visibleRows(page);

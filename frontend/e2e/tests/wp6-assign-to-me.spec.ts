@@ -7,7 +7,7 @@ import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
 
 /**
- * "Assign to me" (WP6: #234, #199): the first item of the Assignee menu in the work grids, and in Pod Work a link-button next to
+ * "Assign to Me" (WP6: #234, #199): the first item of the Assignee menu in the work grids, and in Pod Work a link-button next to
  * "Unassigned" instead of an Actions column. One implementation: same call, an Undo toast ("Assigned to you."), the row refreshed.
  * Every test uses its own users, Pod and tagged tasks, so nothing depends on counts or order in the shared database.
  * Screenshots go to E2E_SCREENSHOTS when it is set (docs/ux/task-queue-review/fixes/wp-assign).
@@ -40,7 +40,7 @@ async function setDensity(page: Page, name: 'Compact' | 'Comfortable'): Promise<
 }
 
 test.describe('WP6: Assign to me', () => {
-  test('#234: a technician outside the Pod gets "Assign to me" first in the Assignee menu; it assigns, and Undo puts the row back', async ({
+  test('#234: a technician outside the Pod gets "Assign to Me" first in the Assignee menu; it assigns, and Undo puts the row back', async ({
     seed,
     admin,
     asUser,
@@ -68,7 +68,7 @@ test.describe('WP6: Assign to me', () => {
     const lead = pop.getByRole('button', { name: `Assign ${task.taskNumber} to me`, exact: true });
     await expect(lead).toBeVisible();
     // First in the menu: above the search box and the Pod's members, and where the keyboard starts from Arrow Up.
-    const search = pop.getByRole('textbox', { name: 'Search people' });
+    const search = pop.getByRole('textbox', { name: 'Search People' });
     const lb = (await lead.boundingBox())!;
     const sb = (await search.boundingBox())!;
     expect(lb.y + lb.height).toBeLessThanOrEqual(sb.y);
@@ -157,7 +157,7 @@ test.describe('WP6: Assign to me', () => {
     await expect(row).toContainText('Unassigned');
   });
 
-  test('#199: Pod Work has no Actions column; "Assign to me" sits next to Unassigned and assigns with an Undo toast', async ({
+  test('#199: Pod Work has no Actions column; "Assign to Me" sits next to Unassigned and assigns with an Undo toast', async ({
     seed,
     admin,
     asUser,
@@ -181,7 +181,7 @@ test.describe('WP6: Assign to me', () => {
 
     const link = podWork.assignToMe(task.taskNumber);
     await expect(link).toBeVisible();
-    await expect(link).toHaveText('Assign to me');
+    await expect(link).toHaveText('Assign to Me');
     // One line: the "Unassigned" menu trigger and the link share a row, in both densities.
     for (const density of ['Comfortable', 'Compact'] as const) {
       await setDensity(page, density);

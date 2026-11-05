@@ -17,7 +17,7 @@ import { Badge } from '../../../shared/ui/badge';
   template: `
     <section class="wt" aria-labelledby="wt-heading" data-task-types-tab>
       <div class="wt__head">
-        <h2 id="wt-heading" class="wt__title">Task types</h2>
+        <h2 id="wt-heading" class="wt__title">Task Types</h2>
         <p class="wt__help" data-summary-line>{{ summary() }}</p>
       </div>
       @if (rows().length === 0) {
@@ -38,7 +38,7 @@ import { Badge } from '../../../shared/ui/badge';
               }
               <span class="wt__badges">
                 @if (t.isDefault) {
-                  <mf-badge tone="info" icon="pi-star" data-default>Default workflow</mf-badge>
+                  <mf-badge tone="info" icon="pi-star" data-default>Default Workflow</mf-badge>
                 }
                 @if (t.isActive) {
                   <mf-badge tone="success" icon="pi-check-circle">Active</mf-badge>

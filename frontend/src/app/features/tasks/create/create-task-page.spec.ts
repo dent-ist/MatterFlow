@@ -542,7 +542,7 @@ describe('CreateTaskPage', () => {
     expect(h.el.textContent).toContain('This matter is inactive. Choose an active matter.');
   });
 
-  describe('Change type', { timeout: 20000 }, () => {
+  describe('Change Type', { timeout: 20000 }, () => {
     const twoTypes = (): TaskTypeView[] => [
       aType(),
       aType({ id: 2, name: 'Other', hasFormFields: false, publishedFormVersionId: undefined }),
@@ -668,7 +668,7 @@ describe('CreateTaskPage', () => {
     });
   });
 
-  describe('Quick fill from email', () => {
+  describe('Quick Fill From Email', () => {
     afterEach(() => localStorage.removeItem(EMAIL_PANEL_STORAGE_KEY));
 
     it('is collapsed by default behind a Fill from email button, essentials first', async () => {
@@ -677,7 +677,7 @@ describe('CreateTaskPage', () => {
       await pickType(h);
 
       expect(field(h, '#ei-paste')).toBeNull();
-      expect(field(h, '[data-email-toggle]')!.textContent).toContain('Fill from email');
+      expect(field(h, '[data-email-toggle]')!.textContent).toContain('Fill From Email');
       const order = Array.from(
         h.el.querySelectorAll('#ct-matter, #ct-title, #ct-requestor-name'),
       ).map((e) => e.id);
@@ -693,9 +693,9 @@ describe('CreateTaskPage', () => {
         'From: Jane Doe <jane.doe@example-firm.test>\nSubject: Production volume 7\n\nPlease prepare the load file.';
       paste.dispatchEvent(new Event('input'));
       await settle(h.fixture);
-      buttonByLabel(h.el, 'Fill from pasted text')!.click();
+      buttonByLabel(h.el, 'Fill From Pasted Text')!.click();
       await settle(h.fixture);
-      buttonByLabel(h.el, 'Fill the task')!.click();
+      buttonByLabel(h.el, 'Fill the Task')!.click();
       await settle(h.fixture);
 
       expect(h.intake.parseEmailText).toHaveBeenCalled();
@@ -769,7 +769,7 @@ describe('CreateTaskPage', () => {
     await choose(h, '#ct-pod', '4');
     await type(h, '[data-request-details] input[type=text]', 'WS-9');
 
-    buttonByLabel(h.el, 'Create and add another')!.click();
+    buttonByLabel(h.el, 'Create and Add Another')!.click();
     await settle(h.fixture);
 
     expect(h.tasks.createTask).toHaveBeenCalledTimes(1);

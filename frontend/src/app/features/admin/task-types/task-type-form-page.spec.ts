@@ -74,27 +74,27 @@ describe('TaskTypeFormPage', () => {
     expect(q('[data-status]').textContent).toContain('Published v1');
     expect(q('[data-readonly-banner]').textContent).toContain("can't be edited");
     expect(el().querySelector('[data-add]')).toBeNull();
-    expect(button('Save draft')).toBeUndefined();
+    expect(button('Save Draft')).toBeUndefined();
     expect(button('Publish...')).toBeUndefined();
-    expect(button('Create new draft')).toBeDefined();
+    expect(button('Create New Draft')).toBeDefined();
     // The baseline example is shown and works in the preview.
     expect(el().querySelector('mf-dynamic-form [data-field="requires_ocr"]')).not.toBeNull();
   });
 
   it('creates a draft from the published version, edits and saves it', async () => {
-    await press('Create new draft');
+    await press('Create New Draft');
     expect(q('[data-status]').textContent).toContain('Draft v2');
     expect(q('[data-published-note]').textContent).toContain('published: v1');
     expect(el().querySelector('[data-add]')).not.toBeNull();
-    expect(button('Save draft')!.disabled).toBe(true);
+    expect(button('Save Draft')!.disabled).toBe(true);
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
 
     q('[data-add="TEXT"]').click();
     await settle();
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
-    expect(button('Save draft')!.disabled).toBe(false);
+    expect(button('Save Draft')!.disabled).toBe(false);
 
-    await press('Save draft');
+    await press('Save Draft');
     expect(q('[data-notice]').textContent).toContain('Draft v2 saved.');
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
     const saved = await new Promise<number>((resolve) =>
@@ -104,10 +104,10 @@ describe('TaskTypeFormPage', () => {
   });
 
   it('publishes through a dialog that shows the diff, then locks the version', async () => {
-    await press('Create new draft');
+    await press('Create New Draft');
     q('[data-add="TEXT"]').click();
     await settle();
-    await press('Save draft');
+    await press('Save Draft');
     await press('Publish...');
 
     const dialog = q('[data-dialog="publish"]', document.body);
@@ -131,7 +131,7 @@ describe('TaskTypeFormPage', () => {
   });
 
   it('Publish... with errors left shows the Validation tab instead of the dialog', async () => {
-    await press('Create new draft');
+    await press('Create New Draft');
     q('[data-add="SELECT"]').click();
     await settle();
     for (let i = 0; i < 2; i++) {
@@ -154,7 +154,7 @@ describe('TaskTypeFormPage', () => {
     expect(badge.querySelector('i.pi')).not.toBeNull();
     expect(q('h1').contains(badge)).toBe(true);
     expect(el().querySelector('[data-published-note]')).toBeNull();
-    await press('Create new draft');
+    await press('Create New Draft');
     expect(q('mf-badge[data-status]').textContent).toContain('Draft v2');
     expect(q('[data-published-note]').textContent).toContain('(published: v1)');
   });
@@ -172,24 +172,24 @@ describe('TaskTypeFormPage', () => {
   });
 
   it('shows Unsaved changes in the bar while the draft is dirty', async () => {
-    await press('Create new draft');
+    await press('Create New Draft');
     expect(el().querySelector('[data-dirty]')).toBeNull();
     q('[data-add="TEXT"]').click();
     await settle();
-    expect(q('[data-dirty]').textContent).toContain('Unsaved changes');
+    expect(q('[data-dirty]').textContent).toContain('Unsaved Changes');
   });
 
   it('a read-only version offers Open draft when a draft exists', async () => {
-    await press('Create new draft');
+    await press('Create New Draft');
     await chooseVersion('v1');
     expect(q('mf-badge[data-status]').textContent).toContain('Published v1');
-    expect(button('Create new draft')).toBeUndefined();
-    await press('Open draft v2');
+    expect(button('Create New Draft')).toBeUndefined();
+    await press('Open Draft v2');
     expect(q('mf-badge[data-status]').textContent).toContain('Draft v2');
   });
 
   it('asks before discarding unsaved changes when switching versions', async () => {
-    await press('Create new draft');
+    await press('Create New Draft');
     q('[data-add="TEXT"]').click();
     await settle();
     await chooseVersion('v1');
@@ -203,10 +203,10 @@ describe('TaskTypeFormPage', () => {
   });
 
   it('shows the server publish validation errors inline and keeps the draft editable', async () => {
-    await press('Create new draft');
+    await press('Create New Draft');
     q('[data-add="TEXT"]').click();
     await settle();
-    await press('Save draft');
+    await press('Save Draft');
     vi.spyOn(api, 'publish').mockReturnValue(
       throwError(() =>
         apiError(400, 'PUBLISH_VALIDATION_FAILED', 'The form cannot be published: 2 problem(s).', {
@@ -225,7 +225,7 @@ describe('TaskTypeFormPage', () => {
     expect(issues).toContain('The server rejects this key.');
     expect(issues).toContain('The server found a form-level problem.');
     expect(q('[data-status]').textContent).toContain('Draft v2');
-    expect(button('Save draft')).toBeDefined();
+    expect(button('Save Draft')).toBeDefined();
 
     // Editing clears the server's issues until the next publish attempt.
     q('[data-add="TEXT"]').click();
@@ -236,7 +236,7 @@ describe('TaskTypeFormPage', () => {
   });
 
   it('offers a conflict dialog when the draft changed under the editor', async () => {
-    await press('Create new draft');
+    await press('Create New Draft');
     q('[data-add="TEXT"]').click();
     await settle();
     const save = vi
@@ -244,35 +244,35 @@ describe('TaskTypeFormPage', () => {
       .mockReturnValue(
         throwError(() => apiError(409, 'CONCURRENCY_CONFLICT', 'Someone else changed this.')),
       );
-    await press('Save draft');
+    await press('Save Draft');
 
     expect(q('[data-dialog="conflict"]', document.body)).not.toBeNull();
     expect(el().querySelector('[role=alert]')).toBeNull();
 
     // Keep my changes: the latest version is reloaded but the local edits stay.
     save.mockRestore();
-    await press('Keep my changes', document.body);
+    await press('Keep My Changes', document.body);
     expect(document.body.querySelector('[data-dialog="conflict"]')).toBeNull();
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
     expect(q('[data-notice]').textContent).toContain('Your edits are kept');
-    await press('Save draft');
+    await press('Save Draft');
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
   });
 
   it('reloads the latest draft and drops local edits from the conflict dialog', async () => {
-    await press('Create new draft');
+    await press('Create New Draft');
     q('[data-add="TEXT"]').click();
     await settle();
     vi.spyOn(api, 'saveDraft').mockReturnValue(
       throwError(() => apiError(409, 'CONCURRENCY_CONFLICT', 'Someone else changed this.')),
     );
-    await press('Save draft');
-    await press('Reload latest', document.body);
+    await press('Save Draft');
+    await press('Reload Latest', document.body);
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
   });
 
   it('retires a published version after confirmation', async () => {
-    await press('Retire version');
+    await press('Retire Version');
     expect(q('[data-dialog="retire"]', document.body)).not.toBeNull();
     // The dialog opens on its primary action and uses the shared wording (#362).
     expect(document.activeElement?.textContent?.trim()).toBe('Retire v1');

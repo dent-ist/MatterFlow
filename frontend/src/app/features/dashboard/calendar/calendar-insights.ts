@@ -62,7 +62,7 @@ export function riskSentence(risk: CalSummary['risk']): string {
                 data-show-risk
                 (click)="showRisk.emit(s.risk.firstRiskDate!)"
               >
-                Show risk days
+                Show Risk Days
               </button>
             }
           </div>
@@ -86,7 +86,7 @@ export function riskSentence(risk: CalSummary['risk']): string {
             <i class="pi pi-chart-line" aria-hidden="true"></i>
             <span
               mfTip="Measures free task slots (open task capacity), not how many people are present."
-              >Free task slots, next 4 weeks</span
+              >Free Task Slots, Next 4 Weeks</span
             >
             <i
               class="pi fc__chev"

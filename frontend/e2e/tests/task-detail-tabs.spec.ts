@@ -257,10 +257,10 @@ test.describe('Task tabs: keyboard only', () => {
     await expect(selected(page)).toHaveText(/^\s*Assets/);
     await page.keyboard.press('Tab');
     await expect(
-      detail.section('Assets').getByRole('button', { name: 'Link asset' }),
+      detail.section('Assets').getByRole('button', { name: 'Link Asset' }),
     ).toBeFocused();
     await page.keyboard.press('Enter');
-    const picker = detail.section('Assets').getByRole('combobox', { name: 'Asset to link' });
+    const picker = detail.section('Assets').getByRole('combobox', { name: 'Asset to Link' });
     await expect(picker).toBeFocused();
     await picker.fill(asset.displayName);
     await page.getByRole('option', { name: new RegExp(asset.displayName) }).click();
@@ -430,8 +430,8 @@ test.describe('Task tabs: live counts', () => {
     await expect(tabOf(page, 'Comments')).toHaveText(/^\s*Comments\s*\(1\)$/);
     await expect(editor).toBeHidden();
     await detail.selectTab('Assets');
-    await detail.section('Assets').getByRole('button', { name: 'Link asset' }).click();
-    const picker = detail.section('Assets').getByRole('combobox', { name: 'Asset to link' });
+    await detail.section('Assets').getByRole('button', { name: 'Link Asset' }).click();
+    const picker = detail.section('Assets').getByRole('combobox', { name: 'Asset to Link' });
     await picker.fill(asset.displayName);
     await page.getByRole('option', { name: new RegExp(asset.displayName) }).click();
     await detail.section('Assets').locator('[data-link-submit]').click();

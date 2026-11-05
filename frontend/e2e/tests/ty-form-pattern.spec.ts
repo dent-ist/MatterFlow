@@ -32,7 +32,7 @@ const PAGES: FormPage[] = [
     url: '/admin/task-types/new',
     card: 'form.edit',
     field: '#tt-name',
-    save: 'Create task type',
+    save: 'Create Task Type',
     message: 'Enter a name.',
   },
   {
@@ -40,7 +40,7 @@ const PAGES: FormPage[] = [
     url: '/admin/workflows/new',
     card: 'form.pg-form',
     field: '#wf-name',
-    save: 'Create workflow',
+    save: 'Create Workflow',
     message: 'Enter a name.',
   },
   {
@@ -48,7 +48,7 @@ const PAGES: FormPage[] = [
     url: '/admin/steps/new',
     card: 'form.pg-form',
     field: '#step-title',
-    save: 'Create step',
+    save: 'Create Step',
     message: 'Enter a title.',
   },
 ];
@@ -106,7 +106,7 @@ test.describe('One form-page pattern for the three edit pages (#361)', () => {
     const metrics: { cls: string; h: number; r: string }[] = [];
     for (const [url, label] of [
       ['/admin/task-types', 'New task type'],
-      ['/admin/workflows', 'New workflow'],
+      ['/admin/workflows', 'New Workflow'],
       ['/admin/steps', 'New step'],
     ]) {
       await page.goto(url);
@@ -147,7 +147,7 @@ test.describe('One form-page pattern for the three edit pages (#361)', () => {
     const typeRole = await seed.role(['TaskType.Manage', 'Task.View'], 'Type only');
     const typePage = await asUser((await seed.user([typeRole.name], 'tt-ttonly')).username);
     await typePage.goto('/admin/task-types/new');
-    await typePage.getByRole('button', { name: 'Create task type' }).click();
+    await typePage.getByRole('button', { name: 'Create Task Type' }).click();
     await expect(typePage.locator('[data-summary] li')).toHaveText(['Enter a name.']);
     await expect(typePage.locator('#tt-name')).toBeFocused();
 

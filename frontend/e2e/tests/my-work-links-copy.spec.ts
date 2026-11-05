@@ -154,7 +154,7 @@ test.describe('My Work links, filters and copy', () => {
     const none = page.locator('tbody [data-empty="none"]');
     await expect(none).toContainText('You have no open tasks you created.');
     await shot(page, 'b4-created-by-me-create-task-1366x768');
-    await none.getByRole('link', { name: 'Create task' }).click();
+    await none.getByRole('link', { name: 'New Task' }).click();
     await expect(page).toHaveURL(/\/tasks\/new/);
     await page.close();
 
@@ -290,7 +290,7 @@ test.describe('My Work links, filters and copy', () => {
     // The empty state carries the one Clear filters (the bar shows none while it does; re-review RR-02).
     await page
       .locator('tbody td[data-empty="filtered"]')
-      .getByRole('button', { name: 'Clear filters' })
+      .getByRole('button', { name: 'Clear Filters' })
       .click();
     await expect(page).not.toHaveURL(/status=/);
 
@@ -302,7 +302,7 @@ test.describe('My Work links, filters and copy', () => {
       'Today',
       'Tomorrow',
       'Next 7 days',
-      'This week',
+      'This Week',
       'Next week',
       'This month',
     ]);

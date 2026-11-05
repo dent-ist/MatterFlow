@@ -10,10 +10,10 @@ describe('SkipTarget (#586)', () => {
   it('gives the element its id and tabindex while current, and takes both back on release', () => {
     const skip = TestBed.inject(SkipTarget);
     const el = document.createElement('div');
-    const off = skip.register({ label: 'Skip to table', element: el, focus: () => undefined });
+    const off = skip.register({ label: 'Skip to Table', element: el, focus: () => undefined });
     expect(el.id).toBe('mf-list');
     expect(el.getAttribute('tabindex')).toBe('-1');
-    expect(skip.target()?.label).toBe('Skip to table');
+    expect(skip.target()?.label).toBe('Skip to Table');
     off();
     expect(el.hasAttribute('id')).toBe(false);
     expect(el.hasAttribute('tabindex')).toBe(false);

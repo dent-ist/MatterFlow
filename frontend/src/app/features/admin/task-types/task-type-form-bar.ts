@@ -77,14 +77,14 @@ import { IntPipe } from '../../../shared/ui/number-format';
           Versions ({{ versionCount() | mfInt }})
         </button>
         @if (!readOnly() && dirty()) {
-          <mf-badge tone="warning" icon="pi-pencil" data-dirty>Unsaved changes</mf-badge>
+          <mf-badge tone="warning" icon="pi-pencil" data-dirty>Unsaved Changes</mf-badge>
         }
         <span class="fdb__notice" role="status" aria-live="polite" data-notice>{{ notice() }}</span>
       </div>
       <div class="fdb__actions">
         @if (!readOnly()) {
           <p-button
-            label="Save draft"
+            label="Save Draft"
             severity="secondary"
             [disabled]="!dirty() || busy()"
             (onClick)="save.emit()"
@@ -93,7 +93,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
         } @else {
           @if (published()) {
             <p-button
-              label="Retire version"
+              label="Retire Version"
               severity="secondary"
               [disabled]="busy()"
               (onClick)="retire.emit()"
@@ -101,13 +101,13 @@ import { IntPipe } from '../../../shared/ui/number-format';
           }
           @if (draftNo(); as d) {
             <p-button
-              [label]="'Open draft v' + d"
+              [label]="'Open Draft v' + d"
               data-open-draft
               [disabled]="busy()"
               (onClick)="openDraft.emit()"
             />
           } @else {
-            <p-button label="Create new draft" [disabled]="busy()" (onClick)="newDraft.emit()" />
+            <p-button label="Create New Draft" [disabled]="busy()" (onClick)="newDraft.emit()" />
           }
         }
       </div>

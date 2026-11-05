@@ -72,7 +72,7 @@ test.describe('New priority and Edit priority (#609)', () => {
     try {
       const link = rowOf(page, made.label).locator('[data-edit]');
       await link.click();
-      await expect(dialog(page, 'Edit priority')).toBeVisible();
+      await expect(dialog(page, 'Edit Priority')).toBeVisible();
       await expect(label(page)).toHaveValue(made.label);
       await expect(page.locator('#priority-color')).toHaveValue('low');
 
@@ -208,7 +208,7 @@ test.describe('New priority and Edit priority (#609)', () => {
     const link = rowOf(page, 'Critical').locator('[data-edit]');
     await link.focus();
     await page.keyboard.press('Enter');
-    await expect(dialog(page, 'Edit priority')).toBeVisible();
+    await expect(dialog(page, 'Edit Priority')).toBeVisible();
     await expect(label(page)).toBeFocused();
     for (let i = 0; i < 8; i++) {
       await page.keyboard.press('Tab');
@@ -228,8 +228,8 @@ test.describe('New priority and Edit priority (#609)', () => {
     await page.goto('/admin/priorities');
     const menu = rowOf(page, 'Critical').getByRole('button', { name: /^Actions for / });
     await openRowMenu(page, menu);
-    await page.getByRole('menuitem', { name: 'Edit priority' }).click();
-    await expect(dialog(page, 'Edit priority')).toBeVisible();
+    await page.getByRole('menuitem', { name: 'Edit Priority' }).click();
+    await expect(dialog(page, 'Edit Priority')).toBeVisible();
     await expect(page).toHaveURL(/edit=\d+$/);
     await expect(label(page)).toHaveValue('Critical');
     await page.keyboard.press('Escape');

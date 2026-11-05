@@ -14,7 +14,7 @@ import { SearchHitCard, hitCardLines } from './search-hit-card';
   template: `
     <main>
       <h1>Search results</h1>
-      <mf-record-card-list noun="results" label="Search results" state="ready" [empty]="false">
+      <mf-record-card-list noun="results" label="Search Results" state="ready" [empty]="false">
         <ng-template [mfRecordCard]="hits()" let-hit
           ><mf-search-hit-card [hit]="hit"
         /></ng-template>
@@ -184,7 +184,7 @@ describe('SearchHitCard (one card for all five hit types, #472)', () => {
   it('is a list item of a named list, one Tab stop per card', () => {
     const f = create([matter, client, task]);
     const list = f.nativeElement.querySelector('ul')!;
-    expect(list.getAttribute('aria-label')).toBe('Search results');
+    expect(list.getAttribute('aria-label')).toBe('Search Results');
     expect(list.querySelectorAll(':scope > li').length).toBe(3);
     const stops = f.nativeElement.querySelectorAll(
       'a[href], button, [tabindex]:not([tabindex="-1"])',
@@ -249,7 +249,7 @@ describe('SearchHitCard (one card for all five hit types, #472)', () => {
     const stored = cards(
       create([{ ...asset, disposition: 'PENDING_DISPOSITION', sizeValue: 5.5, sizeUnit: 'GB' }]),
     )[0];
-    expect(stored.textContent).toContain('Pending disposition');
+    expect(stored.textContent).toContain('Pending Disposition');
     expect(stored.querySelector('[data-card-extra]')!.textContent).toContain('5.5 GB');
   });
 });

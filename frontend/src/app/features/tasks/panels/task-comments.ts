@@ -176,7 +176,7 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
                 <p class="tc__muted" data-limit-note role="status">
                   Showing latest {{ visibleItems().length }} of {{ total() | mfInt }}.
                   <button type="button" class="tc__link" data-show-all (click)="setLimit('all')">
-                    Show all
+                    Show All
                   </button>
                 </p>
               } @else if (!query() && shownAll() && total() > latestCount) {
@@ -264,7 +264,7 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
                               [disabled]="saving() || isBlank(editDraft())"
                               (click)="saveEdit(c)"
                             >
-                              Save changes
+                              Save Changes
                             </button>
                             <button
                               type="button"
@@ -297,7 +297,7 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
                               [attr.aria-expanded]="historyId() === c.commentId"
                               (click)="toggleHistory(c)"
                             >
-                              View edit history
+                              View Edit History
                             </button>
                           </p>
                           @if (historyId() === c.commentId) {
@@ -340,7 +340,7 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
                     [disabled]="loadingMore()"
                     (click)="loadMore()"
                   >
-                    {{ loadingMore() ? 'Loading...' : 'Load more comments' }}
+                    {{ loadingMore() ? 'Loading...' : 'Load More Comments' }}
                   </button>
                 </div>
               }
@@ -394,7 +394,7 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
               data-post
               [disabled]="posting() || isBlank(draft())"
             >
-              Post comment
+              Post Comment
             </button>
           } @else {
             <input

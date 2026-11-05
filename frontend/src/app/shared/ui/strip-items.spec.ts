@@ -14,7 +14,7 @@ const CHIPS: StripDef<Row>[] = [
   { key: 'active', label: 'Active', matches: (r) => r.active, params: { status: null } },
   {
     key: 'noFields',
-    label: 'No published fields',
+    label: 'No Published Fields',
     hint: 'Active asset types with no published field',
     alert: true,
     matches: (r) => r.active && r.fields === 0,

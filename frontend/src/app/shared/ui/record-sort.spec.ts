@@ -4,9 +4,9 @@ import { SortOption } from '../work-queue/phone-sort';
 import { RecordSort, parseSortExpression, sortExpression } from './record-sort';
 
 const OPTIONS: SortOption[] = [
-  { value: 'clientNumber', label: 'Client number' },
+  { value: 'clientNumber', label: 'Client Number' },
   { value: 'name', label: 'Name' },
-  { value: 'openTasks', label: 'Open tasks', descFirst: true },
+  { value: 'openTasks', label: 'Open Tasks', descFirst: true },
   { value: 'overdue', label: 'Overdue', descFirst: true },
 ];
 
@@ -48,9 +48,9 @@ describe('RecordSort', () => {
     const { el } = create();
     const select = ddSelect(el.querySelector('[data-sort-select]')!);
     expect(Array.from(select.options).map((o) => o.textContent?.trim())).toEqual([
-      'Client number',
+      'Client Number',
       'Name',
-      'Open tasks',
+      'Open Tasks',
       'Overdue',
     ]);
     expect(select.value).toBe('clientNumber');

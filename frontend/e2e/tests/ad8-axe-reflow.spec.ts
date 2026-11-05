@@ -39,13 +39,13 @@ test.describe('Axe and reflow of the administration areas, overlays open (#660)'
       await check(page, 'priorities', size.width);
       await openRowMenu(page, page.getByRole('button', { name: `Actions for ${label}` }));
       await check(page, 'priorities menu', size.width);
-      await page.getByRole('menuitem', { name: 'Set as default' }).click();
+      await page.getByRole('menuitem', { name: 'Set as Default' }).click();
       await expect(page.getByRole('dialog')).toBeVisible();
       await check(page, 'default question', size.width);
       await page.getByRole('button', { name: 'Cancel' }).click();
       await openRowMenu(page, page.getByRole('button', { name: `Actions for ${label}` }));
-      await page.getByRole('menuitem', { name: 'Edit priority' }).click();
-      await expect(page.getByRole('dialog', { name: 'Edit priority' })).toBeVisible();
+      await page.getByRole('menuitem', { name: 'Edit Priority' }).click();
+      await expect(page.getByRole('dialog', { name: 'Edit Priority' })).toBeVisible();
       await check(page, 'edit priority', size.width);
       await page.keyboard.press('Escape');
 
@@ -57,7 +57,7 @@ test.describe('Axe and reflow of the administration areas, overlays open (#660)'
         .first()
         .click();
       await page.getByRole('menuitem', { name: 'Rename' }).click();
-      await expect(page.getByRole('dialog', { name: 'Rename status label' })).toBeVisible();
+      await expect(page.getByRole('dialog', { name: 'Rename Status Label' })).toBeVisible();
       await check(page, 'rename status label', size.width);
       await page.keyboard.press('Escape');
       if (size.width === 1366 || size.width === 375) await shot(page, 'labels-audit');
@@ -96,7 +96,7 @@ test.describe('Axe and reflow of the administration areas, overlays open (#660)'
       await openRowMenu(page, page.getByRole('button', { name: `Actions for ${role}` }));
       await check(page, 'link roles menu', size.width);
       await page.getByRole('menuitem', { name: 'Rename' }).click();
-      await expect(page.getByRole('dialog', { name: 'Rename link role' })).toBeVisible();
+      await expect(page.getByRole('dialog', { name: 'Rename Link Role' })).toBeVisible();
       await check(page, 'rename link role', size.width);
       await page.keyboard.press('Escape');
       if (size.width === 1366 || size.width === 375) await shot(page, 'asset-types-audit');

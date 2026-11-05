@@ -29,8 +29,8 @@ const defs: FilterDef[] = [
     valueGroups: [{ label: 'Open', values: OPEN }],
     options: [
       { value: 'NEW', label: 'New' },
-      { value: 'IN_PROGRESS', label: 'In progress' },
-      { value: 'ON_HOLD', label: 'On hold' },
+      { value: 'IN_PROGRESS', label: 'In Progress' },
+      { value: 'ON_HOLD', label: 'On Hold' },
       { value: 'COMPLETED', label: 'Completed' },
     ],
   },

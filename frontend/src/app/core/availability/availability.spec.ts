@@ -23,18 +23,18 @@ describe('availability', () => {
         NY,
         new Date('2026-10-15T12:00:00Z'),
       );
-      expect(text).toBe('Out of office until Oct 20');
+      expect(text).toBe('Out of Office until Oct 20');
     });
 
-    it('adds the year when it is not this year, and says plain "Out of office" when open-ended', () => {
+    it('adds the year when it is not this year, and says plain "Out of Office" when open-ended', () => {
       expect(
         outOfOfficeText(
           { state: 'OUT_OF_OFFICE', outUntil: '2027-01-03T05:00:00Z' },
           NY,
           new Date('2026-10-15T12:00:00Z'),
         ),
-      ).toBe('Out of office until Jan 2, 2027');
-      expect(outOfOfficeText({ state: 'OUT_OF_OFFICE' }, NY)).toBe('Out of office');
+      ).toBe('Out of Office until Jan 2, 2027');
+      expect(outOfOfficeText({ state: 'OUT_OF_OFFICE' }, NY)).toBe('Out of Office');
       expect(outOfOfficeText({ state: 'AVAILABLE' }, NY)).toBeNull();
     });
 
@@ -44,12 +44,12 @@ describe('availability', () => {
         tone: 'success',
       });
       expect(availabilityDisplay({ state: 'OFF_HOURS' }, NY)).toMatchObject({
-        label: 'Off hours',
+        label: 'Off Hours',
         tone: 'neutral',
         icon: 'pi-moon',
       });
       expect(availabilityDisplay({ state: 'OUT_OF_OFFICE' }, NY)).toMatchObject({
-        label: 'Out of office',
+        label: 'Out of Office',
         tone: 'warning',
       });
       expect(availabilityDisplay(undefined, NY).label).toBe('Available');
@@ -139,7 +139,7 @@ describe('availability', () => {
       const now = new Date('2026-10-15T14:00:00Z');
       expect(
         previewDisplay({ ...base, status: 'OUT_OF_OFFICE', until: '2026-10-20' }, now)?.label,
-      ).toBe('Out of office until Oct 20');
+      ).toBe('Out of Office until Oct 20');
       expect(
         previewDisplay(
           { ...base, status: 'OUT_OF_OFFICE', from: '2026-10-16', until: '2026-10-20' },
@@ -154,8 +154,8 @@ describe('availability', () => {
     it('is available inside work hours (end exclusive) and off hours outside them', () => {
       const draft = { ...base, status: 'AVAILABLE' };
       expect(previewDisplay(draft, new Date('2026-10-15T14:00:00Z'))?.label).toBe('Available');
-      expect(previewDisplay(draft, new Date('2026-10-15T21:00:00Z'))?.label).toBe('Off hours'); // 17:00
-      expect(previewDisplay(draft, new Date('2026-10-17T15:00:00Z'))?.label).toBe('Off hours'); // Saturday
+      expect(previewDisplay(draft, new Date('2026-10-15T21:00:00Z'))?.label).toBe('Off Hours'); // 17:00
+      expect(previewDisplay(draft, new Date('2026-10-17T15:00:00Z'))?.label).toBe('Off Hours'); // Saturday
     });
 
     it('gives nothing for a time zone the browser does not know', () => {

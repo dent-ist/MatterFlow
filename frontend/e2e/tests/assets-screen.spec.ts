@@ -41,7 +41,7 @@ test.describe('Assets list: column filters and the record page link', () => {
     const gridBox = (await grid.boundingBox())!;
     expect(toggleBox.y + toggleBox.height).toBeLessThanOrEqual(gridBox.y + 1);
 
-    const columns = ['Type', 'Matter', 'External reference', 'Disposition'];
+    const columns = ['Type', 'Matter', 'External Reference', 'Disposition'];
     const headers = grid.locator('thead tr:first-child th');
     // The admin sees the selection column, Size and Linked tasks (no filter of their own): the cells under them are empty, the other five columns have a control.
     await expect(headers).toHaveCount(8);
@@ -118,8 +118,8 @@ test.describe('Assets list: column filters and the record page link', () => {
     await expect(names).toHaveText([`Alpha ${token}`, `Beta ${token}`]);
 
     // Enter applies at once; External reference only matches that column.
-    await filter(page, 'External reference').fill(`${token}-b`);
-    await filter(page, 'External reference').press('Enter');
+    await filter(page, 'External Reference').fill(`${token}-b`);
+    await filter(page, 'External Reference').press('Enter');
     await expect(page).toHaveURL(/extref=/);
     await expect(names).toHaveText([`Beta ${token}`]);
     await page.getByRole('button', { name: 'Clear External reference filter' }).click();
@@ -146,7 +146,7 @@ test.describe('Assets list: column filters and the record page link', () => {
     await expect(filter(page, 'Name')).toBeVisible();
     await expect(filterDropdown(page, 'Disposition')).toBeVisible();
 
-    await page.getByRole('main').getByRole('button', { name: 'Clear filters' }).first().click();
+    await page.getByRole('main').getByRole('button', { name: 'Clear Filters' }).first().click();
     await expect(page).not.toHaveURL(/name=|typeId=|matter=|status=|extref=/);
     await expect(filtersToggle(page)).not.toContainText('(');
     await expect(filter(page, 'Name')).toHaveValue('');

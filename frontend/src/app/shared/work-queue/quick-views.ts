@@ -179,7 +179,7 @@ const STRIP_GAP = 4;
     @if (menuOpen()) {
       <mf-filter-popover
         [anchor]="moreButton"
-        label="More views"
+        label="More Views"
         [menu]="true"
         (closed)="menuOpen.set(false)"
       >

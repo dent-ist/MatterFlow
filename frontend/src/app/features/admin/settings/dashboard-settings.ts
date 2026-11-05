@@ -43,10 +43,10 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
       </p>
 
       <fieldset class="ds__group" data-group="hours">
-        <legend>Working hours</legend>
+        <legend>Working Hours</legend>
         <div class="ds__row">
           <div class="mf-field">
-            <label class="mf-field__label" for="ds-start">Workday starts</label>
+            <label class="mf-field__label" for="ds-start">Workday Starts</label>
             <input
               id="ds-start"
               class="mf-field__input"
@@ -68,7 +68,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
             }
           </div>
           <div class="mf-field">
-            <label class="mf-field__label" for="ds-end">Workday ends</label>
+            <label class="mf-field__label" for="ds-end">Workday Ends</label>
             <input
               id="ds-end"
               class="mf-field__input"
@@ -96,7 +96,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
           aria-labelledby="ds-days-l"
           aria-describedby="ds-days-help"
         >
-          <span class="mf-field__label" id="ds-days-l">Working days</span>
+          <span class="mf-field__label" id="ds-days-l">Working Days</span>
           <div class="ds__days">
             @for (d of weekdays; track d) {
               <label class="ds__day">
@@ -120,7 +120,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
           }
         </div>
         <div class="mf-field" role="radiogroup" aria-labelledby="ds-basis-l">
-          <span class="mf-field__label" id="ds-basis-l">Age is counted in</span>
+          <span class="mf-field__label" id="ds-basis-l">Age Is Counted In</span>
           <label class="ds__day">
             <input
               type="radio"
@@ -182,7 +182,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
         </div>
         <div class="ds__row">
           <div class="mf-field">
-            <label class="mf-field__label" for="ds-per">Unassigned tasks per extra level</label>
+            <label class="mf-field__label" for="ds-per">Unassigned Tasks Per Extra Level</label>
             <input
               id="ds-per"
               class="mf-field__input"
@@ -207,7 +207,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
             }
           </div>
           <div class="mf-field">
-            <label class="mf-field__label" for="ds-bonus">Most extra levels from the count</label>
+            <label class="mf-field__label" for="ds-bonus">Most Extra Levels From the Count</label>
             <input
               id="ds-bonus"
               class="mf-field__input"
@@ -238,7 +238,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
         <div class="pg-alert" role="alert" data-server-error>
           {{ m }}
           @if (conflict()) {
-            <p-button label="Reload latest" severity="secondary" data-reload (onClick)="load()" />
+            <p-button label="Reload Latest" severity="secondary" data-reload (onClick)="load()" />
           }
         </div>
       }
@@ -257,7 +257,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
       <div class="ds__actions mf-form-actions--sticky">
         <p-button
           type="button"
-          label="Reset to default"
+          label="Reset to Default"
           severity="secondary"
           [outlined]="true"
           data-reset

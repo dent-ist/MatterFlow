@@ -84,12 +84,12 @@ describe('filters bar', { timeout: 20_000 }, () => {
     });
   });
 
-  describe('Clear filters', () => {
+  describe('Clear Filters', () => {
     it('shows only while something other than the default is active and goes back to the defaults', async () => {
       await mount();
       expect(clearButton()).toBeNull();
       await m.go('/list?name=a&status=all&q=old&sort=name');
-      expect(clearButton()?.textContent).toContain('Clear filters');
+      expect(clearButton()?.textContent).toContain('Clear Filters');
       clearButton()!.click();
       await m.settle();
       expect(m.router.url).toBe('/list?sort=name');
@@ -145,7 +145,7 @@ describe('filters bar', { timeout: 20_000 }, () => {
       more.click();
       await m.settle();
       expect(chips()).toHaveLength(7);
-      expect(m.el.querySelector('.fch__more')?.textContent).toContain('Show fewer');
+      expect(m.el.querySelector('.fch__more')?.textContent).toContain('Show Fewer');
     });
 
     it('are listed as "Active filters"', async () => {
@@ -156,7 +156,7 @@ describe('filters bar', { timeout: 20_000 }, () => {
     });
   });
 
-  describe('Other filters', () => {
+  describe('Other Filters', () => {
     it('lists the filters that have no cell and opens the chosen control', async () => {
       await mount('/list', { columns: ['name', 'status'] });
       const more = m.el.querySelector<HTMLButtonElement>('[data-more-filters]')!;
@@ -269,7 +269,7 @@ describe('filters bar', { timeout: 20_000 }, () => {
       m.filters.markRestored();
       await m.settle();
       Array.from(m.el.querySelectorAll<HTMLButtonElement>('[data-restored-notice] button'))
-        .find((b) => b.textContent!.includes('Reset to default'))!
+        .find((b) => b.textContent!.includes('Reset to Default'))!
         .click();
       await m.settle();
       expect(m.router.url).toBe('/list');

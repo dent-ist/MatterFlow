@@ -251,7 +251,7 @@ test.describe('My Matters: one dropdown style and icons (UI-19)', () => {
     // One dropdown component for every list.
     for (const [id, name] of [
       ['#mm-show', 'Show'],
-      ['#mm-feed-kind', 'Kind of activity'],
+      ['#mm-feed-kind', 'Kind of Activity'],
     ] as const) {
       await page.locator(id).click();
       const list = page.getByRole('listbox', { name });
@@ -483,10 +483,10 @@ test.describe('My Matters: calendar events, assets and activity (need the UI-03 
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters?tab=assets');
     await expect(page.getByRole('columnheader', { name: /Comment/ })).toHaveCount(0);
-    for (const h of ['Client', 'Matter', 'Asset type', 'Created', 'Updated', 'Status'])
+    for (const h of ['Client', 'Matter', 'Asset Type', 'Created', 'Updated', 'Status'])
       await expect(page.getByRole('columnheader', { name: new RegExp(h) }).first()).toBeVisible();
     await page.locator('[data-open]').first().click();
-    await expect(page.locator('[data-asset-panel]')).toContainText('Linked tasks');
+    await expect(page.locator('[data-asset-panel]')).toContainText('Linked Tasks');
   });
 
   test('an activity item opens the task in a NEW tab', async ({ seed, personas, asUser }) => {

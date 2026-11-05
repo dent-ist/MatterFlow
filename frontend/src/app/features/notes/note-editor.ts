@@ -395,7 +395,7 @@ export interface RefInfo {
           >
             <mf-dropdown
               buttonId="ne-style"
-              label="Text style"
+              label="Text Style"
               size="sm"
               [items]="styleItems"
               [value]="style()"
@@ -641,7 +641,7 @@ export interface RefInfo {
                 (mousedown)="$event.preventDefault()"
                 (click)="run('toggleHeaderRow')"
               >
-                Header row
+                Header Row
               </button>
               <button
                 type="button"
@@ -649,7 +649,7 @@ export interface RefInfo {
                 (mousedown)="$event.preventDefault()"
                 (click)="run('deleteTable')"
               >
-                Delete table
+                Delete Table
               </button>
             </div>
           }
@@ -751,7 +751,7 @@ export interface RefInfo {
             </p>
             <p class="ne__err" id="ne-link-err" role="alert">{{ linkError() }}</p>
             @if (linkNeedsText()) {
-              <label for="ne-link-text">Text to show</label>
+              <label for="ne-link-text">Text to Show</label>
               <input
                 id="ne-link-text"
                 type="text"
@@ -770,7 +770,7 @@ export interface RefInfo {
                   data-link-remove
                   (click)="removeLink()"
                 >
-                  Remove link
+                  Remove Link
                 </button>
               }
               <span class="ne__grow"></span>

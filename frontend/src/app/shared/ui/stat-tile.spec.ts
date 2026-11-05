@@ -24,7 +24,7 @@ import { StatTile } from './stat-tile';
 class Host {
   value = signal('1,234');
   unit = signal('');
-  label = signal('Total assets');
+  label = signal('Total Assets');
   note = signal('');
   noteName = signal('');
   muted = signal(false);
@@ -49,7 +49,7 @@ describe('StatTile', () => {
     expect(group.getAttribute('aria-label')).toBe('1,234 total assets');
     fixture.componentInstance.value.set('21.5');
     fixture.componentInstance.unit.set('GB');
-    fixture.componentInstance.label.set('Total size');
+    fixture.componentInstance.label.set('Total Size');
     fixture.detectChanges();
     expect(el().querySelector('[role=group]')!.getAttribute('aria-label')).toBe(
       '21.5 GB total size',
@@ -61,7 +61,7 @@ describe('StatTile', () => {
   it('adds the note to the name and mutes a zero', () => {
     const c = fixture.componentInstance;
     c.value.set('2');
-    c.label.set('Pending disposition');
+    c.label.set('Pending Disposition');
     c.note.set('oldest 41 days');
     c.muted.set(true);
     fixture.detectChanges();

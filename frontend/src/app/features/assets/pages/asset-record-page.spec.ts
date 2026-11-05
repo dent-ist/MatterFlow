@@ -173,7 +173,7 @@ describe('AssetRecordPage', () => {
       await settle(fixture);
 
       expect(el().querySelector('[data-disposition-badge]')?.textContent).toContain(
-        'Pending disposition',
+        'Pending Disposition',
       );
       expect(el().querySelector('[data-record-header] mf-active-badge')).toBeNull();
       expect(el().querySelector('[data-inactive-banner]')?.textContent).toContain(
@@ -184,7 +184,7 @@ describe('AssetRecordPage', () => {
       );
       const strip = el().querySelector('[data-asset-strip]')!.textContent!;
       expect(strip).toContain('Disposition');
-      expect(strip).toContain('Pending disposition');
+      expect(strip).toContain('Pending Disposition');
     });
 
     it('shows no disposition badge for an Active or an Inactive asset (the status badge says it)', async () => {
@@ -225,13 +225,13 @@ describe('AssetRecordPage', () => {
 
       const details = el().querySelector('[data-details]')!;
       expect(details.querySelector('[data-disposition]')?.textContent).toContain(
-        'Pending disposition',
+        'Pending Disposition',
       );
       expect(details.querySelector('[data-disposition-note]')?.textContent).toContain(
         'Matter closed',
       );
       const change = details.querySelector('[data-disposition-change]')!.textContent!;
-      expect(change).toContain('Active to Pending disposition');
+      expect(change).toContain('Active to Pending Disposition');
       expect(change).toContain('Test User 03');
       expect(change).toContain('Matter closed');
     });
@@ -317,7 +317,7 @@ describe('AssetRecordPage', () => {
 
   it('has Details, Linked tasks (n) and History tabs; the count is the number of linked tasks', async () => {
     await create(['Asset.View', 'Task.View', 'Audit.View']);
-    expect(tabs()).toEqual(['Details', 'Linked tasks (2)', 'History']);
+    expect(tabs()).toEqual(['Details', 'Linked Tasks (2)', 'History']);
     expect(tab('Details').getAttribute('aria-selected')).toBe('true');
     expect(el().querySelector('[role=tabpanel]')!.getAttribute('aria-labelledby')).toBe(
       'asset-tab-details',
@@ -330,7 +330,7 @@ describe('AssetRecordPage', () => {
     assets.getAsset.mockReturnValue(ok(anAsset({ linkedTaskCount: undefined })));
     await fixture.componentInstance.load();
     await settle(fixture);
-    expect(tabs()).toEqual(['Details', 'Linked tasks']);
+    expect(tabs()).toEqual(['Details', 'Linked Tasks']);
     expect(assets.listAssetLinkedTasks).not.toHaveBeenCalled();
     await openTab('history');
     expect(tab('Details').getAttribute('aria-selected')).toBe('true'); // falls back to Details
@@ -345,9 +345,9 @@ describe('AssetRecordPage', () => {
   it('selects the tab from ?tab= and keeps it in the address, replacing the entry', async () => {
     await create(['Asset.View', 'Task.View', 'Audit.View']);
     await openTab('tasks');
-    expect(tab('Linked tasks').getAttribute('aria-selected')).toBe('true');
+    expect(tab('Linked Tasks').getAttribute('aria-selected')).toBe('true');
     expect(el().querySelector('mf-asset-linked-tasks')).not.toBeNull();
-    expect(document.title).toBe('Contract bundle: Linked tasks - MatterFlow');
+    expect(document.title).toBe('Contract bundle: Linked Tasks - MatterFlow');
 
     await openTab('history');
     expect(el().querySelector('mf-entity-activity')).not.toBeNull();

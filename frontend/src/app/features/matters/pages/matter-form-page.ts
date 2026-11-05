@@ -71,7 +71,7 @@ function clientOption(c: ClientResponse): PickerOption {
         { label: 'Matters', link: '/matters' },
         { label: isEdit() ? original()?.name || 'Edit' : 'New' },
       ]"
-      [heading]="isEdit() ? 'Edit matter' : 'New matter'"
+      [heading]="isEdit() ? 'Edit Matter' : 'New Matter'"
     />
 
     @if (state() === 'loading') {
@@ -86,7 +86,7 @@ function clientOption(c: ClientResponse): PickerOption {
       @if (conflict()) {
         <div class="pg-alert" role="alert" data-conflict>
           This matter was changed by someone else.
-          <p-button label="Reload latest" severity="secondary" (onClick)="load()" />
+          <p-button label="Reload Latest" severity="secondary" (onClick)="load()" />
         </div>
       }
       @if (summary().length > 0) {
@@ -98,7 +98,7 @@ function clientOption(c: ClientResponse): PickerOption {
             }
           </ul>
           @if (existingId(); as existing) {
-            <a class="pg-link" [routerLink]="['/matters', existing]">View the existing matter</a>
+            <a class="pg-link" [routerLink]="['/matters', existing]">View the Existing Matter</a>
           }
         </div>
       }
@@ -114,14 +114,14 @@ function clientOption(c: ClientResponse): PickerOption {
             <span class="pg-reason">The client can't change after creation.</span>
           </div>
           <div class="pg-filter">
-            <span class="pg-label">Matter number</span>
+            <span class="pg-label">Matter Number</span>
             <span class="pg-mono" data-locked-number>{{ original()?.matterNumber }}</span>
             <span class="pg-reason"
               >Combined reference: <mf-matter-ref [value]="original()?.matterRef" [copy]="false"
             /></span>
             <p-button
               *mfHasPermission="'Matter.EditNumber'"
-              label="Change number"
+              label="Change Number"
               severity="secondary"
               size="small"
               (onClick)="openChangeNumber()"
@@ -139,7 +139,7 @@ function clientOption(c: ClientResponse): PickerOption {
           />
           <mf-number-input
             inputId="matter-number"
-            label="Matter number"
+            label="Matter Number"
             noun="matter number"
             help="Enter 1 to 5 digits, as issued by the firm's main system."
             [extraPreview]="combinedPreview()"
@@ -151,7 +151,7 @@ function clientOption(c: ClientResponse): PickerOption {
 
         <mf-text-field
           inputId="matter-name"
-          label="Matter name"
+          label="Matter Name"
           [required]="true"
           [maxLength]="300"
           [error]="nameError()"
@@ -187,7 +187,7 @@ function clientOption(c: ClientResponse): PickerOption {
         </label>
 
         <div class="pg-field">
-          <label class="mf-label" for="matter-ai">AI allowed</label>
+          <label class="mf-label" for="matter-ai">AI Allowed</label>
           <select
             id="matter-ai"
             class="mf-control"
@@ -215,7 +215,7 @@ function clientOption(c: ClientResponse): PickerOption {
           <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
           <p-button
             type="submit"
-            [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create matter'"
+            [label]="busy() ? 'Saving...' : isEdit() ? 'Save Changes' : 'Create Matter'"
             [disabled]="busy()"
           />
         </div>
@@ -236,7 +236,7 @@ function clientOption(c: ClientResponse): PickerOption {
       </p>
       <mf-number-input
         inputId="new-matter-number"
-        label="New matter number"
+        label="New Matter Number"
         noun="matter number"
         [showErrors]="numberSubmitted()"
         [serverError]="fieldError('number')"

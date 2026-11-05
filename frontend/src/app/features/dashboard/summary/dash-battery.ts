@@ -39,7 +39,7 @@ type BatteryState = 'loading' | 'ready' | 'error';
       [attr.aria-busy]="state() === 'loading' ? 'true' : null"
     >
       <div class="ph">
-        <h2 id="db-h"><i class="pi pi-bolt" aria-hidden="true"></i>Team capacity</h2>
+        <h2 id="db-h"><i class="pi pi-bolt" aria-hidden="true"></i>Team Capacity</h2>
         @if (view()?.word; as word) {
           <span class="word" [attr.data-level]="view()?.level" data-battery-word>
             <i class="pi" [class]="icons[word]" aria-hidden="true"></i>

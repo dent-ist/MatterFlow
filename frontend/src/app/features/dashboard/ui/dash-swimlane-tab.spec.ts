@@ -370,7 +370,7 @@ describe('DashSwimlaneTab', () => {
     expect(card.querySelector('[data-card-open]')!.getAttribute('title')).toContain('Acme Corp /');
     expect(text(card.querySelector('[data-due]'))).toContain('ASAP');
     expect(text(card.querySelector('[data-field="assignee"]'))).toContain('Tariq Malik');
-    expect(text(card.querySelector('[data-ooo]'))).toBe('Out of office');
+    expect(text(card.querySelector('[data-ooo]'))).toBe('Out of Office');
     expect(card.querySelector('[data-ooo]')!.getAttribute('title')).toBe('Out of office: Leave');
     expect(card.querySelector('[data-progress] [role="img"]')!.getAttribute('aria-label')).toBe(
       'Workflow steps: 1 of 4 done',
@@ -830,7 +830,7 @@ describe('DashSwimlaneTab', () => {
         ],
       });
       await open(of(byAssignee), '/dashboard?tab=swimlane&group=assignee');
-      expect(text(lane('IN_PROGRESS').querySelector('.grp-btn'))).toContain('Out of office');
+      expect(text(lane('IN_PROGRESS').querySelector('.grp-btn'))).toContain('Out of Office');
       expect(text(lane('NEW').querySelector('.grp-btn'))).toContain('Unassigned');
     });
   });
@@ -983,7 +983,7 @@ describe('DashSwimlaneTab', () => {
       expect(tasks['getTask']).toHaveBeenCalledWith(3);
       expect(text(peek)).toContain('Out of office owner');
       expect(text(peek.querySelector('[data-peek-status]'))).toContain('In Progress');
-      expect(text(peek.querySelector('[data-peek-assignee]'))).toContain('Out of office');
+      expect(text(peek.querySelector('[data-peek-assignee]'))).toContain('Out of Office');
       expect(
         Array.from(peek.querySelectorAll('[data-peek-steps] li')).map(
           (li) =>

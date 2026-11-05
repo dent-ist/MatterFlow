@@ -26,7 +26,7 @@ async function setOutFromMenu(page: Page): Promise<void> {
 
 async function imBackFromMenu(page: Page): Promise<void> {
   const menu = await openMenu(page);
-  await menu.getByRole('menuitem', { name: "I'm back" }).click();
+  await menu.getByRole('menuitem', { name: "I'm Back" }).click();
 }
 
 const WHO = [
@@ -45,21 +45,21 @@ test.describe('pf1-follow-menu: the open profile page follows the header menu (#
       const me = await asUser(p.username);
       await me.goto('/profile');
       await expect(me.locator('[data-status-available]')).toBeChecked();
-      await expect(me.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+      await expect(me.getByRole('button', { name: 'Save Changes' })).toBeDisabled();
 
       await setOutFromMenu(me);
       await expect(me.locator('[data-status-ooo]')).toBeChecked();
-      await expect(me.locator('h1 [data-availability-chip]')).toContainText('Out of office');
+      await expect(me.locator('h1 [data-availability-chip]')).toContainText('Out of Office');
       await expect(me.locator('[data-updated-note]')).toHaveText(/Your availability was updated\./);
       await expect(me.locator('[data-updated-note]')).toHaveAttribute('aria-live', 'polite');
-      await expect(me.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+      await expect(me.getByRole('button', { name: 'Save Changes' })).toBeDisabled();
       await expect(me.getByRole('button', { name: 'Cancel' })).toBeDisabled();
       await expect(me.locator('[data-stale]')).toHaveCount(0);
 
       await imBackFromMenu(me);
       await expect(me.locator('[data-status-available]')).toBeChecked();
       await expect(me.locator('[data-ooo-fields]')).toHaveCount(0);
-      await expect(me.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+      await expect(me.getByRole('button', { name: 'Save Changes' })).toBeDisabled();
       // Focus is back on the menu button, as before.
       await expect(me.getByRole('button', { name: /account menu/ })).toBeFocused();
     });
@@ -79,10 +79,10 @@ test.describe('pf1-follow-menu: the open profile page follows the header menu (#
     await expect(stale).toContainText('changed somewhere else');
     await expect(me.getByLabel('Start time', { exact: true })).toHaveValue('08:30');
     await expect(me.locator('[data-status-available]')).toBeChecked();
-    await expect(me.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+    await expect(me.getByRole('button', { name: 'Save Changes' })).toBeEnabled();
 
     // Nothing is overwritten silently: Save raises the existing conflict message and shows the latest values.
-    await me.getByRole('button', { name: 'Save changes' }).click();
+    await me.getByRole('button', { name: 'Save Changes' }).click();
     await expect(me.locator('[data-conflict]')).toContainText('your edits were not saved');
     await expect(me.locator('[data-status-ooo]')).toBeChecked();
     await expect(me.getByLabel('Start time', { exact: true })).toHaveValue('09:00');
@@ -105,7 +105,7 @@ test.describe('pf1-follow-menu: the open profile page follows the header menu (#
     await expect(me.locator('[data-status-ooo]')).toBeChecked();
     await expect(me.getByLabel('End time', { exact: true })).toHaveValue('16:00');
 
-    await me.getByRole('button', { name: 'Load latest' }).click();
+    await me.getByRole('button', { name: 'Load Latest' }).click();
     await expect(me.locator('[data-status-available]')).toBeChecked();
     await expect(me.getByLabel('End time', { exact: true })).toHaveValue('17:00');
     await expect(me.locator('[data-updated-note]')).toContainText('latest availability');
@@ -141,7 +141,7 @@ test.describe('pf1-follow-menu: the open profile page follows the header menu (#
       await noHorizontalScroll(me);
       await shot(me, 'pf1-follow-menu-dirty');
     }
-    await me.getByRole('button', { name: 'Load latest' }).click();
+    await me.getByRole('button', { name: 'Load Latest' }).click();
     for (const size of SIZES) {
       await me.setViewportSize(size);
       expect(await axeViolations(me), `followed page at ${size.width}`).toEqual([]);
@@ -178,7 +178,7 @@ test.describe('pf1-toast-replace: one availability toast at a time (#525)', () =
     await setOutFromMenu(me);
     await expect(toasts(me).filter({ hasText: 'Out of office set' })).toHaveCount(1);
     await me.getByLabel('Start time', { exact: true }).fill('08:00');
-    await me.getByRole('button', { name: 'Save changes' }).click();
+    await me.getByRole('button', { name: 'Save Changes' }).click();
     await expect(toasts(me).filter({ hasText: 'Availability saved' })).toHaveCount(1);
     await expect(toasts(me).filter({ hasText: 'Out of office set' })).toHaveCount(0);
   });

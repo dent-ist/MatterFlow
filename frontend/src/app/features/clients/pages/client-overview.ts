@@ -118,7 +118,7 @@ export function rowsFromMatters(matters: readonly MatterResponse[]): OverviewMat
       @if (canSeeMatters()) {
         <section class="ov-matters" aria-labelledby="ov-matters-h" data-overview-matters>
           <h3 id="ov-matters-h" class="ov-h">
-            {{ canSeeTasks() ? 'Matters with the most open tasks' : 'Matters' }}
+            {{ canSeeTasks() ? 'Matters With the Most Open Tasks' : 'Matters' }}
           </h3>
           @if (client().matterCount === 0) {
             <p class="ov-empty" data-no-matters>

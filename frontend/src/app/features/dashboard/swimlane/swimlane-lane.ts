@@ -20,7 +20,7 @@ import { SwimlaneCardView, initials } from './swimlane-card';
 import { Density, GroupBy, LANE_HINTS, LaneModel, LaneRow, GroupNode } from './swimlane-model';
 import { IntPipe } from '../../../shared/ui/number-format';
 
-/** How many cards a lane draws before "Show more": a lane holds at most 200, and a long board stays quick to draw. */
+/** How many cards a lane draws before "Show More": a lane holds at most 200, and a long board stays quick to draw. */
 export const LANE_PAGE = 40;
 
 export interface LaneMove {
@@ -199,7 +199,7 @@ let nextId = 0;
                         <span class="grp-title">{{ row.node.label }}</span>
                         @if (row.node.assignee?.availability?.state === 'OUT_OF_OFFICE') {
                           <span class="chip chip--ooo">
-                            <i class="pi pi-calendar-minus" aria-hidden="true"></i>Out of office
+                            <i class="pi pi-calendar-minus" aria-hidden="true"></i>Out of Office
                           </span>
                         }
                       }
@@ -232,7 +232,7 @@ let nextId = 0;
                 Show {{ nextChunk() }} more of {{ hidden() }} hidden
               </button>
               <button type="button" class="mf-btn mf-btn--text" data-show-all (click)="showAll()">
-                Show all
+                Show All
               </button>
             </div>
           }
@@ -571,7 +571,7 @@ export class SwimlaneLane {
   readonly laneMove = output<LaneMove>();
   readonly skipLane = output<string>();
 
-  /** Cards drawn so far (grows with "Show more"). */
+  /** Cards drawn so far (grows with "Show More"). */
   private readonly limit = signal(LANE_PAGE);
   private readonly active = signal<string | null>(null);
 

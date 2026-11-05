@@ -39,23 +39,23 @@ export class CreateTaskPage {
     this.description = page.locator('[data-description-field] [role=textbox]');
     this.chooser = page.locator('[data-type-chooser]');
     this.typeChip = page.locator('[data-type-chip]');
-    this.changeType = page.getByRole('button', { name: 'Change type' });
-    this.typeSearch = page.getByRole('searchbox', { name: 'Search task types' });
+    this.changeType = page.getByRole('button', { name: 'Change Type' });
+    this.typeSearch = page.getByRole('searchbox', { name: 'Search Task Types' });
     this.requestorName = page.getByRole('textbox', { name: 'Requestor name (required)' });
-    this.requestorEmail = page.getByRole('textbox', { name: 'Requestor email', exact: true });
+    this.requestorEmail = page.getByRole('textbox', { name: 'Requestor Email', exact: true });
     this.priority = page.getByLabel('Priority (required)');
-    this.dueDate = page.getByLabel('Due date', { exact: true });
+    this.dueDate = page.getByLabel('Due Date', { exact: true });
     this.dueTime = page.getByLabel(/^Time \(/);
     this.whenToggle = page.locator('[data-when-toggle]');
     this.whenSummary = page.locator('[data-when-summary]');
     this.pod = page.getByLabel('Pod', { exact: true });
     this.assignee = page.getByRole('combobox', { name: 'Assignee', exact: true });
-    this.submit = page.getByRole('button', { name: 'Create task', exact: true });
+    this.submit = page.getByRole('button', { name: 'Create Task', exact: true });
     this.summary = page.locator('[data-summary]');
     this.workflows = page.locator('[data-workflows]');
     this.requestDetails = page.locator('[data-request-details]');
     this.sensitiveBanner = page.locator('[data-sensitive-banner]');
-    this.pasteBox = page.getByRole('textbox', { name: 'Paste email text' });
+    this.pasteBox = page.getByRole('textbox', { name: 'Paste Email Text' });
     this.fillFromPasted = page.getByRole('button', { name: /Fill from pasted text/ });
   }
 
@@ -73,9 +73,9 @@ export class CreateTaskPage {
     });
   }
 
-  /** The "Quick fill from email" panel starts collapsed (UXR-38); opens it unless it is already open. */
+  /** The "Quick Fill From Email" panel starts collapsed (UXR-38); opens it unless it is already open. */
   async showEmailPanel(): Promise<void> {
-    const toggle = this.page.getByRole('button', { name: 'Fill from email' });
+    const toggle = this.page.getByRole('button', { name: 'Fill From Email' });
     if (await toggle.isVisible()) await toggle.click();
     await expect(this.pasteBox).toBeVisible();
   }

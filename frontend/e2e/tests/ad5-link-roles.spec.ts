@@ -45,7 +45,7 @@ test.describe('Link Roles tab chrome and list (#640)', () => {
       `Link Roles, ${active} active`,
     );
     const header = page.locator('mf-page-header');
-    await expect(header.getByRole('button', { name: 'New link role' })).toBeVisible();
+    await expect(header.getByRole('button', { name: 'New Link Role' })).toBeVisible();
     await expect(header.getByRole('button', { name: 'New asset type' })).toHaveCount(0);
     const description = page.locator('[data-page-description]');
     await expect(description).toHaveText(
@@ -107,11 +107,11 @@ test.describe('Link Roles tab chrome and list (#640)', () => {
     await shot(page, 'link-roles-long-name');
   });
 
-  test('"Skip to table" is the first Tab stop and moves focus to the table', async ({ page }) => {
+  test('"Skip to Table" is the first Tab stop and moves focus to the table', async ({ page }) => {
     await page.goto(TAB_URL);
     await expect(page.locator('[data-roles] tbody tr[data-row]').first()).toBeVisible();
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('link', { name: 'Skip to table' })).toBeFocused();
+    await expect(page.getByRole('link', { name: 'Skip to Table' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.locator('#link-roles-table')).toBeFocused();
   });
@@ -126,7 +126,7 @@ test.describe('New link role and Rename (#640, #642)', () => {
     await admin.post('/api/v1/asset-link-roles', { name: taken, isActive: true });
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(TAB_URL);
-    const opener = page.getByRole('button', { name: 'New link role' });
+    const opener = page.getByRole('button', { name: 'New Link Role' });
     await opener.click();
     await expect(dialog(page)).toBeVisible();
     await expect(field(page)).toBeFocused();
@@ -166,7 +166,7 @@ test.describe('New link role and Rename (#640, #642)', () => {
     await link.focus();
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(new RegExp(`edit=${role.id}`));
-    await expect(dialog(page)).toContainText('Rename link role');
+    await expect(dialog(page)).toContainText('Rename Link Role');
     await expect(field(page)).toHaveValue(name);
 
     // Unsaved: Escape asks, Stay keeps the text, Leave closes it and focus returns to the link.
@@ -270,13 +270,13 @@ test.describe('Links, Delete only when unused, Move, Deactivate (#641, #640)', (
     await expect(row(page, b)).toBeVisible();
     const before = await names();
     await openRowMenu(page, menu(page, b));
-    await page.getByRole('menuitem', { name: 'Move up' }).click();
+    await page.getByRole('menuitem', { name: 'Move Up' }).click();
     await expect(menu(page, b)).toBeFocused();
     const after = await names();
     expect(after.indexOf(b)).toBe(before.indexOf(b) - 1);
     expect(after.indexOf(a)).toBe(before.indexOf(a) + 1); // the role it passed moves down one
     await openRowMenu(page, menu(page, b));
-    await page.getByRole('menuitem', { name: 'Move down' }).click();
+    await page.getByRole('menuitem', { name: 'Move Down' }).click();
     await expect.poll(names).toEqual(before);
     await expect(menu(page, b)).toBeFocused();
     await page.reload();
@@ -333,7 +333,7 @@ test.describe('Permissions and accessibility', () => {
       expect(await axeViolations(page), `menu at ${size.width}`).toEqual([]);
       await page.keyboard.press('Escape');
 
-      await page.getByRole('button', { name: 'New link role' }).click();
+      await page.getByRole('button', { name: 'New Link Role' }).click();
       await expect(dialog(page)).toBeVisible();
       expect(await axeViolations(page), `dialog at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);

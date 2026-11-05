@@ -79,7 +79,7 @@ describe('AssigneePicker (Edit task, Create task)', () => {
     ]);
     expect(options()[1].querySelector('[data-option-hint]')!.textContent).toContain('2 open');
     expect(options()[1].querySelector('[data-option-flag]')!.textContent).toMatch(
-      /Out of office until Mar 2[01], 2099/,
+      /Out of Office until Mar 2[01], 2099/,
     );
     expect(el().querySelector('[data-search-all]')).toBeNull();
   });
@@ -119,7 +119,7 @@ describe('AssigneePicker (Edit task, Create task)', () => {
     expect(fixture.componentInstance.selected()).toEqual({
       id: 9,
       label: 'Bo Bell',
-      flag: expect.stringContaining('Out of office until'),
+      flag: expect.stringContaining('Out of Office until'),
     });
     expect(el().querySelector('[data-chosen]')!.textContent).toContain('Bo Bell');
   });

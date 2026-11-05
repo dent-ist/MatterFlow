@@ -29,7 +29,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
   template: `
     <form class="cs" novalidate (submit)="$event.preventDefault(); save()" data-capacity-settings>
       <fieldset class="cs__group">
-        <legend>Team capacity</legend>
+        <legend>Team Capacity</legend>
         <div class="mf-field">
           <label class="cs__check" for="cs-off-hours">
             <input
@@ -55,7 +55,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
           {{ m }}
           @if (conflict()) {
             <p-button
-              label="Reload latest"
+              label="Reload Latest"
               severity="secondary"
               data-capacity-reload
               (onClick)="load()"
@@ -77,7 +77,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
       <div class="cs__actions">
         <p-button
           type="button"
-          label="Reset to default"
+          label="Reset to Default"
           severity="secondary"
           [outlined]="true"
           data-capacity-reset

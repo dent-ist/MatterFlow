@@ -56,7 +56,7 @@
       <p class="error" role="alert" data-conflict>
         Someone else changed this task type.
         <button type="button" class="mf-btn mf-btn--text" (click)="reload()" data-reload>
-          Reload the latest version
+          Reload the Latest Version
         </button>
         (your unsaved edits will be discarded).
       </p>
@@ -182,7 +182,7 @@
                 }
               </div>
               <div class="field">
-                <label for="tt-target">Expected turnaround (days)</label>
+                <label for="tt-target">Expected Turnaround (days)</label>
                 <input
                   id="tt-target"
                   class="text tt__target"
@@ -272,7 +272,7 @@
         @case ('form') {
           @if (taskType(); as t) {
             <section class="rf" aria-labelledby="tt-form" data-form-tab>
-              <h2 id="tt-form">Request form</h2>
+              <h2 id="tt-form">Request Form</h2>
               @if (formFacts(); as f) {
                 <ul class="rf__states" data-form-summary>
                   @if (f.published) {
@@ -301,7 +301,7 @@
                 </ul>
               }
               <button type="button" class="mf-btn" (click)="openForm()" data-open-form>
-                {{ hasForm() ? 'Edit form' : 'Create form' }}
+                {{ hasForm() ? 'Edit Form' : 'Create Form' }}
               </button>
               <p class="muted hint">
                 The request form is the set of fields people fill in when they create a task of this
@@ -325,7 +325,7 @@
             (click)="current() === 'overview' ? null : save()"
             data-save
           >
-            {{ isNew() ? 'Create task type' : 'Save changes' }}
+            {{ isNew() ? 'Create Task Type' : 'Save Changes' }}
           </button>
         </div>
       }

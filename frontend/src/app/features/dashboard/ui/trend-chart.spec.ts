@@ -37,7 +37,7 @@ const panel = (
   note: string | null = null,
 ): PanelView => ({
   key,
-  title: key === 'flows' ? 'Created and completed' : 'Backlog at end of day',
+  title: key === 'flows' ? 'Created and Completed' : 'Backlog at End of Day',
   lines: [...lines],
   height: key === 'flows' ? 320 : 200,
   measureNote: note,
@@ -47,7 +47,7 @@ const panel = (
   imports: [TrendChart],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<mf-trend-chart
-    heading="Tasks over time"
+    heading="Tasks Over Time"
     [dates]="dates()"
     [granularity]="granularity()"
     [periodFrom]="from()"
@@ -102,7 +102,7 @@ describe('trend chart', () => {
       const plot = el.querySelector('[data-plot]')!;
       expect(plot.getAttribute('aria-roledescription')).toBe('chart');
       expect(plot.getAttribute('aria-label')).toContain('Created 7 created, Completed 5 completed');
-      expect(el.querySelector('h3')!.textContent).toBe('Created and completed');
+      expect(el.querySelector('h3')!.textContent).toBe('Created and Completed');
       expect(plot.getAttribute('tabindex')).toBe('0');
       const svg = plot.querySelector('svg.chart')!;
       expect(svg.getAttribute('aria-hidden')).toBe('true');
@@ -418,8 +418,8 @@ describe('trend chart', () => {
       const panels = Array.from(el.querySelectorAll('[data-panel]'));
       expect(panels.map((p) => p.getAttribute('data-panel'))).toEqual(['flows', 'backlog']);
       expect(panels.map((p) => text(p.querySelector('h3')))).toEqual([
-        'Created and completed',
-        'Backlog at end of day',
+        'Created and Completed',
+        'Backlog at End of Day',
       ]);
       const top = (p: Element) =>
         Math.max(
@@ -458,14 +458,14 @@ describe('trend chart', () => {
       expect(el.querySelectorAll('line.rule').length).toBe(2);
       expect(el.querySelectorAll('[data-tip]').length).toBe(1);
       const tip = text(el.querySelector('[data-tip]'));
-      expect(tip).toContain('Created and completed');
+      expect(tip).toContain('Created and Completed');
       expect(tip).toContain('5 created');
-      expect(tip).toContain('Backlog at end of day');
+      expect(tip).toContain('Backlog at End of Day');
       expect(tip).toContain('152 overdue');
       expect(text(el.querySelector('[data-readout]'))).toBe(
-        'Fri, Oct 2: 5 created, 4 completed; Backlog at end of day: 152 overdue.',
+        'Fri, Oct 2: 5 created, 4 completed; Backlog at End of Day: 152 overdue.',
       );
-      expect(plot.getAttribute('aria-label')).toContain('Backlog at end of day: Overdue 140 now');
+      expect(plot.getAttribute('aria-label')).toContain('Backlog at End of Day: Overdue 140 now');
     });
 
     it('does not take the arrow keys of the controls inside the chart', () => {
@@ -481,7 +481,7 @@ describe('trend chart', () => {
       await update((h) => h.asTable.set(true));
       expect(
         Array.from(el.querySelectorAll('thead th[scope=colgroup]')).map((t) => text(t)),
-      ).toEqual(['Created and completed', 'Backlog at end of day']);
+      ).toEqual(['Created and Completed', 'Backlog at End of Day']);
       expect(Array.from(el.querySelectorAll('thead th[data-col]')).map((t) => text(t))).toEqual([
         'Created',
         'Completed',
@@ -710,7 +710,7 @@ describe('trend chart', () => {
       plot.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
       fixture.detectChanges();
       expect(text(el.querySelector('[data-readout]'))).toContain(
-        'Week of Oct 5: 9 created; Backlog at end of day: 140 open',
+        'Week of Oct 5: 9 created; Backlog at End of Day: 140 open.',
       );
       expect(plot.getAttribute('aria-label')).toContain('per week');
       expect(plot.getAttribute('aria-label')).toContain('Open 150 now');

@@ -36,7 +36,7 @@ test.describe('Quick actions per matter', () => {
     await expect(dialog.locator('[data-task-list] label')).toHaveCount(2);
     await dialog.locator('[data-task-list] label', { hasText: 'Second open task' }).click();
     await dialog.locator('[data-comment-text]').fill('Quick note from the project manager');
-    await dialog.getByRole('button', { name: 'Add comment' }).click();
+    await dialog.getByRole('button', { name: 'Add Comment' }).click();
     await expect(toasts(page).first()).toContainText('Comment posted');
     await page.goto(`/tasks/${second.taskId}`);
     await expect(page.locator('main')).toContainText('Quick note from the project manager');

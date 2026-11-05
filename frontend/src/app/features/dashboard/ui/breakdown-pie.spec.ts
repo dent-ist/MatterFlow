@@ -69,7 +69,7 @@ describe('paletteColor', () => {
     <mf-bar-list
       cardKey="task-type"
       heading="Task Type"
-      rowHeading="Task type"
+      rowHeading="Task Type"
       [items]="types"
       emptyText="No open tasks."
     />

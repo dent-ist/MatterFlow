@@ -47,7 +47,7 @@ import { dashDue } from './due-suffix';
       }
       @if (riskShown() && (tone() === 'asap' || !c.line2)) {
         <span class="dc-l2 dc-risk" aria-hidden="true" data-at-risk>
-          <i class="pi pi-clock"></i>At risk
+          <i class="pi pi-clock"></i>At Risk
         </span>
       }
     </span>

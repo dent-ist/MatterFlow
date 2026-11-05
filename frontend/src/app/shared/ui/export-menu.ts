@@ -103,7 +103,7 @@ export class ExportMenu {
       },
       {
         id: 'copy',
-        label: 'Copy as text',
+        label: 'Copy as Text',
         icon: 'pi-copy',
         disabled: off,
         reason,

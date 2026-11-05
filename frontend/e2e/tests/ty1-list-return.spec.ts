@@ -191,12 +191,12 @@ test.describe('Back and the breadcrumb keep the list view and the row focus (#35
     await page.goto(typesUrl);
     const typeId = types.ids[26];
     await page.getByRole('button', { name: `Actions for ${types.names[26]}` }).click();
-    await page.getByRole('menuitem', { name: 'Edit form' }).click();
+    await page.getByRole('menuitem', { name: 'Edit Form' }).click();
     await expect(page).toHaveURL(new RegExp(`/admin/task-types/${typeId}/form$`));
     await page.goBack();
     await expect(rowLink(page, typeId)).toBeFocused();
     await page.getByRole('button', { name: `Actions for ${types.names[26]}` }).click();
-    await page.getByRole('menuitem', { name: 'Edit form' }).click();
+    await page.getByRole('menuitem', { name: 'Edit Form' }).click();
     await crumb(page, 'Task Types').click();
     expect(urlOf(page)).toBe(typesUrl);
     await expect(rowLink(page, typeId)).toBeFocused();
@@ -230,7 +230,7 @@ test.describe('Back and the breadcrumb keep the list view and the row focus (#35
     const stepsUrl = `/admin/steps?title=${steps.token}&size=25&page=2`;
     await page.goto(stepsUrl);
     await page.getByRole('button', { name: `Actions for ${steps.names[28]}` }).click();
-    await page.getByRole('menuitem', { name: 'Edit inputs' }).click();
+    await page.getByRole('menuitem', { name: 'Edit Inputs' }).click();
     await expect(page).toHaveURL(new RegExp(`/admin/steps/${steps.ids[28]}/form$`));
     await crumb(page, 'Workflow Steps').click();
     expect(urlOf(page)).toBe(stepsUrl);

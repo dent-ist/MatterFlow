@@ -158,7 +158,7 @@ const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN
         [attr.aria-disabled]="busy() ? 'true' : null"
         (click)="$event.stopPropagation(); assignToMe()"
       >
-        Assign to me
+        Assign to Me
       </button>
     }
     @if (flow(); as action) {
@@ -355,7 +355,7 @@ export class RowEdit {
       wanted &&
       this.myId() > 0 &&
       r.assignedUser?.userId !== this.myId()
-      ? { label: 'Assign to me', ariaLabel: `Assign ${r.taskNumber} to me` }
+      ? { label: 'Assign to Me', ariaLabel: `Assign ${r.taskNumber} to me` }
       : null;
   });
 

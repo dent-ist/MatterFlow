@@ -216,7 +216,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
                   </div>
 
                   <div class="mf-field">
-                    <label class="mf-field__label" for="td-req-email">Requestor email</label>
+                    <label class="mf-field__label" for="td-req-email">Requestor Email</label>
                     <input
                       id="td-req-email"
                       class="mf-field__input"
@@ -288,10 +288,10 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
               }
 
               <fieldset class="dt__due">
-                <legend class="dt__sr">Due date and time</legend>
+                <legend class="dt__sr">Due Date and Time</legend>
                 <div class="dt__row">
                   <div class="mf-field">
-                    <label class="mf-field__label" for="td-due-date">Due date</label>
+                    <label class="mf-field__label" for="td-due-date">Due Date</label>
                     <mf-date-input
                       inputId="td-due-date"
                       label="due date"
@@ -388,7 +388,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
                 />
                 {{ t.matter.name }}
               </dd>
-              <dt>Task type</dt>
+              <dt>Task Type</dt>
               <dd>{{ t.taskType.name }}</dd>
               <dt>Workflow</dt>
               <dd>{{ t.workflow.workflowName }} v{{ t.workflow.versionNo }}</dd>
