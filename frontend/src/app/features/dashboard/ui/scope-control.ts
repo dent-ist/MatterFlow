@@ -19,7 +19,6 @@ let nextId = 0;
     <div class="sc" data-dash-scope>
       <span class="sc-lbl" aria-hidden="true">Scope</span>
       <mf-dropdown
-        size="sm"
         data-scope
         [buttonId]="id"
         label="Scope"

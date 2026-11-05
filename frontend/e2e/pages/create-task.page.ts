@@ -61,7 +61,7 @@ export class CreateTaskPage {
 
   async open(query = ''): Promise<void> {
     await this.page.goto(`/tasks/new${query}`);
-    await expect(this.page.getByRole('heading', { name: 'Create task', level: 1 })).toBeVisible();
+    await expect(this.page.getByRole('heading', { name: 'Create Task', level: 1 })).toBeVisible();
     // Either the chooser or (deep link / prefilled type) the form is up.
     await expect(this.chooser.or(this.title)).toBeVisible();
   }

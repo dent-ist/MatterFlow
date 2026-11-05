@@ -1,13 +1,12 @@
-<mf-record-header kind="task" current="Create task" name="Create task" [parents]="headerParents()">
-  <i mfIcon class="ct__title-icon pi pi-plus" aria-hidden="true" data-page-icon></i>
-  <span mfContext data-create-context>
+<mf-page-header heading="Create Task" [crumbs]="headerCrumbs()">
+  <span mfDescription data-create-context>
     @if (selectedChoice(); as c) {
       Task type <strong>{{ c.type.name }}</strong>
     } @else {
       Choose a task type to start
     }
   </span>
-</mf-record-header>
+</mf-page-header>
 
 @if (!canCreate()) {
   <div class="pg-alert" role="alert" data-denied>You don't have permission to create tasks.</div>

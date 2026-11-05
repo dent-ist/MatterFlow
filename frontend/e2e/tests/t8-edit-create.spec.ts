@@ -442,7 +442,7 @@ test.describe('T8: Create task page (CT1 #322, #323)', () => {
     return out;
   }
 
-  test('record header: Create task as the h1 on mf-record-header, Tasks > Create task, the chosen type as the context line, at most two lines', async ({
+  test('page header: Create Task as the h1 on mf-page-header, Tasks > Create Task, the chosen type as the context line, at most two lines', async ({
     page,
     seed,
   }) => {
@@ -451,13 +451,13 @@ test.describe('T8: Create task page (CT1 #322, #323)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const create = new CreateTaskPage(page);
     await create.open();
-    const header = page.locator('[data-record-header]');
+    const header = page.locator('mf-page-header');
     await expect(header).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Create task', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Create Task', level: 1 })).toBeVisible();
     await expect(
       header.locator('nav[aria-label="Breadcrumb"] a', { hasText: 'Tasks' }),
     ).toBeVisible();
-    await expect(header.locator('[data-crumb-current]')).toContainText('Create task');
+    await expect(header.locator('[aria-current="page"]')).toContainText('Create Task');
     await expect(page.locator('[data-create-context]')).toContainText('Choose a task type');
     // Not a record with a state: no Active badge next to the title.
     await expect(header.getByText('Active', { exact: true })).toHaveCount(0);
@@ -477,10 +477,10 @@ test.describe('T8: Create task page (CT1 #322, #323)', () => {
     const world = await seed.world({ stepCount: 2 });
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/tasks/new?matterId=${world.matter.matterId}&taskType=${world.taskType.id}`);
-    const trail = page.locator('[data-record-header] .rh__trail');
+    const trail = page.locator('mf-page-header nav[aria-label="Breadcrumb"]');
     await expect(trail.getByRole('link', { name: 'Tasks' })).toBeVisible();
     await expect(trail.getByRole('link', { name: world.matter.matterRef })).toBeVisible();
-    await expect(page.locator('[data-crumb-current]')).toContainText('Create task');
+    await expect(page.locator('mf-page-header [aria-current="page"]')).toContainText('Create Task');
   });
 
   for (const size of SIZES) {
@@ -614,14 +614,14 @@ test.describe('T8: Create task page (CT1 #322, #323)', () => {
     await expect(
       denied.getByRole('heading', { name: "You don't have permission to view this." }),
     ).toBeVisible();
-    await expect(denied.locator('[data-record-header]')).toHaveCount(0);
+    await expect(denied.locator('mf-page-header')).toHaveCount(0);
 
     const role = await seed.role(['Task.View', 'Task.Create'], `E2E T8 creator ${token}`);
     const creator = await seed.user([role.name], `t8d-${token}`);
     const page = await asUser(creator.username);
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto(`/tasks/new?taskType=${world.taskType.id}`);
-    await expect(page.locator('[data-record-header]')).toBeVisible();
+    await expect(page.locator('mf-page-header')).toBeVisible();
     await expect(page.locator('[data-summary-card]')).toBeVisible();
     await new CreateTaskPage(page).openWhen(); // collapsed by default (#349)
     await expect(page.locator('[data-no-assign]')).toBeVisible();

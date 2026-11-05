@@ -586,7 +586,7 @@ describe('DashboardPage', () => {
         'mf-dash-tab-swimlane',
       );
       // The refresh is one icon in the tab row, with no "Updated" text, on every tab.
-      expect(el.querySelector('mf-page-header [data-refresh]')).toBeNull();
+      expect(el.querySelector('[data-page-actions] [data-refresh]')).not.toBeNull();
       expect(el.querySelectorAll('[data-refresh]').length).toBe(1);
       const icon = el.querySelector<HTMLButtonElement>('mf-dash-tabs [data-refresh]')!;
       expect(icon).not.toBeNull();
@@ -604,7 +604,7 @@ describe('DashboardPage', () => {
       expect(usersIcon.getAttribute('aria-label')).toBe('Refresh');
       expect(usersIcon.textContent!.trim()).toBe('');
       expect(el.querySelectorAll('[data-refresh]').length).toBe(1);
-      expect(el.querySelector('mf-page-header [data-refresh]')).toBeNull();
+      expect(el.querySelector('[data-page-actions] [data-refresh]')).not.toBeNull();
       expect(el.querySelector('[data-tabpanel="swimlane"]')).toBeNull();
 
       tabButtons(el)[0].click();

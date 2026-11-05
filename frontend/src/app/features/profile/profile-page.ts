@@ -20,7 +20,7 @@ import { AvailabilityForm, LoadState } from '../../shared/availability/availabil
 import { AbsenceList } from '../../shared/availability/absences/absence-list';
 import { HolidayCard } from '../../shared/availability/absences/holiday-card';
 import { HasUnsavedChanges } from '../../shared/guards/unsaved-changes.guard';
-import { PageHeader, RecordTitle } from '../../shared/ui/page-header';
+import { PageHeader } from '../../shared/ui/page-header';
 import { RecordSkeleton } from '../../shared/ui/record-skeleton';
 import { RecordState, recordStateTitle } from '../../shared/ui/record-state';
 
@@ -37,7 +37,7 @@ import { RecordState, recordStateTitle } from '../../shared/ui/record-state';
   selector: 'mf-profile-page',
   imports: [
     PageHeader,
-    RecordTitle,
+
     AvailabilityChip,
     AvailabilityForm,
     AccountCard,
@@ -59,12 +59,17 @@ import { RecordState, recordStateTitle } from '../../shared/ui/record-state';
         (retried)="retry()"
       />
     } @else {
-      <mf-page-header [description]="context()" icon="" data-profile-header>
-        <mf-record-title mfTitle [name]="name()" [clamp]="true">
+      <mf-page-header heading="My profile" data-profile-header>
+        <!-- The person's name and availability are the context line under the title (D-21, #1135). -->
+        <span mfDescription class="pp__who" data-profile-who>
+          <span class="pp__name" data-name>{{ name() }}</span>
           @if (mine.profile()) {
             <mf-availability-chip [availability]="mine.current()" />
           }
-        </mf-record-title>
+          @if (context()) {
+            <span data-profile-context>{{ context() }}</span>
+          }
+        </span>
       </mf-page-header>
     }
     @if (shown() === 'loading') {

@@ -59,7 +59,8 @@ import { DESCRIPTION_MAX_TEXT, htmlToText, isBlankHtml } from '../panels/rich-te
 import { whenSummaryText } from '../panels/when-summary';
 import { AssigneePicker } from '../../../shared/assignees/assignee-picker';
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
-import { RecordHeader, SENSITIVE_ACCESS_TEXT } from '../../../shared/ui/record-header';
+import { PageHeader } from '../../../shared/ui/page-header';
+import { SENSITIVE_ACCESS_TEXT } from '../../../shared/ui/record-header';
 import type { Crumb } from '../../../shared/ui/page-header';
 import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { TextField } from '../../../shared/ui/text-field';
@@ -114,7 +115,7 @@ const matterOption = (m: MatterResponse): PickerOption => ({
   imports: [
     ErrorReference,
     Button,
-    RecordHeader,
+    PageHeader,
     DynamicForm,
     DateInput,
     EmailIntake,
@@ -281,7 +282,11 @@ export class CreateTaskPage implements HasUnsavedChanges {
   protected readonly cardText = cardText;
 
   /** Crumb steps before "Create task": Tasks, and the Matter when the page was opened from one (only for a person who may open it). */
-  protected readonly headerParents = computed<Crumb[]>(() => {
+  protected readonly headerCrumbs = computed<Crumb[]>(() => [
+    ...this.headerParents(),
+    { label: 'Create Task' },
+  ]);
+  private readonly headerParents = computed<Crumb[]>(() => {
     const back = this.backTarget();
     const parents: Crumb[] = [
       back ? { label: 'My Matters', link: back } : { label: 'Tasks', link: '/tasks' },

@@ -27,3 +27,17 @@
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   }
 }
+
+/* The context line under the title: the person's name, their availability chip and their roles and Pod (D-21, #1135). */
+.pp__who {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mf-s2);
+  vertical-align: middle;
+}
+
+.pp__name {
+  color: var(--mf-text);
+  font-size: var(--mf-fs-md);
+  font-weight: var(--mf-fw-semibold);
+}

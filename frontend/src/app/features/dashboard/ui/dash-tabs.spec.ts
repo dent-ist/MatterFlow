@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { DashTab, DashTabs } from './dash-tabs';
 
 const TABS: DashTab[] = [
@@ -30,6 +31,7 @@ describe('DashTabs (WP9b: the tab strip on a phone)', () => {
   const tabs = () => Array.from(el.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
 
   beforeEach(async () => {
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
     fixture = TestBed.createComponent(Host);
     el = fixture.nativeElement as HTMLElement;
     document.body.appendChild(el);

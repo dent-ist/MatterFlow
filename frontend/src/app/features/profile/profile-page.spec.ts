@@ -72,16 +72,20 @@ describe('ProfilePage', () => {
 
   it('the header names the person, gives roles and primary Pod and the chip (P11)', async () => {
     const { root } = await create();
-    expect(text(root, 'h1')).toContain('Kim Admin');
-    expect(root.querySelector('h1 [data-availability-chip]')?.textContent).toContain('Available');
-    expect(text(root, '[data-page-description]')).toBe('Data Technician, Pod Lead \u00b7 Main Pod');
+    // The title is the page ("My profile"); the person's name, availability chip, roles and Pod are the context line under it (#1135).
+    expect(text(root, 'h1')).toBe('My profile');
+    expect(text(root, '[data-profile-who] [data-name]')).toBe('Kim Admin');
+    expect(
+      root.querySelector('[data-profile-who] [data-availability-chip]')?.textContent,
+    ).toContain('Available');
+    expect(text(root, '[data-profile-context]')).toBe('Data Technician, Pod Lead \u00b7 Main Pod');
     // The Out of office list has its own Add button; the header carries no action.
     expect(root.querySelectorAll('[data-page-actions] button').length).toBe(0);
   });
 
   it('with no display name the header shows the Windows account', async () => {
     const { root } = await create({ me: { displayName: '' } });
-    expect(text(root, 'h1')).toContain('KE\\kekim');
+    expect(text(root, '[data-profile-who] [data-name]')).toBe('KE\\kekim');
   });
 
   it('lists the out of office entries (several, grouped) and the holiday card beside them', async () => {
@@ -128,7 +132,7 @@ describe('ProfilePage', () => {
     await settle(fixture);
     expect(root.querySelector('[data-record-state]')).toBeNull();
     expect(text(root, '[data-page-live]')).toBe('Loaded');
-    expect(text(root, 'h1')).toContain('Kim Admin');
+    expect(text(root, '[data-profile-who] [data-name]')).toBe('Kim Admin');
   });
 
   it('asks before leaving with unsaved edits, and not otherwise', async () => {

@@ -17,6 +17,7 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { PageTitle } from '../../../core/title/page-title';
 import { CreateTaskContext } from '../../../shared/layout/create-task-context';
 import { FixedPage } from '../../../shared/ui/fixed-page';
+import { PageHeader } from '../../../shared/ui/page-header';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { tabIcon } from '../../../shared/ui/tab-icons';
 import { LoadGroup, panelLoader } from '../panel-loader';
@@ -62,6 +63,7 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
     FocusChip,
     FocusControl,
     OptionsMenu,
+    PageHeader,
     ScopeSwitch,
     MmTreePanel,
     MmTreeRail,
@@ -73,33 +75,6 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
   styles: `
     :host {
       display: block;
-    }
-    .hdr {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--mf-s2) var(--mf-s3);
-      min-height: 30px;
-      flex: none;
-    }
-    .chip-i {
-      display: grid;
-      place-items: center;
-      width: 32px;
-      height: 32px;
-      border-radius: var(--mf-radius-lg);
-      background: var(--mf-primary);
-      color: var(--mf-surface);
-    }
-    h1 {
-      margin: 0;
-      font-size: var(--mf-fs-title-lg);
-      font-weight: 600;
-      line-height: 1.2;
-    }
-    mf-mm-scope-bar {
-      flex: 1 1 auto;
-      margin-top: var(--mf-s3);
     }
     .work {
       display: block;
@@ -192,14 +167,12 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
   `,
   template: `
     <mf-fixed-page>
-      <div class="hdr">
-        <span class="chip-i"
-          ><i class="pi pi-clipboard" data-page-icon aria-hidden="true"></i
-        ></span>
-        <h1>My Matters</h1>
-        <mf-mm-scope-chip [label]="scopeChipLabel()" (clear)="clear()" />
-        <mf-mm-workflow-bar [filters]="scope.filters()" [scopeName]="scopeName()" />
+      <!-- The one page header (D-21, #1135): the tile, the H1, the chosen client or matter as a chip beside it; the workflow mix, Scope, Options and New at the right. -->
+      <mf-page-header heading="My Matters">
+        <mf-mm-scope-chip mfTitleExtra [label]="scopeChipLabel()" (clear)="clear()" />
+        <mf-mm-workflow-bar mfActions [filters]="scope.filters()" [scopeName]="scopeName()" />
         <mf-mm-scope-bar
+          mfActions
           [tree]="tree.data()"
           [clientId]="scope.clientId()"
           [matterId]="scope.matterId()"
@@ -235,7 +208,7 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
             (created)="refresh.update((n) => n + 1)"
           />
         </mf-mm-scope-bar>
-      </div>
+      </mf-page-header>
 
       <mf-mm-focus-chip />
       <div class="sr" role="status" aria-live="polite" data-live>{{ announce() }}</div>

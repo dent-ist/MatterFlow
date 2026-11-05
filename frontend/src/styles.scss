@@ -188,3 +188,11 @@ a:not([class]):hover,
 #mf-list:focus {
   outline: none;
 }
+
+/* The page heading receives focus from script (after a navigation, for screen readers); it is not interactive, so it never draws a focus box (D-21, #1135). */
+h1[data-page-title]:focus,
+h1[data-page-title]:focus-visible,
+h1[tabindex='-1']:focus,
+h1[tabindex='-1']:focus-visible {
+  outline: none;
+}

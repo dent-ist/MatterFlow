@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { ActivatedRoute, RouterLink, UrlTree } from '@angular/router';
 import { iconForPath } from '../layout/section-icons';
+import { CountChip } from './count-chip';
 import { FixedPage } from './fixed-page';
 
 /** One step of the breadcrumb trail; the last one is the current page and has no link. */
@@ -47,13 +48,13 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
  *     `data-ph-selector` to get the cap);
  *   - the context line is the single place for a description: `description` or the `mfDescription` slot.
  *
- * Slots: `mfTitle` (rich H1 content such as reference + name + badge; replaces `heading`), `mfActions` (put the attribute on each
+ * Slots: `mfTitle` (rich H1 content such as reference + name + badge; replaces `heading`), `mfTitleExtra` (a chip beside the title, My Matters' scope chip), `mfActions` (put the attribute on each
  * action, secondary first and the primary action last so it sits top-right), `mfDescription` (rich context line) and the default
  * slot for anything that belongs to the header under the context line (chips, tabs).
  */
 @Component({
   selector: 'mf-page-header',
-  imports: [RouterLink],
+  imports: [RouterLink, CountChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.ph--compact]': 'compact' },
   template: `
@@ -82,17 +83,18 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
       }
       <div class="ph__row">
         <div class="ph__head">
-          <h1 class="ph__title" data-page-title>
+          <h1 class="ph__title" data-page-title [attr.id]="titleId()">
             @if (iconClass(); as ic) {
               <i class="ph__icon" [class]="ic" aria-hidden="true" data-page-icon></i>
             }
             <ng-content select="[mfTitle]">{{ heading() }}</ng-content>
           </h1>
           @if (count() !== null) {
-            <span class="ph__count" data-list-count
-              ><span class="mf-sr-only">Total: </span>{{ countText() }}</span
+            <mf-count-chip data-list-count
+              ><span class="mf-sr-only">Total: </span>{{ countText() }}</mf-count-chip
             >
           }
+          <ng-content select="[mfTitleExtra]" />
         </div>
         <div class="ph__actions" data-page-actions>
           <ng-content select="[mfActions]" />
@@ -181,19 +183,6 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
       gap: var(--mf-s2);
       min-width: 0;
     }
-    .ph__count {
-      flex: none;
-      min-width: 1.5rem;
-      padding: 0 var(--mf-s2);
-      border: 1px solid var(--mf-border);
-      border-radius: 999px;
-      background: var(--mf-surface-alt);
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-      font-weight: 600;
-      line-height: 1.5rem;
-      text-align: center;
-    }
     .ph__row {
       display: flex;
       flex-wrap: wrap;
@@ -222,8 +211,8 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
     .ph__icon {
       display: inline-grid;
       place-items: center;
-      width: 32px;
-      height: 32px;
+      width: var(--mf-tile-size);
+      height: var(--mf-tile-size);
       margin-right: var(--mf-s2);
       border-radius: var(--mf-radius-lg);
       background: var(--mf-primary);
@@ -333,6 +322,8 @@ export class PageHeader {
   readonly icon = input<string | null>(null);
   /** A list page: the total after the filters as a small chip after the title (null while loading, so the chip is left out). */
   readonly count = input<number | null>(null);
+  /** An id for the H1 when something points at it (`aria-labelledby`, the Dashboard's panel). */
+  readonly titleId = input<string | null>(null);
   protected readonly countText = computed(() => (this.count() ?? 0).toLocaleString('en-US'));
 
   protected readonly crumbMax = CRUMB_MAX;
