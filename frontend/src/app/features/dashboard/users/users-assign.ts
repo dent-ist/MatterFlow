@@ -103,9 +103,14 @@ export function assignHint(
   template: `
     <mf-form-dialog
       [title]="user() ? 'Assign Work to ' + user()!.displayName : 'Assign Work'"
-      [secondaryLabel]="footerReady() ? 'Cancel' : 'Close'"
-      [showPrimary]="false"
+      [secondaryLabel]="confirming() ? 'Back' : footerReady() ? 'Cancel' : 'Close'"
+      [ownSecondary]="confirming() !== null"
+      primaryLabel="Confirm Assignment"
+      [showPrimary]="confirming() !== null"
+      [busy]="busy()"
       [footerActions]="footerReady()"
+      (secondaryClick)="cancelConfirm()"
+      (submitted)="confirmBatch()"
       [visible]="visible()"
       (visibleChange)="onVisible($event)"
     >
@@ -152,26 +157,6 @@ export function assignHint(
                   <mf-error-reference />
                 </div>
               }
-              <div class="bar">
-                <button
-                  type="button"
-                  class="mf-btn mf-btn--primary"
-                  data-assign-confirm-ok
-                  [disabled]="busy()"
-                  (click)="confirmBatch()"
-                >
-                  Assign {{ picked.length === 1 ? 'task' : picked.length + ' tasks' }}
-                </button>
-                <button
-                  type="button"
-                  class="mf-btn"
-                  data-assign-confirm-back
-                  [disabled]="busy()"
-                  (click)="cancelConfirm()"
-                >
-                  Back
-                </button>
-              </div>
             </section>
           } @else {
             @if (inPods()) {
@@ -441,12 +426,6 @@ export function assignHint(
       align-self: center;
       color: var(--mf-text-muted);
     }
-    .bar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--mf-s2);
-    }
     .muted,
     .note {
       margin: 0;
@@ -678,6 +657,7 @@ export class UsersAssign {
   }
 
   protected cancelConfirm(): void {
+    if (this.busy()) return;
     this.confirming.set(null);
     afterNextRender(
       () => document.querySelector<HTMLElement>('.mf-formdlg [data-assign-next]')?.focus(),
@@ -687,10 +667,7 @@ export class UsersAssign {
 
   private focusConfirm(): void {
     afterNextRender(
-      () =>
-        document
-          .querySelector<HTMLElement>('[data-assign-dialog] [data-assign-confirm-ok]')
-          ?.focus(),
+      () => document.querySelector<HTMLElement>('[data-panel-primary] button')?.focus(),
       { injector: this.injector },
     );
   }

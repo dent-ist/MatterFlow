@@ -310,7 +310,6 @@ const emptySpec = (): SpecDraft => ({
             [items]="directionItems"
             [value]="direction()"
             (valueChange)="onDirection($event)"
-            size="sm"
           />
         } @else {
           <mf-dropdown
@@ -320,7 +319,6 @@ const emptySpec = (): SpecDraft => ({
             [items]="statusItems"
             [value]="specStatus()"
             (valueChange)="onSpecStatus($event)"
-            size="sm"
           />
         }
         <span class="pt__spacer"></span>

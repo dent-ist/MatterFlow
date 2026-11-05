@@ -574,7 +574,7 @@ test.describe('Users tab: workload', () => {
     await expect(confirm).toContainText('Assign these 3 tasks to');
     await expect(confirm.locator('[data-confirm-row]')).toHaveCount(3);
     await expect(confirm.locator('[data-assign-confirm-hint]')).toContainText('heavy load');
-    await dialog.locator('[data-assign-confirm-back]').click();
+    await page.locator('[data-panel-cancel] button').click();
     await expect(confirm).toHaveCount(0);
     await page.keyboard.press('Escape');
 
@@ -594,7 +594,7 @@ test.describe('Users tab: workload', () => {
       .locator('[data-confirm-row]')
       .evaluateAll((els) => els.map((e) => e.getAttribute('data-confirm-row')!));
     expect(refs).toHaveLength(3);
-    await dialog.locator('[data-assign-confirm-ok]').click();
+    await page.locator('[data-panel-primary] button').click();
     await expect(page.getByText(/3 tasks assigned to/).first()).toBeVisible();
     for (const n of [1, 2, 3]) {
       const found = await (

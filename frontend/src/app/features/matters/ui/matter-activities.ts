@@ -98,7 +98,6 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
         buttonId="ma-kind"
         label="Kind"
         prefix="Kind:"
-        size="sm"
         [items]="kindItems"
         [value]="kind()"
         (valueChange)="setKind($event)"

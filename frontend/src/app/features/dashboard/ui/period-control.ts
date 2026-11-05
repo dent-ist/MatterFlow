@@ -42,7 +42,6 @@ let nextId = 0;
       <div class="pc-row">
         <span class="pc-lbl" aria-hidden="true">Period</span>
         <mf-dropdown
-          size="sm"
           data-period
           [buttonId]="id + '-select'"
           label="Period"

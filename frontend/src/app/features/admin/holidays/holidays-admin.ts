@@ -313,7 +313,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                               }
                             </td>
                             <td>
-                              <div class="ha__c" [attr.title]="rule(r.h)">{{ rule(r.h) }}</div>
+                              <div class="ha__rep" [attr.title]="rule(r.h)">{{ rule(r.h) }}</div>
                             </td>
                             <td>
                               <div class="ha__c" [attr.title]="r.h.regionNote">
@@ -653,8 +653,20 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       text-transform: uppercase;
       white-space: nowrap;
     }
+    /* The Holiday column is never narrower than 160 px and a name breaks only between words, never inside one (#1220). */
     .ha__name {
+      min-width: 160px;
       font-weight: 700;
+    }
+    .ha__name .ha__c {
+      overflow-wrap: normal;
+    }
+    /* Repeats: one line, the full rule is the tooltip (#1220). */
+    .ha__rep {
+      max-width: 16rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .ha__d {
       display: block;

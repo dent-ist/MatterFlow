@@ -988,7 +988,7 @@ describe('DashUsersTab', () => {
         'Assign these 3 tasks to Cy Tan?',
       );
       expect(dialog().querySelectorAll('[data-confirm-row]').length).toBe(3);
-      dialog().querySelector<HTMLButtonElement>('[data-assign-confirm-ok]')!.click();
+      document.querySelector<HTMLButtonElement>('[data-panel-primary] button')!.click();
       await settle();
       expect(tasks['assignTasksBatch']).toHaveBeenCalledTimes(1);
       const body = tasks['assignTasksBatch'].mock.calls[0][0];
@@ -1041,7 +1041,7 @@ describe('DashUsersTab', () => {
       await openPicker('Cy Tan');
       document.querySelector<HTMLButtonElement>('[data-assign-next]')!.click();
       await settle();
-      dialog().querySelector<HTMLButtonElement>('[data-assign-confirm-ok]')!.click();
+      document.querySelector<HTMLButtonElement>('[data-panel-primary] button')!.click();
       await settle();
       expect(text(dialog().querySelector('[data-assign-failures]'))).toContain('TSK-22');
       expect(text(dialog().querySelector('[data-assign-live]'))).toBe('1 task assigned to Cy Tan.');
