@@ -1,6 +1,11 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { NAV_ITEMS } from '../layout/nav-items';
+import { DASHBOARD_TAB_LABELS } from '../../features/dashboard/dashboard-prefs';
+import { TAB_LABELS as MY_WORK_TABS } from '../../features/my-work/pages/my-work-page';
+import { TAB_LABELS as MY_MATTERS_TABS } from '../../features/my-matters/ui/mm-scope';
+import { LABEL_TABS } from '../../features/admin/labels-tabs';
 
 /**
  * Guard for D-20 (#1149): "click it or name it = Title Case; read it = sentence case". A button label, a page heading, a dialog title, a column heading and a one-line
@@ -86,6 +91,26 @@ describe('capitalisation of what is clicked or named (D-20, #1149)', () => {
           if (!isTitleCase(label)) {
             offenders.push(`${relative(APP, file).replace(/\\/g, '/')}: ${name} "${label}"`);
           }
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('every navigation item, route title and tab label is Title Case (#1150)', () => {
+    const labels = [
+      ...NAV_ITEMS.map((n) => n.label),
+      ...Object.values(DASHBOARD_TAB_LABELS),
+      ...Object.values(MY_WORK_TABS),
+      ...Object.values(MY_MATTERS_TABS),
+      ...LABEL_TABS.map((t) => t.label),
+    ];
+    const offenders = labels.filter((label) => !isTitleCase(label));
+    for (const file of sources(APP).filter((f) => f.endsWith('.routes.ts'))) {
+      const text = readFileSync(file, 'utf8');
+      for (const match of text.matchAll(/\btitle: '([^']+)'/g)) {
+        if (!isTitleCase(match[1])) {
+          offenders.push(`${relative(APP, file).replace(/\\/g, '/')}: route title "${match[1]}"`);
         }
       }
     }

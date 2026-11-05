@@ -17,7 +17,7 @@ export type WorkflowTab = 'overview' | 'versions' | 'task-types';
 export const WORKFLOW_TAB_LABEL: Readonly<Record<WorkflowTab, string>> = {
   overview: 'Overview',
   versions: 'Versions',
-  'task-types': 'Task types',
+  'task-types': 'Task Types',
 };
 
 /** The tab `?tab=` names; anything else is Overview. */

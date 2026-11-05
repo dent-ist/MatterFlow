@@ -407,7 +407,7 @@ describe('AssetTypeRecordPage', () => {
     beforeEach(() => open());
 
     it('is the same page with a plain header, no tabs, no Active badge and the footer from the start', () => {
-      expect(q('[data-page-title]').textContent).toContain('New asset type');
+      expect(q('[data-page-title]').textContent).toContain('New Asset Type');
       expect(el().querySelector('[role=tab]')).toBeNull();
       expect(el().querySelector('[data-page-actions] button[data-action]')).toBeNull();
       expect(q('[data-save]').textContent).toContain('Create Asset Type');

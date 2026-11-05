@@ -101,7 +101,7 @@ describe('workflow record helpers', () => {
     expect(workflowTabs(d).map((t) => [t.label, t.count])).toEqual([
       ['Overview', undefined],
       ['Versions', 2],
-      ['Task types', 2],
+      ['Task Types', 2],
     ]);
     expect(workflowTabs(null).map((t) => t.count)).toEqual([undefined, '--', '--']);
   });
@@ -207,7 +207,7 @@ describe('WorkflowEditPage record page (WP-TY5)', () => {
     const tabs = Array.from(el.querySelectorAll('[role="tab"]')).map((t) =>
       t.textContent!.replace(/\s+/g, ' ').trim(),
     );
-    expect(tabs).toEqual(['Overview', 'Versions (2)', 'Task types (1)']);
+    expect(tabs).toEqual(['Overview', 'Versions (2)', 'Task Types (1)']);
     // The overview keeps the editable fields; the status checkbox is gone on an existing workflow.
     expect(el.querySelector('#wf-name')).not.toBeNull();
     expect(el.querySelector('#wf-active')).toBeNull();

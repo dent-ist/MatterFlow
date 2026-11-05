@@ -396,7 +396,7 @@ export class SearchResultsPage {
     // The document title follows the tab: `Search results: Tasks - MatterFlow` (S21).
     effect(() => {
       this.pageTitle.pin(
-        pageTab('Search results', this.tab() === ALL_TAB ? 'All' : this.tabLabel()),
+        pageTab('Search Results', this.tab() === ALL_TAB ? 'All' : this.tabLabel()),
       );
     });
     inject(DestroyRef).onDestroy(() => this.pageTitle.unpin());

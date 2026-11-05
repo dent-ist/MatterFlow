@@ -26,7 +26,7 @@ export const MATTERS_ROUTES: Routes = [
   },
   {
     path: ':matterId/edit',
-    title: 'Edit matter',
+    title: 'Edit Matter',
     canActivate: [permissionGuard('Matter.Edit', 'Matter.EditNumber')],
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./pages/matter-form-page').then((m) => m.MatterFormPage),

@@ -11,7 +11,7 @@ export type TaskTypeTab = 'overview' | 'workflows' | 'form';
 export const TASK_TYPE_TAB_LABEL: Readonly<Record<TaskTypeTab, string>> = {
   overview: 'Overview',
   workflows: 'Workflows',
-  form: 'Request form',
+  form: 'Request Form',
 };
 
 /** Why the Request form tab cannot be opened on a type that is not saved yet (TE9, the "disabled with a reason" case). */

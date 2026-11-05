@@ -39,14 +39,14 @@ const TASK_TYPES_CRUMBS = [
 const STEP_ROUTES: Routes = [
   {
     path: 'steps/new',
-    title: 'New step',
+    title: 'New Step',
     canActivate: [permissionGuard('Workflow.Manage')],
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./steps/step-edit-page').then((m) => m.StepEditPage),
   },
   {
     path: 'steps/:ownerId/form',
-    title: 'Step form',
+    title: 'Step Form',
     canActivate: [permissionGuard('Workflow.Manage')],
     canDeactivate: [unsavedChangesGuard],
     providers: [{ provide: FormDesignerApi, useClass: StepFormDesignerApi }],
@@ -60,7 +60,7 @@ const STEP_ROUTES: Routes = [
   },
   {
     path: 'steps/:stepId',
-    title: 'Edit step',
+    title: 'Edit Step',
     canActivate: [permissionGuard('Workflow.Manage')],
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./steps/step-edit-page').then((m) => m.StepEditPage),
@@ -71,14 +71,14 @@ const STEP_ROUTES: Routes = [
 const WORKFLOW_ROUTES: Routes = [
   {
     path: 'workflows/new',
-    title: pageTab('Task Types', 'New workflow'),
+    title: pageTab('Task Types', 'New Workflow'),
     canActivate: [permissionGuard('Workflow.Manage')],
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./workflows/workflow-edit-page').then((m) => m.WorkflowEditPage),
   },
   {
     path: 'workflows/:workflowId/versions/:versionId',
-    title: 'Workflow version',
+    title: 'Workflow Version',
     canActivate: [permissionGuard('Workflow.Manage')],
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () =>
@@ -86,7 +86,7 @@ const WORKFLOW_ROUTES: Routes = [
   },
   {
     path: 'workflows/:workflowId',
-    title: 'Edit workflow',
+    title: 'Edit Workflow',
     canActivate: [permissionGuard('Workflow.Manage')],
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./workflows/workflow-edit-page').then((m) => m.WorkflowEditPage),
@@ -96,7 +96,7 @@ const WORKFLOW_ROUTES: Routes = [
 /** Asset Types > Fields (UX S17): the same designer, backed by the forms endpoints for the Asset Type's form. */
 const assetTypeForm = (path: string): Route => ({
   path,
-  title: 'Asset type fields',
+  title: 'Asset Type Fields',
   canActivate: [permissionGuard('AssetType.Manage')],
   canDeactivate: [unsavedChangesGuard],
   providers: [{ provide: FormDesignerApi, useClass: AssetTypeFormDesignerApi }],
@@ -114,7 +114,7 @@ const assetTypeForm = (path: string): Route => ({
 /** Custom Fields > Edit fields (UX S18): the same designer on the singleton form of Client, Matter or Project. */
 const customFieldForm = (path: string): Route => ({
   path,
-  title: 'Custom Fields form',
+  title: 'Custom Fields Form',
   canActivate: [permissionGuard('CustomField.Manage')],
   canDeactivate: [unsavedChangesGuard],
   providers: [{ provide: FormDesignerApi, useClass: CustomFieldFormDesignerApi }],
@@ -214,7 +214,7 @@ export const ADMIN_ROUTES: Routes = [
   {
     // The asset type record page (#635): `new` is the same page with a plain header; the address is the record's own page, the designer is below it.
     path: 'asset-types/new',
-    title: 'New asset type',
+    title: 'New Asset Type',
     canActivate: [permissionGuard('AssetType.Manage')],
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () =>
@@ -223,7 +223,7 @@ export const ADMIN_ROUTES: Routes = [
   assetTypeForm('asset-types/:ownerId/form'),
   {
     path: 'asset-types/:id',
-    title: 'Asset type',
+    title: 'Asset Type',
     canActivate: [permissionGuard('AssetType.Manage')],
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () =>
@@ -274,7 +274,7 @@ export const ADMIN_ROUTES: Routes = [
   },
   {
     path: 'reports/new',
-    title: 'New report',
+    title: 'New Report',
     canActivate: [permissionGuard('Report.Manage')],
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./reports/report-editor-page').then((m) => m.ReportEditorPage),

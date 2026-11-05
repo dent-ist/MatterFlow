@@ -12,7 +12,7 @@ export const SEARCH_ROUTES: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    title: 'Search results',
+    title: 'Search Results',
     canActivate: [permissionGuard(...SEARCH_TYPES.map((t) => t.permission))],
     loadComponent: () => import('./search-results-page').then((m) => m.SearchResultsPage),
   },

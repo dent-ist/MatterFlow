@@ -170,9 +170,9 @@ describe('AppShell header search', () => {
     expect(el.querySelector('[data-nav-more], [data-nav-more-toggle]')).toBeNull();
     // The two "assets" items differ in words (S5, #620), also in the tooltip of the icon rail.
     const names = Array.from(el.querySelectorAll('nav a')).map((a) => a.textContent!.trim());
-    expect(names).toContain('Asset types');
+    expect(names).toContain('Asset Types');
     expect(names).toContain('Assets');
-    expect(el.querySelector<HTMLElement>('nav a[data-tip="Asset types"]')).not.toBeNull();
+    expect(el.querySelector<HTMLElement>('nav a[data-tip="Asset Types"]')).not.toBeNull();
   });
 
   it('keeps each item on its own permission: Projects without Matters stays, at its place', async () => {

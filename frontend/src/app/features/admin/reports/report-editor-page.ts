@@ -317,7 +317,7 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
     effect(() => {
       const state = this.state();
       const name = this.report()?.name;
-      if (this.isNew()) this.pageTitle.set('New report');
+      if (this.isNew()) this.pageTitle.set('New Report');
       else if (state === 'ready' && name) this.pageTitle.set(shortTitleText(name));
       else if (state === 'notFound') this.pageTitle.set('Report not found');
     });

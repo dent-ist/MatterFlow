@@ -636,7 +636,7 @@ describe('StepEditPage', () => {
       Array.from(el.querySelectorAll('[role=tab]')).map((t) =>
         t.textContent!.replace(/\s+/g, ' ').trim(),
       ),
-    ).toEqual(['Details', 'Inputs', 'Used by (1)']);
+    ).toEqual(['Details', 'Inputs', 'Used By (1)']);
     expect(el.querySelector('[data-footer]')).toBeNull();
     expect(buttonByLabel(el, 'Deactivate')).toBeUndefined();
   });

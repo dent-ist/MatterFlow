@@ -13,7 +13,7 @@ export const TASKS_ROUTES: Routes = [
   },
   {
     path: 'new',
-    title: 'Create task',
+    title: 'Create Task',
     canActivate: [permissionGuard('Task.Create')],
     canDeactivate: [unsavedChangesGuard],
     providers: [

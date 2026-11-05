@@ -24,13 +24,13 @@ export const TASK_TYPE_ROUTES: Routes = [
     children: [
       {
         path: 'new',
-        title: 'New task type',
+        title: 'New Task Type',
         canDeactivate: [unsavedChangesGuard],
         loadComponent: () => import('./task-type-edit-page').then((m) => m.TaskTypeEditPage),
       },
       {
         path: ':ownerId/form',
-        title: 'Task type form',
+        title: 'Task Type Form',
         data: {
           heading: 'Task Types',
           ownerLabel: 'Task Type',
@@ -42,7 +42,7 @@ export const TASK_TYPE_ROUTES: Routes = [
       },
       {
         path: ':id',
-        title: 'Edit task type',
+        title: 'Edit Task Type',
         canDeactivate: [unsavedChangesGuard],
         loadComponent: () => import('./task-type-edit-page').then((m) => m.TaskTypeEditPage),
       },

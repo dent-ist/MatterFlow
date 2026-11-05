@@ -194,7 +194,7 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
 
   /** The name the header shows: the saved one (edits in the field do not retitle the page until they are saved). */
   protected readonly headerName = computed(() =>
-    this.isNew() ? 'New asset type' : (this.assetType()?.name ?? 'Asset type'),
+    this.isNew() ? 'New Asset Type' : (this.assetType()?.name ?? 'Asset type'),
   );
   protected readonly parents = computed<Crumb[]>(() => [
     { label: 'Administration', plain: true },
@@ -285,7 +285,7 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
       const name = this.assetType()?.name;
       if (state === 'notFound' || state === 'forbidden' || state === 'error') {
         this.pageTitle.set(recordStateTitle('assetType', state));
-      } else if (this.isNew()) this.pageTitle.set('New asset type');
+      } else if (this.isNew()) this.pageTitle.set('New Asset Type');
       else if (name) this.pageTitle.set(shortTitleText(name));
     });
   }

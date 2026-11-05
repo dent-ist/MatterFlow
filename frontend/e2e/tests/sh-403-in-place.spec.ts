@@ -29,7 +29,7 @@ test.describe('The 403 page keeps the address (#598)', () => {
     await expect(page.locator('[data-asked]')).toContainText(
       'You asked for /admin/users?status=all.',
     );
-    await expect(page).toHaveTitle('No access - MatterFlow');
+    await expect(page).toHaveTitle('No Access - MatterFlow');
     // A technician with no pod and no assigned task holds Dashboard.ViewUnassigned: the landing rule (#628) leads to the Dashboard.
     await expect(page.locator('[data-back-link]')).toHaveAttribute('href', '/dashboard');
 
@@ -111,7 +111,7 @@ test.describe('The 403 page keeps the address (#598)', () => {
     await expect(page.getByRole('heading', { name: FORBIDDEN, level: 1 })).toBeVisible();
     await expect(page).toHaveURL(/\/403$/);
     await expect(page.locator('[data-asked]')).toHaveCount(0);
-    await expect(page).toHaveTitle('No access - MatterFlow');
+    await expect(page).toHaveTitle('No Access - MatterFlow');
   });
 
   test('permission variants: the address is kept for every kind of person, and the link follows the landing rule', async ({

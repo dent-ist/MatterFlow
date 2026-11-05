@@ -43,14 +43,14 @@ export const ASSETS_ROUTES: Routes = [
       },
       {
         path: 'new',
-        title: 'New asset',
+        title: 'New Asset',
         canActivate: [permissionGuard('Asset.Create')],
         canDeactivate: [unsavedChangesGuard],
         loadComponent: () => import('./pages/asset-form-page').then((m) => m.AssetFormPage),
       },
       {
         path: ':assetId/edit',
-        title: 'Edit asset',
+        title: 'Edit Asset',
         canActivate: [permissionGuard('Asset.Edit')],
         canDeactivate: [unsavedChangesGuard],
         loadComponent: () => import('./pages/asset-form-page').then((m) => m.AssetFormPage),

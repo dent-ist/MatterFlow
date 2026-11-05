@@ -19,7 +19,7 @@ export const CLOSED_WINDOW_DAYS = 90;
 
 export const DUE_SOON_LABEL = 'Due soon';
 export const OVERDUE_LABEL = 'Overdue';
-export const DUE_SOON_AND_OVERDUE_LABEL = 'Due soon and overdue';
+export const DUE_SOON_AND_OVERDUE_LABEL = 'Due Soon and Overdue';
 export const COMPLETED_LABEL = 'Completed';
 export const CLOSED_LABEL = 'Closed';
 

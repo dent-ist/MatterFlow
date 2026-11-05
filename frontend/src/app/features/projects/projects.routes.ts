@@ -12,14 +12,14 @@ export const PROJECTS_ROUTES: Routes = [
   },
   {
     path: 'new',
-    title: 'New project',
+    title: 'New Project',
     canActivate: [permissionGuard('Project.Create')],
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./pages/project-form-page').then((m) => m.ProjectFormPage),
   },
   {
     path: ':projectId/edit',
-    title: 'Edit project',
+    title: 'Edit Project',
     canActivate: [permissionGuard('Project.Edit')],
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./pages/project-form-page').then((m) => m.ProjectFormPage),

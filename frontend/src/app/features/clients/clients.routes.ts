@@ -12,14 +12,14 @@ export const CLIENTS_ROUTES: Routes = [
   },
   {
     path: 'new',
-    title: 'New client',
+    title: 'New Client',
     canActivate: [permissionGuard('Client.Create')],
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./pages/client-form-page').then((m) => m.ClientFormPage),
   },
   {
     path: ':clientId/edit',
-    title: 'Edit client',
+    title: 'Edit Client',
     canActivate: [permissionGuard('Client.Edit', 'Client.EditNumber')],
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./pages/client-form-page').then((m) => m.ClientFormPage),

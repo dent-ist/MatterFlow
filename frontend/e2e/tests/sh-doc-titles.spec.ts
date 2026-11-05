@@ -25,8 +25,8 @@ const SAMPLE: [string, string][] = [
   ['/admin/priorities', 'Labels: Priorities - MatterFlow'],
   ['/admin/status-labels', 'Labels: Status Labels - MatterFlow'],
   ['/admin/asset-types?tab=link-roles', 'Asset Types: Link Roles - MatterFlow'],
-  ['/admin/workflows/new', 'Task Types: New workflow - MatterFlow'],
-  ['/no-such-page', 'Page not found - MatterFlow'],
+  ['/admin/workflows/new', 'Task Types: New Workflow - MatterFlow'],
+  ['/no-such-page', 'Page Not Found - MatterFlow'],
 ];
 
 test.describe('Document titles: the colon rule (#606)', () => {

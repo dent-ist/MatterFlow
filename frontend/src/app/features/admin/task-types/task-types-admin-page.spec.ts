@@ -94,7 +94,7 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
         'Users',
         'Task Types',
         'Labels',
-        'Asset types',
+        'Asset Types',
         'Custom Fields',
         'Reports',
         'Audit Logs',
@@ -354,8 +354,8 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
       expect(await titleOf('/admin/task-types')).toBe('Task Types');
       expect(await titleOf('/admin/workflows')).toBe('Task Types: Workflows');
       expect(await titleOf('/admin/steps')).toBe('Task Types: Workflow Steps');
-      expect(await titleOf('/admin/steps/new')).toBe('New step');
-      expect(await titleOf('/admin/task-types/new')).toBe('New task type');
+      expect(await titleOf('/admin/steps/new')).toBe('New Step');
+      expect(await titleOf('/admin/task-types/new')).toBe('New Task Type');
     },
     SLOW,
   );

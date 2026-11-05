@@ -119,9 +119,9 @@ describe('MyWorkPage', () => {
     );
     expect(tabs).toEqual([
       'Active (7)',
-      'Due soon and overdue (2)',
+      'Due Soon and Overdue (2)',
       'Closed (5)',
-      'Created by me (3)',
+      'Created By Me (3)',
     ]);
     expect(tab(el, 'Active').getAttribute('aria-selected')).toBe('true');
     expect(el.querySelector('[role="tabpanel"]')!.getAttribute('aria-labelledby')).toBe(
@@ -230,12 +230,12 @@ describe('MyWorkPage', () => {
 
   it('switches tabs through the URL and loads that view', async () => {
     const el = await open('/my-work');
-    tab(el, 'Due soon and overdue').click();
+    tab(el, 'Due Soon and Overdue').click();
     await settle();
 
     expect(query()['view']).toBe('dueSoon');
     expect(lastArgs()[ARG.view]).toBe('dueSoon');
-    expect(tab(el, 'Due soon and overdue').getAttribute('aria-selected')).toBe('true');
+    expect(tab(el, 'Due Soon and Overdue').getAttribute('aria-selected')).toBe('true');
     // The help is behind an info button, not an always-visible paragraph (D4).
     expect(el.querySelector('[data-help]')).toBeNull();
     el.querySelector<HTMLButtonElement>('[data-tab-help] button')!.click();
@@ -314,13 +314,13 @@ describe('MyWorkPage', () => {
     const el = await open('/my-work');
     const title = (name: string) => tab(el, name).getAttribute('title');
     expect(title('Active')).toBe('Open tasks assigned to you');
-    expect(title('Due soon and overdue')).toBe(
+    expect(title('Due Soon and Overdue')).toBe(
       'Overdue plus due in the next 2 days. ASAP tasks have no due date and are listed under Active',
     );
     expect(title('Closed')).toBe(
       'Completed or cancelled in the last 90 days (use Show older for more)',
     );
-    expect(title('Created by me')).toBe('Tasks you created, any status or assignee');
+    expect(title('Created By Me')).toBe('Tasks you created, any status or assignee');
   });
 
   const chips = (el: HTMLElement) =>
@@ -445,7 +445,7 @@ describe('MyWorkPage', () => {
     expect(query()['priority']).toBe('1');
     expect(query()['status']).toBe('IN_PROGRESS');
 
-    tab(el, 'Due soon and overdue').click();
+    tab(el, 'Due Soon and Overdue').click();
     await settle();
     expect(query()['status']).toBe('IN_PROGRESS');
 
@@ -618,7 +618,7 @@ describe('MyWorkPage', () => {
     const el = await open('/my-work');
     expect(query()['view']).toBe('dueSoon');
     expect(el.querySelector('[data-restored-text]')!.textContent).toMatch(
-      /^Restored your last view: Due soon and overdue, Priority /,
+      /^Restored your last view: Due Soon and Overdue, Priority /,
     );
   });
 
@@ -688,7 +688,7 @@ describe('MyWorkPage', () => {
       expect(lastArgs()[ARG.view]).toBe('createdByMe');
       expect(getMyWork).toHaveBeenCalledTimes(2);
       expect(el.querySelector('[data-restored-text]')!.textContent).toContain(
-        'Nothing is assigned to you, so this opens Created by me.',
+        'Nothing is assigned to you, so this opens Created By Me.',
       );
       expect(el.querySelector('[data-restored-notice] button[aria-label]')).not.toBeNull();
       expect(el.querySelectorAll('[data-restored-notice] button').length).toBe(1);
@@ -745,7 +745,7 @@ describe('MyWorkPage', () => {
       await settle();
       expect(el.querySelectorAll('tr[data-task]').length).toBe(1);
 
-      tab(el, 'Due soon and overdue').click();
+      tab(el, 'Due Soon and Overdue').click();
       await settle();
       expect(el.querySelectorAll('tr[data-task]').length).toBe(0);
       tab(el, 'Closed').click();

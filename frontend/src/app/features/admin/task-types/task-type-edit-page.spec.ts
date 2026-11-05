@@ -101,7 +101,7 @@ describe('TaskTypeEditPage', () => {
       expect(all('[role=tab]').map((t) => t.textContent!.replace(/\s+/g, ' ').trim())).toEqual([
         'Overview',
         'Workflows (2)',
-        'Request form',
+        'Request Form',
       ]);
       expect(q('[role=tab][aria-selected=true]').getAttribute('data-tab')).toBe('overview');
       expect(el().querySelector('[data-footer]')).toBeNull();

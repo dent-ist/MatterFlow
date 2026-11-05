@@ -41,7 +41,7 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
     await page.getByRole('button', { name: 'New asset type' }).click();
     await expect(page).toHaveURL(/\/admin\/asset-types\/new$/);
     await expect(heading(page)).toHaveText('New asset type');
-    await expect(page).toHaveTitle('New asset type - MatterFlow');
+    await expect(page).toHaveTitle('New Asset Type - MatterFlow');
     await expect(crumbs(page)).toHaveText([/Administration/, /Asset Types/, /New asset type/]);
     // A new type has no tabs and no state badge; Create and Cancel are there from the start.
     await expect(page.getByRole('tab')).toHaveCount(0);
