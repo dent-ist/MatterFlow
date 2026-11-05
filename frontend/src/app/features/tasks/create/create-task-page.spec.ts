@@ -1,3 +1,4 @@
+import { TASK_TYPE_COLOURS } from '../../../shared/task-type/task-type-colours';
 import { aLookupItem } from '../../../shared/assignees/assignee-testing';
 import { EMAIL_PANEL_STORAGE_KEY } from '../../../shared/ui/email-intake';
 import { TestBed } from '@angular/core/testing';
@@ -274,6 +275,28 @@ describe('CreateTaskPage', () => {
     );
     expect(field(h, 'form')).toBeNull();
     expect(field(h, '#ct-title')).toBeNull();
+  });
+
+  it('draws each card with the shared task type chip in the type colour: two keys differ, no key falls back to the id (#1224)', async () => {
+    const h = await create({
+      types: [
+        aType({ id: 1, name: 'Alpha', colourKey: 'teal' }),
+        aType({ id: 2, name: 'Beta', colourKey: 'violet' }),
+        aType({ id: 4, name: 'Gamma', colourKey: undefined }),
+      ],
+    });
+    const colour = (name: string) =>
+      h.el
+        .querySelector<HTMLElement>(`[data-type-card="${name}"] mf-task-type-chip`)!
+        .getAttribute('data-colour');
+    expect(colour('Alpha')).toBe('teal');
+    expect(colour('Beta')).toBe('violet');
+    expect(colour('Alpha')).not.toBe(colour('Beta'));
+    // No key: the colour comes from the id, the same one the grids use (mf-task-type-chip).
+    expect(colour('Gamma')).toBe(TASK_TYPE_COLOURS[4 % TASK_TYPE_COLOURS.length].key);
+    expect(
+      h.el.querySelector('[data-type-card="Alpha"] mf-task-type-chip .chip')!.classList,
+    ).not.toContain('sm');
   });
 
   it('shows an empty state when no task type is available', async () => {
@@ -693,7 +716,7 @@ describe('CreateTaskPage', () => {
         'From: Jane Doe <jane.doe@example-firm.test>\nSubject: Production volume 7\n\nPlease prepare the load file.';
       paste.dispatchEvent(new Event('input'));
       await settle(h.fixture);
-      buttonByLabel(h.el, 'Fill From Pasted Text')!.click();
+      buttonByLabel(h.el, 'Fill from Pasted Text')!.click();
       await settle(h.fixture);
       buttonByLabel(h.el, 'Fill the Task')!.click();
       await settle(h.fixture);

@@ -69,7 +69,14 @@
                     [attr.title]="c.type.description || null"
                     (click)="chooseType(c.type.id)"
                   >
-                    <mf-task-type-icon [iconKey]="c.type.iconKey" />
+                    <mf-task-type-chip
+                      size="sm"
+                      [iconKey]="c.type.iconKey"
+                      [colourKey]="c.type.colourKey"
+                      [typeId]="c.type.id"
+                      [name]="c.type.name"
+                      [decorative]="true"
+                    />
                     <span>{{ c.type.name }}</span>
                   </button>
                 }
@@ -86,7 +93,14 @@
                     [attr.title]="c.type.description || null"
                     (click)="chooseType(c.type.id)"
                   >
-                    <mf-task-type-icon [iconKey]="c.type.iconKey" />
+                    <mf-task-type-chip
+                      size="sm"
+                      [iconKey]="c.type.iconKey"
+                      [colourKey]="c.type.colourKey"
+                      [typeId]="c.type.id"
+                      [name]="c.type.name"
+                      [decorative]="true"
+                    />
                     <span>{{ c.type.name }}</span>
                   </button>
                 }
@@ -137,7 +151,13 @@
                   (click)="chooseType(c.type.id)"
                   (focus)="focusedType.set(c.type.id)"
                 >
-                  <mf-task-type-icon [iconKey]="c.type.iconKey" size="lg" />
+                  <mf-task-type-chip
+                    [iconKey]="c.type.iconKey"
+                    [colourKey]="c.type.colourKey"
+                    [typeId]="c.type.id"
+                    [name]="c.type.name"
+                    [decorative]="true"
+                  />
                   <span class="ct__card-name">{{ c.type.name }}</span>
                   @if (c.type.description) {
                     <span class="ct__card-desc">{{ cardText(c.type.description) }}</span>
