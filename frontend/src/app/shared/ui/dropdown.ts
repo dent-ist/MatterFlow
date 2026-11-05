@@ -101,7 +101,7 @@ let nextId = 0;
       <span class="vw">
         <span class="val">{{ text() }}</span>
         @for (w of sizer(); track $index) {
-          <span class="siz" aria-hidden="true">{{ w }}</span>
+          <span class="siz" aria-hidden="true" [attr.data-w]="w"></span>
         }
       </span>
       @if (buttonCount() !== null) {
@@ -247,6 +247,8 @@ let nextId = 0;
       cursor: pointer;
     }
     .btn.sm {
+      gap: var(--mf-s1);
+      padding: 0 var(--mf-s2);
       height: var(--mf-ctl-h-sm);
       font-size: var(--mf-fs-sm);
     }
@@ -283,6 +285,9 @@ let nextId = 0;
     }
     .vw > * {
       grid-area: 1 / 1;
+    }
+    .siz::after {
+      content: attr(data-w);
     }
     .siz {
       overflow: hidden;

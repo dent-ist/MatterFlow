@@ -230,7 +230,7 @@ describe('Dropdown anatomy (UI update 2, #1125)', () => {
 
   it('the trigger carries the widest label invisibly, so its width does not follow the chosen value', async () => {
     const { el } = await setup();
-    const sizer = Array.from(el.querySelectorAll('#s1 .siz')).map((n) => n.textContent);
+    const sizer = Array.from(el.querySelectorAll('#s1 .siz')).map((n) => n.getAttribute('data-w'));
     expect(sizer).toContain('A much longer label than the first one');
     expect(el.querySelector('#s1 .siz')?.getAttribute('aria-hidden')).toBe('true');
     expect(el.querySelector('#s1 .chev')?.className).toContain('pi-chevron-down');

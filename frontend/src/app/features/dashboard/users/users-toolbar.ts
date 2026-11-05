@@ -50,7 +50,9 @@ import {
         (valueChange)="onSort($event)"
       />
       <p class="sorted" data-sorted-line>
-        <span class="st" data-sorted-text>Sorted by {{ sortLabels[sort()] }}</span>
+        <span class="st" data-sorted-text [attr.title]="'Sorted by ' + sortLabels[sort()]"
+          >Sorted by {{ sort() === 'load' ? 'Load' : sortLabels[sort()] }}</span
+        >
         @if (sort() !== 'load') {
           <button
             type="button"
