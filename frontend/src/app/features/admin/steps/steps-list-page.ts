@@ -179,7 +179,7 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
                   [defaultSort]="defaultSort"
                   (sorted)="setSort($event)"
                 >
-                  Used In
+                  Used in
                 </th>
                 @if (showInputs()) {
                   <th scope="col">Inputs</th>
@@ -352,7 +352,7 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
   /** The phone's Sort by select: the sortable columns (the headers' keys); the count sorts descending first, like its header. */
   protected readonly sortOptions: readonly SortOption[] = [
     { value: 'title', label: 'Title' },
-    { value: 'usedInWorkflows', label: 'Used In', descFirst: true },
+    { value: 'usedInWorkflows', label: 'Used in', descFirst: true },
     { value: 'status', label: 'Status' },
   ];
   /** The Tags column (two chips and "+n") is left out below 1100 px, its filter moving under "Other filters", so the grid fits a 768 px window (#375). */
@@ -467,7 +467,7 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
       },
       {
         key: 'used',
-        label: 'Used In',
+        label: 'Used in',
         column: 'usedIn',
         type: 'triState',
         options: [

@@ -15,7 +15,7 @@ export type StepTab = 'details' | 'inputs' | 'used-by';
 export const STEP_TAB_LABEL: Readonly<Record<StepTab, string>> = {
   details: 'Details',
   inputs: 'Inputs',
-  'used-by': 'Used By',
+  'used-by': 'Used by',
 };
 
 /** Why the Inputs and Used by tabs cannot be opened on a step that is not saved yet. */

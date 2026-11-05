@@ -16,7 +16,8 @@ import {
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { calendarDayInZone, mfDateLong } from '../../../core/time/time';
+import { calendarDayInZone } from '../../../core/time/time';
+import { numericDate } from '../../../shared/ui/numeric-date';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { queueParams } from '../dashboard-links';
 import { TrendSample } from './trend-sample';
@@ -40,7 +41,6 @@ import {
   rangeQuery,
   shortDate,
   weekdayOf,
-  weekLabel,
   xTicks,
 } from './trend-model';
 import { isHollow, markerPath } from '../../../shared/charts/chart-palette';
@@ -875,7 +875,7 @@ export class TrendChart {
     const weekly = this.weekly();
     const range =
       pts.length > 0
-        ? `${weekly ? weekLabel(pts[0]) : shortDate(pts[0])} to ${weekly ? weekLabel(pts[pts.length - 1]) : shortDate(pts[pts.length - 1])}`
+        ? `${shortDate(pts[0])} to ${shortDate(weekly ? addDays(pts[pts.length - 1], 6) : pts[pts.length - 1])}`
         : '';
     const parts = this.panels()
       .filter((p) => p.lines.length > 0)
@@ -1049,7 +1049,8 @@ export class TrendChart {
   }
 
   protected day(date: string): string {
-    return this.weekly() ? weekLabel(date) : mfDateLong(date, this.zone, 'date');
+    if (!this.weekly()) return numericDate(date, this.clock.now(), this.zone);
+    return `${numericDate(date, this.clock.now(), this.zone)} to ${numericDate(addDays(date, 6), this.clock.now(), this.zone)}`;
   }
 
   /** The Task Queue query behind the count of a day, or of a week cut to the period (a stock: its value at the end of it). */

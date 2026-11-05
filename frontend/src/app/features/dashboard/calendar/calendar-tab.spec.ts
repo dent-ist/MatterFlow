@@ -127,9 +127,7 @@ describe('DashCalendarTab', () => {
     await open();
     expect(text(q('[data-forecast]'))).toContain('Free Task Slots, Next 4 Weeks');
     expect(text(q('[data-forecast]'))).not.toContain('Wk ');
-    expect(text(q('[data-forecast] [data-week]'))).toMatch(
-      /[A-Z][a-z]{2} \d+ to (\d+|[A-Z][a-z]{2} \d+)/,
-    );
+    expect(text(q('[data-forecast] [data-week]'))).toMatch(/\d{2}\/\d{2} to \d{2}\/\d{2}/);
     expect(q('[data-risk-banner]')).not.toBeNull();
   });
 
@@ -253,7 +251,7 @@ describe('DashCalendarTab', () => {
 
   it('the Role filter narrows the month to that role and is kept in the address', async () => {
     await open();
-    ddChoose(host, 'Filter By Role', 'Data Scientist');
+    ddChoose(host, 'Filter by Role', 'Data Scientist');
     await settle();
     expect(url()).toContain('role=1');
     expect(cell('2026-11-03').getAttribute('title')).toContain('5 in view');
@@ -286,8 +284,8 @@ describe('DashCalendarTab', () => {
 
 describe('forecast dates', () => {
   it('words a week as real dates', () => {
-    expect(weekRangeText('2026-11-01')).toBe('Nov 1 to 7');
-    expect(weekRangeText('2026-10-27')).toBe('Oct 27 to Nov 2');
+    expect(weekRangeText('2026-11-01')).toBe('11/01 to 11/07');
+    expect(weekRangeText('2026-10-27')).toBe('10/27 to 11/02');
   });
 });
 

@@ -121,7 +121,7 @@ describe('MyWorkPage', () => {
       'Active (7)',
       'Due Soon and Overdue (2)',
       'Closed (5)',
-      'Created By Me (3)',
+      'Created by Me (3)',
     ]);
     expect(tab(el, 'Active').getAttribute('aria-selected')).toBe('true');
     expect(el.querySelector('[role="tabpanel"]')!.getAttribute('aria-labelledby')).toBe(
@@ -320,7 +320,7 @@ describe('MyWorkPage', () => {
     expect(title('Closed')).toBe(
       'Completed or cancelled in the last 90 days (use Show older for more)',
     );
-    expect(title('Created By Me')).toBe('Tasks you created, any status or assignee');
+    expect(title('Created by Me')).toBe('Tasks you created, any status or assignee');
   });
 
   const chips = (el: HTMLElement) =>
@@ -688,7 +688,7 @@ describe('MyWorkPage', () => {
       expect(lastArgs()[ARG.view]).toBe('createdByMe');
       expect(getMyWork).toHaveBeenCalledTimes(2);
       expect(el.querySelector('[data-restored-text]')!.textContent).toContain(
-        'Nothing is assigned to you, so this opens Created By Me.',
+        'Nothing is assigned to you, so this opens Created by Me.',
       );
       expect(el.querySelector('[data-restored-notice] button[aria-label]')).not.toBeNull();
       expect(el.querySelectorAll('[data-restored-notice] button').length).toBe(1);

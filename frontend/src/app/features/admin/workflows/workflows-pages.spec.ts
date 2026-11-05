@@ -1060,7 +1060,7 @@ describe('WorkflowVersionPage draft editor', () => {
     await settle(fixture);
     expect(titles(el)).toEqual(['Intake QC', 'Load', 'OCR']);
     expect(el.querySelector('[data-step-row="Load"] [data-skip-summary]')?.textContent).toContain(
-      'Skippable - comment',
+      'Skippable - Comment',
     );
     expect(el.querySelector('[data-live]')?.textContent).toContain(
       'Restored Load at position 2 of 3',
@@ -1457,7 +1457,7 @@ describe('WorkflowVersionPage tabs, switcher and impact lines (WP-TY6)', () => {
     const tabs = Array.from(el.querySelectorAll('[role="tab"]')).map((t) =>
       t.textContent!.replace(/\s+/g, ' ').trim(),
     );
-    expect(tabs).toEqual(['Steps (2)', 'Used By (2)']);
+    expect(tabs).toEqual(['Steps (2)', 'Used by (2)']);
     expect(el.querySelector('[data-steps]')).not.toBeNull();
     expect(el.querySelector('[data-used-by-panel]')).toBeNull();
   });

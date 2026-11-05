@@ -3,16 +3,10 @@ import { CalSummary } from './calendar-contract';
 import { Tip } from '../../../shared/ui/tip';
 import { LEVELS, WEEKDAYS_SHORT, addDays, dayOfWeek } from './calendar-model';
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-/** "Nov 1 to 7" (or "Oct 27 to Nov 2" across a month end): the seven days from a week's first day. */
+/** "11/01 to 11/07" (D-60, numeric): the seven days from a week's first day. */
 export function weekRangeText(weekStart: string): string {
-  const end = addDays(weekStart, 6);
-  const m = (iso: string) => MONTHS[Number(iso.slice(5, 7)) - 1];
-  const d = (iso: string) => Number(iso.slice(8, 10));
-  return m(weekStart) === m(end)
-    ? `${m(weekStart)} ${d(weekStart)} to ${d(end)}`
-    : `${m(weekStart)} ${d(weekStart)} to ${m(end)} ${d(end)}`;
+  const md = (iso: string) => `${iso.slice(5, 7)}/${iso.slice(8, 10)}`;
+  return `${md(weekStart)} to ${md(addDays(weekStart, 6))}`;
 }
 
 /** The words of the free-capacity forecast (the battery's formula, decision AS): 50 % and more Healthy, 25 to 49 Limited, under 25 Low. */

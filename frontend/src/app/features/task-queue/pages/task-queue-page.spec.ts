@@ -593,7 +593,7 @@ describe('TaskQueuePage', () => {
     expect(lastArgs()[ARG.pod]).toEqual([5]);
   });
 
-  it('hides "Created By Me" without Task.Create, and the link still filters (#223)', async () => {
+  it('hides "Created by Me" without Task.Create, and the link still filters (#223)', async () => {
     let el = await open('/tasks', { permissions: ['Task.View'] });
     expect(el.querySelector('[data-view="createdByMe"]')).toBeNull();
     TestBed.resetTestingModule();

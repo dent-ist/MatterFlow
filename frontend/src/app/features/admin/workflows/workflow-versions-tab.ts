@@ -225,7 +225,7 @@ export class WorkflowVersionsTab {
     if (w.draftVersionId) {
       items.push({
         id: 'create-draft',
-        label: 'Create Draft From This Version',
+        label: 'Create Draft from This Version',
         icon: 'pi-plus',
         disabled: true,
         reason: DRAFT_EXISTS_REASON,
@@ -244,7 +244,7 @@ export class WorkflowVersionsTab {
     } else {
       items.push({
         id: 'create-draft',
-        label: 'Create Draft From This Version',
+        label: 'Create Draft from This Version',
         icon: 'pi-plus',
         disabled: this.busy(),
         run: () => this.newDraft.emit(v),

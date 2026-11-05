@@ -319,16 +319,16 @@ test.describe('Column filters on the administration lists', () => {
 
       // Used in: only Alpha is in a workflow.
       await page.goto(`/admin/steps?title=${token}`);
-      await select(page, 'Used In').selectOption('true');
+      await select(page, 'Used in').selectOption('true');
       await expect(page).toHaveURL(/used=true/);
       await expect(rows).toHaveCount(1);
       await expect(rows.first()).toContainText(`Alpha ${token}`);
-      await select(page, 'Used In').selectOption('false');
+      await select(page, 'Used in').selectOption('false');
       await expect(rows).toHaveCount(1);
       await expect(rows.first()).toContainText(`Beta ${token}`);
 
       // Description has its own box.
-      await select(page, 'Used In').selectOption('');
+      await select(page, 'Used in').selectOption('');
       await text(page, 'Description').fill(`nothing-${token}`);
       await expect(grid(page, 'Steps list').locator('td[data-empty="filtered"]')).toBeVisible();
       await expect(text(page, 'Title')).toBeVisible();

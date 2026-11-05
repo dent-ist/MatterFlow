@@ -129,7 +129,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
                 A weekday of a month (4th Thursday of November)
               </option>
               <option value="EASTER_OFFSET" [selected]="pattern() === 'EASTER_OFFSET'">
-                Days From Easter
+                Days from Easter
               </option>
             </select>
           </div>
@@ -263,7 +263,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
         }
         @if (yearly() && shape() === 'day' && pattern() === 'EASTER_OFFSET') {
           <div class="hd__f">
-            <label class="hd__l" for="hd-easter">Days From Easter Sunday</label>
+            <label class="hd__l" for="hd-easter">Days from Easter Sunday</label>
             <input
               id="hd-easter"
               class="mf-control"

@@ -438,7 +438,7 @@ export class RecordSkeleton {
       return [
         { key: 'details', label: 'Details', icon: tabIcon('details') },
         { key: 'inputs', label: 'Inputs', icon: tabIcon('inputs') },
-        { key: 'used-by', label: 'Used By', icon: tabIcon('used-by'), count: '--' },
+        { key: 'used-by', label: 'Used by', icon: tabIcon('used-by'), count: '--' },
       ];
     }
     if (kind !== 'client' && kind !== 'matter' && kind !== 'project' && kind !== 'asset') return [];

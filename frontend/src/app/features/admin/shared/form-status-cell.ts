@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { formatInstantDate } from '../../../core/time/time';
+import { calendarDayInZone, formatCalendarDayLong } from '../../../core/time/time';
 import { numericInstant } from '../../../shared/ui/numeric-date';
 import { Badge } from '../../../shared/ui/badge';
 
@@ -10,7 +10,7 @@ import { Badge } from '../../../shared/ui/badge';
  *   <td class="mf-cell-badge"><mf-form-status-cell [publishedVersion]="t.publishedVersionNo" [fieldCount]="t.fieldCount"
  *        [publishedAtUtc]="t.publishedAtUtc" [draftVersion]="t.draftVersionNo" /></td>
  *
- *   Published v3 (green, check)   then "8 fields" and "Updated Oct 12" in muted text (the year only when it is not this year)
+ *   Published v3 (green, check)   then "8 fields" and "Updated 10/12" in muted text (the year only when it is not this year)
  *   Draft v4 (the app-wide Draft amber)   an open draft, next to the published badge when there is one
  *   No published fields (neutral, info icon)   when nothing is published; the draft badge may follow it
  *
@@ -78,7 +78,7 @@ export class FormStatusCell {
   /** The open draft's version number, or `null` when there is none. */
   readonly draftVersion = input<number | null | undefined>(null);
 
-  /** "8 fields · Updated Oct 12", or empty. Only a published form has fields and a date. */
+  /** "8 fields · Updated 10/12", or empty. Only a published form has fields and a date. */
   protected readonly facts = computed(() => {
     if (this.publishedVersion() == null) return '';
     const parts: string[] = [];
@@ -103,7 +103,7 @@ export class FormStatusCell {
       parts.push(n === 1 ? '1 field' : `${n} fields`);
     const at = this.publishedAtUtc();
     if (this.publishedVersion() != null && at)
-      parts.push(`updated ${formatInstantDate(at, this.zone)}`);
+      parts.push(`updated ${formatCalendarDayLong(calendarDayInZone(at, this.zone))}`);
     const text = parts.join(', ');
     return text.charAt(0).toUpperCase() + text.slice(1) + '.';
   });

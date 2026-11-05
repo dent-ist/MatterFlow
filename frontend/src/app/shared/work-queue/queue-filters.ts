@@ -408,7 +408,7 @@ export const BUILT_IN_VIEWS: readonly BuiltInView[] = [
   { key: 'asap', label: 'ASAP' },
   { key: 'onHold', label: 'On Hold' },
   { key: 'myPod', label: 'My Pod' },
-  { key: 'createdByMe', label: 'Created By Me' },
+  { key: 'createdByMe', label: 'Created by Me' },
   { key: 'recentlyCompleted', label: 'Recently Completed' },
 ];
 

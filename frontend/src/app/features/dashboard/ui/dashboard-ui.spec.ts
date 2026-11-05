@@ -17,7 +17,7 @@ import { StatTile } from './stat-tile';
       linkText="View unassigned tasks"
     />
     <mf-stat-tile
-      label="Created By Me"
+      label="Created by Me"
       [value]="0"
       query="creator=9"
       linkText="View tasks I created"
@@ -63,7 +63,7 @@ describe('dashboard UI', () => {
     const el = await render();
     const tiles = el.querySelectorAll('mf-stat-tile');
     expect(tiles[1].querySelector('a')).toBeNull();
-    expect(tiles[1].textContent).toContain('Created By Me');
+    expect(tiles[1].textContent).toContain('Created by Me');
     expect(tiles[1].textContent).not.toContain('View tasks I created');
     expect(tiles[1].querySelector('[data-zero]')).not.toBeNull();
   });

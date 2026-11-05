@@ -15,7 +15,7 @@ import { USED_BY_NOTE, UsedWorkflow } from './step-record';
   styleUrl: './step-tabs.scss',
   template: `
     <section class="st" aria-labelledby="st-used-h" data-used-tab>
-      <h2 id="st-used-h" class="st__h">Used By</h2>
+      <h2 id="st-used-h" class="st__h">Used by</h2>
       @if (workflows().length === 0) {
         <p class="st__muted" data-not-used>Not used. No workflow contains this step yet.</p>
       } @else {

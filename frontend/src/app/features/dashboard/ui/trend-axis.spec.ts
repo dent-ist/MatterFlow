@@ -9,7 +9,9 @@ import {
   nudgeLabels,
   pointHeading,
   rangeQuery,
+  longDate,
   shortDate,
+  weekRange,
   weekLabel,
   weekdayOf,
   xTicks,
@@ -37,10 +39,12 @@ describe('trend dates', () => {
     expect(addDays('2026-10-31', 2)).toBe('2026-11-02');
     expect(addDays('2026-03-07', 2)).toBe('2026-03-09');
     expect(weekdayOf(addDays('2026-11-01', 1))).toBe(1);
-    expect(shortDate('2026-10-06')).toBe('Oct 6');
-    expect(weekLabel('2026-10-06')).toBe('Week of Oct 6');
-    expect(pointHeading('2026-10-13', 'day')).toBe('Tue, Oct 13');
-    expect(pointHeading('2026-10-12', 'week')).toBe('Week of Oct 12');
+    expect(shortDate('2026-10-06')).toBe('10/06');
+    expect(weekLabel('2026-10-06')).toBe('Week of October 6');
+    expect(weekRange('2026-10-06')).toBe('10/06 to 10/12');
+    expect(longDate('2026-10-06')).toBe('October 6');
+    expect(pointHeading('2026-10-13', 'day')).toBe('Tue, October 13');
+    expect(pointHeading('2026-10-12', 'week')).toBe('Week of October 12');
     expect(granularityOf('week')).toBe('week');
     expect(granularityOf('day')).toBe('day');
     expect(granularityOf(undefined)).toBe('day');
@@ -150,11 +154,11 @@ describe('x axis ticks (T5)', () => {
     const pts = days('2026-09-14', 30); // Mon 14 Sep to Tue 13 Oct
     const ticks = xTicks(pts, 'day', xOf(30, 40, 640), 8);
     // Monday 12 Oct is a day before the last day and would touch it: dropped.
-    expect(ticks.map((t) => t.text)).toEqual(['Sep 14', 'Sep 21', 'Sep 28', 'Oct 5', 'Oct 13']);
+    expect(ticks.map((t) => t.text)).toEqual(['09/14', '09/21', '09/28', '10/05', '10/13']);
     // The first starts at the axis, the last ends at its point, the rest are centred.
     expect(ticks[0].anchor).toBe('start');
     expect(ticks[ticks.length - 1].anchor).toBe('end');
-    expect(ticks[ticks.length - 1].text).toBe('Oct 13');
+    expect(ticks[ticks.length - 1].text).toBe('10/13');
     expect(ticks.slice(1, -1).every((t) => t.anchor === 'middle')).toBe(true);
     // Mondays only in between.
     for (const t of ticks.slice(1, -1)) expect(weekdayOf(t.date)).toBe(1);
@@ -189,7 +193,7 @@ describe('x axis ticks (T5)', () => {
 
   it('ranges across months, a year end and daylight saving changes keep their Mondays', () => {
     const cross = xTicks(days('2026-12-21', 21), 'day', xOf(21, 40, 800), 8).map((t) => t.text);
-    expect(cross).toEqual(['Dec 21', 'Dec 28', 'Jan 4', 'Jan 10']);
+    expect(cross).toEqual(['12/21', '12/28', '01/04', '01/10']);
     // 8 Mar 2026 (spring forward in New York) and 1 Nov 2026 (fall back): the weekday of every day is still the calendar's.
     const spring = xTicks(days('2026-03-02', 14), 'day', xOf(14, 40, 800), 8);
     expect(spring.map((t) => t.date)).toEqual(['2026-03-02', '2026-03-09', '2026-03-15']);
@@ -220,7 +224,7 @@ describe('x axis ticks (T5)', () => {
   it('copes with one point and none', () => {
     expect(xTicks([], 'day', () => 0, 8)).toEqual([]);
     expect(xTicks(['2026-10-13'], 'day', () => 100, 8)).toEqual([
-      { index: 0, date: '2026-10-13', text: 'Oct 13', x: 100, anchor: 'middle' },
+      { index: 0, date: '2026-10-13', text: '10/13', x: 100, anchor: 'middle' },
     ]);
   });
 });

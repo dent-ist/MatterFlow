@@ -440,7 +440,7 @@ const emptySpec = (): SpecDraft => ({
                   <th scope="col">Status</th>
                   <th scope="col">Images and Text</th>
                   <th scope="col">Load File</th>
-                  <th scope="col" class="pg-num">Used By</th>
+                  <th scope="col" class="pg-num">Used by</th>
                   <th scope="col">Last Updated</th>
                 </tr>
               </thead>
@@ -811,7 +811,7 @@ const emptySpec = (): SpecDraft => ({
           <dt>Notes</dt>
           <dd>{{ s.notes || 'None' }}</dd>
         </dl>
-        <h3 class="pt__h">Used By</h3>
+        <h3 class="pt__h">Used by</h3>
         <ul class="pt__list" data-spec-used-by>
           @for (u of s.usedBy; track u.productionId) {
             <li>

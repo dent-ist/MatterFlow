@@ -54,7 +54,7 @@ const LABEL: Record<Key, string> = {
   allOpen: 'All Open',
   unassigned: 'Unassigned',
   myPod: 'My Pod',
-  createdByMe: 'Created By Me',
+  createdByMe: 'Created by Me',
   overdue: 'Overdue',
   dueSoon: 'Due Soon',
   asap: 'ASAP',

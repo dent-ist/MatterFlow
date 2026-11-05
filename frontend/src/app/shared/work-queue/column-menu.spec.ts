@@ -42,7 +42,7 @@ describe('column menu items (#207)', () => {
     const fit = title[2];
     expect(fit.disabled).toBe(true);
     expect(fit.hint).toBe('Fills the space left');
-    expect(fit.name).toBe('Fit to content Title, Fills the space left');
+    expect(fit.name).toBe('Fit to Content Title, Fills the space left');
   });
 
   it('names carry the column and start with the visible text', () => {

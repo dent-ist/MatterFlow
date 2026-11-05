@@ -158,7 +158,7 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
                         [class]="podsOpen() ? 'pi-chevron-down' : 'pi-chevron-right'"
                         aria-hidden="true"
                       ></i>
-                      Coverage By Pod
+                      Coverage by Pod
                       <span class="n">{{ p.pods.length }}</span>
                     </button>
                   </h3>

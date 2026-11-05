@@ -596,7 +596,7 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
       { key: 'steps', label: 'Steps', icon: tabIcon('steps'), count: this.rows().length },
       {
         key: 'used-by',
-        label: 'Used By',
+        label: 'Used by',
         icon: tabIcon('used-by'),
         count: w ? activeTaskTypes({ workflow: w }).length : 0,
       },

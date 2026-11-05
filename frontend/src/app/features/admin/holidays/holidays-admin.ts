@@ -278,7 +278,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                           <th scope="col">Date in {{ year() }}</th>
                           <th scope="col">Repeats</th>
                           <th scope="col">Region Note</th>
-                          <th scope="col">Counts As</th>
+                          <th scope="col">Counts as</th>
                           <th scope="col"><span class="mf-sr-only">Actions</span></th>
                         </tr>
                       </thead>

@@ -33,7 +33,7 @@ export function steppedPx(def: ColumnDef, currentPx: number, direction: 1 | -1):
 export interface ColumnMenuState {
   /** The width in force, px at the default zoom. */
   currentPx: number;
-  /** True when the user stored a width for this column (enables "Reset width"). */
+  /** True when the user stored a width for this column (enables "Reset Width"). */
   stored: boolean;
   /** Narrow-box and phone rules do not matter here: the grid does not open the menu on a phone. */
   canHide: boolean;
@@ -41,7 +41,7 @@ export interface ColumnMenuState {
 
 /**
  * The items of a column's menu, in order. Sort comes first for a sortable column; the Title (the spring) has no width items, only a
- * disabled "Fit to content" that says why; Ref and Title cannot be hidden.
+ * disabled "Fit to Content" that says why; Ref and Title cannot be hidden.
  */
 export function columnMenuItems(def: ColumnDef, state: ColumnMenuState): ColumnMenuItem[] {
   const item = (
@@ -58,19 +58,19 @@ export function columnMenuItems(def: ColumnDef, state: ColumnMenuState): ColumnM
   });
   const items: ColumnMenuItem[] = [];
   if (def.sortField) {
-    items.push(item('sort-asc', 'Sort ascending'), item('sort-desc', 'Sort descending'));
+    items.push(item('sort-asc', 'Sort Ascending'), item('sort-desc', 'Sort Descending'));
   }
   if (def.fill || def.resizable === false) {
-    items.push(item('fit', 'Fit to content', true, 'Fills the space left'));
+    items.push(item('fit', 'Fit to Content', true, 'Fills the space left'));
   } else {
     items.push(
       item('widen', 'Widen', state.currentPx >= def.maxWidth),
       item('narrow', 'Narrow', state.currentPx <= def.minWidth),
-      item('fit', 'Fit to content'),
-      item('reset', 'Reset width', !state.stored),
+      item('fit', 'Fit to Content'),
+      item('reset', 'Reset Width', !state.stored),
     );
   }
-  if (state.canHide && !def.locked) items.push(item('hide', 'Hide column'));
+  if (state.canHide && !def.locked) items.push(item('hide', 'Hide Column'));
   return items;
 }
 

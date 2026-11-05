@@ -121,7 +121,7 @@ describe('TaskTable, Dashboard Summary cells', () => {
     const heads = Array.from(el().querySelectorAll('thead tr:first-child th')).map((th) =>
       th.textContent?.trim(),
     );
-    expect(heads).toContain('Unassigned For');
+    expect(heads).toContain('Unassigned for');
   });
 
   it('lists each person in the Assign menu with the state icon, the state word and the load', async () => {

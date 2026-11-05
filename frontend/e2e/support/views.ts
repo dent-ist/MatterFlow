@@ -23,7 +23,7 @@ export const VIEW_LABEL: Record<ViewKey, string> = {
   asap: 'ASAP',
   onHold: 'On Hold',
   myPod: 'My Pod',
-  createdByMe: 'Created By Me',
+  createdByMe: 'Created by Me',
   recentlyCompleted: 'Recently Completed',
 };
 

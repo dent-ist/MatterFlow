@@ -3,7 +3,7 @@ import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * Guard for D-60 (#1146, #1147): the long date form (`mfDateLong`, "Oct 12, 2026, 10:23 PM EDT") is for tooltips and accessible names only. A template that prints it
+ * Guard for D-60 (#1146, #1147): the long date form (`mfDateLong`, "October 12, 2026, 10:23 PM EDT" (the FULL month)) is for tooltips and accessible names only. A template that prints it
  * in a cell, a field, a chip or a feed fails here; what those show is `mfNum` (`MM/DD hh:mm AM/PM`).
  */
 const APP = join(process.cwd(), 'src', 'app');

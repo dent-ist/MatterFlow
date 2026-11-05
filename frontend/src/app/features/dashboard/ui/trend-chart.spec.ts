@@ -124,28 +124,28 @@ describe('trend chart', () => {
       plot.dispatchEvent(new FocusEvent('focus'));
       fixture.detectChanges();
       // Focus starts on the last day.
-      expect(el.querySelector('[data-tip]')!.textContent).toContain('Sat, Oct 3');
+      expect(el.querySelector('[data-tip]')!.textContent).toContain('Sat, October 3');
       expect(el.querySelector('[data-tip]')!.textContent).toContain('0 created');
       expect(el.querySelector('[data-tip]')!.textContent).toContain('1 completed');
       expect(el.querySelector('[data-readout]')!.textContent).toContain(
-        'Sat, Oct 3: 0 created, 1 completed',
+        'Sat, October 3: 0 created, 1 completed',
       );
 
       plot.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
       fixture.detectChanges();
-      expect(el.querySelector('[data-tip]')!.textContent).toContain('Fri, Oct 2');
+      expect(el.querySelector('[data-tip]')!.textContent).toContain('Fri, October 2');
       expect(el.querySelector('[data-tip]')!.textContent).toContain('5 created');
       expect(el.querySelector('[data-readout]')!.textContent).toContain(
-        'Fri, Oct 2: 5 created, 4 completed',
+        'Fri, October 2: 5 created, 4 completed',
       );
 
       plot.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
       fixture.detectChanges();
-      expect(el.querySelector('[data-tip]')!.textContent).toContain('Thu, Oct 1');
+      expect(el.querySelector('[data-tip]')!.textContent).toContain('Thu, October 1');
 
       plot.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
       fixture.detectChanges();
-      expect(el.querySelector('[data-tip]')!.textContent).toContain('Sat, Oct 3');
+      expect(el.querySelector('[data-tip]')!.textContent).toContain('Sat, October 3');
 
       plot.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
       fixture.detectChanges();
@@ -164,7 +164,7 @@ describe('trend chart', () => {
         Object.assign(new Event('pointermove', { bubbles: true }), { clientX: 327 }),
       );
       fixture.detectChanges();
-      expect(el.querySelector('[data-tip]')!.textContent).toContain('Fri, Oct 2');
+      expect(el.querySelector('[data-tip]')!.textContent).toContain('Fri, October 2');
 
       // The day is taken from the drawing itself: a drawing that sits to the right of the left edge of its box (offset 220 px) maps
       // the pointer over ITS middle (x = 220 + 180) to the middle day, not the pointer over the middle of the box.
@@ -180,7 +180,7 @@ describe('trend chart', () => {
         Object.assign(new Event('pointermove', { bubbles: true }), { clientX: 547 }),
       );
       fixture.detectChanges();
-      expect(el.querySelector('[data-tip]')!.textContent).toContain('Fri, Oct 2');
+      expect(el.querySelector('[data-tip]')!.textContent).toContain('Fri, October 2');
     });
 
     it('marks weekends, and marks today as a partial day only when the series ends today', () => {
@@ -197,9 +197,9 @@ describe('trend chart', () => {
       expect(heads).toEqual(['Day', 'Created', 'Completed']);
       const rows = Array.from(el.querySelectorAll('tbody tr'));
       expect(rows.map((r) => r.querySelector('th')!.textContent)).toEqual([
-        'October 1, 2026',
-        'October 2, 2026',
-        'October 3, 2026',
+        '10/01',
+        '10/02',
+        '10/03',
       ]);
       expect(rows[1].querySelectorAll('a')[0].getAttribute('href')).toBe(
         '/tasks?createdFrom=2026-10-02&createdTo=2026-10-02',
@@ -280,13 +280,13 @@ describe('trend chart', () => {
       plot.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
       fixture.detectChanges();
       const tip = text(el.querySelector('[data-tip]'));
-      expect(tip).toContain('Fri, Oct 2');
+      expect(tip).toContain('Fri, October 2');
       expect(tip).toContain('Created');
       expect(tip).toContain('All Task Types 8');
       expect(tip).toContain('Alpha 6');
       expect(tip).toContain('Beta 2');
       expect(text(el.querySelector('[data-readout]'))).toBe(
-        'Fri, Oct 2, created: All Task Types 8, Alpha 6, Beta 2.',
+        'Fri, October 2, created: All Task Types 8, Alpha 6, Beta 2.',
       );
     });
 
@@ -463,7 +463,7 @@ describe('trend chart', () => {
       expect(tip).toContain('Backlog at End of Day');
       expect(tip).toContain('152 overdue');
       expect(text(el.querySelector('[data-readout]'))).toBe(
-        'Fri, Oct 2: 5 created, 4 completed; Backlog at End of Day: 152 overdue.',
+        'Fri, October 2: 5 created, 4 completed; Backlog at End of Day: 152 overdue.',
       );
       expect(plot.getAttribute('aria-label')).toContain('Backlog at End of Day: Overdue 140 now');
     });
@@ -692,8 +692,8 @@ describe('trend chart', () => {
       expect(el.querySelectorAll('rect.weekend').length).toBe(0);
       expect(el.textContent).not.toContain('Shaded: weekends');
       const ticks = Array.from(el.querySelectorAll('text[data-xtick]')).map((t) => text(t));
-      expect(ticks[0]).toBe('Sep 7');
-      expect(ticks[ticks.length - 1]).toBe('Oct 12');
+      expect(ticks[0]).toBe('09/07');
+      expect(ticks[ticks.length - 1]).toBe('10/12');
       expect(text(el.querySelector('.foot'))).toContain('Each point is a week, Monday to Sunday');
       expect(text(el.querySelector('.foot'))).toContain('not replayed');
     });
@@ -704,13 +704,13 @@ describe('trend chart', () => {
       const plot = el.querySelector<HTMLElement>('[data-plot]')!;
       plot.dispatchEvent(new FocusEvent('focus'));
       fixture.detectChanges();
-      expect(text(el.querySelector('[data-tip-heading]'))).toBe('Week of Oct 12');
+      expect(text(el.querySelector('[data-tip-heading]'))).toBe('Week of October 12');
       expect(el.querySelector('[data-tip]')!.textContent).toContain('This week so far');
-      expect(text(el.querySelector('[data-readout]'))).toContain('Week of Oct 12: 2 created');
+      expect(text(el.querySelector('[data-readout]'))).toContain('Week of October 12: 2 created');
       plot.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
       fixture.detectChanges();
       expect(text(el.querySelector('[data-readout]'))).toContain(
-        'Week of Oct 5: 9 created; Backlog at End of Day: 140 open.',
+        'Week of October 5: 9 created; Backlog at End of Day: 140 open.',
       );
       expect(plot.getAttribute('aria-label')).toContain('per week');
       expect(plot.getAttribute('aria-label')).toContain('Open 150 now');
@@ -720,7 +720,7 @@ describe('trend chart', () => {
       await update((h) => h.asTable.set(true));
       expect(text(el.querySelector('thead th'))).toBe('Week');
       const rows = Array.from(el.querySelectorAll('tbody tr'));
-      expect(text(rows[0].querySelector('th'))).toBe('Week of Sep 7');
+      expect(text(rows[0].querySelector('th'))).toBe('09/07 to 09/13');
       // The first week holds only 10 to 13 Sep of the period.
       expect(rows[0].querySelectorAll('a')[0].getAttribute('href')).toBe(
         '/tasks?createdFrom=2026-09-10&createdTo=2026-09-13',
@@ -794,7 +794,7 @@ describe('trend chart', () => {
       };
       at('pointerdown', 40); // the first day (the plot starts at the axis)
       fixture.detectChanges();
-      expect(el.querySelector('[data-tip]')!.textContent).toContain('Thu, Oct 1');
+      expect(el.querySelector('[data-tip]')!.textContent).toContain('Thu, October 1');
       at('pointerleave', 40);
       fixture.detectChanges();
       expect(el.querySelector('[data-tip]')).not.toBeNull();

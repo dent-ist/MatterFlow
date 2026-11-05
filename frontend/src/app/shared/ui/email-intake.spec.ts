@@ -73,7 +73,7 @@ describe('EmailIntake', () => {
     box.value = text;
     box.dispatchEvent(new Event('input'));
     await settle(fixture);
-    buttonByLabel(el(), 'Fill From Pasted Text')!.click();
+    buttonByLabel(el(), 'Fill from Pasted Text')!.click();
     await settle(fixture);
   }
 
@@ -117,7 +117,7 @@ describe('EmailIntake', () => {
   it('keeps the paste button disabled until there is text', async () => {
     await create();
 
-    expect(buttonByLabel(el(), 'Fill From Pasted Text')!.disabled).toBe(true);
+    expect(buttonByLabel(el(), 'Fill from Pasted Text')!.disabled).toBe(true);
   });
 
   it('reads pasted text through the API, shows the values for review and emits the edited prefill', async () => {
@@ -510,7 +510,7 @@ describe('EmailIntake', () => {
       const box = q<HTMLTextAreaElement>('textarea');
       pasteWithHtml(box, 'Name\tQty\nDisk\t2', '<table><tr><td>Name</td><td>Qty</td></tr></table>');
       await settle(fixture);
-      buttonByLabel(el(), 'Fill From Pasted Text')!.click();
+      buttonByLabel(el(), 'Fill from Pasted Text')!.click();
       await settle(fixture);
 
       expect(api.parseEmailText).toHaveBeenCalledWith({
@@ -526,7 +526,7 @@ describe('EmailIntake', () => {
       box.value = 'pasted and edited';
       box.dispatchEvent(new Event('input'));
       await settle(fixture);
-      buttonByLabel(el(), 'Fill From Pasted Text')!.click();
+      buttonByLabel(el(), 'Fill from Pasted Text')!.click();
       await settle(fixture);
       expect(api.parseEmailText.mock.calls[0][0].pastedHtml).toBeUndefined();
 

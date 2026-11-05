@@ -287,7 +287,7 @@ describe('built-in views', () => {
       'ASAP',
       'On Hold',
       'My Pod',
-      'Created By Me',
+      'Created by Me',
       'Recently Completed',
     ]);
   });

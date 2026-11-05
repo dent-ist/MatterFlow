@@ -733,7 +733,20 @@ export function granularityOf(value: string | null | undefined): Granularity {
   return value === 'week' ? 'week' : 'day';
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function utc(date: string): Date | null {
@@ -753,22 +766,33 @@ export function addDays(date: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** "Oct 6". */
+/** "10/06" (D-60: numeric, no month names): the axis labels and the Day column. */
 export function shortDate(date: string): string {
+  const d = parseDateOnly(date);
+  return d ? `${String(d.month).padStart(2, '0')}/${String(d.day).padStart(2, '0')}` : date;
+}
+
+/** "October 6" (the FULL month, D-60): only in the long form of a tooltip or a sentence. */
+export function longDate(date: string): string {
   const d = parseDateOnly(date);
   return d ? `${MONTHS[d.month - 1]} ${d.day}` : date;
 }
 
-/** "Week of Oct 6" (the Monday). */
-export function weekLabel(date: string): string {
-  return `Week of ${shortDate(date)}`;
+/** "10/06 to 10/12": the Monday to Sunday week of a weekly point. */
+export function weekRange(date: string): string {
+  return `${shortDate(date)} to ${shortDate(addDays(date, 6))}`;
 }
 
-/** "Tue, Oct 13" for a day, "Week of Oct 6" for a week. */
+/** "Week of October 6" (the Monday): the long form of a weekly point, for tooltips. */
+export function weekLabel(date: string): string {
+  return `Week of ${longDate(date)}`;
+}
+
+/** "Tue, October 13" for a day, "Week of October 6" for a week (tooltips: the long form with the full month). */
 export function pointHeading(date: string, granularity: Granularity): string {
   if (granularity === 'week') return weekLabel(date);
   const w = weekdayOf(date);
-  return w < 0 ? date : `${WEEKDAYS[w]}, ${shortDate(date)}`;
+  return w < 0 ? date : `${WEEKDAYS[w]}, ${longDate(date)}`;
 }
 
 /**

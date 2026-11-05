@@ -540,7 +540,7 @@ function plural(n: number, one: string, many: string): string {
               </p>
             }
             <mf-chart-panel
-              heading="Assets By Asset Type"
+              heading="Assets by Asset Type"
               labelHeader="Asset type"
               [valueHeader]="valueHeader()"
               [rows]="chartData()"

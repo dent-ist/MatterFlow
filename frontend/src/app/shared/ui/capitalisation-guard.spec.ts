@@ -9,7 +9,7 @@ import { LABEL_TABS } from '../../features/admin/labels-tabs';
 
 /**
  * Guard for D-20 (#1149): "click it or name it = Title Case; read it = sentence case". A button label, a page heading, a dialog title, a column heading and a one-line
- * button text in a template must be Title Case (minor words "a, an, and, as, at, for, in, of, on, or, the, to" stay lowercase except first and last). Text with a
+ * button text in a template must be Title Case (minor words stay lowercase except as the first word: a, an, and, as, at, but, by, for, from, in, into, of, on, or, per, the, to, via, vs, with). Text with a
  * sentence full stop, a placeholder or a tooltip is not checked. A word that is data and not a name goes into `ALLOWED` with the reason.
  */
 const APP = join(process.cwd(), 'src', 'app');
@@ -19,14 +19,21 @@ const MINOR = new Set([
   'and',
   'as',
   'at',
+  'but',
+  'by',
   'for',
+  'from',
   'in',
+  'into',
   'of',
   'on',
   'or',
+  'per',
   'the',
   'to',
+  'via',
   'vs',
+  'with',
 ]);
 
 /** Strings that are allowed to differ (the reason in the comment). */
@@ -36,7 +43,6 @@ const ALLOWED = new Set<string>([
   'Choose a unit', // same
   'Choose a client', // same
   'Choose a matter', // same
-  'Skippable - comment', // a status badge, not an option; the badge sweep (#1130) owns it
 ]);
 
 export function isTitleCase(text: string): boolean {
@@ -46,7 +52,7 @@ export function isTitleCase(text: string): boolean {
     const core = word.replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, '');
     if (!core || !/^[A-Za-z]/.test(core) || /[./]/.test(core)) return true;
     if (/^v\d*$/.test(core) || core.toLowerCase() === 'vs') return true;
-    const minor = MINOR.has(core.toLowerCase()) && i > 0 && i < words.length - 1;
+    const minor = MINOR.has(core.toLowerCase()) && i > 0;
     return minor ? /^[a-z]/.test(core) : /^[A-Z]/.test(core);
   });
 }
@@ -85,6 +91,10 @@ describe('capitalisation of what is clicked or named (D-20, #1149)', () => {
     expect(isTitleCase('Expected Turnaround (days)')).toBe(true);
     expect(isTitleCase('Clear filters')).toBe(false);
     expect(isTitleCase('Assign To Me')).toBe(false);
+    expect(isTitleCase('Produced by Us')).toBe(true);
+    expect(isTitleCase('Coverage by Pod')).toBe(true);
+    expect(isTitleCase('Created By Me')).toBe(false);
+    expect(isTitleCase('By Member')).toBe(true);
   });
 
   it('every button label, page heading, dialog title and column heading is Title Case', () => {

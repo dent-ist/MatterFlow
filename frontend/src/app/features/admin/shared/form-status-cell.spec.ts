@@ -40,7 +40,7 @@ describe('FormStatusCell (#631)', () => {
     expect(el.querySelector('[data-facts]')!.textContent).toBe('8 fields · Updated 10/12');
     expect(el.querySelector('[data-draft], [data-none]')).toBeNull();
     expect(el.querySelector('mf-form-status-cell')!.getAttribute('title')).toBe(
-      'Published version 3, 8 fields, updated Oct 12, 2026.',
+      'Published version 3, 8 fields, updated October 12, 2026.',
     );
   });
 

@@ -130,7 +130,7 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
   // Dashboard Summary only (epic #1063): how long an unassigned task has waited; shown while the Unassigned card is on. Never in a chooser or a default set.
   {
     key: 'unassignedFor',
-    label: 'Unassigned For',
+    label: 'Unassigned for',
     sortField: 'unassignedSince',
     width: 152,
     minWidth: 120,

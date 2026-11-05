@@ -43,12 +43,12 @@ describe('PrintLine (#215)', () => {
     };
   }
 
-  it('names the page, the sort, the place in the list and the time in the viewer zone', () => {
+  it('names the page, the sort, the place in the list and the day in the viewer zone', () => {
     const r = render();
     expect(r.page).toBe('Task Queue: Overdue');
     expect(r.sort).toBe('Sorted by Due date, soonest first');
     expect(r.count).toBe('Page 1 of 9, 442 tasks, showing 1-50');
-    expect(r.when).toBe('Printed Oct 14, 2026, 12:05 PM EDT');
+    expect(r.when).toBe('Printed October 14, 2026');
   });
 
   it('says the last page, a single page, one task and no tasks', () => {

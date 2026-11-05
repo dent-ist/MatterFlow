@@ -290,7 +290,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
       const wf = await seed.workflow({ name: `Draftless ${uid()}`, stepCount: 2 });
       await page.goto(`/admin/workflows/${wf.workflowDefinitionId}?tab=versions`);
       await page.getByRole('button', { name: 'Actions for v1' }).click();
-      await page.getByRole('menuitem', { name: 'Create Draft From This Version' }).click();
+      await page.getByRole('menuitem', { name: 'Create Draft from This Version' }).click();
       await expect(page).toHaveURL(/\/versions\/\d+/);
     });
   });

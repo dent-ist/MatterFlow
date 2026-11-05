@@ -287,7 +287,7 @@ describe('StepsListPage', () => {
     // Open by default (from 640 px, #365); the Filters button sits in the page header, not in this tab.
     expect(el.querySelector('[data-filter-row]')).not.toBeNull();
     expect(el.querySelector('[data-filters-toggle]')).toBeNull();
-    for (const column of ['Title', 'Description', 'Used In', 'Status']) {
+    for (const column of ['Title', 'Description', 'Used in', 'Status']) {
       expect(el.querySelector(`[aria-label^="Filter by ${column}"]`)).not.toBeNull();
     }
     expect(el.querySelector('button[data-filter="tags"]')).not.toBeNull();
@@ -311,7 +311,7 @@ describe('StepsListPage narrow window (#356)', () => {
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
     expect(Array.from(el.querySelectorAll('thead th')).map((th) => th.textContent!.trim())).toEqual(
-      ['Title', 'Description', 'Tags', 'Used In', 'Inputs', 'Status', 'Actions'],
+      ['Title', 'Description', 'Tags', 'Used in', 'Inputs', 'Status', 'Actions'],
     );
     const row = el.querySelector('tbody tr[data-row="Deduplicate"]')!;
     expect(row.querySelectorAll('td')).toHaveLength(7);
@@ -383,7 +383,7 @@ describe('StepsListPage phone cards and narrow columns (#375)', () => {
       'Title',
       'Description',
       'Tags',
-      'Used In',
+      'Used in',
       'Inputs',
       'Status',
       'Actions',
@@ -397,7 +397,7 @@ describe('StepsListPage phone cards and narrow columns (#375)', () => {
       'Title',
       'Description',
       'Tags',
-      'Used In',
+      'Used in',
       'Inputs',
       'Status',
       'Actions',
@@ -637,7 +637,7 @@ describe('StepEditPage', () => {
       Array.from(el.querySelectorAll('[role=tab]')).map((t) =>
         t.textContent!.replace(/\s+/g, ' ').trim(),
       ),
-    ).toEqual(['Details', 'Inputs', 'Used By (1)']);
+    ).toEqual(['Details', 'Inputs', 'Used by (1)']);
     expect(el.querySelector('[data-footer]')).toBeNull();
     expect(buttonByLabel(el, 'Deactivate')).toBeUndefined();
   });
@@ -768,7 +768,7 @@ describe('StepsListPage tags', () => {
     const el: HTMLElement = fixture.nativeElement;
 
     expect(Array.from(el.querySelectorAll('thead th')).map((th) => th.textContent!.trim())).toEqual(
-      ['Title', 'Description', 'Tags', 'Used In', 'Inputs', 'Status', 'Actions'],
+      ['Title', 'Description', 'Tags', 'Used in', 'Inputs', 'Status', 'Actions'],
     );
     const first = el.querySelector('tbody tr[data-row="Deduplicate"]')!;
     expect(

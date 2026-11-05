@@ -93,7 +93,7 @@ const ATTENTION = [
       </section>
 
       <section class="card wide" aria-labelledby="mw-ty">
-        <h3 id="mw-ty">Open Work By Task Type</h3>
+        <h3 id="mw-ty">Open Work by Task Type</h3>
         @if (types().length === 0) {
           <p class="msg">{{ typesLoad.state() === 'loading' ? 'Loading' : 'No open tasks.' }}</p>
         } @else {

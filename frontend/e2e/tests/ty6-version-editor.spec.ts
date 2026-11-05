@@ -101,7 +101,7 @@ test.describe('Version editor: step rows (VP2, #394)', () => {
     const trimmed = texts.map((t) => t.replace(/\s+/g, ' ').trim());
     expect(trimmed).toContain('Required');
     expect(trimmed).toContain('Skippable');
-    expect(trimmed).toContain('Skippable - comment');
+    expect(trimmed).toContain('Skippable - Comment');
     await shoot(page, 'rows-13-long-title', { w: 1366, h: 768 });
     for (const size of SIZES.slice(1)) {
       await page.setViewportSize({ width: size.w, height: size.h });
@@ -188,7 +188,7 @@ test.describe('Version editor: row overflow and skip rules (VP2, #395)', () => {
     await page.keyboard.press('Tab');
     await page.keyboard.press('Space');
     await expect(stepRow(page, a).locator('[data-skip-summary]')).toContainText(
-      'Skippable - comment',
+      'Skippable - Comment',
     );
     await page.keyboard.press('Escape');
     await expect(pop).toHaveCount(0);
@@ -224,7 +224,7 @@ test.describe('Version editor: row overflow and skip rules (VP2, #395)', () => {
     await page.getByRole('menuitem', { name: 'Remove' }).press('Enter');
     await page.locator('[data-undo]').click();
     await expect(stepRow(page, a).locator('[data-skip-summary]')).toContainText(
-      'Skippable - comment',
+      'Skippable - Comment',
     );
     expect((await titlesOf(page)).slice(0, 2)).toEqual([b, a]);
 

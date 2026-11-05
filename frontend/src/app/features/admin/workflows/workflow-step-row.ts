@@ -24,7 +24,7 @@ export interface PreviewState {
   definition?: FormDefinition;
 }
 
-/** The one rule badge of a step row: Required, Skippable or Skippable - comment (icon and word, never colour alone). */
+/** The one rule badge of a step row: Required, Skippable or Skippable - Comment (icon and word, never colour alone). */
 export function ruleBadge(row: Pick<PlacementRow, 'isSkippable' | 'skipCommentRequired'>): {
   label: string;
   tone: 'neutral' | 'info';
@@ -32,7 +32,7 @@ export function ruleBadge(row: Pick<PlacementRow, 'isSkippable' | 'skipCommentRe
 } {
   if (!row.isSkippable) return { label: 'Required', tone: 'neutral', icon: 'pi-lock' };
   return row.skipCommentRequired
-    ? { label: 'Skippable - comment', tone: 'info', icon: 'pi-comment' }
+    ? { label: 'Skippable - Comment', tone: 'info', icon: 'pi-comment' }
     : { label: 'Skippable', tone: 'info', icon: 'pi-forward' };
 }
 

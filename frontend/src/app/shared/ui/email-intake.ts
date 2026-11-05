@@ -158,7 +158,7 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
 
             <div class="ei__actions">
               <p-button
-                label="Fill From Pasted Text"
+                label="Fill from Pasted Text"
                 icon="pi pi-clipboard"
                 severity="secondary"
                 [disabled]="phase() === 'loading' || !pasted().trim()"

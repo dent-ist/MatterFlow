@@ -73,7 +73,7 @@ export const TAB_LABELS: Readonly<Record<TabKey, string>> = {
   active: 'Active',
   dueSoon: DUE_SOON_AND_OVERDUE_LABEL,
   completed: CLOSED_LABEL,
-  createdByMe: 'Created By Me',
+  createdByMe: 'Created by Me',
 };
 
 /**

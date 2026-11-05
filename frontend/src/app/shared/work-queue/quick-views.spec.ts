@@ -36,7 +36,7 @@ describe('QuickViews', () => {
       'ASAP',
       'On Hold',
       'My Pod',
-      'Created By Me',
+      'Created by Me',
       'More views',
     ]);
   });
@@ -207,7 +207,7 @@ describe('QuickViews', () => {
       expect(button(el, 'overdue').getAttribute('aria-label')).toBe('Overdue, 101 tasks');
       expect(button(el, 'overdue').textContent!.replace(/\s+/g, ' ').trim()).toBe('Overdue 101');
       expect(button(el, 'allOpen').getAttribute('data-count')).toBe('442');
-      expect(button(el, 'createdByMe').getAttribute('aria-label')).toBe('Created By Me, 1 task');
+      expect(button(el, 'createdByMe').getAttribute('aria-label')).toBe('Created by Me, 1 task');
       expect(button(el, 'onHold').getAttribute('aria-label')).toBe('On Hold, 64 tasks');
       expect(button(el, 'dueSoon').getAttribute('data-count')).toBe('96');
       fixture.componentRef.setInput('counts', { ...counts, open: 1442 });

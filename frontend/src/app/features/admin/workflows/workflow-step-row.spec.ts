@@ -20,7 +20,7 @@ describe('ruleBadge (VP2, #394)', () => {
       icon: 'pi-forward',
     });
     expect(ruleBadge(row({ isSkippable: true, skipCommentRequired: true }))).toEqual({
-      label: 'Skippable - comment',
+      label: 'Skippable - Comment',
       tone: 'info',
       icon: 'pi-comment',
     });

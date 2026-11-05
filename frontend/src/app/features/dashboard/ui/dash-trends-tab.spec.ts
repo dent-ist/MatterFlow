@@ -586,7 +586,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     const plot = el.querySelector<HTMLElement>('[data-plot]')!;
     plot.dispatchEvent(new FocusEvent('focus'));
     await settle();
-    expect(text(el.querySelector('[data-tip-heading]'))).toBe('Week of Oct 14');
+    expect(text(el.querySelector('[data-tip-heading]'))).toBe('Week of October 14');
   });
 
   describe('on a phone (480 px and below)', () => {

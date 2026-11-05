@@ -263,7 +263,7 @@ export function queueFilterDefs(
     // is not matched and nothing says so.
     {
       key: 'managedByMe',
-      label: 'Managed By Me',
+      label: 'Managed by Me',
       type: 'select',
       param: 'managedByMe',
       noControl: true,
