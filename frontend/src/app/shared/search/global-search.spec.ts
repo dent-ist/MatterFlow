@@ -198,10 +198,8 @@ describe('mf-global-search (header typeahead)', () => {
         join(process.cwd(), 'src/app/shared/search/global-search.ts'),
         'utf8',
       );
-      const heading = source.slice(
-        source.indexOf('.mf-gs__group {'),
-        source.indexOf('.mf-gs__option {'),
-      );
+      const from = source.indexOf('.mf-gs__group {');
+      const heading = source.slice(from, source.indexOf('}', from));
       expect(heading).not.toContain('uppercase');
       expect(heading).toContain('font-size: var(--mf-fs-sm)');
       expect(heading).toContain('font-weight: var(--mf-fw-semibold)');

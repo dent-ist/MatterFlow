@@ -121,12 +121,13 @@ describe('rowActions in mf-action-menu (#554)', () => {
     expect(items[0].classList.contains('am__item--danger')).toBe(false);
   });
 
-  it('shows the reason of a disabled entry as text, not as a tooltip', async () => {
+  it('shows the reason of a disabled entry as its tooltip and accessible description, not as a second line (#1218)', async () => {
     const el = await open();
     const del = el.querySelector<HTMLElement>('[data-action="delete"]')!;
     expect(del.getAttribute('aria-disabled')).toBe('true');
-    expect(del.getAttribute('title')).toBeNull();
+    expect(del.getAttribute('title')).toBe('Used by 31 tasks');
     const reason = del.querySelector('[data-reason]')!;
+    expect(reason.classList.contains('mf-sr-only')).toBe(true);
     expect(reason.textContent!.trim()).toBe('Used by 31 tasks');
     expect(del.getAttribute('aria-describedby')).toBe(reason.id);
   });
