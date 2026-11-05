@@ -24,6 +24,8 @@ const VIEWS: readonly { mode: BreakdownMode; label: string; icon: string }[] = [
           type="button"
           class="mf-btn"
           [attr.data-view]="v.mode"
+          [attr.aria-label]="v.label"
+          [attr.title]="v.label"
           [attr.aria-pressed]="mode() === v.mode"
           (click)="pick.emit(v.mode)"
         >
@@ -38,8 +40,16 @@ const VIEWS: readonly { mode: BreakdownMode; label: string; icon: string }[] = [
       display: inline-flex;
       flex: none;
     }
-    /* A narrow card: the icons carry the buttons, the words stay for assistive tools. */
+    /* A narrow card: the icons carry the buttons, the words stay for assistive tools (aria-label and tooltip). Every segment is a 36 x 36 square (--mf-ctl-h)
+       with the 20 px icon of the switch, the same 1 px borders and solid selected fill (designer decision, ui-spec 14.4). */
     @container (max-width: 17rem) {
+      .mf-seg {
+        grid-auto-columns: var(--mf-ctl-h);
+      }
+      .mf-btn {
+        width: var(--mf-ctl-h);
+        padding: 0;
+      }
       .lbl {
         position: absolute;
         width: 1px;

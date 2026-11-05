@@ -140,4 +140,13 @@ describe('dashboard UI', () => {
       'View of Open by Pod',
     );
   });
+
+  it('the view switch keeps each view name as aria-label and tooltip, so the icon-only form (a card under 17 rem: 36 x 36 segments, 20 px icon) is still named (spec 14.4)', async () => {
+    const el = await render();
+    const buttons = Array.from(
+      el.querySelectorAll<HTMLButtonElement>('mf-bar-list [data-view-switch] button'),
+    );
+    expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual(['Bars', 'Pie', 'Table']);
+    expect(buttons.map((b) => b.getAttribute('title'))).toEqual(['Bars', 'Pie', 'Table']);
+  });
 });
