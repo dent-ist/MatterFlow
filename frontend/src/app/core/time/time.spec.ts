@@ -43,13 +43,13 @@ describe('formatInstant', () => {
 
 describe('formatStatusStamp (T3 status note)', () => {
   const NOW = new Date('2026-10-19T16:00:00Z');
-  it('is "Oct 18, 4:03 PM" in the viewer zone, in two zones', () => {
-    expect(formatStatusStamp('2026-10-18T20:03:00Z', NY, NOW)).toBe('Oct 18, 4:03 PM');
-    expect(formatStatusStamp('2026-10-18T20:03:00Z', 'Asia/Tokyo', NOW)).toBe('Oct 19, 5:03 AM');
+  it('is "10/18 04:03 PM" in the viewer zone, in two zones', () => {
+    expect(formatStatusStamp('2026-10-18T20:03:00Z', NY, NOW)).toBe('10/18 04:03 PM');
+    expect(formatStatusStamp('2026-10-18T20:03:00Z', 'Asia/Tokyo', NOW)).toBe('10/19 05:03 AM');
   });
   it('adds the year outside the current year of the viewer zone', () => {
-    expect(formatStatusStamp('2025-12-31T23:30:00Z', NY, NOW)).toBe('Dec 31, 2025, 6:30 PM');
-    expect(formatStatusStamp('2025-12-31T23:30:00Z', 'Asia/Tokyo', NOW)).toBe('Jan 1, 8:30 AM');
+    expect(formatStatusStamp('2025-12-31T23:30:00Z', NY, NOW)).toBe('12/31/2025 06:30 PM');
+    expect(formatStatusStamp('2025-12-31T23:30:00Z', 'Asia/Tokyo', NOW)).toBe('01/01 08:30 AM');
   });
 });
 
@@ -104,16 +104,16 @@ describe('describeDueCell (#208)', () => {
   it('overdue timed and date-only, hours then days, no week cap', () => {
     expect(cell(timed('2026-10-17T10:00:00Z'))).toMatchObject({
       tone: 'overdue',
-      line1: 'Oct 17, 6:00 AM',
-      dateText: 'Oct 17',
+      line1: '10/17 06:00 AM',
+      dateText: '10/17',
       line2: 'Overdue 6h',
-      sentence: 'Due Oct 17 at 6:00 AM, overdue 6 hours',
-      tooltip: 'Oct 17, 2026, 6:00 AM EDT',
+      sentence: 'Due October 17 at 6:00 AM, overdue 6 hours',
+      tooltip: 'October 17, 2026, 6:00 AM EDT',
     });
     expect(cell({ dueDate: '2026-10-13' })).toMatchObject({
-      line1: 'Oct 13',
+      line1: '10/13',
       line2: 'Overdue 4d',
-      sentence: 'Due Oct 13, overdue 4 days',
+      sentence: 'Due October 13, overdue 4 days',
     });
     expect(cell({ dueDate: '2026-08-15' }).line2).toBe('Overdue 63d');
     expect(cell(timed('2026-10-17T15:30:00Z')).sentence).toContain('less than 1 hour');
@@ -123,32 +123,32 @@ describe('describeDueCell (#208)', () => {
   it('today, tomorrow, in 2 days, later', () => {
     expect(cell(timed('2026-10-18T03:59:00Z'))).toMatchObject({
       tone: 'today',
-      line1: 'Oct 17, 11:59 PM',
+      line1: '10/17 11:59 PM',
       line2: 'Due today',
-      sentence: 'Due today, Oct 17 at 11:59 PM',
+      sentence: 'Due today, October 17 at 11:59 PM',
     });
     expect(cell({ dueDate: '2026-10-17' })).toMatchObject({
-      line1: 'Oct 17',
-      sentence: 'Due today, Oct 17',
+      line1: '10/17',
+      sentence: 'Due today, October 17',
     });
     expect(cell(timed('2026-10-18T19:00:00Z'))).toMatchObject({
       tone: 'soon',
-      line1: 'Oct 18, 3:00 PM',
+      line1: '10/18 03:00 PM',
       line2: 'Tomorrow',
-      sentence: 'Due tomorrow, Oct 18 at 3:00 PM',
+      sentence: 'Due tomorrow, October 18 at 3:00 PM',
     });
     expect(cell(timed('2026-10-19T13:00:00Z'))).toMatchObject({
       tone: 'soon',
-      line1: 'Oct 19, 9:00 AM',
+      line1: '10/19 09:00 AM',
       line2: 'In 2 days',
-      sentence: 'Due Oct 19 at 9:00 AM, in 2 days',
-      tooltip: 'Oct 19, 2026, 9:00 AM EDT',
+      sentence: 'Due October 19 at 9:00 AM, in 2 days',
+      tooltip: 'October 19, 2026, 9:00 AM EDT',
     });
     expect(cell({ dueDate: '2026-10-28' })).toMatchObject({
       tone: 'none',
-      line1: 'Oct 28',
+      line1: '10/28',
       line2: '',
-      sentence: 'Due Oct 28',
+      sentence: 'Due October 28',
     });
     expect(cell({ dueDate: '2026-10-20' }).line2).toBe('');
   });
@@ -157,22 +157,22 @@ describe('describeDueCell (#208)', () => {
     for (const s of ['COMPLETED', 'CANCELLED']) {
       expect(cell({ dueDate: '2026-10-13' }, NY, s)).toMatchObject({
         tone: 'closed',
-        line1: 'Oct 13',
+        line1: '10/13',
         line2: '',
-        sentence: 'Was due Oct 13',
+        sentence: 'Was due October 13',
         overdue: false,
       });
     }
   });
 
   it('shows the year only outside the current calendar year', () => {
-    expect(cell({ dueDate: '2027-01-05' }).line1).toBe('Jan 5, 2027');
-    expect(cell({ dueDate: '2027-01-05' }).sentence).toBe('Due Jan 5, 2027');
-    expect(cell({ dueDate: '2025-12-31' }).line1).toBe('Dec 31, 2025');
+    expect(cell({ dueDate: '2027-01-05' }).line1).toBe('01/05/2027');
+    expect(cell({ dueDate: '2027-01-05' }).sentence).toBe('Due January 5, 2027');
+    expect(cell({ dueDate: '2025-12-31' }).line1).toBe('12/31/2025');
     // New Year's Eve in New York is already next year in Auckland.
     const nye = utc('2026-12-31T20:00:00Z');
-    expect(cell({ dueDate: '2026-12-31' }, NY, undefined, nye).line1).toBe('Dec 31');
-    expect(cell({ dueDate: '2026-12-31' }, AKL, undefined, nye).line1).toBe('Dec 31, 2026');
+    expect(cell({ dueDate: '2026-12-31' }, NY, undefined, nye).line1).toBe('12/31');
+    expect(cell({ dueDate: '2026-12-31' }, AKL, undefined, nye).line1).toBe('12/31/2026');
   });
 
   it('a timed task has the same tone and relative text in New York, Los Angeles and Auckland', () => {
@@ -180,9 +180,9 @@ describe('describeDueCell (#208)', () => {
     const cells = [NY, LA, AKL].map((z) => cell(t, z));
     // 09:00 EDT Oct 19 / 06:00 PDT Oct 19 / 02:00 NZDT Oct 20
     expect(cells.map((c) => c.line1)).toEqual([
-      'Oct 19, 9:00 AM',
-      'Oct 19, 6:00 AM',
-      'Oct 20, 2:00 AM',
+      '10/19 09:00 AM',
+      '10/19 06:00 AM',
+      '10/20 02:00 AM',
     ]);
     expect(cells.map((c) => c.line2)).toEqual(['In 2 days', 'In 2 days', 'In 2 days']);
     // Overdue is the same moment for all: 5 hours past.
@@ -229,11 +229,11 @@ describe('dueCellText', () => {
     const now = utc('2026-10-14T12:00:00Z');
     expect(dueCellText(describeDueCell(null, now, NY))).toBe('ASAP');
     expect(dueCellText(describeDueCell({ dueDate: '2026-10-12' }, now, NY))).toBe(
-      'Oct 12 · Overdue 2d',
+      '10/12 · Overdue 2d',
     );
     expect(dueCellText(describeDueCell({ dueDate: '2026-10-16' }, now, NY))).toBe(
-      'Oct 16 · In 2 days',
+      '10/16 · In 2 days',
     );
-    expect(dueCellText(describeDueCell({ dueDate: '2026-11-20' }, now, NY))).toBe('Nov 20');
+    expect(dueCellText(describeDueCell({ dueDate: '2026-11-20' }, now, NY))).toBe('11/20');
   });
 });

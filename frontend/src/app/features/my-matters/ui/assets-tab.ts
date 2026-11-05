@@ -23,6 +23,7 @@ import { panelLoader } from '../panel-loader';
 import { AssetQuery, MmApi } from './mm-api';
 import { AssetRow, AssetStatusCode } from './mm-models';
 import { IntPipe } from '../../../shared/ui/number-format';
+import { shortAccountName } from '../../../shared/ui/person-name';
 
 const PAGE_SIZE = 25;
 
@@ -274,7 +275,7 @@ const HEADS = [
                 >
               </dd>
               <dt>Created</dt>
-              <dd>{{ d.createdAtUtc | mfNum }} by {{ d.createdByName }}</dd>
+              <dd>{{ d.createdAtUtc | mfNum }} by {{ who(d.createdByName) }}</dd>
               <dt>Last Updated</dt>
               <dd>{{ d.updatedAtUtc ? (d.updatedAtUtc | mfNum) : 'Never' }}</dd>
               @if (d.sizeValue) {
@@ -689,6 +690,11 @@ const HEADS = [
   `,
 })
 export class MmAssetsTab {
+  /** A person as the grids and details name them: the display name, or the account without its domain (D-62; never `KE\\kekim`). */
+  protected who(name: string | null | undefined): string {
+    return shortAccountName(name) || (name ?? '');
+  }
+
   private readonly api = inject(MmApi);
   private readonly typesApi = inject(AssetTypesClient);
 

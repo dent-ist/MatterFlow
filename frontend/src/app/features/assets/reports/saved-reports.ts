@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AssetReportResponse, AssetReportsClient } from '../../../api/generated/api-client';
@@ -6,6 +5,7 @@ import { ApiError } from '../../../core/http/api-error';
 import { QuietRequests } from '../../../core/http/interceptors';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 /**
  * The person's saved asset reports (personal: nobody else sees them): open, rename and delete. A saved report is only a definition, so
@@ -14,7 +14,7 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
  */
 @Component({
   selector: 'mf-saved-reports',
-  imports: [ConfirmDialog, DatePipe],
+  imports: [ConfirmDialog, NumericDatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (state() === 'loading') {
@@ -48,7 +48,7 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
                 <span class="sr-open sr-open--off">{{ r.name }}</span>
               }
               <span class="sr-when"
-                >{{ r.modifiedAtUtc ?? r.createdAtUtc | date: 'd MMM y' }}
+                >{{ r.modifiedAtUtc ?? r.createdAtUtc | mfNum: 'date' }}
                 @if (!r.isSupported) {
                   . Saved by a newer version; it cannot be opened here.
                 }

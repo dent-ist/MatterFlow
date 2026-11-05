@@ -106,8 +106,8 @@ describe('audit formatting', () => {
 
     it('reads 31 Dec and 1 Jan as the same days, in any zone (a floating date never shifts)', () => {
       for (const zone of ['America/New_York', 'Pacific/Auckland', 'UTC']) {
-        expect(mfDateLong('2026-12-31', zone)).toBe('Dec 31, 2026');
-        expect(mfDateLong('2027-01-01', zone)).toBe('Jan 1, 2027');
+        expect(mfDateLong('2026-12-31', zone)).toBe('December 31, 2026');
+        expect(mfDateLong('2027-01-01', zone)).toBe('January 1, 2027');
       }
       const t = activityText(
         {

@@ -123,6 +123,42 @@ export function dayIndex(d: CalendarDay): number {
   return Math.round(Date.UTC(d.year, d.month - 1, d.day) / 86_400_000);
 }
 
+const two = (n: number): string => String(n).padStart(2, '0');
+
+/** `MM/DD`, or `MM/DD/YYYY` when the year is not `currentYear` (the one numeric day format, D-60; `shared/ui/numeric-date.ts` re-exports it). */
+export function numericDay(d: CalendarDay, currentYear: number): string {
+  return `${two(d.month)}/${two(d.day)}${d.year === currentYear ? '' : `/${d.year}`}`;
+}
+
+/** `hh:mm AM/PM` from a 24-hour clock. */
+export function numericTime(hour: number, minute: number): string {
+  const h = hour % 12 === 0 ? 12 : hour % 12;
+  return `${two(h)}:${two(minute)} ${hour < 12 ? 'AM' : 'PM'}`;
+}
+
+/** "October 28, 2026" (the FULL month) for a floating calendar date: the long form of tooltips, accessible names and sentences (D-60, spec 15.4). */
+export function formatCalendarDayLong(d: CalendarDay): string {
+  return clean(
+    formatter('UTC', { year: 'numeric', month: 'long', day: 'numeric' }).format(
+      new Date(Date.UTC(d.year, d.month - 1, d.day)),
+    ),
+  );
+}
+
+/** "October 28" (the FULL month, no year) for a calendar day. */
+function formatMonthDayLong(d: CalendarDay): string {
+  return clean(
+    formatter('UTC', { month: 'long', day: 'numeric' }).format(
+      new Date(Date.UTC(d.year, d.month - 1, d.day)),
+    ),
+  );
+}
+
+/** "October 28, 2026, 3:00 PM CDT" for an instant in the viewer's zone: the long timestamp of a tooltip or an accessible name. */
+export function formatInstantLong(instant: Date | string | number, zone: string): string {
+  return `${formatCalendarDayLong(calendarDayInZone(instant, zone))}, ${formatInstantTime(instant, zone)}`;
+}
+
 /** "Oct 28, 2026" for a floating calendar date. */
 export function formatCalendarDay(d: CalendarDay): string {
   return clean(
@@ -173,18 +209,16 @@ export function formatInstant(instant: Date | string | number, zone: string): st
 }
 
 /**
- * "Oct 18, 4:03 PM" for an instant in the viewer's zone: the stamp of the Task status note (Completed, Cancelled, On Hold). The year shows
- * only outside the current year (`now`, in the same zone); the full date with the zone is the tooltip (`formatInstant`).
+ * "10/18 04:03 PM" for an instant in the viewer's zone: the stamp of the Task status note (Completed, Cancelled, On Hold), the numeric date of D-60. The year
+ * shows only outside the current year (`now`, in the same zone); the full date with the zone is the tooltip (`formatInstantLong`).
  */
 export function formatStatusStamp(
   instant: Date | string | number,
   zone: string,
   now: Date = new Date(),
 ): string {
-  const day = calendarDayInZone(instant, zone);
-  const text =
-    day.year === calendarDayInZone(now, zone).year ? formatMonthDay(day) : formatCalendarDay(day);
-  return `${text}, ${formatTimeOnly(toDate(instant), zone)}`;
+  const p = partsInZone(instant, zone);
+  return `${numericDay(p, calendarDayInZone(now, zone).year)} ${numericTime(p.hour, p.minute)}`;
 }
 
 export type MfDateKind = 'auto' | 'date' | 'datetime';
@@ -192,9 +226,9 @@ export type MfDateKind = 'auto' | 'date' | 'datetime';
 /**
  * The LONG date formatter (UXR-08, addendum M; D-60, #1146): tooltips, accessible names and sentences only. What the screens print is `numericDate` /
  * `numericInstant` / the `mfNum` pipe (`MM/DD hh:mm AM/PM`). Through this function or the `mfDateLong` pipe:
- *  - a floating calendar date (`2026-10-12`) renders as `Oct 12, 2026` and never shifts with the viewer's zone;
- *  - an instant renders in the viewer's zone as `Oct 12, 2026, 10:23 PM EDT` (`kind: 'datetime'`, the default for instants)
- *    or as just `Oct 12, 2026` (`kind: 'date'`).
+ *  - a floating calendar date (`2026-10-12`) renders as `October 12, 2026` and never shifts with the viewer's zone;
+ *  - an instant renders in the viewer's zone as `October 12, 2026, 10:23 PM EDT` (`kind: 'datetime'`, the default for instants)
+ *    or as just `October 12, 2026` (`kind: 'date'`).
  * Empty or unreadable input renders as an empty string; an unreadable string is never echoed as a guess.
  */
 export function mfDateLong(
@@ -205,11 +239,13 @@ export function mfDateLong(
   if (value === null || value === undefined || value === '') return '';
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const day = parseDateOnly(value);
-    return day ? formatCalendarDay(day) : '';
+    return day ? formatCalendarDayLong(day) : '';
   }
   const instant = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(instant.getTime())) return '';
-  return kind === 'date' ? formatInstantDate(instant, zone) : formatInstant(instant, zone);
+  return kind === 'date'
+    ? formatCalendarDayLong(calendarDayInZone(instant, zone))
+    : formatInstantLong(instant, zone);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -244,15 +280,15 @@ export type DueTone = 'overdue' | 'today' | 'soon' | 'none' | 'asap' | 'closed';
 /** What the Due cell, the Dashboard lists, the Swimlane card and the task header show for one row. */
 export interface DueCell {
   tone: DueTone;
-  /** Short date text, no zone: `ASAP`, `Oct 17, 10:00 AM`, `Oct 13`, `Jan 5, 2027`. */
+  /** Numeric date text, no zone: `ASAP`, `10/17 10:00 AM`, `10/13`, `01/05/2027`. */
   line1: string;
   /** Relative text: `Overdue 6h`, `Due today`, `Tomorrow`, `In 2 days`; empty for later, closed and ASAP. */
   line2: string;
-  /** The date without time (`Oct 17`, `Jan 5, 2027`): the inline layout of Compact and cards. */
+  /** The date without time (`10/17`, `01/05/2027`): the inline layout of Compact and cards. */
   dateText: string;
-  /** One spoken sentence, e.g. `Due Oct 17 at 10:00 AM, overdue 6 hours`. */
+  /** One spoken sentence, e.g. `Due October 17 at 10:00 AM, overdue 6 hours`. */
   sentence: string;
-  /** Full date with the zone abbreviation for a timed due (`Oct 17, 2026, 10:00 AM EDT`). */
+  /** Full date with the zone abbreviation for a timed due (`October 17, 2026, 10:00 AM EDT`). */
   tooltip: string;
   overdue: boolean;
   hasTime: boolean;
@@ -316,10 +352,14 @@ export function describeDueCell(
   const hasTime = !!validAt;
   const day: CalendarDay = validAt ? calendarDayInZone(validAt, zone) : (dueDay as CalendarDay);
   const todayDay = calendarDayInZone(now, zone);
-  const dayText = day.year === todayDay.year ? formatMonthDay(day) : formatCalendarDay(day);
+  // What the cell prints is the numeric date (D-60: `11/04 05:00 PM`, `11/25`, `11/25/2027`); the spoken sentence and the tooltip spell the month out.
+  const dayText = numericDay(day, todayDay.year);
+  const spokenDay =
+    day.year === todayDay.year ? formatMonthDayLong(day) : formatCalendarDayLong(day);
   const timeText = validAt ? formatTimeOnly(validAt, zone) : '';
-  const withTime = validAt ? `${dayText}, ${timeText}` : dayText;
-  const tooltip = validAt ? formatInstant(validAt, zone) : formatCalendarDay(day);
+  const clock = validAt ? partsInZone(validAt, zone) : null;
+  const withTime = clock ? `${dayText} ${numericTime(clock.hour, clock.minute)}` : dayText;
+  const tooltip = validAt ? formatInstantLong(validAt, zone) : formatCalendarDayLong(day);
   const closed = !!status && CLOSED_STATUSES.includes(status);
   const delta = dayIndex(day) - dayIndex(todayDay);
 
@@ -329,7 +369,7 @@ export function describeDueCell(
       line1: dayText,
       line2: '',
       dateText: dayText,
-      sentence: `Was due ${dayText}`,
+      sentence: `Was due ${spokenDay}`,
       tooltip,
       overdue: false,
       hasTime,
@@ -345,7 +385,7 @@ export function describeDueCell(
       line1: withTime,
       dateText: dayText,
       line2: `Overdue ${short}`,
-      sentence: `Due ${dayText}${at}, overdue ${spokenDuration(short)}`,
+      sentence: `Due ${spokenDay}${at}, overdue ${spokenDuration(short)}`,
       tooltip,
       overdue: true,
       hasTime,
@@ -358,7 +398,7 @@ export function describeDueCell(
       line1: withTime,
       dateText: dayText,
       line2: 'Due today',
-      sentence: `Due today, ${dayText}${at}`,
+      sentence: `Due today, ${spokenDay}${at}`,
       tooltip,
       overdue: false,
       hasTime,
@@ -371,7 +411,7 @@ export function describeDueCell(
       line1: withTime,
       dateText: dayText,
       line2: 'Tomorrow',
-      sentence: `Due tomorrow, ${dayText}${at}`,
+      sentence: `Due tomorrow, ${spokenDay}${at}`,
       tooltip,
       overdue: false,
       hasTime,
@@ -384,7 +424,7 @@ export function describeDueCell(
       line1: withTime,
       dateText: dayText,
       line2: `In ${plural(delta, 'day')}`,
-      sentence: `Due ${dayText}${at}, in ${plural(delta, 'day')}`,
+      sentence: `Due ${spokenDay}${at}, in ${plural(delta, 'day')}`,
       tooltip,
       overdue: false,
       hasTime,
@@ -396,7 +436,7 @@ export function describeDueCell(
     line1: dayText,
     line2: '',
     dateText: dayText,
-    sentence: `Due ${dayText}`,
+    sentence: `Due ${spokenDay}`,
     tooltip,
     overdue: false,
     hasTime,
@@ -404,7 +444,7 @@ export function describeDueCell(
   };
 }
 
-/** The one-line words of a Due cell where only text fits (a table cell, a tooltip): `ASAP`, `Oct 13`, `Oct 13 · Overdue 4d`. */
+/** The one-line words of a Due cell where only text fits (a table cell, a tooltip): `ASAP`, `10/13`, `10/13 · Overdue 4d`. */
 export function dueCellText(cell: DueCell): string {
   if (cell.tone === 'asap') return 'ASAP';
   return cell.line2 && cell.tone !== 'closed' ? `${cell.dateText} · ${cell.line2}` : cell.dateText;

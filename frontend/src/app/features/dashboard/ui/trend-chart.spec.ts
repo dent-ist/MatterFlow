@@ -197,9 +197,9 @@ describe('trend chart', () => {
       expect(heads).toEqual(['Day', 'Created', 'Completed']);
       const rows = Array.from(el.querySelectorAll('tbody tr'));
       expect(rows.map((r) => r.querySelector('th')!.textContent)).toEqual([
-        'Oct 1, 2026',
-        'Oct 2, 2026',
-        'Oct 3, 2026',
+        'October 1, 2026',
+        'October 2, 2026',
+        'October 3, 2026',
       ]);
       expect(rows[1].querySelectorAll('a')[0].getAttribute('href')).toBe(
         '/tasks?createdFrom=2026-10-02&createdTo=2026-10-02',

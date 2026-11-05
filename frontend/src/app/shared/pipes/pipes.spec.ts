@@ -48,22 +48,22 @@ describe('mfDateLong pipe', () => {
 
   it('mfDateLong renders UTC timestamps in local time with the zone abbreviation', () => {
     const { local } = setup('America/Los_Angeles', '2026-10-14T12:00:00Z');
-    expect(local.transform('2026-10-14T14:05:00Z')).toBe('Oct 14, 2026, 7:05 AM PDT');
-    expect(local.transform('2026-10-14T14:05:00Z', 'date')).toBe('Oct 14, 2026');
+    expect(local.transform('2026-10-14T14:05:00Z')).toBe('October 14, 2026, 7:05 AM PDT');
+    expect(local.transform('2026-10-14T14:05:00Z', 'date')).toBe('October 14, 2026');
     expect(local.transform(null)).toBe('');
     expect(local.transform('garbage')).toBe('');
   });
 
-  it('mfDateLong shows a calendar date as Oct 12, 2026 in every zone and never shifts it', () => {
+  it('mfDateLong shows a calendar date as October 12, 2026 in every zone and never shifts it', () => {
     for (const zone of ['Pacific/Auckland', 'America/Los_Angeles', 'UTC']) {
       const { local } = setup(zone, '2026-10-14T12:00:00Z');
-      expect(local.transform('2026-10-12')).toBe('Oct 12, 2026');
-      expect(local.transform('2026-10-12', 'datetime')).toBe('Oct 12, 2026');
+      expect(local.transform('2026-10-12')).toBe('October 12, 2026');
+      expect(local.transform('2026-10-12', 'datetime')).toBe('October 12, 2026');
     }
     const { local } = setup('America/New_York', '2026-10-14T12:00:00Z');
     expect(local.transform('2026-02-30')).toBe('');
     expect(local.transform(new Date('2026-10-12T22:23:00-04:00'))).toBe(
-      'Oct 12, 2026, 10:23 PM EDT',
+      'October 12, 2026, 10:23 PM EDT',
     );
   });
 });

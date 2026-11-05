@@ -206,7 +206,7 @@ describe('UsersPage', () => {
       await chooseStatus('all');
       const cell = q('[data-user="2"] [data-last-seen]');
       expect(cell.textContent!.trim()).toBe('10/14');
-      expect(cell.getAttribute('title')).toContain('Oct 14, 2026');
+      expect(cell.getAttribute('title')).toContain('October 14, 2026');
       expect(q('[data-user="4"] [data-last-seen]').textContent!.trim()).toBe('Never');
     });
 

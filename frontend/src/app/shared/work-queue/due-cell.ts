@@ -6,11 +6,11 @@ import { dashDue } from './due-suffix';
 
 /**
  * The Due cell of the work grids (#209), one component for My Work, Task Queue, Pod Work and the Matter and Project grids.
- * Two-line layout (Comfortable): line 1 the date (the year only outside the current year), line 2 the relative text in bold with its tone
+ * Two-line layout (Comfortable): line 1 the numeric date `11/04 05:00 PM` or `11/25` (D-60, #1221; the year only outside the current year, `MM/DD/YYYY`), line 2 the relative text in bold with its tone
  * (overdue red with the alert icon, due today amber with the clock, tomorrow and in 2 days bold neutral, later and closed no line 2;
- * ASAP one centred line with the bolt). Inline layout (Compact and cards): `Oct 17 · Overdue 6h` on one line. Icon and words carry the
+ * ASAP one centred line with the bolt). Inline layout (Compact and cards): `10/17 +6h` on one line. Icon and words carry the
  * meaning, colour only adds to it. The visible lines are `aria-hidden`; a visually hidden sentence is the one spoken name of the cell,
- * and the tooltip is the full date with the zone. Closed tasks are plain: muted date, no bolt, no red.
+ * and the tooltip is the full date with the zone and the full month (`October 17, 2026, 10:00 AM EDT`). Closed tasks are plain: muted date, no bolt, no red.
  */
 @Component({
   selector: 'mf-due-cell',
@@ -135,7 +135,7 @@ export class DueCell {
   readonly layout = input<'two-line' | 'inline'>('two-line');
   /** Extra tooltip line after the full date (the Dashboard lists put "Created 3 days ago" here). */
   readonly extraTip = input('');
-  /** A closed task says "Was due Oct 14" (the Task page's Due tile, B2 #302); the work lists show the plain date. */
+  /** A closed task says "Was due 10/14" (the Task page's Due tile, B2 #302); the work lists show the plain date. */
   readonly wasDue = input(false);
 
   /** PM v2 (#878): the task is At risk (the server's rule: open, not overdue, 80 percent of the type's target used). Said in words, never colour alone. */

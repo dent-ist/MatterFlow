@@ -20,6 +20,7 @@ import { auditObjectLink, auditObjectText } from '../../admin/audit/audit-links'
 import { stampText } from '../../admin/audit/audit-rows';
 import { StateBlock } from '../../../shared/ui/state-block';
 import { IntPipe } from '../../../shared/ui/number-format';
+import { shortAccountName } from '../../../shared/ui/person-name';
 
 /**
  * The Kind dropdown of the Activities tab: a word for the audit object types that belong together. The choice is sent to the server as the object type filter, so paging
@@ -164,7 +165,7 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
                         }
                       </div>
                     </td>
-                    <td>{{ e.actor.displayName }}</td>
+                    <td>{{ who(e.actor.displayName) }}</td>
                   </tr>
                 }
               </tbody>
@@ -183,6 +184,11 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
   `,
 })
 export class MatterActivities {
+  /** A person as the grids and details name them: the display name, or the account without its domain (D-62; never `KE\\kekim`). */
+  protected who(name: string | null | undefined): string {
+    return shortAccountName(name) || (name ?? '');
+  }
+
   readonly matterId = input.required<number>();
 
   private readonly api = inject(AuditSearchClient);

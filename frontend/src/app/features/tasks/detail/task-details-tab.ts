@@ -21,6 +21,7 @@ import { RequestSection, requestHeadingText } from './request-section';
 import { TaskDetailStore } from './task-detail.store';
 import { TaskEditDialog } from './task-edit-dialog';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
+import { shortAccountName } from '../../../shared/ui/person-name';
 
 /**
  * Details panel (UX S10) of the Task page, in the side panel of `mf-detail-layout` (the layout adds the "Details" heading): the
@@ -65,7 +66,9 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
             <!-- One wrapper div around the dt/dd pairs is valid in a dl: Created and Last updated share one row. -->
             <div class="dt__pair">
               <dt>Created</dt>
-              <dd>{{ t.createdBy?.displayName ?? 'Unknown' }}, {{ t.createdAtUtc | mfNum }}</dd>
+              <dd>
+                {{ who(t.createdBy?.displayName) || 'Unknown' }}, {{ t.createdAtUtc | mfNum }}
+              </dd>
               @if (t.modifiedAtUtc) {
                 <dt class="dt__pair-gap">Last Updated</dt>
                 <dd>{{ t.modifiedAtUtc | mfNum }}</dd>
@@ -134,6 +137,11 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
   `,
 })
 export class TaskDetailsTab {
+  /** A person as the grids and details name them: the display name, or the account without its domain (D-62; never `KE\\kekim`). */
+  protected who(name: string | null | undefined): string {
+    return shortAccountName(name) || (name ?? '');
+  }
+
   protected readonly store = inject(TaskDetailStore);
   private readonly forms = inject(FormsClient);
   protected readonly editing = this.store.editing;

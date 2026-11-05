@@ -11,10 +11,11 @@ import {
 } from '@angular/core';
 import { TaskResponse } from '../../../api/generated/api-client';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { formatInstant, formatStatusStamp } from '../../../core/time/time';
+import { formatInstantLong, formatStatusStamp } from '../../../core/time/time';
 import { htmlToPlainText } from '../panels/rich-text';
 import { MATTER_INACTIVE_TEXT } from '../../../shared/work-queue/inline-edit';
 import { TaskDetailStore } from './task-detail.store';
+import { shortAccountName } from '../../../shared/ui/person-name';
 
 /** The three states that have a note: the icon (all neutral: grey, never amber) and the words before the date. */
 const STATES: Readonly<Record<string, { icon: string; lead: string; label: string }>> = {
@@ -40,12 +41,14 @@ export function statusNoteOf(
   if (!state) return null;
   // Completed names the completion moment; Cancelled and On Hold the moment the status changed.
   const at = (task.status === 'COMPLETED' ? task.completedAtUtc : null) ?? task.statusChangedAtUtc;
-  const who = task.statusReason?.authorName || task.statusChangedBy?.displayName || '';
+  const who = shortAccountName(
+    task.statusReason?.authorName || task.statusChangedBy?.displayName || '',
+  );
   const reason = task.status === 'COMPLETED' ? '' : htmlToPlainText(task.statusReason?.bodyHtml);
   const lead = [state.lead, at ? formatStatusStamp(at, zone, now) : '', who ? `by ${who}` : '']
     .filter(Boolean)
     .join(' ');
-  const full = at ? formatInstant(at, zone) : '';
+  const full = at ? formatInstantLong(at, zone) : '';
   // PM v2 (#877): the structured reason of a hold, beside the free comment.
   const reasonName = task.status === 'ON_HOLD' ? (task.onHoldReason?.name ?? '') : '';
   const tooltip = [
@@ -60,7 +63,7 @@ export function statusNoteOf(
 
 /**
  * The one status note of the Task page (B1, B2, #301, #302): a Completed, Cancelled or On Hold task says who changed it, when, and (for On
- * Hold and Cancelled) why, in one neutral line under the header: `Cancelled Oct 18, 4:03 PM by KE\kekim: Duplicate of an earlier request`.
+ * Hold and Cancelled) why, in one neutral line under the header: `Cancelled 10/18 04:03 PM by kekim: Duplicate of an earlier request`.
  * It replaces the closed banner, the reason banner and the two notices of the Workflow. It has no buttons: Reopen task and Resume are the header's
  * actions. A reason longer than two lines is cut with "Show More" (the whole reason is the tooltip and is in the Activity). The one extra
  * sentence is for a closed task in an inactive Matter, which cannot be reopened.

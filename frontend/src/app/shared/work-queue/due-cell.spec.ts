@@ -58,11 +58,11 @@ describe('DueCell (#209)', () => {
 
   it('overdue timed: date with time, bold red line 2 with the alert icon, one spoken sentence', () => {
     const r = render({ dueAtUtc: '2026-10-14T10:00:00Z' });
-    expect(r.l1).toBe('Oct 14, 6:00 AM');
+    expect(r.l1).toBe('10/14 06:00 AM');
     expect(r.l2).toBe('Overdue 6h');
     expect(r.el.querySelector('.dc-l2 .pi-exclamation-circle')).not.toBeNull();
-    expect(r.spoken).toBe('Due Oct 14 at 6:00 AM, overdue 6 hours');
-    expect(r.root.getAttribute('title')).toBe('Oct 14, 2026, 6:00 AM EDT');
+    expect(r.spoken).toBe('Due October 14 at 6:00 AM, overdue 6 hours');
+    expect(r.root.getAttribute('title')).toBe('October 14, 2026, 6:00 AM EDT');
     expect(r.el.querySelector('time')!.getAttribute('datetime')).toBe('2026-10-14T10:00:00Z');
     // the visible lines are hidden from assistive technology; only the sentence is spoken
     expect(r.el.querySelector('.dc-l1')!.getAttribute('aria-hidden')).toBe('true');
@@ -70,14 +70,14 @@ describe('DueCell (#209)', () => {
   });
 
   it('overdue date-only, today with a clock, tomorrow, in 2 days, later without line 2', () => {
-    expect(render({ dueDate: '2026-10-10' })).toMatchObject({ l1: 'Oct 10', l2: 'Overdue 4d' });
+    expect(render({ dueDate: '2026-10-10' })).toMatchObject({ l1: '10/10', l2: 'Overdue 4d' });
     const today = render({ dueDate: '2026-10-14' });
     expect(today.l2).toBe('Due today');
     expect(today.el.querySelector('.pi-clock')).not.toBeNull();
     expect(render({ dueDate: '2026-10-15' }).l2).toBe('Tomorrow');
     expect(render({ dueDate: '2026-10-16' }).l2).toBe('In 2 days');
     const later = render({ dueDate: '2027-01-05' });
-    expect(later.l1).toBe('Jan 5, 2027');
+    expect(later.l1).toBe('01/05/2027');
     expect(later.l2).toBeUndefined();
   });
 
@@ -90,10 +90,10 @@ describe('DueCell (#209)', () => {
     expect(closedNoDate.el.querySelector('.pi-bolt')).toBeNull();
     expect(closedNoDate.l1).toBe('-');
     const closed = render({ dueDate: '2026-10-01' }, 'COMPLETED');
-    expect(closed.l1).toBe('Oct 1');
+    expect(closed.l1).toBe('10/01');
     expect(closed.l2).toBeUndefined();
     expect(closed.el.querySelector('.pi-exclamation-circle')).toBeNull();
-    expect(closed.spoken).toBe('Was due Oct 1');
+    expect(closed.spoken).toBe('Was due October 1');
   });
 
   it('wasDue (the Task page): a closed task with a due date says "Was due 10/01"; no due date keeps the dash; an open task is unchanged (#302)', () => {
@@ -133,7 +133,7 @@ describe('DueCell At risk (PM v2, #878)', () => {
   it('says At risk in words and in the spoken name, and keeps quiet when it is not', () => {
     const el = render(true, { dueDate: '2026-10-30' });
     expect(el.querySelector('[data-at-risk]')?.textContent).toContain('At Risk');
-    expect(el.querySelector('.dc-sr')?.textContent).toContain('Due Oct 30. At risk');
+    expect(el.querySelector('.dc-sr')?.textContent).toContain('Due October 30. At risk');
     expect(render(false, { dueDate: '2026-10-30' }).querySelector('[data-at-risk]')).toBeNull();
   });
 
@@ -160,7 +160,7 @@ describe('DueCell At risk (PM v2, #878)', () => {
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelector('time')).toBeNull();
     expect(el.querySelector('.dc-l2')!.textContent!.replace(/\s+/g, ' ').trim()).toBe('+4d');
-    expect(el.querySelector('.dc')!.getAttribute('title')).toContain('Oct 10');
+    expect(el.querySelector('.dc')!.getAttribute('title')).toContain('October 10');
     f.componentInstance.due.set({ dueDate: '2026-10-20' });
     f.detectChanges();
     expect(el.querySelector('time')).not.toBeNull();

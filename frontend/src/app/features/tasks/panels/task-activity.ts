@@ -18,6 +18,7 @@ import { ActivityText, activityText, friendlyText } from '../../../shared/ui/aud
 import { ActivityGroupRow, ActivityRow, formatRange, groupActivity } from './activity-groups';
 import { StateBlock } from '../../../shared/ui/state-block';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
+import { shortAccountName } from '../../../shared/ui/person-name';
 
 interface Filter {
   readonly key: string;
@@ -145,7 +146,7 @@ const PAGE_SIZE = 25;
                     >
                     <div class="ta__what">
                       <span class="ta__actor" data-actor>{{
-                        e.actor?.displayName ?? 'System'
+                        who(e.actor?.displayName) || 'System'
                       }}</span>
                       <span class="ta__summary" data-summary>{{ text(e).summary }}</span>
                       @if (hasChanges(e)) {
@@ -336,6 +337,11 @@ const PAGE_SIZE = 25;
   `,
 })
 export class TaskActivity {
+  /** A person as the grids and details name them: the display name, or the account without its domain (D-62; never `KE\\kekim`). */
+  protected who(name: string | null | undefined): string {
+    return shortAccountName(name) || (name ?? '');
+  }
+
   readonly taskId = input.required<number>();
   /** Change the value to reload the timeline. */
   readonly refresh = input(0);

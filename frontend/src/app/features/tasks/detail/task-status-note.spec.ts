@@ -16,22 +16,22 @@ const reason = (bodyHtml: string, authorName = 'KE\\kekim') => ({
 });
 
 describe('statusNoteOf (B1, B2, #301, #302)', () => {
-  it('Completed: "Completed Oct 18, 4:03 PM by Test User 01" in the viewer zone, from the completion moment', () => {
+  it('Completed: "Completed 10/18 04:03 PM by Test User 01" in the viewer zone, from the completion moment', () => {
     const task = aTask({
       status: 'COMPLETED',
       statusChangedAtUtc: '2026-10-18T20:04:00Z',
       completedAtUtc: '2026-10-18T20:03:00Z',
       statusChangedBy: { userId: 5, displayName: 'Test User 01', isActive: true },
     });
-    expect(statusNoteOf(task, NY, NOW)!.lead).toBe('Completed Oct 18, 4:03 PM by Test User 01');
+    expect(statusNoteOf(task, NY, NOW)!.lead).toBe('Completed 10/18 04:03 PM by Test User 01');
     // The same instant in another zone is another day and clock time.
-    expect(statusNoteOf(task, TOKYO, NOW)!.lead).toBe('Completed Oct 19, 5:03 AM by Test User 01');
+    expect(statusNoteOf(task, TOKYO, NOW)!.lead).toBe('Completed 10/19 05:03 AM by Test User 01');
   });
 
   it('shows the year only outside the current year, and no "by" when the actor is unknown', () => {
     const task = aTask({ status: 'COMPLETED', completedAtUtc: '2025-12-31T23:30:00Z' });
-    expect(statusNoteOf(task, NY, NOW)!.lead).toBe('Completed Dec 31, 2025, 6:30 PM');
-    expect(statusNoteOf(task, TOKYO, NOW)!.lead).toBe('Completed Jan 1, 8:30 AM');
+    expect(statusNoteOf(task, NY, NOW)!.lead).toBe('Completed 12/31/2025 06:30 PM');
+    expect(statusNoteOf(task, TOKYO, NOW)!.lead).toBe('Completed 01/01 08:30 AM');
   });
 
   it('Cancelled and On Hold: who, when and the reason as plain text; the tooltip has the full date and the whole reason', () => {
@@ -46,10 +46,10 @@ describe('statusNoteOf (B1, B2, #301, #302)', () => {
       NY,
       NOW,
     )!;
-    expect(cancelled.lead).toBe('Cancelled Oct 18, 4:03 PM by KE\\kekim');
+    expect(cancelled.lead).toBe('Cancelled 10/18 04:03 PM by kekim');
     expect(cancelled.reason).toBe('Duplicate of an earlier request\nSecond line');
     expect(cancelled.tooltip).toBe(
-      'Cancelled Oct 18, 2026, 4:03 PM EDT by KE\\kekim\nDuplicate of an earlier request\nSecond line',
+      'Cancelled October 18, 2026, 4:03 PM EDT by kekim\nDuplicate of an earlier request\nSecond line',
     );
     const hold = statusNoteOf(
       aTask({
@@ -60,7 +60,7 @@ describe('statusNoteOf (B1, B2, #301, #302)', () => {
       NY,
       NOW,
     )!;
-    expect(hold.lead).toBe('On hold since Oct 18, 4:03 PM by KE\\kekim');
+    expect(hold.lead).toBe('On hold since 10/18 04:03 PM by kekim');
     expect(hold.icon).toBe('pi-pause');
   });
 
@@ -92,7 +92,7 @@ describe('TaskStatusNote on the page', () => {
     expect(hold.el.querySelectorAll('[data-status-note]').length).toBe(1);
     const note = q(hold.el, '[data-status-note]')!;
     expect(note.getAttribute('data-status')).toBe('ON_HOLD');
-    expect(note.textContent).toMatch(/On hold since Oct 1[89], \d{1,2}:\d{2} [AP]M by KE\\kekim/);
+    expect(note.textContent).toMatch(/On hold since 10\/1[89](\/2026)? \d{2}:\d{2} [AP]M by kekim/);
     expect(note.textContent).toContain('Waiting for the custodian');
     expect(note.querySelector('button')).toBeNull();
     expect(q(hold.el, '[data-closed-banner]')).toBeNull();

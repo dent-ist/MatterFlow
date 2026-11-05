@@ -2,6 +2,7 @@ import { dayIndex, parseDateOnly } from '../../../core/time/time';
 import { numericDate } from '../../../shared/ui/numeric-date';
 import { FEED_KINDS, FeedItem, FeedKind } from './mm-models';
 import { formatAgo } from '../../../shared/ui/number-format';
+import { shortAccountName } from '../../../shared/ui/person-name';
 
 export interface KindLook {
   label: string;
@@ -38,9 +39,9 @@ export function feedWhat(i: FeedItem, now: Date = new Date(), zone = 'UTC'): str
     case 'NEW_ASSETS':
       return `Asset added: ${i.assetName ?? 'asset'}${i.assetTypeName ? ` (${i.assetTypeName})` : ''}`;
     case 'NEW_COMMENTS':
-      return `${i.actorName ?? 'Someone'} commented`;
+      return `${shortAccountName(i.actorName) || 'Someone'} commented`;
     case 'NEW_STATUS_UPDATES':
-      return `${word(i.fromStatus)} to ${word(i.toStatus)}${i.actorName ? ` by ${i.actorName}` : ''}`;
+      return `${word(i.fromStatus)} to ${word(i.toStatus)}${i.actorName ? ` by ${shortAccountName(i.actorName)}` : ''}`;
     case 'ON_HOLD':
       return `On hold${i.onHoldDays != null ? ` for ${days(i.onHoldDays)}` : ''}${i.onHoldReason ? `: ${i.onHoldReason}` : ''}`;
     case 'OVERDUE':

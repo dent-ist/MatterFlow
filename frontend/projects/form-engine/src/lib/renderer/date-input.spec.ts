@@ -50,7 +50,7 @@ describe('mf-date-input (the shared date control)', () => {
   });
 
   it('shows a format hint that the field references, and a named calendar button', () => {
-    expect(el().querySelector('#due-hint')!.textContent).toContain('Oct 12, 2026');
+    expect(el().querySelector('#due-hint')!.textContent).toContain('10/12/2026');
     expect(input().getAttribute('aria-describedby')).toContain('due-hint');
     expect(el().querySelector('button')!.getAttribute('aria-label')).toBe(
       'Choose due date from a calendar',
@@ -66,7 +66,7 @@ describe('mf-date-input (the shared date control)', () => {
   ])('reads %s and tidies it to the display format', async (typed, iso) => {
     await type(typed);
     expect(fixture.componentInstance.iso()).toBe(iso);
-    expect(input().value).toBe('Oct 12, 2026');
+    expect(input().value).toBe('10/12/2026');
     expect(el().querySelector('[role=alert]')).toBeNull();
   });
 
@@ -94,7 +94,7 @@ describe('mf-date-input (the shared date control)', () => {
     fixture.componentInstance.iso.set('2026-03-04');
     fixture.detectChanges();
     await fixture.whenStable();
-    expect(input().value).toBe('Mar 4, 2026');
+    expect(input().value).toBe('03/04/2026');
     await type('');
     expect(fixture.componentInstance.iso()).toBeNull();
     expect(input().value).toBe('');

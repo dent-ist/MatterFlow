@@ -33,6 +33,19 @@ describe('the long date pipe', () => {
     expect(offenders.filter((f) => !PENDING.includes(f))).toEqual([]);
   });
 
+  it('has no Angular date pipe with a month-name pattern in a template (d MMM y, MMM d, MMMM)', () => {
+    const offenders: string[] = [];
+    for (const file of sources(APP)) {
+      const text = readFileSync(file, 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/\[(?:attr\.)?(?:title|aria-label)\]="[^"]*"/g, '');
+      if (/\|\s*date\s*:\s*'[^']*MMM/.test(text)) {
+        offenders.push(relative(APP, file).replace(/\\/g, '/'));
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
   it('has no pending exceptions', () => {
     expect(PENDING.length).toBe(0);
   });

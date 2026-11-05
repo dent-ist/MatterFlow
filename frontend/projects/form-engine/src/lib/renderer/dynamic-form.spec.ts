@@ -167,9 +167,10 @@ describe('DynamicForm', () => {
       { d: '2026-10-12', dt: '2026-10-12T22:23:00Z' },
       { readOnly: true },
     );
-    expect(field('d')!.textContent).toContain('Oct 12, 2026');
+    expect(field('d')!.textContent).toMatch(/10\/12/);
+    expect(field('d')!.textContent).not.toMatch(/Oct/);
     expect(field('d')!.textContent).not.toContain('2026-10-12');
-    expect(field('dt')!.textContent).toMatch(/Oct 1[23], 2026, \d{1,2}:\d{2} [AP]M [A-Z]{2,5}/);
+    expect(field('dt')!.textContent).toMatch(/10\/1[23](\/2026)? \d{2}:\d{2} [AP]M/);
   });
 
   it('maps server errors onto fields', async () => {
@@ -248,11 +249,11 @@ describe('DynamicForm', () => {
     };
 
     it.each([
-      ['2026-09-14', '2026-09-14', 'Sep 14, 2026'],
-      ['9/14/2026', '2026-09-14', 'Sep 14, 2026'],
-      ['Oct 1, 2026', '2026-10-01', 'Oct 1, 2026'],
-      ['10/1/26', '2026-10-01', 'Oct 1, 2026'],
-      ['1 October 2026', '2026-10-01', 'Oct 1, 2026'],
+      ['2026-09-14', '2026-09-14', '09/14/2026'],
+      ['9/14/2026', '2026-09-14', '09/14/2026'],
+      ['Oct 1, 2026', '2026-10-01', '10/01/2026'],
+      ['10/1/26', '2026-10-01', '10/01/2026'],
+      ['1 October 2026', '2026-10-01', '10/01/2026'],
     ])('stores %s as %s and shows it as %s', async (typed, stored, shown) => {
       await create(DATES);
       const emitted: Record<string, unknown>[] = [];
@@ -290,7 +291,7 @@ describe('DynamicForm', () => {
 
     it('shows a format hint and an accessible calendar button', async () => {
       await create(DATES);
-      expect(field('received')!.textContent).toContain('Type a date such as Oct 12, 2026');
+      expect(field('received')!.textContent).toContain('Type a date such as 10/12/2026');
       const input = field('received')!.querySelector<HTMLInputElement>('input[type=text]')!;
       expect(input.getAttribute('aria-describedby')).toContain(`${input.id}-hint`);
       expect(field('received')!.querySelector('button')!.getAttribute('aria-label')).toContain(

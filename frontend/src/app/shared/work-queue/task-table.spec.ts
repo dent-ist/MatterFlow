@@ -201,7 +201,7 @@ describe('TaskTable', () => {
       ['due'],
     );
     const due = cell('due');
-    expect(due.querySelector('.dc-l1')!.textContent).toBe('Oct 10');
+    expect(due.querySelector('.dc-l1')!.textContent).toBe('10/10');
     expect(due.querySelector('.dc-l2')!.textContent).toContain('Overdue 4d');
     expect(due.querySelector('.pi-exclamation-circle')).not.toBeNull();
     expect(el().querySelector('tbody tr')!.classList).toContain('wt-row--overdue');
@@ -212,8 +212,8 @@ describe('TaskTable', () => {
       [aRow({ isAsap: false, isOverdue: true, dueDate: '2026-10-10', status: 'IN_PROGRESS' })],
       ['due'],
     );
-    expect(cell('due').querySelector('.dc-l1')!.textContent).toBe('Oct 10');
-    expect(cell('due').querySelector('.dc-sr')!.textContent).toBe('Due Oct 10, overdue 4 days');
+    expect(cell('due').querySelector('.dc-l1')!.textContent).toBe('10/10');
+    expect(cell('due').querySelector('.dc-sr')!.textContent).toBe('Due October 10, overdue 4 days');
     expect(cell('due').querySelector('.dc--inline')).toBeNull();
   });
 
@@ -325,9 +325,9 @@ describe('TaskTable', () => {
     );
     const ages = Array.from(el().querySelectorAll<HTMLElement>('tbody td[data-col="age"] span'));
     expect(ages[0].textContent?.trim()).toBe('12 d');
-    expect(ages[0].getAttribute('title')).toMatch(/^Created Oct 2, 2026/);
+    expect(ages[0].getAttribute('title')).toMatch(/^Created October 2, 2026/);
     expect(ages[1].textContent?.trim()).toBe('12 d');
-    expect(ages[1].getAttribute('title')).toMatch(/^Took 12 d\. Created Sep 1, 2026/);
+    expect(ages[1].getAttribute('title')).toMatch(/^Took 12 d\. Created September 1, 2026/);
   });
 
   it('marks tasks assigned since the last visit with a "New" text badge, only when asked', async () => {
@@ -403,17 +403,19 @@ describe('TaskTable', () => {
     const dues = Array.from(el().querySelectorAll('tbody td[data-col="due"]'));
     const line = (n: number, l: 1 | 2) =>
       dues[n].querySelector(`.dc-l${l}`)?.textContent?.replace(/\s+/g, ' ').trim();
-    expect(line(0, 1)).toBe('Oct 14');
+    expect(line(0, 1)).toBe('10/14');
     expect(line(0, 2)).toBe('Due today');
     expect(dues[0].querySelector('.pi-clock')).not.toBeNull();
     expect(dues[0].querySelector('.dc--today')).not.toBeNull();
-    expect(line(1, 1)).toBe('Oct 15');
+    expect(line(1, 1)).toBe('10/15');
     expect(line(1, 2)).toBe('Tomorrow');
     expect(dues[1].querySelector('.pi')).toBeNull();
-    expect(line(2, 1)).toBe('Oct 16');
+    expect(line(2, 1)).toBe('10/16');
     expect(line(2, 2)).toBe('In 2 days');
-    expect(line(3, 1)).toBe('Oct 28');
-    expect(dues[3].querySelector('.dc')!.getAttribute('title')).toBe('Oct 28, 2026, 3:00 PM CDT');
+    expect(line(3, 1)).toBe('10/28');
+    expect(dues[3].querySelector('.dc')!.getAttribute('title')).toBe(
+      'October 28, 2026, 3:00 PM CDT',
+    );
     expect(line(3, 2)).toBeUndefined();
   });
 
@@ -422,7 +424,7 @@ describe('TaskTable', () => {
       [aRow({ isAsap: false, isOverdue: false, dueDate: '2026-01-01', status: 'COMPLETED' })],
       ['due'],
     );
-    expect(cell('due').querySelector('.dc-l1')!.textContent).toBe('Jan 1');
+    expect(cell('due').querySelector('.dc-l1')!.textContent).toBe('01/01');
     expect(cell('due').textContent).not.toContain('Overdue');
     expect(cell('due').querySelector('.dc--closed')).not.toBeNull();
   });
@@ -779,7 +781,7 @@ describe('TaskTable', () => {
     // 02:30 UTC is still Oct 16 in Chicago.
     expect(cells[0].textContent?.trim()).toBe('10/16');
     expect(cells[0].querySelector('[title]')!.getAttribute('title')).toBe(
-      'Oct 16, 2026, 9:30 PM CDT',
+      'October 16, 2026, 9:30 PM CDT',
     );
     expect(cells[1].textContent?.trim()).toBe('-');
   });

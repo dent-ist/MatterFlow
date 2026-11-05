@@ -1,6 +1,12 @@
 import { Pipe, PipeTransform, inject } from '@angular/core';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
-import { CalendarDay, calendarDayInZone, parseDateOnly, partsInZone } from '../../core/time/time';
+import {
+  calendarDayInZone,
+  numericDay,
+  numericTime,
+  parseDateOnly,
+  partsInZone,
+} from '../../core/time/time';
 
 /**
  * THE numeric date format of the new My Matters (UI update, issue #974): `MM/DD hh:mm AM/PM`, no month names. Change it here and every date of the page follows.
@@ -16,18 +22,7 @@ export const NUMERIC_DATE = {
   year: 'other',
 } as const;
 
-const two = (n: number): string => String(n).padStart(2, '0');
-
-/** `MM/DD`, or `MM/DD/YYYY` when the year is not `currentYear`. */
-export function numericDay(d: CalendarDay, currentYear: number): string {
-  return `${two(d.month)}/${two(d.day)}${d.year === currentYear ? '' : `/${d.year}`}`;
-}
-
-/** `hh:mm AM/PM` from a 24-hour clock. */
-export function numericTime(hour: number, minute: number): string {
-  const h = hour % 12 === 0 ? 12 : hour % 12;
-  return `${two(h)}:${two(minute)} ${hour < 12 ? 'AM' : 'PM'}`;
-}
+export { numericDay, numericTime };
 
 /** A calendar date (`yyyy-MM-dd`, no zone) as `MM/DD` or `MM/DD/YYYY`; the text itself when it is not a date. `now` and `zone` decide the current year. */
 export function numericDate(value: string | null | undefined, now: Date, zone: string): string {

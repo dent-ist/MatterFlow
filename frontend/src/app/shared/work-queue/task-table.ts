@@ -1347,7 +1347,7 @@ export class TaskTable {
     return row.closedAtUtc ? `Took ${this.ageDays(row)} d. ${created}` : created;
   }
 
-  /** The tooltip of a closed date: the time and zone ("Oct 16, 2026, 3:00 PM EDT"). */
+  /** The tooltip of a closed date: the time and zone ("October 16, 2026, 3:00 PM EDT"). */
   protected closedTitle(instant: string): string {
     return mfDateLong(instant, this.zone, 'datetime');
   }

@@ -1,5 +1,6 @@
 import { TaskActivityItem } from '../../../api/generated/api-client';
 import { calendarDayInZone, dayIndex, formatInstantClock } from '../../../core/time/time';
+import { shortAccountName } from '../../../shared/ui/person-name';
 import { numericDay } from '../../../shared/ui/numeric-date';
 
 /** Fewest comment events one person adds in a run before the timeline folds them into one row (PM decision, #317). */
@@ -61,7 +62,7 @@ export function groupActivity(events: readonly TaskActivityItem[]): ActivityRow[
         key: first.eventId,
         events: run,
         latest: first,
-        actorName: first.actor?.displayName ?? 'System',
+        actorName: shortAccountName(first.actor?.displayName) || 'System',
       });
     } else {
       for (let j = i; j < end; j++) rows.push({ kind: 'event', event: events[j] });

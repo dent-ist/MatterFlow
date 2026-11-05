@@ -136,8 +136,8 @@ test.describe('Task page: inline Due date (#664)', () => {
     await page.keyboard.press('Enter');
     await expect(page.locator(POPOVER)).toHaveCount(0);
     await expect(page.locator(TRIGGER)).toBeFocused();
-    await expect(detail.due).toContainText('Oct 24, 2030');
-    await expect(live(page)).toHaveText('Due date set to Oct 24, 2030 5:00 PM');
+    await expect(detail.due).toContainText('10/24/2030');
+    await expect(live(page)).toHaveText('Due date set to 10/24/2030 05:00 PM');
     await expect(page.locator(TRIGGER)).toHaveAttribute('aria-expanded', 'false');
     await shot(page, 'saved');
 
@@ -241,7 +241,7 @@ test.describe('Task page: inline Due date (#664)', () => {
     await shot(page, 'error');
     await page.locator('[data-due-save]').click();
     await expect(page.locator(POPOVER)).toHaveCount(0);
-    await expect(detail.due).toContainText('Oct 24, 2030');
+    await expect(detail.due).toContainText('10/24/2030');
   });
 
   test('a conflict shows the conflict message with Reload inside the popover; Reload brings the other change', async ({
@@ -270,7 +270,7 @@ test.describe('Task page: inline Due date (#664)', () => {
     await shot(page, 'conflict');
     await page.locator('[data-due-reload]').click();
     await expect(page.locator(POPOVER)).toHaveCount(0);
-    await expect(detail.due).toContainText('Nov 1, 2030');
+    await expect(detail.due).toContainText('11/01/2030');
     await expect(page.locator('h1')).toContainText('(renamed)');
   });
 
@@ -291,7 +291,7 @@ test.describe('Task page: inline Due date (#664)', () => {
     const viewPage = await asUser(viewer.username);
     const viewDetail = new TaskDetailPage(viewPage);
     await viewDetail.open(task.taskId);
-    await expect(viewDetail.due).toContainText('Oct 24');
+    await expect(viewDetail.due).toContainText('10/24/2030');
     await expect(trigger(viewPage)).toHaveCount(0);
 
     // The built-in Data Technician role follows the server's canEdit.
@@ -345,7 +345,7 @@ test.describe('Task page: inline Due date (#664)', () => {
       await fill(page, 'Oct 24, 2030', '17:00');
       await page.locator('[data-due-save]').click();
       await expect(page.locator(POPOVER)).toHaveCount(0);
-      await expect(detail.due).toContainText('Oct 24, 2030');
+      await expect(detail.due).toContainText('10/24/2030');
       const saved = await admin.get(`/api/v1/tasks/${task.taskId}`);
       expect(new Date(saved.dueAtUtc).toISOString()).toBe(new Date(utc).toISOString());
 
@@ -353,7 +353,7 @@ test.describe('Task page: inline Due date (#664)', () => {
       await detail.openEdit();
       const dialog = page.getByRole('dialog', { name: 'Edit Task' });
       await dialog.getByRole('button', { name: /^Priority, due date and assignment/ }).click();
-      await expect(dialog.locator('#td-due-date')).toHaveValue(/Oct 24, 2030/);
+      await expect(dialog.locator('#td-due-date')).toHaveValue(/10\/24\/2030/);
       await expect(dialog.locator('#td-due-time')).toHaveValue('17:00');
       await shot(page, `zone-${zone.replace('/', '-')}`);
     });

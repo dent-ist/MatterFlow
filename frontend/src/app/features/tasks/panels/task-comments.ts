@@ -34,6 +34,7 @@ import { countNew, latestOf, readSeen, saveSeen } from './section-state';
 import { StateBlock } from '../../../shared/ui/state-block';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 import { IntPipe } from '../../../shared/ui/number-format';
+import { shortAccountName } from '../../../shared/ui/person-name';
 
 export const COMMENTS_INTERNAL_NOTE = 'Internal only. Visible to people who can view tasks.';
 export const COMMENTS_PRIVILEGE_NOTE =
@@ -202,7 +203,7 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
                       [attr.data-comment-id]="c.commentId"
                     >
                       <div class="tc__meta">
-                        <strong class="tc__author">{{ c.author.displayName }}</strong>
+                        <strong class="tc__author">{{ who(c.author.displayName) }}</strong>
                         <time
                           [attr.datetime]="c.createdAtUtc"
                           [title]="c.createdAtUtc + ' (UTC)'"
@@ -604,6 +605,11 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
   `,
 })
 export class TaskComments {
+  /** A person as the grids and details name them: the display name, or the account without its domain (D-62; never `KE\\kekim`). */
+  protected who(name: string | null | undefined): string {
+    return shortAccountName(name) || (name ?? '');
+  }
+
   /** The Task whose comments are shown. */
   readonly taskId = input.required<number>();
   /** Hides the composer and the edit / delete actions. */

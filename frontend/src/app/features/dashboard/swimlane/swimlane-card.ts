@@ -567,7 +567,7 @@ export function initials(name: string): string {
     .line .due-chip {
       font-size: var(--mf-fs-xs);
     }
-    /* The inline Due cell ("Oct 17 Overdue 24d"): the relative text stays whole, the date gives way to the title (ellipsis; tooltip has it). */
+    /* The inline Due cell ("10/17 +24d"): the relative text stays whole, the date gives way to the title (ellipsis; tooltip has it). */
     .line .due {
       flex: 0 1 auto;
       min-width: 0;

@@ -106,7 +106,7 @@ test.describe('#428 availability dialog: one date hint', () => {
       await expect(dialog.locator('.di__hint')).toHaveCount(0);
       const help = dialog.locator('[data-dates-help]');
       await expect(help).toHaveCount(1);
-      await expect(help).toContainText('Type a date such as Oct 12, 2026 or 10/12/2026');
+      await expect(help).toContainText('Type a date such as 10/12/2026');
       await expect(help).toContainText('Leave From empty to start now.');
       // Both fields are described by that one hint.
       const helpId = await help.getAttribute('id');

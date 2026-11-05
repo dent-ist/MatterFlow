@@ -46,7 +46,7 @@ const sameInstant = (a: Date | null, b: Date | null): boolean =>
 /**
  * THE date (or date and time) control of the application (UXR-08, UAT2-02): one look and one behaviour on every screen, including the
  * form engine. Typing is parsed explicitly (`date-parse.ts`): `Oct 12, 2026`, `10/12/2026`, `10/12/26`, `2026-10-12` and `12 Oct 2026`
- * all work. The text is never rewritten while the user types; leaving the field rewrites a readable date as `Oct 12, 2026` (the way
+ * all work. The text is never rewritten while the user types; leaving the field rewrites a readable date as `10/12/2026` (the way
  * the app displays dates), and text that cannot be read is KEPT and reported (inline message here, and `textInvalid`) instead of being
  * silently cleared. A format hint is always visible, and a calendar button opens the browser's own picker.
  *
@@ -202,13 +202,13 @@ export class DateInput {
   );
   protected readonly hint = computed(() =>
     this.withTime()
-      ? 'Type a date and time such as Oct 12, 2026, 2:30 PM or 10/12/2026 14:30, or use the calendar.'
-      : 'Type a date such as Oct 12, 2026 or 10/12/2026, or use the calendar.',
+      ? 'Type a date and time such as 10/12/2026 2:30 PM or 10/12/2026 14:30, or use the calendar.'
+      : 'Type a date such as 10/12/2026, or use the calendar.',
   );
   protected readonly errorText = computed(() =>
     this.withTime()
-      ? 'Enter a valid date and time, for example Oct 12, 2026, 2:30 PM.'
-      : 'Enter a valid date, for example Oct 12, 2026 or 10/12/2026.',
+      ? 'Enter a valid date and time, for example 10/12/2026 2:30 PM.'
+      : 'Enter a valid date, for example 10/12/2026.',
   );
   protected readonly hintId = computed(() => `${this.inputId()}-hint`);
   protected readonly errorId = computed(() => `${this.inputId()}-text-error`);

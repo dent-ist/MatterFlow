@@ -55,6 +55,20 @@ describe('feed text', () => {
     ).toBe('Asset added: Laptop (Device)');
   });
 
+  it('never prints a Windows account: "KE\\kekim" reads "kekim" (D-62, #1221)', () => {
+    const item = {
+      ...base,
+      kind: 'NEW_STATUS_UPDATES' as const,
+      fromStatus: 'NEW',
+      toStatus: 'IN_PROGRESS',
+    };
+    expect(feedWhat({ ...item, actorName: 'KE\\kekim' })).toBe('New to In Progress by kekim');
+    expect(feedWhat({ ...item, actorName: 'Ann Lee' })).toBe('New to In Progress by Ann Lee');
+    expect(feedWhat({ ...base, kind: 'NEW_COMMENTS', actorName: 'KE\\kekim' })).toBe(
+      'kekim commented',
+    );
+  });
+
   it('says how far a due date moved and which way', () => {
     const w = feedWhat({
       ...base,

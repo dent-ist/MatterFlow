@@ -21,6 +21,7 @@ import { agoShort, feedTitle, feedWhat, KIND_LOOK } from './feed-format';
 import { MmApi } from './mm-api';
 import { FEED_KINDS, FeedItem, FeedKind } from './mm-models';
 import { IntPipe } from '../../../shared/ui/number-format';
+import { shortAccountName } from '../../../shared/ui/person-name';
 
 const PAGE_SIZE = 25;
 
@@ -169,7 +170,7 @@ const PAGE_SIZE = 25;
                     </span>
                   </div>
                 </td>
-                <td class="c-who">{{ i.actorName ?? 'System' }}</td>
+                <td class="c-who">{{ who(i.actorName) || 'System' }}</td>
                 <td class="c-m">
                   {{ i.matterName }}<span class="m">{{ i.clientName }}</span>
                 </td>
@@ -398,6 +399,11 @@ const PAGE_SIZE = 25;
   `,
 })
 export class MmActivityTab {
+  /** A person as the grids and details name them: the display name, or the account without its domain (D-62; never `KE\\kekim`). */
+  protected who(name: string | null | undefined): string {
+    return shortAccountName(name) || (name ?? '');
+  }
+
   private readonly api = inject(MmApi);
   private readonly router = inject(Router);
   private readonly clock = inject(Clock);

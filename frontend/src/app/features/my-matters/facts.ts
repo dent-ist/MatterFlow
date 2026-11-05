@@ -11,6 +11,7 @@ import {
   parseDateOnly,
 } from '../../core/time/time';
 import { numericDay } from '../../shared/ui/numeric-date';
+import { shortAccountName } from '../../shared/ui/person-name';
 
 const STATUS_WORDS: Record<string, string> = {
   NEW: 'New',
@@ -66,7 +67,7 @@ export function activityWhen(instant: string, now: Date, zone: string): string {
 
 /** The Who cell of the Activity grid: the person's name, never the account; "System" when nobody did it. */
 export function activityWho(e: Pick<MyMattersActivityItem, 'actorName'>): string {
-  return e.actorName?.trim() || 'System';
+  return shortAccountName(e.actorName) || 'System';
 }
 
 /**
@@ -117,7 +118,7 @@ export function shortDate(
  * never read or shown (privilege).
  */
 export function activityText(e: MyMattersActivityItem): string {
-  const who = e.actorName ?? 'Someone';
+  const who = shortAccountName(e.actorName) || 'Someone';
   const task = e.taskTitle ? `"${e.taskTitle}"` : 'a task';
   switch (e.kind) {
     case 'TASK_CREATED':
