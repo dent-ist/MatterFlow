@@ -40,9 +40,9 @@ const VIEWS: readonly { mode: BreakdownMode; label: string; icon: string }[] = [
       display: inline-flex;
       flex: none;
     }
-    /* A narrow card: the icons carry the buttons, the words stay for assistive tools (aria-label and tooltip). Every segment is a 36 x 36 square (--mf-ctl-h)
+    /* A card narrower than 25 rem (350 px; #1219): the icons carry the buttons, the words stay for assistive tools (aria-label and tooltip). Every segment is a 36 x 36 square (--mf-ctl-h)
        with the 20 px icon of the switch, the same 1 px borders and solid selected fill (designer decision, ui-spec 14.4). */
-    @container (max-width: 17rem) {
+    @container (max-width: 25rem) {
       .mf-seg {
         grid-auto-columns: var(--mf-ctl-h);
       }

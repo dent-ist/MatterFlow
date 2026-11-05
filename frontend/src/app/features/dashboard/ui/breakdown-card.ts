@@ -27,7 +27,12 @@ export const BD_CARD_CSS = `
     gap: var(--mf-s3);
     margin-bottom: var(--mf-s3);
   }
+  /* Title and switch stay on one row (#1219): the title gives way with an ellipsis, the switch never shrinks. */
   h3 {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     margin: 0;
     font-size: var(--mf-fs-xl, 1.25rem);
     font-weight: 700;
