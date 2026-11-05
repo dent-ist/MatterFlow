@@ -71,7 +71,7 @@ import { DRAFT_INPUTS_NOTE, InputRow, InputsFacts, inputRows } from './step-reco
           <p class="st__muted" role="alert" data-inputs-failed>
             Couldn't load the inputs.
             <button type="button" class="mf-btn mf-btn--text" (click)="reload()" data-inputs-retry>
-              Try Again
+              Retry
             </button>
           </p>
         } @else if (rows().length === 0) {

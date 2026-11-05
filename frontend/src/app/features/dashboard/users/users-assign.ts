@@ -155,7 +155,7 @@ export function assignHint(
               </ul>
               @if (batchError()) {
                 <div class="alert" role="alert" data-assign-batch-error>
-                  <span>The tasks could not be assigned.</span>
+                  <span>Couldn't assign the tasks.</span>
                   <mf-error-reference />
                 </div>
               }

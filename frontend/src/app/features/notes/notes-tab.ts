@@ -331,7 +331,7 @@ interface RefChip {
               @if (listError()) {
                 <p class="nt__error" role="alert" data-notes-error>
                   <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>{{ listError() }}
-                  <button type="button" class="mf-btn" (click)="loadList()">Try Again</button>
+                  <button type="button" class="mf-btn" (click)="loadList()">Retry</button>
                 </p>
               } @else if (!loaded()) {
                 <div class="nt__skel" aria-busy="true" role="status" data-notes-loading>
@@ -1029,7 +1029,7 @@ interface RefChip {
                         {{ n.title }}
                       </h2>
                       <p class="nt__upd" data-note-byline>
-                        Last updated by <b>{{ n.updatedByName ?? 'someone' }}</b> &middot;
+                        Last Updated by <b>{{ n.updatedByName ?? 'someone' }}</b> &middot;
                         {{ n.updatedAtUtc | mfNum }}
                       </p>
                       <div class="nt__tags" data-note-tag-chips>
@@ -2814,7 +2814,7 @@ export class NotesTab {
         this.saveError.set(Object.values(e.problem?.errors ?? {})[0]?.[0]?.message ?? e.message);
       } else {
         this.saveError.set(
-          e instanceof ApiError ? e.message : 'The note could not be saved. Try again.',
+          e instanceof ApiError ? e.message : "Couldn't save the note. Try again.",
         );
       }
     } finally {
@@ -3211,7 +3211,7 @@ export class NotesTab {
         this.templates().find((x) => x.noteTemplateId === saved.noteTemplateId) ?? saved,
       );
     } catch (e) {
-      this.tplError.set(e instanceof ApiError ? e.message : 'The template could not be saved.');
+      this.tplError.set(e instanceof ApiError ? e.message : "Couldn't save the template.");
     } finally {
       this.busy.set(false);
     }
@@ -3273,7 +3273,7 @@ export class NotesTab {
         `Find "${this.tplName().trim()}" under Templates or with New note, From template.`,
       );
     } catch (e) {
-      this.tplError.set(e instanceof ApiError ? e.message : 'The template could not be saved.');
+      this.tplError.set(e instanceof ApiError ? e.message : "Couldn't save the template.");
     } finally {
       this.busy.set(false);
     }

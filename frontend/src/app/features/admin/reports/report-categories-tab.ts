@@ -51,7 +51,7 @@ interface Draft {
     } @else if (state() === 'error') {
       <p class="rc__error" role="alert" data-error>
         Couldn't load the categories.
-        <button type="button" class="mf-btn mf-btn--text" (click)="load()">Try Again</button>
+        <button type="button" class="mf-btn mf-btn--text" (click)="load()">Retry</button>
       </p>
     } @else {
       <div class="mf-table-wrap" mfScrollArea="Report categories">

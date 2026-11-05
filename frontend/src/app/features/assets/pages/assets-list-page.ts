@@ -786,8 +786,7 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
       label: 'My Role',
       type: 'text',
       noControl: true,
-      valueLabel: (v: string): string =>
-        v === 'secondary' ? 'Secondary project manager' : 'Primary project manager',
+      valueLabel: (v: string): string => (v === 'secondary' ? 'Secondary PM' : 'Primary PM'),
     },
   ]);
 

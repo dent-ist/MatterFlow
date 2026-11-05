@@ -290,7 +290,7 @@ export class SetOutOfOfficeDialog {
       );
       this.visible.set(false);
     } catch (err) {
-      this.error.set(err instanceof ApiError ? err.message : 'We could not save that. Try again.');
+      this.error.set(err instanceof ApiError ? err.message : "Couldn't save that. Try again.");
     } finally {
       this.busy.set(false);
     }

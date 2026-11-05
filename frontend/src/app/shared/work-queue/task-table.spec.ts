@@ -467,7 +467,7 @@ describe('TaskTable', () => {
     expect(link.textContent?.trim()).toBe('Dedup');
     expect(link.getAttribute('href')).toBe('/tasks/1042?tab=workflow&step=903');
     expect(link.getAttribute('aria-label')).toBe(
-      'Workflow progress: 2 of 6 done, current step Dedup. Open step.',
+      'Progress: 2 of 6 done, current step Dedup. Open step.',
     );
   });
 

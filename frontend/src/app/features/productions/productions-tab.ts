@@ -342,7 +342,7 @@ const emptySpec = (): SpecDraft => ({
       @if (error()) {
         <p class="pg-reason" role="alert" data-productions-error>
           {{ error() }}
-          <button type="button" class="mf-btn mf-btn--text" (click)="reload()">Try Again</button>
+          <button type="button" class="mf-btn mf-btn--text" (click)="reload()">Retry</button>
         </p>
       } @else if (view() === 'productions') {
         @if (loaded() && productions().length === 0) {
@@ -441,7 +441,7 @@ const emptySpec = (): SpecDraft => ({
                   <th scope="col">Images and Text</th>
                   <th scope="col">Load File</th>
                   <th scope="col" class="pg-num">Used By</th>
-                  <th scope="col">Updated</th>
+                  <th scope="col">Last Updated</th>
                 </tr>
               </thead>
               <tbody>
@@ -1642,7 +1642,7 @@ export class ProductionsTab {
             : e.message,
       );
     } else {
-      this.formError.set('It could not be saved. Try again.');
+      this.formError.set("Couldn't save. Try again.");
     }
   }
 

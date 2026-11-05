@@ -560,7 +560,7 @@ export class StepEditPage implements HasUnsavedChanges {
       this.summary.set(
         errors.summary.length > 0 || errors.conflict
           ? errors.summary
-          : ['We could not save the step. Try again.'],
+          : ["Couldn't save the step. Try again."],
       );
       this.conflict.set(errors.conflict);
       focusFirstInvalid(this.injector);

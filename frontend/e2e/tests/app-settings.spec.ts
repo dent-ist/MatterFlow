@@ -66,7 +66,7 @@ test.describe('the administrator changes the name and the icon', () => {
     await expect(toasts(page)).toContainText(SAVED);
     await expect(page.locator('.mf-logo [data-app-name]')).toHaveText('Smith & Co Legal');
     await expect(page).toHaveTitle('Settings: Branding - Smith & Co Legal');
-    await expect(page.locator('[data-last-changed]')).toContainText('Last Changed');
+    await expect(page.locator('[data-last-changed]')).toContainText('Last Updated');
 
     await page.reload();
     await expect(page.locator('.mf-logo [data-app-name]')).toHaveText('Smith & Co Legal');

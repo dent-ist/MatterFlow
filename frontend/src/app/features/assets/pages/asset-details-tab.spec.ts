@@ -101,7 +101,7 @@ describe('AssetDetailsTab', () => {
     );
     expect(el().querySelector('[data-external-reference] a')).toBeNull();
     expect(el().querySelector('[data-external-reference] .pg-mono')?.textContent).toBe('REL-77');
-    expect(el().textContent).not.toContain('Last Changed');
+    expect(el().textContent).not.toContain('Last Updated');
   });
 
   describe('long text (#508)', () => {

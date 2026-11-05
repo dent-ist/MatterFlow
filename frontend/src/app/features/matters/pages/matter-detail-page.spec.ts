@@ -405,7 +405,7 @@ describe('MatterDetailPage', () => {
       'Secondary PM',
       'AI Allowed',
       'Created',
-      'Last Changed',
+      'Last Updated',
     ]);
     expect(summary.querySelector('dl')!.textContent).toContain('00343-00012');
     expect(summary.querySelector('[data-ai-value]')!.textContent!.trim()).toBe('No');

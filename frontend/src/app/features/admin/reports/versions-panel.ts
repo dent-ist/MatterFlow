@@ -275,7 +275,7 @@ export class VersionsPanel {
         ),
       );
     } catch {
-      this.failure.set('The versions could not be compared.');
+      this.failure.set("Couldn't compare the versions.");
     }
   }
 

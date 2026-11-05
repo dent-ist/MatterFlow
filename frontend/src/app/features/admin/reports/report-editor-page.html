@@ -67,7 +67,7 @@
   @case ('error') {
     <div class="rep__state" role="alert" data-error>
       <h2>The report could not be loaded</h2>
-      <button type="button" class="mf-btn" (click)="retry()">Try Again</button>
+      <button type="button" class="mf-btn" (click)="retry()">Retry</button>
     </div>
   }
   @case ('ready') {
@@ -90,7 +90,7 @@
         <p class="rep__error" role="alert" data-conflict>
           Someone else saved this report.
           <button type="button" class="mf-btn mf-btn--text" (click)="reload()" data-reload>
-            Reload the Latest Version
+            Reload Latest
           </button>
           (your unsaved edits are discarded).
         </p>

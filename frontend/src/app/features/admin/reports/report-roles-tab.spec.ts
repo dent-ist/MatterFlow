@@ -103,7 +103,9 @@ describe('ReportRolesTab (#717)', () => {
     el.querySelector<HTMLButtonElement>('[data-checklist-save]')!.click();
     await fixture.whenStable();
     fixture.detectChanges();
-    expect(el.querySelector('[data-failure]')!.textContent).toContain('could not be saved');
+    expect(el.querySelector('[data-failure]')!.textContent).toContain(
+      "Couldn't save the assignment.",
+    );
     expect(el.querySelector<HTMLInputElement>('[data-item="1"] input')!.checked).toBe(true);
   });
 });

@@ -247,7 +247,7 @@ export function brandingOf(view: BrandingAdminView): Branding {
 
           @if (v.updatedAtUtc) {
             <p class="st__last" data-last-changed>
-              Last changed {{ v.updatedAtUtc | mfNum }}
+              Last Updated {{ v.updatedAtUtc | mfNum }}
               @if (v.updatedBy) {
                 by {{ v.updatedBy }}
               }

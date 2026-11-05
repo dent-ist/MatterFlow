@@ -486,7 +486,7 @@ export class AbsenceList {
       this.deleteError.set(
         err instanceof ApiError && err.status === 409
           ? 'This entry was changed somewhere else. Close this window to see the latest list.'
-          : 'The entry could not be deleted. Try again.',
+          : "Couldn't delete the entry. Try again.",
       );
     } finally {
       this.deleteBusy.set(false);

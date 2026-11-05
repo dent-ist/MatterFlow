@@ -547,7 +547,7 @@ export class ParametersEditor {
           truncated: false,
           durationMs: 0,
           errorCode: 'TEST_FAILED',
-          error: 'The test could not be run.',
+          error: "Couldn't run the test.",
         },
       }));
     } finally {

@@ -344,7 +344,7 @@ describe('TaskQueuePage', () => {
   it('reads the project manager link: tasks on matters I manage, a removable chip, sent to the API', async () => {
     const el = await open('/tasks?managedByMe=true&status=NEW&status=ON_HOLD&role=secondary');
     expect(chips(el)).toContain('On matters I manage');
-    expect(chips(el)).toContain('As: Secondary manager');
+    expect(chips(el)).toContain('As: Secondary PM');
     expect(lastArgs()[ARG.managedByMe]).toBe(true);
     expect(lastArgs()[ARG.role]).toBe('secondary');
     expect(lastArgs()[ARG.status]).toEqual(['NEW', 'ON_HOLD']);

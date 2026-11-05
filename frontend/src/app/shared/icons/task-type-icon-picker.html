@@ -65,13 +65,13 @@
     </div>
     <p class="tip__status" role="status" aria-live="polite" data-icon-count>
       @if (loadFailed()) {
-        The icons could not be loaded.
+        Couldn't load the icons.
       } @else {
         {{ matchCount() | mfInt }} {{ matchCount() === 1 ? 'icon' : 'icons' }}
       }
     </p>
     @if (loadFailed()) {
-      <button type="button" class="tip__retry" (click)="loadCatalog()">Try Again</button>
+      <button type="button" class="tip__retry" (click)="loadCatalog()">Retry</button>
     } @else if (matchCount() === 0) {
       <p class="tip__empty" data-icon-empty>No icon matches "{{ query() }}". Try another word.</p>
     }

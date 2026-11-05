@@ -337,7 +337,7 @@ export class BulkTasksDialog {
       this.finished.emit(answer);
     } catch (err) {
       this.error.set(
-        err instanceof ApiError ? err.message : 'The change could not be made. Try again.',
+        err instanceof ApiError ? err.message : "Couldn't make the change. Try again.",
       );
     } finally {
       this.busy.set(false);

@@ -335,7 +335,7 @@ export class AssetRecordPage {
     if (a.modifiedAtUtc) {
       items.push({
         key: 'modified',
-        label: 'Modified',
+        label: 'Last Updated',
         count: null,
         value: numericInstant(a.modifiedAtUtc, this.clock.now(), this.zone, false),
       });

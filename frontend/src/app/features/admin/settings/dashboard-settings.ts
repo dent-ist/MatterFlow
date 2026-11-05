@@ -246,7 +246,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
         <p class="ds__intro" data-ds-meta>
           Times are in the firm's time zone ({{ v.timeZoneId }}), for everyone.
           @if (v.updatedAtUtc) {
-            Last changed {{ v.updatedAtUtc | mfNum }}
+            Last Updated {{ v.updatedAtUtc | mfNum }}
             @if (v.updatedBy) {
               by {{ v.updatedBy }}
             }
@@ -400,7 +400,7 @@ export class DashboardSettings implements OnInit {
       this.applyView(view);
       this.conflict.set(false);
     } catch {
-      this.serverMessage.set("We couldn't load the settings. Try again.");
+      this.serverMessage.set("Couldn't load the settings. Try again.");
     }
   }
 
@@ -490,7 +490,7 @@ export class DashboardSettings implements OnInit {
           this.serverErrors.set(named);
         }
         this.serverMessage.set(
-          error instanceof ApiError ? error.message : "We couldn't save the settings. Try again.",
+          error instanceof ApiError ? error.message : "Couldn't save the settings. Try again.",
         );
       }
     } finally {

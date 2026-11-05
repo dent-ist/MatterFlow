@@ -87,9 +87,7 @@ describe('DashBattery (DB-05)', () => {
     create(capacityOf(evening, 0));
     expect(text('[data-battery-big]')).toBe('67%');
     expect(el().textContent).not.toContain('After hours');
-    expect(text('[data-battery-legend] li[data-state="OFF_HOURS"]')).toContain(
-      'Outside work hours, still counted',
-    );
+    expect(text('[data-battery-legend] li[data-state="OFF_HOURS"]')).toContain('Off Hours');
   });
 
   it('says the unassigned waiting as a button that selects the Unassigned card, and N tasks over capacity in red only above zero', () => {

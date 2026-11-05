@@ -155,7 +155,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
           </div>
           @if (asset().modifiedAtUtc) {
             <div class="ad__f">
-              <dt>Last Changed</dt>
+              <dt>Last Updated</dt>
               <dd>{{ asset().modifiedAtUtc | mfNum }}</dd>
             </div>
           }

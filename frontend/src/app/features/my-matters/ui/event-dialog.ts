@@ -503,6 +503,6 @@ export class MmEventDialog {
       return 'Someone else changed this item. Close the dialog and open it again.';
     if (code === 'MATTER_INACTIVE') return 'This matter is inactive, so it cannot get new items.';
     if (status === 404) return 'This matter or item is no longer available.';
-    return 'The item could not be saved. Try again.';
+    return "Couldn't save the item. Try again.";
   }
 }

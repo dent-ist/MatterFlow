@@ -654,7 +654,9 @@ describe('UsersPage', () => {
     it('shows a loading state and then a retryable error for a person that cannot be read', async () => {
       startUrl = '/admin/users?status=active&user=999';
       await create('User.View', 'User.Manage');
-      expect(q('[data-panel-error]').textContent).toContain('We could not load this user');
+      expect(q('[data-panel-error]').textContent).toContain(
+        "Couldn't load this user. Try again.Retry",
+      );
       expect(q('[data-panel-retry]')).not.toBeNull();
     });
 

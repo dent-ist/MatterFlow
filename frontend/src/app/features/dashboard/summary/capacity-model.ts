@@ -42,6 +42,8 @@ export interface LegendItem {
   icon: string;
   swatch: StateMeta['swatch'];
   count: number;
+  /** The explanation, shown as the tooltip of the legend item (the state name stays "Off Hours"). */
+  hint: string | null;
 }
 
 export type CapacityWord = 'Healthy' | 'Watch' | 'Low' | 'Critical';
@@ -123,11 +125,8 @@ export function batteryView(c: DashboardCapacity): BatteryView {
   const legend: LegendItem[] = CAPACITY_STATES.map((state) => ({
     state,
     ...STATE_META[state],
-    // The Off hours count stays as information: with the setting on those people are still counted.
-    label:
-      state === 'OFF_HOURS' && c.countOffHours
-        ? 'Outside work hours, still counted'
-        : STATE_META[state].label,
+    // The Off Hours count stays as information: with the setting on those people are still counted (the explanation is the tooltip, the name never changes).
+    hint: state === 'OFF_HOURS' && c.countOffHours ? 'Outside work hours, still counted' : null,
     count: counts.get(state) ?? 0,
   }));
   const formula = formulaText(c.slotsPerPerson, c.countOffHours);

@@ -632,6 +632,6 @@ export class PodsPage extends ServerListPage<PodSummary> implements OnDestroy, H
         return;
       }
     }
-    this.failure.set('The pod could not be saved. Try again.');
+    this.failure.set("Couldn't save the pod. Try again.");
   }
 }

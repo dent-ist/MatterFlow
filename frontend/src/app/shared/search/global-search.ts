@@ -108,7 +108,7 @@ interface DisplayGroup {
                   (mousedown)="$event.preventDefault()"
                   (click)="retry()"
                 >
-                  Try Again
+                  Retry
                 </button>
               </p>
             }

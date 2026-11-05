@@ -181,7 +181,7 @@ export class UserCalendarField {
       this.notify.success('Holiday calendar saved', undefined, { key: 'user-calendar' });
     } catch (err) {
       this.error.set(
-        err instanceof ApiError ? err.message : 'The calendar could not be saved. Try again.',
+        err instanceof ApiError ? err.message : "Couldn't save the calendar. Try again.",
       );
     } finally {
       this.busy.set(false);

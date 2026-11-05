@@ -209,7 +209,7 @@ export function rowsFromMatters(matters: readonly MatterResponse[]): OverviewMat
       <p class="ov-when" data-created-line>
         Created {{ client().createdAtUtc | mfNum: 'date' }}
         @if (client().modifiedAtUtc) {
-          - Last changed {{ client().modifiedAtUtc | mfNum: 'date' }}
+          - Last Updated {{ client().modifiedAtUtc | mfNum: 'date' }}
         }
       </p>
 

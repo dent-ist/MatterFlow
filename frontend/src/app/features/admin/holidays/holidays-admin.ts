@@ -916,7 +916,7 @@ export class HolidaysAdmin implements OnInit {
       await this.load();
     } catch (err) {
       this.deleteError.set(
-        err instanceof ApiError ? err.message : 'The calendar could not be deleted. Try again.',
+        err instanceof ApiError ? err.message : "Couldn't delete the calendar. Try again.",
       );
     } finally {
       this.deleteBusy.set(false);
@@ -956,7 +956,7 @@ export class HolidaysAdmin implements OnInit {
       await this.afterHolidayChange();
     } catch (err) {
       this.deleteError.set(
-        err instanceof ApiError ? err.message : 'The holiday could not be deleted. Try again.',
+        err instanceof ApiError ? err.message : "Couldn't delete the holiday. Try again.",
       );
     } finally {
       this.deleteBusy.set(false);
@@ -994,7 +994,7 @@ export class HolidaysAdmin implements OnInit {
           ? 'The defaults were changed by someone else. The latest are shown; make your change again.'
           : err instanceof ApiError
             ? err.message
-            : 'The defaults could not be saved. Try again.',
+            : "Couldn't save the defaults. Try again.",
       );
       if (err instanceof ApiError && err.status === 409)
         this.applyDefaults(await this.api.defaults());

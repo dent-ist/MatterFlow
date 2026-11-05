@@ -220,7 +220,7 @@ export class ImportDialog {
         this.error.set('');
       }
     } catch {
-      if (id === this.seq) this.error.set('The lines could not be checked. Try again.');
+      if (id === this.seq) this.error.set("Couldn't check the lines. Try again.");
     }
   }
 
@@ -236,7 +236,7 @@ export class ImportDialog {
       this.visible.set(false);
     } catch (err) {
       this.error.set(
-        err instanceof ApiError ? err.message : 'The holidays could not be imported. Try again.',
+        err instanceof ApiError ? err.message : "Couldn't import the holidays. Try again.",
       );
     } finally {
       this.busy.set(false);

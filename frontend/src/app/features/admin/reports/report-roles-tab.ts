@@ -122,7 +122,7 @@ export class ReportRolesTab {
       this.roles.set(await firstValueFrom(this.api.getRolesOfReport(this.reportId())));
       this.loaded = true;
     } catch {
-      this.failure.set("Couldn't load the roles.");
+      this.failure.set("Couldn't load roles.");
     } finally {
       this.loading.set(false);
     }
@@ -144,7 +144,7 @@ export class ReportRolesTab {
       this.notify.success('Report assignments saved', text);
       await this.load();
     } catch (e) {
-      this.failure.set(e instanceof ApiError ? e.message : 'The assignment could not be saved.');
+      this.failure.set(e instanceof ApiError ? e.message : "Couldn't save the assignment.");
     } finally {
       this.busy.set(false);
     }

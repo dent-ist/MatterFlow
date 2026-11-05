@@ -49,7 +49,7 @@ const SEARCH_DELAY_MS = 300;
       @if (failure(); as f) {
         <p class="sb__error" role="alert" data-schema-failure>
           {{ f }}
-          <button type="button" class="mf-btn mf-btn--text" (click)="reload()">Try Again</button>
+          <button type="button" class="mf-btn mf-btn--text" (click)="reload()">Retry</button>
         </p>
       }
       <ul class="sb__tables">

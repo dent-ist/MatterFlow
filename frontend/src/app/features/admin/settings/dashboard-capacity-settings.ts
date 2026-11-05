@@ -66,7 +66,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
       @if (view(); as v) {
         @if (v.updatedAtUtc) {
           <p class="cs__meta" data-capacity-meta>
-            Last changed {{ v.updatedAtUtc | mfNum }}
+            Last Updated {{ v.updatedAtUtc | mfNum }}
             @if (v.updatedBy) {
               by {{ v.updatedBy }}
             }
@@ -189,7 +189,7 @@ export class DashboardCapacitySettings implements OnInit {
       this.applyView(await firstValueFrom(this.api.getDashboardCapacitySettings()));
       this.conflict.set(false);
     } catch {
-      this.serverMessage.set("We couldn't load the capacity setting. Try again.");
+      this.serverMessage.set("Couldn't load the capacity setting. Try again.");
     }
   }
 
@@ -248,7 +248,7 @@ export class DashboardCapacitySettings implements OnInit {
         );
       } else {
         this.serverMessage.set(
-          error instanceof ApiError ? error.message : "We couldn't save the setting. Try again.",
+          error instanceof ApiError ? error.message : "Couldn't save the setting. Try again.",
         );
       }
     } finally {

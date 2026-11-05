@@ -70,11 +70,12 @@ describe('batteryView', () => {
       'Busy',
       'Overloaded',
       'Out of Office',
-      'Outside work hours, still counted',
-    ]);
-    // With the setting off the word is the plain one.
-    expect(batteryView(capacityOf(people, 3, { countOffHours: false })).legend.at(-1)!.label).toBe(
       'Off Hours',
+    ]);
+    // The state name never changes; with the setting on the explanation is the tooltip (#1151).
+    expect(v.legend.at(-1)!.hint).toBe('Outside work hours, still counted');
+    expect(batteryView(capacityOf(people, 3, { countOffHours: false })).legend.at(-1)!.hint).toBe(
+      null,
     );
     expect(v.legend.reduce((n, l) => n + l.count, 0)).toBe(12);
     expect(v.legend.map((l) => l.count)).toEqual([3, 3, 2, 1, 2, 1]);

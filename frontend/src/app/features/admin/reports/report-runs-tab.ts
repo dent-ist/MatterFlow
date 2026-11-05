@@ -43,7 +43,7 @@ const PAGE = 50;
     @if (failure(); as f) {
       <p class="rr__error" role="alert" data-failure>
         {{ f }}
-        <button type="button" class="mf-btn mf-btn--text" (click)="reload()">Try Again</button>
+        <button type="button" class="mf-btn mf-btn--text" (click)="reload()">Retry</button>
       </p>
     }
     <div class="mf-table-wrap" mfScrollArea="Run Log">

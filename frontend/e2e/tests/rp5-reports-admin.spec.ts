@@ -309,7 +309,7 @@ test.describe('the editor (#713 to #715)', () => {
     await page.locator('#rep-description').fill('Changed in the first editor');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.locator('[data-conflict]')).toBeVisible();
-    await page.getByRole('button', { name: 'Reload the Latest Version' }).click();
+    await page.getByRole('button', { name: 'Reload Latest' }).click();
     await expect(page.locator('[data-conflict]')).toHaveCount(0);
   });
 

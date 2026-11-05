@@ -88,7 +88,7 @@ describe('ClientOverview', () => {
       aClient({ modifiedAtUtc: '2026-10-05T12:00:00Z' }),
     );
     expect(text(el().querySelector('[data-created-line]'))).toBe(
-      'Created 10/01 - Last changed 10/05',
+      'Created 10/01 - Last Updated 10/05',
     );
   });
 

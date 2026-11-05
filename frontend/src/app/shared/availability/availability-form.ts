@@ -67,7 +67,7 @@ interface Problem {
     } @else if (state() === 'error') {
       @if (mode() === 'dialog') {
         <div class="av-alert" role="alert" data-load-error>
-          We couldn't load the availability. Try again.
+          Couldn't load the availability. Try again.
           <p-button label="Retry" severity="secondary" (onClick)="load()" />
         </div>
       }

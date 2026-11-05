@@ -155,7 +155,7 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
   },
   {
     key: 'updated',
-    label: 'Updated',
+    label: 'Last Updated',
     sortField: 'updated',
     width: 120,
     minWidth: 96,

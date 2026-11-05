@@ -277,7 +277,7 @@ const BONES: Record<string, string> = {
             [disabled]="selected().size === 0"
             (click)="bulkOpen.set(true)"
           >
-            Set Project Managers
+            Set PMs
           </button>
           <button type="button" class="mf-btn mf-btn--text" (click)="selected.set(emptySelection)">
             Clear Selection
@@ -1059,7 +1059,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
       // `?managerId=` (a link from My Matters' All matters scope, #701): matters where that person is Primary or Secondary; no control, a removable chip.
       {
         key: 'managerId',
-        label: 'Project manager (either)',
+        label: 'PM (Either)',
         type: 'text',
         noControl: true,
         normalize: (v: string) => (/^[1-9]\d*$/.test(v) ? v : null),

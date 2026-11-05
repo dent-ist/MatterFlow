@@ -269,7 +269,7 @@ const BAD_DATE = 'Enter a valid date, for example Oct 12, 2026 or 10/12/2026.';
                 the latest version.
               </span>
               <button type="button" class="de-link" data-due-reload (click)="reload()">
-                Reload
+                Reload Latest
               </button>
             </p>
           } @else if (message(); as m) {
@@ -511,7 +511,7 @@ export class DueEdit implements OnDestroy {
   private errorText(error: unknown): string {
     // A failed connection has no message of its own worth showing (the HTTP layer toasts it).
     const text = error instanceof ApiError && error.status !== 0 ? error.message : '';
-    return text || "We couldn't save the due date. Try again.";
+    return text || "Couldn't save the due date. Try again.";
   }
 
   protected reload(): void {

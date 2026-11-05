@@ -229,7 +229,7 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
       this.draftCodes.set(new Set(detail.permissionCodes));
       this.baseline.set(this.draftKey());
     } catch {
-      this.error.set('We could not load this role. Try again.');
+      this.error.set("Couldn't load this role. Try again.");
     }
   }
 

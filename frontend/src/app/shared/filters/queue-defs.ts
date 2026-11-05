@@ -175,7 +175,7 @@ export function queueFilterDefs(
     },
     {
       key: 'updated',
-      label: 'Updated',
+      label: 'Last Updated',
       column: 'updated',
       type: 'dateRange',
       fromParam: 'updatedFrom',
@@ -273,7 +273,7 @@ export function queueFilterDefs(
     },
     {
       key: 'managerId',
-      label: 'Project Manager',
+      label: 'PM',
       type: 'text',
       noControl: true,
       normalize: asId,
@@ -289,8 +289,8 @@ export function queueFilterDefs(
       param: 'role',
       noControl: true,
       options: [
-        { value: 'primary', label: 'Primary manager' },
-        { value: 'secondary', label: 'Secondary manager' },
+        { value: 'primary', label: 'Primary PM' },
+        { value: 'secondary', label: 'Secondary PM' },
       ],
       normalize: (v: string) => (v === 'primary' || v === 'secondary' ? v : null),
     },

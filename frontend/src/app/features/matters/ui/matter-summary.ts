@@ -200,7 +200,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
           <p class="ms__empty-assets" role="alert" data-assets-error>
             Couldn't load the assets.
             <button type="button" class="mf-btn mf-btn--text" (click)="assetsLoader.load()">
-              Try Again
+              Retry
             </button>
           </p>
         } @else if (assetTypes().length > 0) {
@@ -314,11 +314,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
                     class="mf-btn mf-btn--text ms__btn"
                     [attr.data-change-managers]="matter().primaryManager ? '' : null"
                     [attr.data-add-managers]="matter().primaryManager ? null : ''"
-                    [attr.aria-label]="
-                      matter().primaryManager
-                        ? 'Change project managers'
-                        : 'Add a primary project manager'
-                    "
+                    [attr.aria-label]="matter().primaryManager ? 'Change PMs' : 'Add a Primary PM'"
                     (click)="changeManagers.emit()"
                   >
                     {{ matter().primaryManager ? 'Change' : 'Add' }}
@@ -339,7 +335,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
                       type="button"
                       class="mf-btn mf-btn--text ms__btn"
                       data-add-secondary-manager
-                      aria-label="Add a secondary project manager"
+                      aria-label="Add a Secondary PM"
                       (click)="changeManagers.emit()"
                     >
                       Add
@@ -361,7 +357,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
               </dd>
             </div>
             <div class="ms__f">
-              <dt>Last Changed</dt>
+              <dt>Last Updated</dt>
               <dd [attr.title]="long(matter().modifiedAtUtc)" data-modified>
                 @if (matter().modifiedAtUtc; as m) {
                   {{ stamp(m) }}

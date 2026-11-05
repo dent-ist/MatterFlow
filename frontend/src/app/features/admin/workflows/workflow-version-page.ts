@@ -913,7 +913,7 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
             rowVersion: v.version.rowVersion,
           }),
         ),
-      'We could not save the draft. Try again.',
+      "Couldn't save the draft. Try again.",
     );
     if (!saved) return false;
     this.apply(saved);
@@ -966,7 +966,7 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
       );
     } catch {
       this.publishOpen.set(false);
-      this.messages.set(['We could not compare with the published version. Try again.']);
+      this.messages.set(["Couldn't compare with the published version. Try again."]);
     } finally {
       this.diffLoading.set(false);
     }
@@ -982,7 +982,7 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
             rowVersion: v.version.rowVersion,
           }),
         ),
-      'We could not publish the workflow. Try again.',
+      "Couldn't publish the workflow. Try again.",
     );
     // A failure keeps the dialog open with its message and focus on its button (#414); a conflict means the question is stale.
     if (!result) {
@@ -1007,7 +1007,7 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
             rowVersion: v.version.rowVersion,
           }),
         ),
-      'We could not retire the version. Try again.',
+      "Couldn't retire the version. Try again.",
     );
     if (!result) {
       if (this.conflict()) this.retireOpen.set(false);
@@ -1030,7 +1030,7 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
             fromVersionId: v.version.workflowVersionId,
           }),
         ),
-      'We could not create the draft. Try again.',
+      "Couldn't create the draft. Try again.",
     );
     if (!draft) return;
     this.notify.success(`Draft v${draft.version.versionNo} created`);
@@ -1050,7 +1050,7 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
         firstValueFrom(
           this.api.discardWorkflowDraft(v.workflowDefinitionId, v.version.workflowVersionId),
         ).then(() => true),
-      'We could not discard the draft. Try again.',
+      "Couldn't discard the draft. Try again.",
     );
     if (!done) {
       if (this.conflict()) this.discardOpen.set(false);

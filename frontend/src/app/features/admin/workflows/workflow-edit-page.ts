@@ -795,7 +795,7 @@ export class WorkflowEditPage implements HasUnsavedChanges {
     try {
       return await work();
     } catch (err) {
-      const errors = workflowErrors(err, 'We could not save the workflow. Try again.');
+      const errors = workflowErrors(err, "Couldn't save the workflow. Try again.");
       this.serverErrors.set(errors.fields);
       this.messages.set(errors.messages);
       focusFirstInvalid(this.injector);

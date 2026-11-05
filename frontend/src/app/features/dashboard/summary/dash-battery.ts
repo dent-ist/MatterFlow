@@ -160,7 +160,7 @@ type BatteryState = 'loading' | 'ready' | 'error';
               }
               <ul class="legend" aria-label="People by state" data-battery-legend>
                 @for (l of v.legend; track l.state) {
-                  <li class="lg" [attr.data-state]="l.state">
+                  <li class="lg" [attr.data-state]="l.state" [mfTip]="l.hint">
                     <span class="sw" [class]="'sw sw--' + l.swatch" aria-hidden="true">
                       <i class="pi" [class]="l.icon"></i>
                     </span>

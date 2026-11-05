@@ -126,7 +126,7 @@ function dueKey(t: AssetTaskLink): number | null {
             </p>
             <p mfCardMeta class="rc-line">
               <span class="rc-text">{{
-                t.assigneeName ? 'Assigned to ' + t.assigneeName : 'Unassigned'
+                t.assigneeName ? 'Assignee: ' + t.assigneeName : 'Unassigned'
               }}</span>
             </p>
           </mf-record-card>

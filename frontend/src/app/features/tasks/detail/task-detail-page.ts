@@ -82,7 +82,7 @@ const isTab = (v: unknown): v is TaskPageTab => TABS.includes(v as string);
               This task was changed by someone else, so your change wasn't saved. Reload to see the
               latest version.
               <button type="button" class="link-btn" data-reload (click)="store.load()">
-                Reload
+                Reload Latest
               </button>
             </div>
           }

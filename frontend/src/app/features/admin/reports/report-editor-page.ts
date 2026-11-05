@@ -651,7 +651,7 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
       }
     } catch (e) {
       this.preview.set(null);
-      this.failure.set(e instanceof ApiError ? e.message : 'The preview could not be run.');
+      this.failure.set(e instanceof ApiError ? e.message : "Couldn't run the preview.");
     } finally {
       this.previewBusy.set(false);
     }
@@ -703,7 +703,7 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
       this.announcement.set(message);
       this.notify.success(toast[0], toast[1]);
     } catch (e) {
-      this.failure.set(e instanceof ApiError ? e.message : 'The state could not be changed.');
+      this.failure.set(e instanceof ApiError ? e.message : "Couldn't change the state.");
     } finally {
       this.busy.set(false);
     }
@@ -731,8 +731,7 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
       );
     } catch (e) {
       if (serverFormErrors(e).conflict) this.conflict.set(true);
-      else
-        this.failure.set(e instanceof ApiError ? e.message : 'The version could not be restored.');
+      else this.failure.set(e instanceof ApiError ? e.message : "Couldn't restore the version.");
     } finally {
       this.busy.set(false);
     }

@@ -204,7 +204,7 @@ describe('ParametersEditor', () => {
     q('[data-test-list]').click();
     await fixture.whenStable();
     fixture.detectChanges();
-    expect(el.querySelector('[data-test-result]')!.textContent).toContain('could not be run');
+    expect(el.querySelector('[data-test-result]')!.textContent).toContain("Couldn't run the test.");
   });
 
   it('cannot test a SELECT list before the report is saved, and says so', () => {

@@ -146,7 +146,7 @@ export class RoleReportsTab {
       this.notify.success('Report assignments saved', text);
       await this.load();
     } catch (e) {
-      this.failure.set(e instanceof ApiError ? e.message : 'The assignment could not be saved.');
+      this.failure.set(e instanceof ApiError ? e.message : "Couldn't save the assignment.");
     } finally {
       this.busy.set(false);
     }

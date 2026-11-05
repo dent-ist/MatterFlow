@@ -249,7 +249,7 @@ export class SavedReports {
       this.renamed.emit(saved);
       this.notify.success('Report renamed', saved.name);
     } catch (e) {
-      this.error.set(failure(e, 'The report could not be renamed.'));
+      this.error.set(failure(e, "Couldn't rename the report."));
     } finally {
       this.busy.set(false);
     }
@@ -266,7 +266,7 @@ export class SavedReports {
       this.deleted.emit(report.assetReportId);
       this.notify.success('Report deleted', report.name);
     } catch (e) {
-      this.error.set(failure(e, 'The report could not be deleted.'));
+      this.error.set(failure(e, "Couldn't delete the report."));
     } finally {
       this.busy.set(false);
     }

@@ -5,7 +5,7 @@ import { pmFixtures } from '../support/pm-fixtures';
 import { toasts } from '../support/toasts';
 
 /**
- * Project managers on matters (epic #667, #688 and #689): the Matters list columns, filters, Mine and the bulk "Set Project Managers", the matter
+ * Project managers on matters (epic #667, #688 and #689): the Matters list columns, filters, Mine and the bulk "Set PMs", the matter
  * header line with its Change dialog, and the small health strip. A matter without a manager is normal: nothing on these pages warns about it.
  * Permission variants: Project Manager, Director (holds Matter.AssignManagers), Matter.Edit without it, and the Read-Only Observer.
  */
@@ -87,14 +87,14 @@ test.describe('Matters list: project managers', () => {
     await page.locator('[data-select-mode]').click();
     await rowOf(page, 'No manager one').locator('[data-select-row]').check();
     await rowOf(page, 'No manager two').locator('[data-select-row]').check();
-    await page.getByRole('button', { name: 'Set Project Managers' }).click();
+    await page.getByRole('button', { name: 'Set PMs' }).click();
     const dialog = page.locator('[data-managers-dialog]');
     await expect(dialog.locator('[data-managers-bulk-note]')).toContainText('2 matters selected');
     await dialog
       .locator('[data-manager-select=primary]')
       .selectOption({ label: `PM Bravo ${fx.token}` });
     await page.locator('[data-panel-primary] button').click();
-    await expect(toasts(page).first()).toContainText('Project managers set');
+    await expect(toasts(page).first()).toContainText('PMs set');
     await expect(rowOf(page, 'No manager two').locator('[data-primary-manager]')).toContainText(
       'PM Bravo',
     );
@@ -118,7 +118,7 @@ test.describe('Matters list: project managers', () => {
           '[data-select-mode], [data-select-row], [data-select-all], [data-scope-switch]',
         ),
       ).toHaveCount(0);
-      await expect(page.getByRole('button', { name: 'Set Project Managers' })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Set PMs' })).toHaveCount(0);
     });
   }
 

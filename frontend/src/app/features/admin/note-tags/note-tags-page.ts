@@ -41,7 +41,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
   template: `
     @if (error()) {
       <p class="pg-reason" role="alert">
-        {{ error() }} <button type="button" (click)="load()">Try Again</button>
+        {{ error() }} <button type="button" (click)="load()">Retry</button>
       </p>
     } @else if (loaded() && tags().length === 0) {
       <p class="pg-reason" data-note-tags-empty>No tags yet.</p>
@@ -247,7 +247,7 @@ export class NoteTagsPage {
       this.notify.success(t ? 'Tag saved' : 'Tag created');
       await this.load();
     } catch (e) {
-      this.formError.set(this.message(e, 'The tag could not be saved.'));
+      this.formError.set(this.message(e, "Couldn't save the tag."));
     } finally {
       this.busy.set(false);
     }

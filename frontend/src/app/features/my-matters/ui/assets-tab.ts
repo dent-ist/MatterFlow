@@ -38,7 +38,7 @@ const HEADS = [
   { label: 'Matter', sort: 'matter', cls: 'c-ma' },
   { label: 'Asset Type', sort: 'assetType', cls: 'c-ty' },
   { label: 'Created', sort: 'created', cls: 'c-cr' },
-  { label: 'Updated', sort: 'updated', cls: 'c-up' },
+  { label: 'Last Updated', sort: 'updated', cls: 'c-up' },
   { label: 'Status', sort: 'status', cls: 'c-st' },
 ] as const;
 
@@ -275,7 +275,7 @@ const HEADS = [
               </dd>
               <dt>Created</dt>
               <dd>{{ d.createdAtUtc | mfNum }} by {{ d.createdByName }}</dd>
-              <dt>Updated</dt>
+              <dt>Last Updated</dt>
               <dd>{{ d.updatedAtUtc ? (d.updatedAtUtc | mfNum) : 'Never' }}</dd>
               @if (d.sizeValue) {
                 <dt>Size</dt>

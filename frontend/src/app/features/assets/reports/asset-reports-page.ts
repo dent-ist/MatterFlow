@@ -484,9 +484,7 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
                 <div class="ar__alert" role="alert" data-result-error>
                   {{ runError() }}
                   <mf-error-reference />
-                  <button type="button" class="mf-btn" data-run-retry (click)="run()">
-                    Try Again
-                  </button>
+                  <button type="button" class="mf-btn" data-run-retry (click)="run()">Retry</button>
                 </div>
               }
               @case ('ok') {
@@ -914,7 +912,7 @@ export class AssetReportsPage {
       this.runState.set('ok');
     } catch (e) {
       if (seq !== this.runSeq) return;
-      this.runError.set(failure(e, 'The report could not be run.'));
+      this.runError.set(failure(e, "Couldn't run the report."));
       this.runState.set('error');
     }
   }
@@ -969,7 +967,7 @@ export class AssetReportsPage {
         replaceUrl: true,
       });
     } catch (e) {
-      this.saveError.set(failure(e, 'The report could not be saved.'));
+      this.saveError.set(failure(e, "Couldn't save the report."));
     } finally {
       this.saving.set(false);
     }

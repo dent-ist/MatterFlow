@@ -173,7 +173,7 @@ describe('SettingsPage: Administration > Settings > Branding (epic #850, BR-05)'
 
   it('shows the last change when there is one', async () => {
     await open(view({ updatedAtUtc: '2026-10-27T09:14:00Z', updatedBy: 'Dana Reyes' }));
-    expect(text('[data-last-changed]')).toContain('Last changed');
+    expect(text('[data-last-changed]')).toContain('Last Updated');
     expect(text('[data-last-changed]')).toContain('by Dana Reyes');
   });
 

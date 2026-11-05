@@ -460,7 +460,7 @@ function plural(n: number, one: string, many: string): string {
       }
       @if (filters().clientId !== null || filters().managerId !== null) {
         <p class="dt__note" data-filters-note>
-          The Client and Project manager filters do not apply to Data. Use Matters above.
+          The Client and PM filters do not apply to Data. Use Matters above.
         </p>
       }
 

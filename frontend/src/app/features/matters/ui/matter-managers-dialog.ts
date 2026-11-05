@@ -85,7 +85,7 @@ const CONCURRENCY = 3;
   template: `
     <mf-form-dialog
       [title]="title()"
-      [primaryLabel]="failed().length > 0 ? 'Try the Rest Again' : 'Save'"
+      [primaryLabel]="failed().length > 0 ? 'Retry' : 'Save'"
       [canSubmit]="canSave()"
       [busy]="busy()"
       [error]="error()"
@@ -100,7 +100,7 @@ const CONCURRENCY = 3;
           </p>
         }
         <div class="mmd__field">
-          <label class="mmd__label" [for]="uid + '-primary'">Primary Project Manager</label>
+          <label class="mmd__label" [for]="uid + '-primary'">Primary PM</label>
           <select
             class="mf-control"
             [id]="uid + '-primary'"
@@ -116,7 +116,7 @@ const CONCURRENCY = 3;
           </select>
         </div>
         <div class="mmd__field">
-          <label class="mmd__label" [for]="uid + '-secondary'">Secondary Project Manager</label>
+          <label class="mmd__label" [for]="uid + '-secondary'">Secondary PM</label>
           <select
             class="mf-control"
             [id]="uid + '-secondary'"
@@ -174,9 +174,7 @@ export class MatterManagersDialog {
 
   protected readonly uid = `mmd${Math.random().toString(36).slice(2, 8)}`;
   protected readonly bulk = computed(() => this.targets().length > 1);
-  protected readonly title = computed(() =>
-    this.bulk() ? 'Set Project Managers' : 'Change Managers',
-  );
+  protected readonly title = computed(() => (this.bulk() ? 'Set PMs' : 'Change Managers'));
   protected readonly primaryChoice = signal(NONE);
   protected readonly secondaryChoice = signal(NONE);
   protected readonly eligible = signal<readonly MatterManagerItem[]>([]);
@@ -191,7 +189,7 @@ export class MatterManagersDialog {
     const lead = this.bulk()
       ? [
           { value: KEEP, label: 'Leave unchanged' },
-          { value: NONE, label: 'No project manager' },
+          { value: NONE, label: 'No PM' },
         ]
       : [{ value: NONE, label: 'None' }];
     const seen = new Set<string>();
@@ -292,7 +290,7 @@ export class MatterManagersDialog {
       this.failed.set([]);
       this.visible.set(false);
       this.notify.success(
-        this.bulk() ? 'Project managers set' : 'Project managers saved',
+        this.bulk() ? 'PMs set' : 'PMs saved',
         this.bulk() ? `${this.savedCount()} matters.` : undefined,
       );
       return;
