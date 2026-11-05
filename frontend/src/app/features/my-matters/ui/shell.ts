@@ -192,7 +192,7 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
                 <mf-scope-switch
                   [scope]="scope.filters().scope"
                   [canAll]="scope.canAll()"
-                  allLabel="All matters"
+                  allLabel="All Matters"
                   description="Mine: the matters you manage as primary or secondary project manager. All matters: every active matter, whoever manages it."
                   (scopeChange)="setScope($event)"
                 />

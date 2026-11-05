@@ -163,7 +163,7 @@ test.describe('Density and space', () => {
     await page.locator('tr[data-filter-row] [data-filter="due"]').click();
     await expect(page.getByRole('group', { name: 'Presets' })).toBeVisible();
     expect(Math.abs((await due.boundingBox())!.width - before)).toBeLessThanOrEqual(1);
-    await page.getByRole('button', { name: 'Next 7 days' }).click();
+    await page.getByRole('button', { name: 'Next 7 Days' }).click();
     await page.keyboard.press('Escape');
     expect(Math.abs((await due.boundingBox())!.width - before)).toBeLessThanOrEqual(1);
   });

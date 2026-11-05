@@ -15,15 +15,15 @@ import { labelledDropdown } from '../support/dropdown';
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
 
-const CORE = ['7 days', '30 days', '90 days', 'This month', 'Last month', 'Custom'];
+const CORE = ['7 Days', '30 Days', '90 Days', 'This Month', 'Last Month', 'Custom'];
 const COVERAGE = [
-  '7 days',
-  '30 days',
-  '90 days',
-  'This month',
-  'Last month',
-  'Last 6 months',
-  'Last 12 months',
+  '7 Days',
+  '30 Days',
+  '90 Days',
+  'This Month',
+  'Last Month',
+  'Last 6 Months',
+  'Last 12 Months',
   'Custom',
 ];
 const NOTE =
@@ -114,7 +114,7 @@ test.describe('the address', () => {
     const read = page.waitForRequest((r) =>
       /\/api\/v1\/dashboard\/trend\?.*period=90d/.test(r.url()),
     );
-    await period(page).selectOption({ label: '90 days' });
+    await period(page).selectOption({ label: '90 Days' });
     await read;
     await expect(page).toHaveURL(/\/dashboard\?tab=trends&period=90d$/);
     const link = page.url();

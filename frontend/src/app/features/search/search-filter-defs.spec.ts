@@ -104,7 +104,7 @@ describe('search filter definitions (#474, #475, #476)', () => {
     expect(activeKinds('task', values)).toEqual(['client', 'status']);
     expect(
       filterChips('task', values, { client: () => '00343 Acme Corp' }).map((c) => c.label),
-    ).toEqual(['Client: 00343 Acme Corp', 'Task status: New, On Hold']);
+    ).toEqual(['Client: 00343 Acme Corp', 'Task Status: New, On Hold']);
     expect(filterChips('matter', values).map((c) => c.label)).toEqual([
       'Client: Client 3',
       'Status: Inactive',

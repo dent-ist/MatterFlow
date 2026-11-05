@@ -26,11 +26,11 @@ import { MatterEvent, MatterTree } from './mm-models';
 import { CAL_SHOWS, CalShow } from './mm-scope';
 
 const SHOW_LABELS: Record<CalShow, string> = {
-  events: 'Calendar events',
-  critical: 'Critical tasks',
-  high: 'High priority tasks',
-  all: 'All task due dates',
-  overdue: 'Overdue tasks',
+  events: 'Calendar Events',
+  critical: 'Critical Tasks',
+  high: 'High Priority Tasks',
+  all: 'All Task Due Dates',
+  overdue: 'Overdue Tasks',
 };
 
 const SHOW_HINTS: Record<CalShow, string> = {

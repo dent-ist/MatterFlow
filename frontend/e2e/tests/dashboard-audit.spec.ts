@@ -34,7 +34,7 @@ test.describe('Dashboard actions and click-through', () => {
   /** Chips of the filters that have no column in the grid (the filter row shows the others). */
   const chips = (page: Page) => page.getByRole('list', { name: 'Active filters' });
   /**
-   * Since #221 a link that matches a quick view presses it, and a pressed view hides the chips of the filters it owns (so there is no "Overdue only"
+   * Since #221 a link that matches a quick view presses it, and a pressed view hides the chips of the filters it owns (so there is no "Overdue Only"
    * chip). The view is a button in the strip, or the More button when the strip is narrow; its name carries the count ("Overdue, 12 tasks").
    * The list below it has the same total (the pager says "... of N"), and the address carries the filter of the Dashboard link.
    */
@@ -66,7 +66,7 @@ test.describe('Dashboard actions and click-through', () => {
       for (const [k, v] of wanted) expect(got.getAll(k), `parameter ${k}`).toContain(v);
     }
     await expect(
-      chips(page).getByText(label === 'ASAP' ? 'ASAP only' : 'Overdue only'),
+      chips(page).getByText(label === 'ASAP' ? 'ASAP Only' : 'Overdue Only'),
     ).toHaveCount(0);
   }
 

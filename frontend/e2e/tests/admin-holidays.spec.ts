@@ -24,13 +24,13 @@ test.describe('Settings > Holidays', () => {
     await expect(page.locator('[data-calendar]', { hasText: name })).toBeVisible();
 
     await page.locator('[data-add-holiday]').click();
-    const holiday = page.getByRole('dialog', { name: 'Add holiday' });
+    const holiday = page.getByRole('dialog', { name: 'Add Holiday' });
     await holiday.getByLabel('Name').fill('Thanksgiving');
     await holiday.getByLabel('Date Rule').selectOption('NTH_WEEKDAY');
     await holiday.getByLabel('Which').selectOption({ label: '4th' });
     await holiday.getByLabel('Weekday').selectOption({ label: 'Thursday' });
     await holiday.locator('#hd-nmonth').selectOption({ label: 'November' });
-    await holiday.getByRole('button', { name: 'Add holiday' }).click();
+    await holiday.getByRole('button', { name: 'Add Holiday' }).click();
     await expect(holiday).toBeHidden();
     const row = page.locator('[data-holiday]', { hasText: 'Thanksgiving' });
     await expect(row).toContainText('Every year, 4th Thursday of November');
@@ -56,14 +56,14 @@ test.describe('Settings > Holidays', () => {
     await expect(calendar).toBeHidden();
 
     await page.locator('[data-add-holiday]').click();
-    const holiday = page.getByRole('dialog', { name: 'Add holiday' });
+    const holiday = page.getByRole('dialog', { name: 'Add Holiday' });
     await holiday.getByLabel('Name').fill('Year-end');
     await holiday.getByLabel('Range of days').check();
     await holiday.locator('#hd-month').selectOption({ label: 'December' });
     await holiday.locator('#hd-day').fill('24');
     await holiday.locator('#hd-emonth').selectOption({ label: 'December' });
     await holiday.locator('#hd-eday').fill('26');
-    await holiday.getByRole('button', { name: 'Add holiday' }).click();
+    await holiday.getByRole('button', { name: 'Add Holiday' }).click();
     await expect(holiday).toBeHidden();
     await expect(page.locator('[data-holiday]', { hasText: 'Year-end' })).toContainText('12/24 to');
   });
@@ -174,7 +174,7 @@ test.describe('Settings > Holidays: accessibility (axe wcag2a, wcag2aa, wcag21aa
         await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
       ).toBeLessThanOrEqual(0);
       await page.locator('[data-add-holiday]').click();
-      await expect(page.getByRole('dialog', { name: 'Add holiday' })).toBeVisible();
+      await expect(page.getByRole('dialog', { name: 'Add Holiday' })).toBeVisible();
       expect(await axeViolations(page)).toEqual([]);
       await page.keyboard.press('Escape');
       await page.getByRole('tab', { name: 'Dashboard' }).click();

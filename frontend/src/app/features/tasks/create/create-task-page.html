@@ -244,7 +244,7 @@
                 [attr.aria-invalid]="fieldError('projectId') ? 'true' : null"
                 (change)="onProjectChange($event)"
               >
-                <option value="" [selected]="projectId$() === null">No project</option>
+                <option value="" [selected]="projectId$() === null">No Project</option>
                 @for (p of projects(); track p.projectId) {
                   <option [value]="p.projectId" [selected]="p.projectId === projectId$()">
                     {{ p.name }}
@@ -510,7 +510,7 @@
                       [attr.aria-invalid]="fieldError('assignedPodId') ? 'true' : null"
                       (change)="onPodChange($event)"
                     >
-                      <option value="" [selected]="podId() === null">No pod</option>
+                      <option value="" [selected]="podId() === null">No Pod</option>
                       @for (p of pods(); track p.podId) {
                         <option [value]="p.podId" [selected]="p.podId === podId()">
                           {{ p.name }}

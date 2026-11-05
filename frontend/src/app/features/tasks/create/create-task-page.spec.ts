@@ -520,7 +520,7 @@ describe('CreateTaskPage', () => {
     await type(h, '#ct-due-date', '10/30/2026');
     field(h, '#ct-due-date').dispatchEvent(new Event('blur'));
     await settle(h.fixture);
-    expect((field(h, '#ct-due-date') as HTMLInputElement).value).toBe('Oct 30, 2026');
+    expect((field(h, '#ct-due-date') as HTMLInputElement).value).toBe('10/30/2026');
 
     await submit(h);
 

@@ -30,7 +30,7 @@ const TYPE: FilterDef = {
   key: 'typeId',
   label: 'Type',
   type: 'select',
-  allLabel: 'All types',
+  allLabel: 'All Types',
   options: [{ value: '4', label: 'Document Set' }],
 };
 const NAME: FilterDef = { key: 'name', label: 'Name', column: 'name', type: 'text' };
@@ -64,8 +64,8 @@ const OVERDUE: FilterDef = {
   type: 'triState',
   options: [
     { value: '', label: 'Any' },
-    { value: 'true', label: 'Overdue only' },
-    { value: 'false', label: 'Not overdue' },
+    { value: 'true', label: 'Overdue Only' },
+    { value: 'false', label: 'Not Overdue' },
   ],
 };
 const map = (o: Record<string, string | string[]>) => convertToParamMap(o);
@@ -189,7 +189,7 @@ describe('filter definitions', () => {
 
   describe('words', () => {
     it('adds the leading "all" option of a select once', () => {
-      expect(selectOptions(TYPE).map((o) => o.label)).toEqual(['All types', 'Document Set']);
+      expect(selectOptions(TYPE).map((o) => o.label)).toEqual(['All Types', 'Document Set']);
       expect(selectOptions(STATUS)).toHaveLength(3);
     });
 
@@ -202,14 +202,14 @@ describe('filter definitions', () => {
         presets: ['today', 'tomorrow', 'next7', 'thisWeek', 'nextWeek', 'thisMonth'],
       };
       const wed = { year: 2026, month: 10, day: 21 };
-      // Next 7 days on a Wednesday: Wed to next Tue.
+      // Next 7 Days on a Wednesday: Wed to next Tue.
       const next7 = { from: '2026-10-21', to: '2026-10-27' };
-      expect(buildChips(due, next7, false, wed)[0].label).toBe('Due: Next 7 days');
+      expect(buildChips(due, next7, false, wed)[0].label).toBe('Due: Next 7 Days');
       expect(buildChips(due, { from: '2026-10-21', to: '2026-10-21' }, false, wed)[0].label).toBe(
         'Due: Today',
       );
       expect(buildChips(due, { from: '2026-10-19', to: '2026-10-25' }, false, wed)[0].label).toBe(
-        'Due: This week',
+        'Due: This Week',
       );
       // A custom range, an open-ended range, and no calendar day all keep the dates.
       expect(buildChips(due, { from: '2026-10-21', to: '2026-10-28' }, false, wed)[0].label).toBe(
@@ -228,7 +228,7 @@ describe('filter definitions', () => {
       expect(
         buildChips(created, { from: '2026-10-15', to: '2026-10-21' }, false, wed)[0].label,
       ).toBe('Created: Last 7 days');
-      expect(printText(due, next7, wed)).toBe('Due Next 7 days');
+      expect(printText(due, next7, wed)).toBe('Due Next 7 Days');
     });
 
     it('makes one chip per chosen value, named for the filter, with the value left after removing it', () => {
@@ -258,7 +258,7 @@ describe('filter definitions', () => {
       expect(rangeText(DUE, { from: '2026-10-01', to: '' })).toBe('from 10/01/2026');
       expect(rangeText(DUE, { from: '', to: '2026-10-16' })).toBe('until 10/16/2026');
       expect(rangeText(AGE, { from: '3', to: '' })).toBe('3 or more');
-      expect(valueText(OVERDUE, 'true')).toBe('Overdue only');
+      expect(valueText(OVERDUE, 'true')).toBe('Overdue Only');
     });
 
     it('prints "Status Active"-style text for the print line', () => {

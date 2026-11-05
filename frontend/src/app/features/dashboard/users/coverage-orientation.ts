@@ -33,7 +33,7 @@ export class CoverageOrientation {
   readonly valueChange = output<Orientation>();
 
   protected readonly orientations: { key: Orientation; label: string }[] = [
-    { key: 'type', label: 'By task type' },
+    { key: 'type', label: 'By Task Type' },
     { key: 'matrix', label: 'Matrix' },
   ];
 }

@@ -140,7 +140,7 @@ export function bulkWarning(code: string): string {
                   data-bulk-pod
                   (change)="pod.set($any($event.target).value)"
                 >
-                  <option value="" [selected]="pod() === ''">Keep each task’s pod</option>
+                  <option value="" [selected]="pod() === ''">Keep Each Task’s Pod</option>
                   @for (p of pods(); track p.podId) {
                     <option [value]="p.podId" [selected]="pod() === '' + p.podId">
                       {{ p.name }}

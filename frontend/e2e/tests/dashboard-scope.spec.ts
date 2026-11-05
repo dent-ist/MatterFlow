@@ -9,8 +9,8 @@ import { dateInZone, FIRM_ZONE } from '../support/time';
 import { labelledDropdown } from '../support/dropdown';
 
 /**
- * Dashboard page-wide Scope (UX review 2, P1, #89): one Scope select at the right end of the tab row ("All pods", "My pods", one pod) for every
- * tab, `?pod=` in the address, remembered per user, "My pods" by default for a member of at least one pod and "All pods" for everyone else
+ * Dashboard page-wide Scope (UX review 2, P1, #89): one Scope select at the right end of the tab row ("All Pods", "My Pods", one pod) for every
+ * tab, `?pod=` in the address, remembered per user, "My Pods" by default for a member of at least one pod and "All Pods" for everyone else
  * (membership, not role names). The scope is the task's Pod field, so every scoped number equals the Task Queue count behind its link.
  *
  * The database is shared, so the scenario owns three pods (A, B, C) and the people in them: the lead is in A and B, the peer in A, the
@@ -142,7 +142,7 @@ test.describe('Dashboard Scope', () => {
     await page.goto('/dashboard');
     await shown(page);
     await expect(scopeSelect(page)).toHaveAttribute('data-value', 'mine');
-    await expect(scopeSelect(page)).toContainText('My pods');
+    await expect(scopeSelect(page)).toContainText('My Pods');
     // The default is not written to the address.
     expect(new URL(page.url()).searchParams.has('pod')).toBe(false);
     await expect(
@@ -166,7 +166,7 @@ test.describe('Dashboard Scope', () => {
     await dir.goto('/dashboard');
     await shown(dir);
     await expect(scopeSelect(dir)).toHaveAttribute('data-value', 'all');
-    await expect(scopeSelect(dir)).toContainText('All pods');
+    await expect(scopeSelect(dir)).toContainText('All Pods');
     expect(await tileValue(dir, 'Open')).toBeGreaterThanOrEqual(8);
   });
 
@@ -177,8 +177,8 @@ test.describe('Dashboard Scope', () => {
     await lead.goto('/dashboard');
     await shown(lead);
     expect(await scopeSelect(lead).optionTexts()).toEqual([
-      'All pods',
-      'My pods',
+      'All Pods',
+      'My Pods',
       `Scope A ${s.tag}`,
       `Scope B ${s.tag}`,
     ]);
@@ -186,17 +186,17 @@ test.describe('Dashboard Scope', () => {
     await dir.goto('/dashboard');
     await shown(dir);
     const labels = (await scopeSelect(dir).optionTexts()).map((l) => l.trim());
-    expect(labels[0]).toBe('All pods');
+    expect(labels[0]).toBe('All Pods');
     expect(labels).toEqual(
       expect.arrayContaining([`Scope A ${s.tag}`, `Scope B ${s.tag}`, `Scope C ${s.tag}`]),
     );
-    expect(labels).not.toContain('My pods');
-    // A person in no pod has no "My pods"; the loner has the lead's rights but no pod.
+    expect(labels).not.toContain('My Pods');
+    // A person in no pod has no "My Pods"; the loner has the lead's rights but no pod.
     const alone = await asUser(s.loner.username);
     await alone.goto('/dashboard');
     await shown(alone);
     await expect(scopeSelect(alone)).toHaveAttribute('data-value', 'all');
-    expect(await scopeSelect(alone).optionTexts()).toEqual(['All pods']);
+    expect(await scopeSelect(alone).optionTexts()).toEqual(['All Pods']);
   });
 
   test('a shared link carries the scope to every tab and survives a reload; a tab change keeps it', async ({

@@ -122,7 +122,7 @@ test.describe('pf5-phone-dot: the out-of-office dot on the phone icon (#578)', (
     await menuButton(me).click();
     await me.getByRole('menuitem', { name: 'Set Out of Office' }).click();
     const dialog = me.getByRole('dialog', { name: 'Set out of office' });
-    await dialog.getByRole('button', { name: 'Rest of today' }).click();
+    await dialog.getByRole('button', { name: 'Rest of Today' }).click();
     await dialog.getByRole('button', { name: 'Set out of office' }).click();
     await expect(dialog).toHaveCount(0);
     const dot = me.locator('[data-ooo-dot]');

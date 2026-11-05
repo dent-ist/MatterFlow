@@ -24,7 +24,7 @@ let nextId = 0;
 export const SEARCH_ABOVE = 8;
 
 /**
- * The "Compare task types" list of the Trends chart, which is also its legend (`mf-trend-legend`): the "All task types" line, one checkbox
+ * The "Compare task types" list of the Trends chart, which is also its legend (`mf-trend-legend`): the "All Task Types" line, one checkbox
  * per task type with its icon, name and total for the period (of the measure of panel 1), Select all and Clear. The list is never disabled:
  * while panel 1 shows its two-line measure a one-line hint says that picking a type switches it to Created. The measure itself is chosen
  * with the segmented control above each panel. Every row has a sample of its line (colour, dash and marker) so colour is never the only cue.
@@ -88,7 +88,7 @@ export const SEARCH_ABOVE = 8;
               @if (!twoLine() && showAll()) {
                 <mf-trend-sample [style]="allStyle" />
               }
-              <span class="name">All task types</span>
+              <span class="name">All Task Types</span>
               @if (allHidden()) {
                 <span
                   class="retired"
@@ -400,7 +400,7 @@ export class TrendLegend {
   protected readonly twoLine = computed(() => this.choice().metric === 'both');
   protected readonly measure = computed(() => totalMeasure(this.choice()));
   protected readonly showAll = computed(() => allVisible(this.choice()));
-  /** "All task types" is off only because task types are compared (the automatic rule). */
+  /** "All Task Types" is off only because task types are compared (the automatic rule). */
   protected readonly allHidden = computed(
     () => this.choice().all === 'auto' && this.choice().types.length > 0,
   );
@@ -425,7 +425,7 @@ export class TrendLegend {
     return {
       count: this.sum(metric),
       query: metric === 'created' ? d.createdQuery : d.completedQuery,
-      label: 'All task types',
+      label: 'All Task Types',
     };
   }
 

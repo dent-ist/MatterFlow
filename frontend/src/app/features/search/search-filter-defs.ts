@@ -34,10 +34,10 @@ export const FILTER_KEYS: readonly FilterKind[] = [
 export const FILTER_LABELS: Readonly<Record<FilterKind, string>> = {
   client: 'Client',
   matter: 'Matter',
-  assetType: 'Asset type',
+  assetType: 'Asset Type',
   active: 'Status',
-  sensitive: 'Sensitive matter',
-  status: 'Task status',
+  sensitive: 'Sensitive Matter',
+  status: 'Task Status',
   requestor: 'Requestor',
 };
 
@@ -51,8 +51,8 @@ export const ACTIVE_OPTIONS: readonly { value: Tri; label: string }[] = [
 
 export const SENSITIVE_OPTIONS: readonly { value: Tri; label: string }[] = [
   { value: 'any', label: 'Any' },
-  { value: 'true', label: 'Sensitive only' },
-  { value: 'false', label: 'Not sensitive' },
+  { value: 'true', label: 'Sensitive Only' },
+  { value: 'false', label: 'Not Sensitive' },
 ];
 
 export const STATUS_CODES = Object.keys(DEFAULT_STATUS_LABELS) as StatusCode[];

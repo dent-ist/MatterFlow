@@ -471,7 +471,7 @@ describe('TaskTypesPage', () => {
     );
     expect(badge.querySelector('.badge')!.getAttribute('aria-describedby')).toBe(why.id);
     expect(row('Collection').querySelector('.chip')).toBeNull();
-    expect(row('Collection').querySelector('[data-form-status]')!.textContent).toContain('No form');
+    expect(row('Collection').querySelector('[data-form-status]')!.textContent).toContain('No Form');
     // No workflow at all: "No workflow", muted (not a warning), and a plain 0.
     const none = row('Collection').querySelector('[data-default-workflow] .tt-clip')!;
     expect(none.textContent!.trim()).toBe('No workflow');

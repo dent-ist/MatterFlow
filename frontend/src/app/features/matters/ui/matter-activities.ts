@@ -27,7 +27,7 @@ import { shortAccountName } from '../../../shared/ui/person-name';
  * stays right. Production, Spec and Note events come from the Productions and Notes modules (object types Production, ProductionSpec and Note).
  */
 export const ACTIVITY_KINDS: readonly { value: string; label: string; types: string }[] = [
-  { value: '', label: 'All kinds', types: '' },
+  { value: '', label: 'All Kinds', types: '' },
   { value: 'matter', label: 'Matter', types: 'Matter' },
   {
     value: 'tasks',

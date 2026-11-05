@@ -224,7 +224,7 @@ describe('ParametersEditor', () => {
     ]);
     expect(
       [...el.querySelectorAll('#param-0-kind option')].map((o) => o.textContent!.trim()),
-    ).toEqual(['Matter', 'Client', 'User', 'Pod', 'Role', 'Task type']);
+    ).toEqual(['Matter', 'Client', 'User', 'Pod', 'Role', 'Task Type']);
     expect(el.querySelector('[data-parameter="N"] [data-number-settings]')).not.toBeNull();
     expect(
       [...el.querySelectorAll('#param-2-keywords option')].map((o) => o.getAttribute('value')),

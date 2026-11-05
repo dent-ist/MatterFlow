@@ -61,7 +61,7 @@ const PAGE_SIZE = 25;
             [attr.aria-disabled]="unreadCount() === 0 || marking() ? true : null"
             (click)="markRead()"
           >
-            <i class="pi pi-check" aria-hidden="true"></i> Mark all as read
+            <i class="pi pi-check" aria-hidden="true"></i> Mark All as Read
           </button>
         </div>
       </div>

@@ -40,10 +40,10 @@ export const PARAM_TYPES: readonly { value: ParamType; label: string }[] = [
   { value: 'text', label: 'Text' },
   { value: 'number', label: 'Number' },
   { value: 'date', label: 'Date' },
-  { value: 'dateRange', label: 'Date range' },
-  { value: 'single', label: 'Single choice' },
-  { value: 'multi', label: 'Multiple choice' },
-  { value: 'yesNo', label: 'Yes / no' },
+  { value: 'dateRange', label: 'Date Range' },
+  { value: 'single', label: 'Single Choice' },
+  { value: 'multi', label: 'Multiple Choice' },
+  { value: 'yesNo', label: 'Yes / No' },
   { value: 'lookup', label: 'Lookup (matter, client, user...)' },
 ];
 
@@ -53,7 +53,7 @@ export const LOOKUP_KINDS: readonly { value: LookupKind; label: string }[] = [
   { value: 'user', label: 'User' },
   { value: 'pod', label: 'Pod' },
   { value: 'role', label: 'Role' },
-  { value: 'taskType', label: 'Task type' },
+  { value: 'taskType', label: 'Task Type' },
 ];
 
 export const TYPE_LABEL: Readonly<Record<ParamType, string>> = Object.fromEntries(
@@ -253,26 +253,26 @@ export function defaultKeywords(def: ParamDef): readonly { value: string; label:
     case 'date':
       return [
         { value: 'today', label: 'Today' },
-        { value: 'startOfMonth', label: 'Start of this month' },
-        { value: 'endOfMonth', label: 'End of this month' },
-        { value: 'startOfYear', label: 'Start of this year' },
-        { value: 'endOfYear', label: 'End of this year' },
-        { value: 'today-30', label: '30 days ago' },
+        { value: 'startOfMonth', label: 'Start of This Month' },
+        { value: 'endOfMonth', label: 'End of This Month' },
+        { value: 'startOfYear', label: 'Start of This Year' },
+        { value: 'endOfYear', label: 'End of This Year' },
+        { value: 'today-30', label: '30 Days Ago' },
       ];
     case 'dateRange':
       return [
-        { value: 'thisMonth', label: 'This month' },
-        { value: 'lastMonth', label: 'Last month' },
-        { value: 'last30Days', label: 'Last 30 days' },
-        { value: 'thisYear', label: 'This year' },
+        { value: 'thisMonth', label: 'This Month' },
+        { value: 'lastMonth', label: 'Last Month' },
+        { value: 'last30Days', label: 'Last 30 Days' },
+        { value: 'thisYear', label: 'This Year' },
       ];
     case 'multi':
-      return def.valueType === 'int' ? [{ value: 'myPods', label: 'My pods' }] : [];
+      return def.valueType === 'int' ? [{ value: 'myPods', label: 'My Pods' }] : [];
     case 'lookup':
       return def.lookupKind === 'pod' && def.lookupMulti
-        ? [{ value: 'myPods', label: 'My pods' }]
+        ? [{ value: 'myPods', label: 'My Pods' }]
         : def.lookupKind === 'pod'
-          ? [{ value: 'myPod', label: 'My primary pod' }]
+          ? [{ value: 'myPod', label: 'My Primary Pod' }]
           : def.lookupKind === 'user'
             ? [{ value: 'me', label: 'Me' }]
             : [];

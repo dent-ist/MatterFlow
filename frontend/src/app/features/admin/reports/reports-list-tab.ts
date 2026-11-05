@@ -278,7 +278,7 @@ export class ReportsListTab extends LocalListPage<ReportListItemResponse> {
         label: 'Category',
         column: 'category',
         type: 'select',
-        allLabel: 'All categories',
+        allLabel: 'All Categories',
         options: () =>
           this.categories().map((c) => ({
             value: String(c.categoryId),

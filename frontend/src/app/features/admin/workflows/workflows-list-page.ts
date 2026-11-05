@@ -517,7 +517,7 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
       statusDef(),
       {
         key: 'taskType',
-        label: 'Task type',
+        label: 'Task Type',
         type: 'text',
         noControl: true,
         normalize: idOnly,

@@ -66,12 +66,12 @@ export class DashScope {
 
   /** True once the choices are known (or could not be read): nothing on the page is read before, so the first read already has the right scope. */
   readonly ready = computed(() => this.state() === 'ready' || this.state() === 'failed');
-  /** The person is a member of at least one active Pod ("My pods" is offered). */
+  /** The person is a member of at least one active Pod ("My Pods" is offered). */
   readonly inPod = computed(() => this.hasPods());
   readonly defaultScope = computed(() => (this.hasPods() ? this.defaultFromServer() : SCOPE_ALL));
   readonly options = computed<ScopeOption[]>(() => {
-    const out: ScopeOption[] = [{ value: SCOPE_ALL, label: 'All pods', group: 'general' }];
-    if (this.hasPods()) out.push({ value: SCOPE_MINE, label: 'My pods', group: 'general' });
+    const out: ScopeOption[] = [{ value: SCOPE_ALL, label: 'All Pods', group: 'general' }];
+    if (this.hasPods()) out.push({ value: SCOPE_MINE, label: 'My Pods', group: 'general' });
     for (const p of this.pods()) {
       out.push({ value: String(p.podId), label: p.name, group: p.isMine ? 'mine' : 'other' });
     }
@@ -104,7 +104,7 @@ export class DashScope {
   /** `all` is in effect (no Pod filter). */
   readonly isAll = computed(() => this.scope() === SCOPE_ALL);
 
-  /** The text of the control for the scope in effect ("All pods", "My pods", the Pod's name). */
+  /** The text of the control for the scope in effect ("All Pods", "My Pods", the Pod's name). */
   readonly label = computed(() => this.labelOf(this.scope()));
 
   labelOf(value: string): string {

@@ -184,11 +184,11 @@ export class MatterManagersDialog {
   protected readonly failed = signal<ManagersSaved['failed']>([]);
   protected readonly savedCount = signal(0);
 
-  /** The choices of both pickers: a leading "Leave unchanged" (several matters) or "None", then every eligible person, then people who are on the matter but no longer eligible. */
+  /** The choices of both pickers: a leading "Leave Unchanged" (several matters) or "None", then every eligible person, then people who are on the matter but no longer eligible. */
   protected readonly options = computed(() => {
     const lead = this.bulk()
       ? [
-          { value: KEEP, label: 'Leave unchanged' },
+          { value: KEEP, label: 'Leave Unchanged' },
           { value: NONE, label: 'No PM' },
         ]
       : [{ value: NONE, label: 'None' }];

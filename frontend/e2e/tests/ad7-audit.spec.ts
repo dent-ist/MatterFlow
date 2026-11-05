@@ -282,7 +282,7 @@ test.describe('Friendly filters and quick views (#650, #654)', () => {
     const objects = filterDropdown(page, 'Object Type');
     expect(await objects.optionTexts()).toContain('Asset Type');
     expect(await objects.optionValues()).toContain('AssetType');
-    expect((await objects.optionTexts()).filter((t) => t === 'Configuration changes')).toHaveLength(
+    expect((await objects.optionTexts()).filter((t) => t === 'Configuration Changes')).toHaveLength(
       1,
     );
     await events.selectOption('TASK_CREATED');

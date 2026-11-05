@@ -149,7 +149,7 @@ test.describe('Users tab: capacity, population and toolbar', () => {
       `${board.summary.unassignedTasks} unassigned task`,
     );
 
-    // Choosing a state filters, and "All states" clears.
+    // Choosing a state filters, and "All States" clears.
     await pickUserStates(page, 'heavy');
     await expect(page).toHaveURL(/ustate=heavy/);
     await expect(page.locator('[data-user-card]')).toHaveCount(lv.heavy);

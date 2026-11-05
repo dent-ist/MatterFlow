@@ -89,7 +89,7 @@ test.describe('My Work: New', () => {
     await expect(rows.filter({ hasText: 'Fresh' })).toHaveCount(3);
     await expect(page.locator('td[data-col="ref"] [data-new-dot]')).toHaveCount(3);
     await expect(item).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('[data-chip="newSince"]')).toContainText('New since your last visit');
+    await expect(page.locator('[data-chip="newSince"]')).toContainText('New Since Your Last Visit');
     await shot(page, 'new-filter-1366x768');
 
     // Open a task and go Back: still New 3 and the same three rows (the visit did not move).

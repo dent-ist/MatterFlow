@@ -54,7 +54,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             <div class="ha__side">
               <div class="ha__sh">
                 <h2 class="ha__h">
-                  Holiday calendars <span class="ha__n">{{ calendars().length }}</span>
+                  Holiday Calendars <span class="ha__n">{{ calendars().length }}</span>
                 </h2>
                 <button
                   type="button"
@@ -71,7 +71,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                   one for a country or a closure, then add its days.
                 </p>
               }
-              <ul class="ha__cals" aria-label="Holiday calendars">
+              <ul class="ha__cals" aria-label="Holiday Calendars">
                 @for (c of calendars(); track c.calendarId) {
                   <li>
                     <button
@@ -109,7 +109,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                       [value]="firm() ?? ''"
                       (change)="setFirm($any($event.target).value)"
                     >
-                      <option value="" [selected]="firm() === null">No default</option>
+                      <option value="" [selected]="firm() === null">No Default</option>
                       @for (c of ownCalendars(); track c.calendarId) {
                         <option [value]="c.calendarId" [selected]="firm() === c.calendarId">
                           {{ c.name }}
@@ -130,7 +130,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                           (change)="setPod(p.podId, $any($event.target).value)"
                         >
                           <option value="" [selected]="podCal(p.podId) === null">
-                            Firm default
+                            Firm Default
                           </option>
                           @for (c of ownCalendars(); track c.calendarId) {
                             <option
@@ -187,7 +187,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                       data-edit-calendar
                       (click)="editCalendar(c)"
                     >
-                      <i class="pi pi-pencil" aria-hidden="true"></i> Edit calendar
+                      <i class="pi pi-pencil" aria-hidden="true"></i> Edit Calendar
                     </button>
                     <button
                       type="button"
@@ -235,7 +235,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                     </button>
                   </div>
                   <button type="button" class="mf-btn" data-import (click)="importOpen.set(true)">
-                    <i class="pi pi-upload" aria-hidden="true"></i> Import / paste list
+                    <i class="pi pi-upload" aria-hidden="true"></i> Import / Paste List
                   </button>
                   <button
                     type="button"
@@ -243,7 +243,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                     data-add-holiday
                     (click)="addHoliday()"
                   >
-                    <i class="pi pi-plus" aria-hidden="true"></i> Add holiday
+                    <i class="pi pi-plus" aria-hidden="true"></i> Add Holiday
                   </button>
                 </div>
                 @if (listState() === 'loading') {

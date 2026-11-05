@@ -189,11 +189,11 @@ test.describe('Swimlane board (WP9a)', () => {
     await expect(menu.getByRole('menuitemradio')).toHaveText([
       /Comfortable/,
       /Compact/,
-      /7 days/,
+      /7 Days/,
       /14 days/,
-      /30 days/,
+      /30 Days/,
     ]);
-    await expect(menu.getByRole('menuitemcheckbox', { name: 'Only mine' })).toBeVisible();
+    await expect(menu.getByRole('menuitemcheckbox', { name: 'Only Mine' })).toBeVisible();
     // Not grouped: no Expand all.
     await expect(menu.getByRole('menuitem', { name: 'Expand All' })).toHaveCount(0);
     await shot(page, '05-more-menu-1366');
@@ -234,7 +234,7 @@ test.describe('Swimlane board (WP9a)', () => {
     await expect(trigger).toBeFocused();
     await expect(page.locator('[data-active-settings]')).toContainText('Done in 14 days');
     await page.goto(base);
-    await menuPick(page, 'menuitemradio', '7 days');
+    await menuPick(page, 'menuitemradio', '7 Days');
 
     // Keyboard only: search, Group, Sort, Filters, "..." in that order, then the first lane.
     await labelledDropdown(page, 'Group').focus();

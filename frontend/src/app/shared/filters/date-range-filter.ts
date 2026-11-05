@@ -41,7 +41,7 @@ export function shortRange(r: RangeValue, thisYear: number): string {
 }
 
 /**
- * Date range column filter: a button ("Any date" / "10/01 to 10/16") opening a popover with From and To (`mf-date-input`, applies when
+ * Date range column filter: a button ("Any Date" / "10/01 to 10/16") opening a popover with From and To (`mf-date-input`, applies when
  * the user leaves the field, presses Enter or picks from the calendar) and presets (Today, This week with weeks starting on Monday, Last
  * 7 / 30 days, This month, ...) worked out in the viewer's time zone. A preset fills both dates. A range whose From is after To shows an
  * error and is not applied. In the sheet (`inline`) the same group shows in place.
@@ -163,7 +163,7 @@ export class ColumnDateRangeFilter {
   readonly value = input<RangeValue>({ from: '', to: '' });
   /** Preset keys to offer (see DATE_PRESETS). */
   readonly presets = input<readonly string[]>(DEFAULT_DATE_PRESETS);
-  readonly emptyLabel = input('Any date');
+  readonly emptyLabel = input('Any Date');
   readonly inline = input(false);
   readonly disabled = input(false);
   /** The valid range, when the user changed it. */

@@ -32,6 +32,11 @@ const MINOR = new Set([
 /** Strings that are allowed to differ (the reason in the comment). */
 const ALLOWED = new Set<string>([
   'Rows per page', // D-20: the pager label is read, not clicked
+  'Choose the unit', // a prompt row of a dropdown (placeholder wording, sentence case)
+  'Choose a unit', // same
+  'Choose a client', // same
+  'Choose a matter', // same
+  'Skippable - comment', // a status badge, not an option; the badge sweep (#1130) owns it
 ]);
 
 export function isTitleCase(text: string): boolean {
@@ -66,6 +71,10 @@ const CHANNELS: { name: string; pattern: RegExp }[] = [
   { name: 'dialog title', pattern: /<mf-form-dialog\b[^>]*?\stitle="([^"{}]+)"/g },
   { name: 'dialog button', pattern: /<mf-form-dialog\b[^>]*?\sprimaryLabel="([^"{}]+)"/g },
   { name: 'button text', pattern: /<button\b[^>]*>\s*([A-Za-z][^<>{}\n]*?)\s*<\/button>/g },
+  {
+    name: 'icon button text',
+    pattern: /<button\b[^>]*>\s*<i\b[^>]*><\/i>\s*([A-Za-z][^<>{}\n]*?)\s*<\/button>/g,
+  },
   { name: 'column heading', pattern: /<th\b[^>]*>\s*([A-Za-z][^<>{}\n]*?)\s*<\/th>/g },
 ];
 
@@ -90,6 +99,34 @@ describe('capitalisation of what is clicked or named (D-20, #1149)', () => {
           if (label.length > 45 || /[.?!:]$/.test(label) || ALLOWED.has(label)) continue;
           if (!isTitleCase(label)) {
             offenders.push(`${relative(APP, file).replace(/\\/g, '/')}: ${name} "${label}"`);
+          }
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  // Spec 15.1 (#1222): the fixed words of a dropdown option and of a filter's "all" value are Title Case ("All Pods", "Any Date", "Last 30 Days").
+  // Names of people, pods, matters and admin-edited labels come from data and are not in the source as literals.
+  const OPTION_PATTERNS: RegExp[] = [
+    /\{\s*(?:key|value|id)\s*:\s*[^,{}]+,\s*label:\s*'([^']+)'/g,
+    /\b(?:allLabel|emptyLabel)\s*:\s*'([^']+)'/g,
+    /\b(?:allLabel|emptyLabel)="([^"]+)"/g,
+    /\blabel: '([^']+)', (?:group|heading|count|icon|tone|sub|dot|lock|typeChip|stateIcon)/g,
+    /<option\b[^>]*>\s*([^<>{}\n]{2,45}?)\s*<\/option>/g,
+  ];
+
+  it('every fixed dropdown option label and every "all" value is Title Case (spec 15.1, #1222)', () => {
+    const offenders: string[] = [];
+    for (const file of sources(APP)) {
+      const text = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+      for (const pattern of OPTION_PATTERNS) {
+        for (const match of text.matchAll(pattern)) {
+          const label = match[1].trim();
+          if (label.length > 45 || /[.?!:]$/.test(label) || ALLOWED.has(label)) continue;
+          if (/^(Choose|Select) /.test(label) || label.includes(': ')) continue; // a prompt row, or a rule written as a sentence
+          if (!isTitleCase(label)) {
+            offenders.push(`${relative(APP, file).replace(/\\/g, '/')}: option "${label}"`);
           }
         }
       }

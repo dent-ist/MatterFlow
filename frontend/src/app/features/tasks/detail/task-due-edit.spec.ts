@@ -131,7 +131,7 @@ describe('Task page: inline Due date (#664)', () => {
     expect(body.priorityId).toBeUndefined();
     expect(body.formValues).toBeUndefined();
     expect(pop(m.el)).toBeNull();
-    expect(q(m.el, '[data-due]')!.textContent).toContain('Oct 24');
+    expect(q(m.el, '[data-due]')!.textContent).toContain('10/24');
     expect(q(m.el, '[data-due]')!.textContent).not.toContain('ASAP');
     expect(q(m.el, '[data-due-live]')!.textContent).toBe('Due date set to 10/24 5:00 PM');
     expect(document.activeElement).toBe(trigger(m.el));
@@ -147,7 +147,7 @@ describe('Task page: inline Due date (#664)', () => {
     const m = await mountTaskPage(task, PERMS, { tasks: { updateTask } });
     await open(m);
     expect((q(m.el, '[data-due-popover] mf-date-input input') as HTMLInputElement).value).toContain(
-      'Oct 24, 2026',
+      '10/24/2026',
     );
     await click(m.fixture, q(m.el, '[data-due-clear]'));
     await tick(m);

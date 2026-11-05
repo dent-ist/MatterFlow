@@ -18,10 +18,10 @@ import { ADMIN_FIELD_LIMITS } from '../shared/field-limits';
 
 /** Color choices offered in the picker; `custom` reveals the color input. */
 export const PRIORITY_COLOR_TOKENS = [
-  { value: 'critical', label: 'Critical red' },
-  { value: 'high', label: 'High amber' },
-  { value: 'normal', label: 'Normal gray' },
-  { value: 'low', label: 'Low gray' },
+  { value: 'critical', label: 'Critical Red' },
+  { value: 'high', label: 'High Amber' },
+  { value: 'normal', label: 'Normal Gray' },
+  { value: 'low', label: 'Low Gray' },
   { value: 'neutral', label: 'Neutral' },
 ] as const;
 
@@ -104,7 +104,7 @@ const DEFAULT_CUSTOM_COLOUR = '#336699'; // theme-colour-ok: starting value of a
             @for (c of tokens; track c.value) {
               <option [value]="c.value" [selected]="choice() === c.value">{{ c.label }}</option>
             }
-            <option value="custom" [selected]="choice() === 'custom'">Custom color</option>
+            <option value="custom" [selected]="choice() === 'custom'">Custom Color</option>
           </select>
           @if (choice() === 'custom') {
             <input

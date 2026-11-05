@@ -20,7 +20,7 @@ const ATTENTION = [
   { key: 'risk', label: 'At Risk', tone: 'risk' },
   { key: 'unassigned', label: 'Unassigned', tone: '' },
   { key: 'critical', label: 'Critical', tone: '' },
-  { key: 'due7', label: 'Due in 7 days', tone: '' },
+  { key: 'due7', label: 'Due in 7 Days', tone: '' },
 ] as const;
 
 /**

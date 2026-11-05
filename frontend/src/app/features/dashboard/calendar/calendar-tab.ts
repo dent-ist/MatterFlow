@@ -601,7 +601,7 @@ export class DashCalendarTab {
 
   protected readonly canManage = computed(() => this.auth.has('User.ManageAvailability'));
   protected readonly roleItems = computed<DropdownItem[]>(() => [
-    { value: ALL_ROLES, label: 'All roles' },
+    { value: ALL_ROLES, label: 'All Roles' },
     ...(this.data()?.roles ?? []).map((r) => ({ value: String(r.roleId), label: r.name })),
   ]);
   protected readonly roleValue = computed(() =>

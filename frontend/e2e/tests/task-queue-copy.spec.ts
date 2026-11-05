@@ -49,10 +49,10 @@ test.describe('Task Queue copy', () => {
     await queue.quickView('Overdue').click();
     // The pressed view owns its filter: no chip repeats it (WP16, #221).
     await expect(page.locator('[data-filter-chips] [data-chip]')).toHaveCount(0);
-    // The same filter without the view (one status only) reads "Overdue only", never "Overdue: Overdue only".
+    // The same filter without the view (one status only) reads "Overdue Only", never "Overdue: Overdue only".
     await page.goto('/tasks?overdue=true&status=NEW');
     const chips = page.locator('[data-filter-chips] [data-chip]');
-    await expect(chips).toContainText(['Overdue only']);
+    await expect(chips).toContainText(['Overdue Only']);
     await expect(page.locator('[data-filter-chips]')).not.toContainText('Overdue: Overdue only');
     await queue.open();
     await queue.quickView('Overdue').click();
@@ -71,8 +71,8 @@ test.describe('Task Queue copy', () => {
     // The drill-through chips (Dashboard Due soon) read in plain words too.
     await page.goto('/tasks?asap=false&overdue=false&status=NEW');
     const chipsList = page.locator('[data-filter-chips]');
-    await expect(chipsList).toContainText('Has a due date');
-    await expect(chipsList).toContainText('Not overdue');
+    await expect(chipsList).toContainText('Has a Due Date');
+    await expect(chipsList).toContainText('Not Overdue');
     await expect(chipsList).not.toContainText('ASAP:');
     await expect(chipsList).not.toContainText('Overdue:');
   });

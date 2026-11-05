@@ -204,9 +204,9 @@ export type TypeRowOrder = (typeof TYPE_ROW_ORDERS)[number];
 export const isTypeRowOrder = (v: unknown): v is TypeRowOrder =>
   TYPE_ROW_ORDERS.includes(v as TypeRowOrder);
 export const TYPE_ROW_ORDER_LABELS: Record<TypeRowOrder, string> = {
-  fewest: 'Fewest people first',
-  name: 'Type name',
-  completed: 'Most completed',
+  fewest: 'Fewest People First',
+  name: 'Type Name',
+  completed: 'Most Completed',
 };
 
 /** How many people handled a task type: nobody (informational), exactly one (amber) or two or more (nothing to say). */

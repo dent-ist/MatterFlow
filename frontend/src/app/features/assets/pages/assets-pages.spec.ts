@@ -696,8 +696,8 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       );
       for (const name of ['Name', 'Type', 'Matter', 'External Reference', 'Disposition'])
         expect(control(name), name).not.toBeNull();
-      // Type is a multi-select: a button that says "All types", the choices are in its panel.
-      expect(control<HTMLButtonElement>('Type').textContent).toContain('All types');
+      // Type is a multi-select: a button that says "All Types", the choices are in its panel.
+      expect(control<HTMLButtonElement>('Type').textContent).toContain('All Types');
       control<HTMLButtonElement>('Type').click();
       await settle(fixture);
       expect(

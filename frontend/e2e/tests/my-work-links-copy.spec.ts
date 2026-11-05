@@ -294,19 +294,19 @@ test.describe('My Work links, filters and copy', () => {
       .click();
     await expect(page).not.toHaveURL(/status=/);
 
-    // Due presets, in order, without Overdue; "Next 7 days" equals the range typed by hand.
+    // Due presets, in order, without Overdue; "Next 7 Days" equals the range typed by hand.
     await myWork.open('?view=active');
     await page.getByRole('button', { name: /^Filter by Due/ }).click();
     const presets = page.getByRole('group', { name: 'Presets' }).getByRole('button');
     await expect(presets).toHaveText([
       'Today',
       'Tomorrow',
-      'Next 7 days',
+      'Next 7 Days',
       'This Week',
-      'Next week',
-      'This month',
+      'Next Week',
+      'This Month',
     ]);
-    await presets.filter({ hasText: 'Next 7 days' }).click();
+    await presets.filter({ hasText: 'Next 7 Days' }).click();
     await expect(page).toHaveURL(new RegExp(`dueFrom=${dateInZone(FIRM_ZONE, 0)}`));
     await expect(page).toHaveURL(new RegExp(`dueTo=${dateInZone(FIRM_ZONE, 6)}`));
     await expect(page.locator(`[data-task]`).filter({ hasText: `Soon ${tag}` })).toHaveCount(1);

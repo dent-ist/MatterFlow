@@ -159,8 +159,8 @@ describe('TaskComments', () => {
     const select = q<HTMLSelectElement>('[data-order-select]');
     expect(select.getAttribute('aria-label')).toBe('Sort comments');
     expect(Array.from(select.options).map((o) => o.textContent!.trim())).toEqual([
-      'Oldest first',
-      'Newest first',
+      'Oldest First',
+      'Newest First',
     ]);
     expect(el().querySelector('button[data-order]')).toBeNull();
   });

@@ -1051,7 +1051,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
         type: 'select',
         noControl: true,
         bareChip: true,
-        options: [{ value: 'true', label: 'Mine: matters I manage' }],
+        options: [{ value: 'true', label: 'Mine: Matters I Manage' }],
         normalize: (v: string) => (v === 'true' ? 'true' : null),
       },
       status,

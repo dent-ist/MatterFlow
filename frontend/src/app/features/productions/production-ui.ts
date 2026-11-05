@@ -3,12 +3,12 @@
 export type Direction = 'OUT' | 'IN';
 
 export const DIRECTIONS: readonly { value: Direction; label: string }[] = [
-  { value: 'OUT', label: 'Produced by us' },
+  { value: 'OUT', label: 'Produced By Us' },
   { value: 'IN', label: 'Received' },
 ];
 
 export function directionLabel(direction: string): string {
-  return direction === 'IN' ? 'Received' : 'Produced by us';
+  return direction === 'IN' ? 'Received' : 'Produced By Us';
 }
 
 /** "ABC000001 to ABC000250", one number when only one is known, an empty string when none. */

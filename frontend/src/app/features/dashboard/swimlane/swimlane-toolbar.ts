@@ -157,7 +157,7 @@ export interface Option {
               (click)="pickMine()"
             >
               <i class="pi" [class.pi-check]="v.mine" aria-hidden="true"></i>
-              Only mine
+              Only Mine
             </button>
             @if (v.groupBy !== 'none') {
               <div class="sep" role="separator"></div>
@@ -265,7 +265,7 @@ export interface Option {
             [checked]="v.overdue"
             (change)="viewChange.emit({ overdue: $any($event.target).checked })"
           />
-          Overdue only
+          Overdue Only
         </label>
         <button
           type="button"
@@ -466,7 +466,7 @@ export class SwimlaneToolbar {
     const out: string[] = [];
     if (this.density() === 'compact') out.push('Compact');
     if (this.view().days !== DEFAULT_COMPLETED_DAYS) out.push(`Done in ${this.view().days} days`);
-    if (this.view().mine) out.push('Only mine');
+    if (this.view().mine) out.push('Only Mine');
     return out;
   });
   protected readonly count = computed(() => filterCount(this.view()));
@@ -484,11 +484,11 @@ export class SwimlaneToolbar {
     ...this.people().map((p) => ({ value: '' + p.id, label: p.label })),
   ]);
   protected readonly typeItems = computed<DropdownItem[]>(() => [
-    { value: '', label: 'Any type' },
+    { value: '', label: 'Any Type' },
     ...this.types().map((p) => ({ value: '' + p.id, label: p.label })),
   ]);
   protected readonly priorityItems = computed<DropdownItem[]>(() => [
-    { value: '', label: 'Any priority' },
+    { value: '', label: 'Any Priority' },
     ...this.priorities().map((p) => ({ value: '' + p.id, label: p.label })),
   ]);
 

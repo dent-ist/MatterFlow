@@ -129,13 +129,13 @@ export class UserCalendarField {
   protected readonly defaultLabel = computed(() => {
     const s = this.state();
     const name = this.own().find((c) => c.calendarId === s?.effectiveCalendarId)?.name;
-    if (s?.explicitCalendarId != null) return 'Use the default';
+    if (s?.explicitCalendarId != null) return 'Use the Default';
     if (s?.effectiveSource === 'POD') {
       return s.podName
         ? `Pod default (${s.podName}: ${name ?? 'none'})`
         : `Pod default (${name ?? 'none'})`;
     }
-    if (s?.effectiveSource === 'FIRM') return `Firm default (${name ?? 'none'})`;
+    if (s?.effectiveSource === 'FIRM') return `Firm Default (${name ?? 'none'})`;
     return 'No calendar';
   });
 

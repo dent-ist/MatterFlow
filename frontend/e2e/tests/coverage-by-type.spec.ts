@@ -8,7 +8,7 @@ import { expect, test } from '../support/fixtures';
 import { CoverageSeed, seedCoverage } from '../support/workload';
 
 /**
- * Dashboard > Users > Coverage, WP11 (UX review 2): the "By task type" orientation as the default (C1, #134), the two statements about types nobody
+ * Dashboard > Users > Coverage, WP11 (UX review 2): the "By Task Type" orientation as the default (C1, #134), the two statements about types nobody
  * handled and types handled by one person (C3, #136) and the quiet matrix (C2, #135, covered in users-tab.spec.ts). The seeded people (A: 3
  * Production and 1 Review, B: 1 Production, C: 2 Production) make Production a three-person type and Review a one-person type; every test scopes the
  * search to them with `uq=<tag>` because the database is shared. Screenshots go to E2E_SCREENSHOTS when it is set.
@@ -75,9 +75,9 @@ test.describe('By task type (C1, #134)', () => {
     await expect(page.locator('[data-summary="completed"]')).toContainText('7');
     // Neutral orders, no scores.
     expect(await (await usersFilter(page, 'Order')).optionTexts()).toEqual([
-      'Fewest people first',
-      'Type name',
-      'Most completed',
+      'Fewest People First',
+      'Type Name',
+      'Most Completed',
     ]);
     await expect(page).not.toHaveURL(/cov=/);
 

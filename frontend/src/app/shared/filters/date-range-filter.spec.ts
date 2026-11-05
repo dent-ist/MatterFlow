@@ -39,12 +39,12 @@ describe('date range column filter', () => {
   afterEach(() => TestBed.resetTestingModule());
 
   it('shows the preset name on the button when the range equals a preset, else the dates (#155)', () => {
-    // Thursday 15 Oct 2026 in Los Angeles: Next 7 days is Oct 15 to Oct 21.
+    // Thursday 15 Oct 2026 in Los Angeles: Next 7 Days is Oct 15 to Oct 21.
     create({ presets: ['today', 'next7', 'thisWeek'] });
     fixture.componentRef.setInput('value', { from: '2026-10-15', to: '2026-10-21' });
     fixture.detectChanges();
-    expect(button().textContent).toContain('Next 7 days');
-    expect(button().getAttribute('aria-label')).toBe('Filter by Due, Next 7 days');
+    expect(button().textContent).toContain('Next 7 Days');
+    expect(button().getAttribute('aria-label')).toBe('Filter by Due, Next 7 Days');
     fixture.componentRef.setInput('value', { from: '2026-10-15', to: '2026-10-22' });
     fixture.detectChanges();
     expect(button().textContent).toContain('10/15 to 10/22');
@@ -57,9 +57,9 @@ describe('date range column filter', () => {
     expect(button().textContent).toContain('From 10/15');
   });
 
-  it('is a button named for its column that says Any date or the range', () => {
+  it('is a button named for its column that says Any Date or the range', () => {
     create();
-    expect(button().getAttribute('aria-label')).toBe('Filter by Due, Any date');
+    expect(button().getAttribute('aria-label')).toBe('Filter by Due, Any Date');
     expect(button().getAttribute('aria-haspopup')).toBe('dialog');
     fixture.componentRef.setInput('value', { from: '2026-10-01', to: '2026-10-16' });
     fixture.detectChanges();
@@ -85,7 +85,7 @@ describe('date range column filter', () => {
     expect(dialog.querySelector('label[for$="-from"]')?.textContent).toContain('From');
     expect(
       Array.from(dialog.querySelectorAll('[data-preset]')).map((b) => b.textContent!.trim()),
-    ).toEqual(['Today', 'This week', 'Last 7 days', 'Last 30 days', 'This month']);
+    ).toEqual(['Today', 'This Week', 'Last 7 Days', 'Last 30 Days', 'This Month']);
   });
 
   it("fills both dates from a preset, in the viewer's zone, weeks starting on Monday", () => {
@@ -139,7 +139,7 @@ describe('date range column filter', () => {
     expect(el().querySelector('button.ft-btn')).toBeNull();
     expect(
       Array.from(el().querySelectorAll('[data-preset]')).map((b) => b.textContent!.trim()),
-    ).toEqual(['Next 7 days', 'This month']);
+    ).toEqual(['Next 7 Days', 'This Month']);
     preset('next7').click();
     expect(emitted).toEqual([{ from: '2026-10-15', to: '2026-10-21' }]);
   });

@@ -586,7 +586,7 @@ export class UsersDrawer {
   protected readonly tab = signal<'overview' | 'types' | 'trend'>('overview');
   protected readonly tabs: readonly MfTab[] = [
     { key: 'overview', label: 'Overview', icon: 'pi-home' },
-    { key: 'types', label: 'Task types', icon: 'pi-th-large' },
+    { key: 'types', label: 'Task Types', icon: 'pi-th-large' },
     { key: 'trend', label: 'Trend', icon: 'pi-chart-bar' },
   ];
   protected readonly bones = [1, 2, 3];

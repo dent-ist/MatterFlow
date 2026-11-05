@@ -54,7 +54,7 @@ const PAGE = 100;
         <p class="ptp__links">
           @if (canEditProject()) {
             <button type="button" class="mf-btn" data-edit-project (click)="edit.emit(p)">
-              <i class="pi pi-pencil" aria-hidden="true"></i> Edit project
+              <i class="pi pi-pencil" aria-hidden="true"></i> Edit Project
             </button>
           }
           <a class="pg-link" data-open-project [routerLink]="['/projects', p.projectId]"
@@ -65,7 +65,7 @@ const PAGE = 100;
           <h3 class="ptp__h">Linked tasks ({{ linked().length }})</h3>
           @if (canEdit() && !adding()) {
             <button type="button" class="mf-btn" data-add-task (click)="startAdd()">
-              <i class="pi pi-plus" aria-hidden="true"></i> Add task
+              <i class="pi pi-plus" aria-hidden="true"></i> Add Task
             </button>
           }
         </div>

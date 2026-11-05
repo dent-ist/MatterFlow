@@ -232,7 +232,7 @@ export function parseDefault(def: ParamDef, text: string): unknown {
             [id]="id(i, 'source')"
             (change)="patch(i, { optionsKind: $any($event.target).value })"
           >
-            <option value="fixed" [selected]="d.optionsKind === 'fixed'">A fixed list</option>
+            <option value="fixed" [selected]="d.optionsKind === 'fixed'">A Fixed List</option>
             <option value="query" [selected]="d.optionsKind === 'query'">A SELECT</option>
           </select>
         </div>
@@ -244,7 +244,7 @@ export function parseDefault(def: ParamDef, text: string): unknown {
             (change)="patch(i, { valueType: $any($event.target).value })"
           >
             <option value="text" [selected]="(d.valueType ?? 'text') === 'text'">Text</option>
-            <option value="int" [selected]="d.valueType === 'int'">Whole number</option>
+            <option value="int" [selected]="d.valueType === 'int'">Whole Number</option>
           </select>
         </div>
       </div>
@@ -282,7 +282,7 @@ export function parseDefault(def: ParamDef, text: string): unknown {
             </div>
           }
           <button type="button" class="mf-btn" (click)="addOption(i)" data-add-option>
-            <i class="pi pi-plus" aria-hidden="true"></i> Add a choice
+            <i class="pi pi-plus" aria-hidden="true"></i> Add a Choice
           </button>
         </div>
       } @else {

@@ -106,7 +106,7 @@ const FORM_OPTIONS = [
   { value: 'published', label: 'Published' },
   { value: 'draft', label: 'Draft' },
   { value: 'retired', label: 'Retired' },
-  { value: 'none', label: 'No form' },
+  { value: 'none', label: 'No Form' },
 ] as const;
 
 /**
@@ -224,7 +224,7 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
         label: 'Request Form',
         column: 'form',
         type: 'select',
-        allLabel: 'All forms',
+        allLabel: 'All Forms',
         options: FORM_OPTIONS,
       },
       statusDef(),
@@ -470,7 +470,7 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
       case FormVersionStatus.Retired:
         return 'Retired';
       default:
-        return 'No form';
+        return 'No Form';
     }
   }
 

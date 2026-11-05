@@ -12,13 +12,13 @@ export interface DatePreset {
 
 export const DATE_PRESETS: readonly DatePreset[] = [
   { key: 'today', label: 'Today' },
-  { key: 'thisWeek', label: 'This week' },
-  { key: 'last7', label: 'Last 7 days' },
-  { key: 'last30', label: 'Last 30 days' },
-  { key: 'thisMonth', label: 'This month' },
-  { key: 'next7', label: 'Next 7 days' },
+  { key: 'thisWeek', label: 'This Week' },
+  { key: 'last7', label: 'Last 7 Days' },
+  { key: 'last30', label: 'Last 30 Days' },
+  { key: 'thisMonth', label: 'This Month' },
+  { key: 'next7', label: 'Next 7 Days' },
   { key: 'tomorrow', label: 'Tomorrow' },
-  { key: 'nextWeek', label: 'Next week' },
+  { key: 'nextWeek', label: 'Next Week' },
 ];
 
 /** The Due column looks ahead (G2): in this order. There is no Overdue preset (see `queueFilterDefs`). */

@@ -169,7 +169,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
                 [attr.aria-invalid]="err('projectId') ? 'true' : null"
                 (change)="set('projectId', toNumber($any($event.target).value))"
               >
-                <option value="" [selected]="model().projectId === null">No project</option>
+                <option value="" [selected]="model().projectId === null">No Project</option>
                 @for (p of projectOptions(); track p.id) {
                   <option [value]="p.id" [selected]="model().projectId === p.id">
                     {{ p.label }}
@@ -341,7 +341,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
                     [attr.aria-invalid]="err('assignedPodId') ? 'true' : null"
                     (change)="set('podId', toNumber($any($event.target).value))"
                   >
-                    <option value="" [selected]="model().podId === null">No pod</option>
+                    <option value="" [selected]="model().podId === null">No Pod</option>
                     @for (p of podOptions(); track p.id) {
                       <option [value]="p.id" [selected]="model().podId === p.id">
                         {{ p.label }}

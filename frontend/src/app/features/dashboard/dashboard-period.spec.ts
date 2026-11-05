@@ -18,17 +18,17 @@ import {
 describe('the period vocabulary', () => {
   it('offers 7, 30 and 90 days, this month and last month, and Coverage appends 6 and 12 months', () => {
     expect(CORE_PRESETS.map((p) => p.label)).toEqual([
-      '7 days',
-      '30 days',
-      '90 days',
-      'This month',
-      'Last month',
+      '7 Days',
+      '30 Days',
+      '90 Days',
+      'This Month',
+      'Last Month',
     ]);
     expect(presetsFor(false)).toBe(CORE_PRESETS);
     expect(presetsFor(true).map((p) => p.label)).toEqual([
       ...CORE_PRESETS.map((p) => p.label),
-      'Last 6 months',
-      'Last 12 months',
+      'Last 6 Months',
+      'Last 12 Months',
     ]);
     expect(ALL_PRESETS.some((p) => p.label === 'This Week')).toBe(false);
   });

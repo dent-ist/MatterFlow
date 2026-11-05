@@ -279,7 +279,7 @@ describe('MyWorkPage', () => {
     expect(query()['completedFrom']).toBeUndefined();
     expect(lastArgs()[ARG.closedWindow]).toBe('all');
     expect(lastArgs()[ARG.completedFrom]).toBeUndefined();
-    expect(chips(el)).toContain('Closed: all time');
+    expect(chips(el)).toContain('Closed: All Time');
     expect(
       Array.from(el.querySelectorAll('button')).some((b) => b.textContent?.trim() === 'Show Older'),
     ).toBe(false);
@@ -589,7 +589,7 @@ describe('MyWorkPage', () => {
       expect(JSON.stringify(query())).not.toContain('2026-10-10');
       expect(lastArgs()[ARG.assignedFrom]).toBe(new Date(SINCE).toISOString());
       expect(item(el)!.getAttribute('aria-pressed')).toBe('true');
-      expect(el.querySelector('[data-chip]')?.textContent).toContain('New since your last visit');
+      expect(el.querySelector('[data-chip]')?.textContent).toContain('New Since Your Last Visit');
 
       // Another strip item replaces it; the same item again switches it off.
       el.querySelector<HTMLButtonElement>('[data-strip-item="asap"]')!.click();

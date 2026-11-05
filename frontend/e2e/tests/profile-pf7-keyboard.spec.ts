@@ -56,9 +56,9 @@ test.describe('pf7-keyboard: keyboard-only flows on My profile (#582)', () => {
     const dialog = me.getByRole('dialog', { name: 'Set out of office' });
     await expect(dialog).toBeVisible();
     await expect(dialog.locator('.p-dialog-title')).toBeFocused();
-    await dialog.getByRole('button', { name: 'Until tomorrow' }).focus();
+    await dialog.getByRole('button', { name: 'Until Tomorrow' }).focus();
     await press(me, 'Space');
-    await expect(dialog.getByRole('button', { name: 'Until tomorrow' })).toHaveAttribute(
+    await expect(dialog.getByRole('button', { name: 'Until Tomorrow' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
@@ -89,7 +89,7 @@ test.describe('pf7-keyboard: keyboard-only flows on My profile (#582)', () => {
     await press(me, 'Enter');
     const dialog = me.getByRole('dialog', { name: 'Set out of office' });
     await expect(dialog).toBeVisible();
-    await dialog.getByRole('button', { name: 'Rest of today' }).focus();
+    await dialog.getByRole('button', { name: 'Rest of Today' }).focus();
     await press(me, 'Enter');
     await press(me, 'Escape');
     await expect(dialog).toHaveCount(0);

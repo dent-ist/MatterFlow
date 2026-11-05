@@ -91,7 +91,7 @@ test.describe('Trends by task type', () => {
     await expect(page.getByRole('group', { name: /tasks over time/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Backlog at End of Day' })).toBeVisible();
     await expect(lines(page)).toHaveCount(4); // Created and Completed + Open and Overdue
-    await expect(page.getByRole('checkbox', { name: 'All task types' })).toBeChecked();
+    await expect(page.getByRole('checkbox', { name: 'All Task Types' })).toBeChecked();
     await expect(page.locator('input:disabled, select:disabled')).toHaveCount(0);
     await expect(page.getByRole('radio', { name: 'Created and Completed' })).toBeChecked();
 
@@ -182,11 +182,11 @@ test.describe('Trends by task type', () => {
 
     // Tooltip: the keyboard moves through the days and the live read-out lists every line.
     await page.locator('[data-plot]').focus();
-    await expect(trendTip(page)).toContainText('All task types');
+    await expect(trendTip(page)).toContainText('All Task Types');
     await expect(trendTip(page)).toContainText('Backlog at End of Day');
     for (const t of mine.slice(0, 3)) await expect(trendTip(page)).toContainText(t.name);
     await page.keyboard.press('ArrowLeft');
-    await expect(page.locator('[data-readout]')).toContainText('All task types');
+    await expect(page.locator('[data-readout]')).toContainText('All Task Types');
     await expect(page.locator('[data-readout]')).toContainText(mine[1].name);
 
     // Table view: a column for every visible line.

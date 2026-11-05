@@ -136,7 +136,7 @@ let nextUid = 0;
               [key]="d.key"
               [value]="range()"
               [presets]="d.presets ?? defaultPresets"
-              [emptyLabel]="d.emptyLabel ?? 'Any date'"
+              [emptyLabel]="d.emptyLabel ?? 'Any Date'"
               [inline]="inline()"
               (valueChange)="filters().set(d.key, $event)"
             />

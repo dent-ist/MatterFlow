@@ -155,7 +155,7 @@ describe('mf-search-filters (#474, #475, #476)', () => {
     const chips = Array.from(el.querySelectorAll<HTMLButtonElement>('[data-filter-chip]'));
     expect(chips.map((c) => c.getAttribute('aria-label'))).toEqual([
       'Remove filter Client: 00343 Acme Corp',
-      'Remove filter Task status: New',
+      'Remove filter Task Status: New',
     ]);
     chips[1].click();
     expect(changes.at(-1)).toEqual({ ...NO_FILTERS, client: 3 });
@@ -166,8 +166,8 @@ describe('mf-search-filters (#474, #475, #476)', () => {
   it('loads the asset types for the Asset type filter and names the chip from them', async () => {
     const { el } = await create('asset', { ...NO_FILTERS, assetType: 7 });
     const select = ddSelect(el, 'Asset Type');
-    expect(select.options.map((o) => o.textContent)).toEqual(['Any type', 'Production']);
+    expect(select.options.map((o) => o.textContent)).toEqual(['Any Type', 'Production']);
     expect(select.value).toBe('7');
-    expect(el.querySelector('[data-filter-chip]')!.textContent).toContain('Asset type: Production');
+    expect(el.querySelector('[data-filter-chip]')!.textContent).toContain('Asset Type: Production');
   });
 });

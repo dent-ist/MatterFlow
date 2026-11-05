@@ -237,7 +237,7 @@ export class UsersPage implements OnInit {
         label: 'Roles',
         column: 'roles',
         type: 'multiSelect',
-        emptyLabel: 'Any role',
+        emptyLabel: 'Any Role',
         options: this.roleOptions(),
         normalize: (v) => (/^[1-9]\d{0,9}$/.test(v) ? v : null),
       },

@@ -103,7 +103,7 @@ describe('PrioritiesPage (#605, #609, #614, #618)', () => {
       expect(all('[data-default]').length).toBe(1);
       expect(row('Normal').querySelector('[data-default]')!.textContent).toContain('Default');
       expect(row('Critical').querySelector('[data-color-cell]')!.textContent).toContain(
-        'Critical red',
+        'Critical Red',
       );
       for (const r of all('[data-row]')) {
         expect(all('mf-action-menu', r).length).toBe(1);

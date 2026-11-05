@@ -460,7 +460,7 @@ export function buildView(
     }
     if (allVisible(choice)) {
       lines.push(
-        line(panel, measure, 'all', 'All task types', ALL_STYLE, all, null, 'All task types'),
+        line(panel, measure, 'all', 'All Task Types', ALL_STYLE, all, null, 'All Task Types'),
       );
     }
     for (const id of choice.types) {

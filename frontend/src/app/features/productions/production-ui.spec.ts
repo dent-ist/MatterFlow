@@ -10,7 +10,7 @@ import {
 
 describe('production-ui', () => {
   it('names the direction and the party', () => {
-    expect(directionLabel('OUT')).toBe('Produced by us');
+    expect(directionLabel('OUT')).toBe('Produced By Us');
     expect(directionLabel('IN')).toBe('Received');
     expect(partyLabel('OUT')).toBe('Produced to');
     expect(partyLabel('IN')).toBe('Produced by');

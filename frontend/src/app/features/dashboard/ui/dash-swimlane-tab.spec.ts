@@ -445,8 +445,8 @@ describe('DashSwimlaneTab', () => {
       expect(ddValue(q('[data-group-by]'))).toBe('assignee');
       // The settings behind the "..." button that are not the defaults are visible as text.
       expect(text(q('[data-active-settings]'))).toContain('Done in 14 days');
-      expect(text(q('[data-active-settings]'))).toContain('Only mine');
-      // assignee, type, priority and overdue are the four data filters (the pod is the page-wide scope); "Only mine" has its own toggle.
+      expect(text(q('[data-active-settings]'))).toContain('Only Mine');
+      // assignee, type, priority and overdue are the four data filters (the pod is the page-wide scope); "Only Mine" has its own toggle.
       expect(text(q('[data-filter-count]'))).toBe('(4)');
       q<HTMLButtonElement>('[data-filters]').click();
       await settle();
@@ -592,7 +592,7 @@ describe('DashSwimlaneTab', () => {
         'Unassigned',
         'Tariq Malik',
       ]);
-      expect(ddOptionTexts(q('[data-filter="type"]'))).toEqual(['Any type', 'Data Processing']);
+      expect(ddOptionTexts(q('[data-filter="type"]'))).toEqual(['Any Type', 'Data Processing']);
       expect(q('[data-filter="pod"]')).toBeNull();
       expect(ddOptionTexts(q('[data-filter="priority"]')).length).toBeGreaterThan(2);
     });

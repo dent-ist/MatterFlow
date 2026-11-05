@@ -63,7 +63,7 @@ export function techFilterDefs(
     },
     {
       key: TECH_TYPE_PARAM,
-      label: 'Task type',
+      label: 'Task Type',
       type: 'multiSelect',
       options: types,
       normalize: asId,

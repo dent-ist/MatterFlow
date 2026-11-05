@@ -29,13 +29,13 @@ export const USER_SORTS = [
 ] as const;
 export type UserSort = (typeof USER_SORTS)[number];
 export const USER_SORT_LABELS: Record<UserSort, string> = {
-  load: 'Availability and load',
+  load: 'Availability and Load',
   name: 'Name',
-  priority: 'Highest priority',
-  open: 'Open tasks',
-  fewest: 'Fewest open tasks',
+  priority: 'Highest Priority',
+  open: 'Open Tasks',
+  fewest: 'Fewest Open Tasks',
   overdue: 'Overdue',
-  nextdue: 'Next due',
+  nextdue: 'Next Due',
 };
 /** The sorts the Sort dropdown offers (US-11); Highest priority and Fewest open tasks stay as table-header and "can take work" sorts. */
 export const SORT_MENU: readonly UserSort[] = ['load', 'name', 'open', 'overdue', 'nextdue'];

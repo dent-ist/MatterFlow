@@ -890,7 +890,7 @@ interface RefChip {
                           administrator unlocks it. Copy your text first if you want to keep it.
                           <div class="nt__bb">
                             <button type="button" class="mf-btn" (click)="copyMine()">
-                              <i class="pi pi-copy" aria-hidden="true"></i>Copy my text
+                              <i class="pi pi-copy" aria-hidden="true"></i>Copy My Text
                             </button>
                             <button
                               type="button"
@@ -932,7 +932,7 @@ interface RefChip {
                               data-note-reload
                               (click)="reloadTheirs()"
                             >
-                              <i class="pi pi-refresh" aria-hidden="true"></i>Reload their version
+                              <i class="pi pi-refresh" aria-hidden="true"></i>Reload Their Version
                             </button>
                             @if (!keepMine()) {
                               <button
@@ -1353,7 +1353,7 @@ interface RefChip {
                         )
                       "
                     >
-                      <i class="pi pi-lock-open" aria-hidden="true"></i>Unlock note
+                      <i class="pi pi-lock-open" aria-hidden="true"></i>Unlock Note
                     </button>
                   } @else {
                     <button
@@ -1365,7 +1365,7 @@ interface RefChip {
                       [title]="organiseReason()"
                       (click)="onMenu(organiseReason(), 'lock')"
                     >
-                      <i class="pi pi-lock" aria-hidden="true"></i>Lock note
+                      <i class="pi pi-lock" aria-hidden="true"></i>Lock Note
                     </button>
                   }
                 </li>
@@ -1379,7 +1379,7 @@ interface RefChip {
                     data-note-copy-link
                     (click)="onMenu('', 'copy')"
                   >
-                    <i class="pi pi-link" aria-hidden="true"></i>Copy link
+                    <i class="pi pi-link" aria-hidden="true"></i>Copy Link
                   </button>
                 </li>
                 <li role="none">
@@ -1435,7 +1435,7 @@ interface RefChip {
                     [title]="deleteReason(n)"
                     (click)="onMenu(deleteReason(n), 'delete')"
                   >
-                    <i class="pi pi-trash" aria-hidden="true"></i>Delete note
+                    <i class="pi pi-trash" aria-hidden="true"></i>Delete Note
                   </button>
                 </li>
               } @else if (kind === 'template' && selTemplate(); as t) {
@@ -1450,7 +1450,7 @@ interface RefChip {
                     [title]="tplReason(t)"
                     (click)="closeMenus(); onTemplateAction($event, tplReason(t), 'del', t)"
                   >
-                    <i class="pi pi-trash" aria-hidden="true"></i>Delete template
+                    <i class="pi pi-trash" aria-hidden="true"></i>Delete Template
                   </button>
                 </li>
               }

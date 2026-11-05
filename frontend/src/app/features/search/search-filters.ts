@@ -275,7 +275,7 @@ export class SearchFilters {
     label: o.label,
   }));
   protected readonly assetTypeItems = computed<DropdownItem[]>(() => [
-    { value: '', label: 'Any type' },
+    { value: '', label: 'Any Type' },
     ...this.assetTypes().map((t) => ({ value: String(t.assetTypeId), label: t.name })),
   ]);
   protected readonly statusCodes = STATUS_CODES;
@@ -472,7 +472,7 @@ export class SearchFilters {
         ).items,
       );
     } catch {
-      this.assetTypes.set([]); // the filter then offers only "Any type"
+      this.assetTypes.set([]); // the filter then offers only "Any Type"
     }
   }
 }

@@ -43,7 +43,7 @@ describe('report model', () => {
     });
 
     it('keeps the author’s definitions and reports the ones the query no longer uses', () => {
-      const mine: ParamDef = { name: 'PODS', type: 'multi', label: 'My pods', isRequired: true };
+      const mine: ParamDef = { name: 'PODS', type: 'multi', label: 'My Pods', isRequired: true };
       const r = reconcile([mine, { name: 'OLD', type: 'text', label: 'Old' }], [ph('PODS')]);
       expect(r.defs).toHaveLength(2);
       expect(r.defs[0]).toBe(mine);

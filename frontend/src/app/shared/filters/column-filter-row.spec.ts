@@ -48,7 +48,7 @@ describe('column filter row', { timeout: 20_000 }, () => {
       'Filter by Name',
       'Filter by Type: All types',
       'Filter by Priority, All',
-      'Filter by Due, Any date',
+      'Filter by Due, Any Date',
       'Filter by Status: Active',
     ]);
   });

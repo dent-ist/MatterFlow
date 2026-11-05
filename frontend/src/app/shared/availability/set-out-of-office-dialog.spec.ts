@@ -190,10 +190,10 @@ describe('SetOutOfOfficeDialog', () => {
       expect(group.getAttribute('role')).toBe('group');
       expect(group.getAttribute('aria-labelledby')).toBe('ooo-until-label');
       expect([...group.querySelectorAll('button')].map((b) => b.textContent!.trim())).toEqual([
-        'Rest of today',
-        'Until tomorrow',
+        'Rest of Today',
+        'Until Tomorrow',
         'Until Monday',
-        '1 week',
+        '1 Week',
         'Pick a Date',
       ]);
       chip('monday').click();

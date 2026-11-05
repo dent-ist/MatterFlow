@@ -46,11 +46,11 @@ export const DEFAULT_SELECTION: DataSelection = {
 };
 
 export const PERIOD_LABELS: Record<DataPeriod, string> = {
-  all: 'All time',
-  '30d': 'Last 30 days',
-  '12m': 'Last 12 months',
-  year: 'This year',
-  custom: 'Custom range',
+  all: 'All Time',
+  '30d': 'Last 30 Days',
+  '12m': 'Last 12 Months',
+  year: 'This Year',
+  custom: 'Custom Range',
 };
 
 export const MAX_MATTERS = 200;
@@ -128,7 +128,7 @@ export function parseStatus(q: ParamMap): DataStatus | null {
 
 /**
  * The address for a selection. A default is `null` so `queryParamsHandling: 'merge'` removes it, except `dp`, which is always written: it is the sign that the
- * person chose (so "All time" stays chosen even though it is the default, and a remembered choice does not come back over it).
+ * person chose (so "All Time" stays chosen even though it is the default, and a remembered choice does not come back over it).
  */
 export function selectionToParams(s: DataSelection): Params {
   return {

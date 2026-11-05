@@ -48,7 +48,7 @@ describe('Technician Summary model (S9)', () => {
     );
     expect(defs.map((d) => [d.key, d.label, d.type])).toEqual([
       ['sprio', 'Priority', 'multiSelect'],
-      ['stype', 'Task type', 'multiSelect'],
+      ['stype', 'Task Type', 'multiSelect'],
     ]);
     const values = parseFilters(defs, params({ sprio: '1', stype: '3,4' }));
     expect(values['sprio']).toEqual(['1']);

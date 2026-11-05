@@ -26,7 +26,7 @@ export const MEASURES: readonly { value: ReportDraft['measure']; label: string }
 ];
 
 export const DISPOSITIONS: readonly { value: string; label: string }[] = [
-  { value: '', label: 'Any disposition' },
+  { value: '', label: 'Any Disposition' },
   { value: 'ACTIVE', label: 'Active' },
   { value: 'INACTIVE', label: 'Inactive' },
   { value: 'PENDING_DISPOSITION', label: 'Pending Disposition' },

@@ -74,7 +74,7 @@ describe('DashScope', () => {
     expect(s.ready()).toBe(true);
     expect(s.scope()).toBe('all');
     expect(s.defaultScope()).toBe('all');
-    expect(s.options().map((o) => o.label)).toEqual(['All pods']);
+    expect(s.options().map((o) => o.label)).toEqual(['All Pods']);
     expect(s.isAll()).toBe(true);
     expect(s.queueParam()).toBeUndefined();
   });
@@ -83,15 +83,15 @@ describe('DashScope', () => {
     const { s } = await scope(aMemberChoices());
     s.applyAddress(get({}));
     expect(s.scope()).toBe('mine');
-    expect(s.label()).toBe('My pods');
+    expect(s.label()).toBe('My Pods');
     expect(s.options().map((o) => [o.label, o.group])).toEqual([
-      ['All pods', 'general'],
-      ['My pods', 'general'],
+      ['All Pods', 'general'],
+      ['My Pods', 'general'],
       ['Review Alpha', 'mine'],
       ['Review Beta', 'mine'],
       ['Processing', 'other'],
     ]);
-    // "My pods" is the union of the person's pods in the Task Queue filter.
+    // "My Pods" is the union of the person's pods in the Task Queue filter.
     expect(s.podIds()).toEqual([1, 2]);
     expect(s.queueParam()).toEqual(['1', '2']);
   });

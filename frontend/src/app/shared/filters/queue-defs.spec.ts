@@ -349,13 +349,13 @@ describe('the managed-by filters are link-only', () => {
     }
 
     expect(optionsOf(defs.find((d) => d.key === 'managedByMe')!)[0]?.label).toBe(
-      'On matters I manage',
+      'On Matters I Manage',
     );
   });
 });
 
 describe('At risk and On-hold reason have controls (PM v2, #877, #878)', () => {
-  it('offers the reasons with "No reason given" first, and At risk only in Other filters', () => {
+  it('offers the reasons with "No Reason Given" first, and At risk only in Other filters', () => {
     const defs = queueFilterDefs({
       onHoldReasons: [{ value: '3', label: 'Waiting for client data' }],
     });
@@ -363,7 +363,7 @@ describe('At risk and On-hold reason have controls (PM v2, #877, #878)', () => {
     expect(reason.noControl).toBeFalsy();
     expect(reason.column).toBe('onHoldReason');
     expect(optionsOf(reason).map((o) => o.label)).toEqual([
-      'No reason given',
+      'No Reason Given',
       'Waiting for client data',
     ]);
     expect(reason.valueLabel!('3')).toBe('Waiting for client data');

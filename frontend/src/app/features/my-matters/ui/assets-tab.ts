@@ -723,7 +723,7 @@ export class MmAssetsTab {
     { id: number; name: string; iconKey?: string; colourKey?: string }[]
   >([]);
   protected readonly typeItems = computed<DropdownItem[]>(() => [
-    { value: '', label: 'All types' },
+    { value: '', label: 'All Types' },
     ...this.types().map((t) => ({
       value: String(t.id),
       label: t.name,
@@ -731,7 +731,7 @@ export class MmAssetsTab {
     })),
   ]);
   protected readonly statusItems: DropdownItem[] = [
-    { value: '', label: 'All statuses' },
+    { value: '', label: 'All Statuses' },
     ...(Object.keys(ASSET_STATUS) as AssetStatusCode[]).map((k) => ({
       value: k,
       label: ASSET_STATUS[k].label,

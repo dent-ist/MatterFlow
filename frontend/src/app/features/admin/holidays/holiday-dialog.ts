@@ -124,12 +124,12 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
               [value]="pattern()"
               (change)="pattern.set($any($event.target).value)"
             >
-              <option value="FIXED" [selected]="pattern() === 'FIXED'">A fixed date (12/25)</option>
+              <option value="FIXED" [selected]="pattern() === 'FIXED'">A Fixed Date (12/25)</option>
               <option value="NTH_WEEKDAY" [selected]="pattern() === 'NTH_WEEKDAY'">
                 A weekday of a month (4th Thursday of November)
               </option>
               <option value="EASTER_OFFSET" [selected]="pattern() === 'EASTER_OFFSET'">
-                Days from Easter
+                Days From Easter
               </option>
             </select>
           </div>
@@ -325,7 +325,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
               [value]="weekendRule()"
               (change)="weekendRule.set($any($event.target).value)"
             >
-              <option value="NONE" [selected]="weekendRule() === 'NONE'">Stays on that day</option>
+              <option value="NONE" [selected]="weekendRule() === 'NONE'">Stays on That Day</option>
               <option value="US" [selected]="weekendRule() === 'US'">
                 US rule: Saturday moves to Friday, Sunday to Monday
               </option>

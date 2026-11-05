@@ -450,18 +450,18 @@ export class ScopedTasks {
       this.projectId() === null &&
       this.projectOptions().length > 0,
   );
-  /** The Project dropdown of a row (needs Task.Edit and a Matter's grid with projects): "No project" first, then the matter's projects. */
+  /** The Project dropdown of a row (needs Task.Edit and a Matter's grid with projects): "No Project" first, then the matter's projects. */
   protected readonly rowProjectChoices = computed<DropdownItem[]>(() =>
     this.canLinkProject()
       ? [
-          { value: '', label: 'No project' },
+          { value: '', label: 'No Project' },
           ...this.projectOptions().map((o) => ({ value: o.value, label: o.label })),
         ]
       : [],
   );
   protected readonly linkItems = computed<DropdownItem[]>(() => [
     ...this.projectOptions().map((o) => ({ value: o.value, label: o.label })),
-    { value: NO_PROJECT, label: 'No project (unlink)' },
+    { value: NO_PROJECT, label: 'No Project (unlink)' },
   ]);
   protected readonly targets = computed<BulkTarget[]>(() =>
     [...this.selected()].map(
@@ -584,7 +584,7 @@ export class ScopedTasks {
               label: 'Project',
               column: 'project',
               type: 'select',
-              allLabel: 'All projects',
+              allLabel: 'All Projects',
               options: this.projectOptions(),
               normalize: asId,
             },

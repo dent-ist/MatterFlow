@@ -410,7 +410,7 @@ describe('TaskDetailPage header', () => {
     const { fixture, el, fakes } = await mountTaskPage(task);
     expect(el.querySelectorAll('[data-status-note]').length).toBe(1);
     expect(q(el, '[data-status-note]')!.textContent).toMatch(
-      /Completed Oct 13, \d{1,2}:\d{2} [AP]M by Dana P/,
+      /Completed 10\/13(\/\d{4})? \d{2}:\d{2} [AP]M by Dana P/,
     );
     expect(q(el, '[data-closed-banner]')).toBeNull();
     expect(q(el, '[data-action="edit"]')).toBeNull();

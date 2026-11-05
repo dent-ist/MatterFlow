@@ -133,8 +133,8 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
               aria-label="Sort comments"
               (change)="setOrder($any($event.target).value === 'newest')"
             >
-              <option value="oldest" [selected]="!newestFirst()">Oldest first</option>
-              <option value="newest" [selected]="newestFirst()">Newest first</option>
+              <option value="oldest" [selected]="!newestFirst()">Oldest First</option>
+              <option value="newest" [selected]="newestFirst()">Newest First</option>
             </select>
           </div>
         </div>

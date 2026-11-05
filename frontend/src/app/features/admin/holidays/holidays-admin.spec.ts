@@ -112,7 +112,7 @@ describe('HolidaysAdmin (Settings > Holidays)', () => {
     expect(save.disabled).toBe(false);
     // An "applies to everyone" calendar is not a choice for a person or a pod.
     expect(Array.from(pod.options).map((o) => o.textContent?.trim())).toEqual([
-      'Firm default',
+      'Firm Default',
       'US Holiday',
       'UK Holiday',
     ]);

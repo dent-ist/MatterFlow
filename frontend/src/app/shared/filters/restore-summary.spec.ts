@@ -35,14 +35,14 @@ describe('restoreSummary', () => {
   });
 
   it('names a quick view instead of listing its filters', () => {
-    expect(restoreSummary(null, [chip('Overdue only')], 'Overdue')).toBe(
+    expect(restoreSummary(null, [chip('Overdue Only')], 'Overdue')).toBe(
       'Restored your last view: Overdue.',
     );
   });
 
   it('keeps the chip words for filters that are not a view', () => {
-    expect(restoreSummary(null, [chip('Overdue only'), chip('Priority: Critical')])).toBe(
-      'Restored your last view: Overdue only, Priority Critical.',
+    expect(restoreSummary(null, [chip('Overdue Only'), chip('Priority: Critical')])).toBe(
+      'Restored your last view: Overdue Only, Priority Critical.',
     );
   });
 });

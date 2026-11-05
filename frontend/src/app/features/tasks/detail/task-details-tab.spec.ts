@@ -271,7 +271,7 @@ describe('Details tab', () => {
     expect((q(document.body, '#td-title') as HTMLInputElement).value).toBe(
       'Process Smith custodians',
     );
-    expect((q(document.body, '#td-due-date') as HTMLInputElement).value).toBe('Oct 30, 2026');
+    expect((q(document.body, '#td-due-date') as HTMLInputElement).value).toBe('10/30/2026');
     expect((q(document.body, '#td-due-time') as HTMLInputElement).value).toBe('15:00');
     expect(q(document.body, 'label[for=td-due-time]')!.textContent).toMatch(/Time \(.+\)/);
     expect(q(document.body, '#td-pod')).not.toBeNull();

@@ -56,12 +56,12 @@ export const ASSETS_CLOSED_NOTE =
             type="button"
             class="mf-btn mf-btn--text"
             data-link-open
-            aria-label="Link asset"
-            title="Link asset"
+            aria-label="Link Asset"
+            title="Link Asset"
             (click)="openLinking()"
           >
             <i class="pi pi-link" aria-hidden="true"></i>
-            <span class="tl__act">Link asset</span>
+            <span class="tl__act">Link Asset</span>
           </button>
         </div>
       }

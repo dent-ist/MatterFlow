@@ -57,7 +57,7 @@ test.describe('pf2-header: name, context line, status chip and ONE primary actio
     await actions.click();
     const dialog = me.getByRole('dialog', { name: 'Set out of office' });
     await expect(dialog).toBeVisible();
-    await dialog.getByRole('button', { name: 'Rest of today' }).click();
+    await dialog.getByRole('button', { name: 'Rest of Today' }).click();
     await dialog.getByRole('button', { name: 'Set out of office' }).click();
     await expect(dialog).toHaveCount(0);
     // Same store as the menu: chip, label and the page follow; the focus is back on the action.

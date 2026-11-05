@@ -25,12 +25,12 @@ export const GROUP_LABELS: Record<GroupBy, string> = {
   none: 'None',
   priority: 'Priority',
   assignee: 'Assignee',
-  clientMatter: 'Client / matter',
+  clientMatter: 'Client / Matter',
 };
 export const SORT_LABELS: Record<SortKey, string> = {
   priority: 'Priority',
-  due: 'Due date',
-  clientMatter: 'Client / matter',
+  due: 'Due Date',
+  clientMatter: 'Client / Matter',
   created: 'Created',
 };
 

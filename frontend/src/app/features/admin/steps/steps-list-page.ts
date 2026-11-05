@@ -440,7 +440,7 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
         label: 'Tags',
         column: 'tags',
         type: 'multiSelect',
-        emptyLabel: 'Any tag',
+        emptyLabel: 'Any Tag',
         options: this.tagOptions(),
       },
       {
@@ -451,8 +451,8 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
         type: 'select',
         default: 'all',
         options: [
-          { value: 'all', label: 'Match all tags' },
-          { value: 'any', label: 'Match any tag' },
+          { value: 'all', label: 'Match All Tags' },
+          { value: 'any', label: 'Match Any Tag' },
         ],
         normalize: (v) => (v === 'any' || v === 'all' ? v : null),
         disabledReason: () => (this.filters.list('tags').length > 0 ? null : 'Choose tags first'),
@@ -464,7 +464,7 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
         type: 'triState',
         options: [
           { value: '', label: 'Any' },
-          { value: 'true', label: 'Used in a workflow' },
+          { value: 'true', label: 'Used in a Workflow' },
           { value: 'false', label: 'Not Used' },
         ],
       },

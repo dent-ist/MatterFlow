@@ -9,8 +9,8 @@ describe('tri-state column filter', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(ColumnTristateFilter);
     fixture.componentRef.setInput('label', 'Overdue');
-    fixture.componentRef.setInput('yesLabel', 'Overdue only');
-    fixture.componentRef.setInput('noLabel', 'Not overdue');
+    fixture.componentRef.setInput('yesLabel', 'Overdue Only');
+    fixture.componentRef.setInput('noLabel', 'Not Overdue');
     fixture.detectChanges();
   });
   afterEach(() => TestBed.resetTestingModule());
@@ -19,8 +19,8 @@ describe('tri-state column filter', () => {
     expect(select().button.getAttribute('aria-label')).toMatch(/^Filter by Overdue:/);
     expect(Array.from(select().options).map((o) => [o.value, o.textContent!.trim()])).toEqual([
       ['', 'Any'],
-      ['true', 'Overdue only'],
-      ['false', 'Not overdue'],
+      ['true', 'Overdue Only'],
+      ['false', 'Not Overdue'],
     ]);
     expect(select().value).toBe('');
   });

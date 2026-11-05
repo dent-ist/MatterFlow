@@ -183,7 +183,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
           [attr.aria-pressed]="showGaps()"
           (click)="showGaps.set(!showGaps())"
         >
-          <i class="pi pi-flag" aria-hidden="true"></i>Training gaps
+          <i class="pi pi-flag" aria-hidden="true"></i>Training Gaps
         </button>
       }
       <span class="grow"></span>
@@ -968,12 +968,12 @@ export class CoverageView implements OnInit {
     label: TYPE_ROW_ORDER_LABELS[o],
   }));
   protected readonly scaleItems: DropdownItem[] = [
-    { value: 'relative', label: 'Relative to the task type' },
+    { value: 'relative', label: 'Relative to the Task Type' },
     { value: 'absolute', label: 'Absolute' },
   ];
   protected readonly nameTotalItems: DropdownItem[] = [
-    { value: 'name', label: 'By name' },
-    { value: 'total', label: 'By total completed' },
+    { value: 'name', label: 'By Name' },
+    { value: 'total', label: 'By Total Completed' },
   ];
 
   protected onScale(value: string): void {

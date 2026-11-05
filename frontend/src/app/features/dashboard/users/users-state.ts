@@ -12,9 +12,9 @@ import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { STATE_KEYS, UsersFilters, stateKeysOf } from './users-model';
 
 /**
- * The ONE State control of the Users Workload view (US-11, #1102), replacing the six state buttons: the shared multi-select dropdown with "All states" on top and one row per state
- * (the state icon, the name and the number of people), any combination. The button says "State: All states" or "State: Idle +1". Choosing "All states" clears the others and choosing a
- * state clears "All states". The counts follow the people on the board (the page scope, the name search and the population rule).
+ * The ONE State control of the Users Workload view (US-11, #1102), replacing the six state buttons: the shared multi-select dropdown with "All States" on top and one row per state
+ * (the state icon, the name and the number of people), any combination. The button says "State: All states" or "State: Idle +1". Choosing "All States" clears the others and choosing a
+ * state clears "All States". The counts follow the people on the board (the page scope, the name search and the population rule).
  */
 @Component({
   selector: 'mf-users-state',
@@ -53,7 +53,7 @@ export class UsersState {
     const counts = new Map<UserStateKey, number>();
     for (const u of users) for (const k of stateKeysOf(u)) counts.set(k, (counts.get(k) ?? 0) + 1);
     return [
-      { value: '', label: 'All states', count: users.length },
+      { value: '', label: 'All States', count: users.length },
       ...STATE_KEYS.map((k) => ({
         value: k,
         label: USER_STATE_WORDS[k],
@@ -63,7 +63,7 @@ export class UsersState {
     ];
   });
 
-  /** "All states" is the chosen row while no state is chosen; the list's own choice is written back so an unchecked row never leaves it empty. */
+  /** "All States" is the chosen row while no state is chosen; the list's own choice is written back so an unchecked row never leaves it empty. */
   protected readonly selected = linkedSignal<readonly string[]>(() => {
     const s = this.filters().states;
     return s.length ? s : [''];
@@ -71,7 +71,7 @@ export class UsersState {
 
   protected onValues(next: readonly string[]): void {
     const before = this.filters().states;
-    // "All states" was just chosen: clear the others. Otherwise the chosen states (a state clears "All states").
+    // "All States" was just chosen: clear the others. Otherwise the chosen states (a state clears "All States").
     const states =
       next.includes('') && before.length > 0 ? [] : STATE_KEYS.filter((k) => next.includes(k));
     this.selected.set(states.length ? [...states] : ['']);

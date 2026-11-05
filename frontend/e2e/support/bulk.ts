@@ -109,7 +109,7 @@ export async function seedBulk(admin: Api, seed: Seeder, opts: BulkOptions = {})
     taskNumbers.push(created.taskNumber);
   });
   // The admin had to be a member to be given tasks in the pod. Leaving them in it would change the whole run: a member of a pod opens the
-  // Dashboard on "My pods" instead of "All pods", so every later spec that reads the Dashboard as the admin would see only this pod.
+  // Dashboard on "My Pods" instead of "All Pods", so every later spec that reads the Dashboard as the admin would see only this pod.
   await admin.delete(`/api/v1/pods/${pod.podId}/members/${me.userId}`);
   return {
     world,

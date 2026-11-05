@@ -76,7 +76,7 @@ export class ScopeControl {
     ...this.general().map((o) => ({ value: o.value, label: o.label })),
     ...(this.mine().length > 0
       ? [
-          { value: '', label: 'My pods', heading: true },
+          { value: '', label: 'My Pods', heading: true },
           ...this.mine().map((o) => ({ value: o.value, label: o.label })),
         ]
       : []),

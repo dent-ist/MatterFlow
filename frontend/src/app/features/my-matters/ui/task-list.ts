@@ -225,7 +225,7 @@ export function statusCodes(status: StatusFilter): string[] {
                 [items]="statusItems()"
                 [values]="statuses()"
                 (valuesChange)="setStatuses($any($event))"
-                placeholder="All open"
+                placeholder="All Open"
                 [panelWidth]="240"
               />
               <mf-dropdown
@@ -892,12 +892,12 @@ export class MmTaskList {
     }));
   });
   protected readonly dueItems: DropdownItem[] = [
-    { value: '', label: 'Any date' },
+    { value: '', label: 'Any Date' },
     { value: 'overdue', label: 'Overdue' },
     { value: 'today', label: 'Today' },
-    { value: 'week', label: 'Next 7 days' },
-    { value: 'month', label: 'This month' },
-    { value: 'range', label: 'Custom range' },
+    { value: 'week', label: 'Next 7 Days' },
+    { value: 'month', label: 'This Month' },
+    { value: 'range', label: 'Custom Range' },
   ];
   private readonly lookups = inject(LookupStore);
   private readonly sectionTypes = inject(SectionTypes);
@@ -913,7 +913,7 @@ export class MmTaskList {
     // A link may carry a person the first 50 of the lookup do not list: keep the choice visible on the button.
     const extra =
       typeof chosen === 'number' && !people.some((p) => p.value === String(chosen))
-        ? [{ value: String(chosen), label: 'Selected person' }]
+        ? [{ value: String(chosen), label: 'Selected Person' }]
         : [];
     return [
       { value: '', label: 'Anyone' },
@@ -966,7 +966,7 @@ export class MmTaskList {
     if (g.assignee !== null)
       out.push({
         key: 'asg',
-        label: `Assignee: ${g.assignee === 'none' ? 'Unassigned' : (this.people().find((u) => u.id === g.assignee)?.name ?? 'Selected person')}`,
+        label: `Assignee: ${g.assignee === 'none' ? 'Unassigned' : (this.people().find((u) => u.id === g.assignee)?.name ?? 'Selected Person')}`,
         clear: { asg: null },
       });
     if (g.due)

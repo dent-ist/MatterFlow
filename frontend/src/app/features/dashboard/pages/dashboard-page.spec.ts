@@ -1547,7 +1547,7 @@ describe('DashboardPage', () => {
       const sel = select(el);
       expect(sel.value).toBe('all');
       expect(text(el.querySelector('.sc-lbl'))).toBe('Scope');
-      expect(Array.from(sel.options).map((o) => o.textContent!.trim())).toEqual(['All pods']);
+      expect(Array.from(sel.options).map((o) => o.textContent!.trim())).toEqual(['All Pods']);
       const row = el.querySelector('[data-dash-head]')!;
       expect(row.contains(sel.button)).toBe(true);
       const refresh = row.querySelector('[data-refresh]')!;
@@ -1570,8 +1570,8 @@ describe('DashboardPage', () => {
       const el = await open();
       expect(select(el).value).toBe('mine');
       expect(Array.from(select(el).options).map((o) => o.textContent!.trim())).toEqual([
-        'All pods',
-        'My pods',
+        'All Pods',
+        'My Pods',
         'Review Alpha',
         'Review Beta',
         'Processing',
@@ -1634,7 +1634,7 @@ describe('DashboardPage', () => {
       const el = await open(of(summary()), ALL, '/dashboard?pod=99');
       expect(select(el).value).toBe('mine');
       expect(text(el.querySelector('mf-dash-note'))).toContain(
-        'That pod is not available to you. Showing My pods.',
+        'That pod is not available to you. Showing My Pods.',
       );
       expect(router().url).toBe('/dashboard');
       expect(getDashboard).toHaveBeenCalledWith(
@@ -1684,7 +1684,7 @@ describe('DashboardPage', () => {
       // Back to the default: the parameter leaves the address.
       await pickScope(el, 'mine');
       expect(router().url).toBe('/dashboard');
-      expect(text(el.querySelector('[data-dash-live]'))).toBe('Scope: My pods');
+      expect(text(el.querySelector('[data-dash-live]'))).toBe('Scope: My Pods');
     });
 
     it('shows the skeleton while the new scope is read, never the old numbers under the new label', async () => {

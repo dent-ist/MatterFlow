@@ -499,7 +499,7 @@ export class SkillsView {
 
   protected readonly types = computed(() => this.matrix()?.types ?? []);
   protected readonly typeItems = computed<DropdownItem[]>(() => [
-    { value: '', label: 'All task types' },
+    { value: '', label: 'All Task Types' },
     ...this.types().map((t) => ({ value: String(t.taskTypeId), label: t.name })),
   ]);
   private readonly cells = computed(() => {

@@ -412,7 +412,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     harness.detectChanges();
     const tip = text(el.querySelector('[data-tip]'));
     // All task types is hidden for scale; both panels list their lines for the day, grouped.
-    expect(tip).not.toContain('All task types');
+    expect(tip).not.toContain('All Task Types');
     expect(tip).toContain('Alpha 3');
     expect(tip).toContain('Beta 2');
     expect(tip).toContain('Backlog at End of Day');

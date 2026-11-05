@@ -195,7 +195,7 @@ describe('Dropdown (UI-19)', () => {
 })
 class MultiHost {
   readonly states: DropdownItem[] = [
-    { value: '', label: 'All states' },
+    { value: '', label: 'All States' },
     { value: 'idle', label: 'Idle' },
     { value: 'busy', label: 'Busy' },
     { value: 'gone', label: 'Gone', disabled: true },

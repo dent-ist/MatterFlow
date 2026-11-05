@@ -157,10 +157,10 @@ export function outOfOfficeSummary(
 export type UntilPresetId = 'today' | 'tomorrow' | 'monday' | 'week';
 
 export const UNTIL_PRESETS: readonly { id: UntilPresetId; label: string }[] = [
-  { id: 'today', label: 'Rest of today' },
-  { id: 'tomorrow', label: 'Until tomorrow' },
+  { id: 'today', label: 'Rest of Today' },
+  { id: 'tomorrow', label: 'Until Tomorrow' },
   { id: 'monday', label: 'Until Monday' },
-  { id: 'week', label: '1 week' },
+  { id: 'week', label: '1 Week' },
 ];
 
 /**

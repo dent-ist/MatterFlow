@@ -420,7 +420,7 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
                   <mf-scope-switch
                     [scope]="draft().scope"
                     [canAll]="true"
-                    allLabel="All matters"
+                    allLabel="All Matters"
                     announceMine="Report on the matters you manage"
                     announceAll="Report on all matters"
                     (scopeChange)="set('scope', $event)"
@@ -675,7 +675,7 @@ export class AssetReportsPage {
   protected readonly units = computed(() => this.fields()?.units ?? []);
   protected readonly defaultSizeKey = computed(() => this.fields()?.defaultSizeFieldKey ?? null);
   protected readonly typeItems = computed<DropdownItem[]>(() => [
-    { value: '', label: 'All asset types' },
+    { value: '', label: 'All Asset Types' },
     ...this.types().map((t) => ({
       value: '' + t.assetTypeId,
       label: t.name + (t.isActive ? '' : ' (inactive)'),

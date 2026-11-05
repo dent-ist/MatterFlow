@@ -75,9 +75,9 @@ export type QuickView = 'today' | 'last7' | 'config' | 'access';
 
 export const QUICK_VIEWS: readonly { key: QuickView; label: string }[] = [
   { key: 'today', label: 'Today' },
-  { key: 'last7', label: 'Last 7 days' },
-  { key: 'config', label: 'Configuration changes' },
-  { key: 'access', label: 'Access changes' },
+  { key: 'last7', label: 'Last 7 Days' },
+  { key: 'config', label: 'Configuration Changes' },
+  { key: 'access', label: 'Access Changes' },
 ];
 
 const CONFIG_VALUE = CONFIGURATION_OBJECT_TYPES.join(',');
@@ -198,7 +198,7 @@ export class AuditPage {
         label: 'Event Type',
         column: 'what',
         type: 'select',
-        allLabel: 'Any event',
+        allLabel: 'Any Event',
         options: this.facets()
           .eventTypes.map((t) => ({ value: t, label: eventTypeLabel(t) }))
           .sort((a, b) => a.label.localeCompare(b.label)),
@@ -209,10 +209,10 @@ export class AuditPage {
         label: 'Object Type',
         column: 'object',
         type: 'select',
-        allLabel: 'Any object',
+        allLabel: 'Any Object',
         options: [
-          { value: CONFIG_VALUE, label: 'Configuration changes' },
-          { value: ACCESS_VALUE, label: 'Access changes' },
+          { value: CONFIG_VALUE, label: 'Configuration Changes' },
+          { value: ACCESS_VALUE, label: 'Access Changes' },
           ...this.facets()
             .objectTypes.map((t) => ({ value: t, label: objectTypeLabel(t) }))
             .sort((a, b) => a.label.localeCompare(b.label)),
@@ -238,7 +238,7 @@ export class AuditPage {
         noControl: true,
         normalize: (v) =>
           /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v) ? v : null,
-        valueLabel: () => 'One operation',
+        valueLabel: () => 'One Operation',
       },
     ]),
   });

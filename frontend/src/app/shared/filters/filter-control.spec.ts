@@ -44,7 +44,7 @@ describe('filter control', { timeout: 20_000 }, () => {
       'Filter by Priority, All',
     );
     expect(cell('due').querySelector('button')?.getAttribute('aria-label')).toBe(
-      'Filter by Due, Any date',
+      'Filter by Due, Any Date',
     );
     expect(cell('status').querySelector('mf-dropdown button')?.getAttribute('aria-label')).toMatch(
       /^Filter by Status:/,

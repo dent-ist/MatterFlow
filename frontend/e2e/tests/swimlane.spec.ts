@@ -137,7 +137,7 @@ test.describe('Swimlane tab', () => {
     for (const [key, label] of [
       ['due', 'Due Date'],
       ['created', 'Created'],
-      ['clientMatter', 'Client / matter'],
+      ['clientMatter', 'Client / Matter'],
       ['priority', 'Priority'],
     ] as const) {
       const response = page.waitForResponse(
@@ -272,7 +272,7 @@ test.describe('Swimlane tab', () => {
     await expect(lane(page, 'NEW').locator('[data-lane-count]')).toHaveText(
       String(data.lanes[0].count),
     );
-    await page.getByRole('checkbox', { name: 'Overdue only' }).check();
+    await page.getByRole('checkbox', { name: 'Overdue Only' }).check();
     await expect(page.locator('[data-filter-count]')).toHaveText('(2)');
     await expect(page).toHaveURL(/overdue=true/);
     // A reload lands on the same filtered board.
@@ -291,13 +291,13 @@ test.describe('Swimlane tab', () => {
     await expect(page.locator('mf-swimlane-card [data-card-ref]')).toHaveText(one.ref);
   });
 
-  test('"Only mine" narrows the board to the signed-in user and says so in the empty lanes', async ({
+  test('"Only Mine" narrows the board to the signed-in user and says so in the empty lanes', async ({
     page,
   }) => {
     await openBoard(page);
-    await menuPick(page, 'menuitemcheckbox', 'Only mine');
+    await menuPick(page, 'menuitemcheckbox', 'Only Mine');
     await expect(page).toHaveURL(/mine=true/);
-    await expect(page.locator('[data-active-settings]')).toContainText('Only mine');
+    await expect(page.locator('[data-active-settings]')).toContainText('Only Mine');
     // The seeded tasks belong to other people.
     await expect(lane(page, 'NEW').locator('[data-lane-empty]')).toContainText('match the filters');
     await expect(page.locator('mf-swimlane-card')).toHaveCount(0);
@@ -310,7 +310,7 @@ test.describe('Swimlane tab', () => {
     const response = page.waitForResponse(
       (r) => r.url().includes('/dashboard/swimlane') && r.url().includes('completedDays=30'),
     );
-    await menuPick(page, 'menuitemradio', '30 days');
+    await menuPick(page, 'menuitemradio', '30 Days');
     expect((await response).ok()).toBe(true);
     await expect(page).toHaveURL(/days=30/);
     await labelledDropdown(page, 'Group').selectOption({ label: 'Priority' });
@@ -328,7 +328,7 @@ test.describe('Swimlane tab', () => {
     await expect(page).toHaveURL(/group=priority/);
     await expect(page).toHaveURL(/days=30/);
     // Put the defaults back for the tests that follow.
-    await menuPick(page, 'menuitemradio', '7 days');
+    await menuPick(page, 'menuitemradio', '7 Days');
     await labelledDropdown(page, 'Group').selectOption({ label: 'None' });
     await menuPick(page, 'menuitemradio', 'Comfortable');
   });

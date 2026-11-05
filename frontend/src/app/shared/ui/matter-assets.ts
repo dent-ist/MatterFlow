@@ -279,7 +279,7 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
       label: 'Type',
       column: 'type',
       type: 'multiSelect',
-      emptyLabel: 'All types',
+      emptyLabel: 'All Types',
       options: this.typeOptions(),
     },
     { key: 'name', label: 'Name', column: 'name', type: 'text', search: true },

@@ -214,7 +214,7 @@ export const SHOW_FILTERS: readonly { key: ShowFilter; label: string }[] = [
   { key: 'risk', label: 'At Risk' },
   { key: 'unassigned', label: 'Unassigned' },
   { key: 'critical', label: 'Critical' },
-  { key: 'due7', label: 'Due in 7 days' },
+  { key: 'due7', label: 'Due in 7 Days' },
 ];
 
 /** The Status chips of the task grid. `open` (New + In Progress + On Hold) is the default. */

@@ -255,8 +255,8 @@ describe('MatterFormPage', () => {
       const select = el().querySelector<HTMLSelectElement>('[data-ai-allowed]')!;
       expect(Array.from(select.options).map((o) => o.textContent!.trim())).toEqual([
         'No',
-        'On-prem AI only',
-        'Company-approved AI services',
+        'On-Prem AI Only',
+        'Company-Approved AI Services',
       ]);
       expect(select.value).toBe('No');
       select.value = 'OnPremOnly';

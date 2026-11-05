@@ -88,7 +88,7 @@ export const dropdownByAttr = (scope: Page | Locator, attr: string): Dropdown =>
 
 /**
  * A dropdown inside the Filters popover of the Dashboard Users views (US-07, #1098): opens the popover first when it is closed, then finds the dropdown by its label
- * ("Highest priority", "Availability", "Sort", "Task Type"). The popover stays open for the next choice.
+ * ("Highest Priority", "Availability", "Sort", "Task Type"). The popover stays open for the next choice.
  */
 export async function usersFilter(page: Page, label: string): Promise<Dropdown> {
   if ((await page.locator('[data-filters-panel]').count()) === 0)
@@ -98,7 +98,7 @@ export async function usersFilter(page: Page, label: string): Promise<Dropdown> 
 }
 
 /**
- * The State dropdown of the Users Workload view (US-11, #1102): opens it, clicks each state (a value of '' is "All states") and closes it with Done. The list is a
+ * The State dropdown of the Users Workload view (US-11, #1102): opens it, clicks each state (a value of '' is "All States") and closes it with Done. The list is a
  * multi choice, so the states combine.
  */
 export async function pickUserStates(page: Page, ...values: string[]): Promise<void> {
@@ -108,7 +108,7 @@ export async function pickUserStates(page: Page, ...values: string[]): Promise<v
   await page.locator('[data-dd-done]').click();
 }
 
-/** The number next to a state in the State dropdown (the people in it); '' is "All states". */
+/** The number next to a state in the State dropdown (the people in it); '' is "All States". */
 export async function userStateCount(page: Page, key: string): Promise<number> {
   await page.getByRole('button', { name: /^State:/ }).click();
   const n = await page.locator(`.dd-panel [role="option"][data-value="${key}"] .n`).textContent();

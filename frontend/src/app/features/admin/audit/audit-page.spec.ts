@@ -164,7 +164,7 @@ describe('AuditPage', () => {
     const events = Array.from(ddSelect(document.body, 'Filter by Event Type').options).map((o) =>
       o.textContent?.trim(),
     );
-    expect(events).toEqual(['Any event', 'Field changed', 'Task created']); // the code stays the value (#650)
+    expect(events).toEqual(['Any Event', 'Field changed', 'Task created']); // the code stays the value (#650)
     expect(
       Array.from(ddSelect(document.body, 'Filter by Event Type').options).map((o) => o.value),
     ).toEqual(['', 'FIELD_CHANGED', 'TASK_CREATED']);
@@ -172,9 +172,9 @@ describe('AuditPage', () => {
       o.textContent?.trim(),
     );
     expect(objects).toEqual([
-      'Any object',
-      'Configuration changes',
-      'Access changes',
+      'Any Object',
+      'Configuration Changes',
+      'Access Changes',
       'Matter',
       'Task',
     ]);

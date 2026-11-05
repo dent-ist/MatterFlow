@@ -23,17 +23,17 @@ export interface PeriodPreset {
 
 /** The items every tab offers (Custom is the last one, drawn by the control). */
 export const CORE_PRESETS: readonly PeriodPreset[] = [
-  { key: '7d', label: '7 days' },
-  { key: '30d', label: '30 days' },
-  { key: '90d', label: '90 days' },
-  { key: 'this-month', label: 'This month' },
-  { key: 'last-month', label: 'Last month' },
+  { key: '7d', label: '7 Days' },
+  { key: '30d', label: '30 Days' },
+  { key: '90d', label: '90 Days' },
+  { key: 'this-month', label: 'This Month' },
+  { key: 'last-month', label: 'Last Month' },
 ];
 
 /** Coverage appends two long windows (training questions need them): 183 and 365 days. */
 export const LONG_PRESETS: readonly PeriodPreset[] = [
-  { key: '6m', label: 'Last 6 months' },
-  { key: '12m', label: 'Last 12 months' },
+  { key: '6m', label: 'Last 6 Months' },
+  { key: '12m', label: 'Last 12 Months' },
 ];
 
 export const ALL_PRESETS: readonly PeriodPreset[] = [...CORE_PRESETS, ...LONG_PRESETS];

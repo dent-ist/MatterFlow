@@ -19,7 +19,7 @@ export interface QueueLookups {
   users?: readonly FilterOption[];
   types?: readonly FilterOption[];
   workflows?: readonly FilterOption[];
-  /** The on-hold reasons (PM v2, #877); "No reason given" (`0`) is added in front. */
+  /** The on-hold reasons (PM v2, #877); "No Reason Given" (`0`) is added in front. */
   onHoldReasons?: readonly FilterOption[];
 }
 
@@ -36,7 +36,7 @@ export interface QueueDefOptions {
   defaultStatus?: readonly string[];
   /** My Work, Closed tab: adds the "Closed: all time" chip of `closed=all` ("Show Older"; removing it returns to the 90-day window). */
   closedWindow?: boolean;
-  /** My Work: adds the "New since your last visit" chip of `new=1` (the strip's New item; removing the chip lists every task again). */
+  /** My Work: adds the "New Since Your Last Visit" chip of `new=1` (the strip's New item; removing the chip lists every task again). */
   newSince?: boolean;
   /** Names for the link-only record chips (`?matter=12` shows "Matter: 00343-00012"). */
   names?: {
@@ -129,7 +129,7 @@ export function queueFilterDefs(
       column: 'pod',
       type: 'multiSelect',
       options: list(lookups.pods),
-      flagOptions: { none: { param: 'noPod', label: 'No pod' } },
+      flagOptions: { none: { param: 'noPod', label: 'No Pod' } },
       normalize: asId,
       ...off('pod'),
     },
@@ -197,7 +197,7 @@ export function queueFilterDefs(
             type: 'select',
             param: 'closed',
             noControl: true,
-            options: [{ value: 'all', label: 'all time' }],
+            options: [{ value: 'all', label: 'All Time' }],
             normalize: (v: string) => (v.toLowerCase() === 'all' ? 'all' : null),
             ...off('closedWindow'),
           } satisfies FilterDef,
@@ -212,7 +212,7 @@ export function queueFilterDefs(
             param: 'new',
             noControl: true,
             bareChip: true,
-            options: [{ value: '1', label: 'New since your last visit' }],
+            options: [{ value: '1', label: 'New Since Your Last Visit' }],
             normalize: (v: string) => (v === '1' ? '1' : null),
             ...off('newSince'),
           } satisfies FilterDef,
@@ -222,7 +222,7 @@ export function queueFilterDefs(
       key: 'asap',
       label: 'ASAP',
       type: 'triState',
-      options: TRI('Any', 'ASAP only', 'Has a due date'),
+      options: TRI('Any', 'ASAP Only', 'Has a Due Date'),
       bareChip: true,
       ...off('due'),
     },
@@ -230,7 +230,7 @@ export function queueFilterDefs(
       key: 'overdue',
       label: 'Overdue',
       type: 'triState',
-      options: TRI('Any', 'Overdue only', 'Not overdue'),
+      options: TRI('Any', 'Overdue Only', 'Not Overdue'),
       bareChip: true,
       ...off('due'),
     },
@@ -268,7 +268,7 @@ export function queueFilterDefs(
       param: 'managedByMe',
       noControl: true,
       bareChip: true,
-      options: [{ value: 'true', label: 'On matters I manage' }],
+      options: [{ value: 'true', label: 'On Matters I Manage' }],
       normalize: (v: string) => (v.toLowerCase() === 'true' ? 'true' : null),
     },
     {
@@ -301,8 +301,8 @@ export function queueFilterDefs(
       param: 'dueWithin',
       noControl: true,
       options: [
-        { value: '3', label: '3 days' },
-        { value: '7', label: '7 days' },
+        { value: '3', label: '3 Days' },
+        { value: '7', label: '7 Days' },
       ],
       normalize: (v: string) => (v === '3' || v === '7' ? v : null),
     },
@@ -315,7 +315,7 @@ export function queueFilterDefs(
       param: 'atRisk',
       allLabel: 'Any',
       bareChip: true,
-      options: [{ value: 'true', label: 'At risk only' }],
+      options: [{ value: 'true', label: 'At Risk Only' }],
       normalize: (v: string) => (v.toLowerCase() === 'true' ? 'true' : null),
     },
     // Issue #905: the Overview's "View all" (overdue, at risk, due today, unassigned and due soon, on hold too long).
@@ -326,7 +326,7 @@ export function queueFilterDefs(
       param: 'needsAttention',
       allLabel: 'Any',
       bareChip: true,
-      options: [{ value: 'true', label: 'Needs attention only' }],
+      options: [{ value: 'true', label: 'Needs Attention Only' }],
       normalize: (v: string) => (v.toLowerCase() === 'true' ? 'true' : null),
     },
     {
@@ -335,11 +335,11 @@ export function queueFilterDefs(
       column: 'onHoldReason',
       type: 'multiSelect',
       param: 'onHoldReason',
-      options: () => [{ value: '0', label: 'No reason given' }, ...(lookups.onHoldReasons ?? [])],
+      options: () => [{ value: '0', label: 'No Reason Given' }, ...(lookups.onHoldReasons ?? [])],
       normalize: (v: string) => (/^\d+$/.test(v) ? v : null),
       valueLabel: (id: string) =>
         id === '0'
-          ? 'No reason given'
+          ? 'No Reason Given'
           : (lookups.onHoldReasons?.find((o) => o.value === id)?.label ?? 'selected reason'),
     },
   ];

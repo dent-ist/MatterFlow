@@ -17,7 +17,7 @@ interface Group {
 
 const HEADINGS: Record<string, string> = {
   Technician: 'Technician',
-  ProjectManager: 'Project manager',
+  ProjectManager: 'Project Manager',
   PodLead: 'Pod Lead',
 };
 

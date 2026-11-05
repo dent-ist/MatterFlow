@@ -268,7 +268,7 @@ describe('DashUsersTab', () => {
       await settle();
     }
   };
-  /** The State dropdown: open it, click each state, then Done. A value of '' is "All states". */
+  /** The State dropdown: open it, click each state, then Done. A value of '' is "All States". */
   const pickStates = async (...values: string[]) => {
     ddButton(host, 'State').click();
     await settle();
@@ -558,7 +558,7 @@ describe('DashUsersTab', () => {
     it('lists All states and the six states with their number of people, and links the unassigned tasks to the Task Queue', async () => {
       await open();
       expect(ddOptionTexts(host, 'State')).toEqual([
-        'All states 6',
+        'All States 6',
         'Idle 1',
         'Light 3',
         'Normal 1',
@@ -566,7 +566,7 @@ describe('DashUsersTab', () => {
         'Out of Office 1',
         'Off Hours 1',
       ]);
-      expect(ddText(host, 'State')).toBe('All states');
+      expect(ddText(host, 'State')).toBe('All States');
       // The six buttons, the Filters button and the legend icon in the toolbar are gone.
       expect(q('[data-chip], [data-filters-toggle], [data-legend-toggle]')).toBeNull();
       expect(text(q('[data-summary-unassigned] [data-n]'))).toBe('4');
@@ -584,7 +584,7 @@ describe('DashUsersTab', () => {
       expect(names().length).toBe(6);
     });
 
-    it('states combine (any of them), "All states" clears them, and the address keeps them', async () => {
+    it('states combine (any of them), "All States" clears them, and the address keeps them', async () => {
       await open();
       await pickStates('idle', 'heavy');
       expect(names()).toEqual(['Cy Tan', 'Hal Moe']);
@@ -595,7 +595,7 @@ describe('DashUsersTab', () => {
       await pickStates('');
       expect(names().length).toBe(6);
       expect(url()).not.toContain('ustate');
-      expect(ddText(host, 'State')).toBe('All states');
+      expect(ddText(host, 'State')).toBe('All States');
     });
 
     it('Off hours is a state applied on the page', async () => {
@@ -641,11 +641,11 @@ describe('DashUsersTab', () => {
         q('[data-filter="priority"], [data-filter="availability"], [data-filter="pod"]'),
       ).toBeNull();
       expect(ddOptionTexts(host, 'Sort')).toEqual([
-        'Availability and load',
+        'Availability and Load',
         'Name',
-        'Open tasks',
+        'Open Tasks',
         'Overdue',
-        'Next due',
+        'Next Due',
       ]);
       await choose('[data-sort]', 'overdue');
       expect(qa('[data-user-card]')[0].getAttribute('data-user')).toBe('Ann Lee');
@@ -1160,7 +1160,7 @@ describe('DashUsersTab', () => {
 
       it('is the default orientation: one row per type, fewest people first, ties by name, the matrix is the second option', async () => {
         await typeView();
-        expect(qa('[data-orientation]').map((b) => text(b))).toEqual(['By task type', 'Matrix']);
+        expect(qa('[data-orientation]').map((b) => text(b))).toEqual(['By Task Type', 'Matrix']);
         expect(q('[data-orientation="type"]').getAttribute('aria-pressed')).toBe('true');
         expect(q('[data-coverage-table]')).toBeNull();
         expect(qa('[data-type-row]').map((r) => r.getAttribute('data-type-name'))).toEqual([
@@ -1252,9 +1252,9 @@ describe('DashUsersTab', () => {
           'Archive',
         ]);
         expect(ddOptionTexts(host, 'Order')).toEqual([
-          'Fewest people first',
-          'Type name',
-          'Most completed',
+          'Fewest People First',
+          'Type Name',
+          'Most Completed',
         ]);
         expect(ddText(host, 'Order')).not.toMatch(/best|worst|top|rank|score/i);
         expect(JSON.parse(localStorage.getItem('mf.dashboard.coverage.v1.5')!).rowOrder).toBe(
@@ -1496,7 +1496,7 @@ describe('DashUsersTab', () => {
       ]);
       await choose('[data-coverage-user-order]', 'total');
       expect(qa('thead th[data-person]')[0].getAttribute('data-person')).toBe('3');
-      expect(ddText(host, 'Task Types')).toContain('By total completed');
+      expect(ddText(host, 'Task Types')).toContain('By Total Completed');
       expect(ddText(host, 'Task Types')).not.toMatch(/best|worst|top|rank/i);
     });
 
@@ -1570,13 +1570,13 @@ describe('DashUsersTab', () => {
       await coverage();
       const select = ddSelect(host, 'Period');
       expect(Array.from(select.options).map((o) => o.textContent)).toEqual([
-        '7 days',
-        '30 days',
-        '90 days',
-        'This month',
-        'Last month',
-        'Last 6 months',
-        'Last 12 months',
+        '7 Days',
+        '30 Days',
+        '90 Days',
+        'This Month',
+        'Last Month',
+        'Last 6 Months',
+        'Last 12 Months',
         'Custom',
       ]);
       expect(text(q('mf-period-control .pc-lbl'))).toBe('Period');

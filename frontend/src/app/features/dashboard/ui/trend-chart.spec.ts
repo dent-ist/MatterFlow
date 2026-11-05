@@ -222,8 +222,8 @@ describe('trend chart', () => {
   describe('several lines', () => {
     const ALL = line({
       key: 'all',
-      name: 'All task types',
-      tipName: 'All task types',
+      name: 'All Task Types',
+      tipName: 'All Task Types',
       valueWord: '',
       style: ALL_STYLE,
       values: [3, 8, 2],
@@ -282,11 +282,11 @@ describe('trend chart', () => {
       const tip = text(el.querySelector('[data-tip]'));
       expect(tip).toContain('Fri, Oct 2');
       expect(tip).toContain('Created');
-      expect(tip).toContain('All task types 8');
+      expect(tip).toContain('All Task Types 8');
       expect(tip).toContain('Alpha 6');
       expect(tip).toContain('Beta 2');
       expect(text(el.querySelector('[data-readout]'))).toBe(
-        'Fri, Oct 2, created: All task types 8, Alpha 6, Beta 2.',
+        'Fri, Oct 2, created: All Task Types 8, Alpha 6, Beta 2.',
       );
     });
 
@@ -307,7 +307,7 @@ describe('trend chart', () => {
       await update((h) => h.asTable.set(true));
       expect(Array.from(el.querySelectorAll('thead th')).map((t) => text(t))).toEqual([
         'Day',
-        'All task types',
+        'All Task Types',
         'Alpha',
         'Beta',
       ]);
