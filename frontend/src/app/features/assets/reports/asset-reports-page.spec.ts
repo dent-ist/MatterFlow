@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ddChoose, ddOptionValues, ddValue } from '../../../testing/dropdown-testing.spec-util';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import {
@@ -146,9 +147,7 @@ describe('AssetReportsPage', () => {
     await settle(fixture);
   };
   const choose = async (sel: string, value: string) => {
-    const select = q<HTMLSelectElement>(sel);
-    select.value = value;
-    select.dispatchEvent(new Event('change'));
+    ddChoose(q(sel), undefined, value);
     await settle(fixture);
   };
 
@@ -157,7 +156,7 @@ describe('AssetReportsPage', () => {
     expect(q('h1').textContent).toContain('Asset reports');
     expect(q('[data-result-idle]')).toBeTruthy();
     expect(el().querySelectorAll('[data-saved-item]')).toHaveLength(1);
-    expect(q<HTMLSelectElement>('[data-type]').options.length).toBe(3);
+    expect(ddOptionValues(q('[data-type]'))).toHaveLength(3);
     expect(q('[data-number-field]')).toBeNull();
   });
 
@@ -178,13 +177,13 @@ describe('AssetReportsPage', () => {
     await choose('[data-type]', '4');
     expect(reports['getAssetReportFields']).toHaveBeenLastCalledWith(4);
     await click_('[data-measure="sum"]');
-    expect(q<HTMLSelectElement>('[data-number-field]').value).toBe('size_gb');
+    expect(ddValue(q('[data-number-field]'))).toBe('size_gb');
     expect(q('[data-number-unit]')).toBeNull();
     await choose('[data-number-field]', 'pages');
     expect(q('[data-number-unit]')).toBeTruthy();
     await click_('[data-run]');
     expect(run['runAssetReport']).not.toHaveBeenCalled();
-    expect(q('[data-number-unit]').getAttribute('aria-invalid')).toBe('true');
+    expect(q('[data-number-unit] button').getAttribute('aria-invalid')).toBe('true');
     await choose('[data-number-unit]', 'Items');
     run['runAssetReport'].mockReturnValue(ok(sumResult()));
     await click_('[data-run]');
@@ -216,10 +215,10 @@ describe('AssetReportsPage', () => {
     expect(q('[data-graph-field]')).toBeNull();
     await click_('[data-show-pie]');
     expect(el().querySelector('mf-pie-chart')).toBeTruthy();
-    const graph = q<HTMLSelectElement>('[data-graph-field]');
-    expect(graph.options.length).toBe(2);
-    expect(graph.labels?.[0].textContent).toContain('Graph field');
-    expect(graph.value).toBe('1');
+    const graph = q('[data-graph-field]');
+    expect(ddOptionValues(graph)).toHaveLength(2);
+    expect(q('label[for="ar-graph"]').textContent).toContain('Graph field');
+    expect(ddValue(graph)).toBe('1');
     expect(q('mf-chart-panel').textContent).toContain('412');
     await choose('[data-graph-field]', '0');
     expect(q('mf-chart-panel').textContent).toContain('12 assets');

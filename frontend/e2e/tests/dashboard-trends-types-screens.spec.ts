@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Page } from '@playwright/test';
+import { dropdownByAttr } from '../support/dropdown';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
 import { TaskApi } from '../support/tasks';
@@ -205,7 +206,7 @@ test.describe('trends screenshots', () => {
       ).toBeChecked();
       await shot(`08-measure-both-${w}`);
       const measure = w < 600 ? page.locator('[data-measure-select="flows"]') : null;
-      if (measure) await measure.selectOption('onTime');
+      if (measure) await dropdownByAttr(page, 'data-measure-select="flows"').selectOption('onTime');
       else await page.locator('[data-measure-option="onTime"]').check();
       await expect(
         page.locator('[data-measure-option="onTime"], [data-measure-select]').first(),

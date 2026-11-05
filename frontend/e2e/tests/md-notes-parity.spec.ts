@@ -1,5 +1,6 @@
 import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
+import { dropdownByAttr } from '../support/dropdown';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
 
@@ -601,7 +602,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await expect(page.locator('[data-template-tags-button] mf-note-tag')).toHaveCount(1);
     expect(await axeViolations(page, '[data-notes-tab]')).toEqual([]);
     // move it to Client Level
-    await page.locator('[data-template-level-select]').selectOption('CLIENT');
+    await dropdownByAttr(page, 'data-template-level-select').selectOption('CLIENT');
     await page.locator('[data-template-save]').click();
     await expect(page.locator('[data-template-list] li', { hasText: mat })).toContainText(
       'Client Level',

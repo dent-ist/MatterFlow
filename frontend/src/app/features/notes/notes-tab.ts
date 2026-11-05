@@ -37,8 +37,8 @@ import { ApiError } from '../../core/http/api-error';
 import { NotificationService } from '../../core/notify/notification.service';
 import { taskTypeChipColours } from '../../shared/task-type/task-type-colours';
 import { ConfirmDialog } from '../../shared/ui/confirm-dialog';
+import { Dropdown, DropdownItem } from '../../shared/ui/dropdown';
 import { AiButton, AiComingSoon } from '../../shared/ui/ai/ai-assist';
-import { DropdownItem } from '../../shared/ui/dropdown';
 import { NumericDatePipe } from '../../shared/ui/numeric-date';
 import { SearchBox } from '../../shared/ui/search-box';
 import { FormDialog } from '../../shared/ui/form-dialog';
@@ -113,6 +113,7 @@ interface RefChip {
     AiButton,
     AiComingSoon,
     ConfirmDialog,
+    Dropdown,
     FormDialog,
     NgTemplateOutlet,
     NoteEditor,
@@ -619,26 +620,15 @@ interface RefChip {
                       </div>
                       <div class="nt__fl nt__lvl">
                         <label for="te-level" id="te-level-l">Level</label>
-                        <select
-                          id="te-level"
-                          aria-labelledby="te-level-l"
-                          class="nt__select"
+                        <mf-dropdown
                           data-template-level-select
+                          buttonId="te-level"
+                          label="Level"
+                          [items]="levelItems()"
                           [value]="tplLevel()"
-                          (change)="tplLevel.set($any($event.target).value)"
-                        >
-                          <option value="MATTER">Matter Level ({{ matterLabel() }})</option>
-                          @if (clientId() && (canClientLevel() || tplLevel() === 'CLIENT')) {
-                            <option value="CLIENT" [disabled]="!canClientLevel()">
-                              Client Level ({{ clientName() }})
-                            </option>
-                          }
-                          @if (isAdmin() || tplLevel() === 'SYSTEM') {
-                            <option value="SYSTEM" [disabled]="!isAdmin()">
-                              System Level (every matter)
-                            </option>
-                          }
-                        </select>
+                          [neutralValue]="null"
+                          (valueChange)="onLevel($event)"
+                        />
                       </div>
                     </div>
                     <div class="nt__edhint">
@@ -1972,6 +1962,31 @@ export class NotesTab {
   protected readonly canClientLevel = computed(
     () => this.auth.isSystemAdmin() || this.auth.has('Client.Edit'),
   );
+  protected readonly levelItems = computed<DropdownItem[]>(() => {
+    const items: DropdownItem[] = [
+      { value: 'MATTER', label: `Matter Level (${this.matterLabel()})` },
+    ];
+    if (this.clientId() && (this.canClientLevel() || this.tplLevel() === 'CLIENT')) {
+      items.push({
+        value: 'CLIENT',
+        label: `Client Level (${this.clientName()})`,
+        disabled: !this.canClientLevel(),
+      });
+    }
+    if (this.isAdmin() || this.tplLevel() === 'SYSTEM') {
+      items.push({
+        value: 'SYSTEM',
+        label: 'System Level (every matter)',
+        disabled: !this.isAdmin(),
+      });
+    }
+    return items;
+  });
+
+  protected onLevel(value: string): void {
+    if (value === 'MATTER' || value === 'CLIENT' || value === 'SYSTEM') this.tplLevel.set(value);
+  }
+
   protected readonly tplTagChips = computed(() =>
     this.allTags().filter((g) => this.tplTagIds().includes(g.noteTagId)),
   );

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { DataPeriod, PERIOD_LABELS } from '../data-selection';
 
 /** The choice of the period control. */
@@ -14,6 +15,7 @@ export interface PeriodChoice {
  */
 @Component({
   selector: 'mf-data-period',
+  imports: [Dropdown],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -37,7 +39,6 @@ export interface PeriodChoice {
       .pp__field {
         width: 100%;
       }
-      .pp__field select,
       .pp__field input {
         min-height: 44px;
       }
@@ -46,16 +47,15 @@ export interface PeriodChoice {
   template: `
     <div class="pp__field">
       <label for="dp-period">Period</label>
-      <select
-        id="dp-period"
-        class="mf-control mf-control--compact"
+      <mf-dropdown
         data-data-period
-        (change)="pick($any($event.target).value)"
-      >
-        @for (p of periods; track p) {
-          <option [value]="p" [selected]="p === period()">{{ labels[p] }}</option>
-        }
-      </select>
+        buttonId="dp-period"
+        label="Period"
+        [items]="items"
+        [value]="period()"
+        [neutralValue]="null"
+        (valueChange)="pick($event)"
+      />
     </div>
     @if (period() === 'custom') {
       <div class="pp__field">
@@ -63,7 +63,7 @@ export interface PeriodChoice {
         <input
           id="dp-from"
           type="date"
-          class="mf-control mf-control--compact"
+          class="mf-control"
           data-data-from
           [value]="from() ?? ''"
           [max]="to() ?? ''"
@@ -75,7 +75,7 @@ export interface PeriodChoice {
         <input
           id="dp-to"
           type="date"
-          class="mf-control mf-control--compact"
+          class="mf-control"
           data-data-to
           [value]="to() ?? ''"
           [min]="from() ?? ''"
@@ -92,7 +92,10 @@ export class DataPeriodControl {
   readonly changed = output<PeriodChoice>();
 
   protected readonly periods: readonly DataPeriod[] = ['all', '30d', '12m', 'year', 'custom'];
-  protected readonly labels = PERIOD_LABELS;
+  protected readonly items: DropdownItem[] = this.periods.map((p) => ({
+    value: p,
+    label: PERIOD_LABELS[p],
+  }));
 
   protected pick(value: string): void {
     const period = this.periods.find((p) => p === value) ?? 'all';

@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ddChoose } from '../../../testing/dropdown-testing.spec-util';
 import { provideRouter } from '@angular/router';
 import { firstValueFrom, of } from 'rxjs';
 import { ReportAssignmentClient } from '../../../api/generated/api-client';
@@ -254,7 +255,8 @@ describe('RolesPage', () => {
   it('lines the form fields up in one column: same left edge and width for name, description, search and copy', async () => {
     await press('New role');
     const fields = ['[data-name]', '[data-description]', '#role-permission-search', '[data-copy]'];
-    for (const sel of fields) expect(q(sel).classList.contains('mf-control')).toBe(true);
+    for (const sel of fields.filter((f) => f !== '[data-copy]'))
+      expect(q(sel).classList.contains('mf-control')).toBe(true);
     // Every control sits in an .mf-fld whose label is a shared .mf-label above it.
     for (const sel of fields) {
       const wrap = q(sel).closest('.mf-fld')!;
@@ -384,9 +386,7 @@ describe('RolesPage', () => {
     expect(groups).toEqual(['Pod']);
 
     await search('');
-    const select = q<HTMLSelectElement>('[data-copy]');
-    select.value = '6'; // Data Scientist
-    select.dispatchEvent(new Event('change'));
+    ddChoose(q('[data-copy]'), undefined, '6'); // Data Scientist
     await settle();
     expect(q<HTMLInputElement>('[data-perm="Task.View"]').checked).toBe(true);
     expect(q('[data-note]').textContent).toContain('copied from Data Scientist');

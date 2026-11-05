@@ -43,6 +43,8 @@ export interface DropdownItem {
   stateIcon?: UserStateKey;
   /** A group heading (not choosable). */
   heading?: boolean;
+  /** Shown but not choosable (muted, `aria-disabled`). */
+  disabled?: boolean;
 }
 
 let nextId = 0;
@@ -51,7 +53,7 @@ let nextId = 0;
  * The one dropdown of the app (`mf-dropdown`, epic #953 UI-19): a button that opens a rounded popover list in the mockup's style, a light blue chosen row with a check mark at its right edge (before the count; no reserved left column), counts right-aligned, comfortable rows, and `role="listbox"`. Single choice (`value`) or several (`multi`, `values`, with a Done button). A search box only where the list is
  * long (`search`; matches the label and the second line); `limit` shows the first rows and says "keep typing". Keys: Down or Enter on the button opens it; in the list Up, Down, Home, End,
  * type-ahead, Enter (or Space) choose, Escape closes and returns focus to the button, Tab closes. The popover is drawn in the page's overlay layer (the body), so a frame that clips
- * or contains its children cannot cut it. Rows are 44 px on a phone. Colours are tokens only; the button is 36 px (`sm` 30 px, 44 px on a phone).
+ * or contains its children cannot cut it. Rows are 44 px on a phone. Colours are tokens only; the button is 36 px (`sm` 32 px, 44 px on a phone), 4 px radius, as wide as its widest option (22 rem at most); the list is 8 px radius, items 36 px, selected = check and 600 weight on `--mf-selected-bg`, a search box above ten options, "No matches." when empty; the multi list has a checkbox per item and its "All" row (empty value) clears the rest.
  */
 @Component({
   selector: 'mf-dropdown',
@@ -70,6 +72,7 @@ let nextId = 0;
       [attr.aria-expanded]="open()"
       [attr.data-value]="multi() ? null : value()"
       [attr.aria-describedby]="describedBy() || null"
+      [attr.aria-invalid]="invalid() ? 'true' : null"
       [attr.aria-label]="label() + ': ' + (text() || '')"
       (click)="toggle()"
       (keydown)="onButtonKey($event)"
@@ -95,11 +98,16 @@ let nextId = 0;
       @if (prefix()) {
         <span class="pre">{{ prefix() }}</span>
       }
-      <span class="val">{{ text() }}</span>
+      <span class="vw">
+        <span class="val">{{ text() }}</span>
+        @for (w of sizer(); track $index) {
+          <span class="siz" aria-hidden="true">{{ w }}</span>
+        }
+      </span>
       @if (buttonCount() !== null) {
         <span class="cnt">({{ buttonCount() }})</span>
       }
-      <i class="pi pi-angle-down chev" aria-hidden="true"></i>
+      <i class="pi pi-chevron-down chev" aria-hidden="true"></i>
     </button>
 
     <ng-template #panelTpl>
@@ -111,7 +119,7 @@ let nextId = 0;
         [style.width.px]="pos().width"
         [style.maxHeight.px]="pos().maxHeight"
       >
-        @if (search()) {
+        @if (hasSearch()) {
           <div class="srch">
             <i class="pi pi-search" aria-hidden="true"></i>
             <input
@@ -144,8 +152,14 @@ let nextId = 0;
                 tabindex="-1"
                 [attr.data-value]="it.value"
                 [attr.aria-selected]="isOn(it.value)"
+                [attr.aria-disabled]="it.disabled ? 'true' : null"
                 [class.on]="isOn(it.value)"
               >
+                @if (multi()) {
+                  <span class="cb" [class.on]="isOn(it.value)" aria-hidden="true"
+                    ><i class="pi pi-check"></i
+                  ></span>
+                }
                 @if (it.typeChip; as tc) {
                   <mf-task-type-chip
                     size="sm"
@@ -181,7 +195,7 @@ let nextId = 0;
                     <small>{{ it.sub }}</small>
                   }
                 </span>
-                @if (isOn(it.value)) {
+                @if (isOn(it.value) && !multi()) {
                   <i class="pi pi-check tick" aria-hidden="true"></i>
                 }
                 @if ((it.count ?? -1) >= 0) {
@@ -195,7 +209,9 @@ let nextId = 0;
           }
           @if (none()) {
             <!-- A listbox needs at least one option; this one cannot be chosen (the key and click handlers skip it). -->
-            <li role="option" aria-disabled="true" aria-selected="false" class="mute">No match</li>
+            <li role="option" aria-disabled="true" aria-selected="false" class="mute">
+              No matches.
+            </li>
           }
         </ul>
         @if (multi()) {
@@ -223,7 +239,8 @@ let nextId = 0;
       height: var(--mf-ctl-h);
       padding: 0 var(--mf-s3);
       border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
+      max-width: 22rem;
+      border-radius: var(--mf-radius);
       background: var(--mf-surface);
       color: var(--mf-text);
       font: inherit;
@@ -244,9 +261,13 @@ let nextId = 0;
       background: var(--mf-sem-info-bg);
       border-color: var(--mf-sem-info-line);
     }
+    .btn[aria-invalid='true'] {
+      border-color: var(--mf-danger);
+    }
     .btn:disabled {
       background: var(--mf-surface-alt);
-      cursor: default;
+      color: var(--mf-text-disabled);
+      cursor: not-allowed;
     }
     .pre,
     .cnt {
@@ -254,8 +275,23 @@ let nextId = 0;
       font-size: var(--mf-fs-sm);
       flex: none;
     }
-    .val {
+    /* The trigger is as wide as its widest option and never changes with the chosen value (#1125): the longest labels are drawn invisibly in the same grid cell. */
+    .vw {
+      display: grid;
       flex: 1 1 auto;
+      min-width: 0;
+    }
+    .vw > * {
+      grid-area: 1 / 1;
+    }
+    .siz {
+      overflow: hidden;
+      height: 0;
+      visibility: hidden;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .val {
       min-width: 0;
       overflow: hidden;
       text-align: left;
@@ -267,7 +303,7 @@ let nextId = 0;
     .ico {
       flex: none;
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
+      font-size: var(--mf-icon-sm);
     }
     .sr {
       position: absolute;
@@ -283,8 +319,8 @@ let nextId = 0;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-xl);
+      border: 1px solid var(--mf-border-soft);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-surface);
       box-shadow: var(--mf-shadow-pop);
       color: var(--mf-text);
@@ -322,10 +358,10 @@ let nextId = 0;
       display: flex;
       align-items: center;
       gap: var(--mf-s2);
-      padding: var(--mf-s1) 12px;
-      min-height: 40px;
+      padding: var(--mf-s1) var(--mf-s3);
+      min-height: var(--mf-row-h);
       box-sizing: border-box;
-      border-radius: var(--mf-radius-md);
+      border-radius: var(--mf-radius);
       cursor: pointer;
     }
     .list li[role='option']:hover,
@@ -338,7 +374,26 @@ let nextId = 0;
       outline-offset: -2px;
     }
     .list li.on {
-      background: var(--mf-sem-info-bg);
+      background: var(--mf-selected-bg);
+      font-weight: 600;
+    }
+    .cb {
+      display: grid;
+      flex: none;
+      place-items: center;
+      box-sizing: border-box;
+      width: var(--mf-icon-sm);
+      height: var(--mf-icon-sm);
+      border: 1px solid var(--mf-border-strong);
+      border-radius: var(--mf-radius);
+      background: var(--mf-surface);
+      color: transparent;
+      font-size: var(--mf-icon-xs);
+    }
+    .cb.on {
+      border-color: var(--mf-primary);
+      background: var(--mf-primary);
+      color: var(--mf-primary-contrast);
     }
     .t {
       flex: 1;
@@ -357,7 +412,7 @@ let nextId = 0;
     .tick {
       flex: none;
       color: var(--mf-primary);
-      font-size: var(--mf-fs-sm);
+      font-size: var(--mf-icon-sm);
     }
     .dot {
       flex: none;
@@ -426,6 +481,10 @@ let nextId = 0;
       color: var(--mf-text-muted);
       cursor: default;
     }
+    .list li[role='option'][aria-disabled='true']:not(.mute) {
+      color: var(--mf-text-disabled);
+      cursor: not-allowed;
+    }
     .list li[role='option'].mute:hover {
       background: transparent;
     }
@@ -439,7 +498,7 @@ let nextId = 0;
       font-size: var(--mf-fs-sm);
     }
     .foot button {
-      min-height: 32px;
+      min-height: var(--mf-ctl-h-sm);
       border: 0;
       background: none;
       color: var(--mf-link);
@@ -495,6 +554,8 @@ export class Dropdown {
   readonly disabled = input(false);
   /** The id of a note that describes the control (read after its name). */
   readonly describedBy = input<string | null>(null);
+  /** The field failed validation: danger border and `aria-invalid` on the button. */
+  readonly invalid = input(false);
 
   protected readonly open = signal(false);
   protected readonly query = signal('');
@@ -535,6 +596,20 @@ export class Dropdown {
       ? this.chosen()!.count!
       : null,
   );
+  /** A search box is drawn when asked for, and always above ten options (#1125). */
+  protected readonly hasSearch = computed(
+    () => this.search() || this.items().filter((i) => !i.heading).length > 10,
+  );
+  /** The longest labels (and the placeholder), drawn invisibly so the trigger is as wide as its widest text (#1125). */
+  protected readonly sizer = computed(() => {
+    const labels = this.items()
+      .filter((i) => !i.heading)
+      .map((i) => i.label)
+      .sort((a, b) => b.length - a.length)
+      .slice(0, 3);
+    const extra = this.multi() ? ' +9' : '';
+    return [this.placeholder(), ...labels].map((t) => t + extra);
+  });
   protected readonly highlighted = computed(() =>
     this.multi()
       ? this.values().some((v) => v !== this.neutralValue())
@@ -569,7 +644,8 @@ export class Dropdown {
   );
 
   protected isOn(v: string): boolean {
-    return this.multi() ? this.values().includes(v) : this.value() === v;
+    if (this.multi()) return v === '' ? this.values().length === 0 : this.values().includes(v);
+    return this.value() === v;
   }
 
   protected toggle(): void {
@@ -586,13 +662,19 @@ export class Dropdown {
     const below = vh - r.bottom - 16;
     const above = r.top - 16;
     const flip = below < 260 && above > below;
+    // The list is at most 20 rem tall, then it scrolls.
+    const cap =
+      20 *
+      (parseFloat(
+        this.doc.defaultView?.getComputedStyle(this.doc.documentElement).fontSize ?? '',
+      ) || 14);
     this.pos.set({
       left: Math.max(8, Math.min(r.left, vw - width - 8)),
       top: r.bottom + 4,
       bottom: vh - r.top + 4,
       above: flip,
       width,
-      maxHeight: flip ? Math.min(420, above) : Math.max(220, Math.min(420, below)),
+      maxHeight: flip ? Math.min(cap, above) : Math.max(160, Math.min(cap, below)),
     });
     if (this.query() !== '') this.searched.emit('');
     this.query.set('');
@@ -652,6 +734,12 @@ export class Dropdown {
   protected pick(v: string): void {
     if (this.multi()) {
       const cur = this.values();
+      // "All <things>" (the empty value) clears the rest.
+      if (v === '') {
+        this.values.set([]);
+        this.view?.detectChanges();
+        return;
+      }
       this.values.set(cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v]);
       this.view?.detectChanges();
       return;
@@ -683,7 +771,7 @@ export class Dropdown {
       case 'ArrowDown':
         return go(inInput ? 0 : at + 1);
       case 'ArrowUp':
-        if (at <= 0 && this.search()) {
+        if (at <= 0 && this.hasSearch()) {
           e.preventDefault();
           panel.querySelector<HTMLElement>('input')?.focus();
           return;

@@ -154,10 +154,10 @@ describe('Dropdown (UI-19)', () => {
     input.value = 'zzz';
     input.dispatchEvent(new Event('input'));
     await flush();
-    expect(panel()!.textContent).toContain('No match');
+    expect(panel()!.textContent).toContain('No matches.');
   });
 
-  it('QA: "No match" keeps the listbox valid (it holds an option) and cannot be chosen; the scrolling list can take focus (axe)', async () => {
+  it('QA: "No matches." keeps the listbox valid (it holds an option) and cannot be chosen; the scrolling list can take focus (axe)', async () => {
     const { host, btn, flush, panel } = await setup();
     btn('d3').click();
     await flush();
@@ -167,10 +167,106 @@ describe('Dropdown (UI-19)', () => {
     input.dispatchEvent(new Event('input'));
     await flush();
     const none = panel()!.querySelector<HTMLElement>('li[role=option][aria-disabled=true]');
-    expect(none?.textContent).toContain('No match');
+    expect(none?.textContent).toContain('No matches.');
     none!.click();
     await flush();
     expect(host.big()).toBe(before);
     expect(panel()!.querySelector('[role=listbox]')!.getAttribute('tabindex')).toBe('0');
+  });
+});
+
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [Dropdown],
+  template: `
+    <mf-dropdown
+      id="m1"
+      label="State"
+      prefix="State:"
+      [items]="states"
+      [multi]="true"
+      [(values)]="values"
+    />
+    <mf-dropdown id="s1" label="Short" [items]="short" [(value)]="one" />
+    <mf-dropdown id="s2" label="Long" [items]="eleven" [(value)]="two" />
+  `,
+})
+class MultiHost {
+  readonly states: DropdownItem[] = [
+    { value: '', label: 'All states' },
+    { value: 'idle', label: 'Idle' },
+    { value: 'busy', label: 'Busy' },
+    { value: 'gone', label: 'Gone', disabled: true },
+  ];
+  readonly short: DropdownItem[] = [
+    { value: 'a', label: 'A' },
+    { value: 'b', label: 'A much longer label than the first one' },
+  ];
+  readonly eleven: DropdownItem[] = Array.from({ length: 11 }, (_, i) => ({
+    value: `v${i}`,
+    label: `Item ${i}`,
+  }));
+  readonly values = signal<readonly string[]>([]);
+  readonly one = signal('a');
+  readonly two = signal('');
+}
+
+describe('Dropdown anatomy (UI update 2, #1125)', () => {
+  async function setup() {
+    const fixture = TestBed.createComponent(MultiHost);
+    const flush = async () => {
+      fixture.detectChanges();
+      await fixture.whenStable();
+      await Promise.resolve();
+      fixture.detectChanges();
+    };
+    await flush();
+    const el = fixture.nativeElement as HTMLElement;
+    const opts = () =>
+      Array.from(document.body.querySelectorAll<HTMLElement>('.dd-panel li[role=option]'));
+    return { fixture, el, opts, flush };
+  }
+  afterEach(() => document.body.querySelectorAll('.dd-panel').forEach((e) => e.remove()));
+
+  it('the trigger carries the widest label invisibly, so its width does not follow the chosen value', async () => {
+    const { el } = await setup();
+    const sizer = Array.from(el.querySelectorAll('#s1 .siz')).map((n) => n.textContent);
+    expect(sizer).toContain('A much longer label than the first one');
+    expect(el.querySelector('#s1 .siz')?.getAttribute('aria-hidden')).toBe('true');
+    expect(el.querySelector('#s1 .chev')?.className).toContain('pi-chevron-down');
+  });
+
+  it('a list of more than ten options gets a search box, a short one does not', async () => {
+    const { el, flush } = await setup();
+    (el.querySelector('#s1 button') as HTMLButtonElement).click();
+    await flush();
+    expect(document.body.querySelector('.dd-panel .srch')).toBeNull();
+    document.body.querySelectorAll('.dd-panel').forEach((e) => e.remove());
+    (el.querySelector('#s2 button') as HTMLButtonElement).click();
+    await flush();
+    expect(document.body.querySelector('.dd-panel .srch')).not.toBeNull();
+  });
+
+  it('multi: a checkbox per row, "All" is first and clears the rest, the trigger says "Idle +1", a disabled row cannot be chosen', async () => {
+    const { fixture, el, opts, flush } = await setup();
+    const btn = el.querySelector('#m1 button') as HTMLButtonElement;
+    btn.click();
+    await flush();
+    expect(document.body.querySelectorAll('.dd-panel .cb').length).toBe(4);
+    expect(opts()[0].getAttribute('aria-selected')).toBe('true'); // nothing picked = All
+    opts()[1].click();
+    await flush();
+    opts()[2].click();
+    await flush();
+    expect(fixture.componentInstance.values()).toEqual(['idle', 'busy']);
+    expect(btn.textContent).toContain('State:');
+    expect(btn.textContent).toContain('Idle +1');
+    opts()[3].click();
+    await flush();
+    expect(fixture.componentInstance.values()).toEqual(['idle', 'busy']);
+    expect(opts()[3].getAttribute('aria-disabled')).toBe('true');
+    opts()[0].click();
+    await flush();
+    expect(fixture.componentInstance.values()).toEqual([]);
   });
 });

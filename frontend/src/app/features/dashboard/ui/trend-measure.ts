@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 
 let nextId = 0;
 
@@ -9,11 +10,12 @@ export interface MeasureOption<T extends string> {
 
 /**
  * The measure control of one Trends panel (`mf-trend-measure`): a segmented control (a native radio group, so the arrow keys move through
- * it and Tab leaves it) that becomes a select below 600 px. The selected segment is bold with a check mark, never colour alone. With a single
+ * it and Tab leaves it) that becomes the shared dropdown below 600 px. The selected segment is bold with a check mark, never colour alone. With a single
  * option it is just the name of that option. Generic over the option values; the tab owns the state machine (see `normalizeChoice`).
  */
 @Component({
   selector: 'mf-trend-measure',
+  imports: [Dropdown],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (options().length === 1) {
@@ -35,16 +37,15 @@ export interface MeasureOption<T extends string> {
           </label>
         }
       </div>
-      <select
+      <mf-dropdown
         class="select"
-        [attr.aria-label]="label()"
+        [label]="label()"
         [attr.data-measure-select]="panel()"
-        (change)="onSelect($event)"
-      >
-        @for (o of options(); track o.value) {
-          <option [value]="o.value" [selected]="o.value === value()">{{ o.label }}</option>
-        }
-      </select>
+        [items]="items()"
+        [value]="value()"
+        [neutralValue]="null"
+        (valueChange)="valueChange.emit($event)"
+      />
     }
   `,
   styles: `
@@ -109,15 +110,6 @@ export interface MeasureOption<T extends string> {
     }
     .select {
       display: none;
-      min-height: var(--mf-target-min);
-      max-width: 100%;
-      padding: 0 var(--mf-s2);
-      font: inherit;
-      font-size: var(--mf-fs-sm);
-      color: var(--mf-text);
-      background: var(--mf-surface);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
     }
     @media (max-width: 599.98px) {
       .seg {
@@ -139,7 +131,7 @@ export class TrendMeasure {
   readonly value = input.required<string>();
   readonly valueChange = output<string>();
 
-  protected onSelect(event: Event): void {
-    this.valueChange.emit((event.target as HTMLSelectElement).value);
-  }
+  protected readonly items = computed<DropdownItem[]>(() =>
+    this.options().map((o) => ({ value: o.value, label: o.label })),
+  );
 }

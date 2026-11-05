@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { firstValueFrom } from 'rxjs';
 import { ReportAdminClient, ReportRunLogItemResponse } from '../../../api/generated/api-client';
 import { ApiError } from '../../../core/http/api-error';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
 
@@ -14,28 +15,28 @@ const PAGE = 50;
  */
 @Component({
   selector: 'mf-report-runs-tab',
-  imports: [MfDatePipe, ScrollArea],
+  imports: [Dropdown, MfDatePipe, ScrollArea],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
     <div class="rr__filters">
       <div class="rr__field">
         <label class="mf-label mf-label--sm" for="runs-status">Status</label>
-        <select id="runs-status" class="mf-control" (change)="setStatus($any($event.target).value)">
-          <option value="">All</option>
-          @for (s of statuses; track s) {
-            <option [value]="s">{{ s }}</option>
-          }
-        </select>
+        <mf-dropdown
+          buttonId="runs-status"
+          label="Status"
+          [items]="statusItems"
+          (valueChange)="setStatus($event)"
+        />
       </div>
       <div class="rr__field">
         <label class="mf-label mf-label--sm" for="runs-kind">Kind</label>
-        <select id="runs-kind" class="mf-control" (change)="setKind($any($event.target).value)">
-          <option value="">All</option>
-          @for (k of kinds; track k) {
-            <option [value]="k">{{ k }}</option>
-          }
-        </select>
+        <mf-dropdown
+          buttonId="runs-kind"
+          label="Kind"
+          [items]="kindItems"
+          (valueChange)="setKind($event)"
+        />
       </div>
     </div>
     <p class="mf-sr-only" role="status" aria-live="polite" data-announce>{{ announcement() }}</p>
@@ -146,6 +147,14 @@ export class ReportRunsTab {
     'Running',
   ];
   protected readonly kinds = ['Run', 'Preview', 'Export', 'ChoiceQuery'];
+  protected readonly statusItems: DropdownItem[] = [
+    { value: '', label: 'All' },
+    ...this.statuses.map((s) => ({ value: s, label: s })),
+  ];
+  protected readonly kindItems: DropdownItem[] = [
+    { value: '', label: 'All' },
+    ...this.kinds.map((k) => ({ value: k, label: k })),
+  ];
   protected readonly rows = signal<ReportRunLogItemResponse[]>([]);
   protected readonly next = signal<number | null>(null);
   protected readonly loading = signal(true);

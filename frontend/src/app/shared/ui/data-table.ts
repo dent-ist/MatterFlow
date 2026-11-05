@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { Button } from 'primeng/button';
 import { retryWhenBackOnline } from '../../core/http/connectivity';
+import { Dropdown, DropdownItem } from './dropdown';
 import { ErrorReference } from './error-reference';
 import { FixedPage } from './fixed-page';
 import { StatusFilter as StatusFilterValue, ariaSort, nextSort } from './list-helpers';
@@ -83,21 +84,20 @@ export class SortHeader {
 /** Status select with the product-owner default "Active" (inactive and archived records are hidden until asked for). */
 @Component({
   selector: 'mf-status-filter',
+  imports: [Dropdown],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.sf--pinned]': 'pinned' },
   template: `
     <div class="sf">
       <label class="sf__label" [for]="inputId()">Status</label>
-      <select
-        class="mf-control sf__select"
-        [id]="inputId()"
+      <mf-dropdown
+        [buttonId]="inputId()"
+        label="Status"
+        [items]="items()"
         [value]="value()"
-        (change)="valueChange.emit($any($event.target).value)"
-      >
-        <option value="active">Active</option>
-        <option value="inactive">{{ inactiveLabel() }}</option>
-        <option value="all">All</option>
-      </select>
+        [neutralValue]="null"
+        (valueChange)="valueChange.emit($event)"
+      />
     </div>
   `,
   styles: `
@@ -109,9 +109,6 @@ export class SortHeader {
       font-weight: 600;
       font-size: var(--mf-fs-sm);
       line-height: 1.25rem;
-    }
-    .sf__select {
-      min-width: 160px;
     }
     /* Pinned toolbar of a fixed-header page: the label sits left of the select, so the toolbar is one row. */
     @media (min-width: 768px) and (min-height: 561px) {
@@ -131,6 +128,11 @@ export class StatusFilter {
   /** Wording of the middle option ("Inactive", or "Archived" for projects). */
   readonly inactiveLabel = input('Inactive');
   readonly valueChange = output<string>();
+  protected readonly items = computed<DropdownItem[]>(() => [
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: this.inactiveLabel() },
+    { value: 'all', label: 'All' },
+  ]);
 }
 
 const SKELETON_ROWS = [0, 1, 2, 3, 4];

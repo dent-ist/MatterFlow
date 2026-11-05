@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { ddChoose } from '../../../testing/dropdown-testing.spec-util';
 import { Router, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import {
@@ -199,9 +200,7 @@ describe('ReportRunsTab (#712)', () => {
     expect(el.querySelector('[data-more]')).toBeNull();
 
     api.listReportRuns.mockReturnValueOnce(of({ items: [], nextBefore: undefined }));
-    const status = el.querySelector<HTMLSelectElement>('#runs-status')!;
-    status.value = 'Failed';
-    status.dispatchEvent(new Event('change'));
+    ddChoose(el.querySelector<HTMLElement>('mf-dropdown:has(#runs-status)')!, undefined, 'Failed');
     await settle(fixture);
     expect(api.listReportRuns).toHaveBeenLastCalledWith(
       undefined,

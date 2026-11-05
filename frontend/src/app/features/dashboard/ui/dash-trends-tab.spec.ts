@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ddChoose } from '../../../testing/dropdown-testing.spec-util';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -290,9 +291,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     );
     expect(el.querySelector('[data-measure-select=flows]')).not.toBeNull();
     // The select (below 600 px) works the same.
-    const select = el.querySelector<HTMLSelectElement>('[data-measure-select=flows]')!;
-    select.value = 'onTime';
-    select.dispatchEvent(new Event('change', { bubbles: true }));
+    ddChoose(el.querySelector('[data-measure-select=flows]')!, undefined, 'onTime');
     await settle();
     expect(url()).toBe('/trends?metric=ontime');
     await choose('flows', 'both');

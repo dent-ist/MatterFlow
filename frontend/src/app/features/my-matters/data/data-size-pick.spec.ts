@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ddChoose, ddValue } from '../../../testing/dropdown-testing.spec-util';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import type { AssetDataTypeRow } from '../../../api/generated/api-client';
 import { SizeChoice } from '../data-selection';
@@ -77,9 +78,11 @@ describe('DataSizePick', () => {
   it('applies another field only once it has a unit, and goes back to the default when the extra field is dropped', async () => {
     await change(box('3:docs'));
     expect(fixture.componentInstance.choices()).toEqual([]); // waiting for the unit
-    const unit = el().querySelector<HTMLSelectElement>('[data-size-unit="3:docs"]')!;
-    expect(unit.value).toBe('');
-    await change(unit, 'Items');
+    const unit = el().querySelector<HTMLElement>('[data-size-unit="3:docs"]')!;
+    expect(ddValue(unit)).toBe('');
+    ddChoose(unit, undefined, 'Items');
+    fixture.detectChanges();
+    await fixture.whenStable();
     // The default field stays ticked and the extra one is added to it.
     expect(fixture.componentInstance.choices()).toEqual([
       { typeId: 3, key: 'size_gb', unit: null },

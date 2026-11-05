@@ -3,6 +3,7 @@ import path from 'node:path';
 import { Locator, Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { BoardSeed, seedBoard } from '../support/board';
+import { dropdownByAttr } from '../support/dropdown';
 import { expect, test } from '../support/fixtures';
 
 /**
@@ -165,7 +166,9 @@ test.describe('Lane switcher below 900 px (#125)', () => {
     await page.getByRole('button', { name: /^Filters/ }).click();
     await expect(page.locator('[data-filter-panel] [data-group-by]')).toBeVisible();
     await expect(page.locator('[data-filter-panel] [data-sort]')).toBeVisible();
-    await page.locator('[data-filter-panel] [data-group-by]').selectOption('assignee');
+    await dropdownByAttr(page.locator('[data-filter-panel]'), 'data-group-by').selectOption(
+      'assignee',
+    );
     await expect(page.locator('[data-filter-count]')).toHaveText('(1)');
     await expect(lane(page, 'IN_PROGRESS').locator('.grp-btn').first()).toBeVisible();
     await shot(page, 'toolbar-filters-375');

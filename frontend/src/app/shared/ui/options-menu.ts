@@ -181,12 +181,15 @@ export class OptionsMenu {
     const began = this.pressInside;
     this.pressInside = false;
     if (began) return;
+    // The list of an `mf-dropdown` inside the menu is drawn in the page body: a click in it is not a click outside.
+    if ((event.target as Element | null)?.closest?.('.dd-panel')) return;
     if (!this.host.nativeElement.contains(event.target as Node)) this.close(false);
   }
 
   /** Tab (or a click on another control) moves the focus out of the menu: it closes without stealing the focus back. */
   protected leave(event: FocusEvent): void {
     const to = event.relatedTarget as Node | null;
+    if ((to as Element | null)?.closest?.('.dd-panel')) return;
     if (to && !this.host.nativeElement.contains(to)) this.close(false);
   }
 

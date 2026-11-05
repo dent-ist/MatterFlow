@@ -13,6 +13,7 @@ import {
   TasksClient,
   UsersLookupClient,
 } from '../../../api/generated/api-client';
+import { ddChoose, ddOptionTexts, ddValue } from '../../../testing/dropdown-testing.spec-util';
 import { scopesMock } from '../dash-scope-testing';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { Permission } from '../../../core/auth/permissions';
@@ -256,9 +257,7 @@ describe('DashSwimlaneTab', () => {
       new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true, ...init }),
     );
   const choose = async (selector: string, value: string) => {
-    const select = q<HTMLSelectElement>(selector);
-    select.value = value;
-    select.dispatchEvent(new Event('change'));
+    ddChoose(q(selector), undefined, value);
     await settle();
   };
   const url = () => TestBed.inject(Router).url;
@@ -443,7 +442,7 @@ describe('DashSwimlaneTab', () => {
         true,
         'all',
       );
-      expect(q<HTMLSelectElement>('[data-group-by]').value).toBe('assignee');
+      expect(ddValue(q('[data-group-by]'))).toBe('assignee');
       // The settings behind the "..." button that are not the defaults are visible as text.
       expect(text(q('[data-active-settings]'))).toContain('Done in 14 days');
       expect(text(q('[data-active-settings]'))).toContain('Only mine');
@@ -451,7 +450,7 @@ describe('DashSwimlaneTab', () => {
       expect(text(q('[data-filter-count]'))).toBe('(4)');
       q<HTMLButtonElement>('[data-filters]').click();
       await settle();
-      expect(q<HTMLSelectElement>('[data-filter="priority"]').value).toBe('2');
+      expect(ddValue(q('[data-filter="priority"]'))).toBe('2');
       expect(q<HTMLInputElement>('[data-filter="overdue"]').checked).toBe(true);
     });
 
@@ -564,7 +563,7 @@ describe('DashSwimlaneTab', () => {
         '/dashboard?tab=swimlane&group=priority&sort=due&days=7',
       );
       await settle();
-      expect(q<HTMLSelectElement>('[data-group-by]').value).toBe('priority');
+      expect(ddValue(q('[data-group-by]'))).toBe('priority');
       expect(getBoard).toHaveBeenLastCalledWith(
         7,
         'priority',
@@ -588,17 +587,14 @@ describe('DashSwimlaneTab', () => {
       );
       q<HTMLButtonElement>('[data-filters]').click();
       await settle();
-      expect(qa('[data-filter="assignee"] option').map((o) => text(o))).toEqual([
+      expect(ddOptionTexts(q('[data-filter="assignee"]'))).toEqual([
         'Anyone',
         'Unassigned',
         'Tariq Malik',
       ]);
-      expect(qa('[data-filter="type"] option').map((o) => text(o))).toEqual([
-        'Any type',
-        'Data Processing',
-      ]);
+      expect(ddOptionTexts(q('[data-filter="type"]'))).toEqual(['Any type', 'Data Processing']);
       expect(q('[data-filter="pod"]')).toBeNull();
-      expect(qa('[data-filter="priority"] option').length).toBeGreaterThan(2);
+      expect(ddOptionTexts(q('[data-filter="priority"]')).length).toBeGreaterThan(2);
     });
   });
 

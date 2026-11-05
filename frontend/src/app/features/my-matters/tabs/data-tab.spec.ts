@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ddChoose } from '../../../testing/dropdown-testing.spec-util';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
@@ -375,9 +376,7 @@ describe('DataTab', () => {
     await settle();
     expect(el().querySelector('mf-pie-chart')).not.toBeNull();
     // The choice stays when the selection changes, and is remembered with it.
-    const period = q<HTMLSelectElement>('[data-data-period]');
-    period.value = '12m';
-    period.dispatchEvent(new Event('change'));
+    ddChoose(q('[data-data-period]'), undefined, '12m');
     await settle();
     expect(TestBed.inject(Router).url).toContain('dv=pie');
     expect(saved.at(-1)).toEqual([
@@ -560,9 +559,7 @@ describe('DataTab', () => {
     sizes.querySelector<HTMLInputElement>('[data-size-field="3:docs"]')!.click();
     await settle();
     expect(api['getMyMattersData'].mock.calls.at(-1)![4]).toBeUndefined();
-    const unitSelect = sizes.querySelector<HTMLSelectElement>('[data-size-unit="3:docs"]')!;
-    unitSelect.value = 'Items';
-    unitSelect.dispatchEvent(new Event('change'));
+    ddChoose(sizes.querySelector<HTMLElement>('[data-size-unit="3:docs"]')!, undefined, 'Items');
     await settle();
     expect(api['getMyMattersData'].mock.calls.at(-1)![4]).toEqual(['3:size_gb', '3:docs:Items']);
     expect(api['getMyMattersDataVolume'].mock.calls.at(-1)![4]).toEqual([
@@ -571,9 +568,7 @@ describe('DataTab', () => {
     ]);
 
     // Period: a ready period becomes dates from today's calendar.
-    const period = q<HTMLSelectElement>('[data-data-period]');
-    period.value = 'year';
-    period.dispatchEvent(new Event('change'));
+    ddChoose(q('[data-data-period]'), undefined, 'year');
     await settle();
     const call = api['getMyMattersData'].mock.calls.at(-1)!;
     expect(call[5]).toMatch(/^\d{4}-01-01$/);

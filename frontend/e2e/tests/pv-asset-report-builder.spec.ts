@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
+import { dropdownByAttr, labelledDropdown } from '../support/dropdown';
 import { expect, test } from '../support/fixtures';
 import { PmFixtures, pmFixtures } from '../support/pm-fixtures';
 import { SIZES, noHorizontalScroll, shot } from '../support/screens';
@@ -121,7 +122,7 @@ test.describe('Asset report builder (PM v2)', () => {
     }
     async choose(selector: string, value: string) {
       this.n++;
-      await this.page.locator(selector).selectOption(value);
+      await dropdownByAttr(this.page, selector.slice(1, -1)).selectOption(value);
     }
   }
 
@@ -153,7 +154,10 @@ test.describe('Asset report builder (PM v2)', () => {
     await page.locator('[data-name]').fill(`Data by platform ${k.token}`);
     await steps.choose('[data-type]', String(k.workspace.assetTypeId));
     await steps.click('[data-measure="sum"]');
-    await expect(page.locator('[data-number-field]')).toHaveValue('size_gb');
+    await expect(dropdownByAttr(page, 'data-number-field')).toHaveAttribute(
+      'data-value',
+      'size_gb',
+    );
     await steps.choose('[data-group]', 'field:platform');
     await steps.click('[data-run]');
 
@@ -167,7 +171,7 @@ test.describe('Asset report builder (PM v2)', () => {
 
     await steps.click('[data-show-pie]');
     await expect(page.locator('mf-pie-chart')).toBeVisible();
-    await expect(page.getByLabel('Graph field')).toHaveValue('1');
+    await expect(labelledDropdown(page, 'Graph field')).toHaveAttribute('data-value', '1');
     await steps.click('[data-save]');
     await expect(page.locator('[data-saved-item]')).toHaveCount(1);
     await expect(page.locator('[data-save]')).toHaveText('Save changes');
@@ -192,14 +196,14 @@ test.describe('Asset report builder (PM v2)', () => {
     const k = await kit(seed, personas);
     const page = await asUser(k.fx.pmA.username);
     await page.goto('/assets/reports');
-    await page.locator('[data-type]').selectOption(String(k.workspace.assetTypeId));
+    await dropdownByAttr(page, 'data-type').selectOption(String(k.workspace.assetTypeId));
     await page.locator('[data-measure="sum"]').click();
-    await page.locator('[data-group]').selectOption('field:platform');
+    await dropdownByAttr(page, 'data-group').selectOption('field:platform');
     await page.locator('[data-run]').click();
     await page.locator('[data-show-bar]').click();
     await expect(page.locator('mf-bar-chart')).toBeVisible();
     await expect(page.locator('mf-bar-chart')).toContainText('40');
-    await page.getByLabel('Graph field').selectOption('0');
+    await labelledDropdown(page, 'Graph field').selectOption('0');
     await expect(page.locator('mf-bar-chart')).toContainText('2');
     await expect(page.locator('mf-bar-chart')).not.toContainText('40');
     await page.locator('[data-show-table]').click();
@@ -217,9 +221,9 @@ test.describe('Asset report builder (PM v2)', () => {
     const page = await asUser(k.fx.pmA.username);
     await page.goto('/assets/reports');
     await page.locator('[data-name]').fill('Platform & size');
-    await page.locator('[data-type]').selectOption(String(k.workspace.assetTypeId));
+    await dropdownByAttr(page, 'data-type').selectOption(String(k.workspace.assetTypeId));
     await page.locator('[data-measure="sum"]').click();
-    await page.locator('[data-group]').selectOption('field:platform');
+    await dropdownByAttr(page, 'data-group').selectOption('field:platform');
     await page.locator('[data-run]').click();
     await expect(resultRows(page)).toHaveCount(2);
     await page.locator('[data-export-menu] [data-overflow]').click();
@@ -254,7 +258,7 @@ test.describe('Asset report builder (PM v2)', () => {
     await page.goto('/assets/reports');
     await page.locator('[data-measure="sum"]').click();
     await expect(page.locator('[data-default-size-note]')).toContainText('default size field');
-    await page.locator('[data-group]').selectOption('assetType');
+    await dropdownByAttr(page, 'data-group').selectOption('assetType');
     await page.locator('[data-run]').click();
     const warning = page.locator('[data-units-warning]');
     await expect(warning).toBeVisible();
@@ -279,8 +283,8 @@ test.describe('Asset report builder (PM v2)', () => {
     await page.goto('/assets/reports');
 
     // Empty: no disposed assets.
-    await page.locator('[data-type]').selectOption(String(k.workspace.assetTypeId));
-    await page.locator('[data-disposition]').selectOption('DISPOSED');
+    await dropdownByAttr(page, 'data-type').selectOption(String(k.workspace.assetTypeId));
+    await dropdownByAttr(page, 'data-disposition').selectOption('DISPOSED');
     await page.locator('[data-run]').click();
     await expect(page.locator('[data-result-empty]')).toContainText('No assets match this report');
     await expect(page.locator('[data-export-menu]')).toHaveCount(0);
@@ -306,7 +310,7 @@ test.describe('Asset report builder (PM v2)', () => {
       await new Promise((r) => setTimeout(r, 1200));
       await route.continue();
     });
-    await page.locator('[data-disposition]').selectOption('');
+    await dropdownByAttr(page, 'data-disposition').selectOption('');
     await page.locator('[data-run]').click();
     await expect(page.locator('[data-result-loading]')).toBeVisible();
     await expect(resultRows(page).first()).toBeVisible();
@@ -369,8 +373,10 @@ test.describe('Asset report builder (PM v2)', () => {
     };
     await press('[data-name]');
     await page.keyboard.type('Keyboard report');
-    await press('[data-type]');
-    await page.keyboard.type(k.workspace.name); // type-ahead picks the option
+    await press('[data-type] button');
+    await page.keyboard.press('ArrowDown'); // opens the list
+    await page.keyboard.type(k.workspace.name); // type-ahead moves to the option
+    await page.keyboard.press('Enter');
     await press('[data-run]');
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-summary]')).toContainText('3 assets in 1 group');
@@ -399,9 +405,9 @@ test.describe('Asset report builder (PM v2)', () => {
     await page
       .locator('[data-name]')
       .fill(`A report with a rather long name to check wrapping ${k.token}`);
-    await page.locator('[data-type]').selectOption(String(k.workspace.assetTypeId));
+    await dropdownByAttr(page, 'data-type').selectOption(String(k.workspace.assetTypeId));
     await page.locator('[data-measure="sum"]').click();
-    await page.locator('[data-group]').selectOption('field:platform');
+    await dropdownByAttr(page, 'data-group').selectOption('field:platform');
     await page.locator('[data-run]').click();
     await expect(resultRows(page)).toHaveCount(2);
     await page.locator('[data-save]').click();
@@ -444,8 +450,8 @@ test.describe('Asset report builder (PM v2)', () => {
     // The states: idle (new report), empty, error.
     await page.locator('[data-new-report]').click();
     await check('idle');
-    await page.locator('[data-disposition]').selectOption('DISPOSED');
-    await page.locator('[data-type]').selectOption(String(k.workspace.assetTypeId));
+    await dropdownByAttr(page, 'data-disposition').selectOption('DISPOSED');
+    await dropdownByAttr(page, 'data-type').selectOption(String(k.workspace.assetTypeId));
     await page.locator('[data-run]').click();
     await expect(page.locator('[data-result-empty]')).toBeVisible();
     await check('empty');

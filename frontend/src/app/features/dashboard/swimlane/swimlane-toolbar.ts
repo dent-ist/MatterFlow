@@ -9,6 +9,7 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { SearchBox } from '../../../shared/ui/search-box';
 import {
   COMPLETED_WINDOWS,
@@ -43,7 +44,7 @@ export interface Option {
  */
 @Component({
   selector: 'mf-swimlane-toolbar',
-  imports: [SearchBox, NgTemplateOutlet],
+  imports: [Dropdown, SearchBox, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:click)': 'onDocumentClick($event)' },
   template: `
@@ -188,31 +189,27 @@ export interface Option {
     <ng-template #groupSort>
       <div class="fld">
         <label class="lbl" for="sl-group">Group</label>
-        <select
-          id="sl-group"
-          class="mf-control mf-control--compact"
+        <mf-dropdown
           data-group-by
+          buttonId="sl-group"
+          label="Group"
+          [items]="groupItems"
           [value]="v.groupBy"
-          (change)="onGroup($any($event.target).value)"
-        >
-          @for (g of groupBys; track g) {
-            <option [value]="g" [selected]="g === v.groupBy">{{ groupLabels[g] }}</option>
-          }
-        </select>
+          [neutralValue]="null"
+          (valueChange)="onGroup($event)"
+        />
       </div>
       <div class="fld">
         <label class="lbl" for="sl-sort">Sort</label>
-        <select
-          id="sl-sort"
-          class="mf-control mf-control--compact"
+        <mf-dropdown
           data-sort
+          buttonId="sl-sort"
+          label="Sort"
+          [items]="sortItems"
           [value]="v.sort"
-          (change)="onSort($any($event.target).value)"
-        >
-          @for (s of sorts; track s) {
-            <option [value]="s" [selected]="s === v.sort">{{ sortLabels[s] }}</option>
-          }
-        </select>
+          [neutralValue]="null"
+          (valueChange)="onSort($event)"
+        />
       </div>
     </ng-template>
 
@@ -229,46 +226,36 @@ export interface Option {
         }
         <div class="fld fld--col">
           <label class="lbl" for="sl-assignee">Assignee</label>
-          <select
-            id="sl-assignee"
-            class="mf-control mf-control--compact"
+          <mf-dropdown
             data-filter="assignee"
-            (change)="viewChange.emit({ assignee: $any($event.target).value || null })"
-          >
-            <option value="">Anyone</option>
-            <option value="unassigned" [selected]="v.assignee === 'unassigned'">Unassigned</option>
-            @for (p of people(); track p.id) {
-              <option [value]="p.id" [selected]="v.assignee === '' + p.id">{{ p.label }}</option>
-            }
-          </select>
+            buttonId="sl-assignee"
+            label="Assignee"
+            [items]="assigneeItems()"
+            [value]="v.assignee ?? ''"
+            (valueChange)="viewChange.emit({ assignee: $event || null })"
+          />
         </div>
         <div class="fld fld--col">
           <label class="lbl" for="sl-type">Task type</label>
-          <select
-            id="sl-type"
-            class="mf-control mf-control--compact"
+          <mf-dropdown
             data-filter="type"
-            (change)="viewChange.emit({ type: num($any($event.target).value) })"
-          >
-            <option value="">Any type</option>
-            @for (p of types(); track p.id) {
-              <option [value]="p.id" [selected]="v.type === p.id">{{ p.label }}</option>
-            }
-          </select>
+            buttonId="sl-type"
+            label="Task type"
+            [items]="typeItems()"
+            [value]="v.type === null ? '' : '' + v.type"
+            (valueChange)="viewChange.emit({ type: num($event) })"
+          />
         </div>
         <div class="fld fld--col">
           <label class="lbl" for="sl-priority">Priority</label>
-          <select
-            id="sl-priority"
-            class="mf-control mf-control--compact"
+          <mf-dropdown
             data-filter="priority"
-            (change)="viewChange.emit({ priority: num($any($event.target).value) })"
-          >
-            <option value="">Any priority</option>
-            @for (p of priorities(); track p.id) {
-              <option [value]="p.id" [selected]="v.priority === p.id">{{ p.label }}</option>
-            }
-          </select>
+            buttonId="sl-priority"
+            label="Priority"
+            [items]="priorityItems()"
+            [value]="v.priority === null ? '' : '' + v.priority"
+            (valueChange)="viewChange.emit({ priority: num($event) })"
+          />
         </div>
         <label class="check">
           <input
@@ -324,12 +311,6 @@ export interface Option {
       min-width: 10rem;
       flex: 1 1 18rem;
       max-width: 22rem;
-    }
-    /* The search input is as tall as the other (compact) controls on the line, not the 40px form height. */
-    .search ::ng-deep .sb__input {
-      min-height: var(--mf-row-h-compact);
-      height: var(--mf-row-h-compact);
-      padding-block: 0;
     }
     .n {
       font-variant-numeric: tabular-nums;
@@ -439,7 +420,7 @@ export interface Option {
       .fld:not(.fld--col) {
         flex: 1 1 8rem;
       }
-      .fld select {
+      .fld mf-dropdown {
         flex: 1;
         min-width: 0;
       }
@@ -447,10 +428,14 @@ export interface Option {
   `,
 })
 export class SwimlaneToolbar {
-  protected readonly groupBys = GROUP_BYS;
-  protected readonly groupLabels = GROUP_LABELS;
-  protected readonly sorts = SORTS;
-  protected readonly sortLabels = SORT_LABELS;
+  protected readonly groupItems: DropdownItem[] = GROUP_BYS.map((g) => ({
+    value: g,
+    label: GROUP_LABELS[g],
+  }));
+  protected readonly sortItems: DropdownItem[] = SORTS.map((s) => ({
+    value: s,
+    label: SORT_LABELS[s],
+  }));
   protected readonly windows = COMPLETED_WINDOWS;
 
   readonly view = input.required<SwimlaneView>();
@@ -491,6 +476,20 @@ export class SwimlaneToolbar {
       (this.compact() && this.view().groupBy !== DEFAULT_VIEW.groupBy ? 1 : 0) +
       (this.compact() && this.view().sort !== DEFAULT_VIEW.sort ? 1 : 0),
   );
+
+  protected readonly assigneeItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'Anyone' },
+    { value: 'unassigned', label: 'Unassigned' },
+    ...this.people().map((p) => ({ value: '' + p.id, label: p.label })),
+  ]);
+  protected readonly typeItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'Any type' },
+    ...this.types().map((p) => ({ value: '' + p.id, label: p.label })),
+  ]);
+  protected readonly priorityItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'Any priority' },
+    ...this.priorities().map((p) => ({ value: '' + p.id, label: p.label })),
+  ]);
 
   protected num(value: string): number | null {
     const n = Number(value);

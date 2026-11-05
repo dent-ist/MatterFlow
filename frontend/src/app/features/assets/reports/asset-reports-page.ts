@@ -31,6 +31,7 @@ import { ChartPanel } from '../../../shared/charts/chart-panel';
 import { ChartKind } from '../../../shared/charts/chart-types';
 import { ScopeService } from '../../../shared/scope/scope.service';
 import { ScopeSwitch } from '../../../shared/scope/scope-switch';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { ExportMenu, ExportResult } from '../../../shared/ui/export-menu';
 import { ExportService } from '../../../shared/ui/export.service';
 import { ExportFormat } from '../../../shared/ui/list-export';
@@ -65,6 +66,7 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
 @Component({
   selector: 'mf-asset-reports-page',
   imports: [
+    Dropdown,
     PageHeader,
     ScopeSwitch,
     ChartPanel,
@@ -305,35 +307,28 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
 
               <div class="mf-field">
                 <label class="mf-field__label" for="ar-type">Asset type</label>
-                <select
-                  id="ar-type"
-                  class="mf-field__input"
+                <mf-dropdown
                   data-type
-                  (change)="onType($any($event.target).value)"
-                >
-                  <option value="" [selected]="draft().typeId === null">All asset types</option>
-                  @for (t of types(); track t.assetTypeId) {
-                    <option [value]="t.assetTypeId" [selected]="draft().typeId === t.assetTypeId">
-                      {{ t.name }}{{ t.isActive ? '' : ' (inactive)' }}
-                    </option>
-                  }
-                </select>
+                  buttonId="ar-type"
+                  label="Asset type"
+                  [items]="typeItems()"
+                  [value]="draft().typeId === null ? '' : '' + draft().typeId"
+                  [neutralValue]="null"
+                  (valueChange)="onType($event)"
+                />
               </div>
 
               <div class="mf-field">
                 <label class="mf-field__label" for="ar-group">Group by</label>
-                <select
-                  id="ar-group"
-                  class="mf-field__input"
+                <mf-dropdown
                   data-group
-                  (change)="set('groupBy', $any($event.target).value)"
-                >
-                  @for (g of groupOptions(); track g.key) {
-                    <option [value]="g.key" [selected]="draft().groupBy === g.key">
-                      {{ g.label }}
-                    </option>
-                  }
-                </select>
+                  buttonId="ar-group"
+                  label="Group by"
+                  [items]="groupItems()"
+                  [value]="draft().groupBy"
+                  [neutralValue]="null"
+                  (valueChange)="set('groupBy', $event)"
+                />
               </div>
 
               <fieldset class="ar__set" data-measure-set>
@@ -369,23 +364,17 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
                 } @else {
                   <div class="mf-field">
                     <label class="mf-field__label" for="ar-number">Number field</label>
-                    <select
-                      id="ar-number"
-                      class="mf-field__input"
+                    <mf-dropdown
                       data-number-field
-                      [attr.aria-invalid]="errors().numberField ? 'true' : null"
-                      [attr.aria-describedby]="errors().numberField ? 'ar-number-err' : null"
-                      (change)="
-                        set('numberField', $any($event.target).value); set('numberUnit', '')
-                      "
-                    >
-                      @for (f of numberFields(); track f.key) {
-                        <option [value]="f.key" [selected]="draft().numberField === f.key">
-                          {{ f.label
-                          }}{{ f.isDefaultSize ? ' (default size, ' + f.unit + ')' : '' }}
-                        </option>
-                      }
-                    </select>
+                      buttonId="ar-number"
+                      label="Number field"
+                      [items]="numberItems()"
+                      [value]="draft().numberField"
+                      [neutralValue]="null"
+                      [invalid]="!!errors().numberField"
+                      [describedBy]="errors().numberField ? 'ar-number-err' : null"
+                      (valueChange)="set('numberField', $event); set('numberUnit', '')"
+                    />
                     @if (errors().numberField) {
                       <p id="ar-number-err" class="mf-field__error">{{ errors().numberField }}</p>
                     }
@@ -393,23 +382,17 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
                   @if (needsUnit()) {
                     <div class="mf-field">
                       <label class="mf-field__label" for="ar-unit">Unit of this field</label>
-                      <select
-                        id="ar-unit"
-                        class="mf-field__input"
+                      <mf-dropdown
                         data-number-unit
-                        [attr.aria-invalid]="errors().numberUnit ? 'true' : null"
-                        [attr.aria-describedby]="errors().numberUnit ? 'ar-unit-err' : null"
-                        (change)="set('numberUnit', $any($event.target).value)"
-                      >
-                        <option value="" [selected]="draft().numberUnit === ''">
-                          Choose the unit
-                        </option>
-                        @for (u of units(); track u) {
-                          <option [value]="u" [selected]="draft().numberUnit === u">
-                            {{ u }}
-                          </option>
-                        }
-                      </select>
+                        buttonId="ar-unit"
+                        label="Unit of this field"
+                        [items]="unitItems()"
+                        [value]="draft().numberUnit"
+                        [neutralValue]="null"
+                        [invalid]="!!errors().numberUnit"
+                        [describedBy]="errors().numberUnit ? 'ar-unit-err' : null"
+                        (valueChange)="set('numberUnit', $event)"
+                      />
                       @if (errors().numberUnit) {
                         <p id="ar-unit-err" class="mf-field__error">{{ errors().numberUnit }}</p>
                       }
@@ -420,18 +403,15 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
 
               <div class="mf-field">
                 <label class="mf-field__label" for="ar-disp">Disposition</label>
-                <select
-                  id="ar-disp"
-                  class="mf-field__input"
+                <mf-dropdown
                   data-disposition
-                  (change)="set('disposition', $any($event.target).value)"
-                >
-                  @for (d of dispositions; track d.value) {
-                    <option [value]="d.value" [selected]="draft().disposition === d.value">
-                      {{ d.label }}
-                    </option>
-                  }
-                </select>
+                  buttonId="ar-disp"
+                  label="Disposition"
+                  [items]="dispositionItems"
+                  [value]="draft().disposition"
+                  [neutralValue]="null"
+                  (valueChange)="set('disposition', $event)"
+                />
               </div>
 
               @if (scopes.canAll()) {
@@ -545,18 +525,15 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
                       @if (kind() !== 'table' && r.columns.length > 1) {
                         <div class="ar__graph">
                           <label class="pg-label" for="ar-graph">Graph field</label>
-                          <select
-                            id="ar-graph"
-                            class="mf-control"
+                          <mf-dropdown
                             data-graph-field
-                            (change)="graphChoice.set(+$any($event.target).value)"
-                          >
-                            @for (c of r.columns; track c.key; let i = $index) {
-                              <option [value]="i" [selected]="graphIndex() === i">
-                                {{ c.label }}
-                              </option>
-                            }
-                          </select>
+                            buttonId="ar-graph"
+                            label="Graph field"
+                            [items]="graphItems()"
+                            [value]="'' + graphIndex()"
+                            [neutralValue]="null"
+                            (valueChange)="graphChoice.set(+$event)"
+                          />
                         </div>
                       }
                     </div>
@@ -657,7 +634,10 @@ export class AssetReportsPage {
 
   protected readonly crumbs = [{ label: 'Assets', link: ['/assets'] }, { label: 'Reports' }];
   protected readonly measures = MEASURES;
-  protected readonly dispositions = DISPOSITIONS;
+  protected readonly dispositionItems: DropdownItem[] = DISPOSITIONS.map((d) => ({
+    value: d.value,
+    label: d.label,
+  }));
   protected readonly format = formatCell;
 
   protected readonly typesState = signal<LoadState>('loading');
@@ -696,6 +676,29 @@ export class AssetReportsPage {
   protected readonly numberFields = computed(() => this.fields()?.numberFields ?? []);
   protected readonly units = computed(() => this.fields()?.units ?? []);
   protected readonly defaultSizeKey = computed(() => this.fields()?.defaultSizeFieldKey ?? null);
+  protected readonly typeItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'All asset types' },
+    ...this.types().map((t) => ({
+      value: '' + t.assetTypeId,
+      label: t.name + (t.isActive ? '' : ' (inactive)'),
+    })),
+  ]);
+  protected readonly groupItems = computed<DropdownItem[]>(() =>
+    this.groupOptions().map((g) => ({ value: g.key, label: g.label })),
+  );
+  protected readonly numberItems = computed<DropdownItem[]>(() =>
+    this.numberFields().map((f) => ({
+      value: f.key,
+      label: f.label + (f.isDefaultSize ? ' (default size, ' + f.unit + ')' : ''),
+    })),
+  );
+  protected readonly unitItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'Choose the unit' },
+    ...this.units().map((u) => ({ value: u, label: u })),
+  ]);
+  protected readonly graphItems = computed<DropdownItem[]>(
+    () => this.result()?.columns.map((c, i) => ({ value: '' + i, label: c.label })) ?? [],
+  );
   protected readonly groupOptions = computed(
     () =>
       this.fields()?.groupBy ?? [

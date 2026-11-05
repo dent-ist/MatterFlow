@@ -4,6 +4,7 @@ import path from 'node:path';
 import { Locator, Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { BoardSeed, seedBoard } from '../support/board';
+import { labelledDropdown } from '../support/dropdown';
 import { expect, test } from '../support/fixtures';
 
 /**
@@ -163,8 +164,8 @@ test.describe('Swimlane board (WP9a)', () => {
       // Search, Group, Sort, Filters and "..." are all in it.
       for (const part of [
         page.getByRole('searchbox'),
-        page.getByLabel('Group', { exact: true }),
-        page.getByLabel('Sort', { exact: true }),
+        labelledDropdown(page, 'Group'),
+        labelledDropdown(page, 'Sort'),
         page.getByRole('button', { name: /^Filters/ }),
         page.getByRole('button', { name: 'More options' }),
       ]) {
@@ -236,9 +237,9 @@ test.describe('Swimlane board (WP9a)', () => {
     await menuPick(page, 'menuitemradio', '7 days');
 
     // Keyboard only: search, Group, Sort, Filters, "..." in that order, then the first lane.
-    await page.getByLabel('Group', { exact: true }).focus();
+    await labelledDropdown(page, 'Group').focus();
     await page.keyboard.press('Tab');
-    await expect(page.getByLabel('Sort', { exact: true })).toBeFocused();
+    await expect(labelledDropdown(page, 'Sort')).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.getByRole('button', { name: /^Filters/ })).toBeFocused();
     await page.keyboard.press('Tab');

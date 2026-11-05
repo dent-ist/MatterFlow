@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import type { AssetDataNumberField, AssetDataTypeRow } from '../../../api/generated/api-client';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { OptionsMenu } from '../../../shared/ui/options-menu';
 import { SIZE_UNITS } from '../data-model';
 import { SizeChoice } from '../data-selection';
@@ -32,7 +33,7 @@ export function sizeGroups(types: readonly AssetDataTypeRow[]): SizeGroup[] {
  */
 @Component({
   selector: 'mf-data-size-pick',
-  imports: [OptionsMenu],
+  imports: [Dropdown, OptionsMenu],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -123,17 +124,13 @@ export function sizeGroups(types: readonly AssetDataTypeRow[]): SizeGroup[] {
                 }
               </label>
               @if (isOn(g, f.key) && !f.isDefault) {
-                <select
-                  class="mf-control mf-control--compact"
+                <mf-dropdown
                   [attr.data-size-unit]="g.typeId + ':' + f.key"
-                  [attr.aria-label]="'Unit of ' + f.label"
-                  (change)="unit(g, f, $any($event.target).value)"
-                >
-                  <option value="" [selected]="!unitOf(g, f.key)">Choose a unit</option>
-                  @for (u of units; track u) {
-                    <option [value]="u" [selected]="u === unitOf(g, f.key)">{{ u }}</option>
-                  }
-                </select>
+                  [label]="'Unit of ' + f.label"
+                  [items]="unitItems"
+                  [value]="unitOf(g, f.key)"
+                  (valueChange)="unit(g, f, $event)"
+                />
               }
             </div>
           }
@@ -148,7 +145,10 @@ export class DataSizePick {
   readonly wide = input(false);
   readonly changed = output<SizeChoice[]>();
 
-  protected readonly units = SIZE_UNITS;
+  protected readonly unitItems: DropdownItem[] = [
+    { value: '', label: 'Choose a unit' },
+    ...SIZE_UNITS.map((u) => ({ value: u, label: u })),
+  ];
   protected readonly groups = computed(() => sizeGroups(this.types()));
 
   /** Fields ticked whose unit is still missing: `typeId:key`. */

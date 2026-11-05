@@ -2,6 +2,7 @@ import { Locator, Page } from '@playwright/test';
 import { Json } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { BoardSeed, seedBoard } from '../support/board';
+import { labelledDropdown } from '../support/dropdown';
 import { expect, test } from '../support/fixtures';
 
 /**
@@ -142,7 +143,7 @@ test.describe('Swimlane tab', () => {
       const response = page.waitForResponse(
         (r) => r.url().includes('/dashboard/swimlane') && r.url().includes(`sort=${key}`),
       );
-      await page.getByLabel('Sort', { exact: true }).selectOption({ label });
+      await labelledDropdown(page, 'Sort').selectOption({ label });
       const data = await (await response).json();
       // The default sort is not written to the address (P9).
       if (key === 'priority') await expect(page).not.toHaveURL(/sort=/);
@@ -170,7 +171,7 @@ test.describe('Swimlane tab', () => {
     expect(shown.map((t) => t.trim())).toEqual(expected);
     await expect(headers.first()).toContainText(String(data.groups[0].counts.new));
 
-    await page.getByLabel('Group', { exact: true }).selectOption({ label: 'Assignee' });
+    await labelledDropdown(page, 'Group').selectOption({ label: 'Assignee' });
     await expect(lane(page, 'NEW').locator('.grp-btn').first()).toContainText('Unassigned');
   });
 
@@ -262,7 +263,8 @@ test.describe('Swimlane tab', () => {
   }) => {
     await openBoard(page);
     await page.getByRole('button', { name: /^Filters/ }).click();
-    await page.getByLabel('Priority', { exact: true }).selectOption({ index: 1 });
+    const priorityPick = labelledDropdown(page, 'Priority');
+    await priorityPick.selectOption((await priorityPick.optionValues())[1]);
     await expect(page.locator('[data-filter-count]')).toHaveText('(1)');
     await expect(page).toHaveURL(/priority=\d+/);
     const priority = new URL(page.url()).searchParams.get('priority');
@@ -311,7 +313,7 @@ test.describe('Swimlane tab', () => {
     await menuPick(page, 'menuitemradio', '30 days');
     expect((await response).ok()).toBe(true);
     await expect(page).toHaveURL(/days=30/);
-    await page.getByLabel('Group', { exact: true }).selectOption({ label: 'Priority' });
+    await labelledDropdown(page, 'Group').selectOption({ label: 'Priority' });
     await menuPick(page, 'menuitemradio', 'Compact');
     await expect(page.locator('[data-board]')).toHaveAttribute('data-density', 'compact');
     // Settings that are not the defaults stay visible as text next to the "..." button.
@@ -320,14 +322,14 @@ test.describe('Swimlane tab', () => {
 
     // A plain Swimlane link (no board parameters) opens with the remembered choices, and writes them into the address.
     await page.goto(`/dashboard?tab=swimlane&q=${board.tag}`);
-    await expect(page.getByLabel('Group', { exact: true })).toHaveValue('priority');
+    await expect(labelledDropdown(page, 'Group')).toHaveAttribute('data-value', 'priority');
     await expect(page.locator('[data-board]')).toHaveAttribute('data-density', 'compact');
     await expect(page.locator('[data-active-settings]')).toContainText('Done in 30 days');
     await expect(page).toHaveURL(/group=priority/);
     await expect(page).toHaveURL(/days=30/);
     // Put the defaults back for the tests that follow.
     await menuPick(page, 'menuitemradio', '7 days');
-    await page.getByLabel('Group', { exact: true }).selectOption({ label: 'None' });
+    await labelledDropdown(page, 'Group').selectOption({ label: 'None' });
     await menuPick(page, 'menuitemradio', 'Comfortable');
   });
 

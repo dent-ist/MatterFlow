@@ -172,17 +172,16 @@
               @if (!locked()) {
                 <div class="mf-fld">
                   <label for="role-copy" class="mf-label">Copy from role</label>
-                  <select
-                    id="role-copy"
-                    class="mf-control"
+                  <mf-dropdown
                     data-copy
-                    (change)="copyFrom($any($event.target).value)"
-                  >
-                    <option value="">Choose...</option>
-                    @for (r of roles(); track r.roleId) {
-                      <option [value]="r.roleId">{{ r.name }}</option>
-                    }
-                  </select>
+                    buttonId="role-copy"
+                    label="Copy from role"
+                    placeholder="Choose..."
+                    [items]="roleItems()"
+                    [value]="''"
+                    [neutralValue]="null"
+                    (valueChange)="copyFrom($event)"
+                  />
                 </div>
               }
             </div>

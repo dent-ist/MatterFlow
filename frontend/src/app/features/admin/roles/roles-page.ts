@@ -19,6 +19,7 @@ import {
 import { NotificationService } from '../../../core/notify/notification.service';
 import { CharCounter } from '../../../shared/ui/char-counter';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { Tabs } from '../../../shared/ui/tabs';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { phoneCards } from '../../../shared/ui/record-card-list';
@@ -75,7 +76,7 @@ export function roleChanges(
 /** S12 Admin: Roles and permissions. List with member counts, editor with the grouped permission matrix. */
 @Component({
   selector: 'mf-roles-page',
-  imports: [Button, CharCounter, ConfirmDialog, RoleReportsTab, ScrollArea, Tabs],
+  imports: [Button, CharCounter, ConfirmDialog, Dropdown, RoleReportsTab, ScrollArea, Tabs],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   templateUrl: './roles-page.html',
@@ -302,6 +303,10 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
       next?.focus();
     });
   }
+
+  protected readonly roleItems = computed<DropdownItem[]>(() =>
+    this.roles().map((r) => ({ value: '' + r.roleId, label: r.name })),
+  );
 
   /** "Copy from role": replaces the draft permissions with another role's. */
   protected async copyFrom(roleId: string): Promise<void> {
