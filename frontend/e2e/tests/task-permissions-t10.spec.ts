@@ -480,7 +480,7 @@ test.describe('#329: Task page permission matrix, no dead links', () => {
       // Edit dialog: opens, its selects load without a 403, closes unchanged.
       if (allowed.canEdit) {
         await detail.openEdit();
-        const dialog = page.getByRole('dialog', { name: 'Edit task details' });
+        const dialog = page.getByRole('dialog', { name: 'Edit Task' });
         await settle(page);
         await expect(dialog.getByRole('button', { name: 'Save changes' })).toBeVisible();
         // Pod and assignee only with Task.Assign; the project select only with Project.View.

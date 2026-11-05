@@ -153,7 +153,7 @@ describe('Details tab', () => {
       area.insertAdjacentHTML('beforeend', '<p>More</p>');
       area.dispatchEvent(new Event('input'));
       await settle(fixture);
-      await click(fixture, q(document.body, '[data-save]'));
+      await click(fixture, q(document.body, '[data-panel-primary] button'));
       const body = fakes.tasks['updateTask'].mock.calls[0][1];
       expect(body.description).toContain('<table>');
       expect(body.description).toContain('<p>More</p>');
@@ -169,7 +169,7 @@ describe('Details tab', () => {
       const area = q(document.body, '[data-description-editor] [role=textbox]')!;
       expect(area.innerHTML).toBe('<p>Old text<br>second line</p>');
       await type(fixture, document.body, '#td-title', 'Only the title changed');
-      await click(fixture, q(document.body, '[data-save]'));
+      await click(fixture, q(document.body, '[data-panel-primary] button'));
       expect(fakes.tasks['updateTask'].mock.calls[0][1].description).toBe('Old text\nsecond line');
     });
 
@@ -184,7 +184,7 @@ describe('Details tab', () => {
       area.innerHTML = '<p>New text</p>';
       area.dispatchEvent(new Event('input'));
       await settle(fixture);
-      await click(fixture, q(document.body, '[data-save]'));
+      await click(fixture, q(document.body, '[data-panel-primary] button'));
       expect(fakes.tasks['updateTask'].mock.calls[0][1].description).toBe('<p>New text</p>');
 
       await click(fixture, q(el, '[data-action="edit"]'));
@@ -192,7 +192,7 @@ describe('Details tab', () => {
       again.innerHTML = '<p><br></p>';
       again.dispatchEvent(new Event('input'));
       await settle(fixture);
-      await click(fixture, q(document.body, '[data-save]'));
+      await click(fixture, q(document.body, '[data-panel-primary] button'));
       expect(fakes.tasks['updateTask'].mock.calls[1][1].description).toBeUndefined();
     });
 
@@ -203,7 +203,7 @@ describe('Details tab', () => {
       area.innerHTML = `<p>${'x'.repeat(20001)}</p>`;
       area.dispatchEvent(new Event('input'));
       await settle(fixture);
-      await click(fixture, q(document.body, '[data-save]'));
+      await click(fixture, q(document.body, '[data-panel-primary] button'));
       expect(q(document.body, '#td-description-error')!.textContent).toContain('20000');
       expect(fakes.tasks['updateTask']).not.toHaveBeenCalled();
     });
@@ -218,7 +218,7 @@ describe('Details tab', () => {
     expect(q(document.body, '[data-edit-form]')).not.toBeNull();
     expect(q(document.body, '.p-dialog [role=dialog], .p-dialog')).not.toBeNull();
 
-    await click(fixture, q(document.body, '[data-cancel]'));
+    await click(fixture, q(document.body, '[data-panel-cancel] button'));
     await new Promise((r) => setTimeout(r, 20));
     expect(q(document.body, '[data-edit-form]')).toBeNull();
     expect(q(el, '[data-view]')).not.toBeNull();
@@ -241,7 +241,7 @@ describe('Details tab', () => {
     const dialog = fixture.debugElement
       .queryAll(By.directive(Dialog))
       .map((d) => d.componentInstance as Dialog)
-      .find((d) => d.header === 'Edit task details')!;
+      .find((d) => d.styleClass?.includes('mf-formdlg'))!;
     expect(dialog.focusOnShow).toBe(false);
     const pod = q(document.body, '#td-pod') as HTMLSelectElement;
     pod.focus();
@@ -287,7 +287,7 @@ describe('Details tab', () => {
     await click(fixture, q(el, '[data-action="edit"]'));
     await type(fixture, document.body, '#td-title', '');
     await type(fixture, document.body, '#td-due-time', '10:00');
-    await click(fixture, q(document.body, '[data-save]'));
+    await click(fixture, q(document.body, '[data-panel-primary] button'));
 
     expect(q(document.body, '#td-title-error')!.textContent).toContain('Enter a title.');
     expect(q(document.body, '[data-error-summary]')!.textContent).toContain('Enter a title.');
@@ -325,10 +325,9 @@ describe('Details tab', () => {
     expect(
       q(body, '[data-request-body] input, [data-request-body] [role=checkbox]'),
     ).not.toBeNull();
-    // The footer is the dialog's own footer, outside the form body, and its Save button submits the form.
-    const save = q(body, '[data-save]')!;
+    // The footer is the dialog's own footer, outside the form body.
+    const save = q(body, '[data-panel-primary] button')!;
     expect(q(body, '[data-edit-form]')!.contains(save)).toBe(false);
-    expect(save.getAttribute('form')).toBe('td-edit-form');
     await click(fixture, toggle);
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(q(body, '[data-request-body]')!.hasAttribute('hidden')).toBe(false);
@@ -344,7 +343,7 @@ describe('Details tab', () => {
     );
     await click(fixture, q(el, '[data-action="edit"]'));
     await type(fixture, document.body, '#td-title', '');
-    await click(fixture, q(document.body, '[data-save]'));
+    await click(fixture, q(document.body, '[data-panel-primary] button'));
     await new Promise((r) => setTimeout(r, 30));
     expect(q(document.body, '[data-request-toggle]')!.getAttribute('aria-expanded')).toBe('false');
     expect(document.activeElement?.id).toBe('td-title');
@@ -360,7 +359,7 @@ describe('Details tab', () => {
     const when = q(document.body, '[data-when-toggle]')!;
     expect(when.getAttribute('aria-expanded')).toBe('false');
     await type(fixture, document.body, '#td-due-time', '10:00');
-    await click(fixture, q(document.body, '[data-save]'));
+    await click(fixture, q(document.body, '[data-panel-primary] button'));
     await new Promise((r) => setTimeout(r, 30));
     expect(when.getAttribute('aria-expanded')).toBe('true');
     expect(q(document.body, '[data-when-body]')!.hasAttribute('hidden')).toBe(false);
@@ -386,7 +385,7 @@ describe('Details tab', () => {
     await type(fixture, document.body, '#td-title', 'New title');
     await type(fixture, document.body, '#td-due-date', '2026-11-02');
     await type(fixture, document.body, '#td-due-time', '09:30');
-    await click(fixture, q(document.body, '[data-save]'));
+    await click(fixture, q(document.body, '[data-panel-primary] button'));
 
     expect(fakes.tasks['updateTask']).toHaveBeenCalledWith(
       1042,
@@ -418,7 +417,7 @@ describe('Details tab', () => {
       },
     });
     await click(fixture, q(el, '[data-action="edit"]'));
-    await click(fixture, q(document.body, '[data-save]'));
+    await click(fixture, q(document.body, '[data-panel-primary] button'));
 
     expect(q(document.body, '#td-req-email-error')!.textContent).toContain(
       'That email address looks wrong.',
@@ -439,7 +438,7 @@ describe('Details tab', () => {
     });
     await click(fixture, q(el, '[data-action="edit"]'));
     await type(fixture, document.body, '#td-title', 'Mine');
-    await click(fixture, q(document.body, '[data-save]'));
+    await click(fixture, q(document.body, '[data-panel-primary] button'));
 
     expect(q(el, '[data-conflict-banner]')).not.toBeNull();
     expect((q(document.body, '#td-title') as HTMLInputElement).value).toBe('Mine');
@@ -464,7 +463,7 @@ describe('Details tab', () => {
     language.value = 'French';
     language.dispatchEvent(new Event('input'));
     await settle(fixture);
-    await click(fixture, q(document.body, '[data-save]'));
+    await click(fixture, q(document.body, '[data-panel-primary] button'));
 
     const body = fakes.tasks['updateTask'].mock.calls[0][1];
     expect(body.formValues).toEqual({ ocr: true, language: 'French' });
@@ -487,7 +486,7 @@ describe('Details tab', () => {
     pod.value = '';
     pod.dispatchEvent(new Event('change'));
     await settle(fixture);
-    await click(fixture, q(document.body, '[data-save]'));
+    await click(fixture, q(document.body, '[data-panel-primary] button'));
 
     expect(fakes.tasks['assignTask']).toHaveBeenCalledWith(1042, {
       rowVersion: 'RV2',
@@ -527,7 +526,7 @@ describe('Details tab', () => {
     expect(option.textContent).toContain('Colleague C.');
     option.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
     await settle(fixture);
-    await click(fixture, q(document.body, '[data-save]'));
+    await click(fixture, q(document.body, '[data-panel-primary] button'));
 
     expect(fakes.tasks['assignTask']).toHaveBeenCalledWith(
       1042,
@@ -542,7 +541,9 @@ describe('Details tab', () => {
 
     await type(fixture, document.body, '#td-due-date', '2020-01-02');
     expect(q(document.body, '[data-past-due]')!.textContent).toContain('already passed');
-    expect((q(document.body, '[data-save]') as HTMLButtonElement).disabled).toBe(false);
+    expect((q(document.body, '[data-panel-primary] button') as HTMLButtonElement).disabled).toBe(
+      false,
+    );
   });
 
   describe('Request details section (#313)', () => {

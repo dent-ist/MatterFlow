@@ -351,7 +351,7 @@ test.describe('Task page: inline Due date (#664)', () => {
 
       // The Edit dialog shows the same date and time.
       await detail.openEdit();
-      const dialog = page.getByRole('dialog', { name: 'Edit task details' });
+      const dialog = page.getByRole('dialog', { name: 'Edit Task' });
       await dialog.getByRole('button', { name: /^Priority, due date and assignment/ }).click();
       await expect(dialog.locator('#td-due-date')).toHaveValue(/Oct 24, 2030/);
       await expect(dialog.locator('#td-due-time')).toHaveValue('17:00');

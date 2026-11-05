@@ -70,6 +70,7 @@ export const DIALOG_WIDTHS = {
   template: `
     <p-dialog
       styleClass="mf-dlg mf-formdlg"
+      [appendTo]="appendTo()"
       [modal]="true"
       [closable]="false"
       [dismissableMask]="!dirty()"
@@ -197,6 +198,11 @@ export class FormDialog {
    * (D-30). Empty: no such button. The page confirms or deletes in `(deleted)`.
    */
   readonly deleteLabel = input('');
+  /**
+   * Where the dialog is drawn: `body` by default, outside the page, because a page that is a fixed layout or a scroll container has its own stacking context
+   * and would draw the app's top bar over a dialog declared inside it (the Edit Task and Add Event dialogs showed it).
+   */
+  readonly appendTo = input<string>('body');
   /** False for a dialog that has no footer. */
   readonly showFooter = input(true);
 

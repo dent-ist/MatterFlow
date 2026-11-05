@@ -43,8 +43,7 @@ import { AssetPickerContext } from '../../../shared/ui/asset-picker';
 import { AssigneePicker } from '../../../shared/assignees/assignee-picker';
 import { PickerOption } from '../../../shared/ui/entity-picker';
 import { splitFormErrors } from '../../../shared/ui/custom-fields';
-import { Dialog } from 'primeng/dialog';
-import { DialogFocus } from '../../../shared/ui/dialog-focus';
+import { FormDialog } from '../../../shared/ui/form-dialog';
 import { TitleArea } from '../../../shared/ui/title-area';
 import { RichTextEditor } from '../panels/rich-text-editor';
 import {
@@ -100,8 +99,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
     DynamicForm,
     RequestSection,
     DateInput,
-    Dialog,
-    DialogFocus,
+    FormDialog,
     AssigneePicker,
     MatterRef,
     RichTextEditor,
@@ -112,21 +110,15 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
   styleUrls: ['../../../shared/ui/page.scss', '../../../shared/ui/form-field.scss'],
   template: `
     @if (store.task(); as t) {
-      <p-dialog
-        header="Edit task details"
-        appendTo="body"
-        [modal]="true"
-        [closable]="true"
-        closeAriaLabel="Close without saving"
-        [closeOnEscape]="!store.dirty()"
-        [mfDialogFocus]="editing()"
-        [focusOnShow]="false"
-        (onShow)="focusTitle()"
-        [draggable]="false"
-        [resizable]="false"
+      <mf-form-dialog
+        title="Edit Task"
+        size="large"
+        primaryLabel="Save Changes"
+        [dirty]="store.dirty()"
+        [busy]="store.busy()"
         [visible]="editing()"
         (visibleChange)="onDialogVisible($event)"
-        [style]="{ width: 'min(720px, 100vw)', maxWidth: '100vw' }"
+        (submitted)="save()"
       >
         <form id="td-edit-form" class="dt__form" novalidate (submit)="save($event)" data-edit-form>
           @if (summary().length > 0) {
@@ -404,30 +396,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
             <p class="pg-muted" data-lock-text>{{ lockText }}</p>
           </section>
         </form>
-
-        <ng-template #footer>
-          <div class="dt__actions" data-edit-footer>
-            <button
-              type="button"
-              class="mf-btn"
-              data-cancel
-              [disabled]="store.busy()"
-              (click)="cancelEdit()"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              form="td-edit-form"
-              class="mf-btn mf-btn--primary"
-              data-save
-              [disabled]="store.busy()"
-            >
-              Save changes
-            </button>
-          </div>
-        </ng-template>
-      </p-dialog>
+      </mf-form-dialog>
     }
   `,
   styles: `
@@ -550,13 +519,6 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
       min-width: 0;
       overflow-wrap: anywhere;
     }
-    /* The dialog rule (S18): the secondary action on the left, the primary on the right. */
-    .dt__actions {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      gap: var(--mf-s2);
-    }
     .warn {
       color: var(--mf-warning);
     }
@@ -577,7 +539,6 @@ export class TaskEditDialog {
   private readonly clock = inject(Clock);
   private readonly injector = inject(Injector);
   private readonly dynamicForm = viewChild(DynamicForm);
-  private readonly dialog = viewChild(Dialog);
 
   protected readonly lockText = LOCK_TEXT;
   protected readonly toNumber = toNumber;
@@ -702,12 +663,6 @@ export class TaskEditDialog {
     effect(() => {
       if (this.store.editing()) untracked(() => this.beginEdit());
     });
-    // PrimeNG binds its Escape listener once, when the dialog opens, and never looks at `closeOnEscape` again; with unsaved changes the
-    // listener is taken off (it is bound afresh the next time the dialog opens), so Esc is ignored as it should be.
-    effect(() => {
-      const dialog = this.dialog();
-      if (dialog && this.store.dirty()) untracked(() => dialog.unbindDocumentEscapeListener());
-    });
     effect(() => {
       const podId = this.selectedPodId();
       untracked(() => {
@@ -799,17 +754,6 @@ export class TaskEditDialog {
     );
     this.store.dirty.set(false);
     void this.loadOptions(t.matter.matterId);
-  }
-
-  /**
-   * Puts the cursor in the Title once the dialog has finished opening, unless the person (or a test) has already moved on to
-   * another field of the form. PrimeNG's own focus-on-show runs after the enter animation and would take focus back from a field
-   * the user already started typing in, which blurred the Assignee picker and closed its list.
-   */
-  protected focusTitle(): void {
-    const active = document.activeElement;
-    if (active && active !== document.body && active.closest('[data-edit-form]')) return;
-    document.getElementById('td-title')?.focus();
   }
 
   private async loadOptions(matterId: number): Promise<void> {
@@ -914,8 +858,8 @@ export class TaskEditDialog {
     return errors;
   }
 
-  protected async save(event: Event): Promise<void> {
-    event.preventDefault();
+  protected async save(event?: Event): Promise<void> {
+    event?.preventDefault();
     const task = this.store.task();
     if (!task) return;
     const errors = this.validate();

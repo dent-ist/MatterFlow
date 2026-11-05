@@ -41,7 +41,17 @@ async function checkPage(page: Page, label: string): Promise<void> {
   expect(body, `dialog body sideways: ${label}`).toBeLessThanOrEqual(0);
 }
 
-const dialogOf = (page: Page): Locator => page.getByRole('dialog', { name: 'Edit task details' });
+const dialogOf = (page: Page): Locator => page.getByRole('dialog', { name: 'Edit Task' });
+
+/** Cancel in the Edit Task dialog: with unsaved changes the dialog first asks "Discard them?", which this answers with Discard Changes. */
+async function cancelEdit(page: Page): Promise<void> {
+  await page.locator('[data-panel-cancel] button').click();
+  const discard = page.locator('[data-guard-discard] button');
+  await discard
+    .waitFor({ state: 'visible', timeout: 600 })
+    .then(() => discard.click())
+    .catch(() => undefined);
+}
 const whenToggle = (page: Page): Locator => page.locator('[data-when-toggle]');
 const whenSummary = (page: Page): Locator => page.locator('[data-when-summary]');
 const inputToggle = (page: Page): Locator => page.locator('[data-request-toggle]');
@@ -187,7 +197,7 @@ test.describe('Edit task sections (#350)', () => {
     await page.keyboard.press('Space');
     await expect(whenSummary(page)).toContainText('High priority, due Oct 30, 2030 at 9:15 AM');
     // Cancel and reopen: the section starts collapsed again and shows the saved values.
-    await page.locator('[data-cancel]').click();
+    await cancelEdit(page);
     await page.keyboard.press('Escape');
     await openEdit(page);
     await expect(whenToggle(page)).toHaveAttribute('aria-expanded', 'false');
@@ -221,7 +231,7 @@ test.describe('Edit task sections (#350)', () => {
     await page.keyboard.press('Tab');
     await page.locator('#td-due-time').focus();
     await page.keyboard.type('0930AM');
-    await page.locator('[data-save]').focus();
+    await page.locator('[data-panel-primary] button').focus();
     await page.keyboard.press('Enter');
     await expect(dialogOf(page)).toHaveCount(0);
     const saved = await new TaskApi(admin, task.taskId).get();
@@ -247,7 +257,7 @@ test.describe('Edit task sections (#350)', () => {
     await page.locator('#td-due-time').fill('10:00');
     await whenToggle(page).click();
     await expect(whenToggle(page)).toHaveAttribute('aria-expanded', 'false');
-    await page.locator('[data-save]').click();
+    await page.locator('[data-panel-primary] button').click();
     await expect(whenToggle(page)).toHaveAttribute('aria-expanded', 'true');
     await expect(page.locator('[data-error-summary]')).toContainText('Choose a date');
     await expect(page.locator('#td-due-date')).toBeFocused();
@@ -272,7 +282,7 @@ test.describe('Edit task sections (#350)', () => {
         }),
       });
     });
-    await page.locator('[data-save]').click();
+    await page.locator('[data-panel-primary] button').click();
     await expect(whenToggle(page)).toHaveAttribute('aria-expanded', 'true');
     await expect(page.locator('#td-when-body [role=alert]')).toContainText('server rejects');
     await expect(page.locator('#td-due-date')).toBeFocused();
@@ -285,11 +295,11 @@ test.describe('Edit task sections (#350)', () => {
       el.value = '';
       el.dispatchEvent(new Event('input'));
     });
-    await page.locator('[data-save]').click();
+    await page.locator('[data-panel-primary] button').click();
     await expect(inputToggle(page)).toHaveAttribute('aria-expanded', 'true');
     await expect(page.locator('#td-req-name')).toBeFocused();
     await page.locator('#td-req-name').fill('Rita');
-    await page.locator('[data-save]').click();
+    await page.locator('[data-panel-primary] button').click();
     await expect(dialogOf(page)).toHaveCount(0);
     expect((await new TaskApi(admin, task.taskId).get()).requestorName).toBe('Rita');
   });
@@ -317,7 +327,7 @@ test.describe('Edit task sections (#350)', () => {
     await expect(page.locator('#td-priority')).toBeEnabled();
     await expect(page.locator('#td-pod')).toBeVisible();
     await expect(page.locator('#td-assignee-change')).toBeVisible(); // the task already has an assignee
-    await page.locator('[data-cancel]').click();
+    await cancelEdit(page);
 
     // Task.Edit only: no Pod, no assignee, no priority control; the summary still states who it is assigned to.
     const editRole = await seed.role(['Task.View', 'Task.Edit'], `E2E ES editor ${token}`);
@@ -333,7 +343,7 @@ test.describe('Edit task sections (#350)', () => {
     await expect(editorPage.locator('#td-priority')).toHaveCount(0);
     await expect(editorPage.locator('#td-due-date')).toBeVisible();
     await checkPage(editorPage, 'Task.Edit without Assign 375');
-    await editorPage.locator('[data-cancel]').click();
+    await cancelEdit(editorPage);
 
     // Task.View only: no Edit control, so no dialog.
     const viewRole = await seed.role(['Task.View'], `E2E ES viewer ${token}`);

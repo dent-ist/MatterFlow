@@ -14,7 +14,7 @@ import { firstValueFrom } from 'rxjs';
 import { TaskCommentsClient, TaskQueueClient } from '../../api/generated/api-client';
 import { ApiError } from '../../core/http/api-error';
 import { NotificationService } from '../../core/notify/notification.service';
-import { ConfirmDialog } from '../ui/confirm-dialog';
+import { FormDialog } from '../ui/form-dialog';
 import { textToHtml } from '../../features/tasks/panels/rich-text';
 
 /** The longest comment (the server limit, plain text). */
@@ -35,7 +35,7 @@ interface OpenTask {
  */
 @Component({
   selector: 'mf-add-comment-dialog',
-  imports: [ConfirmDialog],
+  imports: [FormDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .ac__field {
@@ -78,13 +78,14 @@ interface OpenTask {
     }
   `,
   template: `
-    <mf-confirm-dialog
-      title="Add comment"
-      confirmLabel="Add comment"
+    <mf-form-dialog
+      title="Add Comment"
+      primaryLabel="Add Comment"
+      busyLabel="Posting..."
       [busy]="posting()"
       [error]="error()"
       [(visible)]="visible"
-      (confirmed)="post()"
+      (submitted)="post()"
     >
       <p class="ac__muted" data-note>
         The comment is saved on a task of {{ matterLabel() }}. Internal only. Visible to people who
@@ -146,7 +147,7 @@ interface OpenTask {
           {{ chosen() === null ? 'Choose a task.' : 'Write the comment.' }}
         </p>
       }
-    </mf-confirm-dialog>
+    </mf-form-dialog>
   `,
 })
 export class AddCommentDialog {
@@ -262,8 +263,7 @@ export class AddCommentDialog {
     this.touched.set(true);
     const taskId = this.chosen();
     if (taskId === null || !this.ready() || this.posting()) {
-      // The dialog stays open (a confirm closes it): the person is told what is missing.
-      this.visible.set(true);
+      // The dialog stays open: the person is told what is missing.
       return;
     }
     this.posting.set(true);
@@ -280,7 +280,6 @@ export class AddCommentDialog {
       this.error.set(
         e instanceof ApiError && e.message ? e.message : "Couldn't post the comment. Try again.",
       );
-      this.visible.set(true);
     } finally {
       this.posting.set(false);
     }

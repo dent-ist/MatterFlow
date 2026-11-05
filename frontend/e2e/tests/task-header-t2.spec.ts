@@ -557,9 +557,9 @@ test.describe('Task header T2: primary action and overflow (#298)', () => {
     await new TaskDetailPage(page).open(task.taskId);
     const edit = page.locator('[data-action="edit"]');
     await edit.click();
-    await expect(page.getByRole('dialog', { name: 'Edit task details' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Edit Task' })).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('dialog', { name: 'Edit task details' })).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: 'Edit Task' })).toHaveCount(0);
     await expect(edit).toBeFocused();
   });
 

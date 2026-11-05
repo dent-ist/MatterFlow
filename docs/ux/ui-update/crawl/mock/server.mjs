@@ -15,6 +15,10 @@ const NAMES = ['Alpha', 'Bravo', 'Charlie', 'Delta'];
 const PEOPLE = ['Test User 02', 'Test User 06', 'Test User 18', 'Test User 30'];
 const word = (key, i) => {
   const k = key.toLowerCase();
+  if (k.includes('timezone')) return 'America/New_York';
+  if (k === 'state') return 'AVAILABLE';
+  if (k === 'start') return '09:00';
+  if (k === 'end') return '17:00';
   if (k.includes('email')) return `user${i}@example.test`;
   if (k.includes('displayname') || k === 'username' || k.endsWith('username')) return PEOPLE[i % 4];
   if (k.includes('tasknumber')) return `TSK-${100 + i}`;
@@ -29,7 +33,7 @@ const word = (key, i) => {
 };
 
 function gen(schema, key = '', i = 0, depth = 0) {
-  if (!schema || depth > 5) return null;
+  if (!schema || depth > 9) return null;
   if (schema.$ref) return gen(schemas[schema.$ref.split('/').pop()], key, i, depth + 1);
   if (schema.allOf) return Object.assign({}, ...schema.allOf.map((s) => gen(s, key, i, depth + 1) ?? {}));
   if (schema.oneOf || schema.anyOf) {
@@ -42,7 +46,7 @@ function gen(schema, key = '', i = 0, depth = 0) {
     case 'object': {
       const out = {};
       for (const [k, v] of Object.entries(schema.properties ?? {})) out[k] = gen(v, k, i, depth + 1);
-      return out;
+      return fix(out, i);
     }
     case 'array': return [0, 1, 2, 3].map((n) => gen(schema.items, key, n, depth + 1));
     case 'integer': {
@@ -62,6 +66,34 @@ function gen(schema, key = '', i = 0, depth = 0) {
   }
 }
 
+/** Shape fixers: values the schema cannot say (the status words, the allowed transitions, the step states). */
+function fix(o, i) {
+  if ('stepInstanceId' in o && 'sequenceNo' in o) {
+    Object.assign(o, { sequenceNo: i + 1, title: ['Collect the data', 'Process the files', 'Quality check', 'Deliver'][i % 4], status: i === 0 ? 'IN_PROGRESS' : 'PENDING', isCurrent: i === 0,
+      isSkippable: i % 2 === 0, skipCommentRequired: i === 2, hasBeenResolved: false, requiredInputsSatisfied: true, values: {}, inputFormVersionId: null,
+      description: null, instructions: null, documentationUrl: null, skipComment: null, firstResolvedAtUtc: null, resolvedAtUtc: null, resolvedByUserId: null });
+  }
+  if ('taskNumber' in o && 'allowedActions' in o) {
+    Object.assign(o, { status: 'IN_PROGRESS', statusLabel: 'In Progress', dueTime: '17:00', timeZone: 'America/New_York', statusReason: null, onHoldReason: null,
+      completedAtUtc: null, warnings: [], droppedFields: [], bulkCompletedStepInstanceIds: [], descriptionFormat: 'text', formVersionId: null, formVersionNo: null });
+    o.allowedActions.transitions = [
+      { action: 'COMPLETE', targetStatus: 'COMPLETED', requiresComment: false, requiredPermission: 'Task.Complete', permitted: true, blockedReason: null },
+      { action: 'HOLD', targetStatus: 'ON_HOLD', requiresComment: true, requiredPermission: 'Task.ChangeStatus', permitted: true, blockedReason: null },
+      { action: 'CANCEL', targetStatus: 'CANCELLED', requiresComment: true, requiredPermission: 'Task.Cancel', permitted: true, blockedReason: null },
+    ];
+  }
+  if ('taskNumber' in o && 'status' in o && !('allowedActions' in o)) {
+    const st = [['NEW', 'New'], ['IN_PROGRESS', 'In Progress'], ['NEW', 'New'], ['ON_HOLD', 'On Hold']][i % 4];
+    o.status = st[0];
+    if ('statusLabel' in o) o.statusLabel = st[1];
+  }
+  if ('workflowInstanceId' in o && 'progress' in o) {
+    o.progress = { total: 4, pending: 3, inProgress: 1, completed: 0, skipped: 0, resolved: 0, currentStepInstanceId: 1, reopenedPrerequisiteStepInstanceIds: [] };
+    o.isOrdered = false;
+  }
+  return o;
+}
+
 const ops = [];
 for (const [path, item] of Object.entries(spec.paths)) {
   const re = new RegExp('^' + path.replace(/\{[^}]+\}/g, '[^/]+') + '/?$');
@@ -74,7 +106,9 @@ for (const [path, item] of Object.entries(spec.paths)) {
 }
 
 /** Pinned answers: [METHOD, path regex, (url) => body]. First match wins, before the generated one. */
+const STEPS = [1, 2, 3].map((n) => ({ stepInstanceId: n, sequenceNo: n, title: ['Collect the data', 'Process the files', 'Quality check'][n - 1] }));
 const overrides = [
+  ['GET', /\/tasks\/\d+\/completion$/, () => ({ isReady: false, canBulkComplete: true, unresolved: STEPS, bulkCompletable: STEPS, blocked: [], workflowRowVersion: 'AAAAAAAAB9E=' })],
   ['GET', /\/lookups\/priorities/, () => [
     { priorityId: 1, id: 1, label: 'Critical', color: '#B42318', rank: 1, isActive: true, isDefault: false },
     { priorityId: 2, id: 2, label: 'High', color: '#B54708', rank: 2, isActive: true, isDefault: false },
@@ -90,8 +124,9 @@ createServer((req, res) => {
     res.writeHead(200, { 'content-type': 'application/json' });
     return res.end(JSON.stringify(hit[2](url)));
   }
-  // The most specific path wins (fewest template parts).
-  const found = ops.filter((o) => o.method === req.method && o.re.test(path)).sort((a, b) => a.path.length - b.path.length)[0];
+  // The most specific path wins (fewest {template} parts, then the longest literal).
+  const params = (o) => (o.path.match(/\{/g) ?? []).length;
+  const found = ops.filter((o) => o.method === req.method && o.re.test(path)).sort((a, b) => params(a) - params(b) || b.path.length - a.path.length)[0];
   if (!found) {
     res.writeHead(404, { 'content-type': 'application/problem+json' });
     return res.end(JSON.stringify({ title: 'No mock', status: 404 }));

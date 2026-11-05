@@ -60,7 +60,17 @@ async function checkPage(page: Page, label: string): Promise<void> {
   expect(overflow, `page-level horizontal scroll: ${label}`).toBeLessThanOrEqual(0);
 }
 
-const editDialog = (page: Page): Locator => page.getByRole('dialog', { name: 'Edit task details' });
+const editDialog = (page: Page): Locator => page.getByRole('dialog', { name: 'Edit Task' });
+
+/** Cancel in the Edit Task dialog: with unsaved changes the dialog first asks "Discard them?", which this answers with Discard Changes. */
+async function cancelEdit(page: Page): Promise<void> {
+  await page.locator('[data-panel-cancel] button').click();
+  const discard = page.locator('[data-guard-discard] button');
+  await discard
+    .waitFor({ state: 'visible', timeout: 600 })
+    .then(() => discard.click())
+    .catch(() => undefined);
+}
 const dialogBody = (page: Page): Locator => page.locator('.p-dialog-content');
 const requestToggle = (page: Page): Locator => page.locator('[data-request-toggle]');
 const whenToggle = (page: Page): Locator => page.locator('[data-when-toggle]');
@@ -114,7 +124,7 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
     await expect(page.locator('[data-request-body]')).toBeHidden();
 
     // Save and Cancel are in the footer and inside the viewport before and after scrolling the body to its end.
-    const save = page.locator('[data-save]');
+    const save = page.locator('[data-panel-primary] button');
     await expect(save).toBeVisible();
     const before = (await save.boundingBox())!;
     expect(before.y + before.height).toBeLessThanOrEqual(768);
@@ -122,7 +132,7 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
     const after = (await save.boundingBox())!;
     expect(after.y + after.height).toBeLessThanOrEqual(768);
     expect(Math.round(after.y)).toBe(Math.round(before.y));
-    await expect(page.locator('[data-cancel]')).toBeVisible();
+    await expect(page.locator('[data-panel-cancel] button')).toBeVisible();
     // The body scrolled (the dialog is longer than the screen) and the locked block is at its end.
     await expect(page.locator('[data-locked-fields]')).toBeInViewport();
     await shot(page, 'edit-dialog-bottom-1366x768');
@@ -180,7 +190,7 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
     expect(
       await title.evaluate((el) => el.clientHeight > parseFloat(getComputedStyle(el).lineHeight)),
     ).toBe(true);
-    await page.locator('[data-save]').click();
+    await page.locator('[data-panel-primary] button').click();
     await expect(editDialog(page)).toHaveCount(0);
     expect((await new TaskApi(admin, task.taskId).get()).title).toBe('first second third');
   });
@@ -272,7 +282,7 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
     await page.locator('#td-req-name').fill('');
     await requestToggle(page).click();
     await expect(page.locator('[data-request-body]')).toBeHidden();
-    await page.locator('[data-save]').click();
+    await page.locator('[data-panel-primary] button').click();
     await expect(page.locator('[data-error-summary]')).toBeVisible();
     await expect(page.locator('[data-error-summary]')).toContainText('Enter a title.');
     await expect(page.locator('[data-error-summary]')).toContainText('Enter the requestor name.');
@@ -280,7 +290,7 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
     await expect(page.locator('#td-title')).toHaveAttribute('aria-invalid', 'true');
     await expect(page.locator('#td-title-error')).toContainText('Enter a title.');
     await expect(page.locator('#td-req-name-error')).toBeVisible();
-    await expect(page.locator('[data-save]')).toBeInViewport();
+    await expect(page.locator('[data-panel-primary] button')).toBeInViewport();
     // The requestor is part of Input (#350): its section opened for the error, the priority section had none and stays closed.
     await expect(requestToggle(page)).toHaveAttribute('aria-expanded', 'true');
     await expect(whenToggle(page)).toHaveAttribute('aria-expanded', 'false');
@@ -293,16 +303,16 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
     await reqField(page, 1).fill('');
     await requestToggle(page).click();
     await expect(page.locator('[data-request-body]')).toBeHidden();
-    await page.locator('[data-save]').click();
+    await page.locator('[data-panel-primary] button').click();
     await expect(requestToggle(page)).toHaveAttribute('aria-expanded', 'true');
     await expect(page.locator('[data-request-body]')).toBeVisible();
     await expect(page.locator('[data-error-summary]')).toContainText('Request field 1');
     await expect(reqField(page, 1)).toBeFocused();
-    await expect(page.locator('[data-save]')).toBeInViewport();
+    await expect(page.locator('[data-panel-primary] button')).toBeInViewport();
     await shot(page, 'edit-dialog-request-error-1366x768');
 
     await reqField(page, 1).fill('Beta');
-    await page.locator('[data-save]').click();
+    await page.locator('[data-panel-primary] button').click();
     await expect(dialog).toHaveCount(0);
     expect((await new TaskApi(admin, task.taskId).get()).formValues.f1).toBe('Beta');
   });
@@ -344,12 +354,12 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
         }),
       });
     });
-    await page.locator('[data-save]').click();
+    await page.locator('[data-panel-primary] button').click();
     await expect(page.locator('#td-req-name-error')).toContainText('does not accept');
     await expect(page.locator('#td-req-name')).toBeFocused();
     await page.unroute('**/api/v1/tasks/*');
 
-    await page.locator('[data-cancel]').click();
+    await cancelEdit(page);
     await expect(editDialog(page)).toHaveCount(0);
     await expect(edit).toBeFocused();
   });
@@ -371,7 +381,7 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
     await whenToggle(page).click();
     await expect(page.locator('#td-assignee')).toBeVisible();
     await expect(page.locator('[data-locked-fields] a[href^="/matters/"]')).toHaveCount(1);
-    await page.locator('[data-cancel]').click();
+    await cancelEdit(page);
 
     // The assignee, a Data Technician (can edit; assigns too under that role).
     const tech = await seed.user(['Data Technician'], `t8t-${token}`);
@@ -385,9 +395,9 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
     await new TaskDetailPage(techPage).open(mine.taskId);
     if ((await techPage.locator('[data-task-header] [data-action="edit"]').count()) > 0) {
       await openEdit(techPage);
-      await expect(techPage.locator('[data-save]')).toBeInViewport();
+      await expect(techPage.locator('[data-panel-primary] button')).toBeInViewport();
       await checkPage(techPage, 'assignee Data Technician edit dialog');
-      await techPage.locator('[data-cancel]').click();
+      await cancelEdit(techPage);
     }
 
     // Task.View + Task.Edit, without Task.Assign, Matter.View, Client.View, Asset.View: no Assignment section, matter without a link.
@@ -404,7 +414,7 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
     await expect(editorPage.locator('[data-locked-fields]')).toContainText(world.matter.matterRef);
     expect(await overflowX(editorPage.locator('.p-dialog-content'))).toBeLessThanOrEqual(0);
     await checkPage(editorPage, 'Task.Edit without Task.Assign 375');
-    await editorPage.locator('[data-cancel]').click();
+    await cancelEdit(editorPage);
 
     // Task.View only: no Edit control anywhere, so no dialog. No Task.View: the page is refused.
     const viewRole = await seed.role(['Task.View'], `E2E T8 viewer ${token}`);

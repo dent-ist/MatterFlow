@@ -15,7 +15,42 @@ const SCENARIOS = [
   { id: '1137-confirm', persona: 'admin', route: '/admin/priorities', open: async (p) => {
     await p.getByRole('button', { name: /actions|more|options/i }).first().click(); await wait(p, 400);
     await p.getByRole('menuitem', { name: /Deactivate|Delete/i }).first().click(); } },
-  ...(globalThis.EXTRA ?? []),
+  { id: '1138-edit-task', persona: 'admin', route: '/tasks/1', open: async (p) => { await p.locator('[data-action="edit"]').first().click(); } },
+  { id: '1138-complete-task', persona: 'admin', route: '/tasks/1', open: async (p) => { await p.getByRole('button', { name: 'Complete Task' }).first().click(); } },
+  { id: '1138-bulk-tasks', persona: 'admin', route: '/matters/1', open: async (p) => {
+    await p.getByRole('tab', { name: /Tasks/ }).click(); await wait(p, 1500);
+    await p.getByRole('button', { name: 'Select', exact: true }).click(); await wait(p, 500);
+    await p.locator('[data-select-all]').click(); await wait(p, 300);
+    await p.getByRole('button', { name: /Re-assign/ }).first().click(); } },
+  { id: '1138-add-comment', persona: 'admin', route: '/matters/1', open: async (p) => {
+    await p.getByRole('button', { name: 'More actions' }).first().click(); await wait(p, 400);
+    await p.getByRole('menuitem', { name: /Add Comment/i }).first().click(); } },
+  { id: '1139-set-out-of-office', persona: 'director', route: '/my-work', open: async (p) => {
+    await p.getByRole('button', { name: /account menu|Test User|Dana/i }).first().click(); await wait(p, 400);
+    await p.getByRole('menuitem', { name: /Set out of office/i }).click(); } },
+  { id: '1139-add-out-of-office', persona: 'director', route: '/profile', open: async (p) => { await p.getByRole('button', { name: /Add out of office/i }).first().click(); } },
+  { id: '1139-add-event', persona: 'admin', route: '/my-matters', open: async (p) => {
+    await p.locator('button', { hasText: /^\s*New\s*$/ }).first().click(); await wait(p, 400);
+    await p.getByText('New Calendar Item').first().click(); } },
+  { id: '1139-change-managers', persona: 'admin', route: '/matters/1', open: async (p) => { await p.locator('button', { hasText: /^\s*Change\s*$/ }).first().click(); } },
+  { id: '1139-availability', persona: 'admin', route: '/admin/users', open: async (p) => {
+    await p.getByRole('button', { name: /^Active/ }).click(); await wait(p, 1200);
+    await p.getByRole('button', { name: /^Actions for/ }).first().click(); await wait(p, 400);
+    await p.getByRole('menuitem', { name: /Edit availability/i }).first().click(); } },
+  { id: '1140-new-priority', persona: 'admin', route: '/admin/priorities', open: async (p) => { await p.getByRole('button', { name: /New priority/i }).first().click(); } },
+  { id: '1140-add-holiday', persona: 'admin', route: '/admin/settings', open: async (p) => {
+    await p.getByRole('tab', { name: /Holidays/i }).click(); await wait(p, 1200); await p.getByRole('button', { name: /^Add holiday/i }).first().click(); } },
+  { id: '1140-import-holidays', persona: 'admin', route: '/admin/settings', open: async (p) => {
+    await p.getByRole('tab', { name: /Holidays/i }).click(); await wait(p, 1200); await p.getByRole('button', { name: /Import/i }).first().click(); } },
+  { id: '1140-edit-calendar', persona: 'admin', route: '/admin/settings', open: async (p) => {
+    await p.getByRole('tab', { name: /Holidays/i }).click(); await wait(p, 1200); await p.getByRole('button', { name: /^Edit calendar/i }).first().click(); } },
+  { id: '1140-change-disposition', persona: 'admin', route: '/assets/1', open: async (p) => {
+    await p.getByRole('button', { name: 'More actions' }).first().click(); await wait(p, 400);
+    await p.getByRole('menuitem', { name: /Change disposition/i }).first().click(); } },
+  { id: '1140-assign-work', persona: 'admin', route: '/dashboard', open: async (p) => {
+    await p.getByRole('tab', { name: /Users/ }).click(); await wait(p, 1800);
+    await p.getByRole('button', { name: /^Assign work to/ }).first().click(); } },
+  { id: '1138-skip-step', persona: 'admin', route: '/tasks/1', open: async (p) => { await p.getByRole('button', { name: 'Skip step' }).first().click(); } },
 ];
 
 const browser = await launch();

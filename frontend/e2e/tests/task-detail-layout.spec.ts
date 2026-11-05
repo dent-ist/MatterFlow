@@ -539,7 +539,7 @@ test.describe('Task detail: single page layout', () => {
 
     const open = page.locator('[data-task-header] [data-action="edit"]');
     await open.click();
-    const dialog = page.getByRole('dialog', { name: 'Edit task details' });
+    const dialog = page.getByRole('dialog', { name: 'Edit Task' });
     await expect(dialog).toBeVisible();
     const requestor = dialog.getByLabel('Requestor name (required)');
     await requestor.fill('Rita Panel');

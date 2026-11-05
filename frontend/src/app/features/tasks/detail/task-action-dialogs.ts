@@ -11,6 +11,7 @@ import { firstValueFrom } from 'rxjs';
 import { OnHoldReasonView, OnHoldReasonsClient } from '../../../api/generated/api-client';
 import { ApiError } from '../../../core/http/api-error';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { FormDialog } from '../../../shared/ui/form-dialog';
 import { TaskDetailStore } from './task-detail.store';
 
 /**
@@ -20,7 +21,7 @@ import { TaskDetailStore } from './task-detail.store';
  */
 @Component({
   selector: 'mf-task-action-dialogs',
-  imports: [ConfirmDialog],
+  imports: [ConfirmDialog, FormDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let d = store.dialog();
@@ -55,6 +56,7 @@ import { TaskDetailStore } from './task-detail.store';
           </label>
           <select
             id="task-hold-reason"
+            class="mf-control"
             [value]="holdReasonId()"
             [attr.aria-required]="reasonRequired() ? 'true' : null"
             [attr.aria-invalid]="holdReasonError() ? 'true' : null"
@@ -80,6 +82,7 @@ import { TaskDetailStore } from './task-detail.store';
         </label>
         <textarea
           id="task-reason"
+          class="mf-control"
           rows="4"
           maxlength="4000"
           [value]="reason()"
@@ -105,15 +108,16 @@ import { TaskDetailStore } from './task-detail.store';
       <p data-reopen-body>The task becomes editable again. No reason is needed.</p>
     </mf-confirm-dialog>
 
-    <mf-confirm-dialog
+    <mf-form-dialog
       [title]="completeTitle()"
-      [confirmLabel]="blocked().length > 0 ? 'Go to first step' : 'Complete all steps and finish'"
-      [showConfirm]="blocked().length > 0 || canBulkConfirm()"
-      [cancelLabel]="blocked().length || !canBulkConfirm() ? 'Close' : 'Cancel'"
+      [primaryLabel]="blocked().length > 0 ? 'Go to First Step' : 'Complete Task'"
+      busyLabel="Working..."
+      [showPrimary]="blocked().length > 0 || canBulkConfirm()"
+      [secondaryLabel]="blocked().length || !canBulkConfirm() ? 'Close' : 'Cancel'"
       [busy]="store.busy()"
       [visible]="d?.kind === 'complete'"
       (visibleChange)="closed($event)"
-      (confirmed)="completeConfirmed()"
+      (submitted)="completeConfirmed()"
     >
       @if (blocked().length > 0) {
         <p data-blocked-body>These steps need required information first:</p>
@@ -146,7 +150,7 @@ import { TaskDetailStore } from './task-detail.store';
           </p>
         }
       }
-    </mf-confirm-dialog>
+    </mf-form-dialog>
   `,
   styles: `
     .reason {
@@ -159,29 +163,6 @@ import { TaskDetailStore } from './task-detail.store';
     .req {
       font-weight: 400;
       color: var(--mf-text-muted);
-    }
-    select {
-      min-height: 2rem;
-      padding: var(--mf-s1) var(--mf-s2);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-    }
-    select[aria-invalid='true'] {
-      border-color: var(--mf-danger);
-    }
-    textarea {
-      padding: var(--mf-s2) var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-    }
-    textarea[aria-invalid='true'] {
-      border-color: var(--mf-danger);
     }
     .error {
       margin: 0;
@@ -272,7 +253,7 @@ export class TaskActionDialogs {
     () => [...this.blocked()].sort((a, b) => a.sequenceNo - b.sequenceNo)[0] ?? null,
   );
   protected readonly completeTitle = computed(() =>
-    this.blocked().length > 0 ? 'Steps need information first' : 'Complete task',
+    this.blocked().length > 0 ? 'Steps Need Information First' : 'Complete Task',
   );
 
   /** Blocked: "Go to first step" closes the dialog and opens, scrolls to and focuses that step. Otherwise the bulk completion. */

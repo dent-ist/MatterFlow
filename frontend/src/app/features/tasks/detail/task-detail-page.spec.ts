@@ -522,7 +522,7 @@ describe('TaskDetailPage complete', () => {
     expect(q(body(), '[data-bulk-steps]')!.textContent).toContain('OCR');
     expect(fakes.tasks['completeTask']).not.toHaveBeenCalled();
 
-    await click(fixture, dialogButton('Complete all steps and finish')!);
+    await click(fixture, dialogButton('Complete Task')!);
     expect(fakes.tasks['completeTask']).toHaveBeenCalledWith(1042, {
       rowVersion: 'RV1',
       completeUnresolvedSteps: true,
@@ -554,7 +554,7 @@ describe('TaskDetailPage complete', () => {
     expect(q(body(), '[data-blocked-body]')!.textContent).toContain(
       'These steps need required information first',
     );
-    expect(dialogButton('Complete all steps and finish')).toBeUndefined();
+    expect(dialogButton('Complete Task')).toBeUndefined();
     const link = byText(body(), '[data-blocked-steps] button', 'Step 3: OCR')!;
     await click(fixture, link);
 
@@ -577,9 +577,9 @@ describe('TaskDetailPage complete', () => {
     await openMenu(fixture, el);
     await click(fixture, q(el, '[data-option=COMPLETE]'));
 
-    expect(dialogButton('Complete all steps and finish')).toBeUndefined();
+    expect(dialogButton('Complete Task')).toBeUndefined();
     expect(dialogButton('Close')).toBeDefined();
-    await click(fixture, dialogButton('Go to first step')!);
+    await click(fixture, dialogButton('Go to First Step')!);
 
     expect(fakes.tasks['completeTask']).not.toHaveBeenCalled();
     expect(q(body(), '[data-blocked-body]')).toBeNull();
@@ -606,7 +606,7 @@ describe('TaskDetailPage complete', () => {
     });
     await openMenu(fixture, el);
     await click(fixture, q(el, '[data-option=COMPLETE]'));
-    await click(fixture, dialogButton('Complete all steps and finish')!);
+    await click(fixture, dialogButton('Complete Task')!);
     expect(q(body(), '[data-blocked-body]')).not.toBeNull();
   });
 
@@ -625,7 +625,7 @@ describe('TaskDetailPage complete', () => {
     });
     await openMenu(fixture, el);
     await click(fixture, q(el, '[data-option=COMPLETE]'));
-    await click(fixture, dialogButton('Complete all steps and finish')!);
+    await click(fixture, dialogButton('Complete Task')!);
 
     expect(fakes.tasks['completeTask']).toHaveBeenCalledTimes(1);
     expect(q(body(), '[data-bulk-steps]')!.textContent).not.toContain('Deduplicate');
@@ -640,7 +640,7 @@ describe('TaskDetailPage complete', () => {
     await openMenu(fixture, el);
     await click(fixture, q(el, '[data-option=COMPLETE]'));
     expect(q(body(), '[data-no-execute]')).not.toBeNull();
-    expect(dialogButton('Complete all steps and finish')).toBeUndefined();
+    expect(dialogButton('Complete Task')).toBeUndefined();
   });
 });
 

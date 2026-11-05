@@ -25,8 +25,8 @@ import { LookupStore } from '../../core/lookups/lookup-store';
 import { ApiError } from '../../core/http/api-error';
 import { QuietRequests } from '../../core/http/interceptors';
 import { USER_TIME_ZONE } from '../../core/time/clock';
-import { ConfirmDialog } from '../ui/confirm-dialog';
 import { EntityPicker, PickerOption } from '../ui/entity-picker';
+import { FormDialog } from '../ui/form-dialog';
 
 export type BulkMode = 'assign' | 'priority';
 
@@ -74,7 +74,7 @@ export function bulkWarning(code: string): string {
  */
 @Component({
   selector: 'mf-bulk-tasks-dialog',
-  imports: [ConfirmDialog, EntityPicker],
+  imports: [FormDialog, EntityPicker],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .bd {
@@ -105,16 +105,16 @@ export function bulkWarning(code: string): string {
     }
   `,
   template: `
-    <mf-confirm-dialog
+    <mf-form-dialog
       [title]="title()"
-      [confirmLabel]="confirmLabel()"
-      [cancelLabel]="phase() === 'result' ? 'Close' : 'Cancel'"
-      [showConfirm]="phase() === 'form'"
+      [primaryLabel]="confirmLabel()"
+      busyLabel="Working..."
+      [secondaryLabel]="phase() === 'result' ? 'Close' : 'Cancel'"
+      [showPrimary]="phase() === 'form'"
       [busy]="busy()"
       [error]="error()"
-      scrollLabel="Bulk change"
       [(visible)]="visible"
-      (confirmed)="run()"
+      (submitted)="run()"
     >
       <div class="bd" data-bulk-dialog [attr.data-phase]="phase()">
         @if (phase() === 'form') {
@@ -201,7 +201,7 @@ export function bulkWarning(code: string): string {
           }
         }
       </div>
-    </mf-confirm-dialog>
+    </mf-form-dialog>
   `,
 })
 export class BulkTasksDialog {
@@ -233,13 +233,13 @@ export class BulkTasksDialog {
     this.phase() === 'result'
       ? 'Result'
       : this.mode() === 'assign'
-        ? 'Re-assign tasks'
-        : 'Set priority',
+        ? 'Re-assign Tasks'
+        : 'Set Priority',
   );
   protected readonly confirmLabel = computed(() => {
     const n = this.targets().length;
-    const noun = n === 1 ? 'task' : 'tasks';
-    return this.mode() === 'assign' ? `Re-assign ${n} ${noun}` : `Set priority on ${n} ${noun}`;
+    const noun = n === 1 ? 'Task' : 'Tasks';
+    return this.mode() === 'assign' ? `Re-assign ${n} ${noun}` : `Set Priority on ${n} ${noun}`;
   });
   protected readonly canRun = computed(() =>
     this.mode() === 'assign'

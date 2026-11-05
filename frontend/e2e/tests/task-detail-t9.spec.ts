@@ -446,7 +446,7 @@ test.describe('T9 #326: one Edit control and the Tab stops', () => {
     const edit = page.locator('[data-action="edit"]');
     await edit.focus();
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('dialog', { name: 'Edit task details' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Edit Task' })).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(edit).toBeFocused();
   });

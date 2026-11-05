@@ -19,6 +19,7 @@ import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { toFormDefinition } from '../../../shared/forms/form-schema';
 import { splitFormErrors } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { FormDialog } from '../../../shared/ui/form-dialog';
 import { TaskDetailStore } from './task-detail.store';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
 import type { BadgeTone } from '../../../shared/ui/badge';
@@ -55,7 +56,7 @@ export function valuesPatch(
  */
 @Component({
   selector: 'mf-task-step',
-  imports: [DynamicForm, ConfirmDialog, MfDatePipe],
+  imports: [DynamicForm, ConfirmDialog, FormDialog, MfDatePipe],
   // The step's asset inputs (ASSET_REF) offer the assets of the task's own matter.
   providers: [AssetPickerContext],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -232,14 +233,15 @@ export function valuesPatch(
       }
 
       @if (skipOpen()) {
-        <mf-confirm-dialog
-          [title]="'Skip &quot;' + s.title + '&quot;?'"
-          confirmLabel="Skip step"
-          cancelLabel="Keep step"
+        <mf-form-dialog
+          title="Skip Step"
+          [subtitle]="s.title"
+          primaryLabel="Skip Step"
+          busyLabel="Working..."
           [busy]="busy()"
           [visible]="true"
           (visibleChange)="closeSkip($event)"
-          (confirmed)="confirmSkip()"
+          (submitted)="confirmSkip()"
         >
           <p>This step is skippable. Skipped steps count as resolved.</p>
           <div class="skip">
@@ -250,6 +252,7 @@ export function valuesPatch(
               }
             </label>
             <textarea
+              class="mf-control"
               [id]="'skip-comment-' + s.stepInstanceId"
               rows="4"
               maxlength="2000"
@@ -265,7 +268,7 @@ export function valuesPatch(
               <p class="error" role="alert" data-skip-error>{{ e }}</p>
             }
           </div>
-        </mf-confirm-dialog>
+        </mf-form-dialog>
       }
 
       @if (reopenOpen()) {
@@ -469,17 +472,6 @@ export function valuesPatch(
     .req {
       font-weight: 400;
       color: var(--mf-text-muted);
-    }
-    textarea {
-      padding: var(--mf-s2) var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-    }
-    textarea[aria-invalid='true'] {
-      border-color: var(--mf-danger);
     }
   `,
 })

@@ -62,7 +62,7 @@ test.describe('Bulk change in the matter grid', () => {
     );
     // Nothing chosen: the dialog asks, and changes nothing.
     await dialog.getByRole('button', { name: 'Re-assign 3 tasks' }).click();
-    await expect(dialog.locator('[data-confirm-error]')).toContainText('Choose a person or a pod.');
+    await expect(dialog.locator('[data-panel-error]')).toContainText('Choose a person or a pod.');
     await dialog.getByRole('combobox', { name: 'Assign to' }).fill(`Bulk Technician ${token}`);
     await dialog.getByRole('option', { name: new RegExp(`Bulk Technician ${token}`) }).click();
     await dialog.getByRole('button', { name: 'Re-assign 3 tasks' }).click();

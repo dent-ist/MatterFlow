@@ -367,7 +367,7 @@ test.describe('Task Detail final verification (#331): contract over six task sha
     await detail.openEdit();
     const save = (await page.locator('[data-save]').boundingBox())!;
     const dialogHeight = Math.round(
-      (await page.getByRole('dialog', { name: 'Edit task details' }).boundingBox())!.height,
+      (await page.getByRole('dialog', { name: 'Edit Task' }).boundingBox())!.height,
     );
     expect(save.y + save.height, 'Save inside the window').toBeLessThanOrEqual(768);
     expect(dialogHeight, 'Edit dialog height').toBeLessThanOrEqual(768);

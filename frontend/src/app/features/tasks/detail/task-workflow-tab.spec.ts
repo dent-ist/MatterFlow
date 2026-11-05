@@ -305,7 +305,7 @@ describe('Workflow tab: step actions and skip rules', () => {
       'This step is skippable. Skipped steps count as resolved.',
     );
     expect(q(body(), 'label[for="skip-comment-103"]')!.textContent).toContain('(required)');
-    await click(fixture, dialogButton('Skip step')!);
+    await click(fixture, dialogButton('Skip Step')!);
     expect(q(body(), '[data-skip-error]')!.textContent).toContain(
       'Add a comment to skip this step.',
     );
@@ -322,7 +322,7 @@ describe('Workflow tab: step actions and skip rules', () => {
     const area = q(body(), '#skip-comment-103') as HTMLTextAreaElement;
     area.value = 'Not needed';
     area.dispatchEvent(new Event('input'));
-    await click(fixture, dialogButton('Skip step')!);
+    await click(fixture, dialogButton('Skip Step')!);
     expect(fakes.workflow['skipTaskStep']).toHaveBeenCalledWith(1042, 103, {
       rowVersion: 'WF1',
       comment: 'Not needed',
@@ -338,7 +338,7 @@ describe('Workflow tab: step actions and skip rules', () => {
     await click(fixture, q(el, '[data-step-id="103"] [data-skip]'));
     // Optional fields are not labelled (UXR-16): only a required comment says "(required)".
     expect(q(body(), 'label[for="skip-comment-103"]')!.textContent).not.toContain('(required)');
-    await click(fixture, dialogButton('Skip step')!);
+    await click(fixture, dialogButton('Skip Step')!);
     expect(fakes.workflow['skipTaskStep']).toHaveBeenCalledWith(1042, 103, {
       rowVersion: 'WF1',
       comment: undefined,

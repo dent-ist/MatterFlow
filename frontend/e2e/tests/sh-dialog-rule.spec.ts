@@ -83,7 +83,10 @@ test.describe('One rule for dialogs and drawers (#619)', () => {
     await expect(dialog).toBeVisible();
     expect(await titleLook(page, '.p-dialog-title')).toEqual({ size: 16, weight: 600 });
     const dialogClose = await closeLook(page, '.p-dialog-close-button');
-    expect(drawerClose).toEqual(dialogClose);
+    // The dialogs share one close icon button (#1137: grey, 36 x 36); the drawers join it in #1142, until then only the shape is compared.
+    expect(isTransparent(dialogClose.background)).toBe(true);
+    expect(isTransparent(dialogClose.borderColor)).toBe(true);
+    expect(isRound(dialogClose.radius)).toBe(true);
     expect(isTransparent(drawerClose.background)).toBe(true);
     expect(isTransparent(drawerClose.borderColor)).toBe(true);
     expect(isRound(drawerClose.radius)).toBe(true);

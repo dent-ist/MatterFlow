@@ -44,9 +44,7 @@ class Host {
 
 const dialog = () => document.body.querySelector<HTMLElement>('[data-bulk-dialog]')!;
 const primary = () =>
-  document.body.querySelector<HTMLButtonElement>(
-    '[data-confirm-primary] button, button[data-confirm-primary]',
-  )!;
+  document.body.querySelector<HTMLButtonElement>('[data-panel-primary] button')!;
 
 describe('BulkTasksDialog', () => {
   let bulk: { bulkChangeMatterTasks: ReturnType<typeof vi.fn> };
@@ -119,7 +117,7 @@ describe('BulkTasksDialog', () => {
       'This can’t be undone in one step.',
     );
     expect(document.body.querySelector('.p-dialog-title, .p-dialog-header')!.textContent).toContain(
-      'Re-assign tasks',
+      'Re-assign Tasks',
     );
   });
 
@@ -128,7 +126,7 @@ describe('BulkTasksDialog', () => {
     primary().click();
     fixture.detectChanges();
     expect(bulk.bulkChangeMatterTasks).not.toHaveBeenCalled();
-    expect(document.body.querySelector('[data-confirm-error]')!.textContent).toContain(
+    expect(document.body.querySelector('[data-panel-error]')!.textContent).toContain(
       'Choose a person or a pod.',
     );
   });

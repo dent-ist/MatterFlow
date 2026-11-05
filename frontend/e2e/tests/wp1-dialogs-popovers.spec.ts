@@ -90,7 +90,7 @@ test.describe('WP1: dialogs, popovers, shortcut list', () => {
       await status.scrollIntoViewIfNeeded();
       await status.click();
       await mine.locator('[data-option="COMPLETE"]').click();
-      const body = mine.locator('[data-confirm-body]').last();
+      const body = mine.locator('[data-panel-body]').last();
       await expect(body).toBeVisible();
       const m = await body.evaluate((e) => ({ sw: e.scrollWidth, cw: e.clientWidth }));
       expect(m.sw, size.name).toBeLessThanOrEqual(m.cw);

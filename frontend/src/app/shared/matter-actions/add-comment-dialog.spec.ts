@@ -51,8 +51,8 @@ describe('AddCommentDialog (Add comment from a matter, epic #758)', () => {
 
   const body = () => document.body;
   const confirmButton = () =>
-    Array.from(body().querySelectorAll<HTMLButtonElement>('p-dialog button')).find(
-      (b) => b.textContent?.trim() === 'Add comment',
+    Array.from(body().querySelectorAll<HTMLButtonElement>('.p-dialog button')).find(
+      (b) => b.textContent?.trim() === 'Add Comment',
     )!;
 
   afterEach(() => document.body.replaceChildren());
@@ -109,7 +109,7 @@ describe('AddCommentDialog (Add comment from a matter, epic #758)', () => {
     f.detectChanges();
     expect(f.componentInstance.open()).toBe(true);
     expect(body().querySelector<HTMLTextAreaElement>('[data-comment-text]')!.value).toBe('Keep me');
-    expect(body().querySelector('[data-confirm-error]')).not.toBeNull();
+    expect(body().querySelector('[data-panel-error]')).not.toBeNull();
   });
 
   it('says so when the matter has no open task', async () => {
