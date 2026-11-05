@@ -32,7 +32,6 @@ import { Dropdown, DropdownItem } from '../ui/dropdown';
       display: block;
       width: 0;
       min-width: 100%;
-      --mf-ctl-h-sm: 32px;
     }
     .ts ::ng-deep .btn {
       padding-inline: var(--mf-s2);

@@ -192,7 +192,6 @@ export interface FilterOption {
       display: block;
       width: 0;
       min-width: 100%;
-      --mf-ctl-h-sm: 32px;
     }
     /* The filter row is quiet: regular weight, like the other filter buttons of the row. */
     .cf__select ::ng-deep .btn {

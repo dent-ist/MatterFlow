@@ -48,11 +48,6 @@ a:not([class]) {
   color: var(--mf-link);
 }
 
-/* Targets are at least 32px (UAT2-22). */
-:root {
-  --mf-target-min: 32px;
-}
-
 /* Wrapper that takes part in its parent's flex layout (page-header action groups with @if blocks). */
 .mf-contents {
   display: contents;
