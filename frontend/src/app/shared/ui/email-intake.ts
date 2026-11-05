@@ -15,7 +15,7 @@ import { firstValueFrom } from 'rxjs';
 import { IntakeClient, ParsedEmailResponse } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { ApiError } from '../../core/http/api-error';
-import { MfDatePipe } from '../pipes/mf-date.pipe';
+import { MfDateLongPipe } from '../pipes/mf-date-long.pipe';
 import {
   DESCRIPTION_MAX_TEXT,
   isBlankHtml,
@@ -85,7 +85,7 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
  */
 @Component({
   selector: 'mf-email-intake',
-  imports: [Button, TextField, MfDatePipe, RichTextEditor],
+  imports: [Button, TextField, MfDateLongPipe, RichTextEditor],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './email-intake.scss',
   template: `
@@ -295,7 +295,7 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
                   <p class="ei__sent" data-sent>
                     Source email sent:
                     @if (sentAt(); as s) {
-                      {{ s | mfDate }}
+                      {{ s | mfDateLong }}
                     } @else {
                       not found in the email
                     }

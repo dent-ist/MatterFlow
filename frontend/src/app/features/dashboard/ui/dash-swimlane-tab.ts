@@ -26,7 +26,7 @@ import { QuietRequests } from '../../../core/http/interceptors';
 import { LookupStore } from '../../../core/lookups/lookup-store';
 import { UndoService } from '../../../core/notify/undo.service';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { mfDate } from '../../../core/time/time';
+import { mfDateLong } from '../../../core/time/time';
 import { FIXED_MODE_QUERY } from '../../../shared/ui/fixed-page';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { tabIcon } from '../../../shared/ui/tab-icons';
@@ -307,7 +307,7 @@ export class DashSwimlaneTab implements OnInit {
 
   readonly updated = computed(() => {
     const b = this.board();
-    return b ? mfDate(b.generatedAtUtc, this.zone, 'datetime') : null;
+    return b ? mfDateLong(b.generatedAtUtc, this.zone, 'datetime') : null;
   });
 
   /** The grouping of the board on screen: a change of Group by shows its layout when its board arrives, not before. */

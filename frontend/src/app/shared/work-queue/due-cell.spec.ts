@@ -96,20 +96,20 @@ describe('DueCell (#209)', () => {
     expect(closed.spoken).toBe('Was due Oct 1');
   });
 
-  it('wasDue (the Task page): a closed task with a due date says "Was due Oct 1"; no due date keeps the dash; an open task is unchanged (#302)', () => {
-    expect(render({ dueDate: '2026-10-01' }, 'COMPLETED', 'inline', true).l1).toBe('Was due Oct 1');
-    expect(render({ dueDate: '2026-10-01' }, 'CANCELLED', 'inline', true).l1).toBe('Was due Oct 1');
+  it('wasDue (the Task page): a closed task with a due date says "Was due 10/01"; no due date keeps the dash; an open task is unchanged (#302)', () => {
+    expect(render({ dueDate: '2026-10-01' }, 'COMPLETED', 'inline', true).l1).toBe('Was due 10/01');
+    expect(render({ dueDate: '2026-10-01' }, 'CANCELLED', 'inline', true).l1).toBe('Was due 10/01');
     expect(render({}, 'COMPLETED', 'inline', true).l1).toBe('-');
-    expect(render({ dueDate: '2026-10-20' }, 'NEW', 'inline', true).l1).toBe('Oct 20');
+    expect(render({ dueDate: '2026-10-20' }, 'NEW', 'inline', true).l1).toBe('10/20');
     // The work lists do not ask for it.
-    expect(render({ dueDate: '2026-10-01' }, 'COMPLETED', 'inline').l1).toBe('Oct 1');
+    expect(render({ dueDate: '2026-10-01' }, 'COMPLETED', 'inline').l1).toBe('10/01');
   });
 
-  it('inline layout: the date without time, then the relative text on the same line, no icon', () => {
+  it('inline layout: the numeric date without time, then the compact +6h suffix on the same line, no icon', () => {
     const r = render({ dueAtUtc: '2026-10-14T10:00:00Z' }, 'NEW', 'inline');
     expect(r.root.classList).toContain('dc--inline');
-    expect(r.l1).toBe('Oct 14');
-    expect(r.l2).toBe('Overdue 6h');
+    expect(r.l1).toBe('10/14');
+    expect(r.l2).toBe('+6h');
   });
 });
 
@@ -144,7 +144,7 @@ describe('DueCell At risk (PM v2, #878)', () => {
     ).toBeNull();
   });
 
-  it('dateless: a cell with words keeps only "Overdue 4d" (the date stays in the tooltip); a plain date stays', () => {
+  it('dateless: a cell with words keeps only "+4d" (the date stays in the tooltip); a plain date stays', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
@@ -159,7 +159,7 @@ describe('DueCell At risk (PM v2, #878)', () => {
     f.detectChanges();
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelector('time')).toBeNull();
-    expect(el.querySelector('.dc-l2')!.textContent!.replace(/\s+/g, ' ').trim()).toBe('Overdue 4d');
+    expect(el.querySelector('.dc-l2')!.textContent!.replace(/\s+/g, ' ').trim()).toBe('+4d');
     expect(el.querySelector('.dc')!.getAttribute('title')).toContain('Oct 10');
     f.componentInstance.due.set({ dueDate: '2026-10-20' });
     f.detectChanges();

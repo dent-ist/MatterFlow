@@ -13,7 +13,7 @@ import { RouterLink } from '@angular/router';
 import { TaskQueueRow } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
-import { calendarDayInZone, mfDate } from '../../core/time/time';
+import { calendarDayInZone, mfDateLong } from '../../core/time/time';
 import { CopyParts, CopyPart } from '../ui/copy-parts';
 import { retryWhenBackOnline } from '../../core/http/connectivity';
 import { ErrorReference } from '../ui/error-reference';
@@ -422,12 +422,12 @@ export class TaskCardList {
   /** "Oct 16" (the year only outside the current year, like the Due cell). */
   protected closedOn(row: TaskQueueRow): string | null {
     if (!row.closedAtUtc) return null;
-    const text = mfDate(row.closedAtUtc, this.zone, 'date');
+    const text = mfDateLong(row.closedAtUtc, this.zone, 'date');
     const year = calendarDayInZone(this.clock.now(), this.zone).year;
     return text.endsWith(`, ${year}`) ? text.slice(0, -`, ${year}`.length) : text;
   }
 
   protected closedTip(row: TaskQueueRow): string | null {
-    return row.closedAtUtc ? mfDate(row.closedAtUtc, this.zone, 'datetime') : null;
+    return row.closedAtUtc ? mfDateLong(row.closedAtUtc, this.zone, 'datetime') : null;
   }
 }

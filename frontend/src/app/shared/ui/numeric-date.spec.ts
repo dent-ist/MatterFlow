@@ -4,7 +4,6 @@ import {
   numericDateAndTime,
   numericDay,
   numericInstant,
-  numericInstantFull,
   numericTime,
   readableDate,
   readableInstant,
@@ -68,12 +67,5 @@ describe('numeric date format (UI-23)', () => {
     expect(readableDate('2026-10-26')).toBe('October 26, 2026');
     expect(readableDate('2026-10-26', '16:00')).toBe('October 26, 2026, 4:00 PM');
     expect(readableInstant('2026-10-26T20:00:00Z', NY)).toBe('October 26, 2026, 4:00 PM');
-  });
-});
-
-describe('numericInstantFull (MD-42)', () => {
-  it('always has the year and the 12-hour clock', () => {
-    expect(numericInstantFull('2026-10-26T20:00:00Z', NY)).toBe('10/26/2026 04:00 PM');
-    expect(numericInstantFull('2025-01-02T05:05:00Z', 'UTC')).toBe('01/02/2025 05:05 AM');
   });
 });

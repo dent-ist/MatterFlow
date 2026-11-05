@@ -28,7 +28,7 @@ import { QuietRequests } from '../../../core/http/interceptors';
 import { LookupStore } from '../../../core/lookups/lookup-store';
 import { UndoService } from '../../../core/notify/undo.service';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { mfDate } from '../../../core/time/time';
+import { mfDateLong } from '../../../core/time/time';
 import { USERS_VIEW_PARAM } from '../dashboard-links';
 import { withoutDefaults } from '../dash-url-state';
 import { DashSkeleton } from './dash-skeleton';
@@ -444,7 +444,7 @@ export class DashUsersTab implements OnInit {
   protected readonly shown = computed(() => this.users().slice(0, this.limit()));
   readonly updated = computed(() => {
     const b = this.board();
-    return b ? mfDate(b.generatedAtUtc, this.zone, 'datetime') : null;
+    return b ? mfDateLong(b.generatedAtUtc, this.zone, 'datetime') : null;
   });
 
   /** The person in the drawer: the board's current copy, else the last copy seen (a refresh with a filter may drop them). */

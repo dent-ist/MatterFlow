@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { CLOSED_STATUSES, DueInput, describeDueCell } from '../../core/time/time';
+import { numericDate, numericInstant } from '../ui/numeric-date';
+import { dashDue } from './due-suffix';
 
 /**
  * The Due cell of the work grids (#209), one component for My Work, Task Queue, Pod Work and the Matter and Project grids.
@@ -29,7 +31,7 @@ import { CLOSED_STATUSES, DueInput, describeDueCell } from '../../core/time/time
       } @else {
         @if (!dateHidden()) {
           <time class="dc-l1" aria-hidden="true" [attr.datetime]="iso()">{{
-            lead() + (layout() === 'inline' ? c.dateText : c.line1)
+            lead() + (layout() === 'inline' ? numericDay() : c.line1)
           }}</time>
         }
         @if (c.line2 && !closed()) {
@@ -39,7 +41,7 @@ import { CLOSED_STATUSES, DueInput, describeDueCell } from '../../core/time/time
             } @else if (tone() === 'today') {
               <i class="pi pi-clock"></i>
             }
-            {{ c.line2 }}
+            {{ layout() === 'inline' && numeric().suffix ? numeric().suffix : c.line2 }}
           </span>
         }
       }
@@ -152,6 +154,17 @@ export class DueCell {
   protected readonly cell = computed(() =>
     describeDueCell(this.due(), this.clock.now(), this.zone, this.status()),
   );
+  /** The compact (inline) layout reads like the Dashboard Due cell (D-60, #1146): the numeric day (`10/17`, the year only when it is not this year) and `+18d` while overdue. */
+  protected readonly numeric = computed(() =>
+    dashDue(this.due(), this.clock.now(), this.zone, this.status()),
+  );
+  protected readonly numericDay = computed(() => {
+    const due = this.due();
+    const at = due.dueAtUtc ? new Date(due.dueAtUtc) : null;
+    return at && !Number.isNaN(at.getTime())
+      ? numericInstant(at, this.clock.now(), this.zone, false)
+      : numericDate(due.dueDate ?? null, this.clock.now(), this.zone);
+  });
   /** A closed task without a due date shows a muted dash and no ASAP. */
   protected readonly tone = computed(() => {
     const t = this.cell().tone;

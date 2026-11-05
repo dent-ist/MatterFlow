@@ -1,4 +1,4 @@
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -73,7 +73,7 @@ type DialogKind = 'publish' | 'retire' | 'discard' | 'conflict' | 'versions' | n
     FormDialog,
     ScrollRegion,
     FormsModule,
-    MfDatePipe,
+    MfDateLongPipe,
   ],
   templateUrl: './task-type-form-page.html',
   styleUrl: './task-type-form-page.scss',

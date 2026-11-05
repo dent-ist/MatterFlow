@@ -24,7 +24,7 @@ import {
 import { ApiError } from '../../../core/http/api-error';
 import { QuietRequests } from '../../../core/http/interceptors';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { mfDate } from '../../../core/time/time';
+import { mfDateLong } from '../../../core/time/time';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { DashboardPrefs } from '../dashboard-prefs';
 import { Period, periodArgs, periodForTab, periodId, periodPhrase } from '../dashboard-period';
@@ -862,7 +862,7 @@ export class CoverageView implements OnInit {
   );
   protected readonly updated = computed(() => {
     const b = this.board();
-    return b ? mfDate(b.generatedAtUtc, this.zone, 'datetime') : null;
+    return b ? mfDateLong(b.generatedAtUtc, this.zone, 'datetime') : null;
   });
   protected readonly filtered = computed(() => this.filters().q !== '');
   protected readonly matrix = computed<Matrix | null>(() => {

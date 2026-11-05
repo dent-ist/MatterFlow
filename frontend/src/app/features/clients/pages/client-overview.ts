@@ -21,7 +21,6 @@ import {
 import { AuthStore } from '../../../core/auth/auth.store';
 import { QuietRequests } from '../../../core/http/interceptors';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { ErrorReference } from '../../../shared/ui/error-reference';
@@ -30,6 +29,7 @@ import { recordStripItems } from '../../../shared/work-queue/record-strip';
 import { DUE_SOON_DAYS } from '../../../shared/work-queue/work-vocabulary';
 import { WorkStrip } from '../../../shared/work-queue/work-strip';
 import { ZeroDash } from '../../../shared/ui/zero-dash';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 /** How many matters the table lists (the summary's `topMatters` holds at most this many). */
 export const OVERVIEW_MATTERS = 5;
@@ -81,6 +81,7 @@ export function rowsFromMatters(matters: readonly MatterResponse[]): OverviewMat
 @Component({
   selector: 'mf-client-overview',
   imports: [
+    NumericDatePipe,
     ZeroDash,
     WorkStrip,
     RouterLink,
@@ -88,7 +89,6 @@ export function rowsFromMatters(matters: readonly MatterResponse[]): OverviewMat
     ActiveBadge,
     CustomFieldsView,
     ErrorReference,
-    MfDatePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './client-overview.scss',
@@ -205,9 +205,9 @@ export function rowsFromMatters(matters: readonly MatterResponse[]): OverviewMat
       }
 
       <p class="ov-when" data-created-line>
-        Created {{ client().createdAtUtc | mfDate: 'date' }}
+        Created {{ client().createdAtUtc | mfNum: 'date' }}
         @if (client().modifiedAtUtc) {
-          - Last changed {{ client().modifiedAtUtc | mfDate: 'date' }}
+          - Last changed {{ client().modifiedAtUtc | mfNum: 'date' }}
         }
       </p>
 

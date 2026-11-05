@@ -17,7 +17,7 @@ import { Branding, DEFAULT_APP_NAME } from '../../../core/branding/branding';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { Tabs, MfTab } from '../../../shared/ui/tabs';
@@ -80,7 +80,7 @@ export function brandingOf(view: BrandingAdminView): Branding {
     DashboardCapacitySettings,
     ErrorReference,
     HolidaysAdmin,
-    MfDatePipe,
+    MfDateLongPipe,
     PageHeader,
     Tabs,
     TextField,
@@ -248,7 +248,7 @@ export function brandingOf(view: BrandingAdminView): Branding {
 
           @if (v.updatedAtUtc) {
             <p class="st__last" data-last-changed>
-              Last changed {{ v.updatedAtUtc | mfDate }}
+              Last changed {{ v.updatedAtUtc | mfDateLong }}
               @if (v.updatedBy) {
                 by {{ v.updatedBy }}
               }

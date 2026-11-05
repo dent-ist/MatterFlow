@@ -24,7 +24,7 @@ import {
 import { AuthStore } from '../../core/auth/auth.store';
 import { ApiError } from '../../core/http/api-error';
 import { NotificationService } from '../../core/notify/notification.service';
-import { MfDatePipe } from '../../shared/pipes/mf-date.pipe';
+import { MfDateLongPipe } from '../../shared/pipes/mf-date-long.pipe';
 import { ConfirmDialog } from '../../shared/ui/confirm-dialog';
 import { DropdownItem, Dropdown } from '../../shared/ui/dropdown';
 import { GridFrame } from '../../shared/ui/grid-frame';
@@ -134,7 +134,7 @@ const emptySpec = (): SpecDraft => ({
     Button,
     ConfirmDialog,
     GridFrame,
-    MfDatePipe,
+    MfDateLongPipe,
     Dropdown,
     Pager,
     SearchBox,
@@ -401,7 +401,7 @@ const emptySpec = (): SpecDraft => ({
                     </td>
                     <td>
                       @if (p.deliveredOrDueOn) {
-                        {{ p.deliveredOrDueOn | mfDate: 'date' }}
+                        {{ p.deliveredOrDueOn | mfDateLong: 'date' }}
                       } @else {
                         <span class="pt__muted">Not set</span>
                       }
@@ -474,7 +474,7 @@ const emptySpec = (): SpecDraft => ({
                       <span class="pt__sub">{{ s.metadataFields.length }} metadata fields</span>
                     </td>
                     <td class="pg-num">{{ s.usedByCount }}</td>
-                    <td>{{ s.modifiedAtUtc ?? s.createdAtUtc | mfDate: 'date' }}</td>
+                    <td>{{ s.modifiedAtUtc ?? s.createdAtUtc | mfDateLong: 'date' }}</td>
                   </tr>
                 }
               </tbody>
@@ -541,7 +541,7 @@ const emptySpec = (): SpecDraft => ({
           <dt>Pages</dt>
           <dd>{{ count(p.pageCount) || 'Not set' }}</dd>
           <dt>Delivered or due</dt>
-          <dd>{{ p.deliveredOrDueOn ? (p.deliveredOrDueOn | mfDate: 'date') : 'Not set' }}</dd>
+          <dd>{{ p.deliveredOrDueOn ? (p.deliveredOrDueOn | mfDateLong: 'date') : 'Not set' }}</dd>
           <dt>Notes</dt>
           <dd>{{ p.notes || 'None' }}</dd>
         </dl>
@@ -571,7 +571,8 @@ const emptySpec = (): SpecDraft => ({
               } @else {
                 {{ c.body }}
                 <span class="pt__meta"
-                  >{{ c.createdByName ?? 'Someone' }} on {{ c.createdAtUtc | mfDate: 'datetime' }}
+                  >{{ c.createdByName ?? 'Someone' }} on
+                  {{ c.createdAtUtc | mfDateLong: 'datetime' }}
                   @if (c.modifiedAtUtc) {
                     (edited)
                   }
@@ -610,7 +611,7 @@ const emptySpec = (): SpecDraft => ({
           @for (h of history(); track h.auditEventId) {
             <li>
               <b>{{ h.actorName ?? 'Someone' }}</b> {{ text(h) }}
-              <span class="pt__meta">{{ h.occurredAtUtc | mfDate: 'datetime' }}</span>
+              <span class="pt__meta">{{ h.occurredAtUtc | mfDateLong: 'datetime' }}</span>
             </li>
           } @empty {
             <li class="pt__muted">No history yet.</li>
@@ -824,7 +825,7 @@ const emptySpec = (): SpecDraft => ({
           @for (h of history(); track h.auditEventId) {
             <li>
               <b>{{ h.actorName ?? 'Someone' }}</b> {{ text(h) }}
-              <span class="pt__meta">{{ h.occurredAtUtc | mfDate: 'datetime' }}</span>
+              <span class="pt__meta">{{ h.occurredAtUtc | mfDateLong: 'datetime' }}</span>
             </li>
           } @empty {
             <li class="pt__muted">No history yet.</li>

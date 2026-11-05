@@ -22,7 +22,7 @@ import {
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { QuietRequests } from '../../../core/http/interceptors';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { DueCell } from '../../../shared/work-queue/due-cell';
 import { CopyButton } from '../../../shared/ui/copy-button';
 import { SlidePanel } from '../../../shared/ui/slide-panel';
@@ -53,7 +53,7 @@ export const PEEK_COMMENTS = 3;
     RowEdit,
     StatusBadge,
     PriorityFlag,
-    MfDatePipe,
+    MfDateLongPipe,
     DueCell,
     CopyButton,
     ErrorReference,
@@ -151,7 +151,7 @@ export const PEEK_COMMENTS = 3;
               </div>
               <div class="fact">
                 <dt>Created</dt>
-                <dd>{{ c.createdAtUtc | mfDate }}</dd>
+                <dd>{{ c.createdAtUtc | mfDateLong }}</dd>
               </div>
             </dl>
             <p class="actions">
@@ -223,7 +223,7 @@ export const PEEK_COMMENTS = 3;
                         <li class="comment">
                           <p class="who">
                             <strong>{{ cm.author.displayName }}</strong>
-                            <span class="muted">{{ cm.createdAtUtc | mfDate }}</span>
+                            <span class="muted">{{ cm.createdAtUtc | mfDateLong }}</span>
                           </p>
                           <p class="text">{{ snippet(cm) }}</p>
                         </li>

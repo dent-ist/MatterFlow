@@ -377,7 +377,7 @@ describe('DashSwimlaneTab', () => {
     );
     // An overdue card says so in words, with an icon.
     const overdue = lane('NEW').querySelector('mf-swimlane-card')!;
-    expect(text(overdue.querySelector('[data-due]'))).toContain('Overdue 5d');
+    expect(text(overdue.querySelector('[data-due]'))).toContain('+5d');
     expect(overdue.querySelector('[data-due] .pi-exclamation-circle')).not.toBeNull();
     // The card shows the shared Due cell, inline layout (#214): the Task Queue's words, one source (describeDueCell).
     expect(overdue.querySelector('[data-due] mf-due-cell .dc--inline.dc--overdue')).not.toBeNull();
@@ -1148,7 +1148,7 @@ describe('DashSwimlaneTab', () => {
       expect(bar.classList.contains('bar--overdue')).toBe(true);
       expect(bar.style.background).toBe('');
       expect(bar.querySelectorAll('.lvl-bar').length).toBeGreaterThan(0);
-      expect(overdue.textContent).toContain('Overdue');
+      expect(overdue.textContent).toContain('+5d');
       const calm = lane('IN_PROGRESS').querySelector('mf-swimlane-card .bar')!;
       expect(calm.classList.contains('bar--overdue')).toBe(false);
     });

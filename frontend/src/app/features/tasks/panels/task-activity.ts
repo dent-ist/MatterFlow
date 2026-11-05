@@ -14,7 +14,7 @@ import { firstValueFrom } from 'rxjs';
 import { TaskActivityClient, TaskActivityItem } from '../../../api/generated/api-client';
 import { QuietRequests } from '../../../core/http/interceptors';
 import { USER_TIME_ZONE } from '../../../core/time/clock';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { ActivityText, activityText, friendlyText } from '../../../shared/ui/audit-format';
 import { ActivityGroupRow, ActivityRow, formatRange, groupActivity } from './activity-groups';
 import { StateBlock } from '../../../shared/ui/state-block';
@@ -46,7 +46,7 @@ const PAGE_SIZE = 25;
  */
 @Component({
   selector: 'mf-task-activity',
-  imports: [StateBlock, MfDatePipe, NgTemplateOutlet],
+  imports: [StateBlock, MfDateLongPipe, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="ta" [class.ta--compact]="compact()" aria-label="Activity">
@@ -88,7 +88,7 @@ const PAGE_SIZE = 25;
                       class="ta__time"
                       [attr.datetime]="row.latest.occurredAtUtc"
                       [title]="row.latest.occurredAtUtc + ' (UTC)'"
-                      >{{ row.latest.occurredAtUtc | mfDate }}</time
+                      >{{ row.latest.occurredAtUtc | mfDateLong }}</time
                     >
                     <div class="ta__what">
                       <span class="ta__actor" data-actor>{{ row.actorName }}</span>
@@ -117,7 +117,7 @@ const PAGE_SIZE = 25;
                                 class="ta__time"
                                 [attr.datetime]="e.occurredAtUtc"
                                 [title]="e.occurredAtUtc + ' (UTC)'"
-                                >{{ e.occurredAtUtc | mfDate }}</time
+                                >{{ e.occurredAtUtc | mfDateLong }}</time
                               >
                               <span class="ta__summary" data-summary>{{ text(e).summary }}</span>
                               <ng-container
@@ -141,7 +141,7 @@ const PAGE_SIZE = 25;
                       class="ta__time"
                       [attr.datetime]="e.occurredAtUtc"
                       [title]="e.occurredAtUtc + ' (UTC)'"
-                      >{{ e.occurredAtUtc | mfDate }}</time
+                      >{{ e.occurredAtUtc | mfDateLong }}</time
                     >
                     <div class="ta__what">
                       <span class="ta__actor" data-actor>{{

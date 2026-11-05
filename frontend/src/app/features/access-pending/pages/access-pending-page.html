@@ -20,7 +20,7 @@
         >{{ accountNote(p.displayName, p.windowsAccount) }}. An administrator needs to give you a
         role before you can use {{ brand.appName() }}.
         @if (p.registeredAtUtc) {
-          Registered {{ p.registeredAtUtc | mfDate }}.
+          Registered {{ p.registeredAtUtc | mfDateLong }}.
         }
       </p>
       <p data-pending-notified>

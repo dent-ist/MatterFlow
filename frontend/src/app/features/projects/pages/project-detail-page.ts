@@ -15,7 +15,6 @@ import { ProjectResponse, ProjectsClient } from '../../../api/generated/api-clie
 import { AuthStore } from '../../../core/auth/auth.store';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { MatterRef } from '../../../shared/ui/matter-ref';
@@ -28,6 +27,7 @@ import { restoreTabFocus } from '../../../shared/ui/row-nav';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 /**
  * Project detail (UX S07, #257): Tasks (n) / Details tabs across the full page width, as on Client and Matter. Tasks is the default and absent
@@ -37,6 +37,7 @@ import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
 @Component({
   selector: 'mf-project-detail-page',
   imports: [
+    NumericDatePipe,
     FixedPage,
     RecordHeader,
     ActiveBadge,
@@ -47,7 +48,6 @@ import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
     ActivityDrawer,
     Tabs,
     ScrollArea,
-    MfDatePipe,
     CustomFieldsView,
     ScopedTasks,
   ],
@@ -138,10 +138,10 @@ import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
                       <dt>Status</dt>
                       <dd><mf-active-badge [active]="p.isActive" inactiveLabel="Archived" /></dd>
                       <dt>Created</dt>
-                      <dd>{{ p.createdAtUtc | mfDate }}</dd>
+                      <dd>{{ p.createdAtUtc | mfNum }}</dd>
                       @if (p.modifiedAtUtc) {
                         <dt>Last changed</dt>
-                        <dd>{{ p.modifiedAtUtc | mfDate }}</dd>
+                        <dd>{{ p.modifiedAtUtc | mfNum }}</dd>
                       }
                     </dl>
                     <mf-custom-fields-view

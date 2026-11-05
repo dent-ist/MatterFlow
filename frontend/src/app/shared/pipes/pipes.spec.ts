@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
-import { MfDatePipe } from './mf-date.pipe';
+import { MfDateLongPipe } from './mf-date-long.pipe';
 import { MatterRefPipe, normalizeNumber } from './matter-ref.pipe';
 
 describe('normalizeNumber / matterRef', () => {
@@ -32,7 +32,7 @@ describe('normalizeNumber / matterRef', () => {
   });
 });
 
-describe('mfDate pipe', () => {
+describe('mfDateLong pipe', () => {
   function setup(zone: string, nowIso: string) {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -42,11 +42,11 @@ describe('mfDate pipe', () => {
       ],
     });
     return TestBed.runInInjectionContext(() => ({
-      local: new MfDatePipe(),
+      local: new MfDateLongPipe(),
     }));
   }
 
-  it('mfDate renders UTC timestamps in local time with the zone abbreviation', () => {
+  it('mfDateLong renders UTC timestamps in local time with the zone abbreviation', () => {
     const { local } = setup('America/Los_Angeles', '2026-10-14T12:00:00Z');
     expect(local.transform('2026-10-14T14:05:00Z')).toBe('Oct 14, 2026, 7:05 AM PDT');
     expect(local.transform('2026-10-14T14:05:00Z', 'date')).toBe('Oct 14, 2026');
@@ -54,7 +54,7 @@ describe('mfDate pipe', () => {
     expect(local.transform('garbage')).toBe('');
   });
 
-  it('mfDate shows a calendar date as Oct 12, 2026 in every zone and never shifts it', () => {
+  it('mfDateLong shows a calendar date as Oct 12, 2026 in every zone and never shifts it', () => {
     for (const zone of ['Pacific/Auckland', 'America/Los_Angeles', 'UTC']) {
       const { local } = setup(zone, '2026-10-14T12:00:00Z');
       expect(local.transform('2026-10-12')).toBe('Oct 12, 2026');

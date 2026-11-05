@@ -18,7 +18,7 @@ import {
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { ActionMenu } from '../../../shared/ui/action-menu';
 import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
 import { AdminCardList, AdminCardSpec } from '../../../shared/ui/admin-card-spec';
@@ -79,7 +79,7 @@ const COLUMNS: readonly AdminColumn[] = [
     FormStatusCell,
     GridBody,
     Pager,
-    MfDatePipe,
+    MfDateLongPipe,
     RouterLink,
     RowLink,
     ScrollArea,
@@ -155,7 +155,7 @@ const COLUMNS: readonly AdminColumn[] = [
                       @if (r.summary?.publishedVersion; as v) {
                         v{{ v }}
                         @if (r.summary?.publishedAtUtc; as at) {
-                          &middot; {{ at | mfDate: 'date' }}
+                          &middot; {{ at | mfDateLong: 'date' }}
                         }
                       } @else {
                         Not published

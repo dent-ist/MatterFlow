@@ -190,13 +190,14 @@ export function formatStatusStamp(
 export type MfDateKind = 'auto' | 'date' | 'datetime';
 
 /**
- * The one date formatter of the app (UXR-08, addendum M). Every screen shows dates through this function or the `mfDate` pipe:
+ * The LONG date formatter (UXR-08, addendum M; D-60, #1146): tooltips, accessible names and sentences only. What the screens print is `numericDate` /
+ * `numericInstant` / the `mfNum` pipe (`MM/DD hh:mm AM/PM`). Through this function or the `mfDateLong` pipe:
  *  - a floating calendar date (`2026-10-12`) renders as `Oct 12, 2026` and never shifts with the viewer's zone;
  *  - an instant renders in the viewer's zone as `Oct 12, 2026, 10:23 PM EDT` (`kind: 'datetime'`, the default for instants)
  *    or as just `Oct 12, 2026` (`kind: 'date'`).
  * Empty or unreadable input renders as an empty string; an unreadable string is never echoed as a guess.
  */
-export function mfDate(
+export function mfDateLong(
   value: Date | string | number | null | undefined,
   zone: string,
   kind: MfDateKind = 'auto',

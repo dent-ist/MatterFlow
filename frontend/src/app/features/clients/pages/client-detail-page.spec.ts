@@ -165,7 +165,7 @@ describe('ClientDetailPage', () => {
     expect(details.querySelector('[data-client-overview]')).not.toBeNull();
     expect(details.querySelector('dl')).toBeNull(); // the duplicated rows are gone
     expect(details.textContent).not.toContain('Client number');
-    expect(details.textContent).toContain('Created Oct 1, 2026');
+    expect(details.textContent).toContain('Created 10/01');
     expect(details.querySelector('[data-top-matters]')).not.toBeNull();
     expect(clients.getClientSummary).toHaveBeenCalledWith(1);
   });

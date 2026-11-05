@@ -12,7 +12,6 @@ import { DynamicForm, FormDefinition } from 'form-engine';
 import { firstValueFrom } from 'rxjs';
 import { FormsClient } from '../../../api/generated/api-client';
 import { toFormDefinition } from '../../../shared/forms/form-schema';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { ClampedRich } from '../panels/clamped-rich';
@@ -21,6 +20,7 @@ import { requestInitiallyOpen, requestOpenKey, saveOpen } from '../panels/sectio
 import { RequestSection, requestHeadingText } from './request-section';
 import { TaskDetailStore } from './task-detail.store';
 import { TaskEditDialog } from './task-edit-dialog';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 /**
  * Details panel (UX S10) of the Task page, in the side panel of `mf-detail-layout` (the layout adds the "Details" heading): the
@@ -29,7 +29,7 @@ import { TaskEditDialog } from './task-edit-dialog';
  */
 @Component({
   selector: 'mf-task-details-tab',
-  imports: [ClampedRich, DynamicForm, MfDatePipe, RequestSection, TaskEditDialog],
+  imports: [NumericDatePipe, ClampedRich, DynamicForm, RequestSection, TaskEditDialog],
   providers: [AssetPickerContext],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['../../../shared/ui/page.scss', '../../../shared/ui/form-field.scss'],
@@ -58,17 +58,17 @@ import { TaskEditDialog } from './task-edit-dialog';
             </dd>
             @if (t.requestedAtUtc) {
               <dt>Request sent</dt>
-              <dd>{{ t.requestedAtUtc | mfDate }}</dd>
+              <dd>{{ t.requestedAtUtc | mfNum }}</dd>
             }
             <dt>Project</dt>
             <dd>{{ t.project?.name ?? 'No project' }}</dd>
             <!-- One wrapper div around the dt/dd pairs is valid in a dl: Created and Last updated share one row. -->
             <div class="dt__pair">
               <dt>Created</dt>
-              <dd>{{ t.createdBy?.displayName ?? 'Unknown' }}, {{ t.createdAtUtc | mfDate }}</dd>
+              <dd>{{ t.createdBy?.displayName ?? 'Unknown' }}, {{ t.createdAtUtc | mfNum }}</dd>
               @if (t.modifiedAtUtc) {
                 <dt class="dt__pair-gap">Last updated</dt>
-                <dd>{{ t.modifiedAtUtc | mfDate }}</dd>
+                <dd>{{ t.modifiedAtUtc | mfNum }}</dd>
               }
             </div>
           </dl>

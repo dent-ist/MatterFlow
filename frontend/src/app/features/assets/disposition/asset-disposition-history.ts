@@ -9,8 +9,8 @@ import {
 } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AssetDispositionChange, AssetsClient } from '../../../api/generated/api-client';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { dispositionLabel } from './asset-disposition';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 /**
  * The disposition history of an asset (epic #851, issue #866): who moved it from which state to which, when and why, newest first. It comes from its own endpoint, so a person
@@ -18,7 +18,7 @@ import { dispositionLabel } from './asset-disposition';
  */
 @Component({
   selector: 'mf-asset-disposition-history',
-  imports: [MfDatePipe],
+  imports: [NumericDatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -62,7 +62,7 @@ import { dispositionLabel } from './asset-disposition';
           <li class="dh__row" data-disposition-change>
             <span class="dh__change">{{ label(c.fromCode) }} to {{ label(c.toCode) }}</span>
             <span class="dh__meta"
-              >{{ c.actorName || 'The system' }}, {{ c.occurredAtUtc | mfDate }}</span
+              >{{ c.actorName || 'The system' }}, {{ c.occurredAtUtc | mfNum }}</span
             >
             @if (c.note) {
               <span class="dh__note">&ldquo;{{ c.note }}&rdquo;</span>

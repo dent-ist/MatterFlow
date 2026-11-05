@@ -14,7 +14,7 @@ import {
   ReportVersionComparisonResponse,
   ReportVersionResponse,
 } from '../../../api/generated/api-client';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 
 /**
@@ -25,7 +25,7 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
  */
 @Component({
   selector: 'mf-versions-panel',
-  imports: [ConfirmDialog, MfDatePipe],
+  imports: [ConfirmDialog, MfDateLongPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="vp" aria-labelledby="vp-title" data-versions-panel>
@@ -45,7 +45,8 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
                 <span class="vp__chip" data-current>Current</span>
               }
               <span class="vp__meta"
-                >{{ v.createdByName || 'Unknown' }}, {{ v.createdAtUtc | mfDate: 'datetime' }}</span
+                >{{ v.createdByName || 'Unknown' }},
+                {{ v.createdAtUtc | mfDateLong: 'datetime' }}</span
               >
             </div>
             @if (v.changeNote) {

@@ -2,12 +2,12 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 import { RouterLink } from '@angular/router';
 import { AssetsClient, MatterResponse } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
-import { USER_TIME_ZONE } from '../../../core/time/clock';
+import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { ActiveBadge, Badge, SensitiveBadge } from '../../../shared/ui/badge';
 import { AssetTypeChip } from '../../../shared/ui/asset-type-chip';
 import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { MatterRef } from '../../../shared/ui/matter-ref';
-import { numericInstantFull, readableInstant } from '../../../shared/ui/numeric-date';
+import { numericInstant, readableInstant } from '../../../shared/ui/numeric-date';
 import { personInitials } from '../../../shared/ui/person-initials';
 import { shortAccountName } from '../../../shared/ui/person-name';
 import { panelLoader } from '../../my-matters/panel-loader';
@@ -394,6 +394,7 @@ export class MatterSummary {
   private readonly auth = inject(AuthStore);
   private readonly assetsApi = inject(AssetsClient);
   private readonly zone = inject(USER_TIME_ZONE);
+  private readonly clock = inject(Clock);
 
   protected readonly showAssets = computed(() => this.auth.has('Asset.View'));
   protected readonly canCreateAsset = computed(
@@ -411,9 +412,9 @@ export class MatterSummary {
   );
   protected readonly ai = computed(() => aiLabel(this.matter().aiAllowed));
 
-  /** `MM/DD/YYYY hh:mm AM/PM`, always with the year; the long form with the zone is the tooltip. */
+  /** `MM/DD hh:mm AM/PM` (the year only when it is not this year, D-60); the long form with the zone is the tooltip. */
   protected stamp(instant: string | undefined): string {
-    return instant ? numericInstantFull(instant, this.zone) : '';
+    return instant ? numericInstant(instant, this.clock.now(), this.zone) : '';
   }
 
   protected long(instant: string | undefined): string | null {

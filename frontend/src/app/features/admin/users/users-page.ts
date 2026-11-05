@@ -33,7 +33,7 @@ import { PendingUsersStore } from '../../../core/identity-admin/pending-users.st
 import { SkipTarget } from '../../../shared/layout/skip-target';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { UndoService } from '../../../core/notify/undo.service';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { AvailabilityChip } from '../../../shared/availability/availability-chip';
 import { AvailabilityDialog } from '../../../shared/availability/availability-dialog';
 import { ActionMenu } from '../../../shared/ui/action-menu';
@@ -116,7 +116,7 @@ const AVAILABILITY_OPTIONS = [
   selector: 'mf-users-page',
   imports: [
     Button,
-    MfDatePipe,
+    MfDateLongPipe,
     UserDrawer,
     ScrollArea,
     Pager,

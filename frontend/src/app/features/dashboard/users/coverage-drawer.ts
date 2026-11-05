@@ -18,7 +18,7 @@ import {
   TaskQueueClient,
   TaskQueueRow,
 } from '../../../api/generated/api-client';
-import { formatDateOnly, mfDate } from '../../../core/time/time';
+import { formatDateOnly, mfDateLong } from '../../../core/time/time';
 import { USER_TIME_ZONE } from '../../../core/time/clock';
 import { SlidePanel } from '../../../shared/ui/slide-panel';
 import { Tip } from '../../../shared/ui/tip';
@@ -298,7 +298,7 @@ export class CoverageDrawer {
   }
 
   protected completedOn(r: TaskQueueRow): string {
-    return r.completedAtUtc ? mfDate(r.completedAtUtc, this.zone, 'date') : '';
+    return r.completedAtUtc ? mfDateLong(r.completedAtUtc, this.zone, 'date') : '';
   }
 
   protected onVisible(open: boolean): void {

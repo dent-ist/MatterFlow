@@ -278,7 +278,9 @@ One helper owns it: `frontend/src/app/shared/ui/numeric-date.ts` (constant `NUME
 - The person's time zone decides the day, the clock and "the current year" (instants only; calendar dates are floating days).
 - In templates use the `mfNum` pipe (`value | mfNum`, `| mfNum: 'date'`, `| mfNum: 'time'`); in code use `numericDate`, `numericInstant`, `numericDateAndTime`.
 - Accessible text and tooltips keep a readable full date: `readableDate` / `readableInstant` give "October 26, 2026, 4:00 PM". Relative words ("Today", "2 days ago", "Due in 2 d") stay as they are. The month title of the calendar ("October 2026") is a heading, not a date, and stays.
-- Other pages keep `mfDate` for now. The native date and time inputs of the event dialog follow the browser's locale.
+- **One format on every page (D-60, #1146).** The Matter Summary ("Created" / "Last changed"), Client, Asset, Project and Task records, the Task facts and the dates of the work cells (the compact Due cell on the Task page, Dashboard lists, drawers and swimlane cards: `10/17` plus `+18d` while overdue) all use this format; the year shows only when it is not this year (the Matter Summary no longer always shows it).
+- **The long form is `mfDateLong`** (pipe in `shared/pipes/mf-date-long.pipe.ts`, function `mfDateLong` in `core/time/time.ts`; it was `mfDate`): "Oct 12, 2026, 10:23 PM EDT". Use it only in a tooltip (`[attr.title]`), an `aria-label` or a sentence. A unit spec (`mf-date-long-use.spec.ts`) fails when a template prints it anywhere else; the list of files still on it is the spec's `PENDING` array (#1147 empties it).
+- The native date and time inputs follow the browser's locale (`html lang="en-US"` gives `mm/dd/yyyy`).
 
 
 ## 6. Create and edit in a pop-up dialog; side panels for detail (epic #1001, MD-22; owner decision 2026-11-02, addendum AQ.4)

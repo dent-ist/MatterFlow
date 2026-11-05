@@ -37,7 +37,7 @@ import { RecordSkeleton } from '../../../shared/ui/record-skeleton';
 import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { tabIcon } from '../../../shared/ui/tab-icons';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { WorkStrip } from '../../../shared/work-queue/work-strip';
 import { DEFAULT_TASK_TYPE_ICON, TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
@@ -131,7 +131,7 @@ const workflowsKey = (m: Model): string =>
     CharCounter,
     ConfirmDialog,
     FormsModule,
-    MfDatePipe,
+    MfDateLongPipe,
     RecordHeader,
     RecordSkeleton,
     RecordState,

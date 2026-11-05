@@ -12,7 +12,7 @@ import {
   DashboardSettingsAdminView,
   SettingsDashboardClient,
 } from '../../../api/generated/api-client';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import {
@@ -33,7 +33,7 @@ import {
  */
 @Component({
   selector: 'mf-dashboard-settings',
-  imports: [Button, MfDatePipe],
+  imports: [Button, MfDateLongPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form class="ds" novalidate (submit)="$event.preventDefault(); save()" data-dashboard-settings>
@@ -246,7 +246,7 @@ import {
         <p class="ds__intro" data-ds-meta>
           Times are in the firm's time zone ({{ v.timeZoneId }}), for everyone.
           @if (v.updatedAtUtc) {
-            Last changed {{ v.updatedAtUtc | mfDate }}
+            Last changed {{ v.updatedAtUtc | mfDateLong }}
             @if (v.updatedBy) {
               by {{ v.updatedBy }}
             }

@@ -17,7 +17,6 @@ import { firstValueFrom } from 'rxjs';
 import { AssetResponse, FormsClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { FORM_SCHEMA_READ_PERMISSIONS, toFormDefinition } from '../../../shared/forms/form-schema';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
 import { CopyButton } from '../../../shared/ui/copy-button';
 import { StatusChip } from '../../../shared/ui/status-chip';
@@ -25,6 +24,7 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
 import { AssetDispositionHistory } from '../disposition/asset-disposition-history';
 import { dispositionOf } from '../disposition/asset-disposition';
 import { matterLinkOf } from '../../../shared/ui/matter-link';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 /**
  * The Details tab of the asset record page (UX S08): the matter, type, external reference (a link when it is a URL, with a copy button),
@@ -34,7 +34,14 @@ import { matterLinkOf } from '../../../shared/ui/matter-link';
  */
 @Component({
   selector: 'mf-asset-details-tab',
-  imports: [MatterRef, CopyButton, DynamicForm, MfDatePipe, StatusChip, AssetDispositionHistory],
+  imports: [
+    NumericDatePipe,
+    MatterRef,
+    CopyButton,
+    DynamicForm,
+    StatusChip,
+    AssetDispositionHistory,
+  ],
   providers: [AssetPickerContext],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -60,7 +67,7 @@ import { matterLinkOf } from '../../../shared/ui/matter-link';
             <dd>
               <mf-status-chip kind="disposition" [code]="disposition().code" />
               @if (asset().dispositionChangedAtUtc) {
-                <span class="ad__muted"> since {{ asset().dispositionChangedAtUtc | mfDate }}</span>
+                <span class="ad__muted"> since {{ asset().dispositionChangedAtUtc | mfNum }}</span>
               }
               @if (asset().dispositionNote) {
                 <span class="ad__muted" data-disposition-note>
@@ -144,12 +151,12 @@ import { matterLinkOf } from '../../../shared/ui/matter-link';
           </div>
           <div class="ad__f">
             <dt>Created</dt>
-            <dd>{{ asset().createdAtUtc | mfDate }}</dd>
+            <dd>{{ asset().createdAtUtc | mfNum }}</dd>
           </div>
           @if (asset().modifiedAtUtc) {
             <div class="ad__f">
               <dt>Last changed</dt>
-              <dd>{{ asset().modifiedAtUtc | mfDate }}</dd>
+              <dd>{{ asset().modifiedAtUtc | mfNum }}</dd>
             </div>
           }
         </dl>

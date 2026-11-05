@@ -153,11 +153,11 @@
                       data-last-seen
                       [attr.data-drop]="drop.lastSeen"
                       [attr.title]="
-                        u.lastLoginAtUtc ? (u.lastLoginAtUtc | mfDate) : 'Never signed in'
+                        u.lastLoginAtUtc ? (u.lastLoginAtUtc | mfDateLong) : 'Never signed in'
                       "
                     >
                       @if (u.lastLoginAtUtc) {
-                        {{ u.lastLoginAtUtc | mfDate: 'date' }}
+                        {{ u.lastLoginAtUtc | mfDateLong: 'date' }}
                       } @else {
                         <span class="us-muted">Never</span>
                       }

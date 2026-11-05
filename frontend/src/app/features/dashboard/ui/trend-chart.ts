@@ -16,7 +16,7 @@ import {
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { calendarDayInZone, mfDate } from '../../../core/time/time';
+import { calendarDayInZone, mfDateLong } from '../../../core/time/time';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { queueParams } from '../dashboard-links';
 import { TrendSample } from './trend-sample';
@@ -1047,7 +1047,7 @@ export class TrendChart {
   }
 
   protected day(date: string): string {
-    return this.weekly() ? weekLabel(date) : mfDate(date, this.zone, 'date');
+    return this.weekly() ? weekLabel(date) : mfDateLong(date, this.zone, 'date');
   }
 
   /** The Task Queue query behind the count of a day, or of a week cut to the period (a stock: its value at the end of it). */

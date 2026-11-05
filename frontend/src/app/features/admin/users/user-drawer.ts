@@ -27,7 +27,7 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { UndoService } from '../../../core/notify/undo.service';
 import { USER_TIME_ZONE } from '../../../core/time/clock';
 import { LeaveConfirmService } from '../../../shared/guards/unsaved-changes.guard';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { AvailabilityChip } from '../../../shared/availability/availability-chip';
 import { Badge } from '../../../shared/ui/badge';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
@@ -80,7 +80,7 @@ export function readOnlyReason(canManage: boolean, canEditPods: boolean): string
     AvailabilityChip,
     UserPodsCell,
     ConfirmDialog,
-    MfDatePipe,
+    MfDateLongPipe,
     UserCalendarField,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

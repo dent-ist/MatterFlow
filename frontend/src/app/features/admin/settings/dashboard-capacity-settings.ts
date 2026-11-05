@@ -12,7 +12,7 @@ import {
   DashboardCapacityAdminView,
   SettingsDashboardClient,
 } from '../../../api/generated/api-client';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 
@@ -24,7 +24,7 @@ import { NotificationService } from '../../../core/notify/notification.service';
  */
 @Component({
   selector: 'mf-dashboard-capacity-settings',
-  imports: [Button, MfDatePipe],
+  imports: [Button, MfDateLongPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form class="cs" novalidate (submit)="$event.preventDefault(); save()" data-capacity-settings>
@@ -66,7 +66,7 @@ import { NotificationService } from '../../../core/notify/notification.service';
       @if (view(); as v) {
         @if (v.updatedAtUtc) {
           <p class="cs__meta" data-capacity-meta>
-            Last changed {{ v.updatedAtUtc | mfDate }}
+            Last changed {{ v.updatedAtUtc | mfDateLong }}
             @if (v.updatedBy) {
               by {{ v.updatedBy }}
             }

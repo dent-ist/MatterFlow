@@ -16,7 +16,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { calendarDayInZone, mfDate } from '../../../core/time/time';
+import { calendarDayInZone, mfDateLong } from '../../../core/time/time';
 import { AbsenceDialog, AbsencePerson } from '../../../shared/availability/absences/absence-dialog';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { Segmented } from '../../../shared/ui/segmented';
@@ -566,7 +566,7 @@ export class DashCalendarTab {
   readonly failed = computed(() => this.refreshFailed());
   readonly updated = computed(() => {
     const at = this.lastOk();
-    return at ? mfDate(new Date(at).toISOString(), this.zone, 'datetime') : null;
+    return at ? mfDateLong(new Date(at).toISOString(), this.zone, 'datetime') : null;
   });
 
   protected readonly today = computed(() => {

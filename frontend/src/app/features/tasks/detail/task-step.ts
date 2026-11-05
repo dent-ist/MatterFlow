@@ -15,7 +15,6 @@ import { DynamicForm, FormDefinition, ServerFieldError } from 'form-engine';
 import { firstValueFrom } from 'rxjs';
 import { FormsClient, TaskStepInstance } from '../../../api/generated/api-client';
 import { ApiError } from '../../../core/http/api-error';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { toFormDefinition } from '../../../shared/forms/form-schema';
 import { splitFormErrors } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
@@ -23,6 +22,7 @@ import { FormDialog } from '../../../shared/ui/form-dialog';
 import { TaskDetailStore } from './task-detail.store';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
 import type { BadgeTone } from '../../../shared/ui/badge';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 /** The Task statuses the status note under the header explains (so the step does not repeat them). */
 const STATUS_NOTE_STATES: readonly string[] = ['ON_HOLD', 'COMPLETED', 'CANCELLED'];
@@ -56,7 +56,7 @@ export function valuesPatch(
  */
 @Component({
   selector: 'mf-task-step',
-  imports: [DynamicForm, ConfirmDialog, FormDialog, MfDatePipe],
+  imports: [NumericDatePipe, DynamicForm, ConfirmDialog, FormDialog],
   // The step's asset inputs (ASSET_REF) offer the assets of the task's own matter.
   providers: [AssetPickerContext],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -164,7 +164,7 @@ export function valuesPatch(
             <span class="step__tag step__tag--warn" data-reopened>Reopened</span>
           }
           @if (s.resolvedAtUtc && resolved()) {
-            <span class="step__when" data-resolved-at>{{ s.resolvedAtUtc | mfDate }}</span>
+            <span class="step__when" data-resolved-at>{{ s.resolvedAtUtc | mfNum }}</span>
           }
         </p>
         <div class="step__notes">

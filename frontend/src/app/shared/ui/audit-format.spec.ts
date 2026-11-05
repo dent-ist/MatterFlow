@@ -1,5 +1,5 @@
 import { AuditEventDto } from '../../api/generated/api-client';
-import { mfDate } from '../../core/time/time';
+import { mfDateLong } from '../../core/time/time';
 import {
   activityText,
   auditValue,
@@ -99,8 +99,8 @@ describe('audit formatting', () => {
 
     it('reads 31 Dec and 1 Jan as the same days, in any zone (a floating date never shifts)', () => {
       for (const zone of ['America/New_York', 'Pacific/Auckland', 'UTC']) {
-        expect(mfDate('2026-12-31', zone)).toBe('Dec 31, 2026');
-        expect(mfDate('2027-01-01', zone)).toBe('Jan 1, 2027');
+        expect(mfDateLong('2026-12-31', zone)).toBe('Dec 31, 2026');
+        expect(mfDateLong('2027-01-01', zone)).toBe('Jan 1, 2027');
       }
       const t = activityText({
         summary: 'Due date changed from 2026-12-31 to 2027-01-01',

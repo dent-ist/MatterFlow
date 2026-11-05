@@ -286,7 +286,7 @@
                       @if (f.published.at) {
                         <span aria-hidden="true"> &middot; </span>
                         <span class="mf-sr-only">, </span>last published
-                        {{ f.published.at | mfDate: 'date' }}
+                        {{ f.published.at | mfDateLong: 'date' }}
                       }
                     </li>
                   }

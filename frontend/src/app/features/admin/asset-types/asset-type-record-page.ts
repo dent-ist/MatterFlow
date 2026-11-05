@@ -27,7 +27,7 @@ import {
   HasUnsavedChanges,
   LeaveConfirmService,
 } from '../../../shared/guards/unsaved-changes.guard';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { Crumb } from '../../../shared/ui/page-header';
@@ -113,7 +113,7 @@ const modelKey = (m: Model): string =>
     ActivityDrawer,
     ConfirmDialog,
     FormStatusCell,
-    MfDatePipe,
+    MfDateLongPipe,
     RecordHeader,
     RecordSkeleton,
     RecordState,

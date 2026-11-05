@@ -26,7 +26,7 @@ import { statusDef } from '../../../shared/filters/common-defs';
 import { FilterDef } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { ActionMenu } from '../../../shared/ui/action-menu';
 import { AdminCardList, AdminCardSpec, activeCardBadge } from '../../../shared/ui/admin-card-spec';
 import { AdminColumn, adminListState } from '../../../shared/ui/admin-list-state';
@@ -72,7 +72,7 @@ const COLUMN_SPEC: Record<Column, AdminColumn> = {
     ConfirmDialog,
     FiltersBar,
     GridBody,
-    MfDatePipe,
+    MfDateLongPipe,
     Pager,
     RouterLink,
     RowLink,
@@ -172,7 +172,7 @@ const COLUMN_SPEC: Record<Column, AdminColumn> = {
                     <td class="mf-cell-num" data-roles>{{ r.roleCount }}</td>
                     <td class="mf-cell-badge" data-last-run>
                       @if (r.lastRunAtUtc) {
-                        {{ r.lastRunAtUtc | mfDate: 'date' }}
+                        {{ r.lastRunAtUtc | mfDateLong: 'date' }}
                       } @else {
                         <span class="mf-sr-only">Never</span><span aria-hidden="true">-</span>
                       }

@@ -13,8 +13,8 @@ import {
   untracked,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { USER_TIME_ZONE } from '../../../core/time/clock';
-import { mfDate } from '../../../core/time/time';
+import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
+import { numericInstant } from '../../../shared/ui/numeric-date';
 import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { firstValueFrom } from 'rxjs';
 import { AssetResponse, AssetsClient } from '../../../api/generated/api-client';
@@ -267,6 +267,7 @@ export class AssetRecordPage {
   /** What the Linked tasks tab learned (Overdue needs its list): null until the tab has been opened for this asset. */
   protected readonly totals = signal<LinkedTaskTotals | null>(null);
   private readonly zone = inject(USER_TIME_ZONE);
+  private readonly clock = inject(Clock);
 
   /**
    * The summary strip (#506): Open and Linked from the counts that come with the asset (no extra request), Overdue only once the Linked tasks
@@ -312,7 +313,7 @@ export class AssetRecordPage {
       value:
         this.disposition().label +
         (a.dispositionChangedAtUtc
-          ? ', ' + mfDate(a.dispositionChangedAtUtc, this.zone, 'date')
+          ? ', ' + numericInstant(a.dispositionChangedAtUtc, this.clock.now(), this.zone, false)
           : ''),
     });
     if (a.sizeValue !== undefined && a.sizeValue !== null) {
@@ -327,14 +328,14 @@ export class AssetRecordPage {
       key: 'created',
       label: 'Created',
       count: null,
-      value: mfDate(a.createdAtUtc, this.zone, 'date'),
+      value: numericInstant(a.createdAtUtc, this.clock.now(), this.zone, false),
     });
     if (a.modifiedAtUtc) {
       items.push({
         key: 'modified',
         label: 'Modified',
         count: null,
-        value: mfDate(a.modifiedAtUtc, this.zone, 'date'),
+        value: numericInstant(a.modifiedAtUtc, this.clock.now(), this.zone, false),
       });
     }
     return items;

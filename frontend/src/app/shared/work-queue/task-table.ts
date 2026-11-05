@@ -30,14 +30,14 @@ import { GridBody } from '../ui/grid-body';
 import { TaskQueueRow } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
-import { mfDate } from '../../core/time/time';
+import { mfDateLong } from '../../core/time/time';
 import { TaskTypeBadge } from '../task-type/task-type-badge';
 import { TaskTypeChip } from '../ui/task-type-chip';
 import { Tip } from '../ui/tip';
 import { ColumnMove, ReorderColumns } from '../ui/reorder-columns';
 import { DueCell } from './due-cell';
 import { DueSuffixCell, ageText } from './due-suffix';
-import { MfDatePipe } from '../pipes/mf-date.pipe';
+import { MfDateLongPipe } from '../pipes/mf-date-long.pipe';
 import { MatterCell, MatterNameCell } from './matter-cell';
 import { ProjectCell } from './project-cell';
 import { loudPriority, loudStatus } from './quiet-badges';
@@ -102,7 +102,7 @@ const LONG_PRESS_MS = 500;
     ProjectCell,
     DueCell,
     DueSuffixCell,
-    MfDatePipe,
+    MfDateLongPipe,
     PriorityFlag,
     PriorityPill,
     RowEdit,
@@ -606,7 +606,7 @@ const LONG_PRESS_MS = 500;
                         {{ dayOf(row.createdAtUtc) }}
                       }
                       @case ('updated') {
-                        {{ row.updatedAtUtc | mfDate }}
+                        {{ row.updatedAtUtc | mfDateLong }}
                       }
                     }
                   </td>
@@ -1341,16 +1341,16 @@ export class TaskTable {
 
   /** Age tooltip: when it was created (local zone), and for a closed task how long it took. */
   protected ageTitle(row: TaskQueueRow): string {
-    const created = `Created ${mfDate(row.createdAtUtc, this.zone, 'datetime')}`;
+    const created = `Created ${mfDateLong(row.createdAtUtc, this.zone, 'datetime')}`;
     return row.closedAtUtc ? `Took ${this.ageDays(row)} d. ${created}` : created;
   }
 
   /** The tooltip of a closed date: the time and zone ("Oct 16, 2026, 3:00 PM EDT"). */
   protected closedTitle(instant: string): string {
-    return mfDate(instant, this.zone, 'datetime');
+    return mfDateLong(instant, this.zone, 'datetime');
   }
 
   protected dayOf(instant: string): string {
-    return mfDate(instant, this.zone, 'date');
+    return mfDateLong(instant, this.zone, 'date');
   }
 }

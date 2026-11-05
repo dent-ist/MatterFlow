@@ -43,7 +43,7 @@ import { DrillReturn } from '../../../shared/work-queue/drill';
 import { ADMIN_LIST, AdminListLeave } from '../list-return';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { GridBody } from '../../../shared/ui/grid-body';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { Pager } from '../../../shared/ui/pager';
 import {
   RecordCard,
@@ -107,7 +107,7 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
     RecordCard,
     RecordSort,
     FilterChips,
-    MfDatePipe,
+    MfDateLongPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -365,8 +365,8 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
                   @if (publishedShown()) {
                     <td class="ad-nowrap" data-last-published>
                       @if (w.publishedAtUtc) {
-                        <span [attr.title]="w.publishedAtUtc | mfDate">{{
-                          w.publishedAtUtc | mfDate: 'date'
+                        <span [attr.title]="w.publishedAtUtc | mfDateLong">{{
+                          w.publishedAtUtc | mfDateLong: 'date'
                         }}</span>
                       } @else {
                         <span class="pg-muted">&ndash;</span>

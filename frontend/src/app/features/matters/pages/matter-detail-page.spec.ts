@@ -410,9 +410,9 @@ describe('MatterDetailPage', () => {
     expect(summary.querySelector('dl')!.textContent).toContain('00343-00012');
     expect(summary.querySelector('[data-ai-value]')!.textContent!.trim()).toBe('No');
     expect(summary.querySelector('mf-sensitive-badge')).not.toBeNull();
-    // Dates are numeric with the year; the long form is the tooltip.
+    // Dates are numeric (the year only when it is not this year, D-60); the long form is the tooltip.
     expect(summary.querySelector('[data-created]')!.textContent!.trim()).toMatch(
-      /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2} (AM|PM)$/,
+      /^\d{2}\/\d{2} \d{2}:\d{2} (AM|PM)$/,
     );
     expect(summary.querySelector('[data-client-value] a')?.getAttribute('href')).toBe('/clients/1');
     expect(summary.textContent).not.toMatch(/Custom fields/i);

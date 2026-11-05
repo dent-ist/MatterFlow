@@ -28,7 +28,7 @@ import { QuietRequests } from '../../../core/http/interceptors';
 import { LookupStore } from '../../../core/lookups/lookup-store';
 import { UndoService } from '../../../core/notify/undo.service';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { mfDate } from '../../../core/time/time';
+import { mfDateLong } from '../../../core/time/time';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { FixedPage } from '../../../shared/ui/fixed-page';
 import { LIST_ORDER, ListKind, queueArgsFor } from '../dashboard-links';
@@ -875,7 +875,7 @@ export class DashboardPage implements OnInit {
   });
   protected readonly updated = computed(() => {
     const d = this.data();
-    return d ? mfDate(d.generatedAtUtc, this.zone, 'datetime') : null;
+    return d ? mfDateLong(d.generatedAtUtc, this.zone, 'datetime') : null;
   });
   /** The tab list is drawn only with two or more permitted tabs (R3); with one, its name is the page heading and Refresh stays. */
   protected readonly tabRow = computed(() => this.showTabs() && this.visibleTabs().length > 1);

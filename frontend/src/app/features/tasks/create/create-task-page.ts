@@ -46,7 +46,7 @@ import {
 } from '../../../core/time/time';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { toFormDefinition } from '../../../shared/forms/form-schema';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
@@ -128,7 +128,7 @@ const matterOption = (m: MatterResponse): PickerOption => ({
     GridNav,
     TaskTypeIcon,
     PriorityBadge,
-    MfDatePipe,
+    MfDateLongPipe,
   ],
   providers: [AssetPickerContext],
   changeDetection: ChangeDetectionStrategy.OnPush,

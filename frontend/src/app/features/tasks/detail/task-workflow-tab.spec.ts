@@ -98,7 +98,9 @@ describe('Workflow tab: ordered stepper', () => {
     const meta = done.querySelector('.step__meta')!;
     expect(meta.querySelectorAll('[data-state]')).toHaveLength(1);
     expect(meta.querySelector('[data-state]')!.textContent).toContain('Completed');
-    expect(meta.querySelector('[data-resolved-at]')!.textContent).toMatch(/2026/);
+    expect(meta.querySelector('[data-resolved-at]')!.textContent).toMatch(
+      /\d{2}\/\d{2} \d{2}:\d{2} (AM|PM)/,
+    );
     expect(done.querySelector('.step__toggle [data-state]')).toBeNull();
     // Only resolved steps have a date.
     const pending = q(el, '[data-step-id]:has([data-locked])')!;

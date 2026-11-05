@@ -5,7 +5,7 @@ import { SwimlaneCard, TaskQueueRow } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { LookupStore } from '../../../core/lookups/lookup-store';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { levelBars } from '../../../shared/ui/priority-badge';
 import { PriorityFlag } from '../../../shared/ui/priority-flag';
 import { StatusBadge } from '../../../shared/ui/status-badge';
@@ -37,7 +37,7 @@ export function initials(name: string): string {
     TaskTypeIcon,
     RowEdit,
     DueCell,
-    MfDatePipe,
+    MfDateLongPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.compact]': "density() === 'compact'" },
@@ -51,8 +51,8 @@ export function initials(name: string): string {
           {{ c.status === 'CANCELLED' ? 'Cancelled' : 'Done' }}
           {{
             compact()
-              ? short(c.completedAtUtc | mfDate: 'date')
-              : (c.completedAtUtc | mfDate: 'date')
+              ? short(c.completedAtUtc | mfDateLong: 'date')
+              : (c.completedAtUtc | mfDateLong: 'date')
           }}
         </span>
       } @else {

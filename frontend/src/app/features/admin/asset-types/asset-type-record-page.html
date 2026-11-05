@@ -167,7 +167,9 @@
                 [draftVersion]="t.draftVersionNo ?? null"
               />
               @if (!noFields() && t.publishedAtUtc) {
-                <p data-form-published>Last published {{ t.publishedAtUtc | mfDate: 'date' }}.</p>
+                <p data-form-published>
+                  Last published {{ t.publishedAtUtc | mfDateLong: 'date' }}.
+                </p>
               }
               @if (t.draftVersionNo !== undefined && t.draftVersionNo !== null) {
                 <p data-form-draft>Draft v{{ t.draftVersionNo }} is in progress.</p>
