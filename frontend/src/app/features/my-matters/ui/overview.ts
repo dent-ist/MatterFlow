@@ -140,7 +140,6 @@ const UPCOMING_DAYS = 14;
             buttonId="mm-feed-kind"
             label="Kind of activity"
             prefix="Show:"
-            size="sm"
             [items]="kindItems()"
             [value]="kind()"
             (valueChange)="kind.set($any($event))"

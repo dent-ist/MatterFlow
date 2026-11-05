@@ -198,6 +198,9 @@ let nextId = 0;
             </p>
           }
           <div class="upc-actions">
+            <button type="button" class="mf-btn" data-pods-cancel (click)="close(true)">
+              Cancel
+            </button>
             <button
               type="button"
               class="mf-btn mf-btn--primary"
@@ -207,9 +210,6 @@ let nextId = 0;
               (click)="apply()"
             >
               Apply
-            </button>
-            <button type="button" class="mf-btn" data-pods-cancel (click)="close(true)">
-              Cancel
             </button>
           </div>
         </div>
@@ -323,11 +323,16 @@ let nextId = 0;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
+    /* "No pod" is one line (#1215). */
+    .upc-none {
+      white-space: nowrap;
+    }
     .upc-trigger {
       max-width: 100%;
       display: inline-flex;
       align-items: center;
       gap: var(--mf-s1);
+      min-width: 8rem; /* 112 px (the root is 14 px): "No pod" never wraps (#1215) */
       min-height: 1.75rem;
       padding: 0 var(--mf-s1);
       border: 1px solid transparent;

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Dropdown, DropdownItem } from './dropdown';
@@ -268,5 +270,24 @@ describe('Dropdown anatomy (UI update 2, #1125)', () => {
     opts()[0].click();
     await flush();
     expect(fixture.componentInstance.values()).toEqual([]);
+  });
+});
+
+describe('Dropdown height by place (D-02, #1215)', () => {
+  const source = (file: string): string => readFileSync(join(process.cwd(), 'src', file), 'utf8');
+
+  it('the button is 36 px; 32 px only inside a table cell (or with size="sm" in a filter row)', () => {
+    const css = source('app/shared/ui/dropdown.ts');
+    expect(css).toMatch(/\.btn \{[^}]*height: var\(--mf-ctl-h\);/);
+    expect(css).toMatch(
+      /\.btn\.sm,\s*:host-context\(td\) \.btn \{[^}]*height: var\(--mf-ctl-h-sm\)/,
+    );
+  });
+
+  it('the My Matters toolbars and panels do not ask for the 32 px size', () => {
+    for (const file of ['task-list', 'overview', 'activity-tab', 'assets-tab', 'metrics-work']) {
+      const ts = source(`app/features/my-matters/ui/${file}.ts`);
+      expect(/<mf-dropdown[^>]*size="sm"/s.test(ts), file).toBe(false);
+    }
   });
 });

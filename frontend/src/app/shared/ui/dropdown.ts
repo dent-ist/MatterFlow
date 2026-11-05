@@ -246,7 +246,9 @@ let nextId = 0;
       font: inherit;
       cursor: pointer;
     }
-    .btn.sm {
+    /* 36 px in a toolbar or a form; 32 px only in a table cell, or where a filter row asks for it with size="sm" (D-02, #1215). */
+    .btn.sm,
+    :host-context(td) .btn {
       gap: var(--mf-s1);
       padding: 0 var(--mf-s2);
       height: var(--mf-ctl-h-sm);
@@ -514,7 +516,8 @@ let nextId = 0;
     }
     @media (max-width: 767.98px) {
       .btn,
-      .btn.sm {
+      .btn.sm,
+      :host-context(td) .btn {
         height: 44px;
       }
       .list li[role='option'] {
