@@ -1,4 +1,3 @@
-import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { FiltersToggle } from '../ui/column-filters';
 import { SearchBox } from '../ui/search-box';
@@ -13,8 +12,8 @@ let nextId = 0;
  * The list toolbar (`mf-list-toolbar`, LC-01 #1038, decision AR): the zones under the title row of every list page, always in this order, a zone that a
  * page does not fill is left out and never moves the others (the anatomy of `docs/ux/grid-consistency/anatomy-mockup.html`, theme guide section 11).
  *
- *   Row 2  [Search tasks]  [Filters (2)]  [Other filters]  [view slot]  ......  [Columns]  [... menu]      (a bulk bar replaces the whole row)
- *   Row 3  chips ... Clear filters                                           Sorted by Name, A to Z  Reset sort
+ *   Row 2  [Search tasks]  [Filters (2)]  [Other filters]  [view slot]  ......  Sorted by Name  Reset sort  [Columns]  [... menu]  [primary]
+ *   Row 3  chips ... Clear filters                                                  (a bulk bar replaces row 2; row 3 only while filters are active)
  *
  *   <mf-list-toolbar [filters]="filters" controls="client-filter-row" searchLabel="Search clients" [clearAlso]="['q']">
  *     <mf-quick-views mfView ... />            <!-- optional: quick-view chips or a View dropdown -->
@@ -33,15 +32,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-list-toolbar',
-  imports: [
-    NgTemplateOutlet,
-    FiltersToggle,
-    FilterChips,
-    FilterNotice,
-    FilterSheet,
-    MoreFilters,
-    SearchBox,
-  ],
+  imports: [FiltersToggle, FilterChips, FilterNotice, FilterSheet, MoreFilters, SearchBox],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="lt" data-grid-toolbar data-list-toolbar>
@@ -77,10 +68,8 @@ let nextId = 0;
           <mf-more-filters class="lt__other" [filters]="filters()" />
         }
         <ng-content select="[mfView]" />
-        @if (!rowThree()) {
-          <!-- No chips and no notice: the Sorted by line sits in row 2 between Filters and Columns, left aligned and as wide as it needs (it truncates, the sentence is its tooltip), so the list keeps its rows (DB-09). -->
-          <span class="lt__sorted"><ng-container [ngTemplateOutlet]="sortedLine" /></span>
-        }
+        <!-- The Sorted by line is always in row 2, right before Columns (#1126); the full sentence is its tooltip. -->
+        <span class="lt__sorted"><ng-content select="[mfBarEnd]" /></span>
         <span class="lt__tail">
           <span class="lt__cols"><ng-content select="[mfColumns]" /></span>
           <ng-content select="[mfMore]" />
@@ -111,10 +100,8 @@ let nextId = 0;
             </button>
           }
         }
-        <span class="lt__end"><ng-container [ngTemplateOutlet]="sortedLine" /></span>
       </div>
     }
-    <ng-template #sortedLine><ng-content select="[mfBarEnd]" /></ng-template>
     <p class="lt__live" role="status" aria-live="polite" aria-atomic="true" data-filter-live>
       {{ filters().announcement() }}
     </p>
@@ -164,17 +151,17 @@ let nextId = 0;
     .lt__chips {
       min-width: 0;
     }
-    .lt__end {
-      margin-left: auto;
-    }
+    /* The spring: the Sorted by line takes the free room before it, so it ends next to Columns; it never shrinks (the row wraps instead). */
     .lt__sorted {
       display: inline-flex;
-      flex: 1 1 6rem;
-      min-width: 0;
-      overflow: hidden;
+      flex: 0 0 auto;
+      margin-left: auto;
     }
     .lt__sorted:empty {
       display: none;
+    }
+    .lt__sorted:not(:empty) + .lt__tail {
+      margin-left: 0;
     }
     /* A phone: Search and Filters (the sheet holds every filter and the Sort select); Columns and Other filters are not offered. */
     @media (width < 640px) {
@@ -230,8 +217,6 @@ export class ListToolbar extends FocusFilter {
   readonly searchLabel = input('Search');
   /** Rows are selected: the `[mfBulk]` bar replaces row 2. */
   readonly bulkActive = input(false);
-  /** The Sorted by line always has row 3 to itself: for a page whose row 2 is full (the Task Queue's quick-view chips). */
-  readonly sortedBelow = input(false);
   /** A chip on a hidden column asks for the column back (the page owns the column chooser). */
   readonly showColumn = output<string>();
 
@@ -249,6 +234,6 @@ export class ListToolbar extends FocusFilter {
   );
   protected readonly rowThree = computed(() => {
     const f = this.filters();
-    return this.sortedBelow() || f.restored() || f.chips().length > 0 || f.activeCount() > 0;
+    return f.restored() || f.chips().length > 0 || f.activeCount() > 0;
   });
 }

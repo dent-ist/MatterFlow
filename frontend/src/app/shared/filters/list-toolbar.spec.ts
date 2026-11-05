@@ -100,25 +100,29 @@ describe('list toolbar', { timeout: 20_000 }, () => {
     expect(clear()).not.toBeNull();
   });
 
-  it('keeps row 3 with the Sorted by line and offers Reset sort only for a sort the person chose', async () => {
+  it('shows a short Sorted by line (the full sentence is its tooltip) and offers Reset sort only for a sort the person chose', async () => {
     await mount();
-    expect(m.el.querySelector('[data-sorted-text]')?.textContent).toBe('Sorted by Name, A to Z');
+    const text = () => m.el.querySelector('[data-sorted-text]');
+    expect(text()?.textContent).toBe('Sorted by Name');
+    expect(text()?.getAttribute('title')).toBe('Sorted by Name, A to Z');
     expect(m.el.querySelector('[data-reset-sort]')).toBeNull();
     m.host.sort.set('-due');
     await m.settle();
-    expect(m.el.querySelector('[data-sorted-text]')?.textContent).toBe(
-      'Sorted by Due, latest first',
-    );
+    expect(text()?.textContent).toBe('Sorted by Due');
+    expect(text()?.getAttribute('title')).toBe('Sorted by Due, latest first');
     expect(m.el.querySelector('[data-reset-sort]')).not.toBeNull();
   });
 
-  it('puts the Sorted by line in row 2 while there is no chip, and in row 3 (with the chips) when there is one', async () => {
+  it('keeps the Sorted by line in row 2, before Columns, with or without chips (#1126)', async () => {
     await mount();
     expect(m.el.querySelector('[data-toolbar-row2]')).toBeNull();
     expect(row2().querySelector('[data-sorted-line]')).not.toBeNull();
     await m.go('/list?priority=1');
-    expect(m.el.querySelector('[data-toolbar-row2] [data-sorted-line]')).not.toBeNull();
-    expect(row2().querySelector('[data-sorted-line]')).toBeNull();
+    expect(m.el.querySelector('[data-toolbar-row2]')).not.toBeNull();
+    expect(m.el.querySelector('[data-toolbar-row2] [data-sorted-line]')).toBeNull();
+    expect(row2().querySelector('[data-sorted-line]')).not.toBeNull();
+    const sorted = row2().querySelector('.lt__sorted')!;
+    expect(sorted.nextElementSibling?.classList.contains('lt__tail')).toBe(true);
   });
 
   it('replaces row 2 with the bulk bar while rows are selected', async () => {

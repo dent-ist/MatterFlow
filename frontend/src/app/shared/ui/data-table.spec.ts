@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ddOptionTexts } from '../../testing/dropdown-testing.spec-util';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ListState, LoadState, SortHeader, StatusFilter } from './data-table';
 
@@ -73,8 +74,7 @@ describe('data table pieces', () => {
 
   describe('status filter', () => {
     it('offers Active, the inactive word of the list, and All', () => {
-      const options = Array.from(el().querySelectorAll('#st option')).map((o) => o.textContent);
-      expect(options).toEqual(['Active', 'Archived', 'All']);
+      expect(ddOptionTexts(el(), 'Status')).toEqual(['Active', 'Archived', 'All']);
     });
   });
 

@@ -106,14 +106,10 @@ import {
     .bar .mf-btn {
       min-height: var(--mf-ctl-h);
     }
-    .search ::ng-deep .sb__input {
-      height: var(--mf-ctl-h);
-      min-height: var(--mf-ctl-h);
-      padding-block: 0;
-    }
+    /* Wide enough for the whole placeholder "Search by name" at 1366 px (#1126). */
     .search {
-      min-width: 10rem;
-      flex: 0 1 11rem;
+      min-width: 12rem;
+      flex: 0 1 14rem;
     }
     .sorted {
       flex: 1 1 5rem;

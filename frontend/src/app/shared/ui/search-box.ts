@@ -37,6 +37,7 @@ export const SEARCH_DEBOUNCE_MS = 300;
         <input
           class="mf-control sb__input"
           [class.sb__input--icon]="leadingIcon()"
+          [class.sb__input--clear]="!!draft()"
           type="search"
           autocomplete="off"
           [id]="inputId()"
@@ -91,6 +92,9 @@ export const SEARCH_DEBOUNCE_MS = 300;
     .sb__input {
       width: 100%;
       min-width: min(240px, 100%);
+    }
+    /* The room for the clear (x) button is only taken while there is text to clear, so a short box still shows its whole placeholder (#1126). */
+    .sb__input--clear {
       padding-right: calc(var(--mf-s3) + 24px);
     }
     /* A leading search icon inside the box (decorative; the label stays the accessible name). */
@@ -219,7 +223,7 @@ export class SearchBox {
   readonly hintOnFocus = input(false);
   /** Draws a decorative search icon at the left inside the box (the look of the global search). */
   readonly leadingIcon = input(false);
-  /** The 32 px control of a toolbar (the height of the buttons beside it) instead of the 40 px field. */
+  /** Kept for the templates that set it: the search box is the one 36 px control everywhere (`--mf-ctl-h`, 4 px radius). */
   readonly compact = input(false);
   protected readonly focused = signal(false);
 

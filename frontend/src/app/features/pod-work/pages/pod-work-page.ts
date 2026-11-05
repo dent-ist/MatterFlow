@@ -285,7 +285,6 @@ type TabKey = 'queue' | 'members' | 'all';
               [filters]="filters"
               controls="work-filter-row"
               searchLabel="Search tasks"
-              [sortedBelow]="true"
               (showColumn)="showColumn($event)"
             >
               <mf-work-view-controls

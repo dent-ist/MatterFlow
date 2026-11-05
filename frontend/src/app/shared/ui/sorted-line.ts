@@ -20,7 +20,7 @@ export function sortSentence(
 }
 
 /**
- * The "Sorted by X, direction" line with "Reset sort" (LC-01, decision AR 3): the right end of row 3 of every list toolbar. It always says how the
+ * The "Sorted by X" line with "Reset sort" (LC-01, decision AR 3; #1126): row 2 of every list toolbar, right before Columns. The line is short ("Sorted by Name"); the full sentence with the direction ("Sorted by Name, A to Z") is its tooltip. It always says how the
  * list is sorted, the default order included ("Sorted by Name, A to Z"); "Reset sort" shows only while the person has chosen a sort of their own,
  * and returns the list to its default. A list sorts by its column headers (Enter or Space on the header button): the line adds no control for it
  * and no shortcut (#420).
@@ -47,7 +47,9 @@ export function sortSentence(
           Remove grouping
         </button>
       } @else {
-        <span class="sl__text" data-sorted-text [attr.title]="sentence()">{{ sentence() }}</span>
+        <span class="sl__text" data-sorted-text [attr.title]="sentence()">{{
+          shortSentence()
+        }}</span>
       }
       @if (grouped()) {
         <!-- The grouping is the order: nothing to reset. -->
@@ -182,6 +184,13 @@ export class SortedLine {
   });
   /** The person has chosen a sort of their own (so there is something to reset). */
   protected readonly custom = computed(() => !!this.chosen());
+  /** What the line shows: "Sorted by Load"; the full sentence with the direction is its tooltip (#1126). */
+  protected readonly shortSentence = computed(() => {
+    const own = this.chosen();
+    if (own) return `Sorted by ${this.labels()[own.field] ?? own.field}`;
+    if (this.defaultText()) return `Sorted by ${this.defaultText().split(',')[0]}`;
+    return `Sorted by ${this.labels()[this.defaultSort()] ?? this.defaultSort()}`;
+  });
   protected readonly sentence = computed(() => {
     const own = this.chosen();
     if (own) return sortSentence(own.field, own.dir, this.labels());

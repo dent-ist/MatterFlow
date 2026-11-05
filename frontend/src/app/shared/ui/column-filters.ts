@@ -224,6 +224,7 @@ export class ColumnSelectFilter {
     <button
       type="button"
       class="mf-btn ft"
+      [class.ft--on]="count() > 0"
       [attr.aria-pressed]="open()"
       [attr.aria-expanded]="open()"
       [attr.aria-controls]="controls() || null"
@@ -240,7 +241,8 @@ export class ColumnSelectFilter {
     </button>
   `,
   styles: `
-    .ft[aria-pressed='true'] {
+    .ft[aria-pressed='true'],
+    .ft--on {
       border-color: var(--mf-primary);
       background: var(--mf-selected-bg);
     }

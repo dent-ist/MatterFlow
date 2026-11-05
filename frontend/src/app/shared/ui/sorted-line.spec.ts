@@ -29,7 +29,10 @@ describe('sorted line', () => {
     const f = TestBed.createComponent(Host);
     await f.whenStable();
     const el = f.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('Sorted by Client Number, lowest first');
+    expect(el.textContent).toContain('Sorted by Client Number');
+    expect(el.querySelector('[data-sorted-text]')?.getAttribute('title')).toBe(
+      'Sorted by Client Number, lowest first',
+    );
     expect(el.querySelector('[data-reset-sort]')).toBeNull();
   });
 
@@ -38,7 +41,10 @@ describe('sorted line', () => {
     f.componentInstance.sort.set('-name');
     await f.whenStable();
     const el = f.nativeElement as HTMLElement;
-    expect(el.querySelector('[data-sorted-text]')?.textContent).toBe('Sorted by Name, Z to A');
+    expect(el.querySelector('[data-sorted-text]')?.textContent).toBe('Sorted by Name');
+    expect(el.querySelector('[data-sorted-text]')?.getAttribute('title')).toBe(
+      'Sorted by Name, Z to A',
+    );
     el.querySelector<HTMLButtonElement>('[data-reset-sort]')!.click();
     expect(f.componentInstance.resets).toBe(1);
   });

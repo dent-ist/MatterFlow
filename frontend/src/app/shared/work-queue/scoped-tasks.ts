@@ -177,7 +177,6 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
         [controls]="filterRowId"
         searchLabel="Search tasks"
         [bulkActive]="selecting()"
-        [sortedBelow]="true"
       >
         <mf-summary-strip
           mfView
