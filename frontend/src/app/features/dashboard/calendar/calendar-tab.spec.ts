@@ -141,6 +141,34 @@ describe('DashCalendarTab', () => {
     expect(cell('2026-11-28').classList.contains('muted')).toBe(true);
   });
 
+  it('Month: Saturday, Sunday and holiday numbers are red; the weekday heading is its own row without capitals (#1225)', async () => {
+    await open();
+    const heads = qa('.dow span');
+    expect(heads.map((h) => text(h))).toEqual(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
+    expect(heads.filter((h) => h.classList.contains('dow--off')).map((h) => text(h))).toEqual([
+      'Sun',
+      'Sat',
+    ]);
+    const num = (date: string) => cell(date).querySelector('.num')!;
+    // Sunday, Saturday, Thanksgiving (a Thursday holiday): red. A plain Tuesday: not.
+    for (const d of ['2026-11-01', '2026-11-07', '2026-11-26']) {
+      expect(num(d).classList.contains('num--off')).toBe(true);
+    }
+    expect(num('2026-11-03').classList.contains('num--off')).toBe(false);
+    expect(text(q('[data-cal-legend-red] .lg__red'))).toBe('12');
+    expect(text(q('[data-cal-legend-red]'))).toContain('Red numbers = weekend or holiday');
+  });
+
+  it('Week: Saturday, Sunday and holiday headings are red and the header keeps one look (#1225)', async () => {
+    await open('/dashboard?cal=week&week=2026-11-22');
+    const head = (date: string) => q(`th.dh:has([data-day="${date}"])`);
+    expect(head('2026-11-22').classList.contains('off')).toBe(true); // Sunday
+    expect(head('2026-11-28').classList.contains('off')).toBe(true); // Saturday
+    expect(head('2026-11-26').classList.contains('off')).toBe(true); // Thanksgiving
+    expect(head('2026-11-24').classList.contains('off')).toBe(false);
+    expect(text(head('2026-11-28').querySelector('.dn'))).toBe('Sat');
+  });
+
   it('Previous, Next and Today move the month and keep the address short', async () => {
     await open();
     q<HTMLButtonElement>('[data-next]').click();

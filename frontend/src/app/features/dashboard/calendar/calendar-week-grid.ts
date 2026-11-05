@@ -14,6 +14,7 @@ import {
   LEVELS,
   WEEKDAYS_SHORT,
   dayOfWeek,
+  isWeekend,
   expectedShort,
   expectedText,
   longDay,
@@ -53,7 +54,7 @@ interface Row {
                 class="dh"
                 [class.today]="d === today()"
                 [class.sel]="d === selected()"
-                [class.wknd]="isOff(d)"
+                [class.off]="redDay(d)"
               >
                 <button
                   type="button"
@@ -154,14 +155,16 @@ interface Row {
       vertical-align: top;
       text-align: left;
     }
+    /* The heading row is the shared grid heading (D-42): --mf-surface-alt, 12 / 600, no capitals, at least 40 px; a weekend or holiday column does not change it (#1225). */
     thead th {
       position: sticky;
       top: 0;
       z-index: 2;
+      min-height: var(--mf-grid-head-h);
       background: var(--mf-surface-alt);
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-xs);
-      text-transform: uppercase;
+      font-weight: var(--mf-fw-semibold);
     }
     .pod {
       width: 9rem;
@@ -177,7 +180,6 @@ interface Row {
       z-index: 3;
       background: var(--mf-surface-alt);
       color: var(--mf-text-muted);
-      text-transform: uppercase;
     }
     .pn {
       display: block;
@@ -193,8 +195,9 @@ interface Row {
     .dh {
       padding: 0 0 var(--mf-s1);
     }
-    .dh.wknd {
-      background: var(--mf-cov-none-bg);
+    /* Saturday, Sunday and holiday headings are red (#1225). */
+    .dh.off {
+      color: var(--mf-danger);
     }
     .dh.sel {
       box-shadow: inset 0 3px 0 var(--mf-primary);
@@ -205,14 +208,14 @@ interface Row {
       align-items: baseline;
       gap: var(--mf-s2);
       width: 100%;
-      min-height: 32px;
+      min-height: var(--mf-grid-head-h);
+      align-items: center;
       padding: var(--mf-s1) var(--mf-s3);
       border: 0;
       background: none;
       color: inherit;
       font: inherit;
-      font-weight: 700;
-      text-transform: uppercase;
+      font-weight: var(--mf-fw-semibold);
       cursor: pointer;
     }
     .dbtn:hover {
@@ -356,7 +359,8 @@ export class CalWeekGrid {
   protected word = (level: CoverageLevel): string => LEVELS[level].word;
   protected dow = (date: string): string => WEEKDAYS_SHORT[dayOfWeek(date)];
   protected md = (date: string): string => `${date.slice(5, 7)}/${date.slice(8)}`;
-  protected isOff = (date: string): boolean => this.days().get(date)?.level === 'NON_WORKING';
+  /** A Saturday, a Sunday or a holiday: the heading is red (#1225). */
+  protected redDay = (date: string): boolean => isWeekend(date) || this.holidays(date).length > 0;
   protected holidays = (date: string) => this.days().get(date)?.holidays ?? [];
 
   /** Left and Right move between the day headings, Home and End to the first and last day. */

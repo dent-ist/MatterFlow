@@ -71,6 +71,12 @@ for (const c of ['good', 'watch', 'low', 'crit']) {
   pairs.push([`coverage ${c} solid on a card`, `--mf-cov-${c}-solid`, '--mf-surface', graphic]);
 }
 pairs.push(['coverage closed text on its tint', '--mf-cov-none-fg', '--mf-cov-none-bg', text]);
+// Calendar red numbers (#1225): the red text token on every cell background a Saturday, a Sunday or a holiday can sit on, and on the weekday heading.
+pairs.push(['calendar red number on a plain day', '--mf-danger', '--mf-surface', text]);
+pairs.push(['calendar red number on a closed day', '--mf-danger', '--mf-cal-off-bg', text]);
+pairs.push(['calendar red weekday heading', '--mf-danger', '--mf-surface-alt', text]);
+pairs.push(['calendar red number on a selected week heading', '--mf-danger', '--mf-selected-bg', text]);
+for (const c of ['watch', 'low', 'crit']) pairs.push([`calendar red number on a ${c} day`, '--mf-danger', `--mf-cov-${c}-bg`, text]);
 // Note tag chips (MD-36, #1049): text on the tint 4.5:1, the dot on the tint 3:1.
 for (const c of ['slate', 'blue', 'teal', 'green', 'amber', 'orange', 'red', 'rose', 'violet', 'indigo', 'neutral']) {
   pairs.push([`tag ${c} text on its tint`, `--mf-tag-${c}-fg`, `--mf-tag-${c}-bg`, text]);

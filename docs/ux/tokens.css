@@ -314,7 +314,10 @@
   --mf-cov-crit-bg: var(--mf-sem-overdue-bg);
   --mf-cov-crit-fg: var(--mf-sem-overdue-fg);
   --mf-cov-crit-solid: var(--mf-sem-overdue-solid);
-  --mf-cov-none-bg: var(--mf-surface-alt);
+  /* Closed and Non-working day cells (and their legend chips): a slate tint a step darker than the grid heading (--mf-surface-alt), so a closed day never looks like
+     the weekday header (#1225). Text on it: --mf-cov-none-fg 5.8:1, red weekend and holiday numbers (--mf-danger) 5.0:1. */
+  --mf-cal-off-bg: #dde2ea;
+  --mf-cov-none-bg: var(--mf-cal-off-bg);
   --mf-cov-none-fg: var(--mf-sem-neutral-fg);
   --mf-border-soft: #d5d9e1; /* hairlines inside cards (decorative) */
   --mf-border-mid: #c0c6d1; /* control and chip outlines that are not the only cue */

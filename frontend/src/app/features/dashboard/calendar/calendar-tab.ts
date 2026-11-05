@@ -240,6 +240,10 @@ const ALL_ROLES = '';
                 <i class="pi" [class]="LEVELS[l].icon" aria-hidden="true"></i>{{ LEVELS[l].word }}
               </li>
             }
+            <li class="legend__h">Days</li>
+            <li class="lg" data-cal-legend-red>
+              <b class="lg__red">12</b><span>Red numbers = weekend or holiday</span>
+            </li>
             <li class="legend__h">Holidays</li>
             <li class="lg">
               <span class="hchip"
@@ -389,6 +393,10 @@ const ALL_ROLES = '';
     }
     .legend__h {
       font-weight: 700;
+    }
+    .lg__red {
+      color: var(--mf-danger);
+      font-variant-numeric: tabular-nums;
     }
     .lg {
       display: inline-flex;

@@ -16,6 +16,7 @@ import {
   dayAriaLabel,
   expectedShort,
   expectedText,
+  isWeekend,
   longDay,
   outText,
 } from './calendar-model';
@@ -48,8 +49,8 @@ export const cellClass = (level: CalDay['level']): string =>
   host: { '(keydown)': 'onKey($event)' },
   template: `
     <div class="dow" aria-hidden="true">
-      @for (d of dows; track d) {
-        <span>{{ d }}</span>
+      @for (d of dows; track d; let i = $index) {
+        <span [class.dow--off]="i === 0 || i === 6" [attr.data-dow]="d">{{ d }}</span>
       }
     </div>
     <div
@@ -80,7 +81,7 @@ export const cellClass = (level: CalDay['level']): string =>
                 (focus)="active.set(c.date)"
               >
                 <span class="top">
-                  <span class="num">{{ c.num }}</span>
+                  <span class="num" [class.num--off]="off(c)">{{ c.num }}</span>
                   @if (c.day && c.inMonth && !c.muted && c.day.level !== 'GOOD' && lv(c); as l) {
                     <span class="lv" aria-hidden="true"
                       ><i class="pi" [class]="l.icon"></i><span class="lw">{{ l.word }}</span></span
@@ -128,19 +129,26 @@ export const cellClass = (level: CalDay['level']): string =>
       min-height: 0;
       flex: 1 1 0;
     }
+    /* The weekday header is the shared grid heading (D-42): --mf-surface-alt, 40 px, 12 / 600, a hairline under it, no capitals (#1225). */
     .dow {
       display: grid;
       grid-template-columns: repeat(7, minmax(0, 1fr));
       flex: none;
+      align-items: center;
+      height: var(--mf-grid-head-h);
       background: var(--mf-surface-alt);
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-xs);
-      font-weight: 700;
-      text-transform: uppercase;
+      font-weight: var(--mf-fw-semibold);
       border-top: 1px solid var(--mf-border);
+      border-bottom: 1px solid var(--mf-border-soft);
     }
     .dow span {
-      padding: var(--mf-s2) var(--mf-s3);
+      padding: 0 var(--mf-s3);
+    }
+    /* The weekend columns (Sun and Sat) are red in the header too (#1225). */
+    .dow .dow--off {
+      color: var(--mf-danger);
     }
     .cgrid {
       display: grid;
@@ -210,7 +218,12 @@ export const cellClass = (level: CalDay['level']): string =>
       font-weight: 700;
       font-size: var(--mf-fs-sm);
     }
-    .today .num {
+    /* Saturday, Sunday and holiday day numbers are red (#1225); the today pill keeps its own white-on-primary look. */
+    .num.num--off {
+      color: var(--mf-danger);
+    }
+    .today .num,
+    .today .num.num--off {
       font-variant-numeric: tabular-nums;
       display: inline-grid;
       place-items: center;
@@ -311,7 +324,7 @@ export const cellClass = (level: CalDay['level']): string =>
         grid-auto-rows: minmax(64px, auto);
       }
       .dow span {
-        padding: var(--mf-s1);
+        padding: 0 var(--mf-s1);
         text-align: center;
       }
       .day {
@@ -363,6 +376,10 @@ export class CalMonthGrid {
   protected cls(c: Cell): string {
     if (!c.day || !c.inMonth) return 'cv-none';
     return cellClass(c.day.level);
+  }
+  /** A Saturday, a Sunday or a holiday: its day number is red (#1225). */
+  protected off(c: Cell): boolean {
+    return isWeekend(c.date) || (!!c.day && c.day.holidays.length > 0);
   }
   protected lv(c: Cell) {
     return c.day ? LEVELS[c.day.level] : null;

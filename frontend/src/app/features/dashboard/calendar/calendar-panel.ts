@@ -20,7 +20,7 @@ import { STATE_META, CapacityState } from '../../../shared/availability/capacity
 import { CALENDAR_API } from './calendar-api';
 import { CalQuery, CoverageLevel, DayPanel, DayPerson, RoleGroup } from './calendar-contract';
 import { levelClass } from './calendar-month-grid';
-import { LEVELS, longDay } from './calendar-model';
+import { LEVELS, isWeekend, longDay } from './calendar-model';
 import { IntPipe } from '../../../shared/ui/number-format';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -68,7 +68,7 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
     >
       <header class="hd">
         <div class="hd__t">
-          <h2 class="h2" data-panel-date>{{ longDay(date()) }}</h2>
+          <h2 class="h2" [class.h2--off]="redDay()" data-panel-date>{{ longDay(date()) }}</h2>
           @if (isToday()) {
             <span class="tdy">Today</span>
           }
@@ -336,6 +336,10 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
       margin: 0;
       font-size: var(--mf-fs-md);
       font-weight: 700;
+    }
+    /* Saturday, Sunday and holiday dates are red, as in the grids (#1225). */
+    .h2.h2--off {
+      color: var(--mf-danger);
     }
     .tdy {
       margin-left: var(--mf-s2);
@@ -701,6 +705,9 @@ export class CalPanel {
   /** Coverage by pod is folded by default (CAL-11): the lists of people are what the panel is for. */
   protected readonly podsOpen = signal(false);
   protected readonly isToday = computed(() => this.date() === this.today());
+  protected readonly redDay = computed(
+    () => isWeekend(this.date()) || (this.panel()?.holidays.length ?? 0) > 0,
+  );
   protected readonly avail = computed(() =>
     filterGroups(this.panel()?.available ?? [], this.search()),
   );
