@@ -55,7 +55,8 @@ What the agent must not touch (other pages of the same family that have their ow
 - Bundle: initial under 700 kB.
 - Before pushing, in your own worktree under `/home/user/wt/<name>` created from `origin/ui-update-2`: `tsc` for app, spec and e2e, `npm run lint`, `npm run format:check`, a real `npm run ng -- build`, and the unit tests for the touched files (`npm test`). Heavy jobs only through `/home/user/.mf-heavy/heavy.sh timeout <s> <cmd>`; disk 5 GB free; kill only your own processes, never `pkill`.
 - Branch from `ui-update-2` and open the PR into `ui-update-2`. Never push to `dev` or `main`. No `git pull` in `/home/user/MatterFlow`.
-- Commit message form: `UI-<issue number> <page>: <what changed> (#<issue>)`, then the attribution lines of the session. No closing keyword (`closes`, `fixes`, `resolves`) in a commit, PR or comment. Do not close the issue; Agent U reviews against the screenshots and the PM closes it.
+- Commit message form (owner request): first line `UI2 #<issue> <short what changed>`, a blank line, then one bullet per main navigation page (and tab or component) that changed, in the app's own menu and tab names, so the owner knows which page to open and what to check: `- <Main nav page> > <Tab or area>: <what changed in plain words>`. For a shared change list the shared component first, then the pages where it is visible, for example `- Shared Button: height 32 -> 36 px; visible on every page` and `- Dashboard > Users: toolbar buttons are taller`. Plain English, no file lists. Keep the `Co-Authored-By` and `Claude-Session` trailer lines of the session after the bullets.
+- Issue comments by dev agents start with the same "pages/tabs to check" bullets.
 - Plain English in every comment to the owner; no secrets.
 
 ## Review (Agent U fills this when the PR is up)
