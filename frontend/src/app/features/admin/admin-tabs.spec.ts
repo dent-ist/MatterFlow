@@ -20,7 +20,7 @@ const TABS: AdminTab[] = [
   },
   {
     id: 'status-labels',
-    label: 'Status labels',
+    label: 'Status Labels',
     route: '/admin/status-labels',
     permission: ['StatusLabel.Manage'],
     countKey: 'status-labels',
@@ -69,7 +69,7 @@ describe('admin tab model (#545)', () => {
     const can = has('Priority.Manage', 'StatusLabel.Manage');
     expect(adminTabItems(TABS, can)).toEqual([
       { key: 'priorities', label: 'Priorities', icon: 'pi-flag' },
-      { key: 'status-labels', label: 'Status labels', icon: 'pi-tag' },
+      { key: 'status-labels', label: 'Status Labels', icon: 'pi-tag' },
     ]);
     expect(adminTabItems(TABS, can, { priorities: 12, 'status-labels': null })).toEqual([
       {
@@ -79,7 +79,7 @@ describe('admin tab model (#545)', () => {
         count: 12,
         name: 'Priorities, 12 active',
       },
-      { key: 'status-labels', label: 'Status labels', icon: 'pi-tag', count: '--' },
+      { key: 'status-labels', label: 'Status Labels', icon: 'pi-tag', count: '--' },
     ]);
     // A zero is a real answer and is shown.
     expect(adminTabItems(TABS, can, { priorities: 0 })[0]).toMatchObject({ count: 0 });

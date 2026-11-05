@@ -37,7 +37,7 @@ test.describe('titles and crumbs on the administration routes (#588)', () => {
     ],
     [
       '/admin/status-labels',
-      'Labels: Status labels - MatterFlow',
+      'Labels: Status Labels - MatterFlow',
       'Labels',
       ['Administration', 'Labels'],
     ],

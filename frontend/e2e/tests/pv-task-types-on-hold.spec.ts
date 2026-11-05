@@ -99,14 +99,14 @@ test.describe('Task type colour, target and the badge', () => {
   }
 });
 
-test.describe('On-hold reasons', () => {
-  test('the Labels page has the On-hold reasons tab: the seeded list, add, rename, deactivate and the API', async ({
+test.describe('On-Hold Reasons', () => {
+  test('the Labels page has the On-Hold Reasons tab: the seeded list, add, rename, deactivate and the API', async ({
     page,
     admin,
   }) => {
     await page.goto('/admin/on-hold-reasons');
     await expect(page.getByRole('heading', { name: 'Labels', level: 1 })).toBeVisible();
-    await expect(page.getByRole('tab', { name: /On-hold reasons/ })).toHaveAttribute(
+    await expect(page.getByRole('tab', { name: /On-Hold Reasons/ })).toHaveAttribute(
       'aria-selected',
       'true',
     );
@@ -134,11 +134,11 @@ test.describe('On-hold reasons', () => {
   });
 
   for (const size of SIZES) {
-    test(`the On-hold reasons tab is clean at ${size.name}`, async ({ page }) => {
+    test(`the On-Hold Reasons tab is clean at ${size.name}`, async ({ page }) => {
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto('/admin/on-hold-reasons');
       await expect(page.getByText('Waiting for client data').first()).toBeVisible();
-      await clean(page, `On-hold reasons at ${size.name}`);
+      await clean(page, `On-Hold Reasons at ${size.name}`);
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
       );

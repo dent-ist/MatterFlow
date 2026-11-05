@@ -11,7 +11,7 @@ import { firstAllowedTab } from './denial';
  *
  *   const TABS: AdminTab[] = [
  *     { id: 'priorities', label: 'Priorities', route: '/admin/priorities', permission: ['Priority.Manage'], countKey: 'priorities' },
- *     { id: 'status-labels', label: 'Status labels', route: '/admin/status-labels', permission: ['StatusLabel.Manage'], countKey: 'status-labels' },
+ *     { id: 'status-labels', label: 'Status Labels', route: '/admin/status-labels', permission: ['StatusLabel.Manage'], countKey: 'status-labels' },
  *   ];
  *   tabs = computed(() => adminTabItems(TABS, (p) => auth.has(p), counts.snapshot()));    // [tabs]="tabs()" on the shell
  *   current = computed(() => resolveAdminTab(TABS, this.tab(), (p) => auth.has(p))?.id);

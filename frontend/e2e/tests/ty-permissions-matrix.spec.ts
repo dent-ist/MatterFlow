@@ -406,7 +406,7 @@ test.describe('#417: permission matrix of the Task Types area', () => {
 });
 
 /**
- * AD-D (#526, with #523 and #533): the same matrix for the Labels pages (Priorities, Status labels) and the Audit page. Roles are the
+ * AD-D (#526, with #523 and #533): the same matrix for the Labels pages (Priorities, Status Labels) and the Audit page. Roles are the
  * Priority.Manage alone, StatusLabel.Manage alone, both, Audit.View alone, Audit.View with Task.View, System Admin, Task.View alone and a
  * person with no admin permission. For each role the three addresses are opened: a permitted address opens with no refused request, no toast,
  * no error text; the other Labels tab falls back to the tab the person may use; a forbidden address shows the 403 page. The "Labels" menu
@@ -498,7 +498,7 @@ test.describe('AD-D: permission matrix of the Labels and Audit pages', () => {
         );
         if (seen.failed.length > 0) problems.push(`${url}: refused ${seen.failed.join(', ')}`);
         const tabLinks = await page.locator('#mf-main [role="tab"]').count();
-        // Two tabs for Priority and Status; a third, On-hold reasons (#876), for whoever holds OnHoldReason.Manage (the System Admin does).
+        // Two tabs for Priority and Status; a third, On-Hold Reasons (#876), for whoever holds OnHoldReason.Manage (the System Admin does).
         if (mine && other ? tabLinks < 2 || tabLinks > 3 : tabLinks !== 0)
           problems.push(`${url}: ${tabLinks} tab links for Priority=${canPr}, Status=${canSl}`);
         // The page lists its rows, so the data loaded (not an empty error state).

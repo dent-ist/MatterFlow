@@ -1562,7 +1562,7 @@ interface RefChip {
               {{
                 tagQuery()
                   ? 'No tag with that name'
-                  : 'No tags exist yet. An administrator creates them under Labels, Notes tags.'
+                  : 'No tags exist yet. An administrator creates them under Labels, Note Tags.'
               }}
             </p>
           }
@@ -1579,10 +1579,10 @@ interface RefChip {
           Missing a tag?
           @if (isAdmin()) {
             <a routerLink="/admin/note-tags" target="_blank" data-tags-admin-link
-              >Create one under Labels, Notes tags</a
+              >Create one under Labels, Note Tags</a
             >.
           } @else {
-            Ask an administrator (Labels, Notes tags). Users can only pick.
+            Ask an administrator (Labels, Note Tags). Users can only pick.
           }
         </p>
       </div>

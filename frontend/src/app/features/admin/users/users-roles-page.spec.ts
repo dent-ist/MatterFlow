@@ -84,7 +84,7 @@ describe('Users page tabs (Users, Roles, Pods)', () => {
     await harness.navigateByUrl('/admin/roles');
     await settle();
     expect(selected()).toEqual(['Roles']);
-    expect(el().querySelector('[data-editor], .mf-roles-bar')).not.toBeNull();
+    expect(el().querySelector('[data-editor], .mf-layout')).not.toBeNull();
     expect(router.url).toBe('/admin/roles');
   });
 

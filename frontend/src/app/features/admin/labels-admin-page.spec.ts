@@ -60,14 +60,14 @@ describe('Labels page on the admin list shell (#593)', () => {
   }
 
   it(
-    'shows the crumb, the title, one description line and the counted tabs Priorities (4), Status labels (5) and Notes tags',
+    'shows the crumb, the title, one description line and the counted tabs Priorities (4), Status Labels (5) and Note Tags',
     async () => {
       await open('/admin/priorities', ['Priority.Manage', 'StatusLabel.Manage']);
 
       expect(crumbs()).toEqual(['Administration', 'Labels']);
       expect(el().querySelector('h1')!.textContent).toContain('Labels');
       expect(el().textContent).toContain(LABEL_TAB_TEXT.priorities);
-      expect(tabText()).toEqual(['Priorities (4)', 'Status labels (5)', 'Notes tags (--)']);
+      expect(tabText()).toEqual(['Priorities (4)', 'Status Labels (5)', 'Note Tags (--)']);
       expect(
         tabs()
           .filter((t) => t.getAttribute('aria-selected') === 'true')
@@ -91,7 +91,7 @@ describe('Labels page on the admin list shell (#593)', () => {
   );
 
   it(
-    'switches to Status labels without leaving the page, with its own description and no New priority action',
+    'switches to Status Labels without leaving the page, with its own description and no New priority action',
     async () => {
       const router = await open('/admin/priorities', ['Priority.Manage', 'StatusLabel.Manage']);
       expect(el().querySelector('[data-new]')).not.toBeNull();

@@ -15,7 +15,7 @@ import { FormDialog } from '../../../shared/ui/form-dialog';
 import { TextField } from '../../../shared/ui/text-field';
 
 /**
- * Admin: Notes tags (epic #1001, MD-19; mockup notes-mockup-r3), the fourth tab of the Labels page. The firm-wide tags people pick in a note: name, colour of the
+ * Admin: Note Tags (epic #1001, MD-19; mockup notes-mockup-r3), the fourth tab of the Labels page. The firm-wide tags people pick in a note: name, colour of the
  * ten-colour palette, active or not, and how many notes the person can see that use it. A tag that notes use is deactivated, not deleted (the server says 409 IN_USE).
  * Needs `StatusLabel.Manage`. The page header belongs to `LabelsAdminPage`, which calls `openNew()`.
  */
@@ -47,10 +47,10 @@ import { TextField } from '../../../shared/ui/text-field';
     } @else if (loaded() && tags().length === 0) {
       <p class="pg-reason" data-note-tags-empty>No tags yet. Use New Tag.</p>
     } @else {
-      <mf-grid-frame scrollLabel="Notes tags">
+      <mf-grid-frame scrollLabel="Note Tags">
         <table class="pg-table" data-note-tags-table>
           <caption class="pg-sr">
-            Notes tags
+            Note Tags
           </caption>
           <thead>
             <tr>

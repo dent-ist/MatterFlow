@@ -9,7 +9,7 @@
 @if (phone()) {
   <mf-admin-card-list
     noun="on-hold reasons"
-    label="On-hold reasons"
+    label="On-Hold Reasons"
     [items]="rows()"
     [spec]="cardOf"
     emptyText="No on-hold reasons yet. Use New reason above to add the first one."
@@ -19,11 +19,11 @@
     (retry)="load()"
   />
 } @else {
-  <div class="mf-table-wrap" mfScrollArea="On-hold reasons list">
+  <div class="mf-table-wrap" mfScrollArea="On-Hold Reasons list">
     <div class="mf-scroll">
       <table class="mf-grid" id="on-hold-reasons-table" data-roles>
         <caption class="mf-sr-only">
-          On-hold reasons in display order
+          On-Hold Reasons in display order
         </caption>
         <thead>
           <tr>

@@ -4,7 +4,7 @@ import { SIZES, noSideScroll, shot } from '../support/labels';
 
 /**
  * WP-AD3 #593: the Labels page on the admin list shell: crumb Administration > Labels, title, one-line description per tab, counted tabs
- * Priorities (n), Status labels (n) and On-hold reasons (n) with the arrow keys, the "Skip to table" first Tab stop, one tab and no tab strip for a person with
+ * Priorities (n), Status Labels (n) and On-Hold Reasons (n) with the arrow keys, the "Skip to table" first Tab stop, one tab and no tab strip for a person with
  * one permission. Screenshots go to E2E_SCREENSHOTS (docs/ux/admin-pages-review/fixes/ad3-labels).
  */
 test.describe('the Labels page on the admin list shell (#593)', () => {
@@ -57,9 +57,9 @@ test.describe('the Labels page on the admin list shell (#593)', () => {
     const tabs = page.getByRole('tab');
     await expect(tabs).toHaveText([
       new RegExp(`Priorities \\(${active}\\)$`),
-      /Status labels \(5\)$/,
+      /Status Labels \(5\)$/,
       // The third tab came with PM v2 (#876); its count moves when the on-hold reason specs add reasons, so only its shape is fixed here.
-      /On-hold reasons \(\d+\)$/,
+      /On-Hold Reasons \(\d+\)$/,
     ]);
     await expect(tabs.first()).toHaveAttribute('aria-label', `Priorities, ${active} active`);
     await expect(tabs.first()).toHaveAttribute('aria-selected', 'true');
@@ -70,7 +70,7 @@ test.describe('the Labels page on the admin list shell (#593)', () => {
     await tabs.first().focus();
     await page.keyboard.press('ArrowRight');
     await expect(page).toHaveURL(/\/admin\/status-labels$/);
-    await expect(page.getByRole('tab', { name: /^Status labels/ })).toHaveAttribute(
+    await expect(page.getByRole('tab', { name: /^Status Labels/ })).toHaveAttribute(
       'aria-selected',
       'true',
     );
@@ -78,7 +78,7 @@ test.describe('the Labels page on the admin list shell (#593)', () => {
       "Rename how the five statuses read. You can't add or remove statuses.",
     );
     await expect(page.getByRole('button', { name: 'New priority' })).toHaveCount(0);
-    await expect(page).toHaveTitle('Labels: Status labels - MatterFlow');
+    await expect(page).toHaveTitle('Labels: Status Labels - MatterFlow');
     await page.keyboard.press('Home');
     await expect(page).toHaveURL(/\/admin\/priorities$/);
     await expect(page).toHaveTitle('Labels: Priorities - MatterFlow');

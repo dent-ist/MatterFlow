@@ -6,7 +6,7 @@ import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
 
 /**
- * WP-AD2 #564: the lookup dialog (`mf-lookup-dialog`), proven on the Status labels rename (`/admin/status-labels`): one short form in a dialog
+ * WP-AD2 #564: the lookup dialog (`mf-lookup-dialog`), proven on the Status Labels rename (`/admin/status-labels`): one short form in a dialog
  * with a live preview, the counter, the validation summary with focus on the first invalid field, the unsaved guard (Stay is the default) and
  * focus back on the control that opened it. Screenshots go to E2E_SCREENSHOTS (docs/ux/admin-pages-review/fixes/ad2-kit).
  */
@@ -38,7 +38,7 @@ const rename = (page: Page, code: string) =>
 const dialog = (page: Page) => page.getByRole('dialog', { name: 'Rename status label' });
 const field = (page: Page) => page.locator('#status-label-name');
 
-test.describe('lookup dialog on the Status labels rename (#564)', () => {
+test.describe('lookup dialog on the Status Labels rename (#564)', () => {
   test('opens on the first field, previews live, saves, and puts focus back on the status name', async ({
     page,
   }) => {

@@ -38,7 +38,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 const tasksQuery = (code: string) => ({ status: code });
 
 /**
- * Admin: Status labels (UX S18), the second tab of the Labels page. Five fixed rows (#622): the name is the badge with the display label
+ * Admin: Status Labels (UX S18), the second tab of the Labels page. Five fixed rows (#622): the name is the badge with the display label
  * (the internal code is its tooltip; a renamed status also says what it was), Tasks counts every task in the status and links to the Task
  * Queue, and the row menu has Rename. Rename is the lookup dialog (#564) with a live badge, the code and the sentence that says where the
  * name shows; below 640 px the rows are cards. Statuses can be neither added nor removed. Needs `StatusLabel.Manage`.

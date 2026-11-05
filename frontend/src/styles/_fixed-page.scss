@@ -354,16 +354,11 @@
     margin-bottom: var(--mf-s2);
   }
 
-  .mf-fill .pg-bar__intro,
-  .mf-fill .mf-roles-intro {
+  .mf-fill .pg-bar__intro {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  .mf-fill .mf-roles-bar {
-    flex-wrap: nowrap;
   }
 
   /* A form that opens above a list is a panel with its own scroll. */

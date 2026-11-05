@@ -75,7 +75,7 @@ const ROUTES: { name: string; url: () => string }[] = [
   { name: 'Admin Asset Types', url: () => '/admin/asset-types' },
   { name: 'Admin Custom Fields', url: () => '/admin/custom-fields' },
   { name: 'Admin Labels', url: () => '/admin/priorities' },
-  { name: 'Admin Status labels', url: () => '/admin/status-labels' },
+  { name: 'Admin Status Labels', url: () => '/admin/status-labels' },
   { name: 'Admin Audit', url: () => '/admin/audit' },
   { name: '404 page', url: () => '/no-such-page' },
   { name: 'Client 404', url: () => '/clients/999999999' },

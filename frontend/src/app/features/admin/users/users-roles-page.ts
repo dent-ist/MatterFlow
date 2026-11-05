@@ -137,11 +137,13 @@ export class UsersRolesPage implements HasUnsavedChanges {
     adminTabItems(USERS_TABS, this.can, this.counts.snapshot()),
   );
 
-  /** One line, 90 characters at most, for the Users tab; Roles and Pods say theirs in the tab itself. */
+  /** One line, 90 characters at most, above the tab strip (title, description, tabs: #1128); Pods says its own in the tab. */
   protected readonly description = computed(() =>
     this.current() === 'users'
       ? 'Who can sign in, what they can do and who is waiting for access.'
-      : '',
+      : this.current() === 'roles'
+        ? 'Roles group permissions. Assign them to people on the Users tab.'
+        : '',
   );
 
   /** A pod's editor is a record page: the Users header and tabs give way to the record header (Administration > Users > Pods > name). */

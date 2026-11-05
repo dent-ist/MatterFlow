@@ -153,12 +153,12 @@ const TABLE: Row[] = [
   ADMIN('asset-types', 'Asset Types: Link Roles - MatterFlow', { query: { tab: 'link-roles' } }),
   ADMIN('custom-fields', 'Custom Fields - MatterFlow'),
   ADMIN('labelsTabsMatcher', 'Labels: Priorities - MatterFlow', { params: { tab: 'priorities' } }),
-  ADMIN('labelsTabsMatcher', 'Labels: Status labels - MatterFlow', {
+  ADMIN('labelsTabsMatcher', 'Labels: Status Labels - MatterFlow', {
     params: { tab: 'status-labels' },
   }),
   ADMIN('reports', 'Reports - MatterFlow'),
   ADMIN('reports', 'Reports: Categories - MatterFlow', { query: { tab: 'categories' } }),
-  ADMIN('reports', 'Reports: Run log - MatterFlow', { query: { tab: 'runs' } }),
+  ADMIN('reports', 'Reports: Run Log - MatterFlow', { query: { tab: 'runs' } }),
   ADMIN('reports', 'Reports: Assignments - MatterFlow', { query: { tab: 'assignments' } }),
   ADMIN('reports', 'Reports: Settings - MatterFlow', { query: { tab: 'health' } }),
   ADMIN('audit', 'Audit Logs - MatterFlow'),

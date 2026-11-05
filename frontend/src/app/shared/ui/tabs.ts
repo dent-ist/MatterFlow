@@ -122,7 +122,7 @@ export interface MfTab {
   styles: `
     :host {
       display: block;
-      margin-bottom: var(--mf-s4);
+      margin-bottom: var(--mf-s3);
     }
     .strip {
       position: relative;
@@ -182,20 +182,22 @@ export interface MfTab {
       background: linear-gradient(to left, var(--mf-bg), transparent);
     }
     .tab__icon {
-      margin-right: var(--mf-s1);
+      margin-right: var(--mf-s2);
       font-size: var(--mf-icon-lg);
     }
     .tab {
       flex: none;
       scroll-snap-align: start;
-      min-height: 2.75rem;
+      box-sizing: border-box;
+      height: var(--mf-tab-h);
       padding: 0 var(--mf-s4);
       color: var(--mf-text-muted);
       background: none;
       border: 0;
-      border-bottom: 3px solid transparent;
+      border-bottom: 2px solid transparent;
       font: inherit;
-      font-weight: 500;
+      font-size: var(--mf-fs-md);
+      font-weight: 400;
       white-space: nowrap;
       cursor: pointer;
     }
@@ -212,7 +214,7 @@ export interface MfTab {
       background: none;
     }
     .tab[aria-selected='true'] {
-      color: var(--mf-text);
+      color: var(--mf-primary);
       font-weight: 600;
       border-bottom-color: var(--mf-primary);
     }
@@ -238,22 +240,7 @@ export interface MfTab {
       color: var(--mf-text-muted);
       font-weight: 400;
     }
-    /* Dense (the Task page, #347): a shorter strip with little room under it, so the pane starts about where the old section nav let it. */
-    :host(.tabs--dense) {
-      margin-bottom: var(--mf-s1);
-    }
-    :host(.tabs--dense) .tab {
-      min-height: 2.5rem;
-    }
-    /* Pinned under the title of a fixed-header page: tighter, so the grid keeps its height. */
-    @media (min-width: 768px) and (min-height: 561px) {
-      :host(.tabs--pinned) {
-        margin-bottom: var(--mf-s2);
-      }
-      :host(.tabs--pinned) .tab {
-        min-height: 2.5rem;
-      }
-    }
+    /* The normal, dense and pinned strips are the same: 40 px tabs (--mf-tab-h) and a 12 px gap under the strip (#1128). */
   `,
 })
 export class Tabs {

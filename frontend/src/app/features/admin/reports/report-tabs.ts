@@ -16,7 +16,7 @@ export const REPORT_TABS: readonly AdminTab[] = [
     permission: ['Report.Manage'],
     countKey: 'categories',
   },
-  { id: 'runs', label: 'Run log', route: '/admin/reports?tab=runs', permission: ['Report.Manage'] },
+  { id: 'runs', label: 'Run Log', route: '/admin/reports?tab=runs', permission: ['Report.Manage'] },
   {
     id: 'assignments',
     label: 'Assignments',

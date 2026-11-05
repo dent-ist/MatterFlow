@@ -25,7 +25,7 @@ async function check(page: Page, what: string, width: number): Promise<void> {
 test.describe('Axe and reflow of the administration areas, overlays open (#660)', () => {
   test.setTimeout(240_000);
 
-  test('Labels: Priorities and Status labels with the menu, the dialogs and the Deactivate and Default questions', async ({
+  test('Labels: Priorities and Status Labels with the menu, the dialogs and the Deactivate and Default questions', async ({
     page,
     admin,
   }) => {

@@ -9,7 +9,7 @@ import { ScrollArea } from '../../../shared/ui/fixed-page';
 const PAGE = 50;
 
 /**
- * Admin: the Run log tab of the Reports page (spec 9.1, issue #712), read-only: who ran or previewed which version of which report with which
+ * Admin: the Run Log tab of the Reports page (spec 9.1, issue #712), read-only: who ran or previewed which version of which report with which
  * values, how it ended and how long it took, newest first. Filter by status and kind; older rows load page by page. The values are the ones
  * that were bound (long values shortened), never the query. Needs `Report.Manage`.
  */
@@ -46,7 +46,7 @@ const PAGE = 50;
         <button type="button" class="mf-btn mf-btn--text" (click)="reload()">Try again</button>
       </p>
     }
-    <div class="mf-table-wrap" mfScrollArea="Run log">
+    <div class="mf-table-wrap" mfScrollArea="Run Log">
       <div class="mf-scroll">
         <table class="mf-grid" id="runs-table" data-runs>
           <caption class="mf-sr-only">

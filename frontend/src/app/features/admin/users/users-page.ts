@@ -809,7 +809,7 @@ export class UsersPage implements OnInit {
       if (id !== this.requestId) return;
       this.users.set(list.items);
       this.total.set(list.total);
-      // Only a real change: the Status labels carry the pending count and a new object would rebuild the filter controls.
+      // Only a real change: the Status Labels carry the pending count and a new object would rebuild the filter controls.
       const known = this.counts();
       if (
         known.pending !== counts.pending ||

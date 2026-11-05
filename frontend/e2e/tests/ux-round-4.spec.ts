@@ -345,7 +345,7 @@ test.describe('Round 4: administration naming', () => {
     ['/admin/workflows', 'Task Types', 'Task Types: Workflows - MatterFlow'],
     ['/admin/steps', 'Task Types', 'Task Types: Workflow Steps - MatterFlow'],
     ['/admin/priorities', 'Labels', 'Labels: Priorities - MatterFlow'],
-    ['/admin/status-labels', 'Labels', 'Labels: Status labels - MatterFlow'],
+    ['/admin/status-labels', 'Labels', 'Labels: Status Labels - MatterFlow'],
     ['/admin/custom-fields', 'Custom Fields', 'Custom Fields - MatterFlow'],
     ['/admin/audit', 'Audit Logs', 'Audit Logs - MatterFlow'],
     ['/admin/users', 'Users', 'Users - MatterFlow'],

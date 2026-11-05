@@ -118,7 +118,7 @@ export class LabelsAdminPage implements HasUnsavedChanges {
   protected readonly canManagePriorities = computed(() => this.auth.has('Priority.Manage'));
   protected readonly canManageReasons = computed(() => this.auth.has('OnHoldReason.Manage'));
 
-  /** Only the tabs the person may use: `Priorities (8)`, `Status labels (5)` (`--` while the count is on its way). */
+  /** Only the tabs the person may use: `Priorities (8)`, `Status Labels (5)` (`--` while the count is on its way). */
   protected readonly tabs = computed<MfTab[]>(() =>
     adminTabItems(LABEL_TABS, this.can, this.counts.snapshot()),
   );

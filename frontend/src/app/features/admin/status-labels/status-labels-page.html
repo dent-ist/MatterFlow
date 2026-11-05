@@ -9,7 +9,7 @@
 @if (phone()) {
   <mf-admin-card-list
     noun="status labels"
-    label="Status labels"
+    label="Status Labels"
     [items]="rows()"
     [spec]="cardOf"
     [state]="ls.state()"
@@ -18,7 +18,7 @@
     (retry)="load()"
   />
 } @else {
-  <div class="mf-table-wrap" mfScrollArea="Status labels list">
+  <div class="mf-table-wrap" mfScrollArea="Status Labels list">
     <div class="mf-scroll">
       <table class="mf-grid" id="labels-table" data-status-labels>
         <caption class="mf-sr-only">

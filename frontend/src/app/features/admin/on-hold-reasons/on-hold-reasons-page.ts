@@ -41,7 +41,7 @@ const DROP_ORDER = 768;
 /** The address of the dialogs of this tab: `?edit=<id>` or `edit=new` (the name link, the row menu and the New button go there). */
 
 /**
- * Admin: On-hold reasons (PM v2, #876), the third tab of the Labels page, built like Link Roles: the grid contract (44 px rows, Order, Name,
+ * Admin: On-Hold Reasons (PM v2, #876), the third tab of the Labels page, built like Link Roles: the grid contract (44 px rows, Order, Name,
  * Status, one overflow menu), phone cards below 640 px and the lookup dialog for New reason and Rename. The reasons a person picks when a task
  * is put On Hold (Waiting for client data, ...). The menu has Rename, Move up, Move down and Deactivate or Activate; a reason is never deleted
  * (a used one is deactivated, so a task on hold and the history keep its name). Needs `OnHoldReason.Manage`. The header belongs to `LabelsAdminPage`.

@@ -342,20 +342,6 @@
   }
 }
 
-.mf-roles-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--mf-s3);
-  margin-bottom: var(--mf-s3);
-}
-
-.mf-roles-intro {
-  margin: 0;
-  color: var(--mf-text-muted);
-}
-
 /* Fixed-header page: the role list and the editor are two scroll areas side by side; the list header and the editor's Save bar are pinned. */
 @media (min-width: 768px) and (min-height: 561px) {
   .mf-layout {
@@ -377,10 +363,6 @@
     position: sticky;
     top: 0;
     z-index: 2;
-  }
-
-  .mf-roles-bar {
-    margin-bottom: var(--mf-s2);
   }
 }
 

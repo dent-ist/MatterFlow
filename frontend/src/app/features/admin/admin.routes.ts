@@ -239,11 +239,11 @@ export const ADMIN_ROUTES: Routes = [
     matcher: labelsTabsMatcher,
     title: (route) =>
       route.params['tab'] === 'status-labels'
-        ? pageTab('Labels', 'Status labels')
+        ? pageTab('Labels', 'Status Labels')
         : route.params['tab'] === 'on-hold-reasons'
-          ? pageTab('Labels', 'On-hold reasons')
+          ? pageTab('Labels', 'On-Hold Reasons')
           : route.params['tab'] === 'note-tags'
-            ? pageTab('Labels', 'Notes tags')
+            ? pageTab('Labels', 'Note Tags')
             : pageTab('Labels', 'Priorities'),
     canActivate: [labelsTabGuard()],
     canDeactivate: [unsavedChangesGuard],
@@ -258,7 +258,7 @@ export const ADMIN_ROUTES: Routes = [
       const tab = route.queryParams['tab'];
       const names: Record<string, string> = {
         categories: pageTab('Reports', 'Categories'),
-        runs: pageTab('Reports', 'Run log'),
+        runs: pageTab('Reports', 'Run Log'),
         assignments: pageTab('Reports', 'Assignments'),
         health: pageTab('Reports', 'Settings'),
       };

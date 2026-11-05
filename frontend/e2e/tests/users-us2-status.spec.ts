@@ -231,7 +231,7 @@ test.describe('#431 header Filters', () => {
     await page.locator('mf-page-header [data-filters-toggle]').click();
     const sheet = page.getByRole('dialog');
     await expect(sheet).toBeVisible();
-    // Exact: a role the suite created ("Status labels only ...") is a checkbox in the Roles filter and matches a substring.
+    // Exact: a role the suite created ("Status Labels only ...") is a checkbox in the Roles filter and matches a substring.
     await expect(sheet.getByLabel('Status', { exact: true })).toHaveCount(0);
     expect(await axeClean(page)).toEqual([]);
     await shot(page, 'users-filters-sheet', 375, 812);

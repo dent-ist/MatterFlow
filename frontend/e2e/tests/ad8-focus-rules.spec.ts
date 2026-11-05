@@ -4,7 +4,7 @@ import { openRowMenu } from '../support/labels';
 import { uid } from '../support/seed';
 
 /**
- * WP-AD8 #657 (AD-E): one focus rule, applied by test across Priorities, Status labels, Link roles and Asset Types. Opening a dialog moves focus
+ * WP-AD8 #657 (AD-E): one focus rule, applied by test across Priorities, Status Labels, Link roles and Asset Types. Opening a dialog moves focus
  * into it; closing or saving returns it to the row's menu button (or the name link, or the New button that opened it); a failed submit focuses the
  * first invalid field; Move up and Move down keep focus on the menu button and announce the position; success is announced once. Measured with
  * `document.activeElement`: after no action does focus rest on the body. No keyboard shortcut is involved.
@@ -79,7 +79,7 @@ test.describe('Focus rules: Priorities (#657)', () => {
   });
 });
 
-test.describe('Focus rules: Status labels (#657)', () => {
+test.describe('Focus rules: Status Labels (#657)', () => {
   test('Rename: the name link opens the dialog, an empty name focuses the field, Escape with edits asks and Leave returns to the link', async ({
     page,
   }) => {

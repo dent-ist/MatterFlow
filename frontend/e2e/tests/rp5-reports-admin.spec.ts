@@ -7,7 +7,7 @@ import { uid } from '../support/seed';
 
 /**
  * WP-RP5 and WP-RP6 (epic #671; issues #712 to #715 and #717): Reports administration. The Reports list on the admin list kit with its
- * Categories, Run log, Assignments and Settings tabs; the report editor (details, query with live parameter detection, parameter definitions,
+ * Categories, Run Log, Assignments and Settings tabs; the report editor (details, query with live parameter detection, parameter definitions,
  * schema browser, preview, activation gate, version history with compare and restore); and the assignment of reports to roles from both sides.
  * The stack needs the read-only report login (`e2e/run-local.sh` creates it); the tests of the preview skip themselves when Reports are not ready.
  */
@@ -128,7 +128,7 @@ test.describe('who can open Reports administration (#712)', () => {
     await expect(navItem(page, 'Reports')).toBeVisible();
     await expect(
       page.getByRole('tablist', { name: 'Reports sections' }).getByRole('tab'),
-    ).toHaveText([/^\s*Reports/, /^\s*Categories/, /^\s*Run log/, /^\s*Settings/]);
+    ).toHaveText([/^\s*Reports/, /^\s*Categories/, /^\s*Run Log/, /^\s*Settings/]);
 
     const page2 = await asUser(both.username);
     await page2.goto('/admin/reports');
@@ -137,7 +137,7 @@ test.describe('who can open Reports administration (#712)', () => {
     ).toHaveText([
       /^\s*Reports/,
       /^\s*Categories/,
-      /^\s*Run log/,
+      /^\s*Run Log/,
       /^\s*Assignments/,
       /^\s*Settings/,
     ]);
@@ -366,7 +366,7 @@ test.describe('the editor (#713 to #715)', () => {
     await expect(tab(page, /^Parameters/)).toHaveAttribute('aria-selected', 'true');
   });
 
-  test('the Run log shows the preview that was just run', async ({ page, admin }) => {
+  test('the Run Log shows the preview that was just run', async ({ page, admin }) => {
     const name = reportName('Logged');
     const id = await createReport(admin, name);
     await admin.post(`/api/v1/report-admin/reports/${id}/preview`, {});

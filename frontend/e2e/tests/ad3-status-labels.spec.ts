@@ -6,7 +6,7 @@ import { SIZES, noSideScroll, shot } from '../support/labels';
 import { uid } from '../support/seed';
 
 /**
- * WP-AD3 #622: the Status labels on the grid contract: the badge with the display label (the code is the tooltip, a renamed status says
+ * WP-AD3 #622: the Status Labels on the grid contract: the badge with the display label (the code is the tooltip, a renamed status says
  * what it was), a Tasks count that equals the Task Queue total, one row menu with Rename, the Rename dialog with the code, the live badge
  * and where the name shows, phone cards below 640 px. Screenshots: E2E_SCREENSHOTS (fixes/ad3-labels).
  */
@@ -15,7 +15,7 @@ const dialog = (page: Page) => page.getByRole('dialog', { name: 'Rename status l
 const field = (page: Page) => page.locator('#status-label-name');
 const badgeOf = (page: Page, code: string) => page.locator(`[data-row="${code}"] mf-status-badge`);
 
-test.describe('the Status labels list (#622)', () => {
+test.describe('the Status Labels list (#622)', () => {
   test('five rows of 44 px with the status badge, the code as the tooltip and a Tasks count equal to the Task Queue total', async ({
     page,
     admin,
