@@ -34,6 +34,8 @@ import { TaskCount } from '../../../shared/ui/task-count';
 import { AdminTabCounts } from '../admin-tabs';
 import { dialogCopy, refusedDeleteMessage } from '../shared/dialog-copy';
 import { PriorityDialog, PriorityDraft, priorityColorName } from './priority-dialog';
+import { Button } from 'primeng/button';
+import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 
 export { CONTRAST_MESSAGE, PRIORITY_COLOR_TOKENS } from './priority-dialog';
 
@@ -55,6 +57,8 @@ const DROP_ORDER = 768;
   selector: 'mf-priorities-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    Button,
+    HasPermissionDirective,
     RouterLink,
     ActionMenu,
     ActiveBadge,
@@ -209,6 +213,11 @@ export class PrioritiesPage implements OnInit, HasUnsavedChanges {
   }
 
   // ---- New and Edit (the lookup dialog, #609)
+
+  /** The empty list's own New button (the same action as the page header's, spec 15.3). */
+  protected newPriority(): void {
+    void this.router.navigate([], { queryParams: { edit: 'new' }, queryParamsHandling: 'merge' });
+  }
 
   protected closeDialog(): void {
     this.labelError.set('');

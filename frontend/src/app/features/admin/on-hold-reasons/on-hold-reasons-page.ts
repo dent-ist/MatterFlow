@@ -34,6 +34,8 @@ import { RowLink } from '../../../shared/ui/row-nav';
 import { TextField } from '../../../shared/ui/text-field';
 import { AdminTabCounts } from '../admin-tabs';
 import { ADMIN_FIELD_LIMITS } from '../shared/field-limits';
+import { Button } from 'primeng/button';
+import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -52,6 +54,8 @@ const DROP_ORDER = 768;
   selector: 'mf-on-hold-reasons-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    Button,
+    HasPermissionDirective,
     ActionMenu,
     ActiveBadge,
     AdminCardList,
@@ -210,6 +214,11 @@ export class OnHoldReasonsPage implements OnInit, HasUnsavedChanges {
     this.summary.set([]);
     this.fieldError.set('');
     this.saveError.set('');
+  }
+
+  /** The empty list's own New button (the same action as the page header's, spec 15.3). */
+  protected newReason(): void {
+    void this.router.navigate([], { queryParams: { edit: 'new' }, queryParamsHandling: 'merge' });
   }
 
   protected closeDialog(): void {

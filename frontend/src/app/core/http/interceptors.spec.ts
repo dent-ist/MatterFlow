@@ -163,8 +163,11 @@ describe('HTTP interceptors', () => {
     const err = caught as ApiError;
     expect(err.code).toBe('DEFAULT_REQUIRED');
     expect(err.message).toBe('Tasks use this priority.');
-    expect(toasts()).toContainEqual(
-      expect.objectContaining({ summary: 'Tasks use this priority.' }),
+    // A GET is held back a moment so an inline block can claim it (#1223).
+    await vi.waitFor(() =>
+      expect(toasts()).toContainEqual(
+        expect.objectContaining({ summary: 'Tasks use this priority.' }),
+      ),
     );
   });
 
@@ -184,37 +187,77 @@ describe('HTTP interceptors', () => {
   });
 
   it('shows the generic message for 5xx and network failures', () => {
-    const { http, ctrl, toasts } = setup();
-    http.get('/x').subscribe({ error: () => undefined });
-    ctrl.expectOne('/x').flush('boom', { status: 500, statusText: 'Server Error' });
-    http.get('/y').subscribe({ error: () => undefined });
-    ctrl.expectOne('/y').error(new ProgressEvent('error'));
-    // Both failures map to the same message: the second is folded into the first (BUG-4), not stacked.
-    expect(toasts()).toEqual([
-      expect.objectContaining({ summary: "Couldn't complete the request.", count: 2 }),
-    ]);
+    vi.useFakeTimers();
+    try {
+      const { http, ctrl, toasts } = setup();
+      http.post('/x', {}).subscribe({ error: () => undefined });
+      ctrl.expectOne('/x').flush('boom', { status: 500, statusText: 'Server Error' });
+      http.get('/y').subscribe({ error: () => undefined });
+      ctrl.expectOne('/y').error(new ProgressEvent('error'));
+      vi.advanceTimersByTime(1000);
+      // Both failures map to the same message: the second is folded into the first (BUG-4), not stacked.
+      expect(toasts()).toEqual([
+        expect.objectContaining({ summary: "Couldn't complete the request.", count: 2 }),
+      ]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('raises no toast for a failed GET while the page shows its own "Couldn\'t load" block, but keeps the toast of a failed save (D-52, #1223)', () => {
+    vi.useFakeTimers();
+    const block = document.createElement('div');
+    block.setAttribute('role', 'alert');
+    block.textContent = "Couldn't load matters. Retry";
+    document.body.appendChild(block);
+    try {
+      const { http, ctrl, toasts } = setup();
+      for (let i = 0; i < 3; i++) {
+        http.get(`/api/v1/matters/${i}`).subscribe({ error: () => undefined });
+        ctrl.expectOne(`/api/v1/matters/${i}`).error(new ProgressEvent('error'));
+      }
+      vi.advanceTimersByTime(1000);
+      expect(toasts()).toEqual([]);
+      http.post('/api/v1/matters', {}).subscribe({ error: () => undefined });
+      ctrl
+        .expectOne('/api/v1/matters')
+        .flush({ status: 500, title: 'Boom' }, { status: 500, statusText: 'x' });
+      expect(toasts()).toEqual([
+        expect.objectContaining({ summary: "Couldn't complete the request." }),
+      ]);
+    } finally {
+      block.remove();
+      vi.useRealTimers();
+    }
   });
 
   it('one network failure still toasts; once two in a row have failed the offline banner speaks: a failed load adds no toast, a failed save still answers once (S13d, #611)', () => {
-    const { http, ctrl, toasts } = setup();
-    const connectivity = TestBed.inject(Connectivity);
-    http.get('/a').subscribe({ error: () => undefined });
-    ctrl.expectOne('/a').error(new ProgressEvent('error'));
-    expect(toasts()).toEqual([expect.objectContaining({ count: 1 })]);
-    expect(connectivity.offline()).toBe(false);
-    // The second failure in a row: the banner is up, and the load does not add to the toast.
-    http.get('/b').subscribe({ error: () => undefined });
-    ctrl.expectOne('/b').error(new ProgressEvent('error'));
-    expect(connectivity.offline()).toBe(true);
-    expect(toasts()).toEqual([expect.objectContaining({ count: 1 })]);
-    // A save that cannot reach the server still tells the person who pressed Save (folded with the identical toast).
-    http.post('/save', {}).subscribe({ error: () => undefined });
-    ctrl.expectOne('/save').error(new ProgressEvent('error'));
-    expect(toasts()).toEqual([expect.objectContaining({ count: 2 })]);
-    // A server error is not a network failure: it proves the server is reachable again.
-    http.get('/c').subscribe({ error: () => undefined });
-    ctrl.expectOne('/c').flush('boom', { status: 500, statusText: 'Server Error' });
-    expect(connectivity.offline()).toBe(false);
+    vi.useFakeTimers();
+    try {
+      const { http, ctrl, toasts } = setup();
+      const connectivity = TestBed.inject(Connectivity);
+      http.get('/a').subscribe({ error: () => undefined });
+      ctrl.expectOne('/a').error(new ProgressEvent('error'));
+      vi.advanceTimersByTime(1000); // a failed GET is held back a moment for an inline block (#1223)
+      expect(toasts()).toEqual([expect.objectContaining({ count: 1 })]);
+      expect(connectivity.offline()).toBe(false);
+      // The second failure in a row: the banner is up, and the load does not add to the toast.
+      http.get('/b').subscribe({ error: () => undefined });
+      ctrl.expectOne('/b').error(new ProgressEvent('error'));
+      vi.advanceTimersByTime(1000);
+      expect(connectivity.offline()).toBe(true);
+      expect(toasts()).toEqual([expect.objectContaining({ count: 1 })]);
+      // A save that cannot reach the server still tells the person who pressed Save (folded with the identical toast).
+      http.post('/save', {}).subscribe({ error: () => undefined });
+      ctrl.expectOne('/save').error(new ProgressEvent('error'));
+      expect(toasts()).toEqual([expect.objectContaining({ count: 2 })]);
+      // A server error is not a network failure: it proves the server is reachable again.
+      http.get('/c').subscribe({ error: () => undefined });
+      ctrl.expectOne('/c').flush('boom', { status: 500, statusText: 'Server Error' });
+      expect(connectivity.offline()).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('a 401 sets the sign-in banner state and adds no toast, however many requests fail (S14, #612)', () => {
@@ -250,7 +293,7 @@ describe('HTTP interceptors', () => {
     TestBed.inject(QuietRequests).run(() =>
       http.get('/quiet').subscribe({ error: (e: unknown) => errors.push(e) }),
     );
-    http.get('/loud').subscribe({ error: () => undefined });
+    http.post('/loud', {}).subscribe({ error: () => undefined });
     ctrl.expectOne('/quiet').flush({}, { status: 500, statusText: 'Server Error' });
     expect(errors.length).toBe(1);
     expect(errors[0]).toBeInstanceOf(ApiError);
@@ -285,7 +328,10 @@ describe('HTTP interceptors', () => {
 
     expect(caught).toBeInstanceOf(ApiError);
     expect((caught as ApiError).code).toBe('DUPLICATE_NAME');
-    expect(toasts()).toContainEqual(expect.objectContaining({ summary: 'Keep one admin.' }));
+    // A GET is held back 400 ms for an inline block (#1223); nothing claims it here.
+    await vi.waitFor(() =>
+      expect(toasts()).toContainEqual(expect.objectContaining({ summary: 'Keep one admin.' })),
+    );
   });
 
   it('refreshes permissions after 403 PERMISSION_DENIED', async () => {

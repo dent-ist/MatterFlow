@@ -99,8 +99,9 @@ export const problemDetailsInterceptor: HttpInterceptorFn = (req, next) => {
             if (toast) {
               const show = () =>
                 injector.get(NotificationService).error(toast.summary, toast.detail);
-              // A failed page load shows an inline alert with the reference id; hold the toast back so it is not duplicated.
-              if (req.method === 'GET' && toast.detail) {
+              // A failed page load shows an inline block ("Couldn't load matters." + Retry): hold the toast back and drop it when the page shows
+              // that block, so one failure is one message (D-52, #1223). A save, delete or assign (not a GET) keeps its toast.
+              if (req.method === 'GET') {
                 injector.get(ErrorReferenceStore).report(apiError.traceId, show);
               } else {
                 show();

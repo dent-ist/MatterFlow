@@ -59,6 +59,7 @@ import { FilterChips } from '../../../shared/ui/filter-chips';
 import { WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 import { IntPipe } from '../../../shared/ui/number-format';
+import { Button } from 'primeng/button';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
 const COLUMNS = [
@@ -90,6 +91,7 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
 @Component({
   selector: 'mf-workflows-list-page',
   imports: [
+    Button,
     IntPipe,
     NumericDatePipe,
     ScrollArea,
@@ -273,6 +275,12 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
               hiddenLabel="inactive"
               (showAll)="showAll()"
             >
+              <p-button
+                mfEmptyAction
+                label="New Workflow"
+                icon="pi pi-plus"
+                (onClick)="newWorkflow()"
+              />
               @for (w of rows(); track w.workflowDefinitionId) {
                 <tr [attr.data-row]="w.name">
                   <td class="ad-name">
@@ -607,6 +615,11 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   /** Why Deactivate failed, shown inside the dialog that stays open (#414). */
   protected readonly dialogError = signal('');
   protected readonly deactivateTarget = signal<WorkflowSummary | null>(null);
+  /** The empty list's own New button (the same action as the page header's, spec 15.3). */
+  protected newWorkflow(): void {
+    void this.router.navigateByUrl('/admin/workflows/new');
+  }
+
   /** The row menu of every row (#355): Open draft (a workflow that has one), then Deactivate or Activate. The page needs Workflow.Manage. */
   private readonly menus = computed(
     () => new Map(this.rows().map((w) => [w.workflowDefinitionId, this.menuOf(w)] as const)),

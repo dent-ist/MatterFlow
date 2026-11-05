@@ -61,6 +61,7 @@ import { FilterChips } from '../../../shared/ui/filter-chips';
 import { WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { parseStatus } from '../../../shared/ui/list-helpers';
 import { TaskTypeBadge } from '../../../shared/task-type/task-type-badge';
+import { Button } from 'primeng/button';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
 const COLUMNS = [
@@ -121,6 +122,7 @@ const FORM_OPTIONS = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   imports: [
+    Button,
     ScrollArea,
     ConfirmDialog,
     ActiveBadge,
@@ -551,6 +553,11 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
             run: () => void this.setActive(t, true),
           },
     ];
+  }
+
+  /** The empty list's own New button (the same action as the page header's, spec 15.3). */
+  protected newTaskType(): void {
+    void this.router.navigateByUrl('/admin/task-types/new');
   }
 
   /** A row menu entry that opens a page of the record: remembers the row and the list address like the name link does. */

@@ -46,8 +46,8 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
       text-align: center;
     }
     .sb__mark {
-      /* D-51: 24 px. There is no 24 px icon token yet (the scale stops at --mf-icon-lg 20), so the 24 px spacing step carries it. */
-      font-size: var(--mf-s5);
+      /* D-51: 24 px, the one place the extra-large icon token is used (spec 15.2). */
+      font-size: var(--mf-icon-xl);
       color: var(--mf-text-muted);
     }
     .sb--error .sb__mark {

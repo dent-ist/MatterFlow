@@ -12,7 +12,7 @@
     label="On-Hold Reasons"
     [items]="rows()"
     [spec]="cardOf"
-    emptyText="No on-hold reasons yet. Use New reason above to add the first one."
+    emptyText="No on-hold reasons yet."
     [state]="ls.state()"
     [empty]="ls.empty()"
     [filtered]="false"
@@ -37,12 +37,19 @@
           mfGridBody
           noun="on-hold reasons"
           [columnSpec]="columnSpec()"
-          emptyText="No on-hold reasons yet. Use New reason above to add the first one."
+          emptyText="No on-hold reasons yet."
           [state]="ls.state()"
           [empty]="ls.empty()"
           [filtered]="false"
           (retry)="load()"
         >
+          <p-button
+            mfEmptyAction
+            *mfHasPermission="'OnHoldReason.Manage'"
+            label="New Reason"
+            icon="pi pi-plus"
+            (onClick)="newReason()"
+          />
           @for (r of paging.slice(rows()); track r.id; let idx = $index) {
             @let i = paging.offset() + idx;
             <tr

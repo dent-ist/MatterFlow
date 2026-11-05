@@ -53,6 +53,7 @@ import { ADMIN_LIST, AdminListLeave } from '../list-return';
 import { dialogCopy } from '../shared/dialog-copy';
 import { FormStatusCell } from '../shared/form-status-cell';
 import { IntPipe } from '../../../shared/ui/number-format';
+import { Button } from 'primeng/button';
 
 /** Every column of the grid, in order; the keys the filter definitions point at. */
 type Column = 'name' | 'fields' | 'assets' | 'status' | 'actions';
@@ -80,6 +81,7 @@ const LOAD_PAGE_SIZE = 100;
 @Component({
   selector: 'mf-asset-types-page',
   imports: [
+    Button,
     IntPipe,
     ActionMenu,
     ActiveBadge,
@@ -180,6 +182,12 @@ const LOAD_PAGE_SIZE = 100;
               (clear)="clear()"
               (showAll)="showAll()"
             >
+              <p-button
+                mfEmptyAction
+                label="New Asset Type"
+                icon="pi pi-plus"
+                (onClick)="newType()"
+              />
               @for (t of rows(); track t.assetTypeId) {
                 <tr [attr.data-row]="t.name" [class.inactive]="!t.isActive">
                   <td class="mf-cell-name">
@@ -568,6 +576,11 @@ export class AssetTypesPage extends LocalListPage<AssetTypeResponse> {
     }
     if (typeof t.draftVersionNo === 'number') parts.push(`draft v${t.draftVersionNo}`);
     return parts.join(' · ');
+  }
+
+  /** The empty list's own New button (the same action as the page header's, spec 15.3). */
+  protected newType(): void {
+    void this.router.navigate(['/admin/asset-types/new'], { state: this.leave.state() });
   }
 
   private open(t: AssetTypeResponse): Promise<boolean> {

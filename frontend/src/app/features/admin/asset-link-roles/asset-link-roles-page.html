@@ -12,7 +12,7 @@
     label="Asset link roles"
     [items]="rows()"
     [spec]="cardOf"
-    emptyText="No link roles yet. Use New link role above to add the first one."
+    emptyText="No link roles yet."
     [state]="ls.state()"
     [empty]="ls.empty()"
     [filtered]="false"
@@ -40,12 +40,19 @@
           mfGridBody
           noun="asset link roles"
           [columnSpec]="columnSpec()"
-          emptyText="No link roles yet. Use New link role above to add the first one."
+          emptyText="No link roles yet."
           [state]="ls.state()"
           [empty]="ls.empty()"
           [filtered]="false"
           (retry)="load()"
         >
+          <p-button
+            mfEmptyAction
+            *mfHasPermission="'AssetType.Manage'"
+            label="New Link Role"
+            icon="pi pi-plus"
+            (onClick)="newRole()"
+          />
           @for (r of paging.slice(rows()); track r.id; let idx = $index) {
             @let i = paging.offset() + idx;
             <tr

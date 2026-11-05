@@ -17,6 +17,8 @@ import { GridFrame } from '../../../shared/ui/grid-frame';
 import { FormDialog } from '../../../shared/ui/form-dialog';
 import { TextField } from '../../../shared/ui/text-field';
 import { IntPipe } from '../../../shared/ui/number-format';
+import { Button } from 'primeng/button';
+import { StateBlock } from '../../../shared/ui/state-block';
 
 /**
  * Admin: Note Tags (epic #1001, MD-19; mockup notes-mockup-r3), the fourth tab of the Labels page. The firm-wide tags people pick in a note: name, colour of the
@@ -25,7 +27,18 @@ import { IntPipe } from '../../../shared/ui/number-format';
  */
 @Component({
   selector: 'mf-note-tags-page',
-  imports: [IntPipe, ActionMenu, ConfirmDialog, Pager, Dropdown, GridFrame, FormDialog, TextField],
+  imports: [
+    Button,
+    StateBlock,
+    IntPipe,
+    ActionMenu,
+    ConfirmDialog,
+    Pager,
+    Dropdown,
+    GridFrame,
+    FormDialog,
+    TextField,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   styleUrl: '../../../shared/ui/page.scss',
@@ -44,7 +57,10 @@ import { IntPipe } from '../../../shared/ui/number-format';
         {{ error() }} <button type="button" (click)="load()">Retry</button>
       </p>
     } @else if (loaded() && tags().length === 0) {
-      <p class="pg-reason" data-note-tags-empty>No tags yet.</p>
+      <mf-state-block data-note-tags-empty>
+        No tags yet.
+        <p-button mfStateAction label="New Tag" icon="pi pi-plus" (onClick)="openNew()" />
+      </mf-state-block>
     } @else {
       <mf-grid-frame scrollLabel="Note Tags">
         <table class="pg-table" data-note-tags-table>

@@ -36,7 +36,7 @@
     noun="task types"
     label="Task types"
     [filters]="filters"
-    emptyText="No task types yet. Use New task type above to add the first one."
+    emptyText="No task types yet."
     [state]="ls.state()"
     [empty]="ls.empty()"
     [filtered]="ls.filtered()"
@@ -186,7 +186,7 @@
           mfGridBody
           noun="task types"
           [filters]="filters"
-          emptyText="No task types yet. Use New task type above to add the first one."
+          emptyText="No task types yet."
           [state]="ls.state()"
           [empty]="ls.empty()"
           [filtered]="ls.filtered()"
@@ -197,6 +197,12 @@
           hiddenLabel="inactive"
           (showAll)="showAll()"
         >
+          <p-button
+            mfEmptyAction
+            label="New Task Type"
+            icon="pi pi-plus"
+            (onClick)="newTaskType()"
+          />
           @for (t of rows(); track t.id) {
             <tr [attr.data-row]="t.name" [class.inactive]="!t.isActive">
               <td class="tt-namecell">

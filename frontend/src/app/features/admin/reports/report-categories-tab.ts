@@ -18,6 +18,8 @@ import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard'
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { AdminTabCounts } from '../admin-tabs';
 import { IntPipe } from '../../../shared/ui/number-format';
+import { Button } from 'primeng/button';
+import { StateBlock } from '../../../shared/ui/state-block';
 
 interface Draft {
   /** Category id; 0 for a new category. */
@@ -36,7 +38,7 @@ interface Draft {
  */
 @Component({
   selector: 'mf-report-categories-tab',
-  imports: [IntPipe, ActiveBadge, NgTemplateOutlet, ScrollArea],
+  imports: [Button, StateBlock, IntPipe, ActiveBadge, NgTemplateOutlet, ScrollArea],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -104,7 +106,17 @@ interface Draft {
               } @empty {
                 @if (!draft()) {
                   <tr>
-                    <td colspan="5" data-empty>No categories yet.</td>
+                    <td colspan="5" data-empty>
+                      <mf-state-block>
+                        No categories yet.
+                        <p-button
+                          mfStateAction
+                          label="New Category"
+                          icon="pi pi-plus"
+                          (onClick)="startNew()"
+                        />
+                      </mf-state-block>
+                    </td>
                   </tr>
                 }
               }

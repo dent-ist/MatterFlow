@@ -49,6 +49,7 @@ import { stripChips } from '../../../shared/ui/strip-items';
 import { FilterChips } from '../../../shared/ui/filter-chips';
 import { WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { TagChips } from '../../../shared/ui/tag-chips';
+import { Button } from 'primeng/button';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
 const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'inputs', 'status', 'actions'] as const;
@@ -84,6 +85,7 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
 @Component({
   selector: 'mf-steps-list-page',
   imports: [
+    Button,
     ScrollArea,
     ActiveBadge,
     Badge,
@@ -217,6 +219,7 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
               hiddenLabel="inactive"
               (showAll)="showAll()"
             >
+              <p-button mfEmptyAction label="New Step" icon="pi pi-plus" (onClick)="newStep()" />
               @for (s of rows(); track s.stepDefinitionId) {
                 <tr [attr.data-row]="s.title">
                   <td class="ad-spring">
@@ -421,6 +424,11 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
   /** Why Deactivate failed, shown inside the dialog that stays open (#414). */
   protected readonly dialogError = signal('');
   protected readonly deactivateTarget = signal<StepDefinitionSummary | null>(null);
+  /** The empty list's own New button (the same action as the page header's, spec 15.3). */
+  protected newStep(): void {
+    void this.router.navigateByUrl('/admin/steps/new');
+  }
+
   /** The row menu of every row (#355): Edit inputs, then Deactivate or Activate. The page needs Workflow.Manage, which both need. */
   private readonly menus = computed(
     () => new Map(this.rows().map((s) => [s.stepDefinitionId, this.menuOf(s)] as const)),

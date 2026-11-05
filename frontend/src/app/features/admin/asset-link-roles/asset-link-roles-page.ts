@@ -36,6 +36,8 @@ import { AdminTabCounts } from '../admin-tabs';
 import { dialogCopy, refusedDeleteMessage } from '../shared/dialog-copy';
 import { ADMIN_FIELD_LIMITS } from '../shared/field-limits';
 import { IntPipe } from '../../../shared/ui/number-format';
+import { Button } from 'primeng/button';
+import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -59,6 +61,8 @@ const TAB = 'link-roles';
   selector: 'mf-asset-link-roles-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    Button,
+    HasPermissionDirective,
     IntPipe,
     ActionMenu,
     ActiveBadge,
@@ -221,6 +225,11 @@ export class AssetLinkRolesPage implements OnInit, HasUnsavedChanges {
     this.summary.set([]);
     this.fieldError.set('');
     this.saveError.set('');
+  }
+
+  /** The empty list's own New button (the same action as the page header's, spec 15.3). */
+  protected newRole(): void {
+    void this.router.navigate([], { queryParams: { edit: 'new' }, queryParamsHandling: 'merge' });
   }
 
   protected closeDialog(): void {

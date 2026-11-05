@@ -44,6 +44,7 @@ import { ADMIN_LIST, AdminListLeave } from '../list-return';
 import { AdminShellFilters } from '../task-types/shell-filters';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 import { IntPipe } from '../../../shared/ui/number-format';
+import { Button } from 'primeng/button';
 
 type Column = 'name' | 'category' | 'roles' | 'lastRun' | 'status' | 'actions';
 
@@ -66,6 +67,7 @@ const COLUMN_SPEC: Record<Column, AdminColumn> = {
 @Component({
   selector: 'mf-reports-list-tab',
   imports: [
+    Button,
     IntPipe,
     NumericDatePipe,
     ActionMenu,
@@ -155,6 +157,12 @@ const COLUMN_SPEC: Record<Column, AdminColumn> = {
               (clear)="clear()"
               (showAll)="showAll()"
             >
+              <p-button
+                mfEmptyAction
+                label="New Report"
+                icon="pi pi-plus"
+                (onClick)="newReport()"
+              />
               @for (r of rows(); track r.reportId) {
                 <tr [attr.data-row]="r.name" [class.inactive]="!r.isActive">
                   <td class="mf-cell-name">
@@ -415,6 +423,11 @@ export class ReportsListTab extends LocalListPage<ReportListItemResponse> {
     meta: [r.categoryName, r.roleCount === 1 ? '1 role' : `${r.roleCount} roles`],
     actions: this.menus().get(r.reportId) ?? null,
   });
+
+  /** The empty list's own New button (the same action as the page header's, spec 15.3). */
+  protected newReport(): void {
+    void this.router.navigate(['/admin/reports/new'], { state: this.leave.state() });
+  }
 
   private open(r: ReportListItemResponse, tab?: string): Promise<boolean> {
     return this.router.navigate(['/admin/reports', r.reportId], {

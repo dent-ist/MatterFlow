@@ -158,7 +158,7 @@ describe('StepsListPage', () => {
     );
   });
 
-  it('shows an empty state that points at the New step button of the page header', async () => {
+  it('shows an empty state with the same New Step button as the page header (spec 15.3, #1223)', async () => {
     await setup({
       listStepDefinitions: vi
         .fn()
@@ -168,9 +168,10 @@ describe('StepsListPage', () => {
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector('[data-empty="none"]')).not.toBeNull();
-    // The one way to add is the page header's New step button: the empty state says so and has no second button (#370).
+    // The header keeps its New Step button; the empty list repeats it in the body (spec 15.3).
     expect(el.querySelector('[data-empty="none"]')!.textContent).toContain('No steps yet.');
-    expect(el.querySelector('[data-empty="none"] button, [data-empty="none"] a')).toBeNull();
+    const add = el.querySelector<HTMLElement>('[data-empty="none"] button');
+    expect(add?.textContent).toContain('New Step');
   });
 
   it('sends the column filters of the address to the API', async () => {

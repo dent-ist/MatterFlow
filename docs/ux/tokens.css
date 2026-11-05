@@ -377,6 +377,7 @@
   --mf-icon-sm: 16px;
   --mf-icon-md: 18px;
   --mf-icon-lg: 20px;
+  --mf-icon-xl: 24px; /* ONLY the icon of an empty, error or system-page state block (D-51, D-53; spec 15.2, #1223); controls, tabs, switches and chips stay on xs to lg */
   --mf-fs-title-lg: 22px;
   --mf-fs-chip: 12px;
   --mf-fw-semibold: 600;
