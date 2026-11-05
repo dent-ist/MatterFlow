@@ -48,6 +48,18 @@ describe('mf-action-menu', () => {
     expect(document.activeElement).toBe(items()[0]);
   });
 
+  it('an entry without an icon still has the icon slot, and a disabled entry keeps one line: its reason is the tooltip and the accessible description (#1218)', async () => {
+    trigger().click();
+    await settle(fixture);
+    for (const item of items()) expect(item.querySelector(':scope > i.pi')).not.toBeNull();
+    const beta = items()[1];
+    expect(beta.getAttribute('title')).toBe('Not now.');
+    const reason = beta.querySelector<HTMLElement>('[data-reason]')!;
+    expect(reason.classList.contains('mf-sr-only')).toBe(true);
+    expect(beta.getAttribute('aria-describedby')).toBe(reason.id);
+    expect(items()[0].getAttribute('title')).toBeNull();
+  });
+
   it('moves with the arrows, Home and End and wraps around', async () => {
     key(trigger(), 'ArrowDown');
     await settle(fixture);

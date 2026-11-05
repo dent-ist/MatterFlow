@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { throwError } from 'rxjs';
@@ -187,6 +189,27 @@ describe('mf-global-search (header typeahead)', () => {
         o.textContent!.replace(/\s+/g, ' ').trim(),
       );
       expect(more).toEqual(['See all 12 matters', 'See all 1,000+ tasks']);
+    });
+
+    it('the group headings are plain 13 / 600 text (no capitals) and "See all N" and "View all N results" are text buttons (#1218)', async () => {
+      await create(ALL, manyTasks());
+      await type('review');
+      const source = readFileSync(
+        join(process.cwd(), 'src/app/shared/search/global-search.ts'),
+        'utf8',
+      );
+      const heading = source.slice(
+        source.indexOf('.mf-gs__group {'),
+        source.indexOf('.mf-gs__option {'),
+      );
+      expect(heading).not.toContain('uppercase');
+      expect(heading).toContain('font-size: var(--mf-fs-sm)');
+      expect(heading).toContain('font-weight: var(--mf-fw-semibold)');
+      for (const sel of ['[data-see-all]', '[data-view-all-text]']) {
+        const link = el().querySelector(sel)!;
+        expect(link.classList.contains('mf-btn'), sel).toBe(true);
+        expect(link.classList.contains('mf-btn--text'), sel).toBe(true);
+      }
     });
 
     it('sums the group totals in the footer, with `n+` when any group is capped', async () => {

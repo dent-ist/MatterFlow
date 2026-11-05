@@ -73,6 +73,7 @@
   min-width: 0;
 }
 
+/* A disabled entry keeps one line: its reason is the tooltip and, hidden from the eye, its accessible description (#1218). */
 .am__reason {
   color: var(--mf-text-muted);
   font-size: var(--mf-fs-sm);

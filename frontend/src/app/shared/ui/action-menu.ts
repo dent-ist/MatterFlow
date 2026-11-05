@@ -97,6 +97,7 @@ let nextId = 0;
               [attr.aria-current]="item.current ? 'true' : null"
               [attr.aria-disabled]="item.disabled ? 'true' : null"
               [attr.aria-describedby]="item.disabled && item.reason ? uid + '-r-' + item.id : null"
+              [attr.title]="item.disabled && item.reason ? item.reason : null"
               (click)="pick(item)"
             >
               <!-- Every entry has the icon slot, so the labels line up whether or not an entry has an icon. -->
@@ -104,7 +105,8 @@ let nextId = 0;
               <span class="am__text">
                 <span>{{ item.label }}</span>
                 @if (item.disabled && item.reason) {
-                  <span class="am__reason" [id]="uid + '-r-' + item.id" data-reason>{{
+                  <!-- The reason is the tooltip and the accessible description, not a second line (D-36, #1218). -->
+                  <span class="am__reason mf-sr-only" [id]="uid + '-r-' + item.id" data-reason>{{
                     item.reason
                   }}</span>
                 }

@@ -135,7 +135,7 @@ interface DisplayGroup {
                         <!-- Sits in the heading row (grid) but first in the DOM, so Up and Down meet it before the group's hits. -->
                         <li
                           role="option"
-                          class="mf-gs__more"
+                          class="mf-gs__more mf-btn mf-btn--text"
                           data-see-all
                           [id]="more.id"
                           [class.mf-gs__option--active]="more.id === activeId()"
@@ -228,7 +228,9 @@ interface DisplayGroup {
                     (keydown.enter)="choose(all)"
                     (mousemove)="hover(all)"
                   >
-                    <span data-view-all-text>{{ viewAllText() }}</span>
+                    <span class="mf-btn mf-btn--text mf-gs__all-text" data-view-all-text>{{
+                      viewAllText()
+                    }}</span>
                     @if (searchedIn(); as line) {
                       <span class="mf-gs__searched" data-searched-in>{{ line }}</span>
                     }
@@ -317,14 +319,11 @@ interface DisplayGroup {
     .mf-gs__section .mf-gs__option {
       grid-column: 1 / -1;
     }
+    /* "See all N" is a text button (D-13, #1218): the shared look, here only the place in the grid and the room at the right edge. */
     .mf-gs__more {
       grid-column: 2;
       grid-row: 1;
-      padding: var(--mf-s1) var(--mf-s3);
-      color: var(--mf-link);
-      font-size: var(--mf-fs-sm);
-      font-weight: 600;
-      cursor: pointer;
+      margin-right: var(--mf-s2);
     }
     .mf-gs__more.mf-gs__option--active {
       background: var(--mf-selected-bg);
@@ -340,10 +339,8 @@ interface DisplayGroup {
       display: block;
       padding: var(--mf-s2) var(--mf-s3) var(--mf-s1);
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
+      font-size: var(--mf-fs-sm);
+      font-weight: var(--mf-fw-semibold);
     }
     .mf-gs__option {
       display: grid;
@@ -407,8 +404,10 @@ interface DisplayGroup {
       z-index: 1;
       background: var(--mf-surface);
       border-top: 1px solid var(--mf-border);
-      color: var(--mf-link);
-      font-weight: 600;
+    }
+    /* "View all N results" is a text button too: the shared look, at the left of its row. */
+    .mf-gs__all-text {
+      justify-self: start;
     }
     .mf-gs__all.mf-gs__option--active {
       background: var(--mf-selected-bg);
