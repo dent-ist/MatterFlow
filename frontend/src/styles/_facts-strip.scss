@@ -10,9 +10,11 @@
   margin: 0;
   padding: 0;
   overflow: hidden;
-  border: 1px solid var(--mf-border);
+  /* The card edge, radius and shadow of the global .mf-card (D-10, #1134); the 1 px gaps over the soft border colour draw the dividers. */
+  border: 1px solid var(--mf-border-soft);
   border-radius: var(--mf-radius-xl);
-  background: var(--mf-border);
+  background: var(--mf-border-soft);
+  box-shadow: var(--mf-shadow-card);
   list-style: none;
 }
 
@@ -23,7 +25,7 @@
   box-sizing: border-box;
   min-width: 0;
   min-height: 54px;
-  padding: 6px var(--mf-s3);
+  padding: var(--mf-s2) var(--mf-s4);
   background: var(--mf-surface);
 }
 

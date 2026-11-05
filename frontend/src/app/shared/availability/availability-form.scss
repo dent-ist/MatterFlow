@@ -19,17 +19,9 @@
   min-width: 0;
 }
 
-.av-form--page .av-card {
-  padding: var(--mf-s4) var(--mf-s5);
-  border: 1px solid var(--mf-border);
-  border-radius: var(--mf-radius-xl);
-  background: var(--mf-surface);
-}
-
+/* On My profile the card is the global .mf-card (#1134); its 16 / 600 title sits right above the description. */
 .av-card__title {
   margin: 0;
-  font-size: var(--mf-fs-h3);
-  font-weight: 600;
 }
 
 .av-card__desc {
@@ -128,7 +120,7 @@
   legend {
     padding: 0;
     margin-bottom: var(--mf-s2);
-    font-size: var(--mf-fs-h3);
+    font-size: var(--mf-fs-lg);
     font-weight: 600;
   }
 
@@ -278,7 +270,7 @@
 .av-actions--page {
   margin: 0;
   padding: var(--mf-s3) var(--mf-s4);
-  border: 1px solid var(--mf-border);
+  border: 1px solid var(--mf-border-soft);
   border-radius: var(--mf-radius-xl);
 }
 

@@ -37,10 +37,10 @@ type LoadState = 'loading' | 'ready' | 'error';
   imports: [AbsenceDialog, ConfirmDialog, NgTemplateOutlet, NumericDatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="al" aria-labelledby="al-title" data-absence-list>
+    <section class="al mf-card" aria-labelledby="al-title" data-absence-list>
       <header class="al__head">
         <div>
-          <h2 class="al__title" id="al-title">Out of office</h2>
+          <h2 class="al__title mf-card__title" id="al-title">Out of office</h2>
           <p class="al__desc">
             {{
               self()
@@ -226,12 +226,6 @@ type LoadState = 'loading' | 'ready' | 'error';
     :host {
       display: block;
     }
-    .al {
-      padding: var(--mf-s4) var(--mf-s5);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-xl);
-      background: var(--mf-surface);
-    }
     .al__head {
       display: flex;
       flex-wrap: wrap;
@@ -239,10 +233,9 @@ type LoadState = 'loading' | 'ready' | 'error';
       justify-content: space-between;
       gap: var(--mf-s2) var(--mf-s4);
     }
+    /* The card look and the 16 / 600 title are the global .mf-card (#1134); the description sits right under the title. */
     .al__title {
       margin: 0;
-      font-size: var(--mf-fs-h3);
-      font-weight: 600;
     }
     .al__desc {
       margin: 0;

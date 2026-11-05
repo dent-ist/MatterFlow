@@ -617,3 +617,11 @@ Loading shows a skeleton of the grid; an error shows `mf-dash-state` with Retry;
 - The Task Types tab uses the Task Types page icon (`pi-file-edit`), not `pi-tags`, which is the Asset Types icon of the menu.
 - A registry icon used by two keys has to be listed in `tab-icons.spec.ts` as one concept under two names, or as a known repeat that the page epics may split; a new repeat fails the guard.
 - Icon sizes in feature styles are only `--mf-icon-xs|sm|md|lg`: tiny marks and sort arrows 12 px (xs), icons beside text 16 px (sm), buttons 18 px (md), tabs and the page tile 20 px (lg). An icon-only control keeps an `aria-label` and a tooltip.
+
+### 13.4 Cards (D-10, D-11, #1134)
+
+- One global card, `src/styles/_cards.scss`: `.mf-card` = `--mf-surface`, 1 px `--mf-border-soft`, `--mf-radius-xl` (12 px), `--mf-shadow-card`, padding 16. Page styles lay cards out; they do not set radius, border or shadow again.
+- A card title is `.mf-card__title` (16 / 600, 12 px below; an `h2` or `h3` of the right level). A section heading inside a page or a card is `.mf-section-title` (16 / 600, 24 above, 8 below). The 18 px and 20 px headings of Profile and Search are gone.
+- A card that opens something is ONE button or link with `.mf-card--clickable` (hover `--mf-row-hover`); the selected one adds `.mf-card--selected` (a 2 px inset `--mf-primary` ring, never a coloured edge).
+- Cards now on the class: Profile (Out of office, Work hours, Holidays, Account, Notifications), the Task page Details panel (`mf-detail-layout`), Matter Summary (Details card and the asset tiles), `mf-stat-tile` (radius 12, was 8), the Search result sections (heading 16 / 600) and the Task facts strip (`.mf-facts`, soft edge and card shadow). `.pg-form` (Task Type, Workflow and Step forms) has the 16 px padding.
+- Not yet on the class (page epics): the Dashboard panels and its own `stat-tile`, the My Matters tiles, chart cards, record cards of Clients, Projects and Assets.

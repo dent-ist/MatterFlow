@@ -222,7 +222,7 @@ interface Section {
     .res-section mf-search-grid,
     .mf-table-wrap {
       display: block;
-      border: 1px solid var(--mf-border);
+      border: 1px solid var(--mf-border-soft);
       border-radius: var(--mf-radius-xl);
       background: var(--mf-surface);
       box-shadow: var(--mf-shadow-card);
@@ -230,9 +230,11 @@ interface Section {
     .res-section mf-search-grid {
       overflow: hidden;
     }
+    /* A section heading is 16 / 600 with 24 above and 8 below (D-11, #1134). */
     .res-heading {
-      margin: 0 0 var(--mf-s2);
-      font-size: var(--mf-fs-h3);
+      margin: var(--mf-s5) 0 var(--mf-s2);
+      font-size: var(--mf-fs-lg);
+      font-weight: var(--mf-fw-semibold);
     }
     .res-searched {
       margin: 0 0 var(--mf-s2);

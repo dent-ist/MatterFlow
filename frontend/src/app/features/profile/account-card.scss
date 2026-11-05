@@ -2,19 +2,7 @@
   display: block;
 }
 
-.ac {
-  padding: var(--mf-s4) var(--mf-s5);
-  border: 1px solid var(--mf-border);
-  border-radius: var(--mf-radius-xl);
-  background: var(--mf-surface);
-  box-shadow: var(--mf-shadow-card);
-}
-
-.ac__title {
-  margin: 0 0 var(--mf-s3);
-  font-size: var(--mf-fs-h3);
-}
-
+/* The card look and its 16 / 600 title are the global .mf-card and .mf-card__title (#1134). */
 .ac__list {
   display: grid;
   gap: var(--mf-s3);

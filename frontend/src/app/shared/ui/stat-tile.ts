@@ -17,37 +17,20 @@ import { TileChip, TileTone } from './tile-chip';
       display: block;
       min-width: 0;
     }
+    /* The card look (radius 12, soft border, card shadow, 16 px padding), the hover and the selected ring are the global .mf-card (D-10, #1134). */
     .st {
-      box-sizing: border-box;
       display: flex;
       align-items: center;
       gap: var(--mf-s3);
       width: 100%;
       height: 100%;
       min-height: 76px;
-      padding: var(--mf-s2) var(--mf-s3);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-lg, 8px);
-      background: var(--mf-surface);
-      color: var(--mf-text);
       font: inherit;
       text-align: left;
-    }
-    button.st {
-      cursor: pointer;
-    }
-    button.st:hover {
-      background: var(--mf-surface-alt);
     }
     button.st:focus-visible {
       outline: 2px solid var(--mf-focus);
       outline-offset: 2px;
-    }
-    .st--on {
-      border-color: var(--mf-primary);
-      border-width: 2px;
-      padding: calc(var(--mf-s2) - 1px) calc(var(--mf-s3) - 1px);
-      background: var(--mf-selected-bg);
     }
     .st mf-tile-chip {
       --chip: 32px;
@@ -74,7 +57,7 @@ import { TileChip, TileTone } from './tile-chip';
       font-size: var(--mf-fs-sm);
       color: var(--mf-text-muted);
     }
-    .st--on .st__label {
+    .mf-card--selected .st__label {
       color: var(--mf-text);
       font-weight: 700;
     }
@@ -111,8 +94,8 @@ import { TileChip, TileTone } from './tile-chip';
     @if (pressable()) {
       <button
         type="button"
-        class="st"
-        [class.st--on]="pressed()"
+        class="st mf-card mf-card--clickable"
+        [class.mf-card--selected]="pressed()"
         [class.st--zero]="muted()"
         [attr.aria-pressed]="pressed()"
         [attr.aria-label]="name()"
@@ -121,7 +104,7 @@ import { TileChip, TileTone } from './tile-chip';
         <ng-container *ngTemplateOutlet="body" />
       </button>
     } @else {
-      <div class="st" [class.st--zero]="muted()" role="group" [attr.aria-label]="name()">
+      <div class="st mf-card" [class.st--zero]="muted()" role="group" [attr.aria-label]="name()">
         <ng-container *ngTemplateOutlet="body" />
       </div>
     }

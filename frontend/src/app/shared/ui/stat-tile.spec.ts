@@ -92,7 +92,7 @@ describe('StatTile', () => {
     fixture.detectChanges();
     expect(el().querySelector('button')!.getAttribute('aria-pressed')).toBe('true');
     expect(el().querySelector('.st__tick')).not.toBeNull();
-    expect(el().querySelector('.st--on')).not.toBeNull();
+    expect(el().querySelector('.mf-card--selected')).not.toBeNull();
   });
 
   it('shows a decorative icon chip in its accent when it has an icon, none otherwise (#934)', () => {

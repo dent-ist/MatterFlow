@@ -1,0 +1,49 @@
+/*
+ * Card anatomy (D-10, D-11, #1134): one card look for every page. A card is `--mf-surface` with a 1 px `--mf-border-soft` edge, `--mf-radius-xl` (12 px), the card shadow and 16 px of
+ * padding. Its title is 16 / 600 with 12 px below (`.mf-card__title`, an `h2` or `h3` at the right level); a section heading inside a page or a card is 16 / 600 with 24 px above and
+ * 8 below (`.mf-section-title`). A card that opens something is ONE button or link (`.mf-card--clickable`): hover `--mf-row-hover`; the selected one has a 2 px inset `--mf-primary`
+ * ring (`.mf-card--selected`, never a coloured edge). Page styles do not set radius, border or shadow of a card again; they only lay the cards out.
+ */
+.mf-card {
+  box-sizing: border-box;
+  padding: var(--mf-s4);
+  border: 1px solid var(--mf-border-soft);
+  border-radius: var(--mf-radius-xl);
+  background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-card);
+  color: var(--mf-text);
+}
+
+.mf-card__title {
+  margin: 0 0 var(--mf-s3);
+  color: var(--mf-text);
+  font-size: var(--mf-fs-lg);
+  font-weight: var(--mf-fw-semibold);
+  line-height: 1.3;
+}
+
+.mf-section-title {
+  margin: var(--mf-s5) 0 var(--mf-s2);
+  color: var(--mf-text);
+  font-size: var(--mf-fs-lg);
+  font-weight: var(--mf-fw-semibold);
+  line-height: 1.3;
+}
+
+.mf-card--clickable {
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.mf-card--clickable:hover {
+  background: var(--mf-row-hover);
+}
+
+.mf-card--selected,
+.mf-card--selected:hover {
+  box-shadow:
+    inset 0 0 0 2px var(--mf-primary),
+    var(--mf-shadow-card);
+}

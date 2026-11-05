@@ -13,8 +13,8 @@ import { CopyButton } from '../../shared/ui/copy-button';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './account-card.scss',
   template: `
-    <section class="ac" aria-labelledby="ac-title" data-account-card>
-      <h2 class="ac__title" id="ac-title">Account</h2>
+    <section class="ac mf-card" aria-labelledby="ac-title" data-account-card>
+      <h2 class="ac__title mf-card__title" id="ac-title">Account</h2>
       <dl class="ac__list">
         <div class="ac__row" data-ac-row="name">
           <dt>Name</dt>

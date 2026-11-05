@@ -63,16 +63,9 @@ import { aiLabel } from './matter-ai';
       align-items: center;
       gap: var(--mf-s2);
       min-height: var(--mf-ctl-h);
-      padding: var(--mf-s2) var(--mf-s3);
-      border: 1px solid var(--mf-border-soft);
-      border-radius: var(--mf-radius-lg);
-      background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-card);
+      padding: var(--mf-s2) var(--mf-s4);
       color: inherit;
       text-decoration: none;
-    }
-    .ms__tile:hover {
-      background: var(--mf-sem-info-bg);
     }
     .ms__tile-name {
       flex: 1 1 auto;
@@ -109,28 +102,23 @@ import { aiLabel } from './matter-ai';
       flex: 0 1 auto;
       min-height: 0;
       container-type: inline-size;
-      border: 1px solid var(--mf-border-soft);
-      border-radius: var(--mf-radius-xl);
-      background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-card);
+      padding: 0;
     }
     .ms__head {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: var(--mf-s2);
-      padding: var(--mf-s3) var(--mf-s3) var(--mf-s2);
+      padding: var(--mf-s4) var(--mf-s4) var(--mf-s3);
     }
     .ms__title {
       margin: 0;
-      font-size: var(--mf-fs-lg);
-      font-weight: 700;
     }
     .ms__scroll {
       flex: 0 1 auto;
       min-height: 0;
       overflow-y: auto;
-      padding: 0 var(--mf-s3) var(--mf-s3);
+      padding: 0 var(--mf-s4) var(--mf-s4);
     }
     .ms__fields {
       display: grid;
@@ -218,7 +206,7 @@ import { aiLabel } from './matter-ai';
             @for (t of assetTypes(); track t.assetTypeId) {
               <li>
                 <a
-                  class="ms__tile"
+                  class="ms__tile mf-card mf-card--clickable"
                   data-asset-tile
                   [routerLink]="[]"
                   [queryParams]="{ tab: 'assets', typeId: t.assetTypeId }"
@@ -255,9 +243,9 @@ import { aiLabel } from './matter-ai';
     }
 
     <div class="ms__body">
-      <section class="ms__card" aria-labelledby="ms-details-h" data-summary-details>
+      <section class="ms__card mf-card" aria-labelledby="ms-details-h" data-summary-details>
         <div class="ms__head">
-          <h2 class="ms__title" id="ms-details-h">Details</h2>
+          <h2 class="ms__title mf-card__title" id="ms-details-h">Details</h2>
           @if (canEdit()) {
             <button type="button" class="mf-btn" data-edit-matter (click)="edit.emit()">
               <i class="pi pi-pencil" aria-hidden="true"></i> Edit

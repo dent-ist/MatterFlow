@@ -171,7 +171,7 @@ function savePanelOpen(open: boolean): void {
     <ng-template #panel>
       <aside
         #aside
-        class="dl__aside"
+        class="dl__aside mf-card"
         [class.dl__aside--more]="more()"
         [attr.aria-labelledby]="uid + '-h'"
         data-detail-panel
@@ -331,13 +331,11 @@ function savePanelOpen(open: boolean): void {
     .dl__main {
       min-width: 0;
     }
+    /* The card look of the Details panel is the global .mf-card (D-10, #1134); its inner bars keep their own padding. */
     .dl__aside {
       min-width: 0;
       margin-bottom: var(--mf-s4);
-      background: var(--mf-surface);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius);
-      box-shadow: var(--mf-shadow-1);
+      padding: 0;
     }
     .dl--wide .dl__aside {
       position: sticky;
@@ -358,13 +356,14 @@ function savePanelOpen(open: boolean): void {
       bottom: 0;
       height: 2.5rem;
       margin-top: -2.5rem;
-      border-radius: 0 0 var(--mf-radius) var(--mf-radius);
+      border-radius: 0 0 var(--mf-radius-xl) var(--mf-radius-xl);
       background: linear-gradient(to bottom, transparent, var(--mf-surface));
       pointer-events: none;
     }
     .dl__h {
       margin: 0;
-      font-size: var(--mf-fs-h3);
+      font-size: var(--mf-fs-lg);
+      font-weight: var(--mf-fw-semibold);
       line-height: 1.3;
     }
     .dl__t {

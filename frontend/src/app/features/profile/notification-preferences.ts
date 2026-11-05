@@ -30,8 +30,8 @@ const HEADINGS: Record<string, string> = {
   selector: 'mf-notification-preferences',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="np" aria-labelledby="np-heading" data-notification-preferences>
-      <h2 class="np__title" id="np-heading">Notifications</h2>
+    <section class="np mf-card" aria-labelledby="np-heading" data-notification-preferences>
+      <h2 class="np__title mf-card__title" id="np-heading">Notifications</h2>
       <p class="np__help">
         Choose which events create a notification for you. Notifications appear in the bell; nothing
         is sent by email. A change applies to future notifications only: existing ones stay, and
@@ -100,17 +100,6 @@ const HEADINGS: Record<string, string> = {
   styles: `
     :host {
       display: block;
-    }
-    /* One card style on My profile (#529): the bordered 8 px card of the Account card. */
-    .np {
-      padding: var(--mf-s4) var(--mf-s5);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-xl);
-      background: var(--mf-surface);
-    }
-    .np__title {
-      margin: 0 0 var(--mf-s2);
-      font-size: var(--mf-fs-h3);
     }
     .np__help,
     .np__muted {

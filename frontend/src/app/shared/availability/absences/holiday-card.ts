@@ -17,8 +17,8 @@ import { HolidayInfo } from './absence-contract';
   imports: [NumericDatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="hc" aria-labelledby="hc-title" data-holiday-card>
-      <h2 class="hc__title" id="hc-title">Holidays</h2>
+    <section class="hc mf-card" aria-labelledby="hc-title" data-holiday-card>
+      <h2 class="hc__title mf-card__title" id="hc-title">Holidays</h2>
       @if (info(); as i) {
         @if (i.holidayCalendar; as c) {
           <p class="hc__cal">
@@ -45,17 +45,6 @@ import { HolidayInfo } from './absence-contract';
   styles: `
     :host {
       display: block;
-    }
-    .hc {
-      padding: var(--mf-s4) var(--mf-s5);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-xl);
-      background: var(--mf-surface);
-    }
-    .hc__title {
-      margin: 0 0 var(--mf-s2);
-      font-size: var(--mf-fs-h3);
-      font-weight: 600;
     }
     .hc__cal,
     .hc__none,

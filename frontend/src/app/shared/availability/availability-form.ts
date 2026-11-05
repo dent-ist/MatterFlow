@@ -132,11 +132,11 @@ interface Problem {
           </p>
         }
 
-        <section class="av-card" data-card="work-hours">
+        <section class="av-card" [class.mf-card]="mode() === 'page'" data-card="work-hours">
           <fieldset class="av-set" data-hours-set>
             <legend>
               @if (mode() === 'page') {
-                <h2 class="av-card__title">Work hours</h2>
+                <h2 class="av-card__title mf-card__title">Work hours</h2>
               } @else {
                 Work hours
               }
