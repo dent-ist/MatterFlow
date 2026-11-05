@@ -12,7 +12,6 @@ import {
   DashboardSettingsAdminView,
   SettingsDashboardClient,
 } from '../../../api/generated/api-client';
-import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import {
@@ -25,6 +24,7 @@ import {
   sameSettings,
   validateGaugeSettings,
 } from './dashboard-settings-model';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 /**
  * Administration > Settings > Dashboard (epic #1063, DB-06): the working hours and levels of the unassigned gauge. Workday start and end, the working days, the age basis
@@ -33,7 +33,7 @@ import {
  */
 @Component({
   selector: 'mf-dashboard-settings',
-  imports: [Button, MfDateLongPipe],
+  imports: [NumericDatePipe, Button],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form class="ds" novalidate (submit)="$event.preventDefault(); save()" data-dashboard-settings>
@@ -246,7 +246,7 @@ import {
         <p class="ds__intro" data-ds-meta>
           Times are in the firm's time zone ({{ v.timeZoneId }}), for everyone.
           @if (v.updatedAtUtc) {
-            Last changed {{ v.updatedAtUtc | mfDateLong }}
+            Last changed {{ v.updatedAtUtc | mfNum }}
             @if (v.updatedBy) {
               by {{ v.updatedBy }}
             }

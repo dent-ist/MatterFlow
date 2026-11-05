@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TaskQueueRow } from '../../api/generated/api-client';
-import { formatDateOnly } from '../../core/time/time';
+import { numericDate } from '../ui/numeric-date';
 import { OPEN_STATUSES } from './queue-filters';
 
 /** True for the tasks a bulk change may touch: New, In Progress and On Hold. */
@@ -217,5 +217,5 @@ export class TaskSelectList {
     this.editableRows().some((r) => this.selected().has(r.taskId)),
   );
   protected readonly editable = isBulkEditable;
-  protected date = formatDateOnly;
+  protected date = (value: string): string => numericDate(value, new Date(), 'UTC');
 }

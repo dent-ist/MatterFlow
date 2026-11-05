@@ -213,15 +213,15 @@ describe('filter definitions', () => {
       );
       // A custom range, an open-ended range, and no calendar day all keep the dates.
       expect(buildChips(due, { from: '2026-10-21', to: '2026-10-28' }, false, wed)[0].label).toBe(
-        'Due: Oct 21, 2026 to Oct 28, 2026',
+        'Due: 10/21 to 10/28',
       );
       expect(buildChips(due, { from: '2026-10-21', to: '' }, false, wed)[0].label).toBe(
-        'Due: from Oct 21, 2026',
+        'Due: from 10/21',
       );
-      expect(buildChips(due, next7, false)[0].label).toBe('Due: Oct 21, 2026 to Oct 27, 2026');
+      expect(buildChips(due, next7, false)[0].label).toBe('Due: 10/21/2026 to 10/27/2026');
       // A preset the filter does not offer is not a name (Last 7 days is not a Due preset).
       expect(buildChips(due, { from: '2026-10-15', to: '2026-10-21' }, false, wed)[0].label).toBe(
-        'Due: Oct 15, 2026 to Oct 21, 2026',
+        'Due: 10/15 to 10/21',
       );
       // Created keeps its past presets, and the print line uses the same name.
       const created: FilterDef = { ...due, key: 'created', label: 'Created', presets: undefined };
@@ -251,12 +251,12 @@ describe('filter definitions', () => {
       });
     });
 
-    it('writes ranges the way the rest of the app writes dates', () => {
+    it('writes ranges the way the rest of the app writes dates (without a "today" the year is always written)', () => {
       expect(rangeText(DUE, { from: '2026-10-01', to: '2026-10-16' })).toBe(
-        'Oct 1, 2026 to Oct 16, 2026',
+        '10/01/2026 to 10/16/2026',
       );
-      expect(rangeText(DUE, { from: '2026-10-01', to: '' })).toBe('from Oct 1, 2026');
-      expect(rangeText(DUE, { from: '', to: '2026-10-16' })).toBe('until Oct 16, 2026');
+      expect(rangeText(DUE, { from: '2026-10-01', to: '' })).toBe('from 10/01/2026');
+      expect(rangeText(DUE, { from: '', to: '2026-10-16' })).toBe('until 10/16/2026');
       expect(rangeText(AGE, { from: '3', to: '' })).toBe('3 or more');
       expect(valueText(OVERDUE, 'true')).toBe('Overdue only');
     });
@@ -264,7 +264,7 @@ describe('filter definitions', () => {
     it('prints "Status Active"-style text for the print line', () => {
       expect(printText(STATUS, 'active')).toBe('Status Active');
       expect(printText(PRIORITY, ['1', '2'])).toBe('Priority Critical or High');
-      expect(printText(DUE, { from: '2026-10-01', to: '' })).toBe('Due from Oct 1, 2026');
+      expect(printText(DUE, { from: '2026-10-01', to: '' })).toBe('Due from 10/01/2026');
     });
   });
 

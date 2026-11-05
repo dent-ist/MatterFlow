@@ -138,7 +138,7 @@ describe('AssetTypesPage (#634, #637)', () => {
       const fields = row.querySelector('[data-fields]')!.textContent!.replace(/\s+/g, ' ');
       expect(fields).toContain('Published v2');
       expect(fields).toContain('8 fields');
-      expect(fields).toContain('Updated Oct 12');
+      expect(fields).toContain('Published v28 fields · Updated 10/12');
       expect(row.querySelector('[data-assets]')!.textContent!.trim()).toBe('12');
       expect(row.textContent).toContain('Active');
       expect(row.querySelectorAll('button[data-overflow]')).toHaveLength(1);

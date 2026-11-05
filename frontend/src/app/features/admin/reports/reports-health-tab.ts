@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { firstValueFrom } from 'rxjs';
 import { ReportAdminClient, ReportsStatusResponse } from '../../../api/generated/api-client';
 import { ApiError } from '../../../core/http/api-error';
-import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 /**
  * Admin: the Settings tab of the Reports page (spec 8.3 step 6, issue #712): whether reports can run and why not (no report login, the login is the
@@ -11,7 +11,7 @@ import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
  */
 @Component({
   selector: 'mf-reports-health-tab',
-  imports: [MfDateLongPipe],
+  imports: [NumericDatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -41,7 +41,7 @@ import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
             <dt>Database compatibility level</dt>
             <dd>{{ l.compatibilityLevel }}</dd>
             <dt>Checked</dt>
-            <dd>{{ l.checkedAtUtc | mfDateLong: 'datetime' }}</dd>
+            <dd>{{ l.checkedAtUtc | mfNum }}</dd>
           </dl>
         }
         <p>

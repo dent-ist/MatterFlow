@@ -136,7 +136,7 @@ describe('CustomFieldsPage (#644)', () => {
     );
     const published = row('Matter').querySelector('[data-published]')!;
     expect(published.textContent!.replace(/\s+/g, ' ')).toContain('v2');
-    expect(published.textContent).toContain('Oct 12');
+    expect(published.textContent).toContain(' v2  · 10/12 ');
     expect(published.getAttribute('title')).toBe('Published by Kim Lee');
     const status = row('Matter').querySelector('[data-status]')!.textContent!;
     expect(status).toContain('Published v2');

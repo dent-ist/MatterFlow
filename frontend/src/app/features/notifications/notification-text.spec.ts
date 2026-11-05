@@ -27,8 +27,8 @@ describe('notification text', () => {
     expect(relativeTime('2026-10-22T17:00:00Z', now, zone)).toBe('1 h ago');
     expect(relativeTime('2026-10-22T14:00:00Z', now, zone)).toBe('4 h ago');
     expect(relativeTime('2026-10-21T20:00:00Z', now, zone)).toBe('yesterday');
-    expect(relativeTime('2026-10-18T20:00:00Z', now, zone)).toBe('Oct 18');
-    expect(relativeTime('2025-10-18T20:00:00Z', now, zone)).toBe('Oct 18, 2025');
+    expect(relativeTime('2026-10-18T20:00:00Z', now, zone)).toBe('10/18');
+    expect(relativeTime('2025-10-18T20:00:00Z', now, zone)).toBe('10/18/2025');
     expect(relativeTime('nonsense', now, zone)).toBe('');
   });
 

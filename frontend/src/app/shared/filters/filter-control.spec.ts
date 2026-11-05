@@ -57,7 +57,7 @@ describe('filter control', { timeout: 20_000 }, () => {
     expect(ddSelect(cell('type')).value).toBe('5');
     expect(ddSelect(cell('status')).value).toBe('active');
     expect(cell('priority').textContent).toContain('High');
-    expect(cell('due').textContent).toContain('From Oct 1');
+    expect(cell('due').textContent).toContain('From 10/01');
     expect(ddSelect(cell('sensitive')).value).toBe('true');
   });
 
@@ -112,7 +112,7 @@ describe('filter control', { timeout: 20_000 }, () => {
     const off = cell('due').querySelector<HTMLInputElement>('[data-filter-disabled] input')!;
     expect(off.disabled).toBe(true);
     expect(off.getAttribute('aria-label')).toBe('Filter by Due');
-    expect(off.value).toContain('Oct 1, 2026');
+    expect(off.value).toContain('from 10/01');
     const why = cell('due').querySelector(`#${off.getAttribute('aria-describedby')}`)!;
     expect(why.textContent).toBe('Set by the Due soon tab');
     expect(cell('due').querySelector('[data-filter-disabled]')?.getAttribute('title')).toBe(

@@ -47,14 +47,14 @@ describe('date range column filter', () => {
     expect(button().getAttribute('aria-label')).toBe('Filter by Due, Next 7 days');
     fixture.componentRef.setInput('value', { from: '2026-10-15', to: '2026-10-22' });
     fixture.detectChanges();
-    expect(button().textContent).toContain('Oct 15 to Oct 22');
+    expect(button().textContent).toContain('10/15 to 10/22');
     // A preset the filter does not offer, and an open-ended range, keep the dates.
     fixture.componentRef.setInput('value', { from: '2026-10-09', to: '2026-10-15' });
     fixture.detectChanges();
-    expect(button().textContent).toContain('Oct 9 to Oct 15');
+    expect(button().textContent).toContain('10/09 to 10/15');
     fixture.componentRef.setInput('value', { from: '2026-10-15', to: '' });
     fixture.detectChanges();
-    expect(button().textContent).toContain('From Oct 15');
+    expect(button().textContent).toContain('From 10/15');
   });
 
   it('is a button named for its column that says Any date or the range', () => {
@@ -63,18 +63,16 @@ describe('date range column filter', () => {
     expect(button().getAttribute('aria-haspopup')).toBe('dialog');
     fixture.componentRef.setInput('value', { from: '2026-10-01', to: '2026-10-16' });
     fixture.detectChanges();
-    expect(button().textContent).toContain('Oct 1 to Oct 16');
+    expect(button().textContent).toContain('10/01 to 10/16');
     expect(button().hasAttribute('data-active')).toBe(true);
   });
 
   it('writes the year when the range is not in this year, and one-sided ranges in words', () => {
-    expect(shortRange({ from: '2026-10-01', to: '2026-10-16' }, 2026)).toBe('Oct 1 to Oct 16');
-    expect(shortRange({ from: '2025-12-30', to: '2026-01-02' }, 2026)).toBe(
-      'Dec 30, 2025 to Jan 2',
-    );
-    expect(shortRange({ from: '2026-10-05', to: '' }, 2026)).toBe('From Oct 5');
-    expect(shortRange({ from: '', to: '2026-10-05' }, 2026)).toBe('Until Oct 5');
-    expect(shortRange({ from: '2026-10-05', to: '2026-10-05' }, 2026)).toBe('Oct 5');
+    expect(shortRange({ from: '2026-10-01', to: '2026-10-16' }, 2026)).toBe('10/01 to 10/16');
+    expect(shortRange({ from: '2025-12-30', to: '2026-01-02' }, 2026)).toBe('12/30/2025 to 01/02');
+    expect(shortRange({ from: '2026-10-05', to: '' }, 2026)).toBe('From 10/05');
+    expect(shortRange({ from: '', to: '2026-10-05' }, 2026)).toBe('Until 10/05');
+    expect(shortRange({ from: '2026-10-05', to: '2026-10-05' }, 2026)).toBe('10/05');
   });
 
   it('opens a dialog with From, To and the presets', () => {

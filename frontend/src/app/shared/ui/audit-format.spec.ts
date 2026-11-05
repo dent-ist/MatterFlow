@@ -1,5 +1,8 @@
 import { AuditEventDto } from '../../api/generated/api-client';
 import { mfDateLong } from '../../core/time/time';
+
+/** The fixed "now" of the date examples (a calendar date shows its year only when it is not this one). */
+const NOW = new Date('2026-10-14T12:00:00Z');
 import {
   activityText,
   auditValue,
@@ -76,24 +79,28 @@ describe('audit formatting', () => {
     expect(objectTypeLabel('Priority')).toBe('Priority');
   });
 
-  it('shows a calendar date as Oct 15, 2026 and leaves other values alone', () => {
-    expect(auditValue('2026-10-15')).toBe('Oct 15, 2026');
-    expect(dateValue('2026-02-30')).toBe('2026-02-30'); // not a real day: echoed, never guessed
+  it('shows a calendar date as 10/15 (10/15/2027 in another year) and leaves other values alone', () => {
+    expect(auditValue('2026-10-15', NOW)).toBe('10/15');
+    expect(auditValue('2027-10-15', NOW)).toBe('10/15/2027');
+    expect(dateValue('2026-02-30', NOW)).toBe('2026-02-30'); // not a real day: echoed, never guessed
     expect(dateValue('Filing 2026-10-15')).toBe('Filing 2026-10-15');
     expect(dateValue('2026-10-15T09:00:00Z')).toBe('2026-10-15T09:00:00Z');
   });
 
   describe('activityText (#293)', () => {
     it('rewrites the dates of a due date change in the sentence and the values', () => {
-      const t = activityText({
-        summary: 'Due date changed from 2026-10-15 to 2026-10-14',
-        oldValue: '2026-10-15',
-        newValue: '2026-10-14',
-      });
+      const t = activityText(
+        {
+          summary: 'Due date changed from 2026-10-15 to 2026-10-14',
+          oldValue: '2026-10-15',
+          newValue: '2026-10-14',
+        },
+        NOW,
+      );
       expect(t).toEqual({
-        summary: 'Due date changed from Oct 15, 2026 to Oct 14, 2026',
-        oldValue: 'Oct 15, 2026',
-        newValue: 'Oct 14, 2026',
+        summary: 'Due date changed from 10/15 to 10/14',
+        oldValue: '10/15',
+        newValue: '10/14',
       });
     });
 
@@ -102,12 +109,15 @@ describe('audit formatting', () => {
         expect(mfDateLong('2026-12-31', zone)).toBe('Dec 31, 2026');
         expect(mfDateLong('2027-01-01', zone)).toBe('Jan 1, 2027');
       }
-      const t = activityText({
-        summary: 'Due date changed from 2026-12-31 to 2027-01-01',
-        oldValue: '2026-12-31',
-        newValue: '2027-01-01',
-      });
-      expect(t.summary).toBe('Due date changed from Dec 31, 2026 to Jan 1, 2027');
+      const t = activityText(
+        {
+          summary: 'Due date changed from 2026-12-31 to 2027-01-01',
+          oldValue: '2026-12-31',
+          newValue: '2027-01-01',
+        },
+        NOW,
+      );
+      expect(t.summary).toBe('Due date changed from 12/31 to 01/01/2027');
     });
 
     it('leaves a summary without a date, and without values, unchanged', () => {
@@ -135,8 +145,9 @@ describe('audit formatting', () => {
 
     it('rewrites a date set from nothing and one cleared', () => {
       expect(
-        activityText({ summary: 'Due date set to 2026-10-15', newValue: '2026-10-15' }).summary,
-      ).toBe('Due date set to Oct 15, 2026');
+        activityText({ summary: 'Due date set to 2026-10-15', newValue: '2026-10-15' }, NOW)
+          .summary,
+      ).toBe('Due date set to 10/15');
     });
   });
 });

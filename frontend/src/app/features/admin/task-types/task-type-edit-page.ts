@@ -37,7 +37,6 @@ import { RecordSkeleton } from '../../../shared/ui/record-skeleton';
 import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { tabIcon } from '../../../shared/ui/tab-icons';
-import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { WorkStrip } from '../../../shared/work-queue/work-strip';
 import { DEFAULT_TASK_TYPE_ICON, TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
@@ -62,6 +61,7 @@ import {
 } from './task-type-record';
 import { TaskTypeStatusNote } from './task-type-status-note';
 import { TaskTypeWorkflowsTab, WorkflowsChange } from './task-type-workflows-tab';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 /** The typed target turnaround: empty is none, otherwise a whole number of days from 1 to 365 (calendar days). */
 export function parseTarget(text: string): { value?: number; error?: string } {
@@ -127,11 +127,11 @@ const workflowsKey = (m: Model): string =>
   selector: 'mf-task-type-edit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    NumericDatePipe,
     ActivityDrawer,
     CharCounter,
     ConfirmDialog,
     FormsModule,
-    MfDateLongPipe,
     RecordHeader,
     RecordSkeleton,
     RecordState,

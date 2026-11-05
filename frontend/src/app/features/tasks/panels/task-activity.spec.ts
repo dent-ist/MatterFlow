@@ -165,13 +165,11 @@ describe('TaskActivity', () => {
       nextCursor: undefined,
       canViewChanges: true,
     });
-    expect(q('[data-summary]').textContent).toBe(
-      'Due date changed from Oct 15, 2026 to Oct 14, 2026',
-    );
+    expect(q('[data-summary]').textContent).toBe('Due date changed from 10/15 to 10/14');
     q<HTMLButtonElement>('[data-changes-toggle]').click();
     await settle(fixture);
-    expect(q('[data-changes]').textContent).toContain('Oct 15, 2026');
-    expect(q('[data-changes]').textContent).toContain('Oct 14, 2026');
+    expect(q('[data-changes]').textContent).toContain('10/15');
+    expect(q('[data-changes]').textContent).toContain('10/14');
     expect(q('[data-changes]').textContent).not.toContain('2026-10');
   });
 

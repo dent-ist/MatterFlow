@@ -32,11 +32,11 @@ describe('audit rows', () => {
   // 2026-10-20 12:00 in New York.
   const now = new Date('2026-10-20T16:00:00Z');
 
-  it('labels a day Today, Oct 19 or Oct 19, 2025', () => {
+  it('labels a day Today, 10/19 or 10/19/2025', () => {
     const today = { year: 2026, month: 10, day: 20 };
     expect(dayLabel(today, today)).toBe('Today');
-    expect(dayLabel({ year: 2026, month: 10, day: 19 }, today)).toBe('Oct 19');
-    expect(dayLabel({ year: 2025, month: 10, day: 19 }, today)).toBe('Oct 19, 2025');
+    expect(dayLabel({ year: 2026, month: 10, day: 19 }, today)).toBe('10/19');
+    expect(dayLabel({ year: 2025, month: 10, day: 19 }, today)).toBe('10/19/2025');
   });
 
   it('puts a divider on the first event of each day in the viewer zone, and none inside a day', () => {
@@ -51,7 +51,7 @@ describe('audit rows', () => {
       zone,
       now,
     );
-    expect(blocks.map((b) => b.day)).toEqual(['Today', null, 'Oct 19', null, 'Dec 31, 2025']);
+    expect(blocks.map((b) => b.day)).toEqual(['Today', null, '10/19', null, '12/31/2025']);
   });
 
   it('keeps the day label of a group on its first event and does not repeat a day across pages', () => {
@@ -65,9 +65,9 @@ describe('audit rows', () => {
     expect(both.map((b) => b.day)).toEqual(['Today', null]);
   });
 
-  it('shows the time alone, with the whole stamp and zone for the tooltip', () => {
+  it('shows the whole numeric stamp, with the long stamp and zone for the tooltip', () => {
     const e = item(1, '2026-10-20T04:27:00Z');
-    expect(clockText(e, zone)).toBe('12:27 AM');
+    expect(clockText(e, zone, now)).toBe('10/20 12:27 AM');
     expect(stampText(e, zone)).toBe('Oct 20, 2026, 12:27 AM EDT');
   });
 

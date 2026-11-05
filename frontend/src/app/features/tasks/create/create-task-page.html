@@ -268,7 +268,7 @@
             </div>
             @if (requestedAt(); as sent) {
               <p class="mf-field__help" data-source-sent>
-                Source email sent: {{ sent | mfDateLong }} (read-only, from the email)
+                Source email sent: {{ sent | mfNum }} (read-only, from the email)
               </p>
             }
           </section>

@@ -1,5 +1,6 @@
 import { ParamMap } from '@angular/router';
-import { CalendarDay, formatDateOnly, parseDateOnly } from '../../core/time/time';
+import { CalendarDay, parseDateOnly } from '../../core/time/time';
+import { numericDay } from '../ui/numeric-date';
 import { DATE_PRESETS, DEFAULT_DATE_PRESETS, matchingPreset } from './date-presets';
 
 /**
@@ -420,11 +421,16 @@ export function optionLabel(def: FilterDef, value: string): string {
   return def.valueLabel ? def.valueLabel(value) : value;
 }
 
-/** "Oct 1, 2026 to Oct 16, 2026" / "from Oct 1, 2026" / "until Oct 16, 2026"; numbers are shown as they are. */
+/** "10/01 to 10/16" / "from 10/01" / "until 10/16" (the year only when it is not this year, D-60); numbers are shown as they are. */
 export function rangeText(def: FilterDef, r: RangeValue, today?: CalendarDay | null): string {
   const named = today ? presetName(def, r, today) : null;
   if (named) return named;
-  const f = (v: string) => (def.type === 'dateRange' ? formatDateOnly(v) : v);
+  const year = today?.year ?? -1; // no "today" (the print line): the year is always written
+  const f = (v: string) => {
+    if (def.type !== 'dateRange') return v;
+    const d = parseDateOnly(v);
+    return d ? numericDay(d, year) : v;
+  };
   if (r.from && r.to) return r.from === r.to ? f(r.from) : `${f(r.from)} to ${f(r.to)}`;
   if (r.from) return def.type === 'dateRange' ? `from ${f(r.from)}` : `${f(r.from)} or more`;
   return def.type === 'dateRange' ? `until ${f(r.to)}` : `${f(r.to)} or less`;

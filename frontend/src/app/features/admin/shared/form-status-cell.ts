@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { calendarDayInZone, formatInstantDate } from '../../../core/time/time';
+import { formatInstantDate } from '../../../core/time/time';
+import { numericInstant } from '../../../shared/ui/numeric-date';
 import { Badge } from '../../../shared/ui/badge';
 
 /**
@@ -107,10 +108,8 @@ export class FormStatusCell {
     return text.charAt(0).toUpperCase() + text.slice(1) + '.';
   });
 
-  /** "Oct 12"; with the year ("Oct 12, 2025") when it is not this year. */
+  /** "10/12"; with the year ("10/12/2025") when it is not this year (D-60). */
   private shortDate(at: string): string {
-    const full = formatInstantDate(at, this.zone);
-    const year = calendarDayInZone(this.clock.now(), this.zone).year;
-    return full.replace(new RegExp(`, ${year}$`), '');
+    return numericInstant(at, this.clock.now(), this.zone, false);
   }
 }

@@ -145,9 +145,9 @@ describe('AuditPage', () => {
     expect(row.textContent).toContain('Dana Director');
     expect(row.textContent).toContain('Status changed from In Progress to On Hold');
     // The time alone in the row (the day is the divider above it); the whole stamp with the zone is the tooltip.
-    expect(row.querySelector('time')?.textContent).toBe('10:05 AM');
+    expect(row.querySelector('time')?.textContent).toBe('10/14 10:05 AM');
     expect(row.querySelector('time')?.getAttribute('title')).toBe('Oct 14, 2026, 10:05 AM CDT');
-    expect(el().querySelector('tr.au-day')?.textContent).toContain('Oct 14');
+    expect(el().querySelector('tr.au-day')?.textContent).toContain('10/14');
     expect(row.querySelector('a')?.getAttribute('href')).toBe('/tasks/1042');
     expect(row.querySelector('a')?.textContent).toContain('TSK-1042 Process Smith custodians');
     expect(el().querySelector('th[title*="America/Chicago"]')?.textContent).toContain('When');
@@ -438,9 +438,9 @@ describe('AuditPage', () => {
     const days = Array.from(el().querySelectorAll('tr.au-day th')).map((th) =>
       th.textContent?.trim(),
     );
-    expect(days).toEqual(['Oct 14', 'Oct 13', 'Dec 31, 2025']);
+    expect(days).toEqual(['10/14', '10/13', '12/31/2025']);
     expect(el().querySelector('tr.au-day th')?.getAttribute('scope')).toBe('row');
-    expect(el().querySelector('tr[data-event="3"] time')?.textContent).toBe('9:30 PM');
+    expect(el().querySelector('tr[data-event="3"] time')?.textContent).toBe('10/13 09:30 PM');
   });
 
   it('sets the quick views as address filters, marks the pressed one and clears it again (#654)', async () => {

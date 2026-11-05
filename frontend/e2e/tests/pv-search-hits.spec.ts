@@ -26,7 +26,7 @@ test.describe('PM v2 page fixes: Search hits (#885)', () => {
       'aria-label',
       /Task type: /,
     );
-    await expect(row.locator('[data-cell="due"]')).toContainText('Overdue Jan 1, 2000');
+    await expect(row.locator('[data-cell="due"]')).toContainText('Overdue 01/01/2000');
     await page.goto(`/search?q=${encodeURIComponent(`Pending ${d.token}`)}&type=asset`);
     const asset = page.locator('[data-hit-row]').first();
     await expect(asset.locator('[data-cell="size"]')).toContainText('5.5 GB');

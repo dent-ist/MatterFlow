@@ -116,7 +116,7 @@ describe('formatRange', () => {
   });
   it('shows the days across midnight', () => {
     expect(formatRange(at(23, 58, 13), at(0, 3, 14), 'UTC')).toBe(
-      'Oct 13, 11:58 PM to Oct 14, 12:03 AM',
+      '10/13, 11:58 PM to 10/14, 12:03 AM',
     );
   });
   it('uses the viewer zone', () => {

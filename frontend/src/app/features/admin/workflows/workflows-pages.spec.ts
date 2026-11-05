@@ -259,7 +259,7 @@ describe('WorkflowsListPage', () => {
     expect(link.textContent!.trim()).toBe('4');
     expect(link.getAttribute('href')).toBe('/admin/task-types?workflow=1');
     expect(link.getAttribute('aria-label')).toBe('4 task types use Standard Processing');
-    expect(first.querySelector('[data-last-published]')!.textContent).toContain('Oct 1, 2026');
+    expect(first.querySelector('[data-last-published]')!.textContent).toContain('10/01');
     // No chips: the task types of a workflow are on its page.
     expect(first.querySelector('[data-assoc-chip]')).toBeNull();
     const second = el.querySelector('[data-row="Production"]')!;

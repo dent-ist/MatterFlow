@@ -46,7 +46,7 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
     await expect(create.description).toContainText('Please process the Jones mailbox');
     await expect(create.requestorName).toHaveValue('Linda Cho');
     await expect(create.requestorEmail).toHaveValue('linda.cho@example-firm.test');
-    await expect(page.locator('[data-source-sent]')).toContainText('Oct 13, 2026');
+    await expect(page.locator('[data-source-sent]')).toContainText(/10\/13( 0?9:05 AM)?/);
 
     // The matter is not guessed from the email either, and everything stays editable.
     await expect(page.locator('[data-chosen]')).toHaveCount(0);
@@ -100,7 +100,7 @@ test.describe('Create a task from an Outlook email (SCN-017)', () => {
       'Report attached. Hit counts are in the second tab.',
     );
     await expect(create.description).not.toContainText('report.xlsx');
-    await expect(page.locator('[data-source-sent]')).toContainText('Oct 14, 2026');
+    await expect(page.locator('[data-source-sent]')).toContainText(/10\/14/);
   });
 
   test('SCN-017: a plain email file keeps the time of the Date header in the viewer time zone', async ({

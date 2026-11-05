@@ -1,10 +1,5 @@
-import {
-  CalendarDay,
-  calendarDayInZone,
-  dayIndex,
-  formatCalendarDay,
-  parseDateOnly,
-} from '../../core/time/time';
+import { CalendarDay, calendarDayInZone, dayIndex, parseDateOnly } from '../../core/time/time';
+import { numericDay } from '../../shared/ui/numeric-date';
 
 /**
  * The one period model of the Dashboard (UX review 2, P3): Summary, Trends and Coverage share one list, one label ("Period") and one address
@@ -158,22 +153,20 @@ export function resolveRange(period: Period, now: Date, zone: string): PeriodRan
 }
 
 /**
- * "Sep 17 to Oct 16": the resolved range as it reads under a number. The year is left out when both ends are in `currentYear` and written
- * ("Dec 20, 2025 to Jan 3, 2026") otherwise; one day reads as that day.
+ * "09/17 to 10/16": the resolved range as it reads under a number. The year is left out when both ends are in `currentYear` and written
+ * ("12/20/2025 to 01/03/2026") otherwise; one day reads as that day (D-60).
  */
 export function rangeText(range: PeriodRange, currentYear: number): string {
   const from = parseDateOnly(range.from);
   const to = parseDateOnly(range.to);
   if (!from || !to) return '';
   const bare = from.year === currentYear && to.year === currentYear;
-  const text = (d: CalendarDay) => {
-    const full = formatCalendarDay(d);
-    return bare ? full.replace(/,?\s\d{4}$/, '') : full;
-  };
+  // The year is written on both ends unless both are this year (-1 never equals a year).
+  const text = (d: CalendarDay) => numericDay(d, bare ? d.year : -1);
   return range.from === range.to ? text(from) : `${text(from)} to ${text(to)}`;
 }
 
-/** The range as it reads inside a sentence about the figures: "from Sep 17 to Oct 16". */
+/** The range as it reads inside a sentence about the figures: "from 09/17 to 10/16". */
 export function periodPhrase(range: PeriodRange | null | undefined, currentYear: number): string {
   return range ? `from ${rangeText(range, currentYear)}` : 'in the chosen period';
 }
@@ -185,7 +178,7 @@ export function customProblem(from: string | null, to: string | null): string | 
   if (!from || !to) return 'Choose both dates of the custom range.';
   const a = parseDateOnly(from);
   const b = parseDateOnly(to);
-  if (!a || !b) return 'Enter the dates as yyyy-mm-dd.';
+  if (!a || !b) return 'Enter the dates as mm/dd/yyyy.';
   if (dayIndex(a) > dayIndex(b)) return 'The start of the period is after its end.';
   if (dayIndex(b) - dayIndex(a) + 1 > MAX_CUSTOM_DAYS) {
     return `The period can be at most ${MAX_CUSTOM_DAYS} days.`;

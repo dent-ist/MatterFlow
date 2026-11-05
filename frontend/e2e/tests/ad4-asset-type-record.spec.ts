@@ -203,7 +203,7 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
     const tab = page.locator('[data-fields-tab]');
     await expect(tab).toContainText('Published v1');
     await expect(tab).toContainText('8 fields');
-    await expect(tab).toContainText(/Last published [A-Z][a-z]{2} \d{1,2}, \d{4}\./);
+    await expect(tab).toContainText(/Last published \d{2}\/\d{2}(\/\d{4})?\./);
     await expect(page.locator('[data-no-fields]')).toHaveCount(0);
 
     await page.goto(`/admin/asset-types/${none.id}?tab=fields`);

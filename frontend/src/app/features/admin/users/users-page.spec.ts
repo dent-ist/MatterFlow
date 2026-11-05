@@ -205,7 +205,7 @@ describe('UsersPage', () => {
       await create('User.View', 'User.Manage');
       await chooseStatus('all');
       const cell = q('[data-user="2"] [data-last-seen]');
-      expect(cell.textContent!.trim()).toBe('Oct 14, 2026');
+      expect(cell.textContent!.trim()).toBe('10/14');
       expect(cell.getAttribute('title')).toContain('Oct 14, 2026');
       expect(q('[data-user="4"] [data-last-seen]').textContent!.trim()).toBe('Never');
     });
@@ -810,7 +810,7 @@ describe('UsersPage', () => {
       expect(q<HTMLInputElement>('[data-name]').value).toBe('Dana Director');
       expect(q<HTMLInputElement>('[data-email]').value).toBe('dana@firm.test');
       expect(q('.ud-dl').textContent).toContain('KE\\ddirector');
-      expect(q('[data-first-seen]').textContent).toContain('Oct 14, 2026');
+      expect(q('[data-first-seen]').textContent).toContain('10/14');
     });
 
     describe('on a phone (#446)', () => {

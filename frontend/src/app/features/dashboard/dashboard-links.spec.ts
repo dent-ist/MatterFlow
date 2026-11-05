@@ -133,27 +133,27 @@ describe('every dashboard link opens the Task Queue with matching filters and ch
           false,
           '2026-10-16',
         ]),
-      ['Status: Open', 'Due: until Oct 16, 2026', 'Has a due date', 'Not overdue'],
+      ['Status: Open', 'Due: until 10/16/2026', 'Has a due date', 'Not overdue'],
     ],
     [
       'completed in the period',
       'status=COMPLETED&completedFrom=2026-09-15',
       (s) =>
         expect([s.filters.status, s.filters.completedFrom]).toEqual([['COMPLETED'], '2026-09-15']),
-      ['Status: COMPLETED', 'Closed: from Sep 15, 2026'],
+      ['Status: COMPLETED', 'Closed: from 09/15/2026'],
     ],
     [
       'created in the period',
       'createdFrom=2026-09-15',
       (s) => expect(s.filters.createdFrom).toBe('2026-09-15'),
-      ['Created: from Sep 15, 2026'],
+      ['Created: from 09/15/2026'],
     ],
     [
       'created on one day (trend table)',
       'createdFrom=2026-10-12&createdTo=2026-10-12',
       (s) =>
         expect([s.filters.createdFrom, s.filters.createdTo]).toEqual(['2026-10-12', '2026-10-12']),
-      ['Created: Oct 12, 2026'],
+      ['Created: 10/12/2026'],
     ],
     [
       'completed on one day (trend table)',
@@ -163,7 +163,7 @@ describe('every dashboard link opens the Task Queue with matching filters and ch
           '2026-10-12',
           '2026-10-12',
         ]),
-      ['Status: COMPLETED', 'Closed: Oct 12, 2026'],
+      ['Status: COMPLETED', 'Closed: 10/12/2026'],
     ],
     [
       'pod',
@@ -206,13 +206,13 @@ describe('every dashboard link opens the Task Queue with matching filters and ch
       `${OPEN}&createdFrom=2026-10-12&createdTo=2026-10-14`,
       (s) =>
         expect([s.filters.createdFrom, s.filters.createdTo]).toEqual(['2026-10-12', '2026-10-14']),
-      ['Status: Open', 'Created: Oct 12, 2026 to Oct 14, 2026'],
+      ['Status: Open', 'Created: 10/12/2026 to 10/14/2026'],
     ],
     [
       'age 15+ days',
       `${OPEN}&createdTo=2026-09-29`,
       (s) => expect([s.filters.createdFrom, s.filters.createdTo]).toEqual([null, '2026-09-29']),
-      ['Status: Open', 'Created: until Sep 29, 2026'],
+      ['Status: Open', 'Created: until 09/29/2026'],
     ],
     [
       'my overdue',
@@ -224,7 +224,7 @@ describe('every dashboard link opens the Task Queue with matching filters and ch
       'created by me',
       'creator=9&createdFrom=2026-09-15',
       (s) => expect([s.filters.creator, s.filters.createdFrom]).toEqual([[9], '2026-09-15']),
-      ['Creator: User 9', 'Created: from Sep 15, 2026'],
+      ['Creator: User 9', 'Created: from 09/15/2026'],
     ],
   ];
 

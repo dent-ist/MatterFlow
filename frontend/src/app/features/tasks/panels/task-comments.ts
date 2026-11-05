@@ -25,7 +25,6 @@ import {
 import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
-import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { PanelScroll } from '../../../shared/ui/panel-scroll';
 import { SearchBox } from '../../../shared/ui/search-box';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
@@ -33,6 +32,7 @@ import { COMMENT_MAX_TEXT, decorateLinks, htmlToText, isBlankHtml } from './rich
 import { RichTextEditor } from './rich-text-editor';
 import { countNew, latestOf, readSeen, saveSeen } from './section-state';
 import { StateBlock } from '../../../shared/ui/state-block';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 export const COMMENTS_INTERNAL_NOTE = 'Internal only. Visible to people who can view tasks.';
 export const COMMENTS_PRIVILEGE_NOTE =
@@ -93,8 +93,8 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
 @Component({
   selector: 'mf-task-comments',
   imports: [
+    NumericDatePipe,
     StateBlock,
-    MfDateLongPipe,
     NgTemplateOutlet,
     RichTextEditor,
     ConfirmDialog,
@@ -204,7 +204,7 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
                         <time
                           [attr.datetime]="c.createdAtUtc"
                           [title]="c.createdAtUtc + ' (UTC)'"
-                          >{{ c.createdAtUtc | mfDateLong }}</time
+                          >{{ c.createdAtUtc | mfNum }}</time
                         >
                         @if (c.purposeLabel) {
                           <span class="tc__tag" data-purpose>{{ c.purposeLabel }}</span>
@@ -285,7 +285,7 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
                             <span data-edited
                               >Edited
                               <time [attr.datetime]="c.editedAtUtc">{{
-                                c.editedAtUtc | mfDateLong
+                                c.editedAtUtc | mfNum
                               }}</time></span
                             >
                             <button
@@ -306,7 +306,7 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
                                 @for (r of history(); track r.revisionId) {
                                   <div class="tc__rev">
                                     <time [attr.datetime]="r.revisedAtUtc">{{
-                                      r.revisedAtUtc | mfDateLong
+                                      r.revisedAtUtc | mfNum
                                     }}</time>
                                     <div
                                       class="tc__body mf-rich"

@@ -1,10 +1,6 @@
 import { TaskActivityItem } from '../../../api/generated/api-client';
-import {
-  calendarDayInZone,
-  dayIndex,
-  formatInstantClock,
-  formatCalendarDay,
-} from '../../../core/time/time';
+import { calendarDayInZone, dayIndex, formatInstantClock } from '../../../core/time/time';
+import { numericDay } from '../../../shared/ui/numeric-date';
 
 /** Fewest comment events one person adds in a run before the timeline folds them into one row (PM decision, #317). */
 export const GROUP_MIN = 3;
@@ -76,7 +72,7 @@ export function groupActivity(events: readonly TaskActivityItem[]): ActivityRow[
 }
 
 /**
- * "4:03 to 4:05 PM" for a run inside one half-day, "11:58 AM to 12:03 PM" across noon, "Oct 17, 11:58 PM to Oct 18, 12:03 AM" across
+ * "4:03 to 4:05 PM" for a run inside one half-day, "11:58 AM to 12:03 PM" across noon, "10/17, 11:58 PM to 10/18, 12:03 AM" across
  * midnight, "4:03 PM" for a single minute. Times are in the viewer's zone.
  */
 export function formatRange(oldest: string, newest: string, zone: string): string {
@@ -85,7 +81,7 @@ export function formatRange(oldest: string, newest: string, zone: string): strin
   const fromDay = calendarDayInZone(oldest, zone);
   const toDay = calendarDayInZone(newest, zone);
   if (dayIndex(fromDay) !== dayIndex(toDay)) {
-    const short = (d: typeof fromDay): string => formatCalendarDay(d).replace(/, \d{4}$/, '');
+    const short = (d: typeof fromDay): string => numericDay(d, d.year);
     return `${short(fromDay)}, ${from} to ${short(toDay)}, ${to}`;
   }
   if (from === to) return from;

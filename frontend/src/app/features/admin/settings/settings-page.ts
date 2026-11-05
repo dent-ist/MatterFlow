@@ -17,7 +17,6 @@ import { Branding, DEFAULT_APP_NAME } from '../../../core/branding/branding';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
-import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { Tabs, MfTab } from '../../../shared/ui/tabs';
@@ -27,6 +26,7 @@ import { DashboardCapacitySettings } from './dashboard-capacity-settings';
 import { DashboardSettings } from './dashboard-settings';
 import { CalendarThresholdsForm } from '../holidays/thresholds-form';
 import { HolidaysAdmin } from '../holidays/holidays-admin';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -74,13 +74,13 @@ export function brandingOf(view: BrandingAdminView): Branding {
 @Component({
   selector: 'mf-settings-page',
   imports: [
+    NumericDatePipe,
     Button,
     CalendarThresholdsForm,
     DashboardSettings,
     DashboardCapacitySettings,
     ErrorReference,
     HolidaysAdmin,
-    MfDateLongPipe,
     PageHeader,
     Tabs,
     TextField,
@@ -248,7 +248,7 @@ export function brandingOf(view: BrandingAdminView): Branding {
 
           @if (v.updatedAtUtc) {
             <p class="st__last" data-last-changed>
-              Last changed {{ v.updatedAtUtc | mfDateLong }}
+              Last changed {{ v.updatedAtUtc | mfNum }}
               @if (v.updatedBy) {
                 by {{ v.updatedBy }}
               }

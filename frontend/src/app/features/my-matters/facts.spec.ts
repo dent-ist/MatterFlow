@@ -17,7 +17,7 @@ describe('My Matters words', () => {
     const now = new Date('2026-10-23T18:00:00Z');
     expect(activityTime('2026-10-23T13:42:00Z', now, 'America/New_York')).toMatch(/9:42/);
     expect(activityTime('2026-10-22T13:42:00Z', now, 'America/New_York')).toBe('Yesterday');
-    expect(activityTime('2026-10-20T13:42:00Z', now, 'America/New_York')).toBe('Oct 20');
+    expect(activityTime('2026-10-20T13:42:00Z', now, 'America/New_York')).toBe('10/20');
   });
 
   it('writes the When cell with the date and the time on one line', () => {
@@ -26,7 +26,7 @@ describe('My Matters words', () => {
     expect(activityWhen('2026-10-22T13:10:00Z', now, 'America/New_York')).toBe(
       'Yesterday, 9:10 AM',
     );
-    expect(activityWhen('2026-10-20T18:05:00Z', now, 'America/New_York')).toBe('Oct 20, 2:05 PM');
+    expect(activityWhen('2026-10-20T18:05:00Z', now, 'America/New_York')).toBe('10/20, 2:05 PM');
   });
 
   it('writes the Who and What cells as short phrases, never from comment text', () => {
@@ -68,8 +68,8 @@ describe('My Matters words', () => {
   });
 
   it('writes a next deadline short in the current year and in full in another', () => {
-    expect(shortDate('2026-10-26', 2026, 'none')).toBe('Oct 26');
-    expect(shortDate('2027-01-05', 2026, 'none')).toBe('Jan 5, 2027');
+    expect(shortDate('2026-10-26', 2026, 'none')).toBe('10/26');
+    expect(shortDate('2027-01-05', 2026, 'none')).toBe('01/05/2027');
     expect(shortDate(undefined, 2026, 'none')).toBe('none');
   });
 });

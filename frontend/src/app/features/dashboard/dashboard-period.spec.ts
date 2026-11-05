@@ -128,16 +128,16 @@ describe('resolving a period in the viewer zone', () => {
 });
 
 describe('range text', () => {
-  it('reads "Sep 17 to Oct 16" inside the current year and adds years outside it', () => {
+  it('reads "09/17 to 10/16" inside the current year and adds years outside it', () => {
     expect(rangeText({ from: '2026-09-17', to: '2026-10-16', days: 30 }, 2026)).toBe(
-      'Sep 17 to Oct 16',
+      '09/17 to 10/16',
     );
     expect(rangeText({ from: '2025-12-20', to: '2026-01-03', days: 15 }, 2026)).toBe(
-      'Dec 20, 2025 to Jan 3, 2026',
+      '12/20/2025 to 01/03/2026',
     );
-    expect(rangeText({ from: '2026-10-16', to: '2026-10-16', days: 1 }, 2026)).toBe('Oct 16');
+    expect(rangeText({ from: '2026-10-16', to: '2026-10-16', days: 1 }, 2026)).toBe('10/16');
     expect(periodPhrase({ from: '2026-09-17', to: '2026-10-16', days: 30 }, 2026)).toBe(
-      'from Sep 17 to Oct 16',
+      'from 09/17 to 10/16',
     );
     expect(periodPhrase(null, 2026)).toBe('in the chosen period');
   });
@@ -153,7 +153,7 @@ describe('custom ranges', () => {
     expect(customProblem('2026-10-05', '2026-10-04')).toMatch(/after its end/);
     expect(customProblem('2025-10-13', '2026-10-14')).toMatch(/at most 366 days/);
     expect(customProblem('2026-10-05', null)).toMatch(/both dates/);
-    expect(customProblem('2026-13-05', '2026-10-05')).toMatch(/yyyy-mm-dd/);
+    expect(customProblem('2026-13-05', '2026-10-05')).toMatch(/mm\/dd\/yyyy/);
   });
 });
 

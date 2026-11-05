@@ -27,7 +27,6 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { UndoService } from '../../../core/notify/undo.service';
 import { USER_TIME_ZONE } from '../../../core/time/clock';
 import { LeaveConfirmService } from '../../../shared/guards/unsaved-changes.guard';
-import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { AvailabilityChip } from '../../../shared/availability/availability-chip';
 import { Badge } from '../../../shared/ui/badge';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
@@ -38,6 +37,7 @@ import { availabilityShown } from './user-availability';
 import { permissionsOfRoles, summarizePermissions } from './user-access';
 import { UserCalendarField } from '../holidays/user-calendar-field';
 import { PodsChange, UserPodsCell } from './user-pods-cell';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 /**
  * Where the drawer starts: nothing special, with the deactivation question already on screen (the row menu's Deactivate), or with the
@@ -73,6 +73,7 @@ export function readOnlyReason(canManage: boolean, canEditPods: boolean): string
 @Component({
   selector: 'mf-user-drawer',
   imports: [
+    NumericDatePipe,
     SlidePanel,
     Button,
     RouterLink,
@@ -80,7 +81,6 @@ export function readOnlyReason(canManage: boolean, canEditPods: boolean): string
     AvailabilityChip,
     UserPodsCell,
     ConfirmDialog,
-    MfDateLongPipe,
     UserCalendarField,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

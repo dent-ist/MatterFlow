@@ -26,7 +26,6 @@ import { statusDef } from '../../../shared/filters/common-defs';
 import { FilterDef } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
-import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { ActionMenu } from '../../../shared/ui/action-menu';
 import { AdminCardList, AdminCardSpec, activeCardBadge } from '../../../shared/ui/admin-card-spec';
 import { AdminColumn, adminListState } from '../../../shared/ui/admin-list-state';
@@ -43,6 +42,7 @@ import { COLUMN_ROOM } from '../../../shared/ui/viewport';
 import { AdminTabCounts } from '../admin-tabs';
 import { ADMIN_LIST, AdminListLeave } from '../list-return';
 import { AdminShellFilters } from '../task-types/shell-filters';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 type Column = 'name' | 'category' | 'roles' | 'lastRun' | 'status' | 'actions';
 
@@ -65,6 +65,7 @@ const COLUMN_SPEC: Record<Column, AdminColumn> = {
 @Component({
   selector: 'mf-reports-list-tab',
   imports: [
+    NumericDatePipe,
     ActionMenu,
     ActiveBadge,
     AdminCardList,
@@ -72,7 +73,6 @@ const COLUMN_SPEC: Record<Column, AdminColumn> = {
     ConfirmDialog,
     FiltersBar,
     GridBody,
-    MfDateLongPipe,
     Pager,
     RouterLink,
     RowLink,
@@ -172,7 +172,7 @@ const COLUMN_SPEC: Record<Column, AdminColumn> = {
                     <td class="mf-cell-num" data-roles>{{ r.roleCount }}</td>
                     <td class="mf-cell-badge" data-last-run>
                       @if (r.lastRunAtUtc) {
-                        {{ r.lastRunAtUtc | mfDateLong: 'date' }}
+                        {{ r.lastRunAtUtc | mfNum: 'date' }}
                       } @else {
                         <span class="mf-sr-only">Never</span><span aria-hidden="true">-</span>
                       }

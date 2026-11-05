@@ -46,7 +46,6 @@ import {
 } from '../../../core/time/time';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { toFormDefinition } from '../../../shared/forms/form-schema';
-import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
@@ -70,6 +69,7 @@ import { reusableAnswers } from './last-answers';
 import { MyMattersFocus } from '../../my-matters/focus';
 import { recentTypeIds, rememberMatter, rememberType } from '../../../shared/tasks/recent-choices';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 type LoadState = 'loading' | 'ready' | 'error';
 type SchemaState = 'none' | 'loading' | 'ready' | 'error';
@@ -113,6 +113,7 @@ const matterOption = (m: MatterResponse): PickerOption => ({
 @Component({
   selector: 'mf-create-task-page',
   imports: [
+    NumericDatePipe,
     ErrorReference,
     Button,
     PageHeader,
@@ -128,7 +129,6 @@ const matterOption = (m: MatterResponse): PickerOption => ({
     GridNav,
     TaskTypeIcon,
     PriorityBadge,
-    MfDateLongPipe,
   ],
   providers: [AssetPickerContext],
   changeDetection: ChangeDetectionStrategy.OnPush,

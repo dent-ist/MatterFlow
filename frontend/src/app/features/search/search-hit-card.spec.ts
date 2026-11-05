@@ -245,7 +245,7 @@ describe('SearchHitCard (one card for all five hit types, #472)', () => {
     expect(late.querySelector('[data-type-badge]')!.getAttribute('aria-label')).toBe(
       'Task type: Production (Outgoing)',
     );
-    expect(late.querySelector('[data-card-extra]')!.textContent).toContain('Overdue Jan 2, 2000');
+    expect(late.querySelector('[data-card-extra]')!.textContent).toContain(', Overdue 01/02/2000');
     const stored = cards(
       create([{ ...asset, disposition: 'PENDING_DISPOSITION', sizeValue: 5.5, sizeUnit: 'GB' }]),
     )[0];

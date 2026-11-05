@@ -22,7 +22,6 @@ import {
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { QuietRequests } from '../../../core/http/interceptors';
-import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { DueCell } from '../../../shared/work-queue/due-cell';
 import { CopyButton } from '../../../shared/ui/copy-button';
 import { SlidePanel } from '../../../shared/ui/slide-panel';
@@ -34,6 +33,7 @@ import { RowEdit } from '../../../shared/work-queue/row-edit';
 import { htmlToPlainText, htmlToText } from '../../tasks/panels/rich-text';
 import { applyRow, cardToRow } from './swimlane-model';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -48,12 +48,12 @@ export const PEEK_COMMENTS = 3;
 @Component({
   selector: 'mf-swimlane-drawer',
   imports: [
+    NumericDatePipe,
     SlidePanel,
     RouterLink,
     RowEdit,
     StatusBadge,
     PriorityFlag,
-    MfDateLongPipe,
     DueCell,
     CopyButton,
     ErrorReference,
@@ -151,7 +151,7 @@ export const PEEK_COMMENTS = 3;
               </div>
               <div class="fact">
                 <dt>Created</dt>
-                <dd>{{ c.createdAtUtc | mfDateLong }}</dd>
+                <dd>{{ c.createdAtUtc | mfNum }}</dd>
               </div>
             </dl>
             <p class="actions">
@@ -223,7 +223,7 @@ export const PEEK_COMMENTS = 3;
                         <li class="comment">
                           <p class="who">
                             <strong>{{ cm.author.displayName }}</strong>
-                            <span class="muted">{{ cm.createdAtUtc | mfDateLong }}</span>
+                            <span class="muted">{{ cm.createdAtUtc | mfNum }}</span>
                           </p>
                           <p class="text">{{ snippet(cm) }}</p>
                         </li>

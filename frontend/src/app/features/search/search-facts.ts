@@ -1,17 +1,12 @@
 import type { SearchHit } from '../../api/generated/api-client';
-import {
-  calendarDayInZone,
-  dayIndex,
-  formatCalendarDay,
-  formatMonthDay,
-  parseDateOnly,
-} from '../../core/time/time';
+import { calendarDayInZone, dayIndex, parseDateOnly } from '../../core/time/time';
+import { numericDay } from '../../shared/ui/numeric-date';
 import { formatSize } from '../assets/disposition/asset-size';
 
 const OPEN = new Set(['NEW', 'IN_PROGRESS', 'ON_HOLD']);
 
 /**
- * The due fact of a task hit (PM v2, #885): "Due Oct 27", "Overdue Oct 20" (an open task whose day is past in the viewer's zone), "ASAP" (an open task
+ * The due fact of a task hit (PM v2, #885): "Due 10/27", "Overdue 10/20" (an open task whose day is past in the viewer's zone), "ASAP" (an open task
  * with no date) and nothing for a closed task or a hit that is not a task. The year shows only when it is not this year.
  */
 export function hitDueText(hit: SearchHit, now: Date, zone: string): string {
@@ -23,7 +18,7 @@ export function hitDueText(hit: SearchHit, now: Date, zone: string): string {
       : null;
   if (!day) return 'ASAP';
   const today = calendarDayInZone(now, zone);
-  const text = day.year === today.year ? formatMonthDay(day) : formatCalendarDay(day);
+  const text = numericDay(day, today.year);
   return dayIndex(day) < dayIndex(today) ? `Overdue ${text}` : `Due ${text}`;
 }
 

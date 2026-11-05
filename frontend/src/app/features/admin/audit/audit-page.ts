@@ -478,7 +478,7 @@ export class AuditPage {
   protected isLong = isLongValue;
   protected objectLabel = objectTypeLabel;
   protected eventLabel = eventTypeLabel;
-  protected clock12 = (item: AuditSearchItem) => clockText(item, this.zone);
+  protected clock12 = (item: AuditSearchItem) => clockText(item, this.zone, this.clock.now());
   protected stamp = (item: AuditSearchItem) => stampText(item, this.zone);
   protected menuOf = (key: string) => this.menus().get(key) ?? null;
 

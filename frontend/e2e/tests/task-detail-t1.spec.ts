@@ -390,7 +390,7 @@ test.describe('Task detail T1: page skeleton (S1, #292)', () => {
 });
 
 test.describe('Task detail T1: Activity drawer (BUG-5 #293, BUG-8 #294) and document title (X3 #295)', () => {
-  test('a due date change reads "Oct 15, 2026 to Oct 14, 2026" in the sentence and in View changes', async ({
+  test('a due date change reads "10/15 to 10/14" in the sentence and in View changes', async ({
     seed,
     admin,
     page,
@@ -408,10 +408,12 @@ test.describe('Task detail T1: Activity drawer (BUG-5 #293, BUG-8 #294) and docu
     await detail.open(task.taskId);
     const drawer = await detail.openActivity();
     const summary = drawer.locator('[data-summary]', { hasText: 'Due date changed' });
-    await expect(summary).toHaveText('Due date changed from Oct 15, 2026 to Oct 14, 2026');
+    await expect(summary).toHaveText(
+      /^Due date changed from 10\/15(\/\d{4})? to 10\/14(\/\d{4})?$/,
+    );
     await expect(drawer).not.toContainText('2026-10-1');
     await drawer.locator('[data-changes-toggle]').first().click();
-    await expect(drawer.locator('[data-changes]').first()).toContainText('Oct 15, 2026');
+    await expect(drawer.locator('[data-changes]').first()).toContainText(/10\/15/);
     await atEverySize(page, 'activity-dates', async () => {
       await expect(drawer).toBeVisible();
     });

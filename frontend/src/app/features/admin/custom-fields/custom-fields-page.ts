@@ -18,7 +18,6 @@ import {
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
-import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { ActionMenu } from '../../../shared/ui/action-menu';
 import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
 import { AdminCardList, AdminCardSpec } from '../../../shared/ui/admin-card-spec';
@@ -36,6 +35,7 @@ import { CUSTOM_FIELD_OBJECTS } from './custom-field-form-designer-api';
 import { DrillReturn } from '../../../shared/work-queue/drill';
 import { ADMIN_LIST, AdminListLeave } from '../list-return';
 import { FormStatusCell } from '../shared/form-status-cell';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 /** One object (Client, Matter or Project) with what its custom-field form holds. */
 interface Row {
@@ -72,6 +72,7 @@ const COLUMNS: readonly AdminColumn[] = [
 @Component({
   selector: 'mf-custom-fields-page',
   imports: [
+    NumericDatePipe,
     ActionMenu,
     ActivityDrawer,
     AdminCardList,
@@ -79,7 +80,6 @@ const COLUMNS: readonly AdminColumn[] = [
     FormStatusCell,
     GridBody,
     Pager,
-    MfDateLongPipe,
     RouterLink,
     RowLink,
     ScrollArea,
@@ -155,7 +155,7 @@ const COLUMNS: readonly AdminColumn[] = [
                       @if (r.summary?.publishedVersion; as v) {
                         v{{ v }}
                         @if (r.summary?.publishedAtUtc; as at) {
-                          &middot; {{ at | mfDateLong: 'date' }}
+                          &middot; {{ at | mfNum: 'date' }}
                         }
                       } @else {
                         Not published

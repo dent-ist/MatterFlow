@@ -1,10 +1,5 @@
-import {
-  calendarDayInZone,
-  dayIndex,
-  formatCalendarDay,
-  formatInstant,
-  formatMonthDay,
-} from '../../core/time/time';
+import { calendarDayInZone, dayIndex, formatInstant } from '../../core/time/time';
+import { numericDay } from '../../shared/ui/numeric-date';
 
 /** The parts of a notification the text helpers need (the generated `NotificationItem` fits). */
 export interface NotificationLike {
@@ -45,7 +40,7 @@ export function relativeTime(createdUtc: string, now: Date, zone: string): strin
   const daysAgo = dayIndex(today) - dayIndex(day);
   if (daysAgo <= 0) return `${Math.floor(minutes / 60)} h ago`;
   if (daysAgo === 1) return 'yesterday';
-  return day.year === today.year ? formatMonthDay(day) : formatCalendarDay(day);
+  return numericDay(day, today.year);
 }
 
 /** "Oct 28, 2026, 3:00 PM CDT" for the tooltip and the `<time>` title. */

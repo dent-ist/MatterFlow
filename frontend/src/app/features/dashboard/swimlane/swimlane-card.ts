@@ -5,7 +5,6 @@ import { SwimlaneCard, TaskQueueRow } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { LookupStore } from '../../../core/lookups/lookup-store';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
-import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { levelBars } from '../../../shared/ui/priority-badge';
 import { PriorityFlag } from '../../../shared/ui/priority-flag';
 import { StatusBadge } from '../../../shared/ui/status-badge';
@@ -15,6 +14,7 @@ import { RowEdit } from '../../../shared/work-queue/row-edit';
 import { Density, applyRow, cardToRow } from './swimlane-model';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 import { personInitials } from '../../../shared/ui/person-initials';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 /** Initials for the avatar: first letters of the first and last word. */
 export function initials(name: string): string {
@@ -30,6 +30,7 @@ export function initials(name: string): string {
 @Component({
   selector: 'mf-swimlane-card',
   imports: [
+    NumericDatePipe,
     RouterLink,
     NgTemplateOutlet,
     PriorityFlag,
@@ -37,7 +38,6 @@ export function initials(name: string): string {
     TaskTypeIcon,
     RowEdit,
     DueCell,
-    MfDateLongPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.compact]': "density() === 'compact'" },
@@ -50,9 +50,7 @@ export function initials(name: string): string {
           <i class="pi pi-check" aria-hidden="true"></i>
           {{ c.status === 'CANCELLED' ? 'Cancelled' : 'Done' }}
           {{
-            compact()
-              ? short(c.completedAtUtc | mfDateLong: 'date')
-              : (c.completedAtUtc | mfDateLong: 'date')
+            compact() ? short(c.completedAtUtc | mfNum: 'date') : (c.completedAtUtc | mfNum: 'date')
           }}
         </span>
       } @else {
@@ -636,9 +634,9 @@ export class SwimlaneCardView {
     return a.note ? `Out of office: ${a.note}` : 'Out of office';
   });
   protected readonly initialsOf = initials;
-  /** A date without its year ("Oct 18"), for the one-line card. */
+  /** A date without its year ("10/18"), for the one-line card. */
   protected short(text: string): string {
-    return text.replace(/,?\s*\d{4}$/, '');
+    return text.replace(/(,?\s*|\/)\d{4}$/, '');
   }
 
   protected editable(field: 'status' | 'priority' | 'assignee'): boolean {

@@ -37,7 +37,6 @@ import { Tip } from '../ui/tip';
 import { ColumnMove, ReorderColumns } from '../ui/reorder-columns';
 import { DueCell } from './due-cell';
 import { DueSuffixCell, ageText } from './due-suffix';
-import { MfDateLongPipe } from '../pipes/mf-date-long.pipe';
 import { MatterCell, MatterNameCell } from './matter-cell';
 import { ProjectCell } from './project-cell';
 import { loudPriority, loudStatus } from './quiet-badges';
@@ -77,6 +76,7 @@ import { isShortcut } from '../layout/shortcut-registry';
 import { TaskSkeleton } from './task-skeleton';
 import { PHONE_CARDS_QUERY, TaskCardList } from './task-card-list';
 import { Dropdown, DropdownItem } from '../ui/dropdown';
+import { NumericDatePipe, numericInstant } from '../ui/numeric-date';
 
 const NARROW_BELOW = 760;
 /** A touch held this long on a header opens its column menu (PM ruling on #207). */
@@ -90,6 +90,7 @@ const LONG_PRESS_MS = 500;
 @Component({
   selector: 'mf-task-table',
   imports: [
+    NumericDatePipe,
     Dropdown,
     TaskTypeBadge,
     TaskTypeChip,
@@ -102,7 +103,6 @@ const LONG_PRESS_MS = 500;
     ProjectCell,
     DueCell,
     DueSuffixCell,
-    MfDateLongPipe,
     PriorityFlag,
     PriorityPill,
     RowEdit,
@@ -606,7 +606,7 @@ const LONG_PRESS_MS = 500;
                         {{ dayOf(row.createdAtUtc) }}
                       }
                       @case ('updated') {
-                        {{ row.updatedAtUtc | mfDateLong }}
+                        {{ row.updatedAtUtc | mfNum }}
                       }
                     }
                   </td>
@@ -1350,7 +1350,8 @@ export class TaskTable {
     return mfDateLong(instant, this.zone, 'datetime');
   }
 
+  /** The day of an instant for a cell: "10/16" (the year only outside the current year, D-60). */
   protected dayOf(instant: string): string {
-    return mfDateLong(instant, this.zone, 'date');
+    return numericInstant(instant, this.clock.now(), this.zone, false);
   }
 }

@@ -12,9 +12,9 @@ import {
   DashboardCapacityAdminView,
   SettingsDashboardClient,
 } from '../../../api/generated/api-client';
-import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 /**
  * Administration > Settings > Dashboard, the capacity battery (decision AV, DB-16 #1103): ONE choice, "Count people outside work hours as available" (default on). On, a person who is
@@ -24,7 +24,7 @@ import { NotificationService } from '../../../core/notify/notification.service';
  */
 @Component({
   selector: 'mf-dashboard-capacity-settings',
-  imports: [Button, MfDateLongPipe],
+  imports: [NumericDatePipe, Button],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form class="cs" novalidate (submit)="$event.preventDefault(); save()" data-capacity-settings>
@@ -66,7 +66,7 @@ import { NotificationService } from '../../../core/notify/notification.service';
       @if (view(); as v) {
         @if (v.updatedAtUtc) {
           <p class="cs__meta" data-capacity-meta>
-            Last changed {{ v.updatedAtUtc | mfDateLong }}
+            Last changed {{ v.updatedAtUtc | mfNum }}
             @if (v.updatedBy) {
               by {{ v.updatedBy }}
             }

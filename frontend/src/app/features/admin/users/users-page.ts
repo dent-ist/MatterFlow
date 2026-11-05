@@ -66,6 +66,7 @@ import { PodsChange, UserPodsCell } from './user-pods-cell';
 import { UserDrawer, UserDrawerIntent } from './user-drawer';
 import { availabilityShown } from './user-availability';
 import { podsText } from './user-pods-draft';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 type Tab = Exclude<UserStatusFilter, 'all'>;
 type StatusOption = UserStatusFilter;
@@ -115,6 +116,7 @@ const AVAILABILITY_OPTIONS = [
 @Component({
   selector: 'mf-users-page',
   imports: [
+    NumericDatePipe,
     Button,
     MfDateLongPipe,
     UserDrawer,

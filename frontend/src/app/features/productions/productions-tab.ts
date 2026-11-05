@@ -24,7 +24,6 @@ import {
 import { AuthStore } from '../../core/auth/auth.store';
 import { ApiError } from '../../core/http/api-error';
 import { NotificationService } from '../../core/notify/notification.service';
-import { MfDateLongPipe } from '../../shared/pipes/mf-date-long.pipe';
 import { ConfirmDialog } from '../../shared/ui/confirm-dialog';
 import { DropdownItem, Dropdown } from '../../shared/ui/dropdown';
 import { GridFrame } from '../../shared/ui/grid-frame';
@@ -46,6 +45,7 @@ import {
   partyLabel,
 } from './production-ui';
 import { StateBlock } from '../../shared/ui/state-block';
+import { NumericDatePipe } from '../../shared/ui/numeric-date';
 
 type View = 'productions' | 'specs';
 type Panel = 'none' | 'production' | 'production-form' | 'spec' | 'spec-form';
@@ -130,11 +130,11 @@ const emptySpec = (): SpecDraft => ({
 @Component({
   selector: 'mf-productions-tab',
   imports: [
+    NumericDatePipe,
     StateBlock,
     Button,
     ConfirmDialog,
     GridFrame,
-    MfDateLongPipe,
     Dropdown,
     Pager,
     SearchBox,
@@ -401,7 +401,7 @@ const emptySpec = (): SpecDraft => ({
                     </td>
                     <td>
                       @if (p.deliveredOrDueOn) {
-                        {{ p.deliveredOrDueOn | mfDateLong: 'date' }}
+                        {{ p.deliveredOrDueOn | mfNum: 'date' }}
                       } @else {
                         <span class="pt__muted">Not set</span>
                       }
@@ -474,7 +474,7 @@ const emptySpec = (): SpecDraft => ({
                       <span class="pt__sub">{{ s.metadataFields.length }} metadata fields</span>
                     </td>
                     <td class="pg-num">{{ s.usedByCount }}</td>
-                    <td>{{ s.modifiedAtUtc ?? s.createdAtUtc | mfDateLong: 'date' }}</td>
+                    <td>{{ s.modifiedAtUtc ?? s.createdAtUtc | mfNum: 'date' }}</td>
                   </tr>
                 }
               </tbody>
@@ -541,7 +541,7 @@ const emptySpec = (): SpecDraft => ({
           <dt>Pages</dt>
           <dd>{{ count(p.pageCount) || 'Not set' }}</dd>
           <dt>Delivered or due</dt>
-          <dd>{{ p.deliveredOrDueOn ? (p.deliveredOrDueOn | mfDateLong: 'date') : 'Not set' }}</dd>
+          <dd>{{ p.deliveredOrDueOn ? (p.deliveredOrDueOn | mfNum: 'date') : 'Not set' }}</dd>
           <dt>Notes</dt>
           <dd>{{ p.notes || 'None' }}</dd>
         </dl>
@@ -572,7 +572,7 @@ const emptySpec = (): SpecDraft => ({
                 {{ c.body }}
                 <span class="pt__meta"
                   >{{ c.createdByName ?? 'Someone' }} on
-                  {{ c.createdAtUtc | mfDateLong: 'datetime' }}
+                  {{ c.createdAtUtc | mfNum }}
                   @if (c.modifiedAtUtc) {
                     (edited)
                   }
@@ -611,7 +611,7 @@ const emptySpec = (): SpecDraft => ({
           @for (h of history(); track h.auditEventId) {
             <li>
               <b>{{ h.actorName ?? 'Someone' }}</b> {{ text(h) }}
-              <span class="pt__meta">{{ h.occurredAtUtc | mfDateLong: 'datetime' }}</span>
+              <span class="pt__meta">{{ h.occurredAtUtc | mfNum }}</span>
             </li>
           } @empty {
             <li class="pt__muted">No history yet.</li>
@@ -825,7 +825,7 @@ const emptySpec = (): SpecDraft => ({
           @for (h of history(); track h.auditEventId) {
             <li>
               <b>{{ h.actorName ?? 'Someone' }}</b> {{ text(h) }}
-              <span class="pt__meta">{{ h.occurredAtUtc | mfDateLong: 'datetime' }}</span>
+              <span class="pt__meta">{{ h.occurredAtUtc | mfNum }}</span>
             </li>
           } @empty {
             <li class="pt__muted">No history yet.</li>

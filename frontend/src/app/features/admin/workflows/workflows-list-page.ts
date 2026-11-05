@@ -57,6 +57,7 @@ import { SortOption } from '../../../shared/work-queue/phone-sort';
 import { stripChips } from '../../../shared/ui/strip-items';
 import { FilterChips } from '../../../shared/ui/filter-chips';
 import { WorkStripItem } from '../../../shared/work-queue/work-strip';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
 const COLUMNS = [
@@ -88,6 +89,7 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
 @Component({
   selector: 'mf-workflows-list-page',
   imports: [
+    NumericDatePipe,
     ScrollArea,
     Badge,
     ActiveBadge,
@@ -366,7 +368,7 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
                     <td class="ad-nowrap" data-last-published>
                       @if (w.publishedAtUtc) {
                         <span [attr.title]="w.publishedAtUtc | mfDateLong">{{
-                          w.publishedAtUtc | mfDateLong: 'date'
+                          w.publishedAtUtc | mfNum: 'date'
                         }}</span>
                       } @else {
                         <span class="pg-muted">&ndash;</span>

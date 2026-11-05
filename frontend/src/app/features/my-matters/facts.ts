@@ -7,11 +7,10 @@ import {
   CalendarDay,
   calendarDayInZone,
   dayIndex,
-  formatCalendarDay,
   formatInstantClock,
-  formatMonthDay,
   parseDateOnly,
 } from '../../core/time/time';
+import { numericDay } from '../../shared/ui/numeric-date';
 
 const STATUS_WORDS: Record<string, string> = {
   NEW: 'New',
@@ -48,21 +47,21 @@ export function dueDay(
   return t.dueAtUtc ? calendarDayInZone(t.dueAtUtc, zone) : null;
 }
 
-/** "9:42 AM" for today, "Yesterday", else "Oct 21": the time an activity event is shown with (the full stamp is its tooltip). */
+/** "9:42 AM" for today, "Yesterday", else "10/21": the time an activity event is shown with (the full stamp is its tooltip). */
 export function activityTime(instant: string, now: Date, zone: string): string {
   const day = calendarDayInZone(instant, zone);
   const gap = dayIndex(calendarDayInZone(now, zone)) - dayIndex(day);
   if (gap <= 0) return formatInstantClock(instant, zone);
-  return gap === 1 ? 'Yesterday' : formatMonthDay(day);
+  return gap === 1 ? 'Yesterday' : numericDay(day, calendarDayInZone(now, zone).year);
 }
 
-/** "Today, 9:42 AM", "Yesterday, 9:10 AM", "Oct 21, 2:05 PM": the When cell of the Activity grid (date and time on one line; the full stamp is its tooltip). */
+/** "Today, 9:42 AM", "Yesterday, 9:10 AM", "10/21 02:05 PM": the When cell of the Activity grid (date and time on one line; the full stamp is its tooltip). */
 export function activityWhen(instant: string, now: Date, zone: string): string {
   const day = calendarDayInZone(instant, zone);
   const gap = dayIndex(calendarDayInZone(now, zone)) - dayIndex(day);
   const clock = formatInstantClock(instant, zone);
   if (gap <= 0) return `Today, ${clock}`;
-  return `${gap === 1 ? 'Yesterday' : formatMonthDay(day)}, ${clock}`;
+  return `${gap === 1 ? 'Yesterday' : numericDay(day, calendarDayInZone(now, zone).year)}, ${clock}`;
 }
 
 /** The Who cell of the Activity grid: the person's name, never the account; "System" when nobody did it. */
@@ -102,13 +101,7 @@ export function activityWhat(e: MyMattersActivityItem): string {
   }
 }
 
-const SHORT_DATE = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-  timeZone: 'UTC',
-});
-
-/** "Oct 26" for a `yyyy-MM-dd` date in the current year, "Oct 26, 2027" in another one, or the fallback; `year` is the current year. */
+/** "10/26" for a `yyyy-MM-dd` date in the current year, "10/26/2027" in another one, or the fallback; `year` is the current year (D-60). */
 export function shortDate(
   value: string | undefined | null,
   year: number,
@@ -116,9 +109,7 @@ export function shortDate(
 ): string {
   const d = value ? parseDateOnly(value) : null;
   if (!d) return fallback;
-  return d.year === year
-    ? SHORT_DATE.format(new Date(Date.UTC(d.year, d.month - 1, d.day)))
-    : formatCalendarDay(d);
+  return numericDay(d, year);
 }
 
 /**

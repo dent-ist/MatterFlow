@@ -1,27 +1,20 @@
 import { AuditSearchItem } from '../../../api/generated/api-client';
-import {
-  CalendarDay,
-  calendarDayInZone,
-  dayIndex,
-  formatCalendarDay,
-  formatInstant,
-  formatInstantClock,
-  formatMonthDay,
-} from '../../../core/time/time';
+import { CalendarDay, calendarDayInZone, dayIndex, formatInstant } from '../../../core/time/time';
+import { numericDay, numericInstant } from '../../../shared/ui/numeric-date';
 import { friendlyText } from '../../../shared/ui/audit-format';
 import { AuditGroup } from './audit-links';
 
 /** One top-level row of the log: an event or a group of one operation, with the day divider that goes above it when a new day starts. */
 export interface AuditBlock {
   group: AuditGroup;
-  /** "Today", "Oct 19" or "Oct 19, 2025" on the first row of each day (in the viewer's zone); null on the others. */
+  /** "Today", "10/19" or "10/19/2025" on the first row of each day (in the viewer's zone); null on the others. */
   day: string | null;
 }
 
-/** "Today" for the viewer's today, "Oct 19" within this year, "Oct 19, 2025" before (#655). */
+/** "Today" for the viewer's today, "10/19" within this year, "10/19/2025" before (#655, D-60). */
 export function dayLabel(day: CalendarDay, today: CalendarDay): string {
   if (dayIndex(day) === dayIndex(today)) return 'Today';
-  return day.year === today.year ? formatMonthDay(day) : formatCalendarDay(day);
+  return numericDay(day, today.year);
 }
 
 /** Puts a day label on the first block of each calendar day of the viewer's zone. A day that continues in the next page of results is not repeated. */
@@ -41,9 +34,9 @@ export function withDayDividers(
   });
 }
 
-/** The time of an event alone ("12:27 AM"): the day is the divider above it (#655). */
-export function clockText(item: AuditSearchItem, zone: string): string {
-  return formatInstantClock(item.occurredAtUtc, zone);
+/** The "When" of an event: "10/20 12:27 AM" ("10/20/2025 12:27 AM" outside this year); the long form with the zone is the tooltip (#655, D-60). */
+export function clockText(item: AuditSearchItem, zone: string, now: Date = new Date()): string {
+  return numericInstant(item.occurredAtUtc, now, zone);
 }
 
 /** The whole stamp for the tooltip ("Oct 20, 2026, 12:27 AM EDT"). */

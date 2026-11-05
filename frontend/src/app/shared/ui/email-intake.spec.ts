@@ -132,7 +132,7 @@ describe('EmailIntake', () => {
     expect(editor().innerHTML).toBe('<p>Hi team,</p><p>Please prepare the load file.</p>');
     expect(field('ei-f-name').value).toBe('Jane Doe');
     expect(field('ei-f-email').value).toBe('jane.doe@example-firm.test');
-    expect(q('[data-sent]').textContent).toContain('Oct 12, 2026');
+    expect(q('[data-sent]').textContent).toContain(' Source email sent:  10/12 01:15 PM ');
 
     // The user edits a field before applying.
     field('ei-f-title').value = 'Volume 7 load file';

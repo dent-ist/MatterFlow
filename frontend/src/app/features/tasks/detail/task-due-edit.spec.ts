@@ -133,7 +133,7 @@ describe('Task page: inline Due date (#664)', () => {
     expect(pop(m.el)).toBeNull();
     expect(q(m.el, '[data-due]')!.textContent).toContain('Oct 24');
     expect(q(m.el, '[data-due]')!.textContent).not.toContain('ASAP');
-    expect(q(m.el, '[data-due-live]')!.textContent).toBe('Due date set to Oct 24, 2026 5:00 PM');
+    expect(q(m.el, '[data-due-live]')!.textContent).toBe('Due date set to 10/24 5:00 PM');
     expect(document.activeElement).toBe(trigger(m.el));
   });
 

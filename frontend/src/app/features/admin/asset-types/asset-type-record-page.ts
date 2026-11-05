@@ -27,7 +27,6 @@ import {
   HasUnsavedChanges,
   LeaveConfirmService,
 } from '../../../shared/guards/unsaved-changes.guard';
-import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { Crumb } from '../../../shared/ui/page-header';
@@ -50,6 +49,7 @@ import { dialogCopy } from '../shared/dialog-copy';
 import { ADMIN_FIELD_LIMITS } from '../shared/field-limits';
 import { FormStatusCell } from '../shared/form-status-cell';
 import { notFoundError } from './asset-type-form-designer-api';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 /** The tabs of the record (`?tab=`); the Assets tab is for people who may see assets. */
 export type AssetTypeTab = 'overview' | 'fields' | 'assets';
@@ -110,10 +110,10 @@ const modelKey = (m: Model): string =>
   selector: 'mf-asset-type-record-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    NumericDatePipe,
     ActivityDrawer,
     ConfirmDialog,
     FormStatusCell,
-    MfDateLongPipe,
     RecordHeader,
     RecordSkeleton,
     RecordState,

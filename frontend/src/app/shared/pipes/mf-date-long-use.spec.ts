@@ -8,34 +8,8 @@ import { describe, expect, it } from 'vitest';
  */
 const APP = join(process.cwd(), 'src', 'app');
 
-/** Files that still print the long form and are converted by the next issue (#1147). Empty when part 2 is done. */
-const PENDING: string[] = [
-  'features/access-pending/pages/access-pending-page.html',
-  'features/admin/asset-types/asset-type-record-page.html',
-  'features/admin/custom-fields/custom-fields-page.ts',
-  'features/admin/reports/report-runs-tab.ts',
-  'features/admin/reports/reports-health-tab.ts',
-  'features/admin/reports/reports-list-tab.ts',
-  'features/admin/reports/versions-panel.ts',
-  'features/admin/settings/dashboard-capacity-settings.ts',
-  'features/admin/settings/dashboard-settings.ts',
-  'features/admin/settings/settings-page.ts',
-  'features/admin/task-types/task-type-edit-page.html',
-  'features/admin/task-types/task-type-form-page.html',
-  'features/admin/users/user-drawer.html',
-  'features/admin/users/users-page.html',
-  'features/admin/workflows/workflow-versions-tab.ts',
-  'features/admin/workflows/workflows-list-page.ts',
-  'features/dashboard/swimlane/swimlane-card.ts',
-  'features/dashboard/swimlane/swimlane-drawer.ts',
-  'features/productions/productions-tab.ts',
-  'features/tasks/create/create-task-page.html',
-  'features/tasks/panels/task-activity.ts',
-  'features/tasks/panels/task-comments.ts',
-  'shared/ui/email-intake.ts',
-  'shared/ui/entity-activity.ts',
-  'shared/work-queue/task-table.ts',
-];
+/** Files that still print the long form (none since part 2, #1147; a new entry needs a reason). */
+const PENDING: string[] = [];
 
 function sources(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -59,7 +33,7 @@ describe('the long date pipe', () => {
     expect(offenders.filter((f) => !PENDING.includes(f))).toEqual([]);
   });
 
-  it('the pending list only shrinks: part 2 (#1147) empties it', () => {
-    expect(PENDING.length).toBeLessThanOrEqual(25);
+  it('has no pending exceptions', () => {
+    expect(PENDING.length).toBe(0);
   });
 });

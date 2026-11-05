@@ -299,7 +299,7 @@ describe('MyWorkPage', () => {
     const el = await open('/my-work?view=completed&completedFrom=2000-01-01');
     expect(lastArgs()[ARG.completedFrom]).toBe('2000-01-01');
     expect(lastArgs()[ARG.closedWindow]).toBeUndefined();
-    expect(chips(el)).toEqual(['Closed: from Jan 1, 2000']);
+    expect(chips(el)).toEqual(['Closed: from 01/01/2000']);
   });
 
   it('opens the Closed tab for the old view=completed link and names the tabs everywhere', async () => {

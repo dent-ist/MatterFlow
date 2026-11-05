@@ -37,7 +37,7 @@ describe('FormStatusCell (#631)', () => {
   it('published: the badge, the field count and the month and day', () => {
     const { el } = create();
     expect(el.querySelector('[data-published]')!.textContent!.trim()).toBe('Published v3');
-    expect(el.querySelector('[data-facts]')!.textContent).toBe('8 fields · Updated Oct 12');
+    expect(el.querySelector('[data-facts]')!.textContent).toBe('8 fields · Updated 10/12');
     expect(el.querySelector('[data-draft], [data-none]')).toBeNull();
     expect(el.querySelector('mf-form-status-cell')!.getAttribute('title')).toBe(
       'Published version 3, 8 fields, updated Oct 12, 2026.',
@@ -76,7 +76,7 @@ describe('FormStatusCell (#631)', () => {
     f.componentInstance.fields.set(1);
     f.componentInstance.at.set('2025-03-02T15:00:00Z');
     f.detectChanges();
-    expect(el.querySelector('[data-facts]')!.textContent).toBe('1 field · Updated Mar 2, 2025');
+    expect(el.querySelector('[data-facts]')!.textContent).toBe('1 field · Updated 03/02/2025');
     f.componentInstance.fields.set(null);
     f.componentInstance.at.set(null);
     f.detectChanges();

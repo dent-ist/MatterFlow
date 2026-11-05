@@ -515,7 +515,7 @@ describe('TaskTable', () => {
     expect(cell('client').textContent?.trim()).toBe('Acme Corp');
     expect(cell('project').textContent?.trim()).toBe('-');
     expect(cell('type').textContent?.trim()).toBe('Data Processing');
-    expect(cell('created').textContent?.trim()).toBe('Oct 4, 2026');
+    expect(cell('created').textContent?.trim()).toBe('10/04');
   });
 
   it('announces the sort state on the header and emits the field when a header is activated', async () => {
@@ -777,7 +777,7 @@ describe('TaskTable', () => {
     );
     const cells = Array.from(el().querySelectorAll('tbody td[data-col="closed"]'));
     // 02:30 UTC is still Oct 16 in Chicago.
-    expect(cells[0].textContent?.trim()).toBe('Oct 16, 2026');
+    expect(cells[0].textContent?.trim()).toBe('10/16');
     expect(cells[0].querySelector('[title]')!.getAttribute('title')).toBe(
       'Oct 16, 2026, 9:30 PM CDT',
     );

@@ -45,7 +45,7 @@
             }
             @if (u.lastLoginAtUtc) {
               <span class="ud-fact" data-last-seen
-                >Last seen {{ u.lastLoginAtUtc | mfDateLong: 'date' }}</span
+                >Last seen {{ u.lastLoginAtUtc | mfNum: 'date' }}</span
               >
             }
             @if (openTasks(); as n) {
@@ -336,7 +336,7 @@
                   <dt>Windows account</dt>
                   <dd class="ud-mono">{{ u.windowsAccount }}</dd>
                   <dt>First seen</dt>
-                  <dd data-first-seen>{{ u.registeredAtUtc | mfDateLong: 'date' }}</dd>
+                  <dd data-first-seen>{{ u.registeredAtUtc | mfNum: 'date' }}</dd>
                 </dl>
                 @if (canManage()) {
                   <p class="ud-note" data-save-note>

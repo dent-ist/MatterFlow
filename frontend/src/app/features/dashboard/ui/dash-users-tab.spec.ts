@@ -1460,7 +1460,7 @@ describe('DashUsersTab', () => {
       expect(zero.classList.contains('cell--zero')).toBe(true);
       expect(zero.getAttribute('data-step')).toBe('0');
       expect(cell(1, 10).getAttribute('aria-label')).toContain(
-        'Priya Shah: 7 Production tasks completed from Jul 18',
+        'Priya Shah: 7 Production tasks completed from 07/18 to 10/15',
       );
       expect(cell(1, 11).getAttribute('title')).toBe(cell(1, 11).getAttribute('aria-label'));
       // Gaps are outlined only while the Training gaps toggle is on (default off).
@@ -1591,7 +1591,9 @@ describe('DashUsersTab', () => {
         'all',
       );
       expect(url()).toContain('period=90d');
-      expect(text(q('[data-coverage-frame]'))).toContain('from Jul 18');
+      expect(text(q('[data-coverage-frame]'))).toContain(
+        'Tasks each person completed per type from 07/18 to 10/15.',
+      );
       await choose('mf-dropdown[data-period]', '12m');
       expect(getCoverage).toHaveBeenLastCalledWith(
         '12m',

@@ -115,7 +115,7 @@ describe('ReportsListTab (#712)', () => {
       expect(row.querySelector('a')!.getAttribute('href')).toBe('/admin/reports/5');
       expect(row.querySelector('[data-category]')!.textContent).toBe('Task follow-up');
       expect(row.querySelector('[data-roles]')!.textContent).toBe('3');
-      expect(row.querySelector('[data-last-run]')!.textContent).toContain('Oct 20, 2026');
+      expect(row.querySelector('[data-last-run]')!.textContent).toContain(' 10/20 ');
       expect(q('tr[data-row="Tasks per matter"] [data-last-run]').textContent).toContain('Never');
       expect(row.textContent).toContain('Active');
     });

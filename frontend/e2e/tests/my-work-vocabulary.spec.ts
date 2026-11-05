@@ -214,7 +214,7 @@ test.describe('My Work vocabulary and tab rules', () => {
     await myWork.open('?view=completed&completedFrom=2000-01-01');
     await expect(myWork.tab(/^Closed/)).toContainText('(2)');
     await expect(page.locator('[data-filter-chips] [data-chip]')).toContainText(
-      'Closed: from Jan 1, 2000',
+      'Closed: from 01/01/2000',
     );
   });
 

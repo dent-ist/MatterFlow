@@ -14,7 +14,8 @@ import {
 } from '@angular/core';
 import { DateInput } from 'form-engine';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
-import { formatDateOnly, parseDateOnly } from '../../core/time/time';
+import { parseDateOnly } from '../../core/time/time';
+import { numericDay } from '../ui/numeric-date';
 import {
   DATE_PRESETS,
   DEFAULT_DATE_PRESETS,
@@ -28,20 +29,19 @@ import { FILTER_TRIGGER_STYLES, FilterPopover } from './filter-popover';
 
 let nextId = 0;
 
-/** "Oct 1 to Oct 16" (the year only when it is not this year) for the trigger button of a narrow column. */
+/** "10/01 to 10/16" (the year only when it is not this year, D-60) for the trigger button of a narrow column. */
 export function shortRange(r: RangeValue, thisYear: number): string {
   const f = (iso: string): string => {
     const d = parseDateOnly(iso);
     if (!d) return iso;
-    const full = formatDateOnly(iso); // "Oct 28, 2026"
-    return d.year === thisYear ? full.replace(/,\s*\d{4}$/, '') : full;
+    return numericDay(d, thisYear); // "10/28" or "10/28/2027"
   };
   if (r.from && r.to) return r.from === r.to ? f(r.from) : `${f(r.from)} to ${f(r.to)}`;
   return r.from ? `From ${f(r.from)}` : `Until ${f(r.to)}`;
 }
 
 /**
- * Date range column filter: a button ("Any date" / "Oct 1 to Oct 16") opening a popover with From and To (`mf-date-input`, applies when
+ * Date range column filter: a button ("Any date" / "10/01 to 10/16") opening a popover with From and To (`mf-date-input`, applies when
  * the user leaves the field, presses Enter or picks from the calendar) and presets (Today, This week with weeks starting on Monday, Last
  * 7 / 30 days, This month, ...) worked out in the viewer's time zone. A preset fills both dates. A range whose From is after To shows an
  * error and is not applied. In the sheet (`inline`) the same group shows in place.

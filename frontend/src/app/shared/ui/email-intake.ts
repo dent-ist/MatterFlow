@@ -15,7 +15,6 @@ import { firstValueFrom } from 'rxjs';
 import { IntakeClient, ParsedEmailResponse } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { ApiError } from '../../core/http/api-error';
-import { MfDateLongPipe } from '../pipes/mf-date-long.pipe';
 import {
   DESCRIPTION_MAX_TEXT,
   isBlankHtml,
@@ -23,6 +22,7 @@ import {
 } from '../../features/tasks/panels/rich-text';
 import { RichTextEditor } from '../../features/tasks/panels/rich-text-editor';
 import { TextField } from './text-field';
+import { NumericDatePipe } from './numeric-date';
 
 /** The values the host prefills a Create Task form with. A field is present only when the user chose to replace it. */
 export interface EmailPrefill {
@@ -85,7 +85,7 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
  */
 @Component({
   selector: 'mf-email-intake',
-  imports: [Button, TextField, MfDateLongPipe, RichTextEditor],
+  imports: [NumericDatePipe, Button, TextField, RichTextEditor],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './email-intake.scss',
   template: `
@@ -295,7 +295,7 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
                   <p class="ei__sent" data-sent>
                     Source email sent:
                     @if (sentAt(); as s) {
-                      {{ s | mfDateLong }}
+                      {{ s | mfNum }}
                     } @else {
                       not found in the email
                     }

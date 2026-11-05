@@ -195,7 +195,7 @@ describe('ListFilters', { timeout: 20_000 }, () => {
       expect(f.chips().map((c) => c.label)).toEqual([
         'Priority: Critical',
         'Priority: High',
-        'Created: from Oct 1, 2026',
+        'Created: from 10/01',
         'Matter: 7',
       ]);
     });

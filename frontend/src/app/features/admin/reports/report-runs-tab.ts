@@ -3,8 +3,8 @@ import { firstValueFrom } from 'rxjs';
 import { ReportAdminClient, ReportRunLogItemResponse } from '../../../api/generated/api-client';
 import { ApiError } from '../../../core/http/api-error';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
-import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 const PAGE = 50;
 
@@ -15,7 +15,7 @@ const PAGE = 50;
  */
 @Component({
   selector: 'mf-report-runs-tab',
-  imports: [Dropdown, MfDateLongPipe, ScrollArea],
+  imports: [NumericDatePipe, Dropdown, ScrollArea],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -67,7 +67,7 @@ const PAGE = 50;
           <tbody>
             @for (r of rows(); track r.runId) {
               <tr [attr.data-run]="r.runId">
-                <td>{{ r.startedAtUtc | mfDateLong: 'datetime' }}</td>
+                <td>{{ r.startedAtUtc | mfNum }}</td>
                 <td>
                   {{ r.reportName }} <span class="rr__muted">v{{ r.versionNo }}</span>
                 </td>

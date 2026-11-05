@@ -1,4 +1,3 @@
-import { MfDateLongPipe } from '../../../shared/pipes/mf-date-long.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -50,6 +49,7 @@ import {
 } from '../../../shared/ui/record-state';
 import { Crumb, PageHeader } from '../../../shared/ui/page-header';
 import { ADMIN_LIST, ListReturn } from '../list-return';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 type DialogKind = 'publish' | 'retire' | 'discard' | 'conflict' | 'versions' | null;
 
@@ -62,6 +62,7 @@ type DialogKind = 'publish' | 'retire' | 'discard' | 'conflict' | 'versions' | n
   selector: 'mf-task-type-form-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    NumericDatePipe,
     FixedPage,
     FormDesignerBar,
     Badge,
@@ -73,7 +74,6 @@ type DialogKind = 'publish' | 'retire' | 'discard' | 'conflict' | 'versions' | n
     FormDialog,
     ScrollRegion,
     FormsModule,
-    MfDateLongPipe,
   ],
   templateUrl: './task-type-form-page.html',
   styleUrl: './task-type-form-page.scss',

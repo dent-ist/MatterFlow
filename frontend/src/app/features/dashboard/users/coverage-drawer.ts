@@ -18,8 +18,8 @@ import {
   TaskQueueClient,
   TaskQueueRow,
 } from '../../../api/generated/api-client';
-import { formatDateOnly, mfDateLong } from '../../../core/time/time';
-import { USER_TIME_ZONE } from '../../../core/time/clock';
+import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
+import { numericDate, numericInstant } from '../../../shared/ui/numeric-date';
 import { SlidePanel } from '../../../shared/ui/slide-panel';
 import { Tip } from '../../../shared/ui/tip';
 import { ErrorReference } from '../../../shared/ui/error-reference';
@@ -235,6 +235,7 @@ export class CoverageDrawer {
   protected readonly origin = inject(TaskOriginLinks);
   private readonly queue = inject(TaskQueueClient);
   private readonly zone = inject(USER_TIME_ZONE);
+  private readonly clock = inject(Clock);
   private seq = 0;
   private destroyed = false;
   private openedKey = '';
@@ -252,8 +253,12 @@ export class CoverageDrawer {
     const t = this.target();
     return t ? targetQueueParams(t) : {};
   });
-  protected readonly fromText = computed(() => formatDateOnly(this.target()?.from ?? ''));
-  protected readonly toText = computed(() => formatDateOnly(this.target()?.to ?? ''));
+  protected readonly fromText = computed(() =>
+    numericDate(this.target()?.from ?? '', this.clock.now(), this.zone),
+  );
+  protected readonly toText = computed(() =>
+    numericDate(this.target()?.to ?? '', this.clock.now(), this.zone),
+  );
 
   constructor() {
     inject(DestroyRef).onDestroy(() => (this.destroyed = true));
@@ -298,7 +303,9 @@ export class CoverageDrawer {
   }
 
   protected completedOn(r: TaskQueueRow): string {
-    return r.completedAtUtc ? mfDateLong(r.completedAtUtc, this.zone, 'date') : '';
+    return r.completedAtUtc
+      ? numericInstant(r.completedAtUtc, this.clock.now(), this.zone, false)
+      : '';
   }
 
   protected onVisible(open: boolean): void {

@@ -146,7 +146,7 @@ describe('TaskCardList', () => {
     const chips = el().querySelector('[data-card-chips]')!;
     expect(chips.querySelector('[data-col="priority"]')).toBeNull();
     expect(chips.querySelector('[data-col="due"]')).toBeNull();
-    expect(chips.querySelector('[data-col="closed"]')!.textContent?.trim()).toBe('Closed Oct 12');
+    expect(chips.querySelector('[data-col="closed"]')!.textContent?.trim()).toBe('Closed 10/12');
     expect(chips.querySelector('[data-col="status"]')).not.toBeNull();
     expect(el().querySelector('[data-card-meta]')).toBeNull();
   });
@@ -163,7 +163,7 @@ describe('TaskCardList', () => {
       ['status', 'closed'],
     );
     expect(el().querySelector('[data-col="closed"]')!.textContent?.trim()).toBe(
-      'Closed Mar 2, 2025',
+      'Closed 03/02/2025',
     );
   });
 

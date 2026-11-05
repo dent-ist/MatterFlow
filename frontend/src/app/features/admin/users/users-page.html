@@ -157,7 +157,7 @@
                       "
                     >
                       @if (u.lastLoginAtUtc) {
-                        {{ u.lastLoginAtUtc | mfDateLong: 'date' }}
+                        {{ u.lastLoginAtUtc | mfNum: 'date' }}
                       } @else {
                         <span class="us-muted">Never</span>
                       }

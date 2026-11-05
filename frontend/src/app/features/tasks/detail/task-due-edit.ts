@@ -18,7 +18,6 @@ import {
   dayIndex,
   describeDueCell,
   dueCellText,
-  formatDateOnly,
   parseDateOnly,
   zoneAbbreviation,
   zonedLocalToUtc,
@@ -28,6 +27,7 @@ import { Dismissable } from '../../../shared/ui/dismissable';
 import { DueCell } from '../../../shared/work-queue/due-cell';
 import { isBlankHtml } from '../panels/rich-text';
 import { clockText } from '../panels/when-summary';
+import { numericDate } from '../../../shared/ui/numeric-date';
 import { TaskDetailStore } from './task-detail.store';
 
 let nextId = 0;
@@ -489,7 +489,7 @@ export class DueEdit implements OnDestroy {
       const at = clockText(saved.dueTime ?? '');
       this.announce.emit(
         saved.dueDate
-          ? `Due date set to ${formatDateOnly(saved.dueDate)}${at ? ' ' + at : ''}`
+          ? `Due date set to ${numericDate(saved.dueDate, this.clock.now(), this.zone)}${at ? ' ' + at : ''}`
           : 'Due date cleared',
       );
       return;
