@@ -1,0 +1,86 @@
+{
+ "1142-activity-1366": {
+  "dialog": {
+   "w": 520,
+   "h": 768
+  },
+  "header": {
+   "w": 518,
+   "h": 56
+  },
+  "footer": null,
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Activity: Sample Alpha",
+  "titleSize": "16px",
+  "buttons": [],
+  "overflowX": false
+ },
+ "1142-activity-1920": {
+  "dialog": {
+   "w": 520,
+   "h": 1080
+  },
+  "header": {
+   "w": 518,
+   "h": 56
+  },
+  "footer": null,
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Activity: Sample Alpha",
+  "titleSize": "16px",
+  "buttons": [],
+  "overflowX": false
+ },
+ "1142-person-1366": {
+  "dialog": {
+   "w": 520,
+   "h": 768
+  },
+  "header": {
+   "w": 518,
+   "h": 56
+  },
+  "footer": null,
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Test User 02",
+  "titleSize": "16px",
+  "buttons": [],
+  "overflowX": false
+ },
+ "1142-person-1920": {
+  "dialog": {
+   "w": 520,
+   "h": 1080
+  },
+  "header": {
+   "w": 518,
+   "h": 56
+  },
+  "footer": null,
+  "close": {
+   "w": 36,
+   "h": 36
+  },
+  "closeBg": "rgba(0, 0, 0, 0)",
+  "closeColor": "rgb(75, 85, 99)",
+  "title": "Test User 02",
+  "titleSize": "16px",
+  "buttons": [],
+  "overflowX": false
+ }
+}

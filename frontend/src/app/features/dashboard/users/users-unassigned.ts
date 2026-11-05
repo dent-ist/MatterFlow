@@ -13,12 +13,12 @@ import {
   untracked,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Dialog } from 'primeng/dialog';
 import { firstValueFrom } from 'rxjs';
 import { TaskQueueClient, TaskQueueRow } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
-import { DialogFocus } from '../../../shared/ui/dialog-focus';
+import { SlidePanel } from '../../../shared/ui/slide-panel';
+import { Tip } from '../../../shared/ui/tip';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { PriorityFlag } from '../../../shared/ui/priority-flag';
 import { DueCell } from '../../../shared/work-queue/due-cell';
@@ -44,8 +44,8 @@ export const UNASSIGNED_PAGE = 50;
 @Component({
   selector: 'mf-users-unassigned',
   imports: [
-    Dialog,
-    DialogFocus,
+    SlidePanel,
+    Tip,
     RouterLink,
     RowEdit,
     PriorityFlag,
@@ -55,44 +55,26 @@ export const UNASSIGNED_PAGE = 50;
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <p-dialog
-      position="right"
-      styleClass="mf-drawer mf-users-drawer mf-unassigned-drawer"
-      [modal]="true"
-      [closable]="true"
-      [dismissableMask]="true"
-      closeAriaLabel="Close unassigned tasks"
-      [mfDialogFocus]="visible()"
-      [focusOnShow]="false"
-      (onShow)="focusClose()"
-      [draggable]="false"
-      [resizable]="false"
+    <mf-slide-panel
+      [title]="title()"
+      closeLabel="Close unassigned tasks"
+      panelClass="mf-users-drawer mf-unassigned-drawer"
+      initialFocus="close"
+      [showFooter]="false"
       [visible]="visible()"
       (visibleChange)="onVisible($event)"
-      [style]="{
-        width: '36rem',
-        maxWidth: '100vw',
-        height: '100vh',
-        maxHeight: '100vh',
-        margin: '0',
-        borderRadius: '0',
-      }"
     >
-      <ng-template #header let-labelId="ariaLabelledBy">
-        <span class="htitle">
-          <span class="hname" [id]="labelId" data-unassigned-title>{{ title() }}</span>
-          <a
-            class="mf-btn mf-btn--icon"
-            data-unassigned-queue
-            routerLink="/tasks"
-            aria-label="Open in Task Queue"
-            title="Open in Task Queue"
-            [queryParams]="queueParams()"
-          >
-            <i class="pi pi-external-link" aria-hidden="true"></i>
-          </a>
-        </span>
-      </ng-template>
+      <a
+        mfDrawerActions
+        class="mf-btn mf-btn--icon"
+        data-unassigned-queue
+        routerLink="/tasks"
+        aria-label="Open in Task Queue"
+        mfTip="Open in Task Queue"
+        [queryParams]="queueParams()"
+      >
+        <i class="pi pi-external-link" aria-hidden="true"></i>
+      </a>
       @if (visible()) {
         <div class="peek" data-unassigned-panel>
           <p class="sr-only" role="status" aria-live="polite" data-unassigned-live>{{ live() }}</p>
@@ -170,33 +152,12 @@ export const UNASSIGNED_PAGE = 50;
           }
         </div>
       }
-    </p-dialog>
+    </mf-slide-panel>
   `,
   styles: `
     .peek {
       display: grid;
       gap: var(--mf-s3);
-    }
-    .htitle {
-      display: flex;
-      flex: 1;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--mf-s2);
-      min-width: 0;
-    }
-    .hname {
-      min-width: 0;
-      overflow: hidden;
-      font-weight: 600;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .htitle a {
-      text-decoration: none;
-    }
-    .htitle .pi {
-      font-size: var(--mf-icon-lg);
     }
     .rows {
       display: grid;
@@ -415,13 +376,5 @@ export class UsersUnassigned {
 
   protected onVisible(open: boolean): void {
     this.open.set(open);
-  }
-
-  protected focusClose(): void {
-    document
-      .querySelector<HTMLElement>(
-        '.mf-unassigned-drawer button[aria-label="Close unassigned tasks"]',
-      )
-      ?.focus();
   }
 }

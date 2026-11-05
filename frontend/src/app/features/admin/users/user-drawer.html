@@ -1,110 +1,93 @@
-<p-dialog
-  position="right"
-  styleClass="mf-drawer mf-user-drawer"
-  [modal]="true"
-  [closable]="false"
-  [closeOnEscape]="false"
-  [dismissableMask]="false"
-  maskStyleClass="mf-user-drawer-mask"
-  [mfDialogFocus]="open()"
-  [focusOnShow]="false"
-  (onShow)="focusHeading()"
-  [draggable]="false"
-  [resizable]="false"
+<mf-slide-panel
+  [title]="name()"
+  [subtitle]="account()"
+  closeLabel="Close user details"
+  panelClass="mf-user-drawer"
+  maskClass="mf-user-drawer-mask"
+  scrollLabel="User details"
+  initialFocus="none"
+  [hostClosing]="true"
+  [customFooter]="true"
   [visible]="open()"
-  [style]="{
-    width: '480px',
-    maxWidth: '100vw',
-    margin: '0',
-    borderRadius: '0',
-  }"
-  [contentStyle]="{ display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '0' }"
+  (opened)="focusHeading()"
+  (closeRequest)="requestClose()"
 >
-  <ng-template #header let-labelId="ariaLabelledBy">
-    <div class="ud-head" data-drawer-head>
-      <div class="ud-top">
-        <h2 class="ud-title" tabindex="-1" data-panel-heading [id]="labelId" [attr.title]="name()">
-          {{ name() }}
-        </h2>
-        <p-button
-          class="ud-close"
-          icon="pi pi-times"
-          severity="secondary"
-          [rounded]="true"
-          [text]="true"
-          data-drawer-close
-          ariaLabel="Close user details"
-          (onClick)="requestClose()"
-        />
-      </div>
-      @if (detail(); as u) {
-        <p class="ud-account">
-          <span class="ud-mono" data-account>{{ u.windowsAccount }}</span>
-          @if (u.isSeededAdmin) {
-            <span> &middot; Seeded</span>
-          }
-        </p>
-        <div class="ud-facts">
-          @if (u.isPending) {
-            <mf-badge data-drawer-status tone="warning" icon="pi-user-plus"
-              >Pending access</mf-badge
-            >
-          } @else if (u.isActive) {
-            <mf-badge data-drawer-status tone="success" icon="pi-check-circle">Active</mf-badge>
-          } @else {
-            <mf-badge data-drawer-status tone="neutral">Inactive</mf-badge>
-          }
-          @if (availabilityKind() === 'chip') {
-            <mf-availability-chip [availability]="summary()?.availability" />
-          }
-          @if (u.lastLoginAtUtc) {
-            <span class="ud-fact" data-last-seen
-              >Last seen {{ u.lastLoginAtUtc | mfDate: 'date' }}</span
-            >
-          }
-          @if (openTasks(); as n) {
-            <span class="ud-fact" data-open-tasks>Open tasks: {{ n }}</span>
-          } @else if (openTasks() === 0) {
-            <span class="ud-fact" data-open-tasks>No open tasks</span>
-          }
-        </div>
-        <p class="ud-head-actions">
-          @if (openTasks()) {
-            <a class="mf-link" data-view-tasks routerLink="/tasks" [queryParams]="tasksQuery()"
-              >View their tasks</a
-            >
-          }
-          @if (canManage()) {
-            @if (u.isActive) {
-              <button
-                type="button"
-                class="mf-btn mf-btn--text ud-danger"
-                data-deactivate
-                [attr.aria-label]="'Deactivate ' + u.displayName"
-                (click)="askDeactivate()"
-              >
-                Deactivate
-              </button>
-            } @else {
-              <button
-                type="button"
-                class="mf-btn mf-btn--text"
-                data-activate
-                [attr.aria-label]="'Activate ' + u.displayName"
-                [attr.aria-disabled]="deactivateBusy() ? 'true' : null"
-                (click)="activate()"
-              >
-                Activate
-              </button>
-            }
-          }
-        </p>
-      }
-    </div>
-  </ng-template>
+  <span mfDrawerFooter class="ud-foot-slot">
+    @if (canManage()) {
+      <p-button label="Cancel" severity="secondary" data-cancel (onClick)="requestClose()" />
+      <p-button
+        label="Save changes"
+        data-save
+        [disabled]="!dirty() || saving()"
+        (onClick)="save()"
+      />
+    } @else {
+      <p-button label="Close" severity="secondary" data-cancel (onClick)="requestClose()" />
+    }
+  </span>
 
   @if (open()) {
-    <div class="ud-body" mfScrollRegion="User details" data-panel [attr.data-user]="userId()">
+    <div class="ud-body" data-panel [attr.data-user]="userId()">
+      @if (detail(); as u) {
+        <div class="ud-head" data-drawer-head>
+          <div class="ud-facts">
+            @if (u.isPending) {
+              <mf-badge data-drawer-status tone="warning" icon="pi-user-plus"
+                >Pending access</mf-badge
+              >
+            } @else if (u.isActive) {
+              <mf-badge data-drawer-status tone="success" icon="pi-check-circle">Active</mf-badge>
+            } @else {
+              <mf-badge data-drawer-status tone="neutral">Inactive</mf-badge>
+            }
+            @if (availabilityKind() === 'chip') {
+              <mf-availability-chip [availability]="summary()?.availability" />
+            }
+            @if (u.lastLoginAtUtc) {
+              <span class="ud-fact" data-last-seen
+                >Last seen {{ u.lastLoginAtUtc | mfDate: 'date' }}</span
+              >
+            }
+            @if (openTasks(); as n) {
+              <span class="ud-fact" data-open-tasks>Open tasks: {{ n }}</span>
+            } @else if (openTasks() === 0) {
+              <span class="ud-fact" data-open-tasks>No open tasks</span>
+            }
+          </div>
+          <p class="ud-head-actions">
+            @if (openTasks()) {
+              <a class="mf-link" data-view-tasks routerLink="/tasks" [queryParams]="tasksQuery()"
+                >View their tasks</a
+              >
+            }
+            @if (canManage()) {
+              @if (u.isActive) {
+                <button
+                  type="button"
+                  class="mf-btn mf-btn--text ud-danger"
+                  data-deactivate
+                  [attr.aria-label]="'Deactivate ' + u.displayName"
+                  (click)="askDeactivate()"
+                >
+                  Deactivate
+                </button>
+              } @else {
+                <button
+                  type="button"
+                  class="mf-btn mf-btn--text"
+                  data-activate
+                  [attr.aria-label]="'Activate ' + u.displayName"
+                  [attr.aria-disabled]="deactivateBusy() ? 'true' : null"
+                  (click)="activate()"
+                >
+                  Activate
+                </button>
+              }
+            }
+          </p>
+        </div>
+      }
+
       @switch (loadState()) {
         @case ('loading') {
           <div class="ud-loading" role="status" aria-busy="true" data-panel-loading>
@@ -368,21 +351,7 @@
       }
     </div>
   }
-
-  <ng-template #footer>
-    @if (canManage()) {
-      <p-button
-        label="Save changes"
-        data-save
-        [disabled]="!dirty() || saving()"
-        (onClick)="save()"
-      />
-      <p-button label="Cancel" severity="secondary" data-cancel (onClick)="requestClose()" />
-    } @else {
-      <p-button label="Close" severity="secondary" data-cancel (onClick)="requestClose()" />
-    }
-  </ng-template>
-</p-dialog>
+</mf-slide-panel>
 
 <mf-confirm-dialog
   title="Deactivate User"

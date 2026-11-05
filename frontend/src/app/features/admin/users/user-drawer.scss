@@ -1,48 +1,9 @@
-/* The header: the name (two lines at most), the account, then the facts and the status control. It lives in the dialog header. */
+/* The summary under the header: the status chips and facts, then the actions (View their tasks, Deactivate). The title and the account are the drawer's header (mf-slide-panel). */
 .ud-head {
   display: grid;
-  flex: 1 1 auto;
-  gap: var(--mf-s1);
-  min-width: 0;
-}
-
-.ud-top {
-  display: flex;
-  align-items: flex-start;
   gap: var(--mf-s2);
-}
-
-.ud-close {
-  flex: none;
-  margin-left: auto;
-}
-
-.ud-title {
-  flex: 1 1 auto;
   min-width: 0;
-  display: -webkit-box;
-  margin: 0;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  font-size: var(--mf-fs-lg); /* 16px, the dialog title size (S18, #619) */
-  font-weight: 600;
-  line-clamp: 2;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-
-  &:focus-visible {
-    outline: 2px solid var(--mf-focus);
-    outline-offset: 2px;
-  }
-}
-
-.ud-account {
-  margin: 0;
-  overflow: hidden;
-  color: var(--mf-text-muted);
-  font-size: var(--mf-fs-sm);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  padding-bottom: var(--mf-s3);
 }
 
 .ud-mono {
@@ -81,12 +42,14 @@
   color: var(--mf-danger);
 }
 
-/* The body scrolls inside the drawer; the footer (Save changes, Cancel) stays in view. */
+/* The panel body scrolls inside the drawer (mf-slide-panel); the footer (Cancel, Save changes) stays in view. */
 .ud-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  padding: 0 var(--mf-s4) var(--mf-s4);
-  overflow: auto;
+  min-width: 0;
+}
+
+/* The footer buttons are items of the panel's footer row: Cancel at the left, Save changes at the right. */
+.ud-foot-slot {
+  display: contents;
 }
 
 .ud-sec {

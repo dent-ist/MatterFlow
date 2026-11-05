@@ -192,7 +192,7 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     const count = Number(await button.locator('[data-n]').textContent());
     await button.click();
     await expect(page.locator('[data-unassigned-panel]')).toBeVisible();
-    await expect(page.locator('[data-unassigned-title]')).toHaveText(`Unassigned tasks (${count})`);
+    await expect(page.locator('[data-drawer-title]')).toHaveText(`Unassigned tasks (${count})`);
     await expect(page.locator('[data-unassigned-queue]')).toHaveAttribute(
       'href',
       /unassigned=true/,

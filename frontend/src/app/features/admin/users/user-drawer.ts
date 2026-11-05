@@ -2,7 +2,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  HostListener,
   computed,
   effect,
   inject,
@@ -13,7 +12,6 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
-import { Dialog } from 'primeng/dialog';
 import { firstValueFrom } from 'rxjs';
 import { availabilityDisplay } from '../../../core/availability/availability';
 import { ApiError } from '../../../core/http/api-error';
@@ -33,9 +31,8 @@ import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { AvailabilityChip } from '../../../shared/availability/availability-chip';
 import { Badge } from '../../../shared/ui/badge';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
-import { DialogFocus } from '../../../shared/ui/dialog-focus';
+import { SlidePanel } from '../../../shared/ui/slide-panel';
 import { phoneCards } from '../../../shared/ui/record-card-list';
-import { ScrollRegion } from '../../../shared/ui/scroll-region';
 import { impactLine } from '../shared/dialog-copy';
 import { availabilityShown } from './user-availability';
 import { permissionsOfRoles, summarizePermissions } from './user-access';
@@ -63,9 +60,10 @@ export function readOnlyReason(canManage: boolean, canEditPods: boolean): string
 
 /**
  * The user drawer (#438 to #443, U3): one modal side drawer replaces the inline panel. It is `?user=<id>` in the address (the page owns that,
- * so Back closes it and Back from "View their tasks" reopens it). Header: name (two lines at most), status, availability where it informs,
- * last seen, open tasks and the Deactivate / Activate control. Body, in order: Access (roles with description and permission count, the
- * grouped permissions after the save, a System Admin warning), Pods, Availability, Profile. Footer: Save changes and Cancel, always in view.
+ * so Back closes it and Back from "View their tasks" reopens it). It is the shared drawer (`mf-slide-panel`, 520 px, D-33): header = name (two lines at
+ * most) and the Windows account; the first lines of the body are the status, availability where it informs, last seen, open tasks and the
+ * Deactivate / Activate control. Body, in order: Access (roles with description and permission count, the
+ * grouped permissions after the save, a System Admin warning), Pods, Availability, Profile. Footer: Cancel and Save changes, always in view.
  *
  * Save semantics are the ones the panel had and the muted lines say so: Save changes writes roles and profile; pods and availability save
  * on their own, at once (with Undo for pods); Deactivate asks first in a confirm dialog that states the open tasks. Without `User.Manage`
@@ -75,15 +73,13 @@ export function readOnlyReason(canManage: boolean, canEditPods: boolean): string
 @Component({
   selector: 'mf-user-drawer',
   imports: [
-    Dialog,
-    DialogFocus,
+    SlidePanel,
     Button,
     RouterLink,
     Badge,
     AvailabilityChip,
     UserPodsCell,
     ConfirmDialog,
-    ScrollRegion,
     MfDatePipe,
     UserCalendarField,
   ],
@@ -139,6 +135,11 @@ export class UserDrawer {
   protected readonly codesByRole = signal<ReadonlyMap<number, readonly string[]>>(new Map());
   private requestId = 0;
 
+  /** The header's subtitle: the Windows account, and "Seeded" for the seeded administrator. */
+  protected readonly account = computed(() => {
+    const u = this.detail();
+    return u ? u.windowsAccount + (u.isSeededAdmin ? ' \u00b7 Seeded' : '') : '';
+  });
   protected readonly name = computed(
     () => this.detail()?.displayName ?? this.summary()?.displayName ?? 'User details',
   );
@@ -353,26 +354,6 @@ export class UserDrawer {
   }
 
   // ---- closing
-
-  /**
-   * Esc closes the drawer, asking first when there are unsaved edits. The dialog's own Escape is off (it would hide the drawer before the
-   * question is answered); this listens on the document and yields to any dialog above it (the Leave question, the Deactivate question, the
-   * availability dialog), which handle their own Escape.
-   */
-  @HostListener('document:keydown.escape', ['$event'])
-  protected onEscape(event: Event): void {
-    if (!this.open() || event.defaultPrevented) return;
-    // Dialogs stack by z-index (a dialog may sit inline in the page, so the order in the document says nothing): when a mask above ours
-    // exists, a dialog above the drawer (the question, the availability dialog) is the one Esc is for.
-    const mine = document.querySelector<HTMLElement>('.mf-user-drawer-mask');
-    if (!mine) return;
-    const z = (el: Element): number => Number(getComputedStyle(el).zIndex) || 0;
-    const above = Array.from(document.querySelectorAll('.p-dialog-mask')).some(
-      (m) => m !== mine && z(m) > z(mine),
-    );
-    if (above) return;
-    void this.requestClose();
-  }
 
   /** X, Esc, the mask and Cancel: asks first when there are unsaved edits (the same question as leaving the Roles tab). */
   protected async requestClose(): Promise<void> {

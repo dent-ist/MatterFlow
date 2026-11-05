@@ -15,7 +15,6 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
-import { Dialog } from 'primeng/dialog';
 import { firstValueFrom } from 'rxjs';
 import {
   FormsClient,
@@ -35,7 +34,7 @@ import { UndoService } from '../../../core/notify/undo.service';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { toFormDefinition } from '../../../shared/forms/form-schema';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
-import { DialogFocus } from '../../../shared/ui/dialog-focus';
+import { SlidePanel } from '../../../shared/ui/slide-panel';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { WorkflowDiff, diffVersions } from './workflow-diff';
@@ -84,8 +83,7 @@ const LIBRARY_PANE_MIN = 1280;
     RecordState,
     RouterLink,
     Button,
-    Dialog,
-    DialogFocus,
+    SlidePanel,
     ConfirmDialog,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -330,29 +328,14 @@ const LIBRARY_PANE_MIN = 1280;
         }
 
         @if (editable() && !libraryPane()) {
-          <p-dialog
-            position="right"
-            styleClass="mf-drawer"
-            header="Add steps"
-            [modal]="true"
-            [closable]="true"
-            [dismissableMask]="true"
-            closeAriaLabel="Close step library"
-            [mfDialogFocus]="libraryOpen()"
-            [focusOnShow]="false"
-            (onShow)="focusLibrarySearch()"
-            [draggable]="false"
-            [resizable]="false"
+          <mf-slide-panel
+            title="Add steps"
+            closeLabel="Close step library"
+            initialFocus="none"
+            [showFooter]="false"
             [visible]="libraryOpen()"
             (visibleChange)="libraryOpen.set($event)"
-            [style]="{
-              width: '28rem',
-              maxWidth: '100vw',
-              height: '100vh',
-              maxHeight: '100vh',
-              margin: '0',
-              borderRadius: '0',
-            }"
+            (opened)="focusLibrarySearch()"
           >
             @if (libraryOpen()) {
               <p class="pg-reason wf-drawer-help">
@@ -365,7 +348,7 @@ const LIBRARY_PANE_MIN = 1280;
                 (add)="add($event)"
               />
             }
-          </p-dialog>
+          </mf-slide-panel>
         }
       }
     </mf-fixed-page>

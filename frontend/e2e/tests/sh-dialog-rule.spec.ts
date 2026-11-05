@@ -78,18 +78,16 @@ test.describe('One rule for dialogs and drawers (#619)', () => {
     await page.goto(`/clients/${client.clientId}`);
 
     await page.locator('[data-overflow]').click();
-    await page.getByRole('menuitem', { name: /Set inactive/ }).click();
+    await page.getByRole('menuitem', { name: /Set inactive/i }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
     expect(await titleLook(page, '.p-dialog-title')).toEqual({ size: 16, weight: 600 });
     const dialogClose = await closeLook(page, '.p-dialog-close-button');
-    // The dialogs share one close icon button (#1137: grey, 36 x 36); the drawers join it in #1142, until then only the shape is compared.
+    // The dialogs and the drawers share one close icon button (#1137, #1142: grey, 36 x 36, round, no border): the whole style is compared.
     expect(isTransparent(dialogClose.background)).toBe(true);
     expect(isTransparent(dialogClose.borderColor)).toBe(true);
     expect(isRound(dialogClose.radius)).toBe(true);
-    expect(isTransparent(drawerClose.background)).toBe(true);
-    expect(isTransparent(drawerClose.borderColor)).toBe(true);
-    expect(isRound(drawerClose.radius)).toBe(true);
+    expect(drawerClose).toEqual(dialogClose);
     // Footer order: secondary on the left, primary on the right.
     const footer = dialog.locator('.p-dialog-footer button');
     const names = await footer.allInnerTexts();
@@ -102,7 +100,7 @@ test.describe('One rule for dialogs and drawers (#619)', () => {
       await page.setViewportSize(size);
       await page.goto(`/clients/${client.clientId}`);
       await page.locator('[data-overflow]').click();
-      await page.getByRole('menuitem', { name: /Set inactive/ }).click();
+      await page.getByRole('menuitem', { name: /Set inactive/i }).click();
       await expect(dialog).toBeVisible();
       expect(await axeViolations(page), `confirm dialog at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);

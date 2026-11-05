@@ -15,6 +15,7 @@ const openRowMenu = async (p, item, n = 0) => {
   await p.getByRole('menuitem', { name: item }).first().click();
 };
 const tab = async (p, name) => { await p.getByRole('tab', { name }).click(); await wait(p, 1500); };
+const scope = async (p) => { await p.locator('mf-dropdown').first().click(); await wait(p, 500); await p.locator('.dd-panel li', { hasText: 'All pods' }).first().click(); await wait(p, 2000); };
 const userMenu = async (p) => { await p.locator('[data-testid="user-menu"]').click(); await wait(p, 400); };
 
 const CONFIRMS = [
@@ -67,8 +68,8 @@ const DRAWERS = [
     await p.locator('[data-user-open], tbody tr button').first().click(); } },
   { id: '1142-person', persona: 'admin', route: '/dashboard', open: async (p) => { await tab(p, /Users/); await p.locator('[data-user-card], article button, .card button').first().click(); } },
   { id: '1142-unassigned', persona: 'admin', route: '/dashboard', open: async (p) => { await tab(p, /Users/); await p.getByRole('button', { name: /unassigned/i }).first().click(); } },
-  { id: '1142-coverage', persona: 'admin', route: '/dashboard', open: async (p) => { await tab(p, /Users/); await p.getByRole('button', { name: /^Coverage/ }).first().click(); await wait(p, 1500); await p.locator('[data-coverage-cell] button, td button').first().click(); } },
-  { id: '1142-swimlane', persona: 'admin', route: '/dashboard', open: async (p) => { await tab(p, /Swimlane/); await p.locator('[data-card], [data-swimlane-card]').first().click(); } },
+  { id: '1142-coverage', persona: 'admin', route: '/dashboard', open: async (p) => { await tab(p, /Users/); await p.getByRole('button', { name: /^Coverage/ }).first().click(); await wait(p, 1800); await p.locator('[data-cell]').first().click(); } },
+  { id: '1142-swimlane', persona: 'admin', route: '/dashboard', open: async (p) => { await tab(p, /Swimlane/); await scope(p); await p.locator('[data-card-open]').first().click(); } },
 ];
 
 const ALL = [...CONFIRMS.map((s) => ({ ...s, kind: 'dlg' })), ...MENUS.map((s) => ({ ...s, kind: 'menu' })), ...DRAWERS.map((s) => ({ ...s, kind: 'drawer' }))];

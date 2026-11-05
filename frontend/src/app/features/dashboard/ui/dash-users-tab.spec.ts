@@ -428,7 +428,7 @@ describe('DashUsersTab', () => {
       expect(args[36]).toBe('asc');
       const panel = document.querySelector('[data-unassigned-panel]')!;
       expect(panel.querySelectorAll('[data-unassigned-tasks] li')).toHaveLength(2);
-      expect(text(document.querySelector('[data-unassigned-title]'))).toBe('Unassigned tasks (2)');
+      expect(text(document.querySelector('[data-drawer-title]'))).toBe('Unassigned tasks (2)');
       expect(document.querySelector('[data-unassigned-queue]')!.getAttribute('href')).toContain(
         'unassigned=true',
       );

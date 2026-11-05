@@ -11,7 +11,6 @@ import {
   untracked,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Dialog } from 'primeng/dialog';
 import { firstValueFrom } from 'rxjs';
 import {
   SwimlaneCard,
@@ -26,7 +25,7 @@ import { QuietRequests } from '../../../core/http/interceptors';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { DueCell } from '../../../shared/work-queue/due-cell';
 import { CopyButton } from '../../../shared/ui/copy-button';
-import { DialogFocus } from '../../../shared/ui/dialog-focus';
+import { SlidePanel } from '../../../shared/ui/slide-panel';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { PriorityFlag } from '../../../shared/ui/priority-flag';
 import { StatusBadge } from '../../../shared/ui/status-badge';
@@ -49,8 +48,7 @@ export const PEEK_COMMENTS = 3;
 @Component({
   selector: 'mf-swimlane-drawer',
   imports: [
-    Dialog,
-    DialogFocus,
+    SlidePanel,
     RouterLink,
     RowEdit,
     StatusBadge,
@@ -62,29 +60,14 @@ export const PEEK_COMMENTS = 3;
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <p-dialog
-      [header]="card() ? 'Task ' + card()!.ref : 'Task'"
-      position="right"
-      styleClass="mf-drawer mf-swl-drawer"
-      [modal]="true"
-      [closable]="true"
-      [dismissableMask]="true"
-      closeAriaLabel="Close task details"
-      [mfDialogFocus]="visible()"
-      [focusOnShow]="false"
-      (onShow)="focusClose()"
-      [draggable]="false"
-      [resizable]="false"
+    <mf-slide-panel
+      [title]="card() ? 'Task ' + card()!.ref : 'Task'"
+      closeLabel="Close task details"
+      panelClass="mf-swl-drawer"
+      initialFocus="close"
+      [showFooter]="false"
       [visible]="visible()"
       (visibleChange)="onVisible($event)"
-      [style]="{
-        width: '32rem',
-        maxWidth: '100vw',
-        height: '100vh',
-        maxHeight: '100vh',
-        margin: '0',
-        borderRadius: '0',
-      }"
     >
       @if (visible() && card(); as c) {
         <div class="peek" data-peek [attr.data-peek-task]="c.taskId">
@@ -253,7 +236,7 @@ export const PEEK_COMMENTS = 3;
           }
         </div>
       }
-    </p-dialog>
+    </mf-slide-panel>
   `,
   styles: `
     .peek {
@@ -483,12 +466,6 @@ export class SwimlaneDrawer {
 
   protected onVisible(open: boolean): void {
     if (!open) this.closed.emit();
-  }
-
-  protected focusClose(): void {
-    document
-      .querySelector<HTMLElement>('.mf-swl-drawer button[aria-label="Close task details"]')
-      ?.focus();
   }
 
   protected snippet(c: TaskCommentResponse): string {

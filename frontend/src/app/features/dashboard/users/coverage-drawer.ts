@@ -11,7 +11,6 @@ import {
   untracked,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Dialog } from 'primeng/dialog';
 import { firstValueFrom } from 'rxjs';
 import {
   CoverageTaskType,
@@ -21,7 +20,8 @@ import {
 } from '../../../api/generated/api-client';
 import { formatDateOnly, mfDate } from '../../../core/time/time';
 import { USER_TIME_ZONE } from '../../../core/time/clock';
-import { DialogFocus } from '../../../shared/ui/dialog-focus';
+import { SlidePanel } from '../../../shared/ui/slide-panel';
+import { Tip } from '../../../shared/ui/tip';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { emptyState, taskQueueArgs } from '../../../shared/work-queue/queue-filters';
@@ -62,52 +62,36 @@ export function targetQueueParams(t: CoverageTarget): Record<string, string | st
  */
 @Component({
   selector: 'mf-coverage-drawer',
-  imports: [Dialog, DialogFocus, RouterLink, MatterRef, ErrorReference],
+  imports: [SlidePanel, Tip, RouterLink, MatterRef, ErrorReference],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <p-dialog
-      [header]="
+    <mf-slide-panel
+      [title]="
         target() ? target()!.type.name + ': ' + target()!.user.displayName : 'Completed tasks'
       "
-      position="right"
-      styleClass="mf-drawer mf-coverage-drawer"
-      [modal]="true"
-      [closable]="true"
-      [dismissableMask]="true"
-      closeAriaLabel="Close completed tasks"
-      [mfDialogFocus]="visible()"
-      [focusOnShow]="false"
-      (onShow)="focusClose()"
-      [draggable]="false"
-      [resizable]="false"
+      closeLabel="Close completed tasks"
+      panelClass="mf-coverage-drawer"
+      initialFocus="close"
+      [showFooter]="false"
       [visible]="visible()"
       (visibleChange)="onVisible($event)"
-      [style]="{
-        width: '34rem',
-        maxWidth: '100vw',
-        height: '100vh',
-        maxHeight: '100vh',
-        margin: '0',
-        borderRadius: '0',
-      }"
     >
+      <a
+        mfDrawerActions
+        class="mf-btn mf-btn--icon"
+        data-open-queue
+        routerLink="/tasks"
+        aria-label="Open in Task Queue"
+        mfTip="Open in Task Queue"
+        [queryParams]="queueParams()"
+      >
+        <i class="pi pi-external-link" aria-hidden="true"></i>
+      </a>
       @if (target(); as t) {
         <div class="peek" data-coverage-drawer>
           <p class="lead" data-coverage-lead>
             {{ plural(t.count, 'task') }} of this type completed from {{ fromText() }} to
             {{ toText() }}.
-          </p>
-          <p class="actions">
-            <a
-              class="mf-btn mf-btn--icon mf-btn--primary"
-              data-open-queue
-              routerLink="/tasks"
-              aria-label="Open in Task Queue"
-              title="Open in Task Queue"
-              [queryParams]="queueParams()"
-            >
-              <i class="pi pi-external-link" aria-hidden="true"></i>
-            </a>
           </p>
           @switch (state()) {
             @case ('loading') {
@@ -161,19 +145,15 @@ export function targetQueueParams(t: CoverageTarget): Record<string, string | st
           }
         </div>
       }
-    </p-dialog>
+    </mf-slide-panel>
   `,
   styles: `
     .peek {
       display: grid;
       gap: var(--mf-s3);
     }
-    .lead,
-    .actions {
+    .lead {
       margin: 0;
-    }
-    .actions a {
-      text-decoration: none;
     }
     .rows {
       display: grid;
@@ -323,11 +303,5 @@ export class CoverageDrawer {
 
   protected onVisible(open: boolean): void {
     if (!open) this.closed.emit();
-  }
-
-  protected focusClose(): void {
-    document
-      .querySelector<HTMLElement>('.mf-coverage-drawer button[aria-label="Close completed tasks"]')
-      ?.focus();
   }
 }
