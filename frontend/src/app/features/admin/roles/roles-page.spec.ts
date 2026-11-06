@@ -136,7 +136,7 @@ describe('RolesPage', () => {
     const names = Array.from(el().querySelectorAll('.mf-role .mf-name')).map((n) => n.textContent);
     expect(names[0]).toBe('System Admin');
     expect(names).toContain('Data Scientist');
-    expect(q('[data-role="1"]').textContent).toContain('Built-in, locked');
+    expect(q('[data-role="1"]').textContent).toContain('Built-in, Locked');
     expect(q('[data-role="5"]').textContent).toContain('1 member');
   });
 

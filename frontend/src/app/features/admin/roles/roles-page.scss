@@ -259,6 +259,16 @@
   display: flex;
   gap: var(--mf-s2);
   align-items: flex-start;
+  /* The permission matrix: 36 px rows with an 18 px checkbox centred on the first line (D-02, #1199). */
+  min-height: var(--mf-ctl-h);
+  padding-block: var(--mf-s1);
+
+  input[type='checkbox'] {
+    flex: none;
+    width: var(--mf-icon-md);
+    height: var(--mf-icon-md);
+    margin: var(--mf-s1) 0 0;
+  }
 
   strong {
     display: block;
@@ -427,4 +437,9 @@
     flex: 1 1 0;
     min-height: 16rem;
   }
+}
+
+/* The wide list is a grid of columns: the name and its "Built-in, Locked" chip stay on one 44 px row. */
+.mf-list--wide .mf-namecell {
+  flex-wrap: nowrap;
 }
