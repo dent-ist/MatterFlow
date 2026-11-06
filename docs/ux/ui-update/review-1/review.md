@@ -340,3 +340,18 @@ Evidence: `design-evidence`, `evidence/2026-11-06-review-20-admin-lookups-report
 | #1213 Audit Logs | PASS | Who column, headings, "Show More"; works for the Director and the System Admin. |
 
 Rulings: D-44o, D-44p, D-44q; priority glyph points to `mf-priority-flag` (the grids' glyph), drag handle visible, "Color" spelling, "Upload Icon" confirmed, Holidays table stays, Audit Logs accepted without Columns and pager.
+
+## review-21 My Matters narrow rule, native selects, system page leftovers and Calendar day panel (2026-11-06, tip d9850bf, 1366 and 1920)
+
+Evidence: `design-evidence`, `evidence/2026-11-06-review-21-my-matters-selects-leftovers/` (JPEG, `measurements.json`, `axe.json`). Axe: 0 violations on 10 pages at both sizes. Sticky header bug is #1259 (not reported again).
+
+| Issue | Result | Notes |
+|---|---|---|
+| #1252 My Matters narrow rule | PASS with a point | Side panel starts collapsed under 1500 px (Task 446, Assignee 150), choice stored per user (`mf.mymatters.v2.<id>`) and kept after reload; opened at 1366: Type tile only, Ref whole above the title, Assignee hidden; Focus list shows names; crumb and Back link "Task Queue"; one Task Type block on Create Task. The At Risk pill still shows its word at about 200 px: #1264. #1164 and #1173 can close after #1264. |
+| #1253 Matter Summary | PASS | On the shared Details card; field rows at the same y as before (300, 355, 410, 465, 520), card 1098 px at 1366. |
+| #1251 native selects | PASS | 0 native selects on the 13 pages and dialogs checked (New Production, Add Out of Office, Add Holiday, Change Managers, Task edit, Matter edit, Report editor, Asset Type, new Asset Type, Asset form, Priorities, Users, Holidays). Two form dropdowns are blue-filled: #1264. |
+| #1254 | PASS | "See All N" in the menu and on the Search page, banner icons 18 px, Error page button "Retry" only until it fails, title focus on not-found pages, swimlane menu labels. |
+| #1255 | PASS | Overlap answer is `.pg-banner--danger` (4 px radius, two lines, `role="alert"`, icon). |
+| #1258 Calendar day panel | PASS with a finding | Role groups open and close on their own; the repeat is the chip row "Data Technician 6, Director 1, Pod Lead 4" above the groups: #1263. |
+
+Rulings: D-44r (white form dropdowns; Assignee hides only while a user-opened panel leaves the frame under 900 px; Ref natural width; Change Type under the name; banner icon 18 px on the first line; each role once per section).
