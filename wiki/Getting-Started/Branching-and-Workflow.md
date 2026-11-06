@@ -1,0 +1,71 @@
+# Branching and Workflow
+
+[[_TOC_]]
+
+**What this page is for.** The rules for branches, commit messages and schema changes. Rules come from `CLAUDE.md`, `db/scripts/README.md` and `docs/ux/ui-update/README.md`; where a rule here is a convention seen in recent history rather than a written rule, the page says so.
+
+## Branches
+
+| Branch | Role |
+|---|---|
+| `dev` | The main integration branch (`CLAUDE.md`). CI runs on pushes to `dev` and on every pull request. |
+| `main` | Untouched by feature work. |
+| `ui-update-2` | The active integration branch of the UI round (at the time of writing). Agents push with `git push origin HEAD:ui-update-2`. |
+| `dependabot/*` | Automated dependency updates (`.github/dependabot.yml`). |
+
+Rules of the UI-update rounds (`docs/ux/ui-update/README.md`):
+
+- Work on the round's branch, not on `dev`. A round's branch is merged to `dev` only when the owner says so.
+- Use one git worktree per agent or task. Do not overwrite another agent's files.
+- Pull before you push (`git pull --no-rebase origin <branch>`). Never force-push. Never use `git stash` on a shared checkout.
+- After merging or pulling, regenerate the OpenAPI document and the NSwag client from code; never merge those two files by hand.
+- SQL script numbers are allocated by one person per round (the next free number); scripts stay immutable once pushed.
+
+## Commit messages
+
+Two forms are used.
+
+**UI changes** (owner request, `CLAUDE.md` and `docs/ux/ui-update/issue-template.md`):
+
+```
+UI2 #<issue> <short what changed>
+
+- <Main navigation page> > <Tab or area>: <what changed, in plain words>
+- Shared <Component>: <what changed>; visible on <pages>
+
+Co-Authored-By: ...
+Claude-Session: ...
+```
+
+One bullet per main navigation page (and tab or component), in the app's own menu and tab names, so the owner knows what to open and check. For a shared change, list the shared component first, then the pages where it shows. Plain English, no file lists. The ID prefix differs by round (`UI2 #1234` on `ui-update-2`, `WPx DB-16 ...` on `dev`).
+
+**Other changes**: a short first line with the work package or issue id, for example `WPx US-13 Users: unassigned tasks open in a right side panel (#1105)`. This is the pattern in recent `dev` history; it is a convention, not a written rule (unverified as a rule).
+
+**Wiki changes**: first line `Wiki: <what>`, a blank line, one bullet per page or section changed.
+
+## Schema changes: no EF migrations, immutable scripts
+
+- The schema is changed only by adding a numbered SQL script in `db/scripts/`. There are no EF migrations.
+- A merged script is never edited (a checksum guard enforces this at startup). Fix forward with a new script.
+- The owner's note (`CLAUDE.md`): the app is not deployed, so a data backfill for old rows is rarely needed, but scripts stay immutable so the first real deployment starts from a clean, replayable history.
+- Details: [How to Change the Schema](../Database/How-to-Change-the-Schema.md).
+
+## Other rules to respect
+
+- **Module boundaries** are enforced by tests: see [Backend Modules](../Architecture/Backend-Modules.md).
+- **NuGet versions** live only in `backend/Directory.Packages.props`.
+- **API changes** must keep `contracts/openapi/v1.json` and the generated client in sync.
+- **Permissions** come from `contracts/permissions.json`; keep backend and frontend in step.
+- **Shortcuts**: new keyboard shortcuts go in `frontend/src/app/shared/layout/shortcut-registry.ts` with the handler, but no new or changed shortcuts are allowed in the current phase (owner decision, backlog issue #420).
+- **Auth**: the `Dev` provider is for Development and Test only.
+- **UI**: follow `docs/ux/design-guidelines.md` for every screen you touch; see [UI Standard](../Frontend/UI-Standard.md).
+- **Desktop only** (owner, 2026-11-04): review at 1366x768 and 1920x1080; no phone or tablet layouts.
+- **Wiki**: update the matching wiki page in the same change, see [How to Keep the Wiki Up to Date](../Reference/How-to-Keep-the-Wiki-Up-to-Date.md).
+
+## Related pages
+
+- [Continuous Integration](Continuous-Integration.md)
+- [Add a Feature End to End](../How-To/Add-a-Feature-End-to-End.md)
+- [Release Checklist](../How-To/Release-Checklist.md)
+
+Last verified against commit b03d0ac.
