@@ -226,7 +226,11 @@ const LONG_PRESS_MS = 500;
                       aria-hidden="true"
                       [attr.data-resize]="col.key"
                       [attr.data-side]="side"
-                      title="Double-click to fit the rows on this page"
+                      [attr.title]="
+                        col.fill
+                          ? 'Double-click to reset the width'
+                          : 'Double-click to fit the rows on this page'
+                      "
                       (pointerdown)="resizeStart($event, col, side)"
                       (dblclick)="fitNow(col)"
                     ></span>
@@ -1087,8 +1091,24 @@ export class TaskTable {
     this.announce.emit(widthMessage(col, px));
   }
 
+  /** Forgets the stored width of a column (the Title springs again, #1243) and tells the list's live region. */
+  private resetWidth(col: ColumnDef): void {
+    if (col.fill && !(col.key in this.colWidths())) return;
+    this.columnAction.emit({ kind: 'reset', key: col.key });
+    this.announce.emit(
+      col.fill
+        ? `${col.label} column fills the space left`
+        : widthMessage(col, this.defaultPx(col)),
+    );
+  }
+
   /** Double-click on a handle, or "Fit to content": the widest of the header and the rows on this page (`column-fit.ts`, loaded now). */
   protected fitNow(col: ColumnDef): void {
+    // The Title fits nothing: a double-click or "Fit to Content" gives the spring back (#1243).
+    if (col.fill) {
+      if (this.menuOn()) this.resetWidth(col);
+      return;
+    }
     const table = this.wrap()?.nativeElement.querySelector('table');
     if (!table || !this.menuOn()) return;
     void import('./column-fit').then(({ fitColumn }) => {
@@ -1208,8 +1228,7 @@ export class TaskTable {
         this.fitNow(col);
         break;
       case 'reset':
-        this.columnAction.emit({ kind: 'reset', key: col.key });
-        this.announce.emit(widthMessage(col, this.defaultPx(col)));
+        this.resetWidth(col);
         break;
       case 'hide': {
         const shown = this.shownColumns();

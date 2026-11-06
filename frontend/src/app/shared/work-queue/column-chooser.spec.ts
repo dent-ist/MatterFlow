@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ColumnChooser } from './column-chooser';
 import { WORK_COLUMNS } from './column-prefs';
+import { WorkWidths } from './work-widths';
 
 describe('ColumnChooser', () => {
   let fixture: ComponentFixture<ColumnChooser>;
@@ -69,6 +70,29 @@ describe('ColumnChooser', () => {
     fixture.componentRef.setInput('columns', ['ref', 'title', 'matter', 'status']);
     fixture.detectChanges();
     expect(el().querySelector<HTMLButtonElement>('[data-columns-reset]')!.disabled).toBe(true);
+  });
+
+  it('Reset Columns also removes the stored Title width, and stays on while only that width is stored (#1243)', async () => {
+    localStorage.clear();
+    await create({
+      defaults: ['ref', 'title', 'status'],
+      columns: ['ref', 'title', 'status'],
+      widthScope: 'taskQueue',
+      widthUser: 3,
+    });
+    const key = 'mf.work-widths.v1.taskQueue.3';
+    const store = TestBed.inject(WorkWidths);
+    store.set('taskQueue', 3, 'title', 628 / 14);
+    store.set('taskQueue', 3, 'status', 150 / 14);
+    fixture.detectChanges();
+    const reset = el().querySelector<HTMLButtonElement>('[data-columns-reset]')!;
+    expect(reset.disabled).toBe(false);
+    reset.click();
+    fixture.detectChanges();
+    const kept = JSON.parse(localStorage.getItem(key)!).w;
+    expect(kept.title).toBeUndefined();
+    expect(kept.status).toBe(150);
+    localStorage.clear();
   });
 
   it('groups the list under Task, Where, Who, When and State and lists every column once', async () => {

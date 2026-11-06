@@ -33,6 +33,7 @@ Every list uses the same anatomy: rows 44 px (36 compact), header 40 px, pager 2
 | Screen state per surface (filters, sort, Focus, scope) and named saved views | Server table `dbo.UserView` through `/api/v1/me/views`, with a `localStorage` write-through cache | `core/views/view-state.service.ts`; works with storage blocked or the endpoint failing (defaults); **the address always wins over a remembered state** |
 | Page scope (All, Mine, a pod) | `localStorage` per person and page | `shared/scope/scope.service.ts`; "All" only with `Matter.AssignManagers` on My Matters |
 | Dashboard preferences (for example the hidden right panel) | Dashboard prefs | `features/dashboard/dashboard-prefs.ts` |
+| Task grid column widths | Browser `localStorage` | `mf.work-widths.v1.<scope>.<userId or anon>` (`shared/work-queue/work-widths.ts`). The Title is the spring until a person drags its divider; then its width is stored (96 to 1600 px). **"Reset Width" removes it** and the spring returns: in the Title header menu (with "Fit to Content", both enabled only while a width is stored), in the Columns panel > Column Widths (a Title row with the stepper), on a double-click of the Title divider, and with "Reset Columns" and "Reset All Widths" (#1243). |
 
 Nothing about a matter is stored in the browser (Sensitive matter rule): the keys hold only a person's own preference ids.
 

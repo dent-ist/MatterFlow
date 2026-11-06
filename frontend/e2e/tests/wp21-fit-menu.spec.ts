@@ -305,7 +305,7 @@ test.describe('Column header menu (#207)', () => {
     await expect(sortButton(page, 'status')).toBeFocused();
   });
 
-  test('menu items: Sort ascending/descending sorts, Widen stops at the maximum, the Title has only Sort and a disabled Fit that says why; Ref cannot be hidden', async ({
+  test('menu items: Sort ascending/descending sorts, Widen stops at the maximum, the Title has Sort, a disabled Fit that says why and a disabled Reset Width (#1243); Ref cannot be hidden', async ({
     seed,
     asUser,
   }) => {
@@ -328,7 +328,8 @@ test.describe('Column header menu (#207)', () => {
     // Title: sort items and a Fit that is off, with the reason; no width items and no Hide.
     await sortButton(page, 'title').focus();
     await page.keyboard.press('Shift+F10');
-    await expect(menu(page).locator('[role="menuitem"]')).toHaveCount(3);
+    await expect(menu(page).locator('[role="menuitem"]')).toHaveCount(4);
+    await expect(item(page, 'reset')).toHaveAttribute('aria-disabled', 'true');
     await expect(item(page, 'fit')).toHaveAttribute('aria-disabled', 'true');
     await expect(item(page, 'fit')).toContainText('Fills the space left');
     await expect(item(page, 'widen')).toHaveCount(0);
@@ -355,6 +356,49 @@ test.describe('Column header menu (#207)', () => {
     await expect(item(page, 'widen')).toHaveAttribute('aria-disabled', 'true');
     await expect(item(page, 'narrow')).not.toHaveAttribute('aria-disabled', 'true');
     await page.keyboard.press('Escape');
+  });
+
+  test('Title: after a drag the menu has an enabled Reset Width, it removes the stored width and the spring returns (#1243)', async ({
+    seed,
+    asUser,
+  }) => {
+    const tag = uid();
+    await seedLong(seed, tag);
+    const page = await asUser('ke\\kekim');
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await openQueue(page, tag, 4);
+    const spring = Math.round(await width(page, 'title'));
+
+    const h = handle(page, 'title');
+    const box = (await h.boundingBox())!;
+    const x = box.x + box.width / 2;
+    const y = box.y + box.height / 2;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x - 100, y, { steps: 8 });
+    await page.mouse.up();
+    await expect.poll(async () => Math.round(await width(page, 'title'))).toBe(spring - 100);
+    expect(await storedWidth(page, 'title')).toBe(spring - 100);
+
+    await sortButton(page, 'title').focus();
+    await page.keyboard.press('Shift+F10');
+    await expect(item(page, 'reset')).not.toHaveAttribute('aria-disabled', 'true');
+    await expect(item(page, 'fit')).not.toHaveAttribute('aria-disabled', 'true');
+    await item(page, 'reset').click();
+    await expect.poll(async () => Math.round(await width(page, 'title'))).toBe(spring);
+    expect(await storedWidth(page, 'title')).toBeUndefined();
+
+    // A double-click on the divider does the same.
+    await h.scrollIntoViewIfNeeded();
+    const again = (await h.boundingBox())!;
+    await page.mouse.move(again.x + again.width / 2, again.y + again.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(again.x + again.width / 2 - 60, again.y + again.height / 2, { steps: 6 });
+    await page.mouse.up();
+    await expect.poll(async () => storedWidth(page, 'title')).toBeDefined();
+    await h.dblclick();
+    await expect.poll(async () => Math.round(await width(page, 'title'))).toBe(spring);
+    expect(await storedWidth(page, 'title')).toBeUndefined();
   });
 
   test('right click opens the same menu at the pointer; an outside click closes it; a column that cannot sort gets the menu through its header', async ({

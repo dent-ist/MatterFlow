@@ -40,8 +40,9 @@ export interface ColumnMenuState {
 }
 
 /**
- * The items of a column's menu, in order. Sort comes first for a sortable column; the Title (the spring) has no width items, only a
- * disabled "Fit to Content" that says why; Ref and Title cannot be hidden.
+ * The items of a column's menu, in order. Sort comes first for a sortable column. The Title (the spring) has no Widen and Narrow, only
+ * "Fit to Content" (it gives the spring back) and "Reset Width", both disabled while no Title width is stored (#1243, like the other columns);
+ * Ref and Title cannot be hidden.
  */
 export function columnMenuItems(def: ColumnDef, state: ColumnMenuState): ColumnMenuItem[] {
   const item = (
@@ -60,7 +61,12 @@ export function columnMenuItems(def: ColumnDef, state: ColumnMenuState): ColumnM
   if (def.sortField) {
     items.push(item('sort-asc', 'Sort Ascending'), item('sort-desc', 'Sort Descending'));
   }
-  if (def.fill || def.resizable === false) {
+  if (def.fill) {
+    items.push(
+      item('fit', 'Fit to Content', !state.stored, 'Fills the space left'),
+      item('reset', 'Reset Width', !state.stored),
+    );
+  } else if (def.resizable === false) {
     items.push(item('fit', 'Fit to Content', true, 'Fills the space left'));
   } else {
     items.push(

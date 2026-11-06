@@ -30,11 +30,31 @@ describe('ColumnWidthsPanel', () => {
   });
   afterEach(() => localStorage.clear());
 
-  it('lists the shown columns, the Title as informational', () => {
+  it('lists the shown columns, the Title with a stepper and its own Reset Width like the others (#1243)', () => {
     expect(el().querySelectorAll('[data-width-row]').length).toBe(4);
-    expect(row('title').textContent).toContain('Fills the space left');
-    expect(row('title').querySelector('input')).toBeNull();
+    expect(row('title').querySelector('input')).not.toBeNull();
+    expect(row('title').querySelector('[data-width-fit]')).toBeNull();
+    expect(row('title').querySelector('[data-width-reset]')?.getAttribute('aria-disabled')).toBe(
+      'true',
+    );
     expect(input('due').value).toBe('152');
+  });
+
+  it('a Title width is stepped, stored and then reset: the key is gone and the spring is back (#1243)', async () => {
+    input('title').value = '628';
+    input('title').dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(store.widths('taskQueue', 7)['title']).toBeCloseTo(628 / 14);
+    expect(JSON.parse(localStorage.getItem('mf.work-widths.v1.taskQueue.7')!).w.title).toBe(628);
+    expect(
+      row('title').querySelector('[data-width-reset]')?.getAttribute('aria-disabled'),
+    ).toBeNull();
+    click('title', '[data-width-reset]');
+    await fixture.whenStable();
+    expect(store.widths('taskQueue', 7)['title']).toBeUndefined();
+    expect(localStorage.getItem('mf.work-widths.v1.taskQueue.7')).toBeNull();
+    expect(said.at(-1)).toBe('Title column fills the space left');
   });
 
   it('+ and - step 8 px, Shift steps 32 px, and each change is announced', async () => {

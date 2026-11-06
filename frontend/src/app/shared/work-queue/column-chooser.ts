@@ -182,7 +182,7 @@ const GROUPS: readonly { label: string; keys: readonly string[] }[] = [
                 type="button"
                 class="mf-btn mf-btn--text"
                 data-columns-reset
-                [disabled]="isDefault()"
+                [disabled]="isDefault() && !titleStored()"
                 (click)="reset(def)"
               >
                 Reset Columns
@@ -409,6 +409,11 @@ export class ColumnChooser {
     });
   }
   protected readonly announce = signal('');
+  /** The Title has a width of its own (the person dragged it): "Reset Columns" gives the spring back too (#1243). */
+  protected readonly titleStored = computed(() => {
+    const scope = this.widthScope();
+    return !!scope && 'title' in this.widthStore.widths(scope, this.widthUser());
+  });
   protected readonly isDefault = computed(() => {
     const def = this.defaults();
     return !!def && sameSet(normalizeColumns(def), normalizeColumns(this.columns()));
@@ -448,6 +453,8 @@ export class ColumnChooser {
 
   protected reset(def: readonly string[]): void {
     this.columnsChange.emit(normalizeColumns(def));
+    const scope = this.widthScope();
+    if (scope && this.titleStored()) this.widthStore.reset(scope, this.widthUser(), 'title');
     this.announce.set('Columns reset to the default set.');
   }
 

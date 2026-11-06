@@ -35,14 +35,24 @@ describe('column menu items (#207)', () => {
     expect(ids('project')).toEqual(['widen', 'narrow', 'fit', 'reset', 'hide']);
   });
 
-  it('Ref cannot be hidden; the Title has Sort and a disabled Fit that says why, no width items', () => {
+  it('Ref cannot be hidden; the Title has Sort, Fit to Content and Reset Width, both off while no width is stored, no Widen or Narrow (#1243)', () => {
     expect(ids('ref')).not.toContain('hide');
     const title = columnMenuItems(def('title'), { ...state, currentPx: 160 });
-    expect(title.map((i) => i.id)).toEqual(['sort-asc', 'sort-desc', 'fit']);
-    const fit = title[2];
+    expect(title.map((i) => i.id)).toEqual(['sort-asc', 'sort-desc', 'fit', 'reset']);
+    const [fit, reset] = [title[2], title[3]];
     expect(fit.disabled).toBe(true);
     expect(fit.hint).toBe('Fills the space left');
     expect(fit.name).toBe('Fit to Content Title, Fills the space left');
+    expect(reset.disabled).toBe(true);
+    expect(reset.label).toBe('Reset Width');
+  });
+
+  it('with a stored Title width, Fit to Content and Reset Width are enabled (#1243)', () => {
+    const title = columnMenuItems(def('title'), { ...state, currentPx: 628, stored: true });
+    expect(title.filter((i) => i.id === 'fit' || i.id === 'reset').map((i) => i.disabled)).toEqual([
+      false,
+      false,
+    ]);
   });
 
   it('names carry the column and start with the visible text', () => {
@@ -337,6 +347,32 @@ describe('TaskTable column menu (#207) and fit (#205)', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('a stored Title width: Reset Width in the menu, a double-click on its divider and Fit to Content give the spring back (#1243)', async () => {
+    await create({ title: 628 / 14 });
+    await openMenu('title');
+    expect(item('reset').getAttribute('aria-disabled')).not.toBe('true');
+    item('reset').click();
+    await settle();
+    expect(actions).toEqual([{ kind: 'reset', key: 'title' }]);
+    expect(said.at(-1)).toBe('Title column fills the space left');
+    actions.length = 0;
+    th('title')
+      .querySelector('.wt-resize')!
+      .dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    expect(actions).toEqual([{ kind: 'reset', key: 'title' }]);
+    expect(th('title').querySelector('.wt-resize')!.getAttribute('title')).toBe(
+      'Double-click to reset the width',
+    );
+  });
+
+  it('a Title that springs ignores a double-click on its divider (#1243)', async () => {
+    await create();
+    th('title')
+      .querySelector('.wt-resize')!
+      .dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    expect(actions).toEqual([]);
   });
 
   it('the handle says what a double-click does', async () => {

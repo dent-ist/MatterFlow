@@ -1,15 +1,30 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { WORK_COLUMNS, ColumnDef, ColumnScope } from './column-prefs';
 import { WIDTH_STEP_PX, widthMessage } from './column-menu-items';
-import { ASSIGNEE_WITH_LINK_PX, columnWidthRem, pxToRem, remToPx } from './column-widths';
+import { ASSIGNEE_WITH_LINK_PX, ROOT_PX, columnWidthRem, pxToRem, remToPx } from './column-widths';
 import { WorkWidths } from './work-widths';
 
 /** The step with Shift held (the header menu has the plain 8 px only). */
 export const WIDTH_STEP_BIG_PX = 32;
 
+/** The limits of a column's width in px: the Title (the spring) may be dragged between 96 and 1600 px (DB-10, #1073). */
+export function widthLimits(def: ColumnDef): { min: number; max: number } {
+  return def.fill ? { min: 96, max: 1600 } : { min: def.minWidth, max: def.maxWidth };
+}
+
 /** The width after a step of `px` (negative narrows), whole px, clamped to the column's limits. */
 export function stepWidth(def: ColumnDef, current: number, px: number): number {
-  return Math.min(def.maxWidth, Math.max(def.minWidth, Math.round(current) + px));
+  const { min, max } = widthLimits(def);
+  return Math.min(max, Math.max(min, Math.round(current) + px));
 }
 
 /**
@@ -25,7 +40,7 @@ export function stepWidth(def: ColumnDef, current: number, px: number): number {
     <fieldset class="cw" data-widths-set>
       <legend>Column Widths</legend>
       @for (row of rows(); track row.def.key) {
-        @if (row.fill) {
+        @if (row.fixed) {
           <div class="cw-row" [attr.data-width-row]="row.def.key">
             <span class="cw-name">{{ row.def.label }}</span>
             <span class="cw-note">Fills the space left</span>
@@ -39,7 +54,7 @@ export function stepWidth(def: ColumnDef, current: number, px: number): number {
                 class="mf-btn cw-btn"
                 data-width-minus
                 [attr.aria-label]="'Narrow ' + row.def.label"
-                [attr.aria-disabled]="row.px <= row.def.minWidth ? 'true' : null"
+                [attr.aria-disabled]="row.px <= row.min ? 'true' : null"
                 (click)="stepBy(row.def, row.px, -1, $event)"
               >
                 <i class="pi pi-minus" aria-hidden="true"></i>
@@ -51,8 +66,8 @@ export function stepWidth(def: ColumnDef, current: number, px: number): number {
                 data-width-input
                 inputmode="numeric"
                 [attr.aria-label]="row.def.label + ' width in pixels'"
-                [min]="row.def.minWidth"
-                [max]="row.def.maxWidth"
+                [min]="row.min"
+                [max]="row.max"
                 [value]="row.px"
                 (change)="typed(row.def, row.px, field)"
                 (keydown.arrowup)="arrow(row.def, row.px, 1, $event, field)"
@@ -63,21 +78,23 @@ export function stepWidth(def: ColumnDef, current: number, px: number): number {
                 class="mf-btn cw-btn"
                 data-width-plus
                 [attr.aria-label]="'Widen ' + row.def.label"
-                [attr.aria-disabled]="row.px >= row.def.maxWidth ? 'true' : null"
+                [attr.aria-disabled]="row.px >= row.max ? 'true' : null"
                 (click)="stepBy(row.def, row.px, 1, $event)"
               >
                 <i class="pi pi-plus" aria-hidden="true"></i>
               </button>
             </span>
-            <button
-              type="button"
-              class="mf-btn mf-btn--text cw-act"
-              data-width-fit
-              [attr.aria-label]="'Fit ' + row.def.label + ' to content'"
-              (click)="fit(row.def)"
-            >
-              Fit
-            </button>
+            @if (!row.def.fill) {
+              <button
+                type="button"
+                class="mf-btn mf-btn--text cw-act"
+                data-width-fit
+                [attr.aria-label]="'Fit ' + row.def.label + ' to content'"
+                (click)="fit(row.def)"
+              >
+                Fit
+              </button>
+            }
             <button
               type="button"
               class="mf-btn mf-btn--text cw-act"
@@ -180,19 +197,54 @@ export class ColumnWidthsPanel {
 
   private readonly store = inject(WorkWidths);
 
+  constructor() {
+    // The grid behind the panel lays the spring out after the panel did: follow the Title header's size (#1243).
+    const th = this.titleHead();
+    if (th && typeof ResizeObserver !== 'undefined') {
+      const watch = new ResizeObserver(() => this.measured.update((n) => n + 1));
+      watch.observe(th);
+      inject(DestroyRef).onDestroy(() => watch.disconnect());
+    }
+  }
+
   protected readonly rows = computed(() => {
     const stored = this.store.widths(this.scope(), this.userId());
     const effective = this.assignLink()
       ? { assignee: pxToRem(ASSIGNEE_WITH_LINK_PX), ...stored }
       : stored;
     const shown = new Set(this.columns());
-    return WORK_COLUMNS.filter((d) => shown.has(d.key)).map((def) => ({
-      def,
-      fill: !!def.fill || def.resizable === false,
-      px: Math.round(remToPx(columnWidthRem(def, effective))),
-      stored: def.key in stored,
-    }));
+    this.measured();
+    return WORK_COLUMNS.filter((d) => shown.has(d.key)).map((def) => {
+      const { min, max } = widthLimits(def);
+      return {
+        def,
+        // A column that cannot be resized at all only says so; the Title has a row like the others (#1243).
+        fixed: def.resizable === false && !def.fill,
+        min,
+        max,
+        // The Title is the spring until a width is stored: its width is what the grid shows now.
+        px: def.fill
+          ? def.key in stored
+            ? Math.round(remToPx(stored[def.key]))
+            : this.springPx(def)
+          : Math.round(remToPx(columnWidthRem(def, effective))),
+        stored: def.key in stored,
+      };
+    });
   });
+
+  /** Bumped when the Title header changes size, so the stepper shows the spring's width of now. */
+  private readonly measured = signal(0);
+  private readonly titleHead = (): HTMLElement | null =>
+    document.querySelector<HTMLElement>('mf-task-table thead th[data-col="title"]');
+
+  /** The rendered width of the Title while it springs (px at the default zoom), the minimum when the grid is not on screen. */
+  private springPx(def: ColumnDef): number {
+    const th = this.titleHead();
+    const w = th?.getBoundingClientRect().width ?? 0;
+    const root = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    return w > 0 ? Math.round((w / (root > 0 ? root : ROOT_PX)) * ROOT_PX) : def.minWidth;
+  }
 
   /**
    * The width of a column as it is now. A click handler gets the width the template was last rendered with; a second key press (Enter
@@ -251,7 +303,11 @@ export class ColumnWidthsPanel {
   protected reset(def: ColumnDef, stored: boolean): void {
     if (!stored) return;
     this.store.reset(this.scope(), this.userId(), def.key);
-    this.announced.emit(widthMessage(def, this.defaultPx(def)));
+    this.announced.emit(
+      def.fill
+        ? `${def.label} column fills the space left`
+        : widthMessage(def, this.defaultPx(def)),
+    );
   }
 
   /** Fit to the rows on the page, measured on the grid behind the panel (`column-fit.ts`, loaded on first use). */
