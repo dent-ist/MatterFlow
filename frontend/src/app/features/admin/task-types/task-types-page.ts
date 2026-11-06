@@ -67,23 +67,11 @@ import { TaskTypeCell } from '../../../shared/ui/task-type-cell';
 import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
 import { Button } from 'primeng/button';
 
-/** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = [
-  'name',
-  'defaultWorkflow',
-  'target',
-  'form',
-  'workflows',
-  'openTasks',
-  'status',
-  'actions',
-] as const;
-
 /**
  * The skeleton rows of the loading state: one bone per column, as wide as the column's usual content, so the table that replaces them
  * keeps its shape (#370: one definition of the columns for the table and its skeleton).
  */
-const BONES: Record<(typeof COLUMNS)[number], string> = {
+const BONES: Record<string, string> = {
   name: '12rem',
   defaultWorkflow: '9rem',
   target: '5rem', // as wide as its header ("Target (days)"), so the loaded table does not shift
