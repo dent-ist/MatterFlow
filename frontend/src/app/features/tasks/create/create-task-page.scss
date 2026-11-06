@@ -21,8 +21,7 @@
 
 .ct__form {
   max-width: none;
-  /* One input width rule (CT1, #322): every field fills the 720 px column, so labels and inputs line up. */
-  --mf-field-max: none;
+  /* The column is 720 px and each field is the form standard's 480 px (D-35, --mf-field-max); the room to the right stays empty (#1173). */
 }
 
 .ct__section {
@@ -193,26 +192,13 @@
   }
 }
 
+/* The look is the shared clickable card (mf-card: D-10); only the layout of its content is here. */
 .ct__card-type {
   display: grid;
   justify-items: start;
   align-content: start;
   gap: var(--mf-s2);
   min-height: 7rem;
-  padding: var(--mf-s4);
-  color: var(--mf-text);
-  text-align: left;
-  font: inherit;
-  background: var(--mf-surface);
-  border: 1px solid var(--mf-border-strong);
-  border-radius: var(--mf-radius-xl);
-  box-shadow: var(--mf-shadow-1);
-  cursor: pointer;
-}
-
-.ct__card-type:hover {
-  background: var(--mf-selected-bg);
-  border-color: var(--mf-primary);
 }
 
 .ct__card-type:focus-visible {
@@ -233,8 +219,8 @@
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   /* The text is already cut after a whole word (cardText); the clamp is only the safety net. */
   overflow-wrap: normal;
   word-break: normal;

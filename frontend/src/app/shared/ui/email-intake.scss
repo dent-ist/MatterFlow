@@ -2,12 +2,7 @@
   display: block;
 }
 
-.ei {
-  border: 1px solid var(--mf-border-strong);
-  border-radius: var(--mf-radius);
-  background: var(--mf-surface);
-  padding: var(--mf-s3) var(--mf-s4);
-}
+/* The look is the shared card (mf-card: D-10, #1173); this only lays out its content. */
 
 .ei__head {
   display: flex;
@@ -18,8 +13,6 @@
 
 .ei__title {
   margin: 0;
-  font-size: var(--mf-fs-md);
-  font-weight: 600;
 }
 
 .ei__body {

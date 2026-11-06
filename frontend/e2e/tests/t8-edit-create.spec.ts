@@ -465,7 +465,7 @@ test.describe('T8: Create task page (CT1 #322, #323)', () => {
     await expect(header).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Create Task', level: 1 })).toBeVisible();
     await expect(
-      header.locator('nav[aria-label="Breadcrumb"] a', { hasText: 'Tasks' }),
+      header.locator('nav[aria-label="Breadcrumb"] a', { hasText: 'Task Queue' }),
     ).toBeVisible();
     await expect(header.locator('[aria-current="page"]')).toContainText('Create Task');
     await expect(page.locator('[data-create-context]')).toContainText('Choose a task type');
@@ -488,7 +488,7 @@ test.describe('T8: Create task page (CT1 #322, #323)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/tasks/new?matterId=${world.matter.matterId}&taskType=${world.taskType.id}`);
     const trail = page.locator('mf-page-header nav[aria-label="Breadcrumb"]');
-    await expect(trail.getByRole('link', { name: 'Tasks' })).toBeVisible();
+    await expect(trail.getByRole('link', { name: 'Task Queue' })).toBeVisible();
     await expect(trail.getByRole('link', { name: world.matter.matterRef })).toBeVisible();
     await expect(page.locator('mf-page-header [aria-current="page"]')).toContainText('Create Task');
   });
@@ -513,7 +513,7 @@ test.describe('T8: Create task page (CT1 #322, #323)', () => {
       expect(formBox.width).toBeLessThanOrEqual(721);
       if (size.width >= 1100) expect(Math.round(formBox.width)).toBe(720);
 
-      // One input width: the text inputs, the textarea and the selects all fill the column.
+      // One input width: the text inputs, the textarea and the selects are all the standard 480 px field (D-35, #1173).
       const widths: number[] = [];
       for (const loc of [
         create.title,
@@ -524,7 +524,7 @@ test.describe('T8: Create task page (CT1 #322, #323)', () => {
         widths.push(Math.round((await loc.boundingBox())!.width));
       }
       expect(new Set(widths).size, `input widths ${widths.join(',')}`).toBe(1);
-      expect(widths[0]).toBeGreaterThan(Math.min(formBox.width, 700) - 60);
+      expect(widths[0]).toBeLessThanOrEqual(481);
 
       // The Summary in the facts-strip shape: three tiles, side by side from 640 px, stacked below.
       const strip = page.locator('[data-summary-card]');
@@ -582,10 +582,10 @@ test.describe('T8: Create task page (CT1 #322, #323)', () => {
         expect(t.description.startsWith(kept), `${t.name} is a prefix`).toBe(true);
         expect(t.description[kept.length], `${t.name} ends at a word boundary`).toBe(' ');
         await expect(card).toHaveAttribute('title', t.description);
-        // Three lines at most.
+        // Two lines at most (#1173).
         const fits = await card.locator('.ct__card-desc').evaluate((el) => {
           const size = parseFloat(getComputedStyle(el).fontSize);
-          return el.getBoundingClientRect().height <= size * 1.7 * 3;
+          return el.getBoundingClientRect().height <= size * 1.7 * 2;
         });
         expect(fits).toBe(true);
       }
