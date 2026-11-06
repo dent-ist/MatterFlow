@@ -32,7 +32,7 @@ const label = (key: string): string => key.charAt(0).toUpperCase() + key.slice(1
     <mf-form-dialog
       [title]="calendar() ? 'Edit Holiday Calendar' : 'New Holiday Calendar'"
       subtitle="The category name people see on the calendar"
-      [primaryLabel]="calendar() ? 'Save' : 'Create'"
+      [primaryLabel]="calendar() ? 'Save Calendar' : 'Add Calendar'"
       size="small"
       [dirty]="dirty()"
       [busy]="busy()"
