@@ -220,12 +220,17 @@ test.describe('Summary v4', () => {
       await page.goto('/dashboard');
       const hide = page.getByRole('button', { name: 'Hide Panel', exact: true });
       await expect(hide).toHaveAttribute('aria-expanded', 'true');
+      const where = (await hide.boundingBox())!;
       await expect(page.locator('[data-dash-compact]')).toHaveCount(0);
       const shown = (await page.locator('mf-dash-grid').boundingBox())!.width;
       await hide.click();
       const expand = page.getByRole('button', { name: 'Show Panel', exact: true });
       await expect(expand).toHaveAttribute('aria-expanded', 'false');
       await expect(expand).toBeFocused();
+      // One button, one place: the same x and y in both states, at the far right of the cards row.
+      const moved = (await expand.boundingBox())!;
+      expect(Math.abs(moved.x - where.x)).toBeLessThanOrEqual(1);
+      expect(Math.abs(moved.y - where.y)).toBeLessThanOrEqual(1);
       await expect(page.locator('[data-dash-rcol]')).toBeHidden();
       await expect(page.locator('[data-compact-battery]')).toBeVisible();
       await expect(page.locator('[data-compact-gauge]')).toBeVisible();

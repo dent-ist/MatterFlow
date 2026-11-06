@@ -429,33 +429,34 @@ describe('DashboardPage', () => {
     });
 
     describe('the right panel can be hidden (#1233)', () => {
-      const hide = (el: HTMLElement) =>
-        el.querySelector<HTMLButtonElement>('[data-panel-collapse]')!;
-      const show = (el: HTMLElement) => el.querySelector<HTMLButtonElement>('[data-panel-expand]');
+      const toggle = (el: HTMLElement) =>
+        el.querySelector<HTMLButtonElement>('[data-panel-toggle]')!;
       const rcol = (el: HTMLElement) => el.querySelector<HTMLElement>('[data-dash-rcol]')!;
 
-      it('starts shown: a Hide Panel icon button at the top of the column with aria-expanded and aria-controls, and no compact widgets', async () => {
+      it('starts shown: one Hide Panel icon button at the end of the cards row with aria-expanded and aria-controls, and no compact widgets', async () => {
         const el = await open();
-        const b = hide(el);
+        const b = toggle(el);
         expect(b.getAttribute('aria-label')).toBe('Hide Panel');
         expect(b.getAttribute('aria-expanded')).toBe('true');
         expect(b.getAttribute('aria-controls')).toBe(rcol(el).id);
-        expect(rcol(el).contains(b)).toBe(true);
+        expect(el.querySelector('[data-dash-top]')!.contains(b)).toBe(true);
+        expect(rcol(el).contains(b)).toBe(false);
+        expect(el.querySelectorAll('[data-panel-toggle]').length).toBe(1);
         expect(rcol(el).classList.contains('rcol--off')).toBe(false);
         expect(el.querySelector('[data-dash-compact]')).toBeNull();
-        expect(show(el)).toBeNull();
       });
 
-      it('hides the column, shows the compact battery and gauge with Show Panel on the cards row, and shows it again', async () => {
+      it('hides the column, shows the compact battery and gauge on the cards row left of the same button, and shows it again', async () => {
         const el = await open();
-        hide(el).click();
+        const b = toggle(el);
+        b.click();
         await settle();
         expect(rcol(el).classList.contains('rcol--off')).toBe(true);
         const row = el.querySelector('[data-dash-top]')!;
         expect(row.querySelector('[data-dash-cards]')).not.toBeNull();
         expect(row.querySelector('[data-compact-battery]')).not.toBeNull();
         expect(row.querySelector('[data-compact-gauge]')).not.toBeNull();
-        const b = show(el)!;
+        expect(toggle(el)).toBe(b);
         expect(b.getAttribute('aria-label')).toBe('Show Panel');
         expect(b.getAttribute('aria-expanded')).toBe('false');
         expect(b.getAttribute('aria-controls')).toBe(rcol(el).id);
@@ -463,38 +464,27 @@ describe('DashboardPage', () => {
         await settle();
         expect(rcol(el).classList.contains('rcol--off')).toBe(false);
         expect(el.querySelector('[data-dash-compact]')).toBeNull();
+        expect(b.getAttribute('aria-label')).toBe('Hide Panel');
       });
 
       it('remembers the choice per user in the existing Dashboard preference entry, and keeps the period there', async () => {
         const el = await open();
-        hide(el).click();
+        toggle(el).click();
         await settle();
         const key = Object.keys(localStorage).find((k) => k.startsWith('mf.dashboard.v2.'))!;
         expect(JSON.parse(localStorage.getItem(key)!)).toMatchObject({ panelCollapsed: true });
         TestBed.resetTestingModule();
         const again = await open();
         expect(rcol(again).classList.contains('rcol--off')).toBe(true);
-        expect(show(again)).not.toBeNull();
-        show(again)!.click();
+        expect(toggle(again).getAttribute('aria-label')).toBe('Show Panel');
+        toggle(again).click();
         await settle();
         expect(JSON.parse(localStorage.getItem(key)!)).not.toHaveProperty('panelCollapsed');
       });
 
-      it('moves focus to the other button, because the pressed one is gone', async () => {
-        const el = await open();
-        document.body.appendChild(el);
-        hide(el).click();
-        await settle();
-        expect(document.activeElement).toBe(show(el));
-        show(el)!.click();
-        await settle();
-        expect(document.activeElement).toBe(hide(el));
-        el.remove();
-      });
-
       it('the compact gauge does what the full gauge does: selects the Unassigned card, longest waiting first', async () => {
         const el = await open();
-        hide(el).click();
+        toggle(el).click();
         await settle();
         el.querySelector<HTMLButtonElement>('[data-compact-gauge]')!.click();
         await settle();
@@ -509,7 +499,7 @@ describe('DashboardPage', () => {
           'Dashboard.View',
           'Dashboard.ViewSummary',
         ]);
-        hide(el).click();
+        toggle(el).click();
         await settle();
         expect(el.querySelector('[data-compact-battery]')).toBeNull();
         expect(el.querySelector('[data-compact-gauge]')).not.toBeNull();
