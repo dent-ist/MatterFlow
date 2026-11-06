@@ -4,8 +4,8 @@ import { PriorityPill } from './priority-pill';
 
 /**
  * The priority of a task in a list or a card (`mf-priority-flag`, theme rollout TH-01): Critical and High are the pill of `mf-priority-pill` (icon and word),
- * Normal and Low are plain muted text, because only what needs the eye gets a colour (the My Matters rule). `color` is the priority's tone from the API
- * (`critical`, `high`, `normal`, `low`; an admin colour in `#RRGGBB` is not drawn, it is plain text). Closed work (`muted`) is plain text too, so a closed
+ * Normal and Low are plain 14 px text like the other cells, because only what needs the eye gets a colour (the My Matters rule). `color` is the priority's tone from the API
+ * (`critical`, `high`, `normal`, `low`; an admin colour in `#RRGGBB` is not drawn, it is plain text). Closed work (`muted`) is plain muted text too, so a closed
  * Critical task does not draw the eye. The word is always there, for a screen reader as well.
  */
 @Component({
@@ -16,7 +16,9 @@ import { PriorityPill } from './priority-pill';
     @if (pill(); as p) {
       <mf-priority-pill [kind]="p" [label]="label()" [attr.data-priority]="label()" />
     } @else if (label()) {
-      <span class="plain" [attr.data-priority]="label()">{{ label() }}</span>
+      <span class="plain" [class.plain--closed]="muted()" [attr.data-priority]="label()">{{
+        label()
+      }}</span>
     }
   `,
   styles: `
@@ -28,7 +30,11 @@ import { PriorityPill } from './priority-pill';
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      font-size: var(--mf-fs-xs);
+      /* The same 14 px text as every other cell (D-45, #1168); only closed work is muted. */
+      font-size: var(--mf-fs-md);
+      color: inherit;
+    }
+    .plain--closed {
       color: var(--mf-text-muted);
     }
   `,
