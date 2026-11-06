@@ -94,7 +94,12 @@ let nextId = 0;
           </p>
         } @else {
           @if (!single()) {
-            <button type="button" class="skip mf-sr-only" data-skip-lane (click)="skipLane.emit(m.code)">
+            <button
+              type="button"
+              class="skip mf-sr-only"
+              data-skip-lane
+              (click)="skipLane.emit(m.code)"
+            >
               Skip {{ m.label }} lane
             </button>
           }
