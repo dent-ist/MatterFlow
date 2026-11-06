@@ -1,3 +1,4 @@
+import { Badge } from '../../../shared/ui/badge';
 import { TagChip } from '../../../shared/ui/tag-chip';
 import { NgTemplateOutlet } from '@angular/common';
 import {
@@ -53,7 +54,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-user-pods-cell',
-  imports: [NgTemplateOutlet, TagChip],
+  imports: [NgTemplateOutlet, Badge, TagChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-template #chipList>
@@ -118,7 +119,7 @@ let nextId = 0;
       @if (open()) {
         <div
           #pop
-          class="upc-pop"
+          class="upc-pop mf-menu"
           role="dialog"
           data-pods-popover
           [id]="uid + '-pop'"
@@ -130,25 +131,29 @@ let nextId = 0;
           (keydown)="onPopKey($event)"
           (focusout)="onFocusOut($event)"
         >
-          <input
-            #search
-            type="text"
-            class="upc-search"
-            autocomplete="off"
-            aria-label="Search pods"
-            placeholder="Search pods"
-            data-pods-search
-            [value]="query()"
-            (input)="query.set($any($event.target).value)"
-          />
+          <div class="mf-menu__body">
+            <input
+              #search
+              type="text"
+              class="upc-search"
+              autocomplete="off"
+              aria-label="Search pods"
+              placeholder="Search pods"
+              data-pods-search
+              [value]="query()"
+              (input)="query.set($any($event.target).value)"
+            />
+          </div>
           @if (catalog() === null) {
             @if (catalogFailed()) {
-              <p class="upc-note" role="alert" data-pods-failed>Couldn't load pods.</p>
+              <p class="upc-note mf-menu__body" role="alert" data-pods-failed>
+                Couldn't load pods.
+              </p>
             } @else {
-              <p class="upc-note" role="status">Loading pods</p>
+              <p class="upc-note mf-menu__body" role="status">Loading pods</p>
             }
           } @else if (visibleRows().length === 0) {
-            <p class="upc-note" role="status" data-pods-empty>
+            <p class="upc-note mf-menu__body" role="status" data-pods-empty>
               {{ query() ? 'No pods match.' : 'There are no active pods.' }}
             </p>
           }
@@ -168,36 +173,40 @@ let nextId = 0;
                       &ngsp;<span class="upc-tag">inactive</span>
                     }
                   </label>
-                  @if (isSelected(r.podId)) {
-                    <label class="upc-primary">
-                      <input
-                        type="radio"
-                        [name]="uid + '-primary'"
-                        [attr.data-pod-primary]="r.podId"
-                        [attr.aria-label]="'Primary pod: ' + r.name"
-                        [checked]="draft().primary === r.podId"
-                        [disabled]="!r.isActive && draft().primary !== r.podId"
-                        (change)="onPrimary(r.podId)"
-                      />
-                      Primary
-                    </label>
+                  @if (draft().primary === r.podId) {
+                    <mf-badge tone="info" icon="pi-star-fill" data-primary-chip>Primary</mf-badge>
+                  } @else if (isSelected(r.podId) && r.isActive) {
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--text upc-make"
+                      [attr.data-pod-primary]="r.podId"
+                      [attr.aria-label]="'Make ' + r.name + ' the primary pod'"
+                      (click)="onPrimary(r.podId)"
+                    >
+                      Make Primary
+                    </button>
                   }
                 </li>
               }
             </ul>
           }
           @if (hasInactive()) {
-            <p class="upc-foot" data-pods-inactive-note>
+            <p class="upc-foot mf-menu__body" data-pods-inactive-note>
               Inactive pods can stay or be removed; they cannot be newly assigned.
             </p>
           }
           @if (askPrimary()) {
-            <p class="upc-warn" role="alert" [id]="uid + '-why'" data-primary-required>
+            <p
+              class="upc-warn mf-menu__body"
+              role="alert"
+              [id]="uid + '-why'"
+              data-primary-required
+            >
               <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
-              Choose the primary pod before you apply.
+              Choose a primary pod.
             </p>
           }
-          <div class="upc-actions">
+          <div class="upc-actions mf-menu__body">
             <button type="button" class="mf-btn" data-pods-cancel (click)="close(true)">
               Cancel
             </button>
@@ -322,27 +331,20 @@ let nextId = 0;
       color: var(--mf-text-muted);
       font-size: var(--mf-icon-xs);
     }
+    /* The popover is the shared menu surface (mf-menu, D-36, D-44l): radius 8, 1 px soft border, pop shadow, padding 4, rows 36 px. Only where it opens
+       (fixed under the button) and its width (308 px) are here. */
     .upc-pop {
       position: fixed;
       z-index: 1100;
-      box-sizing: border-box;
       display: flex;
       flex-direction: column;
-      gap: var(--mf-s2);
       width: 22rem;
       max-width: calc(100vw - 16px);
-      overflow-y: auto;
-      padding: var(--mf-s2);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-1);
-      font-size: var(--mf-fs-md);
     }
     .upc-search {
       box-sizing: border-box;
       width: 100%;
-      min-height: 2rem;
+      min-height: var(--mf-ctl-h);
       padding: 0 var(--mf-s2);
       border: 1px solid var(--mf-border-strong);
       border-radius: var(--mf-radius);
@@ -361,27 +363,26 @@ let nextId = 0;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: var(--mf-s3);
-      min-height: var(--mf-target-min, 2rem);
-      padding: 0 var(--mf-s1);
+      gap: var(--mf-s2);
+      box-sizing: border-box;
+      min-height: var(--mf-row-h);
+      padding: 0 var(--mf-s2);
+      border-radius: var(--mf-radius);
     }
     .upc-row:hover {
-      background: var(--mf-surface-alt);
+      background: var(--mf-row-hover);
     }
     .upc-row--muted {
       color: var(--mf-text-muted);
     }
-    .upc-check,
-    .upc-primary {
+    .upc-check {
       display: inline-flex;
       align-items: center;
       gap: var(--mf-s2);
-      min-height: var(--mf-target-min, 2rem);
-      cursor: pointer;
-    }
-    .upc-check {
       min-width: 0;
+      min-height: var(--mf-row-h);
       flex: 1;
+      cursor: pointer;
     }
     /* The popover shows the whole name: it wraps to two lines (a longer one is cut there, the full name is the tooltip). */
     .upc-label {
@@ -392,9 +393,12 @@ let nextId = 0;
       overflow: hidden;
       overflow-wrap: anywhere;
     }
-    .upc-primary {
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
+    .upc-make,
+    mf-badge {
+      flex: none;
+    }
+    .upc-make {
+      padding-inline: var(--mf-s1);
     }
     .upc-note,
     .upc-foot {
@@ -416,7 +420,7 @@ let nextId = 0;
       gap: var(--mf-s2);
       justify-content: flex-end;
       padding-top: var(--mf-s2);
-      border-top: 1px solid var(--mf-border);
+      border-top: 1px solid var(--mf-border-soft);
     }
   `,
 })
@@ -598,8 +602,7 @@ export class UserPodsCell implements OnDestroy {
       this.close(true);
     } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       const target = event.target as HTMLElement;
-      // Radios keep their own arrow keys (they move between the Primary radios); the search box and the checkboxes walk the list.
-      if (target instanceof HTMLInputElement && target.type === 'radio') return;
+      // The search box and the checkboxes walk the list.
       event.preventDefault();
       const items = this.walkable();
       const index = items.indexOf(target);

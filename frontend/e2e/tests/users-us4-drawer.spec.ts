@@ -290,7 +290,7 @@ test.describe('#440 Pods, Availability and Profile', () => {
     const pop = page.locator('[data-pods-popover]');
     await expect(pop).toBeVisible();
     await pop.getByRole('checkbox', { name: new RegExp(otherPodName) }).check();
-    await pop.getByRole('radio', { name: `Primary pod: ${otherPodName}` }).check();
+    await pop.getByRole('button', { name: `Make ${otherPodName} the primary pod` }).click();
     await pop.locator('[data-pods-apply]').click();
     await expect(pods).toContainText(otherPodName);
     await expect(page.getByRole('status').filter({ hasText: /Pods of/ })).toBeVisible();
@@ -484,7 +484,7 @@ test.describe('#443 read-only variants and #444 conflicts', () => {
     await expect(page.locator('[data-role]').first()).toBeDisabled();
     await drawer(page).locator('[data-pods-trigger]').click();
     await page.getByRole('checkbox', { name: new RegExp(otherPodName) }).check();
-    await page.getByRole('radio', { name: `Primary pod: ${otherPodName}` }).check();
+    await page.getByRole('button', { name: `Make ${otherPodName} the primary pod` }).click();
     await page.locator('[data-pods-apply]').click();
     await expect(page.locator('[data-section="pods"]')).toContainText(otherPodName);
   });

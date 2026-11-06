@@ -22,6 +22,9 @@ describe('UserPodsCell', () => {
   const el = (): HTMLElement => fixture.nativeElement;
   const q = <T extends HTMLElement = HTMLElement>(sel: string): T => el().querySelector<T>(sel)!;
   const all = (sel: string): HTMLElement[] => Array.from(el().querySelectorAll<HTMLElement>(sel));
+  /** The pod's row in the popover wears the Primary chip. */
+  const isPrimaryRow = (podId: number): boolean =>
+    !!q(`[data-pod-option="${podId}"]`).closest('li')!.querySelector('[data-primary-chip]');
 
   async function create(
     pods: UserPodDto[],
@@ -160,13 +163,13 @@ describe('UserPodsCell', () => {
       expect(q('[data-pods-trigger]').getAttribute('aria-label')).toContain('Legacy (inactive)');
     });
 
-    it('names the popover, the search box, the checkboxes and the Primary radios', async () => {
-      await create([pod(1, 'Processing', true)]);
+    it('names the popover, the search box, the checkboxes and the Make Primary buttons', async () => {
+      await create([pod(1, 'Processing', true), pod(3, 'Intake')]);
       await openPopover();
       expect(q('[role="dialog"]').getAttribute('aria-label')).toBe('Change pods of Jamal Okafor');
       expect(q('[data-pods-search]').getAttribute('aria-label')).toBe('Search pods');
-      expect(q('[data-pod-primary="1"]').getAttribute('aria-label')).toBe(
-        'Primary pod: Processing',
+      expect(q('[data-pod-primary="3"]').getAttribute('aria-label')).toBe(
+        'Make Intake the primary pod',
       );
       expect(q('[data-pod-option="2"]').closest('label')!.textContent).toContain('Review');
     });
@@ -184,9 +187,9 @@ describe('UserPodsCell', () => {
         '2',
       ]);
       expect((q('[data-pod-option="1"]') as HTMLInputElement).checked).toBe(true);
-      expect((q('[data-pod-primary="1"]') as HTMLInputElement).checked).toBe(true);
-      // Primary radios only on ticked pods.
-      expect(all('[data-pod-primary]').length).toBe(1);
+      // The primary pod wears the Primary chip; Make Primary is only on the other ticked pods.
+      expect(isPrimaryRow(1)).toBe(true);
+      expect(all('[data-pod-primary]').length).toBe(0);
       expect(isBlocked()).toBe(true); // nothing changed yet
     });
 
@@ -204,10 +207,11 @@ describe('UserPodsCell', () => {
       await create([]);
       await openPopover();
       await tick(2);
-      expect((q('[data-pod-primary="2"]') as HTMLInputElement).checked).toBe(true);
+      expect(isPrimaryRow(2)).toBe(true);
       await tick(4);
-      expect((q('[data-pod-primary="2"]') as HTMLInputElement).checked).toBe(true);
-      expect((q('[data-pod-primary="4"]') as HTMLInputElement).checked).toBe(false);
+      expect(isPrimaryRow(2)).toBe(true);
+      expect(isPrimaryRow(4)).toBe(false);
+      expect(q('[data-pod-primary="4"]').textContent).toContain('Make Primary');
       expect(applied).toEqual([]); // nothing is sent per click
       apply().click();
       await settle();
@@ -215,7 +219,7 @@ describe('UserPodsCell', () => {
       expect(el().querySelector('[role="dialog"]')).toBeNull();
     });
 
-    it('lets the primary radio move the primary pod', async () => {
+    it('lets Make Primary move the primary pod', async () => {
       await create([pod(1, 'Processing', true), pod(2, 'Review')]);
       await openPopover();
       q('[data-pod-primary="2"]').click();
@@ -229,8 +233,8 @@ describe('UserPodsCell', () => {
       await create([pod(1, 'Processing', true), pod(2, 'Review')]);
       await openPopover();
       await tick(1); // untick the primary pod
-      expect(q('[data-primary-required]').textContent).toContain('Choose the primary pod');
-      expect((q('[data-pod-primary="2"]') as HTMLInputElement).checked).toBe(false); // not promoted silently
+      expect(q('[data-primary-required]').textContent).toContain('Choose a primary pod.');
+      expect(isPrimaryRow(2)).toBe(false); // not promoted silently
       expect(isBlocked()).toBe(true);
       expect(apply().getAttribute('aria-describedby')).toBe(q('[data-primary-required]').id);
 
@@ -265,8 +269,8 @@ describe('UserPodsCell', () => {
       expect(legacy.classList.contains('upc-row--muted')).toBe(true);
       expect(legacy.textContent).toContain('inactive');
       expect(q('[data-pods-inactive-note]')).not.toBeNull();
-      // Its Primary radio cannot be chosen.
-      expect((q('[data-pod-primary="9"]') as HTMLInputElement).disabled).toBe(true);
+      // It cannot be made the primary pod: no Make Primary button on it.
+      expect(el().querySelector('[data-pod-primary="9"]')).toBeNull();
       await tick(9); // remove it
       apply().click();
       await settle();

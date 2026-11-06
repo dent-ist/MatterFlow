@@ -107,6 +107,37 @@ button.p-button:disabled {
   text-decoration: underline;
 }
 
+/* D-44m (#1257): the name of a record that opens a drawer. A text button that reads like the name links of the grids: underlined at rest (offset 2 px),
+   link colour, hover primary-hover, left-aligned, no padding, at most two lines (the full name goes in the title attribute). Add it to
+   `mf-btn mf-btn--text`; never a private class per page. */
+.mf-btn--text.mf-btn--name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  box-sizing: border-box;
+  width: fit-content;
+  max-width: 100%;
+  min-height: var(--mf-target-min);
+  padding: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  text-align: left;
+  white-space: normal;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.mf-btn--text.mf-btn--name:hover:not(:disabled, [aria-disabled='true']) {
+  background: transparent;
+  color: var(--mf-primary-hover);
+  text-decoration: underline;
+}
+
+.mf-btn--text.mf-btn--name:focus-visible {
+  border-radius: var(--mf-radius);
+}
+
 .mf-btn--text.mf-btn--danger {
   border-color: transparent;
   color: var(--mf-danger);

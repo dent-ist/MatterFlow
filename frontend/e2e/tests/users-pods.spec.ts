@@ -37,6 +37,10 @@ const chips = (row: Locator): Locator => row.locator('[data-pod-chip]');
 const popover = (page: Page): Locator => page.locator('[data-pods-popover]');
 
 /** Opens the editor of a row and narrows the checklist to the pods of one test. */
+/** The Primary chip in the popover row of this pod (a ticked pod that is not the primary one has a Make Primary button instead). */
+const primaryChip = (pop: Locator, name: string) =>
+  pop.locator('li').filter({ hasText: name }).locator('[data-primary-chip]');
+
 async function openEditor(page: Page, row: Locator, tag: string): Promise<Locator> {
   await trigger(row).click();
   const pop = popover(page);
@@ -148,11 +152,11 @@ test.describe('Pods column of the Users grid', () => {
     const pop = await openEditor(page, row, tag);
     // The first pod added becomes the primary one.
     await pop.getByRole('checkbox', { name: names[0] }).check();
-    await expect(pop.getByRole('radio', { name: `Primary pod: ${names[0]}` })).toBeChecked();
+    await expect(primaryChip(pop, names[0])).toBeVisible();
     await pop.getByRole('checkbox', { name: names[1] }).check();
-    await expect(pop.getByRole('radio', { name: `Primary pod: ${names[0]}` })).toBeChecked();
+    await expect(primaryChip(pop, names[0])).toBeVisible();
     // Choose the second one as the primary pod.
-    await pop.getByRole('radio', { name: `Primary pod: ${names[1]}` }).check();
+    await pop.getByRole('button', { name: `Make ${names[1]} the primary pod` }).click();
     // Nothing is saved before Apply.
     expect(await userPods(admin, person.userId)).toEqual([]);
     await pop.getByRole('button', { name: 'Apply' }).click();
@@ -208,16 +212,16 @@ test.describe('Pods column of the Users grid', () => {
     const pop = await openEditor(page, row, tag);
     await pop.getByRole('checkbox', { name: names[0] }).uncheck();
     const apply = pop.getByRole('button', { name: 'Apply' });
-    await expect(pop.locator('[data-primary-required]')).toContainText('Choose the primary pod');
+    await expect(pop.locator('[data-primary-required]')).toContainText('Choose a primary pod.');
     // Not promoted silently, and Apply is blocked (it stays focusable and names the reason).
-    await expect(pop.getByRole('radio', { name: `Primary pod: ${names[1]}` })).not.toBeChecked();
+    await expect(primaryChip(pop, names[1])).toHaveCount(0);
     await expect(apply).toHaveAttribute('aria-disabled', 'true');
     // Playwright treats aria-disabled as not actionable, so force the click a user could still make.
     await apply.click({ force: true });
     await expect(popover(page)).toBeVisible();
     expect((await userPods(admin, person.userId)).length).toBe(2);
 
-    await pop.getByRole('radio', { name: `Primary pod: ${names[1]}` }).check();
+    await pop.getByRole('button', { name: `Make ${names[1]} the primary pod` }).click();
     await expect(apply).not.toHaveAttribute('aria-disabled', 'true');
     await apply.click();
     await expect(chips(row)).toHaveCount(1);
