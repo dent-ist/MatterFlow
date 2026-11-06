@@ -1,5 +1,5 @@
 /* The one banner (#1196, D-04, D-40): the amber warning bar, also the sensitive-matter bar of the record headers. One line, 36 px high (taller only when the text must wrap),
-   radius 4 inside the content, 1 px `-line` border (no coloured edge), leading icon 16, text 14, one secondary action 32 px at the right. `--info` is blue; `--danger` and `--success`
+   radius 4 inside the content, 1 px `-line` border (no coloured edge), leading icon 18 (`--mf-icon-md`), text 14, one secondary action 32 px at the right. `--info` is blue; `--danger` and `--success`
    are the same bar for a failure and for "back online"; `--full` is the global kind: full width at the top of the main area, no radius, a bottom line only. */
 .pg-banner,
 .rh__note,

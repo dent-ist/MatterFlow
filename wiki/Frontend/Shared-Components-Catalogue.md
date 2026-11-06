@@ -103,7 +103,7 @@ One bar for every notice: add `pg-banner` to a `div` with a leading `pi` icon, o
 | `pg-banner--success` | "Back online." (green) |
 | `pg-banner--full` | The global kind: full width at the top of the main area, no radius, a bottom line only (offline, sign-in, Dev auth) |
 
-The bar is 36 px high (taller only when the text must wrap), the icon is `--mf-icon-md` (18 px in `tokens.css`; the text of rule D-10a still says 16, rule D-53a and the code say 18), and its action is a 32 px text button. Every banner has its icon (`banner-anatomy.spec.ts` fails without one). The global banners live in `shared/layout/connection-banner.ts` and `dev-auth-banner.ts`; the sensitive bars of the record headers use the same styles (`.rh__note`, `.mh__note`).
+The bar is 36 px high (taller only when the text must wrap), the icon is `--mf-icon-md` (18 px), and its action is a 32 px text button. Every banner has its icon (`banner-anatomy.spec.ts` fails without one). The global banners live in `shared/layout/connection-banner.ts` and `dev-auth-banner.ts`; the sensitive bars of the record headers use the same styles (`.rh__note`, `.mh__note`).
 
 ## Behaviour helpers
 
