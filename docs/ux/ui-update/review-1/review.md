@@ -101,3 +101,18 @@ Real stack, 1366x768 and 1920x1080 (54 screenshots, `measurements-review5.json`)
 | #1155 | PASS | off-scale lint present in `npm run lint`; Summary, Breakdowns, Swimlane, Users, Calendar, Notes editor, My Matters, Task Types form designer show no regression |
 
 Decisions: (a) grid headers 12/700 uppercase for data grids, calendar weekday row is the exception, no existing grid changes; (b) print line: full month, time, no zone; (c) stripes remain in Breakdowns and the gauge, covered by #1158; (d) `--mf-radius-md` retired (#1229); (e) Progress = bar + "2 of 5", step in tooltip (#1227); (f) selected-type strip coloured chip (#1228); (g) Pod Work "Assign to Me" becomes an icon button in a 160 px Assignee cell (#1227).
+
+## Review 6: batch 6a (tip 5bf3cef, 2026-11-06, screenshots in `../review-6/`)
+
+Real stack, both sizes (54 screenshots, `measurements-review6.json`); axe on 12 pages at both sizes: 0 violations (`axe-review6.json`); computed-radius scan of 17 pages (`crawl/rad.js`): no 6 px element outside the navigation.
+
+| Issue | Result | Evidence |
+| --- | --- | --- |
+| #1229 radius | PASS | computed radii are 4, 8, 12, 50%, 999; no 6 px except the nav pill; Dashboard, Matters, Task page, dialogs, drawers, Notes unchanged |
+| #1227 Progress, Assign, print | PASS WITH NOTES | Progress cell "0 of 3"; Pod Work Assignee 160 px with the person-plus icon; print line "Printed November 6, 2026, 1:10 AM". Notes: Matters > Tasks print view has no print line; time lacks the leading zero ("1:10 AM", D-60 says "01:10 AM"); Pod Work default columns still total 1,334 px at 1366 so Status is cut (decision D-43a, fix #1230); Matter Name is off by default but Project is still on |
+| #1228 strip chip | PASS | the selected-type strip shows the blue chip like the picker card |
+| #1225 tidy | PASS | legend wraps in two clean rows ("Days 12 Red numbers = weekend or holiday", "Holidays"); Week header 40 px, 13/600, red Sat and Sun |
+| #1224 | PASS | picker and strip colours agree with the grids |
+| #1154 | PASS WITH NOTES | everything except the Pod Work / Task Queue column totals at 1366 (#1230) |
+
+Decision (Pod Work and Task grids): D-43a in the guideline; fix issue #1230 under #1110.

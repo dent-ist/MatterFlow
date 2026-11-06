@@ -1,0 +1,9 @@
+const { chromium } = require('playwright');
+const U={director:'KE\\testuser02',podlead:'KE\\testuser06',tech:'KE\\testuser01',admin:'KE\\kekim',pm:'KE\\testuser35'};
+const pages=[['director','/dashboard'],['director','/dashboard?tab=calendar'],['director','/dashboard?tab=users'],['director','/dashboard?tab=breakdowns'],['director','/matters/1'],['director','/matters/1?tab=tasks'],['director','/tasks/200'],['director','/assets/1'],['director','/clients/1'],['director','/tasks/new'],['podlead','/pods/work'],['tech','/my-work'],['pm','/my-matters'],['admin','/admin/users'],['admin','/admin/task-types'],['admin','/admin/settings'],['admin','/admin/reports']];
+(async()=>{const b=await chromium.launch(); const ctx={}; const all={};
+ for(const [u,url] of pages){ctx[u]||=await b.newContext({viewport:{width:1366,height:768},extraHTTPHeaders:{'X-Dev-User':U[u]}}); const p=await ctx[u].newPage(); await p.goto('http://localhost:4200'+url,{waitUntil:'domcontentloaded'}); try{await p.waitForLoadState('networkidle',{timeout:8000});}catch{} await p.waitForTimeout(1500);
+  const r=await p.evaluate(()=>{const o={}; for(const e of document.querySelectorAll('body *')){const r=e.getBoundingClientRect(); if(r.width<2||r.height<2) continue; const v=getComputedStyle(e).borderTopLeftRadius; if(v&&v!=='0px'){const k=v; if(v==='6px' && e.closest('nav,.mf-nav,[class*=nav]')) continue; (o[k] ||= []).push((e.tagName+'.'+(e.className&&e.className.toString().split(' ')[0]||'')).slice(0,32));}} return Object.fromEntries(Object.entries(o).map(([k,a])=>[k,[a.length,[...new Set(a)].slice(0,3)]]));});
+  for(const [k,[n,ex]] of Object.entries(r)){ all[k] ||= {n:0,ex:new Set()}; all[k].n+=n; ex.forEach(x=>all[k].ex.add(x)); }
+  await p.close();}
+ await b.close(); for(const [k,v] of Object.entries(all)) console.log(k,v.n,[...v.ex].slice(0,5).join(' '));})();
