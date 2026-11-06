@@ -74,7 +74,7 @@ describe('TaskTypesPage deactivate dialog impact (#379)', () => {
     await TestBed.inject(AuthStore).ensureLoaded();
     const fixture = TestBed.createComponent(TaskTypesPage);
     await settle(fixture);
-    const row = fixture.nativeElement.querySelector(`[data-row="${name}"]`)!;
+    const row = fixture.nativeElement.querySelector(`td[data-row="${name}"]`)!.closest('tr')!;
     row.querySelector('button[data-overflow]')!.click();
     await settle(fixture);
     fixture.nativeElement.querySelector('[role=menuitem][data-action="deactivate"]')!.click();
@@ -208,7 +208,7 @@ describe('TaskTypesPage phone cards and narrow columns (#374)', () => {
       expect(heads(fixture), `at ${width}`).toEqual([
         'Name',
         'Default Workflow',
-        'Target (days)',
+        'Target (Days)',
         'Request Form',
         'Workflows',
         'Status',
@@ -224,7 +224,8 @@ describe('TaskTypesPage', () => {
   let fixture: ComponentFixture<TaskTypesPage>;
   let api: InMemoryTaskTypesApi;
   const el = (): HTMLElement => fixture.nativeElement;
-  const row = (name: string): HTMLElement => el().querySelector(`[data-row="${name}"]`)!;
+  const row = (name: string): HTMLElement =>
+    el().querySelector(`td[data-row="${name}"]`)!.closest('tr')!;
 
   /** Opens the row menu of a type and picks one entry (`data-action`). */
   async function pick(name: string, action: string): Promise<void> {
@@ -295,8 +296,8 @@ describe('TaskTypesPage', () => {
     await (fixture.componentInstance as unknown as { load(): Promise<void> }).load();
     await settle(fixture);
     const names = () =>
-      Array.from(el().querySelectorAll('tbody tr[data-row]')).map((r) =>
-        r.getAttribute('data-row'),
+      Array.from(el().querySelectorAll('tbody tr[data-record-id]')).map((r) =>
+        r.querySelector('td[data-row]')!.getAttribute('data-row'),
       );
     expect(names()).not.toContain('Archive One');
     expect(el().querySelector('mf-pager [data-hidden-hint]')!.textContent).toContain(
@@ -313,13 +314,13 @@ describe('TaskTypesPage', () => {
     fixture.componentRef.setInput('sort', 'status');
     await settle(fixture);
     expect(el().querySelector('th[aria-sort="ascending"]')!.textContent).toContain('Status');
-    const order = Array.from(el().querySelectorAll('tbody tr[data-row]')).map((r) =>
+    const order = Array.from(el().querySelectorAll('tbody tr[data-record-id]')).map((r) =>
       r.classList.contains('inactive'),
     );
     expect(order).toEqual([...order].sort((x, y) => Number(x) - Number(y)));
     fixture.componentRef.setInput('sort', '-status');
     await settle(fixture);
-    const reversed = Array.from(el().querySelectorAll('tbody tr[data-row]')).map((r) =>
+    const reversed = Array.from(el().querySelectorAll('tbody tr[data-record-id]')).map((r) =>
       r.classList.contains('inactive'),
     );
     expect(reversed).toEqual([...reversed].sort((x, y) => Number(y) - Number(x)));
@@ -380,7 +381,7 @@ describe('TaskTypesPage', () => {
     );
     await (fixture.componentInstance as unknown as { load(): Promise<void> }).load();
     await settle(fixture);
-    expect(el().querySelector('[data-target-col]')!.textContent).toContain('Target (days)');
+    expect(el().querySelector('th[data-col="target"]')!.textContent).toContain('Target (Days)');
     expect(row('Production').querySelector('[data-target]')!.textContent!.trim()).toBe('3');
     expect(
       row('Production')
@@ -405,7 +406,9 @@ describe('TaskTypesPage', () => {
     await (fixture.componentInstance as unknown as { load(): Promise<void> }).load();
     await settle(fixture);
     const names = () =>
-      Array.from(el().querySelectorAll('tbody tr')).map((r) => r.getAttribute('data-row'));
+      Array.from(el().querySelectorAll('tbody tr[data-record-id]')).map((r) =>
+        r.querySelector('td[data-row]')!.getAttribute('data-row'),
+      );
 
     expect(names()).toContain('Collection');
     expect(el().querySelector('th[aria-sort="ascending"]')!.textContent).toContain('Name');
@@ -419,7 +422,7 @@ describe('TaskTypesPage', () => {
     await settle(fixture);
     expect(names()).toContain('Collection');
     // One overflow button per row (#355) named after the row; the text links are gone.
-    const cell = row('Collection').querySelector('td.mf-col-menu')!;
+    const cell = row('Collection').querySelector('td.mf-col-actions')!;
     expect(cell.querySelectorAll('button[data-overflow]')).toHaveLength(1);
     expect(cell.querySelector('button[data-overflow]')!.getAttribute('aria-label')).toBe(
       'Actions for Collection',
@@ -442,7 +445,9 @@ describe('TaskTypesPage', () => {
     await (fixture.componentInstance as unknown as { load(): Promise<void> }).load();
     await settle(fixture);
     const names = () =>
-      Array.from(el().querySelectorAll('tbody tr')).map((r) => r.getAttribute('data-row'));
+      Array.from(el().querySelectorAll('tbody tr[data-record-id]')).map((r) =>
+        r.querySelector('td[data-row]')!.getAttribute('data-row'),
+      );
     expect(names()).toEqual(expect.arrayContaining(['Collection', 'Data Processing']));
 
     // Collection has no form yet; Data Processing has a published one.
@@ -491,7 +496,7 @@ describe('TaskTypesPage', () => {
     confirm!.click();
     await settle(fixture);
     // Inactive types are hidden by the default Active filter; the announcement says what happened.
-    expect(el().querySelector('[data-row="Data Processing"]')).toBeNull();
+    expect(el().querySelector('td[data-row="Data Processing"]')).toBeNull();
     expect(el().querySelector('[data-announce]')!.textContent).toContain(
       'Data Processing deactivated.',
     );
@@ -510,9 +515,12 @@ describe('TaskTypesPage workflow chips and filter', () => {
   let fixture: ComponentFixture<TaskTypesPage>;
   let api: InMemoryTaskTypesApi;
   const el = (): HTMLElement => fixture.nativeElement;
-  const row = (name: string): HTMLElement => el().querySelector(`[data-row="${name}"]`)!;
+  const row = (name: string): HTMLElement =>
+    el().querySelector(`td[data-row="${name}"]`)!.closest('tr')!;
   const names = () =>
-    Array.from(el().querySelectorAll('tbody tr')).map((r) => r.getAttribute('data-row'));
+    Array.from(el().querySelectorAll('tbody tr[data-record-id]')).map((r) =>
+      r.querySelector('td[data-row]')!.getAttribute('data-row'),
+    );
 
   async function create(name: string, eligible: number[], def?: number): Promise<void> {
     await new Promise<void>((resolve) =>
