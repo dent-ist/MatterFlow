@@ -400,7 +400,7 @@ describe('EmailIntake', () => {
       await create(['Task.Create'], { expanded: false });
 
       expect(el().querySelector('textarea')).toBeNull();
-      expect(toggle().textContent).toContain('Fill From Email');
+      expect(toggle().textContent).toContain('Fill from Email');
       expect(toggle().getAttribute('aria-expanded')).toBe('false');
       toggle().click();
       await settle(fixture);

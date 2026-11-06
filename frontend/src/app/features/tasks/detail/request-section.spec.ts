@@ -7,7 +7,7 @@ import { RequestSection, requestHeadingText } from './request-section';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RequestSection],
   template: `
-    <mf-request-section heading="Request details (X, form 1)" [count]="n()" [(open)]="open"
+    <mf-request-section heading="Request Details (X, Form 1)" [count]="n()" [(open)]="open"
       ><input id="inside"
     /></mf-request-section>
   `,
@@ -57,10 +57,10 @@ describe('RequestSection', () => {
 describe('requestHeadingText', () => {
   it('names the task type and the form', () => {
     expect(requestHeadingText({ taskType: { name: 'Search and Culling' }, formVersionNo: 1 })).toBe(
-      'Request details (Search and Culling, form 1)',
+      'Request Details (Search and Culling, Form 1)',
     );
     expect(requestHeadingText({ taskType: { name: 'Search and Culling' } })).toBe(
-      'Request details (Search and Culling)',
+      'Request Details (Search and Culling)',
     );
   });
 });

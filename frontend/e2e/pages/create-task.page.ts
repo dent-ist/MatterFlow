@@ -73,9 +73,9 @@ export class CreateTaskPage {
     });
   }
 
-  /** The "Quick Fill From Email" panel starts collapsed (UXR-38); opens it unless it is already open. */
+  /** The "Quick Fill from Email" panel starts collapsed (UXR-38); opens it unless it is already open. */
   async showEmailPanel(): Promise<void> {
-    const toggle = this.page.getByRole('button', { name: 'Fill From Email' });
+    const toggle = this.page.getByRole('button', { name: 'Fill from Email' });
     if (await toggle.isVisible()) await toggle.click();
     await expect(this.pasteBox).toBeVisible();
   }

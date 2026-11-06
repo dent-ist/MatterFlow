@@ -375,12 +375,15 @@ const ROWS = [0, 1, 2, 3, 4] as const;
         margin-bottom: var(--mf-s1);
       }
     }
+    /* The bars add up to a loaded tile (a 16 px label line and a 36 px value row), so the strip does not change height when the facts arrive (#1171). */
     .rk__label {
       width: 3rem;
       height: 0.75rem;
+      margin-block: 3px;
     }
     .rk__fact {
       height: 1rem;
+      margin-block: 11px;
     }
     @media (prefers-reduced-motion: no-preference) {
       .rk__bar {

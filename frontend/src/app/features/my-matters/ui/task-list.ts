@@ -386,7 +386,7 @@ export function statusCodes(status: StatusFilter): string[] {
                   @if (t.assignedUser?.displayName ?? t.assignedPod?.name; as who) {
                     <div class="cell">
                       <span class="av" aria-hidden="true">{{ initials(who) }}</span>
-                      <span>{{ who }}</span>
+                      <span class="who" [attr.title]="who">{{ who }}</span>
                     </div>
                   } @else {
                     <span class="una"
@@ -580,6 +580,13 @@ export function statusCodes(status: StatusFilter): string[] {
       font-size: var(--mf-fs-xs);
       font-weight: 700;
     }
+    /* A name is one line with an ellipsis and its full text as the tooltip (D-45), so a long pod name does not make a row taller than 44 px. */
+    .who {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .una {
       display: inline-flex;
       align-items: center;
@@ -610,8 +617,9 @@ export function statusCodes(status: StatusFilter): string[] {
     col.c-prio {
       width: var(--mf-col-priority-w);
     }
+    /* The person column is 136 to 150 px (D-43); the avatar and a name like "Test User 38" need the upper end. */
     col.c-asg {
-      width: var(--mf-col-assignee-w);
+      width: calc(var(--mf-col-assignee-w) + 14px);
     }
     col.c-due {
       width: var(--mf-col-due-w);
@@ -665,8 +673,8 @@ export function statusCodes(status: StatusFilter): string[] {
         display: none;
       }
     }
-    /* Assignee needs the whole row to fit: type 128, a title, status 176, priority 112, assignee 136 and due 152 (D-43). */
-    @container gc (min-width: 880px) {
+    /* Assignee needs the whole row to fit: type 128, a title, status 176, priority 112, assignee 150 and due 152 (D-43). */
+    @container gc (min-width: 900px) {
       .c-asg {
         display: table-cell;
       }

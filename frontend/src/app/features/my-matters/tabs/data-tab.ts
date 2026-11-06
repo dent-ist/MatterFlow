@@ -34,6 +34,7 @@ import {
   RecordCardList,
   phoneCards,
 } from '../../../shared/ui/record-card-list';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { StatTile } from '../../../shared/ui/stat-tile';
 import { TileTone } from '../../../shared/ui/tile-chip';
 import { formatSize } from '../../assets/disposition/asset-size';
@@ -166,6 +167,7 @@ function plural(n: number, one: string, many: string): string {
     DataPeriodControl,
     DataPick,
     DataSizePick,
+    Dropdown,
     PanelBox,
     RecordCard,
     RecordCardDef,
@@ -199,9 +201,6 @@ function plural(n: number, one: string, many: string): string {
     .dt__field label {
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
-    }
-    .dt__field select {
-      max-width: 100%;
     }
     .dt__info {
       min-width: 32px;
@@ -718,16 +717,15 @@ function plural(n: number, one: string, many: string): string {
           @if (volumeUnits().length > 1) {
             <div class="dt__field">
               <label for="dv-unit">Unit</label>
-              <select
-                id="dv-unit"
-                class="mf-control mf-control--compact"
+              <mf-dropdown
+                buttonId="dv-unit"
+                label="Unit"
                 data-volume-unit
-                (change)="volumeUnit.set($any($event.target).value)"
-              >
-                @for (u of volumeUnits(); track u) {
-                  <option [value]="u" [selected]="u === unitShown()">{{ u }}</option>
-                }
-              </select>
+                [items]="unitItems()"
+                [value]="unitShown()"
+                [neutralValue]="null"
+                (valueChange)="volumeUnit.set($any($event))"
+              />
             </div>
           }
           <div mfSegmented role="group" aria-label="Show the volume as">
@@ -897,6 +895,9 @@ export class DataTab {
   protected readonly asTable = signal(false);
   protected readonly volumeUnit = signal('');
   protected readonly volumeUnits = computed(() => this.volume.data()?.units ?? []);
+  protected readonly unitItems = computed<DropdownItem[]>(() =>
+    this.volumeUnits().map((u) => ({ value: u, label: u })),
+  );
   protected readonly unitShown = computed(() => {
     const units = this.volumeUnits();
     return units.includes(this.volumeUnit()) ? this.volumeUnit() : (units[0] ?? '');

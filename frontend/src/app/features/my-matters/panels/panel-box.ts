@@ -125,8 +125,6 @@ import { LoadGroup, PanelState } from '../panel-loader';
       background: transparent;
     }
     .mmp--flat .mmp__head {
-      /* The Options button of a flat section is a little lower than a form control, so the heading row stays one line of text tall. */
-      --mf-options-h: 28px;
       min-height: 28px;
       margin-bottom: 0;
       padding-bottom: var(--mf-s1);

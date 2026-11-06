@@ -68,8 +68,9 @@ export function stripLineBreaks(text: string): string {
   `,
   styleUrl: './form-field.scss',
   styles: `
+    /* The standard field width (D-35); a form that wants the whole column (the Edit dialog) sets --mf-field-max. */
     .ta {
-      max-width: none;
+      max-width: var(--mf-field-max, 480px);
     }
     .ta__input {
       display: block;

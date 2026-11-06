@@ -559,7 +559,7 @@ export class TaskEditDialog {
   protected readonly requestOpen = signal(false);
   /** The task type and form version the request was made on, shown inside the Input section. */
   protected readonly requestCaption = computed(() =>
-    requestHeadingText(this.store.task()).replace(/^Request details \((.*)\)$/, '$1'),
+    requestHeadingText(this.store.task()).replace(/^Request Details \((.*)\)$/, '$1'),
   );
   /** "Priority, due date and assignment" starts collapsed and opens itself when a field in it has an error (#350). */
   protected readonly whenOpen = signal(false);

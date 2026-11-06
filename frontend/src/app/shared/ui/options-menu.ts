@@ -35,23 +35,12 @@ import {
       position: relative;
       display: inline-block;
     }
+    /* The button is the shared secondary button (36 px, D-02 and D-40); only the disclosure marker and the picker look are here. */
     .om__summary {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
-      min-height: var(--mf-options-h, 32px);
-      padding: 0 var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      cursor: pointer;
       list-style: none;
     }
     .om__summary::-webkit-details-marker {
       display: none;
-    }
-    .om__summary:hover {
-      background: var(--mf-surface-alt);
     }
     .om__n {
       display: inline-flex;
@@ -104,7 +93,7 @@ import {
       (toggle)="toggled($event)"
     >
       <summary
-        class="om__summary"
+        class="om__summary mf-btn"
         data-options-trigger
         [attr.aria-label]="
           triggerName() ||

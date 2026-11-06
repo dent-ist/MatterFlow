@@ -709,7 +709,7 @@ describe('CreateTaskPage', () => {
     });
   });
 
-  describe('Quick Fill From Email', () => {
+  describe('Quick Fill from Email', () => {
     afterEach(() => localStorage.removeItem(EMAIL_PANEL_STORAGE_KEY));
 
     it('is collapsed by default behind a Fill from email button, essentials first', async () => {
@@ -718,7 +718,7 @@ describe('CreateTaskPage', () => {
       await pickType(h);
 
       expect(field(h, '#ei-paste')).toBeNull();
-      expect(field(h, '[data-email-toggle]')!.textContent).toContain('Fill From Email');
+      expect(field(h, '[data-email-toggle]')!.textContent).toContain('Fill from Email');
       const order = Array.from(
         h.el.querySelectorAll('#ct-matter, #ct-title, #ct-requestor-name'),
       ).map((e) => e.id);

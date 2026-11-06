@@ -226,25 +226,25 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
                             @if (c.canEdit) {
                               <button
                                 type="button"
-                                class="mf-btn mf-btn--text mf-btn--icon"
+                                class="mf-btn mf-btn--text"
                                 data-edit
                                 aria-label="Edit comment"
                                 title="Edit comment"
                                 (click)="startEdit(c)"
                               >
-                                <i class="pi pi-pencil" aria-hidden="true"></i>
+                                Edit
                               </button>
                             }
                             @if (c.canDelete) {
                               <button
                                 type="button"
-                                class="mf-btn mf-btn--text mf-btn--icon mf-btn--danger"
+                                class="mf-btn mf-btn--text mf-btn--danger"
                                 data-delete
                                 aria-label="Delete comment"
                                 title="Delete comment"
                                 (click)="askDelete(c)"
                               >
-                                <i class="pi pi-trash" aria-hidden="true"></i>
+                                Delete
                               </button>
                             }
                           </span>

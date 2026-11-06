@@ -90,9 +90,9 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
   styleUrl: './email-intake.scss',
   template: `
     @if (allowed()) {
-      <section class="ei" aria-labelledby="ei-title" data-email-intake>
+      <section class="mf-card ei" aria-labelledby="ei-title" data-email-intake>
         <div class="ei__head">
-          <h2 class="ei__title" id="ei-title">Quick Fill From Email</h2>
+          <h2 class="mf-card__title ei__title" id="ei-title">Quick Fill from Email</h2>
           <button
             type="button"
             class="mf-btn"
@@ -104,7 +104,7 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
             @if (!open()) {
               <i class="pi pi-envelope" aria-hidden="true"></i>
             }
-            {{ open() ? 'Hide' : 'Fill From Email' }}
+            {{ open() ? 'Hide' : 'Fill from Email' }}
           </button>
         </div>
 

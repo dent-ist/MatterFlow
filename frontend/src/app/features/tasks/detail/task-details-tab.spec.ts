@@ -61,7 +61,7 @@ describe('Details tab', () => {
     expect(view).not.toContain('Task Type');
     expect(q(el, '[data-view] a[href="mailto:jane.roe@client.com"]')).not.toBeNull();
     expect(q(el, '[data-request-form]')!.textContent).toContain(
-      'Request details (Data Processing, form 3)',
+      'Request Details (Data Processing, Form 3)',
     );
     expect(q(el, '[data-request-form]')!.textContent).toContain('English');
     expect(q(el, '[data-locked-fields]')).toBeNull();
@@ -563,7 +563,7 @@ describe('Details tab', () => {
     it('is closed for 14 fields and open for 5, with the type, the form and the count in its heading', async () => {
       const long = await mount(14);
       expect(toggle(long.el).getAttribute('aria-expanded')).toBe('false');
-      expect(toggle(long.el).textContent).toContain('Request details (Search and Culling, form 1)');
+      expect(toggle(long.el).textContent).toContain('Request Details (Search and Culling, Form 1)');
       expect(toggle(long.el).textContent).toContain('14 fields');
       expect(q(long.el, '[data-request-form] [data-request-body]')!.hasAttribute('hidden')).toBe(
         true,

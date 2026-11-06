@@ -13,6 +13,7 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { todayText } from '../calendar-month';
 import { NumericDatePipe, numericDate } from '../../../shared/ui/numeric-date';
 import { EventIcon } from '../../../shared/ui/event-type';
+import { Badge } from '../../../shared/ui/badge';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { SidePanel, SideSection } from '../../../shared/ui/side-panel';
 import { MmFilters } from '../my-matters-filters';
@@ -36,7 +37,16 @@ const UPCOMING_DAYS = 14;
  */
 @Component({
   selector: 'mf-mm-overview',
-  imports: [IntPipe, Dropdown, EventIcon, MmTaskList, NgTemplateOutlet, NumericDatePipe, SidePanel],
+  imports: [
+    Badge,
+    IntPipe,
+    Dropdown,
+    EventIcon,
+    MmTaskList,
+    NgTemplateOutlet,
+    NumericDatePipe,
+    SidePanel,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -72,9 +82,11 @@ const UPCOMING_DAYS = 14;
     </div>
 
     <ng-template #events>
-      <section class="card ev" data-section="events" aria-labelledby="mm-ev-h">
+      <section class="mf-card card ev" data-section="events" aria-labelledby="mm-ev-h">
         <div class="ch">
-          <h2 id="mm-ev-h" tabindex="-1" data-section-focus>Upcoming Events</h2>
+          <h2 id="mm-ev-h" class="mf-card__title" tabindex="-1" data-section-focus>
+            Upcoming Events
+          </h2>
           <span class="sub">next {{ days }} days</span>
         </div>
         <div class="list" [attr.aria-busy]="upcoming.busy()">
@@ -134,12 +146,16 @@ const UPCOMING_DAYS = 14;
     </ng-template>
 
     <ng-template #activity>
-      <section class="card ac" data-section="activity" aria-labelledby="mm-ac-h">
+      <section class="mf-card card ac" data-section="activity" aria-labelledby="mm-ac-h">
         <div class="ch">
-          <h2 id="mm-ac-h" tabindex="-1" data-section-focus>Recent Activity</h2>
+          <h2 id="mm-ac-h" class="mf-card__title" tabindex="-1" data-section-focus>
+            Recent Activity
+          </h2>
           @if (feed.data(); as f) {
             @if (f.unreadCount > 0) {
-              <span class="unread">{{ f.unreadCount | mfInt }} unread</span>
+              <mf-badge class="unread" tone="info" icon="pi-bell"
+                >{{ f.unreadCount | mfInt }} unread</mf-badge
+              >
             }
           }
         </div>
@@ -263,14 +279,11 @@ const UPCOMING_DAYS = 14;
       flex: none;
       min-height: 0;
     }
+    /* The look is the shared card (mf-card: D-10); this only lays the card out, and the rows run to its edge so their rules and hover reach it. */
     .card {
       display: flex;
       flex-direction: column;
       min-height: 0;
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-xl);
-      background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-card);
       overflow: hidden;
     }
     .ev {
@@ -282,15 +295,13 @@ const UPCOMING_DAYS = 14;
     }
     .ch {
       display: flex;
-      align-items: baseline;
+      align-items: center;
       gap: var(--mf-s2);
-      padding: var(--mf-s3) var(--mf-s4) var(--mf-s2);
+      margin-bottom: var(--mf-s3);
       flex: none;
     }
-    h2 {
+    h2.mf-card__title {
       margin: 0;
-      font-size: var(--mf-fs-md);
-      font-weight: 700;
     }
     h2:focus-visible {
       outline: 2px solid var(--mf-focus);
@@ -299,19 +310,13 @@ const UPCOMING_DAYS = 14;
     .sub,
     .m {
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
+      font-size: var(--mf-fs-sm);
     }
     .unread {
       margin-left: auto;
-      padding: 0 var(--mf-s2);
-      border-radius: 999px;
-      background: var(--mf-primary);
-      color: var(--mf-surface);
-      font-size: var(--mf-fs-xs);
-      font-weight: 700;
     }
     .kc {
-      padding: 0 var(--mf-s4) var(--mf-s2);
+      margin-bottom: var(--mf-s2);
       flex: none;
     }
     .kc mf-dropdown {
@@ -320,6 +325,7 @@ const UPCOMING_DAYS = 14;
     .list {
       flex: 1 1 auto;
       min-height: 0;
+      margin-inline: calc(-1 * var(--mf-s4));
       overflow: auto;
     }
     .items {
@@ -334,7 +340,7 @@ const UPCOMING_DAYS = 14;
       box-sizing: border-box;
       padding: var(--mf-s2) var(--mf-s4);
       border: 0;
-      border-top: 1px solid var(--mf-border);
+      border-top: 1px solid var(--mf-border-soft);
       background: none;
       color: var(--mf-text);
       font: inherit;
@@ -350,7 +356,7 @@ const UPCOMING_DAYS = 14;
       flex-direction: column;
       flex: none;
       min-width: 64px;
-      font-size: var(--mf-fs-xs);
+      font-size: var(--mf-fs-sm);
       color: var(--mf-text-muted);
     }
     .when b {
@@ -408,11 +414,16 @@ const UPCOMING_DAYS = 14;
     }
     .cf {
       flex: none;
-      padding: var(--mf-s2) var(--mf-s4);
-      border-top: 1px solid var(--mf-border);
+      margin-inline: calc(-1 * var(--mf-s4));
+      padding: var(--mf-s2) var(--mf-s4) 0;
+      border-top: 1px solid var(--mf-border-soft);
+    }
+    /* A text button keeps its 8 px padding inside its 24 px target, so its text lines up with the card's content edge. */
+    .cf .mf-btn--text {
+      margin-left: calc(-1 * var(--mf-s2));
     }
     .msg {
-      margin: var(--mf-s4);
+      margin: var(--mf-s2) var(--mf-s4);
       color: var(--mf-text-muted);
     }
     .stackcol {

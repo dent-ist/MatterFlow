@@ -1,5 +1,5 @@
-/** Most characters of a Task Type description on its chooser card; three lines of the narrowest card hold about this much (CT1, #323). */
-export const CARD_TEXT_MAX = 110;
+/** Most characters of a Task Type description on its chooser card; two lines of the narrowest desktop card (1366) hold about this much (#1173; it was three lines, CT1 #323). */
+export const CARD_TEXT_MAX = 85;
 
 /**
  * `text` for a chooser card: when it is longer than `max`, it is cut after the last whole word that fits and ends in an ellipsis, so a

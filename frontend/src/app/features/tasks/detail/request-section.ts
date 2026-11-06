@@ -2,20 +2,20 @@ import { ChangeDetectionStrategy, Component, computed, input, model } from '@ang
 
 let nextId = 0;
 
-/** `Request details (Search and Culling, form 1)`: the task type and the form version the request was made on. */
+/** `Request Details (Search and Culling, Form 1)`: the task type and the form version the request was made on (a heading: Title Case, D-20). */
 export function requestHeadingText(
   task: { taskType?: { name?: string } | null; formVersionNo?: number | null } | null,
 ): string {
   const parts = [
     task?.taskType?.name,
-    task?.formVersionNo != null ? `form ${task.formVersionNo}` : null,
+    task?.formVersionNo != null ? `Form ${task.formVersionNo}` : null,
   ];
-  return `Request details (${parts.filter(Boolean).join(', ')})`;
+  return `Request Details (${parts.filter(Boolean).join(', ')})`;
 }
 
 /**
- * The collapsible "Request details" section (#313), shared by the Details panel (read view) and the Edit dialog: a heading whose button
- * opens and closes the body, with the form's field count and the chevron at the right; the heading text starts at the same left edge as
+ * The collapsible "Request Details" section (#313), shared by the Details panel (read view) and the Edit dialog: a heading whose text button
+ * (`mf-btn--text`, D-13: it acts) opens and closes the body, with the form's field count and the chevron at the right; the heading text starts at the same left edge as
  * the other sub-headings of its container. The body is hidden, not removed, so a form inside keeps its values
  * and still validates while it is closed. The owner decides whether it starts open (`open`) and remembers the choice (`openChange`
  * fires for the person's own toggle only).
@@ -27,7 +27,7 @@ export function requestHeadingText(
     <h3 class="rs__h">
       <button
         type="button"
-        class="rs__toggle"
+        class="mf-btn mf-btn--text rs__toggle"
         data-request-toggle
         [attr.aria-expanded]="open()"
         [attr.aria-controls]="bodyId"
@@ -54,31 +54,19 @@ export function requestHeadingText(
     }
     .rs__h {
       margin: 0;
+      padding-bottom: var(--mf-s1);
+      border-bottom: 1px solid var(--mf-border-soft);
       font-size: var(--mf-fs-md);
     }
+    /* The look is the shared text button; only its layout is here: the whole line, left aligned, wrapping, with its text on the panel's left edge. */
     .rs__toggle {
       display: flex;
-      align-items: center;
+      justify-content: flex-start;
       gap: var(--mf-s2);
-      box-sizing: border-box;
-      width: 100%;
-      min-height: 2.75rem;
-      padding: var(--mf-s2) 0;
-      border: 0;
-      border-bottom: 1px solid var(--mf-border);
-      background: none;
-      color: var(--mf-text);
-      font: inherit;
-      font-weight: 600;
+      width: calc(100% + var(--mf-s2));
+      margin-left: calc(-1 * var(--mf-s2));
       text-align: left;
-      cursor: pointer;
-    }
-    .rs__toggle:hover .rs__text {
-      text-decoration: underline;
-    }
-    .rs__toggle:focus-visible {
-      outline: 2px solid var(--mf-focus);
-      outline-offset: -2px;
+      white-space: normal;
     }
     .rs__text {
       flex: 1 1 auto;
@@ -101,7 +89,7 @@ export function requestHeadingText(
   `,
 })
 export class RequestSection {
-  /** For example `Request details (Search and Culling, form 1)`. */
+  /** For example `Request Details (Search and Culling, Form 1)`. */
   readonly heading = input.required<string>();
   /** How many fields the form has. */
   readonly count = input.required<number>();

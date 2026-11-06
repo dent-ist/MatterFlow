@@ -41,7 +41,7 @@ export interface SideSection {
         <div class="hd">
           <button
             type="button"
-            class="tgl"
+            class="mf-btn mf-btn--icon tgl"
             data-side-toggle
             [attr.aria-expanded]="true"
             [attr.aria-controls]="panelId"
@@ -58,7 +58,7 @@ export interface SideSection {
       <div class="rail" role="group" [attr.aria-label]="label()">
         <button
           type="button"
-          class="rbtn"
+          class="mf-btn mf-btn--icon rbtn"
           data-side-toggle
           [attr.aria-expanded]="false"
           [attr.aria-controls]="panelId"
@@ -71,7 +71,7 @@ export interface SideSection {
         @for (s of sections(); track s.key) {
           <button
             type="button"
-            class="rbtn"
+            class="mf-btn mf-btn--icon rbtn"
             [attr.data-rail]="s.key"
             [attr.aria-label]="s.label + (s.count ? ', ' + s.count : '')"
             [mfTip]="s.label + (s.count ? ': ' + s.count : '')"
@@ -105,11 +105,11 @@ export interface SideSection {
       height: 100%;
       min-height: 0;
     }
-    /* The toggle sits in the first card's heading row (the cards keep their right edge free for it). */
+    /* The toggle sits in the first card's heading row (the cards keep their right edge free for it): 36 px button, centred on the 16 px card title. */
     .hd {
       position: absolute;
-      top: 6px;
-      right: 8px;
+      top: var(--mf-s2);
+      right: var(--mf-s2);
       z-index: 2;
     }
     .body {
@@ -127,29 +127,15 @@ export interface SideSection {
       width: 48px;
       height: 100%;
       padding: var(--mf-s2) 0;
-      border: 1px solid var(--mf-border);
+      border: 1px solid var(--mf-border-soft);
       border-radius: var(--mf-radius-xl);
       background: var(--mf-surface);
       box-shadow: var(--mf-shadow-card);
       box-sizing: border-box;
     }
-    .tgl,
+    /* The buttons are the shared icon button (36 x 36); the rail button only carries the count chip over its corner. */
     .rbtn {
       position: relative;
-      display: grid;
-      place-items: center;
-      width: 36px;
-      height: 36px;
-      padding: 0;
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      cursor: pointer;
-    }
-    .tgl:hover,
-    .rbtn:hover {
-      background: var(--mf-surface-alt);
     }
     @media (max-width: 767.98px) {
       :host(.open) {
@@ -160,8 +146,8 @@ export interface SideSection {
       }
       .tgl,
       .rbtn {
-        width: 44px;
-        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
       }
     }
   `,
