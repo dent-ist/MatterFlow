@@ -177,8 +177,13 @@ table td:is(.mf-col-actions, .mf-col-menu) {
 
 /* Shared resizable grids (shared/ui/resizable-columns.ts, MD-21): the same handle as above on any table with `mfResizable`. Once a column has a
    chosen or stored width the table runs a fixed layout with explicit widths; cells never grow their column, long text is cut with an ellipsis. */
-.mf-rz thead th:has(> .mf-resize) {
+/* `:where` keeps this fallback at zero specificity: a sticky heading cell (grid frame, fixed page) must stay sticky, as a plain `relative` here
+   made every resizable heading but the first scroll away with the rows (#1259). Sticky is a containing block for the handle too. */
+:where(.mf-rz thead th:has(> .mf-resize)) {
   position: relative;
+}
+
+.mf-rz thead th:has(> .mf-resize) {
   overflow: visible;
 }
 

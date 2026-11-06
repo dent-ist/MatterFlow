@@ -123,7 +123,8 @@
   }
 
   /* The first column of a wide table also stays at the left: it is above the other headers where they cross. */
-  .mf-scroll-area thead th:first-child {
+  .mf-scroll-area thead th:first-child,
+  .mf-scroll-area thead .mf-filter-row td:first-child {
     z-index: 4;
   }
 
