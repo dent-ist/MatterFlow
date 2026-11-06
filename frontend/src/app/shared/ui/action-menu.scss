@@ -32,6 +32,29 @@
   color: var(--mf-text);
 }
 
+/* The same quiet "..." in any row marked `data-row-actions` that is not a table row (a Saved Reports row, D-44g): 36 px, no border, muted at rest, full colour on hover or focus. */
+:host-context([data-row-actions]) button.am__trigger:not(.am__trigger--text) {
+  width: var(--mf-ctl-h);
+  min-width: var(--mf-ctl-h);
+  height: var(--mf-ctl-h);
+  min-height: var(--mf-ctl-h);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--mf-text-muted);
+
+  .pi {
+    font-size: var(--mf-icon-md);
+  }
+}
+
+:host-context(li[data-row-actions]:hover) button.am__trigger:not(.am__trigger--text),
+:host-context(li[data-row-actions]:focus-within) button.am__trigger:not(.am__trigger--text),
+:host-context([data-row-actions])
+  button.am__trigger:not(.am__trigger--text):is(:hover, :focus-visible, [aria-expanded='true']) {
+  color: var(--mf-text);
+}
+
 .am__trigger--text {
   display: inline-flex;
   align-items: center;

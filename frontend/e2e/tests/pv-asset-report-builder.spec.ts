@@ -336,7 +336,8 @@ test.describe('Asset report builder (PM v2)', () => {
     await page.locator('[data-save]').click();
     await expect(page.locator('[data-saved-item]')).toHaveCount(1);
 
-    await page.getByRole('button', { name: 'Rename Original name' }).click();
+    await page.getByRole('button', { name: 'More actions for Original name' }).click();
+    await page.getByRole('menuitem', { name: 'Rename' }).click();
     const dialog = page.getByRole('dialog');
     await dialog.locator('[data-rename-input]').fill('Second name');
     await dialog.getByRole('button', { name: 'Rename', exact: true }).click();
@@ -350,7 +351,8 @@ test.describe('Asset report builder (PM v2)', () => {
     await expect(other.locator('[data-saved-empty]')).toBeVisible();
     await expect(other.locator('[data-notice]')).toContainText('not found');
 
-    await page.getByRole('button', { name: 'Delete Second name' }).click();
+    await page.getByRole('button', { name: 'More actions for Second name' }).click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click();
     await expect(page.locator('[data-saved-empty]')).toBeVisible();
     await expect(page.locator('[data-name]')).toHaveValue('');
@@ -441,7 +443,8 @@ test.describe('Asset report builder (PM v2)', () => {
     await expect(page.locator('mf-bar-chart')).toBeVisible();
     await check('bar');
 
-    await page.getByRole('button', { name: /^Rename / }).click();
+    await page.getByRole('button', { name: /^More actions for / }).click();
+    await page.getByRole('menuitem', { name: 'Rename' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await check('rename');
     await page.keyboard.press('Escape');

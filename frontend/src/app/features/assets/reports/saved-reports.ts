@@ -1,20 +1,29 @@
-import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AssetReportResponse, AssetReportsClient } from '../../../api/generated/api-client';
 import { ApiError } from '../../../core/http/api-error';
 import { QuietRequests } from '../../../core/http/interceptors';
 import { NotificationService } from '../../../core/notify/notification.service';
+import { ActionMenu } from '../../../shared/ui/action-menu';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
-import { NumericDatePipe } from '../../../shared/ui/numeric-date';
+import { rowActions } from '../../../shared/ui/row-actions';
 
 /**
- * The person's saved asset reports (personal: nobody else sees them): open, rename and delete. A saved report is only a definition, so
+ * The person's saved asset reports (personal: nobody else sees them): open, rename and delete, one 44 px row each (the name opens it, one "..." menu has Rename and Delete). A saved report is only a definition, so
  * opening one runs it again with the viewer's current visibility. Rename and delete are confirmed in the shared dialog; a failure stays in
  * the dialog (the shared confirm rule).
  */
 @Component({
   selector: 'mf-saved-reports',
-  imports: [ConfirmDialog, NumericDatePipe],
+  imports: [ConfirmDialog, ActionMenu],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (state() === 'loading') {
@@ -32,49 +41,33 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
     } @else {
       <ul class="sr-list" data-saved-list>
         @for (r of reports(); track r.assetReportId) {
-          <li class="sr-item" [class.sr-item--open]="r.assetReportId === openId()" data-saved-item>
-            <div class="sr-main">
-              @if (r.isSupported) {
-                <button
-                  type="button"
-                  class="sr-open"
-                  [attr.aria-current]="r.assetReportId === openId() ? 'true' : null"
-                  data-saved-open
-                  (click)="opened.emit(r)"
-                >
-                  {{ r.name }}
-                </button>
-              } @else {
-                <span class="sr-open sr-open--off">{{ r.name }}</span>
-              }
-              <span class="sr-when"
-                >{{ r.modifiedAtUtc ?? r.createdAtUtc | mfNum: 'date' }}
-                @if (!r.isSupported) {
-                  . Saved by a newer version; it cannot be opened here.
-                }
-              </span>
-            </div>
-            <div class="sr-actions">
+          <li
+            class="sr-item"
+            [class.sr-item--open]="r.assetReportId === openId()"
+            data-saved-item
+            data-row-actions
+          >
+            @if (r.isSupported) {
               <button
                 type="button"
-                class="mf-btn mf-btn--text"
-                data-saved-rename
-                [attr.aria-label]="'Rename ' + r.name"
-                [disabled]="!r.isSupported"
-                (click)="askRename(r)"
+                class="mf-btn mf-btn--text sr-open"
+                [attr.aria-current]="r.assetReportId === openId() ? 'true' : null"
+                [attr.title]="r.name"
+                data-saved-open
+                (click)="opened.emit(r)"
               >
-                Rename
+                {{ r.name }}
               </button>
-              <button
-                type="button"
-                class="mf-btn mf-btn--text"
-                data-saved-delete
-                [attr.aria-label]="'Delete ' + r.name"
-                (click)="askDelete(r)"
-              >
-                Delete
-              </button>
-            </div>
+            } @else {
+              <span class="sr-open sr-open--off" [attr.title]="r.name" data-saved-unsupported>{{
+                r.name
+              }}</span>
+            }
+            <mf-action-menu
+              [floating]="true"
+              [label]="menus().get(r.assetReportId)!.label"
+              [items]="menus().get(r.assetReportId)!.items"
+            />
           </li>
         }
       </ul>
@@ -130,56 +123,46 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
     .sr-note--error {
       color: var(--mf-danger);
     }
+    /* One 44 px row per report (D-44g): the name as a text button on the left, one "..." menu at the right. */
     .sr-list {
-      display: grid;
-      gap: var(--mf-s2);
+      display: block;
       margin: 0;
       padding: 0;
       list-style: none;
     }
     .sr-item {
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
-      justify-content: space-between;
-      gap: var(--mf-s1) var(--mf-s2);
-      padding: var(--mf-s2) var(--mf-s3);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
+      gap: var(--mf-s2);
+      box-sizing: border-box;
+      height: var(--mf-grid-row-h, 44px);
+      padding-inline: var(--mf-s2) var(--mf-s1);
+      border-bottom: 1px solid var(--mf-border-soft);
     }
-    .sr-item--open {
-      border-color: var(--mf-primary);
+    .sr-item:hover {
+      background: var(--mf-row-hover);
+    }
+    .sr-item--open,
+    .sr-item--open:hover {
       background: var(--mf-selected-bg);
     }
-    .sr-main {
-      display: grid;
-      min-width: 0;
-      flex: 1 1 8rem;
-    }
+    /* The name is one line with an ellipsis (the whole name is the tooltip). */
     .sr-open {
-      min-height: var(--mf-target-min);
-      padding: 0;
-      border: 0;
-      background: none;
-      color: var(--mf-link);
-      font: inherit;
-      font-weight: 600;
+      display: block;
+      flex: 1 1 auto;
+      min-width: 0;
+      padding-inline: 0;
+      line-height: var(--mf-ctl-h);
+      overflow: hidden;
       text-align: left;
-      overflow-wrap: anywhere;
-      cursor: pointer;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .sr-item--open .sr-open {
+      font-weight: var(--mf-fw-semibold);
     }
     .sr-open--off {
       color: var(--mf-text-muted);
-      cursor: default;
-    }
-    .sr-when {
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-    }
-    .sr-actions {
-      display: flex;
-      gap: var(--mf-s1);
     }
     .sr-label {
       display: block;
@@ -205,6 +188,37 @@ export class SavedReports {
   readonly deleted = output<number>();
   readonly retry = output<void>();
 
+  /** The "..." menu of each report (D-44g): Rename and Delete; a report saved by a newer version cannot be renamed here. */
+  protected readonly menus = computed(
+    () =>
+      new Map(
+        this.reports().map((r) => {
+          const menu = rowActions(
+            r.name,
+            [
+              {
+                id: 'rename',
+                label: 'Rename',
+                icon: 'pi-pencil',
+                reason: r.isSupported
+                  ? undefined
+                  : 'Saved by a newer version; it cannot be renamed here.',
+                run: () => this.askRename(r),
+              },
+              {
+                id: 'delete',
+                label: 'Delete',
+                icon: 'pi-trash',
+                danger: true,
+                run: () => this.askDelete(r),
+              },
+            ],
+            { can: () => true },
+          );
+          return [r.assetReportId, { ...menu, label: `More actions for ${r.name}` }] as const;
+        }),
+      ),
+  );
   protected readonly target = signal<AssetReportResponse | null>(null);
   protected readonly newName = signal('');
   protected readonly renameOpen = signal(false);

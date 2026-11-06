@@ -146,6 +146,13 @@ describe('AssetReportsPage', () => {
     q(sel).click();
     await settle(fixture);
   };
+  /** Opens the "..." menu of the first saved report and picks an entry (D-44g). */
+  const pick = async (action: string) => {
+    q('[data-saved-item] button[data-overflow]').click();
+    await settle(fixture);
+    q(`[data-saved-item] [data-action="${action}"]`).click();
+    await settle(fixture);
+  };
   const choose = async (sel: string, value: string) => {
     ddChoose(q(sel), undefined, value);
     await settle(fixture);
@@ -332,9 +339,28 @@ describe('AssetReportsPage', () => {
     expect(q('[data-save-error]').textContent).toContain('already have a report');
   });
 
+  it('a saved report is one row: the name as a text button and ONE "..." menu with Rename and Delete, no text buttons (D-44g)', async () => {
+    await create();
+    const row = q('[data-saved-item]');
+    expect(row.querySelector('button.mf-btn--text[data-saved-open]')?.textContent?.trim()).toBe(
+      'Data by disposition',
+    );
+    const menus = row.querySelectorAll('button[data-overflow]');
+    expect(menus).toHaveLength(1);
+    expect(menus[0].getAttribute('aria-label')).toBe('More actions for Data by disposition');
+    expect(row.querySelectorAll('button:not([data-overflow]):not([data-saved-open])')).toHaveLength(
+      0,
+    );
+    (menus[0] as HTMLElement).click();
+    await settle(fixture);
+    expect(
+      Array.from(row.querySelectorAll('[role=menuitem]')).map((i) => i.textContent?.trim()),
+    ).toEqual(['Rename', 'Delete']);
+  });
+
   it('renames and deletes a saved report from the list', async () => {
     await create();
-    await click_('[data-saved-rename]');
+    await pick('rename');
     const input = document.querySelector<HTMLInputElement>('[data-rename-input]')!;
     input.value = 'Renamed';
     input.dispatchEvent(new Event('input'));
@@ -347,7 +373,7 @@ describe('AssetReportsPage', () => {
       expect.objectContaining({ name: 'Renamed' }),
     );
     expect(q('[data-saved-open]').textContent).toContain('Renamed');
-    await click_('[data-saved-delete]');
+    await pick('delete');
     document
       .querySelector<HTMLElement>('[data-confirm-primary] button, button[data-confirm-primary]')
       ?.click();
