@@ -17,6 +17,7 @@ Internal law-firm eDiscovery Matter and Task tracker. ASP.NET Core (.NET 10) mod
 - Backend (in `backend/`): `dotnet build -warnaserror`, `dotnet test tests/MatterFlow.UnitTests` (fast), `dotnet test` (needs Docker), `dotnet format --verify-no-changes`
 - Frontend (in `frontend/`): `npm ci`, `npm test`, `npm run lint`, `npm run format:check`, `npm run build`, `npm run e2e`
 - Use the repo-local Angular CLI (`npm run ng -- ...`); the global/latest CLI is incompatible with the Node version.
+- Testing and QA: `README.md` section "Testing and QA" has four levels (quick check, unit, integration, full QA). Pick the one that fits the change and say in your report which tests you did NOT run. Details: `docs/qa/e2e.md` (Playwright suite), `docs/ux/ui-update/stack-howto.md` (real-stack browser check).
 - Cloud container: start Docker first (`nohup dockerd >/tmp/dockerd.log 2>&1 &`), install .NET via apt; see `docs/dev-environment.md`.
 
 ## Rules to respect

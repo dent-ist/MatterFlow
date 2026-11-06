@@ -196,6 +196,50 @@ falling back to `ConnectionStrings:Default`; the application uses `ConnectionStr
 | `ActiveDirectory:LookupEnabled` | Optional AD profile lookup (off by default). |
 | `Firm:TimeZoneId` | Fallback time zone (default `America/New_York`). |
 
+## Testing and QA
+
+Pick the level that matches the change. Each level includes the one above it. Run commands from the folder shown. Longer notes: the end-to-end suite is described in `docs/qa/e2e.md`, running the app on a real stack for a browser check in `docs/ux/ui-update/stack-howto.md`, and past QA reports are in `docs/qa/` and `docs/ux/*/qa-report.md`.
+
+| Level | Use it when | Needs Docker | Time |
+|---|---|---|---|
+| 1. Quick check | Before every commit | No | minutes |
+| 2. Unit tests | You changed logic in one area | No | minutes |
+| 3. Integration tests | You changed the API, database, permissions or a module boundary | Yes | 10 to 20 minutes |
+| 4. Full QA | Before merging a branch into `dev`, and before a release | Yes | hours |
+
+**1. Quick check (what CI checks first)**
+
+```bash
+cd backend  && dotnet build -warnaserror && dotnet format --verify-no-changes
+cd frontend && npm run lint && npm run format:check && npx tsc -p tsconfig.app.json --noEmit
+```
+
+**2. Unit tests**
+
+```bash
+cd backend  && dotnet test tests/MatterFlow.UnitTests          # fast; also tests/MatterFlow.ArchitectureTests (module boundaries)
+cd frontend && npm test                                         # Vitest (jsdom): the app and the form-engine library
+node contracts/validate-contracts.mjs                          # OpenAPI, form-rule and permission contracts
+```
+
+If you changed the API, regenerate the client with `npm run api:generate` (in `frontend/`) and commit the result: CI fails on drift.
+
+**3. Integration tests**
+
+```bash
+cd backend  && dotnet test        # everything: unit, architecture, schema and integration tests (SQL Server 2022 in Docker through Testcontainers)
+```
+
+Start Docker first (in the cloud container: `nohup dockerd >/tmp/dockerd.log 2>&1 &`). This is the same as the `backend` and `backend-integration` jobs of `ci.yml`.
+
+**4. Full QA**
+
+1. Level 1 to 3 green, plus `cd frontend && npm run build` (the initial bundle must stay under 700 kB).
+2. End-to-end suite on a fresh database: `cd frontend && npm run e2e` (builds, starts SQL Server and the API, runs every Playwright test, tears down; about 3,000 tests). One area: `npm run e2e -- <file or -g pattern>`; the sensitive-matter specs: `npm run e2e -- sensitive-`. Options and personas: `docs/qa/e2e.md`.
+3. Real-stack browser check of every page you changed, at 1366x768 and 1920x1080, as each role that can see it, with demo data (`npm start`, then `npm run seed:demo`). Run an accessibility check (axe) on those pages; the target is 0 violations.
+4. Performance check when you changed lists or queries: `tools/perf/README.md`.
+5. Write the result (what was run, what failed, what was NOT run) in a report under `docs/qa/` or the epic's folder, and link it from the issue.
+
 ## CI
 
 | Workflow | When | What |
