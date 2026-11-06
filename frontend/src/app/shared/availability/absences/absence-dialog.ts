@@ -135,13 +135,13 @@ export function overlapOf(err: ApiError): AbsenceOverlap | null {
           ends it.
         </p>
         @if (serverDates(); as e) {
-          <p class="ad__banner ad__banner--danger" role="alert" data-ad-overlap>
+          <p class="pg-banner pg-banner--danger" role="alert" data-ad-overlap>
             <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
             <span>{{ e }}</span>
           </p>
         }
         @if (advice(); as a) {
-          <p class="ad__banner" role="status" data-ad-advice>
+          <p class="pg-banner" role="status" data-ad-advice>
             <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
             <span>{{ a }} You can still save.</span>
           </p>
@@ -217,24 +217,6 @@ export function overlapOf(err: ApiError): AbsenceOverlap | null {
       margin: 0;
       color: var(--mf-danger);
       font-size: var(--mf-fs-sm);
-    }
-    /* The banner (amber advice; red for the overlap the server refuses): a tinted box, icon and sentence, radius 8. */
-    .ad__banner {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--mf-s2);
-      margin: 0;
-      padding: var(--mf-s2) var(--mf-s3);
-      border: 1px solid var(--mf-sem-risk-line);
-      border-radius: var(--mf-radius-lg);
-      background: var(--mf-sem-risk-bg);
-      color: var(--mf-sem-risk-fg);
-      font-size: var(--mf-fs-sm);
-    }
-    .ad__banner--danger {
-      border-color: var(--mf-sem-overdue-line);
-      background: var(--mf-sem-overdue-bg);
-      color: var(--mf-sem-overdue-fg);
     }
   `,
 })
