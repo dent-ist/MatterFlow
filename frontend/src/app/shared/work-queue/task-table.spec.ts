@@ -517,7 +517,9 @@ describe('TaskTable', () => {
     );
     expect(cell('age').textContent?.trim()).toBe('10 d');
     expect(cell('client').textContent?.trim()).toBe('Acme Corp');
-    expect(cell('project').textContent?.trim()).toBe('-');
+    // No project: the zero dash with the tooltip "No project" (#1273).
+    expect(cell('project').querySelector('[data-zero-dash]')).not.toBeNull();
+    expect(cell('project').querySelector('[title="No project"]')).not.toBeNull();
     expect(cell('type').textContent?.trim()).toBe('Data Processing');
     expect(cell('created').textContent?.trim()).toBe('10/04');
   });

@@ -61,6 +61,7 @@ import {
   scopedViewFilters,
   scopedViewOwns,
 } from './scoped-view';
+import { MoveTarget, MoveTaskDialog } from './move-task-dialog';
 import { BULK_MAX, BulkMode, BulkTarget, BulkTasksDialog } from './bulk-tasks-dialog';
 import { SummaryStrip } from './summary-strip';
 import { TaskSelectList, isBulkEditable } from './task-select-list';
@@ -125,6 +126,7 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
   imports: [
     Dropdown,
     BulkTasksDialog,
+    MoveTaskDialog,
     Button,
     HasPermissionDirective,
     PageFooter,
@@ -334,8 +336,8 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
           (columnMoved)="onColumnMoved($event)"
           [caption]="caption()"
           [hideContext]="true"
-          [projectChoices]="rowProjectChoices()"
-          (projectPick)="pickRowProject($event)"
+          [canMoveProject]="canLinkProject()"
+          (moveProject)="openMove($event)"
           [origin]="projectId() === null ? 'matter' : 'project'"
           [phoneCards]="true"
           [rowList]="rowList()"
@@ -369,6 +371,14 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
           />
         </div>
       }
+      <mf-move-task-dialog
+        [task]="moveTarget()"
+        [projects]="rowProjectChoices()"
+        [busy]="moving()"
+        [error]="moveError()"
+        [(visible)]="moveOpen"
+        (moved)="moveTask($event)"
+      />
       <mf-bulk-tasks-dialog
         [mode]="bulkMode()"
         [matterId]="matterId()"
@@ -463,7 +473,7 @@ export class ScopedTasks {
       this.projectId() === null &&
       this.projectOptions().length > 0,
   );
-  /** The Project dropdown of a row (needs Task.Edit and a Matter's grid with projects): "No Project" first, then the matter's projects. */
+  /** The choices of the "Move to Project" dialog (needs Task.Edit and a Matter's grid with projects): "No Project" first, then the matter's projects. */
   protected readonly rowProjectChoices = computed<DropdownItem[]>(() =>
     this.canLinkProject()
       ? [
@@ -816,32 +826,53 @@ export class ScopedTasks {
     this.clearSelection();
   }
 
-  /** One row's Project dropdown: the task moves into the project (or out of its project); the row shows the new project at once. */
-  protected async pickRowProject(e: {
-    row: TaskQueueRow;
-    projectId: number | null;
-  }): Promise<void> {
-    if ((e.row.projectId ?? null) === e.projectId) return;
+  // --- "Move to Project..." of a row (#1273): a small dialog, the same call as before ---
+  protected readonly moveOpen = signal(false);
+  protected readonly moveTarget = signal<(MoveTarget & { row: TaskQueueRow }) | null>(null);
+  protected readonly moving = signal(false);
+  protected readonly moveError = signal('');
+
+  protected openMove(row: TaskQueueRow): void {
+    this.moveError.set('');
+    this.moveTarget.set({
+      taskId: row.taskId,
+      taskNumber: row.taskNumber,
+      title: row.title,
+      projectId: row.projectId ?? null,
+      row,
+    });
+    this.moveOpen.set(true);
+  }
+
+  /** The dialog's Move Task: the task moves into the project (or out of its project); the row shows the new project at once. */
+  protected async moveTask(projectId: number | null): Promise<void> {
+    const target = this.moveTarget();
+    if (!target || this.moving() || (target.projectId ?? null) === projectId) return;
+    this.moving.set(true);
+    this.moveError.set('');
     try {
       const answer = await firstValueFrom(
         this.bulkApi.setMatterTasksProject(this.matterId(), {
-          taskIds: [e.row.taskId],
-          projectId: e.projectId ?? undefined,
+          taskIds: [target.taskId],
+          projectId: projectId ?? undefined,
         }),
       );
       if (answer.failed > 0) {
-        this.notify.warn("Couldn't change the project.", answer.results[0]?.message);
+        this.moveError.set(answer.results[0]?.message || "Couldn't change the project.");
         return;
       }
-      const name = this.projectOptions().find((o) => o.value === String(e.projectId))?.label;
+      const name = this.projectOptions().find((o) => o.value === String(projectId))?.label;
       this.replaceRow({
-        ...e.row,
-        projectId: e.projectId ?? undefined,
-        projectName: e.projectId === null ? undefined : name,
+        ...target.row,
+        projectId: projectId ?? undefined,
+        projectName: projectId === null ? undefined : name,
       });
+      this.moveOpen.set(false);
+      this.notify.success('Task moved', `${target.taskNumber} is in ${name ?? 'No Project'}.`);
     } catch {
-      // The HTTP layer already told the person; the row keeps its project (the dropdown shows it again on the next render).
-      this.rows.update((rows) => [...rows]);
+      // The HTTP layer already told the person; the dialog stays open so the pick can be tried again.
+    } finally {
+      this.moving.set(false);
     }
   }
 

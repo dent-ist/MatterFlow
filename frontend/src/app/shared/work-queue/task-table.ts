@@ -38,6 +38,8 @@ import { DueCell } from './due-cell';
 import { DueSuffixCell, ageText } from './due-suffix';
 import { MatterCell, MatterNameCell } from './matter-cell';
 import { ProjectCell } from './project-cell';
+import { ActionMenu } from '../ui/action-menu';
+import { rowActions } from '../ui/row-actions';
 import { loudPriority, loudStatus } from './quiet-badges';
 import { PriorityFlag } from '../ui/priority-flag';
 import { PriorityPill } from '../ui/priority-pill';
@@ -75,12 +77,13 @@ import { KeyboardShortcuts, isEditable } from '../layout/keyboard-shortcuts';
 import { isShortcut } from '../layout/shortcut-registry';
 import { TaskSkeleton } from './task-skeleton';
 import { PHONE_CARDS_QUERY, TaskCardList } from './task-card-list';
-import { Dropdown, DropdownItem } from '../ui/dropdown';
 import { NumericDatePipe, numericInstant } from '../ui/numeric-date';
 import { IntPipe } from '../ui/number-format';
 import { shortAccountName } from '../ui/person-name';
 
 const NARROW_BELOW = 760;
+/** The row menu column, 48 px (`--mf-col-actions-w`) in rem at the default size. */
+const ACTIONS_REM = 3;
 /** A touch held this long on a header opens its column menu (PM ruling on #207). */
 const LONG_PRESS_MS = 500;
 
@@ -95,7 +98,6 @@ const LONG_PRESS_MS = 500;
     TaskTypeCell,
     IntPipe,
     NumericDatePipe,
-    Dropdown,
     Tip,
     ReorderColumns,
     RouterLink,
@@ -103,6 +105,7 @@ const LONG_PRESS_MS = 500;
     MatterCell,
     MatterNameCell,
     ProjectCell,
+    ActionMenu,
     DueCell,
     DueSuffixCell,
     PriorityFlag,
@@ -183,6 +186,9 @@ const LONG_PRESS_MS = 500;
                 [style.width]="col.fill && !titleFixed() ? null : 'var(--w-' + col.key + ')'"
               />
             }
+            @if (rowMenuOn()) {
+              <col data-col="actions" style="width: var(--mf-col-actions-w)" />
+            }
           </colgroup>
           <caption class="mf-sr-only">
             {{
@@ -237,6 +243,11 @@ const LONG_PRESS_MS = 500;
                   }
                 </th>
               }
+              @if (rowMenuOn()) {
+                <th scope="col" class="mf-col-actions" data-col="actions" data-no-reorder>
+                  <span class="mf-sr-only">Actions</span>
+                </th>
+              }
             </tr>
             @if (filters(); as f) {
               @if (f.rowVisible()) {
@@ -275,7 +286,7 @@ const LONG_PRESS_MS = 500;
                 </td>
               </tr>
               @for (n of skeletonRows; track n) {
-                <tr mfTaskSkeleton [columns]="shownKeyList()"></tr>
+                <tr mfTaskSkeleton [columns]="skeletonKeys()"></tr>
               }
             }
             @for (row of rows(); track row.taskId; let i = $index) {
@@ -354,35 +365,12 @@ const LONG_PRESS_MS = 500;
                         }}</span>
                       }
                       @case ('project') {
-                        @if (hideContext() && projectChoices().length > 0 && !closed(row)) {
-                          <!-- A Matter's grid (MD-04): the project is a dropdown in the row; the page links or unlinks the task. -->
-                          <mf-dropdown
-                            size="sm"
-                            label="Project"
-                            [attr.data-project-dropdown]="row.taskId"
-                            [items]="projectChoices()"
-                            [value]="
-                              row.projectId === null || row.projectId === undefined
-                                ? ''
-                                : '' + row.projectId
-                            "
-                            (valueChange)="
-                              projectPick.emit({ row, projectId: $event === '' ? null : +$event })
-                            "
-                            [panelWidth]="240"
-                            placeholder="-"
-                          />
-                        } @else if (hideContext()) {
-                          <mf-project-cell
-                            [name]="row.projectName"
-                            [projectId]="row.projectId"
-                            [link]="auth.canLink('project')"
-                          />
-                        } @else {
-                          <span class="wt-clip" [attr.title]="row.projectName">{{
-                            row.projectName ?? '-'
-                          }}</span>
-                        }
+                        <!-- A link to the project or the zero dash (#1273); moving a task is the row menu's "Move to Project...". -->
+                        <mf-project-cell
+                          [name]="row.projectName"
+                          [projectId]="row.projectId"
+                          [link]="auth.canLink('project')"
+                        />
                       }
                       @case ('typeChip') {
                         <!-- The My Matters chip with the type's name beside it (MD-29, #1033). -->
@@ -597,6 +585,13 @@ const LONG_PRESS_MS = 500;
                     }
                   </td>
                 }
+                @if (rowMenuOn()) {
+                  <td class="mf-col-actions" data-col="actions" data-row-actions>
+                    @if (rowMenus().get(row.taskId); as menu) {
+                      <mf-action-menu [floating]="true" [label]="menu.label" [items]="menu.items" />
+                    }
+                  </td>
+                }
               </tr>
             }
             <span mfEmptyAction><ng-container [ngTemplateOutlet]="emptyAction" /></span>
@@ -651,7 +646,6 @@ export class TaskTable {
     'status',
     'priority',
     'assignee',
-    'project',
   ]);
 
   /** The person as a grid shows them: the display name, or the account without its domain, never `KE\\kekim` (D-62, #1221). */
@@ -829,11 +823,11 @@ export class TaskTable {
   /** Hide the Matter and Client columns: on a Matter's or Project's own page the header already says it. */
   readonly hideContext = input(false);
   /**
-   * The projects a task of this matter can move to (a Matter's Tasks tab, MD-04): with entries, an open task's Project cell is a dropdown with a "No project" row first;
-   * the page decides what a pick does (`projectPick`). Empty (the default) keeps the plain cell.
+   * A Matter's Tasks grid with projects to move to (#1273): each open task gets a row menu (the last, 48 px column) with "Move to Project...";
+   * the page opens its dialog (`moveProject`) and makes the call. False (the default) draws no menu column.
    */
-  readonly projectChoices = input<readonly DropdownItem[]>([]);
-  readonly projectPick = output<{ row: TaskQueueRow; projectId: number | null }>();
+  readonly canMoveProject = input(false);
+  readonly moveProject = output<TaskQueueRow>();
   /**
    * No inline editors: Status, Priority and Assignee are shown as text and badges. A short list on a page of its own business (the My Matters Overview, issue #929)
    * is for reading and opening a task, so it adds no editing controls to the page.
@@ -1030,7 +1024,7 @@ export class TaskTable {
     const widths = this.effectiveWidths();
     return {
       ...widthVars(this.shownColumns(), widths),
-      '--wt-min': `${tableMinRem(this.shownColumns(), widths)}rem`,
+      '--wt-min': `${tableMinRem(this.shownColumns(), widths) + (this.rowMenuOn() ? ACTIONS_REM : 0)}rem`,
       visibility: this.measured() ? 'visible' : 'hidden',
     };
   });
@@ -1041,9 +1035,44 @@ export class TaskTable {
       : this.colWidths(),
   );
 
-  protected readonly columnCount = computed(() => this.shownColumns().length);
-  /** The filter row's cells: the shown columns. */
-  protected readonly filterColumns = computed(() => this.shownColumns().map((c) => c.key));
+  /** True when the grid draws the row menu column after the shown columns (never resized, never stored, D-44a). */
+  protected readonly rowMenuOn = computed(() => this.canMoveProject());
+  protected readonly columnCount = computed(
+    () => this.shownColumns().length + (this.rowMenuOn() ? 1 : 0),
+  );
+  /** The filter row's cells: the shown columns, and an empty cell above the row menus. */
+  protected readonly filterColumns = computed(() => [
+    ...this.shownColumns().map((c) => c.key),
+    ...(this.rowMenuOn() ? ['actions'] : []),
+  ]);
+  /** The skeleton rows' cells. */
+  protected readonly skeletonKeys = computed(() => [
+    ...this.shownKeyList(),
+    ...(this.rowMenuOn() ? ['actions'] : []),
+  ]);
+  /** The row menu of every open task on the page ("Actions for TSK-204"); a closed task has none. */
+  protected readonly rowMenus = computed(
+    () =>
+      new Map(
+        this.rows()
+          .filter((r) => !this.closed(r))
+          .map((r) => [
+            r.taskId,
+            rowActions(
+              r.taskNumber,
+              [
+                {
+                  id: 'move-project',
+                  label: 'Move to Project...',
+                  icon: 'pi-arrow-right-arrow-left',
+                  run: () => this.moveProject.emit(r),
+                },
+              ],
+              { can: (permission) => this.auth.has(permission) },
+            ),
+          ]),
+      ),
+  );
   private readonly shownKeys = computed(() =>
     this.shownColumns()
       .map((c) => c.key)

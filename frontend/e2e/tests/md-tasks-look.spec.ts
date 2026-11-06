@@ -1,7 +1,8 @@
+import { dropdownById } from '../support/dropdown';
 import { expect, test } from '../support/fixtures';
 
 /**
- * A look at a matter's Tasks tab at 1366x768 (MD-04, #1005; MD-24, #1028): no clipped column, a Type chip column, Status shows the status only, a thin Progress bar with the "n of m steps" tooltip on hover and on focus, Due has two lines, and the Project cell is a dropdown (Project is a default column, MD-29).
+ * A look at a matter's Tasks tab at 1366x768 (MD-04, #1005; MD-24, #1028): no clipped column, a Type chip column, Status shows the status only, a thin Progress bar with the "n of m steps" tooltip on hover and on focus, Due has two lines, and the Project cell is a link or the zero dash, with the move in the row menu (#1273).
  * Screenshots go to E2E_SCREENSHOTS when it is set.
  */
 test('Tasks tab at 1366x768: columns fit and the cells show what they should', async ({
@@ -29,7 +30,16 @@ test('Tasks tab at 1366x768: columns fit and the cells show what they should', a
   const order = (await page.locator('mf-task-table thead tr:first-child th').allTextContents()).map(
     (t) => t.trim(),
   );
-  expect(order).toEqual(['Ref', 'Type', 'Title', 'Priority', 'Assignee', 'Due', 'Status']);
+  expect(order).toEqual([
+    'Ref',
+    'Type',
+    'Title',
+    'Priority',
+    'Assignee',
+    'Due',
+    'Status',
+    'Actions',
+  ]);
 
   // Every header is fully visible (not cut by the cell).
   const clippedHeaders = await page.evaluate(() =>
@@ -66,7 +76,14 @@ test('Tasks tab at 1366x768: columns fit and the cells show what they should', a
   ).toBeVisible();
   await expect(first.locator('mf-due-cell')).toBeVisible();
   await expect(first.locator('mf-status-badge, [data-plain-status]').first()).toBeVisible();
-  await expect(first.locator('mf-dropdown[data-project-dropdown]')).toBeVisible();
+  // The Project cell is a link to the project or the zero dash; the move is the row menu's "Move to Project..." (#1273).
+  await expect(first.locator('mf-dropdown')).toHaveCount(0);
+  await expect(
+    first.locator('mf-project-cell a.mf-link, mf-project-cell [data-zero-dash]'),
+  ).toBeVisible();
+  await first.locator('td[data-col="actions"] [data-overflow]').click();
+  await expect(page.getByRole('menuitem', { name: 'Move to Project...' })).toBeVisible();
+  await page.keyboard.press('Escape');
   // Status shows the status only; the progress is a thin bar with role progressbar, named and described "n of m steps".
   await expect(first.locator('[data-steps]')).toHaveCount(0);
   const bar = first.locator('[data-step-bar]');
@@ -82,4 +99,43 @@ test('Tasks tab at 1366x768: columns fit and the cells show what they should', a
   await bar.focus();
   await expect(page.getByRole('tooltip')).toHaveText(/^\d+ of \d+ steps$/);
   void project;
+});
+
+/**
+ * Moving a task to a project (#1273): the Project cell is a link or the zero dash, never a field; the row menu's "Move to Project..." opens a 416 px dialog with one
+ * Project dropdown and [Cancel] [Move Task]; the toast says "Task moved" and the cell becomes a link.
+ */
+test('Tasks tab: "Move to Project..." in the row menu moves a task and the Project cell becomes a link', async ({
+  page,
+  seed,
+}) => {
+  const world = await seed.world();
+  const project = await seed.project(world.matter, 'Wave 1');
+  const task = await seed.task(world, { dueDate: '2099-01-01' });
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto(`/matters/${world.matter.matterId}?tab=tasks`);
+  const row = page.locator(`mf-task-table tbody tr[data-task="${task.taskNumber}"]`);
+  await expect(row).toBeVisible();
+  await page.locator('[data-grid-columns]').click();
+  await page.locator('[data-grid-columns-panel] [data-column="project"]').check();
+  await page.keyboard.press('Escape');
+  // No project yet: the zero dash with the tooltip, no field in the cell.
+  await expect(row.locator('mf-dropdown')).toHaveCount(0);
+  await expect(row.locator('td[data-col="project"] [title="No project"]')).toBeVisible();
+
+  await row.locator('td[data-col="actions"] [data-overflow]').click();
+  await page.getByRole('menuitem', { name: 'Move to Project...' }).click();
+  const dialog = page.locator('.p-dialog');
+  await expect(dialog.locator('[data-panel-title]')).toHaveText('Move to Project');
+  expect((await dialog.boundingBox())!.width).toBe(416);
+  await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeVisible();
+  const move = dialog.getByRole('button', { name: 'Move Task' });
+  await expect(move).toBeDisabled();
+  await dropdownById(dialog, 'move-project').selectOption({ label: 'Wave 1' });
+  await move.click();
+  await expect(page.getByText('Task moved')).toBeVisible();
+  await expect(dialog).toHaveCount(0);
+  const link = row.locator('td[data-col="project"] a.mf-link');
+  await expect(link).toHaveText('Wave 1');
+  await expect(link).toHaveAttribute('href', `/projects/${project.projectId}`);
 });

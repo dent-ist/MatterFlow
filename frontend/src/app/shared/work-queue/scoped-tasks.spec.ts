@@ -7,6 +7,7 @@ import {
   TaskQueueClient,
 } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
+import { NotificationService } from '../../core/notify/notification.service';
 import { Permission } from '../../core/auth/permissions';
 import {
   FakeMeApi,
@@ -107,38 +108,84 @@ describe('ScopedTasks', () => {
     expect(strip.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('a row has a Project dropdown with Task.Edit and projects; choosing one links the task (MD-05)', async () => {
-    await create(['Task.View', 'Task.Edit'], {
-      projectOptions: [
-        { value: '3', label: 'Wave 1' },
-        { value: '4', label: 'Wave 2' },
-      ],
-    });
-    // Project is off by default (#1176): one click away in Columns.
-    expect(
-      el().querySelector('tbody mf-dropdown[data-project-dropdown], tbody [data-project-dropdown]'),
-    ).toBeNull();
-    el().querySelector<HTMLButtonElement>('[data-grid-columns]')!.click();
+  const PROJECTS = [
+    { value: '3', label: 'Wave 1' },
+    { value: '4', label: 'Wave 2' },
+  ];
+  const menuOf = (): HTMLButtonElement =>
+    el().querySelector<HTMLButtonElement>('tbody td[data-col="actions"] [data-overflow]')!;
+  const dialog = (): HTMLElement | null => document.body.querySelector('.p-dialog');
+
+  it('has no Project dropdown in a row: the cell is a link and the move is in the row menu (#1273)', async () => {
+    await create(['Task.View', 'Task.Edit', 'Project.View'], { projectOptions: PROJECTS });
+    await showProject();
+    expect(el().querySelector('tbody mf-dropdown')).toBeNull();
+    expect(el().querySelector('tbody [data-project-dropdown]')).toBeNull();
+    const link = el().querySelector<HTMLAnchorElement>('tbody mf-project-cell a.mf-link')!;
+    expect(text(link)).toBe('Wave 1');
+    expect(link.getAttribute('href')).toBe('/projects/3');
+    // The last column is the 48 px row menu with "Move to Project...".
+    expect(el().querySelector('thead th.mf-col-actions')).not.toBeNull();
+    menuOf().click();
     fixture.detectChanges();
-    const box = el().querySelector<HTMLInputElement>(
-      '[data-grid-columns-panel] [data-column="project"]',
-    )!;
-    box.checked = true;
-    box.dispatchEvent(new Event('change'));
+    const items = Array.from(el().querySelectorAll('[role="menuitem"]')).map((i) => text(i));
+    expect(items).toEqual(['Move to Project...']);
+  });
+
+  it('"Move to Project..." opens a small dialog; Move Task makes the existing call, updates the row and says "Task moved" (#1273)', async () => {
+    await create(['Task.View', 'Task.Edit', 'Project.View'], { projectOptions: PROJECTS });
+    await showProject();
+    const notify = TestBed.inject(NotificationService);
+    const success = vi.spyOn(notify, 'success');
+    menuOf().click();
+    fixture.detectChanges();
+    el().querySelector<HTMLButtonElement>('[data-action="move-project"]')!.click();
     await settle(fixture);
-    expect(ddValue(el().querySelector('tbody')!, 'Project')).toBe('3');
-    ddChoose(el().querySelector('tbody')!, 'Project', '4');
+    const dlg = dialog()!;
+    expect(text(dlg.querySelector('[data-panel-title]'))).toBe('Move to Project');
+    expect(dlg.querySelector('[data-move-task]')!.textContent).toContain('TSK-');
+    // One white Project field: "No Project" first, then the matter's projects; it starts on the task's project.
+    expect(ddOptionTexts(dlg, 'Project')).toEqual(['No Project', 'Wave 1', 'Wave 2']);
+    expect(ddValue(dlg, 'Project')).toBe('3');
+    const footer = Array.from(dlg.querySelectorAll('[data-panel-footer] button')).map((b) =>
+      text(b),
+    );
+    expect(footer).toEqual(['Cancel', 'Move Task']);
+    const move = (): HTMLElement => dialog()!.querySelector<HTMLElement>('[data-panel-primary]')!;
+    await settle(fixture);
+    // Nothing changed yet: the primary is off.
+    expect(move().getAttribute('aria-disabled')).toBe('true');
+    ddChoose(dialog()!, 'Project', '4');
+    await settle(fixture);
+    expect(move().getAttribute('aria-disabled')).toBeNull();
+    move().querySelector('button')!.click();
     await settle(fixture);
     expect(linkApi.setMatterTasksProject).toHaveBeenCalledWith(7, {
       taskIds: [1042],
       projectId: 4,
     });
-    expect(ddValue(el().querySelector('tbody')!, 'Project')).toBe('4');
+    expect(success).toHaveBeenCalledWith('Task moved', expect.stringContaining('is in Wave 2.'));
+    expect(dialog()).toBeNull();
+    expect(text(el().querySelector('tbody mf-project-cell'))).toBe('Wave 2');
   });
 
-  it('has no row Project dropdown without Task.Edit', async () => {
-    await create(['Task.View'], { projectOptions: [{ value: '3', label: 'Wave 1' }] });
+  it('shows the zero dash with the tooltip "No project" for a task without one', async () => {
+    await create(['Task.View', 'Project.View'], { projectCount: 2 });
+    queue.getTaskQueue.mockReturnValue(ok(pageOf([aRow({ projectId: undefined })])));
+    fixture.componentInstance['load']();
+    await showProject();
+    await settle(fixture);
+    const cell = el().querySelector('tbody mf-project-cell')!;
+    expect(cell.querySelector('a')).toBeNull();
+    expect(cell.querySelector('[data-zero-dash]')).not.toBeNull();
+    expect(cell.querySelector('[title="No project"]')).not.toBeNull();
+  });
+
+  it('has no row menu without Task.Edit', async () => {
+    await create(['Task.View'], { projectOptions: PROJECTS });
     expect(el().querySelector('tbody mf-dropdown')).toBeNull();
+    expect(el().querySelector('tbody td[data-col="actions"]')).toBeNull();
+    expect(el().querySelector('thead th.mf-col-actions')).toBeNull();
   });
 
   it('asks a project summary for a project grid', async () => {

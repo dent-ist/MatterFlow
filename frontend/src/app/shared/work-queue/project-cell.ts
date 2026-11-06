@@ -1,13 +1,15 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { ZeroDash } from '../ui/zero-dash';
 
 /**
- * The Project cell of a Matter's Tasks grid (#265): the project's name on one line with an ellipsis, the full name as the tooltip, and a
- * link to the project when the viewer may open it (`Project.View`). A task without a project shows a dash.
+ * The Project cell of a task grid (#265, #1273): the project's name as a link (`mf-link`, underlined) on one line with an ellipsis and the full
+ * name as the tooltip, when the viewer may open it (`Project.View`); plain text without that permission. A task without a project shows the
+ * standard zero dash with the tooltip "No project". Moving a task to another project is the row menu's "Move to Project...", never a field here.
  */
 @Component({
   selector: 'mf-project-cell',
-  imports: [RouterLink],
+  imports: [RouterLink, ZeroDash],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -20,15 +22,12 @@ import { RouterLink } from '@angular/router';
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    a.pc {
-      color: var(--mf-link);
-    }
   `,
   template: `
     @if (name(); as n) {
       @if (link() && projectId() !== null) {
         <a
-          class="pc"
+          class="pc mf-link"
           [routerLink]="['/projects', projectId()]"
           [attr.title]="n"
           data-project-link
@@ -38,7 +37,7 @@ import { RouterLink } from '@angular/router';
         <span class="pc" [attr.title]="n">{{ n }}</span>
       }
     } @else {
-      <span class="pc">-</span>
+      <span class="pc" title="No project" data-no-project><mf-zero-dash /></span>
     }
   `,
 })
