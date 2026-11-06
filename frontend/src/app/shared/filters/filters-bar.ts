@@ -79,6 +79,10 @@ let nextId = 0;
     .mfm__item {
       justify-content: space-between;
     }
+    /* The value panel of a chosen filter is a menu, not a grid cell: its fields are the 36 px control height (D-02, #1169), not the 32 px of the filter row. */
+    .mfm ::ng-deep .mf-control--compact {
+      height: var(--mf-ctl-h);
+    }
     .mfm__set {
       color: var(--mf-text-muted);
     }
