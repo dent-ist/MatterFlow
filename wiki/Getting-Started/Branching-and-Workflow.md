@@ -2,14 +2,16 @@
 
 [[_TOC_]]
 
-**What this page is for.** The rules for branches, commit messages and schema changes. Rules come from `CLAUDE.md`, `db/scripts/README.md` and `docs/ux/ui-update/README.md`; where a rule here is a convention seen in recent history rather than a written rule, the page says so.
+**What this page is for.** The rules for branches, commit messages and schema changes. Rules come from `CLAUDE.md`, `db/scripts/README.md` and `docs/ux/ui-update/README.md`; where a rule here is a convention seen in recent history rather than a written rule, the page says so. How a request becomes a released, tagged version (roles, pull request gates, full QA, UAT) is on [Change Management Process](Change-Management-Process.md).
 
 ## Branches
 
 | Branch | Role |
 |---|---|
-| `dev` | The main integration branch (`CLAUDE.md`). CI runs on pushes to `dev` and on every pull request. |
-| `main` | Untouched by feature work. |
+| `dev` | The main integration branch (`CLAUDE.md`). Feature and fix branches start from `dev` and come back to it through a pull request. CI runs on pushes to `dev` and on every pull request. |
+| `uat` | Planned. Receives only a commit that passed full QA and the security check on `dev`, for user acceptance testing. It does not exist yet (there is no UAT environment yet). |
+| `main` | The released line. Today untouched by feature work. After UAT is accepted, the tested commit is merged here and tagged with the version ([Change Management Process](Change-Management-Process.md)). |
+| `feature/<id>-name`, `fix/<id>-name` | Proposed naming for a developer's working branch, branched from `dev`. |
 | `ui-update-2` | The active integration branch of the UI round (at the time of writing). Agents push with `git push origin HEAD:ui-update-2`. |
 | `dependabot/*` | Automated dependency updates (`.github/dependabot.yml`). |
 
