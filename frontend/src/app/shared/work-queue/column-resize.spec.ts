@@ -149,17 +149,17 @@ describe('TaskTable resize handles (#204)', () => {
 
   it('drags a handle: the live width follows the pointer to the right, and release emits the column only (the Title stays the spring), once', async () => {
     await create();
-    expect(width('due')).toBe(`${136 / 14}rem`);
+    expect(width('due')).toBe(`${152 / 14}rem`);
     const h = handle('due');
     fire(h, 'pointerdown', 500);
     expect(document.body.classList.contains('wt-resizing')).toBe(true);
     fire(h, 'pointermove', 520);
-    expect(width('due')).toBe('156px');
+    expect(width('due')).toBe('172px');
     expect(resized).toEqual([]); // nothing is stored per frame
     fire(h, 'pointermove', 530);
     fire(h, 'pointerup', 530);
     expect(resized.map((r) => r.key)).toEqual(['due']);
-    expect(resized[0]).toEqual({ key: 'due', rem: 166 / 14, defaultRem: undefined });
+    expect(resized[0]).toEqual({ key: 'due', rem: 182 / 14, defaultRem: undefined });
     expect(document.body.classList.contains('wt-resizing')).toBe(false);
   });
 
@@ -249,11 +249,11 @@ describe('TaskTable resize handles (#204)', () => {
     const h = handle('due');
     fire(h, 'pointerdown', 500);
     fire(h, 'pointermove', 530);
-    expect(width('due')).toBe(`${136 / 14}rem`);
+    expect(width('due')).toBe(`${152 / 14}rem`);
     expect(document.querySelector('.wt-resize-guide')).not.toBeNull();
     fire(h, 'pointerup', 530);
     expect(document.querySelector('.wt-resize-guide')).toBeNull();
-    expect(resized.at(-1)!.rem).toBe(166 / 14);
+    expect(resized.at(-1)!.rem).toBe(182 / 14);
   });
 
   it('does not start below 640 px', async () => {

@@ -635,7 +635,7 @@ describe('TaskTable', () => {
     expect(table.querySelectorAll('thead th').length).toBe(cols().length);
     expect(table.querySelectorAll('tbody tr[data-task] td').length).toBe(cols().length);
     const px = (name: string) => table.style.getPropertyValue(name);
-    expect(px('--w-due')).toBe(`${136 / 14}rem`);
+    expect(px('--w-due')).toBe(`${152 / 14}rem`);
     expect(px('--w-title')).toBe('');
 
     fixture.componentRef.setInput('colWidths', { due: 9, title: 40, status: 2 });

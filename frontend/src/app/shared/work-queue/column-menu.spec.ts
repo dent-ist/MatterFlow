@@ -200,8 +200,8 @@ describe('TaskTable column menu (#207) and fit (#205)', () => {
     await openMenu('due');
     item('widen').click();
     await settle();
-    expect(resized).toEqual([{ key: 'due', rem: 144 / 14, defaultRem: undefined }]);
-    expect(said).toEqual(['Due column 144 pixels']);
+    expect(resized).toEqual([{ key: 'due', rem: 160 / 14, defaultRem: undefined }]);
+    expect(said).toEqual(['Due column 160 pixels']);
     expect(menu()).toBeNull();
     expect(document.activeElement).toBe(control('due'));
   });
@@ -223,7 +223,7 @@ describe('TaskTable column menu (#207) and fit (#205)', () => {
     item('reset').click();
     await settle();
     expect(actions).toEqual([{ kind: 'reset', key: 'due' }]);
-    expect(said).toEqual(['Due column 136 pixels']);
+    expect(said).toEqual(['Due column 152 pixels']);
 
     await openMenu('due');
     item('sort-desc').click();

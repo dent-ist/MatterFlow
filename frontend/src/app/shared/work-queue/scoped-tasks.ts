@@ -76,7 +76,7 @@ const PAGE_SIZES: readonly number[] = [25, 50, 100];
 /** The choice that takes the ticked tasks out of their project. */
 const NO_PROJECT = 'none';
 /**
- * Default widths of this grid (px): the D-43 widths (Type 112, Project 140, Priority 112, Assignee 136, Due 136, Status 140), so Priority and Status are never cut
+ * Default widths of this grid (px): the D-43 widths (Type 112, Project 140, Priority 112, Assignee 136, Due 152, Status 140), so Priority and Status are never cut
  * (#1154). With the Title at its 200 px minimum they fill a 1366 px window (1098 px box) without Progress, which is off by default and one click away in the
  * Columns menu; a width the person changed wins.
  */
@@ -85,7 +85,7 @@ const DEFAULT_WIDTHS_PX: Readonly<Record<string, number>> = {
   project: 140,
   priority: 112,
   assignee: 136,
-  due: 136,
+  due: 152,
   status: 140,
   steps: 120,
 };

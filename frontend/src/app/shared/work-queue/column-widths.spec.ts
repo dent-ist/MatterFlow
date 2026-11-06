@@ -20,7 +20,7 @@ describe('column widths (#200)', () => {
   });
 
   it('uses the defaults of the issue in rem', () => {
-    expect(columnWidthRem(def('due'))).toBe(136 / 14);
+    expect(columnWidthRem(def('due'))).toBe(152 / 14);
     expect(columnWidthRem(def('ref'))).toBe(112 / 14);
     expect(columnWidthRem(def('matter'))).toBe(142 / 14);
     expect(columnWidthRem(def('matterName'))).toBe(160 / 14);
@@ -31,14 +31,14 @@ describe('column widths (#200)', () => {
     expect(columnWidthRem(def('due'), { due: 2 })).toBe(pxToRem(120));
     expect(columnWidthRem(def('due'), { due: 99 })).toBe(pxToRem(200));
     expect(columnWidthRem(def('due'), { due: 9 })).toBe(9);
-    expect(Math.round(remToPx(columnWidthRem(def('due'))))).toBe(136);
+    expect(Math.round(remToPx(columnWidthRem(def('due'))))).toBe(152);
     expect(columnWidthRem(def('title'), { title: 30 })).toBe(120 / 14);
     // The Title is fixed only once it was dragged (#1231), clamped to 96 and 1600 px.
     expect(fixedTitleRem(def('title'), undefined)).toBeUndefined();
     expect(fixedTitleRem(def('title'), { title: 20 })).toBe(20);
     expect(fixedTitleRem(def('title'), { title: 5 })).toBe(96 / 14);
     expect(fixedTitleRem(def('due'), { due: 9 })).toBeUndefined();
-    expect(columnWidthRem(def('due'), { due: NaN })).toBe(136 / 14);
+    expect(columnWidthRem(def('due'), { due: NaN })).toBe(152 / 14);
   });
 
   it('writes one custom property per fixed column, and for the Title only once it was dragged (#1231)', () => {
@@ -52,7 +52,7 @@ describe('column widths (#200)', () => {
 
   it('the table minimum is the fixed columns plus the Title minimum', () => {
     expect(tableMinRem([def('ref'), def('title'), def('due')], undefined)).toBeCloseTo(
-      (112 + 120 + 136) / 14,
+      (112 + 120 + 152) / 14,
       9,
     );
   });
