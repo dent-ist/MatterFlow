@@ -278,3 +278,30 @@ Rulings: (1) side panel starts collapsed under 1500 px, Type tile only and Assig
 | Matters list regression check | PASS | Headings 158/223/152/125/125/105/161/48, no overflow. |
 
 Rulings: External Reference 168 and CM Number 123 accepted; the select column 24 px accepted; the saved report date goes in the tooltip; "<Type Name> Fields" is the card name; Matter Summary moves to the shared card in a follow-up (#1253). Recorded as D-44k.
+
+## review-17 System pages and shell (2026-11-06, tip 7c5c2b7, 1366 and 1920)
+
+Evidence: `design-evidence`, `evidence/2026-11-06-review-17-system-pages-shell/` (the same images and measurements also sit in `evidence/2026-11-06-review-18-search-notifications-profile/`). Axe: 0 violations on 10 pages at both sizes (404, 403, Error, matter and task not found, Users, sensitive Matter, inactive Asset, Swimlane, Create Task).
+
+| Issue | Result | Notes |
+|---|---|---|
+| #1193 state pages | PASS with a point | One 480 px card, 48 px tile, H1 22/700 on one line with no ring and focus on it, one sentence and one 36 px button on 404, 403, Error and Access Pending. Record not-found pages (`/matters/99999999`, `/tasks/99999999`) do not move focus to the H1. |
+| #1194 search menu, user menu | PASS | Menu surface, footer "See All Results" and "285 results for "Demo"", user menu items 14/400. Group links read "See all 12" (casing: #1254). |
+| #1195 nav count chip | PASS | Users shows the shared count chip. |
+| #1196 banners | PASS | Sensitive, inactive, offline (warning with Retry), "Back online." (green, leaves) and Dev auth share `.pg-banner`: 36 px, 4 px radius, icon. Create Task notes and Task page warnings lack the icon (#1254). |
+| swimlane unit failure | spec is stale | In the browser the status menu opens with "m" and reads "Put on Hold", "Complete... (needs step inputs)", "Cancel Task" (36 px items); the spec still expects lower case. Fix in #1254. |
+
+Rulings: no search box on 404 and no Copy link on 403 accepted; the Error page text button is named like the 404 button, not "Go to Home"; Access Pending without the list accepted; red and green banner variants accepted; no impersonation banner needed; banners all carry an icon; long record names never appear in the H1, and two lines are allowed (D-53a, D-53b). "See All N" casing fixed once in #1254.
+
+## review-18 Search, Notifications and Profile (2026-11-06, tip 0f603c1, 1366 and 1920)
+
+Axe: 0 violations on Search (results and none), Notifications (two users) and Profile at both sizes.
+
+| Issue | Result | Notes |
+|---|---|---|
+| #1189 Search results | PASS | Section count chips (Matters 12, Clients 5, Tasks 204, Projects 4, Assets 60), 44 px rows, "No results for "zzzqq"." state block; "See all N" is an `<a>` styled as a text button (24 px). Casing: #1254. |
+| #1190 Notifications | PASS | 56 px rows, unread bold with dot, relative times for yesterday and `MM/DD` after, empty state "No notifications yet." and "You're all caught up." in the bell. |
+| #1191 My Profile | PASS | Seven pressed filter chips for work days (26 px), absence type chips shared; Conference is neutral. |
+| #1192 Out of Office dialog | PASS with leftovers | 576 px, "Save Changes" on Edit, `mm/dd/yyyy` dates with `lang="en-US"`, overlap answer shown as a tinted danger banner with icon (own style, radius 8, 50 px): use `.pg-banner` (#1255). The Type field is still a native select (#1251). |
+
+Rulings: Conference stays neutral (no seventh tone, D-54); "See All N" is a link-as-text-button (D-13a) and the casing change is done together for the menu and the page in #1254; the overlap and advice banners move to `.pg-banner` (#1255); relative times today and yesterday, numeric from two days ago confirmed (D-54).
