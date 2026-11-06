@@ -89,7 +89,7 @@ Errors are RFC 9457 `application/problem+json`:
 
 - Tables that users edit have a SQL `rowversion` column named `RowVersion`, mapped as a concurrency token by `ModelConventions`.
 - DTOs expose it as a base64 string. Every update request must send the `rowVersion` it was based on (the architecture test requires a non-nullable `rowVersion` on update requests). The service sets it as the original value; if the row changed, EF raises `DbUpdateConcurrencyException` and the client gets 409 `CONCURRENCY_CONFLICT`; the UI offers to reload.
-- Workflow and lifecycle commands also lock the Task row (`UPDLOCK, ROWLOCK`) inside the transaction so two completions evaluate one after the other. `READ_COMMITTED_SNAPSHOT` is on (script 01) so readers do not block writers.
+- Workflow and lifecycle commands also lock the Task row (`UPDLOCK, ROWLOCK`) inside the transaction so two completions evaluate one after the other. `READ_COMMITTED_SNAPSHOT` should be on so readers do not block writers. It is a one-time DBA step (`ALTER DATABASE ... SET READ_COMMITTED_SNAPSHOT ON`, runbook sections 3 and 5), not a script: `docs/architecture.md` section 10 says script 01 sets it, but script 01 does not, and the local demo database has it off. `DatabaseSettingsCheck` logs a warning at startup when it is off.
 - Every write returns the updated resource with its new `rowVersion`.
 
 ## Transactions and audit
