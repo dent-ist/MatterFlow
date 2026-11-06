@@ -57,7 +57,8 @@ describe('CustomFieldsPage (#644)', () => {
   let fixture: ComponentFixture<CustomFieldsPage>;
   let forms: Record<'listCustomFieldForms' | 'ensureFormDefinition', ReturnType<typeof vi.fn>>;
   const el = (): HTMLElement => fixture.nativeElement;
-  const row = (name: string): HTMLElement => el().querySelector(`tr[data-row="${name}"]`)!;
+  const row = (name: string): HTMLElement =>
+    el().querySelector(`td[data-row="${name}"]`)!.closest('tr')!;
 
   async function open(
     permissions: Permission[] = ['CustomField.Manage', 'Audit.View'],
@@ -107,7 +108,7 @@ describe('CustomFieldsPage (#644)', () => {
   it('lists Client, Matter and Project with the Object as the one link to the designer', async () => {
     await open();
     expect(
-      Array.from(el().querySelectorAll('[data-objects] tbody tr[data-row]')).map((r) =>
+      Array.from(el().querySelectorAll('[data-objects] tbody td[data-row]')).map((r) =>
         r.getAttribute('data-row'),
       ),
     ).toEqual(['Client', 'Matter', 'Project']);
@@ -125,7 +126,9 @@ describe('CustomFieldsPage (#644)', () => {
 
   it('shows the three states: none, published with a draft, only a draft', async () => {
     await open();
-    expect(row('Client').querySelector('[data-fields]')!.textContent).toContain('No fields yet');
+    const clientFields = row('Client').querySelector('[data-fields]')!;
+    expect(clientFields.textContent!.trim()).toBe('0');
+    expect(clientFields.getAttribute('title')).toBe('No fields yet');
     expect(row('Client').querySelector('[data-published]')!.textContent).toContain(
       ' Not published ',
     );
@@ -133,9 +136,9 @@ describe('CustomFieldsPage (#644)', () => {
       'No Published Fields',
     );
 
-    expect(row('Matter').querySelector('[data-fields]')!.textContent).toContain(
-      '8 fields, 2 required',
-    );
+    const matterFields = row('Matter').querySelector('[data-fields]')!;
+    expect(matterFields.textContent!.trim()).toBe('8');
+    expect(matterFields.getAttribute('title')).toBe('8 fields, 2 required');
     const published = row('Matter').querySelector('[data-published]')!;
     expect(published.textContent!.replace(/\s+/g, ' ')).toContain('v2');
     expect(published.textContent).toContain(' v2  · 10/12 ');
@@ -144,7 +147,9 @@ describe('CustomFieldsPage (#644)', () => {
     expect(status).toContain('Published v2');
     expect(status).toContain('Draft v3');
 
-    expect(row('Project').querySelector('[data-fields]')!.textContent).toContain('No fields yet');
+    expect(row('Project').querySelector('[data-fields]')!.getAttribute('title')).toBe(
+      'No fields yet',
+    );
     expect(row('Project').querySelector('[data-status]')!.textContent).toContain('Draft v1');
   });
 
@@ -175,7 +180,7 @@ describe('CustomFieldsPage (#644)', () => {
     forms.listCustomFieldForms.mockReturnValue(ok([summary(FormOwnerKind.Client)]));
     el().querySelector<HTMLButtonElement>('[data-error] button')!.click();
     await settle(fixture);
-    expect(el().querySelectorAll('[data-objects] tbody tr[data-row]')).toHaveLength(3);
+    expect(el().querySelectorAll('[data-objects] tbody td[data-row]')).toHaveLength(3);
     expect(forms.ensureFormDefinition).not.toHaveBeenCalled();
   });
 });
@@ -193,7 +198,7 @@ describe('CustomFieldFormDesignerApi', () => {
 
     expect(await firstValueFrom(api.getOwner('matter'))).toEqual({
       id: 'matter',
-      name: 'Matter custom fields',
+      name: 'Matter Custom Fields',
       crumb: 'Matter',
     });
     await firstValueFrom(api.listVersions('matter'));
