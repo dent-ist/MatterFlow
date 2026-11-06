@@ -199,3 +199,21 @@ Pass: resize (stored `mf.col-widths.v1.<grid>.<user>`, survives reload), reorder
 | #1174-#1181 shared side effects | PASS | Action Menu text trigger 36 px and the shared amber banner (one compact bar) look right on Project, Asset and Task records; no regression seen |
 
 New: #1245, #1246.
+
+## review-12 Dashboard group (tip 7430210, 2026-11-06)
+
+Evidence on `design-evidence` (`evidence/2026-11-06-review-12-dashboard/`: 9 JPEG, measurements, axe). Real stack, both sizes, Director, Pod Lead and Technician; axe on 8 pages and tabs at both sizes: 0 violations. Computed-style scan of all six tabs: 0 elements with a repeating or hatch background, 0 SVG patterns (also in the Breakdowns Pie views); the only 6 px radii are the 10 navigation items; a task type chip is followed by its name in every row measured (Summary 30 of 30 at both sizes, Breakdowns 8 of 8, Technician queue 4 of 4).
+
+| Issue | Result | Evidence |
+| --- | --- | --- |
+| #1157 Summary | PASS | legend tiles are figure tiles, semantic tokens, no stripes |
+| #1158 stripes | PASS | solid red overdue segments with "N overdue" links in Priority, Status, Age and Task Type; Pie views without patterns; guard `no-stripes.spec.ts` covers `features/dashboard` (the shared pie keeps report patterns only for Administration > Reports) |
+| #1159 Breakdowns and Trends | PASS | card titles 16/600, switches whole at 1366, "Measure:" dropdowns, axis `10/08` |
+| #1160 Swimlane | PASS WITH NOTES | "Group:" and "Sort:" prefixes, icon options button, shared chips; hidden skip links report as clipped (#1247) |
+| #1161 Users | PASS | popovers on the menu standard, shared Unassigned button, search box 200 px |
+| #1162 Calendar, Technician queue | PASS WITH NOTES | legend chips, slim risk banner, shared states; day-panel names that open a dialog are underlined links (#1247) |
+| #1242 day panel | PASS | three tiles, role header bands, jump chips, Collapse All, 3 px green row edge |
+| #1239 | PASS | Due whole |
+| user-menu test fix 7202e0b, no-stripes guard | PASS | spec no longer depends on today's date; guard in place |
+
+Decisions: (1) Trends "Measure:" stays a shared dropdown: five measures are more than the 2 to 4 a segmented switch allows (D-16). (2) "Back 11/23" stays (short, numeric date per D-60); the full words "Out of office until November 23, 2026" are the tooltip and accessible name. (3) No person drawer on the Calendar is accepted: a name opens Add Out of Office only with User.ManageAvailability and is then a text button (#1247). (4) The 3 px green row edge in the day panel is recorded as the owner-approved exception D-48a; keep it limited to that list (D-04 forbids it elsewhere). (5) Confirmed: the type name shows beside the chip in every grid and list at both sizes; the owner's rule overrides the earlier "chip alone below 900 px" note, remove that sentence from D-43a if still present.
