@@ -47,7 +47,7 @@ export const WHO_IS_COUNTED =
           </button>
           @if (whoOpen()) {
             <div
-              class="who"
+              class="who mf-menu mf-menu--filter"
               role="dialog"
               aria-label="What the states mean and who is counted"
               data-who-popover
@@ -125,14 +125,10 @@ export const WHO_IS_COUNTED =
       top: calc(100% + var(--mf-s1));
       left: 0;
       z-index: 40;
-      width: min(26rem, 90vw);
       max-height: calc(100vh - 14rem);
-      overflow: auto;
-      padding: var(--mf-s3);
-      background: var(--mf-surface);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
-      box-shadow: var(--mf-shadow-pop);
+    }
+    .who > .sec {
+      padding: var(--mf-s2);
     }
     .who h3 {
       margin: 0 0 var(--mf-s2);

@@ -109,7 +109,7 @@ import {
     }
     /* Wide enough for the whole placeholder "Search by name" at 1366 px (#1126). */
     .search {
-      min-width: 12rem;
+      min-width: 12.5rem;
       flex: 0 1 14rem;
     }
     .sorted {
