@@ -11,6 +11,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -28,11 +29,15 @@ import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { ActionMenu } from '../../../shared/ui/action-menu';
 import { AdminCardList, AdminCardSpec, activeCardBadge } from '../../../shared/ui/admin-card-spec';
-import { AdminColumn, adminListState } from '../../../shared/ui/admin-list-state';
+import { adminListState } from '../../../shared/ui/admin-list-state';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
-import { ScrollArea } from '../../../shared/ui/fixed-page';
-import { GridBody } from '../../../shared/ui/grid-body';
+import {
+  RecordCell,
+  RecordGrid,
+  RecordGridColumn,
+  RecordGridState,
+} from '../../../shared/ui/record-grid';
 import { LocalListPage } from '../../../shared/ui/list-query';
 import { Pager } from '../../../shared/ui/pager';
 import { phoneCards } from '../../../shared/ui/record-card-list';
@@ -46,15 +51,13 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 import { IntPipe } from '../../../shared/ui/number-format';
 import { Button } from 'primeng/button';
 
-type Column = 'name' | 'category' | 'roles' | 'lastRun' | 'status' | 'actions';
-
-const COLUMN_SPEC: Record<Column, AdminColumn> = {
-  name: { cls: 'mf-cell-name', bone: '14rem' },
-  category: { cls: 'mf-cell-badge', bone: '8rem' },
-  roles: { cls: 'mf-cell-num', bone: '1.5rem' },
-  lastRun: { cls: 'mf-cell-badge', bone: '6rem' },
-  status: { cls: 'mf-cell-badge', bone: '4rem' },
-  actions: { cls: 'mf-cell-actions', bone: '1.5rem' },
+/** The skeleton bone of each column (the loading rows of the grid). */
+const BONES: Record<string, string> = {
+  name: '14rem',
+  category: '8rem',
+  roles: '1.5rem',
+  lastRun: '6rem',
+  status: '4rem',
 };
 
 /**
@@ -76,11 +79,12 @@ const COLUMN_SPEC: Record<Column, AdminColumn> = {
     ColumnFilterRow,
     ConfirmDialog,
     FiltersBar,
-    GridBody,
+    NgTemplateOutlet,
     Pager,
+    RecordCell,
+    RecordGrid,
     RouterLink,
     RowLink,
-    ScrollArea,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -90,7 +94,7 @@ const COLUMN_SPEC: Record<Column, AdminColumn> = {
     </div>
 
     @if (failure()) {
-      <p class="rl-failure" role="alert" data-failure>
+      <p class="pg-banner pg-banner--danger" role="alert" data-failure>
         <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ failure() }}
       </p>
     }
@@ -116,105 +120,107 @@ const COLUMN_SPEC: Record<Column, AdminColumn> = {
         (showAll)="showAll()"
       />
     } @else {
-      <div class="mf-table-wrap" mfScrollArea="Reports list" #scroll>
-        <div class="mf-scroll">
-          <table class="mf-grid" id="reports-table" data-reports>
-            <caption class="mf-sr-only">
-              Reports, in category and report order
-            </caption>
-            <thead>
-              <tr>
-                <th class="mf-cell-name" scope="col">Name</th>
-                <th class="mf-cell-badge" scope="col">Category</th>
-                @if (roomy()) {
-                  <th class="mf-cell-num" scope="col">Roles</th>
-                  <th class="mf-cell-badge" scope="col">Last Run</th>
-                }
-                <th class="mf-cell-badge" scope="col">Status</th>
-                <th class="mf-cell-actions" scope="col"><span class="mf-sr-only">Actions</span></th>
-              </tr>
-              @if (filters.rowVisible()) {
-                <tr
-                  mfColumnFilterRow
-                  id="report-filter-row"
-                  [filters]="filters"
-                  [columns]="columns()"
-                ></tr>
-              }
-            </thead>
-            <tbody
-              mfGridBody
-              noun="reports"
-              [columnSpec]="columnSpec()"
+      <div class="mf-fill">
+        <mf-record-grid
+          #scroll
+          data-reports
+          tableId="reports-table"
+          label="Reports list"
+          caption="Reports, in category and report order"
+          noun="reports"
+          [grid]="grid"
+          [rows]="rows()"
+          [rowKey]="reportKey"
+          [loadState]="ls.state()"
+          [empty]="ls.empty()"
+          [filtered]="ls.filtered()"
+          [filters]="filters"
+          emptyText="No reports yet."
+          [hidden]="ls.hidden()"
+          hiddenLabel="inactive"
+          [actions]="true"
+          [rowClass]="rowClass"
+          [bones]="bones"
+          (retry)="load()"
+          (clear)="clear()"
+          (showAll)="showAll()"
+        >
+          @if (filters.rowVisible()) {
+            <tr
+              mfGridFilterRow
+              mfColumnFilterRow
+              id="report-filter-row"
               [filters]="filters"
-              emptyText="No reports yet."
-              [state]="ls.state()"
-              [empty]="ls.empty()"
-              [filtered]="ls.filtered()"
-              [hidden]="ls.hidden()"
-              hiddenLabel="inactive"
-              (retry)="load()"
-              (clear)="clear()"
-              (showAll)="showAll()"
-            >
-              <p-button
-                mfEmptyAction
-                label="New Report"
-                icon="pi pi-plus"
-                (onClick)="newReport()"
-              />
-              @for (r of rows(); track r.reportId) {
-                <tr [attr.data-row]="r.name" [class.inactive]="!r.isActive">
-                  <td class="mf-cell-name">
-                    <a
-                      class="mf-name"
-                      [routerLink]="['/admin/reports', r.reportId]"
-                      [mfRowLink]="listId"
-                      [rowKey]="r.reportId"
-                      [state]="leave.state()"
-                      [attr.title]="r.name"
-                      data-open
-                      >{{ r.name }}</a
-                    >
-                  </td>
-                  <td class="mf-cell-badge" data-category>{{ r.categoryName }}</td>
-                  @if (roomy()) {
-                    <td class="mf-cell-num" data-roles>{{ r.roleCount | mfInt }}</td>
-                    <td class="mf-cell-badge" data-last-run>
-                      @if (r.lastRunAtUtc) {
-                        {{ r.lastRunAtUtc | mfNum: 'date' }}
-                      } @else {
-                        <span class="mf-sr-only">Never</span><span aria-hidden="true">-</span>
-                      }
-                    </td>
-                  }
-                  <td class="mf-cell-badge"><mf-active-badge [active]="r.isActive" /></td>
-                  <td class="mf-cell-actions" [attr.data-actions-of]="r.reportId">
-                    @if (menus().get(r.reportId); as menu) {
-                      <mf-action-menu [floating]="true" [label]="menu.label" [items]="menu.items" />
-                    }
-                  </td>
-                </tr>
+              [columns]="columns()"
+            ></tr>
+          }
+          <p-button mfEmptyAction label="New Report" icon="pi pi-plus" (onClick)="newReport()" />
+          <ng-template mfCell="name" let-r>
+            <td class="rl-namecell" [attr.data-row]="r.name">
+              <a
+                class="mf-link pg-clip"
+                [routerLink]="['/admin/reports', r.reportId]"
+                [mfRowLink]="listId"
+                [rowKey]="r.reportId"
+                [state]="leave.state()"
+                [attr.title]="r.name"
+                data-open
+                >{{ r.name }}</a
+              >
+            </td>
+          </ng-template>
+          <ng-template mfCell="category" let-r>
+            <td class="pg-clip" data-category [attr.title]="r.categoryName">
+              {{ r.categoryName }}
+            </td>
+          </ng-template>
+          <ng-template mfCell="roles" let-r>
+            <td class="pg-num" data-roles>{{ r.roleCount | mfInt }}</td>
+          </ng-template>
+          <ng-template mfCell="lastRun" let-r>
+            <td class="pg-nowrap" data-last-run>
+              @if (r.lastRunAtUtc) {
+                {{ r.lastRunAtUtc | mfNum: 'date' }}
+              } @else {
+                <span class="mf-sr-only">Never</span><span aria-hidden="true">-</span>
               }
-            </tbody>
-          </table>
-        </div>
+            </td>
+          </ng-template>
+          <ng-template mfCell="status" let-r>
+            <td><mf-active-badge [active]="r.isActive" /></td>
+          </ng-template>
+          <ng-template mfCell="actions" let-r>
+            <td class="mf-col-actions" [attr.data-actions-of]="r.reportId">
+              @if (menus().get(r.reportId); as menu) {
+                <mf-action-menu [floating]="true" [label]="menu.label" [items]="menu.items" />
+              }
+            </td>
+          </ng-template>
+          <div mfGridFoot>
+            <ng-container *ngTemplateOutlet="pager" />
+          </div>
+        </mf-record-grid>
       </div>
     }
 
-    @if (state() === 'ready' && total() > 0) {
-      <mf-pager
-        [page]="shownPage()"
-        [pageSize]="pageSize()"
-        [pageSizes]="pageSizes"
-        [total]="total()"
-        [hidden]="hiddenCount()"
-        hiddenLabel="inactive"
-        (showAll)="showAll()"
-        (pageChange)="goToPage($event)"
-        (pageSizeChange)="setPageSize($event)"
-      />
+    @if (phone()) {
+      <ng-container *ngTemplateOutlet="pager" />
     }
+    <ng-template #pager>
+      @if (state() === 'ready' && total() > 0) {
+        <mf-pager
+          [page]="shownPage()"
+          [pageSize]="pageSize()"
+          [pageSizes]="pageSizes"
+          [total]="total()"
+          [hidden]="hiddenCount()"
+          hiddenLabel="inactive"
+          (showAll)="showAll()"
+          (pageChange)="goToPage($event)"
+          (pageSizeChange)="setPageSize($event)"
+        />
+      }
+    </ng-template>
 
     <mf-confirm-dialog
       title="Deactivate Report"
@@ -232,13 +238,8 @@ const COLUMN_SPEC: Record<Column, AdminColumn> = {
     </mf-confirm-dialog>
   `,
   styles: `
-    .rl-failure {
-      display: flex;
-      gap: var(--mf-s2);
-      align-items: center;
-      margin: var(--mf-s2) 0;
-      color: var(--mf-danger);
-      font-size: var(--mf-fs-sm);
+    .rl-namecell {
+      max-width: 0;
     }
   `,
 })
@@ -262,16 +263,35 @@ export class ReportsListTab extends LocalListPage<ReportListItemResponse> {
   protected readonly announcement = signal('');
   protected readonly deactivating = signal<ReportListItemResponse | null>(null);
 
-  protected readonly columns = computed<readonly Column[]>(() => [
-    'name',
-    'category',
-    ...(this.roomy() ? (['roles', 'lastRun'] as const) : []),
-    'status',
-    'actions',
+  /** The columns of the shared record grid (D-44a): Name is the spring; the others have fixed widths so the headings never move. */
+  protected readonly gridDefs = signal<readonly RecordGridColumn[]>([
+    { key: 'name', label: 'Name', locked: true, minWidth: '200px' },
+    { key: 'category', label: 'Category', width: '180px', minWidth: '180px' },
+    {
+      key: 'roles',
+      label: 'Roles',
+      num: true,
+      width: 'var(--mf-col-count-w)',
+      minWidth: 'var(--mf-col-count-w)',
+    },
+    { key: 'lastRun', label: 'Last Run', width: '152px', minWidth: '152px' },
+    {
+      key: 'status',
+      label: 'Status',
+      width: 'var(--mf-col-status-w)',
+      minWidth: 'var(--mf-col-status-w)',
+    },
   ]);
-  protected readonly columnSpec = computed<readonly AdminColumn[]>(() =>
-    this.columns().map((c) => COLUMN_SPEC[c]),
+  protected readonly grid = new RecordGridState('admin-reports', this.gridDefs, () =>
+    this.roomy() ? [] : ['roles', 'lastRun'],
   );
+  protected readonly bones = BONES;
+  protected readonly reportKey = (r: ReportListItemResponse): number => r.reportId;
+  /** An inactive report keeps the `inactive` hook of its row. */
+  protected readonly rowClass = (r: ReportListItemResponse): string | null =>
+    r.isActive ? null : 'inactive';
+  /** The columns of the table in order, the row action last: what the filter row builds its cells from. */
+  protected readonly columns = computed<readonly string[]>(() => [...this.grid.shown(), 'actions']);
 
   /** Inline column filters, applied here because the list is loaded whole: Name, Category and Status (Active by default). */
   protected readonly filters: ListFilters = new ListFilters({

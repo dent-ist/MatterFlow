@@ -93,10 +93,13 @@ describe('ReportsListTab (#712)', () => {
   }
 
   const rowNames = (): string[] =>
-    all('[data-reports] tbody tr[data-row]').map((r) => r.getAttribute('data-row')!);
+    all('[data-reports] tbody td[data-row]').map((r) => r.getAttribute('data-row')!);
 
   async function menuOf(name: string): Promise<HTMLElement[]> {
-    q<HTMLButtonElement>(`tr[data-row="${name}"] button[data-overflow]`).click();
+    q(`td[data-row="${name}"]`)
+      .closest('tr')!
+      .querySelector<HTMLButtonElement>('button[data-overflow]')!
+      .click();
     await settle(fixture);
     return all('[role=menuitem]');
   }
@@ -110,20 +113,25 @@ describe('ReportsListTab (#712)', () => {
     });
 
     it('shows the name as the one link, the category, the roles, the last run and the status', () => {
-      const row = q('tr[data-row="Overdue tasks"]');
+      const row = q('td[data-row=\"Overdue tasks\"]').closest('tr')!;
       expect(row.querySelectorAll('a')).toHaveLength(1);
       expect(row.querySelector('a')!.getAttribute('href')).toBe('/admin/reports/5');
-      expect(row.querySelector('[data-category]')!.textContent).toBe('Task follow-up');
-      expect(row.querySelector('[data-roles]')!.textContent).toBe('3');
+      expect(row.querySelector('[data-category]')!.textContent!.trim()).toBe('Task follow-up');
+      expect(row.querySelector('[data-roles]')!.textContent!.trim()).toBe('3');
       expect(row.querySelector('[data-last-run]')!.textContent).toContain(' 10/20 ');
-      expect(q('tr[data-row="Tasks per matter"] [data-last-run]').textContent).toContain('Never');
+      expect(
+        q('td[data-row="Tasks per matter"]').closest('tr')!.querySelector('[data-last-run]')!
+          .textContent,
+      ).toContain('Never');
       expect(row.textContent).toContain('Active');
     });
 
     it('shows inactive reports with a status chip in text when the status is All, and nothing deletes a report', async () => {
       await show({ status: 'all' });
       expect(rowNames()).toEqual(['Overdue tasks', 'Tasks per matter', 'Open tasks by client']);
-      expect(q('tr[data-row="Open tasks by client"]').textContent).toContain('Inactive');
+      expect(q('td[data-row=\"Open tasks by client\"]').closest('tr')!.textContent).toContain(
+        'Inactive',
+      );
       const items = (await menuOf('Open tasks by client')).map((i) => i.textContent!.trim());
       expect(items.join('|')).not.toMatch(/delete|remove/i);
     });

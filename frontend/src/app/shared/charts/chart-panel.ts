@@ -72,7 +72,6 @@ export const MAX_BARS = 25;
               [emptyText]="emptyText()"
               [unit]="unit()"
               [format]="format()"
-              [patterns]="true"
             />
           } @placeholder {
             <p class="note">Loading the chart.</p>

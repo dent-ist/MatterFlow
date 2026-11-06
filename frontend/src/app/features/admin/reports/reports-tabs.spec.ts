@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { ddChoose } from '../../../testing/dropdown-testing.spec-util';
 import { Router, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
@@ -169,7 +170,12 @@ describe('ReportRunsTab (#712)', () => {
         nextBefore: 8,
       }),
     );
-    TestBed.configureTestingModule({ providers: [{ provide: ReportAdminClient, useValue: api }] });
+    TestBed.configureTestingModule({
+      providers: [
+        provideFakeMe(new FakeMeApi(withPermissions('Report.Manage'))),
+        { provide: ReportAdminClient, useValue: api },
+      ],
+    });
     const fixture = TestBed.createComponent(ReportRunsTab);
     await settle(fixture);
     const el = fixture.nativeElement as HTMLElement;
@@ -181,9 +187,9 @@ describe('ReportRunsTab (#712)', () => {
       undefined,
       50,
     );
-    expect(el.querySelector('[data-run="9"]')!.textContent).toContain('Overdue tasks');
-    expect(el.querySelector('[data-run="9"]')!.textContent).toContain('MAX=2');
-    expect(el.querySelector('[data-run="8"]')!.textContent).toContain('SQL_8134');
+    expect(el.querySelector('tr[data-record-id="9"]')!.textContent).toContain('Overdue tasks');
+    expect(el.querySelector('tr[data-record-id="9"]')!.textContent).toContain('MAX=2');
+    expect(el.querySelector('tr[data-record-id="8"]')!.textContent).toContain('SQL_8134');
 
     api.listReportRuns.mockReturnValueOnce(of({ items: [run(7)], nextBefore: undefined }));
     el.querySelector<HTMLButtonElement>('[data-more]')!.click();
@@ -196,7 +202,7 @@ describe('ReportRunsTab (#712)', () => {
       8,
       50,
     );
-    expect(el.querySelectorAll('[data-run]')).toHaveLength(3);
+    expect(el.querySelectorAll('tbody tr[data-record-id]')).toHaveLength(3);
     expect(el.querySelector('[data-more]')).toBeNull();
 
     api.listReportRuns.mockReturnValueOnce(of({ items: [], nextBefore: undefined }));
