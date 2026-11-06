@@ -21,7 +21,7 @@ import {
 import { AuthStore } from '../../../core/auth/auth.store';
 import { QuietRequests } from '../../../core/http/interceptors';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { ActiveBadge } from '../../../shared/ui/badge';
+import { ActiveBadge, Badge } from '../../../shared/ui/badge';
 import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { dateDaysAgo } from '../../../shared/work-queue/queue-filters';
@@ -89,6 +89,7 @@ export function rowsFromMatters(matters: readonly MatterResponse[]): OverviewMat
     RouterLink,
     Button,
     ActiveBadge,
+    Badge,
     CustomFieldsView,
     ErrorReference,
   ],
@@ -173,10 +174,9 @@ export function rowsFromMatters(matters: readonly MatterResponse[]): OverviewMat
                       <td class="ov-num" data-label="Open">{{ m.open ?? '--' }}</td>
                       <td class="ov-num" [attr.data-label]="m.overdue ? null : 'Overdue'">
                         @if (m.overdue) {
-                          <span class="ov-overdue">
-                            <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
-                            {{ m.overdue }} overdue
-                          </span>
+                          <mf-badge tone="danger" data-overdue-chip
+                            >{{ m.overdue }} overdue</mf-badge
+                          >
                         } @else {
                           @if (m.overdue === 0) {
                             <mf-zero-dash />
@@ -194,7 +194,7 @@ export function rowsFromMatters(matters: readonly MatterResponse[]): OverviewMat
           }
           @if (client().matterCount > 0) {
             <a
-              class="ov-all"
+              class="mf-link ov-all"
               routerLink="."
               [queryParams]="{ tab: 'matters' }"
               queryParamsHandling="merge"
