@@ -405,3 +405,25 @@ Evidence: `design-evidence`, `evidence/2026-11-06-review-25-priorities-toasts-at
 | axe region | not from #1267 | `region` comes from the shared tooltip element (`role="tooltip"` appended to `body`), visible after hovering the panel toggle at 1366 open and at 1920 closed; fix in #1268. |
 
 Rulings: D-44v; `mf-btn--name`, `mf-btn--chip` and the toast copy action are added to the catalogue (section 3).
+
+## review-26 closing sweep of open UI update 2 issues (2026-11-06, tip ca460b4, 1366 and 1920)
+
+Evidence: `design-evidence`, `evidence/2026-11-06-review-26-closing-sweep/` (JPEG, `measurements.json`). Tested on the real stack (empty and error states made with request blocking, nothing written).
+
+| Issue | Verdict | Notes |
+|---|---|---|
+| #1170 task list states | PASS, close | Empty "No tasks match these filters." + Clear Filters, error "Couldn't load tasks." + Retry (no visible toast), count chip "--" while loading or failed, on Task Queue, My Work and Pod Work at both sizes. |
+| #1176 Matter Tasks, Projects, Assets tabs | FAIL | Tasks tab is complete (7 resize handles, Columns, Select, Ref 100, Type 128, Title 330, Priority 112, Assignee 136, Due 152, Status 140). Projects and Assets tabs are hand-built: no Columns, no Sorted line, no resize (0 handles). Fix: #1269. |
+| #1177 Productions, Notes, Activities | PASS, close | Notes segmented switch, Productions Direction and Spec as form dropdowns, Activities Kind dropdown, 44 px rows, `11/04 hh:mm` dates. The Activities and Productions tables still lack resize and Columns: #1269. |
+| #1180 Client record | PASS, close | Header, fact chips, 16/600 heading, 40 px header, overdue chip, "View all 3 matters" link. The Client > Matters tab table is hand-built: #1270. |
+| #1181 Client new and edit | PASS, close | Header "New Client" / "Edit Client", `[Cancel] [Create Client]`, `[Cancel] [Save Changes]` at 36 px. |
+| #1185 Assets list | PASS, close | Covered by #1249 (review 16): fits 1096 px, stable headings, chip whole. |
+| #1201 Task Types list | PASS, close | Covered by #1256 (review 24). |
+| #1202 Task type record and designer | PASS, close | Covered by #1256: record header, no duplicate Edit, designer on the record header, 40 px tabs, banner with icon. The draft header `[Save Draft] [Publish...]` is covered by unit specs, not seen live (it would create a draft on demo data). |
+| #1231 Title resize | PASS, close | Task Queue, My Work, Pod Work, Dashboard Summary, Matter Tasks, Project Tasks at both sizes: narrower, wider, kept after reload, Reset Width restores the spring. |
+| #1235 task type name and colour | UI PASS; NOT VERIFIED backend | Same type, same color in Task Queue, Dashboard Summary and Asset Linked Tasks; the Type name shows on the linked tasks API. Not verified: the backend integration tests (Docker, never run), the sensitive-matter personas on `/assets/{id}/linked-tasks` (the demo sensitive assets 26, 28, 29 have no linked tasks), a type without color on every source. |
+| #1241 shared record grid | PASS, close | Steps 1, 2 and 4 are in place (Matters, Clients, Projects, Assets, Asset Linked Tasks resize and store widths; guard spec exists). The tables still on the guard's ALLOWED list are tracked in #1269 and #1270. |
+
+Epics: #1108, #1109, #1111, #1114, #1116, #1117, #1118, #1120, #1121 have no open child. Open: #1107 (1241, 1268), #1110 (1170, 1231, 1235), #1112 (1176, 1177, 1269), #1113 (1180, 1181, 1270), #1115 (1185), #1119 (1201, 1202), #1106 (all epics).
+
+Guideline text updated in this sweep: D-80 (rail below 1100 px removed), D-46 (under 768 px removed), D-44i (Assignee rule and At Risk threshold now match D-44r and D-44t), "colour" to "color" in the guideline prose, theme-guide toolbar diagram ("Other filters") and the Phone row removed. Left in `theme-guide.md`: the 768x1024 and 375x812 sweep line (sweep.md history), the 44 px touch control size.
