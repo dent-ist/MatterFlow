@@ -165,7 +165,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
             <div class="mf-field">
               <label class="mf-field__label" for="td-project">Project</label>
               <mf-dropdown
-                [neutralValue]="null"
+                field
                 buttonId="td-project"
                 label="Project"
                 [items]="projectItems()"
@@ -270,7 +270,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
                 <div class="mf-field">
                   <label class="mf-field__label" for="td-priority">Priority</label>
                   <mf-dropdown
-                    [neutralValue]="null"
+                    field
                     buttonId="td-priority"
                     label="Priority"
                     [disabled]="!t.allowedActions.canSetPriority"
@@ -330,7 +330,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
                 <div class="mf-field">
                   <label class="mf-field__label" for="td-pod">Pod</label>
                   <mf-dropdown
-                    [neutralValue]="null"
+                    field
                     buttonId="td-pod"
                     label="Pod"
                     [invalid]="!!err('assignedPodId')"

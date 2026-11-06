@@ -30,6 +30,7 @@ const OTHER = '__other__';
   template: `
     <span class="tz__label" aria-hidden="true">Time Zone</span>
     <mf-dropdown
+      field
       buttonId="av-tz"
       class="tz__select"
       data-tz-select
@@ -37,7 +38,6 @@ const OTHER = '__other__';
       [describedBy]="'av-tz-time av-tz-note'"
       [items]="items()"
       [value]="other() ? '__other__' : value()"
-      [neutralValue]="null"
       [panelWidth]="320"
       (valueChange)="choose($event)"
     />

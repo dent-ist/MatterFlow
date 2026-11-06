@@ -72,6 +72,7 @@ export function overlapOf(err: ApiError): AbsenceOverlap | null {
           <div class="ad__field">
             <label class="ad__label" for="ad-person">Person</label>
             <mf-dropdown
+              field
               buttonId="ad-person"
               label="Person"
               data-ad-person
@@ -84,6 +85,7 @@ export function overlapOf(err: ApiError): AbsenceOverlap | null {
         <div class="ad__field">
           <label class="ad__label" for="ad-type">Type</label>
           <mf-dropdown
+            field
             buttonId="ad-type"
             label="Type"
             data-ad-type

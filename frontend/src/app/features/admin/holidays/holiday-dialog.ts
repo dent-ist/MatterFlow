@@ -120,7 +120,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
           <div class="hd__f">
             <label class="hd__l" for="hd-pattern">Date Rule</label>
             <mf-dropdown
-              [neutralValue]="null"
+              field
               buttonId="hd-pattern"
               label="Date Rule"
               [items]="patternItems"
@@ -137,7 +137,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
                 shape() === 'range' ? 'First day: month' : 'Month'
               }}</label>
               <mf-dropdown
-                [neutralValue]="null"
+                field
                 buttonId="hd-month"
                 [label]="shape() === 'range' ? 'First day: month' : 'Month'"
                 [items]="monthItems"
@@ -167,7 +167,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
             <div class="hd__f">
               <label class="hd__l" for="hd-emonth">Last Day: Month</label>
               <mf-dropdown
-                [neutralValue]="null"
+                field
                 buttonId="hd-emonth"
                 label="Last Day: Month"
                 [items]="monthItems"
@@ -195,7 +195,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
             <div class="hd__f">
               <label class="hd__l" for="hd-nth">Which</label>
               <mf-dropdown
-                [neutralValue]="null"
+                field
                 buttonId="hd-nth"
                 label="Which"
                 [items]="nthItems"
@@ -206,7 +206,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
             <div class="hd__f">
               <label class="hd__l" for="hd-wd">Weekday</label>
               <mf-dropdown
-                [neutralValue]="null"
+                field
                 buttonId="hd-wd"
                 label="Weekday"
                 [items]="weekdayItems"
@@ -217,7 +217,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
             <div class="hd__f">
               <label class="hd__l" for="hd-nmonth">of</label>
               <mf-dropdown
-                [neutralValue]="null"
+                field
                 buttonId="hd-nmonth"
                 label="of"
                 [items]="monthItems"
@@ -303,7 +303,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
           <div class="hd__f">
             <label class="hd__l" for="hd-weekend">When It Falls on a Weekend</label>
             <mf-dropdown
-              [neutralValue]="null"
+              field
               buttonId="hd-weekend"
               label="When It Falls on a Weekend"
               [items]="weekendItems"

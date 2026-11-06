@@ -169,13 +169,13 @@
                 <div class="mf-fld">
                   <label for="role-copy" class="mf-label">Copy From Role</label>
                   <mf-dropdown
+                    field
                     data-copy
                     buttonId="role-copy"
                     label="Copy From Role"
                     placeholder="Choose..."
                     [items]="roleItems()"
                     [value]="''"
-                    [neutralValue]="null"
                     (valueChange)="copyFrom($event)"
                   />
                 </div>

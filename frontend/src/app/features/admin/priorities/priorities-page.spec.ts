@@ -105,9 +105,15 @@ describe('PrioritiesPage (#605, #609, #614, #618)', () => {
       expect(all('[data-order] i.pi-bars[data-grip]').length).toBe(4);
       expect(el().querySelectorAll('mf-priority-badge').length).toBe(0);
       expect(row('Critical').querySelector('mf-priority-flag mf-priority-pill')).not.toBeNull();
-      expect(row('Normal').querySelector('mf-priority-flag .plain')!.textContent).toContain(
-        'Normal',
-      );
+      // Normal is the plain word in the shared name button (underlined, D-44m); Critical and High keep their pill inside an "Edit <name>" button.
+      const normal = row('Normal').querySelector<HTMLButtonElement>('button[data-edit]')!;
+      expect(normal.classList.contains('mf-btn--name')).toBe(true);
+      expect(normal.textContent!.trim()).toBe('Normal');
+      expect(normal.getAttribute('aria-label')).toBe('Edit Normal');
+      const critical = row('Critical').querySelector<HTMLButtonElement>('button[data-edit]')!;
+      expect(critical.classList.contains('mf-btn--chip')).toBe(true);
+      expect(critical.getAttribute('aria-label')).toBe('Edit Critical');
+      expect(el().querySelector('.pr-open')).toBeNull();
       expect(all('[data-default]').length).toBe(1);
       expect(row('Normal').querySelector('[data-default]')!.textContent).toContain('Default');
       expect(row('Critical').querySelector('[data-color-cell]')!.textContent).toContain(
@@ -115,7 +121,7 @@ describe('PrioritiesPage (#605, #609, #614, #618)', () => {
       );
       for (const r of all('[data-row]')) {
         expect(all('mf-action-menu', r).length).toBe(1);
-        expect(all('button', r).length).toBe(1);
+        expect(all('button[data-edit]', r).length).toBe(1);
         expect(r.querySelector('mf-active-badge')!.textContent).toContain('Active');
       }
     });
@@ -130,23 +136,25 @@ describe('PrioritiesPage (#605, #609, #614, #618)', () => {
       const link = row('High').querySelector<HTMLAnchorElement>('[data-open-tasks] a')!;
       expect(link.getAttribute('href')).toContain('/tasks?priority=2&status=NEW');
       expect(link.getAttribute('aria-label')).toBe('31 open tasks in High');
-      expect(link.getAttribute('tabindex')).toBe('-1');
+      expect(link.getAttribute('tabindex')).toBeNull();
       expect(row('Low').querySelector('[data-open-tasks] a')).toBeNull();
     });
 
-    it('has two Tab stops per row: the name link and the menu (the count is reached by the right arrow)', () => {
+    it('has the name button, the count link and the menu as Tab stops', () => {
       const stops = all('a, button, input, select', row('High')).filter(
         (x) => x.getAttribute('tabindex') !== '-1',
       );
       expect(stops.map((s) => s.tagName + (s.hasAttribute('data-edit') ? ':edit' : ''))).toEqual([
-        'A:edit',
+        'BUTTON:edit',
+        'A',
         'BUTTON',
       ]);
     });
 
-    it('opens Edit from the name link with ?edit=<id>', () => {
-      const link = row('High').querySelector<HTMLAnchorElement>('[data-edit]')!;
-      expect(link.getAttribute('href')).toContain('edit=2');
+    it('opens Edit from the name button with ?edit=<id>', async () => {
+      row('High').querySelector<HTMLButtonElement>('button[data-edit]')!.click();
+      await fixture.whenStable();
+      expect(TestBed.inject(Router).url).toContain('edit=2');
     });
 
     it('offers the actions in the menu: used rows can be deactivated but not deleted (LB3)', async () => {

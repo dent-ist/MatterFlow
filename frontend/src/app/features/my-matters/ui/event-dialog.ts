@@ -51,6 +51,7 @@ interface Errors {
         <div class="fld">
           <span class="lbl" id="ev-client-l">Client</span>
           <mf-dropdown
+            field
             buttonId="ev-client"
             label="Client"
             icon="pi-building"
@@ -66,6 +67,7 @@ interface Errors {
         <div class="fld">
           <span class="lbl" id="ev-matter-l">Matter</span>
           <mf-dropdown
+            field
             buttonId="ev-matter"
             label="Matter"
             icon="pi-briefcase"

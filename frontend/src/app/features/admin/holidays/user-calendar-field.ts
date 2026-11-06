@@ -32,7 +32,7 @@ import { HolidayCalendar, PreviewRow } from './holiday-contract';
       @if (state(); as s) {
         @if (canManage()) {
           <mf-dropdown
-            [neutralValue]="null"
+            field
             buttonId="uc-select"
             label="Holiday Calendar"
             data-user-calendar-select

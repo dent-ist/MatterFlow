@@ -103,7 +103,7 @@ const CONCURRENCY = 3;
         <div class="mmd__field">
           <label class="mmd__label" [for]="uid + '-primary'">Primary PM</label>
           <mf-dropdown
-            [neutralValue]="null"
+            field
             [buttonId]="uid + '-primary'"
             label="Primary PM"
             data-manager-select="primary"
@@ -116,7 +116,7 @@ const CONCURRENCY = 3;
         <div class="mmd__field">
           <label class="mmd__label" [for]="uid + '-secondary'">Secondary PM</label>
           <mf-dropdown
-            [neutralValue]="null"
+            field
             [buttonId]="uid + '-secondary'"
             label="Secondary PM"
             data-manager-select="secondary"

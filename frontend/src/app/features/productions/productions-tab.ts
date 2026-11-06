@@ -645,6 +645,7 @@ const emptySpec = (): SpecDraft => ({
             <div>
               <label class="pt__label" for="pf-direction">Direction</label>
               <mf-dropdown
+                field
                 buttonId="pf-direction"
                 label="Direction"
                 data-direction-select
@@ -664,6 +665,7 @@ const emptySpec = (): SpecDraft => ({
           <div>
             <label class="pt__label" for="pf-spec">Spec</label>
             <mf-dropdown
+              field
               buttonId="pf-spec"
               label="Spec"
               data-spec-select

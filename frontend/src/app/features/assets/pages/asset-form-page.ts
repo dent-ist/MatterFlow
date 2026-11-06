@@ -175,7 +175,7 @@ export function externalReferenceError(text: string): string | null {
                 </p>
               } @else {
                 <mf-dropdown
-                  [neutralValue]="null"
+                  field
                   buttonId="asset-type"
                   label="Asset Type"
                   [items]="typeItems()"

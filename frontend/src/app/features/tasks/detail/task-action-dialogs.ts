@@ -55,7 +55,7 @@ import { TaskDetailStore } from './task-detail.store';
             }
           </label>
           <mf-dropdown
-            [neutralValue]="null"
+            field
             buttonId="task-hold-reason"
             label="Hold Reason"
             [items]="reasonItems()"

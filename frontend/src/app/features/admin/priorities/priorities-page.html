@@ -69,17 +69,29 @@
               </td>
               <td class="mf-cell-name">
                 <span class="pr-name">
-                  <a
-                    class="pr-open"
-                    mfRowLink="priorities"
-                    [rowKey]="p.id"
-                    [routerLink]="['/admin/priorities']"
-                    [queryParams]="{ edit: p.id }"
-                    [attr.title]="p.label"
-                    data-edit
-                  >
-                    <mf-priority-flag [label]="p.label" [color]="p.color" />
-                  </a>
+                  @if (isPill(p)) {
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--text mf-btn--chip"
+                      data-edit
+                      [attr.title]="p.label"
+                      [attr.aria-label]="'Edit ' + p.label"
+                      (click)="editPriority(p)"
+                    >
+                      <mf-priority-flag [label]="p.label" [color]="p.color" />
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--text mf-btn--name"
+                      data-edit
+                      [attr.title]="p.label"
+                      [attr.aria-label]="'Edit ' + p.label"
+                      (click)="editPriority(p)"
+                    >
+                      {{ p.label }}
+                    </button>
+                  }
                   @if (p.isDefault) {
                     <mf-badge tone="neutral" icon="pi-star" data-default>Default</mf-badge>
                   }
@@ -99,7 +111,7 @@
                     <mf-task-count
                       kind="open"
                       scope="priority"
-                      [rowStop]="true"
+                      [rowStop]="false"
                       [recordId]="p.id"
                       [name]="p.label"
                       [count]="p.openTaskCount"
