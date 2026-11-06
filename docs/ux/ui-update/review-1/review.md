@@ -463,3 +463,16 @@ Evidence: `design-evidence`, `evidence/2026-11-06-review-29-last-small-fixes/`.
 | #1273 Project cell and move | PASS with points | Underlined link or dash, "Move to Project..." dialog 416 px with a white dropdown. Corrections: one action is an icon button (D-36), toast wording for No Project, the dash speaks "0" instead of "No project": #1275. |
 
 New fix issues: #1275 (Move to Project action, toast, spoken name), #1276 (Matters list filters stacked at every width), #1277 (Create Task scrolls its header out of view at 1366), #1278 (Asset Reports dashed placeholder). Rule D-44w.
+
+## review-30 last four fixes (2026-11-06, tip bf2dd16, 1366 and 1920)
+
+Evidence: `design-evidence`, `evidence/2026-11-06-review-30-last-four-fixes/`. I moved TSK-59 into the project and back to "No Project" on the real stack; the demo data is unchanged.
+
+| Issue | Verdict | Notes |
+|---|---|---|
+| #1275 | PASS | Icon-only "Move to Project" (32 px, tooltip), 416 px dialog, toasts "Task moved" with "TSK-59 is in Demo Custodian wave 1." and "TSK-59 is no longer in a project."; the dash speaks "No project". |
+| #1276 | PASS | Matters list Status 161 at 1366 and 1920, Matter Name 577 at 1920 (accepted instead of "about 605"); Client > Matters 161, filters stacked. |
+| #1277 | PASS | At 1366 the crumb (65) and title (93) are in place after choosing a type, Matter is focused, Tab goes to Title. |
+| #1278 | PASS | Idle "Choose what to count, then run the report."; Disposed plus Harvey Vault: "No assets match this report." with "Clear Filters", which resets both. |
+
+Rulings: the `window.scrollTo({ top: 0 })` at the step change stays (a new step starts at the top; do it only when the step changes). Dashed boxes: one real one seen (Holidays no match), two dead CSS rules, the rest used by states that cannot be reached with the demo data: #1279.
