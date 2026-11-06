@@ -11,7 +11,7 @@ import {
   untracked,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { TaskTypeBadge } from '../../shared/task-type/task-type-badge';
+import { TaskTypeCell } from '../../shared/ui/task-type-cell';
 import { MyMattersFocus } from './focus';
 import { SectionTypes, TypeOption } from './section-types';
 
@@ -31,7 +31,7 @@ export function focusLabel(ids: readonly number[], options: readonly TypeOption[
  */
 @Component({
   selector: 'mf-mm-focus',
-  imports: [NgTemplateOutlet, TaskTypeBadge],
+  imports: [NgTemplateOutlet, TaskTypeCell],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -117,13 +117,12 @@ export function focusLabel(ids: readonly number[], options: readonly TypeOption[
                     (change)="toggle(o.id)"
                     [attr.data-focus-option]="o.id"
                   />
-                  <mf-task-type-badge
-                    [decorative]="true"
+                  <mf-task-type-cell
                     [iconKey]="o.iconKey"
                     [colourKey]="o.colourKey"
+                    [typeId]="o.id"
                     [name]="o.name"
                   />
-                  <span>{{ o.name }}</span>
                 </label>
               </li>
             }

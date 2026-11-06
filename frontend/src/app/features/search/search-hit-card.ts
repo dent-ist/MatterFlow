@@ -4,7 +4,7 @@ import { SearchHit } from '../../api/generated/api-client';
 import { SuggestionLines, suggestionLines } from '../../shared/search/search-meta';
 import { ActiveBadge, SensitiveBadge } from '../../shared/ui/badge';
 import { StatusChip } from '../../shared/ui/status-chip';
-import { TaskTypeBadge } from '../../shared/task-type/task-type-badge';
+import { TaskTypeCell } from '../../shared/ui/task-type-cell';
 import { hitDueText, hitIsOverdue, hitSizeText } from './search-facts';
 import { RecordCard } from '../../shared/ui/record-card-list';
 import { StatusBadge } from '../../shared/ui/status-badge';
@@ -42,7 +42,7 @@ export function hitCardLines(hit: SearchHit): SuggestionLines {
  */
 @Component({
   selector: 'mf-search-hit-card',
-  imports: [RecordCard, ActiveBadge, StatusChip, SensitiveBadge, StatusBadge, TaskTypeBadge],
+  imports: [RecordCard, ActiveBadge, StatusChip, SensitiveBadge, StatusBadge, TaskTypeCell],
   changeDetection: ChangeDetectionStrategy.OnPush,
   // The record card is the grid item of the list's `<li>`; this wrapper adds no box.
   host: { style: 'display: contents' },
@@ -86,8 +86,9 @@ export function hitCardLines(hit: SearchHit): SuggestionLines {
         <mf-sensitive-badge mfCardBadges />
       }
       @if (hit().taskTypeName; as typeName) {
-        <mf-task-type-badge
+        <mf-task-type-cell
           mfCardBadges
+          size="sm"
           [name]="typeName"
           [iconKey]="hit().taskTypeIconKey"
           [colourKey]="hit().taskTypeColourKey"

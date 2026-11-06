@@ -49,22 +49,19 @@ test.describe('Task type colour, target and the badge', () => {
     await page.goto(`/admin/task-types?name=${encodeURIComponent(world.taskType.name)}`);
     const row = page.locator(`[data-row="${world.taskType.name}"]`);
     await expect(row.locator('[data-target]')).toHaveText('4');
-    await expect(row.locator('mf-task-type-badge')).toHaveAttribute('data-colour', 'teal');
+    await expect(row.locator('mf-task-type-cell mf-task-type-chip')).toHaveAttribute(
+      'data-colour',
+      'teal',
+    );
 
     await page.goto(`/tasks?matter=${world.matter.matterId}`);
     const link = page.locator(`[data-task-id="${task.taskId}"]`).first();
     await expect(link).toBeVisible();
-    const badge = link.locator('xpath=ancestor::tr[1]').locator('mf-task-type-badge');
-    await expect(badge).toHaveAttribute('data-colour', 'teal');
-    await expect(badge.locator('[role="img"]')).toHaveAttribute(
-      'aria-label',
-      `Task type: ${world.taskType.name}`,
-    );
-    await expect(badge.locator('svg')).toBeVisible();
-    // The link is described by the badge, so a keyboard or screen reader user hears the type.
-    const describedBy = await link.getAttribute('aria-describedby');
-    expect(describedBy).toBeTruthy();
-    await expect(page.locator(`#${describedBy}`)).toHaveText(`Task type: ${world.taskType.name}`);
+    // The Type column is the shared Type cell: the solid chip in the type's colour and the type's name beside it.
+    const cell = link.locator('xpath=ancestor::tr[1]').locator('mf-task-type-cell');
+    await expect(cell.locator('mf-task-type-chip')).toHaveAttribute('data-colour', 'teal');
+    await expect(cell.locator('[data-type-name]')).toHaveText(world.taskType.name);
+    await expect(cell.locator('svg')).toBeVisible();
 
     // Clearing both goes back to the neutral default.
     await page.goto(`/admin/task-types/${world.taskType.id}`);
@@ -89,7 +86,7 @@ test.describe('Task type colour, target and the badge', () => {
       await expect(page.locator('[data-colour-select]')).toBeVisible();
       await clean(page, `Task Type page at ${size.name}`);
       await page.goto(`/tasks?matter=${world.matter.matterId}`);
-      await expect(page.locator('mf-task-type-badge').first()).toBeVisible();
+      await expect(page.locator('mf-task-type-cell').first()).toBeVisible();
       await clean(page, `Task Queue at ${size.name}`);
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth - document.documentElement.clientWidth,

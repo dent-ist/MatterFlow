@@ -1,4 +1,5 @@
 import { Badge } from '../../shared/ui/badge';
+import { CountChip } from '../../shared/ui/count-chip';
 import { TagChip } from '../../shared/ui/tag-chip';
 import {
   ChangeDetectionStrategy,
@@ -116,6 +117,7 @@ interface RefChip {
   selector: 'mf-notes-tab',
   imports: [
     Badge,
+    CountChip,
     IntPipe,
     AiButton,
     AiComingSoon,
@@ -1180,7 +1182,9 @@ interface RefChip {
                       (click)="toggleSide('history')"
                     >
                       <i class="pi pi-history" aria-hidden="true"></i>
-                      <span class="nt__badge">{{ history().length }}</span>
+                      <mf-count-chip overlay aria-hidden="true">{{
+                        history().length
+                      }}</mf-count-chip>
                     </button>
                     @if (refChips().length) {
                       <button
@@ -1194,7 +1198,9 @@ interface RefChip {
                         (click)="toggleSide('refs')"
                       >
                         <i class="pi pi-link" aria-hidden="true"></i>
-                        <span class="nt__badge">{{ refChips().length }}</span>
+                        <mf-count-chip overlay aria-hidden="true">{{
+                          refChips().length
+                        }}</mf-count-chip>
                       </button>
                     }
                   </div>

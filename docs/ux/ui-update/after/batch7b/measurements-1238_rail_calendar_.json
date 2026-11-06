@@ -1,0 +1,60 @@
+{
+ "cal-1366x768": [
+  {
+   "h": 26,
+   "bg": "rgb(223, 227, 250)",
+   "txt": "Thanksgiving"
+  },
+  {
+   "h": 26,
+   "bg": "rgb(223, 227, 250)",
+   "txt": "Day after Thanksgiving"
+  },
+  {
+   "h": 26,
+   "bg": "rgb(227, 231, 238)",
+   "txt": "Chip colour = category"
+  },
+  {
+   "h": 26,
+   "bg": "rgb(223, 227, 250)",
+   "txt": "US Holiday: Thanksgiving"
+  }
+ ],
+ "rail-1366x768": [
+  {
+   "h": 18,
+   "text": "1",
+   "bg": "rgb(180, 35, 24)"
+  }
+ ],
+ "cal-1920x1080": [
+  {
+   "h": 26,
+   "bg": "rgb(223, 227, 250)",
+   "txt": "Thanksgiving"
+  },
+  {
+   "h": 26,
+   "bg": "rgb(223, 227, 250)",
+   "txt": "Day after Thanksgiving"
+  },
+  {
+   "h": 26,
+   "bg": "rgb(227, 231, 238)",
+   "txt": "Chip colour = category"
+  },
+  {
+   "h": 26,
+   "bg": "rgb(223, 227, 250)",
+   "txt": "US Holiday: Thanksgiving"
+  }
+ ],
+ "rail-1920x1080": [
+  {
+   "h": 18,
+   "text": "1",
+   "bg": "rgb(180, 35, 24)"
+  }
+ ]
+}

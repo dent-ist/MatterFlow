@@ -372,7 +372,7 @@ describe('TaskTypesPage', () => {
     });
   });
 
-  it('shows the target turnaround in its own column (a dash and "No target" for none) and a coloured badge before the name (#853)', async () => {
+  it('shows the target turnaround in its own column (a dash and "No target" for none) and the shared Type cell (solid chip and name) in the Name column (#853, #1238)', async () => {
     await new Promise<void>((resolve) =>
       api
         .create({ name: 'Production', description: undefined, colourKey: 'teal', targetDays: 3 })
@@ -382,9 +382,11 @@ describe('TaskTypesPage', () => {
     await settle(fixture);
     expect(el().querySelector('[data-target-col]')!.textContent).toContain('Target (days)');
     expect(row('Production').querySelector('[data-target]')!.textContent!.trim()).toBe('3');
-    expect(row('Production').querySelector('mf-task-type-badge')!.getAttribute('data-colour')).toBe(
-      'teal',
-    );
+    expect(
+      row('Production')
+        .querySelector('mf-task-type-cell mf-task-type-chip')!
+        .getAttribute('data-colour'),
+    ).toBe('teal');
     expect(row('Data Processing').querySelector('[data-target]')!.textContent).toContain(
       'No target',
     );
@@ -470,7 +472,9 @@ describe('TaskTypesPage', () => {
       "No eligible published workflow: users can't create tasks of this type.",
     );
     expect(badge.querySelector('.badge')!.getAttribute('aria-describedby')).toBe(why.id);
-    expect(row('Collection').querySelector('.chip')).toBeNull();
+    expect(
+      row('Collection').querySelector('.tt-namecell [data-warning], .tt-namecell mf-badge'),
+    ).toBeNull();
     expect(row('Collection').querySelector('[data-form-status]')!.textContent).toContain('No Form');
     // No workflow at all: "No workflow", muted (not a warning), and a plain 0.
     const none = row('Collection').querySelector('[data-default-workflow] .tt-clip')!;

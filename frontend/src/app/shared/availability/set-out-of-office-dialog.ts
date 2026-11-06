@@ -21,6 +21,7 @@ import { ApiError } from '../../core/http/api-error';
 import { NotificationService } from '../../core/notify/notification.service';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { calendarDayInZone } from '../../core/time/time';
+import { FilterChip, FilterChips } from '../ui/filter-chips';
 import { FormDialog } from '../ui/form-dialog';
 import {
   ABSENCE_TYPES,
@@ -29,13 +30,15 @@ import {
   isAbsenceType,
 } from './absences/absence-contract';
 
+const PICK_KEY = 'pick';
+
 /**
  * "Set out of office..." from the header menu: an until date and a note (both can be left empty, no mark), out of office from now. Everything else
  * (work hours, time zone) stays as it is; the profile screen has the full form.
  */
 @Component({
   selector: 'mf-set-out-of-office-dialog',
-  imports: [FormDialog, RouterLink],
+  imports: [FormDialog, RouterLink, FilterChips],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-form-dialog
@@ -69,22 +72,13 @@ import {
         </div>
         <div class="ooo__field">
           <label class="ooo__label" for="ooo-until" id="ooo-until-label">Until</label>
-          <div class="ooo__chips" role="group" aria-labelledby="ooo-until-label" data-ooo-presets>
-            @for (p of presets; track p.id) {
-              <button
-                type="button"
-                class="ooo__chip"
-                [attr.aria-pressed]="isPressed(p.id)"
-                [attr.data-preset]="p.id"
-                (click)="choosePreset(p.id)"
-              >
-                {{ p.label }}
-              </button>
-            }
-            <button type="button" class="ooo__chip" data-preset="pick" (click)="pickDate()">
-              Pick a Date
-            </button>
-          </div>
+          <mf-filter-chips
+            label="Until"
+            [chips]="presetChips"
+            [value]="pressedPreset()"
+            data-ooo-presets
+            (valueChange)="onPresetChip($event)"
+          />
           <input
             id="ooo-until"
             type="date"
@@ -130,30 +124,6 @@ import {
       gap: var(--mf-s1);
     }
     .ooo__label {
-      font-weight: 600;
-    }
-    .ooo__chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--mf-s2);
-    }
-    .ooo__chip {
-      min-height: 32px;
-      padding: 0 var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: 999px;
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-      font-size: var(--mf-fs-sm);
-      cursor: pointer;
-    }
-    .ooo__chip:hover {
-      background: var(--mf-surface-alt);
-    }
-    .ooo__chip[aria-pressed='true'] {
-      border-color: var(--mf-primary);
-      background: var(--mf-info-bg);
       font-weight: 600;
     }
     .ooo__more {
@@ -212,7 +182,6 @@ export class SetOutOfOfficeDialog {
   protected setType(value: string): void {
     if (isAbsenceType(value)) this.type.set(value);
   }
-  protected readonly presets = UNTIL_PRESETS;
   /** The quick choice that filled Until; cleared as soon as the date is typed or changed. */
   private readonly preset = signal<UntilPresetId | null>(null);
   protected readonly noteMax = NOTE_MAX;
@@ -235,6 +204,21 @@ export class SetOutOfOfficeDialog {
       today: this.today(),
     }),
   );
+
+  /** The quick choices and "Pick a Date" as one single-choice row (`mf-filter-chips`, #1238). */
+  protected readonly presetChips: FilterChip[] = [
+    ...UNTIL_PRESETS.map((p) => ({ key: p.id, label: p.label })),
+    { key: PICK_KEY, label: 'Pick a Date' },
+  ];
+  /** The chosen quick choice, or none (the Pick a Date chip is an action and is never chosen). */
+  protected readonly pressedPreset = computed(
+    () => UNTIL_PRESETS.find((p) => this.isPressed(p.id))?.id ?? null,
+  );
+
+  protected onPresetChip(key: string): void {
+    if (key === PICK_KEY) this.pickDate();
+    else this.choosePreset(key as UntilPresetId);
+  }
 
   protected isPressed(id: UntilPresetId): boolean {
     return this.preset() === id && this.until() === presetUntil(id, this.today());

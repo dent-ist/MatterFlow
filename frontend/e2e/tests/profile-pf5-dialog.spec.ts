@@ -67,9 +67,9 @@ test.describe('pf5-dialog-presets: quick choices fill Until (#538)', () => {
         { id: 'week', plus: 7 },
       ];
       for (const c of cases) {
-        await dialog.locator(`[data-preset="${c.id}"]`).click();
+        await dialog.locator(`[data-key="${c.id}"]`).click();
         await expect(dialog.locator('#ooo-until')).toHaveValue(inDays(c.plus).iso);
-        await expect(dialog.locator(`[data-preset="${c.id}"]`)).toHaveAttribute(
+        await expect(dialog.locator(`[data-key="${c.id}"]`)).toHaveAttribute(
           'aria-pressed',
           'true',
         );
@@ -89,7 +89,7 @@ test.describe('pf5-dialog-presets: quick choices fill Until (#538)', () => {
     const me = await asUser(p.username);
     await me.goto('/my-work');
     const dialog = await openDialog(me);
-    await dialog.locator('[data-preset="tomorrow"]').click();
+    await dialog.locator('[data-key="tomorrow"]').click();
     await dialog.locator('#ooo-until').fill(inDays(3).iso);
     await dialog.locator('#ooo-until').blur();
     await expect(dialog.locator('[aria-pressed="true"]')).toHaveCount(0);
@@ -97,9 +97,9 @@ test.describe('pf5-dialog-presets: quick choices fill Until (#538)', () => {
     await expect(dialog.locator('#ooo-until')).toBeFocused();
 
     // Keyboard only: Space on a chip, then Tab to the confirm button and Enter.
-    await dialog.locator('[data-preset="week"]').focus();
+    await dialog.locator('[data-key="week"]').focus();
     await me.keyboard.press('Space');
-    await expect(dialog.locator('[data-preset="week"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(dialog.locator('[data-key="week"]')).toHaveAttribute('aria-pressed', 'true');
     await dialog.getByRole('button', { name: 'Set out of office' }).focus();
     await me.keyboard.press('Enter');
     await expect(me.locator('[data-ooo-label]')).toContainText(
@@ -133,7 +133,7 @@ test.describe('pf5-dialog-focus: heading focus and the link to My profile (#539)
       await me.keyboard.press('Tab');
       const label = await me.evaluate(() => {
         const a = document.activeElement as HTMLElement | null;
-        return a?.getAttribute('data-preset') || a?.id || a?.textContent?.trim() || '';
+        return a?.getAttribute('data-key') || a?.id || a?.textContent?.trim() || '';
       });
       reached.add(label);
     }
@@ -180,7 +180,7 @@ test.describe('pf5-dialog-focus: heading focus and the link to My profile (#539)
       };
     });
     expect(fits).toEqual({ scrolls: false, inside: true });
-    await expect(dialog.locator('[data-preset]')).toHaveCount(5);
+    await expect(dialog.locator('[data-ooo-presets] [data-key]')).toHaveCount(5);
   });
 
   test('axe is clean and nothing scrolls sideways with the dialog open, at the four sizes', async ({
@@ -192,7 +192,7 @@ test.describe('pf5-dialog-focus: heading focus and the link to My profile (#539)
     const me = await asUser(p.username);
     await me.goto('/my-work');
     const dialog = await openDialog(me);
-    await dialog.locator('[data-preset="monday"]').click();
+    await dialog.locator('[data-key="monday"]').click();
     for (const size of SIZES) {
       await me.setViewportSize(size);
       await expect(dialog).toBeVisible();

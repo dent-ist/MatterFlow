@@ -60,7 +60,8 @@ import { DIALOG_COPY, impactLine, listNames } from '../shared/dialog-copy';
 import { FilterChips } from '../../../shared/ui/filter-chips';
 import { WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { parseStatus } from '../../../shared/ui/list-helpers';
-import { TaskTypeBadge } from '../../../shared/task-type/task-type-badge';
+import { TaskTypeCell } from '../../../shared/ui/task-type-cell';
+import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
 import { Button } from 'primeng/button';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
@@ -136,7 +137,8 @@ const FORM_OPTIONS = [
     GridBody,
     FiltersBar,
     ColumnFilterRow,
-    TaskTypeBadge,
+    TaskTypeCell,
+    TaskTypeChip,
     AssocFilter,
     RecordCardList,
     RecordCardDef,

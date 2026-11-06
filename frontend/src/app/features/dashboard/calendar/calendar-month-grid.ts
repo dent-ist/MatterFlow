@@ -20,6 +20,7 @@ import {
   longDay,
   outText,
 } from './calendar-model';
+import { TagChip } from '../../../shared/ui/tag-chip';
 
 interface Cell {
   date: string;
@@ -44,6 +45,7 @@ export const cellClass = (level: CalDay['level']): string =>
  */
 @Component({
   selector: 'mf-cal-month',
+  imports: [TagChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './calendar-coverage.scss',
   host: { '(keydown)': 'onKey($event)' },
@@ -106,9 +108,9 @@ export const cellClass = (level: CalDay['level']): string =>
                   }
                   @if (c.day.holidays.length > 0) {
                     <span class="hol" aria-hidden="true">
-                      <span class="hchip" [class]="'hchip hc-' + c.day.holidays[0].colourKey"
-                        ><i class="pi pi-flag"></i><span>{{ c.day.holidays[0].name }}</span></span
-                      >
+                      <mf-tag-chip [colour]="c.day.holidays[0].colourKey" icon="pi-flag">{{
+                        c.day.holidays[0].name
+                      }}</mf-tag-chip>
                       @if (c.day.holidays.length > 1) {
                         <span class="more">+{{ c.day.holidays.length - 1 }} more</span>
                       }
@@ -305,12 +307,6 @@ export const cellClass = (level: CalDay['level']): string =>
       }
       .out,
       .more {
-        display: none;
-      }
-      .hchip {
-        padding: 0 3px;
-      }
-      .hchip > span {
         display: none;
       }
     }

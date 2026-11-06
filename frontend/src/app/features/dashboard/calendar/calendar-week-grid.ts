@@ -21,6 +21,7 @@ import {
   podOn,
   weekPods,
 } from './calendar-model';
+import { TagChip } from '../../../shared/ui/tag-chip';
 
 interface Row {
   key: string;
@@ -36,6 +37,7 @@ interface Row {
  */
 @Component({
   selector: 'mf-cal-week',
+  imports: [TagChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './calendar-coverage.scss',
   host: { '(keydown)': 'onKey($event)' },
@@ -71,11 +73,11 @@ interface Row {
                   <span class="dd">{{ md(d) }}</span>
                 </button>
                 @for (h of holidays(d).slice(0, 1); track h.name) {
-                  <span
-                    class="hchip"
-                    [class]="'hchip hc-' + h.colourKey"
+                  <mf-tag-chip
+                    [colour]="h.colourKey"
+                    icon="pi-flag"
                     [attr.title]="h.category + ': ' + h.name"
-                    ><i class="pi pi-flag" aria-hidden="true"></i><span>{{ h.name }}</span></span
+                    >{{ h.name }}</mf-tag-chip
                   >
                 }
               </th>
@@ -236,7 +238,7 @@ interface Row {
       background: var(--mf-primary);
       color: var(--mf-primary-contrast);
     }
-    .dh .hchip {
+    .dh mf-tag-chip {
       margin: 0 var(--mf-s2);
       max-width: calc(100% - 16px);
     }

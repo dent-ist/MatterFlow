@@ -105,7 +105,9 @@ describe('mf-search-filters (#474, #475, #476)', () => {
   it('shows no panel while closed, but the chips and Clear filters stay', async () => {
     const { el } = await create('matter', { ...NO_FILTERS, active: 'false' }, false);
     expect(el.querySelector('[data-filters-panel]')).toBeNull();
-    expect(el.querySelector('[data-filter-chip]')!.textContent).toContain('Status: Inactive');
+    expect(el.querySelector('[data-filter-chips] [data-key]')!.textContent).toContain(
+      'Status: Inactive',
+    );
     expect(el.querySelector('[data-clear-filters]')).not.toBeNull();
   });
 
@@ -152,7 +154,9 @@ describe('mf-search-filters (#474, #475, #476)', () => {
       client: 3,
       status: ['NEW'],
     });
-    const chips = Array.from(el.querySelectorAll<HTMLButtonElement>('[data-filter-chip]'));
+    const chips = Array.from(
+      el.querySelectorAll<HTMLButtonElement>('[data-filter-chips] [data-key]'),
+    );
     expect(chips.map((c) => c.getAttribute('aria-label'))).toEqual([
       'Remove filter Client: 00343 Acme Corp',
       'Remove filter Task Status: New',
@@ -168,6 +172,8 @@ describe('mf-search-filters (#474, #475, #476)', () => {
     const select = ddSelect(el, 'Asset Type');
     expect(select.options.map((o) => o.textContent)).toEqual(['Any Type', 'Production']);
     expect(select.value).toBe('7');
-    expect(el.querySelector('[data-filter-chip]')!.textContent).toContain('Asset Type: Production');
+    expect(el.querySelector('[data-filter-chips] [data-key]')!.textContent).toContain(
+      'Asset Type: Production',
+    );
   });
 });

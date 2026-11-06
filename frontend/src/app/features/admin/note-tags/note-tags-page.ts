@@ -3,10 +3,7 @@ import { firstValueFrom } from 'rxjs';
 import { NoteTagResponse, NoteTagsClient } from '../../../api/generated/api-client';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
-import {
-  TASK_TYPE_COLOURS,
-  taskTypeChipColours,
-} from '../../../shared/task-type/task-type-colours';
+import { TASK_TYPE_COLOURS } from '../../../shared/task-type/task-type-colours';
 import { ActionMenu } from '../../../shared/ui/action-menu';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { LocalPaging } from '../../../shared/ui/local-paging';
@@ -18,6 +15,7 @@ import { FormDialog } from '../../../shared/ui/form-dialog';
 import { TextField } from '../../../shared/ui/text-field';
 import { IntPipe } from '../../../shared/ui/number-format';
 import { Button } from 'primeng/button';
+import { TagChip } from '../../../shared/ui/tag-chip';
 import { StateBlock } from '../../../shared/ui/state-block';
 
 /**
@@ -38,19 +36,11 @@ import { StateBlock } from '../../../shared/ui/state-block';
     GridFrame,
     FormDialog,
     TextField,
+    TagChip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   styleUrl: '../../../shared/ui/page.scss',
-  styles: `
-    .nt-chip {
-      display: inline-block;
-      padding: 0 var(--mf-s2);
-      border-radius: var(--mf-radius-pill);
-      font-size: var(--mf-fs-sm);
-      font-weight: 600;
-    }
-  `,
   template: `
     @if (error()) {
       <p class="pg-reason" role="alert">
@@ -80,12 +70,7 @@ import { StateBlock } from '../../../shared/ui/state-block';
             @for (t of paging.slice(tags()); track t.noteTagId) {
               <tr data-note-tag-row>
                 <td>
-                  <span
-                    class="nt-chip"
-                    [style.background]="colours(t).bg"
-                    [style.color]="colours(t).fg"
-                    >{{ t.name }}</span
-                  >
+                  <mf-tag-chip [colour]="t.colourKey || 'slate'">{{ t.name }}</mf-tag-chip>
                 </td>
                 <td>{{ colourLabel(t.colourKey) }}</td>
                 <td class="pg-num">{{ t.visibleNoteCount | mfInt }}</td>
@@ -197,10 +182,6 @@ export class NoteTagsPage {
       ],
       { can: () => true },
     );
-  }
-
-  protected colours(t: NoteTagResponse): { bg: string; fg: string } {
-    return taskTypeChipColours(t.colourKey);
   }
 
   protected colourLabel(key?: string | null): string {

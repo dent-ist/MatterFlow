@@ -10,6 +10,8 @@ export interface FilterChip {
   icon?: string;
   /** Tooltip: what the number counts. */
   hint?: string;
+  /** Replaces the visible label as the accessible name ("Remove filter Active"): a chip whose press takes a filter away (Search, #1238). */
+  ariaLabel?: string;
   /** Tinted (the risk colours) while the count is above zero and the chip is not chosen: somebody is waiting (Users: Pending access). */
   tinted?: boolean;
   /** Red text while the count is above zero (an alert count such as Overdue). */
@@ -59,6 +61,7 @@ export interface FilterChip {
             [class.alert]="c.alert && (c.count ?? 0) > 0"
             [attr.aria-pressed]="c.key === value()"
             [attr.data-key]="c.key"
+            [attr.aria-label]="c.ariaLabel ?? null"
             [attr.data-strip-item]="strip() ? c.key : null"
             [attr.title]="c.hint ?? null"
             (click)="pick(c.key)"

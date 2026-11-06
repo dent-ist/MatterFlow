@@ -199,16 +199,6 @@ th:not([aria-sort]) .wt-sort .pi {
   line-clamp: 1;
 }
 
-/* The Task Type badge (icon in a chip tinted with the type's colour) sits before the title; it never replaces the name. */
-.wt-typeicon {
-  flex: none;
-}
-
-/* A Matter's or Project's grid has the Type column (MD-24): the small badge before the title is not drawn (it stays the description of the title link). */
-.wt-typeicon--off {
-  display: none;
-}
-
 /* The workflow progress bar of a Matter's or Project's grid (MD-24): a thin bar in a 24 px tall focus target, so the tooltip is reachable by mouse and by Tab. */
 .wt-stepbar {
   display: flex;

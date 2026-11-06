@@ -33,7 +33,7 @@
   --cs: var(--mf-sem-neutral-solid);
 }
 
-/* Holiday chips: the category colour is an admin-chosen key; the tag tokens carry the tint, the text and the dot. */
+/* Holiday categories: the category colour is an admin-chosen key; the tag tokens carry the tint, the text and the dot. The chip itself is `mf-tag-chip [colour]` (#1238); these classes only set `--hb` and `--hf` for the Calendar dialog and the admin list. */
 .hc-slate,
 .hc-neutral {
   --hb: var(--mf-tag-slate-bg);
@@ -74,29 +74,4 @@
 .hc-red {
   --hb: var(--mf-tag-red-bg, var(--mf-sem-overdue-bg));
   --hf: var(--mf-tag-red-fg, var(--mf-sem-overdue-fg));
-}
-.hchip {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  max-width: 100%;
-  min-width: 0;
-  height: 18px;
-  padding: 0 6px;
-  border-radius: var(--mf-radius-pill);
-  background: var(--hb, var(--mf-tag-slate-bg));
-  color: var(--hf, var(--mf-tag-slate-fg));
-  font-size: var(--mf-fs-xs);
-  font-weight: 600;
-  line-height: 1;
-  white-space: nowrap;
-}
-.hchip > span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.hchip .pi {
-  flex: none;
-  font-size: var(--mf-icon-xs);
 }

@@ -54,11 +54,13 @@
         [list]="listId"
         [rowKey]="t.id"
       >
-        <mf-task-type-badge
+        <mf-task-type-chip
           mfCardIcon
+          size="sm"
           [decorative]="true"
           [iconKey]="t.iconKey"
           [colourKey]="t.colourKey"
+          [typeId]="t.id"
           [name]="t.name"
         />
         <mf-active-badge mfCardBadges [active]="t.isActive" />
@@ -206,23 +208,21 @@
           @for (t of rows(); track t.id) {
             <tr [attr.data-row]="t.name" [class.inactive]="!t.isActive">
               <td class="tt-namecell">
-                <span class="tt-name">
-                  <mf-task-type-badge
-                    [decorative]="true"
+                <a
+                  class="tt-link"
+                  [routerLink]="['/admin/task-types', t.id]"
+                  [mfRowLink]="listId"
+                  [rowKey]="t.id"
+                  [state]="leave.state()"
+                  [attr.title]="t.name"
+                >
+                  <mf-task-type-cell
+                    [name]="t.name"
                     [iconKey]="t.iconKey"
                     [colourKey]="t.colourKey"
-                    [name]="t.name"
+                    [typeId]="t.id"
                   />
-                  <a
-                    class="tt-link"
-                    [routerLink]="['/admin/task-types', t.id]"
-                    [mfRowLink]="listId"
-                    [rowKey]="t.id"
-                    [state]="leave.state()"
-                    [attr.title]="t.name"
-                    >{{ t.name }}</a
-                  >
-                </span>
+                </a>
               </td>
               <td data-default-workflow>
                 @if (defaultWorkflowCell(t); as d) {

@@ -230,7 +230,7 @@ describe('SearchHitCard (one card for all five hit types, #472)', () => {
     expect(labels).toEqual([null, ', Other matter', null]);
   });
 
-  it('shows the task type badge and the due fact of a task, and the disposition and size of an asset (PM v2, #885)', () => {
+  it('shows the task type cell (chip and name) and the due fact of a task, and the disposition and size of an asset (PM v2, #885)', () => {
     const late = cards(
       create([
         {
@@ -242,8 +242,8 @@ describe('SearchHitCard (one card for all five hit types, #472)', () => {
         },
       ]),
     )[0];
-    expect(late.querySelector('[data-type-badge]')!.getAttribute('aria-label')).toBe(
-      'Task type: Production (Outgoing)',
+    expect(late.querySelector('mf-task-type-cell [data-type-name]')!.textContent).toBe(
+      'Production (Outgoing)',
     );
     expect(late.querySelector('[data-card-extra]')!.textContent).toContain(', Overdue 01/02/2000');
     const stored = cards(

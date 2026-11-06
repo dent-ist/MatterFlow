@@ -23,6 +23,7 @@ import { levelClass } from './calendar-month-grid';
 import { DAY_COUNT_TIPS, LEVELS, isWeekend, longDay, offHoursCount } from './calendar-model';
 import { Tip } from '../../../shared/ui/tip';
 import { IntPipe } from '../../../shared/ui/number-format';
+import { TagChip } from '../../../shared/ui/tag-chip';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -55,7 +56,7 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
  */
 @Component({
   selector: 'mf-cal-panel',
-  imports: [IntPipe, NumericDatePipe, NgTemplateOutlet, Tip],
+  imports: [IntPipe, NumericDatePipe, NgTemplateOutlet, Tip, TagChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './calendar-coverage.scss',
   host: { '(keydown.escape)': 'closed.emit()' },
@@ -110,9 +111,8 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
                 <ul class="hols" aria-label="Holidays" data-panel-holidays>
                   @for (h of p.holidays; track h.name + h.category) {
                     <li>
-                      <span class="hchip" [class]="'hchip hc-' + h.colourKey"
-                        ><i class="pi pi-flag" aria-hidden="true"></i
-                        ><span>{{ h.category }}: {{ h.name }}</span></span
+                      <mf-tag-chip [colour]="h.colourKey" icon="pi-flag"
+                        >{{ h.category }}: {{ h.name }}</mf-tag-chip
                       >
                     </li>
                   }
@@ -389,10 +389,6 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
       margin: 0;
       padding: 0;
       list-style: none;
-    }
-    .hols .hchip {
-      height: 22px;
-      font-size: var(--mf-fs-sm);
     }
     /* The three count tiles on one compact row (CAL-11, #1234): one height, the label at the top (it may wrap to two lines) and the number pinned to the bottom, so the numbers share a baseline. */
     .counts {

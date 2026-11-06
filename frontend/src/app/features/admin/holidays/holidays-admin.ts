@@ -20,6 +20,7 @@ import { HolidayDialog } from './holiday-dialog';
 import { ruleText } from './holiday-rules';
 import { ImportDialog } from './import-dialog';
 import { IntPipe } from '../../../shared/ui/number-format';
+import { TagChip } from '../../../shared/ui/tag-chip';
 
 type LoadState = 'loading' | 'ready' | 'error';
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -32,6 +33,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 @Component({
   selector: 'mf-holidays-admin',
   imports: [
+    TagChip,
     Badge,
     IntPipe,
     CalendarDialog,
@@ -179,9 +181,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
               @if (selected(); as c) {
                 <header class="ha__mh">
                   <div class="ha__mt">
-                    <span class="hchip hchip--big" [class]="'hchip hchip--big hc-' + c.colourKey"
-                      ><i class="pi pi-flag" aria-hidden="true"></i><span>{{ c.name }}</span></span
-                    >
+                    <mf-tag-chip [colour]="c.colourKey" icon="pi-flag">{{ c.name }}</mf-tag-chip>
                     @if (c.appliesToEveryone) {
                       <span class="ha__tag">Applies to everyone</span>
                     }
@@ -564,10 +564,6 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     .ha__bar {
       display: flex;
       gap: var(--mf-s2);
-    }
-    .hchip--big {
-      height: 24px;
-      font-size: var(--mf-fs-sm);
     }
     .ha__tag {
       margin-left: var(--mf-s2);

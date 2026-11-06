@@ -11,6 +11,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { CountChip } from '../ui/count-chip';
 import type { NotificationPanel } from '../../features/notifications/notification-panel';
 import type { NotificationStore } from '../../features/notifications/notification-store';
 
@@ -37,6 +38,7 @@ export function bellName(count: number): string {
   selector: 'mf-notification-bell',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'nb' },
+  imports: [CountChip],
   template: `
     <button
       #trigger
@@ -51,7 +53,9 @@ export function bellName(count: number): string {
     >
       <i class="pi pi-bell" aria-hidden="true"></i>
       @if (count() > 0) {
-        <span class="nb__badge" data-notification-badge aria-hidden="true">{{ badge() }}</span>
+        <mf-count-chip overlay alert data-notification-badge aria-hidden="true">{{
+          badge()
+        }}</mf-count-chip>
       }
     </button>
     <div
@@ -79,21 +83,6 @@ export function bellName(count: number): string {
     .nb__button:hover,
     .nb__button[aria-expanded='true'] {
       background: var(--mf-surface-alt);
-    }
-    .nb__badge {
-      position: absolute;
-      top: 2px;
-      right: 0;
-      min-width: 1.25rem;
-      box-sizing: border-box;
-      padding: 0 5px;
-      border-radius: 999px;
-      background: var(--mf-danger);
-      color: #fff;
-      font-size: var(--mf-fs-xs);
-      font-weight: 700;
-      line-height: 1.25rem;
-      text-align: center;
     }
   `,
 })

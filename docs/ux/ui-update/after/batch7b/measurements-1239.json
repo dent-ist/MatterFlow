@@ -1,0 +1,18 @@
+{
+ "1239-1366x768": {
+  "dueHeaderWidth": 152,
+  "clippedDueCells": 0,
+  "dueCells": 0,
+  "sampleText": [],
+  "sidewaysScroll": false,
+  "frameWidth": 718
+ },
+ "1239-1920x1080": {
+  "dueHeaderWidth": 152,
+  "clippedDueCells": 0,
+  "dueCells": 0,
+  "sampleText": [],
+  "sidewaysScroll": false,
+  "frameWidth": 1272
+ }
+}

@@ -147,7 +147,7 @@ describe('SetOutOfOfficeDialog', () => {
   });
 
   describe('quick choices and focus (#538, #539)', () => {
-    const chip = (id: string) => q<HTMLButtonElement>(`[data-preset="${id}"]`);
+    const chip = (id: string) => q<HTMLButtonElement>(`[data-ooo-presets] [data-key="${id}"]`);
 
     it('each chip fills Until, is pressed while it matches, and the sentence names the return day', async () => {
       const { fixture } = await open();
@@ -181,14 +181,13 @@ describe('SetOutOfOfficeDialog', () => {
       chip('pick').click();
       await settle(fixture);
       expect(document.activeElement).toBe(q('#ooo-until'));
-      expect(chip('pick').getAttribute('aria-pressed')).toBeNull();
+      expect(chip('pick').getAttribute('aria-pressed')).toBe('false');
     });
 
     it('saves the chosen date, and the chips are a labelled group of real buttons', async () => {
       const { fixture, api } = await open();
-      const group = q('[data-ooo-presets]');
-      expect(group.getAttribute('role')).toBe('group');
-      expect(group.getAttribute('aria-labelledby')).toBe('ooo-until-label');
+      const group = q('[data-ooo-presets] [role="group"]');
+      expect(group.getAttribute('aria-label')).toBe('Until');
       expect([...group.querySelectorAll('button')].map((b) => b.textContent!.trim())).toEqual([
         'Rest of Today',
         'Until Tomorrow',

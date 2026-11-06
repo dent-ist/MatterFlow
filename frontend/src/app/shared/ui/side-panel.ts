@@ -9,6 +9,7 @@ import {
   output,
   Injector,
 } from '@angular/core';
+import { CountChip } from './count-chip';
 import { Tip } from './tip';
 import { IntPipe } from './number-format';
 
@@ -31,7 +32,7 @@ export interface SideSection {
  */
 @Component({
   selector: 'mf-side-panel',
-  imports: [IntPipe, Tip],
+  imports: [IntPipe, Tip, CountChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.open]': 'open()', '[attr.data-open]': 'open()' },
   template: `
@@ -78,9 +79,9 @@ export interface SideSection {
           >
             <i class="pi" [class]="s.icon" aria-hidden="true"></i>
             @if (s.count) {
-              <span class="badge" [class.alert]="s.alert" aria-hidden="true">{{
+              <mf-count-chip overlay [alert]="!!s.alert" aria-hidden="true">{{
                 s.count | mfInt
-              }}</span>
+              }}</mf-count-chip>
             }
           </button>
         }
@@ -149,26 +150,6 @@ export interface SideSection {
     .tgl:hover,
     .rbtn:hover {
       background: var(--mf-surface-alt);
-    }
-    .badge {
-      position: absolute;
-      top: -7px;
-      right: -7px;
-      min-width: 18px;
-      height: 18px;
-      padding: 0 4px;
-      box-sizing: border-box;
-      border: 2px solid var(--mf-surface);
-      border-radius: var(--mf-radius-pill);
-      background: var(--mf-primary);
-      color: var(--mf-surface);
-      font-size: var(--mf-fs-xs);
-      font-weight: 700;
-      line-height: 14px;
-      text-align: center;
-    }
-    .badge.alert {
-      background: var(--mf-danger);
     }
     @media (max-width: 767.98px) {
       :host(.open) {
