@@ -30,20 +30,23 @@ import { AdminShellFilters } from '../task-types/shell-filters';
 import { ActionMenu, MenuAction } from '../../../shared/ui/action-menu';
 import { ActiveBadge, Badge } from '../../../shared/ui/badge';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
-import { SortHeader } from '../../../shared/ui/data-table';
+import { NgTemplateOutlet } from '@angular/common';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
 import { focusListAfterAction } from '../after-action';
 import { RowLink, RowStop, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { DrillReturn } from '../../../shared/work-queue/drill';
 import { ADMIN_LIST, AdminListLeave } from '../list-return';
-import { ScrollArea } from '../../../shared/ui/fixed-page';
-import { GridBody } from '../../../shared/ui/grid-body';
+import {
+  RecordCell,
+  RecordGrid,
+  RecordGridColumn,
+  RecordGridState,
+} from '../../../shared/ui/record-grid';
 import { Pager } from '../../../shared/ui/pager';
 import { phoneCards } from '../../../shared/ui/record-card-list';
 import { AdminCardList, AdminCardSpec, activeCardBadge } from '../../../shared/ui/admin-card-spec';
 import { RecordSort } from '../../../shared/ui/record-sort';
-import { COLUMN_ROOM } from '../../../shared/ui/viewport';
 import { SortOption } from '../../../shared/work-queue/phone-sort';
 import { stripChips } from '../../../shared/ui/strip-items';
 import { FilterChips } from '../../../shared/ui/filter-chips';
@@ -51,11 +54,8 @@ import { WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { TagChips } from '../../../shared/ui/tag-chips';
 import { Button } from 'primeng/button';
 
-/** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'inputs', 'status', 'actions'] as const;
-
 /** One skeleton bone per column, as wide as its usual content (#370: one definition of the columns for the table and its skeleton). */
-const BONES: Record<(typeof COLUMNS)[number], string> = {
+const BONES: Record<string, string> = {
   title: '12rem',
   description: '14rem',
   tags: '8rem',
@@ -63,17 +63,6 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
   inputs: '4rem',
   status: '4rem',
   actions: '1.5rem',
-};
-
-/** The class that sizes the loaded cell of each column, repeated on its skeleton cell so the columns keep their widths while loading. */
-const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
-  title: 'ad-spring',
-  description: 'ad-desc',
-  tags: 'st-tags ad-tags',
-  usedIn: 'pg-num',
-  inputs: 'ad-nowrap',
-  status: 'ad-nowrap',
-  actions: 'mf-col-menu',
 };
 
 /**
@@ -85,8 +74,10 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
 @Component({
   selector: 'mf-steps-list-page',
   imports: [
+    NgTemplateOutlet,
+    RecordGrid,
+    RecordCell,
     Button,
-    ScrollArea,
     ActiveBadge,
     Badge,
     ActionMenu,
@@ -95,8 +86,6 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
     RowLink,
     RowStop,
     Pager,
-    SortHeader,
-    GridBody,
     FiltersBar,
     ColumnFilterRow,
     TagChips,
@@ -150,170 +139,144 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
         (showAll)="showAll()"
       />
     } @else {
-      <div class="mf-table-wrap" mfScrollArea="Steps list" #scroll>
-        <div class="mf-scroll">
-          <table class="pg-table mf-has-menu" data-steps>
-            <caption class="pg-sr">
-              Workflow Steps
-            </caption>
-            <thead>
-              <tr>
-                <th
-                  mfSort="title"
-                  [sort]="sort()"
-                  [defaultSort]="defaultSort"
-                  (sorted)="setSort($event)"
+      <div class="mf-fill">
+        <mf-record-grid
+          #scroll
+          data-steps
+          label="Steps list"
+          caption="Workflow steps"
+          noun="steps"
+          [grid]="grid"
+          [rows]="rows()"
+          [rowKey]="stepKey"
+          [loadState]="state()"
+          [empty]="rows().length === 0"
+          [filtered]="filters.activeCount() > 0"
+          [filters]="filters"
+          emptyText="No steps yet."
+          [hidden]="hiddenCount()"
+          hiddenLabel="inactive"
+          [actions]="true"
+          [bones]="bones"
+          [sort]="sort()"
+          [defaultSort]="defaultSort"
+          (sorted)="setSort($event)"
+          (retry)="load()"
+          (clear)="clear()"
+          (showAll)="showAll()"
+        >
+          @if (filters.rowVisible()) {
+            <tr
+              mfGridFilterRow
+              mfColumnFilterRow
+              id="step-filter-row"
+              [filters]="filters"
+              [columns]="columns()"
+            ></tr>
+          }
+          <p-button mfEmptyAction label="New Step" icon="pi pi-plus" (onClick)="newStep()" />
+          <ng-template mfCell="title" let-s>
+            <td class="ad-spring">
+              <a
+                class="mf-link pg-name"
+                [routerLink]="['/admin/steps', s.stepDefinitionId]"
+                [mfRowLink]="listId"
+                [rowKey]="s.stepDefinitionId"
+                [state]="leave.state()"
+                [title]="s.title"
+                >{{ s.title }}</a
+              >
+            </td>
+          </ng-template>
+          <ng-template mfCell="description" let-s>
+            <td class="ad-desc">
+              <span class="pg-clip pg-muted" [title]="s.description ?? ''">{{
+                s.description
+              }}</span>
+            </td>
+          </ng-template>
+          <ng-template mfCell="tags" let-s>
+            <td class="st-tags ad-tags">
+              <mf-tag-chips [tags]="s.tags" [max]="2" />
+            </td>
+          </ng-template>
+          <ng-template mfCell="usedIn" let-s>
+            <td data-used-in class="pg-num">
+              @if (s.usedInWorkflows === 0) {
+                <span class="pg-muted">Not Used</span>
+              } @else {
+                <a
+                  class="mf-link"
+                  mfRowStop
+                  data-used-in-link
+                  [routerLink]="['/admin/workflows']"
+                  [queryParams]="workflowsQuery(s)"
+                  [attr.aria-label]="
+                    'Used in ' +
+                    (s.usedInWorkflows === 1 ? '1 workflow' : s.usedInWorkflows + ' workflows')
+                  "
+                  >{{ s.usedInWorkflows }}</a
                 >
-                  Title
-                </th>
-                @if (showDescription()) {
-                  <th scope="col">Description</th>
-                }
-                @if (showTags()) {
-                  <th scope="col">Tags</th>
-                }
-                <th
-                  class="pg-num"
-                  mfSort="usedInWorkflows"
-                  [sort]="sort()"
-                  [defaultSort]="defaultSort"
-                  (sorted)="setSort($event)"
-                >
-                  Used in
-                </th>
-                @if (showInputs()) {
-                  <th scope="col">Inputs</th>
-                }
-                <th
-                  mfSort="status"
-                  [sort]="sort()"
-                  [defaultSort]="defaultSort"
-                  (sorted)="setSort($event)"
-                >
-                  Status
-                </th>
-                <th scope="col" class="mf-col-menu"><span class="pg-sr">Actions</span></th>
-              </tr>
-              @if (filters.rowVisible()) {
-                <tr
-                  mfColumnFilterRow
-                  id="step-filter-row"
-                  [filters]="filters"
-                  [columns]="columns()"
-                ></tr>
               }
-            </thead>
-            <tbody
-              mfGridBody
-              noun="steps"
-              emptyText="No steps yet."
-              [state]="state()"
-              [empty]="rows().length === 0"
-              [filtered]="filters.activeCount() > 0"
-              [columns]="columns().length"
-              [skeleton]="skeleton()"
-              [skeletonCells]="skeletonCells()"
-              (retry)="load()"
-              (clear)="clear()"
-              [hidden]="hiddenCount()"
-              hiddenLabel="inactive"
-              (showAll)="showAll()"
-            >
-              <p-button mfEmptyAction label="New Step" icon="pi pi-plus" (onClick)="newStep()" />
-              @for (s of rows(); track s.stepDefinitionId) {
-                <tr [attr.data-row]="s.title">
-                  <td class="ad-spring">
-                    <a
-                      class="mf-link pg-name"
-                      [routerLink]="['/admin/steps', s.stepDefinitionId]"
-                      [mfRowLink]="listId"
-                      [rowKey]="s.stepDefinitionId"
-                      [state]="leave.state()"
-                      [title]="s.title"
-                      >{{ s.title }}</a
-                    >
-                  </td>
-                  @if (showDescription()) {
-                    <td class="ad-desc">
-                      <span class="pg-clip pg-muted" [title]="s.description ?? ''">{{
-                        s.description
-                      }}</span>
-                    </td>
-                  }
-                  @if (showTags()) {
-                    <td class="st-tags ad-tags">
-                      <mf-tag-chips [tags]="s.tags" [max]="2" />
-                    </td>
-                  }
-                  <td data-used-in class="pg-num">
-                    @if (s.usedInWorkflows === 0) {
-                      <span class="pg-muted">Not Used</span>
-                    } @else {
-                      <a
-                        class="mf-link"
-                        mfRowStop
-                        data-used-in-link
-                        [routerLink]="['/admin/workflows']"
-                        [queryParams]="workflowsQuery(s)"
-                        [attr.aria-label]="
-                          'Used in ' +
-                          (s.usedInWorkflows === 1
-                            ? '1 workflow'
-                            : s.usedInWorkflows + ' workflows')
-                        "
-                        >{{ s.usedInWorkflows }}</a
-                      >
-                    }
-                  </td>
-                  @if (showInputs()) {
-                    <td class="ad-nowrap" data-inputs>
-                      @if (inputsState(s); as state) {
-                        @if (state === 'draft') {
-                          <mf-badge
-                            tone="neutral"
-                            icon="pi-file-edit"
-                            data-inputs-draft
-                            [attr.title]="draftTitle(s)"
-                            >Draft</mf-badge
-                          >
-                        } @else {
-                          <span class="pg-muted" [attr.data-inputs-state]="state">{{
-                            state === 'published' ? 'Published' : 'None'
-                          }}</span>
-                        }
-                      }
-                    </td>
-                  }
-                  <td class="ad-nowrap">
-                    <mf-active-badge [active]="s.isActive" />
-                  </td>
-                  <td class="mf-col-menu">
-                    <mf-action-menu
-                      [items]="menuFor(s)"
-                      [label]="'Actions for ' + s.title"
-                      [floating]="true"
-                    />
-                  </td>
-                </tr>
+            </td>
+          </ng-template>
+          <ng-template mfCell="inputs" let-s>
+            <td class="ad-nowrap" data-inputs>
+              @if (inputsState(s); as state) {
+                @if (state === 'draft') {
+                  <mf-badge
+                    tone="neutral"
+                    icon="pi-file-edit"
+                    data-inputs-draft
+                    [attr.title]="draftTitle(s)"
+                    >Draft</mf-badge
+                  >
+                } @else {
+                  <span class="pg-muted" [attr.data-inputs-state]="state">{{
+                    state === 'published' ? 'Published' : 'None'
+                  }}</span>
+                }
               }
-            </tbody>
-          </table>
-        </div>
+            </td>
+          </ng-template>
+          <ng-template mfCell="status" let-s>
+            <td class="ad-nowrap">
+              <mf-active-badge [active]="s.isActive" />
+            </td>
+          </ng-template>
+          <ng-template mfCell="actions" let-s>
+            <td class="mf-col-actions" data-row-actions>
+              <mf-action-menu
+                [items]="menuFor(s)"
+                [label]="'Actions for ' + s.title"
+                [floating]="true"
+              />
+            </td>
+          </ng-template>
+          <div mfGridFoot>
+            <ng-container *ngTemplateOutlet="pager" />
+          </div>
+        </mf-record-grid>
       </div>
     }
-    @if (state() === 'ready' && total() > 0) {
-      <mf-pager
-        [page]="pageNumber()"
-        [pageSize]="pageSize()"
-        [pageSizes]="pageSizes"
-        [total]="total()"
-        [hidden]="hiddenCount()"
-        hiddenLabel="inactive"
-        (showAll)="showAll()"
-        (pageChange)="goToPage($event)"
-        (pageSizeChange)="setPageSize($event)"
-      />
+    @if (phone()) {
+      <ng-container *ngTemplateOutlet="pager" />
     }
+    <ng-template #pager>
+      @if (state() === 'ready' && total() > 0) {
+        <mf-pager
+          [page]="pageNumber()"
+          [pageSize]="pageSize()"
+          [pageSizes]="pageSizes"
+          [total]="total()"
+          [hidden]="hiddenCount()"
+          hiddenLabel="inactive"
+          (showAll)="showAll()"
+          (pageChange)="goToPage($event)"
+          (pageSizeChange)="setPageSize($event)"
+        />
+      }
+    </ng-template>
     <mf-confirm-dialog
       title="Deactivate Step"
       confirmLabel="Deactivate Step"
@@ -339,14 +302,9 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
   private readonly drill = inject(DrillReturn);
   protected readonly leave = inject(AdminListLeave);
   protected readonly listId = ADMIN_LIST.steps.id;
-  private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
+  private readonly scroll = viewChild('scroll', { read: ElementRef });
 
   protected readonly defaultSort = 'title';
-  /**
-   * The Description column is left out below 1600 px (its filter then sits under "Other filters"): with the Tags and Inputs columns it
-   * would make the Title narrower than the Description, and Title is the spring (#356, #378).
-   */
-  protected readonly showDescription = COLUMN_ROOM;
   /** Below 640 px the list is cards, not a table (#375). */
   protected readonly phone = phoneCards();
   /** The phone's Sort by select: the sortable columns (the headers' keys); the count sorts descending first, like its header. */
@@ -355,21 +313,35 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
     { value: 'usedInWorkflows', label: 'Used in', descFirst: true },
     { value: 'status', label: 'Status' },
   ];
-  /** The Tags column (two chips and "+n") is left out below 1100 px, its filter moving under "Other filters", so the grid fits a 768 px window (#375). */
-  protected readonly showTags = COLUMN_ROOM;
-  /** The Inputs column (none, published or a Draft badge) is left out below 1024 px (#378). */
-  protected readonly showInputs = COLUMN_ROOM;
-  protected readonly columns = computed(() =>
-    COLUMNS.filter(
-      (c) =>
-        (c !== 'description' || this.showDescription()) &&
-        (c !== 'tags' || this.showTags()) &&
-        (c !== 'inputs' || this.showInputs()),
-    ),
-  );
-  protected readonly skeleton = computed(() => this.columns().map((c) => BONES[c]));
-  /** The class of each loaded cell that sizes it, for the skeleton cells (#370). */
-  protected readonly skeletonCells = computed(() => this.columns().map((c) => CELL_CLASS[c]));
+  /** The columns (the shared record grid, #1241; #1204): Title is the spring, the others have fixed widths so the headings never move. */
+  protected readonly gridDefs = signal<readonly RecordGridColumn[]>([
+    { key: 'title', label: 'Title', locked: true, sort: 'title', minWidth: '200px' },
+    { key: 'description', label: 'Description', width: '14rem', minWidth: '14rem' },
+    { key: 'tags', label: 'Tags', width: '12rem', minWidth: '12rem' },
+    {
+      key: 'usedIn',
+      label: 'Used in',
+      sort: 'usedInWorkflows',
+      firstDesc: true,
+      num: true,
+      width: 'var(--mf-col-count-w)',
+      minWidth: 'var(--mf-col-count-w)',
+    },
+    { key: 'inputs', label: 'Inputs', width: '8rem', minWidth: '8rem' },
+    {
+      key: 'status',
+      label: 'Status',
+      sort: 'status',
+      width: 'var(--mf-col-status-w)',
+      minWidth: 'var(--mf-col-status-w)',
+    },
+  ]);
+  protected readonly grid = new RecordGridState('admin-steps', this.gridDefs);
+  protected readonly bones = BONES;
+  /** The row key is the title (unique): every row carries `data-record-id`. */
+  protected readonly stepKey = (s: StepDefinitionSummary): string => s['title'];
+  /** The columns of the table in order, the row action last: what the filter row builds its cells from. */
+  protected readonly columns = computed<readonly string[]>(() => [...this.grid.shown(), 'actions']);
   /** The tags to choose from, with how many steps of the chosen status carry each. */
   protected readonly tagOptions = signal<FilterOption[]>([]);
   /** The library-wide counts of the last answer (no filter applies to them). */
@@ -499,7 +471,7 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
     });
     // The controls move into the sheet while the grid scrolls sideways (the grid is not there while the phone shows cards).
     effect(() => {
-      const area = this.scroll()?.nativeElement;
+      const area = this.scroll()?.nativeElement as HTMLElement | undefined;
       if (area) untracked(() => this.filters.watchOverflow(area));
     });
   }
