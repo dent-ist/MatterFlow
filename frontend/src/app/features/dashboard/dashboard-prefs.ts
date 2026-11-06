@@ -56,10 +56,13 @@ const PREFIX = 'mf.dashboard.v2.';
 
 interface Stored {
   period: PeriodKey;
+  /** The Summary's right panel (battery and gauge) is hidden (#1233). Written only while true, so the stored value of a person who never hid it is unchanged. */
+  panelCollapsed?: true;
 }
 
 /**
- * What the Dashboard remembers per user in this browser: the last explicitly chosen period (never a custom range). The address wins over it: a link
+ * What the Dashboard remembers per user in this browser: the last explicitly chosen period (never a custom range) and whether the Summary's right panel (battery and gauge) is
+ * hidden (#1233; the same per-user entry, no second storage scheme). The address wins over the period: a link
  * that names a period shows that period without changing the memory. Values saved by the earlier list (This week, This month, Last 30 days, Last
  * quarter) are migrated when read and saved again in the new vocabulary. (The tab is not remembered: a plain /dashboard link always opens Summary.)
  * Storage may be unavailable or blocked (private windows, site data cleared): every access is wrapped, and the page works without it.
@@ -70,6 +73,9 @@ export class DashboardPrefs {
   private loadedFor: number | null = null;
   private remembered: PeriodKey = DEFAULT_PERIOD_KEY;
 
+  /** The Summary's right column (Team Capacity and Unassigned Wait) is hidden; the battery and gauge then sit compact on the cards row. Default: shown. */
+  readonly panelCollapsed = signal(false);
+
   /** The period in effect on the page (the shared value of Summary, Trends and Coverage): the address, else the remembered choice. */
   readonly period = signal<Period>(DEFAULT_PERIOD);
 
@@ -78,8 +84,17 @@ export class DashboardPrefs {
     const userId = this.auth.profile()?.userId ?? 0;
     if (this.loadedFor === userId) return;
     this.loadedFor = userId;
-    this.remembered = this.read(userId);
+    const stored = this.read(userId);
+    this.remembered = stored.period;
+    this.panelCollapsed.set(stored.collapsed);
     this.period.set({ key: this.remembered, from: null, to: null });
+  }
+
+  /** The person hid or showed the right panel: in effect now and remembered for this user. */
+  setPanelCollapsed(collapsed: boolean): void {
+    this.ensureLoaded();
+    this.panelCollapsed.set(collapsed);
+    this.save();
   }
 
   /**
@@ -112,28 +127,39 @@ export class DashboardPrefs {
     return PREFIX + userId;
   }
 
-  private read(userId: number): PeriodKey {
+  private read(userId: number): { period: PeriodKey; collapsed: boolean } {
     try {
       const raw = localStorage.getItem(this.storageKey(userId));
-      if (!raw) return DEFAULT_PERIOD_KEY;
-      const stored = (JSON.parse(raw) as Partial<{ period: unknown }> | null)?.period;
+      if (!raw) return { period: DEFAULT_PERIOD_KEY, collapsed: false };
+      const parsed = JSON.parse(raw) as Partial<{
+        period: unknown;
+        panelCollapsed: unknown;
+      }> | null;
+      const stored = parsed?.period;
+      const collapsed = parsed?.panelCollapsed === true;
       const migrated = migrateStoredPeriod(stored);
       if (migrated !== stored && migrated !== null) {
         // Saved by an earlier list: write it back in the new vocabulary so the old value is gone.
         localStorage.setItem(
           this.storageKey(userId),
-          JSON.stringify({ period: migrated } satisfies Stored),
+          JSON.stringify({
+            period: migrated,
+            ...(collapsed ? { panelCollapsed: true } : {}),
+          } satisfies Stored),
         );
       }
-      return migrated ?? DEFAULT_PERIOD_KEY;
+      return { period: migrated ?? DEFAULT_PERIOD_KEY, collapsed };
     } catch {
-      return DEFAULT_PERIOD_KEY;
+      return { period: DEFAULT_PERIOD_KEY, collapsed: false };
     }
   }
 
   private save(): void {
     try {
-      const stored: Stored = { period: this.remembered };
+      const stored: Stored = {
+        period: this.remembered,
+        ...(this.panelCollapsed() ? { panelCollapsed: true as const } : {}),
+      };
       localStorage.setItem(this.storageKey(this.loadedFor ?? 0), JSON.stringify(stored));
     } catch {
       /* storage unavailable: the choice lasts until the page is closed */

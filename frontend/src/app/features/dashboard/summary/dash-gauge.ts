@@ -14,6 +14,7 @@ import {
 import { DashboardUnassignedGauge } from '../../../api/generated/api-client';
 import { GaugeView, gaugeView, levelChange } from './gauge-model';
 import { IntPipe } from '../../../shared/ui/number-format';
+import { GAUGE_LEVEL_CSS } from './gauge-level-css';
 
 const SEGMENTS = [0, 1, 2, 3, 4, 5] as const;
 const CX = 130;
@@ -132,195 +133,163 @@ export function arcPath(a0: number, a1: number): string {
     </ng-template>
   `,
   imports: [IntPipe, NgTemplateOutlet],
-  styles: `
-    :host {
-      display: block;
-      flex: none;
-    }
-    .panel {
-      padding: var(--mf-s3) var(--mf-s4);
-      background: var(--mf-surface);
-      border: 1px solid var(--mf-border-soft);
-      border-radius: var(--mf-radius-xl);
-    }
-    .ph {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      margin-bottom: var(--mf-s2);
-    }
-    h2 {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      margin: 0;
-      font-size: var(--mf-fs-lg);
-      font-weight: 600;
-      white-space: nowrap;
-    }
-    .lvl {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
-      margin-left: auto;
-      padding: 3px 10px;
-      border: 1px solid var(--lbd);
-      border-radius: 999px;
-      color: var(--lfg);
-      background: var(--lbg);
-      font-size: 13px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-    .Lc {
-      --lbg: var(--mf-p-teal-bg);
-      --lfg: var(--mf-p-teal-fg);
-      --lbd: var(--mf-p-teal-line);
-    }
-    .L0 {
-      --lbg: var(--mf-p-slate-bg);
-      --lfg: var(--mf-p-slate-fg);
-      --lbd: var(--mf-p-slate-line);
-    }
-    .L1 {
-      --lbg: var(--mf-p-amber-bg);
-      --lfg: var(--mf-p-amber-fg);
-      --lbd: var(--mf-p-amber-line);
-    }
-    .L2 {
-      --lbg: var(--mf-p-amber-bg);
-      --lfg: var(--mf-p-amber-fg);
-      --lbd: var(--mf-p-amber-solid);
-    }
-    .L3 {
-      --lbg: var(--mf-p-orange-bg);
-      --lfg: var(--mf-p-orange-fg);
-      --lbd: var(--mf-p-orange-solid);
-    }
-    .L4 {
-      --lbg: var(--mf-p-red-bg);
-      --lfg: var(--mf-p-red-fg);
-      --lbd: var(--mf-p-red-solid);
-    }
-    .L5 {
-      --lbg: var(--mf-p-red-fg);
-      --lfg: var(--mf-white);
-      --lbd: var(--mf-tag-red-fg);
-    }
-    .lvl.pulse::after {
-      position: absolute;
-      inset: -3px;
-      border: 2px solid var(--lbd);
-      border-radius: 999px;
-      opacity: 0;
-      content: '';
-      animation: dg-pulse 2.4s ease-out infinite;
-    }
-    @keyframes dg-pulse {
-      0% {
-        opacity: 0.7;
-        transform: scale(0.96);
+  styles: [
+    GAUGE_LEVEL_CSS,
+    `
+      :host {
+        display: block;
+        flex: none;
       }
-      100% {
-        opacity: 0;
-        transform: scale(1.12);
+      .panel {
+        padding: var(--mf-s3) var(--mf-s4);
+        background: var(--mf-surface);
+        border: 1px solid var(--mf-border-soft);
+        border-radius: var(--mf-radius-xl);
       }
-    }
-    .vis {
-      display: block;
-      width: 100%;
-      padding: 0;
-      border: 0;
-      background: none;
-    }
-    .vis--btn {
-      cursor: pointer;
-      border-radius: var(--mf-radius-lg);
-    }
-    .vis--btn:focus-visible {
-      outline: 2px solid var(--mf-focus);
-      outline-offset: 2px;
-    }
-    svg {
-      display: block;
-      width: 100%;
-      max-width: 215px;
-      margin: 0 auto;
-    }
-    .seg {
-      fill: none;
-      stroke-width: 20;
-    }
-    .seg--stripe {
-      stroke-width: 20;
-      opacity: 0.55;
-    }
-    .stripe {
-      stroke: var(--mf-surface);
-      stroke-width: 2;
-    }
-    .num {
-      font-variant-numeric: tabular-nums;
-      fill: var(--mf-text-muted);
-      font-size: 11px;
-    }
-    .needle {
-      transform-origin: 130px 122px;
-      transition: transform 0.4s ease;
-    }
-    .needle line {
-      stroke: var(--mf-text);
-      stroke-width: 4;
-      stroke-linecap: round;
-    }
-    .hub {
-      fill: var(--mf-text);
-    }
-    .stats {
-      display: flex;
-      justify-content: center;
-      gap: 28px;
-      margin-top: var(--mf-s2);
-      text-align: center;
-    }
-    .gcount {
-      display: block;
-      font-size: var(--mf-fs-figure);
-      font-weight: 700;
-      line-height: 1;
-    }
-    .stats small {
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
-    }
-    .gdo {
-      margin: var(--mf-s2) 0 0;
-      font-size: 13px;
-      text-align: center;
-    }
-    .go {
-      width: 100%;
-      margin-top: var(--mf-s2);
-    }
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip: rect(0 0 0 0);
-      white-space: nowrap;
-    }
-    @media (prefers-reduced-motion: reduce) {
+      .ph {
+        display: flex;
+        align-items: center;
+        gap: var(--mf-s2);
+        margin-bottom: var(--mf-s2);
+      }
+      h2 {
+        display: flex;
+        align-items: center;
+        gap: var(--mf-s2);
+        margin: 0;
+        font-size: var(--mf-fs-lg);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .lvl {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: var(--mf-s1);
+        margin-left: auto;
+        padding: 3px 10px;
+        border: 1px solid var(--lbd);
+        border-radius: 999px;
+        color: var(--lfg);
+        background: var(--lbg);
+        font-size: 13px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
       .lvl.pulse::after {
-        animation: none;
+        position: absolute;
+        inset: -3px;
+        border: 2px solid var(--lbd);
+        border-radius: 999px;
         opacity: 0;
+        content: '';
+        animation: dg-pulse 2.4s ease-out infinite;
+      }
+      @keyframes dg-pulse {
+        0% {
+          opacity: 0.7;
+          transform: scale(0.96);
+        }
+        100% {
+          opacity: 0;
+          transform: scale(1.12);
+        }
+      }
+      .vis {
+        display: block;
+        width: 100%;
+        padding: 0;
+        border: 0;
+        background: none;
+      }
+      .vis--btn {
+        cursor: pointer;
+        border-radius: var(--mf-radius-lg);
+      }
+      .vis--btn:focus-visible {
+        outline: 2px solid var(--mf-focus);
+        outline-offset: 2px;
+      }
+      svg {
+        display: block;
+        width: 100%;
+        max-width: 215px;
+        margin: 0 auto;
+      }
+      .seg {
+        fill: none;
+        stroke-width: 20;
+      }
+      .seg--stripe {
+        stroke-width: 20;
+        opacity: 0.55;
+      }
+      .stripe {
+        stroke: var(--mf-surface);
+        stroke-width: 2;
+      }
+      .num {
+        font-variant-numeric: tabular-nums;
+        fill: var(--mf-text-muted);
+        font-size: 11px;
       }
       .needle {
-        transition: none;
+        transform-origin: 130px 122px;
+        transition: transform 0.4s ease;
       }
-    }
-  `,
+      .needle line {
+        stroke: var(--mf-text);
+        stroke-width: 4;
+        stroke-linecap: round;
+      }
+      .hub {
+        fill: var(--mf-text);
+      }
+      .stats {
+        display: flex;
+        justify-content: center;
+        gap: 28px;
+        margin-top: var(--mf-s2);
+        text-align: center;
+      }
+      .gcount {
+        display: block;
+        font-size: var(--mf-fs-figure);
+        font-weight: 700;
+        line-height: 1;
+      }
+      .stats small {
+        color: var(--mf-text-muted);
+        font-size: var(--mf-fs-xs);
+      }
+      .gdo {
+        margin: var(--mf-s2) 0 0;
+        font-size: 13px;
+        text-align: center;
+      }
+      .go {
+        width: 100%;
+        margin-top: var(--mf-s2);
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .lvl.pulse::after {
+          animation: none;
+          opacity: 0;
+        }
+        .needle {
+          transition: none;
+        }
+      }
+    `,
+  ],
 })
 export class DashGauge {
   readonly gauge = input.required<DashboardUnassignedGauge>();

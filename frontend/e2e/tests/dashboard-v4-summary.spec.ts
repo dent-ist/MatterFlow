@@ -206,6 +206,53 @@ test.describe('Summary v4', () => {
     await expect(page.locator('[data-sorted-text]')).toContainText('longest waiting first');
   });
 
+  test('Hide Panel gives the grid the full width and puts a compact battery and gauge on the cards row; the choice is remembered (#1233)', async ({
+    seed,
+    page,
+  }) => {
+    const world = await seed.world();
+    await seed.task(world, { title: `Panel ${uid()}` });
+    for (const size of [
+      { width: 1366, height: 768 },
+      { width: 1920, height: 1080 },
+    ]) {
+      await page.setViewportSize(size);
+      await page.goto('/dashboard');
+      const hide = page.getByRole('button', { name: 'Hide Panel', exact: true });
+      await expect(hide).toHaveAttribute('aria-expanded', 'true');
+      await expect(page.locator('[data-dash-compact]')).toHaveCount(0);
+      const shown = (await page.locator('mf-dash-grid').boundingBox())!.width;
+      await hide.click();
+      const expand = page.getByRole('button', { name: 'Show Panel', exact: true });
+      await expect(expand).toHaveAttribute('aria-expanded', 'false');
+      await expect(expand).toBeFocused();
+      await expect(page.locator('[data-dash-rcol]')).toBeHidden();
+      await expect(page.locator('[data-compact-battery]')).toBeVisible();
+      await expect(page.locator('[data-compact-gauge]')).toBeVisible();
+      expect((await page.locator('mf-dash-grid').boundingBox())!.width).toBeGreaterThan(
+        shown + 300,
+      );
+      // Same row as the cards, never wrapped, nothing sideways.
+      const cards = (await page.locator('[data-dash-cards]').boundingBox())!;
+      const gauge = (await page.locator('[data-compact-gauge]').boundingBox())!;
+      expect(Math.abs(cards.y + cards.height / 2 - (gauge.y + gauge.height / 2))).toBeLessThan(12);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+        ),
+      ).toBe(true);
+      if (axeAvailable()) expect(await axeViolations(page)).toEqual([]);
+      // Remembered for this user: a reload keeps it hidden; the gauge selects the Unassigned card.
+      await page.reload();
+      await expect(page.locator('[data-compact-gauge]')).toBeVisible();
+      await page.locator('[data-compact-gauge]').click();
+      await expect(card(page, 'unassigned')).toHaveAttribute('aria-pressed', 'true');
+      await page.getByRole('button', { name: 'Show Panel', exact: true }).click();
+      await expect(page.locator('[data-dash-rcol]')).toBeVisible();
+      await expect(page.locator('[data-compact-battery]')).toHaveCount(0);
+    }
+  });
+
   test('a Pod Lead opens on My pods', async ({ seed, asUser, personas }) => {
     const lead = await personas.named('podLead');
     await seed.pod(`Lead pod ${uid()}`, [lead.userId]);

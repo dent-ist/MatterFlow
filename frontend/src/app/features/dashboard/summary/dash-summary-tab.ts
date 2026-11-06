@@ -1,16 +1,22 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
   computed,
   inject,
   input,
   output,
   signal,
 } from '@angular/core';
-import { DashboardSummary } from '../../../api/generated/api-client';
+import { DashboardCapacity, DashboardSummary } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { Tip } from '../../../shared/ui/tip';
+import { DashboardPrefs } from '../dashboard-prefs';
 import { CardCounts, CardKey, DashCards } from './dash-cards';
 import { DashBattery } from './dash-battery';
+import { DashCompact } from './dash-compact';
 import { DashGauge } from './dash-gauge';
 import { DashGrid } from './dash-grid';
 import { DashV4Api } from './dash-v4-api';
@@ -18,16 +24,39 @@ import { DashV4Api } from './dash-v4-api';
 /**
  * The Summary tab of the Dashboard for anyone with Dashboard.ViewSummary (epic #1063, DB-03; the Technician's queue is the page's own view). Under the tabs: three Needs attention cards
  * that filter the grid; below, the task grid on the left (shared list standard) and a fixed-width right column with the capacity battery (Dashboard.ViewUsers) and the unassigned gauge
- * (Dashboard.ViewSummary). The page never scrolls on a desktop window; only the grid body and the right column do. Under 768 px (or on a very short window) it is one column: cards,
+ * (Dashboard.ViewSummary). A Hide Panel icon button at the top right of that column hides it (#1233): the grid takes the full width and the compact battery and gauge sit on the right of the cards row, with a Show Panel button at the far end; the choice is remembered per user (`DashboardPrefs`). The page never scrolls on a desktop window; only the grid body and the right column do. Under 768 px (or on a very short window) it is one column: cards,
  * battery and gauge, then the tasks as cards. The page owns the data (it reads the summary and the Scope); this component draws it and reports what the person did.
  */
 @Component({
   selector: 'mf-dash-summary',
-  imports: [DashCards, DashGrid, DashBattery, DashGauge],
+  imports: [DashCards, DashGrid, DashBattery, DashGauge, DashCompact, Tip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill', '[attr.data-dash-summary]': '""' },
   template: `
-    <mf-dash-cards [counts]="counts()" [selected]="card()" (pick)="cardPick.emit($event)" />
+    <div class="top" data-dash-top>
+      <mf-dash-cards [counts]="counts()" [selected]="card()" (pick)="cardPick.emit($event)" />
+      @if (collapsed()) {
+        <div class="tright" data-dash-compact>
+          <mf-dash-compact
+            [capacity]="canUsers() ? capacity() : null"
+            [gauge]="gauge()"
+            (show)="showUnassigned()"
+          />
+          <button
+            type="button"
+            class="mf-btn mf-btn--icon"
+            data-panel-expand
+            aria-label="Show Panel"
+            mfTip="Show Panel"
+            aria-controls="dash-rcol"
+            [attr.aria-expanded]="false"
+            (click)="setCollapsed(false)"
+          >
+            <i class="pi pi-chevron-left" aria-hidden="true"></i>
+          </button>
+        </div>
+      }
+    </div>
     @if (noPodNote(); as note) {
       <!-- Tasks with no pod are in no scope but All pods: a quiet line so they cannot be lost. -->
       <p class="no-pod" data-no-pod-hint>
@@ -42,7 +71,7 @@ import { DashV4Api } from './dash-v4-api';
         </button>
       </p>
     }
-    <div class="body" [class.body--one]="!showRight()">
+    <div class="body" [class.body--one]="!showRight() || collapsed()">
       <mf-dash-grid
         [summary]="summary()"
         [refreshKey]="refreshKey()"
@@ -51,11 +80,26 @@ import { DashV4Api } from './dash-v4-api';
         (assigned)="assigned.emit($event)"
       />
       @if (showRight()) {
-        <div class="rcol" data-dash-rcol>
+        <div class="rcol" id="dash-rcol" [class.rcol--off]="collapsed()" data-dash-rcol>
+          <div class="rhd">
+            <button
+              type="button"
+              class="mf-btn mf-btn--icon"
+              data-panel-collapse
+              aria-label="Hide Panel"
+              mfTip="Hide Panel"
+              aria-controls="dash-rcol"
+              [attr.aria-expanded]="!collapsed()"
+              (click)="setCollapsed(true)"
+            >
+              <i class="pi pi-chevron-right" aria-hidden="true"></i>
+            </button>
+          </div>
           @if (canUsers()) {
             <mf-dash-battery
               [scope]="scope()"
               [refreshKey]="refreshKey()"
+              (loaded)="capacity.set($event)"
               (showUnassigned)="showUnassigned()"
             />
           }
@@ -73,6 +117,38 @@ import { DashV4Api } from './dash-v4-api';
       min-width: 0;
       flex-direction: column;
       gap: var(--mf-s3);
+    }
+    /* The cards row: the cards on the left, the compact battery and gauge and the Show Panel button right aligned on the same row, centred with the cards (#1233). The row is the container
+       the compact widgets measure to drop their texts; it never wraps and never overflows. */
+    .top {
+      display: flex;
+      flex: none;
+      align-items: center;
+      gap: var(--mf-s4);
+      min-width: 0;
+      container: top / inline-size;
+    }
+    .tright {
+      display: flex;
+      flex: 0 0 auto;
+      margin-left: auto;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--mf-s3);
+    }
+    .tright mf-dash-compact {
+      min-width: 0;
+    }
+    .tright .mf-btn {
+      flex: none;
+    }
+    .rhd {
+      display: flex;
+      flex: none;
+      justify-content: flex-end;
+    }
+    .rcol.rcol--off {
+      display: none;
     }
     .no-pod {
       margin: 0;
@@ -118,12 +194,23 @@ import { DashV4Api } from './dash-v4-api';
         order: -1;
         overflow: visible;
       }
+      /* One column: the panel is always shown, so there is nothing to hide or show. */
+      .rcol.rcol--off {
+        display: flex;
+      }
+      .rhd,
+      .tright {
+        display: none;
+      }
     }
   `,
 })
 export class DashSummaryTab {
   private readonly auth = inject(AuthStore);
   private readonly v4 = inject(DashV4Api);
+  private readonly prefs = inject(DashboardPrefs);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
 
   readonly summary = input.required<DashboardSummary>();
   /** The page scope (`all`, `mine` or a pod id). */
@@ -151,6 +238,26 @@ export class DashSummaryTab {
     this.auth.has('Dashboard.ViewSummary') ? this.v4.gaugeOf(this.summary()) : null,
   );
   protected readonly showRight = computed(() => this.canUsers() || this.gauge() !== null);
+  /** The right panel is hidden (remembered per user); only possible while there is something to hide. */
+  protected readonly collapsed = computed(() => this.showRight() && this.prefs.panelCollapsed());
+  /** The last good capacity read of the full battery, for the compact battery (no second request). */
+  protected readonly capacity = signal<DashboardCapacity | null>(null);
+
+  constructor() {
+    this.prefs.ensureLoaded();
+  }
+
+  /** Hide or show the right panel; focus follows to the other button, because the one that was pressed is gone. */
+  protected setCollapsed(collapsed: boolean): void {
+    this.prefs.setPanelCollapsed(collapsed);
+    afterNextRender(
+      () =>
+        this.host.nativeElement
+          .querySelector<HTMLElement>(collapsed ? '[data-panel-expand]' : '[data-panel-collapse]')
+          ?.focus(),
+      { injector: this.injector },
+    );
+  }
 
   protected showAll(event: Event): void {
     event.preventDefault();

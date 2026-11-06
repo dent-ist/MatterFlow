@@ -92,3 +92,58 @@ describe('DashboardPrefs (the shared period)', () => {
     expect(p.period().key).toBe('7d');
   });
 });
+
+describe('DashboardPrefs (the Summary right panel, #1233)', () => {
+  const KEY = 'mf.dashboard.v2.7';
+
+  async function prefs() {
+    TestBed.configureTestingModule({
+      providers: [
+        provideFakeMe(new FakeMeApi({ ...withPermissions('Dashboard.View'), userId: 7 })),
+      ],
+    });
+    await TestBed.inject(AuthStore).ensureLoaded();
+    return TestBed.inject(DashboardPrefs);
+  }
+
+  beforeEach(() => localStorage.clear());
+
+  it('is shown by default and stores nothing extra for a person who never hid it', async () => {
+    const p = await prefs();
+    p.ensureLoaded();
+    expect(p.panelCollapsed()).toBe(false);
+    p.setPanelCollapsed(false);
+    expect(JSON.parse(localStorage.getItem(KEY)!)).toEqual({ period: '30d' });
+  });
+
+  it('remembers the choice next to the period, per user', async () => {
+    localStorage.setItem(KEY, JSON.stringify({ period: '7d' }));
+    const p = await prefs();
+    p.setPanelCollapsed(true);
+    expect(JSON.parse(localStorage.getItem(KEY)!)).toEqual({ period: '7d', panelCollapsed: true });
+    TestBed.resetTestingModule();
+    const again = await prefs();
+    again.ensureLoaded();
+    expect(again.panelCollapsed()).toBe(true);
+    expect(again.period().key).toBe('7d');
+  });
+
+  it('keeps the choice when an old period value is migrated, and when a period is chosen', async () => {
+    localStorage.setItem(KEY, JSON.stringify({ period: 'week', panelCollapsed: true }));
+    const p = await prefs();
+    p.ensureLoaded();
+    expect(JSON.parse(localStorage.getItem(KEY)!)).toEqual({ period: '7d', panelCollapsed: true });
+    p.choose({ key: '90d', from: null, to: null });
+    expect(JSON.parse(localStorage.getItem(KEY)!)).toEqual({ period: '90d', panelCollapsed: true });
+  });
+
+  it('does not use the choice of another user', async () => {
+    localStorage.setItem(
+      'mf.dashboard.v2.8',
+      JSON.stringify({ period: '30d', panelCollapsed: true }),
+    );
+    const p = await prefs();
+    p.ensureLoaded();
+    expect(p.panelCollapsed()).toBe(false);
+  });
+});

@@ -93,9 +93,11 @@ const CARDS: readonly CardSpec[] = [
     </div>
   `,
   styles: `
+    /* In the cards row of the Summary tab the cards give way (down to 11 rem each) when the compact battery and gauge need the room (#1233). */
     :host {
       display: block;
-      flex: none;
+      flex: 0 1 auto;
+      min-width: 0;
     }
     /* Three cards of one width, sized to their content with some air, left aligned under the tab names; the explanation is a tooltip (hover and keyboard focus). */
     .cards {
