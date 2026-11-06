@@ -2,6 +2,8 @@
 
 Product-owner request: on grid screens the whole page used to scroll. Now the page title, tabs, search box and control buttons stay where they are and **only the grid scrolls**, with sticky column headers and a pinned pager bar. This folder holds before and after screenshots of every affected screen (`before/` and `after/`, scrolled state, named `<screen>-<width>x<height>.png` at 1366x768, 1280x800, 1024x768, 768x1024 and 375x812) and this note.
 
+*The before and after screenshots listed below were removed from the working tree. Screenshot archived: restore from branch archive/docs-screenshots-2026-11 (docs/ux/fixed-header/before and docs/ux/fixed-header/after).*
+
 ## The pattern
 
 ```
@@ -38,28 +40,28 @@ The page header, tabs and toolbar are simply whatever sits above the scroll area
 
 | Screen | Route | Pinned | Scrolls | Screenshots (1366x768) |
 | --- | --- | --- | --- | --- |
-| Task Queue | `/tasks` | title + Sorted by / Columns, search, Filters, quick views, chips | task grid | [before](before/task-queue-1366x768.png) / [after](after/task-queue-1366x768.png) |
-| My Work | `/my-work` | title + Sorted by / Columns, tabs, search, Filters | task grid | [before](before/my-work-1366x768.png) / [after](after/my-work-1366x768.png) |
-| Pod Work | `/pods/work` | title + Pod picker + Sorted by / Columns, summary line, tabs, search, Filters | task grid (By member: member table above, own scroll) | [before](before/pod-work-1366x768.png) / [after](after/pod-work-1366x768.png) |
-| Clients | `/clients` | title + New client, search, Status | client grid | [before](before/clients-1366x768.png) / [after](after/clients-1366x768.png) |
-| Matters | `/matters` | title + New matter, search, Status | matter grid | [before](before/matters-1366x768.png) / [after](after/matters-1366x768.png) |
-| Projects | `/projects` | title + New project, search, Status | project grid | [before](before/projects-1366x768.png) / [after](after/projects-1366x768.png) |
-| Assets | `/assets` | title + New asset, Filters bar (see [assets-screen](../assets-screen/README.md)); the filter row is part of the sticky header | asset grid; the selected asset's details panel (40%) sits below it | [before](before/assets-1366x768.png) / [after](after/assets-1366x768.png) |
-| Client page | `/clients/:id` | breadcrumb, title, Activity, Matters search / Status / Create matter; Details panel scrolls by itself | the client's Matters grid | [before](before/client-matters-1366x768.png) / [after](after/client-matters-1366x768.png) |
-| Matter page | `/matters/:id` | breadcrumb, title and actions, client line, Tasks / Projects / Assets tabs, Show filter; Details panel | the matter's Tasks grid (Projects and Assets tabs likewise) | [before](before/matter-tasks-1366x768.png) / [after](after/matter-tasks-1366x768.png) |
-| Project page | `/projects/:id` | breadcrumb, title, matter line, Show filter; Details panel | the project's Tasks grid | [before](before/project-tasks-1366x768.png) / [after](after/project-tasks-1366x768.png) |
-| Users (tab) | `/admin/users` | title, Users / Roles tabs, search, Status, pending cue | users grid; the detail panel scrolls by itself with its Save bar pinned | [before](before/admin-users-1366x768.png) / [after](after/admin-users-1366x768.png) |
-| Users (Roles tab) | `/admin/roles` | title, tabs, intro line + New role | role list (the editor is a second scroll area with a pinned Save bar) | [before](before/admin-roles-1366x768.png) / [after](after/admin-roles-1366x768.png) |
-| Pods | `/admin/pods` | title + New pod, search, Status | pods grid (the pod editor is a normal page with a sticky Save bar) | [before](before/admin-pods-1366x768.png) / [after](after/admin-pods-1366x768.png) |
-| Task Types & Forms | `/admin/task-types` | title + New task type, search, Status | task types grid | [before](before/admin-task-types-1366x768.png) / [after](after/admin-task-types-1366x768.png) |
-| Workflows (first tab of Workflows) | `/admin/workflows` | breadcrumb, title + New workflow, tabs, search, Status | workflows grid | [before](before/admin-workflows-1366x768.png) / [after](after/admin-workflows-1366x768.png) |
-| Workflow Steps (second tab of Workflows) | `/admin/steps` | breadcrumb, title + New step, tabs, search, Status, Tags filter | steps grid | [before](before/admin-steps-1366x768.png) / [after](after/admin-steps-1366x768.png) |
-| Labels: Priorities | `/admin/priorities` | title, Priorities / Status labels links, reorder hint | priorities grid (Add priority form pinned under it) | [before](before/admin-priorities-1366x768.png) / [after](after/admin-priorities-1366x768.png) |
-| Labels: Status labels | `/admin/status-labels` | title, links | status labels grid | [before](before/admin-status-labels-1366x768.png) / [after](after/admin-status-labels-1366x768.png) |
-| Assets admin: Asset Types | `/admin/asset-types` | breadcrumb, title, tabs, intro + New asset type, search, Status | asset types grid (the inline form is a capped panel with a sticky Save bar) | [before](before/admin-asset-types-1366x768.png) / [after](after/admin-asset-types-1366x768.png) |
-| Assets admin: Link Roles | `/admin/asset-types?tab=link-roles` | breadcrumb, title, tabs, intro | link roles grid (Add form pinned under it) | [before](before/admin-link-roles-1366x768.png) / [after](after/admin-link-roles-1366x768.png) |
-| Custom Fields | `/admin/custom-fields` | title | objects grid | [before](before/admin-custom-fields-1366x768.png) / [after](after/admin-custom-fields-1366x768.png) |
-| Audit Logs | `/admin/audit` | title, Filters button (the filter form is folded away and capped when open), Group toggle | audit events grid; Load more is the pinned bottom bar | [before](before/admin-audit-1366x768.png) / [after](after/admin-audit-1366x768.png) |
+| Task Queue | `/tasks` | title + Sorted by / Columns, search, Filters, quick views, chips | task grid | before / after |
+| My Work | `/my-work` | title + Sorted by / Columns, tabs, search, Filters | task grid | before / after |
+| Pod Work | `/pods/work` | title + Pod picker + Sorted by / Columns, summary line, tabs, search, Filters | task grid (By member: member table above, own scroll) | before / after |
+| Clients | `/clients` | title + New client, search, Status | client grid | before / after |
+| Matters | `/matters` | title + New matter, search, Status | matter grid | before / after |
+| Projects | `/projects` | title + New project, search, Status | project grid | before / after |
+| Assets | `/assets` | title + New asset, Filters bar (see [assets-screen](../assets-screen/README.md)); the filter row is part of the sticky header | asset grid; the selected asset's details panel (40%) sits below it | before / after |
+| Client page | `/clients/:id` | breadcrumb, title, Activity, Matters search / Status / Create matter; Details panel scrolls by itself | the client's Matters grid | before / after |
+| Matter page | `/matters/:id` | breadcrumb, title and actions, client line, Tasks / Projects / Assets tabs, Show filter; Details panel | the matter's Tasks grid (Projects and Assets tabs likewise) | before / after |
+| Project page | `/projects/:id` | breadcrumb, title, matter line, Show filter; Details panel | the project's Tasks grid | before / after |
+| Users (tab) | `/admin/users` | title, Users / Roles tabs, search, Status, pending cue | users grid; the detail panel scrolls by itself with its Save bar pinned | before / after |
+| Users (Roles tab) | `/admin/roles` | title, tabs, intro line + New role | role list (the editor is a second scroll area with a pinned Save bar) | before / after |
+| Pods | `/admin/pods` | title + New pod, search, Status | pods grid (the pod editor is a normal page with a sticky Save bar) | before / after |
+| Task Types & Forms | `/admin/task-types` | title + New task type, search, Status | task types grid | before / after |
+| Workflows (first tab of Workflows) | `/admin/workflows` | breadcrumb, title + New workflow, tabs, search, Status | workflows grid | before / after |
+| Workflow Steps (second tab of Workflows) | `/admin/steps` | breadcrumb, title + New step, tabs, search, Status, Tags filter | steps grid | before / after |
+| Labels: Priorities | `/admin/priorities` | title, Priorities / Status labels links, reorder hint | priorities grid (Add priority form pinned under it) | before / after |
+| Labels: Status labels | `/admin/status-labels` | title, links | status labels grid | before / after |
+| Assets admin: Asset Types | `/admin/asset-types` | breadcrumb, title, tabs, intro + New asset type, search, Status | asset types grid (the inline form is a capped panel with a sticky Save bar) | before / after |
+| Assets admin: Link Roles | `/admin/asset-types?tab=link-roles` | breadcrumb, title, tabs, intro | link roles grid (Add form pinned under it) | before / after |
+| Custom Fields | `/admin/custom-fields` | title | objects grid | before / after |
+| Audit Logs | `/admin/audit` | title, Filters button (the filter form is folded away and capped when open), Group toggle | audit events grid; Load more is the pinned bottom bar | before / after |
 
 Other sizes of every screen: `before/<screen>-1280x800.png`, `-1024x768`, `-768x1024`, `-375x812` and the same names under `after/` (screen = the first column of the file names: `task-queue`, `my-work`, `pod-work`, `clients`, `matters`, `projects`, `assets`, `client-matters`, `matter-tasks`, `project-tasks`, `admin-users`, `admin-roles`, `admin-pods`, `admin-task-types`, `admin-workflows`, `admin-steps`, `admin-priorities`, `admin-status-labels`, `admin-asset-types`, `admin-link-roles`, `admin-custom-fields`, `admin-audit`). The data is the seeded bulk set: 65 tasks, 30 clients (one with 40 matters), 30 projects, 60 assets, 25 users, 14 more workflows and task types and the audit rows they leave.
 

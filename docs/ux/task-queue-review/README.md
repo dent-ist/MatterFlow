@@ -67,7 +67,7 @@ The code facts that matter for the designs below: the table is `width: 100%` wit
 
 The owner's reading is right that the line is noise, with one correction to the premise. **The default Task Queue grid has a Matter column but no Client column** (Client is only in the Columns chooser), and the Matter column shows only the reference (`90002-80007`; the name is a tooltip). So today the subline is the only default place where the client's name and the matter's name appear. It is also the worst place: it is the third line of a 61 px row, it is cut after about 22 characters so you usually read only the client, and it makes My Work and Task Queue disagree (My Work: `ref · client · matter`, Task Queue and Pod Work: `client · matter`, and the matter ref in the Matter column repeats nothing). Removing the line is right, but the matter name must land somewhere, or the screen gets less informative, not just calmer.
 
-![Today: three lines per row, client line cut](screenshots/tq-default-1366x768.png)
+*Screenshot archived: restore from branch archive/docs-screenshots-2026-11 (docs/ux/task-queue-review/screenshots/tq-default-1366x768.png)*
 
 #### Recommendation
 
@@ -262,7 +262,7 @@ value = {"v":1,"w":{"due":132,"matter":176}}      only columns the user changed;
 - Sticky Ref column: `left: 0` while overflowing; its handle works the same.
 - Hidden-column chips and "Show column" are unaffected.
 
-![Mock: resize handles, drag guide and the column menu (DOM patch, not shipped)](screenshots/mock-resize-handles-and-menu-1366x768.png)
+*Screenshot archived: restore from branch archive/docs-screenshots-2026-11 (docs/ux/task-queue-review/screenshots/mock-resize-handles-and-menu-1366x768.png)*
 
 #### Phases (each shippable alone)
 
@@ -385,7 +385,7 @@ Only two states carry colour (overdue red, today amber); tomorrow and in two day
 | Plus two-line Due, full date (`mock-two-line-due-title-only-1366x768`) | 304 px | 204 px | 44 px | 10 |
 | Plus year and zone dropped (`mock-overdue-two-line-short-date-1366x768`) | **365 px** | **135 px** | 44 px | 10 |
 
-![Mock: title-only, two-line short Due, 10 rows](screenshots/mock-overdue-two-line-short-date-1366x768.png)
+*Screenshot archived: restore from branch archive/docs-screenshots-2026-11 (docs/ux/task-queue-review/screenshots/mock-overdue-two-line-short-date-1366x768.png)*
 
 #### Acceptance criteria
 
