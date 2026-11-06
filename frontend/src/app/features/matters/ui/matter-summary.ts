@@ -6,6 +6,7 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { ActiveBadge, Badge, SensitiveBadge } from '../../../shared/ui/badge';
 import { AssetTypeChip } from '../../../shared/ui/asset-type-chip';
 import { CustomFieldsView } from '../../../shared/ui/custom-fields';
+import { DetailField, DetailsCard } from '../../../shared/ui/details-card';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { numericInstant, readableInstant } from '../../../shared/ui/numeric-date';
 import { personInitials } from '../../../shared/ui/person-initials';
@@ -18,8 +19,8 @@ import { IntPipe } from '../../../shared/ui/number-format';
  * The Summary tab of the Matter page (MD-03 #1004, redesigned in MD-42 #1060; mockup `docs/ux/mockups/matter-summary`). The page never scrolls on desktop:
  *
  *   Assets by type: equal tiles, one per type, that scroll sideways instead of wrapping; each opens the Assets tab for the type  [Asset.View]
- *   Details: ONE full-width card that fits its content, sits at the top and scrolls inside itself when it is taller than the room; its Edit button is in the page header.
- *     Small muted labels over values in a grid of 3 columns (card 1100 px and wider), 2 (700 px and wider) or 1: CM number (one highlighted line), Client, Matter number,
+ *   Details: ONE full-width card (the shared `mf-details-card`, D-44f, #1253) that fits its content, sits at the top and scrolls inside itself when it is taller than the room; its Edit button is in the page header.
+ *     Small muted labels over values in 3 columns (card 1100 px and wider) or 2: CM number (one highlighted line), Client, Matter number,
  *     Matter name, Status, Sensitive (only when sensitive), Primary PM, Secondary PM, AI allowed, Created, Last changed, then the custom fields (no heading).
  *
  * Only fields the Matter already has plus AI allowed. The recent activity lives on the Activities tab (owner decision, MD-42).
@@ -34,6 +35,8 @@ import { IntPipe } from '../../../shared/ui/number-format';
     SensitiveBadge,
     AssetTypeChip,
     CustomFieldsView,
+    DetailField,
+    DetailsCard,
     MatterRef,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -92,75 +95,18 @@ import { IntPipe } from '../../../shared/ui/number-format';
       border-radius: var(--mf-radius-lg);
       color: var(--mf-text-muted);
     }
-    /* The Details card fits its content (no stretched white area), then scrolls inside when the room is used up. */
+    /* The Details card is the shared mf-details-card (D-44f); it fits its content and scrolls inside when the room is used up. */
     .ms__body {
       display: flex;
       flex-direction: column;
       flex: 1 1 0;
       min-height: 0;
     }
-    .ms__card {
-      display: flex;
-      flex-direction: column;
-      flex: 0 1 auto;
-      min-height: 0;
-      container-type: inline-size;
-      padding: 0;
-    }
-    .ms__head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--mf-s2);
-      padding: var(--mf-s4) var(--mf-s4) var(--mf-s3);
-    }
-    .ms__title {
-      margin: 0;
-    }
-    .ms__scroll {
-      flex: 0 1 auto;
-      min-height: 0;
-      overflow-y: auto;
-      padding: 0 var(--mf-s4) var(--mf-s4);
-    }
-    .ms__fields {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      gap: var(--mf-s3) var(--mf-s5, 1.5rem);
-      margin: 0;
-    }
-    @container (min-width: 700px) {
-      .ms__fields {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-    @container (min-width: 1100px) {
-      .ms__fields {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
-    }
-    .ms__f {
-      min-width: 0;
-      min-height: 2.75rem;
-    }
-    .ms__f dt {
-      margin: 0 0 2px;
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
-    }
-    .ms__f dd {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: var(--mf-s2);
-      min-height: var(--mf-chip-h);
-      margin: 0;
-      overflow-wrap: anywhere;
-    }
     /* The CM number: one highlighted line, number and copy icon on one baseline. */
-    .ms__f--cm dd {
-      align-self: start;
-      width: fit-content;
+    .ms__cm {
+      display: inline-flex;
+      align-items: center;
+      min-height: var(--mf-chip-h);
       padding: 0 var(--mf-s2);
       border-radius: var(--mf-radius);
       background: var(--mf-sem-info-bg);
@@ -185,13 +131,9 @@ import { IntPipe } from '../../../shared/ui/number-format';
     .ms__btn {
       margin-block: -4px;
     }
+    /* The custom fields (no heading) follow the standard fields inside the card's scroll region. */
     .ms__custom {
       margin-top: var(--mf-s3);
-    }
-    @media (max-width: 767.98px), (max-height: 560.98px) {
-      .ms__scroll {
-        overflow: visible;
-      }
     }
   `,
   template: `
@@ -246,137 +188,121 @@ import { IntPipe } from '../../../shared/ui/number-format';
     }
 
     <div class="ms__body">
-      <section class="ms__card mf-card" aria-labelledby="ms-details-h" data-summary-details>
-        <div class="ms__head">
-          <h2 class="ms__title mf-card__title" id="ms-details-h">Details</h2>
+      <mf-details-card
+        title="Details"
+        class="ms__details"
+        data-summary-details
+        threeColumns
+        scrollLabel="Matter details, scrollable"
+      >
+        <div mfDetailField label="CM Number">
+          <span class="ms__cm"><mf-matter-ref [value]="matter().matterRef" /></span>
         </div>
-        <div class="ms__scroll" tabindex="0" role="region" aria-label="Matter details, scrollable">
-          <dl class="ms__fields">
-            <div class="ms__f ms__f--cm">
-              <dt>CM Number</dt>
-              <dd><mf-matter-ref [value]="matter().matterRef" /></dd>
-            </div>
-            <div class="ms__f">
-              <dt>Client</dt>
-              <dd data-client-value>
-                @if (canLinkClient()) {
-                  <a class="mf-link" [routerLink]="['/clients', matter().clientId]"
-                    ><span class="pg-mono">{{ matter().clientNumber }}</span>
-                    {{ matter().clientName }}</a
-                  >
-                } @else {
-                  <span
-                    ><span class="pg-mono">{{ matter().clientNumber }}</span>
-                    {{ matter().clientName }}</span
-                  >
-                }
-              </dd>
-            </div>
-            <div class="ms__f">
-              <dt>Matter Number</dt>
-              <dd class="pg-mono">{{ matter().matterNumber }}</dd>
-            </div>
-            <div class="ms__f">
-              <dt>Matter Name</dt>
-              <dd data-matter-name>{{ matter().name }}</dd>
-            </div>
-            <div class="ms__f">
-              <dt>Status</dt>
-              <dd><mf-active-badge [active]="matter().isActive" /></dd>
-            </div>
-            @if (matter().isSensitive) {
-              <div class="ms__f">
-                <dt>Sensitive</dt>
-                <dd data-sensitive-value>
-                  <!-- "Restricted access" is the chip's tooltip; the chip can be reached with Tab and says it to a screen reader. -->
-                  <span
-                    tabindex="0"
-                    title="Restricted access: only its project managers, people assigned one of its tasks and people who may see all sensitive matters can see it."
-                    data-sensitive-chip
-                  >
-                    <mf-sensitive-badge describedBy="matter-sensitive-note" />
-                    <span class="mf-sr-only">Restricted access</span>
-                  </span>
-                </dd>
-              </div>
+        <div mfDetailField label="Client">
+          <span data-client-value>
+            @if (canLinkClient()) {
+              <a class="mf-link" [routerLink]="['/clients', matter().clientId]"
+                ><span class="pg-mono">{{ matter().clientNumber }}</span>
+                {{ matter().clientName }}</a
+              >
+            } @else {
+              <span
+                ><span class="pg-mono">{{ matter().clientNumber }}</span>
+                {{ matter().clientName }}</span
+              >
             }
-            <div class="ms__f" data-managers>
-              <dt>Primary PM</dt>
-              <dd>
-                @if (matter().primaryManager; as p) {
-                  <span class="ms__avatar" aria-hidden="true">{{ initials(p.displayName) }}</span>
-                  <span data-primary-manager>{{ person(p.displayName) }}</span>
-                } @else {
-                  <span class="ms__none" data-primary-manager>None</span>
-                }
-                @if (canAssign()) {
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--text ms__btn"
-                    [attr.data-change-managers]="matter().primaryManager ? '' : null"
-                    [attr.data-add-managers]="matter().primaryManager ? null : ''"
-                    [attr.aria-label]="matter().primaryManager ? 'Change PMs' : 'Add a Primary PM'"
-                    (click)="changeManagers.emit()"
-                  >
-                    {{ matter().primaryManager ? 'Change' : 'Add' }}
-                  </button>
-                }
-              </dd>
-            </div>
-            <div class="ms__f">
-              <dt>Secondary PM</dt>
-              <dd>
-                @if (matter().secondaryManager; as s) {
-                  <span class="ms__avatar" aria-hidden="true">{{ initials(s.displayName) }}</span>
-                  <span data-secondary-manager>{{ person(s.displayName) }}</span>
-                } @else {
-                  <span class="ms__none" data-secondary-manager>None</span>
-                  @if (canAssign()) {
-                    <button
-                      type="button"
-                      class="mf-btn mf-btn--text ms__btn"
-                      data-add-secondary-manager
-                      aria-label="Add a Secondary PM"
-                      (click)="changeManagers.emit()"
-                    >
-                      Add
-                    </button>
-                  }
-                }
-              </dd>
-            </div>
-            <div class="ms__f">
-              <dt>AI Allowed</dt>
-              <dd data-ai-value>
-                <mf-badge tone="neutral" icon="pi-sparkles">{{ ai() }}</mf-badge>
-              </dd>
-            </div>
-            <div class="ms__f">
-              <dt>Created</dt>
-              <dd [attr.title]="long(matter().createdAtUtc)" data-created>
-                {{ stamp(matter().createdAtUtc) }}
-              </dd>
-            </div>
-            <div class="ms__f">
-              <dt>Last Updated</dt>
-              <dd [attr.title]="long(matter().modifiedAtUtc)" data-modified>
-                @if (matter().modifiedAtUtc; as m) {
-                  {{ stamp(m) }}
-                } @else {
-                  <span class="ms__none">-</span>
-                }
-              </dd>
-            </div>
-          </dl>
-          <div class="ms__custom">
-            <mf-custom-fields-view
-              [heading]="false"
-              [versionId]="matter().formVersionId"
-              [values]="matter().formValues ?? {}"
-            />
-          </div>
+          </span>
         </div>
-      </section>
+        <div mfDetailField label="Matter Number">
+          <span class="pg-mono">{{ matter().matterNumber }}</span>
+        </div>
+        <div mfDetailField label="Matter Name">
+          <span data-matter-name>{{ matter().name }}</span>
+        </div>
+        <div mfDetailField label="Status">
+          <mf-active-badge [active]="matter().isActive" />
+        </div>
+        @if (matter().isSensitive) {
+          <div mfDetailField label="Sensitive">
+            <span data-sensitive-value>
+              <!-- "Restricted access" is the chip's tooltip; the chip can be reached with Tab and says it to a screen reader. -->
+              <span
+                tabindex="0"
+                title="Restricted access: only its project managers, people assigned one of its tasks and people who may see all sensitive matters can see it."
+                data-sensitive-chip
+              >
+                <mf-sensitive-badge describedBy="matter-sensitive-note" />
+                <span class="mf-sr-only">Restricted access</span>
+              </span>
+            </span>
+          </div>
+        }
+        <div mfDetailField label="Primary PM" data-managers>
+          @if (matter().primaryManager; as p) {
+            <span class="ms__avatar" aria-hidden="true">{{ initials(p.displayName) }}</span>
+            <span data-primary-manager>{{ person(p.displayName) }}</span>
+          } @else {
+            <span class="ms__none" data-primary-manager>None</span>
+          }
+          @if (canAssign()) {
+            <button
+              type="button"
+              class="mf-btn mf-btn--text ms__btn"
+              [attr.data-change-managers]="matter().primaryManager ? '' : null"
+              [attr.data-add-managers]="matter().primaryManager ? null : ''"
+              [attr.aria-label]="matter().primaryManager ? 'Change PMs' : 'Add a Primary PM'"
+              (click)="changeManagers.emit()"
+            >
+              {{ matter().primaryManager ? 'Change' : 'Add' }}
+            </button>
+          }
+        </div>
+        <div mfDetailField label="Secondary PM">
+          @if (matter().secondaryManager; as s) {
+            <span class="ms__avatar" aria-hidden="true">{{ initials(s.displayName) }}</span>
+            <span data-secondary-manager>{{ person(s.displayName) }}</span>
+          } @else {
+            <span class="ms__none" data-secondary-manager>None</span>
+            @if (canAssign()) {
+              <button
+                type="button"
+                class="mf-btn mf-btn--text ms__btn"
+                data-add-secondary-manager
+                aria-label="Add a Secondary PM"
+                (click)="changeManagers.emit()"
+              >
+                Add
+              </button>
+            }
+          }
+        </div>
+        <div mfDetailField label="AI Allowed">
+          <span data-ai-value>
+            <mf-badge tone="neutral" icon="pi-sparkles">{{ ai() }}</mf-badge>
+          </span>
+        </div>
+        <div mfDetailField label="Created">
+          <span [attr.title]="long(matter().createdAtUtc)" data-created>
+            {{ stamp(matter().createdAtUtc) }}
+          </span>
+        </div>
+        <div mfDetailField label="Last Updated">
+          <span [attr.title]="long(matter().modifiedAtUtc)" data-modified>
+            @if (matter().modifiedAtUtc; as m) {
+              {{ stamp(m) }}
+            } @else {
+              <span class="ms__none">-</span>
+            }
+          </span>
+        </div>
+        <div class="ms__custom">
+          <mf-custom-fields-view
+            [heading]="false"
+            [versionId]="matter().formVersionId"
+            [values]="matter().formValues ?? {}"
+          />
+        </div>
+      </mf-details-card>
     </div>
   `,
 })

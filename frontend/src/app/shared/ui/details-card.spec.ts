@@ -13,6 +13,9 @@ import { DetailField, DetailsCard } from './details-card';
     <mf-details-card title="Relativity Workspace Fields" [count]="8">
       <p data-extra>Body</p>
     </mf-details-card>
+    <mf-details-card title="Details" threeColumns scrollLabel="Matter details, scrollable">
+      <div mfDetailField label="Client">Acme</div>
+    </mf-details-card>
   `,
 })
 class Host {}
@@ -51,5 +54,18 @@ describe('DetailsCard (D-44f)', () => {
     expect(second.querySelector('mf-count-chip')?.textContent?.trim()).toBe('8');
     expect(second.querySelector('[data-extra]')?.textContent).toBe('Body');
     expect(second.querySelector('dl [data-extra]')).toBeNull();
+  });
+
+  it('the Matter Summary options: three columns and a focusable scroll region with its own name (#1253)', () => {
+    const el = render();
+    const cards = el.querySelectorAll('mf-details-card');
+    expect(cards[0].classList.contains('dc--cols3')).toBe(false);
+    expect(cards[0].querySelector('[role=region]')).toBeNull();
+    expect(cards[2].classList.contains('dc--cols3')).toBe(true);
+    expect(cards[2].classList.contains('dc--scroll')).toBe(true);
+    const region = cards[2].querySelector('[role=region]')!;
+    expect(region.getAttribute('aria-label')).toBe('Matter details, scrollable');
+    expect(region.getAttribute('tabindex')).toBe('0');
+    expect(region.querySelector('dl')).not.toBeNull();
   });
 });

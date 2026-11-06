@@ -31,7 +31,7 @@ test('Summary: asset strip, fit-to-content Details in 3, 2 or 1 columns, no Rece
 
     const m = await page.evaluate(() => {
       const card = document.querySelector('[data-summary-details]') as HTMLElement;
-      const fields = document.querySelector('.ms__fields') as HTMLElement;
+      const fields = document.querySelector('[data-summary-details] dl') as HTMLElement;
       const main = document.querySelector('main') as HTMLElement;
       return {
         columns: getComputedStyle(fields).gridTemplateColumns.split(' ').length,
