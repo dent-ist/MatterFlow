@@ -3,15 +3,6 @@
   display: block;
 }
 
-.pr-failure {
-  display: flex;
-  gap: var(--mf-s2);
-  align-items: center;
-  margin: var(--mf-s2) 0;
-  color: var(--mf-danger);
-  font-size: var(--mf-fs-sm);
-}
-
 /* The name cell: the priority badge (the link that opens Edit) and the Default badge on one line. */
 .pr-name {
   display: flex;

@@ -15,8 +15,6 @@ const ALLOWED: Readonly<Record<string, string>> = {
     'Administration list, adopts the shared grid in its Administration issue',
   'features/admin/custom-fields/custom-fields-page.ts':
     'Administration list, adopts the shared grid in its Administration issue',
-  'features/admin/note-tags/note-tags-page.ts':
-    'Administration list, adopts the shared grid in its Administration issue',
   'features/admin/reports/preview-panel.ts': 'a report preview, not a record list',
   'features/admin/reports/report-categories-tab.ts':
     'Administration list, adopts the shared grid in its Administration issue',
