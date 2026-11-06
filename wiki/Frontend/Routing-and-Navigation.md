@@ -10,6 +10,7 @@
 - Guards use `canActivate`. `permissionGuard(...)` passes when the person holds **any** listed permission; `permissionAllGuard(...)` needs **all**. A refused person lands on `/403`. Forms use `canDeactivate: [unsavedChangesGuard]`.
 - Page titles come from the `title` of each route through `MfTitleStrategy` (`core/title/page-title.ts`); tab names are appended with `pageTab('Users', 'Roles')`.
 - Tabs of a page are usually a query parameter (`?tab=`); the address wins over remembered state.
+- A route can carry `data: { hidesGlobalCreateTask: true }` (`HIDES_GLOBAL_CREATE_TASK` in `shared/layout/app-shell.ts`): the shell then hides its own create-task button, because the page has its own "New Task" prefilled for the record. Set on My Work, Task Queue, Pod Work (#1167) and on the Matter and Project record routes.
 
 ## Top-level routes
 
@@ -94,4 +95,4 @@ Keyboard shortcuts are defined in `shared/layout/shortcut-registry.ts`; no new o
 - [Authentication and Authorization](../Architecture/Authentication-and-Authorization.md)
 - [Feature Map](../Features/Feature-Map.md)
 
-Last verified against commit 2e446f8.
+Last verified against commit a8142a1.
