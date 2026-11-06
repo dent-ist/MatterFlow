@@ -143,6 +143,12 @@ describe('UsersPage', () => {
     expect(cell.querySelector('button[data-open]')!.textContent!.trim()).toBe('Priya Patel');
     expect(cell.querySelector('[data-account]')!.textContent!.trim()).toBe('ppatel');
     expect(cell.querySelectorAll('a, button').length).toBe(1);
+    // The name that opens a drawer is the shared text button with the name modifier (D-44m), never a private class (#1257).
+    expect(Array.from(cell.querySelector('button[data-open]')!.classList)).toEqual([
+      'mf-btn',
+      'mf-btn--text',
+      'mf-btn--name',
+    ]);
     expect(cell.querySelector('button[data-open]')!.getAttribute('aria-label')).toBe(
       'Open Priya Patel (KE\\ppatel)',
     );

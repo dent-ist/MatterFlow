@@ -27,35 +27,6 @@
   font-family: var(--mf-font-mono);
 }
 
-/* The name is the row's one control: a button that looks like the link of the other lists (D-13: link colour, regular weight, underlined) (the drawer opens in place and is in the address). */
-.us-open {
-  /* The kit clamps .mf-name (two lines, one under an account line): it is the button itself, so the clamp works on its text. */
-  width: fit-content;
-  max-width: 100%;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--mf-link);
-  font: inherit;
-  font-weight: 400;
-  text-align: left;
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 2px;
-  cursor: pointer;
-  overflow-wrap: anywhere;
-
-  &:hover {
-    color: var(--mf-primary-hover);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--mf-focus);
-    outline-offset: 2px;
-    border-radius: var(--mf-radius);
-  }
-}
-
 /* The Pods cell is one line (the primary pod and "+n", see mf-user-pods-cell [oneLine]): the row stays 44 px; #435 refines the popover. */
 .us-pods {
   max-width: 15rem;

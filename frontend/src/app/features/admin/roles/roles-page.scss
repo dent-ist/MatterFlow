@@ -100,7 +100,7 @@
 
   .mf-role-head {
     display: grid;
-    grid-template-columns: minmax(10rem, 16rem) minmax(0, 1fr) 7rem 7rem;
+    grid-template-columns: minmax(14rem, 20rem) minmax(0, 1fr) 7rem 7rem;
     align-items: center;
     gap: var(--mf-s3);
     box-sizing: border-box;
@@ -122,7 +122,7 @@
 
   .mf-role {
     display: grid;
-    grid-template-columns: minmax(10rem, 16rem) minmax(0, 1fr) 7rem 7rem;
+    grid-template-columns: minmax(14rem, 20rem) minmax(0, 1fr) 7rem 7rem;
     align-items: center;
     gap: var(--mf-s3);
     box-sizing: border-box;
@@ -442,4 +442,18 @@
 /* The wide list is a grid of columns: the name and its "Built-in, Locked" chip stay on one 44 px row. */
 .mf-list--wide .mf-namecell {
   flex-wrap: nowrap;
+}
+
+/* The Name cell of the wide list never wraps (#1257): the Name column is at least 14 rem (224 px), the chip after the name keeps its place and a
+   name that still does not fit is cut with an ellipsis (the full name is the tooltip). */
+.mf-list--wide .mf-name {
+  display: block;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mf-list--wide .mf-namecell > mf-badge {
+  flex: none;
 }
