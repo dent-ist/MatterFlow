@@ -1,0 +1,86 @@
+[
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/dashboard?tab=calendar",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "pm",
+  "url": "/my-matters",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/tasks/new",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/tasks/200",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/profile",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "admin",
+  "url": "/admin/task-types",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "admin",
+  "url": "/admin/reports/new",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/dashboard?tab=calendar",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "pm",
+  "url": "/my-matters",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/tasks/new",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/tasks/200",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/profile",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "admin",
+  "url": "/admin/task-types",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "admin",
+  "url": "/admin/reports/new",
+  "v": []
+ }
+]
