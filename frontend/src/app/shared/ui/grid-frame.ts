@@ -51,10 +51,12 @@ import { ScrollArea } from './fixed-page';
       border-spacing: 0;
       font-size: var(--mf-fs-md);
     }
+    /* The two header bands (headings at top 0, the inline filter row right under them) stick in EVERY cell, above the rows, opaque. The pinned first
+       column of each band also sticks at the left, one layer higher where the bands cross it (#1259). */
     :host ::ng-deep .tt th {
       position: sticky;
       top: 0;
-      z-index: 1;
+      z-index: 3;
       height: 40px;
       padding: 0 var(--mf-s3);
       background: var(--mf-surface-alt);
@@ -66,22 +68,25 @@ import { ScrollArea } from './fixed-page';
       text-transform: uppercase;
       color: var(--mf-text-muted);
     }
+    :host ::ng-deep .tt thead .mf-filter-row td {
+      position: sticky;
+      top: var(--mf-head-h, 40px);
+      z-index: 3;
+      background: var(--mf-surface-alt);
+    }
     /* The identifier column stays in view while the frame scrolls sideways (D-42, #1152). */
     :host ::ng-deep .tt th:first-child,
     :host ::ng-deep .tt td:first-child {
       position: sticky;
       left: 0;
     }
-    :host ::ng-deep .tt th:first-child {
-      z-index: 3;
+    :host ::ng-deep .tt thead th:first-child,
+    :host ::ng-deep .tt thead .mf-filter-row td:first-child {
+      z-index: 4;
     }
-    :host ::ng-deep .tt td:first-child {
+    :host ::ng-deep .tt tbody td:first-child {
       z-index: 1;
       background: var(--mf-surface);
-    }
-    /* The filter row has one background across all cells, the sticky first one included (D-44d). */
-    :host ::ng-deep .tt thead .mf-filter-row td:first-child {
-      background: var(--mf-surface-alt);
     }
     :host ::ng-deep .tt tbody tr:hover > td:first-child {
       background: var(--mf-row-hover);
