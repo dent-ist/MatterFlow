@@ -141,7 +141,7 @@ describe('MattersListPage', () => {
     expect(rows[0].querySelector('.mf-ref')?.textContent).toBe('00343-00012');
     // The name is the one link to the matter; the reference is plain mono text (WP9, #268).
     expect(rows[0].querySelector('.mf-ref')?.getAttribute('href')).toBeNull();
-    expect(rows[0].querySelector('a.pg-name')?.getAttribute('href')).toBe('/matters/7');
+    expect(rows[0].querySelector('a.pg-clip')?.getAttribute('href')).toBe('/matters/7');
     expect(rows[1].querySelector('.mf-ref')?.textContent).toBe('00001-00012');
     expect(rows[0].textContent).toContain('00343 Acme Corp');
     expect(rows[1].textContent).toContain('Inactive');
@@ -377,12 +377,13 @@ describe('MattersListPage', () => {
     expect(el.querySelector('[data-hidden-hint]')?.textContent).toContain('4 inactive hidden');
   });
 
-  it('clamps a long name at two lines and keeps the sensitive badge beside it', async () => {
+  it('keeps a long name on one line (ellipsis and tooltip) and the sensitive badge beside it (D-45, #1174)', async () => {
     const fixture = await create();
     const first = fixture.nativeElement.querySelectorAll('tbody tr')[1];
-    expect(first.querySelector('.pg-namecell .pg-name')).not.toBeNull();
+    expect(first.querySelector('.pg-namecell .pg-clip')).not.toBeNull();
     expect(first.querySelector('.pg-namecell mf-sensitive-badge')).not.toBeNull();
-    expect(first.querySelector('.pg-name')?.getAttribute('title')).toBeTruthy();
+    expect(first.querySelector('.pg-clip')?.getAttribute('title')).toBeTruthy();
+    expect(first.querySelector('.pg-name')).toBeNull();
   });
 
   it('writes filter changes to the URL (text with replaceUrl) and removes the client chip through the URL', async () => {
@@ -445,9 +446,8 @@ describe('MattersListPage', () => {
       (h) => h.getAttribute('aria-label'),
     );
     expect(labels).toContain('Resize CM Number column');
-    expect(labels).toContain('Resize Name column');
+    expect(labels).toContain('Resize Matter Name column');
     expect(labels).toContain('Resize Primary PM column');
-    expect(labels).toContain('Resize Secondary PM column');
   });
 
   it('reorders and hides columns from the shared Columns menu, remembers it per person, and resets (MD-28, #1032)', async () => {
@@ -455,13 +455,13 @@ describe('MattersListPage', () => {
     const el: HTMLElement = fixture.nativeElement;
     const heads = () =>
       Array.from(el.querySelectorAll('thead tr:first-child th')).map((h) => h.textContent!.trim());
-    expect(heads().slice(0, 3)).toEqual(['CM Number', 'Name', 'Client']);
+    expect(heads().slice(0, 3)).toEqual(['CM Number', 'Matter Name', 'Client']);
     el.querySelector<HTMLButtonElement>('[data-grid-columns]')!.click();
     fixture.detectChanges();
     // Client moves left of Name by the keyboard-reachable button.
     el.querySelector<HTMLButtonElement>('[data-move="client:left"]')!.click();
     await settle(fixture);
-    expect(heads().slice(0, 3)).toEqual(['CM Number', 'Client', 'Name']);
+    expect(heads().slice(0, 3)).toEqual(['CM Number', 'Client', 'Matter Name']);
     const key = `mf.grid.v1.matters.${TestBed.inject(AuthStore).profile()?.userId ?? 'anon'}`;
     expect(JSON.parse(localStorage.getItem(key)!).o.slice(0, 3)).toEqual([
       'matterRef',
@@ -478,7 +478,7 @@ describe('MattersListPage', () => {
     expect(heads()).not.toContain('Overdue');
     el.querySelector<HTMLButtonElement>('[data-grid-columns-reset]')!.click();
     await settle(fixture);
-    expect(heads().slice(0, 3)).toEqual(['CM Number', 'Name', 'Client']);
+    expect(heads().slice(0, 3)).toEqual(['CM Number', 'Matter Name', 'Client']);
     expect(heads()).toContain('Overdue');
     expect(localStorage.getItem(key)).toBeNull();
   });
@@ -498,10 +498,9 @@ describe('MattersListPage', () => {
 
       expect(heads(el)).toEqual([
         'CM Number',
-        'Name',
+        'Matter Name',
         'Client',
         'Primary PM',
-        'Secondary PM',
         'Open Tasks',
         'Overdue',
         'Status',
@@ -522,14 +521,7 @@ describe('MattersListPage', () => {
     it('leaves the count columns out without Task.View and no longer shows the Projects count', async () => {
       const fixture = await create(['Matter.View']);
       const el: HTMLElement = fixture.nativeElement;
-      expect(heads(el)).toEqual([
-        'CM Number',
-        'Name',
-        'Client',
-        'Primary PM',
-        'Secondary PM',
-        'Status',
-      ]);
+      expect(heads(el)).toEqual(['CM Number', 'Matter Name', 'Client', 'Primary PM', 'Status']);
       expect(el.querySelector('[data-count]')).toBeNull();
     });
 
@@ -546,7 +538,7 @@ describe('MattersListPage', () => {
       const copy = row.querySelector('button[data-row-stop]') as HTMLButtonElement;
       expect(copy.getAttribute('tabindex')).toBe('-1');
       expect(copy.getAttribute('aria-label')).toBe('Copy matter number');
-      const name = row.querySelector('a.pg-name') as HTMLAnchorElement;
+      const name = row.querySelector('a.pg-clip') as HTMLAnchorElement;
       expect(name.getAttribute('data-row-list')).toBe('matters');
       expect(name.getAttribute('data-row-key')).toBe('7');
     });
@@ -577,6 +569,15 @@ describe('MattersListPage', () => {
         aMatter({ matterId: 3, matterRef: '00343-00014', secondaryManager: BOB }),
       ]);
       const el: HTMLElement = fixture.nativeElement;
+      // Secondary PM is one click away in Columns (off by default so the default columns fit 1366, D-43a).
+      el.querySelector<HTMLButtonElement>('[data-grid-columns]')!.click();
+      fixture.detectChanges();
+      const box = el.querySelector<HTMLInputElement>(
+        '[data-grid-columns-panel] [data-column="secondaryManager"]',
+      )!;
+      box.checked = true;
+      box.dispatchEvent(new Event('change'));
+      await settle(fixture);
 
       expect(pm(el, 0, 'primary')).toBe('Ann Lee');
       expect(pm(el, 0, 'secondary')).toBe('Bob Roe');

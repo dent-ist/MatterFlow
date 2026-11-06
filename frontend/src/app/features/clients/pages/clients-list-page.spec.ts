@@ -198,7 +198,7 @@ describe('ClientsListPage', () => {
     fixture.componentRef.setInput('sort', 'name');
     await settle(fixture);
     const row = fixture.nativeElement.querySelector('tbody tr')!;
-    const name = row.querySelector('.pg-name')!;
+    const name = row.querySelector('.pg-clip')!;
     expect(name.getAttribute('title')).toBe(long);
     expect(name.textContent?.trim()).toBe(long);
     expect(row.querySelector('td.pg-nowrap')).not.toBeNull();
@@ -256,7 +256,7 @@ describe('ClientsListPage', () => {
       queryParamsHandling: 'merge',
     });
 
-    buttonByLabel(el, 'Name')!.click();
+    buttonByLabel(el, 'Client Name')!.click();
     expect(navigate).toHaveBeenLastCalledWith([], {
       queryParams: { sort: 'name', page: null },
       queryParamsHandling: 'merge',
@@ -339,7 +339,7 @@ describe('ClientsListPage', () => {
       );
       expect(heads).toEqual([
         'Client Number',
-        'Name',
+        'Client Name',
         'Matters',
         'Open Tasks',
         'Overdue',
@@ -364,13 +364,39 @@ describe('ClientsListPage', () => {
       expect(quiet.querySelectorAll('[data-count] a')).toHaveLength(0);
     });
 
+    it('has the shared Columns menu: hides Matters, remembers it per person, resets, and the grid has resize handles (#1179, #1241)', async () => {
+      const fixture = await create(['Client.View', 'Task.View']);
+      const el: HTMLElement = fixture.nativeElement;
+      const heads = () =>
+        Array.from(el.querySelectorAll('thead tr:first-child th')).map((h) =>
+          h.textContent!.trim(),
+        );
+      expect(heads()).toContain('Matters');
+      expect(el.querySelectorAll('thead tr:first-child th > .mf-resize').length).toBeGreaterThan(3);
+      el.querySelector<HTMLButtonElement>('[data-grid-columns]')!.click();
+      fixture.detectChanges();
+      const box = (k: string) =>
+        el.querySelector<HTMLInputElement>(`[data-grid-columns-panel] [data-column="${k}"]`)!;
+      expect(box('name').disabled).toBe(true);
+      box('matters').checked = false;
+      box('matters').dispatchEvent(new Event('change'));
+      await settle(fixture);
+      expect(heads()).not.toContain('Matters');
+      const key = `mf.grid.v1.clients.${TestBed.inject(AuthStore).profile()?.userId ?? 'anon'}`;
+      expect(localStorage.getItem(key)).not.toBeNull();
+      el.querySelector<HTMLButtonElement>('[data-grid-columns-reset]')!.click();
+      await settle(fixture);
+      expect(heads()).toContain('Matters');
+      expect(localStorage.getItem(key)).toBeNull();
+    });
+
     it('leaves both columns out without Task.View', async () => {
       const fixture = await create(['Client.View']);
       const el: HTMLElement = fixture.nativeElement;
       const heads = Array.from(el.querySelectorAll('thead tr:first-child th')).map((h) =>
         h.textContent!.trim(),
       );
-      expect(heads).toEqual(['Client Number', 'Name', 'Matters', 'Status']);
+      expect(heads).toEqual(['Client Number', 'Client Name', 'Matters', 'Status']);
       expect(el.querySelector('[data-count]')).toBeNull();
     });
 
@@ -449,12 +475,12 @@ describe('ClientsListPage', () => {
       const fixture = TestBed.createComponent(ClientsListPage);
       await settle(fixture);
       const el: HTMLElement = fixture.nativeElement;
-      expect(el.querySelector('[data-my-matters-col]')?.textContent).toContain('My Matters');
+      expect(el.querySelector('th[data-col="myMatters"]')?.textContent).toContain('My Matters');
       expect(el.querySelector('[data-my-matters-cell]')?.textContent?.trim()).toBe('2');
 
       TestBed.resetTestingModule();
       const plain = await create(['Client.View', 'Matter.AssignManagers']);
-      expect(plain.nativeElement.querySelector('[data-my-matters-col]')).toBeNull();
+      expect(plain.nativeElement.querySelector('th[data-col="myMatters"]')).toBeNull();
     });
 
     it('does not scope a link that carries filters, and All is remembered per page', async () => {

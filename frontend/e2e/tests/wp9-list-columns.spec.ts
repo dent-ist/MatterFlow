@@ -414,12 +414,12 @@ test.describe('WP9 list columns', () => {
         [
           `/clients?name=${w.token}`,
           'Clients list',
-          ['Client Number', 'Name', 'Matters', 'Status'],
+          ['Client Number', 'Client Name', 'Matters', 'Status'],
         ],
         [
           `/matters?name=${w.token}`,
           'Matters list',
-          ['CM Number', 'Name', 'Client', 'Primary PM', 'Secondary PM', 'Status'],
+          ['CM Number', 'Matter Name', 'Client', 'Primary PM', 'Status'],
         ],
         [`/projects?name=${w.token}`, 'Projects list', ['Name', 'Matter', 'Client', 'Status']],
         [`/clients/${w.client.clientId}?tab=matters`, 'Matters list', ['Matter', 'Name', 'Status']],
