@@ -179,9 +179,6 @@ const BONES: Record<string, string> = {
       min-width: var(--mf-col-client-w);
       max-width: 0;
     }
-    .ml-namecell mf-sensitive-badge {
-      flex: none;
-    }
     .ml-fact {
       white-space: nowrap;
     }
@@ -462,7 +459,7 @@ const BONES: Record<string, string> = {
             </ng-template>
             <ng-template mfCell="name" let-m>
               <td class="ml-name">
-                <div class="pg-namecell ml-namecell">
+                <div class="pg-namecell">
                   <a
                     class="mf-link pg-clip"
                     [routerLink]="['/matters', m.matterId]"

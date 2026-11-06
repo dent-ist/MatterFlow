@@ -385,12 +385,27 @@ test.describe('WP9 list columns', () => {
       await expect(region.locator('tbody tr').first()).toBeVisible();
       const heads = await region.locator('thead tr:first-child th').allTextContents();
       expect(heads.map((h) => h.trim())).toEqual([
-        'Matter',
-        'Name',
+        'CM Number',
+        'Matter Name',
         'Open Tasks',
         'Overdue',
         'Status',
+        'Actions',
       ]);
+      // The shared record grid (#1270): resize handles, Columns, and a Status column that does not take the spare width (Matter Name does).
+      await expect(region.locator('thead .mf-resize')).not.toHaveCount(0);
+      await expect(page.locator('mf-client-matters mf-record-columns button')).toBeVisible();
+      const widths = await region
+        .locator('thead tr:first-child th')
+        .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().width)));
+      expect(widths[4], 'Status keeps its fixed width').toBeLessThanOrEqual(240);
+      expect(widths[1], 'Matter Name takes the spare width').toBeGreaterThan(widths[4]);
+      await page.setViewportSize({ width: 1920, height: 1080 });
+      const wide = await region
+        .locator('thead tr:first-child th')
+        .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().width)));
+      expect(wide[4], 'Status is the same width at 1920').toBe(widths[4]);
+      await page.setViewportSize({ width: 1366, height: 768 });
       await expect(page.locator('[data-page-actions] [data-action="new-matter"]')).toHaveCount(1);
       await expect(page.locator('[data-create-matter]')).toHaveCount(0);
       await shot(page, 'client-matters-tab');

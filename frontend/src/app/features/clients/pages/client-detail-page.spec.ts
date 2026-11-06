@@ -103,7 +103,7 @@ describe('ClientDetailPage', () => {
     const ref = el().querySelector('mf-client-matters tbody .mf-ref');
     expect(ref?.textContent).toBe('00343-00012');
     expect(ref?.getAttribute('href')).toBeNull(); // the reference is plain text; the name is the one link (WP9, #268)
-    expect(el().querySelector('mf-client-matters tbody a.pg-name')?.getAttribute('href')).toBe(
+    expect(el().querySelector('mf-client-matters tbody a.mf-link')?.getAttribute('href')).toBe(
       '/matters/7',
     );
     expect(tab('Matters').getAttribute('aria-selected')).toBe('true');
@@ -212,6 +212,23 @@ describe('ClientDetailPage', () => {
     expect(ddSelect(document.body, 'Filter by Sensitive').value).toBe('');
     expect(el().querySelector('[data-more-filters]')).toBeNull();
     expect(el().querySelector('[data-filter-count]')).toBeNull();
+  });
+
+  it('draws the Matters tab with the shared record grid: Columns, the Sorted line and fixed column widths (#1270)', async () => {
+    await create(['Client.View', 'Matter.View'], 'matters');
+    const tab = el().querySelector('mf-client-matters')!;
+    expect(tab.querySelector('mf-record-grid')).not.toBeNull();
+    expect(tab.querySelector('mf-record-columns')).not.toBeNull();
+    expect(tab.querySelector('[data-sorted-text]')!.textContent).toContain('CM Number');
+    const widths = Array.from(tab.querySelectorAll('thead tr:first-child th[data-col]')).map(
+      (th) => [th.getAttribute('data-col'), th.getAttribute('data-rg-width')],
+    );
+    // Matter Name is the one spring (no width); Status has a fixed width.
+    expect(widths).toEqual([
+      ['matterRef', '157px'],
+      ['name', null],
+      ['status', '238px'],
+    ]);
   });
 
   it('filters, sorts and pages the matters through the address', async () => {

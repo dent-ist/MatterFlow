@@ -7,6 +7,7 @@ import {
   effect,
   inject,
   input,
+  signal,
   untracked,
   viewChild,
 } from '@angular/core';
@@ -18,12 +19,20 @@ import { HasPermissionDirective } from '../../../shared/directives/has-permissio
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { matterColumnDefs } from '../../../shared/filters/common-defs';
 import { FilterDef } from '../../../shared/filters/filter-def';
-import { FiltersBar } from '../../../shared/filters/filters-bar';
+import { ListToolbar } from '../../../shared/filters/list-toolbar';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { ActiveBadge, SensitiveBadge } from '../../../shared/ui/badge';
-import { SortHeader } from '../../../shared/ui/data-table';
-import { GridFrame } from '../../../shared/ui/grid-frame';
-import { GridBody } from '../../../shared/ui/grid-body';
+import { ActionMenu } from '../../../shared/ui/action-menu';
+import { AddCommentDialog } from '../../../shared/matter-actions/add-comment-dialog';
+import { matterActionMenu } from '../../../shared/matter-actions/matter-actions';
+import {
+  RecordCell,
+  RecordColumns,
+  RecordGrid,
+  RecordGridColumn,
+  RecordGridState,
+} from '../../../shared/ui/record-grid';
+import { SortedLine, sortLabelsOf } from '../../../shared/ui/sorted-line';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
 import {
@@ -61,7 +70,6 @@ const BONES: Record<string, string> = {
 @Component({
   selector: 'mf-client-matters',
   imports: [
-    GridFrame,
     NgTemplateOutlet,
     HasPermissionDirective,
     ActiveBadge,
@@ -70,9 +78,13 @@ const BONES: Record<string, string> = {
     RouterLink,
     TaskCount,
     Pager,
-    SortHeader,
-    GridBody,
-    FiltersBar,
+    ListToolbar,
+    SortedLine,
+    RecordGrid,
+    RecordCell,
+    RecordColumns,
+    ActionMenu,
+    AddCommentDialog,
     ColumnFilterRow,
     RecordCardList,
     RecordCardDef,
@@ -89,6 +101,11 @@ const BONES: Record<string, string> = {
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
+    /* Matter Name is the spring of the table: one line with an ellipsis (D-45); the floor is on the heading (the column definition). */
+    td.cm-name {
+      width: 100%;
+      max-width: 0;
+    }
   `,
   template: `
     @if (!canView()) {
@@ -96,7 +113,17 @@ const BONES: Record<string, string> = {
         You don't have permission to view matters.
       </div>
     } @else {
-      <mf-filters-bar [filters]="filters" controls="client-matter-filter-row" [clearAlso]="['q']">
+      <mf-list-toolbar [filters]="filters" controls="client-matter-filter-row" [clearAlso]="['q']">
+        @if (!phone()) {
+          <mf-record-columns mfColumns [grid]="grid" />
+        }
+        <mf-sorted-line
+          mfBarEnd
+          [sort]="sort()"
+          [defaultSort]="defaultSort"
+          [labels]="sortLabels()"
+          (resetSort)="pickSort(null)"
+        />
         <mf-record-sort
           mfSheetSort
           [options]="sortOptions()"
@@ -104,7 +131,7 @@ const BONES: Record<string, string> = {
           defaultSort="matterRef"
           (sorted)="pickSort($event)"
         />
-      </mf-filters-bar>
+      </mf-list-toolbar>
 
       @if (phone()) {
         <mf-record-card-list
@@ -175,145 +202,108 @@ const BONES: Record<string, string> = {
           </ng-template>
         </mf-record-card-list>
       } @else {
-        <mf-grid-frame scrollLabel="Matters list" #scroll>
-          <div class="mf-scroll">
-            <table class="pg-table tt">
-              <caption class="pg-sr">
-                Matters of
-                {{
-                  clientName()
-                }}
-              </caption>
-              <thead>
-                <tr>
-                  <th
-                    mfSort="matterRef"
-                    [sort]="sort()"
-                    [defaultSort]="defaultSort"
-                    (sorted)="setSort($event)"
-                  >
-                    CM Number
-                  </th>
-                  <th
-                    mfSort="name"
-                    [sort]="sort()"
-                    [defaultSort]="defaultSort"
-                    (sorted)="setSort($event)"
-                  >
-                    Matter Name
-                  </th>
-                  @if (counts()) {
-                    <th
-                      class="pg-num"
-                      mfSort="openTasks"
-                      [firstDesc]="true"
-                      [sort]="sort()"
-                      [defaultSort]="defaultSort"
-                      (sorted)="setSort($event)"
-                    >
-                      Open Tasks
-                    </th>
-                    <th
-                      class="pg-num"
-                      mfSort="overdue"
-                      [firstDesc]="true"
-                      [sort]="sort()"
-                      [defaultSort]="defaultSort"
-                      (sorted)="setSort($event)"
-                    >
-                      Overdue
-                    </th>
-                  }
-                  <th scope="col">Status</th>
-                </tr>
-                @if (filters.rowVisible()) {
-                  <tr
-                    mfColumnFilterRow
-                    id="client-matter-filter-row"
-                    [filters]="filters"
-                    [columns]="columns()"
-                  ></tr>
+        <mf-record-grid
+          #scroll
+          label="Matters list"
+          [caption]="'Matters of ' + clientName()"
+          noun="matters"
+          emptyText="No matters yet for this client."
+          [grid]="grid"
+          [rows]="rows()"
+          [rowKey]="matterKey"
+          [loadState]="state()"
+          [empty]="rows().length === 0"
+          [filtered]="filters.activeCount() > 0"
+          [filters]="filters"
+          [hidden]="hiddenCount()"
+          hiddenLabel="inactive"
+          [bones]="bones"
+          [actions]="hasActions()"
+          [sort]="sort()"
+          [defaultSort]="defaultSort"
+          (sorted)="setSort($event)"
+          (retry)="load()"
+          (clear)="clear()"
+          (showAll)="showAll()"
+        >
+          @if (filters.rowVisible()) {
+            <tr
+              mfGridFilterRow
+              mfColumnFilterRow
+              id="client-matter-filter-row"
+              [filters]="filters"
+              [columns]="columns()"
+            ></tr>
+          }
+          <span mfEmptyAction *mfHasPermission="'Matter.Create'">
+            @if (clientActive()) {
+              <button type="button" class="mf-btn" data-empty-new-matter (click)="newMatter()">
+                New Matter
+              </button>
+            } @else {
+              <span class="cm-reason">{{ INACTIVE_REASON }}</span>
+            }
+          </span>
+          <ng-template mfCell="matterRef" let-m>
+            <td>
+              <mf-matter-ref [value]="m.matterRef" [rowStop]="true" />
+            </td>
+          </ng-template>
+          <ng-template mfCell="name" let-m>
+            <td class="cm-name">
+              <div class="pg-namecell">
+                <a
+                  class="mf-link pg-clip"
+                  [routerLink]="['/matters', m.matterId]"
+                  mfRowLink="client-matters"
+                  [rowKey]="m.matterId"
+                  [title]="m.name"
+                  >{{ m.name }}</a
+                >
+                @if (m.isSensitive) {
+                  <mf-sensitive-badge [compact]="true" />
                 }
-              </thead>
-              <tbody
-                mfGridBody
-                noun="matters"
-                emptyText="No matters yet for this client."
-                [state]="state()"
-                [empty]="rows().length === 0"
-                [filtered]="filters.activeCount() > 0"
-                [columns]="columns().length"
-                [skeleton]="skeleton()"
-                (retry)="load()"
-                (clear)="clear()"
-                [hidden]="hiddenCount()"
-                hiddenLabel="inactive"
-                (showAll)="showAll()"
-              >
-                <span mfEmptyAction *mfHasPermission="'Matter.Create'">
-                  @if (clientActive()) {
-                    <button
-                      type="button"
-                      class="mf-btn"
-                      data-empty-new-matter
-                      (click)="newMatter()"
-                    >
-                      New Matter
-                    </button>
-                  } @else {
-                    <span class="cm-reason">{{ INACTIVE_REASON }}</span>
-                  }
-                </span>
-                @for (m of rows(); track m.matterId) {
-                  <tr>
-                    <td>
-                      <mf-matter-ref [value]="m.matterRef" [rowStop]="true" />
-                    </td>
-                    <td>
-                      <div class="pg-namecell">
-                        <a
-                          class="mf-link pg-name"
-                          [routerLink]="['/matters', m.matterId]"
-                          mfRowLink="client-matters"
-                          [rowKey]="m.matterId"
-                          [title]="m.name"
-                          >{{ m.name }}</a
-                        >
-                        @if (m.isSensitive) {
-                          <mf-sensitive-badge />
-                        }
-                      </div>
-                    </td>
-                    @if (counts()) {
-                      <td class="pg-num">
-                        <mf-task-count
-                          kind="open"
-                          scope="matter"
-                          [recordId]="m.matterId"
-                          [name]="m.name"
-                          [count]="m.openTaskCount ?? 0"
-                        />
-                      </td>
-                      <td class="pg-num">
-                        <mf-task-count
-                          kind="overdue"
-                          scope="matter"
-                          [recordId]="m.matterId"
-                          [name]="m.name"
-                          [count]="m.overdueTaskCount ?? 0"
-                        />
-                      </td>
-                    }
-                    <td><mf-active-badge [active]="m.isActive" /></td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-          <div frameFoot>
+              </div>
+            </td>
+          </ng-template>
+          <ng-template mfCell="openTasks" let-m>
+            <td class="pg-num">
+              <mf-task-count
+                kind="open"
+                scope="matter"
+                [recordId]="m.matterId"
+                [name]="m.name"
+                [count]="m.openTaskCount ?? 0"
+              />
+            </td>
+          </ng-template>
+          <ng-template mfCell="overdue" let-m>
+            <td class="pg-num">
+              <mf-task-count
+                kind="overdue"
+                scope="matter"
+                [recordId]="m.matterId"
+                [name]="m.name"
+                [count]="m.overdueTaskCount ?? 0"
+              />
+            </td>
+          </ng-template>
+          <ng-template mfCell="status" let-m>
+            <td><mf-active-badge [active]="m.isActive" /></td>
+          </ng-template>
+          <ng-template mfCell="actions" let-m>
+            <td class="mf-col-actions" data-row-actions>
+              <mf-action-menu
+                [floating]="true"
+                [label]="menus().get(m.matterId)!.label"
+                [items]="menus().get(m.matterId)!.items"
+              />
+            </td>
+          </ng-template>
+          <div mfGridFoot>
             <ng-container *ngTemplateOutlet="pager" />
           </div>
-        </mf-grid-frame>
+        </mf-record-grid>
       }
       @if (phone()) {
         <ng-container *ngTemplateOutlet="pager" />
@@ -333,6 +323,13 @@ const BONES: Record<string, string> = {
           />
         }
       </ng-template>
+      @if (commentRow(); as row) {
+        <mf-add-comment-dialog
+          [matterId]="row.matterId"
+          [matterLabel]="row.matterRef + ' ' + row.name"
+          [(visible)]="commentOpen"
+        />
+      }
     }
   `,
 })
@@ -353,8 +350,8 @@ export class ClientMatters extends ServerListPage<MatterResponse> {
   protected readonly phone = phoneCards();
   /** The phone's Sort by select: the sortable columns, counts only with Task.View (the headers' keys). */
   protected readonly sortOptions = computed((): SortOption[] => [
-    { value: 'matterRef', label: 'Reference' },
-    { value: 'name', label: 'Name' },
+    { value: 'matterRef', label: 'CM Number' },
+    { value: 'name', label: 'Matter Name' },
     ...(this.counts()
       ? [
           { value: 'openTasks', label: 'Open Tasks', descFirst: true },
@@ -366,14 +363,89 @@ export class ClientMatters extends ServerListPage<MatterResponse> {
   protected readonly defaultSort = 'matterRef';
   /** Counts are null without Task.View: the two columns are not rendered then. */
   protected readonly counts = computed(() => this.auth.has('Task.View'));
-  /** The columns of the grid, in order; the keys the filter definitions point at (the Matters list's, without Client). */
-  protected readonly columns = computed(() => [
-    'matterRef',
-    'name',
-    ...(this.counts() ? ['openTasks', 'overdue'] : []),
-    'status',
+  protected readonly sortLabels = computed(() => sortLabelsOf(this.sortOptions()));
+  /** The row menu (New Task, Bulk Update, Add Comment, Open Task List) exists for people who can see tasks, as on the Matters list. */
+  protected readonly hasActions = computed(() => this.auth.has('Task.View'));
+  /** The columns this person may have, in the default order (the counts need Task.View). Widths are fixed, Matter Name is the one spring (D-43; #1270). */
+  protected readonly gridDefs = computed((): RecordGridColumn[] => [
+    {
+      key: 'matterRef',
+      // 157 px: the Number filter field of the filter row is 133 px wide plus the cell's 24 px of padding.
+      label: 'CM Number',
+      locked: true,
+      sort: 'matterRef',
+      width: '157px',
+      minWidth: '157px',
+    },
+    { key: 'name', label: 'Matter Name', locked: true, sort: 'name', minWidth: '200px' },
+    ...(this.counts()
+      ? [
+          {
+            key: 'openTasks',
+            label: 'Open Tasks',
+            sort: 'openTasks',
+            firstDesc: true,
+            num: true,
+            width: '125px',
+            minWidth: '125px',
+          },
+          {
+            key: 'overdue',
+            label: 'Overdue',
+            sort: 'overdue',
+            firstDesc: true,
+            num: true,
+            width: '105px',
+            minWidth: '105px',
+          },
+        ]
+      : []),
+    {
+      key: 'status',
+      label: 'Status',
+      // 238 px, not the 140 of the chip alone: the filter row's Status cell holds the Active dropdown and the Sensitive choice side by side (214 px), and the column must not move when the row is open.
+      width: '238px',
+      minWidth: '238px',
+    },
   ]);
-  protected readonly skeleton = computed(() => this.columns().map((key) => BONES[key]));
+  /** The grid state (shared record grid, #1241): order, visibility and stored widths per person under the id "client-matters". */
+  protected readonly grid = new RecordGridState('client-matters', this.gridDefs);
+  protected readonly bones = BONES;
+  protected readonly matterKey = (m: MatterResponse): number => m.matterId;
+  /** Every column of the table, in order, the action one included (its filter cell is empty but grey): the keys the filter definitions point at. */
+  protected readonly columns = computed(() => [
+    ...this.grid.shown(),
+    ...(this.hasActions() ? ['actions'] : []),
+  ]);
+  /** The matter the Add Comment dialog works on. */
+  protected readonly commentRow = signal<MatterResponse | null>(null);
+  protected readonly commentOpen = signal(false);
+  /** The quick actions of a row, built once per page of rows (the Matters list's menu). */
+  protected readonly menus = computed(
+    () => new Map(this.rows().map((m) => [m.matterId, this.buildMenu(m)] as const)),
+  );
+
+  private buildMenu(m: MatterResponse) {
+    return matterActionMenu(
+      { matterId: m.matterId, matterRef: m.matterRef, name: m.name, isActive: m.isActive },
+      (p) => this.auth.has(p),
+      {
+        newTask: () =>
+          void this.router.navigate(['/tasks/new'], { queryParams: { matterId: m.matterId } }),
+        bulk: () =>
+          void this.router.navigate(['/matters', m.matterId], {
+            queryParams: { tab: 'tasks' },
+            state: { selectTasks: true },
+          }),
+        addComment: () => {
+          this.commentRow.set(m);
+          this.commentOpen.set(true);
+        },
+        openTasks: () =>
+          void this.router.navigate(['/matters', m.matterId], { queryParams: { tab: 'tasks' } }),
+      },
+    );
+  }
   protected readonly INACTIVE_REASON = INACTIVE_REASON;
 
   /** One definition per filter (the Matters list's, without the Client column). */
