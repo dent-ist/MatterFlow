@@ -1,5 +1,8 @@
 import { TaskTypeCell } from '../../../shared/ui/task-type-cell';
 import { TagChip } from '../../../shared/ui/tag-chip';
+import { CountChip } from '../../../shared/ui/count-chip';
+import { FiltersToggle } from '../../../shared/ui/column-filters';
+import { PriorityFlag } from '../../../shared/ui/priority-flag';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -117,10 +120,13 @@ export function statusCodes(status: StatusFilter): string[] {
 @Component({
   selector: 'mf-mm-task-list',
   imports: [
+    CountChip,
+    FiltersToggle,
     IntPipe,
     Dropdown,
     GridFrame,
     Pager,
+    PriorityFlag,
     PriorityPill,
     RouterLink,
     StatusChip,
@@ -135,27 +141,16 @@ export function statusCodes(status: StatusFilter): string[] {
         <h2 class="ttl">
           Tasks
           @if (counts(); as c) {
-            <span class="tot">{{ total() | mfInt }}</span>
+            <mf-count-chip data-task-total>{{ total() | mfInt }}</mf-count-chip>
           }
         </h2>
         <div class="tools">
-          <button
-            type="button"
-            class="mf-btn fbtn"
-            data-filter-toggle
-            aria-controls="mm-col-filters"
-            [attr.aria-expanded]="filterOpen()"
-            [class.on]="activeCount() > 0"
-            (click)="toggleFilters()"
-          >
-            <i class="pi pi-filter" aria-hidden="true"></i>
-            <span>Filters</span>
-            @if (activeCount() > 0) {
-              <span class="bdg" data-filter-count
-                >{{ activeCount() | mfInt }}<span class="sr"> active</span></span
-              >
-            }
-          </button>
+          <mf-filters-toggle
+            controls="mm-col-filters"
+            [open]="filterOpen()"
+            [count]="activeCount()"
+            (toggled)="toggleFilters()"
+          />
           <mf-dropdown
             class="show"
             buttonId="mm-show"
@@ -343,14 +338,18 @@ export function statusCodes(status: StatusFilter): string[] {
                   <div class="cell">
                     <mf-task-type-cell
                       class="ttype"
-                      size="sm"
                       [iconKey]="t.taskTypeIconKey"
                       [colourKey]="t.taskTypeColourKey"
                       [typeId]="t.taskTypeId"
                       [name]="t.taskTypeName"
                     />
                     <span class="tcell">
-                      <a class="mf-link" [routerLink]="['/tasks', t.taskId]" data-task-link>
+                      <a
+                        class="mf-link tlink"
+                        [routerLink]="['/tasks', t.taskId]"
+                        [attr.title]="t.title"
+                        data-task-link
+                      >
                         <span class="ref">{{ t.taskNumber }}</span> {{ t.title }}
                       </a>
                       @if (showMatter()) {
@@ -377,11 +376,11 @@ export function statusCodes(status: StatusFilter): string[] {
                   />
                 </td>
                 <td class="c-prio" data-cell="priority">
-                  @if (pill(t); as p) {
-                    <mf-priority-pill [kind]="p" [label]="t.priority.label" />
-                  } @else {
-                    <span class="sr">{{ t.priority.label }} priority</span>
-                  }
+                  <mf-priority-flag
+                    [label]="t.priority.label"
+                    [color]="t.priority.color"
+                    [muted]="closed(t)"
+                  />
                 </td>
                 <td class="c-asg" data-cell="assignee">
                   @if (t.assignedUser?.displayName ?? t.assignedPod?.name; as who) {
@@ -447,19 +446,10 @@ export function statusCodes(status: StatusFilter): string[] {
     .ttl {
       margin: 0;
       font-size: var(--mf-fs-lg);
-      font-weight: 700;
+      font-weight: var(--mf-fw-semibold);
       display: flex;
       align-items: center;
       gap: var(--mf-s2);
-    }
-    .tot {
-      font-variant-numeric: tabular-nums;
-      padding: 0 var(--mf-s2);
-      border-radius: 999px;
-      background: var(--mf-surface-alt);
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
-      font-weight: 700;
     }
     .tools {
       display: flex;
@@ -483,26 +473,6 @@ export function statusCodes(status: StatusFilter): string[] {
     .urg[aria-pressed='true'] {
       color: var(--mf-text);
       font-weight: 700;
-    }
-    .fbtn[aria-expanded='true'] {
-      border-color: var(--mf-primary);
-      box-shadow: 0 0 0 3px var(--mf-sem-info-bg);
-    }
-    .fbtn.on {
-      background: var(--mf-sem-info-bg);
-      border-color: var(--mf-sem-info-line);
-    }
-    .bdg {
-      min-width: 18px;
-      padding: 0 5px;
-      box-sizing: border-box;
-      border-radius: var(--mf-radius-pill);
-      background: var(--mf-primary);
-      color: var(--mf-primary-contrast);
-      font-size: var(--mf-fs-xs);
-      font-weight: 700;
-      line-height: 18px;
-      text-align: center;
     }
     .fstack {
       display: grid;
@@ -560,8 +530,10 @@ export function statusCodes(status: StatusFilter): string[] {
       margin: var(--mf-s5) var(--mf-s4);
       color: var(--mf-text-muted);
     }
-    .tt {
+    /* The columns are the grid tokens (D-43) and the table is as wide as the frame: it never scrolls sideways, so Due is never cut (#1164); the frame's own 60 rem minimum is lifted here. */
+    mf-grid-frame .tt {
       table-layout: fixed;
+      min-width: 0;
     }
     .tt td {
       height: 44px;
@@ -580,14 +552,21 @@ export function statusCodes(status: StatusFilter): string[] {
       min-width: 0;
     }
     .ttype {
-      flex: 0 0 7.5rem;
-      width: 7.5rem;
+      flex: 0 0 var(--mf-col-type-w);
+      width: var(--mf-col-type-w);
     }
     .tcell {
       display: flex;
       flex-direction: column;
       min-width: 0;
       flex: 1 1 auto;
+    }
+    /* One line with an ellipsis; the full title is the tooltip (D-45), so every row is 44 px. */
+    .tlink {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .av {
       display: grid;
@@ -624,17 +603,18 @@ export function statusCodes(status: StatusFilter): string[] {
     .ppl {
       margin-left: var(--mf-s2);
     }
+    /* Status holds the chip and its step bar (the chip alone is 140), so it is a little wider than the token. */
     col.c-st {
-      width: 176px;
+      width: calc(var(--mf-col-status-w) + 36px);
     }
     col.c-prio {
-      width: 116px;
+      width: var(--mf-col-priority-w);
     }
     col.c-asg {
-      width: 150px;
+      width: var(--mf-col-assignee-w);
     }
     col.c-due {
-      width: 150px;
+      width: var(--mf-col-due-w);
     }
     .due {
       display: inline-flex;
@@ -685,7 +665,8 @@ export function statusCodes(status: StatusFilter): string[] {
         display: none;
       }
     }
-    @container gc (min-width: 780px) {
+    /* Assignee needs the whole row to fit: type 128, a title, status 176, priority 112, assignee 136 and due 152 (D-43). */
+    @container gc (min-width: 880px) {
       .c-asg {
         display: table-cell;
       }
@@ -729,9 +710,6 @@ export function statusCodes(status: StatusFilter): string[] {
       }
       .ppl {
         display: none;
-      }
-      .fbtn {
-        height: 44px;
       }
     }
   `,
@@ -1066,6 +1044,11 @@ export class MmTaskList {
 
   protected initials(name: string): string {
     return personInitials(name);
+  }
+
+  /** A closed task shows its priority as muted plain text (D-45). */
+  protected closed(t: TaskQueueRow): boolean {
+    return t.status === 'COMPLETED' || t.status === 'CANCELLED';
   }
 
   protected step(t: TaskQueueRow): number | null {

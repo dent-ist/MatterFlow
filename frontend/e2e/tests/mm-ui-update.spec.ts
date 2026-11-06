@@ -51,7 +51,7 @@ test.describe('My Matters: the page', () => {
     ]);
     // Default: All open (no column filter), urgency order (no heading marked), the overdue task first; there is no row of status buttons, a Filter button instead.
     await expect(page.locator('mf-mm-task-list mf-filter-chips')).toHaveCount(0);
-    await expect(page.locator('[data-filter-toggle]')).toBeVisible();
+    await expect(page.locator('[data-filters-toggle]')).toBeVisible();
     await expect(page.locator('[data-filter-count]')).toHaveCount(0);
     const links = page.locator('mf-mm-task-list a[data-task-link]');
     await expect(links.first()).toContainText('Overdue one');
@@ -63,7 +63,7 @@ test.describe('My Matters: the page', () => {
     // The count of the Show dropdown equals the grid.
     const label = await page.locator('#mm-show').innerText();
     const n = /\((\d+)\)/.exec(label)?.[1] ?? '';
-    await expect(page.locator('mf-mm-task-list .tot')).toHaveText(n);
+    await expect(page.locator('mf-mm-task-list [data-task-total]')).toHaveText(n);
   });
 
   test('column filters (Status dropdown, text) and the Show filter combine, and the counts equal what the grid shows', async ({
@@ -85,7 +85,7 @@ test.describe('My Matters: the page', () => {
     const n = Number(/\((\d+)\)/.exec(label)?.[1]);
     await expect(page.locator('mf-mm-task-list a[data-task-link]')).toHaveCount(n);
     // The Filter button opens the column filters; Status is a dropdown with counts and several choices; the filters combine with Show and show as chips.
-    await page.locator('[data-filter-toggle]').click();
+    await page.locator('[data-filters-toggle]').click();
     await page.locator('#mm-f-status').click();
     await page.locator('[role=option][data-value="new"]').click();
     await page.locator('[data-dd-done]').click();

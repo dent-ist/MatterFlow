@@ -26,7 +26,7 @@ test.describe('My Matters QA: filters', () => {
       if (r.status() >= 400) failed.push(`${r.status()} ${r.url()}`);
     });
     await page.goto('/my-matters');
-    await page.locator('[data-filter-toggle]').click();
+    await page.locator('[data-filters-toggle]').click();
     await settle(page);
     await page.locator('#mm-f-priority').click();
     await expect(page.getByRole('option').first()).toBeVisible();
@@ -69,7 +69,7 @@ test.describe('My Matters QA: numbers', () => {
       const number = Number(/^\s*(\d+)/.exec(await b.innerText())?.[1]);
       await b.click();
       await expect(page).toHaveURL(/\/my-matters/);
-      await expect(page.locator('mf-mm-task-list .tot')).toHaveText(String(number));
+      await expect(page.locator('mf-mm-task-list [data-task-total]')).toHaveText(String(number));
     }
   });
 });
