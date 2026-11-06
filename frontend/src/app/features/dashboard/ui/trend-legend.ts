@@ -261,7 +261,7 @@ export const SEARCH_ABOVE = 8;
       align-items: center;
       justify-content: space-between;
       gap: var(--mf-s2);
-      min-height: var(--mf-row-h-compact);
+      min-height: var(--mf-row-h);
       padding: 0 var(--mf-s1);
     }
     .row:hover {
@@ -337,7 +337,7 @@ export const SEARCH_ABOVE = 8;
     .search {
       box-sizing: border-box;
       width: 100%;
-      min-height: var(--mf-row-h-compact);
+      min-height: var(--mf-ctl-h);
       margin-bottom: var(--mf-s2);
       padding: 0 var(--mf-s2);
       font: inherit;

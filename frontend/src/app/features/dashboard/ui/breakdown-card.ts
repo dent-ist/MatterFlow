@@ -34,9 +34,9 @@ export const BD_CARD_CSS = `
     text-overflow: ellipsis;
     white-space: nowrap;
     margin: 0;
-    font-size: var(--mf-fs-h3);
-    font-weight: 700;
-    line-height: 1.25;
+    font-size: var(--mf-fs-lg);
+    font-weight: var(--mf-fw-semibold);
+    line-height: 1.3;
   }
   .note,
   .empty {

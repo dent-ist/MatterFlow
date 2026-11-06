@@ -72,7 +72,7 @@ let nextId = 0;
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
-    <div class="card mf-fill" [attr.aria-busy]="busy() ? 'true' : null">
+    <div class="card mf-card mf-fill" [attr.aria-busy]="busy() ? 'true' : null">
       <header>
         @if (caption(); as c) {
           <p class="note">{{ c }}</p>
@@ -81,7 +81,7 @@ let nextId = 0;
           @if (data() && !noActivity()) {
             <button
               type="button"
-              class="toggle"
+              class="mf-btn mf-btn--text"
               data-backlog-toggle
               [attr.aria-pressed]="backlogShown()"
               (click)="toggleBacklog()"
@@ -92,7 +92,7 @@ let nextId = 0;
           @if (hasLines() && !noActivity()) {
             <button
               type="button"
-              class="toggle"
+              class="mf-btn mf-btn--text"
               [attr.aria-pressed]="asTable()"
               (click)="toggleTable()"
             >
@@ -194,13 +194,6 @@ let nextId = 0;
     :host {
       display: block;
     }
-    .card {
-      box-sizing: border-box;
-      padding: var(--mf-s4);
-      background: var(--mf-surface);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-lg);
-    }
     header {
       display: flex;
       align-items: baseline;
@@ -217,18 +210,6 @@ let nextId = 0;
       flex-wrap: wrap;
       justify-content: flex-end;
       gap: var(--mf-s1) var(--mf-s4);
-    }
-    .toggle {
-      background: none;
-      border: 0;
-      padding: 0;
-      min-height: var(--mf-target-min);
-      color: var(--mf-link);
-      font: inherit;
-      font-size: var(--mf-fs-sm);
-      cursor: pointer;
-      text-decoration: underline;
-      white-space: nowrap;
     }
     .note {
       margin: 0 0 var(--mf-s3);
