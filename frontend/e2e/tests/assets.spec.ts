@@ -1,4 +1,5 @@
 import { TaskDetailPage } from '../pages/task-detail.page';
+import { asDropdown, dropdownByAttr } from '../support/dropdown';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
 
@@ -21,7 +22,7 @@ test.describe('Linking assets to a task (SCN-016)', () => {
       await panel.locator('[data-link-open]').click();
       await panel.getByRole('combobox', { name: 'Asset to Link' }).fill(displayName);
       await page.getByRole('option', { name: new RegExp(displayName) }).click();
-      await panel.locator('[data-link-role]').selectOption({ label: relationship });
+      await dropdownByAttr(panel, 'data-link-role').selectOption({ label: relationship });
       await panel.locator('[data-link-submit]').click();
       await expect(
         panel.locator(`li[data-asset-id]`).filter({ hasText: displayName }),
@@ -32,12 +33,12 @@ test.describe('Linking assets to a task (SCN-016)', () => {
     await link(target.displayName, 'Destination');
     await expect(detail.tab('Assets')).toHaveText(/\(2\)/);
     await expect(
-      panel.locator(`li[data-asset-id="${source.assetId}"] [data-role-select]`),
-    ).toHaveValue(/\d+/);
+      panel.locator(`li[data-asset-id="${source.assetId}"] [data-role-select] button`),
+    ).toHaveAttribute('data-value', /\d+/);
 
-    await panel
-      .locator(`li[data-asset-id="${target.assetId}"] [data-role-select]`)
-      .selectOption({ label: 'Result' });
+    await asDropdown(
+      panel.locator(`li[data-asset-id="${target.assetId}"] [data-role-select] button`),
+    ).selectOption({ label: 'Result' });
     await expect
       .poll(async () => {
         const links = await admin.get(`/api/v1/tasks/${task.taskId}/assets`);

@@ -1,3 +1,4 @@
+import { ddChoose, ddOptionTexts } from '../../../testing/dropdown-testing.spec-util';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
@@ -90,7 +91,7 @@ describe('ParametersEditor', () => {
       { name: 'B', type: 'text', label: 'B' },
     ]);
     for (const input of Array.from(
-      el.querySelectorAll('input:not([type=checkbox]), select, textarea'),
+      el.querySelectorAll('input:not([type=checkbox]), mf-dropdown button, textarea'),
     )) {
       expect(el.querySelector(`label[for="${input.id}"]`), input.id).not.toBeNull();
     }
@@ -105,12 +106,8 @@ describe('ParametersEditor', () => {
   });
 
   it('resets the settings when the type changes and shows the ones the new type needs', () => {
-    const { host, fixture, q } = create([
-      { name: 'A', type: 'text', label: 'Alpha', maxLength: 9 },
-    ]);
-    const type = q<HTMLSelectElement>('#param-0-type');
-    type.value = 'single';
-    type.dispatchEvent(new Event('change'));
+    const { host, fixture } = create([{ name: 'A', type: 'text', label: 'Alpha', maxLength: 9 }]);
+    ddChoose(document.body, 'Type', 'single');
     expect(host.changed![0]).toMatchObject({
       type: 'single',
       label: 'Alpha',
@@ -217,21 +214,24 @@ describe('ParametersEditor', () => {
   });
 
   it('offers lookup kinds, number limits and default keywords for the type', () => {
-    const { el, host, q } = create([
+    const { el, host } = create([
       { name: 'P', type: 'lookup', label: 'P', lookupKind: 'pod', lookupMulti: true },
       { name: 'N', type: 'number', label: 'N' },
       { name: 'D', type: 'date', label: 'D' },
     ]);
-    expect(
-      [...el.querySelectorAll('#param-0-kind option')].map((o) => o.textContent!.trim()),
-    ).toEqual(['Matter', 'Client', 'User', 'Pod', 'Role', 'Task Type']);
+    expect(ddOptionTexts(el, 'Searches')).toEqual([
+      'Matter',
+      'Client',
+      'User',
+      'Pod',
+      'Role',
+      'Task Type',
+    ]);
     expect(el.querySelector('[data-parameter="N"] [data-number-settings]')).not.toBeNull();
     expect(
       [...el.querySelectorAll('#param-2-keywords option')].map((o) => o.getAttribute('value')),
     ).toContain('today');
-    const kind = q<HTMLSelectElement>('#param-0-kind');
-    kind.value = 'user';
-    kind.dispatchEvent(new Event('change'));
+    ddChoose(el, 'Searches', 'user');
     expect(host.changed![0].lookupKind).toBe('user');
   });
 });

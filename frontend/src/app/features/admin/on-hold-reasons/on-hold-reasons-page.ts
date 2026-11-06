@@ -97,7 +97,7 @@ export class OnHoldReasonsPage implements OnInit, HasUnsavedChanges {
   protected readonly ls = adminListState({ state: this.state, rows: this.rows });
 
   protected readonly columnSpec = computed(() => [
-    { cls: 'mf-cell-num', bone: '1.5rem', drop: DROP_ORDER },
+    { cls: 'mf-cell-order', bone: '2.5rem', drop: DROP_ORDER },
     { cls: 'mf-cell-name', bone: '10rem' },
     { cls: 'mf-cell-badge', bone: '4.5rem' },
     { cls: 'mf-cell-actions', bone: '1.5rem' },

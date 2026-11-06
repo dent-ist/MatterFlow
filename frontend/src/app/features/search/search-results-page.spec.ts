@@ -152,8 +152,8 @@ describe('SearchResultsPage', () => {
     const el: HTMLElement = fixture.nativeElement;
     const more = Array.from(el.querySelectorAll<HTMLElement>('[data-see-all]'));
     expect(more.map((a) => a.textContent!.replace(/\s+/g, ' ').trim())).toEqual([
-      'See all 112 tasks',
-      'See all 1,000+ assets',
+      'See All 112 Tasks',
+      'See All 1,000+ Assets',
     ]);
     expect(more[0].getAttribute('href')).toContain('type=task');
     expect(el.textContent).not.toContain('Show More');

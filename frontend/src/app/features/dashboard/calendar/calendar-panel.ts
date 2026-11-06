@@ -72,6 +72,11 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
  * number) and a state chip; an unavailable person also has the reason (Out of office, Holiday, Not working), the day they are back and, only when the server sent it (the viewer holds
  * Dashboard.ViewAbsenceReasons), the type of absence. No note, task title or matter appears here. Desktop: docked at the right; 768 to 1023 px a slide-over; a phone a bottom sheet.
  */
+/** The remembered state of a role group: the role id under Available, its negative under Not Available (they open and close on their own, #1258). */
+export function groupKey(kind: string, roleId: number): number {
+  return kind === 'unavailable' ? -roleId : roleId;
+}
+
 @Component({
   selector: 'mf-cal-panel',
   imports: [
@@ -311,20 +316,20 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
               type="button"
               class="gh"
               [attr.data-role]="g.roleId"
-              [attr.aria-expanded]="!isCollapsed(g.roleId)"
+              [attr.aria-expanded]="!isCollapsed(kind, g.roleId)"
               [attr.aria-controls]="listId(kind, g.roleId)"
-              (click)="toggleRole(g.roleId)"
+              (click)="toggleRole(kind, g.roleId)"
             >
               <span class="gh__n">{{ g.roleName }}</span>
               <mf-count-chip>{{ g.people.length }}</mf-count-chip>
               <i
                 class="pi pi-chevron-down chev"
-                [class.chev--closed]="isCollapsed(g.roleId)"
+                [class.chev--closed]="isCollapsed(kind, g.roleId)"
                 aria-hidden="true"
               ></i>
             </button>
           </h4>
-          <ul class="people" [id]="listId(kind, g.roleId)" [hidden]="isCollapsed(g.roleId)">
+          <ul class="people" [id]="listId(kind, g.roleId)" [hidden]="isCollapsed(kind, g.roleId)">
             @for (person of g.people; track person.userId) {
               <li
                 class="person"
@@ -854,11 +859,15 @@ export class CalPanel {
   );
   protected readonly total = countPeople;
 
-  /** The role groups the person collapsed (remembered per user, shared by Available and Not Available). */
+  /**
+   * The role groups the person collapsed (remembered per user). Each group of Available and of Not Available has its own state (#1258): an Available group is stored under its
+   * role id, a Not Available group under the negative id, so the old entries (plain ids) keep meaning "collapsed under Available".
+   */
   protected readonly collapsed = this.prefs.calendarCollapsed;
-  /** The roles shown in either list, in the server's order, each once. */
+  /** The state keys of the groups shown in either list. */
   protected readonly roleIds = computed(() => [
-    ...new Set([...this.avail(), ...this.unavail()].map((g) => g.roleId)),
+    ...this.avail().map((g) => groupKey('available', g.roleId)),
+    ...this.unavail().map((g) => groupKey('unavailable', g.roleId)),
   ]);
   protected readonly allCollapsed = computed(
     () => this.roleIds().length > 0 && this.roleIds().every((id) => this.collapsed().has(id)),
@@ -916,12 +925,14 @@ export class CalPanel {
       : `${LEVELS[p.level].hint}.`;
   }
   protected share = (n: number, of: number): number => (of > 0 ? Math.min(100, (n / of) * 100) : 0);
-  protected isCollapsed = (roleId: number): boolean => this.collapsed().has(roleId);
+  protected isCollapsed = (kind: string, roleId: number): boolean =>
+    this.collapsed().has(groupKey(kind, roleId));
   protected listId = (kind: string, roleId: number): string => `cp-${kind}-${roleId}`;
 
-  protected toggleRole(roleId: number): void {
+  protected toggleRole(kind: string, roleId: number): void {
+    const key = groupKey(kind, roleId);
     const next = new Set(this.collapsed());
-    if (!next.delete(roleId)) next.add(roleId);
+    if (!next.delete(key)) next.add(key);
     this.prefs.setCalendarCollapsed(next);
   }
 
@@ -937,7 +948,7 @@ export class CalPanel {
   /** A jump chip: expand the role when it is collapsed, then bring its header band to the top of the panel and put the focus on it. */
   protected jumpTo(key: string): void {
     const id = Number(key);
-    if (this.collapsed().has(id)) this.toggleRole(id);
+    if (this.isCollapsed('available', id)) this.toggleRole('available', id);
     afterNextRender(
       () => {
         const band = this.host.nativeElement.querySelector<HTMLElement>(

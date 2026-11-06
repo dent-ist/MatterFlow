@@ -877,9 +877,9 @@ describe('DashSwimlaneTab', () => {
       expect(q('[role="menu"]')).not.toBeNull();
       expect(q('.im-pop')).not.toBeNull();
       expect(qa('[role="menuitemradio"]').map((o) => text(o).replace(/\s+/g, ''))).toEqual([
-        'Putonhold',
+        'PutonHold',
         'Complete',
-        'Canceltask',
+        'CancelTask',
       ]);
     });
 

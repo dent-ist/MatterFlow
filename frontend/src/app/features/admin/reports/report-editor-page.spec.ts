@@ -1,3 +1,4 @@
+import { ddOptionTexts, ddText } from '../../../testing/dropdown-testing.spec-util';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
@@ -23,6 +24,17 @@ import { ReportEditorPage, editorTabOf, problemLength } from './report-editor-pa
 import { aCategory, aPreview, aReport, anAnalysis } from './reports-testing';
 
 type Mock = ReturnType<typeof vi.fn>;
+
+const aVersion = (versionNo: number, isCurrent: boolean) => ({
+  versionId: 30 + versionNo,
+  versionNo,
+  createdAtUtc: '2026-10-22T10:00:00Z',
+  createdByUserId: 1,
+  createdByName: 'Ann',
+  changeNote: undefined,
+  isCurrent,
+  hash: 'AA',
+});
 
 describe('editorTabOf', () => {
   it('opens Details unless the address names a tab the person can use', () => {
@@ -70,6 +82,14 @@ describe('ReportEditorPage (#713, #714)', () => {
     input.value = value;
     input.dispatchEvent(new Event('input'));
   };
+
+  /** Picks an entry of the "..." menu of the page header. */
+  async function menuAction(id: string): Promise<void> {
+    q<HTMLButtonElement>('[data-page-actions] [data-overflow]').click();
+    await settle(fixture);
+    q<HTMLButtonElement>(`[data-action="${id}"]`).click();
+    await settle(fixture);
+  }
 
   async function create(
     permissions: Permission[],
@@ -168,13 +188,9 @@ describe('ReportEditorPage (#713, #714)', () => {
       expect(q('[data-status]').textContent).toBe('Inactive');
       expect(q('[data-state-line]').textContent).toContain('Version 3');
       expect(q<HTMLInputElement>('#rep-name').value).toBe('Overdue tasks');
-      expect(q<HTMLSelectElement>('#rep-category').selectedOptions[0].textContent).toContain(
-        'Task follow-up',
-      );
+      expect(ddText(el(), 'Category')).toContain('Task follow-up');
       // An inactive category is not offered for a different report.
-      expect(
-        [...el().querySelectorAll('#rep-category option')].map((o) => o.textContent!.trim()),
-      ).toEqual(['Task follow-up', 'Finance']);
+      expect(ddOptionTexts(el(), 'Category')).toEqual(['Task follow-up', 'Finance']);
       expect(
         [...el().querySelectorAll('[role=tab]')].map((t) =>
           t.textContent!.replace(/\s+/g, ' ').trim(),
@@ -182,20 +198,124 @@ describe('ReportEditorPage (#713, #714)', () => {
       ).toEqual(['Details', 'Query', 'Parameters (0)', 'Roles', 'History']);
     });
 
-    it('hides Activate and says why until the saved version has a successful preview', async () => {
-      expect(el().querySelector('[data-activate]')).toBeNull();
+    it('has no Activate in the header: it is a text button on the History tab, disabled with the reason until the saved version has a successful preview (D-44q)', async () => {
+      defs.listReportVersions.mockReturnValue(ok([aVersion(3, true), aVersion(2, false)]));
+      expect(el().querySelector('[data-page-actions] [data-activate]')).toBeNull();
       expect(q('[data-activate-reason]').textContent).toContain(
         'Preview the current version to activate it.',
       );
 
+      fixture.componentRef.setInput('tab', 'history');
+      await settle(fixture);
+      const activate = q<HTMLButtonElement>('[data-version="3"] [data-activate]');
+      expect(activate.textContent!.trim()).toBe('Activate');
+      expect(activate.classList.contains('mf-btn--text')).toBe(true);
+      expect(activate.disabled).toBe(true);
+      expect(q('[data-version-activate-reason]').textContent).toContain(
+        'Preview the current version to activate it.',
+      );
+      // An older version has no Activate (the API activates the current version; an old one is restored first).
+      expect(el().querySelector('[data-version="2"] [data-activate]')).toBeNull();
+
       report = aReport({ canActivate: true });
-      await TestBed.inject(Router).navigate([]);
-      fixture.componentRef.setInput('id', '5');
-      // A load of the same report again (the Reload button) shows Activate.
+      // A load of the same report again (the Reload button) enables Activate.
       (fixture.componentInstance as unknown as { load(id: string): Promise<void> }).load('5');
       await settle(fixture);
-      expect(q('[data-activate]')).not.toBeNull();
-      expect(el().querySelector('[data-activate-reason]')).toBeNull();
+      expect(q<HTMLButtonElement>('[data-version="3"] [data-activate]').disabled).toBe(false);
+      expect(el().querySelector('[data-version-activate-reason]')).toBeNull();
+    });
+
+    it('shows Activity and "..." while clean and [Discard Changes] [Save Changes] with changes, no bottom bar (D-44q)', async () => {
+      const labels = (): string[] =>
+        [...el().querySelectorAll('[data-page-actions] button')].map(
+          (b) => b.getAttribute('title') ?? b.textContent!.replace(/\s+/g, ' ').trim(),
+        );
+      // Activity needs Audit.View; this person has not got it, so the clean header is "..." only.
+      expect(labels()).toEqual(['More actions']);
+      expect(el().querySelector('[data-footer]')).toBeNull();
+
+      type('#rep-name', 'Renamed');
+      await settle(fixture);
+      expect(labels()).toEqual(['Discard Changes', 'Save Changes', 'More actions']);
+      expect(q('[data-save]').classList.contains('mf-btn--primary')).toBe(true);
+      expect(el().querySelector('[data-version-banner]')).toBeNull();
+
+      q<HTMLButtonElement>('[data-discard]').click();
+      await settle(fixture);
+      expect(q<HTMLInputElement>('#rep-name').value).toBe('Overdue tasks');
+      expect(labels()).toEqual(['More actions']);
+    });
+
+    it('puts Run Preview and Deactivate in the "..." menu', async () => {
+      q<HTMLButtonElement>('[data-page-actions] [data-overflow]').click();
+      await settle(fixture);
+      const items = [...el().querySelectorAll('[role=menuitem]')].map((i) =>
+        i.textContent!.replace(/\s+/g, ' ').trim(),
+      );
+      expect(items).toEqual(['Run Preview']);
+    });
+
+    it('reads "Save as New Version" with an information banner (version N+1, not activated) when the query or the parameters changed', async () => {
+      (fixture.componentInstance as unknown as { sql: { set(v: string): void } }).sql.set(
+        'SELECT 2 AS two',
+      );
+      await settle(fixture);
+      expect(q('[data-save]').textContent!.trim()).toBe('Save as New Version');
+      const banner = q('[data-version-banner]');
+      expect(banner.classList.contains('pg-banner--info')).toBe(true);
+      expect(banner.querySelector('i.pi')).not.toBeNull();
+      expect(banner.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+        'Saving creates version 4 and does not change the active version until you activate it.',
+      );
+
+      // Back to the saved text: the label and the banner go away with the change.
+      (fixture.componentInstance as unknown as { sql: { set(v: string): void } }).sql.set(
+        'SELECT 1 AS one',
+      );
+      await settle(fixture);
+      expect(el().querySelector('[data-page-actions] [data-save]')).toBeNull();
+      expect(el().querySelector('[data-version-banner]')).toBeNull();
+    });
+
+    it('tells an active report that the new query is previewed first, and says the report is not activated once it keeps no status', async () => {
+      report = aReport({ isActive: true });
+      (fixture.componentInstance as unknown as { load(id: string): Promise<void> }).load('5');
+      await settle(fixture);
+      (fixture.componentInstance as unknown as { sql: { set(v: string): void } }).sql.set(
+        'SELECT 2 AS two',
+      );
+      await settle(fixture);
+      expect(q('[data-version-banner]').textContent).toContain('Saving creates version 4.');
+      expect(q('[data-version-banner]').textContent).toContain('previewed first');
+      q<HTMLInputElement>('[data-keep-active]').click();
+      await settle(fixture);
+      expect(q('[data-version-banner]').textContent).toContain(
+        'does not change the active version until you activate it',
+      );
+    });
+
+    it('a change of the details only reads "Save Changes" and the toast says "Report saved"', async () => {
+      const success = vi.spyOn(TestBed.inject(NotificationService), 'success');
+      defs.updateReport.mockReturnValue(
+        ok({
+          versionId: 31,
+          versionNo: 3,
+          isActive: false,
+          deactivated: false,
+          unchanged: true,
+          rowVersion: 'RV2',
+          preview: undefined,
+        }),
+      );
+      type('#rep-description', 'Another line');
+      await settle(fixture);
+      expect(q('[data-save]').textContent!.trim()).toBe('Save Changes');
+      q<HTMLButtonElement>('[data-save]').click();
+      await settle(fixture);
+      expect(success).toHaveBeenCalledWith(
+        'Report saved',
+        expect.stringContaining('did not change'),
+      );
     });
 
     it('detects a new placeholder after a pause in typing and adds its parameter', async () => {
@@ -248,6 +368,7 @@ describe('ReportEditorPage (#713, #714)', () => {
       const success = vi.spyOn(notify, 'success');
       type('#rep-name', 'Overdue tasks by pod');
       type('#rep-note', 'renamed');
+      await settle(fixture);
       q<HTMLButtonElement>('[data-save]').click();
       await settle(fixture);
 
@@ -263,7 +384,7 @@ describe('ReportEditorPage (#713, #714)', () => {
         changeNote: 'renamed',
         keepActive: false,
       });
-      expect(success).toHaveBeenCalledWith('Report saved', 'Saved as version 4.');
+      expect(success).toHaveBeenCalledWith('Saved as version 4');
       expect(defs.getAdminReport).toHaveBeenCalledTimes(2);
       expect(q('[data-state-line]').textContent).toContain('Version 4');
     });
@@ -272,6 +393,8 @@ describe('ReportEditorPage (#713, #714)', () => {
       defs.updateReport.mockReturnValue(
         apiError(409, { code: 'CONCURRENCY_CONFLICT', title: 'Conflict' }),
       );
+      type('#rep-name', 'Changed name');
+      await settle(fixture);
       q<HTMLButtonElement>('[data-save]').click();
       await settle(fixture);
 
@@ -285,6 +408,8 @@ describe('ReportEditorPage (#713, #714)', () => {
       defs.updateReport.mockReturnValue(
         apiError(409, { code: 'DUPLICATE_NAME', title: 'Duplicate' }),
       );
+      type('#rep-name', 'Taken name');
+      await settle(fixture);
       q<HTMLButtonElement>('[data-save]').click();
       await settle(fixture);
 
@@ -296,8 +421,7 @@ describe('ReportEditorPage (#713, #714)', () => {
       admin.previewReport.mockReturnValue(
         ok(aPreview({ countsForActivation: true, rowVersion: 'RV9' })),
       );
-      q<HTMLButtonElement>('[data-preview]').click();
-      await settle(fixture);
+      await menuAction('preview');
 
       expect(admin.previewReport).toHaveBeenCalledWith(5, {
         sql: 'SELECT 1 AS one',
@@ -305,9 +429,16 @@ describe('ReportEditorPage (#713, #714)', () => {
         sampleValues: {},
       });
       expect(q('[data-preview-ok]').textContent).toContain('First 1 of 1 row');
-      expect(q('[data-activate]')).not.toBeNull();
+      fixture.componentRef.setInput('tab', 'history');
+      defs.listReportVersions.mockReturnValue(ok([aVersion(3, true)]));
+      await settle(fixture);
+      expect(q<HTMLButtonElement>('[data-version="3"] [data-activate]').disabled).toBe(false);
 
       // The next save uses the row version the preview produced, or it would be a conflict.
+      fixture.componentRef.setInput('tab', 'details');
+      await settle(fixture);
+      type('#rep-name', 'Renamed after preview');
+      await settle(fixture);
       q<HTMLButtonElement>('[data-save]').click();
       await settle(fixture);
       expect(defs.updateReport.mock.calls[0][2]).toBe('RV9');
@@ -317,21 +448,35 @@ describe('ReportEditorPage (#713, #714)', () => {
       admin.previewReport.mockReturnValue(
         ok(aPreview({ countsForActivation: true, rowVersion: 'RV9' })),
       );
-      q<HTMLButtonElement>('[data-preview]').click();
-      await settle(fixture);
+      await menuAction('preview');
       type('#rep-name', 'Changed');
       await settle(fixture);
+      fixture.componentRef.setInput('tab', 'history');
+      defs.listReportVersions.mockReturnValue(ok([aVersion(3, true)]));
+      await settle(fixture);
 
-      expect(el().querySelector('[data-activate]')).toBeNull();
+      expect(q<HTMLButtonElement>('[data-version="3"] [data-activate]').disabled).toBe(true);
       expect(q('[data-activate-reason]').textContent).toContain('Save your changes');
       expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
     });
 
     it('activates and deactivates (with a question), keeping everything else', async () => {
       report = aReport({ canActivate: true });
+      defs.listReportVersions.mockReturnValue(ok([aVersion(3, true)]));
+      fixture.componentRef.setInput('tab', 'history');
       (fixture.componentInstance as unknown as { load(id: string): Promise<void> }).load('5');
       await settle(fixture);
-      q<HTMLButtonElement>('[data-activate]').click();
+      // Activate asks first ("Activate version 3?") and then calls the API.
+      q<HTMLButtonElement>('[data-version="3"] [data-activate]').click();
+      await settle(fixture);
+      expect(admin.activateReport).not.toHaveBeenCalled();
+      const ok1 = Array.from(document.querySelectorAll('button')).find(
+        (b) => b.textContent?.trim() === 'Activate Version' && b.closest('p-dialog, .p-dialog'),
+      );
+      expect(document.body.querySelector('[data-activate-body]')!.textContent).toContain(
+        'Activate version 3?',
+      );
+      ok1!.click();
       await settle(fixture);
       expect(admin.activateReport).toHaveBeenCalledWith(5);
 
@@ -339,8 +484,7 @@ describe('ReportEditorPage (#713, #714)', () => {
       (fixture.componentInstance as unknown as { load(id: string): Promise<void> }).load('5');
       await settle(fixture);
       expect(q('[data-status]').textContent).toBe('Active');
-      q<HTMLButtonElement>('[data-deactivate]').click();
-      await settle(fixture);
+      await menuAction('deactivate');
       const confirm = Array.from(document.querySelectorAll('button')).find(
         (b) => b.textContent?.trim() === 'Deactivate Report' && b.closest('p-dialog, .p-dialog'),
       );
@@ -379,6 +523,30 @@ describe('ReportEditorPage (#713, #714)', () => {
     });
   });
 
+  describe('with Audit.View', () => {
+    beforeEach(() => create(['Report.Manage', 'Audit.View'], '5'));
+
+    it('has Activity and "..." in the clean header and opens the Activity drawer of the report', async () => {
+      const buttons = [...el().querySelectorAll('[data-page-actions] button')].map(
+        (b) =>
+          b.getAttribute('data-activity') !== null || b.getAttribute('title') === 'More actions',
+      );
+      expect(buttons).toEqual([true, true]);
+      expect(q('[data-activity]').textContent!.trim()).toBe('Activity');
+      q<HTMLButtonElement>('[data-activity]').click();
+      await settle(fixture);
+      expect(document.body.textContent).toContain('Activity: Overdue tasks');
+    });
+
+    it('replaces Activity with [Discard Changes] [Save Changes] while there are changes', async () => {
+      type('#rep-name', 'Renamed');
+      await settle(fixture);
+      expect(el().querySelector('[data-activity]')).toBeNull();
+      expect(q('[data-discard]').textContent!.trim()).toBe('Discard Changes');
+      expect(q('[data-save]').textContent!.trim()).toBe('Save Changes');
+    });
+  });
+
   describe('permission variants', () => {
     it('hides the Roles tab without Report.Assign', async () => {
       await create(['Report.Manage'], '5');
@@ -390,7 +558,8 @@ describe('ReportEditorPage (#713, #714)', () => {
     it('creates a new report with the starter query and goes to its page', async () => {
       await create(['Report.Manage'], undefined);
       expect(q('[data-page-title]').textContent).toContain('New Report');
-      expect(el().querySelector('[data-preview]')).toBeNull();
+      expect(el().querySelector('[data-page-actions] [data-overflow]')).toBeNull();
+      expect(q('[data-save]').textContent!.trim()).toBe('Create Report');
       type('#rep-name', 'My report');
       q<HTMLButtonElement>('[data-save]').click();
       await settle(fixture);

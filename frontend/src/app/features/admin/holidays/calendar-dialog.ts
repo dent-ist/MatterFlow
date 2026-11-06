@@ -72,8 +72,8 @@ const label = (key: string): string => key.charAt(0).toUpperCase() + key.slice(1
           />
         </div>
         <fieldset class="cd__f cd__set">
-          <legend class="cd__l">Colour (shown with the name and a flag icon, never alone)</legend>
-          <div class="cd__colours" role="radiogroup" aria-label="Colour">
+          <legend class="cd__l">Color (shown with the name and a flag icon, never alone)</legend>
+          <div class="cd__colours" role="radiogroup" aria-label="Color">
             @for (c of colours; track c) {
               <label class="cd__c" [class]="'cd__c hc-' + c" [class.cd__c--on]="colour() === c">
                 <input

@@ -13,6 +13,7 @@ import {
 import { DateInput } from 'form-engine';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { FormDialog } from '../../../shared/ui/form-dialog';
 import { HOLIDAY_API } from './holiday-api';
 import { Holiday, HolidayInput, HolidayRuleKind, WeekendRule } from './holiday-contract';
@@ -42,7 +43,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
  */
 @Component({
   selector: 'mf-holiday-dialog',
-  imports: [FormDialog, DateInput],
+  imports: [Dropdown, FormDialog, DateInput],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-form-dialog
@@ -118,20 +119,14 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
         @if (yearly() && shape() === 'day') {
           <div class="hd__f">
             <label class="hd__l" for="hd-pattern">Date Rule</label>
-            <select
-              id="hd-pattern"
-              class="mf-control mf-control--fill"
+            <mf-dropdown
+              [neutralValue]="null"
+              buttonId="hd-pattern"
+              label="Date Rule"
+              [items]="patternItems"
               [value]="pattern()"
-              (change)="pattern.set($any($event.target).value)"
-            >
-              <option value="FIXED" [selected]="pattern() === 'FIXED'">A Fixed Date (12/25)</option>
-              <option value="NTH_WEEKDAY" [selected]="pattern() === 'NTH_WEEKDAY'">
-                A weekday of a month (4th Thursday of November)
-              </option>
-              <option value="EASTER_OFFSET" [selected]="pattern() === 'EASTER_OFFSET'">
-                Days from Easter
-              </option>
-            </select>
+              (valueChange)="pattern.set($any($event))"
+            />
           </div>
         }
 
@@ -141,16 +136,14 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
               <label class="hd__l" for="hd-month">{{
                 shape() === 'range' ? 'First day: month' : 'Month'
               }}</label>
-              <select
-                id="hd-month"
-                class="mf-control mf-control--fill"
-                [value]="month()"
-                (change)="month.set(+$any($event.target).value)"
-              >
-                @for (m of months; track $index) {
-                  <option [value]="$index + 1" [selected]="month() === $index + 1">{{ m }}</option>
-                }
-              </select>
+              <mf-dropdown
+                [neutralValue]="null"
+                buttonId="hd-month"
+                [label]="shape() === 'range' ? 'First day: month' : 'Month'"
+                [items]="monthItems"
+                [value]="'' + month()"
+                (valueChange)="month.set(+$event)"
+              />
             </div>
             <div class="hd__f">
               <label class="hd__l" for="hd-day">{{
@@ -173,18 +166,14 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
           <div class="hd__row">
             <div class="hd__f">
               <label class="hd__l" for="hd-emonth">Last Day: Month</label>
-              <select
-                id="hd-emonth"
-                class="mf-control mf-control--fill"
-                [value]="endMonth()"
-                (change)="endMonth.set(+$any($event.target).value)"
-              >
-                @for (m of months; track $index) {
-                  <option [value]="$index + 1" [selected]="endMonth() === $index + 1">
-                    {{ m }}
-                  </option>
-                }
-              </select>
+              <mf-dropdown
+                [neutralValue]="null"
+                buttonId="hd-emonth"
+                label="Last Day: Month"
+                [items]="monthItems"
+                [value]="'' + endMonth()"
+                (valueChange)="endMonth.set(+$event)"
+              />
             </div>
             <div class="hd__f">
               <label class="hd__l" for="hd-eday">Last Day: Day</label>
@@ -205,42 +194,36 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
           <div class="hd__row hd__row--3">
             <div class="hd__f">
               <label class="hd__l" for="hd-nth">Which</label>
-              <select
-                id="hd-nth"
-                class="mf-control mf-control--fill"
-                [value]="nth()"
-                (change)="nth.set(+$any($event.target).value)"
-              >
-                @for (o of nths; track o.v) {
-                  <option [value]="o.v" [selected]="nth() === o.v">{{ o.t }}</option>
-                }
-              </select>
+              <mf-dropdown
+                [neutralValue]="null"
+                buttonId="hd-nth"
+                label="Which"
+                [items]="nthItems"
+                [value]="'' + nth()"
+                (valueChange)="nth.set(+$event)"
+              />
             </div>
             <div class="hd__f">
               <label class="hd__l" for="hd-wd">Weekday</label>
-              <select
-                id="hd-wd"
-                class="mf-control mf-control--fill"
-                [value]="weekday()"
-                (change)="weekday.set(+$any($event.target).value)"
-              >
-                @for (w of weekdays; track $index) {
-                  <option [value]="$index" [selected]="weekday() === $index">{{ w }}</option>
-                }
-              </select>
+              <mf-dropdown
+                [neutralValue]="null"
+                buttonId="hd-wd"
+                label="Weekday"
+                [items]="weekdayItems"
+                [value]="'' + weekday()"
+                (valueChange)="weekday.set(+$event)"
+              />
             </div>
             <div class="hd__f">
               <label class="hd__l" for="hd-nmonth">of</label>
-              <select
-                id="hd-nmonth"
-                class="mf-control mf-control--fill"
-                [value]="month()"
-                (change)="month.set(+$any($event.target).value)"
-              >
-                @for (m of months; track $index) {
-                  <option [value]="$index + 1" [selected]="month() === $index + 1">{{ m }}</option>
-                }
-              </select>
+              <mf-dropdown
+                [neutralValue]="null"
+                buttonId="hd-nmonth"
+                label="of"
+                [items]="monthItems"
+                [value]="'' + month()"
+                (valueChange)="month.set(+$event)"
+              />
             </div>
           </div>
           <div class="hd__f">
@@ -319,20 +302,14 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
         @if (yearly() && shape() === 'day' && pattern() === 'FIXED') {
           <div class="hd__f">
             <label class="hd__l" for="hd-weekend">When It Falls on a Weekend</label>
-            <select
-              id="hd-weekend"
-              class="mf-control mf-control--fill"
+            <mf-dropdown
+              [neutralValue]="null"
+              buttonId="hd-weekend"
+              label="When It Falls on a Weekend"
+              [items]="weekendItems"
               [value]="weekendRule()"
-              (change)="weekendRule.set($any($event.target).value)"
-            >
-              <option value="NONE" [selected]="weekendRule() === 'NONE'">Stays on That Day</option>
-              <option value="US" [selected]="weekendRule() === 'US'">
-                US rule: Saturday moves to Friday, Sunday to Monday
-              </option>
-              <option value="UK" [selected]="weekendRule() === 'UK'">
-                UK rule: moves to the next Monday
-              </option>
-            </select>
+              (valueChange)="weekendRule.set($any($event))"
+            />
           </div>
         }
         <div class="hd__f">
@@ -419,6 +396,29 @@ export class HolidayDialog {
     { v: 3, t: '3rd' },
     { v: 4, t: '4th' },
     { v: -1, t: 'Last' },
+  ];
+
+  protected readonly patternItems: DropdownItem[] = [
+    { value: 'FIXED', label: 'A Fixed Date (12/25)' },
+    { value: 'NTH_WEEKDAY', label: 'A weekday of a month (4th Thursday of November)' },
+    { value: 'EASTER_OFFSET', label: 'Days from Easter' },
+  ];
+  protected readonly monthItems: DropdownItem[] = MONTHS.map((m, i) => ({
+    value: String(i + 1),
+    label: m,
+  }));
+  protected readonly weekdayItems: DropdownItem[] = WEEKDAYS.map((w, i) => ({
+    value: String(i),
+    label: w,
+  }));
+  protected readonly nthItems: DropdownItem[] = this.nths.map((o) => ({
+    value: String(o.v),
+    label: o.t,
+  }));
+  protected readonly weekendItems: DropdownItem[] = [
+    { value: 'NONE', label: 'Stays on That Day' },
+    { value: 'US', label: 'US rule: Saturday moves to Friday, Sunday to Monday' },
+    { value: 'UK', label: 'UK rule: moves to the next Monday' },
   ];
 
   protected readonly name = signal('');

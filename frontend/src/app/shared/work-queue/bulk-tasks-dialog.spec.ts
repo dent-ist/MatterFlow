@@ -9,6 +9,7 @@ import {
 } from '../../api/generated/api-client';
 import { FakeMeApi, profileOf, provideFakeMe } from '../../core/auth/auth-testing';
 import { LookupStore } from '../../core/lookups/lookup-store';
+import { ddChoose } from '../../testing/dropdown-testing.spec-util';
 import {
   BULK_MAX,
   BulkMode,
@@ -133,9 +134,7 @@ describe('BulkTasksDialog', () => {
 
   it('moves the tasks to a pod alone: the pod, no person', async () => {
     const fixture = await open('assign');
-    const pod = dialog().querySelector<HTMLSelectElement>('[data-bulk-pod]')!;
-    pod.value = '4';
-    pod.dispatchEvent(new Event('change'));
+    ddChoose(dialog(), 'Pod', '4');
     fixture.detectChanges();
     primary().click();
     await fixture.whenStable();
@@ -147,9 +146,7 @@ describe('BulkTasksDialog', () => {
 
   it('sets the priority of the selected tasks', async () => {
     const fixture = await open('priority');
-    const select = dialog().querySelector<HTMLSelectElement>('[data-bulk-priority]')!;
-    select.value = '7';
-    select.dispatchEvent(new Event('change'));
+    ddChoose(dialog(), 'Priority', '7');
     fixture.detectChanges();
     primary().click();
     await fixture.whenStable();
@@ -176,9 +173,7 @@ describe('BulkTasksDialog', () => {
       ],
     };
     const fixture = await open('priority', answer);
-    const select = dialog().querySelector<HTMLSelectElement>('[data-bulk-priority]')!;
-    select.value = '8';
-    select.dispatchEvent(new Event('change'));
+    ddChoose(dialog(), 'Priority', '8');
     fixture.detectChanges();
     primary().click();
     await fixture.whenStable();

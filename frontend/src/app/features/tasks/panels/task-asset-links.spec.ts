@@ -1,3 +1,10 @@
+import {
+  ddButton,
+  ddChoose,
+  ddOptionTexts,
+  ddSelect,
+  ddValue,
+} from '../../../testing/dropdown-testing.spec-util';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import {
@@ -31,6 +38,9 @@ describe('TaskAssetLinks', () => {
   let counts: number[] = [];
   const el = (): HTMLElement => fixture.nativeElement;
   const q = <T extends HTMLElement>(selector: string): T => el().querySelector<T>(selector)!;
+  /** The relationship dropdown of the first row (its name is "Relationship of <asset>"). */
+  const roleSelect = () =>
+    ddSelect(el(), q('[data-role-select] button').getAttribute('aria-label')!.split(': ')[0]);
 
   async function create(
     list = { items: [aLink()], canEdit: true },
@@ -80,13 +90,9 @@ describe('TaskAssetLinks', () => {
     expect(link.getAttribute('href')).toBe('https://dms.example/folders/42');
     expect(link.getAttribute('target')).toBe('_blank');
     expect(link.getAttribute('rel')).toBe('noopener noreferrer');
-    const select = row.querySelector<HTMLSelectElement>('[data-role-select]')!;
-    expect(select.value).toBe('1');
-    expect(Array.from(select.options).map((o) => o.textContent!.trim())).toEqual([
-      'None',
-      'Source',
-      'Destination',
-    ]);
+    const label = ddButton(row).getAttribute('aria-label')!.split(':')[0];
+    expect(ddValue(row, label)).toBe('1');
+    expect(ddOptionTexts(row, label)).toEqual(['None', 'Source', 'Destination']);
   });
 
   it('puts the list in its own labelled, focusable scroll region and keeps the actions outside it', async () => {
@@ -142,9 +148,7 @@ describe('TaskAssetLinks', () => {
       .querySelector('[role=option]')!
       .dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
     await settle(fixture);
-    const role = q<HTMLSelectElement>('[data-link-role]');
-    role.value = '2';
-    role.dispatchEvent(new Event('change'));
+    ddChoose(el(), 'Relationship', '2');
     await settle(fixture);
     q<HTMLButtonElement>('[data-link-submit]').click();
     await settle(fixture);
@@ -189,7 +193,7 @@ describe('TaskAssetLinks', () => {
 
   it('changes the relationship of a link', async () => {
     await create();
-    const select = q<HTMLSelectElement>('[data-role-select]');
+    const select = roleSelect();
     select.value = '2';
     select.dispatchEvent(new Event('change'));
     await settle(fixture);
@@ -202,7 +206,7 @@ describe('TaskAssetLinks', () => {
 
   it('clears the relationship', async () => {
     await create();
-    const select = q<HTMLSelectElement>('[data-role-select]');
+    const select = roleSelect();
     select.value = '';
     select.dispatchEvent(new Event('change'));
     await settle(fixture);
@@ -218,8 +222,8 @@ describe('TaskAssetLinks', () => {
       items: [aLink({ assetLinkRoleId: 3, assetLinkRoleName: 'Retired' })],
       canEdit: true,
     });
-    const select = q<HTMLSelectElement>('[data-role-select]');
-    expect(Array.from(select.options).map((o) => o.textContent!.trim())).toContain('Retired');
+    const select = roleSelect();
+    expect(select.options.map((o) => o.textContent.trim())).toContain('Retired');
     expect(select.value).toBe('3');
   });
 

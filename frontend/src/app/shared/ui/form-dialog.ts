@@ -282,7 +282,7 @@ export class FormDialog {
     }
   }
 
-  /** Focus goes to the first field, or to the close button when the dialog has none. */
+  /** Focus goes to the first field (a text field, or the button of a dropdown), or to the close button when the dialog has none. */
   protected focusFirst(): void {
     const root = document.querySelector<HTMLElement>('.mf-formdlg');
     // The person (or a fast test) already moved into a field: the enter animation must not take focus back from it.
@@ -291,7 +291,7 @@ export class FormDialog {
       root &&
       active instanceof HTMLElement &&
       root.querySelector('[data-panel-body]')?.contains(active) &&
-      active.matches('input, select, textarea, [tabindex="0"]')
+      active.matches('input, select, textarea, [tabindex="0"], mf-dropdown button')
     )
       return;
     if (this.focusPrimary()) {
@@ -302,7 +302,7 @@ export class FormDialog {
       }
     }
     const field = root?.querySelector<HTMLElement>(
-      '[data-panel-body] input:not([type=hidden]):not([disabled]), [data-panel-body] select:not([disabled]), [data-panel-body] textarea:not([disabled]), [data-panel-body] [tabindex="0"]',
+      '[data-panel-body] input:not([type=hidden]):not([disabled]), [data-panel-body] select:not([disabled]), [data-panel-body] textarea:not([disabled]), [data-panel-body] mf-dropdown button:not([disabled]), [data-panel-body] [tabindex="0"]',
     );
     (field ?? root?.querySelector<HTMLElement>('[data-panel-close]'))?.focus();
   }

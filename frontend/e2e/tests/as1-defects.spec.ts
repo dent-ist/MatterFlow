@@ -1,4 +1,5 @@
 import { Page } from '@playwright/test';
+import { dropdownById } from '../support/dropdown';
 import { axeAvailable } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { atEverySize, noHorizontalScroll, shot } from '../support/screens';
@@ -186,7 +187,7 @@ test.describe('Assets list defects (WP-AS1)', () => {
       });
     });
     await page.goto(`/assets/new?matterId=${matter.matterId}`);
-    await page.locator('#asset-type').selectOption(String(typeId));
+    await dropdownById(page, 'asset-type').selectOption(String(typeId));
     await page.locator('#asset-name').fill(`Raced ${token}`);
     await page.locator('#asset-reference').fill(`REF-${token}`);
     await page.getByRole('button', { name: 'Create Asset' }).click();

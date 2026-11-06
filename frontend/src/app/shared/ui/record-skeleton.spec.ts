@@ -121,7 +121,7 @@ describe('mf-record-skeleton (#247, #615)', () => {
     expect(el.querySelector('[data-record-skeleton]')?.getAttribute('data-kind')).toBe('task');
     expect(el.querySelectorAll('[role=status]')).toHaveLength(1);
     expect(el.querySelector('[role=status]')?.textContent).toContain('Loading task');
-    expect(el.querySelector('nav a')?.textContent).toContain('Tasks');
+    expect(el.querySelector('nav a')?.textContent).toContain('Task Queue');
     expect(el.querySelectorAll('[data-crumb-skeleton]')).toHaveLength(2);
     expect(el.querySelector('[data-title-skeleton]')).not.toBeNull();
     // The same boxes as the page: the record header (back link, crumb, title row, context bar) and a facts strip of six tiles.

@@ -825,7 +825,7 @@ test.describe('Users tab: coverage', () => {
     await expect(
       cell(page, a, cov.typeIds.production).locator('xpath=ancestor::td'),
     ).toHaveAttribute('data-step', '4');
-    await page.getByLabel('Colour Scale').selectOption('absolute');
+    await page.getByLabel('Color Scale').selectOption('absolute');
     await expect(
       cell(page, a, cov.typeIds.production).locator('xpath=ancestor::td'),
     ).toHaveAttribute('data-step', '2');

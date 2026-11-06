@@ -644,18 +644,14 @@ const emptySpec = (): SpecDraft => ({
             />
             <div>
               <label class="pt__label" for="pf-direction">Direction</label>
-              <select
-                id="pf-direction"
-                class="mf-field__input mf-control--fill"
+              <mf-dropdown
+                buttonId="pf-direction"
+                label="Direction"
                 data-direction-select
-                (change)="setP('direction', $any($event.target).value)"
-              >
-                @for (o of directionChoices; track o.value) {
-                  <option [value]="o.value" [selected]="pd().direction === o.value">
-                    {{ o.label }}
-                  </option>
-                }
-              </select>
+                [items]="directionChoices"
+                [value]="pd().direction"
+                (valueChange)="setP('direction', $event)"
+              />
             </div>
           </div>
           <mf-text-field
@@ -667,18 +663,14 @@ const emptySpec = (): SpecDraft => ({
           />
           <div>
             <label class="pt__label" for="pf-spec">Spec</label>
-            <select
-              id="pf-spec"
-              class="mf-field__input mf-control--fill"
+            <mf-dropdown
+              buttonId="pf-spec"
+              label="Spec"
               data-spec-select
-              (change)="setP('productionSpecId', $any($event.target).value)"
-            >
-              @for (o of specChoices(); track o.value) {
-                <option [value]="o.value" [selected]="pd().productionSpecId === o.value">
-                  {{ o.label }}
-                </option>
-              }
-            </select>
+              [items]="specChoices()"
+              [value]="pd().productionSpecId"
+              (valueChange)="setP('productionSpecId', $event)"
+            />
           </div>
           <div class="pt__row">
             <mf-text-field
@@ -784,7 +776,7 @@ const emptySpec = (): SpecDraft => ({
           <dd>{{ s.description || 'None' }}</dd>
           <dt>Images</dt>
           <dd>{{ s.imageFormat || 'Not set' }}</dd>
-          <dt>Colour</dt>
+          <dt>Color</dt>
           <dd>{{ s.colourMode || 'Not set' }}</dd>
           <dt>Text</dt>
           <dd>{{ s.textMode || 'Not set' }}</dd>
@@ -884,7 +876,7 @@ const emptySpec = (): SpecDraft => ({
             />
             <mf-text-field
               inputId="sf-colour"
-              label="Colour"
+              label="Color"
               [maxLength]="100"
               [value]="sd().colourMode"
               (valueChange)="setS('colourMode', $event)"

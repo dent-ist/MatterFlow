@@ -1,5 +1,6 @@
 import { expect, test } from '../support/fixtures';
 import { axeAvailable, axeViolations } from '../support/axe';
+import { asDropdown, labelledDropdown } from '../support/dropdown';
 
 /**
  * Administration > Settings > Holidays and the coverage thresholds (epic #1074, CAL-06, issue #1080): a "US Holiday" calendar with Thanksgiving (4th Thursday of November,
@@ -26,10 +27,10 @@ test.describe('Settings > Holidays', () => {
     await page.locator('[data-add-holiday]').click();
     const holiday = page.getByRole('dialog', { name: 'Add Holiday' });
     await holiday.getByLabel('Name').fill('Thanksgiving');
-    await holiday.getByLabel('Date Rule').selectOption('NTH_WEEKDAY');
-    await holiday.getByLabel('Which').selectOption({ label: '4th' });
-    await holiday.getByLabel('Weekday').selectOption({ label: 'Thursday' });
-    await holiday.locator('#hd-nmonth').selectOption({ label: 'November' });
+    await labelledDropdown(holiday, 'Date Rule').selectOption('NTH_WEEKDAY');
+    await labelledDropdown(holiday, 'Which').selectOption({ label: '4th' });
+    await labelledDropdown(holiday, 'Weekday').selectOption({ label: 'Thursday' });
+    await asDropdown(holiday.locator('#hd-nmonth')).selectOption({ label: 'November' });
     await holiday.getByRole('button', { name: 'Add Holiday' }).click();
     await expect(holiday).toBeHidden();
     const row = page.locator('[data-holiday]', { hasText: 'Thanksgiving' });
@@ -59,9 +60,9 @@ test.describe('Settings > Holidays', () => {
     const holiday = page.getByRole('dialog', { name: 'Add Holiday' });
     await holiday.getByLabel('Name').fill('Year-end');
     await holiday.getByLabel('Range of days').check();
-    await holiday.locator('#hd-month').selectOption({ label: 'December' });
+    await asDropdown(holiday.locator('#hd-month')).selectOption({ label: 'December' });
     await holiday.locator('#hd-day').fill('24');
-    await holiday.locator('#hd-emonth').selectOption({ label: 'December' });
+    await asDropdown(holiday.locator('#hd-emonth')).selectOption({ label: 'December' });
     await holiday.locator('#hd-eday').fill('26');
     await holiday.getByRole('button', { name: 'Add Holiday' }).click();
     await expect(holiday).toBeHidden();
@@ -102,8 +103,9 @@ test.describe('Settings > Holidays', () => {
     await page.locator('tbody tr', { hasText: display }).click();
     const field = page.locator('[data-user-calendar-select]');
     await expect(field).toBeVisible();
-    const options = await field.locator('option').allTextContents();
-    await field.selectOption({ index: Math.min(1, options.length - 1) });
+    const dd = asDropdown(field.locator('button'));
+    const options = await dd.optionTexts();
+    await dd.selectOption({ label: options[Math.min(1, options.length - 1)] });
     await expect(page.getByText('Holiday calendar saved').first()).toBeVisible();
     await expect(page.locator('[data-next-holidays]')).toBeVisible();
   });

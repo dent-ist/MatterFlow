@@ -142,10 +142,10 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
           </div>
         } @else {
           <div class="fl" data-display="scale">
-            <span>Colour scale</span>
+            <span>Color scale</span>
             <mf-dropdown
               buttonId="cv-scale"
-              label="Colour Scale"
+              label="Color Scale"
               data-coverage-scale
               [items]="scaleItems"
               [value]="scale()"
@@ -296,7 +296,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
             }
           </ul>
 
-          <ul class="legend" aria-label="Colour legend" data-coverage-legend>
+          <ul class="legend" aria-label="Color legend" data-coverage-legend>
             <li class="lg lg--zero">
               <span class="sw sw--zero" aria-hidden="true"></span>Blank = 0 in this period
             </li>

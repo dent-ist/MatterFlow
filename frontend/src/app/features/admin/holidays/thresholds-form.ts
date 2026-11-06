@@ -40,7 +40,7 @@ export function validateThresholds(
     <form class="th" novalidate (submit)="$event.preventDefault(); save()" data-calendar-thresholds>
       <h2 class="th__h">Calendar Coverage</h2>
       <p class="th__i">
-        The Dashboard Calendar colours each day by how many of the people expected to work are
+        The Dashboard Calendar colors each day by how many of the people expected to work are
         available. These limits decide where Good ends and Watch, Low and Critical begin.
       </p>
       @if (state() === 'loading') {

@@ -1,4 +1,5 @@
 import { Page } from '@playwright/test';
+import { labelledDropdown } from '../support/dropdown';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { Json } from '../support/api';
 import { mmWorld } from '../support/my-matters-fixtures';
@@ -151,7 +152,7 @@ test.describe('Bulk change in the matter grid', () => {
     await expect(page.locator('[data-selection-count]')).toHaveText('2 selected');
     await page.getByRole('button', { name: 'Set priority...' }).click();
     const dialog = page.getByRole('dialog');
-    await dialog.getByLabel('Priority').selectOption({ label: target.label });
+    await labelledDropdown(dialog, 'Priority').selectOption({ label: target.label });
     await dialog.getByRole('button', { name: 'Set priority on 2 tasks' }).click();
     await expect(dialog.locator('[data-bulk-summary]')).toContainText('2 tasks changed.');
     await dialog.getByRole('button', { name: 'Close' }).last().click();

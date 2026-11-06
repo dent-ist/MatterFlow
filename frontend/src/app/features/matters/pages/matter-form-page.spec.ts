@@ -1,3 +1,4 @@
+import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { ClientsClient, MattersClient } from '../../../api/generated/api-client';
@@ -252,8 +253,8 @@ describe('MatterFormPage', () => {
 
     it('offers the three AI allowed values, defaulting to No, and saves the chosen one (MD-02)', async () => {
       await create({ matterId: '7' }, ['Matter.View', 'Matter.Edit']);
-      const select = el().querySelector<HTMLSelectElement>('[data-ai-allowed]')!;
-      expect(Array.from(select.options).map((o) => o.textContent!.trim())).toEqual([
+      const select = ddSelect(el(), 'AI Allowed');
+      expect(select.options.map((o) => o.textContent.trim())).toEqual([
         'No',
         'On-Prem AI Only',
         'Company-Approved AI Services',

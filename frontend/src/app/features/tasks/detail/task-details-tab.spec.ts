@@ -1,3 +1,4 @@
+import { ddChoose } from '../../../testing/dropdown-testing.spec-util';
 import { TestBed } from '@angular/core/testing';
 
 vi.setConfig({ testTimeout: 60000 });
@@ -243,7 +244,7 @@ describe('Details tab', () => {
       .map((d) => d.componentInstance as Dialog)
       .find((d) => d.styleClass?.includes('mf-formdlg'))!;
     expect(dialog.focusOnShow).toBe(false);
-    const pod = q(document.body, '#td-pod') as HTMLSelectElement;
+    const pod = q(document.body, '#td-pod') as HTMLButtonElement;
     pod.focus();
     dialog.onShow.emit({});
     expect(document.activeElement).toBe(pod);
@@ -482,9 +483,7 @@ describe('Details tab', () => {
       },
     );
     await click(fixture, q(el, '[data-action="edit"]'));
-    const pod = q(document.body, '#td-pod') as HTMLSelectElement;
-    pod.value = '';
-    pod.dispatchEvent(new Event('change'));
+    ddChoose(document.body, 'Pod', '');
     await settle(fixture);
     await click(fixture, q(document.body, '[data-panel-primary] button'));
 

@@ -15,15 +15,48 @@ let nextId = 0;
  *   <mf-details-card title="Relativity Workspace Fields" [count]="12"><mf-dynamic-form ... /></mf-details-card>
  *
  * Fields go in the `mfDetailField` slot; anything else projected (a read-only form) goes below them. Labels are Title Case (D-20).
+ *
+ * Two options for the one card that needs them (Matter Summary, #1253): `threeColumns` puts the fields in three columns when the card is 1100 px wide or more (two below that), and
+ * `scrollLabel` makes the card fit its content and scroll the fields inside itself when the page has no more room (a focusable region with that accessible name).
  */
 @Component({
   selector: 'mf-details-card',
   imports: [CountChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'dc' },
+  host: {
+    class: 'dc',
+    '[class.dc--cols3]': 'threeColumns()',
+    '[class.dc--scroll]': 'scrollLabel() !== null',
+  },
   styles: `
     :host {
       display: block;
+    }
+    :host(.dc--cols3) {
+      container-type: inline-size;
+    }
+    :host(.dc--scroll),
+    :host(.dc--scroll) .mf-card {
+      display: flex;
+      flex-direction: column;
+      flex: 0 1 auto;
+      min-height: 0;
+    }
+    .dc__body {
+      min-height: 0;
+    }
+    :host(.dc--scroll) .dc__body {
+      overflow-y: auto;
+    }
+    @media (max-width: 767.98px), (max-height: 560.98px) {
+      :host(.dc--scroll) .dc__body {
+        overflow: visible;
+      }
+    }
+    @container (min-width: 1100px) {
+      :host(.dc--cols3) .dc__fields {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
     }
     .dc__head {
       display: flex;
@@ -55,8 +88,15 @@ let nextId = 0;
           <mf-count-chip data-details-count>{{ count() }}</mf-count-chip>
         }
       </div>
-      <dl class="dc__fields"><ng-content select="[mfDetailField]" /></dl>
-      <ng-content />
+      <div
+        class="dc__body"
+        [attr.tabindex]="scrollLabel() !== null ? 0 : null"
+        [attr.role]="scrollLabel() !== null ? 'region' : null"
+        [attr.aria-label]="scrollLabel()"
+      >
+        <dl class="dc__fields"><ng-content select="[mfDetailField]" /></dl>
+        <ng-content />
+      </div>
     </section>
   `,
 })
@@ -65,6 +105,10 @@ export class DetailsCard {
   readonly title = input.required<string>();
   /** A number shown in a count chip beside the title (the number of fields of a group); none by default. */
   readonly count = input<number | null>(null);
+  /** Three columns from a card width of 1100 px (two below), for a card with many short fields (the Matter Summary). */
+  readonly threeColumns = input(false, { transform: booleanAttribute });
+  /** The card fits its content and scrolls the fields inside itself; the text is the accessible name of that scroll region ("Matter details, scrollable"). */
+  readonly scrollLabel = input<string | null>(null);
   protected readonly headId = `dc-h-${nextId++}`;
 }
 
@@ -87,6 +131,8 @@ export class DetailsCard {
       margin: 0 0 2px;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
+      /* 13 px label on the 15 px line the 12 px label had, so the rows keep their rhythm when a page moves onto this card (#1253). */
+      line-height: 1.15;
     }
     dd {
       display: flex;

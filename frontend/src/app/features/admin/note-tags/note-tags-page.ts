@@ -114,10 +114,10 @@ import { TagChip } from '../../../shared/ui/tag-chip';
           [maxLength]="60"
           [(value)]="name"
         />
-        <span class="mf-field__label" id="nt-colour-label">Colour</span>
+        <span class="mf-field__label" id="nt-colour-label">Color</span>
         <mf-dropdown
           buttonId="nt-colour"
-          label="Colour"
+          label="Color"
           [items]="colourItems"
           [value]="colour()"
           (valueChange)="colour.set($event)"
@@ -148,7 +148,7 @@ export class NoteTagsPage {
   /** The columns: Name is the spring; the others have fixed widths so the headings never move between loading, empty, error and rows. */
   protected readonly gridDefs = signal<readonly RecordGridColumn[]>([
     { key: 'name', label: 'Name', locked: true, minWidth: '200px' },
-    { key: 'colour', label: 'Colour', width: 'var(--mf-col-status-w)', minWidth: '120px' },
+    { key: 'colour', label: 'Color', width: 'var(--mf-col-status-w)', minWidth: '120px' },
     {
       key: 'notes',
       label: 'Notes',

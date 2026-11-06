@@ -133,7 +133,7 @@ describe('the application name in the screens', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  it('the 403, 404 and error pages carry the name; the error text and the 404 search use it too', async () => {
+  it('the 403, 404 and error pages carry the name; the error text uses it too', async () => {
     applyBranding({ ...CUSTOM, appName: 'Acme' });
     for (const page of [ForbiddenPage, NotFoundPage, ErrorPage] as Type<unknown>[]) {
       TestBed.resetTestingModule();
@@ -145,19 +145,13 @@ describe('the application name in the screens', () => {
     expect((await render(ErrorPage)).querySelector('[data-state-reason]')!.textContent).toContain(
       'Acme could not load your account.',
     );
+    // The 404 has no search box any more (D-53b, #1193): one sentence and one button.
     TestBed.resetTestingModule();
-    expect(
-      (await render(NotFoundPage))
-        .querySelector('[data-not-found-search]')!
-        .getAttribute('placeholder'),
-    ).toBe('Search Acme');
+    expect((await render(NotFoundPage)).querySelector('[data-not-found-search]')).toBeNull();
   });
 
   it('the pages still say MatterFlow when nothing was changed', async () => {
     const el = await render(NotFoundPage);
     expect(el.querySelector('[data-state-brand]')!.textContent).toBe('MatterFlow');
-    expect(el.querySelector('[data-not-found-search]')!.getAttribute('placeholder')).toBe(
-      'Search MatterFlow',
-    );
   });
 });

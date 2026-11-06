@@ -1,3 +1,4 @@
+import { ddChoose, ddValue } from '../../../testing/dropdown-testing.spec-util';
 import { TASK_TYPE_COLOURS } from '../../../shared/task-type/task-type-colours';
 import { aLookupItem } from '../../../shared/assignees/assignee-testing';
 import { EMAIL_PANEL_STORAGE_KEY } from '../../../shared/ui/email-intake';
@@ -240,10 +241,14 @@ async function pickType(h: Harness, name = 'Data Processing'): Promise<void> {
   await settle(h.fixture);
 }
 
+const DD_LABELS: Record<string, string> = {
+  '#ct-priority': 'Priority',
+  '#ct-pod': 'Pod',
+  '#ct-project': 'Project',
+};
+
 async function choose(h: Harness, selector: string, value: string): Promise<void> {
-  const select = field<HTMLSelectElement>(h, selector);
-  select.value = value;
-  select.dispatchEvent(new Event('change'));
+  ddChoose(h.el, DD_LABELS[selector], value);
   await settle(h.fixture);
 }
 
@@ -314,7 +319,7 @@ describe('CreateTaskPage', () => {
     await pickType(h, 'Alpha');
     const strip = field(h, '[data-type-chip] mf-task-type-chip')!;
     expect(strip.getAttribute('data-colour')).toBe(cardColour);
-    expect(strip.querySelector('.chip')!.classList).not.toContain('sm');
+    expect(strip.querySelector('.chip')!.classList).toContain('sm');
   });
 
   it('shows an empty state when no task type is available', async () => {
@@ -323,11 +328,16 @@ describe('CreateTaskPage', () => {
     expect(field(h, '[data-type-card]')).toBeNull();
   });
 
-  it('reveals the form with the type as a header chip when a card is chosen', async () => {
+  it('reveals the form with the type once, on the Task Type tile of the summary strip, with Change Type (#1252)', async () => {
     const h = await create({ types: [aType({ iconKey: 'cpu-2' })] });
     await pickType(h);
     expect(field(h, '[data-type-chooser]')).toBeNull();
-    expect(field(h, '[data-type-name]').textContent).toBe('Data Processing');
+    expect(h.el.querySelectorAll('[data-type-name]')).toHaveLength(1);
+    expect(h.el.querySelectorAll('[data-type-chip]')).toHaveLength(1);
+    expect(field(h, '[data-strip-type] [data-change-type]').textContent!.trim()).toBe(
+      'Change Type',
+    );
+    expect(field(h, '[data-strip-type] [data-type-name]').textContent).toBe('Data Processing');
     expect(field(h, '[data-type-chip] mf-task-type-chip')).not.toBeNull();
     expect(field(h, '#ct-title')).not.toBeNull();
     expect(field(h, '#ct-type')).toBeNull();
@@ -817,8 +827,8 @@ describe('CreateTaskPage', () => {
     expect(h.router.navigateByUrl).not.toHaveBeenCalled();
     expect(field<HTMLInputElement>(h, '#ct-title').value).toBe('');
     expect(field(h, '[data-type-name]').textContent).toBe('Data Processing');
-    expect(field<HTMLSelectElement>(h, '#ct-pod').value).toBe('4');
-    expect(field<HTMLSelectElement>(h, '#ct-project').value).toBe('3');
+    expect(ddValue(h.el, 'Pod')).toBe('4');
+    expect(ddValue(h.el, 'Project')).toBe('3');
     expect(field(h, '[data-chosen]').textContent).toContain('00343-00012');
   });
 

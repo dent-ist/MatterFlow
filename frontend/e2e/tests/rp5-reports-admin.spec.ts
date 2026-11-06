@@ -2,6 +2,7 @@ import { Page } from '@playwright/test';
 import { Api, Json } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { asDropdown } from '../support/dropdown';
 import { SIZES, noHorizontalScroll, shot } from '../support/screens';
 import { uid } from '../support/seed';
 
@@ -192,6 +193,12 @@ test.describe('the Reports list (#712)', () => {
   });
 });
 
+/** Run Preview is an entry of the "..." menu of the page header (D-44q). */
+async function runPreviewFromMenu(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'More actions' }).click();
+  await page.getByRole('menuitem', { name: 'Run Preview' }).click();
+}
+
 test.describe('the editor (#713 to #715)', () => {
   test.skip(() => !ready, 'Reports are not ready on this stack: the report login is missing');
 
@@ -203,7 +210,7 @@ test.describe('the editor (#713 to #715)', () => {
     const role = await personas.create({ label: 'rp-runner', permissions: ['Report.Run'] });
     await page.goto('/admin/reports/new');
     await page.locator('#rep-name').fill(reportName('Created'));
-    await page.locator('#rep-category').selectOption({ label: s.category.name });
+    await asDropdown(page.locator('#rep-category')).selectOption({ label: s.category.name });
 
     // A query that is not one SELECT is blocked, with the line and column of the problem.
     await typeQuery(page, 'SELECT 1;\nDROP TABLE dbo.Pod');
@@ -219,19 +226,19 @@ test.describe('the editor (#713 to #715)', () => {
     await awaitAnalysis(page);
     await tab(page, /^Parameters/).click();
     await expect(page.locator('[data-parameter="MAX"]')).toBeVisible();
-    await page.locator('#param-0-type').selectOption('number');
+    await asDropdown(page.locator('#param-0-type')).selectOption('number');
     await page.locator('#param-0-label').fill('Largest value');
     await page.getByRole('button', { name: 'Create Report' }).click();
     await expect(page).toHaveURL(/\/admin\/reports\/\d+$/);
     const id = Number(page.url().split('/').pop());
     await expect(page.locator('[data-status]')).toHaveText('Inactive');
     // Activation is hidden until this version has a successful preview, and the page says why.
-    await expect(page.locator('[data-activate]')).toHaveCount(0);
+    await expect(page.locator('[data-page-actions] [data-activate]')).toHaveCount(0);
     await expect(page.locator('[data-activate-reason]')).toContainText(
       'Preview the current version',
     );
 
-    await page.getByRole('button', { name: 'Preview', exact: true }).click();
+    await runPreviewFromMenu(page);
     await expect(page.locator('[data-preview-ok]')).toBeVisible();
     await page.locator('#pp-MAX').fill('2');
     await page.getByRole('button', { name: 'Run preview' }).click();
@@ -239,7 +246,14 @@ test.describe('the editor (#713 to #715)', () => {
     await expect(
       page.getByRole('region', { name: 'Preview rows' }).locator('tbody tr'),
     ).toHaveCount(2);
-    await page.getByRole('button', { name: 'Activate', exact: true }).click();
+    // Activate is a text button on the History tab, with a confirm question (D-44q).
+    await tab(page, 'History').click();
+    await page
+      .locator('[data-version="1"]')
+      .getByRole('button', { name: 'Activate', exact: true })
+      .click();
+    await expect(page.locator('[data-activate-body]')).toContainText('Activate version 1?');
+    await page.getByRole('button', { name: 'Activate Version' }).click();
     await expect(page.locator('[data-status]')).toHaveText('Active');
 
     // Assignment from the report: the Roles tab.
@@ -272,7 +286,9 @@ test.describe('the editor (#713 to #715)', () => {
     await expect(page.locator('[data-status]')).toHaveText('Active');
     await page.locator('#sql-editor').fill('SELECT 1 AS one,\n       2 AS two');
     await awaitAnalysis(page);
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    // The query changed: the primary says a new version is written, with the information banner.
+    await expect(page.locator('[data-version-banner]')).toContainText('Saving creates version 2');
+    await page.getByRole('button', { name: 'Save as New Version', exact: true }).click();
     await expect(page.locator('[data-state-line]')).toContainText('Version 2');
     await expect(page.locator('[data-status]')).toHaveText('Active');
 
@@ -289,7 +305,7 @@ test.describe('the editor (#713 to #715)', () => {
     await page.getByRole('button', { name: 'Restore Version' }).click();
     await expect(page.locator('[data-state-line]')).toContainText('Version 3');
     await expect(page.locator('[data-status]')).toHaveText('Inactive');
-    await expect(page.locator('[data-activate]')).toHaveCount(0);
+    await expect(page.locator('[data-version="3"] [data-activate]')).toBeDisabled();
     await expect(page.locator('[data-version]')).toHaveCount(3);
   });
 
@@ -307,7 +323,7 @@ test.describe('the editor (#713 to #715)', () => {
       keepActive: false,
     });
     await page.locator('#rep-description').fill('Changed in the first editor');
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByRole('button', { name: 'Save Changes', exact: true }).click();
     await expect(page.locator('[data-conflict]')).toBeVisible();
     await page.getByRole('button', { name: 'Reload Latest' }).click();
     await expect(page.locator('[data-conflict]')).toHaveCount(0);
@@ -482,7 +498,7 @@ test.describe('accessibility at four sizes (#712 to #717)', () => {
     });
 
     await page.goto(`/admin/reports/${id}?tab=query`);
-    await page.getByRole('button', { name: 'Preview', exact: true }).click();
+    await runPreviewFromMenu(page);
     await expect(page.locator('[data-preview-ok]')).toBeVisible();
     await page.getByRole('button', { name: 'Schema Browser' }).click();
     await expect(page.locator('[data-schema-panel] [data-table]').first()).toBeVisible();

@@ -20,6 +20,7 @@ import {
 import { ApiError } from '../../../core/http/api-error';
 import { QuietRequests } from '../../../core/http/interceptors';
 import { NotificationService } from '../../../core/notify/notification.service';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { FormDialog } from '../../../shared/ui/form-dialog';
 import { IntPipe } from '../../../shared/ui/number-format';
 
@@ -52,7 +53,7 @@ const CONCURRENCY = 3;
  */
 @Component({
   selector: 'mf-matter-managers-dialog',
-  imports: [IntPipe, FormDialog],
+  imports: [Dropdown, IntPipe, FormDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .mmd {
@@ -101,35 +102,29 @@ const CONCURRENCY = 3;
         }
         <div class="mmd__field">
           <label class="mmd__label" [for]="uid + '-primary'">Primary PM</label>
-          <select
-            class="mf-control"
-            [id]="uid + '-primary'"
+          <mf-dropdown
+            [neutralValue]="null"
+            [buttonId]="uid + '-primary'"
+            label="Primary PM"
             data-manager-select="primary"
-            [attr.aria-describedby]="uid + '-help'"
-            (change)="primaryChoice.set($any($event.target).value)"
-          >
-            @for (o of options(); track o.value) {
-              <option [value]="o.value" [selected]="o.value === primaryChoice()">
-                {{ o.label }}
-              </option>
-            }
-          </select>
+            [describedBy]="uid + '-help'"
+            [items]="optionItems()"
+            [value]="primaryChoice()"
+            (valueChange)="primaryChoice.set($event)"
+          />
         </div>
         <div class="mmd__field">
           <label class="mmd__label" [for]="uid + '-secondary'">Secondary PM</label>
-          <select
-            class="mf-control"
-            [id]="uid + '-secondary'"
+          <mf-dropdown
+            [neutralValue]="null"
+            [buttonId]="uid + '-secondary'"
+            label="Secondary PM"
             data-manager-select="secondary"
-            [attr.aria-describedby]="uid + '-help'"
-            (change)="secondaryChoice.set($any($event.target).value)"
-          >
-            @for (o of options(); track o.value) {
-              <option [value]="o.value" [selected]="o.value === secondaryChoice()">
-                {{ o.label }}
-              </option>
-            }
-          </select>
+            [describedBy]="uid + '-help'"
+            [items]="optionItems()"
+            [value]="secondaryChoice()"
+            (valueChange)="secondaryChoice.set($event)"
+          />
         </div>
         <p class="mmd__help" [id]="uid + '-help'">
           Both have the same rights. A matter can have one, both or none. People who are out of
@@ -185,6 +180,9 @@ export class MatterManagersDialog {
   protected readonly savedCount = signal(0);
 
   /** The choices of both pickers: a leading "Leave Unchanged" (several matters) or "None", then every eligible person, then people who are on the matter but no longer eligible. */
+  protected readonly optionItems = computed<DropdownItem[]>(() =>
+    this.options().map((o) => ({ value: o.value, label: o.label })),
+  );
   protected readonly options = computed(() => {
     const lead = this.bulk()
       ? [

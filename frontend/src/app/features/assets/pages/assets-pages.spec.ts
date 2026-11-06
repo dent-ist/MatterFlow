@@ -1,4 +1,4 @@
-import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
+import { ddChoose, ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -1011,9 +1011,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     }
 
     async function chooseType(id: string): Promise<void> {
-      const select = el().querySelector<HTMLSelectElement>('#asset-type')!;
-      select.value = id;
-      select.dispatchEvent(new Event('change'));
+      ddChoose(el(), 'Asset Type', id);
       await settle(fixture);
     }
 
@@ -1169,7 +1167,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       );
       expect(el().querySelector('.mf-picker__change')).toBeNull();
       expect(el().querySelector('[data-type-locked]')?.textContent).toContain('Document Set');
-      expect(el().querySelector('select#asset-type')).toBeNull();
+      expect(el().querySelector('button#asset-type')).toBeNull();
       expect((el().querySelector('#asset-name') as HTMLInputElement).value).toBe('Contract bundle');
 
       type('#asset-name', 'Renamed');

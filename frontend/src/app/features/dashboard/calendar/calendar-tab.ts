@@ -259,7 +259,7 @@ const ALL_ROLES = '';
             <li class="lgrp">
               <span class="legend__h">Holidays</span>
               <span class="lg">
-                <mf-tag-chip colour="slate" icon="pi-flag">Chip colour = category</mf-tag-chip>
+                <mf-tag-chip colour="slate" icon="pi-flag">Chip color = category</mf-tag-chip>
               </span>
             </li>
           </ul>

@@ -87,7 +87,7 @@ const FIELD_LABELS: Record<string, string> = {
   SourceOfAgreement: 'the source of the agreement',
   Description: 'the description',
   ImageFormat: 'the image format',
-  ColourMode: 'the colour setting',
+  ColourMode: 'the color setting',
   TextMode: 'the text setting',
   NativesRule: 'the natives rule',
   LoadFile: 'the load file',

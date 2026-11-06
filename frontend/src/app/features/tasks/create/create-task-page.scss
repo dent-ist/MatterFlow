@@ -149,6 +149,28 @@
   font-weight: 600;
 }
 
+/* The Task Type tile: the chip and the name, and "Change Type" at the end of the same line (the one place the type is shown, D-44j). */
+.ct__tile-type {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 var(--mf-s2);
+  min-width: 0;
+}
+
+.ct__tile-id {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s2);
+  min-width: 0;
+}
+
+/* The name stays on one line; when the tile is too narrow for it and the button, the button goes under it. */
+.ct__tile-id .ct__tile-value {
+  white-space: nowrap;
+}
+
 .ct__strip-note {
   grid-column: 1 / -1;
   margin: 0;
@@ -226,27 +248,6 @@
   word-break: normal;
   color: var(--mf-text-muted);
   font-size: var(--mf-fs-sm);
-}
-
-.ct__selected {
-  display: flex;
-  align-items: center;
-  gap: var(--mf-s3);
-  padding: var(--mf-s2) var(--mf-s3);
-  background: var(--mf-surface);
-  border: 1px solid var(--mf-border);
-  border-radius: var(--mf-radius-xl);
-}
-
-.ct__selected-text {
-  display: grid;
-  flex: 1;
-  min-width: 0;
-}
-
-.ct__selected-label {
-  color: var(--mf-text-muted);
-  font-size: var(--mf-fs-xs);
 }
 
 @media (max-width: 639.98px) {

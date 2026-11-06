@@ -28,6 +28,7 @@ import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { PanelScroll } from '../../../shared/ui/panel-scroll';
 import { SearchBox } from '../../../shared/ui/search-box';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { COMMENT_MAX_TEXT, decorateLinks, htmlToText, isBlankHtml } from './rich-text';
 import { RichTextEditor } from './rich-text-editor';
@@ -102,6 +103,7 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
     NgTemplateOutlet,
     RichTextEditor,
     ConfirmDialog,
+    Dropdown,
     SearchBox,
     PanelScroll,
     TagChip,
@@ -129,15 +131,15 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
             (searchChange)="query.set($event)"
           />
           <div class="tc__opts">
-            <select
-              class="mf-control tc__sort"
+            <mf-dropdown
+              [neutralValue]="null"
+              class="tc__sort"
               data-order-select
-              aria-label="Sort comments"
-              (change)="setOrder($any($event.target).value === 'newest')"
-            >
-              <option value="oldest" [selected]="!newestFirst()">Oldest First</option>
-              <option value="newest" [selected]="newestFirst()">Newest First</option>
-            </select>
+              label="Sort Comments"
+              [items]="orderItems"
+              [value]="newestFirst() ? 'newest' : 'oldest'"
+              (valueChange)="setOrder($event === 'newest')"
+            />
           </div>
         </div>
 
@@ -646,6 +648,10 @@ export class TaskComments {
   protected readonly loadingMore = signal(false);
   protected readonly moreError = signal('');
   protected readonly newestFirst = signal(false);
+  protected readonly orderItems: DropdownItem[] = [
+    { value: 'oldest', label: 'Oldest First' },
+    { value: 'newest', label: 'Newest First' },
+  ];
   /** The size of the short view of a long thread (the default of `limit`). */
   protected readonly latestCount = 3;
   private readonly limitKey = computed(() => commentLimitKey(this.auth.profile()?.userId));

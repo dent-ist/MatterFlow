@@ -12,6 +12,7 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { calendarDayInZone } from '../../../core/time/time';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 import { HOLIDAY_API, UserCalendar } from './holiday-api';
 import { HolidayCalendar, PreviewRow } from './holiday-contract';
@@ -23,31 +24,24 @@ import { HolidayCalendar, PreviewRow } from './holiday-contract';
  */
 @Component({
   selector: 'mf-user-calendar-field',
-  imports: [NumericDatePipe],
+  imports: [Dropdown, NumericDatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="uc" data-user-calendar>
       <label class="uc__l" for="uc-select">Holiday Calendar</label>
       @if (state(); as s) {
         @if (canManage()) {
-          <select
-            id="uc-select"
-            class="mf-control"
+          <mf-dropdown
+            [neutralValue]="null"
+            buttonId="uc-select"
+            label="Holiday Calendar"
             data-user-calendar-select
             [disabled]="busy()"
-            aria-describedby="uc-help"
-            [value]="s.explicitCalendarId ?? ''"
-            (change)="choose($any($event.target).value)"
-          >
-            <option value="" [selected]="s.explicitCalendarId === null">
-              {{ defaultLabel() }}
-            </option>
-            @for (c of own(); track c.calendarId) {
-              <option [value]="c.calendarId" [selected]="s.explicitCalendarId === c.calendarId">
-                {{ c.name }}
-              </option>
-            }
-          </select>
+            describedBy="uc-help"
+            [items]="calendarItems()"
+            [value]="s.explicitCalendarId === null ? '' : '' + s.explicitCalendarId"
+            (valueChange)="choose($event)"
+          />
         } @else {
           <p class="uc__t" data-user-calendar-text>{{ current()?.name ?? 'None' }}</p>
         }
@@ -123,6 +117,10 @@ export class UserCalendarField {
   protected readonly error = signal('');
 
   protected readonly own = computed(() => this.calendars().filter((c) => !c.appliesToEveryone));
+  protected readonly calendarItems = computed<DropdownItem[]>(() => [
+    { value: '', label: this.defaultLabel() },
+    ...this.own().map((c) => ({ value: String(c.calendarId), label: c.name })),
+  ]);
   protected readonly current = computed(
     () => this.calendars().find((c) => c.calendarId === this.state()?.effectiveCalendarId) ?? null,
   );

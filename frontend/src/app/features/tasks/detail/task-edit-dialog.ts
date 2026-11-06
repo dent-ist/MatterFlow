@@ -43,6 +43,7 @@ import { AssetPickerContext } from '../../../shared/ui/asset-picker';
 import { AssigneePicker } from '../../../shared/assignees/assignee-picker';
 import { PickerOption } from '../../../shared/ui/entity-picker';
 import { splitFormErrors } from '../../../shared/ui/custom-fields';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { FormDialog } from '../../../shared/ui/form-dialog';
 import { TitleArea } from '../../../shared/ui/title-area';
 import { RichTextEditor } from '../panels/rich-text-editor';
@@ -96,6 +97,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
 @Component({
   selector: 'mf-task-edit-dialog',
   imports: [
+    Dropdown,
     DynamicForm,
     RequestSection,
     DateInput,
@@ -162,20 +164,15 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
 
             <div class="mf-field">
               <label class="mf-field__label" for="td-project">Project</label>
-              <select
-                id="td-project"
-                class="mf-field__input"
-                [value]="model().projectId ?? ''"
-                [attr.aria-invalid]="err('projectId') ? 'true' : null"
-                (change)="set('projectId', toNumber($any($event.target).value))"
-              >
-                <option value="" [selected]="model().projectId === null">No Project</option>
-                @for (p of projectOptions(); track p.id) {
-                  <option [value]="p.id" [selected]="model().projectId === p.id">
-                    {{ p.label }}
-                  </option>
-                }
-              </select>
+              <mf-dropdown
+                [neutralValue]="null"
+                buttonId="td-project"
+                label="Project"
+                [items]="projectItems()"
+                [value]="model().projectId === null ? '' : '' + model().projectId"
+                [invalid]="!!err('projectId')"
+                (valueChange)="set('projectId', toNumber($event))"
+              />
               <p class="mf-field__help">Only projects of the same matter.</p>
               @if (err('projectId'); as e) {
                 <p class="mf-field__error" role="alert">{{ e }}</p>
@@ -272,18 +269,15 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
               ) {
                 <div class="mf-field">
                   <label class="mf-field__label" for="td-priority">Priority</label>
-                  <select
-                    id="td-priority"
-                    class="mf-field__input"
+                  <mf-dropdown
+                    [neutralValue]="null"
+                    buttonId="td-priority"
+                    label="Priority"
                     [disabled]="!t.allowedActions.canSetPriority"
-                    (change)="set('priorityId', +$any($event.target).value)"
-                  >
-                    @for (p of priorityOptions(); track p.id) {
-                      <option [value]="p.id" [selected]="model().priorityId === p.id">
-                        {{ p.label }}
-                      </option>
-                    }
-                  </select>
+                    [items]="priorityItems()"
+                    [value]="'' + model().priorityId"
+                    (valueChange)="set('priorityId', +$event)"
+                  />
                 </div>
               }
 
@@ -335,19 +329,15 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
               @if (t.allowedActions.canAssign) {
                 <div class="mf-field">
                   <label class="mf-field__label" for="td-pod">Pod</label>
-                  <select
-                    id="td-pod"
-                    class="mf-field__input"
-                    [attr.aria-invalid]="err('assignedPodId') ? 'true' : null"
-                    (change)="set('podId', toNumber($any($event.target).value))"
-                  >
-                    <option value="" [selected]="model().podId === null">No Pod</option>
-                    @for (p of podOptions(); track p.id) {
-                      <option [value]="p.id" [selected]="model().podId === p.id">
-                        {{ p.label }}
-                      </option>
-                    }
-                  </select>
+                  <mf-dropdown
+                    [neutralValue]="null"
+                    buttonId="td-pod"
+                    label="Pod"
+                    [invalid]="!!err('assignedPodId')"
+                    [items]="podItems()"
+                    [value]="model().podId === null ? '' : '' + model().podId"
+                    (valueChange)="set('podId', toNumber($event))"
+                  />
                   @if (err('assignedPodId'); as e) {
                     <p class="mf-field__error" role="alert">{{ e }}</p>
                   }
@@ -601,6 +591,18 @@ export class TaskEditDialog {
     }
     return list;
   });
+
+  protected readonly projectItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'No Project' },
+    ...this.projectOptions().map((o) => ({ value: String(o.id), label: o.label })),
+  ]);
+  protected readonly priorityItems = computed<DropdownItem[]>(() =>
+    this.priorityOptions().map((o) => ({ value: String(o.id), label: o.label })),
+  );
+  protected readonly podItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'No Pod' },
+    ...this.podOptions().map((o) => ({ value: String(o.id), label: o.label })),
+  ]);
 
   protected readonly priorityOptions = computed<Option[]>(() => {
     const current = this.store.task()?.priority;

@@ -320,7 +320,7 @@ describe('DashCalendarTab', () => {
       );
     });
 
-    it('clicking a band collapses that role in both lists and the choice is remembered for the user', async () => {
+    it('clicking a band collapses that role in its own list only and the choice is remembered for the user (#1258)', async () => {
       await open('/dashboard?day=2026-11-25');
       const first = bands('available')[0];
       const roleId = first.getAttribute('data-role')!;
@@ -331,9 +331,9 @@ describe('DashCalendarTab', () => {
       expect(
         host.querySelector(`#${first.getAttribute('aria-controls')}`)!.hasAttribute('hidden'),
       ).toBe(true);
-      // The same role in Not Available follows (one choice per role).
+      // The same role in Not Available does not follow: each list keeps its own state.
       for (const band of bands('unavailable').filter((b) => b.getAttribute('data-role') === roleId))
-        expect(band.getAttribute('aria-expanded')).toBe('false');
+        expect(band.getAttribute('aria-expanded')).toBe('true');
       expect(stored().calendarCollapsed).toEqual([Number(roleId)]);
       expect(rows('available').length).toBe(before);
       // A new visit to the page keeps the role collapsed.
@@ -346,6 +346,40 @@ describe('DashCalendarTab', () => {
       await settle();
       expect(bands('available')[0].getAttribute('aria-expanded')).toBe('true');
       expect(stored().calendarCollapsed).toBeUndefined();
+    });
+
+    it('a role group under Not Available opens and closes without moving the same role under Available, and the other way round (#1258)', async () => {
+      await open('/dashboard?day=2026-11-25');
+      const shared = bands('unavailable')
+        .map((b) => b.getAttribute('data-role')!)
+        .find((id) => bands('available').some((b) => b.getAttribute('data-role') === id));
+      expect(shared, 'the fixture day needs a role in both lists').toBeDefined();
+      const band = (list: string) =>
+        bands(list).find((b) => b.getAttribute('data-role') === shared)!;
+      band('unavailable').click();
+      await settle();
+      expect(band('unavailable').getAttribute('aria-expanded')).toBe('false');
+      expect(band('available').getAttribute('aria-expanded')).toBe('true');
+      expect(stored().calendarCollapsed).toEqual([-Number(shared)]);
+      band('available').click();
+      await settle();
+      expect(band('available').getAttribute('aria-expanded')).toBe('false');
+      expect(band('unavailable').getAttribute('aria-expanded')).toBe('false');
+      band('unavailable').click();
+      await settle();
+      expect(band('unavailable').getAttribute('aria-expanded')).toBe('true');
+      expect(band('available').getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('a person row has no role chip: the role is the group heading (#1258)', async () => {
+      await open('/dashboard?day=2026-11-25');
+      for (const row of qa('[data-list] .person')) {
+        const role = row.closest('[data-role-group]')!.querySelector('.gh__n')!.textContent!.trim();
+        const chips = Array.from(row.querySelectorAll('mf-badge, mf-tag-chip, mf-status-chip')).map(
+          (c) => text(c),
+        );
+        expect(chips.filter((c) => c.includes(role))).toEqual([]);
+      }
     });
 
     it('Collapse All and Expand All act on every role shown', async () => {

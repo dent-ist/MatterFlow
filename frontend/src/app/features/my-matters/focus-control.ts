@@ -70,6 +70,11 @@ export function focusLabel(ids: readonly number[], options: readonly TypeOption[
       min-height: 32px;
       cursor: pointer;
     }
+    /* The type cell is a size container, so inside the flex label it has no width of its own: it takes the rest of the row and its name shows. */
+    .fc__opt mf-task-type-cell {
+      flex: 1;
+      min-width: 0;
+    }
     .fc__actions {
       display: flex;
       gap: var(--mf-s2);

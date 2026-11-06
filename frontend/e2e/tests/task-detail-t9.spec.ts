@@ -336,7 +336,7 @@ test.describe('T9 #324 and #325: where a task was opened from', () => {
     for (const bad of ['evil', '%2F%2Fevil.example', 'MATTER', 'constructor', '']) {
       await page.goto(`/tasks/${task.taskId}?from=${bad}`);
       await expect(page.locator('[data-task-header]')).toBeVisible();
-      await expect(crumbs(page).getByRole('link').first()).toHaveText('Tasks');
+      await expect(crumbs(page).getByRole('link').first()).toHaveText('Task Queue');
       await expect(crumbs(page).getByRole('link').first()).toHaveAttribute('href', '/tasks');
     }
     // A crafted return address that is not on the origin page is replaced by the page.
@@ -351,7 +351,7 @@ test.describe('T9 #324 and #325: where a task was opened from', () => {
     await expect(crumbs(page).getByRole('link').first()).toHaveAttribute('href', '/dashboard');
     await page.goto(`/tasks/${task.taskId}?from=project`);
     // This task has no project: nothing to go back to, so the plain page.
-    await expect(crumbs(page).getByRole('link').first()).toHaveText('Tasks');
+    await expect(crumbs(page).getByRole('link').first()).toHaveText('Task Queue');
 
     // Task.View only: no Matter.View and no Dashboard.View. Search still works; Matter and Dashboard are dropped.
     const role = await seed.role(['Task.View'], 'E2E view only');
@@ -361,7 +361,7 @@ test.describe('T9 #324 and #325: where a task was opened from', () => {
     for (const dropped of ['matter', 'dashboard', 'project']) {
       await v.goto(`/tasks/${task.taskId}?from=${dropped}`);
       await expect(v.locator('[data-task-header]')).toBeVisible();
-      await expect(crumbs(v).getByRole('link').first(), dropped).toHaveText('Tasks');
+      await expect(crumbs(v).getByRole('link').first(), dropped).toHaveText('Task Queue');
     }
     await v.goto(`/search?q=${(task.title as string).split(' ').pop()}`);
     const hit = v.locator(`a[data-row-list="search"][data-row-key="${task.taskId}"]:visible`);
@@ -421,7 +421,7 @@ test.describe('T9 #326: one Edit control and the Tab stops', () => {
       stops.push(stop);
       if (stop.startsWith('workflow:')) break;
     }
-    const crumbIndex = stops.findIndex((s) => s.startsWith('a:Tasks'));
+    const crumbIndex = stops.findIndex((s) => s.startsWith('a:Task Queue'));
     const editIndex = stops.findIndex((s) => s === 'button:edit');
     expect(crumbIndex, `crumb in ${stops.join(' | ')}`).toBeGreaterThanOrEqual(0);
     expect(

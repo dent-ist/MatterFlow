@@ -1,4 +1,5 @@
 import { axeAvailable, axeViolations } from '../support/axe';
+import { dropdownById } from '../support/dropdown';
 import { expect, test } from '../support/fixtures';
 import { SIZES, noHorizontalScroll, shot } from '../support/screens';
 import { uid } from '../support/seed';
@@ -60,7 +61,7 @@ test.describe('Asset forms (WP-AS5)', () => {
 
     // The type fields appear under their own heading with the count, in a section that was already there (nothing moves).
     const before = (await page.locator('[data-section="fields"]').boundingBox())!;
-    await page.locator('#asset-type').selectOption(String(type.assetTypeId));
+    await dropdownById(page, 'asset-type').selectOption(String(type.assetTypeId));
     await expect(page.locator('[data-fields-title]')).toContainText(
       `Form type ${token} fields (2)`,
     );
@@ -82,7 +83,7 @@ test.describe('Asset forms (WP-AS5)', () => {
     const { token, matter, type } = await world(seed, admin, 2);
     await page.goto(`/assets/new?matterId=${matter.matterId}`);
     await expect(page.locator('[data-chosen]')).toContainText(matter.matterRef);
-    await page.locator('#asset-type').selectOption(String(type.assetTypeId));
+    await dropdownById(page, 'asset-type').selectOption(String(type.assetTypeId));
     await page.locator('#asset-name').fill(`Created ${token}`);
     await page.getByLabel('Field 1').first().fill('WS-1');
 
@@ -247,7 +248,7 @@ test.describe('Asset forms (WP-AS5)', () => {
     for (const size of SIZES) {
       await page.setViewportSize(size);
       await page.goto(`/assets/new?matterId=${matter.matterId}`);
-      await page.locator('#asset-type').selectOption(String(type.assetTypeId));
+      await dropdownById(page, 'asset-type').selectOption(String(type.assetTypeId));
       await expect(page.locator('[data-type-fields]')).toBeVisible();
       expect(await axeViolations(page), `new at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);

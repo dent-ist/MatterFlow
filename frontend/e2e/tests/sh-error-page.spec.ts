@@ -4,7 +4,7 @@ import { atEverySize, shot } from '../support/screens';
 
 /**
  * S11 (#608): the error page (the account cannot be loaded) shows the Reference of the failed call with Copy, the brand line, and Retry
- * reloads the page the person was on; "Go to Home" appears only after Retry has failed as well.
+ * reloads the page the person was on; "Go to My Work" appears only after Retry has failed as well.
  */
 const TITLE = "Couldn't load your account.";
 
@@ -45,7 +45,7 @@ test.describe('The error page (#608)', () => {
     await expect(page.getByRole('heading', { name: 'Matters', level: 1 })).toBeVisible();
   });
 
-  test('a Retry that fails again says so and offers "Go to Home", which opens the landing page once the account loads', async ({
+  test('a Retry that fails again says so and offers "Go to My Work", which opens the landing page once the account loads', async ({
     page,
   }) => {
     const unfail = await failMe(page, 500);
@@ -53,15 +53,17 @@ test.describe('The error page (#608)', () => {
     await expect(page.getByRole('heading', { name: TITLE, level: 1 })).toBeVisible();
     await page.getByRole('button', { name: 'Retry' }).click();
     await expect(page.locator('[data-failed-again]')).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Go to Home' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Go to My Work' })).toBeVisible();
     await shot(page, 'error-page-failed-again');
     await unfail();
-    await page.getByRole('link', { name: 'Go to Home' }).click();
+    await page.getByRole('link', { name: 'Go to My Work' }).click();
     await expect(page).not.toHaveURL(/\/error$/);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   });
 
-  test('axe is clean with the Reference and with "Go to Home" at four sizes', async ({ page }) => {
+  test('axe is clean with the Reference and with "Go to My Work" at four sizes', async ({
+    page,
+  }) => {
     await failMe(page, 500);
     await page.goto('/clients');
     await expect(page.getByRole('heading', { name: TITLE, level: 1 })).toBeVisible();

@@ -1,3 +1,4 @@
+import { ddButton } from '../../../testing/dropdown-testing.spec-util';
 import { TestBed } from '@angular/core/testing';
 
 vi.setConfig({ testTimeout: 60000 });
@@ -329,15 +330,18 @@ describe('TaskDetailPage header', () => {
     await click(fixture, q(el, '[data-option=HOLD]'));
     await fixture.whenStable();
     fixture.detectChanges();
-    const select = body().querySelector<HTMLSelectElement>('#task-hold-reason')!;
-    expect(Array.from(select.options).map((o) => o.textContent?.trim())).toEqual([
+    // Open the list, read it and choose from it in one go (closing it with Escape would reach the dialog in jsdom).
+    ddButton(body(), 'Hold Reason').click();
+    const options = Array.from(
+      document.body.querySelectorAll<HTMLElement>('.dd-panel [role="option"]'),
+    );
+    expect(options.map((o) => o.textContent?.trim())).toEqual([
       'Choose a reason',
       'Waiting for client data',
     ]);
     // An optional field carries no mark (D-35, #1156).
     expect(body().querySelector('[data-hold-reason-field] label')!.textContent).not.toContain('(');
-    select.value = '3';
-    select.dispatchEvent(new Event('change'));
+    options.find((o) => o.getAttribute('data-value') === '3')!.click();
     const area = body().querySelector<HTMLTextAreaElement>('#task-reason')!;
     area.value = 'Waiting for the vendor';
     area.dispatchEvent(new Event('input'));
@@ -1143,7 +1147,7 @@ describe('TaskDetailPage drill-in context (M7, #160)', () => {
 
   it('drops Pod Work as the origin for a person without Pod.View: the crumb would be a dead link (T10, #329)', async () => {
     const { el } = await openFrom('pod-work', '/pods/work?pod=2');
-    expect(crumb(el).textContent!.trim()).toBe('Tasks');
+    expect(crumb(el).textContent!.trim()).toBe('Task Queue');
     expect(crumb(el).getAttribute('href')).toBe('/tasks');
     expect((q(el, '[data-back-link]') as HTMLAnchorElement).getAttribute('href')).toBe('/tasks');
   });
@@ -1173,7 +1177,7 @@ describe('TaskDetailPage drill-in context (M7, #160)', () => {
       expect(crumbs(other.el)).toEqual([['Matter 00343-00012', '/matters/7?tab=tasks']]);
       TestBed.resetTestingModule();
       const none = await openFrom('matter', '/matters/7?tab=tasks');
-      expect(crumbs(none.el)).toEqual([['Tasks', '/tasks']]);
+      expect(crumbs(none.el)).toEqual([['Task Queue', '/tasks']]);
       expect(back(none.el).getAttribute('href')).toBe('/tasks');
     });
 
@@ -1193,7 +1197,7 @@ describe('TaskDetailPage drill-in context (M7, #160)', () => {
         ...PERMS,
         'Project.View',
       ]);
-      expect(crumbs(bare.el)[0]).toEqual(['Tasks', '/tasks']);
+      expect(crumbs(bare.el)[0]).toEqual(['Task Queue', '/tasks']);
     });
 
     it('Dashboard and Search: the exact address comes back; a foreign address falls back to the page', async () => {
@@ -1215,20 +1219,20 @@ describe('TaskDetailPage drill-in context (M7, #160)', () => {
       expect(crumbs(foreign.el)).toEqual([['Search', '/search']]);
       TestBed.resetTestingModule();
       const denied = await openFrom('dashboard', '/dashboard');
-      expect(crumbs(denied.el)).toEqual([['Tasks', '/tasks']]);
+      expect(crumbs(denied.el)).toEqual([['Task Queue', '/tasks']]);
       TestBed.resetTestingModule();
       // Dashboard.View without any tab permission opens an empty Dashboard whose data answers 403: not an origin (T10, #329).
       const noTab = await openFrom('dashboard', '/dashboard', undefined, [
         ...PERMS,
         'Dashboard.View',
       ]);
-      expect(crumbs(noTab.el)).toEqual([['Tasks', '/tasks']]);
+      expect(crumbs(noTab.el)).toEqual([['Task Queue', '/tasks']]);
     });
   });
 
   it('keeps the default crumb and a Back link to the Task list for an unknown from value', async () => {
     const { el } = await openFrom('somewhere-else');
-    expect(crumb(el).textContent!.trim()).toBe('Tasks');
+    expect(crumb(el).textContent!.trim()).toBe('Task Queue');
     expect(crumb(el).getAttribute('href')).toBe('/tasks');
     expect((q(el, '[data-back-link]') as HTMLAnchorElement).getAttribute('href')).toBe('/tasks');
   });

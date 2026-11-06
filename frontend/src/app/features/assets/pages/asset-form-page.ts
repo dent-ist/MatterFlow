@@ -33,6 +33,7 @@ import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { FORM_SCHEMA_READ_PERMISSIONS, toFormDefinition } from '../../../shared/forms/form-schema';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
 import type { Crumb } from '../../../shared/ui/page-header';
 import { TextField } from '../../../shared/ui/text-field';
@@ -69,6 +70,7 @@ export function externalReferenceError(text: string): string | null {
 @Component({
   selector: 'mf-asset-form-page',
   imports: [
+    Dropdown,
     RecordHeader,
     Badge,
     MatterRef,
@@ -172,18 +174,15 @@ export function externalReferenceError(text: string): string | null {
                   The type can't be changed after the asset is created.
                 </p>
               } @else {
-                <select
-                  id="asset-type"
-                  class="mf-control pg-input"
-                  [attr.aria-invalid]="typeError() ? 'true' : null"
-                  [value]="typeId() ?? ''"
-                  (change)="chooseType($any($event.target).value)"
-                >
-                  <option value="">Select a type...</option>
-                  @for (t of types(); track t.assetTypeId) {
-                    <option [value]="t.assetTypeId">{{ t.name }}</option>
-                  }
-                </select>
+                <mf-dropdown
+                  [neutralValue]="null"
+                  buttonId="asset-type"
+                  label="Asset Type"
+                  [items]="typeItems()"
+                  [value]="typeId() === null ? '' : '' + typeId()"
+                  [invalid]="!!typeError()"
+                  (valueChange)="chooseType($event)"
+                />
                 @if (typeError(); as e) {
                   <p class="mf-field__error" role="alert">{{ e }}</p>
                 }
@@ -350,6 +349,10 @@ export class AssetFormPage implements HasUnsavedChanges {
   protected readonly matter = signal<PickerOption | null>(null);
   protected readonly types = signal<AssetTypeResponse[]>([]);
   protected readonly typeId = signal<number | null>(null);
+  protected readonly typeItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'Select a type...' },
+    ...this.types().map((t) => ({ value: String(t.assetTypeId), label: t.name })),
+  ]);
   protected readonly displayName = signal('');
   protected readonly externalReference = signal('');
   protected readonly description = signal('');

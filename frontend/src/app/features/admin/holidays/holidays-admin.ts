@@ -13,6 +13,7 @@ import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { ActionMenu } from '../../../shared/ui/action-menu';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { rowActions } from '../../../shared/ui/row-actions';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 import { CalendarDialog } from './calendar-dialog';
@@ -37,6 +38,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   imports: [
     TagChip,
     Badge,
+    Dropdown,
     IntPipe,
     CalendarDialog,
     ConfirmDialog,
@@ -116,45 +118,30 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                 @if (defaults(); as d) {
                   <div class="ha__f">
                     <label class="ha__l" for="ha-firm">Firm Default</label>
-                    <select
-                      id="ha-firm"
-                      class="mf-control mf-control--fill"
+                    <mf-dropdown
+                      [neutralValue]="null"
+                      buttonId="ha-firm"
+                      label="Firm Default"
                       data-firm-default
-                      [value]="firm() ?? ''"
-                      (change)="setFirm($any($event.target).value)"
-                    >
-                      <option value="" [selected]="firm() === null">No Default</option>
-                      @for (c of ownCalendars(); track c.calendarId) {
-                        <option [value]="c.calendarId" [selected]="firm() === c.calendarId">
-                          {{ c.name }}
-                        </option>
-                      }
-                    </select>
+                      [items]="firmItems()"
+                      [value]="firm() === null ? '' : '' + firm()"
+                      (valueChange)="setFirm($event)"
+                    />
                   </div>
                   <fieldset class="ha__pods">
                     <legend class="ha__l">Pod Defaults</legend>
                     @for (p of pods(); track p.podId) {
                       <div class="ha__pod">
                         <label [for]="'ha-pod-' + p.podId">{{ p.name }}</label>
-                        <select
-                          [id]="'ha-pod-' + p.podId"
-                          class="mf-control"
+                        <mf-dropdown
+                          [neutralValue]="null"
+                          [buttonId]="'ha-pod-' + p.podId"
+                          [label]="p.name"
                           [attr.data-pod-default]="p.podId"
-                          [value]="podCal(p.podId) ?? ''"
-                          (change)="setPod(p.podId, $any($event.target).value)"
-                        >
-                          <option value="" [selected]="podCal(p.podId) === null">
-                            Firm Default
-                          </option>
-                          @for (c of ownCalendars(); track c.calendarId) {
-                            <option
-                              [value]="c.calendarId"
-                              [selected]="podCal(p.podId) === c.calendarId"
-                            >
-                              {{ c.name }}
-                            </option>
-                          }
-                        </select>
+                          [items]="podItems()"
+                          [value]="podCal(p.podId) === null ? '' : '' + podCal(p.podId)"
+                          (valueChange)="setPod(p.podId, $event)"
+                        />
                       </div>
                     }
                   </fieldset>
@@ -764,6 +751,17 @@ export class HolidaysAdmin implements OnInit {
   protected readonly ownCalendars = computed(() =>
     this.calendars().filter((c) => !c.appliesToEveryone),
   );
+  private readonly calendarChoices = computed<DropdownItem[]>(() =>
+    this.ownCalendars().map((c) => ({ value: String(c.calendarId), label: c.name })),
+  );
+  protected readonly firmItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'No Default' },
+    ...this.calendarChoices(),
+  ]);
+  protected readonly podItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'Firm Default' },
+    ...this.calendarChoices(),
+  ]);
   protected readonly rows = computed(() => {
     const q = this.query().trim().toLowerCase();
     const used = new Set<number>();

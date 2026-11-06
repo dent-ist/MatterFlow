@@ -189,7 +189,7 @@ describe('mf-global-search (header typeahead)', () => {
       const more = Array.from(el().querySelectorAll('[data-see-all]')).map((o) =>
         o.textContent!.replace(/\s+/g, ' ').trim(),
       );
-      expect(more).toEqual(['See all 12 matters', 'See all 1,000+ tasks']);
+      expect(more).toEqual(['See All 12 matters', 'See All 1,000+ tasks']);
     });
 
     it('the group headings are plain 13 / 600 text (no capitals) and "See all N" and "See All Results" are text buttons (#1218)', async () => {

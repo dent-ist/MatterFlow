@@ -767,7 +767,7 @@ describe('MattersListPage', () => {
       expect(dialog.querySelector('[data-managers-bulk-note]')?.textContent).toContain(
         '2 matters selected',
       );
-      const secondary = dialog.querySelector<HTMLSelectElement>('[data-manager-select=secondary]')!;
+      const secondary = ddSelect(dialog, 'Secondary PM');
       expect(secondary.value).toBe('__keep__');
       secondary.value = '12';
       secondary.dispatchEvent(new Event('change'));

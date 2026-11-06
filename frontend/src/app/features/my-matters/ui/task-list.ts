@@ -1,4 +1,5 @@
 import { TaskTypeCell } from '../../../shared/ui/task-type-cell';
+import { Tip } from '../../../shared/ui/tip';
 import { TagChip } from '../../../shared/ui/tag-chip';
 import { CountChip } from '../../../shared/ui/count-chip';
 import { FiltersToggle } from '../../../shared/ui/column-filters';
@@ -115,7 +116,7 @@ export function statusCodes(status: StatusFilter): string[] {
  * The task grid of the Overview (`mf-mm-task-list`, epic #953 UI-13): the Status chip row with counts and the Show filter (they combine), the urgency order by default, sortable
  * headings (`aria-sort`), a pager, and a status chip that carries "step n of m", the hold reason and the dates. The frame fills the height it is given and scrolls inside itself
  * (sticky heading row, pager pinned); below 769 px the rows are cards and the page scrolls. Columns hide with the width of the frame (container queries): Priority moves into the
- * task cell under 640 px, Assignee goes under 780 px, the step bar needs 900 px. Each task is listed once and opens on its own page.
+ * task cell under 640 px, Assignee goes under 900 px while the side panel is open (800 px with it closed), the step bar needs 900 px; with the panel open and a frame under 800 px the Type cell is its tile alone, and the At Risk chip is the clock icon in a Task cell under 260 px (D-44i). Each task is listed once and opens on its own page.
  */
 @Component({
   selector: 'mf-mm-task-list',
@@ -132,6 +133,7 @@ export function statusCodes(status: StatusFilter): string[] {
     StatusChip,
     TagChip,
     TaskTypeCell,
+    Tip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -303,7 +305,7 @@ export function statusCodes(status: StatusFilter): string[] {
       } @else if (rows().length === 0) {
         <p class="msg" data-empty>{{ emptyText() }}</p>
       } @else {
-        <table class="tt" [attr.aria-busy]="loader.busy()">
+        <table class="tt" [class.pnl]="panelOpen()" [attr.aria-busy]="loader.busy()">
           <caption class="sr">
             Tasks
           </caption>
@@ -335,7 +337,7 @@ export function statusCodes(status: StatusFilter): string[] {
             @for (t of rows(); track t.taskId) {
               <tr [attr.data-task]="t.taskId">
                 <td class="td-t" data-cell="title">
-                  <div class="cell">
+                  <div class="cell tcol">
                     <mf-task-type-cell
                       class="ttype"
                       [iconKey]="t.taskTypeIconKey"
@@ -350,14 +352,23 @@ export function statusCodes(status: StatusFilter): string[] {
                         [attr.title]="t.title"
                         data-task-link
                       >
-                        <span class="ref">{{ t.taskNumber }}</span> {{ t.title }}
+                        <span class="ref">{{ t.taskNumber }}</span>
+                        <span class="tname">{{ t.title }}</span>
                       </a>
                       @if (showMatter()) {
                         <span class="mt">{{ t.matterName }}</span>
                       }
                     </span>
                     @if (t.atRisk && (t.status === 'NEW' || t.status === 'IN_PROGRESS')) {
-                      <mf-priority-pill kind="risk" />
+                      <span class="risk" data-at-risk>
+                        <mf-priority-pill class="risk__pill" kind="risk" />
+                        <i
+                          class="pi pi-clock risk__ico"
+                          role="img"
+                          aria-label="At Risk"
+                          mfTip="At Risk"
+                        ></i>
+                      </span>
                     }
                     <span class="ppl">
                       @if (pill(t); as p) {
@@ -563,10 +574,15 @@ export function statusCodes(status: StatusFilter): string[] {
     }
     /* One line with an ellipsis; the full title is the tooltip (D-45), so every row is 44 px. */
     .tlink {
-      display: block;
+      display: flex;
+      gap: var(--mf-s2);
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .tname {
+      min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
-      white-space: nowrap;
     }
     .av {
       display: grid;
@@ -594,7 +610,10 @@ export function statusCodes(status: StatusFilter): string[] {
       color: var(--mf-sem-person-fg);
       font-weight: 600;
     }
+    /* The Ref is never cut (D-44i): it keeps its whole width (at most the 100 px Ref cell) and only the title gives way. */
     .ref {
+      flex: none;
+      max-width: var(--mf-col-ref-w);
       font-family: var(--mf-font-mono);
       font-size: var(--mf-fs-xs);
       color: var(--mf-text-muted);
@@ -609,6 +628,27 @@ export function statusCodes(status: StatusFilter): string[] {
     }
     .ppl {
       margin-left: var(--mf-s2);
+    }
+    /* The Task cell is its own container: under 260 px of cell (236 px inside the 12 px padding) the At Risk chip is the clock icon alone, its words are the tooltip (D-44i). */
+    .tcol {
+      container: tc / inline-size;
+    }
+    .risk {
+      display: inline-flex;
+      flex: none;
+    }
+    .risk__ico {
+      display: none;
+      font-size: var(--mf-icon-md);
+      color: var(--mf-sem-risk-fg);
+    }
+    @container tc (width < 236px) {
+      .risk__pill {
+        display: none;
+      }
+      .risk__ico {
+        display: inline-block;
+      }
     }
     /* Status holds the chip and its step bar (the chip alone is 140), so it is a little wider than the token. */
     col.c-st {
@@ -673,13 +713,28 @@ export function statusCodes(status: StatusFilter): string[] {
         display: none;
       }
     }
-    /* Assignee needs the whole row to fit: type 128, a title, status 176, priority 112, assignee 150 and due 152 (D-43). */
+    /* Assignee needs the whole row to fit: type 128, a title, status 176, priority 112, assignee 150 and due 152 (D-43). It hides under 900 px only while the side panel is open (D-44i); with the panel closed it goes only in a frame under 800 px. */
+    @container gc (min-width: 800px) {
+      .tt:not(.pnl) .c-asg {
+        display: table-cell;
+      }
+      .tt:not(.pnl) col.c-asg {
+        display: table-column;
+      }
+    }
     @container gc (min-width: 900px) {
       .c-asg {
         display: table-cell;
       }
       col.c-asg {
         display: table-column;
+      }
+    }
+    /* With the side panel open and a frame under 800 px the Type cell is its tile alone; the name is the tooltip and stays for assistive tools (D-44i). */
+    @container gc (max-width: 799.98px) {
+      .tt.pnl .ttype {
+        flex: 0 0 var(--mf-tile-size);
+        width: var(--mf-tile-size);
       }
     }
     @media (max-width: 767.98px) {
@@ -738,6 +793,8 @@ export class MmTaskList {
     createdTo: null,
   });
   readonly show = input<ShowFilter>('everything');
+  /** The side panel is open beside the grid: the frame is narrower, so the Type cell and the Assignee column give way sooner (D-44i). */
+  readonly panelOpen = input(false);
   /** The matter name goes under the title where several matters are in play. */
   readonly showMatter = input(true);
   /** Changes with the client / matter: the frame scrolls back to the top. */

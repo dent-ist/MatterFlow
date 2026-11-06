@@ -11,8 +11,9 @@ import {
 } from '@angular/core';
 import { PriorityView } from '../../../api/generated/api-client';
 import { hasReadableText, isHexColor } from '../../../shared/ui/color-contrast';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { LookupDialog } from '../../../shared/ui/lookup-dialog';
-import { PriorityBadge } from '../../../shared/ui/priority-badge';
+import { PriorityFlag } from '../../../shared/ui/priority-flag';
 import { TextField } from '../../../shared/ui/text-field';
 import { ADMIN_FIELD_LIMITS } from '../shared/field-limits';
 
@@ -49,7 +50,7 @@ const DEFAULT_CUSTOM_COLOUR = '#336699'; // theme-colour-ok: starting value of a
  */
 @Component({
   selector: 'mf-priority-dialog',
-  imports: [LookupDialog, TextField, PriorityBadge],
+  imports: [Dropdown, LookupDialog, TextField, PriorityFlag],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .pd-color {
@@ -94,18 +95,15 @@ const DEFAULT_CUSTOM_COLOUR = '#336699'; // theme-colour-ok: starting value of a
       <div class="pd-color">
         <label class="mf-label" for="priority-color">Color</label>
         <div class="pd-color-row">
-          <select
-            id="priority-color"
-            class="mf-control"
+          <mf-dropdown
+            [neutralValue]="null"
+            buttonId="priority-color"
+            label="Color"
             data-color
+            [items]="colorItems"
             [value]="choice()"
-            (change)="pick($any($event.target).value)"
-          >
-            @for (c of tokens; track c.value) {
-              <option [value]="c.value" [selected]="choice() === c.value">{{ c.label }}</option>
-            }
-            <option value="custom" [selected]="choice() === 'custom'">Custom Color</option>
-          </select>
+            (valueChange)="pick($event)"
+          />
           @if (choice() === 'custom') {
             <input
               id="priority-custom"
@@ -126,12 +124,7 @@ const DEFAULT_CUSTOM_COLOUR = '#336699'; // theme-colour-ok: starting value of a
           </p>
         }
       </div>
-      <mf-priority-badge
-        mfPreview
-        [label]="previewLabel()"
-        [color]="colorValue()"
-        [rank]="rank()"
-      />
+      <mf-priority-flag mfPreview [label]="previewLabel()" [color]="colorValue()" />
     </mf-lookup-dialog>
   `,
 })
@@ -140,8 +133,6 @@ export class PriorityDialog {
   readonly open = model(false);
   /** The priority being edited, or null for a new one. */
   readonly priority = input<PriorityView | null>(null);
-  /** Position (1 = most urgent) the preview badge shows its level bars for; a new priority goes last. */
-  readonly rank = input<number | null>(null);
   readonly busy = input(false);
   /** The server's duplicate-name answer (under the Name field) and any other save failure (top of the dialog). */
   readonly labelError = input('');
@@ -154,6 +145,10 @@ export class PriorityDialog {
   protected readonly tokens = PRIORITY_COLOR_TOKENS;
 
   protected readonly label = signal('');
+  protected readonly colorItems: DropdownItem[] = [
+    ...PRIORITY_COLOR_TOKENS.map((c) => ({ value: c.value, label: c.label })),
+    { value: 'custom', label: 'Custom Color' },
+  ];
   protected readonly choice = signal<string>('normal');
   /** The starting value of the custom colour field: a user-picked data colour, not a theme colour. */
   protected readonly custom = signal(DEFAULT_CUSTOM_COLOUR);

@@ -35,7 +35,7 @@ function blockedText(action: string, reason: string | undefined): string {
 
 /**
  * Task header (H1 to H3 and H6, #296 to #299): the shared record header (`mf-record-header`, as the Client, Matter and Project pages) with
- * the crumb `Tasks > matter > TSK-n` (the list the task was opened from, `?from=`, replaces `Tasks`; the matter only for people who may open
+ * the crumb `Task Queue > matter > TSK-n` (the list the task was opened from, `?from=`, replaces `Task Queue`; the matter only for people who may open
  * it), `TSK-n  title` as the page's `h1` at the H2 size (one line, two at most, the full title as tooltip), one muted context line (Matter,
  * Client, Task type, Workflow) and the Sensitive note; then the facts strip (`mf-task-facts`). Actions are data (`RecordAction`): Edit, Activity,
  * the primary Complete task (Reopen task on a closed task) and the overflow with Put on hold or Resume, Copy link and Cancel task (set
@@ -211,16 +211,16 @@ export class TaskHeader {
     const o = this.origin();
     return o
       ? { label: o.label, link: o.link, state: { ...RETURN_STATE } }
-      : { label: 'Tasks', link: '/tasks' };
+      : { label: 'Task Queue', link: '/tasks' };
   });
 
-  /** `Tasks > 00343-00012 Merger Review > TSK-1`: the page the person came from, then the matter for people who may open it. */
+  /** `Task Queue > 00343-00012 Merger Review > TSK-1`: the page the person came from, then the matter for people who may open it. */
   protected readonly parents = computed<Crumb[]>(() => {
     const t = this.store.task();
     if (!t) return [];
     const source = this.origin();
     const list: Crumb = {
-      label: source?.label ?? 'Tasks',
+      label: source?.label ?? 'Task Queue',
       link: source?.link ?? this.router.parseUrl('/tasks'),
       // From a page the crumb brings the person back to the row they left, as "Back to ..." does.
       state: source ? { ...RETURN_STATE } : undefined,

@@ -160,7 +160,7 @@ test.describe('users screenshots', () => {
 
     await page.goto(`/dashboard?tab=users&view=coverage&cov=matrix&uq=zcov${cov.tag}`);
     await expect(page.locator('[data-coverage-table]')).toBeVisible();
-    await page.getByLabel('Colour Scale').selectOption('absolute');
+    await page.getByLabel('Color Scale').selectOption('absolute');
     await page.locator(`[data-type-name="${cov.typeNames.production}"]`).scrollIntoViewIfNeeded();
     await shot('08-coverage-absolute-1366');
     await page.getByRole('button', { name: 'Training gaps' }).click();

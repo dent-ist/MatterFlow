@@ -43,24 +43,32 @@ const versions = [
   template: `<mf-versions-panel
     [reportId]="5"
     [blockedReason]="blocked"
+    [reportActive]="active"
+    [canActivate]="canActivate"
+    activateReason="Preview the current version to activate it."
     (restoreRequested)="restored = $event"
+    (activateRequested)="activated = $event"
   />`,
 })
 class Host {
   blocked = '';
+  active = false;
+  canActivate = true;
   restored: number | null = null;
+  activated: number | null = null;
 }
 
 describe('VersionsPanel (#714)', () => {
   const api = { listReportVersions: vi.fn(), compareReportVersions: vi.fn() };
 
-  async function create(blocked = '') {
+  async function create(blocked = '', setup: (h: Host) => void = () => undefined) {
     api.listReportVersions.mockReturnValue(of(versions));
     TestBed.configureTestingModule({
       providers: [{ provide: ReportDefinitionsClient, useValue: api }],
     });
     const fixture = TestBed.createComponent(Host);
     fixture.componentInstance.blocked = blocked;
+    setup(fixture.componentInstance);
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
@@ -78,7 +86,9 @@ describe('VersionsPanel (#714)', () => {
     expect(
       [...el.querySelectorAll('[data-version]')].map((v) => v.getAttribute('data-version')),
     ).toEqual(['3', '2', '1']);
-    expect(el.querySelector('[data-version="3"] [data-current]')!.textContent).toBe('Current');
+    expect(el.querySelector('[data-version="3"] [data-current]')!.textContent!.trim()).toBe(
+      'Inactive',
+    );
     expect(el.querySelector('[data-version="3"]')!.textContent).toContain('Ann');
     expect(el.querySelector('[data-version="3"]')!.textContent).toContain('added pod filter');
     expect(el.querySelector('[data-version="1"]')!.textContent).toContain('Unknown');
@@ -120,6 +130,46 @@ describe('VersionsPanel (#714)', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     expect(el.querySelector('[data-diff]')).toBeNull();
+  });
+
+  it('has Activate as a text button on the current version of an inactive report, asks first and then reports the version (D-44q)', async () => {
+    const { fixture, el } = await create();
+    const button = el.querySelector<HTMLButtonElement>('[data-version="3"] [data-activate]')!;
+    expect(button.textContent!.trim()).toBe('Activate');
+    expect(button.classList.contains('mf-btn--text')).toBe(true);
+    expect(button.disabled).toBe(false);
+    // No Activate on an older version (the API activates the current one), and none once the report is active.
+    expect(el.querySelector('[data-version="2"] [data-activate]')).toBeNull();
+    button.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.activated).toBeNull();
+    expect(document.body.querySelector('[data-activate-body]')!.textContent).toContain(
+      'Activate version 3?',
+    );
+    const confirm = Array.from(document.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Activate Version' && b.closest('p-dialog, .p-dialog'),
+    );
+    expect(confirm).toBeDefined();
+    confirm!.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.activated).toBe(3);
+  });
+
+  it('disables Activate with the reason beside it until a preview passed, and shows an Active chip and no Activate for an active report', async () => {
+    const waiting = await create('', (h) => (h.canActivate = false));
+    expect(
+      waiting.el.querySelector<HTMLButtonElement>('[data-version="3"] [data-activate]')!.disabled,
+    ).toBe(true);
+    expect(waiting.el.querySelector('[data-version-activate-reason]')!.textContent).toContain(
+      'Preview the current version',
+    );
+    TestBed.resetTestingModule();
+    const active = await create('', (h) => (h.active = true));
+    expect(active.el.querySelector('[data-version="3"] [data-current]')!.textContent!.trim()).toBe(
+      'Active',
+    );
+    expect(active.el.querySelector('[data-activate]')).toBeNull();
   });
 
   it('asks before restoring and then reports the version to the page', async () => {

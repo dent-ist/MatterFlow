@@ -21,7 +21,8 @@ import { ActionMenu } from '../../../shared/ui/action-menu';
 import { AdminCardList, AdminCardSpec, activeCardBadge } from '../../../shared/ui/admin-card-spec';
 import { adminListState } from '../../../shared/ui/admin-list-state';
 import { ActiveBadge, Badge } from '../../../shared/ui/badge';
-import { priorityColors, PriorityBadge } from '../../../shared/ui/priority-badge';
+import { priorityColors } from '../../../shared/ui/priority-badge';
+import { PriorityFlag } from '../../../shared/ui/priority-flag';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { LocalPaging } from '../../../shared/ui/local-paging';
@@ -68,7 +69,7 @@ const DROP_ORDER = 768;
     GridBody,
     Pager,
     ScrollArea,
-    PriorityBadge,
+    PriorityFlag,
     PriorityDialog,
     RowLink,
     TaskCount,
@@ -104,7 +105,7 @@ export class PrioritiesPage implements OnInit, HasUnsavedChanges {
   protected readonly dropColor = DROP_COLOR;
   protected readonly dropOrder = DROP_ORDER;
   protected readonly columnSpec = computed(() => [
-    { cls: 'mf-cell-num', bone: '1.5rem', drop: DROP_ORDER },
+    { cls: 'mf-cell-order', bone: '2.5rem', drop: DROP_ORDER },
     { cls: 'mf-cell-name', bone: '9rem' },
     { cls: 'mf-cell-muted', bone: '6rem', drop: DROP_COLOR },
     ...(this.canViewTasks() ? [{ cls: 'mf-cell-num', bone: '2rem' }] : []),

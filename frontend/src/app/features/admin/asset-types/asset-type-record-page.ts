@@ -2,7 +2,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   Injector,
-  afterNextRender,
   computed,
   effect,
   inject,
@@ -28,6 +27,7 @@ import {
   LeaveConfirmService,
 } from '../../../shared/guards/unsaved-changes.guard';
 import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { Crumb } from '../../../shared/ui/page-header';
 import { RecordHeader, RecordAction } from '../../../shared/ui/record-header';
@@ -112,6 +112,7 @@ const modelKey = (m: Model): string =>
   selector: 'mf-asset-type-record-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    Dropdown,
     IntPipe,
     NumericDatePipe,
     ActivityDrawer,
@@ -165,6 +166,10 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
   protected readonly activityOpen = signal(false);
   protected readonly deactivateOpen = signal(false);
   protected readonly colours = TASK_TYPE_COLOURS;
+  protected readonly colourItems: DropdownItem[] = [
+    { value: '', label: TASK_TYPE_COLOUR_DEFAULT_LABEL },
+    ...TASK_TYPE_COLOURS.map((c) => ({ value: c.key, label: c.label })),
+  ];
   protected readonly defaultColourLabel = TASK_TYPE_COLOUR_DEFAULT_LABEL;
 
   /** Size (epic #851): the NUMBER fields of the published form, the chosen default size field and unit, and the state of the two actions. */
@@ -174,6 +179,14 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
   protected readonly sizeBusy = signal(false);
   protected readonly sizeError = signal('');
   protected readonly sizeUnits = SIZE_UNITS;
+  protected readonly sizeUnitItems: DropdownItem[] = [
+    { value: '', label: 'Choose a unit' },
+    ...SIZE_UNITS.map((u) => ({ value: u, label: u })),
+  ];
+  protected readonly sizeFieldItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'None' },
+    ...this.numberFields().map((f) => ({ value: f.key, label: f.label })),
+  ]);
   protected readonly sizeDirty = computed(() => {
     const t = this.assetType();
     return (
@@ -244,9 +257,8 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
   protected readonly headerActions = computed<RecordAction[]>(() => {
     const t = this.assetType();
     if (!t) return [];
-    const list: RecordAction[] = [
-      { id: 'edit', role: 'edit', label: 'Edit', run: () => void this.editHere() },
-    ];
+    // No header "Edit": the Overview is the edit form with its own Cancel and Save Changes (D-44n).
+    const list: RecordAction[] = [];
     if (this.canSeeActivity()) {
       list.push({
         id: 'activity',
@@ -456,14 +468,6 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
     this.model.set({ ...this.saved() });
     this.fieldErrors.set({});
     this.announcement.set('Changes discarded.');
-  }
-
-  /** Edit in the header: the fields are always editable, so it takes the person to the name. */
-  protected async editHere(): Promise<void> {
-    if (this.current() !== 'overview') await this.go('overview');
-    afterNextRender(() => document.getElementById('at-name')?.focus(), {
-      injector: this.injector,
-    });
   }
 
   /** Edit fields (header and Fields tab): the form designer of the type; a dirty page asks first (the route's leave guard). */

@@ -1,4 +1,5 @@
 import { Locator, Page } from '@playwright/test';
+import { dropdownById } from '../support/dropdown';
 import { TaskDetailPage } from '../pages/task-detail.page';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
@@ -192,7 +193,7 @@ test.describe('Edit task sections (#350)', () => {
     await page.locator('#td-due-date').fill('Oct 30, 2030');
     await page.locator('#td-due-date').blur();
     await page.locator('#td-due-time').fill('09:15');
-    await page.locator('#td-priority').selectOption({ label: 'High' });
+    await dropdownById(page, 'td-priority').selectOption({ label: 'High' });
     await whenToggle(page).focus();
     await page.keyboard.press('Space');
     await expect(whenSummary(page)).toContainText('High priority, due Oct 30, 2030 at 9:15 AM');

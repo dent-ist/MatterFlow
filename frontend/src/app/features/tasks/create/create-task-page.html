@@ -176,7 +176,28 @@
             </div>
             <div class="ct__tile" data-strip-type>
               <span class="ct__tile-label">Task Type</span>
-              <span class="ct__tile-value">{{ selectedChoice()?.type?.name ?? 'Not chosen' }}</span>
+              <span class="ct__tile-type">
+                <span class="ct__tile-id" data-type-chip>
+                  <mf-task-type-chip
+                    size="sm"
+                    [iconKey]="selectedChoice()?.type?.iconKey"
+                    [colourKey]="selectedChoice()?.type?.colourKey"
+                    [typeId]="selectedChoice()?.type?.id"
+                    [decorative]="true"
+                  />
+                  <span class="ct__tile-value" data-type-name>{{
+                    selectedChoice()?.type?.name
+                  }}</span>
+                </span>
+                <button
+                  type="button"
+                  class="mf-btn mf-btn--text"
+                  data-change-type
+                  (click)="changeType()"
+                >
+                  Change Type
+                </button>
+              </span>
             </div>
             <div class="ct__tile" data-strip-workflow>
               <span class="ct__tile-label">Workflow</span>
@@ -194,22 +215,6 @@
               Type, workflow and matter can't be changed after you create the task.
             </p>
           </section>
-
-          <div class="ct__selected" data-type-chip>
-            <mf-task-type-chip
-              [iconKey]="selectedChoice()?.type?.iconKey"
-              [colourKey]="selectedChoice()?.type?.colourKey"
-              [typeId]="selectedChoice()?.type?.id"
-              [decorative]="true"
-            />
-            <span class="ct__selected-text">
-              <span class="ct__selected-label">Task Type</span>
-              <strong data-type-name>{{ selectedChoice()?.type?.name }}</strong>
-            </span>
-            <button type="button" class="mf-btn" data-change-type (click)="changeType()">
-              Change Type
-            </button>
-          </div>
 
           <!-- The essentials first: Matter, Title, Requestor (UXR-38); the type was chosen before -->
           <section class="ct__section" aria-labelledby="ct-h-task">
@@ -261,21 +266,17 @@
             </div>
             <div class="mf-field">
               <label class="mf-field__label" for="ct-project">Project</label>
-              <select
-                id="ct-project"
-                class="mf-field__input"
+              <mf-dropdown
+                [neutralValue]="null"
+                buttonId="ct-project"
+                label="Project"
                 [disabled]="!matter()"
-                [attr.aria-describedby]="'ct-project-help'"
-                [attr.aria-invalid]="fieldError('projectId') ? 'true' : null"
-                (change)="onProjectChange($event)"
-              >
-                <option value="" [selected]="projectId$() === null">No Project</option>
-                @for (p of projects(); track p.projectId) {
-                  <option [value]="p.projectId" [selected]="p.projectId === projectId$()">
-                    {{ p.name }}
-                  </option>
-                }
-              </select>
+                describedBy="ct-project-help"
+                [invalid]="!!fieldError('projectId')"
+                [items]="projectItems()"
+                [value]="projectId$() === null ? '' : '' + projectId$()"
+                (valueChange)="onProjectChange($event)"
+              />
               <p class="mf-field__help" id="ct-project-help">
                 @if (!matter()) {
                   Choose a matter first.
@@ -436,18 +437,15 @@
                   <label class="mf-field__label" for="ct-priority">
                     Priority <span class="mf-field__req">(required)</span>
                   </label>
-                  <select
-                    id="ct-priority"
-                    class="mf-field__input"
-                    [attr.aria-invalid]="fieldError('priorityId') ? 'true' : null"
-                    (change)="onPriorityChange($event)"
-                  >
-                    @for (p of activePriorities(); track p.id) {
-                      <option [value]="p.id" [selected]="p.id === priorityLabelId()">
-                        {{ p.label }}{{ p.isDefault ? ' (default)' : '' }}
-                      </option>
-                    }
-                  </select>
+                  <mf-dropdown
+                    [neutralValue]="null"
+                    buttonId="ct-priority"
+                    label="Priority"
+                    [invalid]="!!fieldError('priorityId')"
+                    [items]="priorityItems()"
+                    [value]="priorityLabelId() === null ? '' : '' + priorityLabelId()"
+                    (valueChange)="onPriorityChange($event)"
+                  />
                   @if (fieldError('priorityId'); as e) {
                     <p class="mf-field__error" role="alert">
                       <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ e }}
@@ -521,6 +519,7 @@
               </p>
               @if (pastDue()) {
                 <p class="pg-banner" role="status" data-past-due>
+                  <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
                   This date has already passed. The task will be overdue immediately.
                 </p>
               }
@@ -529,19 +528,15 @@
                 @if (canListPods()) {
                   <div class="mf-field">
                     <label class="mf-field__label" for="ct-pod">Pod</label>
-                    <select
-                      id="ct-pod"
-                      class="mf-field__input"
-                      [attr.aria-invalid]="fieldError('assignedPodId') ? 'true' : null"
-                      (change)="onPodChange($event)"
-                    >
-                      <option value="" [selected]="podId() === null">No Pod</option>
-                      @for (p of pods(); track p.podId) {
-                        <option [value]="p.podId" [selected]="p.podId === podId()">
-                          {{ p.name }}
-                        </option>
-                      }
-                    </select>
+                    <mf-dropdown
+                      [neutralValue]="null"
+                      buttonId="ct-pod"
+                      label="Pod"
+                      [invalid]="!!fieldError('assignedPodId')"
+                      [items]="podItems()"
+                      [value]="podId() === null ? '' : '' + podId()"
+                      (valueChange)="onPodChange($event)"
+                    />
                     @if (fieldError('assignedPodId'); as e) {
                       <p class="mf-field__error" role="alert">
                         <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ e }}
@@ -561,6 +556,7 @@
                 />
                 @if (userNotInPod()) {
                   <p class="pg-banner" role="status" data-not-in-pod>
+                    <i class="pi pi-info-circle" aria-hidden="true"></i>
                     {{ assignee()?.label }} isn't a member of {{ podName() }}. You can still assign
                     them.
                   </p>

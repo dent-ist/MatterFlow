@@ -94,6 +94,7 @@ describe('AssetLinkRolesPage (#640, #641, #642)', () => {
         'Actions',
       ]);
       expect(all('[data-order]').map((c) => c.textContent!.trim())).toEqual(['1', '2', '3', '4']);
+      expect(all('[data-order] i.pi-bars[data-grip]').length).toBe(4); // the visible grip of a reorder list (D-44o)
       expect(all('[data-links]').map((c) => c.textContent!.trim())).toEqual(['14', '3', '0', '0']);
       for (const r of all('[data-row]')) {
         expect(all('mf-action-menu', r).length).toBe(1);

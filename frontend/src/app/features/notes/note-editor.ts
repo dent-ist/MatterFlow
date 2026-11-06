@@ -33,7 +33,7 @@ export const NOTE_COLOURS: readonly { key: string; label: string }[] = [
   { key: 'slate', label: 'Grey' },
 ];
 
-/** Text colour as a mark: stored as `<span data-color="key">`, never as CSS. */
+/** Text color as a mark: stored as `<span data-color="key">`, never as CSS. */
 function colourMark(): Mark {
   return Mark.create({
     name: 'noteColour',
@@ -441,8 +441,8 @@ export interface RefInfo {
                 data-text-colour
                 aria-haspopup="menu"
                 [attr.aria-expanded]="colourOpen()"
-                [attr.aria-label]="'Text colour: ' + colourLabel()"
-                [title]="'Text colour: ' + colourLabel()"
+                [attr.aria-label]="'Text color: ' + colourLabel()"
+                [title]="'Text color: ' + colourLabel()"
                 (mousedown)="$event.preventDefault()"
                 (click)="toggleColour()"
               >
@@ -453,7 +453,7 @@ export interface RefInfo {
                 <ul
                   class="ne__cmenu"
                   role="menu"
-                  aria-label="Text colour"
+                  aria-label="Text color"
                   tabindex="-1"
                   data-colour-menu
                   (keydown)="colourKey($event)"
@@ -913,7 +913,7 @@ export class NoteEditor {
     else chain.unsetMark('noteColour').run();
     this.colourOpen.set(false);
     this.notice.emit(
-      key ? `Text colour ${NOTE_COLOURS.find((c) => c.key === key)?.label}` : 'Default text colour',
+      key ? `Text color ${NOTE_COLOURS.find((c) => c.key === key)?.label}` : 'Default text color',
     );
   }
 

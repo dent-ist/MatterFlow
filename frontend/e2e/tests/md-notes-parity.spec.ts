@@ -263,7 +263,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await page.locator('.ProseMirror').click();
     await page.keyboard.type('Colour title');
     await page.keyboard.press('Enter');
-    await page.getByRole('button', { name: 'Text colour: Default' }).click();
+    await page.getByRole('button', { name: 'Text color: Default' }).click();
     const menu = page.locator('[data-colour-menu]');
     await expect(menu.getByRole('menuitemradio')).toHaveCount(9);
     for (const n of [
@@ -280,7 +280,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
       await expect(menu.getByRole('menuitemradio', { name: n })).toBeVisible();
     await page.keyboard.press('ArrowDown');
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('button', { name: 'Text colour: Red' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Text color: Red' })).toBeVisible();
     await page.keyboard.type('red words');
     await page.locator('[data-note-save]').click();
     const span = page.locator('.ProseMirror [data-color="red"]');

@@ -27,7 +27,7 @@
         </caption>
         <thead>
           <tr>
-            <th class="mf-cell-num" scope="col" [attr.data-drop]="dropOrder">Order</th>
+            <th class="mf-cell-order" scope="col" [attr.data-drop]="dropOrder">Order</th>
             <th class="mf-cell-name" scope="col">Priority</th>
             <th class="mf-cell-muted" scope="col" [attr.data-drop]="dropColor">Color</th>
             @if (canViewTasks()) {
@@ -64,7 +64,9 @@
               (dragover)="onDragOver($event)"
               (drop)="onDrop(i, $event)"
             >
-              <td class="mf-cell-num" [attr.data-drop]="dropOrder" data-order>{{ i + 1 }}</td>
+              <td class="mf-cell-order" [attr.data-drop]="dropOrder" data-order>
+                <i class="pi pi-bars mf-grip" aria-hidden="true" data-grip></i>{{ i + 1 }}
+              </td>
               <td class="mf-cell-name">
                 <span class="pr-name">
                   <a
@@ -76,7 +78,7 @@
                     [attr.title]="p.label"
                     data-edit
                   >
-                    <mf-priority-badge [label]="p.label" [color]="p.color" [rank]="i + 1" />
+                    <mf-priority-flag [label]="p.label" [color]="p.color" />
                   </a>
                   @if (p.isDefault) {
                     <mf-badge tone="neutral" icon="pi-star" data-default>Default</mf-badge>
@@ -131,7 +133,6 @@
   [open]="dialogOpen()"
   (openChange)="onDialogOpen($event)"
   [priority]="editing()"
-  [rank]="editing() ? rows().indexOf(editing()!) + 1 : rows().length + 1"
   [busy]="busy()"
   [labelError]="labelError()"
   [saveError]="saveError()"

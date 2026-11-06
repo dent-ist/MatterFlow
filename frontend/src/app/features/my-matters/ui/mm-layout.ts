@@ -1,4 +1,4 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { computed, signal } from '@angular/core';
 
 /** The width budget of the docked tree and the side panel (mockup r2): the grid never gets less than GRID_MIN. */
 export const GRID_MIN = 560;
@@ -10,8 +10,11 @@ export const GAP = 12;
 export const DOCK_MIN = 1100;
 /** Up to this width (below 768, the fixed-page threshold) the page scrolls as a whole and the side sections stack under the list (phone and small tablet). */
 export const STACK_MAX = 767;
+/** Below this viewport width the side panel starts collapsed until the person opens it (D-44i, #1252). */
+export const SIDE_OPEN_MIN = 1500;
 
-const KEY = 'mf-mm-ui';
+/** The browser entry of one person, in the style of the Dashboard's `mf.dashboard.v2.<user>`. */
+const PREFIX = 'mf.mymatters.v2.';
 
 export interface LayoutMemory {
   treePref: 'open' | 'rail' | null;
@@ -29,10 +32,11 @@ function store(): Storage | null {
 /**
  * Where the docked tree and the side panel stand (My Matters, epic #953 UI-11 and UI-12). Below about 1510 px the two cannot both be wide and still leave the grid 560 px, so they
  * take turns: opening one collapses the other to its rail and the one used last stays wide. Choosing a matter leaves the tree open (MM-20); it gives way only when the width cannot hold both, and the side panel
- * opens in the room that was freed (unless the person closed it). The states the person chose are remembered in the browser (a convenience; the address does not carry them).
+ * opens in the room that was freed (unless the person closed it). The states the person chose are remembered in the browser per user (`mf.mymatters.v2.<user>`, the key style of the Dashboard; the address does not carry them). With no choice yet, the side panel starts collapsed under 1500 px of window (D-44i).
+ * Not `@Injectable`: the shell provides it with a factory that passes the signed-in user's id (the browser entry is per user).
  */
-@Injectable()
 export class MmLayout {
+  private readonly key: string;
   /** The window width and the width of the whole work area (tree dock + content), set by the page. */
   readonly windowWidth = signal(typeof window === 'undefined' ? 1366 : window.innerWidth);
   readonly workWidth = signal(1000);
@@ -44,6 +48,7 @@ export class MmLayout {
   private treePref: 'open' | 'rail' | null = null;
   private sidePref: 'open' | 'closed' | null = null;
   private sideAuto = false;
+  private defaultClosed = false;
   private wide: 'tree' | 'side' | null = null;
   /** A message for a polite live region when the layout moved something the person did not ask for. */
   readonly announcement = signal('');
@@ -52,8 +57,13 @@ export class MmLayout {
   readonly docked = computed(() => this.windowWidth() >= DOCK_MIN && this.browsable());
   readonly treeWide = computed(() => this.treeOpen() && this.docked());
 
-  constructor() {
+  constructor(userId = 0) {
+    this.key = PREFIX + userId;
     this.load();
+    if (this.sidePref === null && this.windowWidth() < SIDE_OPEN_MIN) {
+      this.sideOpen.set(false);
+      this.defaultClosed = true;
+    }
     this.wide = this.sidePref === 'open' && this.treePref !== 'open' ? 'side' : 'tree';
   }
 
@@ -65,6 +75,16 @@ export class MmLayout {
   /** Brings the two panels into the budget of the current width (call after any change of width or state). */
   reconcile(): void {
     if (this.stacked()) return;
+    // No choice of the person yet and a window under 1500 px: the side panel starts collapsed and stays on its rail until it is opened (D-44i).
+    if (this.sidePref === null && this.windowWidth() < SIDE_OPEN_MIN) {
+      if (this.sideOpen()) this.sideOpen.set(false);
+      this.sideAuto = false;
+      this.defaultClosed = true;
+    } else if (this.defaultClosed) {
+      // The window grew to 1500 px or more and the person never chose: the room decides again.
+      this.defaultClosed = false;
+      this.sideAuto = true;
+    }
     if (!this.docked() && this.treeOpen()) this.treeOpen.set(false);
     if (this.sideOpen() && this.treeWide() && !this.sideFits(true)) {
       if (this.wide === 'side') this.treeOpen.set(false);
@@ -156,7 +176,7 @@ export class MmLayout {
         treePref: this.treePref,
         sidePref: this.sidePref,
       };
-      store()?.setItem(KEY, JSON.stringify(o));
+      store()?.setItem(this.key, JSON.stringify(o));
     } catch {
       // Not remembering is fine.
     }
@@ -164,7 +184,7 @@ export class MmLayout {
 
   private load(): void {
     try {
-      const raw = store()?.getItem(KEY);
+      const raw = store()?.getItem(this.key);
       if (!raw) return;
       const o = JSON.parse(raw) as Partial<LayoutMemory>;
       this.treePref = o.treePref === 'open' || o.treePref === 'rail' ? o.treePref : null;

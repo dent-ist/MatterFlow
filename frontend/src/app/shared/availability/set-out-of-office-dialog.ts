@@ -21,6 +21,7 @@ import { ApiError } from '../../core/http/api-error';
 import { NotificationService } from '../../core/notify/notification.service';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { calendarDayInZone } from '../../core/time/time';
+import { Dropdown, DropdownItem } from '../ui/dropdown';
 import { FilterChip, FilterChips } from '../ui/filter-chips';
 import { FormDialog } from '../ui/form-dialog';
 import {
@@ -38,7 +39,7 @@ const PICK_KEY = 'pick';
  */
 @Component({
   selector: 'mf-set-out-of-office-dialog',
-  imports: [FormDialog, RouterLink, FilterChips],
+  imports: [Dropdown, FormDialog, RouterLink, FilterChips],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-form-dialog
@@ -58,17 +59,14 @@ const PICK_KEY = 'pick';
         </p>
         <div class="ooo__field">
           <label class="ooo__label" for="ooo-type">Type</label>
-          <select
-            id="ooo-type"
-            class="mf-control mf-control--fill"
+          <mf-dropdown
+            buttonId="ooo-type"
+            label="Type"
             data-ooo-type
+            [items]="typeItems"
             [value]="type()"
-            (change)="setType($any($event.target).value)"
-          >
-            @for (t of types; track t) {
-              <option [value]="t" [selected]="t === type()">{{ typeLabels[t] }}</option>
-            }
-          </select>
+            (valueChange)="setType($event)"
+          />
         </div>
         <div class="ooo__field">
           <label class="ooo__label" for="ooo-until" id="ooo-until-label">Until</label>
@@ -177,7 +175,10 @@ export class SetOutOfOfficeDialog {
     return `${t.year}-${String(t.month).padStart(2, '0')}-${String(t.day).padStart(2, '0')}`;
   });
   protected readonly types = ABSENCE_TYPES;
-  protected readonly typeLabels = ABSENCE_TYPE_LABELS;
+  protected readonly typeItems: readonly DropdownItem[] = ABSENCE_TYPES.map((t) => ({
+    value: t,
+    label: ABSENCE_TYPE_LABELS[t],
+  }));
   protected readonly type = signal<AbsenceType>('VACATION');
   protected setType(value: string): void {
     if (isAbsenceType(value)) this.type.set(value);

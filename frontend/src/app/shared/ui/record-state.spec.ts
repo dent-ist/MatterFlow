@@ -195,6 +195,14 @@ describe('mf-record-state', () => {
     expect(link.textContent).toContain('Go to Task Queue');
   });
 
+  it('the title of a not-found page takes focus on arrival, without a Retry to keep it (D-53, #1254)', async () => {
+    const { el, settle } = await render();
+    await settle();
+    const title = el.querySelector<HTMLElement>('[data-page-title]')!;
+    expect(title.textContent).toContain("We couldn't find that");
+    expect(document.activeElement).toBe(title);
+  });
+
   describe('the link of the 403 (BUG-4, #291)', () => {
     async function forbidden(permissions: string[]) {
       const r = await render(permissions);

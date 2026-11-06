@@ -85,6 +85,7 @@ describe('OnHoldReasonsPage (#876)', () => {
       'Status',
       'Actions',
     ]);
+    expect(all('[data-order] i.pi-bars[data-grip]').length).toBe(3); // the visible grip of a reorder list (D-44o)
     expect(row('Waiting for vendor').textContent).toContain('Inactive');
     expect(all('mf-action-menu', row('Waiting for approval')).length).toBe(1);
   });
