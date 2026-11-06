@@ -131,6 +131,8 @@ export class DetailsCard {
       margin: 0 0 2px;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
+      /* 13 px label on the 15 px line the 12 px label had, so the rows keep their rhythm when a page moves onto this card (#1253). */
+      line-height: 1.15;
     }
     dd {
       display: flex;
