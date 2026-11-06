@@ -46,7 +46,7 @@ async function card(page: Page): Promise<Card> {
 test.describe('State pages are one family (#607)', () => {
   test.setTimeout(300_000);
 
-  test('the 404: the card, the address asked for, the brand line, at four sizes', async ({
+  test('the 404: the card, the address asked for, the brand line, at both desktop sizes', async ({
     page,
   }) => {
     for (const size of SIZES) {
@@ -67,7 +67,7 @@ test.describe('State pages are one family (#607)', () => {
       if (size.width >= 768)
         await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
       else await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeVisible();
-      if (size.width === 1366 || size.width === 375) await shot(page, 'state-404');
+      if (size.width === 1366) await shot(page, 'state-404');
     }
   });
 
@@ -92,7 +92,7 @@ test.describe('State pages are one family (#607)', () => {
         'Copy address',
       );
       await expect(page.getByRole('searchbox')).toHaveCount(0);
-      if (size.width === 1366 || size.width === 375) await shot(page, 'state-403');
+      if (size.width === 1366) await shot(page, 'state-403');
     }
   });
 
@@ -108,11 +108,11 @@ test.describe('State pages are one family (#607)', () => {
       expect(c.brandVisible).toBe(true);
       await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
       await noHorizontalScroll(page);
-      if (size.width === 1366 || size.width === 375) await shot(page, 'state-error');
+      if (size.width === 1366) await shot(page, 'state-error');
     }
   });
 
-  test('axe is clean on the 404, the 403 and the error page at four sizes', async ({
+  test('axe is clean on the 404, the 403 and the error page at both desktop sizes', async ({
     page,
     personas,
     asUser,

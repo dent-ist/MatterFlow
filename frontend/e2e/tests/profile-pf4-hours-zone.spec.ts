@@ -144,7 +144,7 @@ test.describe('pf4-hours: compact work hours (#534)', () => {
     await shot(me, 'pf4-first-screen');
   });
 
-  test('axe and no sideways scroll at four sizes, compact and with the grid open', async ({
+  test('axe and no sideways scroll at both desktop sizes, compact and with the grid open', async ({
     personas,
     asUser,
   }) => {
@@ -163,7 +163,7 @@ test.describe('pf4-hours: compact work hours (#534)', () => {
       await expect(me.locator('[data-hours-grid]')).toBeVisible();
       await noHorizontalScroll(me);
       await axeClean(me, `grid at ${size.width}`);
-      if (size.width === 1366 || size.width === 375) await shot(me, 'pf4-grid');
+      if (size.width === 1366) await shot(me, 'pf4-grid');
     }
   });
 });
@@ -303,7 +303,7 @@ test.describe('pf6-zone: the Time zone select (#540) and the local time sentence
     await expect(me.locator('#av-tz-other')).toBeFocused();
   });
 
-  test('axe and no sideways scroll at four sizes, with the other-zones search open', async ({
+  test('axe and no sideways scroll at both desktop sizes, with the other-zones search open', async ({
     personas,
     asUser,
   }) => {

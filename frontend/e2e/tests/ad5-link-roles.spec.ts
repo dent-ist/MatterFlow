@@ -59,7 +59,7 @@ test.describe('Link Roles tab chrome and list (#640)', () => {
     await shot(page, 'link-roles-list');
   });
 
-  test('rows are 44 px with the columns Order, Name, Links, Status and one menu; Order leaves at 768; cards below 640', async ({
+  test('rows are 44 px with the columns Order, Name, Links, Status and one menu', async ({
     page,
     admin,
   }) => {
@@ -88,23 +88,6 @@ test.describe('Link Roles tab chrome and list (#640)', () => {
       await expect(r.getByRole('button')).toHaveCount(1); // the overflow menu is the only control
     }
     await expect(row(page, name).locator('.mf-name')).toHaveAttribute('title', name);
-
-    await page.setViewportSize({ width: 700, height: 1024 });
-    await expect(page.locator('[data-roles] thead th:visible')).toHaveText([
-      'Name',
-      'Links',
-      'Status',
-      'Actions',
-    ]);
-    await noHorizontalScroll(page);
-
-    await page.setViewportSize({ width: 375, height: 812 });
-    await expect(page.locator('[data-roles]')).toHaveCount(0);
-    const card = page.locator('li.rc', { hasText: name });
-    await expect(card).toBeVisible();
-    expect((await card.boundingBox())!.height).toBeLessThan(130); // the 50-character name is two lines at most
-    await noHorizontalScroll(page);
-    await shot(page, 'link-roles-long-name');
   });
 
   test('"Skip to Table" is the first Tab stop and moves focus to the table', async ({ page }) => {
@@ -313,7 +296,7 @@ test.describe('Permissions and accessibility', () => {
     await expect(page.getByRole('menuitem', { name: 'Deactivate' })).toBeVisible();
   });
 
-  test('axe finds nothing at 375, 768, 1366 and 1920 with the list, a row menu and the New and Deactivate dialogs open; no sideways scroll', async ({
+  test('axe finds nothing at 1366 and 1920 with the list, a row menu and the New and Deactivate dialogs open; no sideways scroll', async ({
     page,
     admin,
   }) => {
@@ -337,7 +320,7 @@ test.describe('Permissions and accessibility', () => {
       await expect(dialog(page)).toBeVisible();
       expect(await axeViolations(page), `dialog at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
-      if (size.width === 375 || size.width === 1366) await shot(page, 'link-roles-dialog');
+      if (size.width === 1366) await shot(page, 'link-roles-dialog');
       await page.keyboard.press('Escape');
       await expect(dialog(page)).toBeHidden();
 

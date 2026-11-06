@@ -62,7 +62,7 @@ test.describe('PM v2 page fixes: Matters list columns (#881)', () => {
       await expect(page.locator('tbody tr, li[data-record-card]').first()).toBeVisible();
       expect(await axeViolations(page), `matters list at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
-      if (size.width === 1366 || size.width === 375) await shot(page, 'pv-matters-list');
+      if (size.width === 1366) await shot(page, 'pv-matters-list');
     }
 
     // Without Task.View and Asset.View there is no Columns button at all.

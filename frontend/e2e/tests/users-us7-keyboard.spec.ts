@@ -181,11 +181,9 @@ test.describe('#452 one Tab stop per control', () => {
   });
 });
 
-test.describe('#452 axe at four widths with the skip link focused', () => {
+test.describe('#452 axe at both desktop sizes with the skip link focused', () => {
   test.skip(!axeAvailable(), 'axe-core is not available');
   for (const [width, height] of [
-    [375, 812],
-    [768, 1024],
     [1366, 768],
     [1920, 1080],
   ] as const) {

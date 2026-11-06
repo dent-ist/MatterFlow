@@ -17,8 +17,6 @@ const SIZES = [
   { w: 1366, h: 768 },
   { w: 1920, h: 1080 },
   { w: 1024, h: 768 },
-  { w: 768, h: 1024 },
-  { w: 375, h: 812 },
 ] as const;
 
 async function shot(page: Page, name: string, w: number): Promise<void> {
@@ -807,7 +805,7 @@ test.describe('Task Type record page', () => {
   });
 
   test.describe('counters and the clamped title (#386)', () => {
-    test('a 100-character name: counter announced from 90, H1 at most two lines at 375, crumb cut at 40 with the full text as tooltip', async ({
+    test('a 100-character name: counter announced from 90, H1 at most two lines, crumb cut at 40 with the full text as tooltip', async ({
       page,
       seed,
     }) => {
@@ -815,7 +813,7 @@ test.describe('Task Type record page', () => {
       const name = `${uid()} ${'Collection and review of cross-border data '.repeat(3)}`
         .slice(0, 100)
         .trim();
-      await page.setViewportSize({ width: 375, height: 812 });
+      await page.setViewportSize({ width: 1366, height: 768 });
       await page.goto('/admin/task-types/new');
       const input = page.locator('#tt-name');
       const live = page.locator('#tt-name ~ mf-char-counter [data-char-count-live]');
@@ -837,7 +835,7 @@ test.describe('Task Type record page', () => {
         page.locator('#tt-description ~ mf-char-counter [data-char-count-live]'),
       ).toHaveText('950 of 1000 characters');
       await clean(page, 'new with counters');
-      await shot(page, 'counters', 375);
+      await shot(page, 'counters', 1366);
       await page.locator('[data-save]').click();
       await expect(page).toHaveURL(/\/admin\/task-types\/\d+\?tab=workflows$/);
       await page.goto(page.url().replace('?tab=workflows', ''));
@@ -854,7 +852,7 @@ test.describe('Task Type record page', () => {
       expect(shown.length).toBeLessThanOrEqual(40);
       expect(shown.endsWith('…')).toBe(true);
       await clean(page, 'long name');
-      await shot(page, 'long-name', 375);
+      await shot(page, 'long-name', 1366);
       void wf;
     });
   });

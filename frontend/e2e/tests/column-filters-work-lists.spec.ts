@@ -19,7 +19,6 @@ const text = (page: Page, column: string) =>
     : page.getByRole('textbox', { name: `Filter by ${column}` });
 const multi = (page: Page, column: string) =>
   page.getByRole('button', { name: new RegExp(`^Filter by ${column},`) });
-const sheet = (page: Page) => page.getByRole('dialog', { name: 'Filters' });
 const chips = (page: Page) => page.getByRole('list', { name: 'Active filters' });
 const rowControl = (page: Page, key: string) =>
   page.locator(`tr[data-filter-row] [data-filter="${key}"]`);
@@ -492,39 +491,9 @@ test.describe('Column filters on the work lists', () => {
     });
   });
 
-  test.describe('Filters sheet', () => {
-    test('at 375 px the work lists use the sheet with the same controls, live apply and chips', async ({
-      page,
-      seed,
-    }) => {
-      await page.setViewportSize({ width: 375, height: 812 });
-      const token = uid();
-      await seed.task(await seed.world(), { title: `Sheet ${token}` });
-      await page.goto('/tasks');
-      await expect(page.getByRole('heading', { name: 'Task Queue', level: 1 })).toBeVisible();
-      await expect(page.locator('tr[data-filter-row]')).toHaveCount(0);
+  test.describe('Filters sheet', () => {});
 
-      await toggle(page).click();
-      await expect(sheet(page)).toBeVisible();
-      for (const name of ['CM Number', 'Client', 'Project', 'Requestor']) {
-        await expect(sheet(page).getByRole('textbox', { name: `Filter by ${name}` })).toBeVisible();
-      }
-      await page.getByRole('searchbox', { name: 'Search tasks', exact: true }).fill(token);
-      await expect(page).toHaveURL(new RegExp(`q=${token}`));
-      await expect(sheet(page).getByRole('button', { name: /^Show \d+ result/ })).toBeVisible();
-      await sheet(page)
-        .getByRole('button', { name: /^Show \d+ result/ })
-        .click();
-      await expect(sheet(page)).toHaveCount(0);
-      // The search text is shown by the Search box: no chip, and it is not counted on the Filters button.
-      await expect(page.getByRole('searchbox', { name: 'Search tasks', exact: true })).toHaveValue(
-        token,
-      );
-      await expect(page.locator('[data-task]')).toHaveCount(1);
-    });
-  });
-
-  test('axe: closed, open, filtered, empty at 1366 and the sheet at 375, on the three work lists and the Matter tasks', async ({
+  test('axe: closed, open, filtered, empty at 1366 and on the three work lists and the Matter tasks', async ({
     page,
     seed,
     admin,
@@ -562,14 +531,6 @@ test.describe('Column filters on the work lists', () => {
       await text(page, column).press('Enter');
       await expect(page.locator('tbody td[data-empty="filtered"]')).toBeVisible();
       expect(await axeViolations(page), `${url} empty`).toEqual([]);
-    }
-
-    await page.setViewportSize({ width: 375, height: 812 });
-    for (const [url] of screens) {
-      await page.goto(url);
-      await toggle(page).click();
-      await expect(sheet(page)).toBeVisible();
-      expect(await axeViolations(page), `${url} sheet`).toEqual([]);
     }
   });
 });

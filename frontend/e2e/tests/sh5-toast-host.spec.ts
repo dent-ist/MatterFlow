@@ -22,8 +22,6 @@ async function shot(page: Page, name: string): Promise<void> {
 const SIZES = [
   { name: '1366x768', width: 1366, height: 768 },
   { name: '1920x1080', width: 1920, height: 1080 },
-  { name: '768x1024', width: 768, height: 1024 },
-  { name: '375x812', width: 375, height: 812 },
 ] as const;
 
 const AVAILABILITY = /\/api\/v1\/me\/availability/;
@@ -209,7 +207,7 @@ test.describe('SH-B: the one toast host', () => {
     });
   }
 
-  for (const size of [SIZES[0], SIZES[1], SIZES[3]]) {
+  for (const size of [SIZES[0], SIZES[1]]) {
     test(`Undo is inside the host, reachable by keyboard, and does not cover the pager at ${size.name}`, async ({
       seed,
       admin,

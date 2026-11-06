@@ -1,11 +1,10 @@
 import { Page } from '@playwright/test';
 import { labelledDropdown } from '../support/dropdown';
-import { axeAvailable, axeViolations } from '../support/axe';
 import { Json } from '../support/api';
 import { mmWorld } from '../support/my-matters-fixtures';
 import { uid } from '../support/seed';
 import { expect, test } from '../support/fixtures';
-import { SIZES, noHorizontalScroll, shot } from '../support/screens';
+import { shot } from '../support/screens';
 
 /**
  * Bulk re-assign and re-prioritise inside one matter (epic #667, #699): selection mode in the matter's Tasks grid, the dialog with the count and
@@ -246,50 +245,5 @@ test.describe('Bulk change in the matter grid', () => {
       'You can select at most 100 tasks at once.',
     );
     await expect(page.locator('[data-selection-count]')).toHaveText('100 selected');
-  });
-
-  test('on a phone the tasks are cards you can tick, and the dialogs have no accessibility violations at four sizes', async ({
-    seed,
-    personas,
-    asUser,
-  }) => {
-    expect(axeAvailable(), 'set E2E_AXE_PATH to axe.min.js').toBe(true);
-    const token = uid().slice(0, 5);
-    const w = await mmWorld(seed, personas, 'bulk6');
-    const m = await w.matter('Bulk phone');
-    const tech = await personas.create({
-      label: 'bulk6-tech',
-      roles: ['Data Technician'],
-      displayName: `Phone Technician ${token}`,
-    });
-    await makeTasks(w, m, ['Phone A', 'Phone B']);
-    const page = await asUser(w.pm.username);
-    await page.setViewportSize({ width: 375, height: 812 });
-    await openTasks(page, m.matterId);
-    await page.locator('[data-select-mode]').click();
-    await expect(page.locator('[data-select-cards]')).toBeVisible();
-    await tick(page, 'Phone A').check();
-    await tick(page, 'Phone B').check();
-    for (const size of SIZES) {
-      await page.setViewportSize(size);
-      await expect(page.locator('[data-selection-count]')).toHaveText('2 selected');
-      await page.getByRole('button', { name: 'Re-assign...' }).click();
-      const dialog = page.getByRole('dialog');
-      await expect(dialog.locator('[data-bulk-count]')).toBeVisible();
-      expect(await axeViolations(page), `dialog at ${size.width}`).toEqual([]);
-      await noHorizontalScroll(page);
-      if (size.width === 375) await shot(page, 'bulk-dialog');
-      await dialog.getByRole('button', { name: 'Cancel' }).click();
-      await expect(dialog).toBeHidden();
-    }
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.getByRole('button', { name: 'Re-assign...' }).click();
-    const dialog = page.getByRole('dialog');
-    await dialog.getByRole('combobox', { name: 'Assign To' }).fill(`Phone Technician ${token}`);
-    await dialog.getByRole('option', { name: new RegExp(`Phone Technician ${token}`) }).click();
-    await dialog.getByRole('button', { name: 'Re-assign 2 tasks' }).click();
-    await expect(dialog.locator('[data-bulk-summary]')).toContainText('2 tasks changed.');
-    expect(await axeViolations(page), 'result at 375').toEqual([]);
-    void tech;
   });
 });

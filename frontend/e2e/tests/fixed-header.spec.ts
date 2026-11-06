@@ -381,28 +381,6 @@ test.describe('Fixed-header screens at 1366x768', () => {
 });
 
 test.describe('Fixed-header screens fall back to normal page scrolling', () => {
-  test('at 375 px wide the page scrolls and the header is not pinned', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/clients');
-    const heading = page.getByRole('heading', { name: 'Clients', level: 1 });
-    await expect(heading).toBeVisible();
-    // Below 640 px the list is cards (WP12), not a table: the cards are the rows this test needs.
-    const cards = page.getByRole('list', { name: 'Clients' });
-    await expect(cards.locator('[data-record-card]').first()).toBeVisible();
-    await expect(page.locator('table.pg-table')).toHaveCount(0);
-    expect(await documentOverflow(page)).toBeGreaterThan(100);
-    const before = await box(heading);
-    await page.mouse.move(180, 500);
-    await page.mouse.wheel(0, 400);
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
-    expect((await box(heading)).y).toBeLessThan(before.y - 50); // it scrolled away with the page
-    // The card list is not a scroll box: no inner vertical scrolling, the page does the scrolling.
-    expect(await cards.evaluate((el) => getComputedStyle(el).overflowY)).toBe('visible');
-    expect(
-      await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
-    ).toBeLessThanOrEqual(0);
-  });
-
   test('on a short window (under 561 px high) the page scrolls normally too', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 500 });
     await page.goto('/tasks');
@@ -411,16 +389,6 @@ test.describe('Fixed-header screens fall back to normal page scrolling', () => {
     expect(await documentOverflow(page)).toBeGreaterThan(100);
     await page.mouse.wheel(0, 500);
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
-  });
-
-  test('at 768 px wide the fixed layout is on and the page does not scroll', async ({ page }) => {
-    await page.setViewportSize({ width: 768, height: 900 });
-    await page.goto('/clients');
-    await expect(page.getByRole('heading', { name: 'Clients', level: 1 })).toBeVisible();
-    await expect(
-      page.getByRole('region', { name: 'Clients list, scrollable' }).locator('tbody tr').first(),
-    ).toBeVisible();
-    expect(await documentOverflow(page)).toBeLessThanOrEqual(0);
   });
 
   test('the Dashboard is a fixed page too (#137): the document does not scroll', async ({

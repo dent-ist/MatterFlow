@@ -27,8 +27,6 @@ async function axeClean(page: Page, what: string): Promise<void> {
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 async function world(seed: Seeder, label: string) {
@@ -50,7 +48,7 @@ async function world(seed: Seeder, label: string) {
 }
 
 test.describe('Matter Number and Matter Name cells (#197, #348)', () => {
-  test('number only, name in its own column, tooltip, ellipsis without a taller row, axe at four sizes', async ({
+  test('number only, name in its own column, tooltip, ellipsis without a taller row, axe at both desktop sizes', async ({
     seed,
     asUser,
   }) => {
@@ -163,10 +161,7 @@ test.describe('Matter column default and notice (#198)', () => {
       },
       [`mf.work-columns.v2.taskQueue.${viewer.userId}`, JSON.stringify(['ref', 'title', 'status'])],
     );
-    for (const [width, height] of [
-      [375, 812],
-      [1366, 768],
-    ] as const) {
+    for (const [width, height] of [[1366, 768]] as const) {
       await page.setViewportSize({ width, height });
       const queue = new TaskQueuePage(page);
       await queue.open(`?q=${w.tag}`);
@@ -175,7 +170,6 @@ test.describe('Matter column default and notice (#198)', () => {
       await expect(notice).toBeVisible();
       await shot(page, `task-queue-notice-${width}x${height}`);
       await axeClean(page, `notice ${width}`);
-      if (width === 375) continue;
       await notice.locator('[data-add-matter]').click();
       await expect(notice).toHaveCount(0);
       await expect(page.locator('th[data-col="matter"]')).toBeVisible();

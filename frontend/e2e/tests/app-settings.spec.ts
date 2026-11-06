@@ -315,7 +315,7 @@ test.describe('keyboard', () => {
 test.describe('accessibility and reflow', () => {
   test.setTimeout(240_000);
 
-  test('the settings page is clean in axe and does not scroll sideways at the four sizes, also with errors, a chosen file and the longest name', async ({
+  test('the settings page is clean in axe and does not scroll sideways at both desktop sizes, also with errors, a chosen file and the longest name', async ({
     page,
     admin,
   }) => {
@@ -345,14 +345,14 @@ test.describe('accessibility and reflow', () => {
     }
   });
 
-  test('a 40 character name never widens the shell: header, a list page and the settings page at 320 and the four sizes', async ({
+  test('a 40 character name never widens the shell: header, a list page and the settings page at both desktop sizes', async ({
     page,
     admin,
   }) => {
     expect(axeAvailable()).toBe(true);
     await setBrandingName(admin, WIDEST_NAME);
     const offenders: string[] = [];
-    for (const size of [{ width: 320, height: 640 }, ...SIZES]) {
+    for (const size of SIZES) {
       await page.setViewportSize(size);
       for (const url of ['/', '/clients', '/admin/settings', '/no/such/page']) {
         await page.goto(url);
@@ -369,14 +369,13 @@ test.describe('accessibility and reflow', () => {
         expect(await page.locator('.mf-logo [data-app-name]').textContent()).toBe(WIDEST_NAME);
       }
       await page.goto('/');
-      if (size.width >= 375)
-        expect(await axeViolations(page), `shell at ${size.width}`).toEqual([]);
-      if (size.width === 1366 || size.width === 375) await shot(page, 'shell-long-name');
+      expect(await axeViolations(page), `shell at ${size.width}`).toEqual([]);
+      if (size.width === 1366) await shot(page, 'shell-long-name');
     }
     expect(offenders).toEqual([]);
   });
 
-  test('the longest name also fits the Access Pending and error pages at 320 and 375', async ({
+  test('the longest name also fits the Access Pending and error pages at 1366 and 1920', async ({
     admin,
     asUser,
     personas,
@@ -384,16 +383,16 @@ test.describe('accessibility and reflow', () => {
     await setBrandingName(admin, WIDEST_NAME);
     const username = (await personas.named('pending')).username;
     const technician = (await personas.named('technician')).username;
-    for (const width of [320, 375]) {
+    for (const width of [1366, 1920]) {
       const pending = await asUser(username);
-      await pending.setViewportSize({ width, height: 700 });
+      await pending.setViewportSize({ width, height: 768 });
       await pending.goto('/');
       await expect(pending.locator('.mf-brand')).toHaveText(WIDEST_NAME);
       await noHorizontalScroll(pending);
 
       const error = await asUser(technician);
       await failMe(error);
-      await error.setViewportSize({ width, height: 700 });
+      await error.setViewportSize({ width, height: 768 });
       await error.goto('/');
       await expect(error.locator('[data-state-brand]')).toHaveText(WIDEST_NAME);
       await noHorizontalScroll(error);

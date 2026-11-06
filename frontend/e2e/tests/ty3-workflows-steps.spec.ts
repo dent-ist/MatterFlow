@@ -13,8 +13,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
-  { width: 768, height: 1024 },
-  { width: 375, height: 812 },
 ] as const;
 
 async function shot(page: Page, name: string): Promise<void> {
@@ -176,8 +174,6 @@ test.describe('Workflows columns (#376, #377)', () => {
       [1100, ['Name', 'Versions', 'Steps', 'Status', 'Actions']],
       [1000, ['Name', 'Versions', 'Steps', 'Status', 'Actions']],
       [900, ['Name', 'Versions', 'Steps', 'Status', 'Actions']],
-      [768, ['Name', 'Versions', 'Status', 'Actions']],
-      [640, ['Name', 'Versions', 'Status', 'Actions']],
     ];
     for (const [width, names] of expected) {
       await page.setViewportSize({ width, height: 900 });
@@ -197,7 +193,7 @@ test.describe('Workflows columns (#376, #377)', () => {
 });
 
 test.describe('Steps Inputs column (#378)', () => {
-  test('Draft (a neutral badge), Published or None; hidden below 1024 px; the card names the draft', async ({
+  test('Draft (a neutral badge), Published or None; hidden below 1024 px', async ({
     page,
     seed,
     admin,
@@ -259,16 +255,5 @@ test.describe('Steps Inputs column (#378)', () => {
         .evaluate((el) => el.scrollWidth <= el.clientWidth);
       expect(fit, `at ${width}`).toBe(true);
     }
-    await page.setViewportSize({ width: 768, height: 900 });
-    await page.goto(`/admin/steps?title=${token}`);
-    await expect(page.locator('tbody tr[data-row]').first()).toBeVisible();
-    expect(await heads(page)).not.toContain('Inputs');
-
-    // The phone card says it.
-    await page.setViewportSize(SIZES[3]);
-    await page.goto(`/admin/steps?title=${token}`);
-    await expect(
-      page.locator('li[data-record-card]').filter({ hasText: `${token} Drafted` }),
-    ).toContainText('Inputs in draft (2 fields)');
   });
 });

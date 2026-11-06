@@ -130,26 +130,6 @@ test.describe('FD1: the form designer is three fixed panes', () => {
     });
   }
 
-  test('the action bar stays under the application header while a narrow page scrolls', async ({
-    page,
-    seed,
-    admin,
-  }) => {
-    const world = await typeWorld(seed, admin, { fields: LONG, published: true, draft: true });
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(world.url);
-    await expect(page.getByRole('button', { name: 'Publish...' })).toBeVisible();
-    await page.mouse.move(100, 500);
-    await page.mouse.wheel(0, 2500);
-    await expect
-      .poll(() =>
-        page.evaluate(() => window.scrollY || document.querySelector('.mf-main')?.scrollTop || 0),
-      )
-      .toBeGreaterThan(300);
-    await inView(page, 'Publish...');
-    await inView(page, 'Save Draft');
-  });
-
   test('keyboard: Tab reaches the buttons, the palette, the scrolling Fields list and its controls; focus is visible', async ({
     page,
     seed,

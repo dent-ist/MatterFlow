@@ -24,8 +24,6 @@ async function shot(page: Page, name: string): Promise<void> {
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 test.describe.configure({ timeout: 180_000 });
@@ -169,7 +167,7 @@ test.describe('Pager (#237)', () => {
     }
   });
 
-  test('axe, layout and the 375 px row at four sizes', async ({ page }) => {
+  test('axe, layout and the 375 px row at both desktop sizes', async ({ page }) => {
     test.skip(!axeAvailable(), 'axe-core not available');
     const queue = new TaskQueuePage(page);
     for (const [w, h] of SIZES) {
@@ -258,7 +256,7 @@ test.describe('Microcopy (#228, #229)', () => {
     );
   });
 
-  test('axe with the copy at four sizes', async ({ page }) => {
+  test('axe with the copy at both desktop sizes', async ({ page }) => {
     test.skip(!axeAvailable(), 'axe-core not available');
     for (const [w, h] of SIZES) {
       await page.setViewportSize({ width: w, height: h });

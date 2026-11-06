@@ -159,31 +159,7 @@ test.describe('pf5-dialog-focus: heading focus and the link to My profile (#539)
     await expect(me.locator('[data-profile-header] h1')).toBeVisible();
   });
 
-  test('on a phone nothing in the dialog is focused on open (no on-screen keyboard) and it fits without scrolling', async ({
-    personas,
-    asUser,
-  }) => {
-    const p = await personas.create({ ...PERSONAS.technician, label: 'pf5phone' });
-    const me = await asUser(p.username);
-    await me.setViewportSize({ width: 375, height: 812 });
-    await me.goto('/my-work');
-    const dialog = await openDialog(me);
-    const tag = await me.evaluate(() => document.activeElement?.tagName);
-    expect(tag).not.toBe('INPUT');
-    expect(tag).not.toBe('TEXTAREA');
-    const fits = await me.evaluate(() => {
-      const content = document.querySelector('.p-dialog-content') as HTMLElement;
-      const box = (document.querySelector('.p-dialog') as HTMLElement).getBoundingClientRect();
-      return {
-        scrolls: content.scrollHeight > content.clientHeight + 1,
-        inside: box.top >= 0 && box.bottom <= window.innerHeight,
-      };
-    });
-    expect(fits).toEqual({ scrolls: false, inside: true });
-    await expect(dialog.locator('[data-ooo-presets] [data-key]')).toHaveCount(5);
-  });
-
-  test('axe is clean and nothing scrolls sideways with the dialog open, at the four sizes', async ({
+  test('axe is clean and nothing scrolls sideways with the dialog open, at both desktop sizes', async ({
     personas,
     asUser,
   }) => {

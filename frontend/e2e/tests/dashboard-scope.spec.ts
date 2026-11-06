@@ -383,7 +383,7 @@ test.describe('Dashboard Scope', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   });
 
-  test('axe is clean at 1366, 1920 and 375 with the control in the tab row (open and closed), and no horizontal page scroll', async ({
+  test('axe is clean at 1366 and 1920 with the control in the tab row (open and closed), and no horizontal page scroll', async ({
     asUser,
   }) => {
     test.skip(!axeAvailable(), 'axe-core not installed (set E2E_AXE_PATH to axe.min.js)');
@@ -392,7 +392,6 @@ test.describe('Dashboard Scope', () => {
     for (const [width, height] of [
       [1366, 768],
       [1920, 1080],
-      [375, 812],
     ]) {
       await page.setViewportSize({ width, height });
       for (const tab of ['summary', 'breakdowns', 'trends', 'swimlane', 'users']) {
@@ -429,7 +428,6 @@ test.describe('Dashboard Scope', () => {
     for (const [width, height] of [
       [1366, 768],
       [1920, 1080],
-      [375, 812],
     ]) {
       for (const [who, page] of [
         ['lead', lead],

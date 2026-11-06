@@ -11,10 +11,7 @@ import { seedBulk } from '../support/bulk';
  * record page, and an empty result.
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
-const SIZES = [
-  { w: 1366, h: 768 },
-  { w: 375, h: 812 },
-];
+const SIZES = [{ w: 1366, h: 768 }];
 
 test.describe('assets screen screenshots', () => {
   test.skip(!OUT, 'set E2E_SCREENSHOTS to the output folder');

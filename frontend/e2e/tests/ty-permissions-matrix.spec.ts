@@ -388,8 +388,6 @@ test.describe('#417: permission matrix of the Task Types area', () => {
         );
         await settle(page);
         await page.screenshot({ path: path.join(OUT, `matrix-${role.key}-1366x768.png`) });
-        await page.setViewportSize({ width: 375, height: 812 });
-        await page.screenshot({ path: path.join(OUT, `matrix-${role.key}-375x812.png`) });
       }
       if (OUT) {
         fs.mkdirSync(OUT, { recursive: true });
@@ -577,8 +575,8 @@ test.describe('AD-D: permission matrix of the Labels and Audit pages', () => {
           ...(canSl && !canPr ? ['/admin/status-labels'] : []),
           ...(canAudit ? ['/admin/audit'] : []),
         ];
-        for (const width of [375, 768, 1366, 1920]) {
-          await page.setViewportSize({ width, height: width < 700 ? 812 : 900 });
+        for (const width of [1366, 1920]) {
+          await page.setViewportSize({ width, height: 900 });
           for (const url of pages) {
             await visit(url);
             if (axeAvailable()) {

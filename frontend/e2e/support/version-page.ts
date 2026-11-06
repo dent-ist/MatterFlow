@@ -15,8 +15,6 @@ export const OUT = process.env['E2E_SCREENSHOTS'];
 export const SIZES = [
   { w: 1366, h: 768 },
   { w: 1920, h: 1080 },
-  { w: 768, h: 1024 },
-  { w: 375, h: 812 },
 ];
 
 export interface DraftWorld {

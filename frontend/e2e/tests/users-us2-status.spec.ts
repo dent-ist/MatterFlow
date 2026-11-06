@@ -15,8 +15,6 @@ import { Persona } from '../support/personas';
  * Screenshots for docs/ux/users-review/fixes/us2-status/ are written when E2E_SCREENSHOTS is set to the output folder.
  */
 const SIZES = [
-  { width: 375, height: 812 },
-  { width: 768, height: 1024 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
 ] as const;
@@ -222,18 +220,4 @@ test.describe('#431 header Filters', () => {
       await expect(pressed(page)).toHaveAttribute('data-strip-item', 'all');
     });
   }
-
-  test('the filter sheet opens from the header button below 640 and has no second Status filter', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/admin/users?status=all');
-    await page.locator('mf-page-header [data-filters-toggle]').click();
-    const sheet = page.getByRole('dialog');
-    await expect(sheet).toBeVisible();
-    // Exact: a role the suite created ("Status Labels only ...") is a checkbox in the Roles filter and matches a substring.
-    await expect(sheet.getByLabel('Status', { exact: true })).toHaveCount(0);
-    expect(await axeClean(page)).toEqual([]);
-    await shot(page, 'users-filters-sheet', 375, 812);
-  });
 });

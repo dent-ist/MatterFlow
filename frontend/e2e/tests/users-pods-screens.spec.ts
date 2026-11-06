@@ -10,10 +10,7 @@ import { uid } from '../support/seed';
  * Tabs, the Pods column, the popover, the primary flow and the read-only view at 1366x768 and 375x812.
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
-const SIZES = [
-  { w: 1366, h: 768 },
-  { w: 375, h: 812 },
-];
+const SIZES = [{ w: 1366, h: 768 }];
 
 test.describe('users-pods screenshots', () => {
   test.skip(!OUT, 'set E2E_SCREENSHOTS to the output folder to take the screenshots');

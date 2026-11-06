@@ -11,11 +11,7 @@ import { uid } from '../support/seed';
  * (docs/ux/task-queue-review/fixes/wp-keyboard).
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
-const SIZES = [
-  [1366, 768],
-  [768, 1024],
-  [375, 812],
-] as const;
+const SIZES = [[1366, 768]] as const;
 
 async function shot(page: Page, name: string): Promise<void> {
   if (!OUT) return;

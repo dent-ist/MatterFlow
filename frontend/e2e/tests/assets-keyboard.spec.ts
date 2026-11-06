@@ -90,7 +90,7 @@ test.describe('Assets keyboard audit (WP-AS6)', () => {
     expect(stops.length).toBeLessThan(40);
   });
 
-  test('filters: every filter control is reachable by Tab in column order and the sheet below 640 px traps nothing', async ({
+  test('filters: every filter control is reachable by Tab in column order', async ({
     page,
     seed,
   }) => {
@@ -105,20 +105,6 @@ test.describe('Assets keyboard audit (WP-AS6)', () => {
     const order = await tabUntil(page, (n) => n.includes('Disposition'), 12);
     expect(order.some((n) => /External/.test(n))).toBe(true);
     expect(order.at(-1)).toContain('Disposition');
-
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(`/assets?name=${token}`);
-    await page.getByRole('button', { name: /^Filters/ }).click();
-    const dialog = page.getByRole('dialog');
-    await expect(dialog).toBeVisible();
-    // Focus stays inside the sheet while it is open and Escape closes it and gives focus back to the button.
-    for (let i = 0; i < 12; i++) {
-      await page.keyboard.press('Tab');
-      expect(await dialog.evaluate((d) => d.contains(document.activeElement))).toBe(true);
-    }
-    await page.keyboard.press('Escape');
-    await expect(dialog).toHaveCount(0);
-    await expect(page.getByRole('button', { name: /^Filters/ })).toBeFocused();
   });
 
   test('record page: open from the list by Enter, the heading has focus, Tab stops are listed, the tab arrows work, Back returns focus to the row', async ({
@@ -254,7 +240,7 @@ test.describe('Assets keyboard audit (WP-AS6)', () => {
     await expect(page.locator('[data-page-title]')).toBeFocused();
   });
 
-  test('axe finds nothing and nothing scrolls sideways at four sizes on the list with filters open, the record tabs, the menu, the dialog and both forms', async ({
+  test('axe finds nothing and nothing scrolls sideways at both desktop sizes on the list with filters open, the record tabs, the menu, the dialog and both forms', async ({
     page,
     seed,
   }) => {

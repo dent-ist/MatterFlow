@@ -61,7 +61,7 @@ test.describe('PM v2 page fixes: Grouped overdue notices and the honest bell (#8
       await expect(page.locator('[data-notification-group]').first()).toBeVisible();
       expect(await axeViolations(page), `notifications at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
-      if (size.width === 1366 || size.width === 375) await shot(page, 'pv-notifications-group');
+      if (size.width === 1366) await shot(page, 'pv-notifications-group');
     }
   });
 });

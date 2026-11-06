@@ -15,8 +15,6 @@ import { openMatterDetails } from '../support/matter-details';
 const SIZES = [
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
-  { width: 768, height: 1024 },
-  { width: 375, height: 812 },
 ] as const;
 
 const noHorizontalScroll = async (page: Page): Promise<void> => {
@@ -271,7 +269,7 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     ).toBeLessThanOrEqual(0);
   });
 
-  test('accessibility: Matter and Client Details and the other tabs have no axe violations at 1366, 1920, 768 and 375', async ({
+  test('accessibility: Matter and Client Details and the other tabs have no axe violations at 1366 and 1920', async ({
     page,
     seed,
   }) => {

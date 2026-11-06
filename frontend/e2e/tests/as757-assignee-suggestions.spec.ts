@@ -235,7 +235,7 @@ test.describe('#757: assignee picker suggestions', () => {
     await expect(page.locator('[data-chosen]')).toContainText(`e2e-as-cb-${token}`);
   });
 
-  test('axe finds nothing at the four sizes with the inline picker, the Edit task list and the Create task list open', async ({
+  test('axe finds nothing at both desktop sizes with the inline picker, the Edit task list and the Create task list open', async ({
     page,
     seed,
   }) => {

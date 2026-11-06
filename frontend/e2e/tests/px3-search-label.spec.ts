@@ -37,7 +37,7 @@ test.describe('Search stays global and labels results outside my matters', () =>
     await expect(director.locator('[data-other-matter]')).toHaveCount(0);
   });
 
-  test('the results page carries the label too, and axe is clean at four widths', async ({
+  test('the results page carries the label too, and axe is clean at both desktop sizes', async ({
     seed,
     personas,
     asUser,

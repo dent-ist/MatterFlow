@@ -84,7 +84,7 @@ test.describe('pf5-menu-identity: the account menu starts with who and how (#580
     await expect(me.getByRole('menuitem')).toHaveText([/Keyboard Shortcuts/]);
   });
 
-  test('a 66-character name is cut with an ellipsis in the row (full name as tooltip); axe and no scroll with the menu open at four sizes', async ({
+  test('a 66-character name is cut with an ellipsis in the row (full name as tooltip); axe and no scroll with the menu open at both desktop sizes', async ({
     personas,
     asUser,
   }) => {
@@ -105,40 +105,5 @@ test.describe('pf5-menu-identity: the account menu starts with who and how (#580
       if (axeAvailable()) expect(await axeViolations(me), `menu at ${size.width}`).toEqual([]);
       await shot(me, 'pf5-menu-identity');
     }
-  });
-});
-
-test.describe('pf5-phone-dot: the out-of-office dot on the phone icon (#578)', () => {
-  test('visible at 375 only while out, named in words, hidden when the text label shows (desktop)', async ({
-    personas,
-    asUser,
-  }) => {
-    const p = await personas.create({ ...PERSONAS.technician, label: 'pf5dot' });
-    const me = await asUser(p.username);
-    await me.setViewportSize({ width: 375, height: 812 });
-    await me.goto('/my-work');
-    await expect(menuButton(me)).toBeVisible();
-    await expect(me.locator('[data-ooo-dot]')).toHaveCount(0);
-    await menuButton(me).click();
-    await me.getByRole('menuitem', { name: 'Set Out of Office' }).click();
-    const dialog = me.getByRole('dialog', { name: 'Set out of office' });
-    await dialog.getByRole('button', { name: 'Rest of Today' }).click();
-    await dialog.getByRole('button', { name: 'Set out of office' }).click();
-    await expect(dialog).toHaveCount(0);
-    const dot = me.locator('[data-ooo-dot]');
-    await expect(dot).toBeVisible();
-    await expect(dot).toHaveAttribute('title', 'Out of Office');
-    await expect(menuButton(me)).toHaveAccessibleName(/Out of office until/);
-    await noHorizontalScroll(me);
-    if (axeAvailable()) expect(await axeViolations(me), 'dot at 375').toEqual([]);
-    await shot(me, 'pf5-phone-dot');
-    await me.setViewportSize({ width: 1366, height: 768 });
-    await expect(dot).toBeHidden();
-    await expect(me.locator('[data-ooo-label]')).toBeVisible();
-    // I'm back removes the dot.
-    await me.setViewportSize({ width: 375, height: 812 });
-    await menuButton(me).click();
-    await me.getByRole('menuitem', { name: "I'm Back" }).click();
-    await expect(me.locator('[data-ooo-dot]')).toHaveCount(0);
   });
 });

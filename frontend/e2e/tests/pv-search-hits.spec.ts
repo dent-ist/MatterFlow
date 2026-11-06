@@ -33,7 +33,7 @@ test.describe('PM v2 page fixes: Search hits (#885)', () => {
       await expect(page.locator('[data-hit-row], mf-search-hit-card').first()).toBeVisible();
       expect(await axeViolations(page), `search at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
-      if (size.width === 1366 || size.width === 375) await shot(page, 'pv-search-hits');
+      if (size.width === 1366) await shot(page, 'pv-search-hits');
     }
   });
 });

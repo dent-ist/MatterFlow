@@ -13,8 +13,6 @@ import { uid } from '../support/seed';
  */
 const SHOTS = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
-  { w: 375, h: 812 },
-  { w: 768, h: 1024 },
   { w: 1024, h: 768 },
   { w: 1366, h: 768 },
   { w: 1920, h: 1080 },
@@ -250,17 +248,6 @@ test.describe('Workflow record page (WP-TY5)', () => {
         await shot(page, 'versions-menu-open', size.w);
         await page.keyboard.press('Escape');
       }
-    });
-
-    test('phone: each version is a card with its facts', async ({ page, seed, admin }) => {
-      const s = await build(seed, admin);
-      await page.setViewportSize({ width: 375, height: 812 });
-      await page.goto(url(s, 'versions'));
-      const cards = page.locator('[data-version-cards] > li');
-      await expect(cards).toHaveCount(3);
-      await expect(cards.first()).toContainText('Created');
-      await expect(page.locator('[data-version-table]')).toHaveCount(0);
-      await shot(page, 'versions-cards', 375);
     });
 
     test('retire from a row: the dialog names the open tasks; retiring the published version', async ({

@@ -8,7 +8,7 @@ import { userName, userRow } from '../support/users-grid';
 
 /**
  * Users epic #422, WP-US7 #454: the keyboard-only flows of the rebuilt Users area, with the focus asserted at every step (open, return) and axe
- * with every overlay open at 375, 768, 1366 and 1920.
+ * with every overlay open at 1366 and 1920.
  *
  * The six flows, each without a pointer: grant access, deactivate, edit availability, edit pods, edit a role, edit a pod. A flow starts from
  * the first Tab stop of the page ("Skip to Table") and moves with Tab, Shift+Tab, arrows, Enter, Space and Esc only. Focus never lands on
@@ -18,8 +18,6 @@ import { userName, userRow } from '../support/users-grid';
 const OUT = process.env['E2E_SCREENSHOTS'];
 const TAG = `us7k${Math.floor(Math.random() * 90000) + 10000}`;
 const SIZES = [
-  { width: 375, height: 812 },
-  { width: 768, height: 1024 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
 ] as const;

@@ -9,7 +9,7 @@ import { SIZES, noHorizontalScroll } from '../support/screens';
 test.describe('Breadcrumb rows are vertically aligned', () => {
   test.setTimeout(300_000);
 
-  test('every step shares one vertical centre at four sizes', async ({ page, seed }) => {
+  test('every step shares one vertical centre at both desktop sizes', async ({ page, seed }) => {
     const client = await seed.client();
     const matter = await seed.matter({ client });
     const project = await seed.project(matter);

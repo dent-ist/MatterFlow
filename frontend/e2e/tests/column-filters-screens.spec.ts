@@ -56,20 +56,5 @@ test.describe('column filters screenshots', () => {
     await page.emulateMedia({ media: 'print' });
     await shot(page, 'assets-print');
     await page.emulateMedia({ media: 'screen' });
-
-    // Phone: the sheet.
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/assets');
-    await expect(rows.first()).toBeVisible();
-    await shot(page, 'assets-closed');
-    await toggle.click();
-    await expect(page.getByRole('dialog', { name: 'Filters' })).toBeVisible();
-    await shot(page, 'assets-sheet');
-    await page.getByRole('searchbox', { name: 'Search assets' }).fill('Bulk asset 1');
-    await page.waitForTimeout(600);
-    await shot(page, 'assets-sheet-filtered');
-    await page.getByRole('button', { name: /^Show \d+ results?$/ }).click();
-    await expect(page.getByRole('list', { name: 'Active filters' })).toBeVisible();
-    await shot(page, 'assets-chips');
   });
 });

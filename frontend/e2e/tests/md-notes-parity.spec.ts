@@ -328,26 +328,6 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     expect(bare.colourKey).toBeTruthy();
   });
 
-  test('a new note enables Save once it has content; on a phone Cancel and Save stay together and visible', async ({
-    page,
-    seed,
-  }) => {
-    const w = await world(seed);
-    await page.setViewportSize({ width: 375, height: 812 });
-    await open(page, w.matter.matterId);
-    await page.locator('[data-new-note]').click();
-    await expect(page.locator('[data-note-save]')).toBeDisabled();
-    const cancel = await page.locator('[data-note-cancel]').boundingBox();
-    const save = await page.locator('[data-note-save]').boundingBox();
-    expect(save!.x + save!.width).toBeLessThanOrEqual(375);
-    expect(Math.abs(save!.y - cancel!.y)).toBeLessThan(4);
-    expect(save!.x - (cancel!.x + cancel!.width)).toBeLessThan(16);
-    await page.locator('.ProseMirror').click();
-    await page.keyboard.type('Some content');
-    await expect(page.locator('[data-note-save]')).toBeEnabled();
-    expect(await axeViolations(page, '[data-notes-tab]')).toEqual([]);
-  });
-
   test('typing keeps the caret where it is: title line of a new note, an existing note and a template (MD-38)', async ({
     page,
     seed,
@@ -704,10 +684,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await expect(page.locator('[data-note-head]')).toContainText("AI can't be used on this matter");
   });
 
-  for (const [width, height] of [
-    [1366, 768],
-    [375, 812],
-  ] as const) {
+  for (const [width, height] of [[1366, 768]] as const) {
     test(`axe is clean and nothing scrolls sideways at ${width}x${height}`, async ({
       page,
       seed,

@@ -15,7 +15,7 @@ import {
 
 /**
  * Task Types UX epic #352, WP-TY8, #412: the designer is ONE shared component, so the two extra owners (Asset Types, and the Custom
- * Fields of Client, Matter and Project) get the same layout as Task Types and Steps. This walks their designer routes at four widths:
+ * Fields of Client, Matter and Project) get the same layout as Task Types and Steps. This walks their designer routes at both desktop sizes:
  * layout, publish, retire, permission (`AssetType.Manage`, `CustomField.Manage`), axe. Their own list and edit screens are not touched.
  *
  * The custom-field forms are singletons shared by every test, so nothing there is published or retired for real: the publish and retire

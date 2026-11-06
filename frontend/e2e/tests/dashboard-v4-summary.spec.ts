@@ -13,8 +13,6 @@ test.describe.configure({ timeout: 180_000 });
 const SIZES = [
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
-  { width: 768, height: 1024 },
-  { width: 375, height: 812 },
 ];
 
 const card = (page: import('@playwright/test').Page, key: string) =>
@@ -268,7 +266,7 @@ test.describe('Summary v4', () => {
   });
 });
 
-test.describe('Summary v4 at four sizes', () => {
+test.describe('Summary v4 at both desktop sizes', () => {
   for (const size of SIZES) {
     test(`${size.width}x${size.height}: axe is clean, the page never scrolls sideways${size.width >= 768 ? ' or down' : ''}`, async ({
       seed,

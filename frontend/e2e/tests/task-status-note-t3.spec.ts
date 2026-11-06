@@ -12,13 +12,11 @@ import { FIRM_ZONE, dateInZone } from '../support/time';
 /**
  * Task Detail T3 "Status note" (#301, #302): one neutral note under the header says who, when and why for a Completed, Cancelled or On Hold
  * task (no banners, no Workflow notices, no step lines), the Due tile of a closed task reads "Was due Oct 14", and Reopen task / Resume stay the
- * header's actions. Checked at four widths with axe and no sideways scroll, for Completed, Cancelled, On Hold, Overdue, ASAP and Sensitive
+ * header's actions. Checked at both desktop sizes with axe and no sideways scroll, for Completed, Cancelled, On Hold, Overdue, ASAP and Sensitive
  * combinations. Screenshots go to E2E_SCREENSHOTS when it is set (docs/ux/task-detail-review/fixes/t3).
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
-  { width: 375, height: 812 },
-  { width: 768, height: 1024 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
 ] as const;
@@ -78,7 +76,7 @@ const noteHeight = (page: Page) =>
   page.locator('[data-status-note]').evaluate((el) => el.getBoundingClientRect().height);
 
 test.describe('Task status note T3 (#301, #302)', () => {
-  test('Cancelled: one note with who, when and why (two lines at most), no other banner, Reopen task in the header; axe 0 at four widths', async ({
+  test('Cancelled: one note with who, when and why (two lines at most), no other banner, Reopen task in the header; axe 0 at both desktop sizes', async ({
     seed,
     admin,
     page,
@@ -187,7 +185,7 @@ test.describe('Task status note T3 (#301, #302)', () => {
     await expect(page.locator('[data-status-note]')).toContainText(STAMP);
   });
 
-  test('Sensitive + Overdue + ASAP combinations: Sensitive and Cancelled shows the Sensitive line and the note; Overdue and ASAP open tasks have no note; ASAP + On Hold; axe 0 at four widths', async ({
+  test('Sensitive + Overdue + ASAP combinations: Sensitive and Cancelled shows the Sensitive line and the note; Overdue and ASAP open tasks have no note; ASAP + On Hold; axe 0 at both desktop sizes', async ({
     seed,
     admin,
     page,

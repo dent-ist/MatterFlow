@@ -10,7 +10,7 @@ import { SIZES, axeClean, box, pageSideScroll, shot } from '../support/pod-work-
 import { toasts } from '../support/toasts';
 
 /**
- * Final verification of Pod Work (epic #546, package WP-PW8, #577): the contract over the fixtures at four sizes (axe 0 including
+ * Final verification of Pod Work (epic #546, package WP-PW8, #577): the contract over the fixtures at both desktop sizes (axe 0 including
  * `target-size`, no sideways scroll, no failed API response and no toast on any allowed path, no nested scroll box on By member, "Assign to
  * me" in view at 768), the state matrix (loading, empty pod, no pod, no pods, error, offline, reduced motion) and the measurements of the
  * review taken again (`fixes/final/measurements.json`). Screenshots go to `E2E_SCREENSHOTS_PW` (docs/ux/pod-work-review/fixes/final). It uses
@@ -31,7 +31,7 @@ test.describe('Pod Work final verification', () => {
     expect(axeAvailable(), 'set E2E_AXE_PATH to axe.min.js').toBe(true);
   });
 
-  test.describe('the contract over the fixtures at four sizes', () => {
+  test.describe('the contract over the fixtures at both desktop sizes', () => {
     for (const size of SIZES) {
       test(`${size.name}: every tab and state of the busy pod: axe 0, no sideways scroll, no failed request, no toast, no nested scroll box`, async ({
         seed,
@@ -99,14 +99,14 @@ test.describe('Pod Work final verification', () => {
   });
 
   test.describe('the state matrix', () => {
-    test('loading: a skeleton or a polite "Loading" while the answer is slow, then the page; at 1366 and 375', async ({
+    test('loading: a skeleton or a polite "Loading" while the answer is slow, then the page; at 1366', async ({
       seed,
       personas,
       asUser,
     }) => {
       const fx = await podWorkFixtures(seed, personas);
       const page = await asUser(fx.lead.username);
-      for (const size of [SIZES[0], SIZES[3]]) {
+      for (const size of [SIZES[0]]) {
         await page.setViewportSize({ width: size.width, height: size.height });
         const release = await delayApi(page, /\/api\/v1\/pod-work\?/, 3500);
         await page.goto(`/pods/work?podId=${fx.busy.podId}`);
@@ -121,7 +121,7 @@ test.describe('Pod Work final verification', () => {
       }
     });
 
-    test('empty pod, no pod and no pods are each one message or one list; error has the reference and Retry and no toast; at four sizes', async ({
+    test('empty pod, no pod and no pods are each one message or one list; error has the reference and Retry and no toast; at both desktop sizes', async ({
       seed,
       personas,
       asUser,
@@ -259,7 +259,7 @@ test.describe('Pod Work final verification', () => {
   });
 
   test.describe('the measurements of the review, taken again', () => {
-    test('title, select, header, By member, phone first screen, strip and toast', async ({
+    test('title, select, header, By member, strip and toast', async ({
       seed,
       personas,
       asUser,
@@ -269,16 +269,11 @@ test.describe('Pod Work final verification', () => {
       const page = await asUser(fx.lead.username);
       const after: Record<string, number | string | boolean> = {};
 
-      // BUG-1 / W2 / W4 at 768 with the 76-character pod name.
-      await page.setViewportSize({ width: 768, height: 1024 });
+      // BUG-1 / W2 / W4 at 1366 with the 76-character pod name.
+      await page.setViewportSize({ width: 1366, height: 768 });
       await page.goto(`/pods/work?podId=${fx.longName.podId}`);
       const pw = new PodWorkPage(page);
       await expect(pw.podSelect).toBeVisible();
-      const h1 = await box(page.getByRole('heading', { name: 'Pod Work', level: 1 }));
-      after['title height at 768 (px)'] = Math.round(h1.height);
-      expect(h1.height).toBeLessThan(44);
-      await page.setViewportSize({ width: 1366, height: 768 });
-      await page.goto(`/pods/work?podId=${fx.longName.podId}`);
       const sel = await box(pw.podSelect);
       after['pod select width with the 76-character name at 1366 (px)'] = Math.round(sel.width);
       expect(sel.width).toBeLessThanOrEqual(22 * 14 + 1);
@@ -314,17 +309,6 @@ test.describe('Pod Work final verification', () => {
         return n;
       });
       expect(inView).toBeGreaterThanOrEqual(8);
-
-      // BUG-4 and W10 at 375.
-      await page.setViewportSize({ width: 375, height: 812 });
-      await page.goto(`/pods/work?podId=${fx.busy.podId}`);
-      await expect(page.locator('li[data-task]').first()).toBeVisible();
-      await page.waitForTimeout(300);
-      after['page width minus window at 375 (px)'] = await pageSideScroll(page);
-      const t = await box(page.getByRole('heading', { name: 'Pod Work', level: 1 }));
-      const c = await box(page.locator('li[data-task]').first());
-      after['first card under the title at 375 (px)'] = Math.round(c.y - (t.y + t.height));
-      expect(c.y - (t.y + t.height)).toBeLessThanOrEqual(200);
 
       // W5: the strip.
       after['strip items that are toggle buttons'] = await page

@@ -18,8 +18,6 @@ import { FIRM_ZONE, dateInZone } from '../support/time';
 const OUT = process.env['E2E_SCREENSHOTS'];
 
 const SIZES = [
-  { width: 375, height: 812 },
-  { width: 768, height: 1024 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
 ] as const;
@@ -132,7 +130,7 @@ async function seeded(
 }
 
 test.describe('Task header T2: record header, 200-character title, targets (#296)', () => {
-  test('a 200-character title on a 205-character matter: two title lines, one-line crumb, Workflow within the review target, axe 0 at four widths (drawer and Comments open too)', async ({
+  test('a 200-character title on a 205-character matter: two title lines, one-line crumb, Workflow within the review target, axe 0 at both desktop sizes (drawer and Comments open too)', async ({
     seed,
     admin,
     page,
@@ -183,11 +181,6 @@ test.describe('Task header T2: record header, 200-character title, targets (#296
     // The review measured y 519 (1366) and 1230 (375) for this task; the targets are #296 (y <= 300) and #300 (y <= 480).
     expect(tops[1366], 'Workflow y at 1366').toBeLessThanOrEqual(300);
     expect(tops[1920], 'Workflow y at 1920').toBeLessThanOrEqual(300);
-    // At 375 the Details disclosure and the Jump to row still sit between the strip and the Workflow (#307 moves them): the header's own
-    // share is the strip's bottom edge plus one gap.
-    expect(bottoms[375] + 16, 'Workflow y at 375 without Details and Jump to').toBeLessThanOrEqual(
-      480,
-    );
     console.log(
       'T2 long task Workflow y',
       JSON.stringify(tops),
@@ -233,7 +226,7 @@ test.describe('Task header T2: record header, 200-character title, targets (#296
     });
   });
 
-  test('the crumb names the list the task was opened from; Back to <list> is the phone link; no old page header remains', async ({
+  test('the crumb names the list the task was opened from; no old page header remains', async ({
     seed,
     admin,
     page,
@@ -245,11 +238,7 @@ test.describe('Task header T2: record header, 200-character title, targets (#296
     await expect(page.locator('.rh__trail li a').first()).toHaveText('My Work');
     await expect(page.locator('[data-back-link]')).toHaveAttribute('href', '/my-work');
     await expect(page.locator('[data-back-link]')).toBeHidden();
-    await page.setViewportSize({ width: 375, height: 812 });
-    await expect(page.locator('[data-back-link]')).toBeVisible();
-    await expect(page.locator('[data-back-link]')).toContainText('Back to My Work');
-    await expect(page.locator('.rh__trail')).toBeHidden();
-    await page.locator('[data-back-link]').click();
+    await page.locator('.rh__trail li a').first().click();
     await expect(page).toHaveURL(/\/my-work/);
   });
 
@@ -389,14 +378,14 @@ test.describe('Task header T2: facts strip, context line, Details trimmed (#297)
 });
 
 test.describe('Task header T2: Sensitive note on one line (#299)', () => {
-  test('a sensitive matter adds at most 40 px above the Workflow at 1366 and 375, and the sentence is in the tooltip and for screen readers', async ({
+  test('a sensitive matter adds at most 40 px above the Workflow at 1366, and the sentence is in the tooltip and for screen readers', async ({
     seed,
     admin,
     page,
   }) => {
     const plain = await seeded(seed, admin);
     const sensitive = await seeded(seed, admin, { sensitive: true });
-    for (const size of [SIZES[2], SIZES[0]]) {
+    for (const size of [SIZES[0]]) {
       await page.setViewportSize(size);
       await new TaskDetailPage(page).open(plain.task.taskId);
       const before = await workflowTop(page);
@@ -623,67 +612,4 @@ test.describe('Task header T2: primary action and overflow (#298)', () => {
   });
 });
 
-test.describe('Task header T2: phone header (#300)', () => {
-  test('at 375: Back to the list, the primary action and the overflow share one row of 44 px targets; Edit and Activity are in the overflow; the title is two lines of 18 px', async ({
-    seed,
-    admin,
-    page,
-  }) => {
-    const { task } = await seeded(seed, admin, { task: { title: LONG_TITLE } });
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(`/tasks/${task.taskId}?from=task-queue`);
-    await expect(page.locator('[data-task-header] [data-ref]')).toBeVisible();
-    const back = await box(page, '[data-back-link]');
-    const primary = await box(page, '[data-action="complete"]');
-    const menu = await box(page, '[data-overflow]');
-    expect(Math.abs(primary.y - back.y), 'one row').toBeLessThan(30);
-    expect(Math.abs(menu.y - primary.y)).toBeLessThan(10);
-    expect(primary.height).toBeGreaterThanOrEqual(43.5);
-    expect(menu.height).toBeGreaterThanOrEqual(43.5);
-    expect(menu.width).toBeGreaterThanOrEqual(43.5);
-    await expect(page.locator('[data-page-actions] > button')).toHaveText([/Complete Task/]);
-    await page.locator('[data-overflow]').click();
-    await expect(page.getByRole('menuitem')).toHaveText([
-      /Edit/,
-      /Activity/,
-      /Put on Hold/,
-      /Copy Link/,
-      /Cancel Task/,
-    ]);
-    for (const item of await page.getByRole('menuitem').all()) {
-      expect((await item.boundingBox())!.height).toBeGreaterThanOrEqual(43.5);
-    }
-    if (axeAvailable()) expect(await axeViolations(page)).toEqual([]);
-    await shot(page, 'phone-overflow');
-    // Activity from the overflow opens the drawer.
-    await page.getByRole('menuitem', { name: /Activity/ }).click();
-    await expect(page.getByRole('dialog', { name: /^Activity:/ })).toBeVisible();
-  });
-
-  test('at 375 the header and strip end early enough for the Workflow to start at y <= 380 (typical) and <= 480 (200-character, sensitive); Details and Jump to still sit between until #307', async ({
-    seed,
-    admin,
-    page,
-  }) => {
-    const typical = await seeded(seed, admin);
-    const long = await seeded(seed, admin, {
-      matter: { name: LONG_MATTER },
-      sensitive: true,
-      task: { title: LONG_TITLE },
-    });
-    await page.setViewportSize({ width: 375, height: 812 });
-    const measure = async (taskId: number, name: string) => {
-      await new TaskDetailPage(page).open(taskId);
-      const workflow = await workflowTop(page);
-      const strip = await box(page, '[data-facts]');
-      await shot(page, name);
-      return { workflow, stripBottom: Math.round(strip.y + strip.height) };
-    };
-    const a = await measure(typical.task.taskId, 'phone-typical');
-    const b = await measure(long.task.taskId, 'phone-long');
-    console.log('T2 phone (typical, long)', JSON.stringify({ a, b }));
-    // Workflow would start one gap (16 px) under the strip. Today the Details disclosure and the Jump to row (#307 moves them) sit between.
-    expect(a.stripBottom + 16, 'typical').toBeLessThanOrEqual(380);
-    expect(b.stripBottom + 16, 'long').toBeLessThanOrEqual(480);
-  });
-});
+test.describe('Task header T2: phone header (#300)', () => {});

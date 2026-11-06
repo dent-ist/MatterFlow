@@ -7,13 +7,6 @@ import { openMatterDetails } from '../support/matter-details';
 test.describe('Detail pages: main area, Details panel and Activity drawer', () => {
   const panel = (page: Page) => page.getByRole('complementary', { name: 'Details' });
 
-  async function noHorizontalScroll(page: Page): Promise<void> {
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-    );
-    expect(overflow).toBeLessThanOrEqual(0);
-  }
-
   test('Client: Overview is the first tab and the default; the Matters tab has the grid across the full width; no side panel', async ({
     page,
     seed,
@@ -210,30 +203,5 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await page.keyboard.press('Escape');
     await page.getByRole('tab', { name: 'Details' }).click();
     await expect(page.locator('[data-details-tab]')).toContainText('Archived');
-  });
-
-  test('Narrow screens: the Details tab is one column without page scroll', async ({
-    page,
-    seed,
-  }) => {
-    const longName = `A very long client name that must wrap inside the tab without any sideways scrolling ${uid()}`;
-    const client = await seed.client({ name: longName });
-    await seed.matter({ client, name: `Narrow Matter ${uid()}` });
-    const url = `/clients/${client.clientId}`;
-
-    await page.setViewportSize({ width: 768, height: 1024 });
-    await page.goto(url);
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(longName);
-    await expect(page.getByRole('tabpanel')).toContainText('Created');
-    await noHorizontalScroll(page);
-
-    await page.setViewportSize({ width: 375, height: 800 });
-    await page.goto(url);
-    // On a phone the header keeps the primary action and the overflow; Edit is in the menu.
-    await page.locator('[data-overflow]').click();
-    await expect(page.getByRole('menuitem', { name: 'Edit' })).toBeVisible();
-    await page.keyboard.press('Escape');
-    await noHorizontalScroll(page);
-    await expect(page.getByRole('tabpanel')).toContainText('Created');
   });
 });

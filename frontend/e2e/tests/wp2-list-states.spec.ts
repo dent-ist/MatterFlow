@@ -18,8 +18,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 type Mode = 'hung' | 'error' | 'forbidden' | 'empty';
@@ -297,7 +295,7 @@ test.describe('WP2 list states (#251)', () => {
       ['/api/v1/projects', '/projects'],
       ['/api/v1/matters', `/clients/${w.client.clientId}?tab=matters`],
     ] as const) {
-      for (const [width, height] of [SIZES[0], SIZES[3]]) {
+      for (const [width, height] of [SIZES[0]]) {
         await page.unrouteAll();
         await page.route(
           (u) => u.pathname === api,
@@ -319,7 +317,7 @@ test.describe('WP2 list states (#251)', () => {
 });
 
 test.describe('WP2 matter reference on one line (#252)', () => {
-  test('the reference never breaks at its hyphen at 768 and 375', async ({ page, seed }) => {
+  test('the reference never breaks at its hyphen at 1366 and 1920', async ({ page, seed }) => {
     test.setTimeout(120_000);
     const w = await world(seed);
     const ref = w.matter.matterRef as string;
@@ -328,19 +326,16 @@ test.describe('WP2 matter reference on one line (#252)', () => {
         name: 'matters-list',
         url: `/matters?matterRef=${ref}`,
         cell: 'tbody mf-matter-ref .mf-ref',
-        phoneCell: '[data-card-meta] .rc-ref',
       },
       {
         name: 'client-matters',
         url: `/clients/${w.client.clientId}?tab=matters`,
         cell: 'tbody mf-matter-ref .mf-ref',
-        phoneCell: '[data-card-meta] .rc-ref',
       },
       {
         name: 'projects-list',
         url: `/projects?name=${w.tag}`,
         cell: 'tbody mf-matter-ref .mf-ref',
-        phoneCell: '[data-card-matter] .rc-ref',
       },
       {
         name: 'assets-list',
@@ -348,14 +343,11 @@ test.describe('WP2 matter reference on one line (#252)', () => {
         cell: 'tbody mf-matter-ref .mf-ref',
       },
     ];
-    for (const [width, height] of [SIZES[2], SIZES[3], SIZES[0], SIZES[1]]) {
+    for (const [width, height] of [SIZES[0], SIZES[1]]) {
       await page.setViewportSize({ width, height });
       for (const t of tables) {
-        // The Assets list is a card list on a phone, and its card shows the matter in a text line, not as a reference cell (#866).
-        if (width < 640 && t.name === 'assets-list') continue;
         await page.goto(t.url);
-        // Below 640 px the three record lists are cards (WP12) with the reference in the mono `rc-ref`; Assets stays a table.
-        const selector = width < 640 && t.phoneCell ? t.phoneCell : t.cell;
+        const selector = t.cell;
         const cell = page.locator(selector).first();
         await expect(cell, `${t.name} at ${width}`).toBeVisible();
         await expect(cell).toHaveText(ref);
@@ -377,7 +369,7 @@ test.describe('WP2 matter reference on one line (#252)', () => {
         }
         await axeClean(page, `${t.name} ${width}`);
         await noSideways(page, `${t.name} ${width}`);
-        if (width === 768 || width === 375) await shot(page, `reference-${t.name}`);
+        if (width === 1366) await shot(page, `reference-${t.name}`);
       }
     }
   });

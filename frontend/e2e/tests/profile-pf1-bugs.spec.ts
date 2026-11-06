@@ -124,7 +124,7 @@ test.describe('pf1-follow-menu: the open profile page follows the header menu (#
     await expect(first.locator('[data-status-ooo]')).toBeChecked();
   });
 
-  test('axe and no sideways scroll with the stale note shown, at the four sizes', async ({
+  test('axe and no sideways scroll with the stale note shown, at both desktop sizes', async ({
     personas,
     asUser,
   }) => {

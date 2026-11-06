@@ -310,9 +310,7 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     await expect(page.locator('[data-who-counted]')).toHaveText('');
   });
 
-  test('the toolbar is one line at 1366, wraps without sideways scroll at 375, and the strip keeps its place while loading', async ({
-    page,
-  }) => {
+  test('the toolbar is one line at 1366', async ({ page }) => {
     await onlyDefaultPriorities(page);
     await page.setViewportSize({ width: 1366, height: 768 });
     await openUsers(page);
@@ -322,17 +320,6 @@ test.describe('Users tab: capacity, population and toolbar', () => {
       .locator('[role="toolbar"] button, [role="toolbar"] select, [role="toolbar"] input')
       .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
     expect(Math.max(...tops) - Math.min(...tops)).toBeLessThanOrEqual(24);
-    await page.setViewportSize({ width: 375, height: 812 });
-    await openUsers(page);
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
-      ),
-    ).toBe(true);
-    // The State dropdown is one control (a plain button) that fits the 271 px a phone leaves.
-    const state = page.getByRole('button', { name: /^State:/ });
-    await expect(state).toBeVisible();
-    expect((await state.boundingBox())!.width).toBeGreaterThan(120);
   });
 
   test('an Idle tile is a light tint with a thin outline; Heavy keeps its outline and icon; no tile is darker than the tint except Heavy and Out of office', async ({
@@ -386,7 +373,7 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     await expect(page.locator('[data-who-counted]')).toBeVisible();
   });
 
-  test('has no axe violations in the strip, the open menu, the population line and the toolbar at 1366, 1920 and 375', async ({
+  test('has no axe violations in the strip, the open menu, the population line and the toolbar at 1366 and 1920', async ({
     page,
   }) => {
     test.skip(!axeAvailable(), 'axe-core not installed (set E2E_AXE_PATH to axe.min.js)');
@@ -394,7 +381,6 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     for (const [width, height] of [
       [1366, 768],
       [1920, 1080],
-      [375, 812],
     ]) {
       await page.setViewportSize({ width, height });
       await openUsers(page);
@@ -420,7 +406,7 @@ test.describe('Users tab: capacity, population and toolbar', () => {
 });
 
 test.describe('capacity strip on a big board', () => {
-  test('every segment is a 24 px target at 375 and 1366 px, with one Idle person among hundreds, and axe finds nothing', async ({
+  test('every segment is a 24 px target at 1366 px, with one Idle person among hundreds, and axe finds nothing', async ({
     page,
   }) => {
     test.setTimeout(180_000);
@@ -447,10 +433,7 @@ test.describe('capacity strip on a big board', () => {
       body.users = users;
       await route.fulfill({ response, json: body });
     });
-    for (const [width, height] of [
-      [375, 812],
-      [1366, 768],
-    ]) {
+    for (const [width, height] of [[1366, 768]]) {
       await page.setViewportSize({ width, height });
       await page.goto(`/dashboard?tab=users&uq=${wl.tag}`);
       const state = await page.getByRole('button', { name: /^State:/ }).boundingBox();
@@ -510,7 +493,6 @@ test.describe('users capacity screenshots', () => {
     for (const [w, h] of [
       [1366, 768],
       [1920, 1080],
-      [375, 812],
     ]) {
       await page.setViewportSize({ width: w, height: h });
       await page.goto(base);

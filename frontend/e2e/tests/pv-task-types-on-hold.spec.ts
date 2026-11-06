@@ -10,8 +10,6 @@ import { asDropdown } from '../support/dropdown';
 const SIZES = [
   { name: '1920x1080', width: 1920, height: 1080 },
   { name: '1366x768', width: 1366, height: 768 },
-  { name: '768x1024', width: 768, height: 1024 },
-  { name: '375x812', width: 375, height: 812 },
 ] as const;
 
 async function clean(page: Page, what: string): Promise<void> {

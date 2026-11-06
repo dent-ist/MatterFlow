@@ -91,18 +91,6 @@ test.describe('column filters records screenshots', () => {
     await shot(page, 'matter-assets-type-multiselect');
     await page.keyboard.press('Escape');
 
-    // Phone: the sheet
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/clients');
-    // Below 640 px the three lists are cards since WP12 (#275, #276), not table rows.
-    await expect(page.locator('mf-record-card-list li').first()).toBeVisible();
-    await shot(page, 'clients-closed');
-    await page.getByRole('button', { name: /^Filters/ }).click();
-    await expect(page.getByRole('dialog', { name: 'Filters' })).toBeVisible();
-    await shot(page, 'clients-sheet');
-    await page.getByRole('searchbox', { name: 'Search clients' }).fill('Bulk');
-    await page.waitForTimeout(600);
-    await shot(page, 'clients-sheet-filtered');
     await page.goto(`/matters/${matterId}?tab=assets`);
     await expect(first('Assets list')).toBeVisible();
     await shot(page, 'matter-assets-closed');

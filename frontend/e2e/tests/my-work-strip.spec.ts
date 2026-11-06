@@ -23,8 +23,6 @@ async function shot(page: Page, name: string): Promise<void> {
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 test.describe('My Work needs-attention strip', () => {
@@ -147,11 +145,7 @@ test.describe('My Work needs-attention strip', () => {
           return { top: Math.round(r.top), w: r.width, h: r.height };
         }),
       );
-      if (w >= 640) expect(new Set(items.map((i) => i.top)).size, `one line at ${w}`).toBe(1);
-      if (w === 375) {
-        expect(new Set(items.map((i) => i.top)).size, '2x2 at 375').toBe(2);
-        for (const i of items) expect(i.h).toBeGreaterThanOrEqual(44);
-      }
+      expect(new Set(items.map((i) => i.top)).size, `one line at ${w}`).toBe(1);
       await shot(page, `strip-${w}x${h}`);
     }
   });
@@ -181,8 +175,6 @@ test.describe('My Work needs-attention strip', () => {
     await expect(strip).not.toContainText('Assigned');
     await expect(strip.locator('button')).toHaveCount(4);
     await shot(page, 'pod-work-strip-1366x768');
-    await page.setViewportSize({ width: 375, height: 812 });
-    await shot(page, 'pod-work-strip-375x812');
     if (axeAvailable()) expect(await axeViolations(page)).toEqual([]);
   });
 });

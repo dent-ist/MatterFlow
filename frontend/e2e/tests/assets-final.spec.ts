@@ -7,7 +7,7 @@ import { uid } from '../support/seed';
 
 /**
  * Assets UX review, final verification (#517): the contract of the epic on data shaped like the review's (many assets in one matter, a 300
- * character name, a 1,000 character URL, a 1,500 character description, 19 linked tasks, four kinds of people), at the four sizes, with the
+ * character name, a 1,000 character URL, a 1,500 character description, 19 linked tasks, four kinds of people), at both desktop sizes, with the
  * state matrix and the measurements of the review's before/after table printed as `[measure] key = value` lines.
  * Screenshots: E2E_SCREENSHOTS=docs/ux/assets-review/fixes/final.
  */
@@ -64,7 +64,7 @@ test.describe('Assets final verification (#517)', () => {
     }
   });
 
-  test('the list keeps its full height (no panel), rows are 44 px, the heading and the grid fit 1366x768; the phone page is cards', async ({
+  test('the list keeps its full height (no panel), rows are 44 px, the heading and the grid fit 1366x768', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
@@ -84,18 +84,6 @@ test.describe('Assets final verification (#517)', () => {
     );
     for (const h of heights) expect(h).toBeLessThanOrEqual(45);
     await shot(page, 'final-list');
-
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(`/assets?name=${token}`);
-    await expect(page.locator('li.rc').first()).toBeVisible();
-    const height = await page.evaluate(() => document.documentElement.scrollHeight);
-    measure(
-      'phone page height with 25 cards (review: 3,048 px with 25 table rows and the panel)',
-      height,
-    );
-    // 50 cards (the default page size since LC-05) of 4 lines each (about 137 px): the page is a list, not a list plus a panel; opening an asset is a tap.
-    expect(height).toBeLessThan(50 * 150);
-    await noHorizontalScroll(page);
   });
 
   test('no dead links: a person with Asset.View only gets no link to a matter, task or client on the list or the record page', async ({
@@ -212,7 +200,7 @@ test.describe('Assets final verification (#517)', () => {
     }
   });
 
-  test('New and Edit asset at four sizes: axe, no sideways scroll, screenshots', async ({
+  test('New and Edit asset at both desktop sizes: axe, no sideways scroll, screenshots', async ({
     page,
   }) => {
     for (const size of SIZES) {
@@ -230,7 +218,7 @@ test.describe('Assets final verification (#517)', () => {
     }
   });
 
-  test('list at four sizes: axe, no sideways scroll, with the filter row open (the sheet at 375)', async ({
+  test('list at both desktop sizes: axe, no sideways scroll, with the filter row open ', async ({
     page,
   }) => {
     for (const size of SIZES) {

@@ -24,23 +24,6 @@ function contrast(fg: string, bg: string): number {
 }
 
 test.describe('Round 4: layout and responsive', () => {
-  test('UXR4-01: no page-level sideways scroll on Users at 375 px or on Audit Logs at 768 px', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 375, height: 800 });
-    for (const path of ['/admin/users', '/admin/roles', '/admin/audit']) {
-      await page.goto(path);
-      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-      expect(await pageOverflow(page), `${path} at 375`).toBeLessThanOrEqual(0);
-    }
-    await page.setViewportSize({ width: 768, height: 900 });
-    for (const path of ['/admin/audit', '/admin/users']) {
-      await page.goto(path);
-      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-      expect(await pageOverflow(page), `${path} at 768`).toBeLessThanOrEqual(0);
-    }
-  });
-
   test('UXR4-02: My Work, Task Queue and the matter Tasks grid fit at 1280 px with Status and Due visible; the Task Queue fits at 1024 px or scrolls with a sticky Ref (#201)', async ({
     page,
     seed,

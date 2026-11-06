@@ -7,7 +7,7 @@ import { uid } from '../support/seed';
 
 /**
  * WP-AD8 #660 (AD-E): the combined axe and reflow audit of the five administration areas (Audit Logs, Labels, Asset Types, Link Roles, Custom
- * Fields) at 375, 768, 1366 and 1920 with every overlay open: the row menu, each dialog, the activity drawer, the filter sheet. Each page and
+ * Fields) at 1366 and 1920 with every overlay open: the row menu, each dialog, the activity drawer, the filter sheet. Each page and
  * each overlay: 0 axe violations (wcag2a, wcag2aa, wcag21aa, wcag22aa incl. target-size) and no page-level horizontal scroll. The spec FAILS when
  * axe-core is missing (set E2E_AXE_PATH to axe.min.js). Screenshots go to E2E_SCREENSHOTS (docs/ux/admin-pages-review/fixes/ad8-states-focus).
  */
@@ -60,7 +60,7 @@ test.describe('Axe and reflow of the administration areas, overlays open (#660)'
       await expect(page.getByRole('dialog', { name: 'Rename Status Label' })).toBeVisible();
       await check(page, 'rename status label', size.width);
       await page.keyboard.press('Escape');
-      if (size.width === 1366 || size.width === 375) await shot(page, 'labels-audit');
+      if (size.width === 1366) await shot(page, 'labels-audit');
     }
     await admin.raw('DELETE', `/api/v1/priorities/${p.id}`);
   });
@@ -99,7 +99,7 @@ test.describe('Axe and reflow of the administration areas, overlays open (#660)'
       await expect(page.getByRole('dialog', { name: 'Rename Link Role' })).toBeVisible();
       await check(page, 'rename link role', size.width);
       await page.keyboard.press('Escape');
-      if (size.width === 1366 || size.width === 375) await shot(page, 'asset-types-audit');
+      if (size.width === 1366) await shot(page, 'asset-types-audit');
     }
   });
 
@@ -140,7 +140,7 @@ test.describe('Axe and reflow of the administration areas, overlays open (#660)'
         .first()
         .click();
       await check(page, 'audit details', size.width);
-      if (size.width === 1366 || size.width === 375) await shot(page, 'audit-audit');
+      if (size.width === 1366) await shot(page, 'audit-audit');
     }
   });
 });

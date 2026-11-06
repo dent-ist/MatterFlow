@@ -2,7 +2,7 @@
 
 [[_TOC_]]
 
-**What this page is for.** How the Dashboard screens are organised in code, which tab needs which permission and which backend endpoint feeds it, and where its design rules are. The Dashboard is the largest feature folder (`frontend/src/app/features/dashboard`, 98 files). Backend side: [Availability Capacity and Calendar](../Architecture/Availability-Capacity-and-Calendar.md) and `WorkViews` in the [Module Guide](../Backend/Module-Guide.md).
+**What this page is for.** How the Dashboard screens are organised in code, which tab needs which permission and which backend endpoint feeds it, and where its design rules are. The Dashboard is the largest feature folder (`frontend/src/app/features/dashboard`, 99 source files). Backend side: [Availability Capacity and Calendar](../Architecture/Availability-Capacity-and-Calendar.md) and `WorkViews` in the [Module Guide](../Backend/Module-Guide.md).
 
 ## Tabs
 
@@ -36,7 +36,7 @@ The Dashboard rules are in `docs/ux/theme-guide.md` sections 11.4 to 11.12 and 1
 
 ## Tests
 
-Unit specs sit beside the files (`*-model.spec.ts`, `users-table.spec.ts`, ...). End to end: Playwright specs named `dashboard-*.spec.ts` and `swimlane*.spec.ts` in `frontend/e2e/tests`.
+Unit specs sit beside the files (`*-model.spec.ts`, `users-table.spec.ts`, ...). End to end: Playwright specs named `dashboard-*.spec.ts` and `swimlane*.spec.ts` in `frontend/e2e/tests` (desktop sizes only, D-82; the Swimlane lane switcher and Dashboard phone tab-row specs were deleted, `swimlane-big-screens.spec.ts` keeps the 1920 and 2560 board checks).
 
 ## Related pages
 
@@ -44,4 +44,4 @@ Unit specs sit beside the files (`*-model.spec.ts`, `users-table.spec.ts`, ...).
 - [Feature Map](../Features/Feature-Map.md)
 - [Testing the Frontend](Testing-the-Frontend.md)
 
-Last verified against commit 2e446f8.
+Last verified against commit a8142a1.

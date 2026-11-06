@@ -10,7 +10,7 @@ import { dateInZone, FIRM_ZONE } from '../support/time';
 /**
  * The shared two-line Due cell (TQ-WP14, #209, TQ15, TQ44): the eight states of describeDueCell on seeded tasks, exactly two lines at
  * Comfortable (18 px each, no gap) and one inline line at Compact, one spoken sentence per cell, the tooltip with the zone, a steady
- * 136 px column, tone contrast of 4.5:1 with a cue other than colour, axe at four sizes. Own tagged tasks only. Screenshots go to
+ * 136 px column, tone contrast of 4.5:1 with a cue other than colour, axe at both desktop sizes. Own tagged tasks only. Screenshots go to
  * E2E_SCREENSHOTS when it is set (docs/ux/task-queue-review/fixes/wp-due).
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
@@ -46,8 +46,6 @@ function inFirmZone(ms: number): { dueDate: string; dueTime: string } {
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 interface State {
@@ -71,7 +69,7 @@ const STATES: State[] = [
 ];
 
 test.describe('Due cell (#209)', () => {
-  test('eight states on seeded tasks: two lines, one spoken sentence, tooltip, tone contrast, Due 136 px, axe at four sizes', async ({
+  test('eight states on seeded tasks: two lines, one spoken sentence, tooltip, tone contrast, Due 136 px, axe at both desktop sizes', async ({
     seed,
     page,
   }) => {

@@ -421,7 +421,7 @@ test.describe('Swimlane lane counts (WP9a, #123)', () => {
 });
 
 test.describe('Swimlane accessibility (WP9a)', () => {
-  test('axe is clean at 1366, 1920 and 375 (comfortable, compact, tree, open menu)', async ({
+  test('axe is clean at 1366 and 1920 (comfortable, compact, tree, open menu)', async ({
     page,
   }) => {
     test.skip(!axeAvailable(), 'axe-core not installed (set E2E_AXE_PATH to axe.min.js)');
@@ -429,7 +429,6 @@ test.describe('Swimlane accessibility (WP9a)', () => {
     for (const [w, h] of [
       [1366, 768],
       [1920, 1080],
-      [375, 812],
     ]) {
       await page.setViewportSize({ width: w, height: h });
       const lane1 = w < 900 ? '&lane=new' : '';

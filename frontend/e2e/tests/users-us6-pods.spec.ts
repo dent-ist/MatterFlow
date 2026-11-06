@@ -10,14 +10,12 @@ import { expect, test } from '../support/fixtures';
  *  - rows are 44 px, the name is the one link of a row and puts the pod in the address (`?pod=`), there is no Edit link and no actions column;
  *  - "n inactive hidden - Show all": the count equals the inactive pods, Show all reveals them and the address records it;
  *  - the word is Inactive across the tab and the editor (the members' badge too); phone cards below 640 px;
- *  - axe 0 and no sideways scroll at four widths; permission variants.
+ *  - axe 0 and no sideways scroll at both desktop sizes; permission variants.
  * Screenshots for docs/ux/users-review/fixes/us6-roles-pods/ are written when E2E_SCREENSHOTS is set to the output folder.
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
 const TAG = `us6p${Math.floor(Math.random() * 90000) + 10000}`;
 const SIZES = [
-  { width: 375, height: 812 },
-  { width: 768, height: 1024 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
 ] as const;
@@ -180,17 +178,6 @@ test.describe('#450 Pods list on the kit', () => {
     await shot(page, 'pod-editor-inactive-member', 1366, 768);
     await page.goBack();
     await expect(podRow(page, activePodId)).toBeVisible();
-  });
-
-  test('on a phone a pod is a card whose name opens the editor', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(`/admin/pods?name=${TAG}&status=all`);
-    const card = page.locator('li.rc', { hasText: TAG }).first();
-    await expect(card).toBeVisible();
-    await expect(card.locator('a[data-card-name]')).toHaveAttribute('href', /pod=\d+/);
-    await card.locator('a[data-card-name]').click();
-    await expect(page.locator('[data-editor] [data-record-header]')).toBeVisible();
-    await shot(page, 'pod-editor-phone', 375, 812);
   });
 
   test('a person with Pod.ManageMembers only has the list, the links and no New pod; a Task.View-only person has none of it', async ({

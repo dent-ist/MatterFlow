@@ -18,8 +18,6 @@ import { toasts } from '../support/toasts';
 const SIZES = [
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
-  { width: 768, height: 1024 },
-  { width: 375, height: 812 },
 ] as const;
 
 async function axeAtEverySize(
@@ -175,7 +173,7 @@ test.describe('Sensitive matters: the screens', () => {
     void u;
   });
 
-  test('the assignee task page, the matter overview note and the Matters list are clean for axe at four widths', async ({
+  test('the assignee task page, the matter overview note and the Matters list are clean for axe at both desktop sizes', async ({
     universe: u,
     asUser,
   }) => {

@@ -145,61 +145,6 @@ test.describe('Column filters on the Assets screen', () => {
     await expect(filter(page, 'Name')).toHaveValue('a/b');
   });
 
-  test('below 768 px the Filters button opens a sheet with the same controls; chips stay above the grid', async ({
-    page,
-    seed,
-  }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
-    const token = uid();
-    await seedSet(seed, token);
-    await page.goto('/assets');
-    await expect(names(page).first()).toBeVisible();
-    await expect(toggle(page)).toHaveAttribute('aria-haspopup', 'dialog');
-    await toggle(page).click();
-    await expect(sheet(page)).toBeVisible();
-    await expect(page.locator('tr.mf-filter-row')).toHaveCount(0);
-    for (const column of ['Matter', 'External Reference']) {
-      await expect(sheet(page).getByLabel(`Filter by ${column}`)).toBeVisible();
-    }
-    // Search stays in the toolbar on a phone; the sheet has no Name field.
-    await expect(sheet(page).getByLabel('Filter by Name')).toHaveCount(0);
-    await expect(filter(page, 'Name')).toBeVisible();
-    await expect(sheet(page).getByLabel(/^Filter by (Status|Disposition)/)).toBeVisible();
-    // Type is a multi-select: its checkbox group sits in the sheet.
-    await expect(sheet(page).locator('.ms-group')).toBeVisible();
-    // 44 px targets.
-    const box = (await sheet(page).getByLabel('Filter by Matter').boundingBox())!;
-    expect(box.height).toBeGreaterThanOrEqual(43);
-
-    // Changes apply live; the footer says how many results.
-    await sheet(page).getByLabel('Filter by Matter').fill(`CF Matter ${token}`);
-    await expect(page).toHaveURL(/matter=CF/);
-    await expect(sheet(page).getByRole('button', { name: 'Show 3 results' })).toBeVisible();
-
-    // Esc clears the filled box first, a second Esc closes the sheet and focus returns to the Filters button.
-    await sheet(page).getByLabel('Filter by Matter').press('Escape');
-    await expect(sheet(page).getByLabel('Filter by Matter')).toHaveValue('');
-    await sheet(page).getByLabel('Filter by Matter').fill(`CF Matter ${token}`);
-    await expect(names(page)).toHaveCount(3);
-    await sheet(page).getByRole('button', { name: 'Show 3 results' }).click();
-    await expect(sheet(page)).toHaveCount(0);
-    await expect(toggle(page)).toBeFocused();
-    await expect(page.getByRole('list', { name: 'Active filters' })).toContainText(
-      `Matter: CF Matter ${token}`,
-    );
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-    );
-    expect(overflow).toBeLessThanOrEqual(0);
-
-    // Clear filters from the sheet.
-    await toggle(page).click();
-    await sheet(page).getByRole('button', { name: 'Clear Filters' }).click();
-    await expect(page).not.toHaveURL(/matter=/);
-    await page.keyboard.press('Escape');
-    await expect(sheet(page)).toHaveCount(0);
-  });
-
   test('the sheet also replaces the row when the grid overflows sideways (1024 px wide window)', async ({
     page,
   }) => {
@@ -271,10 +216,5 @@ test.describe('Column filters on the Assets screen', () => {
     await toggle(page).click();
     await expect(page.getByRole('list', { name: 'Active filters' })).toBeVisible();
     expect(await axeViolations(page)).toEqual([]); // row closed, chips
-
-    await page.setViewportSize({ width: 375, height: 812 });
-    await toggle(page).click();
-    await expect(sheet(page)).toBeVisible();
-    expect(await axeViolations(page)).toEqual([]); // sheet
   });
 });

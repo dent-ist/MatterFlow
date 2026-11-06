@@ -24,8 +24,6 @@ async function shot(page: Page, name: string): Promise<void> {
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 test.describe('My Work vocabulary and tab rules', () => {
@@ -218,7 +216,7 @@ test.describe('My Work vocabulary and tab rules', () => {
     );
   });
 
-  test('axe, no overflow and screenshots of the tab strip at 1366, 1920, 768 and 375', async ({
+  test('axe, no overflow and screenshots of the tab strip at 1366 and 1920', async ({
     seed,
     asUser,
   }) => {
@@ -242,8 +240,8 @@ test.describe('My Work vocabulary and tab rules', () => {
           () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
         );
         expect(overflow, `no horizontal page scroll at ${w}`).toBe(false);
-        if (w >= 768) {
-          // The four tabs fit on one line at 768 and above.
+        {
+          // The four tabs fit on one line.
           const strip = await page
             .getByRole('tablist', { name: 'My Work views' })
             .evaluate((n) => ({
@@ -255,17 +253,5 @@ test.describe('My Work vocabulary and tab rules', () => {
         await shot(page, `${view === 'dueSoon' ? 'due-soon-and-overdue' : 'closed'}-${w}x${h}`);
       }
     }
-
-    // At 375 the strip scrolls inside itself and the selected tab is in view.
-    await page.setViewportSize({ width: 375, height: 812 });
-    await myWork.open('?view=createdByMe');
-    const selected = myWork.tab(/^Created by me/);
-    await expect(selected).toHaveAttribute('aria-selected', 'true');
-    const visible = await selected.evaluate((n) => {
-      const strip = n.parentElement!.getBoundingClientRect();
-      const box = n.getBoundingClientRect();
-      return box.left >= strip.left - 1 && box.right <= strip.right + 1;
-    });
-    expect(visible, 'the selected tab is scrolled into view').toBe(true);
   });
 });

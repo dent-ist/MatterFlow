@@ -227,7 +227,6 @@ test.describe('accessibility and screens', () => {
   for (const size of [
     { width: 1366, height: 768 },
     { width: 1920, height: 1080 },
-    { width: 375, height: 812 },
   ]) {
     test(`Summary, Trends and Coverage at ${size.width}: axe is clean, the control is operable by keyboard and nothing scrolls sideways`, async ({
       page,

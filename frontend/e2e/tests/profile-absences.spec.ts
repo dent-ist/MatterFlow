@@ -179,8 +179,6 @@ test.describe('My profile: Out of office, accessibility (axe wcag2a, wcag2aa, wc
   for (const size of [
     { name: '1366x768', width: 1366, height: 768 },
     { name: '1920x1080', width: 1920, height: 1080 },
-    { name: '768x1024', width: 768, height: 1024 },
-    { name: '375x812', width: 375, height: 812 },
   ]) {
     test(`the list and the dialogs are clean at ${size.name} with no sideways scroll`, async ({
       asUser,

@@ -9,7 +9,6 @@ import { uid } from '../support/seed';
  * count chip in the title, "+ New X" in the title row, the Sorted by line with Reset sort, the pager at 50 rows, at 1366x768 and on a phone.
  */
 const DESKTOP = { width: 1366, height: 768 };
-const PHONE = { width: 375, height: 812 };
 
 const box = async (page: Page, selector: string) =>
   (await page.locator(selector).first().boundingBox())!;
@@ -79,21 +78,6 @@ test.describe('List toolbar on Clients (record list)', () => {
       await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight + 1),
     ).toBe(true);
 
-    if (axeAvailable()) expect(await axeViolations(page)).toEqual([]);
-  });
-
-  test('on a phone Search and Filters stay, Columns is not offered and the primary button stays', async ({
-    page,
-  }) => {
-    await page.setViewportSize(PHONE);
-    await page.goto('/clients');
-    await expect(page.getByRole('searchbox', { name: 'Search clients' })).toBeVisible();
-    await expect(page.getByRole('button', { name: /^Filters/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'New Client' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Columns' })).toHaveCount(0);
-    expect(
-      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
-    ).toBe(true);
     if (axeAvailable()) expect(await axeViolations(page)).toEqual([]);
   });
 });

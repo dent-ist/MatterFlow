@@ -99,7 +99,7 @@ test.describe('Focus lands on the heading of the 403 and the 404 (#610)', () => 
     ).toBeFocused();
   });
 
-  test('axe is clean on the focused 403 and 404 at four sizes', async ({
+  test('axe is clean on the focused 403 and 404 at both desktop sizes', async ({
     personas,
     asUser,
     page,

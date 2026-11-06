@@ -39,7 +39,7 @@ Nothing about a matter is stored in the browser (Sensitive matter rule): the key
 
 ## The record grid (#1241)
 
-A list of records (Matters, Clients; Projects and Assets follow) is `<mf-record-grid>`: one place for the frame, sortable headings, drag-to-resize handles with the width stored per person and grid, drag-to-reorder, the Columns chooser (show, hide, move, "Reset to Default", "Reset Width"), the loading, empty and error body and the optional selection and row-action columns. A page gives it a `RecordGridState` and one `<ng-template mfCell="key" let-row><td>...</td></ng-template>` per column:
+A list of records is `<mf-record-grid>` (Matters, Clients, Projects, Assets, the Assets tab of a matter's linked tasks, and the Administration lists: Asset Types, Note Tags, Workflows, Steps, Custom Fields, Reports and report runs): one place for the frame, sortable headings, drag-to-resize handles with the width stored per person and grid, drag-to-reorder, the Columns chooser (show, hide, move, "Reset to Default", "Reset Width"), the loading, empty and error body and the optional selection and row-action columns. A page gives it a `RecordGridState` and one `<ng-template mfCell="key" let-row><td>...</td></ng-template>` per column:
 
 ```ts
 protected readonly grid = new RecordGridState('clients', this.gridDefs);   // gridDefs: RecordGridColumn[] (key, label, sort, num, width, minWidth, locked, defaultHidden, pinned)
@@ -53,7 +53,11 @@ protected readonly grid = new RecordGridState('clients', this.gridDefs);   // gr
 </mf-record-grid>
 ```
 
-The grid id (`'matters'`, `'clients'`) is the storage key: `mf.grid.v1.<id>.<userId>` (order and visibility) and `mf.col-widths.v1.<id>.<userId>` (widths). `exclude` (third constructor argument) drops columns that a permission or the window hides. The heading cell carries the width rules (`width`, `minWidth`), so the columns do not move between loading, empty, error and rows; the cell templates belong to the page (the grid styles are not encapsulated, so `.pg-table td` rules reach them). **Guard:** `record-grid-guard.spec.ts` fails on a hand-built `<table class="pg-table">` outside its allowed list (the Administration lists, Assets, Projects and the record tabs until they migrate).
+The grid id (`'matters'`, `'clients'`) is the storage key: `mf.grid.v1.<id>.<userId>` (order and visibility) and `mf.col-widths.v1.<id>.<userId>` (widths). `exclude` (third constructor argument) drops columns that a permission or the window hides. The heading cell carries the width rules (`width`, `minWidth`), so the columns do not move between loading, empty, error and rows; the cell templates belong to the page (the grid styles are not encapsulated, so `.pg-table td` rules reach them). **Guard:** `record-grid-guard.spec.ts` fails on a hand-built `<table class="pg-table">` outside its `ALLOWED` list. What is still hand-built (each with a reason in the spec): the report preview, report categories and the report matrix, the workflow versions tab, the Client Matters tab, the Matter Projects, Activities, Productions and Assets tabs, Search results and the shell of the Administration lists.
+
+### Sticky header and filter bands (#1259)
+
+The heading cells of the table stay at the top of the scroll area while the rows scroll, and the inline filter row stays directly under them; both are opaque, and the pinned first column is also fixed at the left and sits one layer above the pinned row cells (`shared/ui/grid-frame.ts`, `styles/_fixed-page.scss`). The same rule holds for the Task Queue, My Work, Dashboard > Summary and the Matter and Project Tasks grids. The page footer (pager) stays at the bottom of the frame. Spec: `grid-frame.spec.ts` and the e2e `grid-sticky-bands.spec.ts` (1366 and 1920).
 
 ### Extension points, the action column and the keyboard (#1245)
 
@@ -64,6 +68,7 @@ The grid id (`'matters'`, `'clients'`) is the storage key: `mf.grid.v1.<id>.<use
 | `[rowClass]="fn"` | Extra CSS classes of a row (inactive, selected). |
 | `[rowClickable]` and `(rowClick)` | A click on the row (not on a link, button, field or menu inside it) and Enter or Space on the focused row emit the row. A row with its own link is opened through the link, so `rowClick` does not fire for it. |
 | `[actions]` | The "..." column, always 48 px (`--mf-col-actions-w`); a `data-no-resize` column ignores stored widths. |
+| `[tableId]`, `[emptyParts]`, `[filters]` | The `id` of the `<table>` (the "Skip to table" target), the empty sentence with a link in it, and the page's `ListFilters` (the empty body then says what was searched). A row key (`[rowKey]`) is the record id, never a name (D-44m); the row carries it as `data-record-id`. All options are listed on the [Shared Components Catalogue](Shared-Components-Catalogue.md). |
 
 Every column definition gives a `width` or `minWidth` (the tokens `--mf-col-*-w`, counts `--mf-col-count-w`), except the one spring column. Keyboard: one Tab stop per heading; the resize handle is not a Tab stop. With a heading focused, Shift + Left or Right resizes by 16 px (Ctrl + Shift: 64 px) and Shift + Home sets the minimum.
 
@@ -82,4 +87,4 @@ Every column definition gives a `width` or `minWidth` (the tokens `--mf-col-*-w`
 - [UI Standard](UI-Standard.md)
 - [Testing the Frontend](Testing-the-Frontend.md)
 
-Last verified against commit 2e446f8.
+Last verified against commit a8142a1.

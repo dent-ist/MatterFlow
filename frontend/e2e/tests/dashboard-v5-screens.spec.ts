@@ -45,10 +45,7 @@ test.describe('dashboard v5 screenshots', () => {
 
     const tech = await seed.user(['Data Technician'], 'v5tech');
     const techPage = await asUser(tech.username);
-    for (const [w, h] of [
-      [1366, 768],
-      [375, 812],
-    ]) {
+    for (const [w, h] of [[1366, 768]]) {
       await techPage.setViewportSize({ width: w, height: h });
       await techPage.goto('/dashboard');
       await expect(techPage.locator('[data-panel="unassigned"] li').first()).toBeVisible();

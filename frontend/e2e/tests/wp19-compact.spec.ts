@@ -372,7 +372,7 @@ test.describe('Fixed 36 px Compact rows (#211)', () => {
     expect(queue1920, 'Task Queue rows visible at 1920').toBeGreaterThanOrEqual(21);
   });
 
-  test('axe: Compact grids have no violations at 1366, 1920, 768 and 375', async ({
+  test('axe: Compact grids have no violations at 1366 and 1920', async ({
     seed,
     admin,
     asUser,
@@ -385,8 +385,6 @@ test.describe('Fixed 36 px Compact rows (#211)', () => {
     for (const [width, height] of [
       [1366, 768],
       [1920, 1080],
-      [768, 1024],
-      [375, 812],
     ]) {
       await page.setViewportSize({ width, height });
       await new MyWorkPage(page).open();

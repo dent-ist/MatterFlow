@@ -64,10 +64,6 @@ test.describe('Assets list contract (WP-AS3)', () => {
       'descending',
     );
 
-    // LC-09: it stays at 768 px (the frame scrolls sideways).
-    await page.setViewportSize({ width: 768, height: 1024 });
-    await expect(page.getByRole('columnheader', { name: 'Linked Tasks' })).toHaveCount(1);
-
     const viewer = await personas.create({ label: 'assetonly', permissions: ['Asset.View'] });
     const plain = await asUser(viewer.username);
     await plain.setViewportSize({ width: 1366, height: 768 });
@@ -77,13 +73,13 @@ test.describe('Assets list contract (WP-AS3)', () => {
     await expect(plain.locator('td[data-linked]')).toHaveCount(0);
   });
 
-  test('chrome: the filter row is open on arrival from 640 px, Filters and Clear sit in the page header, below 640 px the sheet opens (#499)', async ({
+  test('chrome: the filter row is open on arrival, Filters and Clear sit in the page header (#499)', async ({
     page,
     seed,
   }) => {
     const token = uid();
     await rows(seed, token, 1);
-    for (const width of [1366, 768, 640]) {
+    for (const width of [1366, 1920]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(`/assets?name=${token}`);
       await expect(page.locator('#asset-filter-row')).toBeVisible();
@@ -95,14 +91,6 @@ test.describe('Assets list contract (WP-AS3)', () => {
       await expect(page.getByRole('button', { name: 'Clear Filters' }).first()).toBeVisible();
       await noHorizontalScroll(page);
     }
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(`/assets?name=${token}`);
-    await expect(page.locator('#asset-filter-row')).toHaveCount(0);
-    await page.getByRole('button', { name: /^Filters/ }).click();
-    await expect(page.getByRole('dialog')).toBeVisible();
-    await expect(page.getByRole('dialog').getByRole('button', { name: /^Sort by/ })).toBeVisible();
-    expect(await axeViolations(page), 'sheet open at 375').toEqual([]);
-    await shot(page, 'as3-filter-sheet');
   });
 
   test('states: the held request shows a skeleton of the real columns, a 500 shows the reference and Retry, an empty filter offers Clear filters (#500)', async ({
@@ -166,46 +154,6 @@ test.describe('Assets list contract (WP-AS3)', () => {
     await expect(header).toHaveAttribute('aria-sort', 'descending');
   });
 
-  test('phone: one card per asset instead of the table, no sideways scroll; 768 keeps every column and the grid frame scrolls sideways (LC-09)', async ({
-    page,
-    seed,
-  }) => {
-    const token = uid();
-    const { busy, idle } = await rows(seed, token, 2);
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(`/assets?name=${token}`);
-    const cards = page.locator('li.rc');
-    await expect(cards).toHaveCount(2);
-    await expect(page.locator('table')).toHaveCount(0);
-    await expect(cards.filter({ hasText: `Busy ${token}` })).toContainText('2 open tasks');
-    await expect(cards.filter({ hasText: `Idle ${token}` })).toContainText('0 open tasks');
-    for (let i = 0; i < 2; i++) {
-      const box = (await cards.nth(i).boundingBox())!;
-      expect(box.height).toBeGreaterThanOrEqual(44);
-    }
-    await expect(cards.first().locator('a')).toHaveAttribute('href', /\/assets\/\d+$/);
-    await noHorizontalScroll(page);
-    await shot(page, 'as3-cards');
-    await cards
-      .filter({ hasText: `Busy ${token}` })
-      .locator('a')
-      .click();
-    await expect(page).toHaveURL(new RegExp(`/assets/${busy.assetId}$`));
-    await page.goBack();
-    await expect(cards.filter({ hasText: `Busy ${token}` }).locator('a')).toBeFocused();
-    void idle;
-
-    await page.setViewportSize({ width: 768, height: 1024 });
-    await page.goto(`/assets?name=${token}`);
-    await expect(page.locator('tbody tr[data-record-id]')).toHaveCount(2);
-    const wrap = page.locator('mf-grid-frame .mf-scroll').first();
-    // LC-09: no column is dropped by width; the frame scrolls sideways and the page does not.
-    expect(await wrap.evaluate((e) => e.scrollWidth - e.clientWidth)).toBeGreaterThan(0);
-    await noHorizontalScroll(page);
-    await expect(page.getByRole('columnheader', { name: 'External Reference' })).toBeVisible();
-    await shot(page, 'as3-768');
-  });
-
   test('keyboard: Skip to table is the first stop and lands on the first name; a row has one Tab stop (two with Matter.View, one more with the select box for bulk disposition) (#503)', async ({
     page,
     seed,
@@ -247,7 +195,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
     expect(plain.url()).toBe(url);
   });
 
-  test('axe finds nothing and nothing scrolls sideways at four sizes, with the filter row open and a long name', async ({
+  test('axe finds nothing and nothing scrolls sideways at both desktop sizes, with the filter row open and a long name', async ({
     page,
     seed,
   }) => {
@@ -256,16 +204,14 @@ test.describe('Assets list contract (WP-AS3)', () => {
     await seed.asset(world.matter, `${token} ${'long name '.repeat(30)}`.slice(0, 300));
     await rows(seed, token, 2);
     await page.goto(`/assets?name=${token}`);
-    await atEverySize(page, 'as3-list', async (size) => {
-      if (size.width >= 640)
-        await expect(page.locator('tbody tr[data-record-id]').first()).toBeVisible();
-      else await expect(page.locator('li.rc').first()).toBeVisible();
+    await atEverySize(page, 'as3-list', async () => {
+      await expect(page.locator('tbody tr[data-record-id]').first()).toBeVisible();
     });
-    for (const size of [SIZES[1], SIZES[3]]) {
+    for (const size of [SIZES[1]]) {
       await page.setViewportSize(size);
       await expect(page.locator('tbody tr[data-record-id]').first()).toBeVisible();
       await shot(page, 'as3-list');
     }
-    expect(SIZES.length).toBe(4);
+    expect(SIZES.length).toBe(2);
   });
 });

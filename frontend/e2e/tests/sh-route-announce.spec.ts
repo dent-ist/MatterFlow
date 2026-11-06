@@ -71,7 +71,7 @@ test.describe('Route announcement (#624)', () => {
     }
   });
 
-  test('axe 0 and no sideways scroll at four widths with the region filled; the region takes no space', async ({
+  test('axe 0 and no sideways scroll at both desktop sizes with the region filled; the region takes no space', async ({
     page,
   }) => {
     expect(axeAvailable(), 'set E2E_AXE_PATH to axe.min.js').toBe(true);

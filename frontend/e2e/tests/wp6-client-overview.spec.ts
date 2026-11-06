@@ -25,8 +25,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 const KEYS = ['open', 'overdue', 'dueSoon', 'asap', 'onHold'] as const;

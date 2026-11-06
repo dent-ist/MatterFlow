@@ -233,7 +233,7 @@ test.describe('Asset forms (WP-AS5)', () => {
     expect(saved.formValues).toEqual({ f1: 'A1' }); // the values the person never saw are untouched
   });
 
-  test('axe finds nothing and nothing scrolls sideways at four sizes on New and Edit', async ({
+  test('axe finds nothing and nothing scrolls sideways at both desktop sizes on New and Edit', async ({
     page,
     seed,
     admin,
@@ -255,13 +255,12 @@ test.describe('Asset forms (WP-AS5)', () => {
       await page.getByRole('button', { name: 'Create Asset' }).click(); // the summary and inline errors are on screen
       await expect(page.locator('[data-summary]')).toBeVisible();
       expect(await axeViolations(page), `new with errors at ${size.width}`).toEqual([]);
-      if (size.width === 375) await shot(page, 'as5-new-asset-errors');
 
       await page.goto(`/assets/${asset.assetId}/edit`);
       await expect(page.locator('[data-type-fields]')).toBeVisible();
       expect(await axeViolations(page), `edit at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
-      if (size.width === 375 || size.width === 1920) await shot(page, 'as5-edit-asset');
+      if (size.width === 1920) await shot(page, 'as5-edit-asset');
     }
   });
 });

@@ -1,6 +1,6 @@
 import { expect, test } from '../support/fixtures';
 import { failApi, goOffline } from '../support/personas';
-import { atEverySize, noHorizontalScroll, shot, SIZES } from '../support/screens';
+import { atEverySize, shot } from '../support/screens';
 import { toasts } from '../support/toasts';
 
 /**
@@ -59,15 +59,13 @@ test.describe('Sign-in banner (#612)', () => {
     await expect(toasts(page)).toHaveCount(0);
   });
 
-  test('axe is clean with the banner shown and nothing scrolls sideways at four sizes', async ({
+  test('axe is clean with the banner shown and nothing scrolls sideways at both desktop sizes', async ({
     page,
   }) => {
     await failApi(page, LISTS, 401, { method: 'GET' });
     await page.goto('/clients');
     await expect(page.locator('[data-signin-banner]')).toBeVisible();
     await atEverySize(page, 'signin-banner-axe');
-    await page.setViewportSize(SIZES[0]);
-    await noHorizontalScroll(page);
   });
 
   test('every kind of person gets the banner', async ({ personas, asUser }) => {

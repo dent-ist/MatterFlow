@@ -30,8 +30,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES: [number, number][] = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ];
 
 const ZONES = ['Pacific/Kiritimati', FIRM_ZONE, 'Etc/GMT+12'];

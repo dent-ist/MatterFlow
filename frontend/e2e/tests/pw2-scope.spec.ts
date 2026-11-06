@@ -9,7 +9,7 @@ import { toasts } from '../support/toasts';
 /**
  * Pod Work, pod scope (epic #546, package WP-PW2): the context line and the pod in the document title (W2, #557), the list of pods when no
  * pod is chosen (W3, #558) and the honest "There are no pods yet." copy (W3, #559). Data: the fixtures of #547. Screenshots go to
- * `E2E_SCREENSHOTS_PW` (docs/ux/pod-work-review/fixes/pw2-scope). axe runs at the four sizes and the suite fails, never skips, without axe.
+ * `E2E_SCREENSHOTS_PW` (docs/ux/pod-work-review/fixes/pw2-scope). axe runs at both desktop sizes and the suite fails, never skips, without axe.
  */
 const DOT = ' · ';
 

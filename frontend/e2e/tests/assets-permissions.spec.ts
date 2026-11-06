@@ -204,7 +204,7 @@ test.describe('Assets permission matrix (WP-AS6)', () => {
     await expect(toasts(page)).toHaveCount(0);
   });
 
-  test('the 403 page for a person without Asset.View: axe finds nothing and nothing scrolls sideways at four sizes', async ({
+  test('the 403 page for a person without Asset.View: axe finds nothing and nothing scrolls sideways at both desktop sizes', async ({
     seed,
     personas,
     asUser,

@@ -122,21 +122,5 @@ test.describe('column filters admin screenshots', () => {
     await page.goto(`/admin/audit?q=${token}-nothing`);
     await expect(page.locator('td[data-empty="filtered"]')).toBeVisible();
     await shot(page, 'admin-audit-empty-filtered');
-
-    // The sheet at phone width
-    await page.setViewportSize({ width: 375, height: 812 });
-    for (const [name, url, region] of [
-      ['admin-users', `/admin/users?status=all&account=${token}`, 'Users list'],
-      ['admin-pods', `/admin/pods?name=${token}`, 'Pods list'],
-      ['admin-steps', `/admin/steps?title=${token}`, 'Steps list'],
-      ['admin-audit', '/admin/audit', 'Audit events list'],
-    ] as const) {
-      await page.goto(url);
-      await expect(first(region)).toBeVisible();
-      await shot(page, `${name}-closed`);
-      await page.getByRole('button', { name: /^Filters/ }).click();
-      await expect(page.getByRole('dialog', { name: 'Filters' })).toBeVisible();
-      await shot(page, `${name}-sheet`);
-    }
   });
 });

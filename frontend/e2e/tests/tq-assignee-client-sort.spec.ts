@@ -14,7 +14,7 @@ async function column(page: Page, key: string): Promise<string[]> {
 }
 
 test.describe('Task Queue Assignee and Client sorts', () => {
-  test('TQ23: header clicks sort Assignee and Client, with aria-sort, URL and axe at four sizes', async ({
+  test('TQ23: header clicks sort Assignee and Client, with aria-sort, URL and axe at both desktop sizes', async ({
     seed,
     asUser,
   }) => {
@@ -85,8 +85,6 @@ test.describe('Task Queue Assignee and Client sorts', () => {
       for (const [w, h] of [
         [1366, 768],
         [1920, 1080],
-        [768, 1024],
-        [375, 812],
       ]) {
         await page.setViewportSize({ width: w, height: h });
         await expect(page.locator('[data-task]').first()).toBeVisible();

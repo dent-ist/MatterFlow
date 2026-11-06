@@ -1,4 +1,3 @@
-import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { inDays, mmWorld } from '../support/my-matters-fixtures';

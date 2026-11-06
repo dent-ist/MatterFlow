@@ -13,8 +13,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 async function shot(page: Page, name: string): Promise<void> {
@@ -38,8 +36,6 @@ async function noSidewaysScroll(page: Page): Promise<void> {
 }
 
 let projectId: number;
-/** A search text that finds one record only (a long suggestion list scrolls, which is the Search epic's to make keyboard reachable). */
-let searchText: string;
 let technician: string;
 let observer: string;
 let viewOnly: string;
@@ -49,7 +45,6 @@ let podId: number;
 test.beforeAll(async ({ seed }) => {
   const world = await seed.world();
   await seed.task(world);
-  searchText = world.client.name;
   projectId = (await seed.project(world.matter)).projectId;
   const tech = await seed.user(['Data Technician'], 'tech');
   technician = tech.username;
@@ -114,7 +109,7 @@ test.describe('Skip link target (#586)', () => {
     }
   });
 
-  test('axe best-practice is clean on the list pages and no page scrolls sideways, at four sizes', async ({
+  test('axe best-practice is clean on the list pages and no page scrolls sideways, at both desktop sizes', async ({
     page,
   }) => {
     test.setTimeout(240_000);
@@ -181,31 +176,5 @@ test.describe('Skip link target (#586)', () => {
     await expect(page.getByRole('heading', { name: /access is pending/i })).toBeVisible();
     await expect(page.locator('a.mf-skip[data-skip-list]')).toHaveCount(0);
     await axeClean(page, 'access pending');
-  });
-});
-
-test.describe('Phone search (#587)', () => {
-  test.use({ viewport: { width: 375, height: 812 } });
-
-  test('aria-controls names the search row; axe is clean closed, open and with suggestions; Esc returns focus', async ({
-    page,
-  }) => {
-    await page.goto('/my-work');
-    const button = page.getByTestId('search-button');
-    await expect(button).toHaveAttribute('aria-controls', 'mf-search-row');
-    await expect(page.locator('#mf-search-row')).toHaveCount(1);
-    await axeClean(page, 'search closed');
-    await button.click();
-    await expect(page.locator('header.mf-header--search-open')).toBeVisible();
-    await expect(page.locator('#mf-search-row input')).toBeFocused();
-    await axeClean(page, 'search open');
-    await page.locator('#mf-search-row input').fill(searchText);
-    await expect(page.locator('[data-search-panel]')).toBeVisible();
-    await axeClean(page, 'search suggestions');
-    await shot(page, 'phone-search-suggestions');
-    await page.keyboard.press('Escape');
-    await page.keyboard.press('Escape');
-    await expect(button).toBeFocused();
-    await noSidewaysScroll(page);
   });
 });

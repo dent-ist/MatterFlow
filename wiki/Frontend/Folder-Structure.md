@@ -46,7 +46,7 @@
 | `admin` | All Administration pages (subfolders: `users`, `roles`, `pods`, `task-types`, `workflows`, `steps`, `priorities`, `status-labels`, `on-hold-reasons`, `note-tags`, `asset-types`, `asset-link-roles`, `custom-fields`, `reports`, `audit`, `settings`, `holidays`, `shared`) | 108 |
 | `assets` | Assets list, record page, form, reports, disposition | 14 |
 | `clients` | Clients list, detail, form | 7 |
-| `dashboard` | Dashboard page and tabs (`summary`, `swimlane`, `users`, `calendar`, `ui` for breakdowns and trends) | 98 |
+| `dashboard` | Dashboard page and tabs (`summary`, `swimlane`, `users`, `calendar`, `ui` for breakdowns and trends) | 99 |
 | `matters` | Matters list, form, detail page with tabs, header, managers dialog, events panel | 14 |
 | `my-matters` | The Project Manager's page (`ui`, `tabs`, `panels`, `data`) | 37 |
 | `my-work` | My Work page | 2 |
@@ -74,4 +74,4 @@
 - [Shared Components Catalogue](Shared-Components-Catalogue.md)
 - [How to Add a Page](How-to-Add-a-Page.md)
 
-Last verified against commit 2e446f8.
+Last verified against commit a8142a1.

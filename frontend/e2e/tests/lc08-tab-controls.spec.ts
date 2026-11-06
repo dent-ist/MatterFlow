@@ -12,7 +12,6 @@ import { uid } from '../support/seed';
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
 const DESKTOP = { width: 1366, height: 768 };
-const PHONE = { width: 375, height: 812 };
 
 interface TabCase {
   key: string;
@@ -116,10 +115,10 @@ test.describe('Matter detail tab controls (LC-08)', () => {
     ).toHaveCount(0);
   });
 
-  test('axe finds nothing in any tab at 1366x768 and 375x812', async ({ page }) => {
+  test('axe finds nothing in any tab at 1366x768', async ({ page }) => {
     test.skip(!axeAvailable(), 'axe-core is not available');
     test.setTimeout(240_000);
-    for (const size of [DESKTOP, PHONE]) {
+    for (const size of [DESKTOP]) {
       await page.setViewportSize(size);
       for (const t of TABS) {
         await page.goto(`/matters/${matterId}?tab=${t.key}`);
@@ -136,7 +135,6 @@ test.describe('Matter detail tab controls (LC-08)', () => {
           doc,
           `${t.key} at ${size.width}: the page does not scroll sideways`,
         ).toBeLessThanOrEqual(0);
-        if (size === PHONE) await shot(page, `tab-${t.key}`);
       }
     }
   });

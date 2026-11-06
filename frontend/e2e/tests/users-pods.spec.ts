@@ -343,10 +343,7 @@ test.describe('Pods column of the Users grid', () => {
 test.describe('Pods column accessibility and layout', () => {
   test.skip(!axeAvailable(), 'axe-core is not installed (npm ci) and E2E_AXE_PATH is not set');
 
-  for (const size of [
-    { name: '1366x768', width: 1366, height: 768 },
-    { name: '375', width: 375, height: 800 },
-  ]) {
+  for (const size of [{ name: '1366x768', width: 1366, height: 768 }]) {
     test(`no axe violations on the Users grid with the popover open, and on the Pods tab (${size.name})`, async ({
       page,
       seed,

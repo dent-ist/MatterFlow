@@ -244,7 +244,7 @@ test.describe('Fixed 44 px rows (#210)', () => {
     expect(mine, 'My Work rows visible').toBeGreaterThanOrEqual(7);
   });
 
-  test('axe: the grid with every kind of row has no violations at 1366, 1920, 768 and 640', async ({
+  test('axe: the grid with every kind of row has no violations at 1366 and 1920', async ({
     seed,
     admin,
     asUser,
@@ -256,8 +256,6 @@ test.describe('Fixed 44 px rows (#210)', () => {
     for (const [width, height] of [
       [1366, 768],
       [1920, 1080],
-      [768, 1024],
-      [640, 900],
     ]) {
       await page.setViewportSize({ width, height });
       await new MyWorkPage(page).open();

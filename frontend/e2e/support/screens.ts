@@ -4,12 +4,10 @@ import { Page, expect } from '@playwright/test';
 import { axeAvailable, axeViolations } from './axe';
 
 /**
- * Screen checks the shell, system-page and header specs share (#596): the four sizes every UX acceptance names, screenshots into
+ * Screen checks the shell, system-page and header specs share (#596): the two desktop sizes every UX acceptance names (D-82: desktop only), screenshots into
  * `E2E_SCREENSHOTS` (a `docs/ux/**\/fixes/<package>` folder; unset, no pictures), "the page does not scroll sideways" and "axe finds nothing".
  */
 export const SIZES = [
-  { width: 375, height: 812 },
-  { width: 768, height: 1024 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
 ] as const;
@@ -35,8 +33,8 @@ export async function noHorizontalScroll(page: Page): Promise<void> {
 }
 
 /**
- * Runs `check` at each of the four sizes after resizing: axe (when available) finds nothing, no sideways scroll, and a screenshot at
- * 1366 and 375. `settle` runs after each resize (wait for the layout you assert on).
+ * Runs `check` at each of the two desktop sizes after resizing: axe (when available) finds nothing, no sideways scroll, and a screenshot at
+ * 1366. `settle` runs after each resize (wait for the layout you assert on).
  */
 export async function atEverySize(
   page: Page,
@@ -48,6 +46,6 @@ export async function atEverySize(
     if (settle) await settle(size);
     if (axeAvailable()) expect(await axeViolations(page), `${name} at ${size.width}`).toEqual([]);
     await noHorizontalScroll(page);
-    if (size.width === 1366 || size.width === 375) await shot(page, name);
+    if (size.width === 1366) await shot(page, name);
   }
 }

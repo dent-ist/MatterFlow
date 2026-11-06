@@ -102,26 +102,4 @@ test.describe('Title cell (#196)', () => {
     await shot(page, 'task-queue-title-only-1366x768');
     await axeClean(page, 'Task Queue 1366');
   });
-
-  test('tablet and phone widths: no subline, a 24 px link target, axe clean', async ({
-    seed,
-    asUser,
-  }) => {
-    const { me, long } = await worker(seed, 'wp2-narrow');
-    const page = await asUser(me.username);
-    for (const [width, height] of [
-      [768, 1024],
-      [375, 812],
-    ]) {
-      await page.setViewportSize({ width, height });
-      await new MyWorkPage(page).open();
-      const row = page.locator(`[data-task="${long.taskNumber}"]`);
-      await expect(row).toBeVisible();
-      await expect(page.locator(SUB)).toHaveCount(0);
-      const box = (await row.locator('a.wt-title').boundingBox())!;
-      expect(box.height, `a 24 px target at ${width}`).toBeGreaterThanOrEqual(24);
-      await shot(page, `my-work-title-only-${width}x${height}`);
-      await axeClean(page, `My Work ${width}`);
-    }
-  });
 });

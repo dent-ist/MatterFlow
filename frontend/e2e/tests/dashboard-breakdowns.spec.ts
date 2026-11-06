@@ -183,14 +183,12 @@ test.describe('Dashboard Breakdowns', () => {
     await expect(priority.locator('tbody .marker')).not.toHaveCount(0);
   });
 
-  test('axe is clean at 1366, 1920, 768 and 375 (bars, pie and table views)', async ({ page }) => {
+  test('axe is clean at 1366 and 1920 (bars, pie and table views)', async ({ page }) => {
     test.skip(!axeAvailable(), 'axe-core not installed (set E2E_AXE_PATH to axe.min.js)');
     test.setTimeout(240_000);
     for (const [width, height] of [
       [1366, 768],
       [1920, 1080],
-      [768, 1024],
-      [375, 812],
     ]) {
       await page.setViewportSize({ width, height });
       const section = await openBreakdowns(page);
@@ -317,7 +315,6 @@ test.describe('Dashboard Breakdowns', () => {
     for (const [width, height] of [
       [1366, 768],
       [1920, 1080],
-      [375, 812],
     ]) {
       await page.setViewportSize({ width, height });
       const section = await openBreakdowns(page);
@@ -458,8 +455,6 @@ test.describe('Dashboard Breakdowns', () => {
     for (const [width, height] of [
       [1366, 900],
       [1920, 1080],
-      [768, 1024],
-      [375, 812],
     ]) {
       await page.setViewportSize({ width, height });
       const section = await openBreakdowns(page);

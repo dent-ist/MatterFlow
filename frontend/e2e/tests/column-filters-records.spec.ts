@@ -19,7 +19,6 @@ const search = (page: Page) =>
 const select = (page: Page, column: string) => filterDropdown(page, column);
 const grid = (page: Page, name: string) =>
   page.getByRole('region', { name: `${name}, scrollable` });
-const sheet = (page: Page) => page.getByRole('dialog', { name: 'Filters' });
 
 test.describe('Column filters on the record lists', () => {
   test.describe('Clients', () => {
@@ -104,35 +103,6 @@ test.describe('Column filters on the record lists', () => {
       await page.getByRole('button', { name: 'Remove filter Status: All' }).click();
       await expect(page).not.toHaveURL(/status=/);
       await expect(grid(page, 'Clients list').locator('td[data-empty="filtered"]')).toBeVisible();
-    });
-
-    test('below 768 px the Filters button opens the sheet with the same controls', async ({
-      page,
-      seed,
-    }) => {
-      await page.setViewportSize({ width: 375, height: 812 });
-      const token = uid();
-      await seed.client({ name: `Phone ${token}` });
-      await page.goto('/clients');
-      // Below 640 px the Clients list is cards (WP12), not a table.
-      await expect(page.locator('li[data-record-card]').first()).toBeVisible();
-      await expect(page.locator('table.pg-table')).toHaveCount(0);
-      await toggle(page).click();
-      await expect(sheet(page)).toBeVisible();
-      for (const column of ['Client Number', 'Status']) {
-        await expect(sheet(page).getByLabel(`Filter by ${column}`)).toBeVisible();
-      }
-      // Search stays in the toolbar on a phone; the sheet has no Name field (LC-01).
-      await expect(sheet(page).getByLabel('Filter by Name')).toHaveCount(0);
-      await expect(search(page)).toBeVisible();
-      await search(page).fill(`phone ${token}`);
-      await expect(page).toHaveURL(/name=phone/);
-      await sheet(page).getByRole('button', { name: 'Show 1 result' }).click();
-      await expect(search(page)).toHaveValue(`phone ${token}`);
-      const overflow = await page.evaluate(
-        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      );
-      expect(overflow).toBeLessThanOrEqual(0);
     });
   });
 
@@ -437,14 +407,6 @@ test.describe('Column filters on the record lists', () => {
       await name.press('Enter');
       await expect(grid(page, region).locator('td[data-empty="filtered"]')).toBeVisible();
       expect(await axeViolations(page), `${url} empty`).toEqual([]);
-    }
-
-    await page.setViewportSize({ width: 375, height: 812 });
-    for (const url of ['/clients', '/matters', '/projects']) {
-      await page.goto(url);
-      await toggle(page).click();
-      await expect(sheet(page)).toBeVisible();
-      expect(await axeViolations(page), `${url} sheet`).toEqual([]);
     }
   });
 });

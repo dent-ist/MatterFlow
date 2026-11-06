@@ -154,7 +154,7 @@ test.describe('The 403 page keeps the address (#598)', () => {
     await expect(page).toHaveURL(/\/access-pending$/);
   });
 
-  test('axe is clean and nothing scrolls sideways at four sizes (long path included)', async ({
+  test('axe is clean and nothing scrolls sideways at both desktop sizes (long path included)', async ({
     personas,
     asUser,
   }) => {

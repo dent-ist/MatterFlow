@@ -14,8 +14,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
-  { width: 768, height: 1024 },
-  { width: 375, height: 812 },
 ] as const;
 
 const TABS = [
@@ -79,17 +77,14 @@ test.describe('one short sentence per tab (#363)', () => {
         expect(box.lines, `${tab.key} at ${size.width}`).toBe(1);
         await expect(description(page)).toHaveAttribute('title', tab.text);
       }
-      await page.setViewportSize(SIZES[3]);
-      const { lines } = await measure(page);
-      expect(lines, `${tab.key} at 375`).toBeLessThanOrEqual(2);
       await expect(page).toHaveTitle(/Task Types|Workflows|Workflow Steps/);
     });
   }
 });
 
-test.describe('the filter row is open from 640 px and the Filters button sits in the header (#365)', () => {
+test.describe('the filter row is open and the Filters button sits in the header (#365)', () => {
   for (const tab of TABS) {
-    test(`${tab.key}: open at 768, 1366 and 1920, closed at 375, button in the header, no extra toolbar row`, async ({
+    test(`${tab.key}: open at 1366 and 1920, button in the header, no extra toolbar row`, async ({
       page,
     }) => {
       for (const size of SIZES) {
@@ -97,9 +92,7 @@ test.describe('the filter row is open from 640 px and the Filters button sits in
         await page.evaluate(() => localStorage.clear()).catch(() => undefined);
         await page.goto(tab.url);
         await expect(page.locator('tbody, mf-record-card-list').first()).toBeVisible();
-        const open = size.width >= 640;
-        if (open) await expect(page.locator(tab.row)).toBeVisible();
-        else await expect(page.locator(tab.row)).toHaveCount(0);
+        await expect(page.locator(tab.row)).toBeVisible();
         // The button is one of the page header's actions, not a row of its own above the grid.
         const header = page.locator('mf-page-header');
         await expect(header.locator('[data-filters-toggle]')).toBeVisible();
@@ -108,7 +101,7 @@ test.describe('the filter row is open from 640 px and the Filters button sits in
         if ((await toolbar.count()) > 0) {
           await expect(toolbar).toHaveText(/^\s*Other filters\s*$/);
         }
-        if (open) await expect(toggle(page)).toHaveAttribute('aria-expanded', 'true');
+        await expect(toggle(page)).toHaveAttribute('aria-expanded', 'true');
         await noSideScroll(page, `${tab.key} at ${size.width}`);
         if (axeAvailable()) {
           expect(await axeViolations(page), `${tab.key} at ${size.width}`).toEqual([]);
@@ -142,18 +135,6 @@ test.describe('the filter row is open from 640 px and the Filters button sits in
       await expect(page.locator(tab.row)).toBeVisible();
     });
   }
-
-  test('on a phone the Filters button opens the sheet and its filters work', async ({ page }) => {
-    await page.setViewportSize(SIZES[3]);
-    await page.goto('/admin/task-types');
-    await toggle(page).click();
-    await expect(page.getByRole('dialog')).toBeVisible();
-    if (axeAvailable()) expect(await axeViolations(page)).toEqual([]);
-    await shot(page, 'p3-sheet-task-types');
-    await page.keyboard.press('Escape');
-    await expect(page.getByRole('dialog')).toHaveCount(0);
-    await expect(toggle(page)).toBeFocused();
-  });
 
   test('permissions: Workflow.Manage only gets the button on Workflows; TaskType.Manage only on Task Types; Task.View only gets the 403', async ({
     seed,

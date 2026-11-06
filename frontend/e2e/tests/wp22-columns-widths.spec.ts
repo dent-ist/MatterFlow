@@ -1,4 +1,3 @@
-import { labelledDropdown } from '../support/dropdown';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Locator, Page } from '@playwright/test';
@@ -258,10 +257,7 @@ test.describe('Columns panel groups (#230)', () => {
   });
 });
 
-for (const size of [
-  { width: 1366, height: 768 },
-  { width: 768, height: 1024 },
-]) {
+for (const size of [{ width: 1366, height: 768 }]) {
   test(`axe: Columns panel with Column widths open at ${size.width}x${size.height}`, async ({
     seed,
     asUser,
@@ -278,22 +274,3 @@ for (const size of [
     await shot(page, `panel-${size.width}x${size.height}`);
   });
 }
-
-test('375 px: the grid is cards, so there is no Columns button (and no Column widths); the Filters sheet starts with Sort by; axe is clean', async ({
-  seed,
-  asUser,
-}) => {
-  const tag = uid();
-  await seedTasks(seed, tag);
-  const page = await asUser('ke\\kekim');
-  await page.setViewportSize({ width: 375, height: 812 });
-  await new TaskQueuePage(page).open(`?q=${encodeURIComponent(tag)}`);
-  await expect(page.locator('li[data-task]').first()).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Columns', exact: true })).toHaveCount(0);
-  await expect(page.locator('[data-widths-set]')).toHaveCount(0);
-  await page.getByRole('button', { name: /^Filters/ }).click();
-  await expect(
-    labelledDropdown(page.getByRole('dialog', { name: 'Filters' }), 'Sort By'),
-  ).toBeVisible();
-  await axeClean(page, 'filters sheet 375');
-});

@@ -234,7 +234,7 @@ test.describe('Asset record page (WP-AS2)', () => {
       formValues: { workspace: 'WS-8841', notes: 'check later' },
     });
 
-    // Admin: both sections, the values, the matter link; axe and no sideways scroll at four sizes.
+    // Admin: both sections, the values, the matter link; axe and no sideways scroll at both desktop sizes.
     await page.goto(`/assets/${asset.assetId}`);
     await expect(page.locator('[data-section="asset"]')).toContainText('First batch');
     await expect(page.locator('[data-type-fields-title] [data-details-title]')).toHaveText(
@@ -250,15 +250,11 @@ test.describe('Asset record page (WP-AS2)', () => {
       await expect(page.locator('[data-type-fields]')).toContainText('WS-8841');
     });
 
-    // The two cards are stacked (D-44f): the type's fields card sits under the Details card at every size.
+    // The two cards are stacked (D-44f): the type's fields card sits under the Details card.
     await page.setViewportSize({ width: 1366, height: 768 });
     const a = (await page.locator('[data-section="asset"]').boundingBox())!;
     const f = (await page.locator('[data-section="fields"]').boundingBox())!;
     expect(f.y).toBeGreaterThan(a.y + a.height - 2);
-    await page.setViewportSize({ width: 768, height: 1024 });
-    const a2 = (await page.locator('[data-section="asset"]').boundingBox())!;
-    const f2 = (await page.locator('[data-section="fields"]').boundingBox())!;
-    expect(f2.y).toBeGreaterThan(a2.y + a2.height - 2);
 
     // Asset.View only: no request to the schema endpoint, no console error, one muted sentence, the matter number as text.
     const viewer = await personas.create({ label: 'assetview', permissions: ['Asset.View'] });
@@ -338,7 +334,7 @@ test.describe('Asset record page (WP-AS2)', () => {
     await expect(page.getByRole('link', { name, exact: true })).toBeFocused();
   });
 
-  test('axe finds nothing and nothing scrolls sideways at four sizes, also with the overflow menu and the dialog open', async ({
+  test('axe finds nothing and nothing scrolls sideways at both desktop sizes, also with the overflow menu and the dialog open', async ({
     page,
     seed,
   }) => {
@@ -358,7 +354,7 @@ test.describe('Asset record page (WP-AS2)', () => {
       ).toHaveCount(3);
       expect(await axeViolations(page), `tasks at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
-      if (size.width === 1366 || size.width === 375) await shot(page, 'as2-record-tasks');
+      if (size.width === 1366) await shot(page, 'as2-record-tasks');
 
       await page.getByRole('tab', { name: 'Details' }).click();
       await page.getByRole('button', { name: 'More actions' }).click();
@@ -368,7 +364,7 @@ test.describe('Asset record page (WP-AS2)', () => {
       await expect(page.getByRole('dialog')).toBeVisible();
       expect(await axeViolations(page), `dialog at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
-      if (size.width === 1366 || size.width === 375) await shot(page, 'as2-record-dialog');
+      if (size.width === 1366) await shot(page, 'as2-record-dialog');
       await page.keyboard.press('Escape');
       await expect(page.getByRole('dialog')).toHaveCount(0);
       await expect(page.getByRole('button', { name: 'More actions' })).toBeFocused();

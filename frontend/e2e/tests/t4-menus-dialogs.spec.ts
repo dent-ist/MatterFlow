@@ -16,8 +16,6 @@ import { TaskApi } from '../support/tasks';
 const SIZES = [
   { name: '1366x768', width: 1366, height: 768 },
   { name: '1920x1080', width: 1920, height: 1080 },
-  { name: '768x1024', width: 768, height: 1024 },
-  { name: '375x812', width: 375, height: 812 },
 ] as const;
 
 async function shot(page: Page, name: string): Promise<void> {
@@ -548,8 +546,8 @@ test.describe('T4: assignee menu (M4, #306)', () => {
     await expect(page.locator('[data-task-header] [data-inline-trigger]')).toHaveCount(0);
     await expect(detail.completeTaskButton).toHaveCount(0);
     await expect(page.locator('[data-lead]')).toHaveCount(0);
-    await page.setViewportSize({ width: 375, height: 812 });
-    await checkPage(page, 'Task.View only 375');
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await checkPage(page, 'Task.View only 1366');
 
     const denied = await asUser(nobody.username);
     await denied.goto(`/tasks/${task.taskId}`);

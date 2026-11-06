@@ -171,29 +171,5 @@ test.describe('column filters work lists screenshots', () => {
     await page.goto(`/admin/users?status=all&availability=OUT_OF_OFFICE&name=shot-away-${token}`);
     await expect(page.locator('tbody tr').first()).toBeVisible();
     await shot(page, 'admin-users-availability-select');
-
-    // 375x812
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/tasks');
-    await expect(page.getByRole('heading', { name: 'Task Queue', level: 1 })).toBeVisible();
-    await shot(page, 'work-queue-closed');
-    await toggle.click();
-    await expect(page.getByRole('dialog', { name: 'Filters' })).toBeVisible();
-    await shot(page, 'work-queue-sheet');
-    await page
-      .getByRole('dialog', { name: 'Filters' })
-      .getByRole('searchbox', { name: 'Search tasks', exact: true })
-      .fill(token);
-    await expect(page).toHaveURL(/q=/);
-    await shot(page, 'work-queue-sheet-filtered');
-    await page.getByRole('button', { name: /^Show \d+ result/ }).click();
-    await shot(page, 'work-queue-chips');
-
-    await mine.setViewportSize({ width: 375, height: 812 });
-    await mine.goto('/my-work');
-    await expect(mine.getByRole('heading', { name: 'My Work', level: 1 })).toBeVisible();
-    await shot(mine, 'my-work-closed');
-    await mine.getByRole('button', { name: /^Filters/ }).click();
-    await shot(mine, 'my-work-sheet');
   });
 });

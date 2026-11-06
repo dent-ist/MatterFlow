@@ -190,8 +190,6 @@ test.describe('Fixed layout (#200)', () => {
     for (const [width, height] of [
       [1366, 768],
       [1920, 1080],
-      [768, 1024],
-      [375, 812],
     ]) {
       await page.setViewportSize({ width, height });
       await myWork.open();

@@ -13,8 +13,6 @@ const MATTER_150 =
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 const menu = (page: Page, name: string) =>

@@ -18,8 +18,6 @@ import { TaskApi } from '../support/tasks';
 const OUT = process.env['E2E_SCREENSHOTS'];
 
 const SIZES = [
-  { width: 375, height: 812 },
-  { width: 768, height: 1024 },
   { width: 1024, height: 768 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
@@ -92,7 +90,7 @@ const tabOf = (page: Page, name: Pane) =>
 const selected = (page: Page) => tabs(page).getByRole('tab', { selected: true });
 
 test.describe('Task tabs: structure, accessibility and every width', () => {
-  test('three tabs in the order Workflow, Assets, Comments; the panel is named by the selected tab; axe 0 and no sideways scroll on each pane at 375, 768, 1024, 1366 and 1920', async ({
+  test('three tabs in the order Workflow, Assets, Comments; the panel is named by the selected tab; axe 0 and no sideways scroll on each pane at 1024, 1366 and 1920', async ({
     seed,
     admin,
     page,
@@ -149,33 +147,9 @@ test.describe('Task tabs: structure, accessibility and every width', () => {
         .evaluate((el) => Math.round(el.getBoundingClientRect().top));
     }
     console.log('Tabs: Workflow heading y (typical task)', JSON.stringify(y));
-    // The T5 / T6 targets: 380 at 375, 420 at 768, 300 at 1366.
-    expect(y['375']).toBeLessThanOrEqual(380);
-    expect(y['768']).toBeLessThanOrEqual(420);
+    // The T5 / T6 target: 300 at 1366.
     expect(y['1366']).toBeLessThanOrEqual(300);
     test.info().annotations.push({ type: 'workflow-heading-y', description: JSON.stringify(y) });
-  });
-
-  test('a 320 px window: the strip scrolls on its own (edge cue), the page does not', async ({
-    seed,
-    admin,
-    page,
-  }) => {
-    const { task } = await seeded(seed);
-    await addComments(admin, task.taskId, 112);
-    await page.setViewportSize({ width: 320, height: 700 });
-    const detail = new TaskDetailPage(page);
-    await detail.open(task.taskId);
-    await expect(tabOf(page, 'Comments')).toHaveText(/112/);
-    await noHorizontalScroll(page);
-    const strip = tabs(page);
-    const scrolls = await strip.evaluate((el) => el.scrollWidth > el.clientWidth);
-    if (scrolls) {
-      await expect(page.locator('[data-tab-cue="end"]')).toBeVisible();
-      await detail.selectTab('Comments');
-      await expect(tabOf(page, 'Comments')).toBeInViewport({ ratio: 0.99 });
-    }
-    await check(page, 'tabs-320');
   });
 });
 
@@ -309,28 +283,6 @@ test.describe('Task tabs: deep links and the address', () => {
     await detail.selectTab('Comments');
     await page.reload();
     await expect(selected(page)).toHaveText(/^\s*Comments/);
-  });
-
-  test('?tab=details opens the Details disclosure below 1100 px (and shows the page on the Workflow tab); the tab choice is not remembered', async ({
-    seed,
-    page,
-  }) => {
-    const { task } = await seeded(seed);
-    await page.setViewportSize({ width: 768, height: 1024 });
-    await page.goto(`/tasks/${task.taskId}?tab=details`);
-    await expect(page.locator('[data-detail-toggle]')).toHaveAttribute('aria-expanded', 'true');
-    await expect(selected(page)).toHaveText(/^\s*Workflow/);
-    await page.goto(`/tasks/${task.taskId}?tab=comments`);
-    await expect(selected(page)).toHaveText(/^\s*Comments/);
-    await page.goto(`/tasks/${task.taskId}`);
-    await expect(selected(page)).toHaveText(/^\s*Workflow/);
-    // Old keys of the stacked layout are ignored.
-    await page.evaluate(() => {
-      localStorage.setItem('mf.task-detail.comments.open.1', '1');
-      localStorage.setItem('mf.task-detail.assets.open.1', '1');
-    });
-    await page.reload();
-    await expect(selected(page)).toHaveText(/^\s*Workflow/);
   });
 
   test('?step= opens that step and focuses it on the Workflow tab', async ({
@@ -472,7 +424,7 @@ test.describe('Task tabs: permission variants', () => {
     expect(assetCalls).toEqual([]);
   });
 
-  test('Task.View only: the tabs and counts show, nothing to change (no composer, no Link asset), C does nothing; axe at four sizes', async ({
+  test('Task.View only: the tabs and counts show, nothing to change (no composer, no Link asset), C does nothing; axe at both desktop sizes', async ({
     seed,
     admin,
     asUser,
@@ -545,7 +497,7 @@ test.describe('Task tabs: permission variants', () => {
     await new TaskApi(admin, task.taskId).assign(tech.userId, pod.podId);
     const techPage = await asUser(tech.username);
     for (const p of [page, techPage]) {
-      await p.setViewportSize({ width: 768, height: 1024 });
+      await p.setViewportSize({ width: 1366, height: 768 });
       await new TaskDetailPage(p).open(task.taskId);
       await expect(tabs(p).getByRole('tab')).toHaveCount(3);
       await check(p, 'roles');

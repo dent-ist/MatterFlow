@@ -201,39 +201,6 @@ test.describe('the Priorities list (#605)', () => {
     await expect(page.locator('[data-announce]')).toContainText('moved to position');
   });
 
-  test('below 640 px the rows are cards with the same actions; 639 is cards, 640 is the table', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 639, height: 900 });
-    await page.goto('/admin/priorities');
-    await expect(page.locator('li.rc').first()).toBeVisible();
-    await expect(page.locator('table.mf-grid')).toHaveCount(0);
-    const all = await page.locator('li.rc').count();
-    const rowsAt1366 = await (async () => {
-      await page.setViewportSize({ width: 640, height: 900 });
-      await expect(page.locator('table.mf-grid tbody tr[data-row]').first()).toBeVisible();
-      return page.locator('table.mf-grid tbody tr[data-row]').count();
-    })();
-    expect(all).toBe(rowsAt1366);
-
-    await page.setViewportSize(SIZES[3]);
-    await expect(page.locator('li.rc').first()).toBeVisible();
-    const card = priorityRow(page, used.label);
-    await expect(card.locator('[data-card-open-tasks]')).toContainText('3 open tasks');
-    await openRowMenu(page, card.getByRole('button', { name: /^Actions for / }));
-    await expect(page.getByRole('menuitem')).toContainText([
-      'Edit Priority',
-      'Move Up',
-      'Move Down',
-      'Set as Default',
-      'Deactivate',
-    ]);
-    // The card's link opens the same dialog as the table's.
-    await page.keyboard.press('Escape');
-    await card.getByRole('link', { name: used.label }).click();
-    await expect(page.getByRole('dialog', { name: 'Edit Priority' })).toBeVisible();
-  });
-
   test('a person with Priority.Manage but not Task.View has no Open tasks column and no Delete', async ({
     asUser,
     personas,

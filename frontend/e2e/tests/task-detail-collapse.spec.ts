@@ -230,26 +230,7 @@ test.describe('Task detail: Comments and Assets panes in the tabs', () => {
     await expect(comments.getByPlaceholder('Write a comment...')).toBeVisible();
   });
 
-  test('375 px: the strip holds the three tabs, a tab shows its pane under it, no sideways scroll', async ({
-    page,
-    seed,
-    admin,
-  }) => {
-    const task = await seedBusyTask(seed, admin);
-    await page.setViewportSize({ width: 375, height: 812 });
-    const detail = new TaskDetailPage(page);
-    await detail.open(task.taskId);
-    await expect(detail.tab('Workflow')).toHaveAttribute('aria-selected', 'true');
-    await noHorizontalScroll(page);
-    const strip = await box(page, '[role="tablist"]');
-    await detail.selectTab('Assets');
-    const assets = await box(page, '[data-section="assets"]');
-    expect(assets.y).toBeGreaterThan(strip.y + strip.height - 1);
-    await expect(detail.section('Assets').locator('[data-section-heading]')).toBeAttached();
-    await noHorizontalScroll(page);
-  });
-
-  for (const width of [1366, 375]) {
+  for (const width of [1366, 1920]) {
     test(`axe finds nothing at ${width} px on every tab`, async ({ page, seed, admin }) => {
       test.skip(!axeAvailable(), 'axe-core is not available');
       const task = await seedBusyTask(seed, admin);

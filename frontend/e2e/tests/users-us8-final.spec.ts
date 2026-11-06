@@ -9,7 +9,7 @@ import { toasts } from '../support/toasts';
 
 /**
  * Final verification of the Users administration (epic #422, WP-US8, #460): the contract of the review over the people the suite has
- * created (more than a thousand on a used database, a 130-character name and long role and pod names among them) at the four sizes of the
+ * created (more than a thousand on a used database, a 130-character name and long role and pod names among them) at both desktop sizes of the
  * definition of done, and the states of the page. The behaviour of every part has its own spec (users-us1 to users-us7); this one checks that
  * the pieces hold together:
  *  - axe (WCAG 2.2 AA, target-size, best practice) finds nothing and the page does not scroll sideways on the Users, Roles and Pods tabs, with
@@ -174,14 +174,6 @@ test.describe('Users final verification', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0);
     after['Esc closes the panel'] = true;
 
-    // BUG-5: no sideways-scroll hint over a one-column table at 375.
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/admin/users?status=all');
-    await expect(page.locator('li.rc').first()).toBeVisible();
-    after['sideways-scroll hint on a phone'] =
-      (await page.getByText('Scroll sideways').count()) > 0;
-    expect(after['sideways-scroll hint on a phone']).toBe(false);
-
     if (OUT) {
       fs.mkdirSync(OUT, { recursive: true });
       const before = {
@@ -229,7 +221,7 @@ test.describe('Users final verification', () => {
     page,
   }) => {
     test.setTimeout(180_000);
-    for (const size of [SIZES[0], SIZES[3]]) {
+    for (const size of [SIZES[0]]) {
       await page.setViewportSize({ width: size.width, height: size.height });
 
       const release = await delayApi(page, /\/api\/v1\/users\?/, 3500);
@@ -291,7 +283,7 @@ test.describe('Users final verification', () => {
       permissions: ['Task.View'],
     });
     const page = await asUser(viewer.username);
-    for (const size of [SIZES[0], SIZES[3]]) {
+    for (const size of [SIZES[0]]) {
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto('/admin/users');
       await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();

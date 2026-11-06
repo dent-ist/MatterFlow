@@ -15,8 +15,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   { width: 1920, height: 1080 },
   { width: 1366, height: 768 },
-  { width: 768, height: 1024 },
-  { width: 375, height: 812 },
 ] as const;
 const KINDS: ListKind[] = ['types', 'steps'];
 
@@ -42,7 +40,7 @@ test.describe('grid-body states on the real columns (#575)', () => {
   for (const kind of KINDS) {
     const info = LISTS[kind];
 
-    test(`${kind}: a filter that finds only inactive records says "n inactive hidden" with Show all, at four widths`, async ({
+    test(`${kind}: a filter that finds only inactive records says "n inactive hidden" with Show all, at both desktop sizes`, async ({
       page,
       admin,
     }) => {
@@ -101,73 +99,6 @@ test.describe('grid-body states on the real columns (#575)', () => {
     await expect(
       page.locator('tbody tr[data-row], tbody tr[data-record-id]').first(),
     ).toBeVisible();
-  });
-});
-
-test.describe('phone cards of AdminCardSpec (#579), on Workflow Steps', () => {
-  test('375: a card is 2 to 4 lines tall with the same facts and the same menu entries as the row; 639 is cards, 640 the table', async ({
-    page,
-    admin,
-  }) => {
-    const token = uid();
-    const rows = await seedMix(admin, 'steps', token, 2, 1);
-    expect(rows).toHaveLength(3);
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(`/admin/steps?title=${token}&status=all`);
-    const cards = page.locator('li[data-record-card]');
-    await expect(cards).toHaveCount(3);
-    for (let i = 0; i < 3; i++) {
-      const box = (await cards.nth(i).boundingBox())!;
-      // 24 px lines: the name plus one to three muted lines, never a clipped or a taller card.
-      expect(box.height, `card ${i}`).toBeGreaterThanOrEqual(48);
-      expect(box.height, `card ${i}`).toBeLessThanOrEqual(4 * 24 + 16);
-      await expect(cards.nth(i).locator('[data-card-meta]')).not.toHaveCount(4);
-    }
-    const first = cards.first();
-    await expect(first.locator('a[data-card-name]')).toContainText(token);
-    // The menu has what the table row's menu has.
-    await first.locator('button[data-overflow]').click();
-    const cardEntries = await page.getByRole('menuitem').allInnerTexts();
-    await page.keyboard.press('Escape');
-    await page.setViewportSize({ width: 1366, height: 768 });
-    await expect(page.locator('li[data-record-card]')).toHaveCount(0);
-    await page
-      .locator('tbody tr[data-row], tbody tr[data-record-id]')
-      .first()
-      .locator('button[data-overflow]')
-      .click();
-    const rowEntries = await page.getByRole('menuitem').allInnerTexts();
-    await page.keyboard.press('Escape');
-    expect(cardEntries.map((t) => t.trim())).toEqual(rowEntries.map((t) => t.trim()));
-    // The boundary.
-    await page.setViewportSize({ width: 639, height: 812 });
-    await expect(page.locator('table')).toHaveCount(0);
-    await expect(cards.first()).toBeVisible();
-    await page.setViewportSize({ width: 640, height: 812 });
-    await expect(page.locator('table')).toHaveCount(1);
-    await expect(page.locator('li[data-record-card]')).toHaveCount(0);
-  });
-
-  test('keyboard only: Tab reaches the card link, then the menu; Enter opens the step; Back puts focus on the card', async ({
-    page,
-    admin,
-  }) => {
-    const token = uid();
-    const rows = await seedMix(admin, 'steps', token, 1, 0);
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(`/admin/steps?title=${token}`);
-    const link = page.locator('li[data-record-card] a[data-card-name]').first();
-    await expect(link).toBeVisible();
-    await link.focus();
-    await page.keyboard.press('Tab');
-    await expect(page.locator('li[data-record-card] button[data-overflow]').first()).toBeFocused();
-    await link.focus();
-    await page.keyboard.press('Enter');
-    await expect(page).toHaveURL(new RegExp(`/admin/steps/${rows[0].id}`));
-    await page.goBack();
-    await expect(page.locator('li[data-record-card] a[data-card-name]').first()).toBeFocused();
-    await axeClean(page, 'steps cards, 375');
-    await shot(page, 'cards-steps');
   });
 });
 

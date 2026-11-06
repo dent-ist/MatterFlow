@@ -64,7 +64,7 @@ test.describe('Toast copy rule (#617)', () => {
     expect(stored.assignedUser ?? null).toBeNull();
   });
 
-  test('the two-line Undo toast is axe clean and does not scroll the page sideways at four sizes', async ({
+  test('the two-line Undo toast is axe clean and does not scroll the page sideways at both desktop sizes', async ({
     seed,
     asUser,
   }) => {

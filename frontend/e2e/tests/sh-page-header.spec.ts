@@ -67,7 +67,7 @@ test.describe('Page-header contract (#600)', () => {
         expect(g.fontSize, `${label}: font size`).toBe(size.width < 640 ? 18 : 22);
         expect(Number(g.fontWeight), `${label}: weight`).toBeGreaterThanOrEqual(700);
         expect(g.offset, `${label}: top offset`).toBeCloseTo(12, 0);
-        if (size.width === 1366 || size.width === 375)
+        if (size.width === 1366)
           await shot(page, `header-${p.name.replace(/ /g, '-').toLowerCase()}`);
       }
       const reference = boxes['Clients'];
@@ -152,7 +152,7 @@ test.describe('Page-header contract (#600)', () => {
     }
   });
 
-  test('axe is clean on the five list pages at four sizes', async ({ page }) => {
+  test('axe is clean on the five list pages at both desktop sizes', async ({ page }) => {
     for (const p of LIST_PAGES) {
       await page.goto(p.path);
       await expect(page.getByRole('heading', { name: p.name, level: 1 })).toBeVisible();
@@ -181,13 +181,13 @@ test.describe('Page-header contract (#600)', () => {
         expect(g.offset, `${label}: top offset`).toBeCloseTo(12, 0);
         expect(Math.abs(g.left - reference.left), `${label}: left edge`).toBeLessThanOrEqual(0.5);
         await noHorizontalScroll(page);
-        if (size.width === 1366 || size.width === 375)
+        if (size.width === 1366)
           await shot(page, `header-${p.name.replace(/ /g, '-').toLowerCase()}`);
       }
     }
   });
 
-  test('Create task: the title sits where a record page title sits (breadcrumb row above it), at four sizes (#602)', async ({
+  test('Create task: the title sits where a record page title sits (breadcrumb row above it), at both desktop sizes (#602)', async ({
     page,
     seed,
   }) => {
@@ -252,7 +252,7 @@ test.describe('Page-header contract (#600)', () => {
     await expect(page.getByRole('tab').nth(1)).toHaveAttribute('aria-selected', 'true');
   });
 
-  test('Dashboard header axe at four sizes', async ({ page }) => {
+  test('Dashboard header axe at both desktop sizes', async ({ page }) => {
     await page.goto('/dashboard');
     await expect(page.getByRole('heading', { name: 'Dashboard', level: 1 })).toBeVisible();
     await atEverySize(page, 'header-axe-dashboard');
@@ -274,7 +274,7 @@ test.describe('Page-header contract (#600)', () => {
     for (const c of cases) {
       const person = await personas.named(c.who);
       const page = await asUser(person.username);
-      for (const size of [SIZES[0], SIZES[2]]) {
+      for (const size of [SIZES[0]]) {
         await page.setViewportSize(size);
         await page.goto(c.path);
         const g = await geometry(page, c.name);

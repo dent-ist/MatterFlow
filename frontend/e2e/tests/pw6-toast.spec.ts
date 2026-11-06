@@ -8,7 +8,7 @@ import { SIZES, axeClean, box, pageSideScroll, shot } from '../support/pod-work-
 /**
  * Pod Work, the Undo toast after "Assign to Me" (epic #546, #571, W8). The App shell epic's toast system already replaced the white box:
  * "Assigned to you." and one short line, the long explanation as the Undo button's tooltip, in the one toast host bottom right. This spec
- * is the verification the issue asks for, at four sizes on Pod Work: text, style and position, not covering the pager, axe 0 with the
+ * is the verification the issue asks for, at both desktop sizes on Pod Work: text, style and position, not covering the pager, axe 0 with the
  * toast visible, Undo from the keyboard restores the assignee and not the status, the polite live region and the 4-second grace of the row.
  * Screenshots go to `E2E_SCREENSHOTS_PW` (docs/ux/pod-work-review/fixes/pw6-assign).
  */

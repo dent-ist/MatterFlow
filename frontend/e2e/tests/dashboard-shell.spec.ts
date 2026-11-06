@@ -11,10 +11,7 @@ import { expect, test } from '../support/fixtures';
  * (docs/ux/dashboard-review-2/fixes/wp1); the tests run without it.
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
-const SIZES = [
-  { width: 1366, height: 768, name: '1366' },
-  { width: 375, height: 812, name: '375' },
-];
+const SIZES = [{ width: 1366, height: 768, name: '1366' }];
 const SUMMARY_API = /\/api\/v1\/dashboard(\?|$)/;
 
 async function shot(page: Page, name: string): Promise<void> {
@@ -200,11 +197,6 @@ test.describe('Dashboard shell: staleness text (P6)', () => {
     await expect(page.locator('[data-stale-age-live]')).toHaveAttribute('aria-live', 'polite');
     await page.setViewportSize({ width: 1366, height: 768 });
     await shot(page, '05-stale-age-1366');
-    await expectAxeClean(page);
-    // At 375 px the text is read, not shown; no horizontal scroll.
-    await page.setViewportSize({ width: 375, height: 812 });
-    await expect(age).not.toBeInViewport();
-    await shot(page, '05-stale-age-375');
     await expectAxeClean(page);
     // A read that works makes it disappear.
     await page.unroute(SUMMARY_API);

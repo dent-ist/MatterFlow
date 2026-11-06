@@ -7,10 +7,7 @@ import { expect, test } from '../support/fixtures';
 test('tab and button icons use the shared icon tokens, and nothing scrolls sideways', async ({
   page,
 }) => {
-  for (const [width, height] of [
-    [1366, 768],
-    [375, 812],
-  ]) {
+  for (const [width, height] of [[1366, 768]]) {
     await page.setViewportSize({ width, height });
     await page.goto('/dashboard');
     await expect(page.locator('i.tab__icon').first()).toBeVisible();

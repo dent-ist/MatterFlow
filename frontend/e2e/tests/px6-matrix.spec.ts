@@ -331,7 +331,7 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
   }) => {
     const fx = await pmFixtures(seed, personas);
     const page = await asUser(fx.pmA.username);
-    for (const size of [SIZES[2], SIZES[0]]) {
+    for (const size of [SIZES[0]]) {
       await page.setViewportSize(size);
       await page.goto('/matters?size=25');
       await expect(page.locator('[data-scope-switch]')).toBeVisible();
@@ -345,7 +345,7 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
       expect(all, 'All is reached with the arrow keys, not with Tab (issue #919)').toBe(-1);
       expectGoodStops('scoped list', { stops: result.stops, left: true }, 4);
     }
-    await page.setViewportSize(SIZES[2]);
+    await page.setViewportSize(SIZES[0]);
     await page.goto('/assets');
     await page.locator('[data-scope="all"]').focus();
     await page.keyboard.press('Enter');
@@ -365,7 +365,7 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
   }) => {
     const fx = await pmFixtures(seed, personas);
     const page = await asUser(fx.pmA.username);
-    await page.setViewportSize(SIZES[2]);
+    await page.setViewportSize(SIZES[0]);
     await page.goto('/my-matters');
     await page.waitForLoadState('networkidle');
     const desk = await tabStops(page, 'nav[aria-label="Main"]', 'nav[aria-label="Main"]');
@@ -380,14 +380,6 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
       'Assets',
       'Task Queue',
     ]);
-    await page.setViewportSize(SIZES[0]);
-    await page.goto('/my-matters');
-    await page.getByRole('button', { name: 'Menu', exact: true }).click();
-    const phone = await tabStops(page, 'nav[aria-label="Main"]', 'nav[aria-label="Main"]');
-    evidence('main-menu', '375', phone);
-    expectGoodStops('menu 375', phone, 7);
-    await page.keyboard.press('Escape');
-    await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeFocused();
   });
 
   test('My Matters tabs: the tab strip is one stop, the arrow keys move between tabs, Home and End jump, Back restores the tab', async ({
@@ -397,7 +389,7 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
   }) => {
     const fx = await pmFixtures(seed, personas);
     const page = await asUser(fx.pmA.username);
-    await page.setViewportSize(SIZES[2]);
+    await page.setViewportSize(SIZES[0]);
     await page.goto('/my-matters');
     await page.waitForLoadState('networkidle');
     // No cap that hides the end of the page: the whole Overview is walked (#820 lists the stop count in docs/qa/pm-keyboard-evidence.md).
@@ -429,7 +421,7 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
   }) => {
     const fx = await pmFixtures(seed, personas);
     const page = await asUser(fx.pmA.username);
-    await page.setViewportSize(SIZES[2]);
+    await page.setViewportSize(SIZES[0]);
     await page.goto(`/matters/${fx.m.primary.matterId}`);
     await expect(page.locator('[data-matter-overview] [data-section="health"]')).toBeVisible();
     await page.waitForLoadState('networkidle');

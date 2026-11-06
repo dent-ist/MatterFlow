@@ -15,8 +15,6 @@ import { TaskApi } from '../support/tasks';
 const SIZES = [
   { name: '1366x768', width: 1366, height: 768 },
   { name: '1920x1080', width: 1920, height: 1080 },
-  { name: '768x1024', width: 768, height: 1024 },
-  { name: '375x812', width: 375, height: 812 },
 ] as const;
 
 const FIELDS: FieldSpec[] = [
@@ -334,7 +332,7 @@ test.describe('Edit task sections (#350)', () => {
     const editRole = await seed.role(['Task.View', 'Task.Edit'], `E2E ES editor ${token}`);
     const editor = await seed.user([editRole.name], `ese-${token}`);
     const editorPage = await asUser(editor.username);
-    await editorPage.setViewportSize({ width: 375, height: 812 });
+    await editorPage.setViewportSize({ width: 1366, height: 768 });
     await new TaskDetailPage(editorPage).open(task.taskId);
     await openEdit(editorPage);
     await expect(editorPage.locator('[data-when-summary]')).toContainText('assigned to ');
@@ -343,7 +341,7 @@ test.describe('Edit task sections (#350)', () => {
     await expect(editorPage.locator('#td-assignee, #td-assignee-change')).toHaveCount(0);
     await expect(editorPage.locator('#td-priority')).toHaveCount(0);
     await expect(editorPage.locator('#td-due-date')).toBeVisible();
-    await checkPage(editorPage, 'Task.Edit without Assign 375');
+    await checkPage(editorPage, 'Task.Edit without Assign 1366');
     await cancelEdit(editorPage);
 
     // Task.View only: no Edit control, so no dialog.

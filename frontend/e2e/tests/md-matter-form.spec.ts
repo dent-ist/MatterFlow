@@ -5,13 +5,11 @@ import { uid } from '../support/seed';
 
 /**
  * One matter form for "+ New Matter" and Edit (MD-43, #1061): the same fields in the same order, the CM Number as a read-only preview, Client and Matter number locked in Edit,
- * the matter number unlocked only after a confirmation and confirmed again on Save with its result. axe at the four sizes. Screenshots to E2E_SCREENSHOTS when set.
+ * the matter number unlocked only after a confirmation and confirmed again on Save with its result. axe at both desktop sizes. Screenshots to E2E_SCREENSHOTS when set.
  */
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 const fieldLabels = async (page: Page) =>
@@ -24,7 +22,7 @@ const fieldLabels = async (page: Page) =>
   );
 
 test.describe('Matter form (MD-43)', () => {
-  test('New and Edit show the same fields; the CM Number follows the inputs and is never typed; axe is clean at four sizes', async ({
+  test('New and Edit show the same fields; the CM Number follows the inputs and is never typed; axe is clean at both desktop sizes', async ({
     page,
     seed,
   }) => {
