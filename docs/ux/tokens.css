@@ -102,7 +102,7 @@
   /* Work grid column widths in CSS px at the default zoom (the grid applies them in rem at the app's 14 px root, so text zoom scales them).
      -w default, -min and -max a user may resize to (columns panel, header menu, drag). The Title is the spring: no width, 160 px minimum,
      never stored. A unit test (column-prefs.spec.ts) keeps these equal to WORK_COLUMNS in column-prefs.ts. */
-  --mf-col-ref-w: 112px;
+  --mf-col-ref-w: 100px;
   --mf-col-ref-min: 80px;
   --mf-col-ref-max: 120px;
   --mf-col-matter-w: 142px;

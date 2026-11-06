@@ -26,13 +26,13 @@ export interface ColumnDef {
 export const WORK_COLUMNS: readonly ColumnDef[] = [
   // The standard task column order (LC-03, decision AR 5 to 7), one for every task list: Ref, Type, Title, [CM Number, Matter Name on global lists], Project,
   // Priority, Assignee, Due, Status, Progress. The registry order IS the order of every table and of the Columns menu; a page's default set only decides what is shown.
-  // 112 and not the review's 96 (measured, PM ruling): the pause marker, a four-digit number (TSK-1008) and the New dot need 109 px.
+  // 100 (#1240, designer decision after #1239): "TSK-204" in the mono font fits with 12 px side padding; the 12 px the column gives back keep the Pod Work Title at 160 px at 1366.
   {
     key: 'ref',
     label: 'Ref',
     locked: true,
     sortField: 'number',
-    width: 112,
+    width: 100,
     minWidth: 80,
     maxWidth: 120,
   },
