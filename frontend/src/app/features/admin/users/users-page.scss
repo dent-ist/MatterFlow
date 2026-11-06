@@ -8,28 +8,23 @@
   align-items: flex-start;
 }
 
+/* The list has no box of its own: the shared grid frame draws the card (D-42). The status chips and the Columns button share the row above it. */
 .mf-list {
   flex: 1;
   min-width: 0;
-  background: var(--mf-surface);
-  border: 1px solid var(--mf-border);
-  border-radius: var(--mf-radius-xl);
-  box-shadow: var(--mf-shadow-card);
+}
 
-  /* An empty state draws its own dashed box: no second border around it (UXR2-18). */
-  &:has([data-empty]) {
-    background: none;
-    border-color: transparent;
-  }
+.us-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mf-s2);
+  margin-bottom: var(--mf-s2);
 }
 
 .mf-mono {
   font-family: var(--mf-font-mono);
-}
-
-/* The selected row (the open panel), also under the sticky action cell. */
-.mf-grid tr.mf-selected td {
-  background: var(--mf-selected-bg);
 }
 
 /* The name is the row's one control: a button that looks like the link of the other lists (D-13: link colour, regular weight, underlined) (the drawer opens in place and is in the address). */
@@ -64,6 +59,24 @@
 /* The Pods cell is one line (the primary pod and "+n", see mf-user-pods-cell [oneLine]): the row stays 44 px; #435 refines the popover. */
 .us-pods {
   max-width: 15rem;
+}
+
+.us-name {
+  max-width: 0;
+}
+
+/* The account under the name: 13 px mono muted (#1197). */
+.us-account {
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+.us-roles {
+  max-width: 9rem;
+}
+
+.us-muted-text {
+  color: var(--mf-text-muted);
 }
 
 .us-muted {
