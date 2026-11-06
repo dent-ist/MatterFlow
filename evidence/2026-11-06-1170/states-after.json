@@ -1,0 +1,56 @@
+{
+ "task-queue-error": {
+  "count": "Total: not available-",
+  "errorBlock": true,
+  "errText": "Couldn't load tasks.\n\nReference:\nT-1\nCopy\nRetry",
+  "toasts": 1,
+  "toastText": [],
+  "requests": 1
+ },
+ "task-queue-empty": {
+  "text": "All",
+  "kind": "",
+  "count": "Total: 0"
+ },
+ "task-queue-loading": {
+  "count": "Total: not available-",
+  "skeletonRows": 8,
+  "ths": 8
+ },
+ "my-work-error": {
+  "count": "Total: not available-",
+  "errorBlock": true,
+  "errText": "Couldn't load tasks.\n\nReference:\nT-1\nCopy\nRetry",
+  "toasts": 1,
+  "toastText": [],
+  "requests": 1
+ },
+ "my-work-empty": {
+  "text": "All",
+  "kind": "",
+  "count": "Total: 0"
+ },
+ "my-work-loading": {
+  "count": "Total: not available-",
+  "skeletonRows": 8,
+  "ths": 7
+ },
+ "pod-work-error": {
+  "count": "Total: not available-",
+  "errorBlock": true,
+  "errText": "Couldn't load tasks.\n\nReference:\nT-1\nCopy\nRetry",
+  "toasts": 1,
+  "toastText": [],
+  "requests": 1
+ },
+ "pod-work-empty": {
+  "text": "All",
+  "kind": "",
+  "count": "Total: 0"
+ },
+ "pod-work-loading": {
+  "count": "Total: not available-",
+  "skeletonRows": 8,
+  "ths": 8
+ }
+}

@@ -1,0 +1,824 @@
+{
+ "task-queue-1366": {
+  "topNew": true,
+  "pageNew": true,
+  "header": {
+   "x": 244,
+   "y": 65,
+   "w": 1098,
+   "h": 39
+  },
+  "toolbar": {
+   "x": 244,
+   "y": 112,
+   "w": 1098,
+   "h": 44
+  },
+  "frame": {
+   "x": 245,
+   "y": 157,
+   "w": 1096,
+   "h": 549
+  },
+  "table": {
+   "x": 245,
+   "y": 157,
+   "w": 1096,
+   "h": 2282
+  },
+  "pager": {
+   "x": 257,
+   "y": 707,
+   "w": 1072,
+   "h": 52
+  },
+  "sorted": {
+   "x": 1032,
+   "y": 118,
+   "w": 140,
+   "h": 24
+  },
+  "columnsBtn": {
+   "x": 1180,
+   "y": 114,
+   "w": 112,
+   "h": 32
+  },
+  "moreBtn": {
+   "x": 1300,
+   "y": 114,
+   "w": 42,
+   "h": 32
+  },
+  "th": [
+   [
+    "Ref",
+    112
+   ],
+   [
+    "Type",
+    128
+   ],
+   [
+    "Title",
+    174
+   ],
+   [
+    "CM Number",
+    142
+   ],
+   [
+    "Priority",
+    112
+   ],
+   [
+    "Assignee",
+    136
+   ],
+   [
+    "Due",
+    152
+   ],
+   [
+    "Status",
+    140
+   ]
+  ],
+  "tableW": 1096,
+  "frameW": 1096,
+  "scrollW": 1096,
+  "count": "Total: 139",
+  "rowH": 44,
+  "cells": {
+   "Ref": {
+    "w": 112,
+    "fs": "14px"
+   },
+   "Type": {
+    "w": 128,
+    "fs": "14px"
+   },
+   "Title": {
+    "w": 174,
+    "fs": "14px"
+   },
+   "CM Number": {
+    "w": 142,
+    "fs": "14px"
+   },
+   "Priority": {
+    "w": 112,
+    "fs": "14px"
+   },
+   "Assignee": {
+    "w": 136,
+    "fs": "14px"
+   },
+   "Due": {
+    "w": 152,
+    "fs": "14px"
+   },
+   "Status": {
+    "w": 140,
+    "fs": "14px"
+   }
+  },
+  "links": {
+   "title": null,
+   "cm": null,
+   "matterName": null
+  },
+  "clipped": [
+   "ttc__name:Incoming Production ",
+   "dc-sr:No due date, ASAP",
+   "ttc__name:Incoming Production ",
+   "dc-sr:No due date, ASAP",
+   "ttc__name:Archive and Disposit",
+   "dc-sr:Due October 23, over",
+   "ttc__name:Incoming Production ",
+   "dc-sr:Due October 24, over",
+   "ttc__name:Archive and Disposit",
+   "dc-sr:Due October 27, over",
+   "ttc__name:Export / Transfer",
+   "dc-sr:Due November 4 at 3:"
+  ],
+  "toolbarText": "Search tasks | Searches as you type. Press Enter to search now. | Filters | Other Filters |  All Open 139 | More  | Sorted by Priority | Columns",
+  "headerText": "Task Queue | Total: | 139 | New Task"
+ },
+ "task-queue-1920": {
+  "topNew": true,
+  "pageNew": true,
+  "header": {
+   "x": 244,
+   "y": 65,
+   "w": 1652,
+   "h": 39
+  },
+  "toolbar": {
+   "x": 244,
+   "y": 112,
+   "w": 1652,
+   "h": 44
+  },
+  "frame": {
+   "x": 245,
+   "y": 157,
+   "w": 1650,
+   "h": 861
+  },
+  "table": {
+   "x": 245,
+   "y": 157,
+   "w": 1650,
+   "h": 2282
+  },
+  "pager": {
+   "x": 257,
+   "y": 1019,
+   "w": 1626,
+   "h": 52
+  },
+  "sorted": {
+   "x": 1586,
+   "y": 118,
+   "w": 140,
+   "h": 24
+  },
+  "columnsBtn": {
+   "x": 1734,
+   "y": 114,
+   "w": 112,
+   "h": 32
+  },
+  "moreBtn": {
+   "x": 1854,
+   "y": 114,
+   "w": 42,
+   "h": 32
+  },
+  "th": [
+   [
+    "Ref",
+    112
+   ],
+   [
+    "Type",
+    128
+   ],
+   [
+    "Title",
+    728
+   ],
+   [
+    "CM Number",
+    142
+   ],
+   [
+    "Priority",
+    112
+   ],
+   [
+    "Assignee",
+    136
+   ],
+   [
+    "Due",
+    152
+   ],
+   [
+    "Status",
+    140
+   ]
+  ],
+  "tableW": 1650,
+  "frameW": 1650,
+  "scrollW": 1650,
+  "count": "Total: 139",
+  "rowH": 44,
+  "cells": {
+   "Ref": {
+    "w": 112,
+    "fs": "14px"
+   },
+   "Type": {
+    "w": 128,
+    "fs": "14px"
+   },
+   "Title": {
+    "w": 728,
+    "fs": "14px"
+   },
+   "CM Number": {
+    "w": 142,
+    "fs": "14px"
+   },
+   "Priority": {
+    "w": 112,
+    "fs": "14px"
+   },
+   "Assignee": {
+    "w": 136,
+    "fs": "14px"
+   },
+   "Due": {
+    "w": 152,
+    "fs": "14px"
+   },
+   "Status": {
+    "w": 140,
+    "fs": "14px"
+   }
+  },
+  "links": {
+   "title": null,
+   "cm": null,
+   "matterName": null
+  },
+  "clipped": [
+   "ttc__name:Incoming Production ",
+   "dc-sr:No due date, ASAP",
+   "ttc__name:Incoming Production ",
+   "dc-sr:No due date, ASAP",
+   "ttc__name:Archive and Disposit",
+   "dc-sr:Due October 23, over",
+   "ttc__name:Incoming Production ",
+   "dc-sr:Due October 24, over",
+   "ttc__name:Archive and Disposit",
+   "dc-sr:Due October 27, over",
+   "ttc__name:Export / Transfer",
+   "dc-sr:Due November 4 at 3:"
+  ],
+  "toolbarText": "Search tasks | Searches as you type. Press Enter to search now. | Filters | Other Filters |  All Open 139 | Unassigned 48 | Overdue 42 | Due Soon 8 | ASAP 27 | On Hold 22 | More  | Sorted by Priority | Columns",
+  "headerText": "Task Queue | Total: | 139 | New Task"
+ },
+ "my-work-1366": {
+  "topNew": true,
+  "pageNew": true,
+  "header": {
+   "x": 244,
+   "y": 65,
+   "w": 1098,
+   "h": 39
+  },
+  "toolbar": {
+   "x": 244,
+   "y": 196,
+   "w": 1098,
+   "h": 44
+  },
+  "frame": {
+   "x": 245,
+   "y": 241,
+   "w": 1096,
+   "h": 187
+  },
+  "table": {
+   "x": 245,
+   "y": 241,
+   "w": 1096,
+   "h": 126
+  },
+  "pager": {
+   "x": 257,
+   "y": 707,
+   "w": 1072,
+   "h": 52
+  },
+  "sorted": {
+   "x": 883,
+   "y": 202,
+   "w": 140,
+   "h": 24
+  },
+  "columnsBtn": {
+   "x": 1030,
+   "y": 196,
+   "w": 312,
+   "h": 36
+  },
+  "moreBtn": null,
+  "th": [
+   [
+    "Ref",
+    112
+   ],
+   [
+    "Type",
+    128
+   ],
+   [
+    "Title",
+    310
+   ],
+   [
+    "CM Number",
+    142
+   ],
+   [
+    "Priority",
+    112
+   ],
+   [
+    "Due",
+    152
+   ],
+   [
+    "Status",
+    140
+   ]
+  ],
+  "tableW": 1096,
+  "frameW": 1096,
+  "scrollW": 1096,
+  "count": "Total: 1",
+  "rowH": 44,
+  "cells": {
+   "Ref": {
+    "w": 112,
+    "fs": "14px"
+   },
+   "Type": {
+    "w": 128,
+    "fs": "14px"
+   },
+   "Title": {
+    "w": 310,
+    "fs": "14px"
+   },
+   "CM Number": {
+    "w": 142,
+    "fs": "14px"
+   },
+   "Priority": {
+    "w": 112,
+    "fs": "14px"
+   },
+   "Due": {
+    "w": 152,
+    "fs": "14px"
+   },
+   "Status": {
+    "w": 140,
+    "fs": "14px"
+   }
+  },
+  "links": {
+   "title": null,
+   "cm": null,
+   "matterName": null
+  },
+  "clipped": [
+   "ttc__name:Access Request",
+   "dc-sr:Due November 16",
+   "line:Waiting for client d"
+  ],
+  "toolbarText": "Search tasks | Searches as you type. Press Enter to search now. | Filters | Other Filters | Sorted by Priority | Open in Task Queue | Columns",
+  "headerText": "My Work | Total: | 1 | New Task"
+ },
+ "my-work-1920": {
+  "topNew": true,
+  "pageNew": true,
+  "header": {
+   "x": 244,
+   "y": 65,
+   "w": 1652,
+   "h": 39
+  },
+  "toolbar": {
+   "x": 244,
+   "y": 196,
+   "w": 1652,
+   "h": 44
+  },
+  "frame": {
+   "x": 245,
+   "y": 241,
+   "w": 1650,
+   "h": 187
+  },
+  "table": {
+   "x": 245,
+   "y": 241,
+   "w": 1650,
+   "h": 126
+  },
+  "pager": {
+   "x": 257,
+   "y": 1019,
+   "w": 1626,
+   "h": 52
+  },
+  "sorted": {
+   "x": 1437,
+   "y": 202,
+   "w": 140,
+   "h": 24
+  },
+  "columnsBtn": {
+   "x": 1584,
+   "y": 196,
+   "w": 312,
+   "h": 36
+  },
+  "moreBtn": null,
+  "th": [
+   [
+    "Ref",
+    112
+   ],
+   [
+    "Type",
+    128
+   ],
+   [
+    "Title",
+    864
+   ],
+   [
+    "CM Number",
+    142
+   ],
+   [
+    "Priority",
+    112
+   ],
+   [
+    "Due",
+    152
+   ],
+   [
+    "Status",
+    140
+   ]
+  ],
+  "tableW": 1650,
+  "frameW": 1650,
+  "scrollW": 1650,
+  "count": "Total: 1",
+  "rowH": 44,
+  "cells": {
+   "Ref": {
+    "w": 112,
+    "fs": "14px"
+   },
+   "Type": {
+    "w": 128,
+    "fs": "14px"
+   },
+   "Title": {
+    "w": 864,
+    "fs": "14px"
+   },
+   "CM Number": {
+    "w": 142,
+    "fs": "14px"
+   },
+   "Priority": {
+    "w": 112,
+    "fs": "14px"
+   },
+   "Due": {
+    "w": 152,
+    "fs": "14px"
+   },
+   "Status": {
+    "w": 140,
+    "fs": "14px"
+   }
+  },
+  "links": {
+   "title": null,
+   "cm": null,
+   "matterName": null
+  },
+  "clipped": [
+   "ttc__name:Access Request",
+   "dc-sr:Due November 16",
+   "line:Waiting for client d"
+  ],
+  "toolbarText": "Search tasks | Searches as you type. Press Enter to search now. | Filters | Other Filters | Sorted by Priority | Open in Task Queue | Columns",
+  "headerText": "My Work | Total: | 1 | New Task"
+ },
+ "pod-work-1366": {
+  "topNew": true,
+  "pageNew": true,
+  "header": {
+   "x": 244,
+   "y": 65,
+   "w": 1098,
+   "h": 59
+  },
+  "toolbar": {
+   "x": 244,
+   "y": 216,
+   "w": 1098,
+   "h": 44
+  },
+  "frame": {
+   "x": 245,
+   "y": 261,
+   "w": 1096,
+   "h": 346
+  },
+  "table": {
+   "x": 245,
+   "y": 261,
+   "w": 1096,
+   "h": 346
+  },
+  "pager": {
+   "x": 257,
+   "y": 707,
+   "w": 1072,
+   "h": 52
+  },
+  "sorted": {
+   "x": 1082,
+   "y": 222,
+   "w": 140,
+   "h": 24
+  },
+  "columnsBtn": {
+   "x": 1230,
+   "y": 218,
+   "w": 112,
+   "h": 32
+  },
+  "moreBtn": null,
+  "th": [
+   [
+    "Ref",
+    112
+   ],
+   [
+    "Type",
+    128
+   ],
+   [
+    "Title",
+    150
+   ],
+   [
+    "CM Number",
+    142
+   ],
+   [
+    "Priority",
+    112
+   ],
+   [
+    "Assignee",
+    160
+   ],
+   [
+    "Due",
+    152
+   ],
+   [
+    "Status",
+    140
+   ]
+  ],
+  "tableW": 1096,
+  "frameW": 1096,
+  "scrollW": 1096,
+  "count": "Total: 6",
+  "rowH": 44,
+  "cells": {
+   "Ref": {
+    "w": 112,
+    "fs": "14px"
+   },
+   "Type": {
+    "w": 128,
+    "fs": "14px"
+   },
+   "Title": {
+    "w": 150,
+    "fs": "14px"
+   },
+   "CM Number": {
+    "w": 142,
+    "fs": "14px"
+   },
+   "Priority": {
+    "w": 112,
+    "fs": "14px"
+   },
+   "Assignee": {
+    "w": 160,
+    "fs": "14px"
+   },
+   "Due": {
+    "w": 152,
+    "fs": "14px"
+   },
+   "Status": {
+    "w": 140,
+    "fs": "14px"
+   }
+  },
+  "links": {
+   "title": null,
+   "cm": null,
+   "matterName": null
+  },
+  "clipped": [
+   "ttc__name:Archive and Disposit",
+   "dc-sr:Due October 23, over",
+   "ttc__name:Data Processing",
+   "dc-sr:Due November 4, over",
+   "ttc__name:Data Processing",
+   "dc-sr:No due date, ASAP",
+   "ttc__name:Export / Transfer",
+   "dc-sr:Due November 5, over",
+   "ttc__name:Collection Receipt",
+   "dc-sr:Due tomorrow, Novemb",
+   "ttc__name:Relativity Workspace",
+   "dc-sr:Due December 1"
+  ],
+  "toolbarText": "Search tasks | Searches as you type. Press Enter to search now. | Filters | Other Filters | Sorted by Priority | Columns",
+  "headerText": "Pod Work | Total: | 6 | Pod | Demo Production Pod (primary) | New Task | Demo Production Pod · 12 members · you are a member (primary)"
+ },
+ "pod-work-1920": {
+  "topNew": true,
+  "pageNew": true,
+  "header": {
+   "x": 244,
+   "y": 65,
+   "w": 1652,
+   "h": 59
+  },
+  "toolbar": {
+   "x": 244,
+   "y": 216,
+   "w": 1652,
+   "h": 44
+  },
+  "frame": {
+   "x": 245,
+   "y": 261,
+   "w": 1650,
+   "h": 346
+  },
+  "table": {
+   "x": 245,
+   "y": 261,
+   "w": 1650,
+   "h": 346
+  },
+  "pager": {
+   "x": 257,
+   "y": 1019,
+   "w": 1626,
+   "h": 52
+  },
+  "sorted": {
+   "x": 1636,
+   "y": 222,
+   "w": 140,
+   "h": 24
+  },
+  "columnsBtn": {
+   "x": 1784,
+   "y": 218,
+   "w": 112,
+   "h": 32
+  },
+  "moreBtn": null,
+  "th": [
+   [
+    "Ref",
+    112
+   ],
+   [
+    "Type",
+    128
+   ],
+   [
+    "Title",
+    704
+   ],
+   [
+    "CM Number",
+    142
+   ],
+   [
+    "Priority",
+    112
+   ],
+   [
+    "Assignee",
+    160
+   ],
+   [
+    "Due",
+    152
+   ],
+   [
+    "Status",
+    140
+   ]
+  ],
+  "tableW": 1650,
+  "frameW": 1650,
+  "scrollW": 1650,
+  "count": "Total: 6",
+  "rowH": 44,
+  "cells": {
+   "Ref": {
+    "w": 112,
+    "fs": "14px"
+   },
+   "Type": {
+    "w": 128,
+    "fs": "14px"
+   },
+   "Title": {
+    "w": 704,
+    "fs": "14px"
+   },
+   "CM Number": {
+    "w": 142,
+    "fs": "14px"
+   },
+   "Priority": {
+    "w": 112,
+    "fs": "14px"
+   },
+   "Assignee": {
+    "w": 160,
+    "fs": "14px"
+   },
+   "Due": {
+    "w": 152,
+    "fs": "14px"
+   },
+   "Status": {
+    "w": 140,
+    "fs": "14px"
+   }
+  },
+  "links": {
+   "title": null,
+   "cm": null,
+   "matterName": null
+  },
+  "clipped": [
+   "ttc__name:Archive and Disposit",
+   "dc-sr:Due October 23, over",
+   "ttc__name:Data Processing",
+   "dc-sr:Due November 4, over",
+   "ttc__name:Data Processing",
+   "dc-sr:No due date, ASAP",
+   "ttc__name:Export / Transfer",
+   "dc-sr:Due November 5, over",
+   "ttc__name:Collection Receipt",
+   "dc-sr:Due tomorrow, Novemb",
+   "ttc__name:Relativity Workspace",
+   "dc-sr:Due December 1"
+  ],
+  "toolbarText": "Search tasks | Searches as you type. Press Enter to search now. | Filters | Other Filters | Sorted by Priority | Columns",
+  "headerText": "Pod Work | Total: | 6 | Pod | Demo Production Pod (primary) | New Task | Demo Production Pod · 12 members · you are a member (primary)"
+ }
+}

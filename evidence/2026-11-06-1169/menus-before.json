@@ -1,0 +1,78 @@
+{
+ "columns": {
+  "w": 35,
+  "h": 22,
+  "radius": "999px",
+  "items": 0,
+  "itemHeights": [],
+  "sample": [],
+  "cls": "cc"
+ },
+ "more": null,
+ "otherfilters": {
+  "w": 320,
+  "h": 495,
+  "radius": "8px",
+  "items": 14,
+  "itemHeights": [
+   32
+  ],
+  "sample": [
+   "Client",
+   "Project",
+   "Workflow",
+   "Pod",
+   "Creator"
+  ],
+  "cls": "mf-menu mf-menu--filter"
+ },
+ "priority-menu": {
+  "w": 196,
+  "h": 154,
+  "radius": "4px",
+  "items": 6,
+  "itemHeights": [
+   24
+  ],
+  "sample": [
+   "Critical",
+   "High",
+   "Normal",
+   "Low",
+   "UI sample"
+  ],
+  "cls": "im-pop"
+ },
+ "assignee-menu": {
+  "w": 308,
+  "h": 224,
+  "radius": "4px",
+  "items": 15,
+  "itemHeights": [
+   24
+  ],
+  "sample": [
+   "Assign to Me",
+   "Unassigned Remove the as",
+   "Test User 02 0 open",
+   "Test User 06 0 open",
+   "Test User 14 0 open"
+  ],
+  "cls": "im-pop"
+ },
+ "status-menu": {
+  "w": 255,
+  "h": 86,
+  "radius": "4px",
+  "items": 3,
+  "itemHeights": [
+   24
+  ],
+  "sample": [
+   "Put on hold",
+   "Complete... (needs step ",
+   "Cancel task"
+  ],
+  "cls": "im-pop"
+ }
+}
