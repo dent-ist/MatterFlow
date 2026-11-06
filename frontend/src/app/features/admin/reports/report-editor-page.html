@@ -44,7 +44,7 @@
         [disabled]="busy()"
         data-save
       >
-        {{ busy() ? 'Saving...' : isNew() ? 'Create report' : 'Save' }}
+        {{ busy() ? 'Saving...' : isNew() ? 'Create Report' : 'Save' }}
       </button>
     }
   </ng-container>
@@ -82,16 +82,19 @@
         </p>
       }
       @if (failure()) {
-        <p class="rep__error" role="alert" data-failure>{{ failure() }}</p>
+        <div class="pg-banner pg-banner--danger" role="alert" data-failure>
+          <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+          <span>{{ failure() }}</span>
+        </div>
       }
       @if (conflict()) {
-        <p class="rep__error" role="alert" data-conflict>
-          Someone else saved this report.
+        <div class="pg-banner pg-banner--danger" role="alert" data-conflict>
+          <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+          <span>Someone else saved this report. Your unsaved edits are discarded.</span>
           <button type="button" class="mf-btn mf-btn--text" (click)="reload()" data-reload>
             Reload Latest
           </button>
-          (your unsaved edits are discarded).
-        </p>
+        </div>
       }
       <div
         id="editor-summary"
