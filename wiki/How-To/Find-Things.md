@@ -36,15 +36,15 @@ Run from the repository root.
 | The component of a URL | Open [Routing and Navigation](../Frontend/Routing-and-Navigation.md) or `grep -rn "path: 'matters'" frontend/src/app` |
 | Everything that uses a permission | `grep -rn "Task.Assign" backend/src frontend/src contracts db/scripts` |
 | The controller of an endpoint | `grep -rn 'Route("api/v1/dashboard' backend/src` and `grep -rn 'Name = "GetDashboard"' backend/src` |
-| Callers of an API method in the frontend | `grep -rn "dashboardClient.getDashboard\|GetDashboard" frontend/src/app --include=*.ts` (skip `api/generated`) |
+| Callers of an API method in the frontend | `grep -rn "GetDashboard" frontend/src/app --include=*.ts` (skip `api/generated`) |
 | The service behind a controller | The controller's constructor parameters name it; `grep -rn "class TaskService" backend/src` |
 | A table's entity and mapping | `grep -rn 'ToTable("Task")' backend/src` and the entity in the same module's `Domain/` |
 | Which script created or changed a column | `grep -ln "AssignedAt" db/scripts/*.sql` (or see [Table Reference](../Database/Table-Reference.md) "Scripts") |
 | Who writes an audit event | `grep -rn "MATTER_SENSITIVITY_CHANGED" backend/src frontend/src` |
 | An error code's origin | `grep -rn "SENSITIVE_NEEDS_MANAGER" backend/src frontend/src` |
-| A setting key | `grep -rn "Dashboard.Gauge" backend/src frontend/src` (application setting) or `grep -rn "Features:SensitiveMatterAccess\|SensitiveMatterAccess" backend/src deploy docs` (configuration) |
+| A setting key | `grep -rn "Dashboard.Gauge" backend/src frontend/src` (application setting) or `grep -rn "SensitiveMatterAccess" backend/src deploy docs` (configuration) |
 | A configuration option class | `grep -rn "GetSection(\"" backend/src` |
-| The test for a feature | Feature name under `backend/tests/MatterFlow.IntegrationTests/<Area>`, `frontend/e2e/tests` (`ls | grep <word>`), or `*.spec.ts` beside the file |
+| The test for a feature | Feature name under `backend/tests/MatterFlow.IntegrationTests/<Area>`, `frontend/e2e/tests` (list the folder and look for the word), or `*.spec.ts` beside the file |
 | The decision behind a behaviour | `grep -n "keyword" docs/requirements/decisions-addendum.md docs/architecture.md`; see [Decision Index](../Reference/Decision-Index.md) |
 | A design rule (D-xx) | `grep -n "D-43" docs/ux/design-guidelines.md` |
 | A UI component | [Shared Components Catalogue](../Frontend/Shared-Components-Catalogue.md) or `grep -rn "selector: 'mf-" frontend/src/app/shared` |

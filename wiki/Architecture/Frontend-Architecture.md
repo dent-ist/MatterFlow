@@ -27,7 +27,7 @@ flowchart TB
   CORE --> HTTP
 :::
 
-Rule: a feature imports from `core`, `shared`, `api/generated` and `form-engine`, **never from another feature**. ESLint enforces it with a `no-restricted-imports` pattern on `**/features/*` (`frontend/eslint.config.js`). Note: the pattern only catches import paths that spell out `features/`; a relative import into a sibling feature folder is not matched. For example `features/tasks/tasks.routes.ts` loads `../task-queue/pages/task-queue-page` (the Task Queue page lives in `features/task-queue` and is mounted at `/tasks`). Treat such links as exceptions to keep small. Shared pieces are promoted to `shared`.
+Rule: a feature imports from `core`, `shared`, `api/generated` and `form-engine`, **never from another feature**. ESLint enforces it with a `no-restricted-imports` pattern on `**/features/*` (`frontend/eslint.config.js`). Note: the pattern only catches import paths that spell out `features/`; a relative import into a sibling feature folder is not matched. For example `features/tasks/tasks.routes.ts` loads `../task-queue/pages/task-queue-page` (the Task Queue page lives in `features/task-queue` and is mounted at `/tasks`). Another example: `features/matters/pages/matter-detail-page.ts` imports `ProductionsTab` from `features/productions`, `NotesTab` from `features/notes` and project panels from `features/projects`. Treat such links as exceptions to keep small. Shared pieces are promoted to `shared`.
 
 ## Routing and permission gating
 

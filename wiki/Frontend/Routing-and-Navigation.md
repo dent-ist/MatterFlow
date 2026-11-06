@@ -63,7 +63,7 @@ The `/admin` route is open to anyone who may open any admin menu item (`ADMIN_NA
 | `/admin/asset-types/new`, `/:id`, `/:ownerId/form` | `asset-types` | `AssetTypeRecordPage`, form designer | `AssetType.Manage` |
 | `/admin/custom-fields`, `/:ownerId/form` | `custom-fields` | `CustomFieldsPage`, designer | `CustomField.Manage` |
 | `/admin/priorities`, `/status-labels`, `/on-hold-reasons`, `/note-tags` (tabs of Labels) | `priorities`, `status-labels`, `on-hold-reasons`, `note-tags` | `LabelsAdminPage` | per tab (`labels-tabs.ts`): Priorities `Priority.Manage`, Status Labels `StatusLabel.Manage`, On-Hold Reasons `OnHoldReason.Manage`, Note Tags `StatusLabel.Manage` (there is no separate note tag permission) |
-| `/admin/reports` (`?tab=categories|runs|assignments|health`) | `reports` | `ReportsAdminPage` | `Report.Manage` |
+| `/admin/reports` (`?tab=` is `categories`, `runs`, `assignments` or `health`) | `reports` | `ReportsAdminPage` | `Report.Manage` |
 | `/admin/reports/new`, `/admin/reports/:id` | `reports` | `ReportEditorPage` | `Report.Manage` |
 | `/admin/settings` (tabs Branding, Dashboard, Holidays) | `settings`, `holidays` | `SettingsPage` | `Settings.Manage` |
 | `/admin/audit` | `audit` | `AuditPage` | `Audit.View` |
