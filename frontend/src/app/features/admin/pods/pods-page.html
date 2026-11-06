@@ -267,105 +267,96 @@
       (showAll)="showAll()"
     />
   } @else {
-    <div class="mf-table-wrap" mfScrollArea="Pods list" #scroll>
-      <div class="mf-scroll">
-        <table class="mf-grid" id="pods-table" data-pods>
-          <caption class="mf-sr-only">
-            Pods
-          </caption>
-          <thead>
-            <tr>
-              <th
-                class="mf-cell-name"
-                mfSort="name"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Name
-              </th>
-              <th
-                class="mf-cell-num"
-                mfSort="memberCount"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Members
-              </th>
-              <th class="mf-cell-badge" scope="col">Status</th>
-            </tr>
-            @if (filters.rowVisible()) {
-              <tr
-                mfColumnFilterRow
-                id="pods-filter-row"
-                [filters]="filters"
-                [columns]="columns"
-              ></tr>
-            }
-          </thead>
-          <tbody
-            mfGridBody
-            noun="pods"
-            [columnSpec]="columnSpec"
+    <div class="mf-fill">
+      <mf-record-grid
+        #scroll
+        data-pods
+        label="Pods list"
+        caption="Pods"
+        noun="pods"
+        [grid]="grid"
+        [rows]="rows()"
+        [rowKey]="podKey"
+        [loadState]="ls.state()"
+        [empty]="ls.empty()"
+        [filtered]="ls.filtered()"
+        [filters]="filters"
+        [hidden]="ls.hidden()"
+        hiddenLabel="inactive"
+        emptyText="No pods yet."
+        [bones]="bones"
+        [sort]="sort()"
+        [defaultSort]="defaultSort"
+        (sorted)="setSort($event)"
+        (retry)="load()"
+        (clear)="clear()"
+        (showAll)="showAll()"
+      >
+        @if (filters.rowVisible()) {
+          <tr
+            mfGridFilterRow
+            mfColumnFilterRow
+            id="pods-filter-row"
             [filters]="filters"
-            [state]="ls.state()"
-            [empty]="ls.empty()"
-            [filtered]="ls.filtered()"
-            [hidden]="ls.hidden()"
-            hiddenLabel="inactive"
-            (retry)="load()"
-            (clear)="clear()"
-            (showAll)="showAll()"
-          >
-            <p-button
-              mfEmptyAction
-              *mfHasPermission="'Pod.Manage'"
-              label="New Pod"
-              icon="pi pi-plus"
-              (onClick)="newPod()"
-            />
-            @for (pod of rows(); track pod.podId) {
-              <tr [attr.data-pod]="pod.podId">
-                <td class="mf-cell-name">
-                  <a
-                    class="mf-name pods__name"
-                    [routerLink]="['/admin/pods']"
-                    [queryParams]="{ pod: pod.podId }"
-                    [mfRowLink]="listId"
-                    [rowKey]="pod.podId"
-                    [state]="leave.state()"
-                    [attr.title]="pod.name"
-                    >{{ pod.name }}</a
-                  >
-                  @if (pod.description) {
-                    <span class="mf-desc" [attr.title]="pod.description">{{
-                      pod.description
-                    }}</span>
-                  }
-                </td>
-                <td class="mf-cell-num">{{ pod.memberCount | mfInt }}</td>
-                <td class="mf-cell-badge"><mf-active-badge [active]="pod.isActive" /></td>
-              </tr>
+            [columns]="columns()"
+          ></tr>
+        }
+        <p-button
+          mfEmptyAction
+          *mfHasPermission="'Pod.Manage'"
+          label="New Pod"
+          icon="pi pi-plus"
+          (onClick)="newPod()"
+        />
+        <ng-template mfCell="name" let-pod>
+          <td class="pods__namecell">
+            <a
+              class="mf-link pg-clip"
+              [routerLink]="['/admin/pods']"
+              [queryParams]="{ pod: pod.podId }"
+              [mfRowLink]="listId"
+              [rowKey]="pod.podId"
+              [state]="leave.state()"
+              [attr.title]="pod.name"
+              >{{ pod.name }}</a
+            >
+            @if (pod.description) {
+              <span class="pods__desc pg-clip" [attr.title]="pod.description">{{
+                pod.description
+              }}</span>
             }
-          </tbody>
-        </table>
-      </div>
+          </td>
+        </ng-template>
+        <ng-template mfCell="members" let-pod>
+          <td class="pg-num">{{ pod.memberCount | mfInt }}</td>
+        </ng-template>
+        <ng-template mfCell="status" let-pod>
+          <td><mf-active-badge [active]="pod.isActive" /></td>
+        </ng-template>
+        <div mfGridFoot>
+          <ng-container *ngTemplateOutlet="pager" />
+        </div>
+      </mf-record-grid>
     </div>
   }
-  @if (state() === 'ready' && total() > 0) {
-    <mf-pager
-      [page]="pageNumber()"
-      [pageSize]="pageSize()"
-      [pageSizes]="pageSizes"
-      [total]="total()"
-      [hidden]="hiddenCount()"
-      hiddenLabel="inactive"
-      (showAll)="showAll()"
-      (pageChange)="goToPage($event)"
-      (pageSizeChange)="setPageSize($event)"
-    />
+  @if (phone()) {
+    <ng-container *ngTemplateOutlet="pager" />
   }
+  <ng-template #pager>
+    @if (state() === 'ready' && total() > 0) {
+      <mf-pager
+        [page]="pageNumber()"
+        [pageSize]="pageSize()"
+        [pageSizes]="pageSizes"
+        [total]="total()"
+        [hidden]="hiddenCount()"
+        hiddenLabel="inactive"
+        (showAll)="showAll()"
+        (pageChange)="goToPage($event)"
+        (pageSizeChange)="setPageSize($event)"
+      />
+    }
+  </ng-template>
 }
 
 <mf-confirm-dialog

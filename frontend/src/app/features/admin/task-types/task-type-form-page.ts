@@ -129,7 +129,7 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
   });
   /**
    * The H1: "Form: Data Processing Extended" for a Task Type, a Step or an Asset Type; the Custom Fields object is named by what it is,
-   * "Matter custom fields" (#645).
+   * "Matter Custom Fields" (#645, #1208).
    */
   protected readonly headline = computed(() => {
     const name = this.owner()?.name ?? '';

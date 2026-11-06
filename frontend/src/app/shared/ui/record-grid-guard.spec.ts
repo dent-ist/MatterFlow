@@ -11,26 +11,12 @@ import { join, relative } from 'node:path';
 const APP = join(process.cwd(), 'src', 'app');
 
 const ALLOWED: Readonly<Record<string, string>> = {
-  'features/admin/asset-types/asset-types-page.ts':
-    'Administration list, adopts the shared grid in its Administration issue',
-  'features/admin/custom-fields/custom-fields-page.ts':
-    'Administration list, adopts the shared grid in its Administration issue',
-  'features/admin/note-tags/note-tags-page.ts':
-    'Administration list, adopts the shared grid in its Administration issue',
   'features/admin/reports/preview-panel.ts': 'a report preview, not a record list',
   'features/admin/reports/report-categories-tab.ts':
-    'Administration list, adopts the shared grid in its Administration issue',
+    'rows are edited in place (D-44a: inline editing is a component of its own, owner to approve)',
   'features/admin/reports/report-matrix-tab.ts':
-    'Administration list, adopts the shared grid in its Administration issue',
-  'features/admin/reports/report-runs-tab.ts':
-    'Administration list, adopts the shared grid in its Administration issue',
-  'features/admin/reports/reports-list-tab.ts':
-    'Administration list, adopts the shared grid in its Administration issue',
-  'features/admin/steps/steps-list-page.ts':
-    'Administration list, adopts the shared grid in its Administration issue',
+    'a roles-by-reports matrix with a column per role, not a record list',
   'features/admin/workflows/workflow-versions-tab.ts':
-    'Administration list, adopts the shared grid in its Administration issue',
-  'features/admin/workflows/workflows-list-page.ts':
     'Administration list, adopts the shared grid in its Administration issue',
   'features/clients/pages/client-matters.ts':
     'Client > Matters tab, adopts the shared grid with the Clients record issues',

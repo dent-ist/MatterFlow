@@ -29,7 +29,7 @@ const listUrl = (extra = '') => `/admin/users?status=all${extra}`;
 const skipLink = (page: Page) => page.getByRole('link', { name: 'Skip to Table' });
 /** The name of each person: the table's name button, below 640 px the card's. */
 const names = (page: Page) =>
-  page.locator('tbody tr[data-user] button[data-open], li.rc button[data-card-name]');
+  page.locator('tbody tr[data-record-id] button[data-open], li.rc button[data-card-name]');
 
 /** Presses Tab until `target` has focus; the number of presses, or -1 after `max`. */
 async function tabsUntil(page: Page, target: Locator, max = 400): Promise<number> {
@@ -43,7 +43,9 @@ async function tabsUntil(page: Page, target: Locator, max = 400): Promise<number
 async function atTop(page: Page, url: string): Promise<void> {
   await page.goto(url);
   await expect(
-    page.locator('tbody tr[data-user] button[data-open], li.rc button[data-card-name]').first(),
+    page
+      .locator('tbody tr[data-record-id] button[data-open], li.rc button[data-card-name]')
+      .first(),
   ).toBeVisible();
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
 }
@@ -61,8 +63,8 @@ test.describe('#452 Skip to table', () => {
     await page.keyboard.press('Enter');
     await expect(names(page).first()).toBeFocused();
     // The next stop is the pods button (a person who may assign pods) and then the row's one action: Grant access or the row menu.
-    const row = page.locator('tbody tr[data-user]').first();
-    const action = row.locator('[data-grant] button, button[data-overflow]').first();
+    const row = page.locator('tbody tr[data-record-id]').first();
+    const action = row.locator('[data-grant], button[data-overflow]').first();
     for (let i = 0; i < 2; i++) {
       await page.keyboard.press('Tab');
       if (await action.evaluate((el) => el === document.activeElement)) break;
@@ -95,8 +97,8 @@ test.describe('#452 one Tab stop per control', () => {
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(listUrl(`&account=e2e-${TAG}`));
-    const waitingRow = page.locator(`tr[data-user="${waiting.userId}"]`);
-    const memberRow = page.locator(`tr[data-user="${member.userId}"]`);
+    const waitingRow = page.locator(`tr[data-record-id="${waiting.userId}"]`);
+    const memberRow = page.locator(`tr[data-record-id="${member.userId}"]`);
     await expect(
       waitingRow.getByRole('button', { name: `Open Wanda ${TAG} (${waiting.username})` }),
     ).toBeVisible();

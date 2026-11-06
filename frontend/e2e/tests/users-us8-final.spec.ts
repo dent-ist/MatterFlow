@@ -28,7 +28,7 @@ async function shot(page: Page, name: string): Promise<void> {
   await page.screenshot({ path: path.join(OUT, `${name}.png`) });
 }
 
-const rows = (page: Page) => page.locator('tr[data-user], li.rc');
+const rows = (page: Page) => page.locator('tr[data-record-id], li.rc');
 
 test.describe('Users final verification', () => {
   test('axe is available (the audits below really run)', () => {
@@ -57,7 +57,7 @@ test.describe('Users final verification', () => {
       // The grid rows are 44 px from 640 px; below it the people are cards.
       if (size.width >= 640) {
         const heights = await page
-          .locator('table.mf-grid tbody tr[data-user]')
+          .locator('tbody tr[data-record-id]')
           .evaluateAll((trs) =>
             trs.slice(0, 12).map((tr) => Math.round(tr.getBoundingClientRect().height * 10) / 10),
           );
@@ -118,7 +118,7 @@ test.describe('Users final verification', () => {
     const after: Record<string, number | string | boolean> = {};
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/admin/users?status=all');
-    await expect(page.locator('tr[data-user]').first()).toBeVisible();
+    await expect(page.locator('tr[data-record-id]').first()).toBeVisible();
 
     // U1: the grid fits its box and the rows are 44 px.
     const grid = await page
@@ -131,7 +131,7 @@ test.describe('Users final verification', () => {
     after['grid width needed minus box at 1366 (px)'] = grid.scroll - grid.client;
     expect(grid.scroll, 'the grid fits its box').toBeLessThanOrEqual(grid.client);
     const heights = await page
-      .locator('tr[data-user]')
+      .locator('tr[data-record-id]')
       .evaluateAll((trs) =>
         trs.map((tr) => Math.round(tr.getBoundingClientRect().height * 10) / 10),
       );
@@ -148,7 +148,7 @@ test.describe('Users final verification', () => {
     for (stops = 1; stops <= 80; stops++) {
       await page.keyboard.press('Tab');
       const at = await page.evaluate(() => ({
-        onRow: !!document.activeElement?.closest('tr[data-user], li.rc'),
+        onRow: !!document.activeElement?.closest('tr[data-record-id], li.rc'),
         inMain: !!document.activeElement?.closest('main, [role=main], #main'),
       }));
       if (at.inMain) pageStops++;

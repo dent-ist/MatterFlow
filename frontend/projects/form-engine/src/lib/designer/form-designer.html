@@ -5,7 +5,7 @@
     <!-- Palette -->
     @if (!readOnly() && !narrow()) {
       <section class="fd__palette fd__pane" aria-labelledby="{{ uid }}-palette-h">
-        <h3 class="fd__h" [id]="uid + '-palette-h'">Add a field</h3>
+        <h2 class="fd__h" [id]="uid + '-palette-h'">Add a Field</h2>
         <div class="fd__scroll" mfFdScroll="Field types">
           <ng-container *ngTemplateOutlet="paletteTpl" />
         </div>
@@ -15,9 +15,9 @@
     <!-- Canvas -->
     <section class="fd__canvas fd__pane" aria-labelledby="{{ uid }}-canvas-h">
       <div class="fd__head">
-        <h3 class="fd__h" [id]="uid + '-canvas-h'">
+        <h2 class="fd__h" [id]="uid + '-canvas-h'">
           Fields<span class="fd__count" data-field-count> ({{ fields().length }})</span>
-        </h3>
+        </h2>
         @if (narrow()) {
           <div class="fd__tools" data-narrow-tools>
             @if (!readOnly()) {
@@ -28,7 +28,7 @@
                 aria-haspopup="dialog"
                 (click)="openSheet('add')"
               >
-                <span aria-hidden="true">+</span> Add field
+                <span aria-hidden="true">+</span> Add Field
               </button>
             }
             <button
@@ -160,7 +160,7 @@
     >
       @if (sheet() === 'add') {
         <div class="fd__sheet-head">
-          <h3 class="fd__h" [id]="uid + '-sheet-h'">Add a field</h3>
+          <h2 class="fd__h" [id]="uid + '-sheet-h'">Add a Field</h2>
           <button type="button" class="mf-btn fd__btn" data-sheet-close (click)="closeSheet()">
             Close
           </button>
@@ -170,7 +170,7 @@
         </div>
       } @else if (sheet() === 'side') {
         <div class="fd__sheet-head">
-          <h3 class="fd__sr" [id]="uid + '-sheet-h'">Field details</h3>
+          <h2 class="fd__sr" [id]="uid + '-sheet-h'">Field details</h2>
           <ng-container *ngTemplateOutlet="tabsTpl" />
           <button type="button" class="mf-btn fd__btn" data-sheet-close (click)="closeSheet()">
             Close
@@ -278,10 +278,10 @@
 <ng-template #propsTpl>
   @let f = current();
   @if (!f) {
-    <h3 class="fd__sr" [id]="uid + '-props-h'">Properties</h3>
+    <h2 class="fd__sr" [id]="uid + '-props-h'">Properties</h2>
     <p class="fd__empty">Select a field to edit its properties.</p>
   } @else {
-    <h3 class="fd__h" [id]="uid + '-props-h'">Properties: {{ rowLabel(f) }}</h3>
+    <h2 class="fd__h" [id]="uid + '-props-h'">Properties: {{ rowLabel(f) }}</h2>
     <fieldset class="fd__fieldset" [disabled]="readOnly()">
       <legend class="fd__sr">Properties of {{ rowLabel(f) }}</legend>
 
@@ -725,7 +725,7 @@
 </ng-template>
 
 <ng-template #issuesTpl>
-  <h3 class="fd__sr" [id]="uid + '-issues-h'">Validation</h3>
+  <h2 class="fd__sr" [id]="uid + '-issues-h'">Validation</h2>
   @if (issues().length === 0) {
     <p class="fd__ok" data-valid>
       No problems found.{{ readOnly() ? '' : ' This form can be published.' }}
@@ -751,7 +751,7 @@
 </ng-template>
 
 <ng-template #previewTpl>
-  <h3 class="fd__sr" [id]="uid + '-preview-h'">Preview</h3>
+  <h2 class="fd__sr" [id]="uid + '-preview-h'">Preview</h2>
   <p class="fd__hint">This is how people will see the form. Change answers to test your rules.</p>
   @if (blocked()) {
     <p class="fd__empty" data-preview-blocked>

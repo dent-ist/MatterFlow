@@ -35,7 +35,7 @@ const PAGES: Stop[] = [
   {
     key: 'asset-types',
     url: '/admin/asset-types',
-    rows: '[data-types] tbody tr[data-row]',
+    rows: '[data-types] tbody tr[data-record-id]',
     target: 2,
   },
   {
@@ -44,7 +44,12 @@ const PAGES: Stop[] = [
     rows: '[data-roles] tbody tr[data-row]',
     target: 2,
   },
-  { key: 'custom-fields', url: '/admin/custom-fields', rows: 'tbody tr[data-row]', target: 2 },
+  {
+    key: 'custom-fields',
+    url: '/admin/custom-fields',
+    rows: 'tbody tr[data-record-id]',
+    target: 2,
+  },
   {
     key: 'audit',
     url: '/admin/audit',
@@ -201,7 +206,7 @@ test.describe('Keyboard-only flows (#659)', () => {
     const type = await admin.post('/api/v1/asset-types', { name, description: null });
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/admin/asset-types?name=${encodeURIComponent(name)}`);
-    const link = page.locator(`tr[data-row="${name}"] [data-open]`);
+    const link = page.locator(`tr:has(td[data-row="${name}"]) [data-open]`);
     await expect(link).toBeVisible();
     await link.focus();
     await page.keyboard.press('Enter');

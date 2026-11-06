@@ -103,237 +103,182 @@
     </ng-template>
   </mf-record-card-list>
 } @else {
-  <div class="mf-table-wrap" mfScrollArea="Task types list" #scroll>
-    <div class="mf-scroll">
-      <table class="grid tt-table mf-has-menu" data-task-types>
-        <caption class="sr-only">
-          Task types
-        </caption>
-        <thead>
-          <tr>
-            <th
-              mfSort="name"
-              [sort]="sort()"
-              [defaultSort]="defaultSort"
-              (sorted)="setSort($event)"
-            >
-              Name
-            </th>
-            <th
-              mfSort="defaultWorkflow"
-              [sort]="sort()"
-              [defaultSort]="defaultSort"
-              (sorted)="setSort($event)"
-            >
-              Default Workflow
-            </th>
-            @if (targetShown()) {
-              <th scope="col" class="num" data-target-col>Target (days)</th>
-            }
-            @if (formRoomShown()) {
-              <th
-                mfSort="form"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Request Form
-              </th>
-            }
-            @if (workflowsShown()) {
-              <th
-                class="num"
-                mfSort="workflows"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Workflows
-              </th>
-            }
-            @if (tasksShown()) {
-              <th
-                class="num"
-                mfSort="openTasks"
-                [firstDesc]="true"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Open Tasks
-              </th>
-            }
-            <th
-              mfSort="status"
-              [sort]="sort()"
-              [defaultSort]="defaultSort"
-              (sorted)="setSort($event)"
-            >
-              Status
-            </th>
-            <th scope="col" class="mf-col-actions mf-col-menu">
-              <span class="sr-only">Actions</span>
-            </th>
-          </tr>
-          @if (filters.rowVisible()) {
-            <tr
-              mfColumnFilterRow
-              id="task-type-filter-row"
-              [filters]="filters"
-              [columns]="columns()"
-            ></tr>
-          }
-        </thead>
-        <tbody
-          mfGridBody
-          noun="task types"
+  <div class="mf-fill">
+    <mf-record-grid
+      #scroll
+      data-task-types
+      label="Task types list"
+      caption="Task types"
+      noun="task types"
+      [grid]="grid"
+      [rows]="rows()"
+      [rowKey]="typeKey"
+      [loadState]="ls.state()"
+      [empty]="ls.empty()"
+      [filtered]="ls.filtered()"
+      [filters]="filters"
+      emptyText="No task types yet."
+      [hidden]="ls.hidden()"
+      hiddenLabel="inactive"
+      [actions]="true"
+      [rowClass]="rowClass"
+      [bones]="bones"
+      [sort]="sort()"
+      [defaultSort]="defaultSort"
+      (sorted)="setSort($event)"
+      (retry)="load()"
+      (clear)="clear()"
+      (showAll)="showAll()"
+    >
+      @if (filters.rowVisible()) {
+        <tr
+          mfGridFilterRow
+          mfColumnFilterRow
+          id="task-type-filter-row"
           [filters]="filters"
-          emptyText="No task types yet."
-          [state]="ls.state()"
-          [empty]="ls.empty()"
-          [filtered]="ls.filtered()"
-          [columnSpec]="columnSpec()"
-          (retry)="load()"
-          (clear)="clear()"
-          [hidden]="ls.hidden()"
-          hiddenLabel="inactive"
-          (showAll)="showAll()"
-        >
-          <p-button
-            mfEmptyAction
-            label="New Task Type"
-            icon="pi pi-plus"
-            (onClick)="newTaskType()"
-          />
-          @for (t of rows(); track t.id) {
-            <tr [attr.data-row]="t.name" [class.inactive]="!t.isActive">
-              <td class="tt-namecell">
-                <a
-                  class="tt-link"
-                  [routerLink]="['/admin/task-types', t.id]"
-                  [mfRowLink]="listId"
-                  [rowKey]="t.id"
-                  [state]="leave.state()"
-                  [attr.title]="t.name"
-                >
-                  <mf-task-type-cell
-                    [name]="t.name"
-                    [iconKey]="t.iconKey"
-                    [colourKey]="t.colourKey"
-                    [typeId]="t.id"
-                  />
-                </a>
-              </td>
-              <td data-default-workflow>
-                @if (defaultWorkflowCell(t); as d) {
-                  @if (d.name) {
-                    <span class="tt-clip" [attr.title]="d.all"
-                      >{{ d.name }}
-                      @if (d.more > 0) {
-                        <span class="muted"> +{{ d.more }}</span>
-                      }
-                    </span>
-                  } @else {
-                    <span class="tt-clip muted">No workflow</span>
-                  }
+          [columns]="columns()"
+        ></tr>
+      }
+      <p-button mfEmptyAction label="New Task Type" icon="pi pi-plus" (onClick)="newTaskType()" />
+      <ng-template mfCell="name" let-t>
+        <td class="tt-namecell" [attr.data-row]="t.name">
+          <a
+            class="tt-link"
+            [routerLink]="['/admin/task-types', t.id]"
+            [mfRowLink]="listId"
+            [rowKey]="t.id"
+            [state]="leave.state()"
+            [attr.title]="t.name"
+          >
+            <mf-task-type-cell
+              [name]="t.name"
+              [iconKey]="t.iconKey"
+              [colourKey]="t.colourKey"
+              [typeId]="t.id"
+            />
+          </a>
+        </td>
+      </ng-template>
+      <ng-template mfCell="defaultWorkflow" let-t>
+        <td data-default-workflow>
+          @if (defaultWorkflowCell(t); as d) {
+            @if (d.name) {
+              <span class="tt-clip" [attr.title]="d.all"
+                >{{ d.name }}
+                @if (d.more > 0) {
+                  <span class="muted"> +{{ d.more }}</span>
                 }
-              </td>
-              @if (targetShown()) {
-                <td class="num" data-target>
-                  @if (t.targetDays !== undefined && t.targetDays !== null) {
-                    {{ t.targetDays }}
-                  } @else {
-                    <span class="muted" aria-hidden="true">-</span>
-                    <span class="sr-only">No target</span>
-                  }
-                </td>
-              }
-              @if (formRoomShown()) {
-                <td data-form-status class="tt-nowrap">
-                  {{ formStatus(t) }}
-                  @if (formVersion(t)) {
-                    <span class="muted">{{ formVersion(t) }}</span>
-                  }
-                </td>
-              }
-              @if (workflowsShown()) {
-                <td data-workflows class="num">
-                  @if (t.eligibleWorkflowIds.length === 0) {
-                    <span class="muted">0</span>
-                  } @else if (canOpenWorkflows()) {
-                    <a
-                      data-workflows-link
-                      mfRowStop
-                      [routerLink]="['/admin/workflows']"
-                      [queryParams]="workflowsQuery(t)"
-                      [attr.aria-label]="
-                        t.eligibleWorkflowIds.length === 1
-                          ? '1 workflow for ' + t.name
-                          : t.eligibleWorkflowIds.length + ' workflows for ' + t.name
-                      "
-                      >{{ t.eligibleWorkflowIds.length }}</a
-                    >
-                  } @else {
-                    {{ t.eligibleWorkflowIds.length }}
-                  }
-                </td>
-              }
-              @if (tasksShown()) {
-                <td data-open-tasks class="num">
-                  @if (t.openTaskCount !== undefined && t.openTaskCount !== null) {
-                    <mf-task-count
-                      kind="open"
-                      scope="type"
-                      [rowStop]="true"
-                      [recordId]="t.id"
-                      [name]="t.name"
-                      [count]="t.openTaskCount"
-                    />
-                  }
-                </td>
-              }
-              <td class="tt-nowrap">
-                <span class="tt-status">
-                  <mf-active-badge [active]="t.isActive" />
-                  @if (notUsableReason(t); as why) {
-                    <mf-badge
-                      tone="neutral"
-                      icon="pi-info-circle"
-                      [describedBy]="'tt-nu-' + t.id"
-                      data-not-usable
-                      >Not Usable</mf-badge
-                    >
-                    <span class="sr-only" [id]="'tt-nu-' + t.id" data-warning>{{ why }}</span>
-                  }
-                </span>
-              </td>
-              <td class="mf-col-actions mf-col-menu">
-                <mf-action-menu
-                  [items]="menuFor(t)"
-                  [label]="'Actions for ' + t.name"
-                  [floating]="true"
-                />
-              </td>
-            </tr>
+              </span>
+            } @else {
+              <span class="tt-clip muted">No workflow</span>
+            }
           }
-        </tbody>
-      </table>
-    </div>
+        </td>
+      </ng-template>
+      <ng-template mfCell="target" let-t>
+        <td class="pg-num" data-target>
+          @if (t.targetDays !== undefined && t.targetDays !== null) {
+            {{ t.targetDays }}
+          } @else {
+            <span class="muted" aria-hidden="true">-</span>
+            <span class="sr-only">No target</span>
+          }
+        </td>
+      </ng-template>
+      <ng-template mfCell="form" let-t>
+        <td data-form-status class="pg-nowrap">
+          {{ formStatus(t) }}
+          @if (formVersion(t)) {
+            <span class="muted">{{ formVersion(t) }}</span>
+          }
+        </td>
+      </ng-template>
+      <ng-template mfCell="workflows" let-t>
+        <td data-workflows class="pg-num">
+          @if (t.eligibleWorkflowIds.length === 0) {
+            <span class="muted">0</span>
+          } @else if (canOpenWorkflows()) {
+            <a
+              data-workflows-link
+              mfRowStop
+              [routerLink]="['/admin/workflows']"
+              [queryParams]="workflowsQuery(t)"
+              [attr.aria-label]="
+                t.eligibleWorkflowIds.length === 1
+                  ? '1 workflow for ' + t.name
+                  : t.eligibleWorkflowIds.length + ' workflows for ' + t.name
+              "
+              >{{ t.eligibleWorkflowIds.length }}</a
+            >
+          } @else {
+            {{ t.eligibleWorkflowIds.length }}
+          }
+        </td>
+      </ng-template>
+      <ng-template mfCell="openTasks" let-t>
+        <td data-open-tasks class="pg-num">
+          @if (t.openTaskCount !== undefined && t.openTaskCount !== null) {
+            <mf-task-count
+              kind="open"
+              scope="type"
+              [rowStop]="true"
+              [recordId]="t.id"
+              [name]="t.name"
+              [count]="t.openTaskCount"
+            />
+          }
+        </td>
+      </ng-template>
+      <ng-template mfCell="status" let-t>
+        <td class="pg-nowrap">
+          <span class="tt-status">
+            <mf-active-badge [active]="t.isActive" />
+            @if (notUsableReason(t); as why) {
+              <mf-badge
+                tone="neutral"
+                icon="pi-info-circle"
+                [describedBy]="'tt-nu-' + t.id"
+                data-not-usable
+                >Not Usable</mf-badge
+              >
+              <span class="sr-only" [id]="'tt-nu-' + t.id" data-warning>{{ why }}</span>
+            }
+          </span>
+        </td>
+      </ng-template>
+      <ng-template mfCell="actions" let-t>
+        <td class="mf-col-actions" data-row-actions>
+          <mf-action-menu
+            [items]="menuFor(t)"
+            [label]="'Actions for ' + t.name"
+            [floating]="true"
+          />
+        </td>
+      </ng-template>
+      <div mfGridFoot>
+        <ng-container *ngTemplateOutlet="pager" />
+      </div>
+    </mf-record-grid>
   </div>
 }
-@if (state() === 'ready' && total() > 0) {
-  <mf-pager
-    [page]="shownPage()"
-    [pageSize]="pageSize()"
-    [pageSizes]="pageSizes"
-    [total]="total()"
-    [hidden]="hiddenCount()"
-    hiddenLabel="inactive"
-    (showAll)="showAll()"
-    (pageChange)="goToPage($event)"
-    (pageSizeChange)="setPageSize($event)"
-  />
+@if (phone()) {
+  <ng-container *ngTemplateOutlet="pager" />
 }
+<ng-template #pager>
+  @if (state() === 'ready' && total() > 0) {
+    <mf-pager
+      [page]="shownPage()"
+      [pageSize]="pageSize()"
+      [pageSizes]="pageSizes"
+      [total]="total()"
+      [hidden]="hiddenCount()"
+      hiddenLabel="inactive"
+      (showAll)="showAll()"
+      (pageChange)="goToPage($event)"
+      (pageSizeChange)="setPageSize($event)"
+    />
+  }
+</ng-template>
 <mf-confirm-dialog
   [title]="deactivateCopy.title"
   [confirmLabel]="deactivateCopy.confirm"

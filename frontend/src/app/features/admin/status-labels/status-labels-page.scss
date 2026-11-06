@@ -3,15 +3,6 @@
   display: block;
 }
 
-.sl-failure {
-  display: flex;
-  gap: var(--mf-s2);
-  align-items: center;
-  margin: var(--mf-s2) 0;
-  color: var(--mf-danger);
-  font-size: var(--mf-fs-sm);
-}
-
 /* The name cell: the status badge (the link that opens Rename) and, when renamed, what the status was called. */
 .sl-name {
   display: flex;

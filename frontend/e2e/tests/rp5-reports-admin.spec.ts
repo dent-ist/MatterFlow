@@ -66,7 +66,7 @@ async function createReport(
 
 const navItem = (page: Page, label: string) =>
   page.locator('nav a', { hasText: new RegExp(`^\\s*${label}\\s*$`) });
-const row = (page: Page, name: string) => page.locator(`tr[data-row="${name}"]`);
+const row = (page: Page, name: string) => page.locator(`tr:has(td[data-row="${name}"])`);
 const tab = (page: Page, name: RegExp | string) => page.getByRole('tab', { name });
 
 async function typeQuery(page: Page, sql: string): Promise<void> {
@@ -188,8 +188,8 @@ test.describe('the Reports list (#712)', () => {
     const name = `Added ${s.token}`;
     await page.locator('#cat-name').fill(name);
     await page.getByRole('button', { name: 'Add', exact: true }).click();
-    await expect(page.locator(`tr[data-row="${name}"]`)).toBeVisible();
-    await expect(page.locator(`tr[data-row="${name}"]`)).toContainText('Active');
+    await expect(page.locator(`tr:has(td[data-row="${name}"])`)).toBeVisible();
+    await expect(page.locator(`tr:has(td[data-row="${name}"])`)).toContainText('Active');
   });
 });
 
@@ -209,7 +209,7 @@ test.describe('the editor (#713 to #715)', () => {
     // A query that is not one SELECT is blocked, with the line and column of the problem.
     await typeQuery(page, 'SELECT 1;\nDROP TABLE dbo.Pod');
     await expect(page.locator('[data-sql-problems]')).toContainText('Line 2', { timeout: 15_000 });
-    await page.getByRole('button', { name: 'Create report' }).click();
+    await page.getByRole('button', { name: 'Create Report' }).click();
     await expect(page.locator('[data-summary]')).toContainText('Not saved');
     await expect(page.locator('[data-summary]')).toContainText('Query, line 2');
     await expect(page).toHaveURL(/\/admin\/reports\/new(\?.*)?$/);
@@ -222,7 +222,7 @@ test.describe('the editor (#713 to #715)', () => {
     await expect(page.locator('[data-parameter="MAX"]')).toBeVisible();
     await asDropdown(page.locator('#param-0-type')).selectOption('number');
     await page.locator('#param-0-label').fill('Largest value');
-    await page.getByRole('button', { name: 'Create report' }).click();
+    await page.getByRole('button', { name: 'Create Report' }).click();
     await expect(page).toHaveURL(/\/admin\/reports\/\d+$/);
     const id = Number(page.url().split('/').pop());
     await expect(page.locator('[data-status]')).toHaveText('Inactive');

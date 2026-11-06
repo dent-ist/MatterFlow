@@ -501,7 +501,6 @@
   --mf-heat-3-fg: #1b1f27;
   --mf-heat-4-fg: #ffffff;
   /* Hatch lines drawn over a series fill (white, 60 %): the pattern layer of the charts. */
-  --mf-chart-hatch: rgba(255, 255, 255, 0.6);
   /* A tab or bar that floats over content (swimlane toolbar, sticky column edge). */
   --mf-shadow-edge: 2px 0 4px -2px rgba(0, 0, 0, 0.25);
 }

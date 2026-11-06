@@ -19,7 +19,7 @@ const SIZES = [
   { width: 375, height: 812 },
 ] as const;
 const KINDS: ListKind[] = ['types', 'workflows', 'steps'];
-const dataRows = (page: Page) => page.locator('tbody tr[data-row]');
+const dataRows = (page: Page) => page.locator('tbody tr[data-record-id]');
 
 async function shot(page: Page, name: string): Promise<void> {
   if (!OUT) return;

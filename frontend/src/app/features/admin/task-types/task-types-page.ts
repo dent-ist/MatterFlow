@@ -21,15 +21,19 @@ import { TaskTypeView, TaskTypesApi } from './task-types-api';
 import { ActiveBadge, Badge } from '../../../shared/ui/badge';
 import { ActionMenu, MenuAction } from '../../../shared/ui/action-menu';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
-import { SortHeader } from '../../../shared/ui/data-table';
+import { NgTemplateOutlet } from '@angular/common';
 import { LocalListPage } from '../../../shared/ui/list-query';
 import { focusListAfterAction } from '../after-action';
 import { RowLink, RowStop, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { DrillReturn } from '../../../shared/work-queue/drill';
 import { ADMIN_LIST, AdminListLeave } from '../list-return';
-import { ScrollArea } from '../../../shared/ui/fixed-page';
-import { AdminColumn, adminListState } from '../../../shared/ui/admin-list-state';
-import { GridBody } from '../../../shared/ui/grid-body';
+import { adminListState } from '../../../shared/ui/admin-list-state';
+import {
+  RecordCell,
+  RecordGrid,
+  RecordGridColumn,
+  RecordGridState,
+} from '../../../shared/ui/record-grid';
 import {
   StripDef,
   stripActiveKey,
@@ -53,7 +57,6 @@ import {
   phoneCards,
 } from '../../../shared/ui/record-card-list';
 import { RecordSort } from '../../../shared/ui/record-sort';
-import { COLUMN_ROOM } from '../../../shared/ui/viewport';
 import { SortOption } from '../../../shared/work-queue/phone-sort';
 import { TaskCount } from '../../../shared/ui/task-count';
 import { DIALOG_COPY, impactLine, listNames } from '../shared/dialog-copy';
@@ -64,23 +67,11 @@ import { TaskTypeCell } from '../../../shared/ui/task-type-cell';
 import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
 import { Button } from 'primeng/button';
 
-/** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = [
-  'name',
-  'defaultWorkflow',
-  'target',
-  'form',
-  'workflows',
-  'openTasks',
-  'status',
-  'actions',
-] as const;
-
 /**
  * The skeleton rows of the loading state: one bone per column, as wide as the column's usual content, so the table that replaces them
  * keeps its shape (#370: one definition of the columns for the table and its skeleton).
  */
-const BONES: Record<(typeof COLUMNS)[number], string> = {
+const BONES: Record<string, string> = {
   name: '12rem',
   defaultWorkflow: '9rem',
   target: '5rem', // as wide as its header ("Target (days)"), so the loaded table does not shift
@@ -89,18 +80,6 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
   openTasks: '1.5rem',
   status: '4rem',
   actions: '1.5rem',
-};
-
-/** The class of each loaded cell that sizes it, repeated on its skeleton cell (#370). */
-const SKELETON_CELL: Record<(typeof COLUMNS)[number], string> = {
-  name: 'tt-namecell',
-  defaultWorkflow: '',
-  target: 'num',
-  form: 'tt-nowrap',
-  workflows: 'num',
-  openTasks: 'num',
-  status: 'tt-nowrap',
-  actions: 'mf-col-actions mf-col-menu',
 };
 
 /** Request form filter values (the `form` parameter) and the form statuses they match. */
@@ -124,7 +103,9 @@ const FORM_OPTIONS = [
   host: { class: 'mf-fill' },
   imports: [
     Button,
-    ScrollArea,
+    NgTemplateOutlet,
+    RecordGrid,
+    RecordCell,
     ConfirmDialog,
     ActiveBadge,
     Badge,
@@ -133,8 +114,6 @@ const FORM_OPTIONS = [
     RowLink,
     RowStop,
     Pager,
-    SortHeader,
-    GridBody,
     FiltersBar,
     ColumnFilterRow,
     TaskTypeCell,
@@ -166,40 +145,69 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
     () => new Map([...this.workflowOptions()].map(([id, w]) => [id, w.name])),
   );
 
-  private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
+  private readonly scroll = viewChild('scroll', { read: ElementRef });
   /** Below 640 px the list is cards, not a table (#374). */
   protected readonly phone = phoneCards();
-  /**
-   * The optional columns drop in a fixed order as the window narrows, so the grid never scrolls sideways and the row menu stays in view
-   * (#374): Open tasks below 1366 px, Workflows (the count) below 1200 px, then Request form below 1100 px, then Target below 1000 px; Name, Default workflow and
-   * Status stay. (The limits were 1280, 1100, 900 and 768 until the capitals of the theme's heading row made every column wider: at those widths the table scrolled sideways and the Name was 77 px; the Default workflow text is also clipped at 10 rem now.) The open Task count is null in the API without Task.View, so that column is not there for a person without it.
-   */
-  private readonly targetRoom = COLUMN_ROOM;
-  private readonly formRoom = COLUMN_ROOM;
-  private readonly workflowsRoom = COLUMN_ROOM;
-  private readonly tasksRoom = COLUMN_ROOM;
   protected readonly canViewTasks = computed(() => this.auth.has('Task.View'));
-  /** The Target column (#853) drops below 1000 px, after the Request form (at 640 px it made the table 57 px wider than its box); the target stays in the row's accessible summary and on the record. */
-  protected readonly targetShown = this.targetRoom;
-  protected readonly formRoomShown = this.formRoom;
-  protected readonly workflowsShown = this.workflowsRoom;
-  protected readonly tasksShown = computed(() => this.tasksRoom() && this.canViewTasks());
-  protected readonly columns = computed<readonly string[]>(() =>
-    COLUMNS.filter(
-      (c) =>
-        (c !== 'target' || this.targetRoom()) &&
-        (c !== 'form' || this.formRoom()) &&
-        (c !== 'workflows' || this.workflowsRoom()) &&
-        (c !== 'openTasks' || this.tasksShown()),
-    ),
-  );
-  /** The real columns for the skeleton (#370, #575): the bone and the sizing class of each shown column. */
-  protected readonly columnSpec = computed<readonly AdminColumn[]>(() =>
-    this.columns().map((c) => ({
-      bone: BONES[c as keyof typeof BONES],
-      cls: SKELETON_CELL[c as keyof typeof SKELETON_CELL],
-    })),
-  );
+  /**
+   * The columns (the shared record grid, #1241; #1201): Name is the spring; the others have fixed widths so the headings never move. Open Tasks is not
+   * there without Task.View (the API sends null).
+   */
+  protected readonly gridDefs = computed((): RecordGridColumn[] => [
+    { key: 'name', label: 'Name', locked: true, sort: 'name', minWidth: '240px' },
+    {
+      key: 'defaultWorkflow',
+      label: 'Default Workflow',
+      sort: 'defaultWorkflow',
+      width: '11rem',
+      minWidth: '11rem',
+    },
+    {
+      key: 'target',
+      label: 'Target (Days)',
+      num: true,
+      width: 'var(--mf-col-count-w)',
+      minWidth: 'var(--mf-col-count-w)',
+    },
+    { key: 'form', label: 'Request Form', sort: 'form', width: '8rem', minWidth: '8rem' },
+    {
+      key: 'workflows',
+      label: 'Workflows',
+      sort: 'workflows',
+      firstDesc: true,
+      num: true,
+      width: 'var(--mf-col-count-w)',
+      minWidth: 'var(--mf-col-count-w)',
+    },
+    ...(this.canViewTasks()
+      ? [
+          {
+            key: 'openTasks',
+            label: 'Open Tasks',
+            sort: 'openTasks',
+            firstDesc: true,
+            num: true,
+            width: 'var(--mf-col-count-w)',
+            minWidth: 'var(--mf-col-count-w)',
+          },
+        ]
+      : []),
+    {
+      key: 'status',
+      label: 'Status',
+      sort: 'status',
+      width: '11rem',
+      minWidth: '11rem',
+    },
+  ]);
+  protected readonly grid = new RecordGridState('admin-task-types', this.gridDefs);
+  protected readonly bones = BONES;
+  /** An inactive type keeps the `inactive` hook of its row (the order test and the page's own styling). */
+  protected readonly rowClass = (t: TaskTypeView): string | null =>
+    t.isActive ? null : 'inactive';
+  protected readonly typeKey = (t: TaskTypeView): number => t.id;
+  /** The columns of the table in order, the row action last: what the filter row builds its cells from. */
+  protected readonly columns = computed<readonly string[]>(() => [...this.grid.shown(), 'actions']);
   /** The phone's Sort by select: the sortable columns (the headers' keys). */
   protected readonly sortOptions: readonly SortOption[] = [
     { value: 'name', label: 'Name' },
@@ -326,7 +334,7 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
     });
     // The controls move into the sheet while the grid scrolls sideways (the grid is not there while the phone shows cards).
     effect(() => {
-      const area = this.scroll()?.nativeElement;
+      const area = this.scroll()?.nativeElement as HTMLElement | undefined;
       if (area) untracked(() => this.filters.watchOverflow(area));
     });
   }

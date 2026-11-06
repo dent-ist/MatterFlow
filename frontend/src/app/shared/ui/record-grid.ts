@@ -279,6 +279,7 @@ export class RecordCell {
       <div class="mf-scroll">
         <table
           class="pg-table tt"
+          [attr.id]="tableId()"
           [mfResizable]="grid().grid"
           mfReorder
           (columnMove)="grid().move($event)"
@@ -425,6 +426,8 @@ export class RecordGrid<T = any> {
   readonly label = input.required<string>();
   /** The hidden table caption; defaults to the label. */
   readonly caption = input('');
+  /** The id of the `<table>`, for the "Skip to table" link of the Administration list shell (`tableId`). */
+  readonly tableId = input<string | null>(null);
   /** Plural, lowercase: "clients" (the empty, error and loading sentences). */
   readonly noun = input.required<string>();
   readonly rows = input.required<readonly T[]>();

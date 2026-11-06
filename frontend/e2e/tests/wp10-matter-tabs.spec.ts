@@ -264,9 +264,7 @@ test.describe('WP10 matter tabs', () => {
     }) => {
       await page.goto(projectsUrl(w.empty));
       await ready(page);
-      await expect(page.locator('[data-empty=projects]')).toContainText(
-        'No projects yet.',
-      );
+      await expect(page.locator('[data-empty=projects]')).toContainText('No projects yet.');
       await page.locator('[data-empty-new-project]').click();
       // The pop-up dialog opens and the page stays where it is (MD-22).
       await expect(page.locator('.mf-formdlg')).toContainText('New Project');

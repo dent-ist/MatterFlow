@@ -88,7 +88,9 @@ describe('HolidaysAdmin (Settings > Holidays)', () => {
   it('deleting a holiday asks first', async () => {
     const f = await create();
     const before = qa(f, '[data-holiday]').length;
-    qa<HTMLButtonElement>(f, '[data-delete-holiday]')[0].click();
+    qa<HTMLButtonElement>(f, '[data-holiday] button[data-overflow]')[0].click();
+    await settle(f);
+    document.querySelector<HTMLElement>('[role=menuitem][data-action="delete"]')!.click();
     await settle(f);
     expect(document.querySelector('[data-confirm-body]')?.textContent).toContain(
       'no longer counts',

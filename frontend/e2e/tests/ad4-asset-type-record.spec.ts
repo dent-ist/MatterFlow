@@ -80,7 +80,7 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
       'true',
     );
     await expect(page.locator('[data-no-fields]')).toContainText('no published fields');
-    await expect(page.getByRole('button', { name: 'Create fields' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Create Fields' })).toBeVisible();
     await shot(page, 'asset-type-created-fields');
   });
 

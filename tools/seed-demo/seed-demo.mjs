@@ -6,7 +6,7 @@
 //   npm run seed:demo -- --dry-run                 only prints what would be created
 //
 // Everything goes through the public HTTP API (as the Dev default admin, and as the test users for their own work), exactly like the
-// screens do: nothing is written to the database directly. See the README section "Demo data".
+// screens do: nothing is written to the database directly. See wiki/Operations/Demo-Data-and-Personas.md.
 
 import { Api, ApiError, Pacer, withRecheck } from './lib/http.mjs';
 import { createRng } from './lib/rng.mjs';

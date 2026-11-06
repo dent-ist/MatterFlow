@@ -67,13 +67,13 @@ describe('ChartPanel', () => {
     expect(q('[data-show-table]').getAttribute('aria-pressed')).toBe('true');
   });
 
-  it('shows a pie with patterns, then a bar, and goes back to the table', async () => {
+  it('shows a pie without hatching, then a bar, and goes back to the table', async () => {
     q<HTMLButtonElement>('[data-show-pie]').click();
     await settle(fixture);
     expect(host.kind()).toBe('pie');
     expect(el().querySelector('mf-pie-chart svg')).not.toBeNull();
     expect(el().querySelectorAll('[data-slice]')).toHaveLength(3);
-    expect(el().querySelectorAll('[data-slice-pattern]')).toHaveLength(2); // slot 0 is solid
+    expect(el().querySelectorAll('[data-slice-pattern]')).toHaveLength(0); // no hatching or stripes anywhere (D-04)
     expect(el().querySelector('table')).toBeNull();
 
     q<HTMLButtonElement>('[data-show-bar]').click();

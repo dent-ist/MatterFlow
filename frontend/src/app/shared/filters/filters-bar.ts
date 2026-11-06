@@ -152,7 +152,7 @@ export class MoreFilters {
           }
         }
         <ng-content />
-        @if (filters().moreDefs().length > 0) {
+        @if (moreFilters() && filters().moreDefs().length > 0) {
           <mf-more-filters [filters]="filters()" />
         }
         @if (!bare()) {
@@ -291,11 +291,18 @@ export class FiltersBar extends FocusFilter {
    */
   readonly bare = input(false);
 
+  /**
+   * The "Other Filters" button for filters that have no column on screen (default on). A list whose filters all have a column (the Administration > Users list:
+   * the account, email and first seen filters are optional columns in the Columns chooser) turns it off: one Filters entry in the header, no second button
+   * (#1197); a filter set from the address on a hidden column still shows as a chip.
+   */
+  readonly moreFilters = input(true);
+
   /** The bar has chips to show, or (row closed) the one Clear filters link. */
   protected readonly barRow = computed(() => {
     const f = this.filters();
     const chips = f.rowVisible() ? f.hiddenChips() : f.chips();
-    return chips.length > 0 || this.clearHere() || f.moreDefs().length > 0;
+    return chips.length > 0 || this.clearHere() || (this.moreFilters() && f.moreDefs().length > 0);
   });
 
   /** The bar shows Clear filters: filters are active, the grid's empty state has none of its own, and (bare) the row is closed. */

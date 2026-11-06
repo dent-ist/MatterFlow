@@ -22,7 +22,7 @@
               <span class="mf-namecell">
                 <span class="mf-name" [attr.title]="r.name">{{ r.name }}</span>
                 @if (r.isSystemAdmin) {
-                  <span class="mf-chip">Built-in, locked</span>
+                  <mf-badge tone="neutral" icon="pi-lock">Built-in, Locked</mf-badge>
                 }
               </span>
               <span class="mf-desc">{{ r.description }}</span>

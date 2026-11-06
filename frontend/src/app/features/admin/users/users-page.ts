@@ -15,7 +15,7 @@ import {
 } from '@angular/core';
 import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Button } from 'primeng/button';
+import { NgTemplateOutlet } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
@@ -41,15 +41,18 @@ import { AdminCardList, AdminCardSpec } from '../../../shared/ui/admin-card-spec
 import { phoneCards } from '../../../shared/ui/record-card-list';
 import { availabilityDisplay } from '../../../core/availability/availability';
 import { USER_TIME_ZONE } from '../../../core/time/clock';
-import { WIDE_COLUMN_DROP, columnDropOrder } from '../../../shared/ui/admin-card-spec';
-import { AdminColumn, adminListState } from '../../../shared/ui/admin-list-state';
+import { adminListState } from '../../../shared/ui/admin-list-state';
 import { rowActions } from '../../../shared/ui/row-actions';
 import { Badge } from '../../../shared/ui/badge';
-import { ScrollArea } from '../../../shared/ui/fixed-page';
-import { GridBody } from '../../../shared/ui/grid-body';
+import {
+  RecordCell,
+  RecordColumns,
+  RecordGrid,
+  RecordGridColumn,
+  RecordGridState,
+} from '../../../shared/ui/record-grid';
 import { parsePage } from '../../../shared/ui/list-helpers';
 import { DEFAULT_PAGE_SIZE, PAGE_SIZES, parsePageSize } from '../../../shared/ui/list-query';
-import { SortHeader } from '../../../shared/ui/data-table';
 import { parseSortExpression } from '../../../shared/ui/record-sort';
 import { PhoneSort, SortChoice, SortOption } from '../../../shared/work-queue/phone-sort';
 import { Pager } from '../../../shared/ui/pager';
@@ -77,8 +80,18 @@ const STATUS_VALUES: readonly StatusOption[] = ['pending', 'active', 'inactive',
 /** The columns the server can sort by (#436); anything else in the address is ignored. */
 const SORT_FIELDS: readonly UserSortKey[] = ['name', 'firstSeen', 'lastSeen'];
 
-/** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = ['name', 'roles', 'pods', 'availability', 'lastSeen', 'status', 'actions'] as const;
+/** Bone widths of a skeleton row, per column key. */
+const BONES: Record<string, string> = {
+  name: '12rem',
+  account: '6rem',
+  email: '10rem',
+  roles: '7rem',
+  pods: '8rem',
+  availability: '6rem',
+  registered: '4rem',
+  lastSeen: '4rem',
+  status: '5rem',
+};
 
 /**
  * The status choices above the grid (#429): one of them is always pressed, and it is the `status` parameter of the address. Pending
@@ -118,22 +131,22 @@ const AVAILABILITY_OPTIONS = [
   selector: 'mf-users-page',
   imports: [
     NumericDatePipe,
-    Button,
+    NgTemplateOutlet,
     MfDateLongPipe,
     UserDrawer,
-    ScrollArea,
+    RecordGrid,
+    RecordCell,
+    RecordColumns,
     Pager,
     Badge,
     AvailabilityChip,
     AvailabilityDialog,
     UserPodsCell,
-    GridBody,
     FiltersBar,
     ColumnFilterRow,
     FilterChips,
     ActionMenu,
     AdminCardList,
-    SortHeader,
     PhoneSort,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -157,35 +170,81 @@ export class UsersPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
-  private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
+  private readonly scroll = viewChild('scroll', { read: ElementRef });
+  /** The scrolling region of the grid (the shared frame's scroll area), once the grid is drawn. */
+  private scrollArea(): HTMLElement | null {
+    return (
+      this.scroll()?.nativeElement.querySelector?.('.mf-scroll-area') ??
+      (this.scroll()?.nativeElement as HTMLElement | undefined) ??
+      null
+    );
+  }
   /** Pending access when someone is waiting, else Active; applies only while the address has no `status`. */
   private readonly defaultTab = signal<Tab>('active');
   private readonly ready = signal(false);
   /** True once the counts endpoint has answered at least once (the segments show `--` until then). */
   private readonly countsKnown = signal(false);
 
-  /**
-   * The optional columns leave in the kit's order as the window narrows (the Pods first, then Roles): below 1280 and 1100 px. The filter
-   * row follows, and a filter on a column that is not shown stays as a chip and in "Other filters".
-   */
   /** Below 640 px the list is cards (#445), not a table. */
   protected readonly phone = phoneCards();
   private readonly zone = inject(USER_TIME_ZONE);
   /**
-   * Last seen is the first to go, below 1440 px: with a long out-of-office chip, a pending person's Grant access and the other columns at their
-   * widest the 1366 px grid has no room for a seventh column. The sort stays in the address, and on a phone in the Filters sheet.
+   * The columns of the grid (the shared record grid, #1241; Administration lists, #1197): Name is the spring, the others have a fixed width so the headings
+   * do not move while the list loads, is empty or has rows. Windows Account, Email and First Seen are optional (the Columns button): their filters are
+   * columns too, so the list needs no "Other Filters" button.
    */
-  protected readonly drop = { ...columnDropOrder(['pods', 'roles']), lastSeen: WIDE_COLUMN_DROP };
-  protected readonly columnSpec: AdminColumn[] = [
-    { cls: 'mf-cell-name', bone: '14rem' },
-    { cls: 'mf-cell-muted', bone: '7rem', drop: this.drop.roles },
-    { cls: 'us-pods', bone: '8rem', drop: this.drop.pods },
-    { cls: 'mf-cell-badge', bone: '6rem' },
-    { cls: 'mf-cell-date', bone: '4rem', drop: this.drop.lastSeen },
-    { cls: 'mf-cell-badge', bone: '5rem' },
-    { cls: 'mf-cell-actions', bone: '1.5rem' },
-  ];
-  /** The window width, for the columns that leave (the same rule as the grid stylesheet: the window, not the box). */
+  protected readonly gridDefs = signal<readonly RecordGridColumn[]>([
+    { key: 'name', label: 'Name', locked: true, sort: 'name', minWidth: '200px' },
+    {
+      key: 'account',
+      label: 'Windows Account',
+      defaultHidden: true,
+      extra: true,
+      width: '9rem',
+      minWidth: '9rem',
+    },
+    {
+      key: 'email',
+      label: 'Email',
+      defaultHidden: true,
+      extra: true,
+      width: '12rem',
+      minWidth: '12rem',
+    },
+    { key: 'roles', label: 'Roles', width: '9rem', minWidth: '9rem' },
+    { key: 'pods', label: 'Pods', width: '15rem', minWidth: '15rem' },
+    { key: 'availability', label: 'Availability', width: '10rem', minWidth: '10rem' },
+    {
+      key: 'registered',
+      label: 'First Seen',
+      defaultHidden: true,
+      extra: true,
+      sort: 'firstSeen',
+      width: 'var(--mf-col-created-w)',
+      minWidth: 'var(--mf-col-created-w)',
+    },
+    {
+      key: 'lastSeen',
+      label: 'Last Seen',
+      sort: 'lastSeen',
+      width: 'var(--mf-col-created-w)',
+      minWidth: 'var(--mf-col-created-w)',
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      width: 'var(--mf-col-status-w)',
+      minWidth: 'var(--mf-col-status-w)',
+    },
+  ]);
+  protected readonly grid = new RecordGridState('admin-users', this.gridDefs);
+  protected readonly bones = BONES;
+  protected readonly userKey = (u: UserSummaryDto): number => u.userId;
+  /** The open person's row is the selected row (the shared `is-selected` look). */
+  protected readonly rowClass = (u: UserSummaryDto): string | null =>
+    u.userId === this.userId() ? 'is-selected' : null;
+  /** The columns of the table in order, the row action last: what the filter row builds its cells from and what "Other Filters" compares with. */
+  protected readonly columns = computed<readonly string[]>(() => [...this.grid.shown(), 'actions']);
   /** The sort of the address as `name`, `-lastSeen` (empty: the queue order, waiting people first); a field the server does not know is ignored. */
   protected readonly sortExpr = computed(() => {
     const parsed = parseSortExpression(this.filters.params().get('sort'));
@@ -197,13 +256,6 @@ export class UsersPage implements OnInit {
     () => parseSortExpression(this.sortExpr())?.field ?? null,
   );
   protected readonly sortDir = computed(() => parseSortExpression(this.sortExpr())?.dir ?? null);
-  /** The Last seen column shows while the list has a person who signed in (or it is the sort): the API returns null when nothing is stored (#437). */
-  protected readonly lastSeenShown = computed(
-    () => this.users().some((u) => !!u.lastLoginAtUtc) || this.sortField() === 'lastSeen',
-  );
-  protected readonly visibleColumns = computed<readonly string[]>(() => {
-    return COLUMNS.filter((c) => !(c === 'lastSeen' && !this.lastSeenShown()));
-  });
   /** One array per load of the roles: the Roles control keeps what the person ticked while the list reloads under it. */
   private readonly roleOptions = computed(() =>
     this.roles().map((r) => ({ value: String(r.roleId), label: r.name })),
@@ -220,7 +272,7 @@ export class UsersPage implements OnInit {
     noun: 'users',
     openByDefault: true,
     sheetBelow: 640,
-    visibleColumns: this.visibleColumns,
+    visibleColumns: this.columns,
     defs: computed((): FilterDef[] => [
       { key: 'name', label: 'Name', column: 'name', type: 'text' },
       { key: 'account', label: 'Windows Account', column: 'account', type: 'text' },
@@ -352,8 +404,7 @@ export class UsersPage implements OnInit {
     // The controls move into the sheet while the grid scrolls sideways.
     afterNextRender(
       () => {
-        const area = this.scroll()?.nativeElement;
-        this.filters.watchOverflow(area);
+        this.filters.watchOverflow(this.scrollArea());
       },
       { injector: this.injector },
     );
@@ -461,9 +512,7 @@ export class UsersPage implements OnInit {
   }
 
   private rowOf(userId: number): HTMLElement | null {
-    return (
-      this.scroll()?.nativeElement.querySelector<HTMLElement>(`tr[data-user="${userId}"]`) ?? null
-    );
+    return this.scrollArea()?.querySelector<HTMLElement>(`tr[data-record-id="${userId}"]`) ?? null;
   }
 
   /** The person's account beside the name, for the accessible names of the row's controls ("Open Alex Abbott (kej01)"). */
@@ -572,12 +621,12 @@ export class UsersPage implements OnInit {
     const root = this.host.nativeElement;
     const target =
       root.querySelector<HTMLElement>(
-        'tbody tr[data-user] button[data-open], li.rc button[data-card-name]',
+        'tbody tr[data-record-id] button[data-open], li.rc button[data-card-name]',
       ) ??
       root.querySelector<HTMLElement>(
         ':is(td, div, p)[data-empty], :is(td, div, p)[data-error], :is(td, div, p)[data-forbidden]',
       ) ??
-      root.querySelector<HTMLElement>('.mf-table-wrap');
+      root.querySelector<HTMLElement>('.mf-scroll-area');
     if (!target) return;
     if (!target.matches('a, button, [tabindex]')) target.setAttribute('tabindex', '-1');
     target.focus();
@@ -646,11 +695,11 @@ export class UsersPage implements OnInit {
 
   /** Focus on the name of a person's row (else of the first row, else the list itself). */
   private focusRowOf(userId: number | null): void {
-    const host = this.scroll()?.nativeElement;
+    const host = this.scrollArea();
     const target =
       (userId !== null
-        ? host?.querySelector<HTMLElement>(`tr[data-user="${userId}"] button[data-open]`)
-        : null) ?? host?.querySelector<HTMLElement>('tr[data-user] button[data-open]');
+        ? host?.querySelector<HTMLElement>(`tr[data-record-id="${userId}"] button[data-open]`)
+        : null) ?? host?.querySelector<HTMLElement>('tr[data-record-id] button[data-open]');
     (target ?? host)?.focus();
   }
 

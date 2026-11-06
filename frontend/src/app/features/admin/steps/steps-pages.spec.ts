@@ -133,7 +133,7 @@ describe('StepsListPage', () => {
     const el: HTMLElement = fixture.nativeElement;
 
     const rows = Array.from(el.querySelectorAll('tbody tr'));
-    expect(rows.map((r) => r.getAttribute('data-row'))).toEqual(['Deduplicate', 'OCR']);
+    expect(rows.map((r) => r.getAttribute('data-record-id'))).toEqual(['Deduplicate', 'OCR']);
     expect(rows[0].querySelector('a')?.getAttribute('href')).toBe('/admin/steps/4');
     // "Used in n workflows" opens the Workflows tab filtered to the step; 0 says "Not Used" (muted, no link).
     const used = rows[0].querySelector<HTMLAnchorElement>('[data-used-in-link]')!;
@@ -313,7 +313,7 @@ describe('StepsListPage narrow window (#356)', () => {
     expect(Array.from(el.querySelectorAll('thead th')).map((th) => th.textContent!.trim())).toEqual(
       ['Title', 'Description', 'Tags', 'Used in', 'Inputs', 'Status', 'Actions'],
     );
-    const row = el.querySelector('tbody tr[data-row="Deduplicate"]')!;
+    const row = el.querySelector('tbody tr[data-record-id="Deduplicate"]')!;
     expect(row.querySelectorAll('td')).toHaveLength(7);
     expect(row.querySelector('a.pg-name')!.getAttribute('title')).toBe('Deduplicate');
     const used = row.querySelector('[data-used-in-link]')!;
@@ -402,7 +402,7 @@ describe('StepsListPage phone cards and narrow columns (#375)', () => {
       'Status',
       'Actions',
     ]);
-    const row: HTMLElement = fixture.nativeElement.querySelector('tbody tr[data-row]');
+    const row: HTMLElement = fixture.nativeElement.querySelector('tbody tr[data-record-id]');
     expect(row.querySelectorAll('[data-tag]')).toHaveLength(2);
     expect(row.querySelector('[data-tags-more]')!.textContent).toContain('+1 more');
   });
@@ -435,7 +435,7 @@ describe('StepsListPage Inputs column (#378)', () => {
     const fixture = TestBed.createComponent(StepsListPage);
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
-    const cell = (title: string) => el.querySelector(`[data-row="${title}"] [data-inputs]`)!;
+    const cell = (title: string) => el.querySelector(`[data-record-id="${title}"] [data-inputs]`)!;
     const badge = cell('Drafted').querySelector('[data-inputs-draft]')!;
     expect(badge.textContent!.trim()).toBe('Draft');
     expect(badge.querySelector('[data-tone="neutral"]')).not.toBeNull();
@@ -529,10 +529,12 @@ describe('StepsListPage row menu', () => {
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelectorAll('tbody button[data-overflow]')).toHaveLength(2);
     expect(
-      el.querySelector('tr[data-row="OCR"] button[data-overflow]')!.getAttribute('aria-label'),
+      el
+        .querySelector('tr[data-record-id="OCR"] button[data-overflow]')!
+        .getAttribute('aria-label'),
     ).toBe('Actions for OCR');
 
-    el.querySelector<HTMLButtonElement>('tr[data-row="OCR"] button[data-overflow]')!.click();
+    el.querySelector<HTMLButtonElement>('tr[data-record-id="OCR"] button[data-overflow]')!.click();
     await settle(fixture);
     expect(entries(el)).toEqual(['edit-inputs', 'activate']);
     el.querySelector<HTMLButtonElement>('[data-action=activate]')!.click();
@@ -540,7 +542,7 @@ describe('StepsListPage row menu', () => {
     expect(api.activateStepDefinition).toHaveBeenCalledWith(5, { rowVersion: 'AAAA' });
 
     el.querySelector<HTMLButtonElement>(
-      'tr[data-row="Deduplicate"] button[data-overflow]',
+      'tr[data-record-id="Deduplicate"] button[data-overflow]',
     )!.click();
     await settle(fixture);
     expect(entries(el)).toEqual(['edit-inputs', 'deactivate']);
@@ -551,7 +553,7 @@ describe('StepsListPage row menu', () => {
     });
 
     el.querySelector<HTMLButtonElement>(
-      'tr[data-row="Deduplicate"] button[data-overflow]',
+      'tr[data-record-id="Deduplicate"] button[data-overflow]',
     )!.click();
     await settle(fixture);
     el.querySelector<HTMLButtonElement>('[data-action=deactivate]')!.click();
@@ -770,12 +772,12 @@ describe('StepsListPage tags', () => {
     expect(Array.from(el.querySelectorAll('thead th')).map((th) => th.textContent!.trim())).toEqual(
       ['Title', 'Description', 'Tags', 'Used in', 'Inputs', 'Status', 'Actions'],
     );
-    const first = el.querySelector('tbody tr[data-row="Deduplicate"]')!;
+    const first = el.querySelector('tbody tr[data-record-id="Deduplicate"]')!;
     expect(
       Array.from(first.querySelectorAll('[data-tag]')).map((c) => c.textContent!.trim()),
     ).toEqual(['Relativity', 'Processing']);
     expect(first.querySelector('[data-tags-more]')!.textContent).toContain('+3 more');
-    expect(el.querySelector('tbody tr[data-row="OCR"] [data-tags]')).toBeNull();
+    expect(el.querySelector('tbody tr[data-record-id="OCR"] [data-tags]')).toBeNull();
     expect(api.listStepTags).toHaveBeenCalledWith(undefined, true, 200);
 
     el.querySelector<HTMLButtonElement>('button[data-filter="tags"]')!.click();

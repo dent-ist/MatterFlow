@@ -21,12 +21,17 @@ import { ApiError } from '../../../core/http/api-error';
 import { ActionMenu } from '../../../shared/ui/action-menu';
 import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
 import { AdminCardList, AdminCardSpec } from '../../../shared/ui/admin-card-spec';
-import { AdminColumn, adminListState } from '../../../shared/ui/admin-list-state';
+import { adminListState } from '../../../shared/ui/admin-list-state';
 import { AdminListShell } from '../../../shared/ui/admin-list-shell';
-import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { LocalPaging } from '../../../shared/ui/local-paging';
 import { Pager } from '../../../shared/ui/pager';
-import { GridBody } from '../../../shared/ui/grid-body';
+import {
+  RecordCell,
+  RecordGrid,
+  RecordGridColumn,
+  RecordGridState,
+} from '../../../shared/ui/record-grid';
+import { IntPipe } from '../../../shared/ui/number-format';
 import { LoadState } from '../../../shared/ui/data-table';
 import { phoneCards } from '../../../shared/ui/record-card-list';
 import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
@@ -53,14 +58,13 @@ const ICONS: Record<string, string> = {
   project: 'pi pi-folder',
 };
 
-/** The loaded cell class and the skeleton bone of each column: one definition for the table and its loading rows (#575). */
-const COLUMNS: readonly AdminColumn[] = [
-  { cls: 'mf-cell-name', bone: '8rem' },
-  { cls: 'mf-cell-muted', bone: '7rem' },
-  { cls: 'mf-cell-muted', bone: '6rem' },
-  { cls: 'mf-cell-badge', bone: '10rem' },
-  { cls: 'mf-cell-actions', bone: '1.5rem' },
-];
+/** The skeleton bone of each column (the loading rows of the grid). */
+const BONES: Record<string, string> = {
+  name: '8rem',
+  fields: '1.5rem',
+  published: '6rem',
+  form: '10rem',
+};
 
 /**
  * Admin: Custom Fields (UX S18, #644). On the admin list shell: the three objects that carry custom fields (Client, Matter, Project), each
@@ -78,11 +82,12 @@ const COLUMNS: readonly AdminColumn[] = [
     AdminCardList,
     AdminListShell,
     FormStatusCell,
-    GridBody,
+    IntPipe,
     Pager,
+    RecordCell,
+    RecordGrid,
     RouterLink,
     RowLink,
-    ScrollArea,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -108,94 +113,90 @@ const COLUMNS: readonly AdminColumn[] = [
           (retry)="load()"
         />
       } @else {
-        <div class="mf-table-wrap" mfScrollArea="Custom fields list">
-          <div class="mf-scroll">
-            <table class="mf-grid" id="custom-fields-table" data-objects>
-              <caption class="mf-sr-only">
-                Objects with custom fields
-              </caption>
-              <thead>
-                <tr>
-                  <th class="mf-cell-name" scope="col">Object</th>
-                  <th class="mf-cell-muted" scope="col">Fields</th>
-                  <th class="mf-cell-muted" scope="col">Published</th>
-                  <th class="mf-cell-badge" scope="col">Form</th>
-                  <th class="mf-cell-actions" scope="col">
-                    <span class="mf-sr-only">Actions</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody
-                mfGridBody
-                noun="objects"
-                [columnSpec]="columns"
-                [state]="ls.state()"
-                [empty]="ls.empty()"
-                [filtered]="false"
-                (retry)="load()"
-              >
-                @for (r of paging.slice(rows()); track r.key) {
-                  <tr [attr.data-row]="r.label">
-                    <td class="mf-cell-name">
-                      <a
-                        class="mf-name mf-link cf-name"
-                        [routerLink]="['/admin/custom-fields', r.key, 'form']"
-                        [mfRowLink]="listId"
-                        [rowKey]="r.key"
-                        [state]="leave.state()"
-                        [attr.title]="r.label"
-                        data-open
-                      >
-                        <i [class]="r.icon" aria-hidden="true"></i>
-                        {{ r.label }}</a
-                      >
-                    </td>
-                    <td class="mf-cell-muted" data-fields>{{ fieldsText(r) }}</td>
-                    <td class="mf-cell-muted" data-published [attr.title]="publishedTitle(r)">
-                      @if (r.summary?.publishedVersion; as v) {
-                        v{{ v }}
-                        @if (r.summary?.publishedAtUtc; as at) {
-                          &middot; {{ at | mfNum: 'date' }}
-                        }
-                      } @else {
-                        Not published
-                      }
-                    </td>
-                    <td class="mf-cell-badge" data-status>
-                      <mf-form-status-cell
-                        [publishedVersion]="r.summary?.publishedVersion ?? null"
-                        [draftVersion]="r.summary?.draftVersion ?? null"
-                      />
-                    </td>
-                    <td class="mf-cell-actions" [attr.data-actions-of]="r.key">
-                      @if (menus().get(r.key); as menu) {
-                        <mf-action-menu
-                          [floating]="true"
-                          [label]="menu.label"
-                          [items]="menu.items"
-                        />
-                      }
-                    </td>
-                  </tr>
+        <div class="mf-fill">
+          <mf-record-grid
+            data-objects
+            tableId="custom-fields-table"
+            label="Custom fields list"
+            caption="Objects with custom fields"
+            noun="objects"
+            [grid]="grid"
+            [rows]="paging.slice(rows())"
+            [rowKey]="objectKey"
+            [loadState]="ls.state()"
+            [empty]="ls.empty()"
+            [actions]="true"
+            [bones]="bones"
+            (retry)="load()"
+          >
+            <ng-template mfCell="name" let-r>
+              <td class="cf-namecell" [attr.data-row]="r.label">
+                <a
+                  class="mf-link cf-name pg-clip"
+                  [routerLink]="['/admin/custom-fields', r.key, 'form']"
+                  [mfRowLink]="listId"
+                  [rowKey]="r.key"
+                  [state]="leave.state()"
+                  [attr.title]="r.label"
+                  data-open
+                >
+                  <i [class]="r.icon" aria-hidden="true"></i>
+                  <span>{{ r.label }}</span></a
+                >
+              </td>
+            </ng-template>
+            <ng-template mfCell="fields" let-r>
+              <td class="pg-num" data-fields [attr.title]="fieldsText(r)">
+                {{ r.summary?.fieldCount ?? 0 | mfInt }}
+              </td>
+            </ng-template>
+            <ng-template mfCell="published" let-r>
+              <td class="pg-nowrap muted" data-published [attr.title]="publishedTitle(r)">
+                @if (r.summary?.publishedVersion; as v) {
+                  v{{ v }}
+                  @if (r.summary?.publishedAtUtc; as at) {
+                    &middot; {{ at | mfNum: 'date' }}
+                  }
+                } @else {
+                  Not published
                 }
-              </tbody>
-            </table>
-          </div>
+              </td>
+            </ng-template>
+            <ng-template mfCell="form" let-r>
+              <td class="pg-nowrap" data-status>
+                <mf-form-status-cell
+                  [publishedVersion]="r.summary?.publishedVersion ?? null"
+                  [draftVersion]="r.summary?.draftVersion ?? null"
+                />
+              </td>
+            </ng-template>
+            <ng-template mfCell="actions" let-r>
+              <td class="mf-col-actions" [attr.data-actions-of]="r.key">
+                @if (menus().get(r.key); as menu) {
+                  <mf-action-menu [floating]="true" [label]="menu.label" [items]="menu.items" />
+                }
+              </td>
+            </ng-template>
+            @if (ls.view() === 'rows') {
+              <div mfGridFoot>
+                <mf-pager
+                  [page]="paging.page()"
+                  [pageSize]="paging.size()"
+                  [pageSizes]="paging.sizes"
+                  [total]="rows().length"
+                  (pageChange)="paging.goTo($event)"
+                  (pageSizeChange)="paging.setSize($event)"
+                />
+              </div>
+            }
+          </mf-record-grid>
         </div>
-        <mf-pager
-          [page]="paging.page()"
-          [pageSize]="paging.size()"
-          [pageSizes]="paging.sizes"
-          [total]="rows().length"
-          (pageChange)="paging.goTo($event)"
-          (pageSizeChange)="paging.setSize($event)"
-        />
       }
       @if (activity(); as r) {
         <mf-activity-drawer
           objectType="FormDefinition"
           [objectId]="r.summary!.formId!"
-          [name]="r.label + ' custom fields'"
+          [name]="r.label + ' Custom Fields'"
           [visible]="true"
           (visibleChange)="!$event && closeActivity()"
         />
@@ -203,8 +204,18 @@ const COLUMNS: readonly AdminColumn[] = [
     </mf-admin-list-shell>
   `,
   styles: `
+    .cf-namecell {
+      max-width: 0;
+    }
+    .cf-name {
+      display: flex;
+      gap: var(--mf-s2);
+      align-items: center;
+    }
     .cf-name i {
-      margin-right: var(--mf-s2);
+      color: var(--mf-text-muted);
+    }
+    .muted {
       color: var(--mf-text-muted);
     }
   `,
@@ -220,7 +231,22 @@ export class CustomFieldsPage implements OnInit {
   protected readonly listId = ADMIN_LIST.customFields.id;
   protected readonly leave = inject(AdminListLeave);
   protected readonly phone = phoneCards();
-  protected readonly columns = COLUMNS;
+  /** The columns of the shared record grid (D-44a): Object is the spring, the count is right aligned, the rest have fixed widths. */
+  protected readonly gridDefs = signal<readonly RecordGridColumn[]>([
+    { key: 'name', label: 'Object', locked: true, minWidth: '200px' },
+    {
+      key: 'fields',
+      label: 'Fields',
+      num: true,
+      width: 'var(--mf-col-count-w)',
+      minWidth: 'var(--mf-col-count-w)',
+    },
+    { key: 'published', label: 'Published', width: '152px', minWidth: '152px' },
+    { key: 'form', label: 'Form', width: '240px', minWidth: '240px' },
+  ]);
+  protected readonly grid = new RecordGridState('admin-custom-fields', this.gridDefs);
+  protected readonly bones = BONES;
+  protected readonly objectKey = (r: Row): string => r.key;
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly rows = signal<Row[]>([]);
@@ -279,7 +305,7 @@ export class CustomFieldsPage implements OnInit {
       map.set(
         r.key,
         rowActions(
-          `${r.label} custom fields`,
+          `${r.label} Custom Fields`,
           [
             {
               id: 'fields',

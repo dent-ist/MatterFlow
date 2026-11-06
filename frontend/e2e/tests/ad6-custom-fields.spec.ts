@@ -16,7 +16,7 @@ const OBJECTS = [
   { key: 'project', label: 'Project', kind: 'Project' },
 ] as const;
 
-const row = (page: Page, label: string) => page.locator(`tr[data-row="${label}"]`);
+const row = (page: Page, label: string) => page.locator(`tr:has(td[data-row="${label}"])`);
 const crumbs = (page: Page) => page.getByRole('navigation', { name: 'Breadcrumb' }).locator('li');
 const WIDTHS = [
   { width: 1920, height: 1080 },

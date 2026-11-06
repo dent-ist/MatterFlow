@@ -64,7 +64,7 @@ const drawer = (page: Page) => page.locator('.mf-user-drawer');
 async function openList(page: Page, width = 1366, height = 768, extra = ''): Promise<void> {
   await page.setViewportSize({ width, height });
   await page.goto(listUrl(extra));
-  await expect(page.locator(width < 640 ? 'li.rc' : 'tr[data-user]')).toHaveCount(4);
+  await expect(page.locator(width < 640 ? 'li.rc' : 'tr[data-record-id]')).toHaveCount(4);
 }
 
 async function openDrawer(page: Page, userId: number): Promise<void> {
@@ -156,7 +156,7 @@ test.describe('#438 the drawer shell', () => {
   test('a deep link opens it; Back closes it and Forward opens it again', async ({ page }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(listUrl());
-    await expect(page.locator('tr[data-user]')).toHaveCount(4);
+    await expect(page.locator('tr[data-record-id]')).toHaveCount(4);
     await nameOf(page, worker.userId).click();
     await expect(drawer(page)).toBeVisible();
     await page.goBack();
@@ -422,7 +422,7 @@ test.describe('#442 a first grant of access', () => {
     ACCOUNT.set(second.userId, second.username);
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/admin/users?status=pending&account=e2e-${XTAG}g`);
-    await expect(page.locator('tr[data-user]')).toHaveCount(2);
+    await expect(page.locator('tr[data-record-id]')).toHaveCount(2);
     const grant = rowOf(page, first.userId).locator('[data-grant] button');
     await grant.click();
     await expect(page.locator('[data-panel-heading]')).toBeFocused();
@@ -449,7 +449,7 @@ test.describe('#443 read-only variants and #444 conflicts', () => {
     const page = await asUser(viewer.username);
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(listUrl());
-    await expect(page.locator('tr[data-user]')).toHaveCount(4);
+    await expect(page.locator('tr[data-record-id]')).toHaveCount(4);
     await expect(page.locator('[data-grant]')).toHaveCount(0);
     await openDrawer(page, pending.userId);
     await expect(page.locator('[data-readonly-reason]')).toContainText(

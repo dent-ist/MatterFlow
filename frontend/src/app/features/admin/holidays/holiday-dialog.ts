@@ -49,7 +49,7 @@ type Pattern = 'FIXED' | 'NTH_WEEKDAY' | 'EASTER_OFFSET';
     <mf-form-dialog
       [title]="holiday() ? 'Edit Holiday' : 'Add Holiday'"
       [subtitle]="calendarName()"
-      [primaryLabel]="holiday() ? 'Save' : 'Add Holiday'"
+      [primaryLabel]="holiday() ? 'Save Holiday' : 'Add Holiday'"
       size="default"
       [dirty]="dirty()"
       [busy]="busy()"

@@ -100,6 +100,38 @@ describe('DashboardSettings form (DB-06)', () => {
     expect((el().querySelector('[data-basis="WORKING"]') as HTMLInputElement).checked).toBe(true);
   });
 
+  it('shows the working days as seven toggle chips and saves a changed day (#1209)', async () => {
+    await create();
+    const chips = Array.from(
+      el().querySelectorAll<HTMLButtonElement>('[data-day-toggles] button[data-key]'),
+    );
+    expect(chips.map((c) => c.textContent!.trim())).toEqual([
+      'Mon',
+      'Tue',
+      'Wed',
+      'Thu',
+      'Fri',
+      'Sat',
+      'Sun',
+    ]);
+    expect(chips.map((c) => c.getAttribute('aria-label'))[0]).toBe('Monday');
+    expect(chips.map((c) => c.getAttribute('aria-pressed'))).toEqual([
+      'true',
+      'true',
+      'true',
+      'true',
+      'true',
+      'false',
+      'false',
+    ]);
+    chips[5].click();
+    fixture.detectChanges();
+    expect(chips[5].getAttribute('aria-pressed')).toBe('true');
+    saveButton().click();
+    await fixture.whenStable();
+    expect(setBody?.gauge.workDays).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
   it('saves changed hours and the clock basis (clock hours are selectable) with an empty version for the first save', async () => {
     await create();
     type('ds-start', '07:30');

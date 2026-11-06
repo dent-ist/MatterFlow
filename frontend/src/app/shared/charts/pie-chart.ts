@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { HATCHES, patternSlot, PATTERN_CSS } from './chart-patterns';
 import { ChartFormat, ChartLink, ChartSlice, plainFormat } from './chart-types';
 import { PIE, PieArc, layoutPie, sharePercent } from './pie-geometry';
 
@@ -8,8 +7,8 @@ let nextId = 0;
 
 /**
  * The pie of the hand-built SVG charts (no chart library; lazy). A donut with the total in the middle, one slice per row, and an optional secondary part
- * of a slice (such as "overdue") as a hatched segment of a thin outer ring. Colour is never the only cue: every slice carries its number (as large slices
- * do in the ring and every legend row does), slices are separated by an outline, a slice can be dashed and, with `patterns`, hatched in its own pattern.
+ * of a slice (such as "overdue") as a solid segment of a thin outer ring. Colour is never the only cue: every slice carries its number (as large slices
+ * do in the ring and every legend row does), slices are separated by an outline and a slice can have its own outline (a solid fill only, never a pattern or a diagonal stripe, D-04).
  * The legend is real text (label, value, share, "N overdue" as a link); focusing or hovering a legend row or a slice shows its text in the middle and
  * under the pie. The SVG itself is one image with a text summary; the legend below it is what screen readers walk. Lifted out of the Dashboard
  * Breakdowns (epic #851, issue #874), which still uses it, and reused by the report builder.
@@ -25,32 +24,6 @@ let nextId = 0;
       <div class="pie" data-pie>
         <div class="figure">
           <svg class="svg" viewBox="0 0 200 200" role="img" [attr.aria-label]="summary()">
-            <defs>
-              @if (patterns()) {
-                @for (h of hatches; track h.n) {
-                  <pattern
-                    [id]="id + '-p' + h.n"
-                    [attr.width]="h.w"
-                    [attr.height]="h.h"
-                    patternUnits="userSpaceOnUse"
-                    [attr.patternTransform]="h.rotate === null ? null : 'rotate(' + h.rotate + ')'"
-                  >
-                    @for (r of h.rects; track $index) {
-                      <rect
-                        class="hatch"
-                        [attr.x]="r.x"
-                        [attr.y]="r.y"
-                        [attr.width]="r.w"
-                        [attr.height]="r.h"
-                      />
-                    }
-                    @for (c of h.circles; track $index) {
-                      <circle class="hatch" [attr.cx]="c.cx" [attr.cy]="c.cy" [attr.r]="c.r" />
-                    }
-                  </pattern>
-                }
-              }
-            </defs>
             @for (arc of arcs(); track arc.index) {
               @if (arc.path) {
                 <path
@@ -69,16 +42,6 @@ let nextId = 0;
                 >
                   <title>{{ tip(arc.slice) }}</title>
                 </path>
-                @if (patterns() && slot(arc.index) > 0) {
-                  <path
-                    class="overlay"
-                    data-slice-pattern
-                    [attr.d]="arc.path"
-                    fill-rule="evenodd"
-                    [attr.fill]="'url(#' + id + '-p' + slot(arc.index) + ')'"
-                    pointer-events="none"
-                  />
-                }
                 @if (arc.label.show) {
                   <text class="num" [attr.x]="arc.label.x" [attr.y]="arc.label.y">
                     {{ arc.index + 1 }}
@@ -112,7 +75,6 @@ let nextId = 0;
                 <span
                   class="swatch"
                   aria-hidden="true"
-                  [class]="'swatch pat-' + (patterns() ? slot(arc.index) : 0)"
                   [class.dashed]="arc.slice.dashed"
                   [style.background-color]="arc.slice.fill"
                   [style.border-color]="arc.slice.outline ?? 'var(--mf-border-strong)'"
@@ -222,7 +184,7 @@ let nextId = 0;
         font-size: 12px;
         fill: var(--mf-text-muted);
       }
-      /* The overdue part of a slice: solid red (D-04, no hatching); its legend row says "N overdue" in words. */
+      /* The overdue part of a slice: solid red (D-04, no stripes); its legend row says "N overdue" in words. */
       .od-ring {
         fill: var(--mf-sem-overdue-solid);
         stroke: var(--mf-surface);
@@ -393,10 +355,6 @@ let nextId = 0;
         white-space: nowrap;
         text-decoration: underline;
       }
-      .hatch {
-        fill: var(--mf-surface);
-        opacity: 0.6;
-      }
       .note {
         margin: 0;
         color: var(--mf-text-muted);
@@ -416,7 +374,6 @@ let nextId = 0;
         white-space: nowrap;
       }
     `,
-    PATTERN_CSS,
   ],
 })
 export class PieChart {
@@ -429,13 +386,10 @@ export class PieChart {
   readonly unit = input('tasks');
   /** The name of the secondary part of a slice ("overdue"). */
   readonly secondaryLabel = input('overdue');
-  /** Hatch every slice after the first in its own pattern, besides colour and numbers (the report charts do; the Dashboard keeps its look). */
-  readonly patterns = input(false);
   /** Formats a value; the default is the plain number. */
   readonly format = input<ChartFormat>(plainFormat);
 
   protected readonly id = `mf-pie-${nextId++}`;
-  protected readonly hatches = HATCHES;
   protected readonly cx = PIE.cx;
   protected readonly cy = PIE.cy;
   /** The slice under the pointer or the keyboard focus (legend row or slice). */
@@ -469,10 +423,6 @@ export class PieChart {
     const s = i === null ? undefined : this.slices()[i];
     return s ? this.tip(s) : '';
   });
-
-  protected slot(index: number): number {
-    return patternSlot(index);
-  }
 
   protected fmt(value: number): string {
     return this.format()(value);

@@ -1,14 +1,20 @@
 <div class="mf-layout">
   <section class="mf-list">
-    <mf-filter-chips
-      label="Users by status"
-      [strip]="true"
-      [chips]="segmentChips()"
-      [value]="segmentActive()"
-      (valueChange)="pickSegment($event)"
-    />
+    <div class="us-bar">
+      <mf-filter-chips
+        label="Users by status"
+        [strip]="true"
+        [chips]="segmentChips()"
+        [value]="segmentActive()"
+        (valueChange)="pickSegment($event)"
+      />
+      @if (!phone()) {
+        <mf-record-columns [grid]="grid" />
+      }
+    </div>
     <mf-filters-bar
       [bare]="true"
+      [moreFilters]="false"
       [filters]="filters"
       controls="user-filter-row"
       [clearAlso]="['q']"
@@ -37,172 +43,175 @@
         (retry)="reload()"
         (clear)="clearFilters()"
       />
+      @if (listState() === 'ready' && total() > 0) {
+        <ng-container *ngTemplateOutlet="pager" />
+      }
     } @else {
-      <div class="mf-table-wrap" mfScrollArea="Users list" #scroll>
-        <div class="mf-scroll">
-          <table class="mf-grid" id="users-table" data-users>
-            <caption class="mf-sr-only">
-              Users
-            </caption>
-            <thead>
-              <tr>
-                <th
-                  class="mf-cell-name"
-                  mfSort="name"
-                  [sort]="sortExpr()"
-                  defaultSort=""
-                  (sorted)="setSort($event)"
-                >
-                  Name
-                </th>
-                <th class="mf-cell-muted" scope="col" [attr.data-drop]="drop.roles">Roles</th>
-                <th class="us-pods" scope="col" [attr.data-drop]="drop.pods">Pods</th>
-                <th class="mf-cell-badge" scope="col">Availability</th>
-                @if (lastSeenShown()) {
-                  <th
-                    class="mf-cell-date"
-                    mfSort="lastSeen"
-                    [attr.data-drop]="drop.lastSeen"
-                    [sort]="sortExpr()"
-                    defaultSort=""
-                    (sorted)="setSort($event)"
-                  >
-                    Last Seen
-                  </th>
-                }
-                <th class="mf-cell-badge" scope="col">Status</th>
-                <th class="mf-cell-actions" scope="col"><span class="mf-sr-only">Actions</span></th>
-              </tr>
-              @if (filters.rowVisible()) {
-                <tr
-                  mfColumnFilterRow
-                  id="user-filter-row"
-                  [filters]="filters"
-                  [columns]="visibleColumns()"
-                ></tr>
-              }
-            </thead>
-            <tbody
-              mfGridBody
-              noun="users"
-              [columnSpec]="columnSpec"
+      <div class="mf-fill">
+        <mf-record-grid
+          #scroll
+          label="Users list"
+          caption="Users"
+          noun="users"
+          [grid]="grid"
+          [rows]="users()"
+          [rowKey]="userKey"
+          [loadState]="ls.state()"
+          [empty]="ls.empty()"
+          [filtered]="ls.filtered()"
+          [filters]="filters"
+          [emptyText]="tab() === 'pending' ? 'No one is waiting for access.' : 'No users found.'"
+          [actions]="true"
+          [rowClass]="rowClass"
+          [bones]="bones"
+          [sort]="sortExpr()"
+          defaultSort=""
+          (sorted)="setSort($event)"
+          (retry)="reload()"
+          (clear)="clearFilters()"
+        >
+          @if (filters.rowVisible()) {
+            <tr
+              mfGridFilterRow
+              mfColumnFilterRow
+              id="user-filter-row"
               [filters]="filters"
-              [emptyText]="
-                tab() === 'pending' ? 'No one is waiting for access.' : 'No users found.'
-              "
-              [state]="ls.state()"
-              [empty]="ls.empty()"
-              [filtered]="ls.filtered()"
-              (retry)="reload()"
-              (clear)="clearFilters()"
-            >
-              @for (u of users(); track u.userId) {
-                <tr [attr.data-user]="u.userId" [class.mf-selected]="userId() === u.userId">
-                  <td class="mf-cell-name">
-                    <button
-                      type="button"
-                      class="mf-name us-open"
-                      data-open
-                      data-row-open
-                      [attr.title]="nameOf(u)"
-                      [attr.aria-label]="'Open ' + nameWithAccount(u)"
-                      (click)="open(u)"
-                    >
-                      {{ nameOf(u) }}
-                    </button>
-                    <span class="mf-desc" [attr.title]="accountLine(u)" data-account>
-                      <span class="mf-mono">{{ accountShort(u) }}</span>
-                      @if (u.isSeededAdmin) {
-                        <span> &middot; Seeded</span>
-                      }
-                    </span>
-                  </td>
-                  <td
-                    class="mf-cell-muted"
-                    [attr.data-drop]="drop.roles"
-                    [attr.title]="rolesLabel(u)"
-                  >
-                    {{ rolesLabel(u) }}
-                  </td>
-                  <td class="us-pods" data-pods-cell [attr.data-drop]="drop.pods">
-                    <mf-user-pods-cell
-                      [displayName]="u.displayName"
-                      [pods]="u.pods"
-                      [catalog]="podChoices()"
-                      [catalogFailed]="podChoicesFailed()"
-                      [canEdit]="canEditPods()"
-                      [busy]="podsBusy().has(u.userId)"
-                      [oneLine]="true"
-                      (opened)="loadPodChoices()"
-                      (applied)="applyPods(u, $event)"
-                    />
-                  </td>
-                  <td class="mf-cell-badge" data-availability-cell>
-                    @switch (availabilityOf(u)) {
-                      @case ('chip') {
-                        <mf-availability-chip [availability]="u.availability" />
-                      }
-                      @case ('plain') {
-                        <span class="us-muted" data-availability-plain>Available</span>
-                      }
-                    }
-                  </td>
-                  @if (lastSeenShown()) {
-                    <td
-                      class="mf-cell-date"
-                      data-last-seen
-                      [attr.data-drop]="drop.lastSeen"
-                      [attr.title]="
-                        u.lastLoginAtUtc ? (u.lastLoginAtUtc | mfDateLong) : 'Never signed in'
-                      "
-                    >
-                      @if (u.lastLoginAtUtc) {
-                        {{ u.lastLoginAtUtc | mfNum: 'date' }}
-                      } @else {
-                        <span class="us-muted">Never</span>
-                      }
-                    </td>
-                  }
-                  <td class="mf-cell-badge" data-status>
-                    @if (u.isPending) {
-                      <mf-badge tone="warning" icon="pi-user-plus">Pending Access</mf-badge>
-                    } @else if (u.isActive) {
-                      <!-- Active is the ordinary state: no badge, only the words for a screen reader. -->
-                      <span class="mf-sr-only">Active</span>
-                    } @else {
-                      <mf-badge tone="neutral">Inactive</mf-badge>
-                    }
-                  </td>
-                  <td class="mf-cell-actions">
-                    @if (u.isPending && canManage()) {
-                      <p-button
-                        label="Grant Access"
-                        data-grant
-                        [ariaLabel]="'Grant access to ' + nameWithAccount(u)"
-                        (onClick)="open(u)"
-                      />
-                    } @else {
-                      @let menu = menuFor(u);
-                      <mf-action-menu [floating]="true" [label]="menu.label" [items]="menu.items" />
-                    }
-                  </td>
-                </tr>
+              [columns]="columns()"
+            ></tr>
+          }
+          <ng-template mfCell="name" let-u>
+            <td class="us-name" data-users-name>
+              <button
+                type="button"
+                class="us-open pg-clip"
+                data-open
+                data-row-open
+                [attr.title]="nameOf(u)"
+                [attr.aria-label]="'Open ' + nameWithAccount(u)"
+                (click)="open(u)"
+              >
+                {{ nameOf(u) }}
+              </button>
+              <span class="us-account pg-clip" [attr.title]="accountLine(u)" data-account>
+                <span class="pg-mono">{{ accountShort(u) }}</span>
+                @if (u.isSeededAdmin) {
+                  <span> &middot; Seeded</span>
+                }
+              </span>
+            </td>
+          </ng-template>
+          <ng-template mfCell="account" let-u>
+            <td class="pg-mono" [attr.title]="u.windowsAccount">
+              <span class="pg-clip">{{ accountShort(u) }}</span>
+            </td>
+          </ng-template>
+          <ng-template mfCell="email" let-u>
+            <td [attr.title]="u.email">
+              <span class="pg-clip">{{ u.email }}</span>
+            </td>
+          </ng-template>
+          <ng-template mfCell="roles" let-u>
+            <td class="us-roles" [attr.title]="rolesLabel(u)">
+              @if (u.isPending && canManage()) {
+                <!-- A person with no role yet: the one thing to do is the button (32 px in a cell, D-02). -->
+                <button
+                  type="button"
+                  class="mf-btn"
+                  data-grant
+                  [attr.aria-label]="'Grant access to ' + nameWithAccount(u)"
+                  (click)="open(u)"
+                >
+                  Grant Access
+                </button>
+              } @else {
+                <span class="pg-clip us-muted-text">{{ rolesLabel(u) }}</span>
               }
-            </tbody>
-          </table>
-        </div>
+            </td>
+          </ng-template>
+          <ng-template mfCell="pods" let-u>
+            <td class="us-pods" data-pods-cell>
+              <mf-user-pods-cell
+                [displayName]="u.displayName"
+                [pods]="u.pods"
+                [catalog]="podChoices()"
+                [catalogFailed]="podChoicesFailed()"
+                [canEdit]="canEditPods()"
+                [busy]="podsBusy().has(u.userId)"
+                [oneLine]="true"
+                (opened)="loadPodChoices()"
+                (applied)="applyPods(u, $event)"
+              />
+            </td>
+          </ng-template>
+          <ng-template mfCell="availability" let-u>
+            <td data-availability-cell>
+              @switch (availabilityOf(u)) {
+                @case ('chip') {
+                  <mf-availability-chip [availability]="u.availability" />
+                }
+                @case ('plain') {
+                  <span class="us-muted" data-availability-plain>Available</span>
+                }
+              }
+            </td>
+          </ng-template>
+          <ng-template mfCell="registered" let-u>
+            <td class="pg-nowrap" data-first-seen [attr.title]="u.registeredAtUtc | mfDateLong">
+              {{ u.registeredAtUtc | mfNum: 'date' }}
+            </td>
+          </ng-template>
+          <ng-template mfCell="lastSeen" let-u>
+            <td
+              class="pg-nowrap"
+              data-last-seen
+              [attr.title]="u.lastLoginAtUtc ? (u.lastLoginAtUtc | mfDateLong) : 'Never signed in'"
+            >
+              @if (u.lastLoginAtUtc) {
+                {{ u.lastLoginAtUtc | mfNum: 'date' }}
+              } @else {
+                <span class="us-muted">Never</span>
+              }
+            </td>
+          </ng-template>
+          <ng-template mfCell="status" let-u>
+            <td data-status>
+              @if (u.isPending) {
+                <mf-badge tone="warning" icon="pi-user-plus">Pending Access</mf-badge>
+              } @else if (u.isActive) {
+                <!-- Active is the ordinary state: no badge, only the words for a screen reader. -->
+                <span class="pg-sr">Active</span>
+              } @else {
+                <mf-badge tone="neutral">Inactive</mf-badge>
+              }
+            </td>
+          </ng-template>
+          <ng-template mfCell="actions" let-u>
+            <td class="mf-col-actions" data-row-actions>
+              <!-- A waiting person has Grant Access (in the Roles cell) and no menu. -->
+              @if (!(u.isPending && canManage())) {
+                @let menu = menuFor(u);
+                <mf-action-menu [floating]="true" [label]="menu.label" [items]="menu.items" />
+              }
+            </td>
+          </ng-template>
+          <div mfGridFoot>
+            <ng-container *ngTemplateOutlet="pager" />
+          </div>
+        </mf-record-grid>
       </div>
     }
-    @if (listState() === 'ready' && total() > 0) {
-      <mf-pager
-        [page]="page()"
-        [pageSize]="pageSize()"
-        [pageSizes]="pageSizes"
-        [total]="total()"
-        (pageChange)="goTo($event)"
-        (pageSizeChange)="setPageSize($event)"
-      />
-    }
+    <ng-template #pager>
+      @if (listState() === 'ready' && total() > 0) {
+        <mf-pager
+          [page]="page()"
+          [pageSize]="pageSize()"
+          [pageSizes]="pageSizes"
+          [total]="total()"
+          (pageChange)="goTo($event)"
+          (pageSizeChange)="setPageSize($event)"
+        />
+      }
+    </ng-template>
   </section>
 </div>
 

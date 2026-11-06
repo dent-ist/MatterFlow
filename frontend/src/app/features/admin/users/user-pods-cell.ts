@@ -248,7 +248,8 @@ let nextId = 0;
       min-width: 0;
       max-width: 100%;
     }
-    :host(.upc--one) .upc-tag {
+    :host(.upc--one) .upc-tag,
+    :host(.upc--one) [data-pod-more] {
       flex: none;
     }
     :host(.upc--one) .upc-name {

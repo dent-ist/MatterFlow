@@ -47,6 +47,12 @@ describe('UsersPage', () => {
     await settle();
   }
 
+  /** The Grant Access button of the first pending row (a 32 px button in the Roles cell). */
+  async function grant(): Promise<void> {
+    q<HTMLButtonElement>('[data-grant]').click();
+    await settle();
+  }
+
   async function create(...permissions: Permission[]): Promise<void> {
     await createWith(() => undefined, ...permissions);
   }
@@ -104,17 +110,17 @@ describe('UsersPage', () => {
 
   /** The names of the listed people (the name button is the one control of the Name cell). */
   const rows = (): string[] =>
-    Array.from(el().querySelectorAll('tbody tr[data-user]')).map((r) =>
+    Array.from(el().querySelectorAll('tbody tr[data-record-id]')).map((r) =>
       r.querySelector('button[data-open]')!.textContent!.trim(),
     );
 
   /** The first row of the person: the name button that opens them. */
   const nameButton = (id: number): HTMLButtonElement =>
-    q<HTMLButtonElement>(`[data-user="${id}"] button[data-open]`);
+    q<HTMLButtonElement>(`[data-record-id="${id}"] button[data-open]`);
 
   /** Opens the row menu of a person. */
   async function openMenu(id: number): Promise<void> {
-    q(`[data-user="${id}"] [data-overflow]`).click();
+    q(`[data-record-id="${id}"] [data-overflow]`).click();
     await settle();
   }
 
@@ -133,7 +139,7 @@ describe('UsersPage', () => {
 
   it('puts the name over the Windows account, makes the name the one control of the cell, and names it with the account (#432)', async () => {
     await create('User.View', 'User.Manage');
-    const cell = q('[data-user="4"] td.mf-cell-name');
+    const cell = q('[data-record-id="4"] td.us-name');
     expect(cell.querySelector('button[data-open]')!.textContent!.trim()).toBe('Priya Patel');
     expect(cell.querySelector('[data-account]')!.textContent!.trim()).toBe('ppatel');
     expect(cell.querySelectorAll('a, button').length).toBe(1);
@@ -144,8 +150,16 @@ describe('UsersPage', () => {
     const headers = Array.from(el().querySelectorAll('thead th')).map((th) =>
       th.textContent!.trim(),
     );
-    // Nobody waiting has signed in more than once: no Last seen column until someone listed has a time (#437).
-    expect(headers).toEqual(['Name', 'Roles', 'Pods', 'Availability', 'Status', 'Actions']);
+    // The columns never come and go with the data (the shared grid keeps its headings in every state, #1197).
+    expect(headers).toEqual([
+      'Name',
+      'Roles',
+      'Pods',
+      'Availability',
+      'Last Seen',
+      'Status',
+      'Actions',
+    ]);
     await chooseStatus('all');
     expect(
       Array.from(el().querySelectorAll('thead th')).map((th) => th.textContent!.trim()),
@@ -189,7 +203,7 @@ describe('UsersPage', () => {
       expect(header('Last Seen').getAttribute('aria-sort')).toBe('none');
     });
 
-    it('hides the Last seen column when no listed person has a last-seen time', async () => {
+    it('keeps the Last Seen column when no listed person has a last-seen time (the headings never move)', async () => {
       await createWith(
         (a) => a.users.forEach((u) => (u.lastLoginAtUtc = undefined)),
         'User.View',
@@ -198,16 +212,16 @@ describe('UsersPage', () => {
       await chooseStatus('all');
       expect(
         Array.from(el().querySelectorAll('thead th')).map((th) => th.textContent!.trim()),
-      ).not.toContain('Last Seen');
+      ).toContain('Last Seen');
     });
 
     it('shows the day in the Last seen cell, the instant as its tooltip, and "Never" for a person who never signed in', async () => {
       await create('User.View', 'User.Manage');
       await chooseStatus('all');
-      const cell = q('[data-user="2"] [data-last-seen]');
+      const cell = q('[data-record-id="2"] [data-last-seen]');
       expect(cell.textContent!.trim()).toBe('10/14');
       expect(cell.getAttribute('title')).toContain('October 14, 2026');
-      expect(q('[data-user="4"] [data-last-seen]').textContent!.trim()).toBe('Never');
+      expect(q('[data-record-id="4"] [data-last-seen]').textContent!.trim()).toBe('Never');
     });
 
     it('offers 25, 50 and 100 rows per page and writes the choice into the address', async () => {
@@ -231,7 +245,7 @@ describe('UsersPage', () => {
   it('marks the seeded administrator beside the account, not as a badge', async () => {
     await create('User.View', 'User.Manage');
     await chooseStatus('all');
-    expect(q('[data-user="1"] [data-account]').textContent!.replace(/\s+/g, ' ')).toContain(
+    expect(q('[data-record-id="1"] [data-account]').textContent!.replace(/\s+/g, ' ')).toContain(
       'Seeded',
     );
   });
@@ -239,10 +253,12 @@ describe('UsersPage', () => {
   it('shows a status badge only when the person is not simply Active', async () => {
     await create('User.View', 'User.Manage');
     await chooseStatus('all');
-    expect(q('[data-user="4"] [data-status] mf-badge').textContent).toContain('Pending Access');
-    expect(q('[data-user="5"] [data-status] mf-badge').textContent).toContain('Inactive');
-    expect(el().querySelector('[data-user="2"] [data-status] mf-badge')).toBeNull();
-    expect(q('[data-user="2"] [data-status]').textContent).toContain('Active'); // for a screen reader
+    expect(q('[data-record-id="4"] [data-status] mf-badge').textContent).toContain(
+      'Pending Access',
+    );
+    expect(q('[data-record-id="5"] [data-status] mf-badge').textContent).toContain('Inactive');
+    expect(el().querySelector('[data-record-id="2"] [data-status] mf-badge')).toBeNull();
+    expect(q('[data-record-id="2"] [data-status]').textContent).toContain('Active'); // for a screen reader
   });
 
   it('opens on Active when no one is waiting, and the Pending segment is not tinted', async () => {
@@ -328,7 +344,7 @@ describe('UsersPage', () => {
       el().querySelector('#users-search, #users-status, #users-availability, mf-search-box'),
     ).toBeNull();
     expect(el().querySelector('[data-filter-row]')).not.toBeNull();
-    // The filters of the columns on screen are in the row; the others (Windows account, First seen, Email) are in "Other Filters".
+    // The filters of the columns on screen are in the row; Windows Account, First Seen and Email are optional columns (Columns button), there is no "Other Filters" button (#1197).
     for (const column of ['Name', 'Roles', 'Availability']) {
       expect(
         el().querySelector(`[aria-label^="Filter by ${column}"]`),
@@ -338,13 +354,13 @@ describe('UsersPage', () => {
     for (const column of ['Windows Account', 'First Seen', 'Email']) {
       expect(el().querySelector(`[aria-label^="Filter by ${column}"]`), column).toBeNull();
     }
-    expect(el().querySelector('[data-more-filters]')).not.toBeNull();
+    expect(el().querySelector('[data-more-filters]')).toBeNull();
     expect(el().querySelector('[aria-label^="Filter by Status"]')).toBeNull();
     // Status is a column of the grid (a badge only when not Active).
     expect(
       Array.from(el().querySelectorAll('thead th')).map((th) => th.textContent!.trim()),
     ).toContain('Status');
-    expect(q('[data-user="4"] [data-status]').textContent).toContain('Pending Access');
+    expect(q('[data-record-id="4"] [data-status]').textContent).toContain('Pending Access');
   });
 
   it('filters by name, as you type or on Enter, and writes it to the address', async () => {
@@ -431,7 +447,7 @@ describe('UsersPage', () => {
   it('grants a role to a pending user: the drawer saves, closes, offers Undo, and the queue shrinks', async () => {
     await create('User.View', 'User.Manage');
 
-    await press('Grant Access'); // first row: Priya Patel (the one action of a pending row)
+    await grant(); // first row: Priya Patel (the one action of a pending row)
     expect(q('[data-panel-heading]').textContent).toContain('Priya Patel');
     expect(urlOf()).toContain('user=4');
     expect(button('Save Changes')!.disabled).toBe(true);
@@ -466,7 +482,7 @@ describe('UsersPage', () => {
 
   it('does not overwrite a change made by someone else when Undo of a grant runs (#442)', async () => {
     await create('User.View', 'User.Manage');
-    await press('Grant Access');
+    await grant();
     const role = q<HTMLInputElement>('[data-role="5"]');
     role.checked = true;
     role.dispatchEvent(new Event('change'));
@@ -486,7 +502,7 @@ describe('UsersPage', () => {
 
   it('shows no success toast and keeps the drawer when the save of a grant fails (#442)', async () => {
     await create('User.View', 'User.Manage');
-    await press('Grant Access');
+    await grant();
     const role = q<HTMLInputElement>('[data-role="5"]');
     role.checked = true;
     role.dispatchEvent(new Event('change'));
@@ -833,7 +849,7 @@ describe('UsersPage', () => {
       it('opens with Access unfolded and the other sections a tap away, as buttons that say so', async () => {
         await create('User.View', 'User.Manage');
         await chooseStatus('active');
-        await q('[data-user="2"] button, li.rc button[data-card-name]').click();
+        await q('[data-record-id="2"] button, li.rc button[data-card-name]').click();
         await settle();
         const body = (id: string): HTMLElement => q(`#${id}-body`);
         expect(body('ud-access').hidden).toBe(false);
@@ -864,7 +880,7 @@ describe('UsersPage', () => {
         Object.defineProperty(window, 'visualViewport', { value: vv, configurable: true });
         await create('User.View', 'User.Manage');
         await chooseStatus('active');
-        await q('[data-user="2"] button, li.rc button[data-card-name]').click();
+        await q('[data-record-id="2"] button, li.rc button[data-card-name]').click();
         await settle();
         const root = document.documentElement.style;
         expect(root.getPropertyValue('--ud-vh')).toBe('800px');
@@ -924,7 +940,7 @@ describe('UsersPage', () => {
     await create('User.View', 'User.Manage');
     api.currentUserId = 99; // not the admin, so only the last-admin rule applies
     await chooseStatus('active');
-    el().querySelector<HTMLButtonElement>('[data-user="1"] button')!.click(); // Kim Admin, the only admin
+    el().querySelector<HTMLButtonElement>('[data-record-id="1"] button')!.click(); // Kim Admin, the only admin
     await settle();
 
     const adminRole = q<HTMLInputElement>('[data-role="1"]');
@@ -1035,7 +1051,7 @@ describe('UsersPage', () => {
       expect(target.label).toBe('Skip to Table');
       target.focus();
       expect(document.activeElement).toBe(
-        el().querySelector('tbody tr[data-user] button[data-open]'),
+        el().querySelector('tbody tr[data-record-id] button[data-open]'),
       );
     });
 
@@ -1064,17 +1080,19 @@ describe('UsersPage', () => {
 
     it('gives a pending person with User.Manage the one primary action, Grant access, and an account in its name', async () => {
       await create('User.View', 'User.Manage');
-      const grant = q<HTMLButtonElement>('[data-user="4"] [data-grant] button');
+      const grant = q<HTMLButtonElement>('[data-record-id="4"] [data-grant]');
       expect(grant.getAttribute('aria-label')).toBe('Grant access to Priya Patel (KE\\ppatel)');
-      expect(el().querySelector('[data-user="4"] [data-overflow]')).toBeNull();
+      expect(el().querySelector('[data-record-id="4"] [data-overflow]')).toBeNull();
       // Two Tab stops on the row: the name and the action.
-      expect(el().querySelectorAll('[data-user="4"] button, [data-user="4"] a').length).toBe(2);
+      expect(
+        el().querySelectorAll('[data-record-id="4"] button, [data-record-id="4"] a').length,
+      ).toBe(2);
     });
 
     it('opens the menu of an active person: Open, Edit availability, Deactivate; the button names the person and the account', async () => {
       await create('User.View', 'User.Manage');
       await chooseStatus('active');
-      expect(q('[data-user="2"] [data-overflow]').getAttribute('aria-label')).toBe(
+      expect(q('[data-record-id="2"] [data-overflow]').getAttribute('aria-label')).toBe(
         'Actions for Dana Director (KE\\ddirector)',
       );
       await openMenu(2);
@@ -1120,14 +1138,14 @@ describe('UsersPage', () => {
     it('Open from the menu opens the drawer, Esc closes it and focus goes back to the menu button', async () => {
       await create('User.View');
       await chooseStatus('active');
-      q<HTMLButtonElement>('[data-user="2"] [data-overflow]').focus();
+      q<HTMLButtonElement>('[data-record-id="2"] [data-overflow]').focus();
       await openMenu(2);
       q('[data-action="open"]').click();
       await settle();
       expect(q('[data-panel-heading]').textContent).toContain('Dana Director');
       await pressEsc();
       await afterClose();
-      expect(document.activeElement).toBe(q('[data-user="2"] [data-overflow]'));
+      expect(document.activeElement).toBe(q('[data-record-id="2"] [data-overflow]'));
     });
   });
 
@@ -1210,7 +1228,7 @@ describe('UsersPage', () => {
 
   describe('Pods column (inline assignment)', () => {
     const podCell = (userId: number): HTMLElement =>
-      q(`[data-user="${userId}"] [data-pods-cell] mf-user-pods-cell`);
+      q(`[data-record-id="${userId}"] [data-pods-cell] mf-user-pods-cell`);
     /** Every pod of the person, by name: the chip of the grid's one-line cell (the primary pod) and the pods behind its "+n" tooltip. */
     const chipsOf = (userId: number): string[] => {
       const cell = podCell(userId);

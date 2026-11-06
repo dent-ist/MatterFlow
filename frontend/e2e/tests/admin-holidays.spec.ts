@@ -20,7 +20,7 @@ test.describe('Settings > Holidays', () => {
     await page.locator('[data-new-calendar]').click();
     const calendar = page.getByRole('dialog', { name: 'New holiday calendar' });
     await calendar.getByLabel('Category Name').fill(name);
-    await calendar.getByRole('button', { name: 'Create' }).click();
+    await calendar.getByRole('button', { name: 'Add Calendar' }).click();
     await expect(calendar).toBeHidden();
     await expect(page.locator('[data-calendar]', { hasText: name })).toBeVisible();
 
@@ -53,7 +53,7 @@ test.describe('Settings > Holidays', () => {
     const calendar = page.getByRole('dialog', { name: 'New holiday calendar' });
     await calendar.getByLabel('Category Name').fill(name);
     await calendar.getByLabel(/Applies to everyone/).check();
-    await calendar.getByRole('button', { name: 'Create' }).click();
+    await calendar.getByRole('button', { name: 'Add Calendar' }).click();
     await expect(calendar).toBeHidden();
 
     await page.locator('[data-add-holiday]').click();

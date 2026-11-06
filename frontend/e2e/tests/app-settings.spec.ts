@@ -293,7 +293,7 @@ test.describe('keyboard', () => {
     page,
   }) => {
     await page.goto('/admin/settings');
-    const choose = page.getByRole('button', { name: 'Choose file...' });
+    const choose = page.getByRole('button', { name: 'Upload Icon' });
     await choose.focus();
     const chooser = page.waitForEvent('filechooser');
     await page.keyboard.press('Enter');

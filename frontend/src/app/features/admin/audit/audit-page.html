@@ -82,8 +82,8 @@
                   @if (whoShown()) {
                     <th class="au-cell-who" scope="col">Who</th>
                   }
-                  <th class="mf-cell-name" scope="col">What Happened</th>
-                  <th class="au-cell-object" scope="col">Object</th>
+                  <th class="mf-cell-name" scope="col">What</th>
+                  <th class="au-cell-object" scope="col">Target</th>
                   <th class="mf-cell-actions" scope="col">
                     <span class="mf-sr-only">Actions</span>
                   </th>
@@ -146,11 +146,11 @@
                           >{{ clock12(g.items[0]) }}</time
                         >
                         @if (!whoShown()) {
-                          <span class="au-sub">{{ g.items[0].actor.displayName }}</span>
+                          <span class="au-sub">{{ who(g.items[0]) }}</span>
                         }
                       </td>
                       @if (whoShown()) {
-                        <td class="au-cell-who">{{ g.items[0].actor.displayName }}</td>
+                        <td class="au-cell-who">{{ who(g.items[0]) }}</td>
                       }
                       <td class="mf-cell-name">
                         <span class="mf-name" data-headline [attr.title]="headline(g)">{{
@@ -253,7 +253,7 @@
               [disabled]="loadingMore()"
               (click)="loadMore()"
             >
-              {{ loadingMore() ? 'Loading...' : 'Load More' }}
+              {{ loadingMore() ? 'Loading...' : 'Show More' }}
             </button>
           } @else {
             <span class="au-muted" data-end>End of the results.</span>
@@ -303,11 +303,11 @@
         clock12(item)
       }}</time>
       @if (!whoShown()) {
-        <span class="au-sub">{{ item.actor.displayName }}</span>
+        <span class="au-sub">{{ who(item) }}</span>
       }
     </td>
     @if (whoShown()) {
-      <td class="au-cell-who">{{ item.actor.displayName }}</td>
+      <td class="au-cell-who">{{ who(item) }}</td>
     }
     <td class="mf-cell-name">
       <span class="mf-name" [attr.title]="friendly(item.summary)">{{

@@ -114,11 +114,11 @@ const assetTypeForm = (path: string): Route => ({
 /** Custom Fields > Edit fields (UX S18): the same designer on the singleton form of Client, Matter or Project. */
 const customFieldForm = (path: string): Route => ({
   path,
-  title: 'Custom Fields Form',
+  title: 'Custom Fields',
   canActivate: [permissionGuard('CustomField.Manage')],
   canDeactivate: [unsavedChangesGuard],
   providers: [{ provide: FormDesignerApi, useClass: CustomFieldFormDesignerApi }],
-  // Crumbs: Administration > Custom Fields > <the object>. The title is "<object> custom fields" once it is loaded.
+  // Crumbs: Administration > Custom Fields > <the object>. The title is "<Object> Custom Fields" once it is loaded.
   data: {
     heading: 'Custom Fields',
     ownerLabel: 'Object',

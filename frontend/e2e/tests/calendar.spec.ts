@@ -128,7 +128,7 @@ test.describe('Dashboard > Calendar', () => {
     const away = panel.locator('[data-list="unavailable"] .person', { hasText: nameA });
     await expect(away).toHaveAttribute('data-state', 'out');
     await expect(away.locator('[data-reason]')).toContainText(/^\s*Back \d\d\/\d\d\s*$/);
-    // Collapse the role: its people are hidden in both lists and the choice survives a reload.
+    // Collapse the role under Available only (Not Available keeps its own state, #1258): its people are hidden and the choice survives a reload.
     await band.click();
     await expect(band).toHaveAttribute('aria-expanded', 'false');
     await expect(row).toBeHidden();

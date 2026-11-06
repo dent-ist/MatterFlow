@@ -26,7 +26,7 @@ export function userRow(page: Page, userId: number, account: string): Locator {
   const width = page.viewportSize()?.width ?? 1366;
   return width < 640
     ? page.locator('li.rc', { hasText: account })
-    : page.locator(`tr[data-user="${userId}"]`);
+    : page.locator(`tr[data-record-id="${userId}"]`);
 }
 
 /** The name button that opens a person: the table's `button[data-open]`, the card's `button[data-card-name]`. */

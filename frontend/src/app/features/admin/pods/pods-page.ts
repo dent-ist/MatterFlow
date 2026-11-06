@@ -45,11 +45,16 @@ import { RETURN_STATE, RowLink, restoreRowFocus } from '../../../shared/ui/row-n
 import { AdminShellFilters } from '../task-types/shell-filters';
 import { ADMIN_LIST, AdminListLeave, ListReturn } from '../list-return';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
-import { SortHeader } from '../../../shared/ui/data-table';
+import { NgTemplateOutlet } from '@angular/common';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
-import { GridBody } from '../../../shared/ui/grid-body';
+import {
+  RecordCell,
+  RecordGrid,
+  RecordGridColumn,
+  RecordGridState,
+} from '../../../shared/ui/record-grid';
 import { Pager } from '../../../shared/ui/pager';
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { statusDef } from '../../../shared/filters/common-defs';
@@ -60,8 +65,8 @@ import { IntPipe } from '../../../shared/ui/number-format';
 
 const SEARCH_DEBOUNCE_MS = 200;
 
-/** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = ['name', 'members', 'status'] as const;
+/** Bone widths of a skeleton row, per column key. */
+const BONES: Record<string, string> = { name: '14rem', members: '2rem', status: '4.5rem' };
 
 /**
  * Admin: Pods (UX S13), the third tab of the Users page (`/admin/pods`). Lists Pods, creates/edits/deactivates them and manages members.
@@ -83,8 +88,9 @@ const COLUMNS = ['name', 'members', 'status'] as const;
     HasPermissionDirective,
     RouterLink,
     Pager,
-    SortHeader,
-    GridBody,
+    NgTemplateOutlet,
+    RecordGrid,
+    RecordCell,
     FiltersBar,
     ColumnFilterRow,
     AdminCardList,
@@ -109,8 +115,30 @@ export class PodsPage extends ServerListPage<PodSummary> implements OnDestroy, H
 
   // ---- list (URL state: name, status, page, size, sort)
   protected readonly defaultSort = 'name';
-  protected readonly columns = COLUMNS;
-  private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
+  /** The columns (the shared record grid, #1241): Name is the spring; Members and Status have fixed widths so the headings never move. */
+  protected readonly gridDefs = signal<readonly RecordGridColumn[]>([
+    { key: 'name', label: 'Name', locked: true, sort: 'name', minWidth: '200px' },
+    {
+      key: 'members',
+      label: 'Members',
+      sort: 'memberCount',
+      firstDesc: true,
+      num: true,
+      width: 'var(--mf-col-count-w)',
+      minWidth: 'var(--mf-col-count-w)',
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      width: 'var(--mf-col-status-w)',
+      minWidth: 'var(--mf-col-status-w)',
+    },
+  ]);
+  protected readonly grid = new RecordGridState('admin-pods', this.gridDefs);
+  protected readonly bones = BONES;
+  protected readonly podKey = (p: PodSummary): number => p.podId;
+  protected readonly columns = computed(() => this.grid.shown());
+  private readonly scroll = viewChild('scroll', { read: ElementRef });
   private watched: HTMLElement | undefined;
 
   /** Inline column filters: Name (`name`, the name only) and Status (`status`, Active by default). The old `q` is no longer read. */
@@ -146,12 +174,6 @@ export class PodsPage extends ServerListPage<PodSummary> implements OnDestroy, H
     filters: this.filters,
     hidden: this.hiddenCount,
   });
-  protected readonly columnSpec = [
-    { cls: 'mf-cell-name', bone: '14rem' },
-    { cls: 'mf-cell-num', bone: '2rem' },
-    { cls: 'mf-cell-badge', bone: '4.5rem' },
-  ];
-
   /** A pod as a phone card: the name opens its editor (`?pod=`), like the name link of the table. */
   protected readonly cardOf = (pod: PodSummary): AdminCardSpec => ({
     title: pod.name,
@@ -263,11 +285,11 @@ export class PodsPage extends ServerListPage<PodSummary> implements OnDestroy, H
       focus: () => {
         const root = host.nativeElement;
         const target =
-          root.querySelector<HTMLElement>('tbody tr[data-pod] a, li.rc a[href]') ??
+          root.querySelector<HTMLElement>('tbody tr[data-record-id] a, li.rc a[href]') ??
           root.querySelector<HTMLElement>(
             ':is(td, div, p)[data-empty], :is(td, div, p)[data-error], :is(td, div, p)[data-forbidden]',
           ) ??
-          root.querySelector<HTMLElement>('.mf-table-wrap');
+          root.querySelector<HTMLElement>('.mf-scroll-area');
         if (!target) return;
         if (!target.matches('a, button, [tabindex]')) target.setAttribute('tabindex', '-1');
         target.focus();
@@ -294,7 +316,7 @@ export class PodsPage extends ServerListPage<PodSummary> implements OnDestroy, H
     });
     // The controls move into the sheet while the grid scrolls sideways (the grid is not on screen while the editor is open).
     effect(() => {
-      const area = this.scroll()?.nativeElement;
+      const area = this.scroll()?.nativeElement as HTMLElement | undefined;
       if (!area || area === this.watched) return;
       this.watched = area;
       untracked(() => this.filters.watchOverflow(area));

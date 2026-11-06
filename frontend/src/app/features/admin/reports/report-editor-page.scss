@@ -55,9 +55,10 @@
   gap: var(--mf-s3);
   max-width: 48rem;
   padding: var(--mf-s4);
-  border: 1px solid var(--mf-border);
-  border-radius: var(--mf-radius);
+  border: 1px solid var(--mf-border-soft);
+  border-radius: var(--mf-radius-xl);
   background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-card);
 }
 
 .rep__field {

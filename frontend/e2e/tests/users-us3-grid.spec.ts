@@ -69,7 +69,7 @@ test.beforeAll(async ({ personas, seed, admin }) => {
 });
 
 const listUrl = (extra = '') => `/admin/users?status=all&account=e2e-${TAG}${extra}`;
-const rows = (page: Page) => page.locator('tr[data-user]');
+const rows = (page: Page) => page.locator('tr[data-record-id]');
 
 async function shot(page: Page, name: string, width: number, height: number): Promise<void> {
   if (!OUT) return;
@@ -109,16 +109,16 @@ const headers = (page: Page) =>
   );
 
 const nameButton = (page: Page, id: number) =>
-  page.locator(`tr[data-user="${id}"] button[data-open]`);
+  page.locator(`tr[data-record-id="${id}"] button[data-open]`);
 const menuButton = (page: Page, id: number) =>
-  page.locator(`tr[data-user="${id}"] button[data-overflow]`);
+  page.locator(`tr[data-record-id="${id}"] button[data-overflow]`);
 
 test.describe('#432 the grid', () => {
   for (const { width, height } of [SIZES[2], SIZES[3]]) {
     test(`rows are exactly 44 px and nothing scrolls sideways at ${width}`, async ({ page }) => {
       await openList(page, width, height);
       const heights = await page.evaluate(() =>
-        Array.from(document.querySelectorAll<HTMLElement>('tr[data-user]')).map((r) => ({
+        Array.from(document.querySelectorAll<HTMLElement>('tr[data-record-id]')).map((r) => ({
           id: r.dataset['user'],
           h: Math.round(r.getBoundingClientRect().height * 10) / 10,
         })),
@@ -145,14 +145,14 @@ test.describe('#432 the grid', () => {
     await openList(page, 1366, 768);
     const name = nameButton(page, pendingLong.userId);
     await expect(name).toHaveAttribute('title', pendingLong.displayName!);
-    const cell = page.locator(`tr[data-user="${pendingLong.userId}"] button[data-open]`);
+    const cell = page.locator(`tr[data-record-id="${pendingLong.userId}"] button[data-open]`);
     const lines = await cell.evaluate((el) => {
       const style = getComputedStyle(el);
       const line = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.5;
       return Math.round(el.getBoundingClientRect().height / line);
     });
     expect(lines).toBeLessThanOrEqual(2);
-    const role = page.locator(`tr[data-user="${busy.userId}"] td.mf-cell-muted`);
+    const role = page.locator(`tr[data-record-id="${busy.userId}"] td.mf-cell-muted`);
     await expect(role).toHaveAttribute('title', new RegExp(longRoleName.slice(0, 40)));
   });
 
@@ -190,30 +190,26 @@ test.describe('#432 the grid', () => {
   }) => {
     await openList(page, 1366, 768);
     await expect(
-      page.locator(`tr[data-user="${pendingLong.userId}"] [data-status] mf-badge`),
+      page.locator(`tr[data-record-id="${pendingLong.userId}"] [data-status] mf-badge`),
     ).toContainText('Pending Access');
     await expect(
-      page.locator(`tr[data-user="${gone.userId}"] [data-status] mf-badge`),
+      page.locator(`tr[data-record-id="${gone.userId}"] [data-status] mf-badge`),
     ).toContainText('Inactive');
-    await expect(page.locator(`tr[data-user="${busy.userId}"] [data-status] mf-badge`)).toHaveCount(
-      0,
-    );
-    await expect(page.locator(`tr[data-user="${busy.userId}"] [data-status]`)).toContainText(
+    await expect(
+      page.locator(`tr[data-record-id="${busy.userId}"] [data-status] mf-badge`),
+    ).toHaveCount(0);
+    await expect(page.locator(`tr[data-record-id="${busy.userId}"] [data-status]`)).toContainText(
       'Active',
     );
   });
 
-  test('Email and First seen are not columns; the filters stay in Other filters and in the address', async ({
+  test('Email and First seen are optional columns (Columns button), there is no Other Filters button; the filters stay in the address', async ({
     page,
   }) => {
     await openList(page, 1366, 768);
     await expect(page.getByRole('columnheader', { name: 'Email' })).toHaveCount(0);
     await expect(page.getByRole('columnheader', { name: 'First Seen' })).toHaveCount(0);
-    await page.locator('[data-more-filters]').click();
-    for (const label of ['Windows Account', 'First Seen', 'Email']) {
-      await expect(page.getByRole('button', { name: new RegExp(`^${label}`) })).toBeVisible();
-    }
-    await page.keyboard.press('Escape');
+    await expect(page.locator('[data-more-filters]')).toHaveCount(0);
 
     // An Email filter in the address still filters (nobody has this e-mail) and shows as a chip.
     await page.goto(listUrl('&email=nobody-has-this'));
@@ -259,10 +255,10 @@ test.describe('#432 the grid', () => {
 
   test('the Pods and Availability cells keep their meaning in one line', async ({ page }) => {
     await openList(page, 1920, 1080);
-    const busyRow = page.locator(`tr[data-user="${busy.userId}"]`);
+    const busyRow = page.locator(`tr[data-record-id="${busy.userId}"]`);
     await expect(busyRow.locator('[data-pods-cell]')).toContainText(`Processing ${TAG}`);
     await expect(
-      page.locator(`tr[data-user="${away.userId}"] [data-availability-chip]`),
+      page.locator(`tr[data-record-id="${away.userId}"] [data-availability-chip]`),
     ).toContainText('Out of Office');
   });
 
@@ -270,7 +266,8 @@ test.describe('#432 the grid', () => {
     page,
   }) => {
     await openList(page, 1366, 768);
-    const cell = (id: number) => page.locator(`tr[data-user="${id}"] [data-availability-cell]`);
+    const cell = (id: number) =>
+      page.locator(`tr[data-record-id="${id}"] [data-availability-cell]`);
     // Out of office keeps its chip with the end date; an ordinary active person says a plain, muted "Available" (no badge).
     await expect(cell(away.userId).locator('[data-availability-chip]')).toContainText(
       /Out of office until/,
@@ -286,7 +283,7 @@ test.describe('#432 the grid', () => {
     // One muted line: the rows stay at 44 px.
     for (const id of [away.userId, busy.userId, pendingLong.userId, gone.userId]) {
       const h = await page
-        .locator(`tr[data-user="${id}"]`)
+        .locator(`tr[data-record-id="${id}"]`)
         .evaluate((r) => r.getBoundingClientRect().height);
       expect(h, `row ${id}`).toBeLessThanOrEqual(45);
     }
@@ -310,19 +307,19 @@ test.describe('#433 one action per row', () => {
         (userId) =>
           Array.from(
             document.querySelectorAll<HTMLElement>(
-              `tr[data-user="${userId}"] a, tr[data-user="${userId}"] button`,
+              `tr[data-record-id="${userId}"] a, tr[data-record-id="${userId}"] button`,
             ),
           ).filter((el) => el.tabIndex >= 0 && el.offsetParent !== null).length,
         id,
       );
     // The Pods cell is one more button for a person with Pod.ManageMembers (the System Admin has it): count the stops of the name and the action.
-    const pendingRow = page.locator(`tr[data-user="${pendingLong.userId}"]`);
+    const pendingRow = page.locator(`tr[data-record-id="${pendingLong.userId}"]`);
     await expect(pendingRow.getByRole('button', { name: /^Grant access to/ })).toBeVisible();
     await expect(pendingRow.locator('button[data-overflow]')).toHaveCount(0);
     expect(await stops(pendingLong.userId)).toBe(
       2 + (await pendingRow.locator('[data-pods-trigger]').count()),
     );
-    const busyRow = page.locator(`tr[data-user="${busy.userId}"]`);
+    const busyRow = page.locator(`tr[data-record-id="${busy.userId}"]`);
     await expect(busyRow.getByRole('button', { name: /^Grant access/ })).toHaveCount(0);
     expect(await stops(busy.userId)).toBe(
       2 + (await busyRow.locator('[data-pods-trigger]').count()),
@@ -414,7 +411,7 @@ test.describe('#433 one action per row', () => {
     await expect(name).toHaveAttribute('aria-sort', 'ascending');
     await expect(name.getByRole('button')).toBeFocused();
     const names = async () =>
-      (await page.locator('tr[data-user] button[data-open]').allTextContents()).map((t) =>
+      (await page.locator('tr[data-record-id] button[data-open]').allTextContents()).map((t) =>
         t.trim(),
       );
     // The server's collation orders the names; the twins with the same name keep their id order in both directions, so leave them out.
@@ -507,6 +504,8 @@ test.describe('#433 one action per row', () => {
     });
     const page = await asUser(lead.username);
     await openList(page, 1366, 768);
-    await expect(page.locator(`tr[data-user="${busy.userId}"] [data-pods-trigger]`)).toBeVisible();
+    await expect(
+      page.locator(`tr[data-record-id="${busy.userId}"] [data-pods-trigger]`),
+    ).toBeVisible();
   });
 });

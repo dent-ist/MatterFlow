@@ -21,7 +21,7 @@ describe('unknown addresses of the form designers (#541)', () => {
   it('an object that is not Client, Matter or Project is a 404, not a plain error', async () => {
     const api = TestBed.inject(CustomFieldFormDesignerApi);
     const owner = await firstValueFrom(api.getOwner('matter'));
-    expect(owner.name).toBe('Matter custom fields');
+    expect(owner.name).toBe('Matter Custom Fields');
 
     const error = await firstValueFrom(api.getOwner('nothing')).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ApiError);

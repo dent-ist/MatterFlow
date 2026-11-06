@@ -214,7 +214,7 @@ describe('ParametersEditor', () => {
   });
 
   it('offers lookup kinds, number limits and default keywords for the type', () => {
-    const { el, host, q } = create([
+    const { el, host } = create([
       { name: 'P', type: 'lookup', label: 'P', lookupKind: 'pod', lookupMulti: true },
       { name: 'N', type: 'number', label: 'N' },
       { name: 'D', type: 'date', label: 'D' },

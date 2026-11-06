@@ -128,14 +128,14 @@
   white-space: nowrap;
 }
 
-/* The name of a pod is the one link of its row (the kit's .mf-name clamps it to two lines, one under a description). */
-.pods__name {
-  color: var(--mf-link);
-  font-weight: 600;
+/* The name cell: the link (D-13, underlined regular) and the description under it, one line each (D-45); the cell is the spring, so it never widens the table. */
+.pods__namecell {
+  max-width: 0;
+}
 
-  &:hover {
-    text-decoration: underline;
-  }
+.pods__desc {
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
 }
 
 .pods__bar {

@@ -28,7 +28,7 @@ test.describe('Access Pending and role grant', () => {
 
     // The administrator finds the user under Pending access and grants a role.
     await page.goto(`/admin/users?account=${encodeURIComponent(newcomer.username)}`);
-    const row = page.locator(`tr[data-user="${newcomer.userId}"]`);
+    const row = page.locator(`tr[data-record-id="${newcomer.userId}"]`);
     await expect(row).toBeVisible();
     await row.getByRole('button', { name: 'Grant Access' }).click();
     const panel = page.locator('.mf-user-drawer');

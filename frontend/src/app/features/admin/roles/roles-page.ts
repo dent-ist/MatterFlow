@@ -19,6 +19,7 @@ import {
 import { NotificationService } from '../../../core/notify/notification.service';
 import { CharCounter } from '../../../shared/ui/char-counter';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { Badge } from '../../../shared/ui/badge';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { Tabs } from '../../../shared/ui/tabs';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
@@ -79,6 +80,7 @@ export function roleChanges(
   selector: 'mf-roles-page',
   imports: [
     IntPipe,
+    Badge,
     Button,
     CharCounter,
     ConfirmDialog,

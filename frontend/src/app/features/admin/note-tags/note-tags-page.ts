@@ -5,95 +5,98 @@ import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { TASK_TYPE_COLOURS } from '../../../shared/task-type/task-type-colours';
 import { ActionMenu } from '../../../shared/ui/action-menu';
+import { adminListState } from '../../../shared/ui/admin-list-state';
+import { ActiveBadge } from '../../../shared/ui/badge';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { LocalPaging } from '../../../shared/ui/local-paging';
 import { Pager } from '../../../shared/ui/pager';
+import {
+  RecordCell,
+  RecordGrid,
+  RecordGridColumn,
+  RecordGridState,
+} from '../../../shared/ui/record-grid';
 import { rowActions } from '../../../shared/ui/row-actions';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
-import { GridFrame } from '../../../shared/ui/grid-frame';
 import { FormDialog } from '../../../shared/ui/form-dialog';
 import { TextField } from '../../../shared/ui/text-field';
 import { IntPipe } from '../../../shared/ui/number-format';
 import { Button } from 'primeng/button';
 import { TagChip } from '../../../shared/ui/tag-chip';
-import { StateBlock } from '../../../shared/ui/state-block';
 
 /**
  * Admin: Note Tags (epic #1001, MD-19; mockup notes-mockup-r3), the fourth tab of the Labels page. The firm-wide tags people pick in a note: name, colour of the
  * ten-colour palette, active or not, and how many notes the person can see that use it. A tag that notes use is deactivated, not deleted (the server says 409 IN_USE).
- * Needs `StatusLabel.Manage`. The page header belongs to `LabelsAdminPage`, which calls `openNew()`.
+ * Needs `StatusLabel.Manage`. The page header belongs to `LabelsAdminPage`, which calls `openNew()`. The list is the shared record grid (#1205, D-44a): the
+ * empty, error and loading bodies are the grid's.
  */
 @Component({
   selector: 'mf-note-tags-page',
   imports: [
     Button,
-    StateBlock,
     IntPipe,
     ActionMenu,
+    ActiveBadge,
     ConfirmDialog,
     Pager,
     Dropdown,
-    GridFrame,
+    RecordGrid,
+    RecordCell,
     FormDialog,
     TextField,
     TagChip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
-  styleUrl: '../../../shared/ui/page.scss',
   template: `
-    @if (error()) {
-      <p class="pg-reason" role="alert">
-        {{ error() }} <button type="button" (click)="load()">Retry</button>
-      </p>
-    } @else if (loaded() && tags().length === 0) {
-      <mf-state-block data-note-tags-empty>
-        No tags yet.
-        <p-button mfStateAction label="New Tag" icon="pi pi-plus" (onClick)="openNew()" />
-      </mf-state-block>
-    } @else {
-      <mf-grid-frame scrollLabel="Note Tags">
-        <table class="pg-table" data-note-tags-table>
-          <caption class="pg-sr">
-            Note Tags
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">Tag</th>
-              <th scope="col">Colour</th>
-              <th scope="col" class="pg-num">Notes</th>
-              <th scope="col">Status</th>
-              <th scope="col" class="mf-col-actions"><span class="pg-sr">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (t of paging.slice(tags()); track t.noteTagId) {
-              <tr data-note-tag-row>
-                <td>
-                  <mf-tag-chip [colour]="t.colourKey || 'slate'">{{ t.name }}</mf-tag-chip>
-                </td>
-                <td>{{ colourLabel(t.colourKey) }}</td>
-                <td class="pg-num">{{ t.visibleNoteCount | mfInt }}</td>
-                <td>{{ t.isActive ? 'Active' : 'Inactive' }}</td>
-                <td class="mf-col-actions">
-                  @let menu = menuFor(t);
-                  <mf-action-menu [floating]="true" [label]="menu.label" [items]="menu.items" />
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-        <mf-pager
-          frameFoot
-          [page]="paging.page()"
-          [pageSize]="paging.size()"
-          [pageSizes]="paging.sizes"
-          [total]="tags().length"
-          (pageChange)="paging.goTo($event)"
-          (pageSizeChange)="paging.setSize($event)"
-        />
-      </mf-grid-frame>
-    }
+    <mf-record-grid
+      data-note-tags-table
+      label="Note Tags"
+      noun="tags"
+      [grid]="grid"
+      [rows]="paging.slice(tags())"
+      [rowKey]="tagKey"
+      [loadState]="ls.state()"
+      [empty]="ls.empty()"
+      emptyText="No tags yet."
+      [bones]="bones"
+      [actions]="true"
+      (retry)="load()"
+    >
+      <p-button mfEmptyAction label="New Tag" icon="pi pi-plus" (onClick)="openNew()" />
+      <ng-template mfCell="name" let-t>
+        <td data-note-tag-row>
+          <mf-tag-chip [colour]="t.colourKey || 'slate'">{{ t.name }}</mf-tag-chip>
+        </td>
+      </ng-template>
+      <ng-template mfCell="colour" let-t>
+        <td>{{ colourLabel(t.colourKey) }}</td>
+      </ng-template>
+      <ng-template mfCell="notes" let-t>
+        <td class="pg-num">{{ t.visibleNoteCount | mfInt }}</td>
+      </ng-template>
+      <ng-template mfCell="status" let-t>
+        <td><mf-active-badge [active]="t.isActive" /></td>
+      </ng-template>
+      <ng-template mfCell="actions" let-t>
+        <td class="mf-col-actions">
+          @let menu = menuFor(t);
+          <mf-action-menu [floating]="true" [label]="menu.label" [items]="menu.items" />
+        </td>
+      </ng-template>
+      @if (ls.view() === 'rows') {
+        <div mfGridFoot>
+          <mf-pager
+            [page]="paging.page()"
+            [pageSize]="paging.size()"
+            [pageSizes]="paging.sizes"
+            [total]="tags().length"
+            (pageChange)="paging.goTo($event)"
+            (pageSizeChange)="paging.setSize($event)"
+          />
+        </div>
+      }
+    </mf-record-grid>
     <mf-form-dialog
       [title]="editing() ? 'Edit Tag' : 'New Tag'"
       [primaryLabel]="editing() ? 'Save Tag' : 'Create Tag'"
@@ -139,8 +142,34 @@ export class NoteTagsPage {
 
   protected readonly paging = new LocalPaging();
   protected readonly tags = signal<NoteTagResponse[]>([]);
-  protected readonly loaded = signal(false);
-  protected readonly error = signal('');
+  protected readonly state = signal<'loading' | 'ready' | 'error'>('loading');
+  protected readonly ls = adminListState({ state: this.state, rows: this.tags });
+  protected readonly tagKey = (t: NoteTagResponse): number => t.noteTagId;
+  /** The columns: Name is the spring; the others have fixed widths so the headings never move between loading, empty, error and rows. */
+  protected readonly gridDefs = signal<readonly RecordGridColumn[]>([
+    { key: 'name', label: 'Name', locked: true, minWidth: '200px' },
+    { key: 'colour', label: 'Colour', width: 'var(--mf-col-status-w)', minWidth: '120px' },
+    {
+      key: 'notes',
+      label: 'Notes',
+      num: true,
+      width: 'var(--mf-col-count-w)',
+      minWidth: 'var(--mf-col-count-w)',
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      width: 'var(--mf-col-status-w)',
+      minWidth: 'var(--mf-col-status-w)',
+    },
+  ]);
+  protected readonly grid = new RecordGridState('admin-note-tags', this.gridDefs);
+  protected readonly bones: Record<string, string> = {
+    name: '8rem',
+    colour: '4rem',
+    notes: '2rem',
+    status: '4.5rem',
+  };
   protected readonly panel = signal(false);
   protected readonly editing = signal<NoteTagResponse | null>(null);
   protected readonly target = signal<NoteTagResponse | null>(null);
@@ -189,13 +218,12 @@ export class NoteTagsPage {
   }
 
   protected async load(): Promise<void> {
+    if (this.tags().length === 0) this.state.set('loading');
     try {
       this.tags.set(await firstValueFrom(this.api.listNoteTags(true)));
-      this.error.set('');
+      this.state.set('ready');
     } catch {
-      this.error.set("Couldn't load the tags.");
-    } finally {
-      this.loaded.set(true);
+      this.state.set('error');
     }
   }
 

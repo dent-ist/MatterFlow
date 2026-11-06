@@ -25,3 +25,27 @@
   display: block;
   min-width: 0;
 }
+
+/* The grid cells (shared record grid, #1201): the name is the spring (one line, the type cell ellipsizes), the workflow text is clipped, the status chips stay on one line. */
+.tt-namecell,
+td[data-default-workflow] {
+  max-width: 0;
+}
+
+.tt-clip {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tt-status {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: var(--mf-s1);
+  align-items: center;
+}
+
+.muted {
+  color: var(--mf-text-muted);
+}

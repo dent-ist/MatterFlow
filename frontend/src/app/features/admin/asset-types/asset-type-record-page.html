@@ -71,227 +71,238 @@
     >
       @switch (current()) {
         @case ('overview') {
-          <form
-            id="at-overview-form"
-            class="at__card"
-            (submit)="$event.preventDefault(); save()"
-            novalidate
-            data-overview-tab
-          >
-            <mf-text-field
-              inputId="at-name"
-              label="Name"
-              [required]="true"
-              [maxLength]="limits.assetTypeName"
-              [counter]="true"
-              [error]="fieldErrors()['name'] || null"
-              [value]="model().name"
-              (valueChange)="patch({ name: $event })"
-            />
-            <mf-text-field
-              inputId="at-description"
-              label="Description"
-              [multiline]="true"
-              [maxLength]="limits.assetTypeDescription"
-              [counter]="true"
-              [error]="fieldErrors()['description'] || null"
-              [value]="model().description"
-              (valueChange)="patch({ description: $event })"
-            />
-            <div class="field">
-              <label id="at-icon-label" for="at-icon">Icon</label>
-              <mf-task-type-icon-picker
-                inputId="at-icon"
-                labelId="at-icon-label"
-                [value]="model().iconKey"
-                (valueChange)="patch({ iconKey: $event })"
-                [invalid]="!!fieldErrors()['iconKey']"
-                describedBy="at-icon-help"
+          <mf-details-card class="at__card" title="Details">
+            <form
+              id="at-overview-form"
+              class="at__stack"
+              (submit)="$event.preventDefault(); save()"
+              novalidate
+              data-overview-tab
+            >
+              <mf-text-field
+                inputId="at-name"
+                label="Name"
+                [required]="true"
+                [maxLength]="limits.assetTypeName"
+                [counter]="true"
+                [error]="fieldErrors()['name'] || null"
+                [value]="model().name"
+                (valueChange)="patch({ name: $event })"
               />
-              <p id="at-icon-help" class="muted hint">
-                Optional. The same icons as task types. Without one, lists show a default icon.
-                @if (model().iconKey) {
-                  <button type="button" class="mf-linkbtn" (click)="patch({ iconKey: '' })">
-                    Clear the Icon
-                  </button>
+              <mf-text-field
+                inputId="at-description"
+                label="Description"
+                [multiline]="true"
+                [maxLength]="limits.assetTypeDescription"
+                [counter]="true"
+                [error]="fieldErrors()['description'] || null"
+                [value]="model().description"
+                (valueChange)="patch({ description: $event })"
+              />
+              <div class="field">
+                <label id="at-icon-label" for="at-icon">Icon</label>
+                <mf-task-type-icon-picker
+                  inputId="at-icon"
+                  labelId="at-icon-label"
+                  [value]="model().iconKey"
+                  (valueChange)="patch({ iconKey: $event })"
+                  [invalid]="!!fieldErrors()['iconKey']"
+                  describedBy="at-icon-help"
+                />
+                <p id="at-icon-help" class="muted hint">
+                  Optional. The same icons as task types. Without one, lists show a default icon.
+                  @if (model().iconKey) {
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--text"
+                      (click)="patch({ iconKey: '' })"
+                    >
+                      Clear Icon
+                    </button>
+                  }
+                </p>
+                @if (fieldErrors()['iconKey']) {
+                  <p class="error" role="alert" data-icon-error>{{ fieldErrors()['iconKey'] }}</p>
                 }
-              </p>
-              @if (fieldErrors()['iconKey']) {
-                <p class="error" role="alert" data-icon-error>{{ fieldErrors()['iconKey'] }}</p>
-              }
-            </div>
-            <div class="field">
-              <label for="at-colour">Colour</label>
-              <div class="at__colour">
-                <mf-dropdown
-                  [neutralValue]="null"
-                  buttonId="at-colour"
-                  label="Colour"
-                  data-colour-select
-                  describedBy="at-colour-help"
-                  [items]="colourItems"
-                  [value]="model().colourKey"
-                  [invalid]="!!fieldErrors()['colourKey']"
-                  (valueChange)="patch({ colourKey: $event })"
-                />
-                <mf-task-type-chip
-                  [iconKey]="model().iconKey"
-                  [colourKey]="model().colourKey"
-                  [typeId]="assetType()?.assetTypeId"
-                  [name]="model().name.trim() || 'Asset type name'"
-                  data-preview
-                />
               </div>
-              <p id="at-colour-help" class="muted hint">
-                One of ten named colours, shown behind a white icon in lists. The preview shows how
-                the type looks. Without a colour one is picked from the type's number.
-              </p>
-              @if (fieldErrors()['colourKey']) {
-                <p class="error" role="alert" data-colour-error>{{ fieldErrors()['colourKey'] }}</p>
-              }
-            </div>
-          </form>
+              <div class="field">
+                <label for="at-colour">Colour</label>
+                <div class="at__colour">
+                  <mf-dropdown
+                    [neutralValue]="null"
+                    buttonId="at-colour"
+                    label="Colour"
+                    data-colour-select
+                    describedBy="at-colour-help"
+                    [items]="colourItems"
+                    [value]="model().colourKey"
+                    [invalid]="!!fieldErrors()['colourKey']"
+                    (valueChange)="patch({ colourKey: $event })"
+                  />
+                  <mf-task-type-chip
+                    [iconKey]="model().iconKey"
+                    [colourKey]="model().colourKey"
+                    [typeId]="assetType()?.assetTypeId"
+                    [name]="model().name.trim() || 'Asset type name'"
+                    data-preview
+                  />
+                </div>
+                <p id="at-colour-help" class="muted hint">
+                  One of ten named colours, shown behind a white icon in lists. The preview shows
+                  how the type looks. Without a colour one is picked from the type's number.
+                </p>
+                @if (fieldErrors()['colourKey']) {
+                  <p class="error" role="alert" data-colour-error>
+                    {{ fieldErrors()['colourKey'] }}
+                  </p>
+                }
+              </div>
+            </form>
+          </mf-details-card>
         }
         @case ('fields') {
           @if (assetType(); as t) {
-            <section class="at__card at__card--fields" aria-labelledby="at-fields" data-fields-tab>
-              <h2 id="at-fields">Fields</h2>
-              <mf-form-status-cell
-                [publishedVersion]="t.publishedFormVersionNo ?? null"
-                [fieldCount]="t.fieldCount ?? null"
-                [publishedAtUtc]="t.publishedAtUtc ?? null"
-                [draftVersion]="t.draftVersionNo ?? null"
-              />
-              @if (!noFields() && t.publishedAtUtc) {
-                <p data-form-published>Last published {{ t.publishedAtUtc | mfNum: 'date' }}.</p>
-              }
-              @if (t.draftVersionNo !== undefined && t.draftVersionNo !== null) {
-                <p data-form-draft>Draft v{{ t.draftVersionNo }} is in progress.</p>
-              }
-              @if (noFields()) {
-                <p class="at__note" role="note" data-no-fields>
-                  <i class="pi pi-info-circle" aria-hidden="true"></i>
-                  This type has no published fields yet. Assets of this type are saved without extra
-                  information until a form is published.
-                </p>
-              }
-              <button type="button" class="mf-btn" (click)="openFields()" data-open-fields>
-                {{
-                  noFields() && (t.draftVersionNo ?? null) === null
-                    ? 'Create fields'
-                    : 'Edit fields'
-                }}
-              </button>
-              <p class="at__hint">
-                The fields are what people fill in for an asset of this type. They are designed on
-                their own page and published as a version; changing them never alters values already
-                saved.
-              </p>
-            </section>
-          }
-          @if (assetType(); as t) {
-            <section class="at__card at__card--fields" aria-labelledby="at-size" data-size-card>
-              <h2 id="at-size">Size</h2>
-              @if (noFields()) {
-                <p class="at__hint" data-size-unavailable>
-                  Publish the fields first, then choose which number field is the size.
-                </p>
-              } @else {
-                <p class="at__hint">
-                  The number field that means the size of an asset of this type, and its unit. The
-                  Data tab and the asset reports use it by default; a project manager can pick
-                  another field there. Values already saved are never changed.
-                </p>
-                <div class="at__size">
-                  <div class="at__size-field">
-                    <label class="at__label" for="at-size-field">Size Field</label>
-                    <mf-dropdown
-                      [neutralValue]="null"
-                      buttonId="at-size-field"
-                      label="Size Field"
-                      data-size-field
-                      [disabled]="sizeBusy()"
-                      [items]="sizeFieldItems()"
-                      [value]="sizeKey()"
-                      (valueChange)="pickSizeField($event)"
-                    />
-                  </div>
-                  <div class="at__size-field">
-                    <label class="at__label" for="at-size-unit">Unit</label>
-                    <mf-dropdown
-                      [neutralValue]="null"
-                      buttonId="at-size-unit"
-                      label="Unit"
-                      data-size-unit
-                      [disabled]="sizeBusy() || sizeKey() === ''"
-                      [items]="sizeUnitItems"
-                      [value]="sizeUnit()"
-                      (valueChange)="sizeUnit.set($event); sizeError.set('')"
-                    />
-                  </div>
-                </div>
-                @if (numberFields().length === 0) {
-                  <p class="at__hint" data-size-no-numbers>
-                    The published form has no number field yet.
+            <mf-details-card class="at__card" title="Fields" data-fields-tab>
+              <div class="at__stack at__stack--start">
+                <mf-form-status-cell
+                  [publishedVersion]="t.publishedFormVersionNo ?? null"
+                  [fieldCount]="t.fieldCount ?? null"
+                  [publishedAtUtc]="t.publishedAtUtc ?? null"
+                  [draftVersion]="t.draftVersionNo ?? null"
+                />
+                @if (!noFields() && t.publishedAtUtc) {
+                  <p data-form-published>Last published {{ t.publishedAtUtc | mfNum: 'date' }}.</p>
+                }
+                @if (t.draftVersionNo !== undefined && t.draftVersionNo !== null) {
+                  <p data-form-draft>Draft v{{ t.draftVersionNo }} is in progress.</p>
+                }
+                @if (noFields()) {
+                  <p class="at__note" role="note" data-no-fields>
+                    <i class="pi pi-info-circle" aria-hidden="true"></i>
+                    This type has no published fields yet. Assets of this type are saved without
+                    extra information until a form is published.
                   </p>
                 }
-                @if (sizeError()) {
-                  <p class="at__error" role="alert" data-size-error>{{ sizeError() }}</p>
-                }
-                <div class="at__size-actions">
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--primary"
-                    [disabled]="sizeBusy() || !sizeDirty()"
-                    (click)="saveSize()"
-                    data-size-save
-                  >
-                    Save Size Field
-                  </button>
-                  <button
-                    type="button"
-                    class="mf-btn"
-                    [disabled]="sizeBusy()"
-                    (click)="reindex()"
-                    data-reindex
-                  >
-                    Rebuild the Index
-                  </button>
-                </div>
+                <button type="button" class="mf-btn" (click)="openFields()" data-open-fields>
+                  {{
+                    noFields() && (t.draftVersionNo ?? null) === null
+                      ? 'Create Fields'
+                      : 'Edit Fields'
+                  }}
+                </button>
                 <p class="at__hint">
-                  Rebuild the index after the rules for indexing change; it only re-reads saved
-                  values and is safe to repeat.
+                  The fields are what people fill in for an asset of this type. They are designed on
+                  their own page and published as a version; changing them never alters values
+                  already saved.
                 </p>
-              }
-            </section>
+              </div>
+            </mf-details-card>
+          }
+          @if (assetType(); as t) {
+            <mf-details-card class="at__card" title="Size" data-size-card>
+              <div class="at__stack at__stack--start">
+                @if (noFields()) {
+                  <p class="at__hint" data-size-unavailable>
+                    Publish the fields first, then choose which number field is the size.
+                  </p>
+                } @else {
+                  <p class="at__hint">
+                    The number field that means the size of an asset of this type, and its unit. The
+                    Data tab and the asset reports use it by default; a project manager can pick
+                    another field there. Values already saved are never changed.
+                  </p>
+                  <div class="at__size">
+                    <div class="at__size-field">
+                      <label class="at__label" for="at-size-field">Size Field</label>
+                      <mf-dropdown
+                        [neutralValue]="null"
+                        buttonId="at-size-field"
+                        label="Size Field"
+                        data-size-field
+                        [disabled]="sizeBusy()"
+                        [items]="sizeFieldItems()"
+                        [value]="sizeKey()"
+                        (valueChange)="pickSizeField($event)"
+                      />
+                    </div>
+                    <div class="at__size-field">
+                      <label class="at__label" for="at-size-unit">Unit</label>
+                      <mf-dropdown
+                        [neutralValue]="null"
+                        buttonId="at-size-unit"
+                        label="Unit"
+                        data-size-unit
+                        [disabled]="sizeBusy() || sizeKey() === ''"
+                        [items]="sizeUnitItems"
+                        [value]="sizeUnit()"
+                        (valueChange)="sizeUnit.set($event); sizeError.set('')"
+                      />
+                    </div>
+                  </div>
+                  @if (numberFields().length === 0) {
+                    <p class="at__hint" data-size-no-numbers>
+                      The published form has no number field yet.
+                    </p>
+                  }
+                  @if (sizeError()) {
+                    <p class="at__error" role="alert" data-size-error>{{ sizeError() }}</p>
+                  }
+                  <div class="at__size-actions">
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--primary"
+                      [disabled]="sizeBusy() || !sizeDirty()"
+                      (click)="saveSize()"
+                      data-size-save
+                    >
+                      Save Size Field
+                    </button>
+                    <button
+                      type="button"
+                      class="mf-btn"
+                      [disabled]="sizeBusy()"
+                      (click)="reindex()"
+                      data-reindex
+                    >
+                      Rebuild the Index
+                    </button>
+                  </div>
+                  <p class="at__hint">
+                    Rebuild the index after the rules for indexing change; it only re-reads saved
+                    values and is safe to repeat.
+                  </p>
+                }
+              </div>
+            </mf-details-card>
           }
         }
         @case ('assets') {
           @if (assetType(); as t) {
-            <section class="at__card at__card--fields" aria-labelledby="at-assets" data-assets-tab>
-              <h2 id="at-assets">Assets</h2>
-              @if (t.assetCount) {
-                <p data-asset-count>
-                  {{ t.assetCount | mfInt }}
-                  {{ t.assetCount === 1 ? 'asset has' : 'assets have' }} this type.
-                </p>
-                <a
-                  class="mf-btn"
-                  routerLink="/assets"
-                  [queryParams]="{ typeId: t.assetTypeId }"
-                  data-assets-link
-                  >View assets of this type</a
-                >
-              } @else {
-                <p data-asset-count>No asset has this type yet.</p>
-              }
-              @if (!t.isActive) {
-                <p class="at__hint">
-                  This type is inactive, so it can't be chosen for new assets. Existing assets keep
-                  it.
-                </p>
-              }
-            </section>
+            <mf-details-card class="at__card" title="Assets" data-assets-tab>
+              <div class="at__stack at__stack--start">
+                @if (t.assetCount) {
+                  <p data-asset-count>
+                    {{ t.assetCount | mfInt }}
+                    {{ t.assetCount === 1 ? 'asset has' : 'assets have' }} this type.
+                  </p>
+                  <a
+                    class="mf-btn"
+                    routerLink="/assets"
+                    [queryParams]="{ typeId: t.assetTypeId }"
+                    data-assets-link
+                    >View Assets of This Type</a
+                  >
+                } @else {
+                  <p data-asset-count>No asset has this type yet.</p>
+                }
+                @if (!t.isActive) {
+                  <p class="at__hint">
+                    This type is inactive, so it can't be chosen for new assets. Existing assets
+                    keep it.
+                  </p>
+                }
+              </div>
+            </mf-details-card>
           }
         }
       }

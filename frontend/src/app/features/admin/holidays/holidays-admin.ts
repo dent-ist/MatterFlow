@@ -11,8 +11,10 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { calendarDayInZone } from '../../../core/time/time';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
+import { ActionMenu } from '../../../shared/ui/action-menu';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
+import { rowActions } from '../../../shared/ui/row-actions';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 import { CalendarDialog } from './calendar-dialog';
 import { HOLIDAY_API } from './holiday-api';
@@ -43,6 +45,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     HolidayDialog,
     ImportDialog,
     NumericDatePipe,
+    ActionMenu,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../dashboard/calendar/calendar-coverage.scss',
@@ -153,7 +156,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                       [disabled]="!defaultsDirty() || defaultsBusy()"
                       (click)="saveDefaults()"
                     >
-                      {{ defaultsBusy() ? 'Saving...' : 'Save defaults' }}
+                      {{ defaultsBusy() ? 'Saving...' : 'Save Defaults' }}
                     </button>
                   </div>
                   <p class="ha__p ha__p--s">
@@ -320,25 +323,13 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                             <td>
                               <mf-badge icon="pi-moon">Non-Working Day</mf-badge>
                             </td>
-                            <td class="ha__acts">
-                              <button
-                                type="button"
-                                class="mf-btn mf-btn--icon"
-                                data-edit-holiday
-                                [attr.aria-label]="'Edit ' + r.h.name"
-                                (click)="editHoliday(r.h)"
-                              >
-                                <i class="pi pi-pencil" aria-hidden="true"></i>
-                              </button>
-                              <button
-                                type="button"
-                                class="mf-btn mf-btn--icon mf-btn--danger"
-                                data-delete-holiday
-                                [attr.aria-label]="'Delete ' + r.h.name"
-                                (click)="askDeleteHoliday(r.h)"
-                              >
-                                <i class="pi pi-trash" aria-hidden="true"></i>
-                              </button>
+                            <td class="ha__acts mf-col-actions">
+                              @let menu = menuFor(r.h);
+                              <mf-action-menu
+                                [floating]="true"
+                                [label]="menu.label"
+                                [items]="menu.items"
+                              />
                             </td>
                           </tr>
                         }
@@ -418,7 +409,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     }
     .ha__grid {
       display: grid;
-      grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr);
+      grid-template-columns: minmax(16rem, 18rem) minmax(0, 1fr);
       gap: var(--mf-s4);
       align-items: start;
     }
@@ -646,7 +637,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     }
     /* The Holiday column is never narrower than 160 px and a name breaks only between words, never inside one (#1220). */
     .ha__name {
-      min-width: 160px;
+      min-width: 144px;
       font-weight: 700;
     }
     .ha__name .ha__c {
@@ -654,10 +645,14 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     }
     /* Repeats: one line, the full rule is the tooltip (#1220). */
     .ha__rep {
-      max-width: 16rem;
+      max-width: 10rem;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+    /* The Region Note is a short remark: 8 rem, the full text is the tooltip, so the five columns and the row menu fit the card at 1366. */
+    .ha__t td:nth-child(4) .ha__c {
+      max-width: 5rem;
     }
     .ha__d {
       display: block;
@@ -674,7 +669,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     }
     .ha__o {
       display: block;
-      max-width: 14rem;
+      max-width: 10rem;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -683,8 +678,10 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       line-height: var(--mf-grid-line-h);
     }
     .ha__acts {
+      width: var(--mf-col-actions-w);
+      padding-inline: 0 !important;
       white-space: nowrap;
-      text-align: right !important;
+      text-align: center !important;
     }
     .ha__state,
     .ha__empty {
@@ -917,6 +914,24 @@ export class HolidaysAdmin implements OnInit {
     this.editingHoliday.set(null);
     this.holidayOpen.set(true);
   }
+  /** The one "..." menu of a holiday row (D-44): Edit, and Delete last and set apart. */
+  protected menuFor(h: Holiday) {
+    return rowActions(
+      h.name,
+      [
+        { id: 'edit', label: 'Edit', icon: 'pi-pencil', run: () => this.editHoliday(h) },
+        {
+          id: 'delete',
+          label: 'Delete',
+          icon: 'pi-trash',
+          danger: true,
+          run: () => this.askDeleteHoliday(h),
+        },
+      ],
+      { can: () => true },
+    );
+  }
+
   protected editHoliday(h: Holiday): void {
     this.editingHoliday.set(h);
     this.holidayOpen.set(true);

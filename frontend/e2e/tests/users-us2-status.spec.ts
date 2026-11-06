@@ -111,34 +111,34 @@ test.describe('#429 status segments', () => {
     page,
   }) => {
     await page.goto(`/admin/users?status=pending&name=${TAG}`);
-    await expect(page.locator(`tr[data-user="${waiting.userId}"]`)).toBeVisible();
+    await expect(page.locator(`tr[data-record-id="${waiting.userId}"]`)).toBeVisible();
     await expect(segment(page, 'pending')).toHaveClass(/tinted/);
     await page.goto(`/admin/users?status=active&name=${TAG}`);
-    await expect(page.locator(`tr[data-user="${waiting.userId}"]`)).toHaveCount(0);
-    await expect(page.locator(`tr[data-user="${working.userId}"]`)).toBeVisible(); // its name has the tag too, and it has access
+    await expect(page.locator(`tr[data-record-id="${waiting.userId}"]`)).toHaveCount(0);
+    await expect(page.locator(`tr[data-record-id="${working.userId}"]`)).toBeVisible(); // its name has the tag too, and it has access
   });
 
   test('choosing a segment updates the address and the grid; Back keeps the earlier segment; reload keeps it', async ({
     page,
   }) => {
     await page.goto(`/admin/users?status=all&account=e2e-${TAG}`);
-    await expect(page.locator('tr[data-user]')).toHaveCount(3);
+    await expect(page.locator('tr[data-record-id]')).toHaveCount(3);
 
     await segment(page, 'inactive').click();
     await expect(page).toHaveURL(/status=inactive/);
-    await expect(page.locator('tr[data-user]')).toHaveCount(1);
-    await expect(page.locator(`tr[data-user="${gone.userId}"]`)).toBeVisible();
+    await expect(page.locator('tr[data-record-id]')).toHaveCount(1);
+    await expect(page.locator(`tr[data-record-id="${gone.userId}"]`)).toBeVisible();
     await expect(pressed(page)).toHaveAttribute('data-strip-item', 'inactive');
 
     await segment(page, 'pending').click();
     await expect(page).toHaveURL(/status=pending/);
-    await expect(page.locator('tr[data-user]')).toHaveCount(1);
-    await expect(page.locator(`tr[data-user="${waiting.userId}"]`)).toBeVisible();
+    await expect(page.locator('tr[data-record-id]')).toHaveCount(1);
+    await expect(page.locator(`tr[data-record-id="${waiting.userId}"]`)).toBeVisible();
 
     await page.goBack();
     await expect(page).toHaveURL(/status=inactive/);
     await expect(pressed(page)).toHaveAttribute('data-strip-item', 'inactive');
-    await expect(page.locator(`tr[data-user="${gone.userId}"]`)).toBeVisible();
+    await expect(page.locator(`tr[data-record-id="${gone.userId}"]`)).toBeVisible();
 
     await page.reload();
     await expect(pressed(page)).toHaveAttribute('data-strip-item', 'inactive');
@@ -150,13 +150,13 @@ test.describe('#429 status segments', () => {
   test('the counts refresh after access is granted', async ({ page, personas, seed }) => {
     const person = await personas.create({ label: `${TAG}grant`, displayName: `${TAG} Grant` });
     await page.goto(`/admin/users?status=pending&name=${TAG}%20Grant`);
-    await expect(page.locator(`tr[data-user="${person.userId}"]`)).toBeVisible();
+    await expect(page.locator(`tr[data-record-id="${person.userId}"]`)).toBeVisible();
     const text = async () => (await segment(page, 'pending').textContent())!.replace(/\D+/g, '');
     const before = Number(await text());
 
     await seed.grantRoles(person.userId, ['Data Technician']);
     await segment(page, 'active').click();
-    await expect(page.locator(`tr[data-user="${person.userId}"]`)).toBeVisible();
+    await expect(page.locator(`tr[data-record-id="${person.userId}"]`)).toBeVisible();
     await expect.poll(async () => Number(await text())).toBe(before - 1);
   });
 
