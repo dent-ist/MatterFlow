@@ -80,7 +80,7 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
     const { harness, router } = await open('pending');
     const stub = TestBed.inject(MeApi) as StubMeApi;
     const page = harness.routeNativeElement as HTMLElement;
-    const button = () => page.querySelector('p-button button') as HTMLButtonElement;
+    const button = () => page.querySelector('[data-check-again]') as HTMLButtonElement;
 
     button().click();
     await new Promise((r) => setTimeout(r));
@@ -208,7 +208,7 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
     const { router, harness } = await open('technician', '/admin/users');
     expect(router.url).toBe('/403');
     expect((harness.routeNativeElement as HTMLElement).textContent).toContain(
-      "You don't have permission to view this.",
+      "You don't have access.",
     );
   });
 

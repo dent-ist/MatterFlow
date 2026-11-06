@@ -11,7 +11,7 @@ import { uid } from '../support/seed';
  * no error toast; a tab the person cannot see falls back to Details; `/assets/new` and `/assets/:id/edit` without the permission, and the
  * whole area without Asset.View, show the 403 page. Screenshots: E2E_SCREENSHOTS=docs/ux/assets-review/fixes/as6-keyboard-permissions.
  */
-const FORBIDDEN = "You don't have permission to view this.";
+const FORBIDDEN = "You don't have access.";
 
 interface Variant {
   label: string;

@@ -392,7 +392,7 @@ describe('AssetRecordPage', () => {
     await settle(fixture);
 
     expect(el().querySelector('h1')?.textContent).toContain("We couldn't find that asset.");
-    expect(el().querySelector('[data-back-link]')?.textContent).toContain('Go to assets');
+    expect(el().querySelector('[data-back-link]')?.textContent).toContain('Go to Assets');
     expect(buttonByLabel(el(), 'Retry')).toBeUndefined();
     expect(el().querySelector('[role=tablist]')).toBeNull();
     expect(document.title).toBe('Asset not found - MatterFlow');

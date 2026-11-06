@@ -203,9 +203,7 @@ test.describe('Publish dialogs: permissions', () => {
       const u = await seed.user([r.name], label);
       const denied = await asUser(u.username);
       await denied.goto(url);
-      await expect(
-        denied.getByRole('heading', { name: "You don't have permission to view this." }),
-      ).toBeVisible();
+      await expect(denied.getByRole('heading', { name: "You don't have access." })).toBeVisible();
       await expect(denied.getByRole('button', { name: 'Publish...' })).toHaveCount(0);
     }
   });

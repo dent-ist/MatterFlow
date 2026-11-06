@@ -292,9 +292,7 @@ test.describe('Task detail T1: load states (S2 #290, BUG-4 #291)', () => {
     const user = await seed.user([role.name], 'notask');
     const page = await asUser(user.username);
     await page.goto(`/tasks/${task.taskId}`);
-    await expect(
-      page.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     await expect(page.getByText(/my work/i)).toHaveCount(0);
     const link = page.getByRole('link', { name: 'Go to Clients' });
     await expect(link).toHaveAttribute('href', '/clients');
@@ -312,9 +310,7 @@ test.describe('Task detail T1: load states (S2 #290, BUG-4 #291)', () => {
     const user = await seed.user([role.name], 'nothing');
     const page = await asUser(user.username);
     await page.goto(`/tasks/${task.taskId}`);
-    await expect(
-      page.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     await expect(page.locator('main a, [data-back-link]')).toHaveCount(0);
   });
 });

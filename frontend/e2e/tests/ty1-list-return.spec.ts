@@ -412,9 +412,7 @@ test.describe('Back and the breadcrumb keep the list view and the row focus (#35
       const viewer = await asUser((await seed.user([viewRole.name], 'ty1-view')).username);
       for (const url of ['/admin/task-types', '/admin/workflows', '/admin/steps']) {
         await viewer.goto(url);
-        await expect(
-          viewer.getByRole('heading', { name: "You don't have permission to view this." }),
-        ).toBeVisible();
+        await expect(viewer.getByRole('heading', { name: "You don't have access." })).toBeVisible();
         await expect(viewer.locator('a[data-row-key]')).toHaveCount(0);
       }
     });

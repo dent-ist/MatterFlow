@@ -161,9 +161,7 @@ test.describe('lookup dialog on the Status Labels rename (#564)', () => {
     const viewerRole = await seed.role(['Task.View'], 'Viewer');
     const viewer = await asUser((await seed.user([viewerRole.name], 'ad2-lk-viewer')).username);
     await viewer.goto('/admin/status-labels');
-    await expect(
-      viewer.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(viewer.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     const role = await seed.role(['StatusLabel.Manage', 'Task.View'], 'Labels only');
     const manager = await asUser((await seed.user([role.name], 'ad2-lk-mgr')).username);
     await manager.goto('/admin/status-labels');

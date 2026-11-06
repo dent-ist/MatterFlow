@@ -2,52 +2,27 @@ import { Location } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject } from '@angular/core';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { ForbiddenRequest, landingLink } from '../../../core/auth/guards';
-import { CopyButton } from '../../../shared/ui/copy-button';
 import { StatePage } from '../../../shared/ui/state-page';
 
 /**
  * The 403 page. A permission guard sends the person here and records the address they asked for (`ForbiddenRequest`); the page puts that
  * address back in the address bar (replacing the `/403` entry), so a reload retries it (for example after an administrator grants a role),
- * Back goes where the person came from, and the address can be quoted: "You asked for /admin/users." with Copy link. Opened directly
+ * Back goes where the person came from, and the address can be quoted: "Asked for /admin/users" with a copy button. Opened directly
  * (`/403`), it has no address to show.
  */
 @Component({
   selector: 'mf-forbidden-page',
-  imports: [StatePage, CopyButton],
+  imports: [StatePage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-state-page
       icon="pi pi-ban"
-      heading="You don't have permission to view this."
+      heading="You don't have access."
       reason="Ask an administrator if you think you should have access."
       [primary]="link()"
-    >
-      @if (asked(); as a) {
-        <p class="fb__asked" data-asked>
-          You asked for <code class="fb__path" data-asked-path>{{ a }}</code
-          >.
-        </p>
-      }
-      @if (asked()) {
-        <mf-copy-button
-          mfSecondary
-          [text]="href()"
-          label="link"
-          [showText]="true"
-          caption="Copy link"
-          doneCaption="Link copied"
-        />
-      }
-    </mf-state-page>
-  `,
-  styles: `
-    .fb__asked {
-      margin: 0;
-    }
-    .fb__path {
-      font-family: var(--mf-font-mono);
-      overflow-wrap: anywhere;
-    }
+      [address]="asked() ?? ''"
+      [addressCopy]="href()"
+    />
   `,
 })
 export class ForbiddenPage {

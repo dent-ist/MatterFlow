@@ -11,7 +11,7 @@ import { toasts } from '../support/toasts';
  * people without it get no such entries, `/profile` is the 403 page, a pending person goes to Access Pending and a disabled one to the
  * disabled-account page. No dead entry, no toast on a denial, axe 0 on the 403 page.
  */
-const FORBIDDEN = "You don't have permission to view this.";
+const FORBIDDEN = "You don't have access.";
 
 const MATRIX: readonly (PersonaSpec & { key: string })[] = [
   { key: 'systemAdmin', ...PERSONAS.systemAdmin },

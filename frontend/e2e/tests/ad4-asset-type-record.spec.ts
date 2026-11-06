@@ -343,9 +343,7 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
     const viewer = await asUser((await seed.user([viewerRole.name], 'ad4-view')).username);
     for (const url of [`/admin/asset-types/${t.assetTypeId}`, '/admin/asset-types/new']) {
       await viewer.goto(url);
-      await expect(
-        viewer.getByRole('heading', { name: "You don't have permission to view this." }),
-      ).toBeVisible();
+      await expect(viewer.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     }
     void page;
     void SIZES;

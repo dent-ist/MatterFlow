@@ -113,9 +113,7 @@ function watch(page: Page): { failed: string[] } {
 }
 
 const isForbiddenPage = async (page: Page): Promise<boolean> =>
-  (await page
-    .getByRole('heading', { level: 1, name: "You don't have permission to view this." })
-    .count()) > 0;
+  (await page.getByRole('heading', { level: 1, name: "You don't have access." }).count()) > 0;
 
 async function settle(page: Page): Promise<void> {
   await page.waitForLoadState('networkidle');

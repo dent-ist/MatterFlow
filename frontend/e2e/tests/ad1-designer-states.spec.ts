@@ -174,9 +174,7 @@ test.describe('Designer not found, no access and failure states (#541)', () => {
     const viewer = await asUser((await seed.user([viewerRole.name], 'ad1-viewer')).username);
     for (const r of ROUTES) {
       await viewer.goto(r.url);
-      await expect(
-        viewer.getByRole('heading', { name: "You don't have permission to view this." }),
-      ).toBeVisible();
+      await expect(viewer.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     }
 
     const typeRole = await seed.role(['AssetType.Manage'], 'Asset types only');
@@ -185,9 +183,7 @@ test.describe('Designer not found, no access and failure states (#541)', () => {
     await expect(heading(typePage)).toHaveText("We couldn't find that asset type.");
     await expect(typePage.getByRole('link', { name: 'Go to Asset Types' })).toBeVisible();
     await typePage.goto(ROUTES[1].url);
-    await expect(
-      typePage.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(typePage.getByRole('heading', { name: "You don't have access." })).toBeVisible();
 
     const fieldRole = await seed.role(['CustomField.Manage'], 'Custom fields only');
     const fieldPage = await asUser((await seed.user([fieldRole.name], 'ad1-fields')).username);

@@ -728,9 +728,7 @@ test.describe('Step record page', () => {
       const viewerPage = await asUser((await seed.user([viewer.name], 'st-viewer')).username);
       for (const p of [typePage, viewerPage]) {
         await p.goto(`/admin/steps/${step.id}`);
-        await expect(
-          p.getByRole('heading', { name: "You don't have permission to view this." }),
-        ).toBeVisible();
+        await expect(p.getByRole('heading', { name: "You don't have access." })).toBeVisible();
       }
     });
 

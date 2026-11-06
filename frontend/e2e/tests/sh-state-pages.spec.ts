@@ -3,12 +3,11 @@ import { expect, test } from '../support/fixtures';
 import { atEverySize, noHorizontalScroll, shot, SIZES } from '../support/screens';
 
 /**
- * One state-page card for the 403, the 404 and the error page (S10, #607): a centred card with the icon and the title (22 px / 700, 18 px
- * below 640), one sentence of reason, the address that was asked for in monospace, "Go to ..." as the primary action and one secondary
- * action (Search on the 404, Copy link on the 403), the brand line outside the card. Inside the shell for the 403 and the 404 (the rail
- * stays); the error page stands alone.
+ * One state-page card for the 403, the 404 and the error page (S10, #607, #1193): a centred card 480 px wide with a 48 px icon tile and the
+ * title (22 px / 700, one line), one sentence of reason, the address that was asked for in muted monospace with a copy button, "Go to ..."
+ * as the one button, the brand line outside the card. Inside the shell for the 403 and the 404 (the rail stays); the error page stands alone.
  */
-const FORBIDDEN = "You don't have permission to view this.";
+const FORBIDDEN = "You don't have access.";
 const NOT_FOUND = "We couldn't find that.";
 const ERROR_TITLE = "Couldn't load your account.";
 
@@ -47,7 +46,7 @@ async function card(page: Page): Promise<Card> {
 test.describe('State pages are one family (#607)', () => {
   test.setTimeout(300_000);
 
-  test('the 404: the card, the address asked for, a search that is not cut, the brand line, at four sizes', async ({
+  test('the 404: the card, the address asked for, the brand line, at four sizes', async ({
     page,
   }) => {
     for (const size of SIZES) {
@@ -55,9 +54,9 @@ test.describe('State pages are one family (#607)', () => {
       await page.goto('/no-such-page?x=1');
       await expect(page.getByRole('heading', { name: NOT_FOUND, level: 1 })).toBeVisible();
       const c = await card(page);
-      expect(c.fontSize, `404 title at ${size.width}`).toBe(size.width < 640 ? 18 : 22);
+      expect(c.fontSize, `404 title at ${size.width}`).toBe(22);
       expect(c.fontWeight).toBeGreaterThanOrEqual(700);
-      expect(c.width).toBeLessThanOrEqual(32 * 16 + 1);
+      expect(c.width).toBeLessThanOrEqual(481);
       // The card never touches the page edges: at least the 16 px gutter of the main area on a phone.
       expect(c.left, `404 card left at ${size.width}`).toBeGreaterThanOrEqual(12);
       expect(c.viewport - c.right, `404 card right at ${size.width}`).toBeGreaterThanOrEqual(12);
@@ -68,38 +67,11 @@ test.describe('State pages are one family (#607)', () => {
       if (size.width >= 768)
         await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
       else await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeVisible();
-      // The placeholder fits its box (it was cut as "Search clients, matters, tasks, a").
-      const fits = await page.locator('[data-not-found-search]').evaluate((el) => {
-        const input = el as HTMLInputElement;
-        const probe = document.createElement('span');
-        const cs = getComputedStyle(input);
-        probe.style.cssText = `position:absolute;visibility:hidden;white-space:nowrap;font:${cs.font}`;
-        probe.textContent = input.placeholder;
-        document.body.append(probe);
-        const need = probe.getBoundingClientRect().width;
-        probe.remove();
-        const pad = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
-        return input.clientWidth - pad >= need;
-      });
-      expect(fits, `placeholder fits at ${size.width}`).toBe(true);
       if (size.width === 1366 || size.width === 375) await shot(page, 'state-404');
     }
   });
 
-  test('the 404 search works from the keyboard and goes to the search results', async ({
-    page,
-  }) => {
-    await page.goto('/no-such-page');
-    await expect(page.getByRole('heading', { name: NOT_FOUND, level: 1 })).toBeVisible();
-    const box = page.getByRole('searchbox', { name: /Search clients/ });
-    await box.focus();
-    await page.keyboard.type('acme');
-    await page.keyboard.press('Enter');
-    await expect(page).toHaveURL(/\/search\?q=acme/);
-    await expect(page.getByRole('heading', { name: 'Search Results', level: 1 })).toBeVisible();
-  });
-
-  test('the 403 uses the same card: primary "Go to", Copy link as the secondary action, no search box', async ({
+  test('the 403 uses the same card: one "Go to" button, the address with a copy button, no search box', async ({
     personas,
     asUser,
   }) => {
@@ -110,14 +82,14 @@ test.describe('State pages are one family (#607)', () => {
       await page.goto('/admin/users');
       await expect(page.getByRole('heading', { name: FORBIDDEN, level: 1 })).toBeVisible();
       const c = await card(page);
-      expect(c.fontSize, `403 title at ${size.width}`).toBe(size.width < 640 ? 18 : 22);
+      expect(c.fontSize, `403 title at ${size.width}`).toBe(22);
       expect(c.left).toBeGreaterThanOrEqual(12);
       expect(c.viewport - c.right).toBeGreaterThanOrEqual(12);
       expect(c.brandVisible).toBe(true);
       expect(c.mono).toBe(true);
       await expect(page.locator('[data-state-actions] [data-back-link]')).toBeVisible();
-      await expect(page.locator('[data-state-secondary]').getByRole('button')).toHaveText(
-        /Copy link/,
+      await expect(page.locator('[data-asked]').getByRole('button')).toHaveAccessibleName(
+        'Copy address',
       );
       await expect(page.getByRole('searchbox')).toHaveCount(0);
       if (size.width === 1366 || size.width === 375) await shot(page, 'state-403');
@@ -130,7 +102,7 @@ test.describe('State pages are one family (#607)', () => {
       await page.goto('/error');
       await expect(page.getByRole('heading', { name: ERROR_TITLE, level: 1 })).toBeVisible();
       const c = await card(page);
-      expect(c.fontSize).toBe(size.width < 640 ? 18 : 22);
+      expect(c.fontSize).toBe(22);
       expect(c.left).toBeGreaterThanOrEqual(12);
       expect(c.viewport - c.right).toBeGreaterThanOrEqual(12);
       expect(c.brandVisible).toBe(true);
@@ -158,7 +130,7 @@ test.describe('State pages are one family (#607)', () => {
     await atEverySize(t, 'state-axe-403');
   });
 
-  test('keyboard only: Tab reaches "Go to ...", then the secondary action', async ({
+  test('keyboard only: Tab reaches "Go to ...", then Copy address', async ({
     personas,
     asUser,
   }) => {
@@ -173,7 +145,7 @@ test.describe('State pages are one family (#607)', () => {
     await page.keyboard.press('Tab');
     await expect(page.locator('[data-back-link]')).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('button', { name: 'Copy Link' })).toBeFocused();
+    await expect(page.getByRole('button', { name: 'Copy address' })).toBeFocused();
   });
 
   test('permission variants: the 404 link follows the landing rule for every kind of person', async ({

@@ -8,7 +8,7 @@ import { Seeder, uid } from '../support/seed';
  * counts (equal to the API's totals for that person), the Searched in line, the Filters controls, and that every result opens without a refused
  * API call. A person with no View permission gets the 403 page.
  */
-const FORBIDDEN = "You don't have permission to view this.";
+const FORBIDDEN = "You don't have access.";
 
 async function seedAll(seed: Seeder) {
   const token = `Srm${uid().replace(/[^a-z0-9]/gi, '')}`;

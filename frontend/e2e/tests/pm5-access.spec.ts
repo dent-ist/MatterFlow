@@ -219,7 +219,7 @@ test.describe('My Matters and the manager fields: who sees what', () => {
     for (const href of links.slice(0, 24)) {
       await page.goto(href);
       await expect(
-        page.getByRole('heading', { name: "You don't have permission to view this.", level: 1 }),
+        page.getByRole('heading', { name: "You don't have access.", level: 1 }),
         href,
       ).toHaveCount(0);
       await expect(page.getByRole('heading', { level: 1 }).first(), href).toBeVisible();
@@ -254,7 +254,7 @@ test.describe('My Matters and the manager fields: who sees what', () => {
       await expect(page.getByRole('link', { name: 'My Matters' })).toHaveCount(0);
       await page.goto('/my-matters');
       await expect(
-        page.getByRole('heading', { name: "You don't have permission to view this.", level: 1 }),
+        page.getByRole('heading', { name: "You don't have access.", level: 1 }),
       ).toBeVisible();
       expect(calls, p.who.username).toEqual([]);
       expect(await toasts(page).count()).toBe(0);

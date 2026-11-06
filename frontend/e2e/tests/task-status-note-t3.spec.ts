@@ -273,9 +273,7 @@ test.describe('Task status note T3 (#301, #302)', () => {
     const nobody = await seed.user([none.name], 'notask');
     const n = await asUser(nobody.username);
     await n.goto(`/tasks/${task.taskId}`);
-    await expect(
-      n.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(n.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     await expect(n.locator('[data-status-note]')).toHaveCount(0);
   });
 });

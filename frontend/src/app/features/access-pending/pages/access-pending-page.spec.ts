@@ -44,14 +44,23 @@ describe('AccessPendingPage copy (#428)', () => {
     expect(flat(el)).toContain('KE\\pend01. An administrator needs to give you a role');
   });
 
-  it('says the administrator is already notified and who to ask for faster access', async () => {
-    const el = await render();
-    const text = flat(el);
-    expect(text).toContain(
-      'An administrator is notified through the Users page: you do not need to resend this.',
+  it('is the shared state-page card with one sentence, the account with a copy button and one button (#1193)', async () => {
+    const el = await render(
+      profileOf({
+        displayName: 'Pat Pending',
+        windowsAccount: 'KE\\pend01',
+        status: 'ACCESS_PENDING',
+      }),
     );
-    expect(text).toContain('Ask your Pod Lead or manager if you need access sooner.');
-    expect(text).not.toContain('Contact:');
+    expect(el.querySelector('[data-state-page]')).not.toBeNull();
+    expect(el.querySelectorAll('h1')).toHaveLength(1);
+    expect(el.querySelector('[data-pending-account] button')!.getAttribute('aria-label')).toBe(
+      'Copy Windows account name',
+    );
+    const buttons = el.querySelectorAll('[data-state-actions] .mf-btn');
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0].textContent).toContain('Check Again');
+    expect(flat(el)).not.toContain('Contact:');
   });
 
   it('the disabled page says "disabled" once and what to do, with the name and account written once (#610)', async () => {

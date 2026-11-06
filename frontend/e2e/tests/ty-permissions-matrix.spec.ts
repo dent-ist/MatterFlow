@@ -206,9 +206,7 @@ async function settle(page: Page): Promise<void> {
 
 /** The 403 page is shown (it keeps the address that was asked for, #598, so the URL no longer says `/403`). */
 const isForbiddenPage = async (page: Page): Promise<boolean> =>
-  (await page
-    .getByRole('heading', { level: 1, name: "You don't have permission to view this." })
-    .count()) > 0;
+  (await page.getByRole('heading', { level: 1, name: "You don't have access." }).count()) > 0;
 
 /** The links of the page content (not the navigation rail or the header search). */
 async function contentLinks(page: Page): Promise<string[]> {

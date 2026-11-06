@@ -175,9 +175,7 @@ test.describe('the filter row is open from 640 px and the Filters button sits in
     const viewerRole = await seed.role(['Task.View'], 'Viewer');
     const viewer = await asUser((await seed.user([viewerRole.name], 'ty2-viewer')).username);
     await viewer.goto('/admin/task-types');
-    await expect(
-      viewer.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(viewer.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     await expect(viewer.locator('[data-filters-toggle]')).toHaveCount(0);
   });
 });

@@ -21,6 +21,7 @@ import { StatePage } from '../../../shared/ui/state-page';
         icon="pi pi-exclamation-triangle"
         heading="Couldn't load your account."
         [reason]="reason()"
+        tone="error"
       >
         <mf-error-reference />
         @if (retrying()) {
@@ -39,7 +40,7 @@ import { StatePage } from '../../../shared/ui/state-page';
           <i class="pi pi-refresh" aria-hidden="true"></i>Retry
         </button>
         @if (failedAgain()) {
-          <a mfSecondary class="mf-btn" href="/" data-go-home>Go to Home</a>
+          <a mfPrimary class="mf-btn mf-btn--text" href="/" data-go-home>Go to Home</a>
         }
       </mf-state-page>
     </main>

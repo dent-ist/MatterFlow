@@ -79,7 +79,7 @@ test.describe('Pod Work permission matrix', () => {
       const seen = watch(page);
       await page.goto('/pods/work?podId=1');
       await expect(
-        page.getByRole('heading', { name: "You don't have permission to view this." }),
+        page.getByRole('heading', { name: "You don't have access." }),
         who,
       ).toBeVisible();
       await page.waitForTimeout(400);

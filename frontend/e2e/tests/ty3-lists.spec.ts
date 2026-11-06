@@ -422,7 +422,7 @@ test.describe('Row overflow menu on the three lists (#355)', () => {
       for (const url of ['/admin/task-types', '/admin/workflows', '/admin/steps']) {
         await viewPage.goto(url);
         await expect(
-          viewPage.getByRole('heading', { name: "You don't have permission to view this." }),
+          viewPage.getByRole('heading', { name: "You don't have access." }),
         ).toBeVisible();
         await expect(viewPage.locator('button[data-overflow]')).toHaveCount(0);
       }

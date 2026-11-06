@@ -27,9 +27,7 @@ test.describe('Dashboard permissions', () => {
 
     // A tab permission without Dashboard.View has no effect, in the UI or on the server.
     await page.goto('/dashboard');
-    await expect(
-      page.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     expect((await page.request.get('/api/v1/dashboard')).status()).toBe(403);
   });
 

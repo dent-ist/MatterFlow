@@ -236,9 +236,7 @@ test.describe('Notification bell and panel', () => {
     await expect(page.getByTestId('user-menu')).toBeVisible();
     await expect(bell(page)).toHaveCount(0);
     await page.goto('/notifications');
-    await expect(
-      page.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     expect(calls).toEqual([]);
   });
 });

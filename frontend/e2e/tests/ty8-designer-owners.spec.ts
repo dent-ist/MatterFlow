@@ -163,9 +163,7 @@ test.describe('permissions of the shared designer', () => {
     const asset = await assetTypeWorld(admin, { fields: manyFields(4), draft: true });
     const custom = await customFieldWorld(admin, 'project');
     const forbidden = (p: Page) =>
-      expect(
-        p.getByRole('heading', { name: "You don't have permission to view this." }),
-      ).toBeVisible();
+      expect(p.getByRole('heading', { name: "You don't have access." })).toBeVisible();
 
     const assetRole = await seed.role(
       ['AssetType.Manage', 'Asset.View', 'Task.View'],

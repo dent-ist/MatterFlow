@@ -19,6 +19,7 @@ import { CopyButton } from './copy-button';
     :host {
       display: block;
       margin-top: var(--mf-s1);
+      color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
     .mf-errref {

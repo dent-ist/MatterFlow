@@ -668,7 +668,7 @@ describe('Projects pages', () => {
       await settle(fixture);
 
       expect(el().querySelector('h1')?.textContent).toContain("We couldn't find that project.");
-      expect(el().querySelector('[data-back-link]')?.textContent).toContain('Go to projects');
+      expect(el().querySelector('[data-back-link]')?.textContent).toContain('Go to Projects');
       expect(buttonByLabel(el(), 'Retry')).toBeUndefined();
     });
 

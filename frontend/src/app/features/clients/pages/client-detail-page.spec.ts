@@ -377,7 +377,7 @@ describe('ClientDetailPage', () => {
     await settle(fixture);
 
     expect(el().querySelector('h1')?.textContent).toContain("We couldn't find that client.");
-    expect(el().querySelector('[data-back-link]')?.textContent).toContain('Go to clients');
+    expect(el().querySelector('[data-back-link]')?.textContent).toContain('Go to Clients');
     expect(buttonByLabel(el(), 'Retry')).toBeUndefined();
     expect(el().querySelector('[role=tablist]')).toBeNull(); // no header and tabs in an error state
   });

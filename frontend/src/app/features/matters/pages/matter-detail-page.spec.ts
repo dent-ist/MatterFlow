@@ -878,7 +878,7 @@ describe('MatterDetailPage', () => {
     await settle(fixture);
 
     expect(el().querySelector('h1')?.textContent).toContain("We couldn't find that matter.");
-    expect(el().querySelector('[data-back-link]')?.textContent).toContain('Go to matters');
+    expect(el().querySelector('[data-back-link]')?.textContent).toContain('Go to Matters');
     expect(buttonByLabel(el(), 'Retry')).toBeUndefined();
     expect(el().querySelector('[role=tablist]')).toBeNull();
   });

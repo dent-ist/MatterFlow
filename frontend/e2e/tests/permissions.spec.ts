@@ -80,9 +80,7 @@ test.describe('Permission denial in the UI and the API (SCN-019)', () => {
 
     for (const url of ['/admin/task-types', '/admin/workflows', '/admin/users', '/admin/audit']) {
       await page.goto(url);
-      await expect(
-        page.getByRole('heading', { name: "You don't have permission to view this." }),
-      ).toBeVisible();
+      await expect(page.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     }
   });
 
@@ -161,9 +159,7 @@ test.describe('Permission denial in the UI and the API (SCN-019)', () => {
     await expect(page.getByRole('button', { name: 'New Task' })).toHaveCount(0);
 
     await page.goto('/tasks/new');
-    await expect(
-      page.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: "You don't have access." })).toBeVisible();
 
     const asViewer = await Api.as(viewer.username);
     try {

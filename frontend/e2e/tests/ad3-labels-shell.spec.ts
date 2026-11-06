@@ -138,9 +138,7 @@ test.describe('the Labels page on the admin list shell (#593)', () => {
     const viewer = await personas.create({ permissions: ['Task.View'], label: 'ad3-tv' });
     const denied = await asUser(viewer.username);
     await denied.goto('/admin/priorities');
-    await expect(
-      denied.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(denied.getByRole('heading', { name: "You don't have access." })).toBeVisible();
   });
 
   for (const size of SIZES) {

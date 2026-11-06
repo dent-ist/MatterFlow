@@ -156,9 +156,7 @@ test.describe('Version editor: leaving a dirty draft (VP8, #398)', () => {
     const ttUser = await seed.user([ttRole.name], 'tt-only');
     const ttPage = await asUser(ttUser.username);
     await ttPage.goto(world.url);
-    await expect(
-      ttPage.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(ttPage.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     await expect(ttPage.locator('[data-step-row]')).toHaveCount(0);
   });
 });
