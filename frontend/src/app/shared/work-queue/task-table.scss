@@ -336,33 +336,3 @@ th:not([aria-sort]) .wt-sort .pi {
 .wt-near > :first-child {
   margin: 0;
 }
-
-/* The Type column (MD-29, every task list since LC-03): the chip and, in a wide column, the type's name beside it, on one line cut with an ellipsis, so a row stays one line tall. */
-.wt-typecell {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: var(--mf-s2);
-  min-width: 0;
-  container: wt-type / inline-size;
-}
-
-/* A narrow Type column (the 112 px default) shows the tile alone, its name is the tooltip and stays in the page for assistive tools; from a 200 px column
-   the name is shown beside it. Never "Archive..." cut in the middle of a word (#1154, D-43, D-45). */
-@container wt-type (max-width: 175px) {
-  .wt-typecell .wt-clip {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-}
-
-.wt-typecell .wt-clip {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}

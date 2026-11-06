@@ -183,7 +183,7 @@ describe('TaskTable resize handles (#204)', () => {
     fire(handle('title'), 'pointermove', 360);
     expect(['ref', 'matter', 'due', 'status'].map((k) => width(k))).toEqual(before);
     fire(handle('title'), 'pointerup', 360);
-    expect(resized).toEqual([{ key: 'title', rem: 220 / 14 }]);
+    expect(resized).toEqual([{ key: 'title', rem: 180 / 14 }]);
   });
 
   it('a Title drag makes it a fixed width that can also get SMALLER; the grid is then as wide as its columns (#1231)', async () => {

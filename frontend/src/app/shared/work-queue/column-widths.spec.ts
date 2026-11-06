@@ -32,7 +32,7 @@ describe('column widths (#200)', () => {
     expect(columnWidthRem(def('due'), { due: 99 })).toBe(pxToRem(200));
     expect(columnWidthRem(def('due'), { due: 9 })).toBe(9);
     expect(Math.round(remToPx(columnWidthRem(def('due'))))).toBe(136);
-    expect(columnWidthRem(def('title'), { title: 30 })).toBe(160 / 14);
+    expect(columnWidthRem(def('title'), { title: 30 })).toBe(120 / 14);
     // The Title is fixed only once it was dragged (#1231), clamped to 96 and 1600 px.
     expect(fixedTitleRem(def('title'), undefined)).toBeUndefined();
     expect(fixedTitleRem(def('title'), { title: 20 })).toBe(20);
@@ -52,7 +52,7 @@ describe('column widths (#200)', () => {
 
   it('the table minimum is the fixed columns plus the Title minimum', () => {
     expect(tableMinRem([def('ref'), def('title'), def('due')], undefined)).toBeCloseTo(
-      (112 + 160 + 136) / 14,
+      (112 + 120 + 136) / 14,
       9,
     );
   });

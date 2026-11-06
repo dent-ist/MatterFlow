@@ -4,7 +4,7 @@ import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import type { SearchHit } from '../../api/generated/api-client';
 import { highlightParts, SearchType } from '../../shared/search/search-meta';
 import { ActiveBadge, SensitiveBadge } from '../../shared/ui/badge';
-import { TaskTypeBadge } from '../../shared/task-type/task-type-badge';
+import { TaskTypeCell } from '../../shared/ui/task-type-cell';
 import { hitDueText, hitIsOverdue, hitSizeText } from './search-facts';
 import { LoadState } from '../../shared/ui/data-table';
 import { GridBody } from '../../shared/ui/grid-body';
@@ -109,11 +109,14 @@ export const SEARCH_COLUMNS: Record<SearchType | 'mixed', readonly Column[]> = {
     SensitiveBadge,
     StatusBadge,
     StatusChip,
-    TaskTypeBadge,
+    TaskTypeCell,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../shared/ui/page.scss',
   styles: `
+    .sg-type {
+      min-width: 12rem;
+    }
     :host {
       display: block;
     }
@@ -287,9 +290,9 @@ export const SEARCH_COLUMNS: Record<SearchType | 'mixed', readonly Column[]> = {
                       </td>
                     }
                     @case ('taskType') {
-                      <td [attr.data-cell]="col.kind">
+                      <td class="sg-type" [attr.data-cell]="col.kind">
                         @if (hit.taskTypeName) {
-                          <mf-task-type-badge
+                          <mf-task-type-cell
                             [name]="hit.taskTypeName"
                             [iconKey]="hit.taskTypeIconKey"
                             [colourKey]="hit.taskTypeColourKey"

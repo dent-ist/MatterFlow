@@ -81,7 +81,7 @@ const NO_PROJECT = 'none';
  * Columns menu; a width the person changed wins.
  */
 const DEFAULT_WIDTHS_PX: Readonly<Record<string, number>> = {
-  typeChip: 112,
+  typeChip: 168,
   project: 140,
   priority: 112,
   assignee: 136,

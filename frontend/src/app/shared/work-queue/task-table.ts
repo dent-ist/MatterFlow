@@ -1,3 +1,4 @@
+import { TaskTypeCell } from '../ui/task-type-cell';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -93,6 +94,7 @@ const LONG_PRESS_MS = 500;
 @Component({
   selector: 'mf-task-table',
   imports: [
+    TaskTypeCell,
     IntPipe,
     NumericDatePipe,
     Dropdown,
@@ -394,18 +396,13 @@ const LONG_PRESS_MS = 500;
                       }
                       @case ('typeChip') {
                         <!-- The My Matters chip with the type's name beside it (MD-29, #1033). -->
-                        <span class="wt-typecell" [attr.title]="row.taskTypeName">
-                          <mf-task-type-chip
-                            [iconKey]="row.taskTypeIconKey"
-                            [colourKey]="row.taskTypeColourKey"
-                            [typeId]="row.taskTypeId"
-                            [decorative]="true"
-                            data-type-chip
-                          />
-                          <span class="wt-clip" data-type-name [attr.title]="row.taskTypeName">{{
-                            row.taskTypeName
-                          }}</span>
-                        </span>
+                        <mf-task-type-cell
+                          [size]="density() === 'compact' ? 'sm' : 'md'"
+                          [name]="row.taskTypeName"
+                          [iconKey]="row.taskTypeIconKey"
+                          [colourKey]="row.taskTypeColourKey"
+                          [typeId]="row.taskTypeId"
+                        />
                       }
                       @case ('steps') {
                         @if (row.workflow.stepsTotal > 0) {
@@ -433,19 +430,13 @@ const LONG_PRESS_MS = 500;
                       }
                       @case ('type') {
                         <!-- The same chip and name as the Matter grid's Type (LC-03: one Type column on every task list); a compact row takes the 24 px chip. -->
-                        <span class="wt-typecell" [attr.title]="row.taskTypeName">
-                          <mf-task-type-chip
-                            [size]="density() === 'compact' ? 'sm' : 'md'"
-                            [iconKey]="row.taskTypeIconKey"
-                            [colourKey]="row.taskTypeColourKey"
-                            [typeId]="row.taskTypeId"
-                            [decorative]="true"
-                            data-type-chip
-                          />
-                          <span class="wt-clip" data-type-name [attr.title]="row.taskTypeName">{{
-                            row.taskTypeName
-                          }}</span>
-                        </span>
+                        <mf-task-type-cell
+                          [size]="density() === 'compact' ? 'sm' : 'md'"
+                          [name]="row.taskTypeName"
+                          [iconKey]="row.taskTypeIconKey"
+                          [colourKey]="row.taskTypeColourKey"
+                          [typeId]="row.taskTypeId"
+                        />
                       }
                       @case ('unassignedFor') {
                         @if (unassignedMinutes(row); as minutes) {

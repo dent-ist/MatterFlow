@@ -36,9 +36,9 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     minWidth: 80,
     maxWidth: 120,
   },
-  // The task type as the coloured chip of My Matters, the tile alone, 56 px, its name the tooltip and accessible name (D-43a, #1230; MD-29, #1033; every task list since LC-03). The storage key stays `type`, so
+  // The task type as the coloured chip and its NAME beside it (`mf-task-type-cell`, #1232; D-43a, MD-29, #1033), 168 px; below about 100 px only the tile shows. The storage key stays `type`, so
   // stored columns, widths and the Task type filter survive the rename (it was "Task type", a name only).
-  { key: 'type', label: 'Type', width: 56, minWidth: 56, maxWidth: 56 },
+  { key: 'type', label: 'Type', width: 168, minWidth: 56, maxWidth: 260 },
   // The same chip and name in a Matter's or Project's grid (own key: its stored choice is `grid-prefs`, never in a chooser or a default set, MD-24 #1028).
   { key: 'typeChip', label: 'Type', width: 150, minWidth: 96, maxWidth: 260, scopedOnly: true },
   {
@@ -46,9 +46,9 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     label: 'Title',
     locked: true,
     sortField: 'title',
-    width: 160,
-    minWidth: 160,
-    maxWidth: 160,
+    width: 120,
+    minWidth: 120,
+    maxWidth: 120,
     fill: true,
     resizable: false,
   },
@@ -213,17 +213,7 @@ export const DEFAULT_COLUMNS: Readonly<Record<string, readonly string[]>> = {
   // Closed (C2): finished work has no progress and no urgency; the date it closed (C1) and the outcome matter. Priority and Due are in the chooser.
   'myWork.closed': ['ref', 'type', 'title', 'matter', 'closed', 'status'],
   // Created by me (B1, B3): where did the work I handed off go: who has it, how urgent, when due, what state, how old.
-  'myWork.createdByMe': [
-    'ref',
-    'type',
-    'title',
-    'matter',
-    'priority',
-    'assignee',
-    'due',
-    'status',
-    'age',
-  ],
+  'myWork.createdByMe': ['ref', 'type', 'title', 'matter', 'priority', 'assignee', 'due', 'status'],
 };
 
 /** The default set of a scope, normalized (table order, Ref and Title included). */

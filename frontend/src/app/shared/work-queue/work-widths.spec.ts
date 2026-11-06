@@ -44,7 +44,7 @@ describe('work widths (#203)', () => {
 
   it('stores nothing for the default, the Title at its minimum, unknown keys and non-numbers', () => {
     saveWidth(TQ, 7, 'due', pxToRem(136));
-    saveWidth(TQ, 7, 'title', pxToRem(160));
+    saveWidth(TQ, 7, 'title', pxToRem(120));
     saveWidth(TQ, 7, 'foo', 20);
     saveWidth(TQ, 7, 'matter', NaN);
     expect(localStorage.length).toBe(0);

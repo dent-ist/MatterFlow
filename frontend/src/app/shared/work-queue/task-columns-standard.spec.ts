@@ -54,10 +54,8 @@ describe('standard task columns', () => {
       'Closed',
       'Status',
     ]);
-    expect(labels('myWork.createdByMe')).toEqual([
-      ...without('Matter Name', 'Project', 'Progress'),
-      'Age',
-    ]);
+    // Created by Me: Age is in Columns, not in the default, so the row fits 1366 with the 168 px Type (#1232).
+    expect(labels('myWork.createdByMe')).toEqual(without('Matter Name', 'Project', 'Progress'));
   });
 
   it('lists every column the chooser offers in the registry order, so the Columns menu and the table agree', () => {

@@ -8,7 +8,7 @@ import { ASSIGNEE_WITH_LINK_PX } from './column-widths';
  * plus a Title of at least 160 px add up to 1,098 px or less, so there is no sideways scroll and Status is whole. Everything else is one click away in Columns.
  */
 const FRAME_1366_PX = 1098;
-const TITLE_MIN_PX = 160;
+const TITLE_MIN_PX = WORK_COLUMNS.find((c) => c.key === 'title')!.minWidth;
 
 const width = (key: string, assignee: number): number => {
   if (key === 'assignee') return assignee;
@@ -30,7 +30,7 @@ describe('default task columns fit the 1366 frame (D-43a, #1230)', () => {
   ];
 
   it.each(scopes)(
-    '%s: default widths plus a 160 px Title are at most 1,098 px',
+    '%s: default widths plus the Title minimum (120 px) are at most 1,098 px',
     (scope, assignee) => {
       const keys = defaultColumns(scope);
       expect(sum(keys, assignee) + TITLE_MIN_PX, `${scope} ${keys.join(',')}`).toBeLessThanOrEqual(
@@ -44,9 +44,10 @@ describe('default task columns fit the 1366 frame (D-43a, #1230)', () => {
     expect(sum(keys, ASSIGNEE_PX) + TITLE_MIN_PX).toBeLessThanOrEqual(FRAME_1366_PX);
   });
 
-  it('Type is the tile alone at 56 px, fixed', () => {
+  it('Type is the chip and the name at 168 px, resizable down to the tile alone (#1232); the Title minimum is 120 px', () => {
     const type = WORK_COLUMNS.find((c) => c.key === 'type')!;
-    expect([type.width, type.minWidth, type.maxWidth]).toEqual([56, 56, 56]);
+    expect([type.width, type.minWidth, type.maxWidth]).toEqual([168, 56, 260]);
+    expect(TITLE_MIN_PX).toBe(120);
   });
 
   it('Project, Matter Name and Progress are off by default on every global list; CM Number stays', () => {
@@ -58,6 +59,6 @@ describe('default task columns fit the 1366 frame (D-43a, #1230)', () => {
     }
     const summary = shownKeys(SUMMARY_GRID_COLUMNS, DEFAULT_GRID_PREFS);
     for (const off of ['project', 'matterName', 'progress']) expect(summary).not.toContain(off);
-    expect(summary).toContain('matter');
+    expect(summary).not.toContain('matter');
   });
 });

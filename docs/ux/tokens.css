@@ -120,9 +120,9 @@
   --mf-col-project-w: 140px;
   --mf-col-project-min: 96px;
   --mf-col-project-max: 280px;
-  --mf-col-type-w: 56px;
+  --mf-col-type-w: 168px;
   --mf-col-type-min: 56px;
-  --mf-col-type-max: 56px;
+  --mf-col-type-max: 260px;
   --mf-col-workflow-w: 150px;
   --mf-col-workflow-min: 96px;
   --mf-col-workflow-max: 280px;
@@ -162,7 +162,7 @@
   --mf-col-updated-w: 120px;
   --mf-col-updated-min: 96px;
   --mf-col-updated-max: 180px;
-  --mf-col-title-min: 160px;
+  --mf-col-title-min: 120px;
   --mf-col-assignee-pod-work-w: 160px; /* Assignee on Pod Work, where the "Assign to me" icon button shares the cell (#1227) */
   --mf-narrow-title-min: 200px; /* the narrow-box rule: autoHide columns drop out while the Title would be narrower than this */
   /* Clients, Matters and Projects (epic #245, ux-spec 5.9 and S05 to S07): NO token was added. The record pages and lists are built on the

@@ -185,7 +185,6 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
       'Assignee',
       'Due',
       'Status',
-      'Age',
     ]);
     await shot(page, 'my-work-created-by-me-1920x1080');
     if (Seeder.canWriteLegacyText()) {

@@ -65,17 +65,7 @@ describe('work table preferences', () => {
     );
     // B1, B3: where did the work I handed off go.
     expect(defaultColumns('myWork.createdByMe')).toEqual(
-      normalizeColumns([
-        'ref',
-        'type',
-        'title',
-        'matter',
-        'priority',
-        'assignee',
-        'due',
-        'status',
-        'age',
-      ]),
+      normalizeColumns(['ref', 'type', 'title', 'matter', 'priority', 'assignee', 'due', 'status']),
     );
     for (const sc of [
       'taskQueue',

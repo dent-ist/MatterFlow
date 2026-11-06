@@ -61,7 +61,7 @@ export const SUMMARY_GRID_COLUMNS: readonly GridColumnDef[] = [
   { key: 'ref', label: 'Ref', locked: true, pinned: true },
   { key: 'type', label: 'Type' },
   { key: 'title', label: 'Title', locked: true },
-  { key: 'matter', label: 'CM Number' },
+  { key: 'matter', label: 'CM Number', defaultHidden: true },
   { key: 'matterName', label: 'Matter Name', defaultHidden: true },
   { key: 'project', label: 'Project', defaultHidden: true },
   { key: 'priority', label: 'Priority' },
