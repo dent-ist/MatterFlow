@@ -337,46 +337,48 @@ export function statusCodes(status: StatusFilter): string[] {
             @for (t of rows(); track t.taskId) {
               <tr [attr.data-task]="t.taskId">
                 <td class="td-t" data-cell="title">
-                  <div class="cell tcol">
-                    <mf-task-type-cell
-                      class="ttype"
-                      [iconKey]="t.taskTypeIconKey"
-                      [colourKey]="t.taskTypeColourKey"
-                      [typeId]="t.taskTypeId"
-                      [name]="t.taskTypeName"
-                    />
-                    <span class="tmain">
-                      <span class="tcell">
-                        <a
-                          class="mf-link tlink"
-                          [routerLink]="['/tasks', t.taskId]"
-                          [attr.title]="t.title"
-                          data-task-link
-                        >
-                          <span class="ref">{{ t.taskNumber }}</span>
-                          <span class="tname">{{ t.title }}</span>
-                        </a>
-                        @if (showMatter()) {
-                          <span class="mt">{{ t.matterName }}</span>
-                        }
-                      </span>
-                      @if (t.atRisk && (t.status === 'NEW' || t.status === 'IN_PROGRESS')) {
-                        <span class="risk" data-at-risk>
-                          <mf-priority-pill class="risk__pill" kind="risk" />
-                          <i
-                            class="pi pi-clock risk__ico"
-                            role="img"
-                            aria-label="At Risk"
-                            mfTip="At Risk"
-                          ></i>
+                  <div class="tcw">
+                    <div class="cell tcol">
+                      <mf-task-type-cell
+                        class="ttype"
+                        [iconKey]="t.taskTypeIconKey"
+                        [colourKey]="t.taskTypeColourKey"
+                        [typeId]="t.taskTypeId"
+                        [name]="t.taskTypeName"
+                      />
+                      <span class="tmain">
+                        <span class="tcell">
+                          <a
+                            class="mf-link tlink"
+                            [routerLink]="['/tasks', t.taskId]"
+                            [attr.title]="t.title"
+                            data-task-link
+                          >
+                            <span class="ref">{{ t.taskNumber }}</span>
+                            <span class="tname">{{ t.title }}</span>
+                          </a>
+                          @if (showMatter()) {
+                            <span class="mt">{{ t.matterName }}</span>
+                          }
                         </span>
-                      }
-                      <span class="ppl">
-                        @if (pill(t); as p) {
-                          <mf-priority-pill [kind]="p" />
+                        @if (t.atRisk && (t.status === 'NEW' || t.status === 'IN_PROGRESS')) {
+                          <span class="risk" data-at-risk>
+                            <mf-priority-pill class="risk__pill" kind="risk" />
+                            <i
+                              class="pi pi-clock risk__ico"
+                              role="img"
+                              aria-label="At Risk"
+                              mfTip="At Risk"
+                            ></i>
+                          </span>
                         }
+                        <span class="ppl">
+                          @if (pill(t); as p) {
+                            <mf-priority-pill [kind]="p" />
+                          }
+                        </span>
                       </span>
-                    </span>
+                    </div>
                   </div>
                 </td>
                 <td class="c-st" data-cell="status">
@@ -556,7 +558,11 @@ export function statusCodes(status: StatusFilter): string[] {
     }
     .td-t {
       min-width: 0;
+      padding-inline: 0;
       line-height: 1.3;
+    }
+    .tcol {
+      padding-inline: var(--mf-s3);
     }
     .cell {
       display: flex;
@@ -631,13 +637,15 @@ export function statusCodes(status: StatusFilter): string[] {
     .ppl {
       margin-left: var(--mf-s2);
     }
-    /* The Task cell is its own container. Its title room is what is left right of the type tile: under 260 px of it (the .tmain container) the At Risk pill is the clock icon alone, 18 px, in the pill colors; the words are the tooltip and the accessible name (D-44i, #1264). */
+    /* The Task cell is its own container (.tcw is as wide as the whole cell, its padding is on .tcol). One rule for every row: in a cell under 460 px the At Risk pill is the 26 px clock-icon circle (18 px icon, pill colors), its words are the tooltip and the accessible name; at 460 px and wider it is the pill with its word. Never a measurement of the title room, which changes per row (D-44t, #1267). */
+    .tcw {
+      container: tc / inline-size;
+    }
     .tmain {
       display: flex;
       align-items: center;
       flex: 1 1 auto;
       min-width: 0;
-      container: tc / inline-size;
     }
     .risk {
       display: inline-flex;
@@ -653,7 +661,7 @@ export function statusCodes(status: StatusFilter): string[] {
       color: var(--mf-sem-risk-fg);
       font-size: var(--mf-icon-md);
     }
-    @container tc (width < 260px) {
+    @container tc (max-width: 459.98px) {
       .risk__pill {
         display: none;
       }
@@ -774,6 +782,9 @@ export function statusCodes(status: StatusFilter): string[] {
       }
       .tt td.td-t {
         flex: 1 1 100%;
+      }
+      .tcol {
+        padding-inline: 0;
       }
       .tt td.c-prio,
       .tt td.c-asg {

@@ -380,8 +380,8 @@ test.describe('My Matters: review round 3 (UI-21)', () => {
   });
 });
 
-test.describe('My Matters: At Risk in a narrow Task cell (D-44i, #1264)', () => {
-  test('with the side panel open at 1366 the At Risk pill is the clock icon (named "At Risk"); at 1920 it keeps its word', async ({
+test.describe('My Matters: At Risk follows the width of the Task cell (D-44t, #1267)', () => {
+  test('the clock icon below 460 px of Task cell (446 and 304 px at 1366), the pill with its word above (708 px at 1920)', async ({
     seed,
     personas,
     asUser,
@@ -400,16 +400,35 @@ test.describe('My Matters: At Risk in a narrow Task cell (D-44i, #1264)', () => 
       }
       await route.fulfill({ response: res, json });
     });
+    const cellWidth = async () =>
+      Math.round((await page.locator('td[data-cell="title"]').first().boundingBox())!.width);
+    const risk = page.locator('[data-at-risk]').first();
+    const expectIcon = async () => {
+      await expect(risk.locator('mf-priority-pill')).toBeHidden();
+      const icon = risk.getByRole('img', { name: 'At Risk' });
+      await expect(icon).toBeVisible();
+      const box = (await icon.boundingBox())!;
+      expect(box.width).toBeLessThanOrEqual(26);
+      expect(box.height).toBeLessThanOrEqual(26);
+    };
+
+    // 1366, side panel closed: the Task cell is 446 px, so the icon (the title room of the row does not matter).
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/my-matters');
-    await page.getByRole('button', { name: /Expand Upcoming events/ }).click();
-    const risk = page.locator('[data-at-risk]').first();
     await expect(risk).toBeVisible();
-    await expect(risk.locator('mf-priority-pill')).toBeHidden();
-    const icon = risk.getByRole('img', { name: 'At Risk' });
-    await expect(icon).toBeVisible();
-    expect((await icon.boundingBox())!.height).toBeLessThanOrEqual(26);
+    expect(Math.abs((await cellWidth()) - 446)).toBeLessThanOrEqual(8);
+    await expectIcon();
+
+    // 1366, side panel open: 304 px, the icon.
+    await page.getByRole('button', { name: /Expand Upcoming events/ }).click();
+    await expect.poll(cellWidth).toBeLessThan(330);
+    expect(Math.abs((await cellWidth()) - 304)).toBeLessThanOrEqual(8);
+    await expectIcon();
+
+    // 1920: 708 px, the pill with its word.
     await page.setViewportSize({ width: 1920, height: 1080 });
+    await expect.poll(cellWidth).toBeGreaterThanOrEqual(460);
+    expect(Math.abs((await cellWidth()) - 708)).toBeLessThanOrEqual(8);
     await expect(risk.locator('mf-priority-pill')).toBeVisible();
     await expect(risk.locator('mf-priority-pill')).toContainText('At Risk');
     await expect(risk.getByRole('img', { name: 'At Risk' })).toBeHidden();
