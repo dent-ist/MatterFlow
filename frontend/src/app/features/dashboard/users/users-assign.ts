@@ -273,6 +273,7 @@ export function assignHint(
                             size="sm"
                             [name]="r.taskTypeName"
                             [iconKey]="r.taskTypeIconKey"
+                            [colourKey]="r.taskTypeColourKey"
                             [typeId]="r.taskTypeId"
                           />
                           <span class="title" [attr.title]="r.title">{{ r.title }}</span>
