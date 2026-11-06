@@ -1,4 +1,5 @@
 import { Dropdown, DropdownItem } from '../../shared/ui/dropdown';
+import { FilterChip, FilterChips } from '../../shared/ui/filter-chips';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -46,7 +47,7 @@ import { DEFAULT_STATUS_LABELS } from '../../core/lookups/lookup-store';
  */
 @Component({
   selector: 'mf-search-filters',
-  imports: [EntityPicker, Dropdown],
+  imports: [EntityPicker, Dropdown, FilterChips],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../shared/ui/page.scss',
   styles: `
@@ -99,25 +100,6 @@ import { DEFAULT_STATUS_LABELS } from '../../core/lookups/lookup-store';
       align-items: center;
       gap: var(--mf-s2);
       margin: 0 0 var(--mf-s3);
-      padding: 0;
-      list-style: none;
-    }
-    .sf-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      min-height: 32px;
-      padding: 0 var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: 999px;
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-      font-size: var(--mf-fs-sm);
-      cursor: pointer;
-    }
-    .sf-chip:hover {
-      background: var(--mf-selected-bg);
     }
   `,
   template: `
@@ -224,27 +206,16 @@ import { DEFAULT_STATUS_LABELS } from '../../core/lookups/lookup-store';
       </div>
     }
     @if (chips().length > 0) {
-      <ul class="sf-chips" aria-label="Active filters" data-filter-chips>
-        @for (chip of chips(); track chip.kind) {
-          <li>
-            <button
-              type="button"
-              class="sf-chip"
-              data-filter-chip
-              [attr.aria-label]="'Remove filter ' + chip.label"
-              (click)="remove(chip.kind)"
-            >
-              <span>{{ chip.label }}</span>
-              <i class="pi pi-times" aria-hidden="true"></i>
-            </button>
-          </li>
-        }
-        <li>
-          <button type="button" class="mf-btn mf-btn--text" data-clear-filters (click)="clear()">
-            Clear Filters
-          </button>
-        </li>
-      </ul>
+      <div class="sf-chips" role="group" aria-label="Active filters" data-filter-chips>
+        <mf-filter-chips
+          label="Active filters"
+          [chips]="chipItems()"
+          (valueChange)="remove($any($event))"
+        />
+        <button type="button" class="mf-btn mf-btn--text" data-clear-filters (click)="clear()">
+          Clear Filters
+        </button>
+      </div>
     }
   `,
 })
@@ -305,6 +276,16 @@ export class SearchFilters {
       matter: (id) => this.matterNames()[id] ?? `Matter ${id}`,
       assetType: (id) => this.assetTypes().find((t) => t.assetTypeId === id)?.name ?? `Type ${id}`,
     }),
+  );
+
+  /** The chips of the active filters for `mf-filter-chips`: pressing one takes that filter away (its accessible name says so). */
+  protected readonly chipItems = computed<FilterChip[]>(() =>
+    this.chips().map((c) => ({
+      key: c.kind,
+      label: c.label,
+      icon: 'pi-times',
+      ariaLabel: 'Remove filter ' + c.label,
+    })),
   );
 
   private timer: ReturnType<typeof setTimeout> | undefined;

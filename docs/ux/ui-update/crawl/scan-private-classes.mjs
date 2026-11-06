@@ -18,6 +18,15 @@ const files = [];
 
 const CHIP_WORD = /(^|[-_])(chip|chips|chipk|badge|badges|pill|pills|tag|tags|hchip|achip)($|[-_])|chip|badge|pill/;
 const LINK_WORD = /^(lnk|link|linkbtn|link-btn|lnk-btn|lnk-)|(^|[-_])(lnk|link|linkbtn)($|[-_])|^(pg-link|ov-link|tc)$/;
+// The shared chip components themselves: their own inner class names are the shared look, not a private one (same list as the guard).
+const SHARED_KINDS = new Set([
+  'shared/ui/badge.ts',
+  'shared/ui/status-chip.ts',
+  'shared/ui/filter-chips.ts',
+  'shared/ui/priority-badge.ts',
+  'shared/ui/priority-pill.ts',
+  'shared/ui/task-type-chip.ts',
+]);
 const rules = [];
 for (const file of files) {
   const text = readFileSync(file, 'utf8');
@@ -28,7 +37,7 @@ for (const file of files) {
     const selector = m[1].replace(/\/\*[\s\S]*?\*\//g, '').trim();
     const body = m[2];
     for (const cls of new Set([...selector.matchAll(/\.([a-zA-Z][\w-]*)/g)].map((x) => x[1]))) {
-      if (CHIP_WORD.test(cls) && /border-radius|background/.test(body) && !/^mf-/.test(cls)) rules.push({ kind: 'chip', file: relative(ROOT, file), cls });
+      if (CHIP_WORD.test(cls) && /border-radius|background/.test(body) && !/^mf-/.test(cls)) { if (!SHARED_KINDS.has(relative(ROOT, file))) rules.push({ kind: 'chip', file: relative(ROOT, file), cls }); }
       if (LINK_WORD.test(cls) && /text-decoration|--mf-link/.test(body) && !/^mf-/.test(cls)) rules.push({ kind: 'link', file: relative(ROOT, file), cls });
     }
   }

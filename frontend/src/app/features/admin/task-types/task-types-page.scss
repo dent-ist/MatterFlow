@@ -19,3 +19,9 @@
   gap: var(--mf-s4);
   margin-bottom: var(--mf-s3);
 }
+
+/* The Name cell: the shared Type cell (solid chip and the name) is the link, so it has the full width of the column (#1238). */
+.tt-link {
+  display: block;
+  min-width: 0;
+}

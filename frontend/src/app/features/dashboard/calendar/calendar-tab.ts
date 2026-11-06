@@ -44,6 +44,7 @@ import {
 import { CalPanel } from './calendar-panel';
 import { cellClass } from './calendar-month-grid';
 import { CalWeekGrid } from './calendar-week-grid';
+import { TagChip } from '../../../shared/ui/tag-chip';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -60,6 +61,7 @@ const ALL_ROLES = '';
 @Component({
   selector: 'mf-dash-calendar-tab',
   imports: [
+    TagChip,
     AbsenceDialog,
     CalInsights,
     CalMonthGrid,
@@ -252,10 +254,7 @@ const ALL_ROLES = '';
             <li class="lgrp">
               <span class="legend__h">Holidays</span>
               <span class="lg">
-                <span class="hchip"
-                  ><i class="pi pi-flag" aria-hidden="true"></i
-                  ><span>Chip colour = category</span></span
-                >
+                <mf-tag-chip colour="slate" icon="pi-flag">Chip colour = category</mf-tag-chip>
               </span>
             </li>
           </ul>
@@ -419,17 +418,6 @@ const ALL_ROLES = '';
       align-items: center;
       gap: var(--mf-s1);
       white-space: nowrap;
-    }
-    /* The legend never clips its sample chip (CAL-11): the words stay whole, the row wraps instead. */
-    .legend .hchip {
-      height: auto;
-      min-height: 18px;
-      max-width: none;
-      overflow: visible;
-    }
-    .legend .hchip > span {
-      overflow: visible;
-      text-overflow: clip;
     }
     .lg.cv-quiet {
       padding: 1px var(--mf-s2);

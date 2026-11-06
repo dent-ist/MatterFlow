@@ -15,6 +15,7 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { FormDialog } from '../../../shared/ui/form-dialog';
 import { HOLIDAY_API } from './holiday-api';
 import { CATEGORY_COLOURS, HolidayCalendar } from './holiday-contract';
+import { TagChip } from '../../../shared/ui/tag-chip';
 
 const label = (key: string): string => key.charAt(0).toUpperCase() + key.slice(1);
 
@@ -24,7 +25,7 @@ const label = (key: string): string => key.charAt(0).toUpperCase() + key.slice(1
  */
 @Component({
   selector: 'mf-calendar-dialog',
-  imports: [FormDialog],
+  imports: [TagChip, FormDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../dashboard/calendar/calendar-coverage.scss',
   template: `
@@ -83,9 +84,7 @@ const label = (key: string): string => key.charAt(0).toUpperCase() + key.slice(1
                   [checked]="colour() === c"
                   (change)="colour.set(c)"
                 />
-                <span class="hchip" [class]="'hchip hc-' + c"
-                  ><i class="pi pi-flag" aria-hidden="true"></i><span>{{ labelOf(c) }}</span></span
-                >
+                <mf-tag-chip [colour]="c" icon="pi-flag">{{ labelOf(c) }}</mf-tag-chip>
               </label>
             }
           </div>
@@ -148,10 +147,6 @@ const label = (key: string): string => key.charAt(0).toUpperCase() + key.slice(1
     .cd__c:focus-within {
       outline: 2px solid var(--mf-focus);
       outline-offset: 1px;
-    }
-    .cd__c .hchip {
-      height: 24px;
-      font-size: var(--mf-fs-sm);
     }
     .cd__chk {
       display: flex;

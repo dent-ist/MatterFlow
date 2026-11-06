@@ -1,0 +1,56 @@
+{
+ "nt-1366x768": [
+  {
+   "h": 26,
+   "bg": "rgb(227, 231, 238)",
+   "color": "rgb(47, 56, 70)",
+   "txt": "Privileged"
+  },
+  {
+   "h": 26,
+   "bg": "rgb(220, 232, 251)",
+   "color": "rgb(23, 60, 121)",
+   "txt": "Work Product"
+  },
+  {
+   "h": 26,
+   "bg": "rgb(213, 240, 238)",
+   "color": "rgb(11, 79, 74)",
+   "txt": "Hot Document"
+  },
+  {
+   "h": 26,
+   "bg": "rgb(221, 241, 226)",
+   "color": "rgb(20, 83, 45)",
+   "txt": "Follow Up"
+  }
+ ],
+ "rail-1366x768": [],
+ "nt-1920x1080": [
+  {
+   "h": 26,
+   "bg": "rgb(227, 231, 238)",
+   "color": "rgb(47, 56, 70)",
+   "txt": "Privileged"
+  },
+  {
+   "h": 26,
+   "bg": "rgb(220, 232, 251)",
+   "color": "rgb(23, 60, 121)",
+   "txt": "Work Product"
+  },
+  {
+   "h": 26,
+   "bg": "rgb(213, 240, 238)",
+   "color": "rgb(11, 79, 74)",
+   "txt": "Hot Document"
+  },
+  {
+   "h": 26,
+   "bg": "rgb(221, 241, 226)",
+   "color": "rgb(20, 83, 45)",
+   "txt": "Follow Up"
+  }
+ ],
+ "rail-1920x1080": []
+}

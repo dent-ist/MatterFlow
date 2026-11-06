@@ -137,8 +137,8 @@ describe('shared building blocks (UI-10)', () => {
     await flush();
     expect(host.open()).toBe(false);
     expect(toggle().getAttribute('aria-expanded')).toBe('false');
-    expect(el.querySelector('#sp [data-rail="events"] .badge')!.textContent).toContain('3');
-    expect(el.querySelector('#sp [data-rail="activity"] .badge')).toBeNull();
+    expect(el.querySelector('#sp [data-rail="events"] mf-count-chip')!.textContent).toContain('3');
+    expect(el.querySelector('#sp [data-rail="activity"] mf-count-chip')).toBeNull();
     el.querySelector<HTMLButtonElement>('#sp [data-rail="events"]')!.click();
     await flush();
     expect(host.open()).toBe(true);

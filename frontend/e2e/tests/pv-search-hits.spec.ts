@@ -22,10 +22,7 @@ test.describe('PM v2 page fixes: Search hits (#885)', () => {
     await page.goto(`/search?q=${encodeURIComponent(`Late ${d.token}`)}&type=task`);
     const row = page.locator('[data-hit-row]').first();
     await expect(row).toBeVisible();
-    await expect(row.locator('[data-cell="taskType"] [data-type-badge]')).toHaveAttribute(
-      'aria-label',
-      /Task type: /,
-    );
+    await expect(row.locator('[data-cell="taskType"] [data-type-name]')).not.toBeEmpty();
     await expect(row.locator('[data-cell="due"]')).toContainText('Overdue 01/01/2000');
     await page.goto(`/search?q=${encodeURIComponent(`Pending ${d.token}`)}&type=asset`);
     const asset = page.locator('[data-hit-row]').first();

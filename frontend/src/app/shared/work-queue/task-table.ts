@@ -32,8 +32,6 @@ import { TaskQueueRow } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { mfDateLong } from '../../core/time/time';
-import { TaskTypeBadge } from '../task-type/task-type-badge';
-import { TaskTypeChip } from '../ui/task-type-chip';
 import { Tip } from '../ui/tip';
 import { ColumnMove, ReorderColumns } from '../ui/reorder-columns';
 import { DueCell } from './due-cell';
@@ -98,8 +96,6 @@ const LONG_PRESS_MS = 500;
     IntPipe,
     NumericDatePipe,
     Dropdown,
-    TaskTypeBadge,
-    TaskTypeChip,
     Tip,
     ReorderColumns,
     RouterLink,
@@ -321,15 +317,6 @@ const LONG_PRESS_MS = 500;
                       }
                       @case ('title') {
                         <div class="wt-titlecell">
-                          <mf-task-type-badge
-                            #tt
-                            class="wt-typeicon"
-                            [class.wt-typeicon--off]="hideContext() || typeColumn()"
-                            [iconKey]="row.taskTypeIconKey"
-                            [colourKey]="row.taskTypeColourKey"
-                            [name]="row.taskTypeName"
-                            data-type-icon
-                          />
                           <div class="wt-titlebody">
                             <a
                               class="wt-title"
@@ -340,7 +327,6 @@ const LONG_PRESS_MS = 500;
                               [rowKey]="row.taskId"
                               [attr.data-task-id]="row.taskId"
                               [attr.title]="titleTip(row)"
-                              [attr.aria-describedby]="tt.descriptionId"
                               (click)="drillOut($event, row)"
                               >{{ row.title }}</a
                             >
@@ -995,10 +981,6 @@ export class TaskTable {
    * Columns in table order. Every chosen column is shown with its width; a box that is too narrow scrolls sideways inside the grid frame
    * (the Ref stays pinned). No column is dropped by width (LC-09).
    */
-  /** The Type column (chip and name) is shown: the small badge before the title would say it twice, so it is not drawn (LC-03). */
-  protected readonly typeColumn = computed(() =>
-    this.shownColumns().some((c) => c.key === 'type' || c.key === 'typeChip'),
-  );
   protected readonly shownColumns = computed<ColumnDef[]>(() => {
     const wanted = new Set(this.columns());
     const hide = this.hideContext();

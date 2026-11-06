@@ -1,0 +1,78 @@
+{
+ "tt-1366x768": [
+  {
+   "name": "Access Request",
+   "colour": "blue",
+   "bg": "rgb(31, 78, 156)"
+  },
+  {
+   "name": "Analytics / TAR Setup",
+   "colour": "teal",
+   "bg": "rgb(15, 118, 110)"
+  },
+  {
+   "name": "Archive and Disposition",
+   "colour": "green",
+   "bg": "rgb(21, 128, 61)"
+  },
+  {
+   "name": "Collection Receipt",
+   "colour": "amber",
+   "bg": "rgb(180, 83, 9)"
+  },
+  {
+   "name": "Data Load / Overlay",
+   "colour": "orange",
+   "bg": "rgb(194, 65, 12)"
+  }
+ ],
+ "bell-1366x768": {
+  "h": 18,
+  "text": "8",
+  "bg": "rgb(180, 35, 24)"
+ },
+ "notes-1366x768": [
+  {
+   "h": 18,
+   "text": "8"
+  }
+ ],
+ "tt-1920x1080": [
+  {
+   "name": "Access Request",
+   "colour": "blue",
+   "bg": "rgb(31, 78, 156)"
+  },
+  {
+   "name": "Analytics / TAR Setup",
+   "colour": "teal",
+   "bg": "rgb(15, 118, 110)"
+  },
+  {
+   "name": "Archive and Disposition",
+   "colour": "green",
+   "bg": "rgb(21, 128, 61)"
+  },
+  {
+   "name": "Collection Receipt",
+   "colour": "amber",
+   "bg": "rgb(180, 83, 9)"
+  },
+  {
+   "name": "Data Load / Overlay",
+   "colour": "orange",
+   "bg": "rgb(194, 65, 12)"
+  }
+ ],
+ "bell-1920x1080": {
+  "h": 18,
+  "text": "8",
+  "bg": "rgb(180, 35, 24)"
+ },
+ "notes-1920x1080": [
+  {
+   "h": 18,
+   "text": "8"
+  }
+ ]
+}

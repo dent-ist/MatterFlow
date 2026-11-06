@@ -223,7 +223,7 @@ describe('TaskTable', () => {
     expect(link.getAttribute('title')).toBe('A very long title '.repeat(10));
   });
 
-  it('holds only the type icon and the title in the Title cell: no subline, no New pill, no progress fold, whatever the inputs (#196)', async () => {
+  it('holds only the title in the Title cell: no subline, no New pill, no progress fold, whatever the inputs (#196)', async () => {
     await create([aRow({ assignedAtUtc: '2026-10-14T10:00:00Z' })], ['ref', 'title', 'progress'], {
       newSince: Date.parse('2026-10-13T00:00:00Z'),
     });
@@ -240,12 +240,7 @@ describe('TaskTable', () => {
         '.wt-new',
       ])
         expect(t.querySelector(sel), sel).toBeNull();
-      // The badge's hidden sentence ("Task type: ...") is the link's description, not visible text of the cell.
-      const visible = Array.from(t.querySelectorAll('[data-type-description]')).reduce(
-        (text, d) => text.replace(d.textContent ?? '', ''),
-        t.textContent ?? '',
-      );
-      expect(visible.replace(/\s+/g, ' ').trim()).toBe('Process Smith custodians');
+      expect((t.textContent ?? '').replace(/\s+/g, ' ').trim()).toBe('Process Smith custodians');
     };
     noExtras();
     // The dot stays in the Ref cell (A5).
@@ -357,18 +352,10 @@ describe('TaskTable', () => {
     expect(markers[0].closest('tr')!.querySelector('.wt-title')).not.toBeNull();
   });
 
-  it('shows the task type badge before the title: the name is its tooltip and accessible name, and the title link is described by it', async () => {
+  it('draws no task type badge in the Title cell: the type is the Type column (chip and name) and nothing else (#1238)', async () => {
     await create([aRow({ taskTypeIconKey: 'cpu-2', taskTypeColourKey: 'teal' })], ['ref', 'title']);
-    const badge = cell('title').querySelector('[data-type-icon]')!;
-    expect(badge.getAttribute('data-colour')).toBe('teal');
-    const chip = badge.querySelector('[data-type-badge]')!;
-    expect(chip.getAttribute('title')).toBe('Data Processing');
-    expect(chip.getAttribute('aria-label')).toBe('Task type: Data Processing');
-    expect(chip.querySelector('mf-task-type-icon svg')?.getAttribute('aria-hidden')).toBe('true');
-    const description = badge.querySelector('[data-type-description]')!;
-    expect(cell('title').querySelector('.wt-title')!.getAttribute('aria-describedby')).toBe(
-      description.id,
-    );
+    expect(cell('title').querySelector('mf-task-type-badge, [data-type-icon]')).toBeNull();
+    expect(cell('title').querySelector('.wt-title')!.getAttribute('aria-describedby')).toBeNull();
   });
 
   it('has no Actions column: Pod Work\'s "Assign to Me" lives in the Assignee cell (#199)', async () => {

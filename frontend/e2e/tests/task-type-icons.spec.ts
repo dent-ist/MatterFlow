@@ -127,7 +127,7 @@ test.describe('Task type icons and the type-first Create Task', () => {
     await page.goto(`/tasks/${task.taskId}`);
     await expect(page.locator('[data-title-icon] svg[data-icon="mail"]')).toBeVisible();
     await page.goto(`/tasks?q=${encodeURIComponent(task.title)}`);
-    await expect(page.locator('[data-type-icon] svg[data-icon="mail"]').first()).toBeVisible();
+    await expect(page.locator('[data-type-chip] svg[data-icon="mail"]').first()).toBeVisible();
   });
 
   test('the API refuses an icon that is not in the library', async ({ admin, seed }) => {

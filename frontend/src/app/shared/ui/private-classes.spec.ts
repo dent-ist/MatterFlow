@@ -19,27 +19,12 @@ const SHARED_KINDS = new Set([
   'shared/ui/priority-badge.ts',
   'shared/ui/priority-pill.ts',
   'shared/ui/task-type-chip.ts',
-  'shared/ui/side-panel.ts',
 ]);
 
 /**
  * Private chip classes that remain, each with the reason and the follow-up (#1130). Keys are `file:class`. Remove an entry when its page is converted; a new entry needs the designer.
  */
 const ALLOWED_CHIPS: Readonly<Record<string, string>> = {
-  'features/admin/note-tags/note-tags-page.ts:nt-chip':
-    'a note tag in the colour an administrator chose (any hex): no shared chip takes a free colour; ask the designer for a coloured tag chip',
-  'features/dashboard/calendar/calendar-coverage.scss:hchip':
-    'a holiday label in the colour an administrator chose (colour key); same need as the coloured tag chip',
-  'features/notes/notes-tab-misc.scss:nt__badge':
-    'a count that sits on the corner of an icon button (History, Referenced Items): the shared count chip is a 22 px grey chip beside a title, not an overlay',
-  'features/search/search-filters.ts:sf-chip':
-    'a removable filter whose whole chip is the button; the shared tag chip removes only with its x, so the behaviour would change (Search page group)',
-  'shared/availability/set-out-of-office-dialog.ts:ooo__chip':
-    'preset buttons that mix toggles and one action ("Pick a Date") in one group; mf-filter-chips has only toggles',
-  'shared/layout/notification-bell.ts:nb__badge':
-    'the red unread count on the bell: an overlay alert count, no shared kind (count chip is grey and beside a title)',
-  'shared/task-type/task-type-badge.ts:tt-chip':
-    'a second task type tile (tinted palette, 24 or 28 px) beside mf-task-type-chip (solid --mf-tt colours); merging changes the colours of Search, task cards, Task Types and My Matters rows, a designer decision',
   'shared/work-queue/task-card-list.scss:tc-sk--chips':
     'a skeleton placeholder in the shape of a chip while loading, not a chip',
 };
