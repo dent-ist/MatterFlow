@@ -1,0 +1,134 @@
+[
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/matters",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/matters/1",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/clients",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/clients/1",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/projects/1",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/assets/1",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/tasks/200",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/matters/1?tab=notes",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/matters/1?tab=productions",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/clients/1/edit",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "admin",
+  "url": "/admin/workflows/1",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/matters",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/matters/1",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/clients",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/clients/1",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/projects/1",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/assets/1",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/tasks/200",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/matters/1?tab=notes",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/matters/1?tab=productions",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/clients/1/edit",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "admin",
+  "url": "/admin/workflows/1",
+  "v": []
+ }
+]
