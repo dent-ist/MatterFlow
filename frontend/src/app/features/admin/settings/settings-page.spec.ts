@@ -444,7 +444,7 @@ describe('SettingsPage: Administration > Settings > Branding (epic #850, BR-05)'
   it('turns the file picker into a keyboard-reachable button', async () => {
     await open();
     const choose = q<HTMLButtonElement>('[data-choose-icon] button, button[data-choose-icon]')!;
-    expect(choose.textContent).toContain('Choose file');
+    expect(choose.textContent).toContain('Upload Icon');
     expect(choose.tabIndex).toBeGreaterThanOrEqual(0);
     expect(q('[data-icon-input]')!.getAttribute('tabindex')).toBe('-1');
   });

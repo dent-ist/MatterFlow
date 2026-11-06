@@ -185,7 +185,7 @@ export function brandingOf(view: BrandingAdminView): Branding {
                 <div class="st__buttons">
                   <p-button
                     type="button"
-                    label="Choose file..."
+                    label="Upload Icon"
                     severity="secondary"
                     data-choose-icon
                     aria-describedby="st-icon-help st-icon-file"
