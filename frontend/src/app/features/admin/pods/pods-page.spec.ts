@@ -247,10 +247,10 @@ describe('PodsPage', () => {
   it('lists pods with member counts and status, and offers New pod to managers only', async () => {
     await create('Pod.View', 'Pod.Manage', 'Pod.ManageMembers');
 
-    expect(text('[data-pod="1"]')).toContain('Pod A');
-    expect(text('[data-pod="1"]')).toContain('2');
-    expect(text('[data-pod="1"]')).toContain('Active');
-    expect(text('[data-pod="2"]')).toContain('Inactive');
+    expect(text('[data-record-id="1"]')).toContain('Pod A');
+    expect(text('[data-record-id="1"]')).toContain('2');
+    expect(text('[data-record-id="1"]')).toContain('Active');
+    expect(text('[data-record-id="2"]')).toContain('Inactive');
     // "New Pod" is a button of the Users page header (LC-06), not of the tab body.
     expect(el().textContent).not.toContain('New pod');
     expect(el().textContent).toContain('Pod leads are a role');
@@ -258,7 +258,7 @@ describe('PodsPage', () => {
 
   it('the name is the one link of the row, there is no Edit link and no actions column, and Inactive is the word for the inactive state (#450)', async () => {
     await create('Pod.View', 'Pod.Manage', 'Pod.ManageMembers');
-    const row = q('[data-pod="1"]');
+    const row = q('[data-record-id="1"]');
     const links = Array.from(row.querySelectorAll('a, button'));
     expect(links.length).toBe(1);
     expect(links[0].textContent!.trim()).toBe('Pod A');
@@ -269,9 +269,9 @@ describe('PodsPage', () => {
         th.textContent!.trim(),
       ),
     ).toEqual(['Name', 'Members', 'Status']);
-    expect(text('[data-pod="2"]')).toContain('Inactive');
+    expect(text('[data-record-id="2"]')).toContain('Inactive');
     expect(el().textContent).not.toContain('Disabled');
-    expect(q('[data-pod="1"] .mf-desc').textContent).toContain('Processing');
+    expect(q('[data-record-id="1"] .pods__desc').textContent).toContain('Processing');
   });
 
   it('says how many inactive pods the default Active hides and Show all reaches them (#450)', async () => {
@@ -324,7 +324,7 @@ describe('PodsPage', () => {
     const target = TestBed.inject(SkipTarget).target()!;
     expect(target.label).toBe('Skip to Table');
     target.focus();
-    expect(document.activeElement).toBe(q('[data-pod="1"] a'));
+    expect(document.activeElement).toBe(q('[data-record-id="1"] a'));
   });
 
   it('puts its filters in the page header registry while the list is open and takes them away with the editor (#450)', async () => {
@@ -611,6 +611,6 @@ describe('PodsPage', () => {
     expect(el().querySelector('[data-error]')).not.toBeNull();
     await click('[data-error] p-button');
     expect(el().querySelector('[data-error]')).toBeNull();
-    expect(el().querySelector('[data-pod="1"]')).not.toBeNull();
+    expect(el().querySelector('[data-record-id="1"]')).not.toBeNull();
   });
 });
