@@ -77,7 +77,7 @@ export function parseDefault(def: ParamDef, text: string): unknown {
           <div class="pe__field">
             <label class="mf-label mf-label--sm" [for]="id(i, 'type')">Type</label>
             <mf-dropdown
-              [neutralValue]="null"
+              field
               [buttonId]="id(i, 'type')"
               label="Type"
               [items]="typeItems"
@@ -192,7 +192,7 @@ export function parseDefault(def: ParamDef, text: string): unknown {
               <div class="pe__field">
                 <label class="mf-label mf-label--sm" [for]="id(i, 'kind')">Searches</label>
                 <mf-dropdown
-                  [neutralValue]="null"
+                  field
                   [buttonId]="id(i, 'kind')"
                   label="Searches"
                   [items]="kindItems"
@@ -225,7 +225,7 @@ export function parseDefault(def: ParamDef, text: string): unknown {
         <div class="pe__field">
           <label class="mf-label mf-label--sm" [for]="id(i, 'source')">Choices Come From</label>
           <mf-dropdown
-            [neutralValue]="null"
+            field
             [buttonId]="id(i, 'source')"
             label="Choices Come From"
             [items]="sourceItems"
@@ -236,7 +236,7 @@ export function parseDefault(def: ParamDef, text: string): unknown {
         <div class="pe__field">
           <label class="mf-label mf-label--sm" [for]="id(i, 'vtype')">Value Is</label>
           <mf-dropdown
-            [neutralValue]="null"
+            field
             [buttonId]="id(i, 'vtype')"
             label="Value Is"
             [items]="valueTypeItems"

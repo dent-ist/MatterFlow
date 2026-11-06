@@ -253,7 +253,7 @@ function clientOption(c: ClientResponse): PickerOption {
         <div class="mf-field">
           <label class="mf-field__label" for="matter-ai">AI Allowed</label>
           <mf-dropdown
-            [neutralValue]="null"
+            field
             buttonId="matter-ai"
             label="AI Allowed"
             data-ai-allowed

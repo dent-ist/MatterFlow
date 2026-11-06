@@ -345,35 +345,37 @@ export function statusCodes(status: StatusFilter): string[] {
                       [typeId]="t.taskTypeId"
                       [name]="t.taskTypeName"
                     />
-                    <span class="tcell">
-                      <a
-                        class="mf-link tlink"
-                        [routerLink]="['/tasks', t.taskId]"
-                        [attr.title]="t.title"
-                        data-task-link
-                      >
-                        <span class="ref">{{ t.taskNumber }}</span>
-                        <span class="tname">{{ t.title }}</span>
-                      </a>
-                      @if (showMatter()) {
-                        <span class="mt">{{ t.matterName }}</span>
-                      }
-                    </span>
-                    @if (t.atRisk && (t.status === 'NEW' || t.status === 'IN_PROGRESS')) {
-                      <span class="risk" data-at-risk>
-                        <mf-priority-pill class="risk__pill" kind="risk" />
-                        <i
-                          class="pi pi-clock risk__ico"
-                          role="img"
-                          aria-label="At Risk"
-                          mfTip="At Risk"
-                        ></i>
+                    <span class="tmain">
+                      <span class="tcell">
+                        <a
+                          class="mf-link tlink"
+                          [routerLink]="['/tasks', t.taskId]"
+                          [attr.title]="t.title"
+                          data-task-link
+                        >
+                          <span class="ref">{{ t.taskNumber }}</span>
+                          <span class="tname">{{ t.title }}</span>
+                        </a>
+                        @if (showMatter()) {
+                          <span class="mt">{{ t.matterName }}</span>
+                        }
                       </span>
-                    }
-                    <span class="ppl">
-                      @if (pill(t); as p) {
-                        <mf-priority-pill [kind]="p" />
+                      @if (t.atRisk && (t.status === 'NEW' || t.status === 'IN_PROGRESS')) {
+                        <span class="risk" data-at-risk>
+                          <mf-priority-pill class="risk__pill" kind="risk" />
+                          <i
+                            class="pi pi-clock risk__ico"
+                            role="img"
+                            aria-label="At Risk"
+                            mfTip="At Risk"
+                          ></i>
+                        </span>
                       }
+                      <span class="ppl">
+                        @if (pill(t); as p) {
+                          <mf-priority-pill [kind]="p" />
+                        }
+                      </span>
                     </span>
                   </div>
                 </td>
@@ -629,8 +631,12 @@ export function statusCodes(status: StatusFilter): string[] {
     .ppl {
       margin-left: var(--mf-s2);
     }
-    /* The Task cell is its own container: under 260 px of cell (236 px inside the 12 px padding) the At Risk chip is the clock icon alone, its words are the tooltip (D-44i). */
-    .tcol {
+    /* The Task cell is its own container. Its title room is what is left right of the type tile: under 260 px of it (the .tmain container) the At Risk pill is the clock icon alone, 18 px, in the pill colors; the words are the tooltip and the accessible name (D-44i, #1264). */
+    .tmain {
+      display: flex;
+      align-items: center;
+      flex: 1 1 auto;
+      min-width: 0;
       container: tc / inline-size;
     }
     .risk {
@@ -639,15 +645,20 @@ export function statusCodes(status: StatusFilter): string[] {
     }
     .risk__ico {
       display: none;
-      font-size: var(--mf-icon-md);
+      place-items: center;
+      width: var(--mf-chip-h);
+      height: var(--mf-chip-h);
+      border-radius: var(--mf-radius-pill);
+      background: var(--mf-sem-risk-bg);
       color: var(--mf-sem-risk-fg);
+      font-size: var(--mf-icon-md);
     }
-    @container tc (width < 236px) {
+    @container tc (width < 260px) {
       .risk__pill {
         display: none;
       }
       .risk__ico {
-        display: inline-block;
+        display: inline-grid;
       }
     }
     /* Status holds the chip and its step bar (the chip alone is 140), so it is a little wider than the token. */

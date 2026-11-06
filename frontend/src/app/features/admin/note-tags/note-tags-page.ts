@@ -116,6 +116,7 @@ import { TagChip } from '../../../shared/ui/tag-chip';
         />
         <span class="mf-field__label" id="nt-colour-label">Color</span>
         <mf-dropdown
+          field
           buttonId="nt-colour"
           label="Color"
           [items]="colourItems"

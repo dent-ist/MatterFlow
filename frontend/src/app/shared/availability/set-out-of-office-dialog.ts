@@ -60,6 +60,7 @@ const PICK_KEY = 'pick';
         <div class="ooo__field">
           <label class="ooo__label" for="ooo-type">Type</label>
           <mf-dropdown
+            field
             buttonId="ooo-type"
             label="Type"
             data-ooo-type

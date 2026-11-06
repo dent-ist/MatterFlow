@@ -89,7 +89,7 @@ export const ASSETS_CLOSED_NOTE =
             <div class="tl__field">
               <label for="tl-role">Relationship</label>
               <mf-dropdown
-                [neutralValue]="null"
+                field
                 buttonId="tl-role"
                 label="Relationship"
                 data-link-role
@@ -165,7 +165,7 @@ export const ASSETS_CLOSED_NOTE =
                         <div class="tl__row">
                           @if (editable()) {
                             <mf-dropdown
-                              [neutralValue]="null"
+                              field
                               size="sm"
                               data-role-select
                               [label]="'Relationship of ' + a.displayName"

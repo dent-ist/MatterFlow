@@ -119,7 +119,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                   <div class="ha__f">
                     <label class="ha__l" for="ha-firm">Firm Default</label>
                     <mf-dropdown
-                      [neutralValue]="null"
+                      field
                       buttonId="ha-firm"
                       label="Firm Default"
                       data-firm-default
@@ -134,7 +134,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                       <div class="ha__pod">
                         <label [for]="'ha-pod-' + p.podId">{{ p.name }}</label>
                         <mf-dropdown
-                          [neutralValue]="null"
+                          field
                           [buttonId]="'ha-pod-' + p.podId"
                           [label]="p.name"
                           [attr.data-pod-default]="p.podId"

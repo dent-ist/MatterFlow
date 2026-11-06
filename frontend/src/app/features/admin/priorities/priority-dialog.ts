@@ -96,7 +96,7 @@ const DEFAULT_CUSTOM_COLOUR = '#336699'; // theme-colour-ok: starting value of a
         <label class="mf-label" for="priority-color">Color</label>
         <div class="pd-color-row">
           <mf-dropdown
-            [neutralValue]="null"
+            field
             buttonId="priority-color"
             label="Color"
             data-color

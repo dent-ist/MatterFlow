@@ -380,6 +380,42 @@ test.describe('My Matters: review round 3 (UI-21)', () => {
   });
 });
 
+test.describe('My Matters: At Risk in a narrow Task cell (D-44i, #1264)', () => {
+  test('with the side panel open at 1366 the At Risk pill is the clock icon (named "At Risk"); at 1920 it keeps its word', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'ar1');
+    const a = await w.matter('Alpha');
+    await w.task(a, { title: 'Alpha task with a rather long title to cut' });
+    const page = await asUser(w.pm.username);
+    // The server decides what is at risk; the row only has to carry the flag.
+    await page.route('**/api/v1/task-queue**', async (route) => {
+      const res = await route.fetch();
+      const json = await res.json();
+      for (const t of json.items ?? []) {
+        t.atRisk = true;
+        t.status = 'IN_PROGRESS';
+      }
+      await route.fulfill({ response: res, json });
+    });
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto('/my-matters');
+    await page.getByRole('button', { name: /Expand Upcoming events/ }).click();
+    const risk = page.locator('[data-at-risk]').first();
+    await expect(risk).toBeVisible();
+    await expect(risk.locator('mf-priority-pill')).toBeHidden();
+    const icon = risk.getByRole('img', { name: 'At Risk' });
+    await expect(icon).toBeVisible();
+    expect((await icon.boundingBox())!.height).toBeLessThanOrEqual(26);
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await expect(risk.locator('mf-priority-pill')).toBeVisible();
+    await expect(risk.locator('mf-priority-pill')).toContainText('At Risk');
+    await expect(risk.getByRole('img', { name: 'At Risk' })).toBeHidden();
+  });
+});
+
 test.describe('My Matters: the Options menu (scope switch and Focus)', () => {
   test('Focus: pick task types once, the grid and the chip follow, it stays after a reload and Clear removes it', async ({
     seed,

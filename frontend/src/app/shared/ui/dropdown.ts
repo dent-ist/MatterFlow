@@ -1,5 +1,6 @@
 import {
   ChangeDetectionStrategy,
+  booleanAttribute,
   Component,
   DestroyRef,
   ElementRef,
@@ -65,7 +66,7 @@ let nextId = 0;
       type="button"
       #btn
       class="btn"
-      [class.on]="highlighted()"
+      [class.on]="highlighted() && !field()"
       [class.sm]="size() === 'sm'"
       [id]="buttonId() || id"
       [disabled]="disabled()"
@@ -559,6 +560,8 @@ export class Dropdown {
   /** The button looks chosen (a light blue fill) when a value other than `neutralValue` is chosen. */
   readonly neutralValue = input<string | null>('');
   readonly size = input<'md' | 'sm'>('md');
+  /** A form field (D-44r): inside a form, dialog or record page the value is an answer, not a filter, so the button is a white field with or without a value. The blue fill is for filter rows, popovers and toolbars only. */
+  readonly field = input(false, { transform: booleanAttribute });
   readonly disabled = input(false);
   /** The id of a note that describes the control (read after its name). */
   readonly describedBy = input<string | null>(null);

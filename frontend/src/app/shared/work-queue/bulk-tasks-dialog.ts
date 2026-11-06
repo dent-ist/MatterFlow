@@ -136,6 +136,7 @@ export function bulkWarning(code: string): string {
               <div class="bd__field">
                 <label class="bd__label" for="bulk-pod">Pod</label>
                 <mf-dropdown
+                  field
                   buttonId="bulk-pod"
                   label="Pod"
                   data-bulk-pod
@@ -154,6 +155,7 @@ export function bulkWarning(code: string): string {
             <div class="bd__field">
               <label class="bd__label" for="bulk-priority">Priority</label>
               <mf-dropdown
+                field
                 buttonId="bulk-priority"
                 label="Priority"
                 data-bulk-priority

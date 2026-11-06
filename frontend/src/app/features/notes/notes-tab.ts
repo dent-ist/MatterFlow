@@ -620,12 +620,12 @@ interface RefChip {
                       <div class="nt__fl nt__lvl">
                         <label for="te-level" id="te-level-l">Level</label>
                         <mf-dropdown
+                          field
                           data-template-level-select
                           buttonId="te-level"
                           label="Level"
                           [items]="levelItems()"
                           [value]="tplLevel()"
-                          [neutralValue]="null"
                           (valueChange)="onLevel($event)"
                         />
                       </div>

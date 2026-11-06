@@ -96,7 +96,7 @@ export function sampleValuesOf(
               <div class="pp__field">
                 <label class="mf-label mf-label--sm" [for]="'pp-' + d.name">{{ d.label }}</label>
                 <mf-dropdown
-                  [neutralValue]="null"
+                  field
                   [buttonId]="'pp-' + d.name"
                   [label]="d.label"
                   [items]="yesNoItems"
