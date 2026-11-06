@@ -44,8 +44,6 @@ const ALLOWED: Readonly<Record<string, string>> = {
     'Matter > Activities feed, adopts the shared grid with the Matter tab issues',
   'features/productions/productions-tab.ts':
     'Matter > Productions tab, adopts the shared grid with the Matter tab issues',
-  'features/projects/pages/projects-list-page.ts':
-    'Projects list, adopts the shared grid in the Projects group (#1241 step 2)',
   'features/search/search-grid.ts': 'Search results, adopts the shared grid in the Search issue',
   'shared/ui/admin-list-shell.ts': 'the shell of the Administration lists',
   'shared/ui/matter-assets.ts':
@@ -91,10 +89,11 @@ describe('record grid guard (#1241)', () => {
     expect(stale, 'remove the migrated pages from ALLOWED').toEqual([]);
   });
 
-  it('the Matters and Clients lists are drawn by the shared grid', () => {
+  it('the Matters, Clients and Projects lists are drawn by the shared grid', () => {
     for (const file of [
       'features/matters/pages/matters-list-page.ts',
       'features/clients/pages/clients-list-page.ts',
+      'features/projects/pages/projects-list-page.ts',
     ]) {
       const text = files.find((f) => f.file === file)!.text;
       expect(text, file).toContain('<mf-record-grid');

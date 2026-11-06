@@ -186,8 +186,9 @@ describe('Projects pages', () => {
       const heads = Array.from(el.querySelectorAll('thead tr:first-child th')).map((h) =>
         h.textContent!.trim(),
       );
-      expect(heads.slice(0, 2)).toEqual(['Name', 'Matter']);
-      expect(heads.slice(-3)).toEqual(['Open Tasks', 'Overdue', 'Status']);
+      expect(heads.slice(0, 2)).toEqual(['Project Name', 'Matter']);
+      // The last heading is the row-action column (screen-reader text only).
+      expect(heads.slice(-4)).toEqual(['Open Tasks', 'Overdue', 'Status', 'Actions']);
       const row = el.querySelector('tbody tr')!;
       // The shared two-line Matter cell: reference over name, tooltip Client . Matter, a link with Matter.View.
       const cell = row.querySelector('mf-matter-cell')!;
@@ -221,7 +222,7 @@ describe('Projects pages', () => {
       await settle(fixture);
       return fixture.nativeElement.querySelector('td[data-empty=none]') as HTMLElement;
     }
-    const FIRST_RUN = 'No projects yet. Open a matter and choose New project.';
+    const FIRST_RUN = 'No projects yet. Open a matter and choose New Project.';
 
     it('points an empty list at Matters with a link when the viewer can see matters (L11)', async () => {
       const cell = await createEmpty(['Project.View', 'Matter.View']);

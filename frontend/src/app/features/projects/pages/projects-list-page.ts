@@ -22,11 +22,17 @@ import { ListToolbar } from '../../../shared/filters/list-toolbar';
 import { SortedLine, sortLabelsOf } from '../../../shared/ui/sorted-line';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { ActiveBadge } from '../../../shared/ui/badge';
-import { SortHeader } from '../../../shared/ui/data-table';
 import { FixedPage } from '../../../shared/ui/fixed-page';
-import { GridFrame } from '../../../shared/ui/grid-frame';
+import {
+  RecordCell,
+  RecordColumns,
+  RecordGrid,
+  RecordGridColumn,
+  RecordGridState,
+} from '../../../shared/ui/record-grid';
+import { ActionMenu } from '../../../shared/ui/action-menu';
+import { RowActionSpec, rowActions } from '../../../shared/ui/row-actions';
 import { CopyPart } from '../../../shared/ui/copy-parts';
-import { GridBody } from '../../../shared/ui/grid-body';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
 import {
@@ -44,7 +50,6 @@ import { ScopeSwitch } from '../../../shared/scope/scope-switch';
 import { Pager } from '../../../shared/ui/pager';
 import { TaskCount } from '../../../shared/ui/task-count';
 import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
-import { COLUMN_ROOM } from '../../../shared/ui/viewport';
 import { MatterCell } from '../../../shared/work-queue/matter-cell';
 
 /** Bone widths of a skeleton row, per column key. */
@@ -58,7 +63,7 @@ const BONES: Record<string, string> = {
 };
 
 /**
- * Global Projects list (UX S07): Name (the one link), Matter (the shared two-line Matter cell of the Task Queue), Client (from 1100 px), Open tasks
+ * Global Projects list (UX S07): Project Name (the one link), Matter (the shared two-line Matter cell of the Task Queue), Client (from 1100 px), Open tasks
  * and Overdue (counts that open the Task Queue; left out without Task.View), Status. Inline column filters (Name, Matter reference or name, Status with Active by default); a link from a
  * Matter keeps `?matterId=` as a removable chip. State lives in the URL.
  */
@@ -66,7 +71,6 @@ const BONES: Record<string, string> = {
   selector: 'mf-projects-list-page',
   imports: [
     FixedPage,
-    GridFrame,
     NgTemplateOutlet,
     PageHeader,
     ScopeSwitch,
@@ -77,8 +81,10 @@ const BONES: Record<string, string> = {
     Pager,
     MatterCell,
     TaskCount,
-    SortHeader,
-    GridBody,
+    RecordGrid,
+    RecordCell,
+    RecordColumns,
+    ActionMenu,
     ListToolbar,
     SortedLine,
     ColumnFilterRow,
@@ -90,6 +96,13 @@ const BONES: Record<string, string> = {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
+  styles: `
+    /* Project Name is the spring of the table: one line with an ellipsis (D-45); the floor is on the heading (the column definition). */
+    td.pj-name {
+      width: 100%;
+      max-width: 0;
+    }
+  `,
   template: `
     <mf-fixed-page>
       <mf-page-header
@@ -123,6 +136,9 @@ const BONES: Record<string, string> = {
         searchLabel="Search projects"
         [clearAlso]="['q']"
       >
+        @if (!phone()) {
+          <mf-record-columns mfColumns [grid]="grid" />
+        }
         <mf-sorted-line
           mfBarEnd
           [sort]="sort()"
@@ -216,147 +232,114 @@ const BONES: Record<string, string> = {
             </ng-template>
           </mf-record-card-list>
         } @else {
-          <mf-grid-frame scrollLabel="Projects list" #scroll>
-            <div class="mf-scroll">
-              <table class="pg-table tt">
-                <caption class="pg-sr">
-                  Projects
-                </caption>
-                <thead>
-                  <tr>
-                    <th
-                      mfSort="name"
-                      [sort]="sort()"
-                      [defaultSort]="defaultSort"
-                      (sorted)="setSort($event)"
-                    >
-                      Name
-                    </th>
-                    <th
-                      mfSort="matterRef"
-                      [sort]="sort()"
-                      [defaultSort]="defaultSort"
-                      (sorted)="setSort($event)"
-                    >
-                      Matter
-                    </th>
-                    @if (showClient()) {
-                      <th scope="col">Client</th>
-                    }
-                    @if (counts()) {
-                      <th
-                        class="pg-num"
-                        mfSort="openTasks"
-                        [firstDesc]="true"
-                        [sort]="sort()"
-                        [defaultSort]="defaultSort"
-                        (sorted)="setSort($event)"
-                      >
-                        Open Tasks
-                      </th>
-                      <th
-                        class="pg-num"
-                        mfSort="overdue"
-                        [firstDesc]="true"
-                        [sort]="sort()"
-                        [defaultSort]="defaultSort"
-                        (sorted)="setSort($event)"
-                      >
-                        Overdue
-                      </th>
-                    }
-                    <th scope="col">Status</th>
-                  </tr>
-                  @if (filters.rowVisible()) {
-                    <tr
-                      mfColumnFilterRow
-                      id="project-filter-row"
-                      [filters]="filters"
-                      [columns]="columns()"
-                    ></tr>
-                  }
-                </thead>
-                <tbody
-                  mfGridBody
-                  noun="projects"
-                  [state]="state()"
-                  [empty]="rows().length === 0"
-                  [filtered]="filters.activeCount() > 0"
-                  [columns]="columns().length"
-                  [emptyParts]="emptyParts()"
-                  [skeleton]="skeleton()"
-                  (retry)="load()"
-                  (clear)="clear()"
-                  [hidden]="hiddenCount()"
-                  hiddenLabel="archived"
-                  [emptyText]="emptyText()"
-                  (showAll)="showAll()"
+          <mf-record-grid
+            #scroll
+            label="Projects list"
+            caption="Projects"
+            noun="projects"
+            [grid]="grid"
+            [rows]="rows()"
+            [rowKey]="projectKey"
+            [loadState]="state()"
+            [empty]="rows().length === 0"
+            [filtered]="filters.activeCount() > 0"
+            [emptyText]="emptyText()"
+            [emptyParts]="emptyParts()"
+            [hidden]="hiddenCount()"
+            hiddenLabel="archived"
+            [bones]="bones"
+            [actions]="hasActions()"
+            [sort]="sort()"
+            [defaultSort]="defaultSort"
+            (sorted)="setSort($event)"
+            (retry)="load()"
+            (clear)="clear()"
+            (showAll)="showAll()"
+          >
+            @if (filters.rowVisible()) {
+              <tr
+                mfGridFilterRow
+                mfColumnFilterRow
+                id="project-filter-row"
+                [filters]="filters"
+                [columns]="columns()"
+              ></tr>
+            }
+            @if (scope.mine() && scope.canAll()) {
+              <button
+                mfEmptyAction
+                type="button"
+                class="mf-btn"
+                data-show-all-matters
+                (click)="scope.set('all')"
+              >
+                Show All Matters
+              </button>
+            }
+            <ng-template mfCell="name" let-p>
+              <td class="pj-name">
+                <a
+                  class="mf-link pg-clip"
+                  [routerLink]="['/projects', p.projectId]"
+                  mfRowLink="projects"
+                  [rowKey]="p.projectId"
+                  [title]="p.name"
+                  >{{ p.name }}</a
                 >
-                  @if (scope.mine() && scope.canAll()) {
-                    <button
-                      mfEmptyAction
-                      type="button"
-                      class="mf-btn"
-                      data-show-all-matters
-                      (click)="scope.set('all')"
-                    >
-                      Show All Matters
-                    </button>
-                  }
-                  @for (p of rows(); track p.projectId) {
-                    <tr>
-                      <td>
-                        <a
-                          class="mf-link pg-name"
-                          [routerLink]="['/projects', p.projectId]"
-                          mfRowLink="projects"
-                          [rowKey]="p.projectId"
-                          [title]="p.name"
-                          >{{ p.name }}</a
-                        >
-                      </td>
-                      <td class="pg-fix">
-                        <mf-matter-cell [row]="p" [link]="auth.canLink('matter')" />
-                      </td>
-                      @if (showClient()) {
-                        <td class="pg-fix pg-fix--client">
-                          <span class="pg-clip" [title]="p.clientNumber + ' ' + p.clientName">{{
-                            p.clientName
-                          }}</span>
-                        </td>
-                      }
-                      @if (counts()) {
-                        <td class="pg-num">
-                          <mf-task-count
-                            kind="open"
-                            scope="project"
-                            [recordId]="p.projectId"
-                            [name]="p.name"
-                            [count]="p.openTaskCount ?? 0"
-                          />
-                        </td>
-                        <td class="pg-num">
-                          <mf-task-count
-                            kind="overdue"
-                            scope="project"
-                            [recordId]="p.projectId"
-                            [name]="p.name"
-                            [count]="p.overdueTaskCount ?? 0"
-                          />
-                        </td>
-                      }
-                      <td>
-                        <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-            <div frameFoot>
+              </td>
+            </ng-template>
+            <ng-template mfCell="matter" let-p>
+              <td class="pg-fix">
+                <mf-matter-cell [row]="p" [link]="auth.canLink('matter')" />
+              </td>
+            </ng-template>
+            <ng-template mfCell="client" let-p>
+              <td class="pg-fix pg-fix--client">
+                <span class="pg-clip" [title]="p.clientNumber + ' ' + p.clientName">{{
+                  p.clientName
+                }}</span>
+              </td>
+            </ng-template>
+            <ng-template mfCell="openTasks" let-p>
+              <td class="pg-num">
+                <mf-task-count
+                  kind="open"
+                  scope="project"
+                  [recordId]="p.projectId"
+                  [name]="p.name"
+                  [count]="p.openTaskCount ?? 0"
+                />
+              </td>
+            </ng-template>
+            <ng-template mfCell="overdue" let-p>
+              <td class="pg-num">
+                <mf-task-count
+                  kind="overdue"
+                  scope="project"
+                  [recordId]="p.projectId"
+                  [name]="p.name"
+                  [count]="p.overdueTaskCount ?? 0"
+                />
+              </td>
+            </ng-template>
+            <ng-template mfCell="status" let-p>
+              <td>
+                <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
+              </td>
+            </ng-template>
+            <ng-template mfCell="actions" let-p>
+              <td class="mf-col-actions" data-row-actions>
+                <mf-action-menu
+                  [floating]="true"
+                  [label]="menus().get(p.projectId)!.label"
+                  [items]="menus().get(p.projectId)!.items"
+                />
+              </td>
+            </ng-template>
+            <div mfGridFoot>
               <ng-container *ngTemplateOutlet="pager" />
             </div>
-          </mf-grid-frame>
+          </mf-record-grid>
         }
         @if (phone()) {
           <ng-container *ngTemplateOutlet="pager" />
@@ -385,8 +368,6 @@ export class ProjectsListPage extends ServerListPage<ProjectResponse> {
   private readonly api = inject(ProjectsClient);
   protected readonly auth = inject(AuthStore);
   private readonly scroll = viewChild('scroll', { read: ElementRef });
-
-  private readonly wide = COLUMN_ROOM;
 
   /** Below 640 px the list is cards, not a table (WP12). */
   protected readonly phone = phoneCards();
@@ -422,16 +403,53 @@ export class ProjectsListPage extends ServerListPage<ProjectResponse> {
   protected readonly sortLabels = computed(() => sortLabelsOf(this.sortOptions()));
   /** Counts are null without Task.View: the two columns are not rendered then. */
   protected readonly counts = computed(() => this.auth.has('Task.View'));
-  protected readonly showClient = computed(() => this.wide());
-  /** The columns of the grid, in order; the keys the filter definitions point at. */
-  protected readonly columns = computed(() => [
-    'name',
-    'matter',
-    ...(this.showClient() ? ['client'] : []),
-    ...(this.counts() ? ['openTasks', 'overdue'] : []),
-    'status',
+  /** The row menu (New Task, Open Task List) exists for people who can see tasks. */
+  protected readonly hasActions = computed(() => this.auth.has('Task.View'));
+  /** The columns this person may have, in the default order (Project Name cannot be hidden; the counts need Task.View). */
+  protected readonly gridDefs = computed((): RecordGridColumn[] => [
+    // The spring: no width, so it takes the free room in every state.
+    { key: 'name', label: 'Project Name', locked: true, sort: 'name', minWidth: '200px' },
+    { key: 'matter', label: 'Matter', sort: 'matterRef', width: '15rem', minWidth: '15rem' },
+    { key: 'client', label: 'Client', width: '12rem', minWidth: '12rem' },
+    ...(this.counts()
+      ? [
+          {
+            key: 'openTasks',
+            label: 'Open Tasks',
+            sort: 'openTasks',
+            firstDesc: true,
+            num: true,
+            width: 'var(--mf-col-count-w)',
+            minWidth: 'var(--mf-col-count-w)',
+          },
+          {
+            key: 'overdue',
+            label: 'Overdue',
+            sort: 'overdue',
+            firstDesc: true,
+            num: true,
+            width: 'var(--mf-col-count-w)',
+            minWidth: 'var(--mf-col-count-w)',
+          },
+        ]
+      : []),
+    {
+      key: 'status',
+      label: 'Status',
+      width: 'var(--mf-col-status-w)',
+      minWidth: 'var(--mf-col-status-w)',
+    },
   ]);
-  protected readonly skeleton = computed(() => this.columns().map((key) => BONES[key]));
+  /** The grid state (shared record grid, #1241): order, visibility and stored widths per person under the id "projects". */
+  protected readonly grid = new RecordGridState('projects', this.gridDefs);
+  protected readonly bones = BONES;
+  protected readonly projectKey = (p: ProjectResponse): number => p.projectId;
+  /** The columns of the grid, in order; the keys the filter definitions point at. */
+  protected readonly columns = computed(() => this.grid.shown());
+  /** The quick actions of a row, built once per page of rows. */
+  protected readonly menus = computed(
+    () => new Map(this.rows().map((p) => [p.projectId, this.buildMenu(p)] as const)),
+  );
 
   protected readonly matterChip = computed(() => {
     const first = this.rows()[0];
@@ -447,10 +465,30 @@ export class ProjectsListPage extends ServerListPage<ProjectResponse> {
       ? [
           'No projects yet. ',
           { label: 'Open a matter', to: '/matters' },
-          ' and choose New project.',
+          ' and choose New Project.',
         ]
-      : ['No projects yet. Open a matter and choose New project.'],
+      : ['No projects yet. Open a matter and choose New Project.'],
   );
+
+  private buildMenu(p: ProjectResponse) {
+    const specs: RowActionSpec[] = [];
+    if (this.auth.has('Task.Create') && p.isActive) {
+      specs.push({
+        id: 'new-task',
+        label: 'New Task',
+        icon: 'pi-plus',
+        run: () => this.go(`/tasks/new?matterId=${p.matterId}&projectId=${p.projectId}`),
+      });
+    }
+    specs.push({
+      id: 'open-tasks',
+      label: 'Open Task List',
+      icon: 'pi-list',
+      run: () => this.go(`/projects/${p.projectId}`),
+    });
+    const menu = rowActions(p.name, specs, { can: (perm) => this.auth.has(perm) });
+    return { ...menu, label: `More actions for ${p.name}` };
+  }
 
   /** Creating from a matter's list keeps the matter. */
   protected newProjectUrl(): string {

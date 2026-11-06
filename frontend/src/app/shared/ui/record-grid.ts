@@ -20,6 +20,8 @@ import {
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { AuthStore } from '../../core/auth/auth.store';
+import { CopyPart } from './copy-parts';
+import type { ListFilters } from '../filters/list-filters';
 import { LoadState, SortHeader } from './data-table';
 import { GridBody } from './grid-body';
 import { GridColumns } from './grid-columns';
@@ -210,10 +212,11 @@ export class RecordCell {
  *  - `[groupBy]="fn"`: `fn(row)` returns `{ key, label }` or null (a row without a group). Rows of one group must be next to each other in `rows`.
  *    Each run gets a header row (36 px, `scope="colgroup"`, a text button with the chevron, `aria-expanded`, "Archived (3)"), Enter and Space
  *    toggle it. `[collapsedGroups]="['archived']"` lists the groups that start closed (a new array resets the choice); `(groupToggle)` reports a toggle.
- *  - `[rowClass]="fn"`: `fn(row)` gives extra CSS class names of that row ("inactive", "selected" styles of the page or the theme).
+ *  - `[rowClass]="fn"`: `fn(row)` gives extra CSS class names of that row; "is-selected" is styled by the grid (a ticked row), other names by the page or the theme.
  *  - `[rowClickable]="true"` and `(rowClick)="open($event)"`: a click on the row (not on a link, button, field or menu inside it), and Enter or Space
  *    on the focused row, emit the row. A row that has its own link (`a[mfRowLink]`, `[data-row-open]`) is opened by the shell for the link, as always: the link
  *    stays a link and `rowClick` does not fire for it. A row without a link or button is a Tab stop so the keyboard reaches it.
+ *  - Every record row carries `data-record-id` (the `rowKey` value) for tests and scripts.
  *  - `actions`: the row-action column ("..." menu, `mfCell="actions"`), always 48 px (`--mf-col-actions-w`), never resized or stored.
  *  - `mfEmptyAction`: the "+ New <Thing>" button of the empty body (D-51).
  *
@@ -256,6 +259,10 @@ export class RecordCell {
     .rg-group__count {
       color: var(--mf-text-muted);
       font-weight: 400;
+    }
+    /* A row class "is-selected" (rowClass) gives the selected look of a ticked row. */
+    .pg-table tbody tr.is-selected {
+      background: var(--mf-selected-bg);
     }
     .pg-table tbody tr.rg-row--click {
       cursor: pointer;
@@ -336,6 +343,8 @@ export class RecordCell {
             [columns]="columnKeys().length"
             [skeleton]="skeleton()"
             [emptyText]="emptyText()"
+            [emptyParts]="emptyParts()"
+            [filters]="filters()"
             [hidden]="hidden()"
             [hiddenLabel]="hiddenLabel()"
             (retry)="retry.emit()"
@@ -369,6 +378,7 @@ export class RecordCell {
                 </tr>
               } @else {
                 <tr
+                  [attr.data-record-id]="it.track"
                   [mfRowFocus]="rowClickable()"
                   [class]="rowClassOf(it.row)"
                   [class.rg-row--click]="rowClickable()"
@@ -417,6 +427,10 @@ export class RecordGrid<T = any> {
   readonly empty = input(false);
   readonly filtered = input(false);
   readonly emptyText = input('');
+  /** The empty sentence with a link in it (copy parts), instead of `emptyText`; shown when the list is empty and not filtered. */
+  readonly emptyParts = input<readonly CopyPart[] | null>(null);
+  /** The page's filters: the empty body then says what was searched (No results for "zzz") and the bar above shows no second Clear Filters. */
+  readonly filters = input<ListFilters | null>(null);
   readonly hidden = input(0);
   readonly hiddenLabel = input('inactive');
   /** The bone width of each column while loading, by column key (CSS lengths). */
