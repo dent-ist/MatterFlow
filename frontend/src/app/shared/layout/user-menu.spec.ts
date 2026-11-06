@@ -31,6 +31,20 @@ const dto = (overrides: Partial<UserAvailabilityDto> = {}): UserAvailabilityDto 
   ...overrides,
 });
 
+/** Out of office until three days from now; the expected label is computed from the same clock (no hard-coded date). */
+const OUT_DAYS = 3;
+const outUntilIso = (): string => new Date(Date.now() + OUT_DAYS * 86_400_000).toISOString();
+const expectedOutLabel = (): string => {
+  const zone = 'America/New_York';
+  // The API reports the end instant (start of the day after the last day); the last out day is a moment before it.
+  const last = new Date(Date.now() + OUT_DAYS * 86_400_000 - 60_000);
+  const part = (d: Date, o: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat('en-US', { timeZone: zone, ...o }).format(d);
+  const text = part(last, { month: 'short', day: 'numeric' });
+  const sameYear = part(last, { year: 'numeric' }) === part(new Date(), { year: 'numeric' });
+  return `Out of Office until ${sameYear ? text : `${text}, ${part(last, { year: 'numeric' })}`}`;
+};
+
 describe('UserMenu (header user area)', () => {
   let client: {
     getMyAvailability: ReturnType<typeof vi.fn>;
@@ -154,14 +168,14 @@ describe('UserMenu (header user area)', () => {
     const out = dto({
       current: {
         state: 'OUT_OF_OFFICE',
-        outUntilUtc: new Date(Date.now() + 3 * 86_400_000).toISOString(),
+        outUntilUtc: outUntilIso(),
         note: undefined,
         nextWorkStartUtc: undefined,
       },
     });
     const fixture = await create(['Task.View'], out);
     expect(fixture.nativeElement.querySelector('[data-ooo-label]').textContent).toContain(
-      ' Out of Office until Nov 8 ',
+      ` ${expectedOutLabel()} `,
     );
     expect(trigger(fixture).getAttribute('aria-label')).toContain('Out of Office until');
     trigger(fixture).click();
@@ -174,7 +188,7 @@ describe('UserMenu (header user area)', () => {
       dto({
         current: {
           state: 'OUT_OF_OFFICE',
-          outUntilUtc: new Date(Date.now() + 3 * 86_400_000).toISOString(),
+          outUntilUtc: outUntilIso(),
           note: undefined,
           nextWorkStartUtc: undefined,
         },
@@ -204,7 +218,7 @@ describe('UserMenu (header user area)', () => {
       await settle(fixture);
       const row = fixture.nativeElement.querySelector('[data-menu-identity]')!;
       expect(row.querySelector('[data-availability-chip]')!.textContent).toContain(
-        'Out of Office until Nov 8',
+        expectedOutLabel(),
       );
       expect(row.querySelector('.um-id__account')).toBeNull();
     });
