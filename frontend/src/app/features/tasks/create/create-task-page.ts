@@ -797,8 +797,15 @@ export class CreateTaskPage implements HasUnsavedChanges {
     if (id === this.typeId()) return;
     this.applyType(id);
     this.typeQuery.set('');
-    // A matter that is already fixed (the page was opened from one) does not need the focus: the Title does.
-    setTimeout(() => document.getElementById(this.matter() ? 'ct-title' : 'ct-matter')?.focus());
+    // The form opens at the top of the page: a card that was scrolled into view to be chosen (a click or Enter on a card under the fold) must not leave
+    // the crumb and the title cut off (#1277). A matter that is already fixed (the page was opened from one) does not need the focus: the Title does.
+    // The focus never scrolls the page (`preventScroll`); the page scrolls only when the person tabs into a lower field.
+    setTimeout(() => {
+      window.scrollTo({ top: 0 });
+      document
+        .getElementById(this.matter() ? 'ct-title' : 'ct-matter')
+        ?.focus({ preventScroll: true });
+    });
   }
 
   /** "Change type": back to the chooser. Values entered in the type's request form are lost, so ask first when there are any. */

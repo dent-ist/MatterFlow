@@ -478,6 +478,35 @@ test.describe('T8: Create task page (CT1 #322, #323)', () => {
     void token;
   });
 
+  test('choosing a type focuses the Matter field without scrolling: the crumb and the whole title stay in view (#1277)', async ({
+    page,
+    seed,
+  }) => {
+    const world = await seed.world({ stepCount: 2 });
+    for (const size of SIZES) {
+      await page.setViewportSize(size);
+      const create = new CreateTaskPage(page);
+      await create.open();
+      const header = page.locator('mf-page-header');
+      const before = {
+        crumb: (await header.locator('nav[aria-label="Breadcrumb"]').boundingBox())!.y,
+        title: (await page.getByRole('heading', { name: 'Create Task', level: 1 }).boundingBox())!
+          .y,
+      };
+      await create.chooseTaskType(world.taskType.name);
+      await expect(create.matter).toBeFocused();
+      await page.waitForTimeout(300);
+      // The page did not move: the crumb and the title are where they were when the chooser was shown, at both sizes.
+      const crumb = (await header.locator('nav[aria-label="Breadcrumb"]').boundingBox())!.y;
+      const title = (await page
+        .getByRole('heading', { name: 'Create Task', level: 1 })
+        .boundingBox())!.y;
+      expect(Math.abs(crumb - before.crumb), `crumb at ${size.width}`).toBeLessThanOrEqual(1);
+      expect(Math.abs(title - before.title), `title at ${size.width}`).toBeLessThanOrEqual(1);
+      expect(crumb).toBeGreaterThanOrEqual(52);
+    }
+  });
+
   test('from a Matter: the Matter is a step of the trail (a link for a person who may open it)', async ({
     page,
     seed,

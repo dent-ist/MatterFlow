@@ -586,6 +586,25 @@ describe('CreateTaskPage', () => {
     expect(field(h, '[data-sensitive-banner]').textContent).toContain('Sensitive matter');
   });
 
+  it('focuses the Matter field when the form opens, without scrolling the page (#1277)', async () => {
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus');
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+    try {
+      const h = await create();
+      await pickType(h);
+      await new Promise((resolve) => setTimeout(resolve));
+      const matter = field(h, '#ct-matter');
+      const calls = focus.mock.calls.filter((_, i) => focus.mock.contexts[i] === matter);
+      expect(calls.length).toBeGreaterThan(0);
+      expect(calls.every(([options]) => options?.preventScroll === true)).toBe(true);
+      // The form opens at the top, so the crumb and the title are in view.
+      expect(scrollTo).toHaveBeenCalledWith({ top: 0 });
+    } finally {
+      focus.mockRestore();
+      scrollTo.mockRestore();
+    }
+  });
+
   it('does not preselect an inactive matter', async () => {
     const h = await create({ inputs: { matterId: '7' }, matter: aMatter({ isActive: false }) });
     await pickType(h);
