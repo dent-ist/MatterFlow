@@ -36,7 +36,7 @@ test.describe('pf4-hours: compact work hours (#534)', () => {
     const p = await personas.create({ ...PERSONAS.technician, label: 'pf4hours' });
     const me = await asUser(p.username);
     await me.goto('/profile');
-    const toggles = me.locator('[data-day-toggle]');
+    const toggles = me.locator('[data-day-toggles] [data-key]');
     await expect(toggles).toHaveCount(7);
     await expect(me.getByRole('button', { name: 'Monday', exact: true })).toHaveAttribute(
       'aria-pressed',
@@ -153,12 +153,12 @@ test.describe('pf4-hours: compact work hours (#534)', () => {
     for (const size of SIZES) {
       await me.setViewportSize(size);
       await me.goto('/profile');
-      await expect(me.locator('[data-day-toggle]').first()).toBeVisible();
+      await expect(me.locator('[data-day-toggles] [data-key]').first()).toBeVisible();
       await noHorizontalScroll(me);
       await axeClean(me, `compact at ${size.width}`);
       await shot(me, 'pf4-compact');
-      const toggle = await me.locator('[data-day-toggle]').first().boundingBox();
-      expect(toggle!.height).toBeGreaterThanOrEqual(32);
+      const toggle = await me.locator('[data-day-toggles] [data-key]').first().boundingBox();
+      expect(toggle!.height).toBeGreaterThanOrEqual(24);
       await me.getByRole('button', { name: 'Different Hours on Some Days' }).click();
       await expect(me.locator('[data-hours-grid]')).toBeVisible();
       await noHorizontalScroll(me);

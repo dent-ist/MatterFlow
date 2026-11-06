@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
+import { Badge, BadgeTone } from '../../ui/badge';
 import { ConfirmDialog } from '../../ui/confirm-dialog';
 import { NumericDatePipe, readableDate } from '../../ui/numeric-date';
 import { AbsenceDialog, AbsencePerson } from './absence-dialog';
@@ -26,6 +27,13 @@ import { groupAbsences } from './absence-rules';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
+const HUE_TONES: Readonly<Record<string, BadgeTone>> = {
+  info: 'info',
+  critical: 'critical',
+  healthy: 'success',
+  neutral: 'neutral',
+};
+
 /**
  * The Out of office list of a person (epic #1074, CAL-05): several entries, grouped Now, Upcoming and Past, each with its type (glyph and word), the first and last day
  * (the last day is included) in the My Matters numeric style, the number of working days and the note (the server sends the note only to the owner and the managers who may
@@ -34,7 +42,7 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 @Component({
   selector: 'mf-absence-list',
-  imports: [AbsenceDialog, ConfirmDialog, NgTemplateOutlet, NumericDatePipe],
+  imports: [AbsenceDialog, Badge, ConfirmDialog, NgTemplateOutlet, NumericDatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="al mf-card" aria-labelledby="al-title" data-absence-list>
@@ -129,9 +137,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 
     <ng-template #row let-e>
       <li class="al__row" [attr.data-absence]="e.absenceId" [attr.data-state]="e.state">
-        <span class="al__type" [class]="'al__type al__type--' + hue(e)">
-          <i class="pi" [class]="icon(e)" aria-hidden="true"></i>{{ label(e) }}
-        </span>
+        <mf-badge class="al__type" [tone]="tone(e)" [icon]="icon(e)">{{ label(e) }}</mf-badge>
         <div class="al__main">
           <span class="al__dates">
             <span aria-hidden="true"
@@ -283,33 +289,7 @@ type LoadState = 'loading' | 'ready' | 'error';
       color: var(--mf-text-muted);
     }
     .al__type {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
       justify-self: start;
-      height: 24px;
-      padding: 0 var(--mf-s2);
-      border-radius: var(--mf-radius-pill);
-      font-size: var(--mf-fs-sm);
-      font-weight: 600;
-      background: var(--mf-sem-neutral-bg);
-      color: var(--mf-sem-neutral-fg);
-    }
-    .al__type--info {
-      background: var(--mf-sem-info-bg);
-      color: var(--mf-sem-info-fg);
-    }
-    .al__type--critical {
-      background: var(--mf-sem-critical-bg);
-      color: var(--mf-sem-critical-fg);
-    }
-    .al__type--healthy {
-      background: var(--mf-sem-healthy-bg);
-      color: var(--mf-sem-healthy-fg);
-    }
-    .al__type--person {
-      background: var(--mf-sem-person-bg);
-      color: var(--mf-sem-person-fg);
     }
     .al__main {
       display: grid;
@@ -437,8 +417,9 @@ export class AbsenceList {
   protected icon(e: AbsenceEntry): string {
     return ABSENCE_TYPE_ICONS[e.type];
   }
-  protected hue(e: AbsenceEntry): string {
-    return ABSENCE_TYPE_HUES[e.type];
+  /** The type chip is the shared status chip (D-12): the hue of the type picks one of its tones; the violet "person" hue has none, so Conference reads neutral like Other. */
+  protected tone(e: AbsenceEntry): BadgeTone {
+    return HUE_TONES[ABSENCE_TYPE_HUES[e.type]] ?? 'neutral';
   }
 
   /** The dates in words, for screen readers and button names (the numeric style is for the eye). */
