@@ -311,7 +311,7 @@ test.describe('Task T6: Details heading, alignment and Request details (#312, #3
     await openFresh(page, long.task.taskId);
     await expect(requestToggle(page)).toHaveAttribute('aria-expanded', 'false');
     await expect(requestToggle(page)).toContainText(
-      `Request details (${long.world.taskType.name}, form 1)`,
+      `Request Details (${long.world.taskType.name}, Form 1)`,
     );
     await expect(requestToggle(page)).toContainText('14 fields');
     await expect(page.locator('[data-request-form] [data-request-body]')).toBeHidden();

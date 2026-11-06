@@ -196,7 +196,7 @@ const PAGE_SIZE = 25;
       @if (e.commentId && e.excerpt) {
         <button
           type="button"
-          class="ta__excerpt"
+          class="mf-btn mf-btn--text ta__excerpt"
           data-comment-link
           [attr.data-comment-id]="e.commentId"
           (click)="showComment.emit(e.commentId)"
@@ -263,21 +263,15 @@ const PAGE_SIZE = 25;
       margin-right: var(--mf-s2);
       font-weight: 600;
     }
+    /* The look is the shared text button; the excerpt is a sentence, so it is left aligned and wraps. */
     .ta__excerpt {
       display: block;
       max-width: 100%;
       margin-top: var(--mf-s1);
-      padding: 0;
-      border: 0;
-      background: transparent;
-      color: var(--mf-link);
-      font: inherit;
+      margin-left: calc(-1 * var(--mf-s2));
       text-align: left;
+      white-space: normal;
       overflow-wrap: anywhere;
-      cursor: pointer;
-    }
-    .ta__excerpt:hover {
-      text-decoration: underline;
     }
     .ta__sub {
       display: grid;
