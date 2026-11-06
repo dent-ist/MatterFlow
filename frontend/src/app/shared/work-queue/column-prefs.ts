@@ -36,11 +36,11 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     minWidth: 80,
     maxWidth: 120,
   },
-  // The task type as the coloured chip and its NAME beside it (`mf-task-type-cell`, #1232; D-43a, MD-29, #1033), 168 px; below about 100 px only the tile shows. The storage key stays `type`, so
+  // The task type as the coloured chip and its NAME beside it (`mf-task-type-cell`, #1232; D-43a, MD-29, #1033), 128 px (chip 32 + 8 gap + the name, which ellipsizes; #1237); below about 100 px of cell only the tile shows. The storage key stays `type`, so
   // stored columns, widths and the Task type filter survive the rename (it was "Task type", a name only).
-  { key: 'type', label: 'Type', width: 168, minWidth: 56, maxWidth: 260 },
+  { key: 'type', label: 'Type', width: 128, minWidth: 96, maxWidth: 260 },
   // The same chip and name in a Matter's or Project's grid (own key: its stored choice is `grid-prefs`, never in a chooser or a default set, MD-24 #1028).
-  { key: 'typeChip', label: 'Type', width: 150, minWidth: 96, maxWidth: 260, scopedOnly: true },
+  { key: 'typeChip', label: 'Type', width: 128, minWidth: 96, maxWidth: 260, scopedOnly: true },
   {
     key: 'title',
     label: 'Title',

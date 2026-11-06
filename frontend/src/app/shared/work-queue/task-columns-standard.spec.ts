@@ -54,7 +54,7 @@ describe('standard task columns', () => {
       'Closed',
       'Status',
     ]);
-    // Created by Me: Age is in Columns, not in the default, so the row fits 1366 with the 168 px Type (#1232).
+    // Created by Me: Age is in Columns, not in the default, so the row fits 1366 with the 128 px Type (#1237).
     expect(labels('myWork.createdByMe')).toEqual(without('Matter Name', 'Project', 'Progress'));
   });
 

@@ -44,11 +44,22 @@ describe('default task columns fit the 1366 frame (D-43a, #1230)', () => {
     expect(sum(keys, ASSIGNEE_PX) + TITLE_MIN_PX).toBeLessThanOrEqual(FRAME_1366_PX);
   });
 
-  it('Type is the chip and the name at 168 px, resizable down to the tile alone (#1232); the Title minimum is 120 px', () => {
+  it('Type is the chip and the name at 128 px (min 96, max 260; #1237); the Title minimum is 120 px', () => {
     const type = WORK_COLUMNS.find((c) => c.key === 'type')!;
-    expect([type.width, type.minWidth, type.maxWidth]).toEqual([168, 56, 260]);
+    expect([type.width, type.minWidth, type.maxWidth]).toEqual([128, 96, 260]);
     expect(TITLE_MIN_PX).toBe(120);
   });
+
+  it.each([
+    ['taskQueue', 136, 160],
+    ['myWork.active', 136, 160],
+    ['podWork', ASSIGNEE_WITH_LINK_PX, 160],
+  ] as [string, number, number][])(
+    '%s: at 1366 the Title keeps at least %i px of the 1,098 px frame (#1237)',
+    (scope, assignee, least) => {
+      expect(FRAME_1366_PX - sum(defaultColumns(scope), assignee)).toBeGreaterThanOrEqual(least);
+    },
+  );
 
   it('Project, Matter Name and Progress are off by default on every global list; CM Number stays', () => {
     for (const [scope] of scopes) {
