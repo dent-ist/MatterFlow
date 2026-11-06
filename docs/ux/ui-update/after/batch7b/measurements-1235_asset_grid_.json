@@ -1,0 +1,142 @@
+{
+ "asset-1366x768": {
+  "sideways": false,
+  "headers": [
+   "Ref:112",
+   "Type:128",
+   "Title:316",
+   "Priority:112",
+   "Assignee:136",
+   "Due:152",
+   "Status:140"
+  ],
+  "types": [
+   {
+    "name": "Collection Receipt",
+    "colour": "amber",
+    "bg": "rgb(180, 83, 9)"
+   },
+   {
+    "name": "Relativity Workspace Setup",
+    "colour": "green",
+    "bg": "rgb(21, 128, 61)"
+   },
+   {
+    "name": "Archive and Disposition",
+    "colour": "green",
+    "bg": "rgb(21, 128, 61)"
+   },
+   {
+    "name": "Export / Transfer",
+    "colour": "rose",
+    "bg": "rgb(190, 24, 93)"
+   },
+   {
+    "name": "Review Setup and Batching",
+    "colour": "amber",
+    "bg": "rgb(180, 83, 9)"
+   },
+   {
+    "name": "Data Processing",
+    "colour": "violet",
+    "bg": "rgb(109, 75, 194)"
+   },
+   {
+    "name": "Incoming Production Intake",
+    "colour": "red",
+    "bg": "rgb(198, 40, 40)"
+   },
+   {
+    "name": "Physical Media Custody Event",
+    "colour": "blue",
+    "bg": "rgb(31, 78, 156)"
+   }
+  ]
+ },
+ "grid-1366x768": {
+  "Incoming Production Intake": "rgb(198, 40, 40)",
+  "Archive and Disposition": "rgb(21, 128, 61)",
+  "Export / Transfer": "rgb(190, 24, 93)",
+  "Review Setup and Batching": "rgb(180, 83, 9)",
+  "Data Processing": "rgb(109, 75, 194)",
+  "Collection Receipt": "rgb(180, 83, 9)",
+  "Relativity Workspace Setup": "rgb(21, 128, 61)",
+  "Physical Media Custody Event": "rgb(31, 78, 156)",
+  "Harvey Vault Request": "rgb(71, 85, 105)",
+  "Analytics / TAR Setup": "rgb(15, 118, 110)",
+  "Data Load / Overlay": "rgb(194, 65, 12)",
+  "Search and Culling": "rgb(194, 65, 12)",
+  "Production (Outgoing)": "rgb(15, 118, 110)",
+  "General / Ad Hoc Request": "rgb(79, 70, 229)"
+ },
+ "asset-1920x1080": {
+  "sideways": false,
+  "headers": [
+   "Ref:112",
+   "Type:128",
+   "Title:870",
+   "Priority:112",
+   "Assignee:136",
+   "Due:152",
+   "Status:140"
+  ],
+  "types": [
+   {
+    "name": "Collection Receipt",
+    "colour": "amber",
+    "bg": "rgb(180, 83, 9)"
+   },
+   {
+    "name": "Relativity Workspace Setup",
+    "colour": "green",
+    "bg": "rgb(21, 128, 61)"
+   },
+   {
+    "name": "Archive and Disposition",
+    "colour": "green",
+    "bg": "rgb(21, 128, 61)"
+   },
+   {
+    "name": "Export / Transfer",
+    "colour": "rose",
+    "bg": "rgb(190, 24, 93)"
+   },
+   {
+    "name": "Review Setup and Batching",
+    "colour": "amber",
+    "bg": "rgb(180, 83, 9)"
+   },
+   {
+    "name": "Data Processing",
+    "colour": "violet",
+    "bg": "rgb(109, 75, 194)"
+   },
+   {
+    "name": "Incoming Production Intake",
+    "colour": "red",
+    "bg": "rgb(198, 40, 40)"
+   },
+   {
+    "name": "Physical Media Custody Event",
+    "colour": "blue",
+    "bg": "rgb(31, 78, 156)"
+   }
+  ]
+ },
+ "grid-1920x1080": {
+  "Incoming Production Intake": "rgb(198, 40, 40)",
+  "Archive and Disposition": "rgb(21, 128, 61)",
+  "Export / Transfer": "rgb(190, 24, 93)",
+  "Review Setup and Batching": "rgb(180, 83, 9)",
+  "Data Processing": "rgb(109, 75, 194)",
+  "Collection Receipt": "rgb(180, 83, 9)",
+  "Relativity Workspace Setup": "rgb(21, 128, 61)",
+  "Physical Media Custody Event": "rgb(31, 78, 156)",
+  "Harvey Vault Request": "rgb(71, 85, 105)",
+  "Analytics / TAR Setup": "rgb(15, 118, 110)",
+  "Data Load / Overlay": "rgb(194, 65, 12)",
+  "Search and Culling": "rgb(194, 65, 12)",
+  "Production (Outgoing)": "rgb(15, 118, 110)",
+  "General / Ad Hoc Request": "rgb(79, 70, 229)"
+ }
+}

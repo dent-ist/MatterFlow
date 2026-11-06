@@ -33,6 +33,8 @@ function link(over: Partial<AssetTaskLink>): AssetTaskLink {
     isAsap: false,
     assigneeUserId: 5,
     assigneeName: 'Ada Lovelace',
+    priorityLabel: 'High',
+    priorityColor: 'high',
     ...over,
   };
 }
@@ -91,8 +93,11 @@ describe('AssetLinkedTasks', () => {
     await settle(fixture);
   }
 
-  it('lists the tasks on the shared cells: ref, the title as the one link, status, due, assignee and role', async () => {
+  it('lists the tasks in the standard task column order (Ref, Type, Title, Priority, Assignee, Due, Status) on the shared cells (#1235)', async () => {
     await create(['Asset.View', 'Task.View']);
+    expect(Array.from(el().querySelectorAll('thead th')).map((h) => h.textContent!.trim())).toEqual(
+      ['Ref', 'Type', 'Title', 'Priority', 'Assignee', 'Due', 'Status'],
+    );
     const row = el().querySelector('tbody tr[data-task="TSK-2"]')!;
     expect(row.querySelector('td')?.textContent).toBe('TSK-2');
     expect(row.querySelectorAll('a')).toHaveLength(1);
@@ -100,11 +105,30 @@ describe('AssetLinkedTasks', () => {
     expect(row.querySelector('[data-status]')?.getAttribute('data-status')).toBe('IN_PROGRESS');
     expect(row.querySelector('mf-due-cell')).not.toBeNull();
     expect(row.querySelector('[data-assignee]')?.textContent).toContain('Ada Lovelace');
-    expect(row.textContent).toContain('Source');
+    expect(row.querySelector('[data-priority]')?.textContent).toContain('High');
     expect(el().querySelector('tr[data-task="TSK-3"] [data-assignee]')?.textContent).toContain(
       'Unassigned',
     );
     expect(api.listAssetLinkedTasks).toHaveBeenCalledWith(9);
+  });
+
+  it('shows the task type as the shared Type cell: the chip in the type colour (or the colour from the id when it has none) and the name', async () => {
+    await create(
+      ['Asset.View', 'Task.View'],
+      [
+        link({ taskId: 1, taskNumber: 'TSK-1' }),
+        link({ taskId: 2, taskNumber: 'TSK-2', taskTypeId: 4, taskTypeColourKey: undefined }),
+      ],
+    );
+    const cell = (n: string) => el().querySelector(`tr[data-task="${n}"] mf-task-type-cell`)!;
+    expect(cell('TSK-1').querySelector('[data-type-name]')?.textContent).toBe('Data Processing');
+    expect(cell('TSK-1').querySelector('mf-task-type-chip')?.getAttribute('data-colour')).toBe(
+      'teal',
+    );
+    // No colour key: the colour comes from the type id, like every grid (ten colours; id 4 is the fifth).
+    expect(cell('TSK-2').querySelector('mf-task-type-chip')?.getAttribute('data-colour')).toBe(
+      'amber',
+    );
   });
 
   it('is sorted by due date, no due date last, and sorts by Due and Status', async () => {

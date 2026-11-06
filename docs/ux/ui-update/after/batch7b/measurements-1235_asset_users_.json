@@ -1,0 +1,238 @@
+{
+ "asset-axe-1366x768": [],
+ "asset-1366x768": {
+  "sideways": false,
+  "headers": [
+   "Ref:112",
+   "Type:128",
+   "Title:316",
+   "Priority:112",
+   "Assignee:136",
+   "Due:152",
+   "Status:140"
+  ],
+  "types": [
+   {
+    "name": "Collection Receipt",
+    "colour": "amber",
+    "bg": "rgb(180, 83, 9)"
+   },
+   {
+    "name": "Relativity Workspace Setup",
+    "colour": "green",
+    "bg": "rgb(21, 128, 61)"
+   },
+   {
+    "name": "Archive and Disposition",
+    "colour": "green",
+    "bg": "rgb(21, 128, 61)"
+   },
+   {
+    "name": "Export / Transfer",
+    "colour": "rose",
+    "bg": "rgb(190, 24, 93)"
+   },
+   {
+    "name": "Review Setup and Batching",
+    "colour": "amber",
+    "bg": "rgb(180, 83, 9)"
+   },
+   {
+    "name": "Data Processing",
+    "colour": "violet",
+    "bg": "rgb(109, 75, 194)"
+   },
+   {
+    "name": "Incoming Production Intake",
+    "colour": "red",
+    "bg": "rgb(198, 40, 40)"
+   },
+   {
+    "name": "Physical Media Custody Event",
+    "colour": "blue",
+    "bg": "rgb(31, 78, 156)"
+   }
+  ]
+ },
+ "users-axe-1366x768": [],
+ "users-1366x768": [
+  {
+   "colour": "rose",
+   "bg": "rgb(190, 24, 93)",
+   "name": "Export / Transfer"
+  },
+  {
+   "colour": "green",
+   "bg": "rgb(21, 128, 61)",
+   "name": "Archive and Disposition"
+  },
+  {
+   "colour": "green",
+   "bg": "rgb(21, 128, 61)",
+   "name": "Relativity Workspace Setup"
+  },
+  {
+   "colour": "green",
+   "bg": "rgb(21, 128, 61)",
+   "name": "Relativity Workspace Setup"
+  },
+  {
+   "colour": "green",
+   "bg": "rgb(21, 128, 61)",
+   "name": "Archive and Disposition"
+  },
+  {
+   "colour": "slate",
+   "bg": "rgb(71, 85, 105)",
+   "name": "Harvey Vault Request"
+  },
+  {
+   "colour": "green",
+   "bg": "rgb(21, 128, 61)",
+   "name": "Relativity Workspace Setup"
+  },
+  {
+   "colour": "amber",
+   "bg": "rgb(180, 83, 9)",
+   "name": "Review Setup and Batching"
+  },
+  {
+   "colour": "amber",
+   "bg": "rgb(180, 83, 9)",
+   "name": "Review Setup and Batching"
+  },
+  {
+   "colour": "green",
+   "bg": "rgb(21, 128, 61)",
+   "name": "Archive and Disposition"
+  },
+  {
+   "colour": "blue",
+   "bg": "rgb(31, 78, 156)",
+   "name": "Physical Media Custody Event"
+  },
+  {
+   "colour": "blue",
+   "bg": "rgb(31, 78, 156)",
+   "name": "Physical Media Custody Event"
+  }
+ ],
+ "asset-axe-1920x1080": [],
+ "asset-1920x1080": {
+  "sideways": false,
+  "headers": [
+   "Ref:112",
+   "Type:128",
+   "Title:870",
+   "Priority:112",
+   "Assignee:136",
+   "Due:152",
+   "Status:140"
+  ],
+  "types": [
+   {
+    "name": "Collection Receipt",
+    "colour": "amber",
+    "bg": "rgb(180, 83, 9)"
+   },
+   {
+    "name": "Relativity Workspace Setup",
+    "colour": "green",
+    "bg": "rgb(21, 128, 61)"
+   },
+   {
+    "name": "Archive and Disposition",
+    "colour": "green",
+    "bg": "rgb(21, 128, 61)"
+   },
+   {
+    "name": "Export / Transfer",
+    "colour": "rose",
+    "bg": "rgb(190, 24, 93)"
+   },
+   {
+    "name": "Review Setup and Batching",
+    "colour": "amber",
+    "bg": "rgb(180, 83, 9)"
+   },
+   {
+    "name": "Data Processing",
+    "colour": "violet",
+    "bg": "rgb(109, 75, 194)"
+   },
+   {
+    "name": "Incoming Production Intake",
+    "colour": "red",
+    "bg": "rgb(198, 40, 40)"
+   },
+   {
+    "name": "Physical Media Custody Event",
+    "colour": "blue",
+    "bg": "rgb(31, 78, 156)"
+   }
+  ]
+ },
+ "users-axe-1920x1080": [],
+ "users-1920x1080": [
+  {
+   "colour": "rose",
+   "bg": "rgb(190, 24, 93)",
+   "name": "Export / Transfer"
+  },
+  {
+   "colour": "green",
+   "bg": "rgb(21, 128, 61)",
+   "name": "Archive and Disposition"
+  },
+  {
+   "colour": "green",
+   "bg": "rgb(21, 128, 61)",
+   "name": "Relativity Workspace Setup"
+  },
+  {
+   "colour": "green",
+   "bg": "rgb(21, 128, 61)",
+   "name": "Relativity Workspace Setup"
+  },
+  {
+   "colour": "green",
+   "bg": "rgb(21, 128, 61)",
+   "name": "Archive and Disposition"
+  },
+  {
+   "colour": "slate",
+   "bg": "rgb(71, 85, 105)",
+   "name": "Harvey Vault Request"
+  },
+  {
+   "colour": "green",
+   "bg": "rgb(21, 128, 61)",
+   "name": "Relativity Workspace Setup"
+  },
+  {
+   "colour": "amber",
+   "bg": "rgb(180, 83, 9)",
+   "name": "Review Setup and Batching"
+  },
+  {
+   "colour": "amber",
+   "bg": "rgb(180, 83, 9)",
+   "name": "Review Setup and Batching"
+  },
+  {
+   "colour": "green",
+   "bg": "rgb(21, 128, 61)",
+   "name": "Archive and Disposition"
+  },
+  {
+   "colour": "blue",
+   "bg": "rgb(31, 78, 156)",
+   "name": "Physical Media Custody Event"
+  },
+  {
+   "colour": "blue",
+   "bg": "rgb(31, 78, 156)",
+   "name": "Physical Media Custody Event"
+  }
+ ]
+}

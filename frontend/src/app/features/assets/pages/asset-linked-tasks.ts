@@ -15,6 +15,10 @@ import { firstValueFrom } from 'rxjs';
 import { AssetTaskLink, AssetsClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { DueCell } from '../../../shared/work-queue/due-cell';
+import { WORK_COLUMNS } from '../../../shared/work-queue/column-prefs';
+import { columnWidthRem } from '../../../shared/work-queue/column-widths';
+import { PriorityFlag } from '../../../shared/ui/priority-flag';
+import { TaskTypeCell } from '../../../shared/ui/task-type-cell';
 import { SortHeader } from '../../../shared/ui/data-table';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import {
@@ -35,6 +39,9 @@ export interface LinkedTaskTotals {
   overdue: number;
 }
 
+/** The width of a task grid column (`WORK_COLUMNS`, D-43), in rem: the same widths as every other task grid. */
+const widthRem = (key: string): number => columnWidthRem(WORK_COLUMNS.find((c) => c.key === key)!);
+
 /** The order of the status sort: the open states first. */
 const STATUS_ORDER = ['NEW', 'IN_PROGRESS', 'ON_HOLD', 'COMPLETED', 'CANCELLED'];
 
@@ -45,8 +52,9 @@ function dueKey(t: AssetTaskLink): number | null {
 }
 
 /**
- * The Linked tasks tab of an Asset (UX S08, #505): every task the asset is linked to as a 44 px table on the shared cells (number, title as
- * the one link, status badge, the Due cell, assignee and the role of the link), sorted by due date (earliest first, no due date last) and
+ * The Linked tasks tab of an Asset (UX S08, #505; columns #1235): every task the asset is linked to as a 44 px table on the shared cells in the standard task column order
+ * (Ref, Type chip and name, Title as the one link, Priority, Assignee, Due, Status; the widths of `WORK_COLUMNS`, 940 px plus a Title of at least 120 px, so it fits the 1098 px
+ * of 1366), sorted by due date (earliest first, no due date last) and
  * sortable by Due and Status. One line above it counts them: "19 linked - 4 open - 1 overdue". Below 640 px each task is a card. Needs
  * `Task.View`; without it the tab says so and loads nothing. Rendered only while its tab is open.
  */
@@ -59,6 +67,8 @@ function dueKey(t: AssetTaskLink): number | null {
     Button,
     StatusBadge,
     DueCell,
+    PriorityFlag,
+    TaskTypeCell,
     SortHeader,
     RecordCardList,
     RecordCardDef,
@@ -82,8 +92,12 @@ function dueKey(t: AssetTaskLink): number | null {
       color: var(--mf-due-overdue);
       font-weight: 700;
     }
+    /* The task grid widths (D-43): fixed columns, the Title takes the rest and never less than 120 px; a narrower box scrolls inside the card. */
+    .lt-table {
+      table-layout: fixed;
+      min-width: calc(var(--lt-fixed) + 8.5rem);
+    }
     td.lt-ref {
-      width: 1%;
       font-family: var(--mf-font-mono);
       white-space: nowrap;
     }
@@ -157,23 +171,26 @@ function dueKey(t: AssetTaskLink): number | null {
               <span [class.lt-over]="totals().overdue > 0">{{ totals().overdue }} overdue</span>
             </p>
             <div class="mf-scroll lt-card">
-              <table class="mf-grid tt" data-linked-table>
+              <table class="mf-grid tt lt-table" data-linked-table [style.--lt-fixed]="fixedRem">
+                <colgroup>
+                  <col [style.width.rem]="w.ref" />
+                  <col [style.width.rem]="w.type" />
+                  <col />
+                  <col [style.width.rem]="w.priority" />
+                  <col [style.width.rem]="w.assignee" />
+                  <col [style.width.rem]="w.due" />
+                  <col [style.width.rem]="w.status" />
+                </colgroup>
                 <caption class="mf-sr-only">
                   Tasks linked to this asset
                 </caption>
                 <thead>
                   <tr>
                     <th scope="col">Ref</th>
+                    <th scope="col">Type</th>
                     <th class="mf-cell-name" scope="col">Title</th>
-                    <th
-                      class="mf-cell-badge"
-                      mfSort="status"
-                      [sort]="sort()"
-                      defaultSort="due"
-                      (sorted)="sort.set($event)"
-                    >
-                      Status
-                    </th>
+                    <th scope="col">Priority</th>
+                    <th scope="col">Assignee</th>
                     <th
                       class="mf-cell-date"
                       mfSort="due"
@@ -183,14 +200,29 @@ function dueKey(t: AssetTaskLink): number | null {
                     >
                       Due
                     </th>
-                    <th scope="col">Assignee</th>
-                    <th scope="col">Role</th>
+                    <th
+                      class="mf-cell-badge"
+                      mfSort="status"
+                      [sort]="sort()"
+                      defaultSort="due"
+                      (sorted)="sort.set($event)"
+                    >
+                      Status
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (t of sorted(); track t.taskId) {
                     <tr [attr.data-task]="t.taskNumber">
                       <td class="lt-ref">{{ t.taskNumber }}</td>
+                      <td data-type>
+                        <mf-task-type-cell
+                          [name]="t.taskTypeName"
+                          [iconKey]="t.taskTypeIconKey"
+                          [colourKey]="t.taskTypeColourKey"
+                          [typeId]="t.taskTypeId"
+                        />
+                      </td>
                       <td class="mf-cell-name">
                         <a
                           class="mf-name"
@@ -199,9 +231,16 @@ function dueKey(t: AssetTaskLink): number | null {
                           >{{ t.title }}</a
                         >
                       </td>
-                      <td class="mf-cell-badge"><mf-status-badge [code]="t.statusCode" /></td>
-                      <td class="mf-cell-date" data-due>
-                        <mf-due-cell [due]="t" [status]="t.statusCode" />
+                      <td data-priority>
+                        @if (t.priorityLabel) {
+                          <mf-priority-flag
+                            [label]="t.priorityLabel"
+                            [color]="t.priorityColor"
+                            [muted]="!t.isOpen"
+                          />
+                        } @else {
+                          <span class="lt-none">-</span>
+                        }
                       </td>
                       <td class="lt-who" [attr.title]="t.assigneeName ?? null" data-assignee>
                         @if (t.assigneeName) {
@@ -210,7 +249,10 @@ function dueKey(t: AssetTaskLink): number | null {
                           <span class="lt-none">Unassigned</span>
                         }
                       </td>
-                      <td class="lt-who">{{ t.assetLinkRoleName ?? '-' }}</td>
+                      <td class="mf-cell-date" data-due>
+                        <mf-due-cell [due]="t" [status]="t.statusCode" />
+                      </td>
+                      <td class="mf-cell-badge"><mf-status-badge [code]="t.statusCode" /></td>
                     </tr>
                   }
                 </tbody>
@@ -231,6 +273,16 @@ export class AssetLinkedTasks {
   private readonly auth = inject(AuthStore);
 
   protected readonly phone = phoneCards();
+  /** The column widths in rem (the task grid standard) and their sum, for the table's minimum width. */
+  protected readonly w = {
+    ref: widthRem('ref'),
+    type: widthRem('type'),
+    priority: widthRem('priority'),
+    assignee: widthRem('assignee'),
+    due: widthRem('due'),
+    status: widthRem('status'),
+  };
+  protected readonly fixedRem = `${Object.values(this.w).reduce((a, b) => a + b, 0)}rem`;
   protected readonly canView = computed(() => this.auth.has('Task.View'));
   protected readonly state = signal<LoadState>('loading');
   protected readonly links = signal<AssetTaskLink[]>([]);

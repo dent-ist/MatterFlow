@@ -78,6 +78,7 @@ const unassigned = (id: number, priority: number, label: string) =>
   aRow({
     taskId: id,
     taskNumber: `TSK-${id}`,
+    taskTypeColourKey: 'teal',
     title: `Unassigned ${id}`,
     status: 'NEW',
     statusLabel: 'New',
@@ -969,6 +970,9 @@ describe('DashUsersTab', () => {
       await openPicker('Cy Tan');
       const row = dialog().querySelector('[data-assign-row]')!;
       expect(row.querySelector('[data-type]')).not.toBeNull();
+      expect(row.querySelector('[data-type] mf-task-type-chip')!.getAttribute('data-colour')).toBe(
+        'teal',
+      );
       expect(row.querySelector('[data-client]')).not.toBeNull();
     });
 

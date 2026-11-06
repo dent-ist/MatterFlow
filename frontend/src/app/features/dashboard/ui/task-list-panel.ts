@@ -170,6 +170,7 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
                         size="sm"
                         [name]="row.taskTypeName"
                         [iconKey]="row.taskTypeIconKey"
+                        [colourKey]="row.taskTypeColourKey"
                         [typeId]="row.taskTypeId"
                       />
                       <span class="title">{{ row.title }}</span>

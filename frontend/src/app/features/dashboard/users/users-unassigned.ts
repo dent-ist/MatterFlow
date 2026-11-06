@@ -122,6 +122,7 @@ export const UNASSIGNED_PAGE = 50;
                           size="sm"
                           [name]="r.taskTypeName"
                           [iconKey]="r.taskTypeIconKey"
+                          [colourKey]="r.taskTypeColourKey"
                           [typeId]="r.taskTypeId"
                         />
                         <span class="title" [attr.title]="r.title">{{ r.title }}</span>

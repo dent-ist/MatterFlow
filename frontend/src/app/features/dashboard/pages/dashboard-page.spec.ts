@@ -155,6 +155,7 @@ function emptyBoard() {
 
 const unassignedRow = aRow({
   taskId: 21,
+  taskTypeColourKey: 'teal',
   taskNumber: 'TSK-21',
   title: 'Unassigned intake',
   assignedUser: undefined,
@@ -979,6 +980,10 @@ describe('DashboardPage', () => {
     // Row content (S7): task type icon with its name, client (matter number and name in the tooltip), due chip when there is a date.
     expect(row.querySelector('[data-type] [data-type-name]')!.textContent).toBe(
       unassignedRow.taskTypeName,
+    );
+    // The chip has the colour the grids show for the type (the row's colour key, #1235).
+    expect(row.querySelector('[data-type] mf-task-type-chip')!.getAttribute('data-colour')).toBe(
+      'teal',
     );
     expect(text(row.querySelector('[data-client]'))).toContain(unassignedRow.clientName);
     expect(row.querySelector('[data-client]')!.getAttribute('title')).toContain('00343-00012');
