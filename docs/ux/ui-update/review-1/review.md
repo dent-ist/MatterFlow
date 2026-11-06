@@ -427,3 +427,14 @@ Evidence: `design-evidence`, `evidence/2026-11-06-review-26-closing-sweep/` (JPE
 Epics: #1108, #1109, #1111, #1114, #1116, #1117, #1118, #1120, #1121 have no open child. Open: #1107 (1241, 1268), #1110 (1170, 1231, 1235), #1112 (1176, 1177, 1269), #1113 (1180, 1181, 1270), #1115 (1185), #1119 (1201, 1202), #1106 (all epics).
 
 Guideline text updated in this sweep: D-80 (rail below 1100 px removed), D-46 (under 768 px removed), D-44i (Assignee rule and At Risk threshold now match D-44r and D-44t), "colour" to "color" in the guideline prose, theme-guide toolbar diagram ("Other filters") and the Phone row removed. Left in `theme-guide.md`: the 768x1024 and 375x812 sweep line (sweep.md history), the 44 px touch control size.
+
+## review-27 desktop-only clean-up, tooltip and wiki (2026-11-06, tip 28c5324, 1366 and 1920)
+
+| Item | Verdict | Notes |
+|---|---|---|
+| #1268 tooltip | PASS | The tooltip is `aria-hidden="true"`; its owner keeps `aria-describedby` (id equal to the tooltip id). Axe 0 with a tooltip open on My Matters with the side panel open (toggle button) and on Dashboard (Hide Panel), at 1366 and 1920. Other pages checked (Tasks, Projects) showed no tooltip on the elements tried, axe 0. |
+| #1268 e2e clean-up | PASS (read only) | Eight specs deleted, swimlane and Task Types card specs cut and renamed, size lists reduced to 1366x768 and 1920x1080, 200 percent zoom check kept. The e2e suite was not run. |
+| D-10a conflict | fixed | Banner icon is 18 px (`--mf-icon-md`) everywhere: D-10a corrected; stale texts in `_banners.scss` and the wiki are #1271. |
+| Wiki | OK | Catalogue and UI Standard match section 3 (`mf-btn--name`, `--chip`, details card, record grid, Copy Reference, `field` on the dropdown, banners). One sentence in the Banner section mentions the old D-10a conflict: #1271. |
+
+Rulings (D-82 exceptions): 200 percent zoom (683 px), 1098 and 1023 px frame checks stay; 400 percent (342 px), tablet rail tips, narrow column-drop tests and tab-strip scroll cues are deleted correctly; non-layout tests moved to 1366x768 are right; phone code and phone unit specs stay.
