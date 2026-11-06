@@ -48,7 +48,6 @@ import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { toFormDefinition } from '../../../shared/forms/form-schema';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
-import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { GridNav } from '../../../shared/ui/grid-nav';
@@ -130,7 +129,6 @@ const matterOption = (m: MatterResponse): PickerOption => ({
     RichTextEditor,
     ConfirmDialog,
     GridNav,
-    TaskTypeIcon,
     TaskTypeChip,
     PriorityBadge,
   ],

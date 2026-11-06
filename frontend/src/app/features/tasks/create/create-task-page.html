@@ -196,7 +196,12 @@
           </section>
 
           <div class="ct__chip" data-type-chip>
-            <mf-task-type-icon [iconKey]="selectedChoice()?.type?.iconKey" />
+            <mf-task-type-chip
+              [iconKey]="selectedChoice()?.type?.iconKey"
+              [colourKey]="selectedChoice()?.type?.colourKey"
+              [typeId]="selectedChoice()?.type?.id"
+              [decorative]="true"
+            />
             <span class="ct__chip-text">
               <span class="ct__chip-label">Task Type</span>
               <strong data-type-name>{{ selectedChoice()?.type?.name }}</strong>

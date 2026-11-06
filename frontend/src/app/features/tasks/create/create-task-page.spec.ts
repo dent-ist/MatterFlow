@@ -299,6 +299,24 @@ describe('CreateTaskPage', () => {
     ).not.toContain('sm');
   });
 
+  it('shows the selected type in the strip with the same chip and colour as its card (#1228)', async () => {
+    const h = await create({
+      types: [
+        aType({ id: 1, name: 'Alpha', colourKey: 'teal' }),
+        aType({ id: 4, name: 'Gamma', colourKey: undefined }),
+      ],
+    });
+    const card = (name: string) =>
+      h.el
+        .querySelector<HTMLElement>(`[data-type-card="${name}"] mf-task-type-chip`)!
+        .getAttribute('data-colour');
+    const cardColour = card('Alpha');
+    await pickType(h, 'Alpha');
+    const strip = field(h, '[data-type-chip] mf-task-type-chip')!;
+    expect(strip.getAttribute('data-colour')).toBe(cardColour);
+    expect(strip.querySelector('.chip')!.classList).not.toContain('sm');
+  });
+
   it('shows an empty state when no task type is available', async () => {
     const h = await create({ types: [aType({ isUsable: false, eligibleWorkflowIds: [] })] });
     expect(field(h, '[data-type-empty]').textContent).toContain('No task types are available');
@@ -310,7 +328,7 @@ describe('CreateTaskPage', () => {
     await pickType(h);
     expect(field(h, '[data-type-chooser]')).toBeNull();
     expect(field(h, '[data-type-name]').textContent).toBe('Data Processing');
-    expect(field(h, '[data-type-chip] mf-task-type-icon')).not.toBeNull();
+    expect(field(h, '[data-type-chip] mf-task-type-chip')).not.toBeNull();
     expect(field(h, '#ct-title')).not.toBeNull();
     expect(field(h, '#ct-type')).toBeNull();
   });
