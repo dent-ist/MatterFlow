@@ -25,12 +25,15 @@ import {
   SearchTypeInfo,
   searchedInLine,
   isSearchable,
-  noResultsMessage,
+  NO_RESULTS_HINT,
+  noResultsSentence,
   searchableTypes,
 } from '../../shared/search/search-meta';
 import { AdminListShell } from '../../shared/ui/admin-list-shell';
 import { ScrollArea } from '../../shared/ui/fixed-page';
+import { CountChip } from '../../shared/ui/count-chip';
 import { Pager } from '../../shared/ui/pager';
+import { StateBlock } from '../../shared/ui/state-block';
 import { PAGE_SIZES } from '../../shared/ui/list-query';
 import { restoreRowFocus } from '../../shared/ui/row-nav';
 import { SearchFilters } from './search-filters';
@@ -75,7 +78,17 @@ interface Section {
  */
 @Component({
   selector: 'mf-search-results-page',
-  imports: [IntPipe, AdminListShell, RouterLink, SearchFilters, SearchGrid, ScrollArea, Pager],
+  imports: [
+    IntPipe,
+    AdminListShell,
+    CountChip,
+    RouterLink,
+    SearchFilters,
+    SearchGrid,
+    ScrollArea,
+    StateBlock,
+    Pager,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../shared/ui/page.scss',
   template: `
@@ -123,19 +136,18 @@ interface Section {
         <p class="res-searched" data-searched-in>{{ line }}</p>
       }
       @if (!searchable()) {
-        <div class="pg-state" data-state="short">
-          <p>
-            Type at least 2 characters (or a number) in the search box to search clients, matters,
-            tasks and assets.
-          </p>
-        </div>
+        <mf-state-block icon="pi-search" data-state="short">
+          Type at least 2 characters (or a number) in the search box to search clients, matters,
+          tasks and assets.
+        </mf-state-block>
       } @else if (tab() === 'all') {
         @if (state() === 'ready' && sections().length === 0) {
-          <div class="pg-state" data-state="empty">
-            <p>{{ emptyMessage() }}</p>
-          </div>
+          <mf-state-block icon="pi-search" data-state="empty">
+            {{ emptyMessage() }}
+            <span mfStateReason>{{ emptyHint }}</span>
+          </mf-state-block>
         } @else if (state() === 'ready') {
-          <div class="mf-table-wrap" mfScrollArea="Search results">
+          <div class="res-all" mfScrollArea="Search results">
             @for (section of sections(); track section.info.type) {
               <section
                 class="res-section"
@@ -144,7 +156,7 @@ interface Section {
               >
                 <h2 class="res-heading" [id]="'res-h-' + section.info.type">
                   {{ section.info.label }}
-                  <span class="pg-muted">({{ count(section.group) }})</span>
+                  <mf-count-chip>{{ count(section.group) }}</mf-count-chip>
                 </h2>
                 <mf-search-grid
                   [type]="section.info.type"
@@ -157,7 +169,7 @@ interface Section {
                 ) {
                   <p class="res-more">
                     <a
-                      class="mf-link"
+                      class="mf-btn mf-btn--text"
                       data-see-all
                       [routerLink]="[]"
                       [queryParams]="seeAllParams(section.info.type)"
@@ -231,8 +243,16 @@ interface Section {
     .res-section mf-search-grid {
       overflow: hidden;
     }
+    /* The All tab is a stack of cards: its scroll area has no frame of its own (D-10, no nested cards). */
+    .res-all {
+      display: block;
+      overflow-x: auto;
+    }
     /* A section heading is 16 / 600 with 24 above and 8 below (D-11, #1134). */
     .res-heading {
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s2);
       margin: var(--mf-s5) 0 var(--mf-s2);
       font-size: var(--mf-fs-lg);
       font-weight: var(--mf-fw-semibold);
@@ -295,7 +315,7 @@ export class SearchResultsPage {
 
   protected readonly trimmed = computed(() => (this.q() ?? '').trim());
   protected readonly searchable = computed(() => isSearchable(this.q()));
-  protected readonly emptyMessage = computed(() => noResultsMessage(this.trimmed()));
+  protected readonly emptyMessage = computed(() => noResultsSentence(this.trimmed()));
   protected readonly types = computed(() => searchableTypes((c) => this.auth.has(c)));
   protected readonly tab = computed<SearchTabKey>(() => resolveTab(this.type(), this.types()));
   /** The open tab as a record type (only read where the tab is not All). */
@@ -335,6 +355,7 @@ export class SearchResultsPage {
     this.searchable() && this.state() === 'ready' ? searchedInLine(this.searched(), true) : null,
   );
   protected readonly seeAllText = SEARCH_COPY.seeAll;
+  protected readonly emptyHint = NO_RESULTS_HINT;
   protected readonly pageNumber = computed(() => parsePage(this.page()));
   protected readonly size = computed(() => parsePageSize(this.pageSize()));
   protected readonly tabs = computed(() =>
@@ -369,7 +390,7 @@ export class SearchResultsPage {
       default: {
         if (this.tab() !== 'all') {
           const page = this.typePage();
-          if (!page || page.items.length === 0) return noResultsMessage(this.trimmed());
+          if (!page || page.items.length === 0) return noResultsSentence(this.trimmed());
           const pages = Math.max(1, Math.ceil(page.total / page.pageSize));
           return SEARCH_COPY.tabCount(
             this.tabLabel(),
@@ -381,7 +402,7 @@ export class SearchResultsPage {
         }
         const count = this.sections().reduce((n, s) => n + s.group.items.length, 0);
         return count === 0
-          ? noResultsMessage(this.trimmed())
+          ? noResultsSentence(this.trimmed())
           : `${count} ${count === 1 ? 'result' : 'results'} for ${this.trimmed()}`;
       }
     }

@@ -141,6 +141,14 @@ export function noResultsMessage(query: string): string {
   return `No results for '${query}'. Try a client or matter number, a task title, or an asset name.`;
 }
 
+/** The one sentence of the no-hits block of the results page (D-51): `No results for "text".` The hint below is its second line. */
+export function noResultsSentence(query: string): string {
+  return `No results for "${query}".`;
+}
+
+/** The second line of the no-hits block: where to look. */
+export const NO_RESULTS_HINT = 'Try a client or matter number, a task title, or an asset name.';
+
 export const SEARCH_ERROR_MESSAGE = 'Search is unavailable. Try again.';
 
 /** What a suggestion option shows besides its (highlighted) name; the panel and any later hit list read the same rules. */
