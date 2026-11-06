@@ -169,6 +169,7 @@ type TabKey = 'queue' | 'members' | 'all';
         heading="Pod Work"
         [description]="contextLine()"
         [count]="loadState() === 'ready' && data()?.pod && !emptyMembers() ? total() : null"
+        [countPending]="loadState() !== 'ready'"
       >
         <span mfTitle class="pw-title">Pod Work</span>
         @if (pods().length > 0) {

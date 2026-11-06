@@ -13,6 +13,7 @@ import { Crumb, PageHeader, RecordTitle } from './page-header';
       description="All your clients."
       [crumbs]="crumbs()"
       [count]="count()"
+      [countPending]="pending()"
     >
       <button mfActions type="button" data-secondary>Export</button>
       @if (showPrimary()) {
@@ -30,6 +31,7 @@ class Host {
   readonly crumbs = signal<Crumb[]>([]);
   readonly showPrimary = signal(true);
   readonly count = signal<number | null>(null);
+  readonly pending = signal(false);
 }
 
 describe('mf-page-header', () => {
@@ -61,6 +63,20 @@ describe('mf-page-header', () => {
     expect(chip.textContent).toContain('1,204');
     expect(h.querySelector('h1')!.textContent!.trim()).toBe('Clients');
     expect(chip.previousElementSibling).toBe(h.querySelector('h1'));
+  });
+
+  it('shows a dash in the count chip while the list has no number (loading, error) and never with a number (#1170)', async () => {
+    const { el, host, fixture } = await render();
+    const h = header(el, 0);
+    host.pending.set(true);
+    await fixture.whenStable();
+    const chip = h.querySelector('[data-count-pending]')!;
+    expect(chip.querySelector('[aria-hidden="true"]')!.textContent).toBe('-');
+    expect(chip.textContent).toContain('Total: not available');
+    host.count.set(7);
+    await fixture.whenStable();
+    expect(h.querySelector('[data-count-pending]')).toBeNull();
+    expect(h.querySelector('[data-list-count]')!.textContent).toContain('7');
   });
 
   it('puts the actions on the title row, in the order given (primary last)', async () => {

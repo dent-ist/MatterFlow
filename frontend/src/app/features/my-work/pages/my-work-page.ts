@@ -160,7 +160,11 @@ const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
   styleUrl: '../../../shared/work-queue/work-page.scss',
   template: `
     <mf-fixed-page>
-      <mf-page-header heading="My Work" [count]="loadState() === 'ready' ? total() : null">
+      <mf-page-header
+        heading="My Work"
+        [count]="loadState() === 'ready' ? total() : null"
+        [countPending]="loadState() !== 'ready'"
+      >
         <p-button
           mfActions
           *mfHasPermission="'Task.Create'"
