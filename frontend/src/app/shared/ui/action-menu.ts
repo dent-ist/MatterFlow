@@ -48,6 +48,7 @@ let nextId = 0;
         type="button"
         class="mf-btn am__trigger"
         [class.am__trigger--text]="triggerText()"
+        [class.mf-btn--primary]="primary() && !!triggerText()"
         data-overflow
         aria-haspopup="menu"
         [attr.aria-expanded]="open()"
@@ -130,6 +131,8 @@ export class ActionMenu {
   readonly floating = input(false);
   /** Text on the button instead of the ellipsis (a switcher: "v3 Draft"), followed by a chevron; `label` then names the menu. */
   readonly triggerText = input('');
+  /** The text button is the primary action of its bar (a record header's "New"): the solid primary look, last before the overflow (D-21, D-40). */
+  readonly primary = input(false);
   /** Which edge of the button the menu lines up with: `end` (default, the overflow at the right of a header) or `start` (a button at the left). */
   readonly align = input<'start' | 'end'>('end');
 
