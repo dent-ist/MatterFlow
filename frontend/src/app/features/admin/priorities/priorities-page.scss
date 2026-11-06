@@ -11,18 +11,6 @@
   min-width: 0;
 }
 
-.pr-open {
-  display: inline-flex;
-  min-width: 0;
-  border-radius: var(--mf-radius);
-  text-decoration: none;
-}
-
-.pr-open:focus-visible {
-  outline: 2px solid var(--mf-focus);
-  outline-offset: 2px;
-}
-
 .pr-swatch {
   display: inline-block;
   width: 14px;

@@ -128,7 +128,7 @@ test.describe('the Priorities list (#605)', () => {
     await expect(unused.locator('[data-open-tasks] a')).toHaveCount(0);
   });
 
-  test('a row has two Tab stops: the priority link and its menu; the count is reached with the right arrow', async ({
+  test('a row has three Tab stops: the priority button, the open-task count and the menu', async ({
     page,
   }) => {
     await page.setViewportSize(SIZES[1]);
@@ -139,12 +139,8 @@ test.describe('the Priorities list (#605)', () => {
         .filter((el) => el.tabIndex >= 0)
         .map((el) => el.tagName + (el.hasAttribute('data-edit') ? ':edit' : '')),
     );
-    expect(stops).toEqual(['A:edit', 'BUTTON']);
-    await row.locator('[data-edit]').focus();
-    await page.keyboard.press('ArrowRight');
-    await expect(row.locator('[data-open-tasks] a')).toBeFocused();
-    await page.keyboard.press('ArrowLeft');
-    await expect(row.locator('[data-edit]')).toBeFocused();
+    expect(stops).toEqual(['BUTTON:edit', 'A', 'BUTTON']);
+    await expect(row.getByRole('button', { name: `Edit ${used.label}` })).toBeVisible();
   });
 
   test('the pointer drag still reorders the rows, and the order is saved', async ({

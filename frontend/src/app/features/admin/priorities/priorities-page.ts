@@ -9,7 +9,7 @@ import {
   input,
   signal,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { PrioritiesClient, PriorityView } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -29,7 +29,6 @@ import { LocalPaging } from '../../../shared/ui/local-paging';
 import { Pager } from '../../../shared/ui/pager';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { phoneCards } from '../../../shared/ui/record-card-list';
-import { RowLink } from '../../../shared/ui/row-nav';
 import { rowActions } from '../../../shared/ui/row-actions';
 import { TaskCount } from '../../../shared/ui/task-count';
 import { AdminTabCounts } from '../admin-tabs';
@@ -60,7 +59,6 @@ const DROP_ORDER = 768;
   imports: [
     Button,
     HasPermissionDirective,
-    RouterLink,
     ActionMenu,
     ActiveBadge,
     AdminCardList,
@@ -71,7 +69,6 @@ const DROP_ORDER = 768;
     ScrollArea,
     PriorityFlag,
     PriorityDialog,
-    RowLink,
     TaskCount,
   ],
   templateUrl: './priorities-page.html',
@@ -218,6 +215,16 @@ export class PrioritiesPage implements OnInit, HasUnsavedChanges {
   /** The empty list's own New button (the same action as the page header's, spec 15.3). */
   protected newPriority(): void {
     void this.router.navigate([], { queryParams: { edit: 'new' }, queryParamsHandling: 'merge' });
+  }
+
+  /** The name (or pill) of a row opens Edit Priority (D-44m: it acts, so it is a button). */
+  protected editPriority(p: PriorityView): void {
+    void this.router.navigate([], { queryParams: { edit: p.id }, queryParamsHandling: 'merge' });
+  }
+
+  /** Critical and High keep their pill (like every task grid); every other priority is a plain name. */
+  protected isPill(p: PriorityView): boolean {
+    return p.color === 'critical' || p.color === 'high';
   }
 
   protected closeDialog(): void {
