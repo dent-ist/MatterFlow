@@ -193,9 +193,9 @@ describe('TaskDetailPage header', () => {
     expect(menuActions(el)).toEqual(['HOLD', 'COMPLETE', 'CANCEL']);
     const items = Array.from(el.querySelectorAll<HTMLElement>('[role=menuitemradio]'));
     expect(items.map((i) => i.querySelector('.im-text')!.textContent!.trim())).toEqual([
-      'Put on hold',
+      'Put on Hold',
       'Complete',
-      'Cancel task',
+      'Cancel Task',
     ]);
     expect(el.querySelector('.im-hint')).toBeNull();
     expect(items[0].getAttribute('title')).toBe('On Hold');

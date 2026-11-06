@@ -441,7 +441,7 @@ test.describe('Task header T2: primary action and overflow (#298)', () => {
     await trigger.focus();
     await page.keyboard.press('Enter');
     const items = page.getByRole('menuitem');
-    await expect(items).toHaveText([/Put on hold/, /Copy link/, /Cancel task/]);
+    await expect(items).toHaveText([/Put on Hold/, /Copy Link/, /Cancel Task/]);
     await expect(items.first()).toBeFocused();
     await page.keyboard.press('ArrowDown');
     await expect(items.nth(1)).toBeFocused();
@@ -497,7 +497,7 @@ test.describe('Task header T2: primary action and overflow (#298)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await new TaskDetailPage(page).open(task.taskId);
     await page.locator('[data-overflow]').click();
-    await page.getByRole('menuitem', { name: /Cancel task/ }).click();
+    await page.getByRole('menuitem', { name: /Cancel Task/ }).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByRole('textbox').fill('Duplicate of an earlier request');
     await dialog.getByRole('button', { name: 'Cancel Task' }).click();
@@ -521,7 +521,7 @@ test.describe('Task header T2: primary action and overflow (#298)', () => {
     await new TaskDetailPage(page).open(task.taskId);
     await expect(page.locator('[data-page-actions] > button')).toHaveText(['Edit', /Activity/]);
     await page.locator('[data-overflow]').click();
-    await expect(page.getByRole('menuitem')).toHaveText([/Resume/, /Copy link/, /Cancel task/]);
+    await expect(page.getByRole('menuitem')).toHaveText([/Resume/, /Copy Link/, /Cancel Task/]);
     await atEverySize(page, 'on-hold', openOverflow(page));
     await page.setViewportSize({ width: 1366, height: 768 });
     await openOverflow(page)();
@@ -540,7 +540,7 @@ test.describe('Task header T2: primary action and overflow (#298)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await new TaskDetailPage(page).open(task.taskId);
     await page.locator('[data-overflow]').click();
-    await page.getByRole('menuitem', { name: /Copy link/ }).click();
+    await page.getByRole('menuitem', { name: /Copy Link/ }).click();
     await expect(page.locator('[data-toast]')).toContainText('Link copied');
     expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(
       new RegExp(`/tasks/${task.taskId}$`),
@@ -589,7 +589,7 @@ test.describe('Task header T2: primary action and overflow (#298)', () => {
       /Complete Task/,
     ]);
     await techPage.locator('[data-overflow]').click();
-    await expect(techPage.getByRole('menuitem')).toHaveText([/Copy link/]);
+    await expect(techPage.getByRole('menuitem')).toHaveText([/Copy Link/]);
     await techPage.keyboard.press('Escape');
     await expect(
       techPage.locator('[data-facts] [data-status] [data-inline-trigger]'),
@@ -603,7 +603,7 @@ test.describe('Task header T2: primary action and overflow (#298)', () => {
     await new TaskDetailPage(v).open(task.taskId);
     await expect(v.locator('[data-page-actions] > button')).toHaveText([/Activity/]);
     await v.locator('[data-overflow]').click();
-    await expect(v.getByRole('menuitem')).toHaveText([/Copy link/]);
+    await expect(v.getByRole('menuitem')).toHaveText([/Copy Link/]);
     await v.keyboard.press('Escape');
     await expect(v.locator('[data-view-only]')).toBeVisible();
     await expect(v.locator('[data-facts] [data-inline-trigger]')).toHaveCount(0);
@@ -648,9 +648,9 @@ test.describe('Task header T2: phone header (#300)', () => {
     await expect(page.getByRole('menuitem')).toHaveText([
       /Edit/,
       /Activity/,
-      /Put on hold/,
-      /Copy link/,
-      /Cancel task/,
+      /Put on Hold/,
+      /Copy Link/,
+      /Cancel Task/,
     ]);
     for (const item of await page.getByRole('menuitem').all()) {
       expect((await item.boundingBox())!.height).toBeGreaterThanOrEqual(43.5);
