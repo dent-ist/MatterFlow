@@ -217,3 +217,16 @@ Evidence on `design-evidence` (`evidence/2026-11-06-review-12-dashboard/`: 9 JPE
 | user-menu test fix 7202e0b, no-stripes guard | PASS | spec no longer depends on today's date; guard in place |
 
 Decisions: (1) Trends "Measure:" stays a shared dropdown: five measures are more than the 2 to 4 a segmented switch allows (D-16). (2) "Back 11/23" stays (short, numeric date per D-60); the full words "Out of office until November 23, 2026" are the tooltip and accessible name. (3) No person drawer on the Calendar is accepted: a name opens Add Out of Office only with User.ManageAvailability and is then a text button (#1247). (4) The 3 px green row edge in the day panel is recorded as the owner-approved exception D-48a; keep it limited to that list (D-04 forbids it elsewhere). (5) Confirmed: the type name shows beside the chip in every grid and list at both sizes; the owner's rule overrides the earlier "chip alone below 900 px" note, remove that sentence from D-43a if still present.
+
+## review-13 record grid and Matters follow-ups (2026-11-06, tip 54f84dc, 1366 and 1920)
+
+Evidence: `design-evidence` branch, `evidence/2026-11-06-review-13-record-grid/` (10 JPEG, `measurements.json`, `axe.json`). Axe (wcag2a/aa/21aa/22aa + best practice): 0 violations on 12 pages at both sizes (Dashboard, Matters, Matter, Clients, Client, Projects, Assets, Task Queue, My Work, Pod Work, Users, Task Types).
+
+| Issue | Result | Notes |
+|---|---|---|
+| #1245 record grid | PASS | Actions column 48 px after reload at both sizes (was 72). Clients headings identical (154/477/96/125/105/140) in loading, empty, error and rows; Matters the same. First heading sticky at left 0; Tab order is headings, filters, first row link (handles are not Tab stops). `groupBy`, `rowClass`, `rowClick` judged: fits Projects, Assets and the Administration lists, rules recorded as D-44a. |
+| #1243 Title width reset | FAIL (partial) | Task Queue passes at both sizes: header menu "Reset Width", double-click on the divider, Columns panel Title row, Reset Columns all return the spring (186 and 740 px). Dashboard > Summary: header menu and double-click work, but the Columns panel has no Title row and "Reset to Default" keeps the narrow width. Fix issue #1248. |
+| #1244 Ref padding, count chip | PASS | Ref cell 100 px, 8 px left, 0 right; chip shows "-" while loading and after an HTTP 500 on Clients, Matters, Projects, Assets, Task Queue, My Work. Rule D-44c. |
+| #1246 Clients and Matters leftovers | PASS with two leftovers | Client Overview and Matters tab headings correct; unsaved-changes question reads "Keep Editing / Discard Changes"; Clients placeholder "Number". Matter > Activities stays "Show More". Left over: Client > Matters tab filter placeholders "Matter" and "Name", and a white sticky first cell in a grey filter row; "Save and leave" extra buttons. Fix issue #1248. |
+
+Decisions: (a) heading keyboard resize accepted as keys of one focused widget, not shortcuts, outside `shortcut-registry.ts` (D-44b); (b) Ref cell 8/0 padding accepted (D-44c); (c) Activities keeps "Show More", no total needed (D-44d); (d) "Save and Leave" and placeholders "Number" and "Name" (D-44d, D-44e), issue #1248.
