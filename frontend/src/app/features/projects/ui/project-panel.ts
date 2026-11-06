@@ -35,6 +35,7 @@ import { TextField } from '../../../shared/ui/text-field';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-form-dialog
+      size="small"
       [title]="project() ? 'Edit Project' : 'New Project'"
       [subtitle]="matterLabel()"
       [primaryLabel]="project() ? 'Save Changes' : 'Create Project'"

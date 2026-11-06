@@ -186,11 +186,11 @@ function clientOption(c: ClientResponse): PickerOption {
           </span>
         </label>
 
-        <div class="pg-field">
-          <label class="mf-label" for="matter-ai">AI Allowed</label>
+        <div class="mf-field">
+          <label class="mf-field__label" for="matter-ai">AI Allowed</label>
           <select
             id="matter-ai"
-            class="mf-control"
+            class="mf-field__input"
             data-ai-allowed
             (change)="aiAllowed.set($any($event.target).value)"
           >
@@ -198,7 +198,7 @@ function clientOption(c: ClientResponse): PickerOption {
               <option [value]="o.value" [selected]="aiAllowed() === o.value">{{ o.label }}</option>
             }
           </select>
-          <span class="pg-reason" style="display: block"
+          <span class="mf-field__help"
             >Which AI tools may be used on this matter's content. Notes check this setting before AI
             is offered.</span
           >
