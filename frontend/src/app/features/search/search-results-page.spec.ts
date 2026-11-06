@@ -124,7 +124,8 @@ describe('SearchResultsPage', () => {
     const headings = sections(el).map((s) =>
       s.querySelector('h2')!.textContent!.replace(/\s+/g, ' ').trim(),
     );
-    expect(headings).toEqual(['Matters (12)', 'Clients (1)', 'Tasks (24)', 'Assets (1,000+)']);
+    expect(headings).toEqual(['Matters 12', 'Clients 1', 'Tasks 24', 'Assets 1,000+']);
+    expect(sections(el)[0].querySelector('h2 mf-count-chip')!.textContent).toContain('12');
   });
 
   it('shows the counts as -- until the answer is in', async () => {
@@ -372,7 +373,8 @@ describe('SearchResultsPage', () => {
   it('says what to try when nothing matches', async () => {
     const fixture = await create('zzz', aResponse([aGroup('client', [])], 'zzz'));
     const empty = fixture.nativeElement.querySelector('[data-state=empty]');
-    expect(empty.textContent).toContain("No results for 'zzz'. Try a client or matter number");
+    expect(empty.textContent).toContain('No results for "zzz".');
+    expect(empty.textContent).toContain('Try a client or matter number');
     expect(fixture.nativeElement.querySelector('a[href*="advanced"]')).toBeNull();
   });
 

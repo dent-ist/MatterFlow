@@ -16,6 +16,7 @@ import { RouterLink } from '@angular/router';
 import type { NotificationItem } from '../../api/generated/api-client';
 import { retryWhenBackOnline } from '../../core/http/connectivity';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
+import { StateBlock } from '../../shared/ui/state-block';
 import { NotificationStore } from './notification-store';
 import {
   NotificationGroup,
@@ -40,7 +41,7 @@ const GAP = 4;
  */
 @Component({
   selector: 'mf-notification-panel',
-  imports: [RouterLink],
+  imports: [RouterLink, StateBlock],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:click)': 'onDocumentClick($event)',
@@ -82,11 +83,10 @@ const GAP = 4;
           }
           @case ('ready') {
             @if (store.recent().length === 0) {
-              <p class="np__empty" data-panel-empty>
-                <i class="pi pi-bell np__empty-icon" aria-hidden="true"></i>
-                <strong>You're all caught up.</strong>
-                <span class="np__muted">New notifications appear here.</span>
-              </p>
+              <mf-state-block icon="pi-bell" [fill]="true" data-panel-empty>
+                You're all caught up.
+                <span mfStateReason>New notifications appear here.</span>
+              </mf-state-block>
             } @else {
               <ul class="np__list" data-panel-list>
                 @for (
@@ -160,7 +160,11 @@ const GAP = 4;
         }
       </div>
       <div class="np__foot">
-        <a class="np__viewall" data-view-all routerLink="/notifications" (click)="later()"
+        <a
+          class="mf-btn mf-btn--text np__viewall"
+          data-view-all
+          routerLink="/notifications"
+          (click)="later()"
           >View All Notifications</a
         >
       </div>
@@ -271,8 +275,7 @@ const GAP = 4;
       font-size: var(--mf-fs-xs);
       color: var(--mf-text-muted);
     }
-    .np__note,
-    .np__empty {
+    .np__note {
       display: flex;
       flex-direction: column;
       align-items: flex-start;
@@ -280,22 +283,12 @@ const GAP = 4;
       margin: 0;
       padding: var(--mf-s4) var(--mf-s3);
     }
-    .np__empty-icon {
-      color: var(--mf-text-muted);
-      font-size: var(--mf-icon-lg);
-    }
     .np__muted {
       color: var(--mf-text-muted);
     }
     .np__foot {
+      padding: var(--mf-s1) var(--mf-s2);
       border-top: 1px solid var(--mf-border-soft);
-    }
-    .np__viewall {
-      display: flex;
-      align-items: center;
-      min-height: var(--mf-row-h);
-      padding: 0 var(--mf-s3);
-      color: var(--mf-link);
     }
   `,
 })

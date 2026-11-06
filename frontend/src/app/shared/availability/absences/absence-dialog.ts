@@ -57,7 +57,7 @@ export function overlapOf(err: ApiError): AbsenceOverlap | null {
     <mf-form-dialog
       [title]="entry() ? 'Edit Out of Office' : 'Add Out of Office'"
       [subtitle]="subtitle()"
-      [primaryLabel]="entry() ? 'Save' : 'Add Out of Office'"
+      [primaryLabel]="entry() ? 'Save Changes' : 'Add Out of Office'"
       size="default"
       [dirty]="dirty()"
       [busy]="busy()"
@@ -105,6 +105,7 @@ export function overlapOf(err: ApiError): AbsenceOverlap | null {
             <input
               id="ad-start"
               type="date"
+              lang="en-US"
               class="mf-control mf-control--fill"
               aria-describedby="ad-dates-help"
               [value]="start() ?? ''"
@@ -122,6 +123,7 @@ export function overlapOf(err: ApiError): AbsenceOverlap | null {
             <input
               id="ad-end"
               type="date"
+              lang="en-US"
               class="mf-control mf-control--fill"
               aria-describedby="ad-dates-help"
               [value]="end() ?? ''"
@@ -140,12 +142,13 @@ export function overlapOf(err: ApiError): AbsenceOverlap | null {
           ends it.
         </p>
         @if (serverDates(); as e) {
-          <p class="ad__error" role="alert" data-ad-overlap>
-            <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ e }}
+          <p class="ad__banner ad__banner--danger" role="alert" data-ad-overlap>
+            <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+            <span>{{ e }}</span>
           </p>
         }
         @if (advice(); as a) {
-          <p class="ad__advice" role="status" data-ad-advice>
+          <p class="ad__banner" role="status" data-ad-advice>
             <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
             <span>{{ a }} You can still save.</span>
           </p>
@@ -222,7 +225,8 @@ export function overlapOf(err: ApiError): AbsenceOverlap | null {
       color: var(--mf-danger);
       font-size: var(--mf-fs-sm);
     }
-    .ad__advice {
+    /* The banner (amber advice; red for the overlap the server refuses): a tinted box, icon and sentence, radius 8. */
+    .ad__banner {
       display: flex;
       align-items: flex-start;
       gap: var(--mf-s2);
@@ -233,6 +237,11 @@ export function overlapOf(err: ApiError): AbsenceOverlap | null {
       background: var(--mf-sem-risk-bg);
       color: var(--mf-sem-risk-fg);
       font-size: var(--mf-fs-sm);
+    }
+    .ad__banner--danger {
+      border-color: var(--mf-sem-overdue-line);
+      background: var(--mf-sem-overdue-bg);
+      color: var(--mf-sem-overdue-fg);
     }
   `,
 })

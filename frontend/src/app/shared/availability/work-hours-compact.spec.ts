@@ -23,7 +23,7 @@ describe('WorkHoursCompact (#534)', () => {
 
   it('seven toggles named by the full day, pressed for the working days, and one pair of times', async () => {
     const { el } = await create();
-    const toggles = [...el.querySelectorAll<HTMLButtonElement>('[data-day-toggle]')];
+    const toggles = [...el.querySelectorAll<HTMLButtonElement>('[data-day-toggles] [data-key]')];
     expect(toggles.map((b) => b.getAttribute('aria-label'))).toEqual([
       'Monday',
       'Tuesday',
@@ -52,8 +52,8 @@ describe('WorkHoursCompact (#534)', () => {
     start.value = '08:00';
     start.dispatchEvent(new Event('input'));
     await settle(fixture);
-    el.querySelector<HTMLButtonElement>('[data-day-toggle="6"]')!.click();
-    el.querySelector<HTMLButtonElement>('[data-day-toggle="1"]')!.click();
+    el.querySelector<HTMLButtonElement>('[data-day-toggles] [data-key="6"]')!.click();
+    el.querySelector<HTMLButtonElement>('[data-day-toggles] [data-key="1"]')!.click();
     await settle(fixture);
     const w = host.week();
     expect(w[5]).toMatchObject({ working: true, start: '08:00', end: '17:00' });

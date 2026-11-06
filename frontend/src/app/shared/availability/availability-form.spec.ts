@@ -100,7 +100,7 @@ describe('AvailabilityForm', () => {
     await create();
     // The Out of office list is not part of this form any more (epic #1074, CAL-05).
     expect(el().querySelector('[data-status-set]')).toBeNull();
-    const on = [...el().querySelectorAll('[data-day-toggle]')].map((b) =>
+    const on = [...el().querySelectorAll('[data-day-toggles] [data-key]')].map((b) =>
       b.getAttribute('aria-pressed'),
     );
     expect(on).toEqual(['true', 'true', 'true', 'true', 'true', 'false', 'false']);
@@ -127,10 +127,10 @@ describe('AvailabilityForm', () => {
     mine.saveMyAvailability.mockReturnValue(ok(profile({ rowVersion: 'V1' })));
     await type('#av-hours-start', '08:00');
     await type('#av-hours-end', '16:00');
-    q<HTMLButtonElement>('[data-day-toggle="6"]').click();
+    q<HTMLButtonElement>('[data-day-toggles] [data-key="6"]').click();
     await settle(fixture);
-    expect(q('[data-day-toggle="6"]').getAttribute('aria-pressed')).toBe('true');
-    q<HTMLButtonElement>('[data-day-toggle="2"]').click();
+    expect(q('[data-day-toggles] [data-key="6"]').getAttribute('aria-pressed')).toBe('true');
+    q<HTMLButtonElement>('[data-day-toggles] [data-key="2"]').click();
     await settle(fixture);
     await save();
     const sent = mine.saveMyAvailability.mock.calls[0][0].workHours;

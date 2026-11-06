@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
 import { DayHours, WEEK_DAYS } from '../../core/availability/availability-edit';
+import { FilterChip, FilterChips } from '../ui/filter-chips';
 
 /**
  * The compact work hours of My profile (epic #520, P3, #534): seven day toggle buttons (Mon to Sun, `aria-pressed`, labelled with the full
@@ -13,23 +14,17 @@ import { DayHours, WEEK_DAYS } from '../../core/availability/availability-edit';
  */
 @Component({
   selector: 'mf-work-hours-compact',
+  imports: [FilterChips],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './work-hours-compact.scss',
   template: `
     <div class="wh">
-      <div class="wh__days" role="group" aria-label="Working days" data-day-toggles>
-        @for (d of week(); track d.day) {
-          <button
-            type="button"
-            class="wh__day"
-            [attr.aria-pressed]="d.working"
-            [attr.aria-label]="name(d.day)"
-            [attr.data-day-toggle]="d.day"
-            (click)="toggle(d.day)"
-          >
-            {{ short(d.day) }}
-          </button>
-        }
+      <div class="wh__days" data-day-toggles>
+        <mf-filter-chips
+          label="Working days"
+          [chips]="dayChips()"
+          (valueChange)="toggle(+$event)"
+        />
       </div>
       <div class="wh__pair" data-hours-pair>
         <span class="wh__word" aria-hidden="true">From</span>
@@ -80,6 +75,16 @@ export class WorkHoursCompact {
     return { start: d.start, end: d.end };
   });
   protected readonly none = computed(() => this.week().every((d) => !d.working));
+
+  /** The seven day toggles as filter chips (D-12, kind 3): each is on or off by itself, the full day name is the accessible name. */
+  protected readonly dayChips = computed<readonly FilterChip[]>(() =>
+    this.week().map((d) => ({
+      key: String(d.day),
+      label: this.short(d.day),
+      ariaLabel: this.name(d.day),
+      pressed: d.working,
+    })),
+  );
 
   protected name(day: number): string {
     return WEEK_DAYS[day - 1].name;

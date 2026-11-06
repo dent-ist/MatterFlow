@@ -18,6 +18,8 @@ export interface FilterChip {
   alert?: boolean;
   /** A plain count with no filter behind it: drawn as text, not as a button. */
   inert?: boolean;
+  /** Overrides "this is the chosen chip": the chips of a multiple choice (the Work Hours day toggles) each say whether they are on; a press returns the chip's key. */
+  pressed?: boolean;
   /** A chip that cannot give anything is disabled when it has a zero count and is not the chosen one. */
   hidden?: boolean;
 }
@@ -59,14 +61,14 @@ export interface FilterChip {
             class="chip"
             [class.tinted]="c.tinted && (c.count ?? 0) > 0"
             [class.alert]="c.alert && (c.count ?? 0) > 0"
-            [attr.aria-pressed]="c.key === value()"
+            [attr.aria-pressed]="isOn(c)"
             [attr.data-key]="c.key"
             [attr.aria-label]="c.ariaLabel ?? null"
             [attr.data-strip-item]="strip() ? c.key : null"
             [attr.title]="c.hint ?? null"
             (click)="pick(c.key)"
           >
-            @if (c.key === value()) {
+            @if (isOn(c)) {
               <i class="pi pi-check tick" aria-hidden="true"></i>
             } @else if (c.icon) {
               <i class="pi ico" [class]="c.icon" aria-hidden="true"></i>
@@ -177,6 +179,10 @@ export class FilterChips {
   /** What choosing the chosen chip again returns (null = keep it chosen). */
   readonly emptyKey = input<string | null>(null);
   readonly valueChange = output<string>();
+
+  protected isOn(chip: FilterChip): boolean {
+    return chip.pressed ?? chip.key === this.value();
+  }
 
   protected pick(key: string): void {
     const empty = this.emptyKey();

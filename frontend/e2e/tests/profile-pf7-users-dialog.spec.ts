@@ -22,7 +22,7 @@ test.describe('pf7-users-dialog: Edit availability with the shared form (#589)',
       await page.goto(`/admin/users?status=active&name=${encodeURIComponent(name)}`);
       await openEditAvailability(userRow(page, userId, username));
       const dialog = page.getByRole('dialog', { name: `Availability of ${name}` });
-      await expect(dialog.locator('[data-day-toggle]')).toHaveCount(7);
+      await expect(dialog.locator('[data-day-toggles] [data-key]')).toHaveCount(7);
       // Flat sections and the "current status" line, not the page's cards, header preview or "No unsaved changes" text.
       await expect(dialog.locator('.av-form--page')).toHaveCount(0);
       await expect(dialog.locator('[data-preview]')).toContainText(`${name}'s current status`);
@@ -70,7 +70,7 @@ test.describe('pf7-users-dialog: Edit availability with the shared form (#589)',
     await page.goto(`/admin/users?status=active&name=${encodeURIComponent(name)}`);
     await openEditAvailability(userRow(page, userId, username));
     const dialog = page.getByRole('dialog', { name: `Availability of ${name}` });
-    await expect(dialog.locator('[data-day-toggle]').first()).toBeVisible();
+    await expect(dialog.locator('[data-day-toggles] [data-key]').first()).toBeVisible();
     await seed.outOfOffice(userId, { note: 'Changed elsewhere' });
     await dialog.getByLabel('Start time', { exact: true }).fill('07:00');
     await dialog.getByRole('button', { name: 'Save Changes' }).click();
