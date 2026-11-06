@@ -76,14 +76,16 @@ test('Tasks tab at 1366x768: columns fit and the cells show what they should', a
   ).toBeVisible();
   await expect(first.locator('mf-due-cell')).toBeVisible();
   await expect(first.locator('mf-status-badge, [data-plain-status]').first()).toBeVisible();
-  // The Project cell is a link to the project or the zero dash; the move is the row menu's "Move to Project..." (#1273).
+  // The Project cell is a link to the project or the zero dash; the move is the icon button "Move to Project" (#1273, #1275).
   await expect(first.locator('mf-dropdown')).toHaveCount(0);
   await expect(
     first.locator('mf-project-cell a.mf-link, mf-project-cell [data-zero-dash]'),
   ).toBeVisible();
-  await first.locator('td[data-col="actions"] [data-overflow]').click();
-  await expect(page.getByRole('menuitem', { name: 'Move to Project...' })).toBeVisible();
-  await page.keyboard.press('Escape');
+  const moveBtn = first
+    .locator('td[data-col="actions"]')
+    .getByRole('button', { name: 'Move to Project' });
+  await expect(moveBtn).toBeVisible();
+  await expect(first.locator('td[data-col="actions"] [data-overflow]')).toHaveCount(0);
   // Status shows the status only; the progress is a thin bar with role progressbar, named and described "n of m steps".
   await expect(first.locator('[data-steps]')).toHaveCount(0);
   const bar = first.locator('[data-step-bar]');
@@ -102,10 +104,10 @@ test('Tasks tab at 1366x768: columns fit and the cells show what they should', a
 });
 
 /**
- * Moving a task to a project (#1273): the Project cell is a link or the zero dash, never a field; the row menu's "Move to Project..." opens a 416 px dialog with one
+ * Moving a task to a project (#1273): the Project cell is a link or the zero dash, never a field; the icon button "Move to Project" in the actions column opens a 416 px dialog with one
  * Project dropdown and [Cancel] [Move Task]; the toast says "Task moved" and the cell becomes a link.
  */
-test('Tasks tab: "Move to Project..." in the row menu moves a task and the Project cell becomes a link', async ({
+test('Tasks tab: "Move to Project" icon button moves a task and the Project cell becomes a link', async ({
   page,
   seed,
 }) => {
@@ -123,8 +125,10 @@ test('Tasks tab: "Move to Project..." in the row menu moves a task and the Proje
   await expect(row.locator('mf-dropdown')).toHaveCount(0);
   await expect(row.locator('td[data-col="project"] [title="No project"]')).toBeVisible();
 
-  await row.locator('td[data-col="actions"] [data-overflow]').click();
-  await page.getByRole('menuitem', { name: 'Move to Project...' }).click();
+  await row
+    .locator('td[data-col="actions"]')
+    .getByRole('button', { name: 'Move to Project' })
+    .click();
   const dialog = page.locator('.p-dialog');
   await expect(dialog.locator('[data-panel-title]')).toHaveText('Move to Project');
   expect((await dialog.boundingBox())!.width).toBe(416);
@@ -134,6 +138,7 @@ test('Tasks tab: "Move to Project..." in the row menu moves a task and the Proje
   await dropdownById(dialog, 'move-project').selectOption({ label: 'Wave 1' });
   await move.click();
   await expect(page.getByText('Task moved')).toBeVisible();
+  await expect(page.getByText(`${task.taskNumber} is in Wave 1.`)).toBeVisible();
   await expect(dialog).toHaveCount(0);
   const link = row.locator('td[data-col="project"] a.mf-link');
   await expect(link).toHaveText('Wave 1');

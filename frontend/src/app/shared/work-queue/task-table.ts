@@ -38,8 +38,6 @@ import { DueCell } from './due-cell';
 import { DueSuffixCell, ageText } from './due-suffix';
 import { MatterCell, MatterNameCell } from './matter-cell';
 import { ProjectCell } from './project-cell';
-import { ActionMenu } from '../ui/action-menu';
-import { rowActions } from '../ui/row-actions';
 import { loudPriority, loudStatus } from './quiet-badges';
 import { PriorityFlag } from '../ui/priority-flag';
 import { PriorityPill } from '../ui/priority-pill';
@@ -105,7 +103,6 @@ const LONG_PRESS_MS = 500;
     MatterCell,
     MatterNameCell,
     ProjectCell,
-    ActionMenu,
     DueCell,
     DueSuffixCell,
     PriorityFlag,
@@ -365,7 +362,7 @@ const LONG_PRESS_MS = 500;
                         }}</span>
                       }
                       @case ('project') {
-                        <!-- A link to the project or the zero dash (#1273); moving a task is the row menu's "Move to Project...". -->
+                        <!-- A link to the project or the zero dash (#1273); moving a task is the icon button "Move to Project" in the actions column. -->
                         <mf-project-cell
                           [name]="row.projectName"
                           [projectId]="row.projectId"
@@ -587,8 +584,17 @@ const LONG_PRESS_MS = 500;
                 }
                 @if (rowMenuOn()) {
                   <td class="mf-col-actions" data-col="actions" data-row-actions>
-                    @if (rowMenus().get(row.taskId); as menu) {
-                      <mf-action-menu [floating]="true" [label]="menu.label" [items]="menu.items" />
+                    @if (!closed(row)) {
+                      <button
+                        type="button"
+                        class="mf-btn mf-btn--icon"
+                        data-action="move-project"
+                        aria-label="Move to Project"
+                        mfTip="Move to Project"
+                        (click)="moveProject.emit(row)"
+                      >
+                        <i class="pi pi-folder" aria-hidden="true"></i>
+                      </button>
                     }
                   </td>
                 }
@@ -823,7 +829,7 @@ export class TaskTable {
   /** Hide the Matter and Client columns: on a Matter's or Project's own page the header already says it. */
   readonly hideContext = input(false);
   /**
-   * A Matter's Tasks grid with projects to move to (#1273): each open task gets a row menu (the last, 48 px column) with "Move to Project...";
+   * A Matter's Tasks grid with projects to move to (#1273): each open task gets the icon button "Move to Project" (the last, 48 px column; one action is an icon button, not a menu, D-36);
    * the page opens its dialog (`moveProject`) and makes the call. False (the default) draws no menu column.
    */
   readonly canMoveProject = input(false);
@@ -1050,29 +1056,6 @@ export class TaskTable {
     ...this.shownKeyList(),
     ...(this.rowMenuOn() ? ['actions'] : []),
   ]);
-  /** The row menu of every open task on the page ("Actions for TSK-204"); a closed task has none. */
-  protected readonly rowMenus = computed(
-    () =>
-      new Map(
-        this.rows()
-          .filter((r) => !this.closed(r))
-          .map((r) => [
-            r.taskId,
-            rowActions(
-              r.taskNumber,
-              [
-                {
-                  id: 'move-project',
-                  label: 'Move to Project...',
-                  icon: 'pi-arrow-right-arrow-left',
-                  run: () => this.moveProject.emit(r),
-                },
-              ],
-              { can: (permission) => this.auth.has(permission) },
-            ),
-          ]),
-      ),
-  );
   private readonly shownKeys = computed(() =>
     this.shownColumns()
       .map((c) => c.key)

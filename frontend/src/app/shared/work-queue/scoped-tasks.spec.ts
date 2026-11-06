@@ -112,11 +112,13 @@ describe('ScopedTasks', () => {
     { value: '3', label: 'Wave 1' },
     { value: '4', label: 'Wave 2' },
   ];
-  const menuOf = (): HTMLButtonElement =>
-    el().querySelector<HTMLButtonElement>('tbody td[data-col="actions"] [data-overflow]')!;
+  const moveBtn = (): HTMLButtonElement =>
+    el().querySelector<HTMLButtonElement>(
+      'tbody td[data-col="actions"] [data-action="move-project"]',
+    )!;
   const dialog = (): HTMLElement | null => document.body.querySelector('.p-dialog');
 
-  it('has no Project dropdown in a row: the cell is a link and the move is in the row menu (#1273)', async () => {
+  it('has no Project dropdown in a row: the cell is a link and the move is an icon button (#1273, #1275)', async () => {
     await create(['Task.View', 'Task.Edit', 'Project.View'], { projectOptions: PROJECTS });
     await showProject();
     expect(el().querySelector('tbody mf-dropdown')).toBeNull();
@@ -124,22 +126,22 @@ describe('ScopedTasks', () => {
     const link = el().querySelector<HTMLAnchorElement>('tbody mf-project-cell a.mf-link')!;
     expect(text(link)).toBe('Wave 1');
     expect(link.getAttribute('href')).toBe('/projects/3');
-    // The last column is the 48 px row menu with "Move to Project...".
+    // The last column is the 48 px actions column with one icon-only button, not a one-item menu (D-36).
     expect(el().querySelector('thead th.mf-col-actions')).not.toBeNull();
-    menuOf().click();
-    fixture.detectChanges();
-    const items = Array.from(el().querySelectorAll('[role="menuitem"]')).map((i) => text(i));
-    expect(items).toEqual(['Move to Project...']);
+    expect(el().querySelector('tbody td[data-col="actions"] [data-overflow]')).toBeNull();
+    const btn = moveBtn();
+    expect(btn.classList.contains('mf-btn--icon')).toBe(true);
+    expect(btn.getAttribute('aria-label')).toBe('Move to Project');
+    expect(btn.querySelector('i.pi-folder')).not.toBeNull();
+    expect(text(btn)).toBe('');
   });
 
-  it('"Move to Project..." opens a small dialog; Move Task makes the existing call, updates the row and says "Task moved" (#1273)', async () => {
+  it('"Move to Project" opens a small dialog; Move Task makes the existing call, updates the row and says "Task moved" (#1273)', async () => {
     await create(['Task.View', 'Task.Edit', 'Project.View'], { projectOptions: PROJECTS });
     await showProject();
     const notify = TestBed.inject(NotificationService);
     const success = vi.spyOn(notify, 'success');
-    menuOf().click();
-    fixture.detectChanges();
-    el().querySelector<HTMLButtonElement>('[data-action="move-project"]')!.click();
+    moveBtn().click();
     await settle(fixture);
     const dlg = dialog()!;
     expect(text(dlg.querySelector('[data-panel-title]'))).toBe('Move to Project');
@@ -169,6 +171,22 @@ describe('ScopedTasks', () => {
     expect(text(el().querySelector('tbody mf-project-cell'))).toBe('Wave 2');
   });
 
+  it('moving to No Project says the task is no longer in a project (#1275)', async () => {
+    await create(['Task.View', 'Task.Edit', 'Project.View'], { projectOptions: PROJECTS });
+    await showProject();
+    const success = vi.spyOn(TestBed.inject(NotificationService), 'success');
+    moveBtn().click();
+    await settle(fixture);
+    ddChoose(dialog()!, 'Project', '');
+    await settle(fixture);
+    dialog()!.querySelector<HTMLElement>('[data-panel-primary] button')!.click();
+    await settle(fixture);
+    expect(success).toHaveBeenCalledWith(
+      'Task moved',
+      expect.stringMatching(/^TSK-\d+ is no longer in a project\.$/),
+    );
+  });
+
   it('shows the zero dash with the tooltip "No project" for a task without one', async () => {
     await create(['Task.View', 'Project.View'], { projectCount: 2 });
     queue.getTaskQueue.mockReturnValue(ok(pageOf([aRow({ projectId: undefined })])));
@@ -179,6 +197,8 @@ describe('ScopedTasks', () => {
     expect(cell.querySelector('a')).toBeNull();
     expect(cell.querySelector('[data-zero-dash]')).not.toBeNull();
     expect(cell.querySelector('[title="No project"]')).not.toBeNull();
+    // The dash speaks "No project", not "0" (#1275).
+    expect(text(cell.querySelector('.mf-sr-only'))).toBe('No project');
   });
 
   it('has no row menu without Task.Edit', async () => {

@@ -5,7 +5,7 @@ import { ZeroDash } from '../ui/zero-dash';
 /**
  * The Project cell of a task grid (#265, #1273): the project's name as a link (`mf-link`, underlined) on one line with an ellipsis and the full
  * name as the tooltip, when the viewer may open it (`Project.View`); plain text without that permission. A task without a project shows the
- * standard zero dash with the tooltip "No project". Moving a task to another project is the row menu's "Move to Project...", never a field here.
+ * standard zero dash with the tooltip "No project". Moving a task to another project is the icon button "Move to Project" in the actions column, never a field here.
  */
 @Component({
   selector: 'mf-project-cell',
@@ -37,7 +37,9 @@ import { ZeroDash } from '../ui/zero-dash';
         <span class="pc" [attr.title]="n">{{ n }}</span>
       }
     } @else {
-      <span class="pc" title="No project" data-no-project><mf-zero-dash /></span>
+      <span class="pc" title="No project" data-no-project
+        ><mf-zero-dash srText="No project"
+      /></span>
     }
   `,
 })

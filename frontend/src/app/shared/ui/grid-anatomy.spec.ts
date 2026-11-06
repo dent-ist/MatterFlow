@@ -136,4 +136,13 @@ describe('zero in an Overdue, Due Soon or On Hold column (D-42, #1152)', () => {
     expect(dash.getAttribute('aria-hidden')).toBe('true');
     expect(el.querySelector('.mf-sr-only')!.textContent).toBe('0');
   });
+
+  it('speaks the srText instead of "0" where the dash stands for a missing value (#1275)', () => {
+    const fixture = TestBed.createComponent(ZeroDash);
+    fixture.componentRef.setInput('srText', 'No project');
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-zero-dash]')!.textContent).toBe('-');
+    expect(el.querySelector('.mf-sr-only')!.textContent).toBe('No project');
+  });
 });

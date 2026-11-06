@@ -21,7 +21,7 @@ export interface MoveTarget {
 }
 
 /**
- * "Move to Project..." of a task row in a Matter's Tasks grid (#1273): a small 416 px dialog with one white Project dropdown ("No Project" first, then
+ * The icon button "Move to Project" of a task row in a Matter's Tasks grid (#1273): a small 416 px dialog with one white Project dropdown ("No Project" first, then
  * the matter's projects) and `[Cancel] [Move Task]`. The page makes the existing move call and closes the dialog (`(moved)` carries the chosen
  * project id, or null for "No Project"); `busy` and `error` come from it. The primary button is off until another project is chosen.
  */

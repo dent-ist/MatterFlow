@@ -826,7 +826,7 @@ export class ScopedTasks {
     this.clearSelection();
   }
 
-  // --- "Move to Project..." of a row (#1273): a small dialog, the same call as before ---
+  // --- "Move to Project" of a row (#1273): a small dialog, the same call as before ---
   protected readonly moveOpen = signal(false);
   protected readonly moveTarget = signal<(MoveTarget & { row: TaskQueueRow }) | null>(null);
   protected readonly moving = signal(false);
@@ -868,7 +868,12 @@ export class ScopedTasks {
         projectName: projectId === null ? undefined : name,
       });
       this.moveOpen.set(false);
-      this.notify.success('Task moved', `${target.taskNumber} is in ${name ?? 'No Project'}.`);
+      this.notify.success(
+        'Task moved',
+        name
+          ? `${target.taskNumber} is in ${name}.`
+          : `${target.taskNumber} is no longer in a project.`,
+      );
     } catch {
       // The HTTP layer already told the person; the dialog stays open so the pick can be tried again.
     } finally {
