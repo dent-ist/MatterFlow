@@ -231,8 +231,9 @@ interface DisplayGroup {
                     (mousemove)="hover(all)"
                   >
                     <span class="mf-btn mf-btn--text mf-gs__all-text" data-view-all-text>{{
-                      viewAllText()
+                      viewAllLabel
                     }}</span>
+                    <span class="mf-gs__total" data-view-all-total>{{ totalText() }}</span>
                     @if (searchedIn(); as line) {
                       <span class="mf-gs__searched" data-searched-in>{{ line }}</span>
                     }
@@ -290,10 +291,11 @@ interface DisplayGroup {
       flex-direction: column;
       max-height: min(70vh, 640px);
       overflow: hidden;
+      padding: var(--mf-s1);
       background: var(--mf-surface);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      box-shadow: var(--mf-shadow-2);
+      border: 1px solid var(--mf-border-soft);
+      border-radius: var(--mf-radius-lg);
+      box-shadow: var(--mf-shadow-pop);
     }
     /* The only scroller of the panel: a named region while it overflows (BUG-1); the footer sticks to its bottom edge (BUG-3). */
     .mf-gs__scroll {
@@ -407,9 +409,22 @@ interface DisplayGroup {
       background: var(--mf-surface);
       border-top: 1px solid var(--mf-border);
     }
-    /* "View all N results" is a text button too: the shared look, at the left of its row. */
+    /* "See All Results" is a text button too: the shared look, at the left of its row, the muted total at the right. */
+    .mf-gs__all {
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+      column-gap: var(--mf-s3);
+    }
     .mf-gs__all-text {
       justify-self: start;
+    }
+    .mf-gs__total {
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+      justify-self: end;
+    }
+    .mf-gs__all > .mf-gs__searched {
+      grid-column: 1 / -1;
     }
     .mf-gs__all.mf-gs__option--active {
       background: var(--mf-selected-bg);
@@ -526,13 +541,15 @@ export class GlobalSearch {
     this.searchable() && this.state() === 'ready' ? { id: 'mf-gs-view-all', kind: 'all' } : null,
   );
 
-  /** `View all 140 results for "review"` (the sum of the group totals, `n+` when any group was capped). */
-  protected readonly viewAllText = computed(() => {
+  protected readonly viewAllLabel = SEARCH_COPY.viewAllLabel;
+
+  /** `140 results for "review"` (the sum of the group totals, `n+` when any group was capped). */
+  protected readonly totalText = computed(() => {
     const groups = this.groups();
     const shown = new Set(groups.map((g) => g.type));
     const capped = this.response().some((g) => g.totalCapped && shown.has(g.type));
     const total = groups.reduce((n, g) => n + g.total, 0);
-    return SEARCH_COPY.viewAll(formatTotal(total, capped), total, capped, this.trimmed());
+    return SEARCH_COPY.totalLine(formatTotal(total, capped), total, capped, this.trimmed());
   });
 
   protected readonly searchedIn = computed(() => searchedInLine(this.searched()));

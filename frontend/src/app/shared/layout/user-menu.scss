@@ -56,7 +56,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--mf-fs-xs);
+  font-family: var(--mf-font-mono);
+  font-size: var(--mf-fs-sm);
   color: var(--mf-text-muted);
 }
 
@@ -110,7 +111,8 @@
 .um-id__name {
   max-width: 100%;
   overflow: hidden;
-  font-weight: 700;
+  font-size: var(--mf-fs-md);
+  font-weight: var(--mf-fw-semibold);
   text-overflow: ellipsis;
   white-space: nowrap;
 }

@@ -83,9 +83,11 @@ export function searchedInLine(
 export const SEARCH_COPY = {
   /** The link of a group or section that holds more hits than are shown: `See all 24`. */
   seeAll: (count: string) => `See all ${count}`,
-  /** The panel footer: `View all 140 results for "review"`. */
-  viewAll: (count: string, total: number, capped: boolean, query: string) =>
-    `View all ${count} ${total === 1 && !capped ? 'result' : 'results'} for "${query}"`,
+  /** The panel footer button (a text button, Title Case, #1194). */
+  viewAllLabel: 'See All Results',
+  /** The muted line beside the footer button: `140 results for "review"`. */
+  totalLine: (count: string, total: number, capped: boolean, query: string) =>
+    `${count} ${total === 1 && !capped ? 'result' : 'results'} for "${query}"`,
   /** The panel after a settled query: `140 results in 5 groups`. */
   panelCount: (count: string, total: number, groups: number) =>
     `${count} ${total === 1 ? 'result' : 'results'} in ${groups} ${groups === 1 ? 'group' : 'groups'}`,
