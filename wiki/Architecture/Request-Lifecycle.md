@@ -14,7 +14,7 @@
 | 4 | `QueryLimitMiddleware` | `Http/ApiRateLimiting.cs` | Rejects a too long query string with 400 `QUERY_TOO_LARGE` |
 | 5 | Exception handler and status code pages | `GlobalExceptionHandler` | Maps exceptions to problem details |
 | 6 | Static files (when the SPA is served) | `Hosting/SpaHosting.cs` | Serves the Angular build from `wwwroot` |
-| 7 | `RequestForgeryGuard` | `Http/RequestForgeryGuard.cs` | Every request under `/api` must carry `X-MatterFlow-Client: web`; bodies must be JSON or multipart; cross-site requests are refused |
+| 7 | `RequestForgeryGuard` | `Http/RequestForgeryGuard.cs` | Every state-changing request (not GET, HEAD, OPTIONS, TRACE) under `/api` must carry `X-MatterFlow-Client: web` (the Angular `csrfInterceptor` adds it); bodies must be JSON or multipart; a cross-site `Sec-Fetch-Site` is refused with 403 |
 | 8 | Authentication | Identity module | Windows (Negotiate) in production, `Dev` handler in Development and Test |
 | 9 | Authorization | `AccessAuthorizationHandler` | Evaluates the `Perm:` policy of the endpoint (see below) |
 | 10 | Rate limiter | `Http/ApiRateLimiting.cs` | Per-user budgets per minute (all calls, comments, task writes, search, audit, dashboard) |
