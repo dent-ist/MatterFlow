@@ -116,3 +116,19 @@ Real stack, both sizes (54 screenshots, `measurements-review6.json`); axe on 12 
 | #1154 | PASS WITH NOTES | everything except the Pod Work / Task Queue column totals at 1366 (#1230) |
 
 Decision (Pod Work and Task grids): D-43a in the guideline; fix issue #1230 under #1110.
+
+## Review 7: batch 6b (tip 7d4a540, 2026-11-06, screenshots in `../review-7/`)
+
+Real stack, both sizes (87 screenshots, `measurements-review7.json`), axe on 15 pages at both sizes: 0 violations (`axe-review7.json`); `crawl/cols.js`, `crawl/resize.js`, `scan-private-classes.mjs`.
+
+| Issue | Result | Evidence |
+| --- | --- | --- |
+| #1230 | PASS WITH NOTES | default column sum at 1366: Task Queue, Pod Work and My Work 1,096 px (frame 1,098): no sideways scroll, Status whole. Note: Type is 168 px so Title is only 126 px on Pod Work (fix #1237). Summary grid: 988 px in a 718 px frame (fix #1236). CM Number stays default; dropping Age is fine |
+| #1231 | PASS WITH NOTES | Title drag both ways (704 to 584 to 784 px at 1920) and the width survives a reload; "Reset Width" not reached by the script |
+| #1232 | PASS | Type chip plus name in Task Queue, My Work, Pod Work, Matter Tasks (ellipsis and tooltip), Dashboard Summary; Search results have no task type column |
+| #1130 | PASS WITH NOTES | scan: 16 chip pairs in 15 files, 8 private classes remain; decisions per class in #1238 |
+| #1132 | PASS | scan: 0 private link classes |
+| #1227 | PASS | Progress "0 of 3", Pod Work Assign icon, Status visible at 1366; print line on the Task Queue |
+| #1154 | PASS | nothing clipped at 1366 in the default views |
+
+New: #1236 (Summary defaults), #1237 (Type 128 px, Title at least 160), #1238 (last chip classes). #1235: comment posted (colour fallback stays, more sources, order, sensitive personas).
