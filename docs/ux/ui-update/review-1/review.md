@@ -147,3 +147,17 @@ Real stack, both sizes; axe on 13 pages and tabs at both sizes: 0 violations (`a
 | #1231 | PASS WITH NOTES | drag both ways persists; Title has no "Reset Width" in the Columns panel (the other columns do, disabled until changed); the header-menu reset could not be reached by script: confirm by hand |
 
 New: #1239 (Due 152). Comments on #1238 and #1235 (Type 128).
+
+## Review 9: batch 7b (tip 5798b78, 2026-11-06, `../review-9/`: 15 compressed JPEG at 1366 wide, `measurements-review9.json`, `axe-review9.json`)
+
+Real stack, API rebuilt and restarted from the branch tip (demo database untouched), both sizes; axe on 12 pages at both sizes: 0 violations. The demo data has no asset with linked tasks, so the Asset > Linked Tasks list was reviewed from the committed screenshot (`asset-linked-tasks-mock-1366.jpg`) and the contract (`AssetTaskLink` carries taskTypeId, taskTypeName, taskTypeIconKey as required and taskTypeColourKey).
+
+| Issue | Result | Evidence |
+| --- | --- | --- |
+| #1239 | PASS WITH NOTES | Due 152: Summary Due text fits (all rows), Summary frame 718 and no scroll; Pod Work Title 150 (fix #1240: Ref 100) |
+| #1238 | PASS | Note Tags, calendar legend holiday chip, Settings > Holidays calendar chip, count overlay 18 px (bell, side rail) and 22 px, Out of Office presets 26 px filter chips, Search filter chips, Task Types list with the shared Type cell; no mismatched colour |
+| #1235 | PASS WITH NOTES | type colour equals the Task Queue for every type shown (14 in the queue, 15 in Task Types, 11 on Summary, 7 in the unassigned panel: 0 mismatches); contract fields present; the linked-tasks columns fit 1366 in the mock; person drawer and Assign Work lists not separately sampled; sensitive personas not tested (no linked data) |
+| #1236 | PASS | Summary default columns fit 718 px, Due whole |
+| #1130 | PASS | private chip classes replaced; scan allows only the skeleton |
+
+Decisions: Pod Work Title guard stays 160, Ref 100 px (#1240). Link role removed from the table is acceptable; it becomes a tooltip (#1240). The Set Out of Office and Add Out of Office dialogs keep a native Type select (shared input style, chevron) and the native date field: both are allowed by D-14 and D-35, so no fix issue. When Type is hidden the Task Queue title cell draws no small type icon: acceptable (the Columns menu brings it back). My Matters Overview Due column is still cut at 1366 (belongs to #1164).
