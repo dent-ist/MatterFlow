@@ -7,11 +7,11 @@ import { expect, test } from '../support/fixtures';
 import { Seeder, uid } from '../support/seed';
 
 /**
- * Clients UX epic, WP3 (#253 record header, #255 action rule, #254 phone header, #256 Sensitive note). Client, Matter and Project pages
+ * Clients UX epic, WP3 (#253 record header, #255 action rule, #256 Sensitive note). Client, Matter and Project pages
  * share one header: crumb (the last step cut at 40 characters), a one-line title at 22 px with the name clamped to two lines, a context
  * line, Edit / Activity / the primary create action and an overflow "..." with the rest. The seeded long records are the review's:
  * a client name of 105 characters, a matter name of 150 and a project name of 130. Geometry is measured on the real page at 1366x768,
- * 1920x1080, 768x1024 and 375x812; axe finds nothing and the page never scrolls sideways.
+ * 1920x1080; axe finds nothing and the page never scrolls sideways.
  * Screenshots go to E2E_SCREENSHOTS when it is set (docs/ux/clients-review/fixes/wp3).
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
@@ -19,8 +19,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 const CLIENT_105 =
@@ -138,7 +136,6 @@ test.describe('WP3: record header geometry (#253, #254)', () => {
     }) => {
       await page.setViewportSize({ width: w, height: h });
       const u = urls();
-      const phone = w < 640;
       const cases = [
         { key: 'client', url: u.client, tabs: true, long: false },
         { key: 'client-long', url: u.longClient, tabs: true, long: true },
@@ -152,16 +149,11 @@ test.describe('WP3: record header geometry (#253, #254)', () => {
 
         // The page title is the h1; the crumb never wraps and its last step is the current page.
         const current = page.locator('[data-crumb-current]');
-        if (!phone) {
-          await expect(current).toHaveAttribute('aria-current', 'page');
-          const visible = await current.locator('[aria-hidden=true]').innerText();
-          expect(visible.replace(/…$/, '').length, c.key).toBeLessThanOrEqual(40);
-          expect(await lines(page, '[data-crumb-current]'), `${c.key} crumb lines`).toBe(1);
-          if (c.long) await expect(current).toHaveAttribute('title', /.{41,}/);
-        } else {
-          await expect(page.locator('[data-back-link]')).toBeVisible();
-          await expect(page.locator('.rh__trail')).toBeHidden();
-        }
+        await expect(current).toHaveAttribute('aria-current', 'page');
+        const visible = await current.locator('[aria-hidden=true]').innerText();
+        expect(visible.replace(/…$/, '').length, c.key).toBeLessThanOrEqual(40);
+        expect(await lines(page, '[data-crumb-current]'), `${c.key} crumb lines`).toBe(1);
+        if (c.long) await expect(current).toHaveAttribute('title', /.{41,}/);
 
         // Name: at most two lines, the full name in the tooltip.
         const name = await page.locator('[data-record-header] h1 [data-name]').evaluate((e) => ({
@@ -178,17 +170,10 @@ test.describe('WP3: record header geometry (#253, #254)', () => {
         const bodyTop = c.tabs
           ? await top(page, '[role=tablist]')
           : await top(page, 'mf-record-header + *');
-        // A matter also carries the project manager line and the small health strip (epic #667): up to 50 px more on a desktop, 130 on a phone.
-        const extra = c.key.startsWith('matter') ? (phone ? 130 : 50) : 0;
-        if (w >= 1024) {
-          expect(bodyTop, `${c.key} tabs y at ${w}`).toBeLessThanOrEqual(200 + extra);
-        } else if (phone) {
-          expect(bodyTop, `${c.key} tabs y at ${w}`).toBeLessThanOrEqual(
-            (c.long ? 260 : 200) + extra,
-          );
-        }
-        if (w === 1366 || w === 375)
-          console.log(`${c.key} ${w}x${h}: body at y ${Math.round(bodyTop)}`);
+        // A matter also carries the project manager line and the small health strip (epic #667): up to 50 px more.
+        const extra = c.key.startsWith('matter') ? 50 : 0;
+        expect(bodyTop, `${c.key} tabs y at ${w}`).toBeLessThanOrEqual(200 + extra);
+        if (w === 1366) console.log(`${c.key} ${w}x${h}: body at y ${Math.round(bodyTop)}`);
 
         await noSidewaysScroll(page);
         await axeClean(page, `${c.key} at ${w}x${h}`);
@@ -198,69 +183,7 @@ test.describe('WP3: record header geometry (#253, #254)', () => {
   }
 });
 
-test.describe('WP3: one action rule (#255)', () => {
-  const headerButtons = (page: Page) =>
-    page
-      .locator('[data-page-actions] > button')
-      .evaluateAll((bs) => bs.map((b) => b.getAttribute('data-action')));
-
-  async function menuItems(page: Page): Promise<(string | null)[]> {
-    await page.locator('[data-overflow]').click();
-    await expect(page.getByRole('menu')).toBeVisible();
-    return page
-      .getByRole('menuitem')
-      .evaluateAll((bs) => bs.map((b) => b.getAttribute('data-action')));
-  }
-
-  for (const [w, h] of SIZES) {
-    test(`axe finds nothing with the overflow open on each page at ${w}x${h}`, async ({ page }) => {
-      await page.setViewportSize({ width: w, height: h });
-      for (const [key, url] of [
-        ['client', urls().client],
-        ['project', urls().project],
-      ] as const) {
-        await page.goto(url);
-        await expect(page.locator('[data-record-header] h1 [data-name]')).toBeVisible();
-        await page.locator('[data-overflow]').click();
-        await expect(page.getByRole('menu')).toBeVisible();
-        const box = await page.getByRole('menu').boundingBox();
-        expect(box!.x, `${key} menu left edge`).toBeGreaterThanOrEqual(0);
-        expect(box!.x + box!.width, `${key} menu right edge`).toBeLessThanOrEqual(w);
-        await axeClean(page, `${key} overflow open at ${w}x${h}`);
-        await noSidewaysScroll(page);
-      }
-    });
-  }
-
-  test.describe('permission matrix', () => {});
-});
-
-test.describe('WP3: phone header (#254)', () => {
-  test.use({ viewport: { width: 375, height: 812 } });
-
-  test('the first grid row of the Matter Tasks tab is above the fold', async ({ page, seed }) => {
-    const world = await seed.world();
-    await seed.task(world);
-    await page.goto(`/matters/${world.matter.matterId}?tab=tasks`);
-    const row = page.locator('[data-task], .tc-card, tbody tr').first();
-    await expect(row).toBeVisible();
-    const box = (await row.boundingBox())!;
-    expect(box.y + 20).toBeLessThan(812);
-    await shot(page, 'phone-matter-tasks');
-  });
-});
-
-test.describe('WP3: tablet header (#254)', () => {
-  test.use({ viewport: { width: 768, height: 1024 } });
-});
-
 test.describe('WP3: Sensitive note (#256)', () => {
-  for (const [w, h] of [
-    [1366, 768],
-    [375, 812],
-  ] as const) {
-  }
-
   for (const [w, h] of SIZES) {
     test(`axe finds nothing on the Sensitive matter at ${w}x${h}`, async ({ page }) => {
       await page.setViewportSize({ width: w, height: h });

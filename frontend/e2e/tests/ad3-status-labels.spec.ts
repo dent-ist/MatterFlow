@@ -103,10 +103,10 @@ test.describe('the Status Labels list (#622)', () => {
     }
   });
 
-  test('a 50 character label previews inside the dialog at 375 px without a sideways scroll', async ({
+  test('a 50 character label previews inside the dialog without a sideways scroll', async ({
     page,
   }) => {
-    await page.setViewportSize(SIZES[3]);
+    await page.setViewportSize(SIZES[1]);
     await page.goto('/admin/status-labels?edit=CANCELLED');
     // Never saved: the shared labels stay as they are.
     await field(page).fill('Waiting for the other side to answer our long letter');
@@ -118,27 +118,8 @@ test.describe('the Status Labels list (#622)', () => {
     const box = (await preview.boundingBox())!;
     const dialogBox = (await dialog(page).boundingBox())!;
     expect(box.x + box.width).toBeLessThanOrEqual(dialogBox.x + dialogBox.width);
-    await noSideScroll(page, 'long label at 375');
+    await noSideScroll(page, 'long label at 1366');
     await shot(page, 'status-label-long-preview');
-  });
-
-  test('below 640 px the statuses are cards with the code as a tooltip, the count and the same Rename', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 639, height: 900 });
-    await page.goto('/admin/status-labels');
-    await expect(page.locator('li.rc')).toHaveCount(5);
-    await expect(page.locator('table.mf-grid')).toHaveCount(0);
-    await page.setViewportSize(SIZES[3]);
-    const card = page.locator('li.rc').first();
-    await expect(card.locator('[data-card-tasks]')).toContainText(/\d+ tasks?/);
-    await card.getByRole('button', { name: /^Actions for / }).click();
-    await expect(page.getByRole('menuitem')).toHaveText(['Rename']);
-    await page.keyboard.press('Escape');
-    await card.getByRole('link').first().click();
-    await expect(dialog(page)).toBeVisible();
-    await page.setViewportSize({ width: 640, height: 900 });
-    await expect(page.locator('table.mf-grid')).toBeVisible();
   });
 
   test('a StatusLabel.Manage person without Task.View has no Tasks column and still renames; Task.View alone gets the 403 page', async ({

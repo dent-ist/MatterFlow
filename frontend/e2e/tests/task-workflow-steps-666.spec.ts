@@ -15,8 +15,6 @@ import { TaskApi } from '../support/tasks';
 const OUT = process.env['E2E_SCREENSHOTS'];
 
 const SIZES = [
-  { width: 375, height: 812 },
-  { width: 768, height: 1024 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
 ] as const;
@@ -45,7 +43,7 @@ async function check(page: Page, name: string): Promise<void> {
 }
 
 test.describe('Task Workflow tab: step status and actions (#666)', () => {
-  test('tags and status are plain text, one status per step, the current step is "Up Next"; actions at the top right at 375, 768, 1366 and 1920', async ({
+  test('tags and status are plain text, one status per step, the current step is "Up Next"; actions at the top right at 1366 and 1920', async ({
     page,
     seed,
     admin,

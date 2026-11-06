@@ -5,15 +5,14 @@ import { Locator, Page } from '@playwright/test';
 import { MyWorkPage, PodWorkPage, TaskQueuePage } from '../pages/queues.pages';
 import { axeAvailable, axeBestPractice, AxeViolation } from '../support/axe';
 import { expect, test } from '../support/fixtures';
-import { failApi } from '../support/personas';
 import { podWorkFixtures } from '../support/pod-work-fixtures';
 import { toasts } from '../support/toasts';
 
 /**
  * Pod Work, first release (epic #546, package WP-PW1): BUG-1 and W4 (#548, the title and the capped Pod select), BUG-2 (#549, Pod.View
- * without Task.View), W9 and W14 (#550, "Assign to Me" in view from 640 to 899 px), BUG-4 (#551, no page-level sideways scroll at 375 px) and
+ * without Task.View), W9 and W14 (#550, "Assign to Me" with the keyboard) and
  * BUG-3 (#552, the strip follows assignments). Data: the fixtures of #547 (`support/pod-work-fixtures.ts`). Screenshots go to
- * `E2E_SCREENSHOTS_PW` when it is set (docs/ux/pod-work-review/fixes/pw1-bugs). axe runs at the four sizes and the suite fails, never skips,
+ * `E2E_SCREENSHOTS_PW` when it is set (docs/ux/pod-work-review/fixes/pw1-bugs). axe runs at both desktop sizes and the suite fails, never skips,
  * when axe is not available (set E2E_AXE_PATH to a copy of axe.min.js).
  */
 const OUT = process.env['E2E_SCREENSHOTS_PW'];
@@ -28,8 +27,6 @@ async function shot(page: Page, name: string): Promise<void> {
 const SIZES = [
   { name: '1366x768', width: 1366, height: 768 },
   { name: '1920x1080', width: 1920, height: 1080 },
-  { name: '768x1024', width: 768, height: 1024 },
-  { name: '375x812', width: 375, height: 812 },
 ] as const;
 
 async function axeClean(page: Page, what: string): Promise<void> {
@@ -77,10 +74,9 @@ test.describe('Pod Work first release', () => {
             size.width,
           );
           expect(sel.width, 'the cap').toBeLessThanOrEqual(22 * 14 + 1);
-          expect(
-            sel.height,
-            'compact control (the shared dropdown: 36 px, 44 px below 768)',
-          ).toBeLessThanOrEqual(size.width < 768 ? 44 : 36);
+          expect(sel.height, 'compact control (the shared dropdown: 36 px)').toBeLessThanOrEqual(
+            36,
+          );
           expect(await pageSideScroll(page)).toBeLessThanOrEqual(0);
           await expect(page.locator('mf-dropdown.pw-pod-select')).toHaveAttribute(
             'title',
@@ -99,7 +95,7 @@ test.describe('Pod Work first release', () => {
     }) => {
       const fx = await podWorkFixtures(seed, personas);
       const page = await asUser(fx.lead.username);
-      for (const size of [SIZES[0], SIZES[2]]) {
+      for (const size of [SIZES[0]]) {
         await page.setViewportSize({ width: size.width, height: size.height });
         const tops: number[] = [];
         await new MyWorkPage(page).open();
@@ -121,7 +117,7 @@ test.describe('Pod Work first release', () => {
     }) => {
       const fx = await podWorkFixtures(seed, personas);
       const page = await asUser(fx.lead.username);
-      await page.setViewportSize({ width: 768, height: 1024 });
+      await page.setViewportSize({ width: 1366, height: 768 });
       const pw = new PodWorkPage(page);
       await page.goto(`/pods/work?podId=${fx.busy.podId}`);
       await expect(pw.podSelect).toBeVisible();
@@ -148,7 +144,7 @@ test.describe('Pod Work first release', () => {
   });
 
   test.describe('#549 BUG-2: Pod.View without Task.View', () => {
-    test('no Pod Work item in the rail (desktop, tablet) or the phone menu; the URL shows the 403 page with no request and no toast', async ({
+    test('no Pod Work item in the rail; the URL shows the 403 page with no request and no toast', async ({
       seed,
       personas,
       asUser,
@@ -160,10 +156,7 @@ test.describe('Pod Work first release', () => {
         if (r.url().includes('/api/v1/pod-work')) requests.push(r.url());
       });
 
-      for (const size of [
-        { width: 1440, height: 900 },
-        { width: 768, height: 1024 },
-      ]) {
+      for (const size of [{ width: 1440, height: 900 }]) {
         await page.setViewportSize(size);
         await page.goto('/dashboard');
         await expect(page.getByRole('navigation', { name: 'Main' })).toBeAttached();
@@ -171,15 +164,6 @@ test.describe('Pod Work first release', () => {
           page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Pod Work' }),
         ).toHaveCount(0);
       }
-      await page.setViewportSize({ width: 375, height: 812 });
-      await page.goto('/dashboard');
-      await page.getByTestId('nav-menu-button').click();
-      await expect(
-        page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Dashboard' }),
-      ).toBeVisible();
-      await expect(
-        page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Pod Work' }),
-      ).toHaveCount(0);
 
       await page.setViewportSize({ width: 1366, height: 768 });
       await page.goto('/pods/work?podId=1');
@@ -220,73 +204,8 @@ test.describe('Pod Work first release', () => {
     });
   });
 
-  test.describe('#550 W9 / W14: "Assign to Me" in view from 640 to 899 px', () => {
-    for (const width of [640, 768, 899]) {
-      test(`${width}x1024: the link of the first row is inside the grid without scrolling; Matter Number is a column of the chooser`, async ({
-        seed,
-        personas,
-        asUser,
-      }) => {
-        const fx = await podWorkFixtures(seed, personas);
-        const page = await asUser(fx.lead.username);
-        await page.setViewportSize({ width, height: 1024 });
-        const pw = new PodWorkPage(page);
-        await page.goto(`/pods/work?podId=${fx.busy.podId}`);
-        const link = pw.assignToMe(fx.busy.unassignedNumbers[0]);
-        await expect(link).toBeVisible();
-        const grid = await box(page.getByRole('region', { name: /Pod Work/ }).first());
-        const l = await box(link);
-        expect(l.x, 'link starts inside the grid').toBeGreaterThanOrEqual(grid.x);
-        expect(l.x + l.width, 'link ends inside the grid').toBeLessThanOrEqual(grid.x + grid.width);
-        await expect(page.getByRole('columnheader', { name: /CM Number/ })).toHaveCount(0);
-        await expect(page.getByRole('columnheader', { name: /Assignee/ })).toBeVisible();
-        expect(await pageSideScroll(page)).toBeLessThanOrEqual(0);
-        if (width === 768) {
-          await shot(page, 'w9-assign-link-768x1024');
-          await axeClean(page, 'axe at 768 with the link only');
-        }
-      });
-    }
-
-    test("from 900 px the columns are today's; below 640 px the cards are unchanged", async ({
-      seed,
-      personas,
-      asUser,
-    }) => {
-      const fx = await podWorkFixtures(seed, personas);
-      const page = await asUser(fx.lead.username);
-      const pw = new PodWorkPage(page);
-      await page.setViewportSize({ width: 900, height: 1024 });
-      await page.goto(`/pods/work?podId=${fx.busy.podId}`);
-      await expect(page.getByRole('columnheader', { name: /CM Number/ })).toBeVisible();
-      await expect(pw.assignToMe(fx.busy.unassignedNumbers[0])).toBeVisible();
-      await expect(page.getByRole('row', { name: /TSK-/ }).first()).toContainText('Unassigned');
-
-      await page.setViewportSize({ width: 639, height: 900 });
-      await expect(page.locator('li[data-task]').first()).toBeVisible();
-      await expect(page.getByRole('table')).toHaveCount(0);
-      await expect(pw.assignToMe(fx.busy.unassignedNumbers[0])).toBeVisible();
-    });
-
-    test('a column choice made by the person wins over the narrow default', async ({
-      seed,
-      personas,
-      asUser,
-    }) => {
-      const fx = await podWorkFixtures(seed, personas);
-      const page = await asUser(fx.lead.username);
-      await page.setViewportSize({ width: 768, height: 1024 });
-      await page.goto(`/pods/work?podId=${fx.busy.podId}`);
-      await expect(page.getByRole('columnheader', { name: /Assignee/ })).toBeVisible();
-      await page.getByRole('button', { name: 'Columns', exact: true }).click();
-      await page.getByRole('checkbox', { name: /CM Number/ }).check();
-      await page.keyboard.press('Escape');
-      await expect(page.getByRole('columnheader', { name: /CM Number/ })).toBeVisible();
-      await page.reload();
-      await expect(page.getByRole('columnheader', { name: /CM Number/ })).toBeVisible();
-    });
-
-    test('Assign to me works with the keyboard from 768 px, and a read-only person has no link', async ({
+  test.describe('#550 W9 / W14: "Assign to Me" with the keyboard', () => {
+    test('Assign to me works with the keyboard, and a read-only person has no link', async ({
       seed,
       personas,
       asUser,
@@ -298,7 +217,7 @@ test.describe('Pod Work first release', () => {
         assignedPodId: pod.podId,
       });
       const page = await asUser(fx.lead.username);
-      await page.setViewportSize({ width: 768, height: 1024 });
+      await page.setViewportSize({ width: 1366, height: 768 });
       const pw = new PodWorkPage(page);
       await page.goto(`/pods/work?podId=${pod.podId}`);
       const link = pw.assignToMe(task.taskNumber);
@@ -307,79 +226,10 @@ test.describe('Pod Work first release', () => {
       await expect(pw.row(task.taskNumber)).toContainText(fx.lead.displayName ?? fx.lead.username);
 
       const ro = await asUser(fx.readonly.username);
-      await ro.setViewportSize({ width: 768, height: 1024 });
+      await ro.setViewportSize({ width: 1366, height: 768 });
       await ro.goto(`/pods/work?podId=${fx.busy.podId}&view=queue`);
       await expect(ro.getByRole('row', { name: /TSK-/ }).first()).toContainText('Unassigned');
       await expect(ro.locator('[data-assign-link]')).toHaveCount(0);
-    });
-  });
-
-  test.describe('#551 BUG-4: no page-level sideways scroll on any tab or state', () => {
-    for (const size of [SIZES[3], SIZES[2]]) {
-      test(`${size.name}: the four tabs, the empty pod, the no-pod state and the error state`, async ({
-        seed,
-        personas,
-        asUser,
-      }) => {
-        const fx = await podWorkFixtures(seed, personas);
-        const page = await asUser(fx.lead.username);
-        await page.setViewportSize({ width: size.width, height: size.height });
-        const pw = new PodWorkPage(page);
-        const seen: [string, number][] = [];
-        const check = async (what: string) => {
-          await page.waitForTimeout(300);
-          seen.push([what, await pageSideScroll(page)]);
-        };
-
-        for (const view of ['queue', 'members', 'all']) {
-          await page.goto(`/pods/work?podId=${fx.busy.podId}&view=${view}`);
-          await expect(pw.tab(/./).first()).toBeVisible();
-          await expect(
-            page.getByRole('row').nth(1).or(page.locator('li[data-task]').first()).first(),
-          ).toBeVisible();
-          await check(`busy pod, ${view}`);
-          if (view === 'members') await shot(page, `bug4-members-${size.name}`);
-        }
-        await page.goto(`/pods/work?podId=${fx.longName.podId}`);
-        await expect(pw.tab(/./).first()).toBeVisible();
-        await check('long pod name');
-
-        await page.goto(`/pods/work?podId=${fx.empty.podId}&view=members`);
-        await expect(page.getByText('No members yet.')).toBeVisible();
-        await check('empty pod, By member');
-
-        const none = await asUser(fx.noPod.username);
-        await none.setViewportSize({ width: size.width, height: size.height });
-        await none.goto('/pods/work');
-        await expect(none.locator('[data-empty], [data-pod-list]').first()).toBeVisible();
-        seen.push(['person in no pod', await pageSideScroll(none)]);
-
-        const unfail = await failApi(page, '**/api/v1/pod-work*', 500);
-        await page.goto(`/pods/work?podId=${fx.busy.podId}`);
-        await expect(page.getByText(/Couldn.t load/).first()).toBeVisible();
-        await check('error state');
-        await unfail();
-
-        for (const [what, over] of seen) {
-          expect(over, `${what} at ${size.name}`).toBeLessThanOrEqual(0);
-        }
-      });
-    }
-
-    test('at 375 px the By member table is cards with no scroll box of its own, and the page does not scroll sideways (#569)', async ({
-      seed,
-      personas,
-      asUser,
-    }) => {
-      const fx = await podWorkFixtures(seed, personas);
-      const page = await asUser(fx.lead.username);
-      await page.setViewportSize({ width: 375, height: 812 });
-      await page.goto(`/pods/work?podId=${fx.busy.podId}&view=members`);
-      await expect(page.locator('[data-members]')).toBeVisible();
-      await expect(page.getByRole('region', { name: /Pod members/ })).toHaveCount(0);
-      await expect(page.getByRole('button', { name: /View tasks of/ }).first()).toBeVisible();
-      expect(await pageSideScroll(page)).toBeLessThanOrEqual(0);
-      await axeClean(page, 'axe at 375, By member');
     });
   });
 

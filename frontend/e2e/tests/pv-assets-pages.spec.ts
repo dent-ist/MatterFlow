@@ -51,7 +51,7 @@ test.describe('PM v2 page fixes: Assets tab and list (#883)', () => {
       await expect(rows.first()).toBeVisible();
       expect(await axeViolations(page), `matter assets at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
-      if (size.width === 1366 || size.width === 375) await shot(page, 'pv-matter-assets');
+      if (size.width === 1366) await shot(page, 'pv-matter-assets');
     }
     for (const size of SIZES) {
       await page.setViewportSize(size);
@@ -61,7 +61,7 @@ test.describe('PM v2 page fixes: Assets tab and list (#883)', () => {
       ).toBeVisible();
       expect(await axeViolations(page), `assets list at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
-      if (size.width === 1366 || size.width === 375) await shot(page, 'pv-assets-list');
+      if (size.width === 1366) await shot(page, 'pv-assets-list');
     }
   });
 });

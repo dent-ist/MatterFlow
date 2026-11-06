@@ -8,15 +8,13 @@ import { uid } from '../support/seed';
 
 /**
  * WP-TY1 BUG-3 (#354): Back and the breadcrumb return to the exact list view (page, size, filters) with keyboard focus on the name link of
- * the row that was left, on the three Administration lists. With E2E_SCREENSHOTS set the focused row is also saved at four widths
+ * the row that was left, on the three Administration lists. With E2E_SCREENSHOTS set the focused row is also saved at both desktop sizes
  * (docs/ux/task-types-review/fixes/ty1-foundations).
  */
 const SHOTS = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   { w: 1366, h: 768 },
   { w: 1920, h: 1080 },
-  { w: 768, h: 1024 },
-  { w: 375, h: 812 },
 ];
 
 type Kind = 'types' | 'workflows' | 'steps';

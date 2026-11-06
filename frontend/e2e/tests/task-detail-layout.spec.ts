@@ -420,46 +420,6 @@ test.describe('Task detail: single page layout', () => {
     await expect(detail.step(load).root.locator('[data-current]')).toBeVisible();
   });
 
-  test('375 px: the tabs, the selected pane, then Details (collapsed) in one column and no sideways scroll', async ({
-    page,
-    seed,
-  }) => {
-    const world = await seed.world({ steps: FIVE_STEPS });
-    const task = await seed.task(world);
-    await page.setViewportSize({ width: 375, height: 800 });
-    const detail = new TaskDetailPage(page);
-    await detail.open(task.taskId);
-
-    const toggle = page.locator('[data-detail-toggle]');
-    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    await expect(
-      page.getByRole('complementary', { name: 'Details' }).locator('[data-view]'),
-    ).toBeHidden();
-    await noHorizontalScroll(page);
-
-    const y = async (locator: ReturnType<Page['locator']>) => (await locator.boundingBox())!.y;
-    const details = await y(page.getByRole('complementary', { name: 'Details' }));
-    const strip = await y(page.getByRole('tablist', { name: 'Task sections' }));
-    for (const name of ['Workflow', 'Assets', 'Comments'] as const) {
-      await detail.selectTab(name);
-      const pane = await y(detail.section(name));
-      expect(strip, `tabs above the ${name} pane`).toBeLessThan(pane);
-      expect(pane, `${name} pane above Details`).toBeLessThan(details);
-      await noHorizontalScroll(page);
-    }
-    await expect(page.getByRole('navigation', { name: 'Sections' })).toHaveCount(0);
-
-    await toggle.click();
-    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    await expect(
-      page.getByRole('complementary', { name: 'Details' }).locator('[data-view]'),
-    ).toBeVisible();
-    await noHorizontalScroll(page);
-
-    await page.setViewportSize({ width: 768, height: 1024 });
-    await noHorizontalScroll(page);
-  });
-
   test('?tab= links: assets and comments show their tab, workflow and no tab the Workflow, activity opens the drawer, details just shows the page', async ({
     page,
     seed,

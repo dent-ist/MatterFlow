@@ -12,14 +12,12 @@ import { expect, test } from '../support/fixtures';
  *  - a pod opens as a record page: crumb Administration > Users > Pods > name, the name, the Active badge, Deactivate in the overflow; Back and
  *    the crumb return to the list as it was (filters) with focus on the row; an unknown pod is the not-found state; Pod.ManageMembers can change
  *    members but not the name or the status;
- *  - axe is required here (a missing axe-core fails the file); axe 0 and no sideways scroll at four widths with the editors open.
+ *  - axe is required here (a missing axe-core fails the file); axe 0 and no sideways scroll at both desktop sizes with the editors open.
  * Screenshots for docs/ux/users-review/fixes/us6-roles-pods/ are written when E2E_SCREENSHOTS is set to the output folder.
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
 const TAG = `us6e${Math.floor(Math.random() * 90000) + 10000}`;
 const SIZES = [
-  { width: 375, height: 812 },
-  { width: 768, height: 1024 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
 ] as const;

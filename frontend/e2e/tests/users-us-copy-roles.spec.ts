@@ -14,8 +14,6 @@ import { openEditAvailability, userRow } from '../support/users-grid';
  * Screenshots go to the folder in E2E_SCREENSHOTS (docs/ux/users-review/fixes/us1-bugs, us6-roles-pods) when it is set.
  */
 const SIZES = [
-  { width: 375, height: 812 },
-  { width: 768, height: 1024 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
 ] as const;

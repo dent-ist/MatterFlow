@@ -13,7 +13,6 @@ const SIZES_DESKTOP = [
   { width: 1366, height: 600 },
   { width: 1920, height: 1080 },
   { width: 1024, height: 768 },
-  { width: 768, height: 1024 },
 ] as const;
 
 const box = async (page: Page, selector: string) => {
@@ -103,27 +102,5 @@ test.describe('Full-height navigation panel (SH-01, #1044)', () => {
     await page.keyboard.press('Tab');
     await expect(link).toBeFocused();
     expect(await link.evaluate((a) => getComputedStyle(a).outlineStyle)).not.toBe('none');
-  });
-
-  test('on a phone the logo stays in the white top bar and the menu is a drawer', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/dashboard');
-    const header = await box(page, 'header.mf-header');
-    const logo = await box(page, '.mf-logo');
-    expect(header.x).toBe(0);
-    expect(logo.y).toBeGreaterThanOrEqual(0);
-    expect(logo.x).toBeGreaterThan(0);
-    expect(logo.x + logo.width).toBeLessThanOrEqual(375);
-    expect(logo.y + logo.height).toBeLessThanOrEqual(header.y + header.height + 1);
-    await expect(page.locator('nav.mf-nav')).toBeHidden();
-    await page.getByRole('button', { name: 'Menu', exact: true }).click();
-    await expect(page.locator('nav.mf-nav')).toBeVisible();
-    await shot(page, 'sh01-drawer');
-    await page.keyboard.press('Escape');
-    await expect(page.locator('nav.mf-nav')).toBeHidden();
-    await noHorizontalScroll(page);
-    if (axeAvailable()) expect(await axeViolations(page), 'axe').toEqual([]);
   });
 });

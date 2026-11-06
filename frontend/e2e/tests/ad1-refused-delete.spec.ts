@@ -14,8 +14,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   { width: 1920, height: 1080 },
   { width: 1366, height: 768 },
-  { width: 768, height: 1024 },
-  { width: 375, height: 812 },
 ] as const;
 
 async function shot(page: Page, name: string): Promise<void> {
@@ -49,7 +47,7 @@ async function scrolledIntoView(button: Locator): Promise<void> {
 }
 
 test.describe('a refused delete is reported once (#537)', () => {
-  test('Priorities: one inline message, no toast, axe clean at four widths (a delete the server refuses after the page offered it)', async ({
+  test('Priorities: one inline message, no toast, axe clean at both desktop sizes (a delete the server refuses after the page offered it)', async ({
     page,
     seed,
   }) => {

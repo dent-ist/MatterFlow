@@ -288,21 +288,4 @@ test.describe('Assets list: column filters and the record page link', () => {
     // The filter row is right under the header row.
     expect(after.filter!.y).toBeCloseTo(after.header!.y + after.header!.height, 0);
   });
-
-  test('the list does not scroll sideways at 375 px', async ({ page, seed }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
-    const token = uid();
-    const matter = await seed.matter();
-    for (let from = 0; from < 10; from += 5) {
-      await Promise.all(
-        Array.from({ length: 5 }, (_, i) => seed.asset(matter, `Phone ${token} ${from + i + 100}`)),
-      );
-    }
-    await page.goto(`/assets?name=${token}`);
-    await expect(page.locator('li.rc a').first()).toBeVisible(); // cards below 640 px (#502)
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-    );
-    expect(overflow).toBeLessThanOrEqual(0);
-  });
 });

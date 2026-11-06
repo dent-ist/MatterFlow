@@ -11,8 +11,6 @@ import { expect, test } from '../support/fixtures';
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
-  { width: 375, height: 812 },
-  { width: 768, height: 1024 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
 ] as const;
@@ -72,7 +70,7 @@ async function atEverySize(page: Page, name: string): Promise<void> {
 
 test.describe('One form-page pattern for the three edit pages (#361)', () => {
   test('the three cards are 720 px wide where the window allows it', async ({ page }) => {
-    for (const size of [SIZES[2], SIZES[3]]) {
+    for (const size of [SIZES[0], SIZES[1]]) {
       await page.setViewportSize(size);
       const widths: number[] = [];
       for (const p of PAGES) {

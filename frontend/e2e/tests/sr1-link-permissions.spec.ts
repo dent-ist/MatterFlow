@@ -151,7 +151,7 @@ test.describe('Hit links lead only where the person may go (#461)', () => {
     await expect(page.getByRole('heading', { name: FORBIDDEN, level: 1 })).toBeVisible();
   });
 
-  test.describe('the narrowest person at four sizes', () => {
+  test.describe('the narrowest person at both desktop sizes', () => {
     test.skip(() => !axeAvailable(), 'axe-core is not available');
 
     test('Task.View only: the results page has no axe violation and no sideways scroll', async ({

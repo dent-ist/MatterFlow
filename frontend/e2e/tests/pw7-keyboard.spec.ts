@@ -12,7 +12,7 @@ import { SIZES, axeClean, pageSideScroll, shot } from '../support/pod-work-check
  * press a strip item, switch tabs, open and close the folded idle members, sort, View tasks, Assign to me and Undo, open a task and go
  * Back (focus returns to the row). Tab stops to the first grid row at 1366x768 are recorded (not gated) in `tab-stops.json` of the folder
  * `E2E_SCREENSHOTS_PW` (docs/ux/pod-work-review/fixes/pw7-access). No keyboard shortcut is added or changed (Phase 2, #420): only Tab,
- * Shift+Tab, Enter, Space, the arrow keys, Home and End are used. axe runs at four sizes on every tab and state with menus open; the
+ * Shift+Tab, Enter, Space, the arrow keys, Home and End are used. axe runs at both desktop sizes on every tab and state with menus open; the
  * suite fails, never skips, without axe.
  */
 const OUT = process.env['E2E_SCREENSHOTS_PW'];

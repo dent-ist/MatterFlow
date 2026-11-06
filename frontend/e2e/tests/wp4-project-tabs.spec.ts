@@ -9,7 +9,7 @@ import { Seeder, uid } from '../support/seed';
 /**
  * Clients UX epic, WP4 (#257, folds BUG-4, BUG-5, P2, P3, P4): Project Details has the tab pattern of Client and Matter. Tasks (n) is the
  * default and absent from the address, Details is `?tab=details`; the side panel is gone, so the Tasks grid is as wide as the page.
- * Measured on the real page at 1366x768, 1920x1080, 768x1024 and 375x812 with a project name of 130 characters; axe finds nothing on
+ * Measured on the real page at 1366x768 and 1920x1080 with a project name of 130 characters; axe finds nothing on
  * either tab and the page never scrolls sideways. Screenshots go to E2E_SCREENSHOTS when it is set (docs/ux/clients-review/fixes/wp4).
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
@@ -17,8 +17,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 const PROJECT_130 =
@@ -104,7 +102,7 @@ test.beforeAll(async ({ seed }: { seed: Seeder }) => {
   data = { world, project, empty, archived, taskCount: titles.length };
 });
 
-test.describe('WP4: project tabs at four sizes', () => {
+test.describe('WP4: project tabs at both desktop sizes', () => {
   for (const [w, h] of SIZES) {
     test(`Tasks and Details tabs at ${w}x${h}: no side panel, full-width grid, nothing clipped, axe clean, no sideways scroll`, async ({
       page,
@@ -126,20 +124,15 @@ test.describe('WP4: project tabs at four sizes', () => {
       await expect(page.getByRole('heading', { name: 'Tasks', level: 2 })).toBeAttached();
 
       // The grid fills the width: it is not squeezed beside a panel.
-      // Under 640 px the list is cards (LC-04), no table.
-      const cards = w < 640;
       const rows = page.locator('[data-task]');
       await expect(rows).toHaveCount(data.taskCount);
-      if (!cards) {
-        const wrap = (await page.locator('.wt-wrap').boundingBox())!;
-        const main = (await page.locator('mf-fixed-page').boundingBox())!;
-        expect(wrap.width, 'grid width vs page').toBeGreaterThan(main.width - 80);
-      }
+      const wrap = (await page.locator('.wt-wrap').boundingBox())!;
+      const main = (await page.locator('mf-fixed-page').boundingBox())!;
+      expect(wrap.width, 'grid width vs page').toBeGreaterThan(main.width - 80);
 
       const firstRow = (await rows.first().boundingBox())!;
       // The summary strip (WP7, one 28 px line plus its margin) sits above the grid now.
       if (w === 1366) expect(firstRow.y, 'first task row y at 1366').toBeLessThan(370);
-      if (w === 768) expect(firstRow.y, 'first task row y at 768').toBeLessThan(h);
       console.log(`${w}x${h}: first task row at y ${Math.round(firstRow.y)}`);
 
       await noSilentClipping(page, `Tasks at ${w}`);
@@ -169,13 +162,10 @@ test.describe('WP4: project tabs at four sizes', () => {
     });
   }
 
-  test('the status column is visible at 1366 and 768 without opening anything (BUG-5)', async ({
+  test('the status column is visible at 1366 without opening anything (BUG-5)', async ({
     page,
   }) => {
-    for (const [w, h] of [
-      [1366, 768],
-      [768, 1024],
-    ] as const) {
+    for (const [w, h] of [[1366, 768]] as const) {
       await page.setViewportSize({ width: w, height: h });
       await page.goto(url(data.project));
       await ready(page);

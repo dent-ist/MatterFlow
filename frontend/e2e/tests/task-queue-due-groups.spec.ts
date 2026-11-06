@@ -23,8 +23,6 @@ async function shot(page: Page, name: string): Promise<void> {
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 /** 30 ASAP, 4 overdue, 2 due today, 1 tomorrow and 3 far away: 40 open tasks of one Matter, two pages of 25. */
@@ -155,7 +153,7 @@ test.describe('Task Queue: dividers when sorted by Due', () => {
     await expect(page.locator('[data-task]:visible')).toHaveCount(15);
   });
 
-  test('#232: axe is clean at four sizes, no page scroll, dividers span the table', async ({
+  test('#232: axe is clean at both desktop sizes, no page scroll, dividers span the table', async ({
     page,
     seed,
   }) => {

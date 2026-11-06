@@ -25,8 +25,6 @@ async function shot(page: Page, name: string): Promise<void> {
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 type Key =

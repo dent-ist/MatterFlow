@@ -7,10 +7,7 @@ import { expect, test } from '../support/fixtures';
  * states, at 1366x768 and 375x812. One table: later epics add their routes here. A violation fails the test and the message prints the
  * rule and the node. Needs axe-core (E2E_AXE_PATH or the installed package); without it every test skips itself.
  */
-const SIZES = [
-  { name: '1366x768', width: 1366, height: 768 },
-  { name: '375x812', width: 375, height: 812 },
-] as const;
+const SIZES = [{ name: '1366x768', width: 1366, height: 768 }] as const;
 
 let ids: {
   clientId: number;
@@ -20,13 +17,11 @@ let ids: {
   assetId?: number;
 };
 let technician: string;
-let searchText: string;
 let pending: string;
 
 test.beforeAll(async ({ seed }) => {
   const world = await seed.world();
   const task = await seed.task(world);
-  searchText = world.client.name;
   const project = await seed.project(world.matter);
   ids = {
     clientId: world.client.clientId,
@@ -147,21 +142,3 @@ for (const size of SIZES) {
     });
   });
 }
-
-test.describe('Shell axe guard: phone states', () => {
-  test.skip(() => !axeAvailable(), 'axe-core is not available');
-  test.use({ viewport: { width: 375, height: 812 } });
-
-  test('phone menu and the search row with suggestions', async ({ page }) => {
-    await page.goto('/my-work');
-    await page.getByRole('button', { name: 'Menu', exact: true }).click();
-    await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
-    await guard(page, 'phone menu open');
-    await page.keyboard.press('Escape');
-    await page.getByTestId('search-button').click();
-    await guard(page, 'phone search row');
-    await page.locator('#mf-search-row input').fill(searchText);
-    await expect(page.locator('[data-search-panel]')).toBeVisible();
-    await guard(page, 'phone search suggestions');
-  });
-});

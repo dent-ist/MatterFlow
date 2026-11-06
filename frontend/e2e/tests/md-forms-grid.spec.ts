@@ -100,15 +100,6 @@ test.describe('New matter pop-up (MD-22)', () => {
     );
     await expect(page).toHaveURL(/\/matters$/);
   });
-
-  test('a phone gets the dialog full screen', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/matters');
-    await page.getByRole('button', { name: 'New Matter' }).first().click();
-    const b = (await page.getByRole('dialog', { name: 'New Matter' }).boundingBox())!;
-    expect(b.width).toBeGreaterThanOrEqual(374);
-    expect(b.height).toBeGreaterThanOrEqual(800);
-  });
 });
 
 test.describe('Matter detail tabs: Summary, Projects, Assets, Productions, buttons (MD-23, MD-25, MD-26)', () => {

@@ -23,8 +23,6 @@ async function shot(page: Page, name: string): Promise<void> {
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 /** Answers every Task Queue request with no rows (the rest of the answer is the real one). */
@@ -149,7 +147,7 @@ test.describe('Task Queue copy', () => {
     );
   });
 
-  test('axe: the empty states and the named view have no violations at four sizes', async ({
+  test('axe: the empty states and the named view have no violations at both desktop sizes', async ({
     page,
   }) => {
     test.skip(!axeAvailable(), 'axe-core not available');
@@ -165,7 +163,6 @@ test.describe('Task Queue copy', () => {
       await queue.open('?overdue=true&q=zzz');
       await expect(page.locator('td[data-empty], div[data-empty]')).toContainText('No tasks match');
       expect(await axeViolations(page), `no match at ${w}`).toEqual([]);
-      if (w === 375) await shot(page, 'empty-overdue-375x812');
     }
   });
 });

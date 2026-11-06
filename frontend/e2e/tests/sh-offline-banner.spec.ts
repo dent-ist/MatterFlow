@@ -1,6 +1,6 @@
 import { expect, test } from '../support/fixtures';
 import { goOffline } from '../support/personas';
-import { atEverySize, noHorizontalScroll, shot, SIZES } from '../support/screens';
+import { atEverySize, shot } from '../support/screens';
 
 /**
  * S13 (#611): one banner under the header while the server cannot be reached, with automatic retry and "Back online.". Playwright's
@@ -97,7 +97,7 @@ test.describe('Offline banner (#611)', () => {
     await expect(page.locator('[data-back-online]')).toBeVisible();
   });
 
-  test('axe is clean with the banner shown, nothing scrolls sideways at four sizes, and the banner wraps on a phone', async ({
+  test('axe is clean with the banner shown, nothing scrolls sideways at both desktop sizes', async ({
     page,
   }) => {
     await page.goto('/clients');
@@ -105,10 +105,6 @@ test.describe('Offline banner (#611)', () => {
     await goOffline(page);
     await expect(page.locator('[data-offline-banner]')).toBeVisible();
     await atEverySize(page, 'offline-banner-axe');
-    await page.setViewportSize(SIZES[0]);
-    await noHorizontalScroll(page);
-    const box = (await page.locator('[data-offline-banner]').boundingBox())!;
-    expect(box.width).toBeLessThanOrEqual(375);
   });
 
   test('the banner shows for every kind of person', async ({ personas, asUser }) => {

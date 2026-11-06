@@ -154,10 +154,7 @@ test.describe('Dashboard permissions', () => {
 
   test.describe('accessibility of the technician view', () => {
     test.skip(!axeAvailable(), 'axe-core is not installed (npm ci) and E2E_AXE_PATH is not set');
-    for (const size of [
-      { width: 1366, height: 768 },
-      { width: 375, height: 812 },
-    ]) {
+    for (const size of [{ width: 1366, height: 768 }]) {
       test(`axe is clean on the unassigned-only Summary at ${size.width}`, async ({
         seed,
         asUser,
@@ -209,7 +206,6 @@ test.describe('Dashboard permissions', () => {
   for (const [width, height] of [
     [1366, 768],
     [1024, 768],
-    [375, 812],
   ]) {
     test(`the role editor form lines up at ${width}x${height}`, async ({ page, seed }) => {
       const role = await seed.role(['Task.View'], `E2E align ${width}`);

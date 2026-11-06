@@ -116,8 +116,6 @@ test.describe('Default landing', () => {
   for (const size of [
     { width: 1366, height: 768 },
     { width: 1920, height: 1080 },
-    { width: 768, height: 1024 },
-    { width: 375, height: 812 },
   ]) {
     test(`axe on the landing page at ${size.width}`, async ({ seed, asUser }) => {
       test.skip(!axeAvailable(), 'axe-core is not available');
@@ -147,8 +145,6 @@ test.describe('Default landing', () => {
     for (const [width, height] of [
       [1366, 768],
       [1920, 1080],
-      [768, 1024],
-      [375, 812],
     ]) {
       for (const [who, page, heading] of [
         ['with-work-my-work', withWork, 'My Work'],

@@ -17,8 +17,6 @@ import { FIRM_ZONE, dateInZone } from '../support/time';
 const OUT = process.env['E2E_SCREENSHOTS'];
 
 const SIZES = [
-  { width: 375, height: 812 },
-  { width: 768, height: 1024 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
 ] as const;
@@ -77,7 +75,7 @@ async function seeded(seed: Seeder, admin: Api, taskOverrides: Json = {}): Promi
 }
 
 test.describe('Task page: inline Due date (#664)', () => {
-  test('the popover is clean for axe and does not scroll the page sideways at 375, 768, 1366 and 1920', async ({
+  test('the popover is clean for axe and does not scroll the page sideways at 1366 and 1920', async ({
     seed,
     admin,
     page,

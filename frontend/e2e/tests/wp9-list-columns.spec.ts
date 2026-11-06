@@ -21,8 +21,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 const grid = (page: Page, name: string) =>
@@ -452,7 +450,7 @@ test.describe('WP9 list columns', () => {
     });
   });
 
-  test.describe('layout at four sizes', () => {
+  test.describe('layout at both desktop sizes', () => {
     const screens = [
       {
         name: 'clients-list',

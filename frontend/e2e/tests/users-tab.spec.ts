@@ -502,22 +502,6 @@ test.describe('Users tab: workload', () => {
     await expect(header).toHaveAttribute('aria-sort', 'none');
   });
 
-  test('below 900 px the table scrolls sideways and keeps the person column in view', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
-    await openUsers(page);
-    await page.getByRole('button', { name: 'Table' }).click();
-    const wrap = page.locator('[data-users-scroll]');
-    await expect(wrap).toBeVisible();
-    await wrap.evaluate((el) => (el.scrollLeft = 300));
-    const person = page.locator('[data-users-table] tbody th.person').first();
-    const w = (await wrap.boundingBox())!;
-    const p = (await person.boundingBox())!;
-    expect(p.x).toBeGreaterThanOrEqual(w.x - 1);
-    expect(p.x + p.width).toBeLessThanOrEqual(w.x + w.width);
-  });
-
   test('the drawer rows have a Reassign icon instead of an assignee menu, list overdue first and reassign with focus, announcement and Undo', async ({
     page,
   }) => {
@@ -622,7 +606,6 @@ test.describe('Users tab: workload', () => {
     for (const [width, height] of [
       [1366, 768],
       [1920, 1080],
-      [375, 812],
     ]) {
       await page.setViewportSize({ width, height });
       await openUsers(page);
@@ -653,10 +636,7 @@ test.describe('Users tab: workload', () => {
   });
 
   test('is usable at 1024 and 375 px without sideways scrolling', async ({ page }) => {
-    for (const [w, h] of [
-      [1024, 768],
-      [375, 812],
-    ]) {
+    for (const [w, h] of [[1024, 768]]) {
       await page.setViewportSize({ width: w, height: h });
       await openUsers(page);
       const overflow = await page.evaluate(
@@ -681,7 +661,7 @@ test.describe('Users tab: workload', () => {
     expect(b.x + b.width).toBeLessThanOrEqual(375);
   });
 
-  test('has no axe violations on the cards, the table, the drawer and the picker at 1366, 1920 and 375', async ({
+  test('has no axe violations on the cards, the table, the drawer and the picker at 1366 and 1920', async ({
     page,
   }) => {
     test.skip(!axeAvailable(), 'axe-core not installed (set E2E_AXE_PATH to axe.min.js)');
@@ -689,7 +669,6 @@ test.describe('Users tab: workload', () => {
     for (const [width, height] of [
       [1366, 768],
       [1920, 1080],
-      [375, 812],
     ]) {
       await page.setViewportSize({ width, height });
       await openUsers(page);

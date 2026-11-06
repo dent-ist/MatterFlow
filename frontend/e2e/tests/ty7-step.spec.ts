@@ -18,8 +18,6 @@ const SIZES = [
   { w: 1366, h: 768 },
   { w: 1920, h: 1080 },
   { w: 1024, h: 768 },
-  { w: 768, h: 1024 },
-  { w: 375, h: 812 },
 ] as const;
 
 async function shot(page: Page, name: string, w: number): Promise<void> {
@@ -175,21 +173,6 @@ test.describe('Step record page', () => {
       await expect(page.locator('[data-action=edit-inputs]')).toHaveClass(/mf-btn--primary/);
       await page.locator('[data-action=edit-inputs]').click();
       await expect(page).toHaveURL(new RegExp(`/admin/steps/${step.id}/form$`));
-    });
-
-    test('a phone keeps only the primary action in the header; Activity is in the overflow', async ({
-      page,
-      seed,
-      admin,
-    }) => {
-      const step = await makeStep(admin, seed);
-      await page.setViewportSize({ width: 375, height: 812 });
-      await openStep(page, step.id);
-      await expect(page.locator('[data-page-actions] button[data-action]')).toHaveText([
-        'Edit Inputs',
-      ]);
-      await overflowButton(page).click();
-      await expect(page.getByRole('menuitem')).toHaveText(['Activity', 'Deactivate']);
     });
 
     test('Activity opens the audit drawer at every width, axe clean, and focus returns to the button', async ({

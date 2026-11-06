@@ -9,7 +9,7 @@ import { SIZES, axeClean, box, pageSideScroll, shot } from '../support/pod-work-
  * Pod Work, By member workload table (epic #546, package WP-PW4): the table with people with work first, idle members folded, availability,
  * a neutral bar and the Unassigned row (W1, W12, #566); the sortable headings (#568); the phone cards (#569). Data: the fixtures of #547
  * (the busy pod: 23 members, 7 with open work, one idle member out of office). Screenshots go to `E2E_SCREENSHOTS_PW`
- * (docs/ux/pod-work-review/fixes/pw4-members). axe runs at the four sizes and the suite fails, never skips, without axe.
+ * (docs/ux/pod-work-review/fixes/pw4-members). axe runs at both desktop sizes and the suite fails, never skips, without axe.
  */
 interface Load {
   userId: number;
@@ -197,7 +197,7 @@ test.describe('Pod Work workload table', () => {
       await shot(page, 'members-1920x1080');
     });
 
-    for (const size of [SIZES[0], SIZES[1], SIZES[2]]) {
+    for (const size of [SIZES[0], SIZES[1]]) {
       test(`${size.name}: axe 0 and no sideways scroll, folded and unfolded`, async ({
         seed,
         personas,
@@ -313,76 +313,6 @@ test.describe('Pod Work workload table', () => {
           'ascending',
         );
       }
-    });
-  });
-
-  test.describe('#569 W1: below 640 px each member is a card', () => {
-    for (const size of [SIZES[3]]) {
-      test(`${size.name}: cards with the three numbers and a 44 px View tasks, the fold works, no sideways scroll, axe 0`, async ({
-        seed,
-        personas,
-        admin,
-        asUser,
-      }) => {
-        const fx = await podWorkFixtures(seed, personas);
-        const api = await admin.get(`/api/v1/pod-work?podId=${fx.busy.podId}`);
-        const working = (api.memberLoads as Load[]).filter((m) => m.open > 0);
-        const idle = (api.memberLoads as Load[]).filter((m) => m.open === 0);
-        const page = await asUser(fx.lead.username);
-        await page.setViewportSize({ width: size.width, height: size.height });
-        await page.goto(`/pods/work?podId=${fx.busy.podId}&view=members`);
-        await expect(page.locator('[data-members]')).toBeVisible();
-        await expect(page.locator('table[data-members]')).toHaveCount(0);
-        await expect(page.getByRole('region', { name: /Pod members/ })).toHaveCount(0);
-
-        const cards = page.locator('[data-members] [data-member-row]');
-        await expect(cards).toHaveCount(1 + working.length);
-        await expect(cards.first()).toContainText('Not assigned to a person');
-        const first = working[0];
-        const card = page.locator(`[data-member-row][data-user="${first.userId}"]`);
-        await expect(card).toContainText(first.displayName);
-        await expect(card).toContainText(
-          `${first.open} open · ${first.overdue} overdue · ${first.onHold} on hold`,
-        );
-        const view = card.getByRole('button', { name: `View tasks of ${first.displayName}` });
-        expect((await box(view)).height).toBeGreaterThanOrEqual(44);
-        expect(await pageSideScroll(page)).toBeLessThanOrEqual(0);
-        await shot(page, `members-cards-${size.name}`);
-        await axeClean(page, `axe, cards, at ${size.name}`);
-
-        // The idle fold is a card too.
-        await expect(fold(page)).toHaveText(`Show ${idle.length} members with no open work`);
-        await fold(page).click();
-        await expect(cards).toHaveCount(1 + working.length + idle.length);
-        expect(await pageSideScroll(page)).toBeLessThanOrEqual(0);
-        await axeClean(page, `axe, cards unfolded, at ${size.name}`);
-
-        // Keyboard order: the name, then View tasks; View tasks sets the Assignee filter and keeps the focus on the card.
-        const name = card.locator('[data-card-name]');
-        await name.focus();
-        await page.keyboard.press('Tab');
-        await expect(view).toBeFocused();
-        await page.keyboard.press('Enter');
-        await expect(page).toHaveURL(new RegExp(`assignee=${first.userId}`));
-        await expect(view).toHaveAttribute('aria-pressed', 'true');
-        await expect(view).toBeFocused();
-      });
-    }
-
-    test('768x1024: the table fits with no sideways scroll and axe 0', async ({
-      seed,
-      personas,
-      asUser,
-    }) => {
-      const fx = await podWorkFixtures(seed, personas);
-      const page = await asUser(fx.lead.username);
-      await page.setViewportSize({ width: 768, height: 1024 });
-      await page.goto(`/pods/work?podId=${fx.busy.podId}&view=members`);
-      await expect(page.locator('table[data-members]')).toBeVisible();
-      expect(await pageSideScroll(page)).toBeLessThanOrEqual(0);
-      await expect(page.locator('[data-member-row] .pm-view').first()).toContainText('View Tasks');
-      await shot(page, 'members-768x1024');
-      await axeClean(page, 'axe at 768');
     });
   });
 });

@@ -14,10 +14,7 @@ import { expect, test } from '../support/fixtures';
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
 const SAMPLES = path.join(__dirname, '..', 'fixtures', 'email');
-const SIZES = [
-  { name: '1366', width: 1366, height: 768 },
-  { name: '375', width: 375, height: 812 },
-];
+const SIZES = [{ name: '1366', width: 1366, height: 768 }];
 
 const TABLE = `<p>Hi Nora, please process these custodians into the Harbor Point workspace by Friday, 5 pm Eastern.</p>
 <table><thead><tr><th scope="col">Custodian</th><th scope="col">Source</th><th scope="col">Batch</th><th scope="col">Volume (GB)</th><th scope="col">Notes</th></tr></thead>

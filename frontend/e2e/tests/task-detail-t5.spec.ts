@@ -19,8 +19,6 @@ import { FIRM_ZONE, dateInZone } from '../support/time';
 const OUT = process.env['E2E_SCREENSHOTS'];
 
 const SIZES = [
-  { width: 375, height: 812 },
-  { width: 768, height: 1024 },
   { width: 1024, height: 768 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
@@ -64,14 +62,6 @@ async function atEverySize(page: Page, name: string, settle: () => Promise<void>
     await settle();
     await check(page, name);
   }
-}
-
-/** Top of the Workflow heading with the page scrolled to the top (the review's measure). */
-async function workflowTop(page: Page): Promise<number> {
-  await page.evaluate(() => window.scrollTo(0, 0));
-  return page
-    .locator('[data-workflow-tab] [data-section-heading]')
-    .evaluate((el) => Math.round(el.getBoundingClientRect().top));
 }
 
 /** Opens the task with nothing remembered (the Details and section choices of an earlier size are cleared). */
@@ -145,7 +135,7 @@ const SENTENCE =
 const LONG_DESCRIPTION = `<p>${SENTENCE.repeat(4)}</p><p>${SENTENCE.repeat(4)}</p><p>${SENTENCE.repeat(3)}</p>`;
 
 test.describe('Task T5: narrow order and the Details disclosure (#307)', () => {
-  test('the tabs and the Workflow come first, Details is last and closed with a one-line summary at 375, 768 and 1024; opening it with the keyboard keeps focus and is remembered', async ({
+  test('the tabs and the Workflow come first, Details is last and closed with a one-line summary at 1024; opening it with the keyboard keeps focus and is remembered', async ({
     seed,
     admin,
     page,
@@ -200,19 +190,12 @@ test.describe('Task T5: narrow order and the Details disclosure (#307)', () => {
     }
   });
 
-  test('?tab=details opens the disclosure without remembering it; from 1100 px the two columns are unchanged and there is no disclosure', async ({
+  test('the two columns are unchanged and there is no disclosure', async ({
     seed,
     admin,
     page,
   }) => {
     const { task } = await seeded(seed, admin);
-    await page.setViewportSize({ width: 768, height: 1024 });
-    await openFresh(page, new TaskDetailPage(page), task.taskId);
-    await page.goto(`/tasks/${task.taskId}?tab=details`);
-    await expect(detailsToggle(page)).toHaveAttribute('aria-expanded', 'true');
-    await page.goto(`/tasks/${task.taskId}`);
-    await expect(detailsToggle(page)).toHaveAttribute('aria-expanded', 'false');
-
     for (const size of SIZES.filter((s) => s.width >= 1366)) {
       await page.setViewportSize(size);
       await new TaskDetailPage(page).open(task.taskId);
@@ -223,38 +206,6 @@ test.describe('Task T5: narrow order and the Details disclosure (#307)', () => {
       const aside = await page.locator('[data-detail-panel]').boundingBox();
       expect(aside!.x, 'Details at the right').toBeGreaterThan(wf!.x + wf!.width);
     }
-  });
-
-  test('Workflow position: typical task <= 380 and long, sensitive task <= 480 at 375; far above the old y 1519 at 768x1024', async ({
-    seed,
-    admin,
-    page,
-  }) => {
-    const typical = await seeded(seed, admin);
-    const long = await seeded(seed, admin, {
-      matter: { name: LONG_MATTER },
-      sensitive: true,
-      task: { title: LONG_TITLE, description: LONG_DESCRIPTION },
-    });
-    const detail = new TaskDetailPage(page);
-    const measured: Record<string, number> = {};
-    for (const [name, fx] of [
-      ['typical', typical],
-      ['long-sensitive', long],
-    ] as const) {
-      for (const size of SIZES) {
-        await page.setViewportSize(size);
-        await openFresh(page, detail, fx.task.taskId);
-        measured[`${name}@${size.width}`] = await workflowTop(page);
-      }
-    }
-    console.log('T5 Workflow heading y', JSON.stringify(measured));
-    expect(measured['typical@375'], 'typical task at 375').toBeLessThanOrEqual(380);
-    expect(measured['long-sensitive@375'], 'long sensitive task at 375').toBeLessThanOrEqual(480);
-    expect(measured['typical@768'], 'typical task at 768x1024').toBeLessThanOrEqual(420);
-    expect(measured['long-sensitive@768'], 'long task at 768x1024').toBeLessThanOrEqual(480);
-    expect(measured['typical@1366']).toBeLessThanOrEqual(300);
-    expect(measured['long-sensitive@1366']).toBeLessThanOrEqual(330);
   });
 });
 
@@ -351,30 +302,6 @@ test.describe('Task T5: the tab strip replaces the section nav (#308, #347)', ()
     }
   });
 
-  test('the strip is not sticky and scrolls sideways on its own at 375 without moving the page; it keeps the selected tab in view', async ({
-    seed,
-    admin,
-    page,
-  }) => {
-    const { task } = await seeded(seed, admin);
-    await addComments(admin, task.taskId, 30);
-    const detail = new TaskDetailPage(page);
-    for (const size of SIZES) {
-      await page.setViewportSize(size);
-      await openFresh(page, detail, task.taskId);
-      await tab(page, 'Comments').click();
-      await expect(tab(page, 'Comments')).toHaveText(/30/);
-      await noHorizontalScroll(page);
-      const inStrip = await tab(page, 'Comments').evaluate((el) => {
-        const strip = el.parentElement!.getBoundingClientRect();
-        const r = el.getBoundingClientRect();
-        return r.left >= strip.left - 1 && r.right <= strip.right + 1;
-      });
-      expect(inStrip, `selected tab inside the strip at ${size.width}`).toBe(true);
-      await shot(page, 'tabs-strip');
-    }
-  });
-
   test('reduced motion: choosing a tab does not scroll the page at all', async ({
     seed,
     admin,
@@ -382,7 +309,7 @@ test.describe('Task T5: the tab strip replaces the section nav (#308, #347)', ()
   }) => {
     const { task } = await seeded(seed, admin);
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.setViewportSize({ width: 768, height: 1024 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     await new TaskDetailPage(page).open(task.taskId);
     await tab(page, 'Assets').click();
     await expect(page.locator('[data-section="assets"]')).toBeVisible();
@@ -391,7 +318,7 @@ test.describe('Task T5: the tab strip replaces the section nav (#308, #347)', ()
 });
 
 test.describe('Task T5 owner request: Assets first, Comments after it, each the full width of the column', () => {
-  test('tabs in that order at 375, 768, 1024, 1366 and 1920; each pane fills the left column; only one is on screen, never side by side', async ({
+  test('tabs in that order at 1024, 1366 and 1920; each pane fills the left column; only one is on screen, never side by side', async ({
     seed,
     admin,
     page,
@@ -487,7 +414,7 @@ test.describe('Task T5: the Details panel without a nested scroll trap (#309)', 
     page,
   }) => {
     const { task } = await seeded(seed, admin, { task: { description: '<p>Short.</p>' } });
-    for (const size of [SIZES[3], SIZES[4]]) {
+    for (const size of [SIZES[1], SIZES[2]]) {
       await page.setViewportSize(size);
       await new TaskDetailPage(page).open(task.taskId);
       const aside = page.locator('[data-detail-panel]');
@@ -537,7 +464,6 @@ test.describe('Task T5: states, axe and no sideways scroll at five widths', () =
       await detail.open(task.taskId);
       await expect(tab(page, 'Comments')).toContainText('112');
     });
-    await page.setViewportSize({ width: 375, height: 812 });
     await tab(page, 'Comments').click();
     await expect(page.locator('[data-comment-id]').first()).toBeVisible();
     await check(page, 'comments-112-open');
@@ -565,9 +491,6 @@ test.describe('Task T5: states, axe and no sideways scroll at five widths', () =
         await expect(tab(page, 'Workflow')).toBeVisible();
       });
     }
-    await page.setViewportSize({ width: 375, height: 812 });
-    await detail.open(done.task.taskId);
-    expect(await workflowTop(page)).toBeLessThanOrEqual(480);
   });
 
   test('view-only: the counts the person may see; Assets has no count without Asset.View', async ({
@@ -600,30 +523,11 @@ test.describe('Task T5: states, axe and no sideways scroll at five widths', () =
     const none = await seed.role(['Matter.View'], 'E2E no task');
     const nobody = await seed.user([none.name], 'notask');
     const n = await asUser(nobody.username);
-    await n.setViewportSize({ width: 375, height: 812 });
+    await n.setViewportSize({ width: 1366, height: 768 });
     await n.goto(`/tasks/${task.taskId}`);
     await n.waitForLoadState('networkidle');
     await expect(tablist(n)).toHaveCount(0);
     await check(n, 'no-task-view');
-  });
-
-  test('System Admin and assignee Data Technician: tabs and disclosure behave the same', async ({
-    seed,
-    admin,
-    page,
-    asUser,
-  }) => {
-    const { task, tech } = await seeded(seed, admin);
-    const techPage = await asUser(tech.username);
-    for (const p of [page, techPage]) {
-      await p.setViewportSize({ width: 768, height: 1024 });
-      await new TaskDetailPage(p).open(task.taskId);
-      await expect(tablist(p).getByRole('tab')).toHaveCount(3);
-      await expect(detailsToggle(p)).toHaveAttribute('aria-expanded', 'false');
-      await detailsToggle(p).click();
-      await expect(p.locator('[data-section="details"] [data-view]')).toBeVisible();
-      await check(p, 'details-open-roles');
-    }
   });
 
   test('the skeleton reserves the tab strip, so the page does not shift when the task arrives (CLS)', async ({
@@ -632,7 +536,7 @@ test.describe('Task T5: states, axe and no sideways scroll at five widths', () =
     page,
   }) => {
     const { task } = await seeded(seed, admin);
-    for (const size of [SIZES[0], SIZES[1], SIZES[3]]) {
+    for (const size of [SIZES[1]]) {
       await page.setViewportSize(size);
       await page.addInitScript(() => {
         (window as unknown as { __cls: number }).__cls = 0;

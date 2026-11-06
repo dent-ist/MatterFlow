@@ -40,10 +40,7 @@ test.describe('task detail v3 screenshots', () => {
     };
 
     try {
-      for (const size of [
-        { w: 1366, h: 768 },
-        { w: 375, h: 812 },
-      ]) {
+      for (const size of [{ w: 1366, h: 768 }]) {
         const at = `${size.w}`;
         await page.setViewportSize({ width: size.w, height: size.h });
         await page.goto(`/tasks/${task.taskId}`);

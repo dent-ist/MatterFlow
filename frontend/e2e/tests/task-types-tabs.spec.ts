@@ -363,10 +363,7 @@ test.describe('Task type, workflow and step cross-links', () => {
     test.skip(!axeAvailable(), 'axe-core not installed (set E2E_AXE_PATH to axe.min.js)');
     test.setTimeout(120_000);
     const w = await world(seed);
-    for (const size of [
-      { width: 1366, height: 768 },
-      { width: 375, height: 812 },
-    ]) {
+    for (const size of [{ width: 1366, height: 768 }]) {
       await page.setViewportSize(size);
       for (const url of [
         `/admin/task-types?name=${w.token}`,

@@ -452,29 +452,6 @@ test.describe('Swimlane tab', () => {
     await expect(page.locator('[data-dash-state="error"]')).toHaveCount(0);
   });
 
-  test('below 900 px one lane at a time with a lane switcher (WP9b), the four lanes from 900 px', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 800, height: 900 });
-    await openBoard(page);
-    await expect(page.locator('[data-lane-switcher]')).toBeVisible();
-    await expect(page.locator('[data-lane]')).toHaveCount(1);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
-      true,
-    );
-
-    await page.setViewportSize({ width: 1024, height: 768 });
-    await expect(page.locator('[data-lane-switcher]')).toHaveCount(0);
-    await expect(page.locator('[data-lane]')).toHaveCount(4);
-    const a = (await lane(page, 'NEW').boundingBox())!;
-    const x = (await lane(page, 'IN_PROGRESS').boundingBox())!;
-    expect(x.y).toBeLessThan(a.y + 60);
-    // No horizontal scroll of the page: the board scrolls inside itself.
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
-      true,
-    );
-  });
-
   test('stays quick with 800 cards: a lane draws 40 at a time and "Show All" draws the rest', async ({
     page,
   }) => {

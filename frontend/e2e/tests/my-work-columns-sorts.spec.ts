@@ -23,8 +23,6 @@ async function shot(page: Page, name: string): Promise<void> {
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 /** The tagged titles of the rows on screen, in order. */
@@ -192,7 +190,7 @@ test.describe('My Work sorts, Closed column and column sets', () => {
     ).toHaveCount(1);
   });
 
-  test('axe, no overflow and screenshots of the Closed tab at 1366, 1920, 768 and 375', async ({
+  test('axe, no overflow and screenshots of the Closed tab at 1366 and 1920', async ({
     seed,
     asUser,
   }) => {

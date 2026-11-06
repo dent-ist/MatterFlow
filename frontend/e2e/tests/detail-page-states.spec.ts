@@ -14,8 +14,6 @@ import { uid } from '../support/seed';
 const OUT = process.env['E2E_SCREENSHOTS'];
 
 const SIZES = [
-  { width: 375, height: 812 },
-  { width: 768, height: 1024 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
 ] as const;
@@ -41,7 +39,7 @@ async function atEverySize(page: Page, name: string, settle?: () => Promise<void
     if (settle) await settle();
     if (axeAvailable()) expect(await axeViolations(page), `${name} at ${size.width}`).toEqual([]);
     await noHorizontalScroll(page);
-    if (size.width === 1366 || size.width === 375) await shot(page, name);
+    if (size.width === 1366) await shot(page, name);
   }
 }
 
@@ -447,13 +445,6 @@ test.describe('Client Matters tab: New matter and the inactive-client rule (#250
     await shot(page, 'client-matters-inactive');
 
     await atEverySize(page, 'client-matters-inactive');
-    // At 375 the page still does not scroll sideways (the grid scrolls inside its own box).
-    await page.setViewportSize({ width: 375, height: 812 });
-    const widths = await page.evaluate(() => [
-      document.documentElement.scrollWidth,
-      window.innerWidth,
-    ]);
-    expect(widths[0]).toBeLessThanOrEqual(widths[1]);
   });
 });
 

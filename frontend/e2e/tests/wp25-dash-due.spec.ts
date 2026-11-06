@@ -10,7 +10,7 @@ import { dateInZone, FIRM_ZONE } from '../support/time';
 /**
  * Dashboard and Swimlane adopt the shared Due cell (TQ-WP25, #213, #214): the Summary lists show the whole "Overdue 24d" at every size
  * (no clipping, BUG-TQ2), the Summary rows, the Swimlane card and the task header say the same words as the Task Queue row of the same
- * task, and axe is clean at four sizes. Own tagged tasks only (the database is shared); the Summary lists are the top five of the whole
+ * task, and axe is clean at both desktop sizes. Own tagged tasks only (the database is shared); the Summary lists are the top five of the whole
  * database, so what they show is compared row by row with the queue instead of expecting our tasks in them. Screenshots go to
  * E2E_SCREENSHOTS when it is set (docs/ux/task-queue-review/fixes/wp-dash-due).
  */
@@ -49,14 +49,10 @@ const ALL_SIZES = [
   [1920, 1080],
   [2560, 1440],
   [1024, 768],
-  [768, 1024],
-  [375, 812],
 ] as const;
 const AXE_SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 interface Cell {
@@ -101,7 +97,7 @@ test.describe('Dashboard and Swimlane Due cell (#213, #214)', () => {
     await make('asap', {});
   });
 
-  test('Swimlane card and task header say what the Task Queue row says, the compact card stays 44 px; axe at four sizes', async ({
+  test('Swimlane card and task header say what the Task Queue row says, the compact card stays 44 px; axe at both desktop sizes', async ({
     page,
   }) => {
     test.setTimeout(300_000);

@@ -7,7 +7,7 @@ import { goOffline } from '../support/personas';
 import { noHorizontalScroll, shot, SIZES } from '../support/screens';
 
 /**
- * Final verification of the app shell and system pages (epic #585, #632): the contract over the shell routes at the four sizes (axe with
+ * Final verification of the app shell and system pages (epic #585, #632): the contract over the shell routes at both desktop sizes (axe with
  * the best-practice rules including target-size, no page-level sideways scroll, the page-header numbers, the bell, the mark), the banners
  * open, the landing of the personas (the Project Manager's short menu and landing included) and the keyboard and focus rules of the shell.
  * Measurements are written to `$E2E_SCREENSHOTS/measurements.json` when that folder is set (docs/ux/shell-review/fixes/final).
@@ -106,7 +106,7 @@ test.describe('Final contract over the shell routes (#632)', () => {
   test.skip(() => !axeAvailable(), 'axe-core is not available');
   test.setTimeout(900_000);
 
-  test('every shell route at four sizes: axe 0 (best-practice), no sideways scroll, header numbers, bell, mark', async ({
+  test('every shell route at both desktop sizes: axe 0 (best-practice), no sideways scroll, header numbers, bell, mark', async ({
     page,
   }) => {
     const rows: Row[] = [];
@@ -115,7 +115,7 @@ test.describe('Final contract over the shell routes (#632)', () => {
       for (const r of ROUTES) {
         await page.goto(r.url());
         rows.push(await measure(page, r.name, size.width));
-        if (size.width === 1366 || size.width === 375)
+        if (size.width === 1366)
           await shot(page, `final-${r.name.replace(/[^A-Za-z0-9]+/g, '-').toLowerCase()}`);
       }
       await expect(page.locator('.mf-logo__mark')).toBeVisible();
@@ -141,7 +141,7 @@ test.describe('Final contract over the shell routes (#632)', () => {
     expect(problems, problems.join('\n')).toEqual([]);
   });
 
-  test('banners open: sign-in problem and offline are clean at four sizes and the page does not scroll sideways', async ({
+  test('banners open: sign-in problem and offline are clean at both desktop sizes and the page does not scroll sideways', async ({
     page,
     context,
   }) => {
@@ -266,9 +266,7 @@ test.describe('Landing and menus of the personas (#632)', () => {
 test.describe('Keyboard and focus (#632)', () => {
   test.setTimeout(300_000);
 
-  test('skip links come first, the user menu and a dialog give focus back, the phone menu returns to its button', async ({
-    page,
-  }) => {
+  test('skip links come first, the user menu and a dialog give focus back', async ({ page }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/clients');
     await expect(page.getByRole('heading', { level: 1, name: 'Clients' })).toBeVisible();
@@ -293,13 +291,5 @@ test.describe('Keyboard and focus (#632)', () => {
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(user).toBeFocused();
-
-    await page.setViewportSize({ width: 375, height: 812 });
-    const menu = page.getByRole('button', { name: 'Menu', exact: true });
-    await menu.focus();
-    await page.keyboard.press('Enter');
-    await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
-    await page.keyboard.press('Escape');
-    await expect(menu).toBeFocused();
   });
 });

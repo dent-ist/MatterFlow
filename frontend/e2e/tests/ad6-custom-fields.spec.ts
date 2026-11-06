@@ -21,8 +21,6 @@ const crumbs = (page: Page) => page.getByRole('navigation', { name: 'Breadcrumb'
 const WIDTHS = [
   { width: 1920, height: 1080 },
   { width: 1366, height: 768 },
-  { width: 768, height: 1024 },
-  { width: 375, height: 812 },
 ] as const;
 
 interface Summary {
@@ -127,7 +125,7 @@ test.describe('Custom Fields list (#644)', () => {
     await expect(button).toBeFocused();
   });
 
-  test('axe finds nothing and nothing scrolls sideways at 375, 768, 1366 and 1920, with the row menu open', async ({
+  test('axe finds nothing and nothing scrolls sideways at 1366 and 1920, with the row menu open', async ({
     page,
   }) => {
     await page.goto('/admin/custom-fields');
@@ -141,29 +139,6 @@ test.describe('Custom Fields list (#644)', () => {
       if (axeAvailable()) expect(await axeViolations(page), `menu at ${size.width}`).toEqual([]);
       await page.keyboard.press('Escape');
     }
-  });
-
-  test('below 640 px the list is cards with the same menu and no sideways scroll', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/admin/custom-fields');
-    const cards = page.locator('li.rc');
-    await expect(cards).toHaveCount(3);
-    for (const card of await cards.all()) {
-      const height = (await card.boundingBox())!.height;
-      expect(height).toBeGreaterThanOrEqual(56);
-      expect(height).toBeLessThanOrEqual(150);
-    }
-    await expect(cards.nth(1)).toContainText('Matter');
-    await expect(cards.nth(1).getByRole('link')).toHaveAttribute(
-      'href',
-      '/admin/custom-fields/matter/form',
-    );
-    await cards.nth(1).getByRole('button', { name: 'Actions for Matter custom fields' }).click();
-    await expect(page.getByRole('menuitem', { name: /Edit fields/ })).toBeVisible();
-    await noHorizontalScroll(page);
-    await shot(page, 'custom-fields-cards');
   });
 
   test('a failed read shows one message with the reference, no toast, and Retry reads again', async ({

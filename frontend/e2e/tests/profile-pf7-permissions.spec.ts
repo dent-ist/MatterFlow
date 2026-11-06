@@ -147,7 +147,7 @@ test.describe('pf7-permissions: who gets My profile, the menu entries and the di
     await expect(disabled.locator('[data-account-card]')).toHaveCount(0);
   });
 
-  test('the 403 page at four sizes: no sideways scroll, axe 0, no toast', async ({
+  test('the 403 page at both desktop sizes: no sideways scroll, axe 0, no toast', async ({
     personas,
     asUser,
   }) => {
@@ -160,7 +160,7 @@ test.describe('pf7-permissions: who gets My profile, the menu entries and the di
       await noHorizontalScroll(me);
       if (axeAvailable()) expect(await axeViolations(me), `403 at ${size.width}`).toEqual([]);
       await expect(toasts(me)).toHaveCount(0);
-      if (size.width === 1366 || size.width === 375) await shot(me, 'pf7-403');
+      if (size.width === 1366) await shot(me, 'pf7-403');
     }
   });
 });

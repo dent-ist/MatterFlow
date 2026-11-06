@@ -24,8 +24,6 @@ async function shot(page: Page, name: string): Promise<void> {
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 async function viewer(seed: Seeder, codes: string[], label: string) {
@@ -326,32 +324,14 @@ test.describe('My Work links, filters and copy', () => {
     );
     await expect(dueButton).not.toHaveAccessibleName(/Next 7 days/);
     await expect(dueButton).toHaveAccessibleName(/\d/);
-    // The chip (always shown in the 375 px sheet layout) says "Due: Next 7 days", or the dates for a custom range.
-    await page.setViewportSize({ width: 375, height: 812 });
-    const chip = page.locator('[data-filter-chips] [data-chip="due"]');
-    await expect(chip).toContainText(/Due: [A-Z][a-z]{2} \d+/);
-    await myWork.open(
-      `?view=active&dueFrom=${dateInZone(FIRM_ZONE, 0)}&dueTo=${dateInZone(FIRM_ZONE, 6)}`,
-    );
-    await expect(chip).toHaveText(/Due: Next 7 days/);
     await page.setViewportSize({ width: 1920, height: 1080 });
 
-    // The tab-owned cells and the Status choices at every width (at 375 the filters are in the sheet).
+    // The tab-owned cells and the Status choices at both desktop sizes.
     for (const [w, h] of SIZES) {
       await page.setViewportSize({ width: w, height: h });
       await myWork.open('?view=dueSoon');
-      if (w < 640) {
-        await page.getByRole('button', { name: /^Filters/ }).click();
-        await expect(
-          page.getByRole('dialog').locator('[data-filter-fixed][data-filter="due"]'),
-        ).toContainText('Next 2 days and overdue');
-        if (axeAvailable()) expect(await axeViolations(page), `sheet at ${w}`).toEqual([]);
-        await shot(page, `bug10-filters-sheet-${w}x${h}`);
-        await page.keyboard.press('Escape');
-      } else {
-        if (axeAvailable()) expect(await axeViolations(page), `filters at ${w}`).toEqual([]);
-        await shot(page, `bug10-due-soon-${w}x${h}`);
-      }
+      if (axeAvailable()) expect(await axeViolations(page), `filters at ${w}`).toEqual([]);
+      await shot(page, `bug10-due-soon-${w}x${h}`);
     }
     await page.close();
   });

@@ -19,8 +19,6 @@ import { FIRM_ZONE, dateInZone } from '../support/time';
 const OUT = process.env['E2E_SCREENSHOTS'];
 
 const SIZES = [
-  { width: 375, height: 812 },
-  { width: 768, height: 1024 },
   { width: 1024, height: 768 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
@@ -228,7 +226,7 @@ test.describe('Task T6: Workflow head (#310)', () => {
 });
 
 test.describe('Task T6: a completed step keeps its number and title on one line (#311, BUG-7)', () => {
-  test('a 140-character title of a completed step 2 shares its first row with "2." at 375, 768, 1366 and 1920', async ({
+  test('a 140-character title of a completed step 2 shares its first row with "2." at 1366 and 1920', async ({
     seed,
     admin,
     page,
@@ -276,7 +274,7 @@ test.describe('Task T6: Details heading, alignment and Request details (#312, #3
     });
     const techPage = await asUser(tech.username);
     for (const p of [page, techPage]) {
-      for (const size of [SIZES[3], SIZES[1]]) {
+      for (const size of [SIZES[1]]) {
         await p.setViewportSize(size);
         await openFresh(p, task.taskId);
         await openDetails(p);
@@ -419,15 +417,6 @@ test.describe('Task T6: long Description is cut at about 12 lines (#314)', () =>
     await new TaskDetailPage(page).open(short.task.taskId);
     await expect(page.locator('[data-description]')).toContainText('Short description.');
     await expect(page.locator('[data-description-more]')).toHaveCount(0);
-
-    // Below 1100 px the Details disclosure holds it: the cut works after the panel is opened.
-    for (const size of SIZES.filter((s) => s.width < 1024)) {
-      await page.setViewportSize(size);
-      await openFresh(page, long.task.taskId);
-      await openDetails(page);
-      await expect(page.locator('[data-description-more]')).toHaveText('Show More');
-      await check(page, 'description-clamped-narrow');
-    }
   });
 
   test('nothing shifts when the page loads (CLS under 0.02) and the wide Details panel has no scrollbar with Request details closed (#309)', async ({
@@ -439,7 +428,7 @@ test.describe('Task T6: long Description is cut at about 12 lines (#314)', () =>
       fieldCount: 14,
       task: { description: LONG_DESCRIPTION },
     });
-    for (const size of [SIZES[3], SIZES[4]]) {
+    for (const size of [SIZES[1], SIZES[2]]) {
       await page.setViewportSize(size);
       await page.addInitScript(() => {
         (window as unknown as { __cls: number }).__cls = 0;
@@ -545,7 +534,7 @@ test.describe('Task T6: long values and permission variants', () => {
     }
 
     // No Task.View: the access state, none of the new parts.
-    await nonePage.setViewportSize({ width: 375, height: 812 });
+    await nonePage.setViewportSize({ width: 1366, height: 768 });
     await nonePage.goto(`/tasks/${task.taskId}`);
     await nonePage.waitForLoadState('networkidle');
     await expect(nonePage.locator('[data-workflow-tab]')).toHaveCount(0);

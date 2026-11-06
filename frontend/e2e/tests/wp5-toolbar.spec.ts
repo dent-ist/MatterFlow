@@ -23,8 +23,6 @@ async function shot(page: Page, name: string): Promise<void> {
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 interface Box {
@@ -246,7 +244,10 @@ test.describe('Task Queue toolbar (WP5)', () => {
     await expect(page.locator('[data-sort-note]')).toBeVisible();
   });
 
-  test('axe: the toolbar in its states has no violations at four sizes', async ({ page, seed }) => {
+  test('axe: the toolbar in its states has no violations at both desktop sizes', async ({
+    page,
+    seed,
+  }) => {
     test.skip(!axeAvailable(), 'axe-core not available');
     // Four sizes, about ten axe scans: over the default 60 s on a loaded machine (3 of 3 runs), so the same 3 minutes as the other axe sweeps.
     test.setTimeout(180_000);

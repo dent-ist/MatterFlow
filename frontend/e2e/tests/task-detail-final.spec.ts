@@ -28,8 +28,6 @@ import { dateInZone, FIRM_ZONE } from '../support/time';
 const OUT = process.env['E2E_SCREENSHOTS'];
 
 const SIZES = [
-  { width: 375, height: 812 },
-  { width: 768, height: 1024 },
   { width: 1024, height: 768 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
@@ -290,7 +288,7 @@ test.describe('Task Detail final verification (#331): contract over six task sha
         await expect(overflow).toBeFocused();
       }
       if (long) {
-        // The Activity drawer of the long task, at the four sizes.
+        // The Activity drawer of the long task, at both desktop sizes.
         for (const size of FOUR) {
           await page.setViewportSize(size);
           await detail.open(fx.task.taskId);
@@ -421,7 +419,7 @@ test.describe('Task Detail final verification (#331): permission matrix in short
   ];
 
   for (const v of variants) {
-    test(`${v.name}: the page opens, the menus open, every link of the page opens, no failed request and no toast; axe 0 at four sizes with the overflow open`, async ({
+    test(`${v.name}: the page opens, the menus open, every link of the page opens, no failed request and no toast; axe 0 at both desktop sizes with the overflow open`, async ({
       seed,
       admin,
       page,
@@ -478,7 +476,7 @@ test.describe('Task Detail final verification (#331): permission matrix in short
     });
   }
 
-  test('no Task.View: the 403 page names the problem, offers a page the person can open, and passes axe at four sizes', async ({
+  test('no Task.View: the 403 page names the problem, offers a page the person can open, and passes axe at both desktop sizes', async ({
     seed,
     admin,
     asUser,
@@ -525,7 +523,7 @@ test.describe('Task Detail final verification (#331): state matrix', () => {
     await expect(skeleton).toHaveCount(0);
   });
 
-  test('404, 403 and a server fault: one heading, a way on (Retry only for the fault), no toast; axe 0 at four sizes', async ({
+  test('404, 403 and a server fault: one heading, a way on (Retry only for the fault), no toast; axe 0 at both desktop sizes', async ({
     seed,
     page,
   }) => {
@@ -568,7 +566,7 @@ test.describe('Task Detail final verification (#331): state matrix', () => {
     }
   });
 
-  test('a lost connection in Activity: one message with Retry, no toast, Retry recovers; axe 0 at four sizes', async ({
+  test('a lost connection in Activity: one message with Retry, no toast, Retry recovers; axe 0 at both desktop sizes', async ({
     seed,
     page,
   }) => {

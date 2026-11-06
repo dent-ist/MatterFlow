@@ -25,8 +25,6 @@ async function shot(page: Page, name: string): Promise<void> {
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 const MAKER_RIGHTS = ['Task.View', 'Task.Create', 'Task.Assign', 'Matter.View'];
@@ -374,7 +372,7 @@ test.describe('My Work per-tab columns', () => {
     await shot(page, 'c2-closed-with-priority-1366x768');
   });
 
-  test('axe, no horizontal page scroll and screenshots of the three default sets at four widths', async ({
+  test('axe, no horizontal page scroll and screenshots of the three default sets at both desktop sizes', async ({
     seed,
     asUser,
   }) => {

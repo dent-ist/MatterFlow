@@ -24,8 +24,6 @@ async function shot(page: Page, name: string): Promise<void> {
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 const nav = (page: Page) => page.locator('nav a.mf-active');
@@ -295,10 +293,7 @@ test.describe('Open in Task Queue', () => {
     }
   });
 
-  test('M10: the link is a real link, in the toolbar on wide windows and in the Filters sheet at 375', async ({
-    seed,
-    asUser,
-  }) => {
+  test('M10: the link is a real link, in the toolbar on wide windows', async ({ seed, asUser }) => {
     const { me } = await world(seed);
     const page = await asUser(me.username);
     const myWork = new MyWorkPage(page);

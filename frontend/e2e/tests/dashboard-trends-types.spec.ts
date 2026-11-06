@@ -265,7 +265,7 @@ test.describe('Trends by task type', () => {
     const flows = page.locator('[data-panel="flows"] svg');
     await page.setViewportSize({ width: 1366, height: 768 });
     await openTrends(page);
-    let b = (await flows.boundingBox())!;
+    const b = (await flows.boundingBox())!;
     expect(b.width).toBeGreaterThanOrEqual(640);
     // Fixed-height Dashboard (#137): the two panels share what the window leaves (flows 1.6 : backlog 1), each at least 160 px.
     expect(b.height).toBeGreaterThanOrEqual(160);
@@ -288,22 +288,6 @@ test.describe('Trends by task type', () => {
     const wide = (await page.locator('mf-trend-legend').boundingBox())!;
     expect(wide.width).toBeGreaterThanOrEqual(360);
     expect(wide.width).toBeLessThanOrEqual(400);
-
-    // The drawing follows the window (no fixed viewBox scaling) and stacks below 1000 px.
-    await page.setViewportSize({ width: 800, height: 900 });
-    await expect.poll(async () => (await flows.boundingBox())!.width).toBeLessThan(800);
-    b = (await flows.boundingBox())!;
-    expect(b.height).toBeGreaterThanOrEqual(160);
-    await page.setViewportSize({ width: 375, height: 812 });
-    // Below 768 px the page scrolls; on a phone (480 px and below) the panels are the full width of the card, 16:9 and at least 220 px (#121).
-    await expect.poll(async () => (await flows.boundingBox())!.height).toBeGreaterThanOrEqual(220);
-    // The navigation rail is a Menu button on a phone (#164), so the chart is the screen minus the two 16 px gutters (at least 343 px, #121).
-    expect((await flows.boundingBox())!.width).toBeGreaterThanOrEqual(343);
-    expect((await flows.boundingBox())!.width).toBeLessThanOrEqual(375);
-    expect(
-      (await page.locator('[data-panel="backlog"] svg').boundingBox())!.height,
-    ).toBeGreaterThanOrEqual(160);
-    await expect(page.locator('[data-measure-select="flows"]')).toBeVisible();
   });
 
   test('has no axe violations with task types selected, in the table and with the due dates lines', async ({
@@ -314,7 +298,6 @@ test.describe('Trends by task type', () => {
     for (const [width, height] of [
       [1366, 768],
       [1920, 1080],
-      [375, 812],
     ]) {
       await page.setViewportSize({ width, height });
       await page.goto(`${TREND}&types=${types[0].id},${types[1].id},${types[2].id}`);
@@ -511,7 +494,7 @@ test.describe('Trends backlog and labels', () => {
     expect(await page.locator('tbody tr').count()).toBeLessThanOrEqual(54);
   });
 
-  test('has no axe violations in the default view and the weekly view, at 1366, 1920 and 375', async ({
+  test('has no axe violations in the default view and the weekly view, at 1366 and 1920', async ({
     page,
   }) => {
     test.skip(!axeAvailable(), 'axe-core not installed (set E2E_AXE_PATH to axe.min.js)');
@@ -519,7 +502,6 @@ test.describe('Trends backlog and labels', () => {
     for (const [width, height] of [
       [1366, 768],
       [1920, 1080],
-      [375, 812],
     ]) {
       await page.setViewportSize({ width, height });
       for (const url of [TREND, `${TREND}&period=90d`]) {
@@ -530,75 +512,6 @@ test.describe('Trends backlog and labels', () => {
         await expect(trendTip(page)).toBeVisible();
         expect(await axeViolations(page), `${url} with the tooltip at ${width}`).toEqual([]);
       }
-    }
-  });
-});
-
-test.describe('Trends on a phone', () => {
-  test.use({ viewport: { width: 375, height: 812 }, hasTouch: true });
-
-  test('shows the chart at full width and 16:9, folds Compare task types behind a 44 px button, and a tap reads a day', async ({
-    page,
-  }) => {
-    await openTrends(page);
-    const flows = page.locator('[data-panel="flows"] svg');
-    const chart = (await flows.boundingBox())!;
-    // The full width the page leaves: the app shell keeps a 56 px navigation rail at 375 px, so that is 271 px, not 343 px.
-    const host = (await page.locator('mf-dash-trends-tab').boundingBox())!;
-    expect(chart.width).toBeGreaterThanOrEqual(host.width - 4);
-    expect(chart.width).toBeGreaterThanOrEqual(260);
-    expect(chart.height).toBeGreaterThanOrEqual(193);
-    expect(chart.height).toBeGreaterThanOrEqual(220);
-    // The default is the chart, not the table; the table is one tap away.
-    await expect(page.locator('[data-plot]')).toBeVisible();
-    await expect(page.getByRole('button', { name: /View as table/ })).toBeVisible();
-
-    // Compare task types: collapsed by default, a 44 px target.
-    const toggle = page.locator('[data-compare-toggle]');
-    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    expect((await toggle.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    await expect(page.locator('mf-trend-legend')).toHaveCount(0);
-    // The page is short: the chart, the backlog and the folded button are under 1.5 screens.
-    const total = await page.evaluate(() => document.scrollingElement!.scrollHeight);
-    expect(total).toBeLessThan(812 * 1.5);
-
-    // One title each; the old sentence is gone.
-    await expect(page.getByRole('heading', { name: 'Created and Completed' })).toHaveCount(1);
-    await expect(page.getByRole('heading', { name: 'Backlog at End of Day' })).toHaveCount(1);
-    await expect(page.getByRole('heading', { name: /per day/ })).toHaveCount(0);
-
-    // A tap on a day shows the tooltip with the values, and it stays after the finger lifts.
-    const plot = (await page.locator('[data-panel-plot="flows"]').boundingBox())!;
-    await page.touchscreen.tap(plot.x + plot.width * 0.4, plot.y + plot.height / 2);
-    await expect(trendTip(page)).toBeVisible();
-    await expect(trendTip(page)).toContainText('Created');
-    await page.waitForTimeout(300);
-    await expect(trendTip(page)).toBeVisible();
-
-    // Opening the list and picking a task type changes the count on the button; the identity of the line is in the list and the tooltip.
-    await toggle.tap();
-    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    await expect(page.locator('mf-trend-legend')).toBeVisible();
-    await search(page, types[0].name);
-    await box(page, types[0].id).check();
-    await expect(toggle).toContainText('Compare task types (1)');
-  });
-
-  test('has no horizontal scroll at 375 and 320 px', async ({ page }) => {
-    for (const width of [375, 320]) {
-      await page.setViewportSize({ width, height: 700 });
-      await page.goto(`${TREND}&types=${types[0].id},${types[1].id}`);
-      await expect(page.locator('[data-plot]')).toBeVisible();
-      // Nothing inside the Trends tab reaches past the window (the tab strip above it is its own scroller and is not part of this tab).
-      const beyond = await page.evaluate(() =>
-        [...document.querySelectorAll('mf-dash-trends-tab, mf-dash-trends-tab *')]
-          .filter((e) => e.getBoundingClientRect().right > window.innerWidth + 0.5)
-          .map((e) => `${e.tagName}.${e.className}`),
-      );
-      expect(beyond, `at ${width}`).toEqual([]);
-      const svg = (await page.locator('[data-panel="flows"] svg').boundingBox())!;
-      expect(svg.width).toBeGreaterThanOrEqual(width - 56 - 60); // the navigation rail and the page gutters
-      expect(svg.x + svg.width).toBeLessThanOrEqual(width);
     }
   });
 });

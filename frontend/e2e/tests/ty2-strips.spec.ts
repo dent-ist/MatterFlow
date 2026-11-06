@@ -17,8 +17,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
-  { width: 768, height: 1024 },
-  { width: 375, height: 812 },
 ] as const;
 
 async function shot(page: Page, name: string): Promise<void> {

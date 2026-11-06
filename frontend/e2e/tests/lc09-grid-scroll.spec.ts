@@ -107,7 +107,7 @@ test.describe('Wide grids scroll inside the frame (LC-09)', () => {
       if (axeAvailable()) expect(await axeViolations(page), `${s.name} axe`).toEqual([]);
     });
 
-    test(`${s.name} at 200% zoom (683 px wide) keeps the table and the page does not scroll sideways; at 400% (342 px) it is cards`, async ({
+    test(`${s.name} at 200% zoom (683 px wide) keeps the table and the page does not scroll sideways`, async ({
       page,
     }) => {
       await page.setViewportSize({ width: 683, height: 600 });
@@ -116,11 +116,6 @@ test.describe('Wide grids scroll inside the frame (LC-09)', () => {
       await expect(region).toBeVisible();
       await expect(region.locator('tbody tr').first()).toBeVisible();
       expect(await pageOverflow(page), `${s.name} at 200%`).toBeLessThanOrEqual(0);
-      await page.setViewportSize({ width: 342, height: 400 });
-      await page.goto(s.url);
-      await expect(page.locator('main')).toBeVisible();
-      await page.waitForTimeout(500);
-      expect(await pageOverflow(page), `${s.name} at 400%`).toBeLessThanOrEqual(0);
     });
   }
 

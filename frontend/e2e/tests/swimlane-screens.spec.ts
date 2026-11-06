@@ -39,7 +39,6 @@ test.describe('swimlane screenshots', () => {
     for (const [w, h] of [
       [1366, 768],
       [1024, 768],
-      [375, 812],
     ]) {
       await page.setViewportSize({ width: w, height: h });
       await page.goto(withLane(page, `${base}&group=none&sort=priority`));
@@ -118,12 +117,5 @@ test.describe('swimlane screenshots', () => {
     await expect(page.locator('[data-dash-state="error"]')).toBeVisible();
     await shot('11-error-1366');
     await page.unroute('**/api/v1/dashboard/swimlane**');
-
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(withLane(page, `${base}&group=none`));
-    await ready(page);
-    await page.locator('[data-lane="NEW"] [data-card-open]').first().click();
-    await expect(page.locator('[data-peek]')).toBeVisible();
-    await shot('12-drawer-375');
   });
 });

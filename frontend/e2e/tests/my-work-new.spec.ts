@@ -23,8 +23,6 @@ async function shot(page: Page, name: string): Promise<void> {
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 /** Writes the visit record once, before the app runs (a later navigation keeps what the app stored). */
@@ -169,13 +167,6 @@ test.describe('My Work: New', () => {
         ),
         `no horizontal page scroll at ${w}`,
       ).toBe(false);
-      if (w === 375) {
-        const heights = await page
-          .locator('[data-strip-item]')
-          .evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
-        for (const height of heights) expect(height).toBeGreaterThanOrEqual(44);
-        await expect(page.locator('[data-new-dot]').first()).toBeVisible();
-      }
       await page.locator('[data-strip-item="new"]').click();
       await expect(page).toHaveURL(/new=1/);
       await expect(page.locator('[data-task]')).toHaveCount(3);

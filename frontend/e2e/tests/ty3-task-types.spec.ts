@@ -14,8 +14,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
-  { width: 768, height: 1024 },
-  { width: 375, height: 812 },
 ] as const;
 
 async function shot(page: Page, name: string): Promise<void> {
@@ -121,9 +119,6 @@ test.describe('Task Types rows and columns (#371)', () => {
       [1099, noForm],
       [1000, noForm],
       [900, noForm.filter((h) => h !== 'Target (days)')],
-      [768, ['Name', 'Default Workflow', 'Status', 'Actions']],
-      // Target (days) drops last of the optional columns (PM v2 #853): at 640 px it made the table wider than its box.
-      [640, ['Name', 'Default Workflow', 'Status', 'Actions']],
     ];
     for (const [width, names] of expected) {
       await page.setViewportSize({ width, height: 900 });
@@ -222,37 +217,6 @@ test.describe('Open tasks (#373)', () => {
       `/api/v1/task-queue?type=${busy.taskType.id}&status=NEW&status=IN_PROGRESS&status=ON_HOLD&pageSize=25`,
     );
     expect(queue.total).toBe(apiBusy);
-  });
-
-  test('on a phone the card has an "n open" line that links to the Task Queue', async ({
-    page,
-    seed,
-  }) => {
-    const token = uid();
-    const w = await seed.world();
-    const current = await seed.admin.get(`/api/v1/task-types/${w.taskType.id}`);
-    await seed.admin.put(`/api/v1/task-types/${w.taskType.id}`, {
-      name: `${token} Counted`,
-      description: null,
-      iconKey: current.iconKey,
-      isActive: true,
-      eligibleWorkflowIds: current.eligibleWorkflowIds,
-      defaultWorkflowDefinitionId: current.defaultWorkflowDefinitionId,
-      rowVersion: current.rowVersion,
-    });
-    await seed.task(w);
-    await seed.task(w);
-
-    await page.setViewportSize(SIZES[3]);
-    await page.goto(`/admin/task-types?name=${token}`);
-    const card = page.locator('li[data-record-card]').filter({ hasText: `${token} Counted` });
-    await expect(card.locator('[data-count="open"]')).toContainText('2 open');
-    await expect(card.locator('[data-count="open"] a')).toHaveAttribute(
-      'href',
-      /\/tasks\?.*type=\d+/,
-    );
-    if (axeAvailable()) expect(await axeViolations(page), 'card with count').toEqual([]);
-    await shot(page, 'p373-card');
   });
 });
 

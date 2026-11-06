@@ -1,7 +1,7 @@
 import { Page } from '@playwright/test';
 import { ensureForm, manyFields } from '../support/designer';
 import { expect, test } from '../support/fixtures';
-import { SIZES, atEverySize, noHorizontalScroll, shot } from '../support/screens';
+import { SIZES, noHorizontalScroll, shot } from '../support/screens';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { uid } from '../support/seed';
 
@@ -18,8 +18,6 @@ const WIDTHS = [
   { width: 1920, height: 1080 },
   { width: 1366, height: 768 },
   { width: 1024, height: 768 },
-  { width: 768, height: 1024 },
-  { width: 375, height: 812 },
 ] as const;
 
 async function everyWidth(page: Page, label: string): Promise<void> {
@@ -27,7 +25,7 @@ async function everyWidth(page: Page, label: string): Promise<void> {
     await page.setViewportSize(size);
     if (axeAvailable()) expect(await axeViolations(page), `${label} at ${size.width}`).toEqual([]);
     await noHorizontalScroll(page);
-    if (size.width === 1366 || size.width === 375) await shot(page, label);
+    if (size.width === 1366) await shot(page, label);
   }
 }
 

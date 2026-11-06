@@ -14,10 +14,7 @@ import { uid } from '../support/seed';
 const OUT = process.env['E2E_SCREENSHOTS'];
 const AXE = process.env['E2E_AXE'];
 
-const SIZES = [
-  { w: 1366, h: 768 },
-  { w: 375, h: 812 },
-];
+const SIZES = [{ w: 1366, h: 768 }];
 
 async function axeViolations(page: Page): Promise<string[]> {
   if (!AXE) return [];

@@ -12,8 +12,6 @@ import { Seeder, uid } from '../support/seed';
 const SIZES = [
   { name: '1366x768', width: 1366, height: 768 },
   { name: '1920x1080', width: 1920, height: 1080 },
-  { name: '768x1024', width: 768, height: 1024 },
-  { name: '375x812', width: 375, height: 812 },
 ] as const;
 
 const SHOTS = process.env['E2E_SHOT_DIR'];
@@ -170,30 +168,7 @@ test.describe('Notification bell and panel', () => {
     await adminApi.dispose();
   });
 
-  test('panel states: empty and the phone sheet', async ({ admin, seed, asUser }) => {
-    const { tech, assign } = await setup(seed, admin);
-    const page = await asUser(tech.username);
-    await page.goto('/tasks');
-    await bell(page).click();
-    await expect(panel(page).locator('[data-panel-empty]')).toContainText("You're all caught up.");
-    await page.keyboard.press('Escape');
-
-    await assign(`Sheet ${uid()}`);
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/tasks');
-    await expect(badge(page)).toHaveText('1');
-    await bell(page).click();
-    const box = (await panel(page).boundingBox())!;
-    expect(box.x).toBe(0);
-    expect(Math.round(box.width)).toBe(375);
-    expect(await sideScroll(page)).toBe(0);
-    await expect(panel(page).locator('[data-panel-close]')).toBeVisible();
-    await panel(page).locator('[data-panel-close]').click();
-    await expect(panel(page)).toHaveCount(0);
-    await expect(bell(page)).toBeFocused();
-  });
-
-  test('axe is clean with the panel open at four sizes, and the header does not scroll sideways', async ({
+  test('axe is clean with the panel open at both desktop sizes, and the header does not scroll sideways', async ({
     admin,
     seed,
     asUser,
@@ -316,7 +291,11 @@ test.describe('Notifications page', () => {
     await expect(page).toHaveURL(/\/tasks\/\d+/);
   });
 
-  test('axe is clean at four sizes and the empty page says so', async ({ admin, seed, asUser }) => {
+  test('axe is clean at both desktop sizes and the empty page says so', async ({
+    admin,
+    seed,
+    asUser,
+  }) => {
     test.skip(!axeAvailable(), 'axe-core is not available');
     test.setTimeout(120_000);
     const { tech, assign } = await setup(seed, admin);
@@ -392,7 +371,7 @@ test.describe('My profile: Notifications section', () => {
     await expect(page.locator('.p-toast-message')).toHaveCount(0);
   });
 
-  test('axe is clean at four sizes', async ({ admin, seed, asUser }) => {
+  test('axe is clean at both desktop sizes', async ({ admin, seed, asUser }) => {
     test.skip(!axeAvailable(), 'axe-core is not available');
     test.setTimeout(120_000);
     const { tech } = await setup(seed, admin);

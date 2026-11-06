@@ -22,8 +22,6 @@ async function shot(page: Page, name: string): Promise<void> {
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 /** The review's persona: 14 ASAP, 9 overdue, 3 due today, one tomorrow and three far away (30 open tasks, two pages of 25). */

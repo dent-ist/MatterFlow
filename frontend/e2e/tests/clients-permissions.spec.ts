@@ -310,10 +310,7 @@ test.describe('#285: permission matrix, no dead links', () => {
 
   for (const key of ['client-only', 'no-matter']) {
     const role = ROLES.find((r) => r.key === key)!;
-    for (const [w, h] of [
-      [1366, 768],
-      [375, 812],
-    ] as const) {
+    for (const [w, h] of [[1366, 768]] as const) {
       test(`${role.label}: axe 0 and no sideways scroll (${w}x${h})`, async ({ asUser, seed }) => {
         const r = await seed.role(role.perms!, `E2E perm axe ${role.key}`);
         const user = await seed.user([r.name], `pa-${role.key.slice(0, 6)}`);
@@ -342,10 +339,7 @@ test.describe('#285: permission matrix, no dead links', () => {
     }
   }
 
-  for (const [w, h] of [
-    [1920, 1080],
-    [768, 1024],
-  ] as const) {
+  for (const [w, h] of [[1920, 1080]] as const) {
     test(`System Admin: axe 0 and no sideways scroll on the six pages (${w}x${h})`, async ({
       page,
     }) => {

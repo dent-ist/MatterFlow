@@ -61,7 +61,7 @@ test.describe('The error page (#608)', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   });
 
-  test('axe is clean with the Reference and with "Go to My Work" at four sizes', async ({
+  test('axe is clean with the Reference and with "Go to My Work" at both desktop sizes', async ({
     page,
   }) => {
     await failMe(page, 500);

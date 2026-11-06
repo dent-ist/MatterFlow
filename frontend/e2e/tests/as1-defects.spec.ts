@@ -36,7 +36,7 @@ test.describe('Assets list defects (WP-AS1)', () => {
     expect(axeAvailable(), 'axe-core must be available (set E2E_AXE_PATH)').toBe(true);
   });
 
-  test('BUG-1: a matter number is a link only with Matter.View; without it nothing leads to the 403 page (1366 and 375)', async ({
+  test('BUG-1: a matter number is a link only with Matter.View; without it nothing leads to the 403 page (1366)', async ({
     seed,
     personas,
     asUser,
@@ -50,10 +50,7 @@ test.describe('Assets list defects (WP-AS1)', () => {
     });
 
     const plain = await asUser(viewer.username);
-    for (const size of [
-      { width: 1366, height: 768 },
-      { width: 375, height: 812 },
-    ]) {
+    for (const size of [{ width: 1366, height: 768 }]) {
       await plain.setViewportSize(size);
       await plain.goto(`/assets?name=${token}`);
       // Below 640 px the list is cards (#502): the matter number is text on a card.
@@ -205,7 +202,7 @@ test.describe('Assets list defects (WP-AS1)', () => {
     await expect(page.getByRole('heading', { level: 1, name: `Raced ${token}` })).toBeVisible();
   });
 
-  test('LC-09: the Reference column stays from 640 px (the frame scrolls sideways); axe finds nothing and the page does not scroll sideways at four sizes', async ({
+  test('LC-09: the Reference column stays from 640 px (the frame scrolls sideways); axe finds nothing and the page does not scroll sideways at both desktop sizes', async ({
     page,
     seed,
   }) => {

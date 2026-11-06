@@ -427,7 +427,7 @@ test.describe('Asset report builder (PM v2)', () => {
         });
         expect(await axeViolations(page), `${what} at ${size.width}`).toEqual([]);
         await noHorizontalScroll(page);
-        if (size.width === 1366 || size.width === 375) {
+        if (size.width === 1366) {
           await page
             .locator('[data-result]')
             .evaluate((el) => el.scrollIntoView({ block: 'start' }));

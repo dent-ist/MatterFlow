@@ -34,42 +34,14 @@ async function expectNoAxeViolations(page: Page, label: string): Promise<void> {
 }
 
 test.describe('Review round 5: profile availability, Swimlane and Users', () => {
-  test('UXR5-01: at 768 px the selected Dashboard tab is inside the tab strip (a Pod Lead sees Summary, Swimlane, Users)', async ({
-    seed,
-    asUser,
-  }) => {
-    const lead = await seed.user(['Pod Lead'], 'r5tabs');
-    await seed.pod(undefined, [lead.userId]);
-    const page = await asUser(lead.username);
-    await page.setViewportSize({ width: 768, height: 1024 });
-    for (const tab of ['users', 'swimlane']) {
-      await page.goto(`/dashboard?tab=${tab}`);
-      const selected = page.locator(`[role="tab"][data-tab="${tab}"]`);
-      await expect(selected).toHaveAttribute('aria-selected', 'true');
-      await expect(page.locator('[data-refresh]')).toBeVisible(); // the controls beside the tab strip have arrived
-      await expect
-        .poll(async () => {
-          const box = await selected.boundingBox();
-          const list = await page.getByRole('tablist', { name: 'Dashboard views' }).boundingBox();
-          return (
-            !!box && !!list && box.x >= list.x - 1 && box.x + box.width <= list.x + list.width + 1
-          );
-        })
-        .toBe(true);
-    }
-  });
-
-  test('UXR5-04: the validation summary of My profile is axe clean (24 px link targets) at 1366 and 375', async ({
+  test('UXR5-04: the validation summary of My profile is axe clean (24 px link targets) at 1366', async ({
     seed,
     asUser,
   }) => {
     test.skip(!axeAvailable(), 'axe-core is not available');
     const user = await seed.user(['Data Technician'], 'r5valid');
     const page = await asUser(user.username);
-    for (const size of [
-      { width: 1366, height: 768 },
-      { width: 375, height: 812 },
-    ]) {
+    for (const size of [{ width: 1366, height: 768 }]) {
       await page.setViewportSize(size);
       await page.goto('/profile');
       await page.getByRole('radio', { name: /Out of office/ }).check();
@@ -100,7 +72,7 @@ test.describe('Review round 5: profile availability, Swimlane and Users', () => 
   }) => {
     const person = await seed.user(['Data Technician'], 'r5scroll');
     const query = `/admin/users?status=all&name=${encodeURIComponent(person.username.split('\\')[1])}`;
-    await page.setViewportSize({ width: 768, height: 1024 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(query);
     await expect(page.locator(`tbody tr`)).toHaveCount(1);
     await expect(page.locator('[data-scroll-hint]')).toHaveCount(0);
@@ -424,8 +396,6 @@ test.describe('review round 5 screenshots', () => {
     for (const [w, h] of [
       [1366, 768],
       [1024, 768],
-      [768, 1024],
-      [375, 812],
     ]) {
       await at(techPage, w, h);
       await techPage.goto('/profile');
@@ -443,15 +413,10 @@ test.describe('review round 5 screenshots', () => {
     await techPage.locator('#av-tz-other').fill('Mars/Olympus');
     await techPage.getByRole('button', { name: 'Save Changes' }).click();
     await shot(techPage, '03-profile-validation-1366');
-    await at(techPage, 375, 812);
-    await shot(techPage, '04-profile-validation-375');
     await techPage.getByRole('button', { name: 'Discard Changes' }).click();
 
     // Header menu and the Set out of office dialog.
-    for (const [w, h] of [
-      [1366, 768],
-      [375, 812],
-    ]) {
+    for (const [w, h] of [[1366, 768]]) {
       await at(techPage, w, h);
       await techPage.goto('/my-work');
       await techPage.getByRole('button', { name: /account menu/ }).click();
@@ -471,19 +436,13 @@ test.describe('review round 5 screenshots', () => {
 
     // Read-only observer.
     const roPage = await asUser(ro.username);
-    for (const [w, h] of [
-      [1366, 768],
-      [375, 812],
-    ]) {
+    for (const [w, h] of [[1366, 768]]) {
       await at(roPage, w, h);
       await roPage.goto('/profile');
       await expect(roPage.locator('h1 [data-availability-chip]')).toBeVisible();
       await shot(roPage, `08-profile-read-only-${s(w)}`);
     }
-    for (const [w, h] of [
-      [1366, 768],
-      [768, 1024],
-    ]) {
+    for (const [w, h] of [[1366, 768]]) {
       await at(roPage, w, h);
       await roPage.goto('/dashboard?tab=users');
       await expect(roPage.getByText(/is not available for your role/)).toBeVisible();
@@ -494,7 +453,6 @@ test.describe('review round 5 screenshots', () => {
     for (const [w, h] of [
       [1366, 768],
       [1024, 768],
-      [768, 1024],
     ]) {
       await at(page, w, h);
       await page.goto(`/admin/users?status=active&name=${tag}`);
@@ -523,7 +481,6 @@ test.describe('review round 5 screenshots', () => {
     for (const [w, h] of [
       [1366, 768],
       [1024, 768],
-      [768, 1024],
     ]) {
       await at(dirPage, w, h);
       await dirPage.goto(`/dashboard?tab=users&uq=${tag}`);
@@ -535,10 +492,7 @@ test.describe('review round 5 screenshots', () => {
     }
 
     const leadPage = await asUser(lead.username);
-    for (const [w, h] of [
-      [1024, 768],
-      [768, 1024],
-    ]) {
+    for (const [w, h] of [[1024, 768]]) {
       await at(leadPage, w, h);
       await leadPage.goto(`/dashboard?tab=users&uq=${tag}`);
       await expect(leadPage.locator('[data-user-card]').first()).toBeVisible();

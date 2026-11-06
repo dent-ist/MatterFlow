@@ -8,7 +8,7 @@ import { SIZES, noHorizontalScroll, shot } from '../support/screens';
 
 /**
  * My profile epic #520, WP-PF8: #601, the final verification. One contract over the review's persons (available, out of office, errors, loading,
- * load error, a 66-character name, no display name) at the four sizes: axe 0 (WCAG 2.2 AA, which includes target-size), no sideways scroll, the
+ * load error, a 66-character name, no display name) at both desktop sizes: axe 0 (WCAG 2.2 AA, which includes target-size), no sideways scroll, the
  * title where the other pages have it, ONE primary action in the header, the columns, the first screen at 1366x768 and at most 18 Tab stops to
  * Save. The measurements are written to `measurements.json` next to the screenshots (docs/ux/profile-review/fixes/final/) when E2E_SCREENSHOTS
  * is set; the before/after table in that folder's README compares them with the review's numbers.
@@ -76,7 +76,7 @@ async function measure(page: Page, state: string, expectActions: number): Promis
 
 test.describe.configure({ mode: 'serial' });
 
-test.describe("pf8-final: the final contract over the review's persons at four sizes (#601)", () => {
+test.describe("pf8-final: the final contract over the review's persons at both desktop sizes (#601)", () => {
   test.setTimeout(420_000);
 
   test('available, out of office, errors, long name and no display name', async ({
@@ -159,7 +159,7 @@ test.describe("pf8-final: the final contract over the review's persons at four s
     }
   });
 
-  test('loading and load error at four sizes', async ({ personas, asUser }) => {
+  test('loading and load error at both desktop sizes', async ({ personas, asUser }) => {
     const p = await personas.create({ ...PERSONAS.technician, label: 'pf8states' });
     const me = await asUser(p.username);
     for (const size of SIZES) {

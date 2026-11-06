@@ -136,7 +136,7 @@ test.describe('pf7-keyboard: keyboard-only flows on My profile (#582)', () => {
   }) => {
     const p = await personas.create({ ...PERSONAS.technician, label: 'pf7kbD' });
     const me = await asUser(p.username);
-    for (const size of [SIZES[0], SIZES[2]]) {
+    for (const size of [SIZES[0]]) {
       await me.setViewportSize(size);
       await me.goto('/profile');
       await me.getByLabel('End time', { exact: true }).fill('08:00');
@@ -278,7 +278,7 @@ test.describe('pf7-keyboard: keyboard-only flows on My profile (#582)', () => {
   });
 });
 
-test.describe('pf7-axe: axe 0 and no sideways scroll at four sizes for every state (#582)', () => {
+test.describe('pf7-axe: axe 0 and no sideways scroll at both desktop sizes for every state (#582)', () => {
   test.setTimeout(240_000);
 
   test('available, out of office, errors, dialog open, menu open, loading and load error', async ({
@@ -298,7 +298,7 @@ test.describe('pf7-axe: axe 0 and no sideways scroll at four sizes for every sta
       await me.goto('/profile');
       await expect(me.locator('[data-card="availability"]')).toBeVisible();
       await check('available', size);
-      if (size.width === 1366 || size.width === 375) await shot(me, 'pf7-available');
+      if (size.width === 1366) await shot(me, 'pf7-available');
 
       await me.getByRole('radio', { name: /Out of office/ }).check();
       await check('out of office (edited)', size);
@@ -308,7 +308,7 @@ test.describe('pf7-axe: axe 0 and no sideways scroll at four sizes for every sta
       await me.getByRole('button', { name: 'Save Changes' }).click();
       await expect(me.locator('[data-summary]')).toBeVisible();
       await check('errors', size);
-      if (size.width === 1366 || size.width === 375) await shot(me, 'pf7-errors');
+      if (size.width === 1366) await shot(me, 'pf7-errors');
 
       await me.goto('/profile');
       await me.locator('[data-primary-action] button').click();

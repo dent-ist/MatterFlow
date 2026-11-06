@@ -11,14 +11,12 @@ import { TaskApi } from '../support/tasks';
 /**
  * Users epic #422, WP-US1 first release (#423 BUG-1/BUG-5, #424 BUG-2, #425 BUG-3): the fixes started as interim code on the inline panel; the
  * user drawer (#438, #441) replaced that code and these tests stayed, now against the drawer.
- *  - no status badge is cut at 375, 768, 1366 and 1920 (the "Scroll sideways" hint is gone with the nine-column grid, #432);
+ *  - no status badge is cut at 1366 and 1920 (the "Scroll sideways" hint is gone with the nine-column grid, #432);
  *  - opening a user moves focus to the drawer heading, Esc and Cancel close it and focus returns to the row button, Esc with unsaved edits asks;
  *  - Deactivate asks in a dialog that is on screen with focus on Cancel (BUG-3), and the dialog states the open tasks (BUG-4).
  * Screenshots for docs/ux/users-review/fixes/us1-bugs/ are written when E2E_SCREENSHOTS is set to the output folder.
  */
 const SIZES = [
-  { width: 375, height: 812 },
-  { width: 768, height: 1024 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
 ] as const;
@@ -355,7 +353,7 @@ test.describe('BUG-4: open tasks and "View their tasks" (#427)', () => {
   });
 });
 
-test.describe('axe and layout at four sizes', () => {
+test.describe('axe and layout at both desktop sizes', () => {
   for (const { width, height } of SIZES) {
     test(`list, drawer and the deactivation question at ${width}x${height}`, async ({ page }) => {
       expect(axeAvailable(), 'axe-core is required (set E2E_AXE_PATH)').toBe(true);

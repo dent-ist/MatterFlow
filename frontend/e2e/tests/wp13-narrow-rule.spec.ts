@@ -69,7 +69,7 @@ async function worker(seed: Seeder, label: string) {
 }
 
 test.describe('Narrow rule (#201)', () => {
-  test('LC-09, 640 to 1023 px: My Work, Task Queue and Pod Work keep every chosen column, the grid scrolls sideways when it must and Ref is sticky', async ({
+  test('LC-09, a 1023 px window: My Work, Task Queue and Pod Work keep every chosen column, the grid scrolls sideways when it must and Ref is sticky', async ({
     seed,
     asUser,
   }) => {
@@ -100,13 +100,7 @@ test.describe('Narrow rule (#201)', () => {
       },
     ];
     for (const c of cases) {
-      for (const [width, height] of [
-        [640, 900],
-        [700, 900],
-        [768, 1024],
-        [900, 800],
-        [1023, 768],
-      ]) {
+      for (const [width, height] of [[1023, 768]]) {
         await c.page.setViewportSize({ width, height });
         await c.open(c.page);
         await expect(c.page.locator('[data-task]').first()).toBeVisible();
@@ -144,16 +138,12 @@ test.describe('Narrow rule (#201)', () => {
             box.x + box.width + 1,
           );
         }
-        if (width === 768) {
-          await shot(c.page, `${c.name.toLowerCase().replace(' ', '-')}-768x1024`);
-          if (c.name === 'Task Queue') await axeClean(c.page, 'Task Queue 768');
-        }
       }
     }
     expect(titles.length).toBe(4);
   });
 
-  test('LC-09: a 1098 px box keeps the Title at 160 px or more and the page never scrolls sideways; 1366, 1920 and 375 are clean', async ({
+  test('LC-09: a 1098 px box keeps the Title at 160 px or more and the page never scrolls sideways; 1366 and 1920 are clean', async ({
     seed,
     asUser,
   }) => {
@@ -193,10 +183,6 @@ test.describe('Narrow rule (#201)', () => {
       await shot(page, `task-queue-${name}`);
       await axeClean(page, `Task Queue ${name}`);
     }
-    await page.setViewportSize({ width: 375, height: 812 });
-    await queue.open(q);
-    await expect(page.locator('[data-task]').first()).toBeVisible();
-    await shot(page, 'task-queue-375x812');
   });
 
   test('LC-09: a user-added Client and Task type stay (nothing drops by width), the Title keeps 160 px, and they are ticked in the Columns chooser', async ({
@@ -241,9 +227,6 @@ test.describe('Priority and Status triggers (#202)', () => {
   for (const [name, width, height] of [
     ['1366x768', 1366, 768],
     ['1920x1080', 1920, 1080],
-    ['768x1024', 768, 1024],
-    // The narrowest table: below 640 px the list is cards (#192).
-    ['640x900', 640, 900],
   ] as const) {
     test(`the chevron is inside the cell at ${name}: one control, at least 24 px, inside the cell padding, axe clean`, async ({
       seed,

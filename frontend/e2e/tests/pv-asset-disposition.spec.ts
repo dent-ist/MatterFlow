@@ -144,7 +144,7 @@ test.describe('Asset disposition (PM v2)', () => {
     ).toContainText('Inactive');
   });
 
-  test('axe finds nothing and nothing scrolls sideways at four sizes: record, dialog and list', async ({
+  test('axe finds nothing and nothing scrolls sideways at both desktop sizes: record, dialog and list', async ({
     seed,
     page,
   }) => {
@@ -162,7 +162,7 @@ test.describe('Asset disposition (PM v2)', () => {
       await expect(page.getByRole('dialog')).toBeVisible();
       expect(await axeViolations(page), `dialog at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
-      if (size.width === 1366 || size.width === 375) await shot(page, 'pv-disposition-dialog');
+      if (size.width === 1366) await shot(page, 'pv-disposition-dialog');
       await page.keyboard.press('Escape');
       await expect(page.getByRole('dialog')).toHaveCount(0);
 
@@ -170,7 +170,7 @@ test.describe('Asset disposition (PM v2)', () => {
       await expect(page.locator('tbody tr[data-record-id], li.rc').first()).toBeVisible();
       expect(await axeViolations(page), `list at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
-      if (size.width === 1366 || size.width === 375) await shot(page, 'pv-disposition-list');
+      if (size.width === 1366) await shot(page, 'pv-disposition-list');
     }
   });
 });

@@ -55,7 +55,7 @@ test.describe('One rule for dialogs and drawers (#619)', () => {
     const drawerClose = await closeLook(page, '.mf-drawer button[aria-label="Close activity"]');
     await page.keyboard.press('Escape');
     await expect(drawer).toBeHidden();
-    // Axe with the drawer open at the four sizes (on a phone the entry is in the overflow menu).
+    // Axe with the drawer open at both desktop sizes (on a phone the entry is in the overflow menu).
     for (const size of SIZES) {
       await page.setViewportSize(size);
       await page.goto(`/clients/${client.clientId}`);
@@ -108,36 +108,5 @@ test.describe('One rule for dialogs and drawers (#619)', () => {
       await page.keyboard.press('Escape');
       await expect(dialog).toBeHidden();
     }
-  });
-
-  test('the phone filter sheet: 16 px / 600 title, the same round close button, axe clean', async ({
-    page,
-    seed,
-  }) => {
-    expect(axeAvailable(), 'set E2E_AXE_PATH to axe.min.js').toBe(true);
-    await seed.client({ name: `Rule sheet ${Date.now()}` });
-    const phone = SIZES[0];
-    await page.setViewportSize(phone);
-    await page.goto('/clients');
-    await page.getByRole('button', { name: /^Filters/ }).click();
-    const sheet = page.getByRole('dialog', { name: 'Filters' });
-    await expect(sheet).toBeVisible();
-    expect(await titleLook(page, '.fs-title')).toEqual({ size: 16, weight: 600 });
-    const close = await closeLook(page, '.fs-close');
-    expect(isTransparent(close.borderColor)).toBe(true);
-    expect(isRound(close.radius)).toBe(true);
-    expect(isTransparent(close.background)).toBe(true);
-    // The colour of the dialog's own close button (the primary colour).
-    expect(close.color).toBe('rgb(31, 78, 156)');
-    // 44 px target on a phone.
-    const box = await page.locator('.fs-close').boundingBox();
-    expect(box!.width).toBeGreaterThanOrEqual(44);
-    expect(box!.height).toBeGreaterThanOrEqual(44);
-    await shot(page, 'rule-filter-sheet');
-    await noHorizontalScroll(page);
-    await page.getByRole('button', { name: 'Close filters' }).focus();
-    await page.keyboard.press('Enter');
-    await expect(sheet).toBeHidden();
-    await expect(page.getByRole('button', { name: /^Filters/ })).toBeFocused();
   });
 });

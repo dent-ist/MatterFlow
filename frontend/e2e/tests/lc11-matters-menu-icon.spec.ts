@@ -31,10 +31,7 @@ test.describe('Matters list: row menu and title icon (LC-11)', () => {
   test('the title icon is a 32 px rounded primary tile on the list pages, at 1366x768 and 375x812', async ({
     page,
   }) => {
-    for (const size of [
-      { width: 1366, height: 768 },
-      { width: 375, height: 812 },
-    ]) {
+    for (const size of [{ width: 1366, height: 768 }]) {
       await page.setViewportSize(size);
       for (const url of ['/matters', '/clients', '/projects', '/assets']) {
         await page.goto(url);

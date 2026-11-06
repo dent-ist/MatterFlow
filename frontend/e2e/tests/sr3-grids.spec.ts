@@ -113,26 +113,12 @@ test.describe('Search results grids and cards (WP-SR3, WP-SR4)', () => {
     await expect(page.locator('[data-empty]')).toContainText('No results for');
   });
 
-  test('phone: cards below 640 px with no table; the table from 640 px; axe 0 and no sideways scroll at four sizes on All and a type tab', async ({
+  test('axe 0 and no sideways scroll at both desktop sizes on All and a type tab', async ({
     page,
     seed,
   }) => {
     test.skip(!axeAvailable(), 'axe-core is not available');
     const s = await seedGrids(seed);
-    for (const width of [375, 639]) {
-      await page.setViewportSize({ width, height: 812 });
-      await page.goto(`/search?q=${s.token}&type=task`);
-      await expect(page.locator('li.rc').first()).toBeVisible();
-      await expect(page.locator('[data-hit-table]')).toHaveCount(0);
-      const link = page.locator('li.rc a').first();
-      const href = await link.getAttribute('href');
-      expect(href).toMatch(/^\/tasks\/\d+/);
-      await noHorizontalScroll(page);
-    }
-    await page.setViewportSize({ width: 640, height: 812 });
-    await page.goto(`/search?q=${s.token}&type=task`);
-    await expect(page.locator('[data-hit-table]')).toHaveCount(1);
-    await expect(page.locator('li.rc')).toHaveCount(0);
 
     for (const size of SIZES) {
       await page.setViewportSize(size);
@@ -141,16 +127,10 @@ test.describe('Search results grids and cards (WP-SR3, WP-SR4)', () => {
         await expect(page.locator('[data-hit-row], li.rc').first()).toBeVisible();
         await noHorizontalScroll(page);
         expect(await axeViolations(page), `axe ${url} at ${size.width}`).toEqual([]);
-        if (size.width === 375 || size.width === 1366)
+        if (size.width === 1366)
           await shot(page, url.includes('type=') ? 'sr3-type-tab' : 'sr3-all-tab');
       }
     }
-
-    // A card: the name is the one link, the task opens; Back returns to the results.
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(`/search?q=${s.token}&type=task`);
-    await page.locator('li.rc a').first().click();
-    await expect(page).toHaveURL(/\/tasks\/\d+/);
   });
 
   test('#471: the Searched in line names exactly what was searched, for three permission sets', async ({

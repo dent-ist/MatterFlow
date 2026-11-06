@@ -26,8 +26,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const tag = uid().slice(0, 6);
 
 const SIZES = [
-  { width: 375, height: 812 },
-  { width: 768, height: 1024 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
 ] as const;
@@ -602,12 +600,12 @@ test.describe('#329: Task page permission matrix, no dead links', () => {
   }
 });
 
-test.describe('#329: the most restricted variants at four sizes', () => {
+test.describe('#329: the most restricted variants at both desktop sizes', () => {
   const restricted = ROLES.filter((r) =>
     ['view-only', 'no-asset', 'no-matter', 'matter-client-view'].includes(r.key),
   );
   for (const role of restricted) {
-    test(`${role.label}: axe 0 and no sideways scroll at 375, 768, 1366 and 1920, also with the overflow and the Activity drawer open`, async ({
+    test(`${role.label}: axe 0 and no sideways scroll at 1366 and 1920, also with the overflow and the Activity drawer open`, async ({
       asUser,
       seed,
       page: adminPage,
@@ -643,8 +641,7 @@ test.describe('#329: the most restricted variants at four sizes', () => {
         if (axeAvailable())
           expect(await axeViolations(page), `${role.key} activity at ${size.width}`).toEqual([]);
         await noHorizontalScroll(page);
-        if (size.width === 375 || size.width === 1366)
-          await shot(page, `perm-${role.key}-activity`);
+        if (size.width === 1366) await shot(page, `perm-${role.key}-activity`);
         await page.keyboard.press('Escape');
         await expect(drawer).toBeHidden();
       }

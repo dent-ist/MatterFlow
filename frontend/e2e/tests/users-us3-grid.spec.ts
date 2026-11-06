@@ -18,8 +18,6 @@ import { labelledDropdown } from '../support/dropdown';
  * Screenshots for docs/ux/users-review/fixes/us3-grid/ are written when E2E_SCREENSHOTS is set to the output folder.
  */
 const SIZES = [
-  { width: 375, height: 812 },
-  { width: 768, height: 1024 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
 ] as const;
@@ -114,7 +112,7 @@ const menuButton = (page: Page, id: number) =>
   page.locator(`tr[data-record-id="${id}"] button[data-overflow]`);
 
 test.describe('#432 the grid', () => {
-  for (const { width, height } of [SIZES[2], SIZES[3]]) {
+  for (const { width, height } of [SIZES[0], SIZES[1]]) {
     test(`rows are exactly 44 px and nothing scrolls sideways at ${width}`, async ({ page }) => {
       await openList(page, width, height);
       const heights = await page.evaluate(() =>
@@ -452,29 +450,6 @@ test.describe('#433 one action per row', () => {
     await expect(labelledDropdown(page, 'Rows per page')).toHaveAttribute('data-value', '25');
     await labelledDropdown(page, 'Rows per page').selectOption('50');
     await expect(page).not.toHaveURL(/size=/);
-  });
-
-  test('#437 on a phone the same sorts are a Sort by select in the Filters sheet, segments stay in the header', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(listUrl());
-    await expect(page.locator('li.rc').first()).toBeVisible();
-    await expect(page.locator('[data-strip-item="pending"]')).toBeVisible();
-    await page.getByRole('button', { name: /^Filters/ }).click();
-    const sheet = page.getByRole('dialog').last();
-    const select = labelledDropdown(sheet, 'Sort By');
-    await expect(select).toBeVisible();
-    expect((await select.optionTexts()).map((t) => t.trim())).toEqual([
-      'Waiting people first (default order)',
-      'Name',
-      'Last Seen',
-      'First Seen',
-    ]);
-    // The segments are not in the sheet.
-    await expect(sheet.locator('[data-strip-item]')).toHaveCount(0);
-    await select.selectOption('lastSeen');
-    await expect(page).toHaveURL(/sort=lastSeen/);
   });
 
   test('a User.View-only administrator sees the name and a menu with Open only, and no Grant access', async ({

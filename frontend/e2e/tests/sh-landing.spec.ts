@@ -192,7 +192,7 @@ test.describe('Landing for oversight roles (#628)', () => {
     await expect(page).toHaveURL(/\/dashboard/);
   });
 
-  test('axe is clean on the Dashboard a director lands on, at four sizes', async ({
+  test('axe is clean on the Dashboard a director lands on, at both desktop sizes', async ({
     personas,
     asUser,
   }) => {

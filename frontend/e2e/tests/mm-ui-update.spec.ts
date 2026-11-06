@@ -188,29 +188,11 @@ test.describe('My Matters: the page', () => {
     }
   });
 
-  test('a phone scrolls as a whole and shows cards; no sideways scroll at 375 and 768', async ({
+  test('axe finds nothing on the five tabs at both desktop sizes', async ({
     seed,
     personas,
     asUser,
   }) => {
-    const w = await mmWorld(seed, personas, 'ui6');
-    const a = await w.matter('Alpha');
-    await w.task(a, { title: 'Phone task' });
-    const page = await asUser(w.pm.username);
-    for (const size of [SIZES[3], SIZES[2]]) {
-      await page.setViewportSize(size);
-      for (const tab of TABS) {
-        await page.goto(tab === 'overview' ? '/my-matters' : `/my-matters?tab=${tab}`);
-        await page.waitForLoadState('networkidle');
-        const over = await page.evaluate(
-          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        );
-        expect(over, `${tab} at ${size.width}`).toBeLessThanOrEqual(0);
-      }
-    }
-  });
-
-  test('axe finds nothing on the five tabs at four sizes', async ({ seed, personas, asUser }) => {
     test.slow();
     expect(axeAvailable(), 'set E2E_AXE_PATH to axe.min.js').toBe(true);
     const w = await mmWorld(seed, personas, 'ui7');

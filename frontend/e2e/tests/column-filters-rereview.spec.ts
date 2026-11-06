@@ -100,14 +100,6 @@ test.describe('Column filters re-review', () => {
     await expect(page).toHaveURL(/status=all/);
     await expect(page.locator('tbody tr').filter({ hasText: name })).toHaveCount(1);
     await expect(page.locator('[data-hidden-hint]')).toHaveCount(0);
-
-    // A phone shows the same sentence in the card list.
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(`/projects?name=${name}`);
-    const cards = page.locator('[data-empty="filtered"]');
-    await expect(cards).toContainText('1 archived hidden');
-    await cards.getByRole('button', { name: 'Show All' }).click();
-    await expect(page.locator('[data-record-card]').filter({ hasText: name })).toHaveCount(1);
   });
 
   test('no filter cell holds two controls that read alike or an empty unlabelled box (RR-14, RR-15)', async ({

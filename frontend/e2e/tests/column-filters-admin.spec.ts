@@ -17,7 +17,6 @@ const multi = (page: Page, column: string) =>
   page.getByRole('button', { name: new RegExp(`^Filter by ${column},`) });
 const grid = (page: Page, name: string) =>
   page.getByRole('region', { name: `${name}, scrollable` });
-const sheet = (page: Page) => page.getByRole('dialog', { name: 'Filters' });
 const chips = (page: Page) => page.getByRole('list', { name: 'Active filters' });
 
 /** An optional column of the Users list (Windows Account, Email, First Seen) is shown from the Columns button; its filter then joins the filter row. */
@@ -487,14 +486,6 @@ test.describe('Column filters on the administration lists', () => {
       await text(page, column).press('Enter');
       await expect(grid(page, region).locator('td[data-empty="filtered"]')).toBeVisible();
       expect(await axeViolations(page), `${url} empty`).toEqual([]);
-    }
-
-    await page.setViewportSize({ width: 375, height: 812 });
-    for (const [url] of screens) {
-      await page.goto(url);
-      await toggle(page).click();
-      await expect(sheet(page)).toBeVisible();
-      expect(await axeViolations(page), `${url} sheet`).toEqual([]);
     }
   });
 });

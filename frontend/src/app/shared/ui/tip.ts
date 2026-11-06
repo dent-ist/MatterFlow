@@ -6,7 +6,7 @@ let nextTipId = 0;
 /**
  * A tooltip for hover AND keyboard focus (WCAG 1.4.13): `<button [mfTip]="'Upcoming events'">`. It shows after the pointer or focus arrives, stays while the pointer is over
  * the owner, and Esc hides it without moving focus. The tip is a fixed-position element on `body` (a scrolling frame cannot clip it) and the owner points at it with
- * `aria-describedby` while it is shown. Text only; the colours are the shared tokens. An empty text shows nothing.
+ * `aria-describedby` while it is shown (the tip itself is `aria-hidden`, so it is not a stray element outside the landmarks). Text only; the colours are the shared tokens. An empty text shows nothing.
  */
 @Directive({
   selector: '[mfTip]',
@@ -34,6 +34,9 @@ export class Tip {
     const tip = this.doc.createElement('div');
     tip.id = `mf-tip-${nextTipId++}`;
     tip.setAttribute('role', 'tooltip');
+    // The tip sits on `body`, outside every landmark, so axe's "region" rule would flag it. It is hidden from the accessibility tree on purpose: the owner's
+    // `aria-describedby` still reads its text (a description may point at a hidden element).
+    tip.setAttribute('aria-hidden', 'true');
     tip.textContent = text;
     Object.assign(tip.style, {
       position: 'fixed',

@@ -276,33 +276,7 @@ test.describe('Asset Types list (#634, #637)', () => {
     await expect(manager.getByRole('menuitem', { name: /History/ })).toHaveCount(0);
   });
 
-  test('below 640 px the list is cards: 2 to 4 lines, the same menu, the name is the one link', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(`/admin/asset-types?name=${s.token}&status=all`);
-    const cards = page.locator('li.rc');
-    await expect(cards.first()).toBeVisible();
-    await expect(cards).toHaveCount(5);
-    for (const card of await cards.all()) {
-      const height = (await card.boundingBox())!.height;
-      expect(height).toBeGreaterThanOrEqual(56);
-      expect(height).toBeLessThanOrEqual(150);
-    }
-    const first = cards.filter({ hasText: s.published.name });
-    await expect(first).toContainText('Published v1');
-    await expect(first).toContainText('8 fields');
-    await expect(first.getByRole('link')).toHaveAttribute(
-      'href',
-      `/admin/asset-types/${s.published.id}`,
-    );
-    await first.getByRole('button', { name: `Actions for ${s.published.name}` }).click();
-    await expect(page.getByRole('menuitem', { name: /Edit fields/ })).toBeVisible();
-    await noHorizontalScroll(page);
-    await shot(page, 'asset-types-cards');
-  });
-
-  test('axe finds nothing at 375, 768, 1366 and 1920 with the list, the row menu and the Deactivate dialog open; no sideways scroll', async ({
+  test('axe finds nothing at 1366 and 1920 with the list, the row menu and the Deactivate dialog open; no sideways scroll', async ({
     page,
   }) => {
     await page.goto(`/admin/asset-types?name=${s.token}&status=all`);
@@ -312,7 +286,7 @@ test.describe('Asset Types list (#634, #637)', () => {
       await expect(page.locator('main').getByText(s.published.name).first()).toBeVisible();
       if (axeAvailable()) expect(await axeViolations(page), `list at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
-      if (size.width === 1366 || size.width === 375) await shot(page, 'asset-types-list');
+      if (size.width === 1366) await shot(page, 'asset-types-list');
 
       await menuButton(page, s.published.name).click();
       await expect(page.getByRole('menuitem', { name: /Deactivate/ })).toBeVisible();

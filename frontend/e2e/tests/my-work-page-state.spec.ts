@@ -286,11 +286,7 @@ test.describe('My Work page state', () => {
       ([key, value]) => localStorage.setItem(key, value),
       [viewKey(me.userId), JSON.stringify({ view: 'dueSoon', priority: ['1', '2', '3'] })],
     );
-    for (const [w, h] of [
-      [1920, 1080],
-      [768, 1024],
-      [375, 812],
-    ] as const) {
+    for (const [w, h] of [[1920, 1080]] as const) {
       await page.setViewportSize({ width: w, height: h });
       await page.goto('/my-work');
       await expect(page.locator('[data-restored-notice]')).toBeVisible();

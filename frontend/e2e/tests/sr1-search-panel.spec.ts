@@ -5,7 +5,7 @@ import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
 
 /**
- * WP-SR1 (Search review BUG-1, BUG-2, BUG-3, BUG-6): the header suggestion panel at the four sizes. Screenshots go to E2E_SCREENSHOTS
+ * WP-SR1 (Search review BUG-1, BUG-2, BUG-3, BUG-6): the header suggestion panel at both desktop sizes. Screenshots go to E2E_SCREENSHOTS
  * (docs/ux/search-review/fixes/sr1-bugs).
  */
 const URL_REFERENCE = `https://share.example.com/${'x'.repeat(960)}`;
@@ -47,7 +47,7 @@ async function suggest(page: Page, text: string): Promise<Locator> {
 test.describe('Search suggestion panel (WP-SR1)', () => {
   test.skip(() => !axeAvailable(), 'axe-core is not available');
 
-  test('BUG-1, BUG-2, BUG-3, BUG-6 at four sizes: no violation, asset lines, one marker, no requestor, footer in view', async ({
+  test('BUG-1, BUG-2, BUG-3, BUG-6 at both desktop sizes: no violation, asset lines, one marker, no requestor, footer in view', async ({
     page,
     seed,
   }) => {

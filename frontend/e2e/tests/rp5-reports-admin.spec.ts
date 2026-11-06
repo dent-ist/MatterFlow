@@ -450,7 +450,7 @@ test.describe('assignment from a role (#717)', () => {
   });
 });
 
-test.describe('accessibility at four sizes (#712 to #717)', () => {
+test.describe('accessibility at both desktop sizes (#712 to #717)', () => {
   test.skip(() => !axeAvailable(), 'axe-core is not available');
 
   async function check(page: Page, name: string, settle: () => Promise<void>): Promise<void> {
@@ -459,7 +459,7 @@ test.describe('accessibility at four sizes (#712 to #717)', () => {
       await settle();
       expect(await axeViolations(page), `${name} at ${size.width}x${size.height}`).toEqual([]);
       await noHorizontalScroll(page);
-      if (size.width === 1366 || size.width === 375) await shot(page, name);
+      if (size.width === 1366) await shot(page, name);
     }
   }
 

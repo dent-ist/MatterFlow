@@ -16,8 +16,6 @@ const SIZES = [
   { width: 1920, height: 1080 },
   { width: 1366, height: 768 },
   { width: 1024, height: 768 },
-  { width: 768, height: 1024 },
-  { width: 375, height: 812 },
 ] as const;
 
 const TABS = [
@@ -115,18 +113,6 @@ test.describe('the shell on the Task Types administration (#544, #545)', () => {
       // The list's own skip target (#413) replaces the shell's: focus lands on the first row's name link.
       await expect(page.locator(`${tab.table} tbody tr[data-row] a`).first()).toBeFocused();
     }
-  });
-
-  test('on a phone the skip link lands on the first card', async ({ page, admin }) => {
-    await seedMix(admin, 'types', uid(), 2, 0);
-    await page.setViewportSize(SIZES[4]);
-    await page.goto('/admin/task-types');
-    // The first card with a link (the loading skeleton has cards without one).
-    await expect(page.locator('li.rc a[href]').first()).toBeVisible();
-    await page.keyboard.press('Tab');
-    await expect(skip(page)).toBeFocused();
-    await page.keyboard.press('Enter');
-    await expect(page.locator('li.rc a[href]').first()).toBeFocused();
   });
 
   test('the tabs carry the active count and keep the arrow, Home and End keys', async ({

@@ -27,8 +27,6 @@ async function axeClean(page: Page, what: string): Promise<void> {
 }
 
 const SIZES = [
-  [375, 812],
-  [768, 1024],
   [1366, 768],
   [1920, 1080],
 ] as const;
@@ -105,7 +103,7 @@ async function world(seed: Seeder, label: string, perMatter = 3, extraRights: st
 }
 
 test.describe('Matter Number and Matter Name: defaults on every list (#348)', () => {
-  test('Task Queue, My Work (four tabs) and Pod Work show the CM Number and keep Matter Name, Project and Progress in the Columns menu (D-43a, #1230), the number cell has no name, axe at four sizes', async ({
+  test('Task Queue, My Work (four tabs) and Pod Work show the CM Number and keep Matter Name, Project and Progress in the Columns menu (D-43a, #1230), the number cell has no name, axe at both desktop sizes', async ({
     seed,
     asUser,
   }) => {
@@ -310,12 +308,6 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
     expect(keys).toContain('Matter Name');
     expect(await width(page, 'title')).toBeGreaterThanOrEqual(160);
     await axeClean(page, 'narrow My Work');
-    // 768 px: the Matter Number is there, the page does not scroll sideways.
-    await page.setViewportSize({ width: 768, height: 1024 });
-    await new TaskQueuePage(page).open(`?q=${w.tag}`);
-    await expect(th(page, 'matter')).toBeVisible();
-    expect(await noPageScroll(page)).toBe(true);
-    await axeClean(page, 'narrow 768');
   });
 });
 

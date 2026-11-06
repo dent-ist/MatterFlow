@@ -75,7 +75,7 @@ test.describe('Still loading... Retry (#615)', () => {
     }
   });
 
-  test('axe is clean with the line showing at four sizes', async ({ page, seed }) => {
+  test('axe is clean with the line showing at both desktop sizes', async ({ page, seed }) => {
     expect(axeAvailable(), 'set E2E_AXE_PATH to axe.min.js').toBe(true);
     await seed.client({ name: `Still axe ${Date.now()}` });
     await delayApi(page, /\/api\/v1\/clients\?/, 40_000);

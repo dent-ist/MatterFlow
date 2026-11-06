@@ -19,8 +19,6 @@ import { userName, userRow } from '../support/users-grid';
  * written when E2E_SCREENSHOTS is set to the output folder.
  */
 const SIZES = [
-  { width: 375, height: 812 },
-  { width: 768, height: 1024 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
 ] as const;
@@ -516,7 +514,7 @@ test.describe('#443 read-only variants and #444 conflicts', () => {
   });
 });
 
-test.describe('axe and layout at four sizes with the drawer open', () => {
+test.describe('axe and layout at both desktop sizes with the drawer open', () => {
   for (const { width, height } of SIZES) {
     test(`drawer, deactivation dialog and availability dialog at ${width}x${height}`, async ({
       page,

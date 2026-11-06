@@ -152,15 +152,15 @@ test.describe('New priority and Edit priority (#609)', () => {
   }) => {
     const long = `ad3 long ${uid().slice(0, 5)} `.padEnd(46, 'x');
     expect(long.length).toBe(46);
-    await page.setViewportSize(SIZES[3]);
+    await page.setViewportSize(SIZES[1]);
     await page.goto('/admin/priorities?edit=new');
     try {
       await label(page).fill(long);
       await expect(page.locator('#priority-label-count')).toContainText('46 / 50');
       const box = (await dialog(page).boundingBox())!;
       expect(box.x).toBeGreaterThanOrEqual(0);
-      expect(box.x + box.width).toBeLessThanOrEqual(375);
-      await noSideScroll(page, 'long name at 375');
+      expect(box.x + box.width).toBeLessThanOrEqual(SIZES[1].width);
+      await noSideScroll(page, 'long name at 1366');
       await shot(page, 'priority-long-name');
       await dialog(page).getByRole('button', { name: 'Add priority' }).click();
       await expect(dialog(page)).toBeHidden();

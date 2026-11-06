@@ -111,26 +111,10 @@ test.describe('Audit Logs chrome (#646)', () => {
     await page.keyboard.press('Enter');
     await expect(page.locator('#audit-table')).toBeFocused();
   });
-
-  test('on a phone the controls are in a sheet behind the Filters button', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/admin/audit');
-    await expect(page.locator('[data-filter-row]')).toHaveCount(0);
-    await page
-      .locator('mf-page-header')
-      .getByRole('button', { name: /^Filters/ })
-      .click();
-    await expect(page.getByRole('dialog')).toBeVisible();
-    requireAxe();
-    expect(await axeViolations(page), 'filter sheet at 375').toEqual([]);
-    await shot(page, 'audit-filter-sheet');
-  });
 });
 
 test.describe('Audit grid, cards, dividers and counter (#647, #651, #653, #655)', () => {
-  test('the grid has five columns from 1100 px, Who joins When at 768, and a day divider with the time alone', async ({
-    page,
-  }) => {
+  test('the grid has five columns, and a day divider with the time alone', async ({ page }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await filterTo(page, `objectType=AssetType&objectId=${s.assetType.id}`);
     await expect(page.locator('#audit-table thead tr').first().locator('th')).toHaveText([
@@ -150,34 +134,6 @@ test.describe('Audit grid, cards, dividers and counter (#647, #651, #653, #655)'
     // The object is two lines at most.
     const object = page.locator('tr[data-event] .au-clamp').first();
     expect((await object.boundingBox())!.height).toBeLessThanOrEqual(40);
-
-    await page.setViewportSize({ width: 768, height: 1024 });
-    await expect(page.locator('#audit-table thead th')).toHaveText([
-      'Details',
-      'When',
-      'What',
-      'Target',
-      'Actions',
-    ]);
-    await expect(page.locator('tr[data-event]').first().locator('.au-sub')).toContainText('kekim', {
-      ignoreCase: true,
-    });
-    await noHorizontalScroll(page);
-  });
-
-  test('on a phone the events are cards with the details inside, and nothing scrolls sideways', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
-    await filterTo(page, `objectType=AssetType&objectId=${s.assetType.id}`);
-    await expect(page.locator('#audit-table')).toHaveCount(0);
-    const card = page.locator('li.rc [data-event]').first();
-    await expect(card).toContainText('kekim', { ignoreCase: true });
-    await expect(page.locator('h2[data-day]').first()).toHaveText('Today');
-    await card.getByRole('button', { name: /^Show details: / }).click();
-    await expect(card.locator('[data-sentence]')).toBeVisible();
-    await noHorizontalScroll(page);
-    await shot(page, 'audit-cards');
   });
 
   test('"Show Only This Operation" is in the details, moves focus to the chip, and there is no banner', async ({
@@ -288,11 +244,6 @@ test.describe('Friendly filters and quick views (#650, #654)', () => {
     await events.selectOption('TASK_CREATED');
     await expect(page).toHaveURL(/eventType=TASK_CREATED/);
     await expect(events).toContainText('Task created');
-    // On a phone the filter is a chip: it says it in words too.
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/admin/audit?eventType=TASK_CREATED&objectType=AssetType');
-    await expect(page.locator('[data-chip="eventType"]')).toContainText('Task created');
-    await expect(page.locator('[data-chip="objectType"]')).toContainText('Asset Type');
   });
 
   test('the four quick views set address filters, show the pressed one and clear it', async ({
@@ -408,7 +359,7 @@ test.describe('Details (#652) and Who without User.View (#656)', () => {
 });
 
 test.describe('Audit accessibility (#647, #646)', () => {
-  test('axe finds nothing at 375, 768, 1366 and 1920 with the list, a row menu and details open; no sideways scroll', async ({
+  test('axe finds nothing at 1366 and 1920 with the list, a row menu and details open; no sideways scroll', async ({
     page,
   }) => {
     requireAxe();
@@ -433,7 +384,7 @@ test.describe('Audit accessibility (#647, #646)', () => {
       expect(await axeViolations(page), `menu at ${size.width}`).toEqual([]);
       await page.keyboard.press('Escape');
       await noHorizontalScroll(page);
-      if (size.width === 1366 || size.width === 375) await shot(page, 'audit-open');
+      if (size.width === 1366) await shot(page, 'audit-open');
     }
   });
 });

@@ -70,7 +70,9 @@ test.describe('A failed list load is shown once, inline (#613)', () => {
     await expect(toasts(page).first()).toBeVisible();
   });
 
-  test('axe is clean with the inline error on the lists at four sizes', async ({ page }) => {
+  test('axe is clean with the inline error on the lists at both desktop sizes', async ({
+    page,
+  }) => {
     for (const p of [PAGES[0], PAGES[3]]) {
       const unfail = await failApi(page, p.api, 500);
       await page.goto(p.path);

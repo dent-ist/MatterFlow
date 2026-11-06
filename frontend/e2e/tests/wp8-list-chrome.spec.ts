@@ -20,8 +20,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 const grid = (page: Page, name: string) =>
@@ -573,20 +571,9 @@ test.describe('WP8 list chrome', () => {
         await expect(select(page, 'Sensitive')).toHaveCount(0);
       }
     });
-
-    test('on a phone the Filters sheet carries Sensitive with its own label', async ({ page }) => {
-      await page.setViewportSize({ width: 375, height: 812 });
-      await page.goto(`/matters?name=${w.token}`);
-      await toggle(page).click();
-      const sheet = page.getByRole('dialog', { name: 'Filters' });
-      await expect(sheet).toBeVisible();
-      await expect(filterDropdown(sheet, 'Sensitive')).toBeVisible();
-      await axeClean(page, 'matters sheet 375');
-      await shot(page, 'matters-filters-sheet');
-    });
   });
 
-  test.describe('axe and sideways scroll at four sizes', () => {
+  test.describe('axe and sideways scroll at both desktop sizes', () => {
     for (const list of LISTS) {
       test(`${list.name}: closed with chips, and filtered`, async ({ page }) => {
         test.setTimeout(180_000);

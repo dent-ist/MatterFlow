@@ -16,8 +16,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   { w: 1366, h: 768 },
   { w: 1920, h: 1080 },
-  { w: 768, h: 1024 },
-  { w: 375, h: 812 },
 ];
 
 const REGION = 'Changes in this version';

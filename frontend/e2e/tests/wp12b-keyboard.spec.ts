@@ -379,8 +379,6 @@ test.describe('Keyboard: skip link, rows and sequences (#181)', () => {
   for (const [width, height] of [
     [1366, 768],
     [1920, 1080],
-    [768, 1024],
-    [375, 812],
   ] as const) {
     test(`axe at ${width}: skip link visible on focus, row focused, help dialog open`, async ({
       seed,

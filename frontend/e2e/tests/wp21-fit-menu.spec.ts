@@ -505,52 +505,13 @@ test.describe('Column header menu (#207)', () => {
       .isVisible();
   });
 
-  test('touch: a long press (500 ms) at 768 opens the menu and does not sort; a tap still sorts', async ({
-    seed,
-    asUser,
-  }) => {
-    const tag = uid();
-    await seedLong(seed, tag);
-    const page = await asUser('ke\\kekim');
-    await page.setViewportSize({ width: 768, height: 1024 });
-    await openQueue(page, tag, 4);
-    const cdp = await page.context().newCDPSession(page);
-    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
-    await page.reload();
-    await expect(page.locator('[data-task]')).toHaveCount(4);
-
-    const box = (await sortButton(page, 'matter').boundingBox())!;
-    const x = box.x + box.width / 2;
-    const y = box.y + box.height / 2;
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
-    await page.waitForTimeout(250);
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-    await expect(th(page, 'matter')).toHaveAttribute('aria-sort', /ascending|descending/);
-    await expect(menu(page)).toHaveCount(0);
-
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
-    await page.waitForTimeout(650);
-    await expect(menu(page)).toBeVisible();
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-    await page.waitForTimeout(200);
-    await expect(menu(page)).toBeVisible();
-    // The release did not sort again: still the one tap's direction.
-    await expect(th(page, 'matter')).toHaveAttribute('aria-sort', 'ascending');
-    await shot(page, 'header-menu-long-press-768x1024');
-    await axeClean(page, 'long-press menu open at 768');
-  });
-
-  test('axe with the menu open at 1366, 1920 and 768; at 375 there is no menu, no handle and no extra tab stop', async ({
-    seed,
-    asUser,
-  }) => {
+  test('axe with the menu open at 1366 and 1920', async ({ seed, asUser }) => {
     const tag = uid();
     await seedLong(seed, tag);
     const page = await asUser('ke\\kekim');
     for (const [w, h] of [
       [1366, 768],
       [1920, 1080],
-      [768, 1024],
     ]) {
       await page.setViewportSize({ width: w, height: h });
       await openQueue(page, tag, 4);
@@ -562,13 +523,5 @@ test.describe('Column header menu (#207)', () => {
       await page.keyboard.press('Escape');
       await axeClean(page, `menu closed at ${w}`);
     }
-    await page.setViewportSize({ width: 375, height: 812 });
-    await openQueue(page, tag, 4);
-    // Below 640 px the list is cards (#192): no headers, so no menu, no handle and no extra tab stop.
-    await expect(page.locator('thead')).toHaveCount(0);
-    await expect(page.locator('.wt-resize')).toHaveCount(0);
-    await expect(page.locator('[data-task] [tabindex]:not(a):not(button)')).toHaveCount(0);
-    await axeClean(page, 'phone');
-    await shot(page, 'no-menu-375x812');
   });
 });

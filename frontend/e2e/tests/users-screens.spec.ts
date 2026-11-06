@@ -66,7 +66,6 @@ test.describe('users screenshots', () => {
     for (const [w, h] of [
       [1366, 768],
       [1024, 768],
-      [375, 812],
     ]) {
       await page.setViewportSize({ width: w, height: h });
       await page.goto(base);

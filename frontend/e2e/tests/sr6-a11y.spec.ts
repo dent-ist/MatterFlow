@@ -107,7 +107,7 @@ test.describe('Search keyboard, focus and announcements (WP-SR6)', () => {
     await expect(page.locator('.mf-gs__live')).toContainText(/\d+ results in 5 groups/);
   });
 
-  test.describe('audit at four widths', () => {
+  test.describe('audit at both desktop sizes', () => {
     test.skip(() => !axeAvailable(), 'axe-core is not available');
 
     test('keyboard-only flow: box, Enter, skip link, first result; axe 0 and no sideways scroll', async ({

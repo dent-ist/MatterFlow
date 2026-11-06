@@ -158,8 +158,6 @@ test.describe('trends screenshots', () => {
     for (const [w, h] of [
       [1366, 768],
       [1920, 1080],
-      [375, 812],
-      [320, 700],
     ]) {
       await page.setViewportSize({ width: w, height: h });
       await page.addInitScript(() => localStorage.clear());

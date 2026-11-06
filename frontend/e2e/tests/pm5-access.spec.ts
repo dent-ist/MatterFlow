@@ -8,7 +8,7 @@ import { toasts } from '../support/toasts';
 
 /**
  * Keyboard, axe and permission matrix for My Matters and the manager fields (epic #667, #703): Tab-stop evidence with the keys the app already
- * has (no new or changed shortcut, #420), axe at four widths with the menus and the sheet open, six kinds of people (Project Manager, a manager
+ * has (no new or changed shortcut, #420), axe at both desktop sizes with the menus and the sheet open, six kinds of people (Project Manager, a manager
  * without Task.View, a manager without Matter.AssignManagers, Director, Read-Only Observer, technician) with no dead link, no toast and no
  * refused request, and the explicit check that a matter without a manager is never a warning on any of the pages that show managers.
  */
@@ -139,7 +139,7 @@ test.describe('My Matters: keyboard', () => {
 });
 
 test.describe('My Matters: axe with the menus open', () => {
-  test('the Client and Matters tree or Scope sheet, the + New menu and the Show filter at four sizes', async ({
+  test('the Client and Matters tree or Scope sheet, the + New menu and the Show filter at both desktop sizes', async ({
     seed,
     personas,
     asUser,

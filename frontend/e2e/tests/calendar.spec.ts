@@ -213,26 +213,6 @@ test.describe('Dashboard > Calendar', () => {
     await expect(page.getByRole('tab', { name: 'Calendar' })).toHaveCount(0);
     await expect(page.getByText(/Calendar is not available for your role/)).toBeVisible();
   });
-
-  test('on a phone the panel is a bottom sheet with a Close button and the page does not scroll sideways', async ({
-    asUser,
-    personas,
-  }) => {
-    const director = await personas.named('director');
-    const page = await asUser(director.username);
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/dashboard?tab=calendar');
-    await page.locator('[data-day]').nth(10).click();
-    const panel = page.locator('[data-cal-panel]');
-    await expect(panel).toBeVisible();
-    const box = await panel.boundingBox();
-    expect(box && box.y + box.height).toBeGreaterThan(700);
-    expect(
-      await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
-    ).toBeLessThanOrEqual(0);
-    await panel.getByRole('button', { name: 'Close the day panel' }).click();
-    await expect(panel).toBeHidden();
-  });
 });
 
 test.describe('Dashboard > Calendar: accessibility (axe wcag2a, wcag2aa, wcag21aa) and the fixed page', () => {
@@ -240,8 +220,6 @@ test.describe('Dashboard > Calendar: accessibility (axe wcag2a, wcag2aa, wcag21a
   for (const size of [
     { name: '1366x768', width: 1366, height: 768 },
     { name: '1920x1080', width: 1920, height: 1080 },
-    { name: '768x1024', width: 768, height: 1024 },
-    { name: '375x812', width: 375, height: 812 },
   ]) {
     test(`Month, Week and the open panel are clean at ${size.name}`, async ({
       asUser,

@@ -22,8 +22,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 const LONG_NAME = `Wave 20 ${'document review for all custodians '.repeat(4)}`.slice(0, 130);

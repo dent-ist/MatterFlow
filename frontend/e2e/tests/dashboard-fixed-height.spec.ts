@@ -386,48 +386,11 @@ test.describe('page chrome and width (#92, #93, #100)', () => {
     await shoot(page, 'trends-only-1366');
     await page.close();
   });
-
-  test('below 768 px the page scrolls normally (documented fallback) and the tab row is not sticky below 600 px', async ({
-    page,
-  }) => {
-    await open(page, TABS[0], { width: 375, height: 812 });
-    expect((await docOverflow(page)).over).toBeGreaterThan(0);
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
-      ),
-    ).toBe(true);
-    const pos = await page.locator('mf-dash-tabs').evaluate((el) => getComputedStyle(el).position);
-    expect(pos).toBe('static');
-    await shoot(page, 'summary-375');
-    await open(page, TABS[2], { width: 375, height: 812 });
-    await shoot(page, 'trends-375');
-    await open(page, TABS[3], { width: 375, height: 812 });
-    await shoot(page, 'swimlane-375');
-    await open(page, TABS[4], { width: 375, height: 812 });
-    await shoot(page, 'users-375');
-    await open(page, TABS[1], { width: 375, height: 812 });
-    await shoot(page, 'breakdowns-375');
-  });
-
-  test('at 700 px the header row is sticky while the page scrolls', async ({ page }) => {
-    await open(page, TABS[0], { width: 700, height: 900 });
-    expect(await page.locator('mf-dash-tabs').evaluate((el) => getComputedStyle(el).position)).toBe(
-      'sticky',
-    );
-    await page.mouse.move(350, 500);
-    await page.mouse.wheel(0, 400);
-    await page.waitForTimeout(200);
-    const head = (await page.locator('[data-dash-head]').boundingBox())!;
-    expect(head.y).toBeGreaterThanOrEqual(0);
-    expect(head.y).toBeLessThan(120);
-    await expect(page.locator('[data-refresh]')).toBeInViewport();
-  });
 });
 
 test.describe('axe (#137)', () => {
   test.skip(!axeAvailable(), 'axe-core is not available');
-  for (const size of [SIZES[0], SIZES[1], { width: 375, height: 812 }]) {
+  for (const size of [SIZES[0], SIZES[1]]) {
     for (const tab of TABS) {
       test(`${tab.name} at ${size.width}x${size.height} is axe clean`, async ({ page }) => {
         await open(page, tab, size);

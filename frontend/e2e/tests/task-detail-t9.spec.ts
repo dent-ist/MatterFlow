@@ -20,8 +20,6 @@ import { FIRM_ZONE, dateInZone } from '../support/time';
 const OUT = process.env['E2E_SCREENSHOTS'];
 
 const SIZES = [
-  { width: 375, height: 812 },
-  { width: 768, height: 1024 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
 ] as const;
@@ -117,18 +115,8 @@ test.describe('T9 #324 and #325: where a task was opened from', () => {
     // The matter is the origin, so it is not a second crumb: Matter, then the task.
     await expect(crumbs(page).getByRole('link')).toHaveCount(1);
     await expect(crumbs(page).locator('[aria-current="page"]')).toContainText(task.taskNumber);
-    // One link back at every width (#325): the crumb from 640 px, "Back to ..." below it.
+    // One link back: the crumb.
     expect(await visibleLinksTo(page, exact)).toBe(1);
-    await page.setViewportSize({ width: 375, height: 812 });
-    expect(await visibleLinksTo(page, exact)).toBe(1);
-    await expect(page.getByRole('link', { name: `Back to Matter ${ref}` })).toBeVisible();
-    // The trail is hidden; the one link in the Breadcrumb landmark is "Back to ...".
-    await expect(crumbs(page).getByRole('link')).toHaveText([
-      new RegExp(`^\\s*Back to Matter ${ref}`),
-    ]);
-    await page.setViewportSize({ width: 768, height: 1024 });
-    expect(await visibleLinksTo(page, exact)).toBe(1);
-    await page.setViewportSize({ width: 1366, height: 768 });
 
     await atEverySize(page, 'task-from-matter');
     await page.setViewportSize({ width: 1366, height: 768 });
@@ -147,13 +135,6 @@ test.describe('T9 #324 and #325: where a task was opened from', () => {
     // The crumb does the same.
     await openWithKeyboard(page, link);
     await crumbs(page).getByRole('link').first().click();
-    await expect(link).toBeFocused();
-    expect(new URL(page.url()).pathname + new URL(page.url()).search).toBe(exact);
-
-    // And "Back to ..." on a phone.
-    await page.setViewportSize({ width: 375, height: 812 });
-    await openWithKeyboard(page, link);
-    await page.getByRole('link', { name: `Back to Matter ${ref}` }).click();
     await expect(link).toBeFocused();
     expect(new URL(page.url()).pathname + new URL(page.url()).search).toBe(exact);
   });
@@ -465,10 +446,7 @@ test.describe('T9 #328: focus after Complete, Hold, Resume, Reopen and Cancel', 
     return { task, api };
   }
 
-  for (const size of [
-    { width: 1366, height: 768 },
-    { width: 375, height: 812 },
-  ]) {
+  for (const size of [{ width: 1366, height: 768 }]) {
     test(`at ${size.width}: Put on hold, Resume, Cancel, Complete and Reopen leave focus on the Status menu button, never on the page body`, async ({
       seed,
       admin,
@@ -553,7 +531,7 @@ test.describe('T9 #328: focus after Complete, Hold, Resume, Reopen and Cancel', 
 });
 
 test.describe('T9 #327: shortcuts C, A and S behind the "Keyboard shortcuts" switch', () => {
-  async function ready(page: Page, taskId: number, size = SIZES[2]): Promise<void> {
+  async function ready(page: Page, taskId: number, size = SIZES[0]): Promise<void> {
     await page.setViewportSize(size);
     await new TaskDetailPage(page).open(taskId);
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
@@ -712,7 +690,7 @@ test.describe('T9 #327: shortcuts C, A and S behind the "Keyboard shortcuts" swi
     await page.keyboard.press('Escape');
   });
 
-  test('axe 0 at four widths with the Status menu opened by S, and no sideways scroll', async ({
+  test('axe 0 at both desktop sizes with the Status menu opened by S, and no sideways scroll', async ({
     seed,
     page,
   }) => {

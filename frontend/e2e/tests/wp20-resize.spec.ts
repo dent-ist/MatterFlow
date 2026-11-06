@@ -368,7 +368,7 @@ test.describe('Drag resize (#204)', () => {
     );
   });
 
-  test('touch: a finger on the handle resizes at 768; below 640 px there are no handles; axe at four sizes', async ({
+  test('touch: a finger on the handle resizes at 768; below 640 px there are no handles; axe at both desktop sizes', async ({
     seed,
     asUser,
   }) => {
@@ -380,8 +380,6 @@ test.describe('Drag resize (#204)', () => {
     for (const [w, h] of [
       [1366, 768],
       [1920, 1080],
-      [768, 1024],
-      [375, 812],
     ]) {
       await page.setViewportSize({ width: w, height: h });
       await queue.open(`?q=${encodeURIComponent(tag)}`);

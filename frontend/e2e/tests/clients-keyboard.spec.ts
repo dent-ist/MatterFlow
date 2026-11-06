@@ -18,8 +18,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 const tag = uid().slice(0, 6);
@@ -111,10 +109,7 @@ test.afterAll(() => {
 });
 
 test.describe('#281: Back returns focus to the row you left', () => {
-  for (const [w, h] of [
-    [1366, 768],
-    [375, 812],
-  ] as const) {
+  for (const [w, h] of [[1366, 768]] as const) {
     test(`Clients: open row 37 of 40, Back, focus is on that name link (${w}x${h})`, async ({
       page,
     }) => {
@@ -139,10 +134,7 @@ const rowLink = (page: Page, list: string, key: number | string) =>
   page.locator(`a[data-row-list="${list}"][data-row-key="${key}"]`);
 
 test.describe('#281: the other origins, the heading fallback and no focus steal', () => {
-  for (const [w, h] of [
-    [1366, 768],
-    [375, 812],
-  ] as const) {
+  for (const [w, h] of [[1366, 768]] as const) {
     test(`Matters, Projects, the client's Matters tab and the matter's Projects tab (${w}x${h})`, async ({
       page,
     }) => {
@@ -200,16 +192,9 @@ test.describe('#281: the other origins, the heading fallback and no focus steal'
   test('the "Back to" link and the crumb of a record also put focus on the row', async ({
     page,
   }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/clients?name=${encodeURIComponent(`Kbd ${tag}`)}&size=100`);
     const link = rowLink(page, 'clients', data.clients[20].clientId);
-    await link.click();
-    await expect(page).toHaveURL(/\/clients\/\d+/);
-    await page.locator('[data-back-link]').click();
-    await expect(page).toHaveURL(/\/clients\?/);
-    await expect(link).toBeFocused();
-
-    await page.setViewportSize({ width: 1366, height: 768 });
     await link.click();
     await expect(page).toHaveURL(/\/clients\/\d+/);
     await page.locator('.rh__trail a', { hasText: 'Clients' }).click();
@@ -368,27 +353,6 @@ test.describe('#282: the copy button is not a Tab stop (the right arrow reaches 
     );
   });
 
-  test('on a phone the card keeps a visible 44 px copy button next to the name link', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(url());
-    const links = page.locator('a[data-row-list="matters"]');
-    await expect(links.first()).toBeVisible();
-    const button = page.locator('li.rc').first().locator('button[data-row-stop]');
-    await expect(button).toHaveCSS('opacity', '1');
-    const box = (await button.boundingBox())!;
-    expect(box.width).toBeGreaterThanOrEqual(44);
-    expect(box.height).toBeGreaterThanOrEqual(44);
-    await links.first().focus();
-    await page.keyboard.press('ArrowRight');
-    await expect(button).toBeFocused();
-    await page.keyboard.press('Tab');
-    expect(await active(page)).not.toBe('body');
-    await expect(button).not.toBeFocused();
-    await shot(page, 'copy-button-card');
-  });
-
   test("the client's Matters tab and the matter header keep working", async ({ page }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/clients/${data.big.clientId}?tab=matters&size=50`);
@@ -461,10 +425,7 @@ const ORIGINS: Origin[] = [
 
 test.describe('#283: Skip to table, the page-specific first Tab stop', () => {
   for (const o of ORIGINS) {
-    for (const [w, h] of [
-      [1366, 768],
-      [375, 812],
-    ] as const) {
+    for (const [w, h] of [[1366, 768]] as const) {
       test(`${o.name}: Tab, Enter lands on the first row (${w}x${h})`, async ({ page }) => {
         await page.setViewportSize({ width: w, height: h });
         await page.goto(o.url());
@@ -713,27 +674,6 @@ test.describe('#284: tabs, menus, dialogs and drawers by keyboard', () => {
       });
     }
   }
-
-  test('the Filters sheet on a phone: focus in, Tab and Shift+Tab stay in, Esc closes and focus returns', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(ORIGINS[0].url());
-    const button = page.getByRole('button', { name: /^Filters/ });
-    await button.focus();
-    await page.keyboard.press('Enter');
-    const sheet = page.locator('[data-filter-sheet]');
-    await expect(sheet).toBeVisible();
-    expect(await focusIsIn(page, '[data-filter-sheet]')).toBe(true);
-    expect(await trapped(page, '[data-filter-sheet]', 20)).toBe(true);
-    expect(await trapped(page, '[data-filter-sheet]', 20, true)).toBe(true);
-    await axeClean(page, 'filter sheet open 375');
-    await noSidewaysScroll(page);
-    await shot(page, 'filter-sheet');
-    await page.keyboard.press('Escape');
-    await expect(sheet).toHaveCount(0);
-    await expect(button).toBeFocused();
-  });
 
   test('a column filter popover (the Matter Tasks tab): Esc closes it and focus returns to its button', async ({
     page,

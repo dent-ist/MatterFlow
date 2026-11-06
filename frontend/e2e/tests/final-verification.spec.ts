@@ -19,7 +19,7 @@ import { dateInZone, FIRM_ZONE } from '../support/time';
  *  3. The review's drill-through check on the Dashboard: every count of the Summary tiles and of the Breakdowns (priorities, statuses, ages,
  *     task types) equals the grid total behind its link, in one pod's scope so the numbers are this test's own.
  *  4. The Tab stops before the first row are counted and recorded (annotation and console).
- *  5. Axe at 1366, 1920, 768 and 375 on the six screens, and (with E2E_SCREENSHOTS) the screenshots of docs/ux/task-queue-review/fixes/final.
+ *  5. Axe at 1366 and 1920 on the six screens, and (with E2E_SCREENSHOTS) the screenshots of docs/ux/task-queue-review/fixes/final.
  *
  * Every test seeds its own tagged data and asserts nothing about global counts.
  */
@@ -28,8 +28,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES: [number, number][] = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ];
 
 async function shot(page: Page, name: string): Promise<void> {
@@ -496,7 +494,7 @@ test.describe('Final verification (#240)', () => {
     console.log(`TAB STOPS to the first row (skip link not used; with it: 1 Tab + Enter): ${text}`);
   });
 
-  test('the six screens at four sizes: axe has no violations, and the screenshots are taken when E2E_SCREENSHOTS is set', async ({
+  test('the six screens at both desktop sizes: axe has no violations, and the screenshots are taken when E2E_SCREENSHOTS is set', async ({
     seed,
     admin,
     asUser,

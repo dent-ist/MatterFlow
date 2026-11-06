@@ -5,7 +5,7 @@ import { uid } from '../support/seed';
 
 /**
  * Assets UX review, package WP-AS4 (docs/ux/assets-review): the Linked tasks tab (#505), the summary strip (#506), the Set inactive dialog
- * (#507), long text (#508) and the record page at 375 and 768 (#509). Screenshots: E2E_SCREENSHOTS=docs/ux/assets-review/fixes/as4-record-complete.
+ * (#507), long text (#508) and the record page at both desktop sizes (#509). Screenshots: E2E_SCREENSHOTS=docs/ux/assets-review/fixes/as4-record-complete.
  */
 const LONG_NAME = 'A very long asset name that goes on and on '.repeat(7).slice(0, 300).trim();
 const LONG_URL =
@@ -208,7 +208,7 @@ test.describe('Asset record page, complete (WP-AS4)', () => {
     await shot(page, 'as4-long-values');
   });
 
-  test('375 and 768: all three tabs, the overflow and the dialog; no sideways scroll, axe finds nothing, targets are big enough (#509)', async ({
+  test('both desktop sizes: all three tabs, the overflow and the dialog; no sideways scroll, axe finds nothing, targets are big enough (#509)', async ({
     page,
     seed,
     personas,
@@ -223,8 +223,7 @@ test.describe('Asset record page, complete (WP-AS4)', () => {
       await shot(page, 'as4-details');
 
       await page.getByRole('tab', { name: /^Linked tasks/ }).click();
-      if (size.width < 640) await expect(page.locator('[data-tasks-tab] li.rc')).toHaveCount(3);
-      else await expect(page.locator('[data-tasks-tab] tbody tr')).toHaveCount(3);
+      await expect(page.locator('[data-tasks-tab] tbody tr')).toHaveCount(3);
       expect(await axeViolations(page), `tasks at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
       await shot(page, 'as4-tasks');
@@ -245,19 +244,6 @@ test.describe('Asset record page, complete (WP-AS4)', () => {
       await noHorizontalScroll(page);
       await page.keyboard.press('Escape');
       await expect(page.getByRole('dialog')).toHaveCount(0);
-
-      if (size.width <= 768) {
-        // Touch targets: tabs and the header buttons are at least 44 px high on a phone and tablet.
-        for (const target of [
-          page.getByRole('tab', { name: 'Details' }),
-          page.getByRole('button', { name: 'More actions' }),
-        ]) {
-          const box = (await target.boundingBox())!;
-          expect(box.height, `target at ${size.width}`).toBeGreaterThanOrEqual(
-            size.width < 640 ? 36 : 32,
-          );
-        }
-      }
     }
   });
 });

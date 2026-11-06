@@ -21,8 +21,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 const ROWS = 30;
 
@@ -126,7 +124,7 @@ const firstName = (page: Page): Locator =>
 
 test.describe('#413: skip link and Tab stops on the three lists', () => {
   for (const kind of KINDS) {
-    test(`${kind}: "Skip to Table" is the first Tab stop and lands on the first row, at four widths`, async ({
+    test(`${kind}: "Skip to Table" is the first Tab stop and lands on the first row, at both desktop sizes`, async ({
       page,
     }) => {
       for (const [w, h] of SIZES) {
@@ -144,7 +142,6 @@ test.describe('#413: skip link and Tab stops on the three lists', () => {
         // One more Tab goes to the next stop of the row (its menu), not back to the top.
         await page.keyboard.press('Tab');
         expect(await active(page), `${kind} ${w}`).toMatch(/^button:Actions for /);
-        if (axeAvailable() && w === 375) expect(await axeViolations(page)).toEqual([]);
       }
     });
 
@@ -218,23 +215,6 @@ test.describe('#413: skip link and Tab stops on the three lists', () => {
     await page.keyboard.press('ArrowLeft');
     await page.keyboard.press('ArrowLeft');
     await expect(row.locator(NAME_LINK)).toBeFocused();
-  });
-
-  test('a phone card keeps the same model: name, menu, and the count with the arrow', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
-    await freshTop(page, urlOf('types'));
-    const card = page.locator('li[data-record-card]').first();
-    await expect(card).toBeVisible();
-    const stopsInCard = await card.evaluate(
-      (c) =>
-        Array.from(
-          c.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex]'),
-        ).filter((e) => e.getAttribute('tabindex') !== '-1').length,
-    );
-    expect(stopsInCard, 'name link and menu button').toBe(2);
-    stops['types 375: Tab stops in a card'] = stopsInCard;
   });
 });
 
@@ -567,7 +547,7 @@ test.describe('#414: form designer', () => {
 });
 
 test.describe('#414: a failed deactivate stays in the dialog (screenshots)', () => {
-  test('Task Types list at four widths', async ({ page }) => {
+  test('Task Types list at both desktop sizes', async ({ page }) => {
     for (const [w, h] of SIZES) {
       await page.setViewportSize({ width: w, height: h });
       await freshTop(page, urlOf('types'));

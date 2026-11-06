@@ -14,8 +14,6 @@ import { TaskApi } from '../support/tasks';
 const SIZES = [
   { name: '1366x768', width: 1366, height: 768 },
   { name: '1920x1080', width: 1920, height: 1080 },
-  { name: '768x1024', width: 768, height: 1024 },
-  { name: '375x812', width: 375, height: 812 },
 ] as const;
 
 /** 200 characters of ordinary words, so it wraps like a real long title. */
@@ -149,7 +147,7 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
   }) => {
     const world = await seed.world({ stepCount: 2 });
     const task = await seed.task(world, { title: LONG_TITLE });
-    await page.setViewportSize({ width: 375, height: 812 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
     await openEdit(page);
@@ -404,7 +402,7 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
     const editRole = await seed.role(['Task.View', 'Task.Edit'], `E2E T8 editor ${token}`);
     const editor = await seed.user([editRole.name], `t8e-${token}`);
     const editorPage = await asUser(editor.username);
-    await editorPage.setViewportSize({ width: 375, height: 812 });
+    await editorPage.setViewportSize({ width: 1366, height: 768 });
     await new TaskDetailPage(editorPage).open(task.taskId);
     await openEdit(editorPage);
     await editorPage.locator('[data-when-toggle]').click();
@@ -413,7 +411,7 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
     await expect(editorPage.locator('[data-locked-fields] a')).toHaveCount(0);
     await expect(editorPage.locator('[data-locked-fields]')).toContainText(world.matter.matterRef);
     expect(await overflowX(editorPage.locator('.p-dialog-content'))).toBeLessThanOrEqual(0);
-    await checkPage(editorPage, 'Task.Edit without Task.Assign 375');
+    await checkPage(editorPage, 'Task.Edit without Task.Assign 1366');
     await cancelEdit(editorPage);
 
     // Task.View only: no Edit control anywhere, so no dialog. No Task.View: the page is refused.
@@ -627,13 +625,13 @@ test.describe('T8: Create task page (CT1 #322, #323)', () => {
     const role = await seed.role(['Task.View', 'Task.Create'], `E2E T8 creator ${token}`);
     const creator = await seed.user([role.name], `t8d-${token}`);
     const page = await asUser(creator.username);
-    await page.setViewportSize({ width: 375, height: 812 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/tasks/new?taskType=${world.taskType.id}`);
     await expect(page.locator('mf-page-header')).toBeVisible();
     await expect(page.locator('[data-summary-card]')).toBeVisible();
     await new CreateTaskPage(page).openWhen(); // collapsed by default (#349)
     await expect(page.locator('[data-no-assign]')).toBeVisible();
-    await checkPage(page, 'Task.Create only 375');
+    await checkPage(page, 'Task.Create only 1366');
   });
 
   test('creating a task end to end with a 200-character title keeps working', async ({

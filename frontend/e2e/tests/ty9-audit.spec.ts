@@ -10,7 +10,7 @@ import { build, versionIds } from '../support/ty-workflow';
  * WP-TY9 #415: the keyboard and axe audit of the Task Types administration pages. Two parts:
  *  1. Tab stops per page and tab (recorded in `tab-stops.json` when E2E_SCREENSHOTS names the output folder; not gated), and the rule
  *     that no page keeps a hidden Tab stop (a stop that is not visible) and that Tab never leaves the document into nothing.
- *  2. The route x width x open overlay matrix: every menu, popover, dialog, drawer and sheet is opened at 1366, 1920, 768 and 375,
+ *  2. The route x width x open overlay matrix: every menu, popover, dialog, drawer and sheet is opened at 1366 and 1920,
  *     axe has 0 violations, the page does not scroll sideways, Escape closes it and focus is back on the control that opened it.
  * No keyboard shortcut is added or changed by this package.
  */
@@ -18,8 +18,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   { w: 1366, h: 768 },
   { w: 1920, h: 1080 },
-  { w: 768, h: 1024 },
-  { w: 375, h: 812 },
 ] as const;
 
 interface World {

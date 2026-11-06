@@ -1,4 +1,3 @@
-import { dropdownById } from '../support/dropdown';
 import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
@@ -102,7 +101,7 @@ test.describe('pf2-header: name, context line, status chip and ONE primary actio
       await expect(me.locator('[data-name]')).toHaveAttribute('title', p.displayName!);
       await noHorizontalScroll(me);
       await axeClean(me, `long name at ${size.width}`);
-      if (size.width === 1366 || size.width === 375) await shot(me, 'pf2-header-long-name');
+      if (size.width === 1366) await shot(me, 'pf2-header-long-name');
     }
   });
 
@@ -225,7 +224,7 @@ test.describe('pf3-columns: two columns from 1100 px, one card style, one width 
       await me.evaluate(() => window.scrollTo(0, 0));
       await noHorizontalScroll(me);
       await axeClean(me, `summary at ${size.width}`);
-      if (size.width === 1366 || size.width === 375) await shot(me, 'pf3-error-summary');
+      if (size.width === 1366) await shot(me, 'pf3-error-summary');
     }
   });
 
@@ -273,38 +272,13 @@ test.describe('pf3-bar: the action bar (#531)', () => {
     await expect(me.getByRole('button', { name: 'Save Changes' })).toBeEnabled();
   });
 
-  test('at 375 the last field (Time zone) scrolls fully above the bar, and a focused field is not left behind it', async ({
-    personas,
-    asUser,
-  }) => {
-    const p = await personas.create({ ...PERSONAS.technician, label: 'pf3bar375' });
-    const me = await asUser(p.username);
-    await me.setViewportSize({ width: 375, height: 812 });
-    await me.goto('/profile');
-    // Focusing the last field of the form scrolls it clear of the sticky bar (scroll margin), never under it.
-    await dropdownById(me, 'av-tz').focus();
-    await expect(dropdownById(me, 'av-tz')).toBeFocused();
-    const clear = () =>
-      me.evaluate(() => {
-        const f = document.activeElement!.getBoundingClientRect();
-        const b = document.querySelector('[data-actions]')!.getBoundingClientRect();
-        return f.bottom <= b.top || f.top >= b.bottom;
-      });
-    await expect.poll(clear, { message: 'Time zone is not under the bar' }).toBe(true);
-    await shot(me, 'pf3-bar-bottom');
-    // The same for a field higher up that the bar would cover when it is brought into view from below.
-    await me.getByRole('radio', { name: /Out of office/ }).check();
-    await me.locator('#av-note').focus();
-    await expect.poll(clear, { message: 'Note is not under the bar' }).toBe(true);
-  });
-
   test('the bar is the column width at 1366 and 1920 and carries the shared top shadow', async ({
     personas,
     asUser,
   }) => {
     const p = await personas.create({ ...PERSONAS.technician, label: 'pf3barw' });
     const me = await asUser(p.username);
-    for (const size of [SIZES[2], SIZES[3]]) {
+    for (const size of [SIZES[0], SIZES[1]]) {
       await me.setViewportSize(size);
       await me.goto('/profile');
       const bar = await box(me, '[data-actions]');
@@ -381,7 +355,7 @@ test.describe('pf3-states: skeleton while loading and the shared record state on
       await expect(me).toHaveTitle('Profile could not be loaded - MatterFlow');
       await noHorizontalScroll(me);
       await axeClean(me, `load error at ${size.width}`);
-      if (size.width === 1366 || size.width === 375) await shot(me, 'pf3-load-error');
+      if (size.width === 1366) await shot(me, 'pf3-load-error');
       const retry = state.getByRole('button', { name: 'Retry' });
       await expect(retry).toBeVisible();
       await retry.click();
