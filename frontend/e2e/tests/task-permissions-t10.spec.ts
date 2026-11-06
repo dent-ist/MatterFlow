@@ -542,8 +542,8 @@ test.describe('#329: Task page permission matrix, no dead links', () => {
         };
         const [label, usable] = wanted[from] ?? [null, true];
         if (label && usable) await expect(first).toHaveText(label);
-        // An origin the person cannot use is dropped: the crumb is the plain "Tasks" and its target opens.
-        if (label && !usable) await expect(first).toHaveText('Tasks');
+        // An origin the person cannot use is dropped: the crumb is the plain "Task Queue" and its target opens.
+        if (label && !usable) await expect(first).toHaveText('Task Queue');
         // Exactly one visible way back (the crumb at this width).
         const href = await first.getAttribute('href');
         expect(href, `crumb target for from=${from}`).toBeTruthy();

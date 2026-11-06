@@ -57,6 +57,7 @@ const UPCOMING_DAYS = 14;
           [statuses]="statuses()"
           [grid]="grid()"
           [show]="show()"
+          [panelOpen]="layout.sideOpen() && !layout.stacked()"
           [showMatter]="showMatter()"
           [resetKey]="resetKey()"
           (paramsChange)="paramsChange.emit($event)"

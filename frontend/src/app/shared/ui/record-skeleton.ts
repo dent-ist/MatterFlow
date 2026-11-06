@@ -420,12 +420,12 @@ export class RecordSkeleton {
       : DRILL_SOURCES[from];
   });
   protected readonly taskParents = computed<Crumb[]>(() => [
-    { label: this.source()?.label ?? 'Tasks', link: this.source()?.path ?? '/tasks' },
+    { label: this.source()?.label ?? 'Task Queue', link: this.source()?.path ?? '/tasks' },
     { label: '' },
   ]);
   protected readonly taskBack = computed(() => {
     const src = this.source();
-    return src ? { label: src.label, link: src.path } : { label: 'Tasks', link: '/tasks' };
+    return src ? { label: src.label, link: src.path } : { label: 'Task Queue', link: '/tasks' };
   });
   protected readonly tabs = computed(() => {
     const kind = this.kind();

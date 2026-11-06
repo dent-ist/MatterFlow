@@ -154,7 +154,7 @@ test.describe('Drill-in keeps its place', () => {
 
     await page.goto(`/tasks/${task.taskId}?from=nowhere`);
     await expect(page.locator('[data-task-header]')).toBeVisible();
-    await expect(crumbs(page).getByRole('link').first()).toHaveText('Tasks');
+    await expect(crumbs(page).getByRole('link').first()).toHaveText('Task Queue');
     await expect(crumbs(page).getByRole('link').first()).toHaveAttribute('href', '/tasks');
     await expect(page.getByRole('link', { name: /^Back to/ })).toHaveCount(0);
     await expect(nav(page)).toHaveText(['Task Queue']);

@@ -1143,7 +1143,7 @@ describe('TaskDetailPage drill-in context (M7, #160)', () => {
 
   it('drops Pod Work as the origin for a person without Pod.View: the crumb would be a dead link (T10, #329)', async () => {
     const { el } = await openFrom('pod-work', '/pods/work?pod=2');
-    expect(crumb(el).textContent!.trim()).toBe('Tasks');
+    expect(crumb(el).textContent!.trim()).toBe('Task Queue');
     expect(crumb(el).getAttribute('href')).toBe('/tasks');
     expect((q(el, '[data-back-link]') as HTMLAnchorElement).getAttribute('href')).toBe('/tasks');
   });
@@ -1173,7 +1173,7 @@ describe('TaskDetailPage drill-in context (M7, #160)', () => {
       expect(crumbs(other.el)).toEqual([['Matter 00343-00012', '/matters/7?tab=tasks']]);
       TestBed.resetTestingModule();
       const none = await openFrom('matter', '/matters/7?tab=tasks');
-      expect(crumbs(none.el)).toEqual([['Tasks', '/tasks']]);
+      expect(crumbs(none.el)).toEqual([['Task Queue', '/tasks']]);
       expect(back(none.el).getAttribute('href')).toBe('/tasks');
     });
 
@@ -1193,7 +1193,7 @@ describe('TaskDetailPage drill-in context (M7, #160)', () => {
         ...PERMS,
         'Project.View',
       ]);
-      expect(crumbs(bare.el)[0]).toEqual(['Tasks', '/tasks']);
+      expect(crumbs(bare.el)[0]).toEqual(['Task Queue', '/tasks']);
     });
 
     it('Dashboard and Search: the exact address comes back; a foreign address falls back to the page', async () => {
@@ -1215,20 +1215,20 @@ describe('TaskDetailPage drill-in context (M7, #160)', () => {
       expect(crumbs(foreign.el)).toEqual([['Search', '/search']]);
       TestBed.resetTestingModule();
       const denied = await openFrom('dashboard', '/dashboard');
-      expect(crumbs(denied.el)).toEqual([['Tasks', '/tasks']]);
+      expect(crumbs(denied.el)).toEqual([['Task Queue', '/tasks']]);
       TestBed.resetTestingModule();
       // Dashboard.View without any tab permission opens an empty Dashboard whose data answers 403: not an origin (T10, #329).
       const noTab = await openFrom('dashboard', '/dashboard', undefined, [
         ...PERMS,
         'Dashboard.View',
       ]);
-      expect(crumbs(noTab.el)).toEqual([['Tasks', '/tasks']]);
+      expect(crumbs(noTab.el)).toEqual([['Task Queue', '/tasks']]);
     });
   });
 
   it('keeps the default crumb and a Back link to the Task list for an unknown from value', async () => {
     const { el } = await openFrom('somewhere-else');
-    expect(crumb(el).textContent!.trim()).toBe('Tasks');
+    expect(crumb(el).textContent!.trim()).toBe('Task Queue');
     expect(crumb(el).getAttribute('href')).toBe('/tasks');
     expect((q(el, '[data-back-link]') as HTMLAnchorElement).getAttribute('href')).toBe('/tasks');
   });

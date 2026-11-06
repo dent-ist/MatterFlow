@@ -176,7 +176,28 @@
             </div>
             <div class="ct__tile" data-strip-type>
               <span class="ct__tile-label">Task Type</span>
-              <span class="ct__tile-value">{{ selectedChoice()?.type?.name ?? 'Not chosen' }}</span>
+              <span class="ct__tile-type">
+                <span class="ct__tile-id" data-type-chip>
+                  <mf-task-type-chip
+                    size="sm"
+                    [iconKey]="selectedChoice()?.type?.iconKey"
+                    [colourKey]="selectedChoice()?.type?.colourKey"
+                    [typeId]="selectedChoice()?.type?.id"
+                    [decorative]="true"
+                  />
+                  <span class="ct__tile-value" data-type-name>{{
+                    selectedChoice()?.type?.name
+                  }}</span>
+                </span>
+                <button
+                  type="button"
+                  class="mf-btn mf-btn--text"
+                  data-change-type
+                  (click)="changeType()"
+                >
+                  Change Type
+                </button>
+              </span>
             </div>
             <div class="ct__tile" data-strip-workflow>
               <span class="ct__tile-label">Workflow</span>
@@ -194,22 +215,6 @@
               Type, workflow and matter can't be changed after you create the task.
             </p>
           </section>
-
-          <div class="ct__selected" data-type-chip>
-            <mf-task-type-chip
-              [iconKey]="selectedChoice()?.type?.iconKey"
-              [colourKey]="selectedChoice()?.type?.colourKey"
-              [typeId]="selectedChoice()?.type?.id"
-              [decorative]="true"
-            />
-            <span class="ct__selected-text">
-              <span class="ct__selected-label">Task Type</span>
-              <strong data-type-name>{{ selectedChoice()?.type?.name }}</strong>
-            </span>
-            <button type="button" class="mf-btn" data-change-type (click)="changeType()">
-              Change Type
-            </button>
-          </div>
 
           <!-- The essentials first: Matter, Title, Requestor (UXR-38); the type was chosen before -->
           <section class="ct__section" aria-labelledby="ct-h-task">

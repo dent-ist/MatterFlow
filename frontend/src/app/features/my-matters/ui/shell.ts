@@ -70,7 +70,12 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
     RouterLink,
     Tabs,
   ],
-  providers: [MmScopeStore, MmLayout, LoadGroup, { provide: MmApi, useExisting: GeneratedMmApi }],
+  providers: [
+    MmScopeStore,
+    { provide: MmLayout, useFactory: () => new MmLayout(inject(AuthStore).profile()?.userId ?? 0) },
+    LoadGroup,
+    { provide: MmApi, useExisting: GeneratedMmApi },
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
