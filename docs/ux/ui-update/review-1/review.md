@@ -450,3 +450,16 @@ Evidence: `design-evidence`, `evidence/2026-11-06-review-28-matter-client-tabs-g
 | #1176 | closed by decision | Select and View are not needed on the Projects and Assets tabs; point 3 (Project cell as a link) is #1273. |
 
 Rulings: no Search box on Client > Matters accepted; Productions menu Open/Delete and Specs menu Open/Duplicate accepted (D-44g); more than 100 projects sorting only the loaded ones accepted; the Project cell becomes a link with "Move to Project..." in the row menu (#1273); the `button-rule.spec` failure is a CSS fault, the chip button takes `min-height: var(--mf-chip-h)` (#1274).
+
+## review-29 last small fixes (2026-11-06, tip 6b6f358, 1366 and 1920)
+
+Evidence: `design-evidence`, `evidence/2026-11-06-review-29-last-small-fixes/`.
+
+| Issue | Verdict | Notes |
+|---|---|---|
+| #1274 chip min-height | PASS | `min-height: 26px` from `--mf-chip-h`; button box 28 px around the 26 px pill (1 px transparent border), accepted. |
+| #1271 banner icon texts | PASS | `_banners.scss` and the wiki say 18. |
+| #1272 Client > Matters Status | PASS | 157 / 501 / 125 / 105 / 161 / 48 at 1366 and Matter Name 1055 at 1920, filters stacked. The Matters list is still 238 px at 1920 (side by side from 1500 px): #1276. |
+| #1273 Project cell and move | PASS with points | Underlined link or dash, "Move to Project..." dialog 416 px with a white dropdown. Corrections: one action is an icon button (D-36), toast wording for No Project, the dash speaks "0" instead of "No project": #1275. |
+
+New fix issues: #1275 (Move to Project action, toast, spoken name), #1276 (Matters list filters stacked at every width), #1277 (Create Task scrolls its header out of view at 1366), #1278 (Asset Reports dashed placeholder). Rule D-44w.
