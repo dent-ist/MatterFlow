@@ -195,17 +195,6 @@
   color: var(--mf-sem-overdue-fg);
 }
 
-/* The amber banner: one compact bar, the same as the sensitive-matter bar of the record header (#1175): 4 px / 12 px padding, 13 px text. */
-.pg-banner {
-  margin: 0 0 var(--mf-s2);
-  padding: var(--mf-s1) var(--mf-s3);
-  font-size: var(--mf-fs-sm);
-  border-radius: var(--mf-radius-lg);
-  border: 1px solid var(--mf-sem-risk-line);
-  background: var(--mf-sem-risk-bg);
-  color: var(--mf-sem-risk-fg);
-}
-
 .pg-form {
   display: grid;
   gap: var(--mf-s4);

@@ -10,7 +10,12 @@ import { StubMeApi } from '../../core/auth/stub-me-api';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (stub(); as s) {
-      <div class="mf-dev-banner" role="region" aria-label="Development authentication">
+      <div
+        class="pg-banner pg-banner--full pg-banner--info mf-dev-banner"
+        role="region"
+        aria-label="Development authentication"
+      >
+        <i class="pi pi-info-circle" aria-hidden="true"></i>
         <span>Dev auth: acting as {{ auth.displayName() || 'nobody' }}</span>
         <label>
           Switch user
@@ -25,16 +30,10 @@ import { StubMeApi } from '../../core/auth/stub-me-api';
   `,
   styles: `
     .mf-dev-banner {
-      display: flex;
-      gap: var(--mf-s4);
-      align-items: center;
       justify-content: center;
-      padding: var(--mf-s1) var(--mf-s4);
-      background: var(--mf-warning-bg);
-      color: var(--mf-warning);
-      font-size: var(--mf-fs-sm);
     }
     select {
+      min-height: var(--mf-ctl-h-sm);
       margin-left: var(--mf-s2);
       font: inherit;
     }

@@ -119,26 +119,7 @@
   display: none;
 }
 
-.rh__note {
-  display: flex;
-  align-items: center;
-  gap: var(--mf-s2);
-  box-sizing: border-box;
-  height: 32px;
-  margin: var(--mf-s1) 0 0;
-  padding: 0 var(--mf-s3);
-  border: 1px solid var(--mf-sem-risk-line);
-  border-radius: var(--mf-radius-lg);
-  background: var(--mf-sem-risk-bg);
-  color: var(--mf-sem-risk-fg);
-  font-size: var(--mf-fs-sm);
-  line-height: 1.3;
-}
-
-.rh__note .pi {
-  flex: none;
-}
-
+/* The sensitive bar is the one banner (`.pg-banner` family in styles/_banners.scss, #1196); only its one-line text is clamped here. */
 .rh__note-text {
   display: -webkit-box;
   min-width: 0;

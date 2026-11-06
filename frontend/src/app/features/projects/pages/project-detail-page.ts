@@ -98,7 +98,11 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
             @if (!p.isActive) {
               <div class="pg-banner" role="note" data-archived-banner>
-                This project is archived. Existing tasks keep it, but new tasks can't select it.
+                <i class="pi pi-info-circle" aria-hidden="true"></i>
+                <span
+                  >This project is archived. Existing tasks keep it, but new tasks can't select
+                  it.</span
+                >
               </div>
             }
 
