@@ -383,7 +383,7 @@ function plural(n: number, one: string, many: string): string {
           @if (showMatters()) {
             <mf-data-pick
               label="Matters"
-              allText="All matters"
+              allText="All Matters"
               one="matter"
               many="matters"
               data-pick-matters
@@ -402,7 +402,7 @@ function plural(n: number, one: string, many: string): string {
           @if (showTypes()) {
             <mf-data-pick
               label="Asset Types"
-              allText="All asset types"
+              allText="All Asset Types"
               one="asset type"
               many="asset types"
               data-pick-types

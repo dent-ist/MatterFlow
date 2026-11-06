@@ -335,7 +335,7 @@ describe('trend chart', () => {
     });
     const LATE = line({
       key: 'all-late',
-      name: 'Completed late',
+      name: 'Completed Late',
       valueWord: 'completed late',
       measure: 'late',
       style: MEASURE_STYLES.late,

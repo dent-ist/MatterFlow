@@ -6,6 +6,9 @@ import {
   toDefinition,
   toDraft,
   undrawnGroups,
+  withStandardLabels,
+  groupByLabel,
+  DISPOSITIONS,
 } from './report-model';
 
 describe('report model', () => {
@@ -72,5 +75,41 @@ describe('report model', () => {
     expect(cellText(412.456)).toBe('412.5');
     expect(cellText(undefined)).toBe('');
     expect(cellText(0)).toBe('0');
+  });
+
+  it('names the disposition groups as the chips do (D-20), for the table, the legends and the export alike', () => {
+    const byDisposition = {
+      groupBy: 'disposition',
+      columns: result.columns,
+      rows: [
+        { key: 'ACTIVE', label: 'Active', cells: [5, 1] },
+        { key: 'PENDING_DISPOSITION', label: 'Pending disposition', cells: [2, 1] },
+        { key: 'DISPOSED', label: 'Disposed', cells: [1, 1] },
+      ],
+    } as AssetReportResult;
+    const named = withStandardLabels(byDisposition);
+    expect(named.rows.map((r) => r.label)).toEqual(['Active', 'Pending Disposition', 'Disposed']);
+    expect(chartRows(named, 0).map((r) => r.label)).toEqual([
+      'Active',
+      'Pending Disposition',
+      'Disposed',
+    ]);
+    // Another grouping keeps the words of its groups, and a built-in grouping heading is Title Case ("Asset type" from the API).
+    const other = {
+      ...byDisposition,
+      groupBy: 'assetType',
+      groupByLabel: 'Asset type',
+    } as AssetReportResult;
+    expect(withStandardLabels(other).rows).toBe(other.rows);
+    expect(withStandardLabels(other).groupByLabel).toBe('Asset Type');
+    expect(groupByLabel('field:review_type', 'Review type')).toBe('Review type');
+    // The filter dropdown is built from the same table.
+    expect(DISPOSITIONS.map((d) => d.label)).toEqual([
+      'Any Disposition',
+      'Active',
+      'Inactive',
+      'Pending Disposition',
+      'Disposed',
+    ]);
   });
 });

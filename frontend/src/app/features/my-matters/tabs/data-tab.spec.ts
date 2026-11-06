@@ -529,6 +529,14 @@ describe('DataTab', () => {
     await open();
     // Matters: a list asked for from the server, ticked in a popover.
     const matters = await openPicker('[data-pick-matters]');
+    // The "all" options are dropdown values: Title Case (D-20, #1262).
+    expect(matters.querySelector('summary')!.textContent).toContain('All Matters');
+    expect(matters.querySelector('[data-pick-all]')!.closest('label')!.textContent).toContain(
+      'All Matters',
+    );
+    expect(el().querySelector('[data-pick-types] summary')!.textContent).toContain(
+      'All Asset Types',
+    );
     const box = matters.querySelector<HTMLInputElement>('[data-pick="5"]')!;
     box.click();
     await settle();

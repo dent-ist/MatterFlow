@@ -137,7 +137,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     expect(text(el.querySelector('[data-two-line]'))).toBe(
       'Pick a task type and the chart switches to Created.',
     );
-    expect(measureText('backlog')).toBe('Open and overdue');
+    expect(measureText('backlog')).toBe('Open and Overdue');
     // One title per panel; the card has no title of its own (the page's section heading names the tab).
     expect(Array.from(el.querySelectorAll('h3')).map((h) => text(h))).toEqual([
       'Created and Completed',
@@ -317,7 +317,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
 
   it('opens a legacy address: due=overdue,ontime is Overdue in the backlog panel and On time as the flow measure', async () => {
     await open('/trends?due=overdue,ontime');
-    expect(measureText('flows')).toBe('On time');
+    expect(measureText('flows')).toBe('On Time');
     expect(panelLines('flows').length).toBe(1);
     expect(panelLines('backlog').length).toBe(1);
     // metric=overdue with types: the types are compared in the backlog panel.

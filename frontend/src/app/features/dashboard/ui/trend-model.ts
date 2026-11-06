@@ -76,13 +76,13 @@ export const MEASURE_INFO: Record<Measure, MeasureInfo> = {
     totalNote: 'Open now',
   },
   onTime: {
-    label: 'On time',
+    label: 'On Time',
     word: 'completed on time',
     heading: 'on time',
     totalNote: 'Completed on time in the period',
   },
   late: {
-    label: 'Completed late',
+    label: 'Completed Late',
     word: 'completed late',
     heading: 'late',
     totalNote: 'Completed late in the period',
@@ -115,11 +115,11 @@ export const FLOW_CHOICE_LABEL: Record<FlowChoice, string> = {
   both: 'Created and Completed',
   created: 'Created',
   completed: 'Completed',
-  onTime: 'On time',
-  late: 'Completed late',
+  onTime: 'On Time',
+  late: 'Completed Late',
 };
 export const BACKLOG_CHOICE_LABEL: Record<BacklogChoice, string> = {
-  both: 'Open and overdue',
+  both: 'Open and Overdue',
   open: 'Open',
   overdue: 'Overdue',
 };

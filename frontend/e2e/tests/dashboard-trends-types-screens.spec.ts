@@ -207,7 +207,7 @@ test.describe('trends screenshots', () => {
       await shot(`08-measure-both-${w}`);
       await dropdownByAttr(page, 'data-measure-select="flows"').selectOption('onTime');
       await expect(page.locator('[data-measure-select="flows"] button')).toHaveText(
-        'Measure: On time',
+        'Measure: On Time',
       );
       await shot(`09-measure-on-time-${w}`);
 
