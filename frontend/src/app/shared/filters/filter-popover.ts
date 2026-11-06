@@ -112,7 +112,7 @@ export class FilterPopover {
 
 /** Shared look of the trigger buttons of the multi-select, user, date and number filters: a 32 px control with a chevron. */
 export const FILTER_TRIGGER_STYLES = `
-  :host { display: block; min-width: 0; }
+  :host { display: block; min-width: 0; container: ft-trigger / inline-size; }
   .ft-btn {
     display: flex;
     align-items: center;
@@ -133,4 +133,9 @@ export const FILTER_TRIGGER_STYLES = `
   .ft-foot { display: flex; justify-content: space-between; gap: var(--mf-s2); margin-top: var(--mf-s2); }
   .ft-error { margin: 0 0 var(--mf-s2); color: var(--mf-danger); font-size: var(--mf-fs-sm); }
   :host(.ft--inline) .ft-btn { display: none; }
+  /* A column as narrow as the 56 px Type tile (D-43a, #1230): the trigger is the chevron alone; the choice stays in its accessible name and a chosen filter keeps its primary border. */
+  @container ft-trigger (max-width: 72px) {
+    .ft-btn { justify-content: center; gap: 0; padding-inline: 0; }
+    .ft-text { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); }
+  }
 `;

@@ -1,0 +1,63 @@
+import { ASSIGNEE_PX, SUMMARY_GRID_COLUMNS } from '../../features/dashboard/summary/dash-grid';
+import { DEFAULT_GRID_PREFS, shownKeys } from '../ui/grid-prefs';
+import { WORK_COLUMNS, defaultColumns } from './column-prefs';
+import { ASSIGNEE_WITH_LINK_PX } from './column-widths';
+
+/**
+ * D-43a (#1230): the default columns of every global task grid fit the visible frame at 1366 (about 1,098 px): the widths of the default columns
+ * plus a Title of at least 160 px add up to 1,098 px or less, so there is no sideways scroll and Status is whole. Everything else is one click away in Columns.
+ */
+const FRAME_1366_PX = 1098;
+const TITLE_MIN_PX = 160;
+
+const width = (key: string, assignee: number): number => {
+  if (key === 'assignee') return assignee;
+  return WORK_COLUMNS.find((c) => c.key === key)!.width;
+};
+/** The sum of the default columns without the Title (the spring), with the Assignee width of that grid. */
+const sum = (keys: readonly string[], assignee: number): number =>
+  keys.filter((k) => k !== 'title').reduce((n, k) => n + width(k, assignee), 0);
+
+describe('default task columns fit the 1366 frame (D-43a, #1230)', () => {
+  const scopes: [string, number][] = [
+    ['taskQueue', 136],
+    ['myWork.active', 136],
+    ['myWork.dueSoon', 136],
+    ['myWork.closed', 136],
+    ['myWork.createdByMe', 136],
+    ['podWork', ASSIGNEE_WITH_LINK_PX],
+    ['podWork.all', ASSIGNEE_WITH_LINK_PX],
+  ];
+
+  it.each(scopes)(
+    '%s: default widths plus a 160 px Title are at most 1,098 px',
+    (scope, assignee) => {
+      const keys = defaultColumns(scope);
+      expect(sum(keys, assignee) + TITLE_MIN_PX, `${scope} ${keys.join(',')}`).toBeLessThanOrEqual(
+        FRAME_1366_PX,
+      );
+    },
+  );
+
+  it('the Dashboard Summary grid fits too (its Assignee is wider: Unassigned and the Assign control)', () => {
+    const keys = shownKeys(SUMMARY_GRID_COLUMNS, DEFAULT_GRID_PREFS);
+    expect(sum(keys, ASSIGNEE_PX) + TITLE_MIN_PX).toBeLessThanOrEqual(FRAME_1366_PX);
+  });
+
+  it('Type is the tile alone at 56 px, fixed', () => {
+    const type = WORK_COLUMNS.find((c) => c.key === 'type')!;
+    expect([type.width, type.minWidth, type.maxWidth]).toEqual([56, 56, 56]);
+  });
+
+  it('Project, Matter Name and Progress are off by default on every global list; CM Number stays', () => {
+    for (const [scope] of scopes) {
+      const keys = defaultColumns(scope);
+      for (const off of ['project', 'matterName', 'progress'])
+        expect(keys, `${scope} ${off}`).not.toContain(off);
+      expect(keys, scope).toContain('matter');
+    }
+    const summary = shownKeys(SUMMARY_GRID_COLUMNS, DEFAULT_GRID_PREFS);
+    for (const off of ['project', 'matterName', 'progress']) expect(summary).not.toContain(off);
+    expect(summary).toContain('matter');
+  });
+});

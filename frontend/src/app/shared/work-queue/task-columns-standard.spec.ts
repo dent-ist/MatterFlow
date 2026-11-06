@@ -34,27 +34,30 @@ describe('standard task columns', () => {
     expect(WORK_COLUMNS.map((c) => c.label)).not.toContain('Matter Number');
   });
 
-  it('shows the standard order in the Task Queue and Pod Work (global lists)', () => {
-    expect(labels('taskQueue')).toEqual(STANDARD);
-    // Pod Work: the same order without Matter Name (#1227; it is in the Columns menu).
-    expect(labels('podWork')).toEqual(STANDARD.filter((l) => l !== 'Matter Name'));
-    expect(labels('podWork.all')).toEqual(STANDARD.filter((l) => l !== 'Matter Name'));
+  it('shows the standard order, without Matter Name, Project and Progress, in the Task Queue and Pod Work (D-43a, #1230)', () => {
+    const fits = without('Matter Name', 'Project', 'Progress');
+    expect(labels('taskQueue')).toEqual(fits);
+    expect(labels('podWork')).toEqual(fits);
+    expect(labels('podWork.all')).toEqual(fits);
   });
 
   it('keeps the order on My Work and drops the obvious columns: no Assignee; Closed in place of Due', () => {
-    expect(labels('myWork.active')).toEqual(without('Assignee'));
-    expect(labels('myWork.dueSoon')).toEqual(without('Assignee'));
+    const fits = without('Matter Name', 'Project', 'Progress', 'Assignee');
+    expect(labels('myWork.active')).toEqual(fits);
+    expect(labels('myWork.dueSoon')).toEqual(fits);
     // The Closed tab: Closed takes the place of Due, directly before Status.
     expect(labels('myWork.closed')).toEqual([
       'Ref',
       'Type',
       'Title',
       'CM Number',
-      'Matter Name',
       'Closed',
       'Status',
     ]);
-    expect(labels('myWork.createdByMe')).toEqual([...without('Progress'), 'Age']);
+    expect(labels('myWork.createdByMe')).toEqual([
+      ...without('Matter Name', 'Project', 'Progress'),
+      'Age',
+    ]);
   });
 
   it('lists every column the chooser offers in the registry order, so the Columns menu and the table agree', () => {

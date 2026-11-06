@@ -46,6 +46,12 @@ const headers = (page: Page): Promise<string[]> =>
 const th = (page: Page, key: string): Locator =>
   page.locator(`thead tr:first-child th[data-col="${key}"]`);
 const sortButton = (page: Page, key: string): Locator => th(page, key).locator('button').first();
+/** Matter Name, Project and Progress are off by default on the global lists (D-43a, #1230): one click each in the Columns panel. */
+async function showColumns(page: Page, ...labels: string[]): Promise<void> {
+  await columnsButton(page).click();
+  for (const label of labels) await page.getByLabel(label, { exact: true }).check();
+  await columnsButton(page).click();
+}
 const columnsButton = (page: Page): Locator =>
   page.getByRole('button', { name: 'Columns', exact: true });
 const width = async (page: Page, key: string): Promise<number> =>
@@ -99,7 +105,7 @@ async function world(seed: Seeder, label: string, perMatter = 3, extraRights: st
 }
 
 test.describe('Matter Number and Matter Name: defaults on every list (#348)', () => {
-  test('Task Queue, My Work (four tabs) and Pod Work show Matter Number and Matter Name, the number cell has no name, axe at four sizes', async ({
+  test('Task Queue, My Work (four tabs) and Pod Work show the CM Number and keep Matter Name, Project and Progress in the Columns menu (D-43a, #1230), the number cell has no name, axe at four sizes', async ({
     seed,
     asUser,
   }) => {
@@ -136,14 +142,16 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
       'Type',
       'Title',
       'CM Number',
-      'Matter Name',
-      'Project',
       'Priority',
       'Assignee',
       'Due',
       'Status',
-      'Progress',
     ]);
+    // Matter Name is one click away in the Columns panel (D-43a).
+    await columnsButton(page).click();
+    await page.getByLabel('Matter Name', { exact: true }).check();
+    await columnsButton(page).click();
+    await expect(th(page, 'matterName')).toBeVisible();
     // The number cell holds the reference and nothing else; the name is in its own column (link with Matter.View, tooltip = the name).
     const row = page.locator(`[data-task="${w.tasks[0].taskNumber}"]`);
     const numberCell = row.locator('td[data-col="matter"]');
@@ -159,18 +167,7 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
 
     const mw = new MyWorkPage(page);
     await mw.open();
-    const active = [
-      'Ref',
-      'Type',
-      'Title',
-      'CM Number',
-      'Matter Name',
-      'Project',
-      'Priority',
-      'Due',
-      'Status',
-      'Progress',
-    ];
+    const active = ['Ref', 'Type', 'Title', 'CM Number', 'Priority', 'Due', 'Status'];
     await expect(page.locator('[data-task]').first()).toBeVisible();
     expect(await headers(page)).toEqual(active);
     await shot(page, 'my-work-active-1920x1080');
@@ -184,8 +181,6 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
       'Type',
       'Title',
       'CM Number',
-      'Matter Name',
-      'Project',
       'Priority',
       'Assignee',
       'Due',
@@ -201,7 +196,6 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
         'Type',
         'Title',
         'CM Number',
-        'Matter Name',
         'Closed',
         'Status',
       ]);
@@ -218,13 +212,10 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
       'Type',
       'Title',
       'CM Number',
-      'Matter Name',
-      'Project',
       'Priority',
       'Assignee',
       'Due',
       'Status',
-      'Progress',
     ]);
     await shot(page, 'pod-work-1920x1080');
 
@@ -257,6 +248,7 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
     const page = await asUser(viewer.username);
     await page.setViewportSize({ width: 1920, height: 1080 });
     await new TaskQueuePage(page).open(`?q=${w.tag}`);
+    await showColumns(page, 'Matter Name');
     const row = page.locator(`[data-task="${w.tasks[0].taskNumber}"]`);
     await expect(row.locator('td[data-col="matter"] a')).toHaveCount(0);
     await expect(row.locator('td[data-col="matter"] .mf-ref')).toHaveText(
@@ -282,6 +274,7 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
     await page.setViewportSize({ width: 1366, height: 768 });
     await new TaskQueuePage(page).open(`?q=${w.tag}`);
     await expect(page.locator('[data-task]').first()).toBeVisible();
+    await showColumns(page, 'Matter Name', 'Project', 'Progress');
     expect(await headers(page)).toEqual(
       expect.arrayContaining([
         'Ref',
@@ -311,6 +304,7 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
     const mw = new MyWorkPage(page);
     await mw.open();
     await expect(page.locator('[data-task]').first()).toBeVisible();
+    await showColumns(page, 'Matter Name', 'Progress');
     const keys = await headers(page);
     expect(keys).toContain('CM Number');
     expect(keys).toContain('Progress');

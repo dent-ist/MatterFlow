@@ -36,9 +36,9 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     minWidth: 80,
     maxWidth: 120,
   },
-  // The task type as the coloured chip of My Matters with the type's name beside it (MD-29, #1033; every task list since LC-03). The storage key stays `type`, so
+  // The task type as the coloured chip of My Matters, the tile alone, 56 px, its name the tooltip and accessible name (D-43a, #1230; MD-29, #1033; every task list since LC-03). The storage key stays `type`, so
   // stored columns, widths and the Task type filter survive the rename (it was "Task type", a name only).
-  { key: 'type', label: 'Type', width: 112, minWidth: 96, maxWidth: 260 },
+  { key: 'type', label: 'Type', width: 56, minWidth: 56, maxWidth: 56 },
   // The same chip and name in a Matter's or Project's grid (own key: its stored choice is `grid-prefs`, never in a chooser or a default set, MD-24 #1028).
   { key: 'typeChip', label: 'Type', width: 150, minWidth: 96, maxWidth: 260, scopedOnly: true },
   {
@@ -189,41 +189,18 @@ export function columnScope(page: WorkPage, tab: string | null): ColumnScope {
   return `${base}.${TAB_SCOPE[tab] ?? tab}`;
 }
 
-// The standard order of every task list (LC-03): Ref, Type, Title, CM Number, Matter Name, Project, Priority, Assignee, Due, Status, Progress. A narrow box drops
-// what does not fit, in `NARROW_DROP_ORDER` (Matter Name first), so a 1366 px window shows the columns it has room for, in this order. Client, Task workflow,
-// Pod, Creator, Requestor, Age, the dates and the hold reason live in the column chooser.
-const QUEUE_DEFAULT = [
-  'ref',
-  'type',
-  'title',
-  'matter',
-  'matterName',
-  'project',
-  'priority',
-  'assignee',
-  'due',
-  'status',
-  'progress',
-];
-/** Pod Work (#1227): the standard order without Matter Name (in the Columns menu), so Assignee, Due and Status fit at 1366 without sideways scrolling. */
-const POD_WORK_DEFAULT = QUEUE_DEFAULT.filter((c) => c !== 'matterName');
+// The standard order of every task list (LC-03): Ref, Type, Title, CM Number, Matter Name, Project, Priority, Assignee, Due, Status, Progress. The DEFAULT set of a global
+// list (D-43a, #1230) leaves out Matter Name, Project and Progress so it fits the 1366 frame (1,098 px with a 160 px Title); they are one click away in Columns, as are Client, Task
+// workflow, Pod, Creator, Requestor, Age, the dates and the hold reason. A narrow box drops what does not fit, in `NARROW_DROP_ORDER` (Matter Name first).
+const QUEUE_DEFAULT = ['ref', 'type', 'title', 'matter', 'priority', 'assignee', 'due', 'status'];
+/** Pod Work: the same columns (its Assignee is 160 px, with the Assign icon). */
+const POD_WORK_DEFAULT = QUEUE_DEFAULT;
 /** What the Task Queue and Pod Work showed before Matter Name (#348): a stored set equal to it was never customised. */
 const QUEUE_BEFORE_NAME = ['ref', 'title', 'matter', 'priority', 'assignee', 'due', 'status'];
 /** What My Work showed before X1 and WP6b: a stored set equal to it was never customised. */
 const MY_WORK_LEGACY = ['ref', 'title', 'matter', 'priority', 'progress', 'due', 'status'];
 /** Active and Due soon and overdue: the standard order without Assignee (the list is already the person's own). */
-const MY_WORK_DEFAULT = [
-  'ref',
-  'type',
-  'title',
-  'matter',
-  'matterName',
-  'project',
-  'priority',
-  'due',
-  'status',
-  'progress',
-];
+const MY_WORK_DEFAULT = ['ref', 'type', 'title', 'matter', 'priority', 'due', 'status'];
 
 /**
  * The default columns per scope, most specific first (X1). To give a tab its own set (C2, B1, B3, A2, A3), add its key here
@@ -234,15 +211,13 @@ export const DEFAULT_COLUMNS: Readonly<Record<string, readonly string[]>> = {
   myWork: MY_WORK_DEFAULT,
   podWork: POD_WORK_DEFAULT,
   // Closed (C2): finished work has no progress and no urgency; the date it closed (C1) and the outcome matter. Priority and Due are in the chooser.
-  'myWork.closed': ['ref', 'type', 'title', 'matter', 'matterName', 'closed', 'status'],
+  'myWork.closed': ['ref', 'type', 'title', 'matter', 'closed', 'status'],
   // Created by me (B1, B3): where did the work I handed off go: who has it, how urgent, when due, what state, how old.
   'myWork.createdByMe': [
     'ref',
     'type',
     'title',
     'matter',
-    'matterName',
-    'project',
     'priority',
     'assignee',
     'due',

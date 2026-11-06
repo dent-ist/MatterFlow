@@ -204,25 +204,13 @@ describe('MyWorkPage', () => {
   it('lists my tasks with priority, workflow progress, due and status (the matter reference is in the Matter column only, #196, #198)', async () => {
     const el = await open('/my-work');
     const headers = Array.from(el.querySelectorAll('thead th')).map((h) => h.textContent?.trim());
-    // The standard task order without Assignee (My Work lists the person's own tasks), Progress last (LC-03).
-    expect(headers).toEqual([
-      'Ref',
-      'Type',
-      'Title',
-      'CM Number',
-      'Matter Name',
-      'Project',
-      'Priority',
-      'Due',
-      'Status',
-      'Progress',
-    ]);
+    // The standard task order without Assignee (My Work lists the person's own tasks); Matter Name, Project and Progress are in the Columns menu (D-43a, #1230).
+    expect(headers).toEqual(['Ref', 'Type', 'Title', 'CM Number', 'Priority', 'Due', 'Status']);
     const row = el.querySelector('tbody tr')!;
     // #348: the Matter Number cell shows the reference only; the matter name is its own column.
     expect(row.querySelector('td[data-col="matter"]')!.textContent).toContain('00343-00012');
     expect(row.querySelector('td[data-col="matter"]')!.textContent).not.toContain('Merger');
-    expect(row.querySelector('td[data-col="matterName"]')!.textContent).toContain('Merger');
-    expect(row.textContent).toContain('2 of 6');
+    expect(row.querySelector('td[data-col="matterName"]')).toBeNull();
     expect(row.textContent).toContain('ASAP');
     expect(row.textContent).toContain('In Progress');
   });
@@ -1012,7 +1000,7 @@ describe('MyWorkPage', () => {
     await choose('Progress');
     el.querySelector<HTMLElement>('.cc-button')!.click(); // close the panel
     await settle();
-    expect(el.querySelector('th[data-col="progress"]')).toBeNull();
+    expect(el.querySelector('th[data-col="progress"]')).not.toBeNull();
 
     // Closed has its own set (Progress is not in it).
     tab(el, 'Closed').click();
@@ -1023,12 +1011,12 @@ describe('MyWorkPage', () => {
     // Back on Active the choice is kept; "Reset Columns" brings the default back.
     tab(el, 'Active').click();
     await settle();
-    expect(el.querySelector('th[data-col="progress"]')).toBeNull();
+    expect(el.querySelector('th[data-col="progress"]')).not.toBeNull();
     el.querySelector<HTMLElement>('.cc-button')!.click();
     await settle();
     el.querySelector<HTMLElement>('[data-columns-reset]')!.click();
     await settle();
-    expect(el.querySelector('th[data-col="progress"]')).not.toBeNull();
+    expect(el.querySelector('th[data-col="progress"]')).toBeNull();
     expect(el.querySelector('.cc [role="status"]')!.textContent).toContain(
       'Columns reset to the default set.',
     );

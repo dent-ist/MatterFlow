@@ -56,10 +56,25 @@ import { CARD_KEYS, CardKey, isCardKey } from './dash-cards';
 import { IntPipe } from '../../../shared/ui/number-format';
 export { DASH_GRID_PARAMS } from './dash-grid-params';
 
+/** The standard task column order (decision AR 5 to 7). Ref is pinned first and Title cannot be hidden; Matter Name, Project and Progress are one click away in Columns (D-43a, #1230). */
+export const SUMMARY_GRID_COLUMNS: readonly GridColumnDef[] = [
+  { key: 'ref', label: 'Ref', locked: true, pinned: true },
+  { key: 'type', label: 'Type' },
+  { key: 'title', label: 'Title', locked: true },
+  { key: 'matter', label: 'CM Number' },
+  { key: 'matterName', label: 'Matter Name', defaultHidden: true },
+  { key: 'project', label: 'Project', defaultHidden: true },
+  { key: 'priority', label: 'Priority' },
+  { key: 'assignee', label: 'Assignee' },
+  { key: 'due', label: 'Due' },
+  { key: 'status', label: 'Status' },
+  { key: 'progress', label: 'Progress', defaultHidden: true },
+];
+
 /** The page size of a list (decision AR 10): 50, chosen from 25 / 50 / 100. */
 const PAGE_SIZE = 50;
 /** Default width of the Assignee column (px): "Unassigned" and the Assign control sit on one line. */
-const ASSIGNEE_PX = 200;
+export const ASSIGNEE_PX = 200;
 const CARD_NAMES: Record<CardKey, string> = {
   overdue: 'Overdue',
   unassigned: 'Unassigned',
@@ -261,20 +276,7 @@ export class DashGrid {
 
   // ---- columns
 
-  /** The standard task column order (decision AR 5 to 7). Ref is pinned first and Title cannot be hidden. */
-  protected readonly gridDefs = computed((): GridColumnDef[] => [
-    { key: 'ref', label: 'Ref', locked: true, pinned: true },
-    { key: 'type', label: 'Type' },
-    { key: 'title', label: 'Title', locked: true },
-    { key: 'matter', label: 'CM Number' },
-    { key: 'matterName', label: 'Matter Name' },
-    { key: 'project', label: 'Project' },
-    { key: 'priority', label: 'Priority' },
-    { key: 'assignee', label: 'Assignee' },
-    { key: 'due', label: 'Due' },
-    { key: 'status', label: 'Status' },
-    { key: 'progress', label: 'Progress' },
-  ]);
+  protected readonly gridDefs = computed((): readonly GridColumnDef[] => SUMMARY_GRID_COLUMNS);
   protected readonly prefs = signal<GridPrefs>(DEFAULT_GRID_PREFS);
   private readonly prefsKey = computed(() =>
     gridPrefsKey('dashboardSummary', this.auth.profile()?.userId),

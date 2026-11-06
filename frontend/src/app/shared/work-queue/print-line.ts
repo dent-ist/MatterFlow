@@ -8,7 +8,11 @@ import {
   signal,
 } from '@angular/core';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
-import { calendarDayInZone, formatCalendarDayLong, formatInstantClock } from '../../core/time/time';
+import {
+  calendarDayInZone,
+  formatCalendarDayLong,
+  formatInstantClockPadded,
+} from '../../core/time/time';
 import { SortDirection } from './queue-filters';
 import { directionWords } from './sort-sentences';
 import { SORT_LABELS } from './sort-note';
@@ -71,10 +75,10 @@ export class PrintLine {
     inject(DestroyRef).onDestroy(() => window.removeEventListener('beforeprint', refresh));
   }
 
-  /** "November 6, 2026, 10:23 AM": a sentence, so the FULL month and the time without the zone (D-60, #1227). */
+  /** "November 6, 2026, 01:10 AM": a sentence, so the FULL month and the time without the zone (D-60, #1227). */
   protected readonly printed = computed(
     () =>
-      `${formatCalendarDayLong(calendarDayInZone(this.now(), this.zone))}, ${formatInstantClock(this.now(), this.zone)}`,
+      `${formatCalendarDayLong(calendarDayInZone(this.now(), this.zone))}, ${formatInstantClockPadded(this.now(), this.zone)}`,
   );
 
   protected readonly sortText = computed(() => {

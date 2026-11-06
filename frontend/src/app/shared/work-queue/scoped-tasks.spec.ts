@@ -257,6 +257,19 @@ describe('ScopedTasks', () => {
     expect(text(el().querySelector('[data-type-name]'))).not.toBe('');
   });
 
+  it('has the shared print line (name, sort, count, day and time printed) on a Matter (#1230)', async () => {
+    await create(['Task.View']);
+    expect(text(el().querySelector('[data-print-page]'))).toBe('Matter Tasks');
+    expect(text(el().querySelector('[data-print-when]'))).toMatch(
+      /^Printed [A-Z][a-z]+ \d{1,2}, \d{4}, \d{2}:\d{2} [AP]M$/,
+    );
+  });
+
+  it('names the Project Tasks print line (#1230)', async () => {
+    await create(['Task.View'], { projectId: 3 });
+    expect(text(el().querySelector('[data-print-page]'))).toBe('Project Tasks');
+  });
+
   it('draws the project name on one line with a tooltip, a link with Project.View', async () => {
     await create(['Task.View', 'Project.View'], { projectCount: 2 });
     const cell = el().querySelector('mf-project-cell')!;

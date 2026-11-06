@@ -21,7 +21,7 @@ const SCREENS: Screen[] = [
     name: 'Task Queue',
     url: '/tasks',
     region: 'Task Queue list, scrollable',
-    headers: ['Ref', 'Type', 'Title', 'CM Number', 'Matter Name', 'Project', 'Priority', 'Status'],
+    headers: ['Ref', 'Type', 'Title', 'CM Number', 'Priority', 'Status'],
   },
   {
     name: 'Matters',

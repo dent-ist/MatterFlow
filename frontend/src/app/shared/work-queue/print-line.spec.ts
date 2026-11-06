@@ -51,6 +51,20 @@ describe('PrintLine (#215)', () => {
     expect(r.when).toBe('Printed October 14, 2026, 12:05 PM');
   });
 
+  it('prints the time with the leading zero of D-60 ("01:10 AM", not "1:10 AM")', () => {
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: USER_TIME_ZONE, useValue: 'America/New_York' },
+        { provide: Clock, useValue: { now: () => new Date('2026-11-06T06:10:00Z') } },
+      ],
+    });
+    const f = TestBed.createComponent(Host);
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('[data-print-when]').textContent.trim()).toBe(
+      'Printed November 6, 2026, 01:10 AM',
+    );
+  });
+
   it('says the last page, a single page, one task and no tasks', () => {
     expect(render((h) => h.page.set(9)).count).toBe('Page 9 of 9, 442 tasks, showing 401-442');
     expect(render((h) => h.total.set(12)).count).toBe('12 tasks');

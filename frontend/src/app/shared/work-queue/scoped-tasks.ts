@@ -51,6 +51,7 @@ import {
 } from '../ui/grid-prefs';
 import { ColumnMove } from '../ui/reorder-columns';
 import { Pager } from '../ui/pager';
+import { PrintLine } from './print-line';
 import { QueueChoices, mergeOptions } from './queue-choices';
 import { OPEN_STATUSES, dateDaysAgo, parseQueueState, queueArgs } from './queue-filters';
 import {
@@ -135,6 +136,7 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
     PhoneSort,
     SortedLine,
     GridColumns,
+    PrintLine,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -304,6 +306,16 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
           <span class="st-selnote" role="status" data-selection-note>{{ selectionNote() }}</span>
         </div>
       </mf-list-toolbar>
+
+      <!-- The line only the printed page shows (the same shared line as the Task Queue: page, sort, place in the list, day and time printed; #1230). -->
+      <mf-print-line
+        [name]="printName()"
+        [sort]="sort()"
+        [dir]="dir()"
+        [total]="total()"
+        [page]="page()"
+        [pageSize]="pageSize()"
+      />
 
       @if (selecting()) {
         <mf-task-select-list
@@ -530,6 +542,9 @@ export class ScopedTasks {
     ...Object.fromEntries(Object.entries(DEFAULT_WIDTHS_PX).map(([k, px]) => [k, pxToRem(px)])),
     ...this.widthStore.widths(this.widthScope(), this.auth.profile()?.userId ?? null),
   }));
+  protected readonly printName = computed(() =>
+    this.projectId() === null ? 'Matter Tasks' : 'Project Tasks',
+  );
   protected readonly caption = computed(() =>
     this.projectId() === null ? 'Tasks of this matter' : 'Tasks of this project',
   );

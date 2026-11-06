@@ -56,23 +56,12 @@ describe('work table preferences', () => {
   it('gives each scope its default and falls back to the page default for a tab without one', () => {
     expect(defaultColumns('taskQueue')).toEqual(normalizeColumns(DEFAULT_COLUMNS['taskQueue']!));
     // LC-03: the standard order without Assignee (My Work lists the person's own tasks), Progress last.
-    const active = [
-      'ref',
-      'type',
-      'title',
-      'matter',
-      'matterName',
-      'project',
-      'priority',
-      'due',
-      'status',
-      'progress',
-    ];
+    const active = ['ref', 'type', 'title', 'matter', 'priority', 'due', 'status'];
     expect(defaultColumns('myWork.active')).toEqual(normalizeColumns(active));
     expect(defaultColumns('myWork.dueSoon')).toEqual(normalizeColumns(active));
     // C2: finished work has no progress, priority or due date by default.
     expect(defaultColumns('myWork.closed')).toEqual(
-      normalizeColumns(['ref', 'type', 'title', 'matter', 'matterName', 'closed', 'status']),
+      normalizeColumns(['ref', 'type', 'title', 'matter', 'closed', 'status']),
     );
     // B1, B3: where did the work I handed off go.
     expect(defaultColumns('myWork.createdByMe')).toEqual(
@@ -81,8 +70,6 @@ describe('work table preferences', () => {
         'type',
         'title',
         'matter',
-        'matterName',
-        'project',
         'priority',
         'assignee',
         'due',
@@ -98,11 +85,12 @@ describe('work table preferences', () => {
       'myWork.createdByMe',
     ]) {
       expect(defaultColumns(sc)).toContain('matter');
-      expect(defaultColumns(sc)).toContain('matterName');
+      // D-43a (#1230): Matter Name, Project and Progress are in the Columns menu, not in the default.
+      expect(defaultColumns(sc)).not.toContain('matterName');
       expect(defaultColumns(sc)).not.toContain('client');
     }
     expect(defaultColumns('podWork.all')).toEqual(defaultColumns('podWork'));
-    // #1227: Pod Work keeps Matter Name in the Columns menu only, so Assignee, Due and Status fit at 1366.
+    // #1227, #1230: Pod Work keeps Matter Name in the Columns menu only, so Assignee, Due and Status fit at 1366.
     expect(defaultColumns('podWork')).toContain('matter');
     expect(defaultColumns('podWork')).not.toContain('matterName');
     expect(defaultColumns('podWork')).toEqual(
@@ -182,10 +170,10 @@ describe('work table preferences', () => {
     const stored = (scope: string, id: number) =>
       JSON.parse(localStorage.getItem(`mf.work-columns.v2.${scope}.${id}`) ?? 'null');
 
-    it('puts Matter Name into the default of every page and tab, next to Matter Number', () => {
-      for (const sc of ['taskQueue', 'myWork', 'myWork.closed', 'myWork.createdByMe']) {
-        const cols = defaultColumns(sc);
-        expect(cols.indexOf('matterName'), sc).toBe(cols.indexOf('matter') + 1);
+    it('keeps Matter Name out of the default of every page and tab (D-43a, #1230): it is one click away in Columns', () => {
+      for (const sc of ['taskQueue', 'myWork', 'myWork.closed', 'myWork.createdByMe', 'podWork']) {
+        expect(defaultColumns(sc), sc).not.toContain('matterName');
+        expect(defaultColumns(sc), sc).toContain('matter');
       }
     });
 
@@ -203,10 +191,10 @@ describe('work table preferences', () => {
       expect(stored('taskQueue', 1)).not.toBeNull();
     });
 
-    it('gives a person who never chose the new standard default, Matter Name included', () => {
+    it('gives a person who never chose the new standard default (Matter Name, Project and Progress in the Columns menu)', () => {
       for (const sc of ['taskQueue', 'myWork.active', 'myWork.closed']) {
         expect(loadColumns(sc, 9)).toEqual(defaultColumns(sc));
-        expect(loadColumns(sc, 9)).toContain('matterName');
+        expect(loadColumns(sc, 9)).not.toContain('matterName');
       }
       // Pod Work (#1227): Matter Name is in the Columns menu, not in the default.
       expect(loadColumns('podWork.all', 9)).toEqual(defaultColumns('podWork.all'));
