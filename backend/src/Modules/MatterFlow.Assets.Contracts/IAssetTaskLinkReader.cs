@@ -8,6 +8,9 @@ namespace MatterFlow.Assets.Contracts;
 /// <param name="AssetLinkRoleId">The relationship of the Asset to the Task, if one was chosen.</param>
 /// <param name="AssetLinkRoleName">Name of that role.</param>
 /// <param name="LinkedAtUtc">When the link was made (UTC).</param>
+/// <param name="TaskTypeId">The Task's type (always set; the Task Queue row's <c>taskTypeId</c>).</param>
+/// <param name="TaskTypeName">The type's name (the Task Queue row's <c>taskTypeName</c>).</param>
+/// <param name="TaskTypeIconKey">The type's icon key (the Task Queue row's <c>taskTypeIconKey</c>).</param>
 /// <param name="DueDate">The Task's due date when it has a date only (the same field the Task Queue shows), else null.</param>
 /// <param name="DueAtUtc">The Task's due instant (UTC) when it has a time, else null.</param>
 /// <param name="IsAsap">The Task is due as soon as possible.</param>
@@ -17,6 +20,7 @@ namespace MatterFlow.Assets.Contracts;
 /// <param name="AssigneeName">Display name of the assigned person.</param>
 /// <param name="PriorityLabel">The Task's priority label.</param>
 /// <param name="PriorityColor">The Task's priority colour token.</param>
+/// <param name="TaskTypeColourKey">The type's palette colour (<c>contracts/task-type-colours.json</c>); null = the neutral default, and the screen then derives one from the type id like the grids do.</param>
 public sealed record AssetTaskLink(
     long TaskId,
     string TaskNumber,
@@ -25,6 +29,9 @@ public sealed record AssetTaskLink(
     int? AssetLinkRoleId,
     string? AssetLinkRoleName,
     DateTime LinkedAtUtc,
+    int TaskTypeId,
+    string TaskTypeName,
+    string TaskTypeIconKey,
     DateOnly? DueDate = null,
     DateTime? DueAtUtc = null,
     bool IsAsap = false,
@@ -33,7 +40,8 @@ public sealed record AssetTaskLink(
     int? AssigneeUserId = null,
     string? AssigneeName = null,
     string? PriorityLabel = null,
-    string? PriorityColor = null);
+    string? PriorityColor = null,
+    string? TaskTypeColourKey = null);
 
 /// <summary>How many Tasks an Asset is linked to (BUG A2): all of them, and the open ones (New, In Progress, On Hold: the Task Queue definition).</summary>
 /// <param name="Linked">Every Task linked to the Asset.</param>

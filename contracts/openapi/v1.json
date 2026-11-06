@@ -18922,7 +18922,10 @@
           "statusCode",
           "assetLinkRoleId",
           "assetLinkRoleName",
-          "linkedAtUtc"
+          "linkedAtUtc",
+          "taskTypeId",
+          "taskTypeName",
+          "taskTypeIconKey"
         ],
         "type": "object",
         "properties": {
@@ -18955,6 +18958,16 @@
           "linkedAtUtc": {
             "type": "string",
             "format": "date-time"
+          },
+          "taskTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "taskTypeName": {
+            "type": "string"
+          },
+          "taskTypeIconKey": {
+            "type": "string"
           },
           "dueDate": {
             "type": [
@@ -19002,6 +19015,12 @@
             ]
           },
           "priorityColor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "taskTypeColourKey": {
             "type": [
               "null",
               "string"

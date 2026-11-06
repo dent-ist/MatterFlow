@@ -242,6 +242,48 @@ public sealed class TaskAssetLinksApiTests(SqlServerFixture sql) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task The_asset_linked_tasks_carry_the_task_type_id_name_icon_and_colour_of_the_task_queue_row()
+    {
+        var task = await _h.CreateTaskAsync(_w);
+        var asset = await CreateAssetAsync(_w.MatterId, "Typed drive");
+        await OkAsync(await LinkAsync(TaskId(task), asset), HttpStatusCode.Created);
+
+        async Task<(JsonElement Linked, JsonElement Row)> ReadAsync()
+        {
+            var linked = (await OkAsync(await _h.Admin.GetAsync($"/api/v1/assets/{asset}/linked-tasks"))).GetProperty("items").EnumerateArray().Single();
+            var page = await OkAsync(await _h.Admin.GetAsync("/api/v1/task-queue?pageSize=100"));
+            return (linked, page.GetProperty("items").EnumerateArray().Single(i => i.GetProperty("taskId").GetInt64() == TaskId(task)));
+        }
+
+        static string? Opt(JsonElement e, string name) => e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
+
+        // A type with no colour: the key is empty on both, the screen derives the colour from the id (same fallback as the grids).
+        var (linked, row) = await ReadAsync();
+        linked.GetProperty("taskTypeId").GetInt32().ShouldBe(_w.TaskTypeId);
+        linked.GetProperty("taskTypeId").GetInt32().ShouldBe(row.GetProperty("taskTypeId").GetInt32());
+        linked.GetProperty("taskTypeName").GetString().ShouldBe(row.GetProperty("taskTypeName").GetString());
+        linked.GetProperty("taskTypeIconKey").GetString().ShouldBe(row.GetProperty("taskTypeIconKey").GetString());
+        Opt(linked, "taskTypeColourKey").ShouldBe(Opt(row, "taskTypeColourKey"));
+        Opt(linked, "taskTypeColourKey").ShouldBeNull();
+
+        // An admin-set colour shows on both, the same key.
+        var type = await OkAsync(await _h.Admin.GetAsync($"/api/v1/task-types/{_w.TaskTypeId}"));
+        await OkAsync(await _h.Admin.PutAsJsonAsync($"/api/v1/task-types/{_w.TaskTypeId}", new
+        {
+            name = type.GetProperty("name").GetString(),
+            iconKey = type.GetProperty("iconKey").GetString(),
+            colourKey = "teal",
+            isActive = true,
+            eligibleWorkflowIds = type.GetProperty("eligibleWorkflowIds").EnumerateArray().Select(e => e.GetInt32()).ToArray(),
+            defaultWorkflowDefinitionId = type.GetProperty("defaultWorkflowDefinitionId").GetInt32(),
+            rowVersion = type.GetProperty("rowVersion").GetString(),
+        }));
+        (linked, row) = await ReadAsync();
+        Opt(linked, "taskTypeColourKey").ShouldBe("teal");
+        Opt(row, "taskTypeColourKey").ShouldBe("teal");
+    }
+
+    [Fact]
     public async Task The_asset_shows_its_linked_tasks_and_a_role_in_use_cannot_be_deleted()
     {
         var roles = await RolesAsync();

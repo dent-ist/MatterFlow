@@ -18,6 +18,7 @@ internal sealed class TaskAssetLinkReader(
     IAssetLinkRoleCatalog roles,
     TaskAccess access,
     IPriorityCatalog priorities,
+    ITaskTypeCatalog taskTypes,
     IUserDirectory users,
     IUserTimeZone timeZone,
     IClock clock) : IAssetTaskLinkReader
@@ -83,7 +84,7 @@ internal sealed class TaskAssetLinkReader(
             from l in db.Set<TaskAsset>().AsNoTracking()
             join t in access.Visible() on l.TaskId equals t.Id
             where l.AssetId == assetId
-            select new { l.TaskId, t.Number, t.Title, t.Status, t.DueDate, t.DueAtUtc, t.PriorityId, t.AssignedUserId, l.AssetLinkRoleId, l.CreatedAtUtc })
+            select new { l.TaskId, t.Number, t.Title, t.Status, t.DueDate, t.DueAtUtc, t.PriorityId, t.TaskTypeId, t.AssignedUserId, l.AssetLinkRoleId, l.CreatedAtUtc })
             .ToListAsync(cancellationToken);
         if (rows.Count == 0)
             return [];
@@ -96,7 +97,9 @@ internal sealed class TaskAssetLinkReader(
             .ThenByDescending(r => r.TaskId)
             .ToList();
 
-        // Three lookups for the whole list, never one per row.
+        // A few lookups for the whole list (role names, priorities, task types, assignees), never one per row. The type fields come from the same catalog the Task Queue rows use,
+        // and only for the Tasks this caller may see: the rows above are already limited by the sensitive-matter rule, so a hidden Task never reaches this map.
+        var typeMap = (await taskTypes.ListAsync(includeInactive: true, cancellationToken)).ToDictionary(ty => ty.Id);
         var roleNames = (await roles.ListAsync(true, cancellationToken)).ToDictionary(r => r.Id, r => r.Name);
         var priorityMap = (await priorities.ListAsync(includeInactive: true, cancellationToken)).ToDictionary(p => p.Id);
         var userMap = await users.FindManyAsync([.. ordered.Select(r => r.AssignedUserId).OfType<int>().Distinct()], cancellationToken);
@@ -107,6 +110,7 @@ internal sealed class TaskAssetLinkReader(
             {
                 var due = TaskDue.FromStored(r.DueDate, r.DueAtUtc);
                 priorityMap.TryGetValue(r.PriorityId, out var priority);
+                typeMap.TryGetValue(r.TaskTypeId, out var type);
                 return new AssetTaskLink(
                     r.TaskId,
                     r.Number,
@@ -115,6 +119,9 @@ internal sealed class TaskAssetLinkReader(
                     r.AssetLinkRoleId,
                     r.AssetLinkRoleId is { } id && roleNames.TryGetValue(id, out var name) ? name : null,
                     TaskSupport.Utc(r.CreatedAtUtc),
+                    r.TaskTypeId,
+                    type?.Name ?? string.Empty,
+                    type?.IconKey ?? string.Empty,
                     r.DueDate,
                     TaskSupport.Utc(r.DueAtUtc),
                     due.IsAsap,
@@ -123,7 +130,8 @@ internal sealed class TaskAssetLinkReader(
                     r.AssignedUserId,
                     r.AssignedUserId is { } uid && userMap.TryGetValue(uid, out var user) ? user.DisplayName : null,
                     priority?.Label,
-                    priority?.Color);
+                    priority?.Color,
+                    type?.ColourKey);
             }),
         ];
     }

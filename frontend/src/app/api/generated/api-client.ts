@@ -24785,6 +24785,9 @@ export interface AssetTaskLink {
     assetLinkRoleId: number | undefined;
     assetLinkRoleName: string | undefined;
     linkedAtUtc: string;
+    taskTypeId: number;
+    taskTypeName: string;
+    taskTypeIconKey: string;
     dueDate?: string | undefined;
     dueAtUtc?: string | undefined;
     isAsap?: boolean;
@@ -24794,6 +24797,7 @@ export interface AssetTaskLink {
     assigneeName?: string | undefined;
     priorityLabel?: string | undefined;
     priorityColor?: string | undefined;
+    taskTypeColourKey?: string | undefined;
 
     [key: string]: any;
 }
