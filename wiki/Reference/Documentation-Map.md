@@ -69,7 +69,7 @@
 | Path | Purpose |
 |---|---|
 | `Home.md`, section pages and folders | The developer wiki; published as the Azure DevOps wiki |
-| `tools/check-db-docs.mjs` | Checks the database pages against `db/scripts` |
+| `wiki/tools/check-db-docs.mjs` | Checks the database pages against `db/scripts` |
 | `.order` files | Page order for Azure DevOps |
 
 ## Where to find ...
