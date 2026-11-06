@@ -83,6 +83,8 @@ cd backend  && dotnet test        # everything: unit, architecture, schema and i
 4. Performance check when you changed lists or queries: [`tools/perf/README.md`](tools/perf/README.md).
 5. Write the result (what was run, what failed, what was NOT run) in a report under `docs/qa/` or the epic's folder, and link it from the issue.
 
+Where these levels fit in a change (pull request, full QA on `dev`, UAT, release): [Change Management Process](wiki/Getting-Started/Change-Management-Process.md).
+
 More: [Testing the Backend](wiki/Backend/Testing-the-Backend.md), [Testing the Frontend](wiki/Frontend/Testing-the-Frontend.md), [Continuous Integration](wiki/Getting-Started/Continuous-Integration.md), [Release Checklist](wiki/How-To/Release-Checklist.md). The end-to-end suite is described in [`docs/qa/e2e.md`](docs/qa/e2e.md) and running the app for a browser check in [`docs/ux/ui-update/stack-howto.md`](docs/ux/ui-update/stack-howto.md).
 
 ## Working rules

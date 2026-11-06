@@ -26,10 +26,27 @@ flowchart LR
 
 More diagrams are on [System Overview](Architecture/System-Overview.md).
 
+## How a change goes from request to release
+
+Every request is a work item. The product manager reviews, plans and approves it. A developer branches from `dev`, builds it and, before opening a pull request, runs the unit tests for the changed code, follows the UI guideline in `docs/ux/design-guidelines.md` (`CLAUDE.md` says where to find it) and runs an AI consistency review. The pull request needs green CI, the product manager's approval (behaviour) and the technical reviewer's approval (code). After the merge to `dev`, full QA and the security check run. A commit that passes goes to `uat`, and after UAT is accepted it is merged to `main` and tagged with the version.
+
+::: mermaid
+flowchart LR
+  A["Work item"] --> B["Product manager approves"]
+  B --> C["Branch from dev, build, check"]
+  C --> D["Pull request: CI, PM and code review"]
+  D --> E["dev: full QA and security check"]
+  E --> F["uat: UAT testing"]
+  F --> G["main: tag the version"]
+:::
+
+Details, roles and the open items: [Change Management Process](Getting-Started/Change-Management-Process.md).
+
 ## Find it fast
 
 | I want to ... | Read |
 |---|---|
+| See how a change goes from request to release | [Change Management Process](Getting-Started/Change-Management-Process.md) |
 | Get the app running on my machine | [Local Setup](Getting-Started/Local-Setup.md) |
 | Know what each top-level folder contains | [Repository Map](Getting-Started/Repository-Map.md) |
 | Find the right build, test or lint command | [Commands](Getting-Started/Commands.md) |
