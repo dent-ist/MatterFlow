@@ -107,10 +107,10 @@ import {
     .bar .mf-btn {
       min-height: var(--mf-ctl-h);
     }
-    /* Wide enough for the whole placeholder "Search by name" at 1366 px (#1126). */
+    /* Wide enough for the whole placeholder "Search by name" at 1366 px: at least 200 px (#1126, #1161). */
     .search {
-      min-width: 12.5rem;
-      flex: 0 1 14rem;
+      min-width: 200px;
+      flex: 0 1 200px;
     }
     .sorted {
       flex: 1 1 5rem;
