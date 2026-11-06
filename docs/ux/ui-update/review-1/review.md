@@ -322,3 +322,21 @@ Evidence: `design-evidence`, `evidence/2026-11-06-review-19-admin-users-task-typ
 | #1204 Steps | PASS with a point | Record grid. Row key is the title, unique only among active steps: use the id (#1256). |
 
 Rulings: D-44l, D-44m, D-44n. Pods popover stays Apply and Cancel; Grant Access stays in the Roles cell; role checklist stays; Roles master-detail accepted; Pods Lead and Open Tasks not built; user name = `mf-btn--name`; "Built-in, Locked" confirmed.
+
+## review-20 Administration Lookups, Settings, Reports and Audit Logs (2026-11-06, tip 6f2b312, 1366 and 1920)
+
+Evidence: `design-evidence`, `evidence/2026-11-06-review-20-admin-lookups-reports-audit/` (JPEG, `measurements.json`, `axe.json`). The sticky header and filter row scroll bug is #1259 and is not reported again.
+
+| Issue | Result | Notes |
+|---|---|---|
+| #1205 Labels | PASS with points | Four tabs, Note Tags on the record grid, 44 px rows. Priority glyph differs from the grids (badge vs flag), no visible drag handle on the reorder lists, "Colour" vs "Color": #1260. |
+| #1206 | PASS | No change needed. |
+| #1207 Asset Types, Link Roles | PASS with a point | Record page tabs on the Details card, Link Roles list. Header "Edit" duplicates the form (#1260). |
+| #1208 Custom Fields | PASS | Record grid, columns 560/96/152/240/48. |
+| #1209 Settings > Dashboard | PASS | Working Days are seven pressed filter chips (26 px). |
+| #1210 Branding, Holidays | PASS with a point | "Upload Icon", "..." per holiday row, dialog primary names the action. Native dropdowns remain in Holidays (#1251). |
+| #1211 Reports tabs | PASS | Reports and Run Log on the record grid; pies checked on Assets > Reports, My Matters > Metrics and Dashboard > Breakdowns: solid colors, numbered legend, no pattern, stripe or hatch anywhere. Legend word "Pending disposition" and "All matters": #1262. |
+| #1212 Report editor | PASS with a ruling | Title Case buttons, shared card look; actions stay in the header (D-44q, #1261). Native Category dropdown (#1251). |
+| #1213 Audit Logs | PASS | Who column, headings, "Show More"; works for the Director and the System Admin. |
+
+Rulings: D-44o, D-44p, D-44q; priority glyph points to `mf-priority-flag` (the grids' glyph), drag handle visible, "Color" spelling, "Upload Icon" confirmed, Holidays table stays, Audit Logs accepted without Columns and pager.
