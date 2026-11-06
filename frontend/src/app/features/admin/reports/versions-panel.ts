@@ -43,7 +43,11 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
             <div class="vp__head">
               <strong>Version {{ v.versionNo }}</strong>
               @if (v.isCurrent) {
-                <mf-badge tone="success" data-current>Current</mf-badge>
+                @if (reportActive()) {
+                  <mf-badge tone="success" icon="pi-check-circle" data-current>Active</mf-badge>
+                } @else {
+                  <mf-badge tone="neutral" icon="pi-minus-circle" data-current>Inactive</mf-badge>
+                }
               }
               <span class="vp__meta"
                 >{{ v.createdByName || 'Unknown' }}, {{ v.createdAtUtc | mfNum }}</span
@@ -74,6 +78,26 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
                 >
                   Restore
                 </button>
+              }
+              @if (v.isCurrent && !reportActive()) {
+                <button
+                  type="button"
+                  class="mf-btn mf-btn--text"
+                  (click)="askActivate(v)"
+                  [disabled]="!canActivate() || busy()"
+                  [attr.aria-describedby]="canActivate() ? null : 'vp-activate-why-' + v.versionNo"
+                  data-activate
+                >
+                  Activate
+                </button>
+                @if (!canActivate() && activateReason()) {
+                  <span
+                    class="vp__meta"
+                    [id]="'vp-activate-why-' + v.versionNo"
+                    data-version-activate-reason
+                    >{{ activateReason() }}</span
+                  >
+                }
               }
             </div>
             @if (comparing(); as c) {
@@ -115,6 +139,20 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
         }
       </ol>
     </section>
+
+    <mf-confirm-dialog
+      title="Activate Version"
+      confirmLabel="Activate Version"
+      [busy]="busy()"
+      [visible]="activating() !== null"
+      (visibleChange)="!$event && activating.set(null)"
+      (confirmed)="activate()"
+    >
+      <p data-activate-body>
+        Activate version {{ activating()?.versionNo }}? People whose roles have this report can see
+        and run it.
+      </p>
+    </mf-confirm-dialog>
 
     <mf-confirm-dialog
       title="Restore Version"
@@ -234,11 +272,20 @@ export class VersionsPanel {
   /** Asked to restore: the page runs the call (it holds the row version) and reports back. */
   readonly restoreRequested = output<number>();
   readonly busy = input(false);
+  /** Whether the report is active (its current version is the active one). */
+  readonly reportActive = input(false);
+  /** The current version passed a preview and nothing is unsaved: Activate can be used. */
+  readonly canActivate = input(false);
+  /** Why Activate is not available yet (shown beside the disabled button). */
+  readonly activateReason = input('');
+  /** Asked to activate: the page runs the call. */
+  readonly activateRequested = output<number>();
 
   protected readonly versions = signal<ReportVersionResponse[]>([]);
   protected readonly failure = signal('');
   protected readonly comparing = signal<ReportVersionComparisonResponse | null>(null);
   protected readonly restoring = signal<ReportVersionResponse | null>(null);
+  protected readonly activating = signal<ReportVersionResponse | null>(null);
 
   constructor() {
     effect(() => {
@@ -275,6 +322,16 @@ export class VersionsPanel {
 
   protected askRestore(v: ReportVersionResponse): void {
     this.restoring.set(v);
+  }
+
+  protected askActivate(v: ReportVersionResponse): void {
+    this.activating.set(v);
+  }
+
+  protected activate(): void {
+    const v = this.activating();
+    this.activating.set(null);
+    if (v) this.activateRequested.emit(v.versionNo);
   }
 
   protected restore(): void {

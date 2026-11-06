@@ -30,6 +30,8 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { PageTitle, shortTitleText } from '../../../core/title/page-title';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
+import { ActionMenu, MenuAction } from '../../../shared/ui/action-menu';
+import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { Crumb, PageHeader } from '../../../shared/ui/page-header';
@@ -107,8 +109,11 @@ const intOrNull = (text: string): number | null => {
 };
 
 /**
- * The report editor (spec 9.2; issues #713 to #715). `/admin/reports/new` and `/admin/reports/:id` are the same page: a header with Save, Preview
- * and Activate over the tabs Details | Query | Parameters | Roles | History (`?tab=`, replaced, not added). The query is a plain textarea with line
+ * The report editor (spec 9.2; issues #713 to #715, #1261, D-44q). `/admin/reports/new` and `/admin/reports/:id` are the same page over the tabs
+ * Details | Query | Parameters | Roles | History (`?tab=`, replaced, not added). The actions stay in the page header, no bottom bar: clean it holds
+ * Activity and "..." (Run Preview, Deactivate); with changes it holds `[Discard Changes] [Save Changes]`, and the primary reads "Save as New Version"
+ * (with an information banner: version N+1, not activated) when the query or the parameters changed, which the page works out from the edited fields
+ * (the API decides). Activate is a text button on the History tab with a confirm question. The query is a plain textarea with line
  * numbers and highlighted `:NAME` placeholders; every pause in typing (400 ms) the server reads it (nothing is executed) and the parameter
  * list follows the placeholders. Saving is blocked, with explicit messages, while the query is invalid or a parameter is not defined. The preview
  * panel runs the unsaved text with sample values; Activate appears only after a successful preview of exactly the saved version. A concurrent
@@ -117,7 +122,9 @@ const intOrNull = (text: string): number | null => {
 @Component({
   selector: 'mf-report-editor-page',
   imports: [
+    ActionMenu,
     ActiveBadge,
+    ActivityDrawer,
     ConfirmDialog,
     Dropdown,
     PageHeader,
@@ -183,9 +190,13 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
   protected readonly previewBusy = signal(false);
   protected readonly schemaOpen = signal(false);
   protected readonly deactivateOpen = signal(false);
+  protected readonly activityOpen = signal(false);
   protected readonly versionsKey = signal(0);
 
   private baseline = '';
+  /** The query text and the parameters as loaded or last saved: when either differs the save writes a new version. */
+  private baselineSql = '';
+  private baselineParams = '';
   private analyzeTimer: ReturnType<typeof setTimeout> | undefined;
   private analyzeId = 0;
   private loadedFor: string | undefined | null = null;
@@ -211,6 +222,58 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
   protected readonly dirty = computed(() => {
     this.baselineVersion();
     return this.state() === 'ready' && this.key() !== this.baseline;
+  });
+
+  /** The query or the parameters differ from the saved version: saving writes version N+1 (the API decides; the label only tells). */
+  protected readonly versionChanged = computed(() => {
+    this.baselineVersion();
+    return (
+      !this.isNew() &&
+      this.state() === 'ready' &&
+      (this.sql() !== this.baselineSql ||
+        JSON.stringify(toRequestParameters(this.defs(), this.unused())) !== this.baselineParams)
+    );
+  });
+  protected readonly newVersionNo = computed(() => (this.report()?.versionNo ?? 0) + 1);
+  /** The label of the primary header button: it tells what saving does. */
+  protected readonly saveLabel = computed(() =>
+    this.busy()
+      ? 'Saving...'
+      : this.isNew()
+        ? 'Create Report'
+        : this.versionChanged()
+          ? 'Save as New Version'
+          : 'Save Changes',
+  );
+  /** An active report that keeps its status is previewed first (the API); the banner says so instead of "not activated". */
+  protected readonly staysActiveIfPreviewPasses = computed(
+    () => this.isActive() && this.keepActive(),
+  );
+  protected readonly canSeeActivity = computed(() => this.auth.has('Audit.View'));
+
+  /** The "..." of the header: Run Preview and, for an active report, Deactivate (Activate is on the History tab). */
+  protected readonly menuItems = computed<MenuAction[]>(() => {
+    if (this.isNew()) return [];
+    const list: MenuAction[] = [
+      {
+        id: 'preview',
+        label: 'Run Preview',
+        icon: 'pi-eye',
+        disabled: this.previewBusy(),
+        run: () => void this.runPreview(),
+      },
+    ];
+    if (this.isActive()) {
+      list.push({
+        id: 'deactivate',
+        label: 'Deactivate',
+        icon: 'pi-ban',
+        disabled: this.busy(),
+        separated: true,
+        run: () => this.deactivateOpen.set(true),
+      });
+    }
+    return list;
   });
 
   protected readonly canActivate = computed(
@@ -407,8 +470,7 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
     this.parameterErrors.set({});
     this.summary.set([]);
     this.keepActive.set(true);
-    this.baseline = this.key();
-    this.baselineVersion.update((n) => n + 1);
+    this.markBaseline();
     this.scheduleAnalyze(0);
   }
 
@@ -539,8 +601,7 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
       const current = this.report();
       if (!current) {
         const created = await firstValueFrom(this.api.createReport(body));
-        this.baseline = this.key();
-        this.baselineVersion.update((n) => n + 1);
+        this.markBaseline();
         this.notify.success('Report created', 'It is inactive until you preview and activate it.');
         await this.router.navigate(['/admin/reports', created.reportId], { replaceUrl: true });
         return true;
@@ -557,7 +618,7 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
       this.versionsKey.update((n) => n + 1);
       if (result.deactivated) {
         this.announcement.set(`Saved as version ${result.versionNo}. Preview it to activate.`);
-        this.notify.warn(`Report saved as version ${result.versionNo}`, 'Preview it to activate.');
+        this.notify.warn(`Saved as version ${result.versionNo}`, 'Preview it to activate.');
       } else if (result.unchanged) {
         this.announcement.set(
           'Saved. The query and parameters did not change, so no new version was written.',
@@ -568,7 +629,7 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
         );
       } else {
         this.announcement.set(`Saved as version ${result.versionNo}.`);
-        this.notify.success('Report saved', `Saved as version ${result.versionNo}.`);
+        this.notify.success(`Saved as version ${result.versionNo}`);
       }
       return true;
     } catch (e) {
@@ -584,9 +645,22 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
     if (id === undefined) return;
     const fresh = await firstValueFrom(this.api.getAdminReport(id));
     this.report.set(fresh);
-    this.baseline = this.key();
+    this.markBaseline();
     this.changeNote.set('');
+  }
+
+  /** What the page shows now is what is saved: the dirty check and the version label start again from here. */
+  private markBaseline(): void {
+    this.baseline = this.key();
+    this.baselineSql = this.sql();
+    this.baselineParams = JSON.stringify(toRequestParameters(this.defs(), this.unused()));
     this.baselineVersion.update((n) => n + 1);
+  }
+
+  /** Discard Changes of the header: back to what is saved (a new report: back to the empty form). */
+  protected discard(): void {
+    this.apply(this.report());
+    this.announcement.set('Changes discarded.');
   }
 
   private fail(e: unknown): void {

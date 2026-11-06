@@ -5,47 +5,28 @@
 >
   <ng-container mfActions>
     @if (state() === 'ready') {
-      @if (!isNew()) {
+      <!-- D-44q: clean = Activity and "..."; with changes = [Discard Changes] [Save Changes]; no bottom bar. -->
+      @if (dirty()) {
+        <button type="button" class="mf-btn" (click)="discard()" [disabled]="busy()" data-discard>
+          Discard Changes
+        </button>
+      } @else if (!isNew() && canSeeActivity()) {
+        <button type="button" class="mf-btn" (click)="activityOpen.set(true)" data-activity>
+          <i class="pi pi-history" aria-hidden="true"></i> Activity
+        </button>
+      }
+      @if (dirty() || isNew()) {
         <button
           type="button"
-          class="mf-btn"
-          (click)="runPreview()"
-          [disabled]="previewBusy()"
-          data-preview
+          class="mf-btn mf-btn--primary"
+          (click)="save()"
+          [disabled]="busy()"
+          data-save
         >
-          <i class="pi pi-eye" aria-hidden="true"></i> Preview
+          {{ saveLabel() }}
         </button>
-        @if (isActive()) {
-          <button
-            type="button"
-            class="mf-btn"
-            (click)="deactivateOpen.set(true)"
-            [disabled]="busy()"
-            data-deactivate
-          >
-            Deactivate
-          </button>
-        } @else if (canActivate()) {
-          <button
-            type="button"
-            class="mf-btn"
-            (click)="activate()"
-            [disabled]="busy()"
-            data-activate
-          >
-            Activate
-          </button>
-        }
       }
-      <button
-        type="button"
-        class="mf-btn mf-btn--primary"
-        (click)="save()"
-        [disabled]="busy()"
-        data-save
-      >
-        {{ busy() ? 'Saving...' : isNew() ? 'Create Report' : 'Save' }}
-      </button>
+      <mf-action-menu [items]="menuItems()" label="More actions" />
     }
   </ng-container>
 </mf-page-header>
@@ -121,6 +102,22 @@
         [selected]="current()"
         (tabChange)="selectTab($event)"
       />
+      @if (versionChanged()) {
+        <p class="pg-banner pg-banner--info" role="status" data-version-banner>
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+          @if (staysActiveIfPreviewPasses()) {
+            <span
+              >Saving creates version {{ newVersionNo() }}. The report is active, so the new query
+              is previewed first; the report stays active only if the preview passes.</span
+            >
+          } @else {
+            <span
+              >Saving creates version {{ newVersionNo() }} and does not change the active version
+              until you activate it.</span
+            >
+          }
+        </p>
+      }
       <div
         class="rep__panel"
         role="tabpanel"
@@ -404,7 +401,11 @@
                 [refreshKey]="versionsKey()"
                 [blockedReason]="restoreBlocked()"
                 [busy]="busy()"
+                [reportActive]="isActive()"
+                [activateReason]="activateReason()"
+                [canActivate]="canActivate()"
                 (restoreRequested)="restore($event)"
+                (activateRequested)="activate()"
               />
             }
           }
@@ -422,6 +423,16 @@
       }
     </div>
   }
+}
+
+@if (canSeeActivity() && report(); as r) {
+  <mf-activity-drawer
+    objectType="Report"
+    [objectId]="r.reportId"
+    [name]="r.name"
+    [visible]="activityOpen()"
+    (visibleChange)="activityOpen.set($event)"
+  />
 }
 
 <mf-confirm-dialog
