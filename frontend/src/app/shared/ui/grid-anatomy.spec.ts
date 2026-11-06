@@ -50,10 +50,12 @@ describe('one grid anatomy (D-42, #1152)', () => {
     expect(skills).not.toContain('height: 3rem');
   });
 
-  it('the row action cell is 48 px wide', () => {
+  it('the row action cell is 48 px wide: the token --mf-col-actions-w, defined once as 48px (#1245)', () => {
     expect(
       rule(source('styles/_tables.scss'), 'table th:is(.mf-col-actions, .mf-col-menu)'),
-    ).toContain('width: 48px');
+    ).toContain('width: var(--mf-col-actions-w)');
+    const tokens = readFileSync(join(process.cwd(), '..', 'docs', 'ux', 'tokens.css'), 'utf8');
+    expect(tokens).toMatch(/--mf-col-actions-w:\s*48px;/);
   });
 
   it('the "..." of a table cell is a quiet 36 px icon button: no border, muted at rest, full colour on row hover or focus (#1153)', () => {
