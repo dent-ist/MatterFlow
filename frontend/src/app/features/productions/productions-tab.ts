@@ -776,7 +776,7 @@ const emptySpec = (): SpecDraft => ({
           <dd>{{ s.description || 'None' }}</dd>
           <dt>Images</dt>
           <dd>{{ s.imageFormat || 'Not set' }}</dd>
-          <dt>Colour</dt>
+          <dt>Color</dt>
           <dd>{{ s.colourMode || 'Not set' }}</dd>
           <dt>Text</dt>
           <dd>{{ s.textMode || 'Not set' }}</dd>
@@ -876,7 +876,7 @@ const emptySpec = (): SpecDraft => ({
             />
             <mf-text-field
               inputId="sf-colour"
-              label="Colour"
+              label="Color"
               [maxLength]="100"
               [value]="sd().colourMode"
               (valueChange)="setS('colourMode', $event)"

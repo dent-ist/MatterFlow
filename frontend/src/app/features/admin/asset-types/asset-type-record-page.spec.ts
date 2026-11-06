@@ -120,14 +120,14 @@ describe('AssetTypeRecordPage', () => {
   describe('the record (#635)', () => {
     beforeEach(() => open('4'));
 
-    it('shows the name, Active, Edit and the primary Edit fields, with no footer while nothing changed', () => {
+    it('shows the name, Active and the primary Edit Fields, with no header Edit (the Overview is the form, D-44n) and no footer while nothing changed', () => {
       expect(q('[data-page-title]').textContent).toContain('Document Set');
       expect(q('[data-status-badge], mf-active-badge').textContent).toContain('Active');
       const ids = all('[data-page-actions] button[data-action]').map((b) =>
         b.getAttribute('data-action'),
       );
       expect(ids[ids.length - 1]).toBe('edit-fields');
-      expect(ids).toContain('edit');
+      expect(ids).not.toContain('edit');
       expect(el().querySelector('[data-footer]')).toBeNull();
       expect(q<HTMLInputElement>('#at-name').value).toBe('Document Set');
       expect(q<HTMLTextAreaElement>('#at-description').value).toBe('Sets of documents');
@@ -175,7 +175,7 @@ describe('AssetTypeRecordPage', () => {
     });
 
     it('has a colour choice with a live solid chip preview and saves the colour (UI-22)', async () => {
-      const select = ddSelect(el(), 'Colour');
+      const select = ddSelect(el(), 'Color');
       expect(select.options).toHaveLength(11);
       expect(q('[data-preview]').getAttribute('data-colour')).toBeTruthy();
       select.value = 'rose';

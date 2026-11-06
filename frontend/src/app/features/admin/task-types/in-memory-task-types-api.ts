@@ -159,7 +159,7 @@ export class InMemoryTaskTypesApi extends TaskTypesApi {
   private checkColour(key: string | undefined): string | undefined {
     if (!key?.trim()) return undefined;
     if (!isTaskTypeColour(key)) {
-      const message = 'Choose a colour from the palette.';
+      const message = 'Choose a color from the palette.';
       throw problem(400, 'VALIDATION_FAILED', message, {
         colourKey: [{ code: 'UNKNOWN_COLOUR', message }],
       });

@@ -173,6 +173,28 @@ table.mf-grid {
   white-space: nowrap;
 }
 
+/* Reorder lists (D-44o: Priorities, On-Hold Reasons, Link Roles): the Order cell is the 16 px grip (muted, visible at rest) and the number; the whole row drags, the row menu keeps Move Up and Move Down. */
+.mf-grid th.mf-cell-order,
+.mf-grid td.mf-cell-order {
+  width: 1%;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.mf-grid td.mf-cell-order .mf-grip {
+  display: inline-block;
+  margin-right: var(--mf-s2);
+  color: var(--mf-text-muted);
+  font-size: var(--mf-icon-sm);
+  line-height: 1;
+  vertical-align: -3px;
+}
+
+.mf-grid tr[draggable='true'] {
+  cursor: grab;
+}
+
 .mf-grid th.mf-cell-badge,
 .mf-grid td.mf-cell-badge,
 .mf-grid th.mf-cell-date,

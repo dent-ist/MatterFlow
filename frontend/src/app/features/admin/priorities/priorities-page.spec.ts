@@ -101,6 +101,13 @@ describe('PrioritiesPage (#605, #609, #614, #618)', () => {
         'Actions',
       ]);
       expect(all('[data-order]').map((c) => c.textContent!.trim())).toEqual(['1', '2', '3', '4']);
+      // The reorder list is a record-grid look (D-44o): a visible 16 px grip before the number, and the priority is drawn as in every task grid.
+      expect(all('[data-order] i.pi-bars[data-grip]').length).toBe(4);
+      expect(el().querySelectorAll('mf-priority-badge').length).toBe(0);
+      expect(row('Critical').querySelector('mf-priority-flag mf-priority-pill')).not.toBeNull();
+      expect(row('Normal').querySelector('mf-priority-flag .plain')!.textContent).toContain(
+        'Normal',
+      );
       expect(all('[data-default]').length).toBe(1);
       expect(row('Normal').querySelector('[data-default]')!.textContent).toContain('Default');
       expect(row('Critical').querySelector('[data-color-cell]')!.textContent).toContain(
@@ -325,7 +332,7 @@ describe('PrioritiesPage (#605, #609, #614, #618)', () => {
       expect(document.body.querySelector('#priority-label-count')!.textContent).toContain('4 / 50');
       expect(ddSelect(document.body, 'Color').value).toBe('high');
       await type(field(), 'Elevated');
-      expect(dialog().querySelector('[data-preview] mf-priority-badge')!.textContent).toContain(
+      expect(dialog().querySelector('[data-preview] mf-priority-flag')!.textContent).toContain(
         'Elevated',
       );
       // The grid keeps its old name until the save.

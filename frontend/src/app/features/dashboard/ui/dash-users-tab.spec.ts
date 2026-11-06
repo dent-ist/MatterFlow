@@ -248,7 +248,7 @@ describe('DashUsersTab', () => {
     }
     const labels: Record<string, string> = {
       '[data-coverage-row-order]': 'Order',
-      '[data-coverage-scale]': 'Colour Scale',
+      '[data-coverage-scale]': 'Color Scale',
       '[data-coverage-type-order]': 'Task Types',
       '[data-coverage-user-order]': 'People',
     };

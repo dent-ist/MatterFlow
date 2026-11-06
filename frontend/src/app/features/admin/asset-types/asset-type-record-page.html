@@ -126,12 +126,12 @@
                 }
               </div>
               <div class="field">
-                <label for="at-colour">Colour</label>
+                <label for="at-colour">Color</label>
                 <div class="at__colour">
                   <mf-dropdown
                     [neutralValue]="null"
                     buttonId="at-colour"
-                    label="Colour"
+                    label="Color"
                     data-colour-select
                     describedBy="at-colour-help"
                     [items]="colourItems"
@@ -148,8 +148,8 @@
                   />
                 </div>
                 <p id="at-colour-help" class="muted hint">
-                  One of ten named colours, shown behind a white icon in lists. The preview shows
-                  how the type looks. Without a colour one is picked from the type's number.
+                  One of ten named colors, shown behind a white icon in lists. The preview shows how
+                  the type looks. Without a color one is picked from the type's number.
                 </p>
                 @if (fieldErrors()['colourKey']) {
                   <p class="error" role="alert" data-colour-error>

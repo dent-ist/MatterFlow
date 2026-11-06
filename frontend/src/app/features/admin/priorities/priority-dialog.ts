@@ -13,7 +13,7 @@ import { PriorityView } from '../../../api/generated/api-client';
 import { hasReadableText, isHexColor } from '../../../shared/ui/color-contrast';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { LookupDialog } from '../../../shared/ui/lookup-dialog';
-import { PriorityBadge } from '../../../shared/ui/priority-badge';
+import { PriorityFlag } from '../../../shared/ui/priority-flag';
 import { TextField } from '../../../shared/ui/text-field';
 import { ADMIN_FIELD_LIMITS } from '../shared/field-limits';
 
@@ -50,7 +50,7 @@ const DEFAULT_CUSTOM_COLOUR = '#336699'; // theme-colour-ok: starting value of a
  */
 @Component({
   selector: 'mf-priority-dialog',
-  imports: [Dropdown, LookupDialog, TextField, PriorityBadge],
+  imports: [Dropdown, LookupDialog, TextField, PriorityFlag],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .pd-color {
@@ -124,12 +124,7 @@ const DEFAULT_CUSTOM_COLOUR = '#336699'; // theme-colour-ok: starting value of a
           </p>
         }
       </div>
-      <mf-priority-badge
-        mfPreview
-        [label]="previewLabel()"
-        [color]="colorValue()"
-        [rank]="rank()"
-      />
+      <mf-priority-flag mfPreview [label]="previewLabel()" [color]="colorValue()" />
     </mf-lookup-dialog>
   `,
 })
@@ -138,8 +133,6 @@ export class PriorityDialog {
   readonly open = model(false);
   /** The priority being edited, or null for a new one. */
   readonly priority = input<PriorityView | null>(null);
-  /** Position (1 = most urgent) the preview badge shows its level bars for; a new priority goes last. */
-  readonly rank = input<number | null>(null);
   readonly busy = input(false);
   /** The server's duplicate-name answer (under the Name field) and any other save failure (top of the dialog). */
   readonly labelError = input('');

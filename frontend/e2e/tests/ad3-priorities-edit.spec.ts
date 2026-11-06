@@ -71,6 +71,9 @@ test.describe('New priority and Edit priority (#609)', () => {
     await page.setViewportSize(SIZES[1]);
     await page.goto('/admin/priorities');
     try {
+      // A reorder list looks like a record grid: the grip is visible at rest (D-44o) and the priority is the flag of the task grids.
+      await expect(rowOf(page, made.label).locator('[data-grip]')).toBeVisible();
+      await expect(rowOf(page, made.label).locator('mf-priority-badge')).toHaveCount(0);
       const link = rowOf(page, made.label).locator('[data-edit]');
       await link.click();
       await expect(dialog(page, 'Edit Priority')).toBeVisible();
@@ -79,10 +82,7 @@ test.describe('New priority and Edit priority (#609)', () => {
 
       // Changing the color changes the preview, not the row.
       await dropdownById(page, 'priority-color').selectOption('critical');
-      await expect(dialog(page).locator('[data-preview] [data-priority]')).toHaveAttribute(
-        'style',
-        /critical/,
-      );
+      await expect(dialog(page).locator('[data-preview] mf-priority-pill')).toBeVisible();
       const listed = (await admin.get<Json[]>('/api/v1/priorities')).find((p) => p.id === made.id)!;
       expect(listed.color, 'nothing is saved by choosing a color').toBe('low');
 

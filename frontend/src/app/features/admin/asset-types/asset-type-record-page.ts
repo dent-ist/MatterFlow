@@ -2,7 +2,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   Injector,
-  afterNextRender,
   computed,
   effect,
   inject,
@@ -258,9 +257,8 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
   protected readonly headerActions = computed<RecordAction[]>(() => {
     const t = this.assetType();
     if (!t) return [];
-    const list: RecordAction[] = [
-      { id: 'edit', role: 'edit', label: 'Edit', run: () => void this.editHere() },
-    ];
+    // No header "Edit": the Overview is the edit form with its own Cancel and Save Changes (D-44n).
+    const list: RecordAction[] = [];
     if (this.canSeeActivity()) {
       list.push({
         id: 'activity',
@@ -470,14 +468,6 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
     this.model.set({ ...this.saved() });
     this.fieldErrors.set({});
     this.announcement.set('Changes discarded.');
-  }
-
-  /** Edit in the header: the fields are always editable, so it takes the person to the name. */
-  protected async editHere(): Promise<void> {
-    if (this.current() !== 'overview') await this.go('overview');
-    afterNextRender(() => document.getElementById('at-name')?.focus(), {
-      injector: this.injector,
-    });
   }
 
   /** Edit fields (header and Fields tab): the form designer of the type; a dirty page asks first (the route's leave guard). */

@@ -27,7 +27,7 @@ import { DIALOG_WIDTHS } from './form-dialog';
  *   <mf-lookup-dialog title="Rename status label" submitLabel="Save name" [(visible)]="open" [dirty]="name() !== original()"
  *       [saving]="busy()" [error]="serverError()" [summary]="summary()" (save)="save()" (cancel)="reset()">
  *     <mf-text-field inputId="sl-name" label="Name" [required]="true" [maxLength]="50" [counter]="true" [error]="nameError()" [(value)]="name" />
- *     <mf-priority-badge mfPreview [label]="name()" [color]="color()" />        <!-- live preview of the result (optional) -->
+ *     <mf-priority-flag mfPreview [label]="name()" [color]="color()" />        <!-- live preview of the result (optional) -->
  *   </mf-lookup-dialog>
  *
  * - Fields go in the default slot; a live preview (the badge as it will look) in the `mfPreview` slot, under the fields, named "Preview".

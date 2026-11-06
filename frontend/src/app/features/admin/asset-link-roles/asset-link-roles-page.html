@@ -27,7 +27,7 @@
         </caption>
         <thead>
           <tr>
-            <th class="mf-cell-num" scope="col" [attr.data-drop]="dropOrder">Order</th>
+            <th class="mf-cell-order" scope="col" [attr.data-drop]="dropOrder">Order</th>
             <th class="mf-cell-name" scope="col">Name</th>
             @if (linksShown()) {
               <th class="mf-cell-num" scope="col">Links</th>
@@ -63,7 +63,9 @@
               (dragover)="onDragOver($event)"
               (drop)="onDrop(i, $event)"
             >
-              <td class="mf-cell-num" [attr.data-drop]="dropOrder" data-order>{{ i + 1 }}</td>
+              <td class="mf-cell-order" [attr.data-drop]="dropOrder" data-order>
+                <i class="pi pi-bars mf-grip" aria-hidden="true" data-grip></i>{{ i + 1 }}
+              </td>
               <td class="mf-cell-name">
                 @if (canManage()) {
                   <a
