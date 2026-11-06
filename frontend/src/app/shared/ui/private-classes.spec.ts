@@ -48,8 +48,6 @@ const ALLOWED_DASHED: Readonly<Record<string, string>> = {
   'features/admin/workflows/workflow-step-row.scss:.wsr__preview': 'the step preview',
   'shared/charts/pie-chart.ts:.swatch.dashed': 'the legend swatch of the dashed pie slice',
   '../styles/_tables.scss:.wt-resize-guide': 'the drop line of a column resize',
-  'features/dashboard/swimlane/swimlane-lane.ts:.count--caveat':
-    'the count link that is not an exact match (a marker, not a box)',
 };
 
 /** The selectors (innermost, as written) of the rules in a style sheet that draw a dashed border or outline; follows SCSS nesting. Comments are removed first. */

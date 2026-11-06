@@ -54,6 +54,16 @@ import { IntPipe } from '../../../shared/ui/number-format';
     [data-summary-assets] {
       min-height: 3rem;
     }
+    /* No assets: one 52 px card row in the place of the tile strip (D-44x): muted sentence at the left, the text button at the right. */
+    .ms__no-assets {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--mf-s3);
+      height: calc(var(--mf-ctl-h) + 2 * var(--mf-s2));
+      padding: 0 var(--mf-s4);
+      font-size: var(--mf-fs-md);
+    }
     /* The asset strip: equal tiles in one row that scrolls sideways when there are too many. */
     .ms__tiles {
       display: grid;
@@ -164,21 +174,18 @@ import { IntPipe } from '../../../shared/ui/number-format';
             }
           </ul>
         } @else if (assetsLoader.state() === 'ready') {
-          <div data-no-assets>
-            <mf-state-block>
-              No assets yet.
-              @if (canCreateAsset()) {
-                <button
-                  type="button"
-                  mfStateAction
-                  class="mf-btn"
-                  data-new-asset
-                  (click)="newAsset.emit()"
-                >
-                  <i class="pi pi-plus" aria-hidden="true"></i> New Asset
-                </button>
-              }
-            </mf-state-block>
+          <div class="ms__no-assets mf-card" data-no-assets>
+            <span class="ms__none">No assets yet.</span>
+            @if (canCreateAsset()) {
+              <button
+                type="button"
+                class="mf-btn mf-btn--text"
+                data-new-asset
+                (click)="newAsset.emit()"
+              >
+                New Asset
+              </button>
+            }
           </div>
         }
       </section>

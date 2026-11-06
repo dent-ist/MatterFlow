@@ -1187,6 +1187,12 @@ describe('DashUsersTab', () => {
         );
       });
 
+      it('has the view heading as an h2 and no heading above it in the view (heading order, #1280)', async () => {
+        await typeView();
+        expect(q('[data-coverage-heading]').tagName).toBe('H2');
+        expect(qa('mf-coverage-view h1, mf-coverage-view h2, mf-coverage-view h3').length).toBe(1);
+      });
+
       it('lists the names alphabetically with the people count, the completed total and the status', async () => {
         await typeView();
         expect(text(trow('Production').querySelector('[data-names]'))).toBe(

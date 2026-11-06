@@ -527,7 +527,7 @@ test.describe('Task detail: single page layout', () => {
     // The Assets tab stays (T10 matrix), without a count; its pane carries the sentence.
     await expect(detail.tab('Assets')).toHaveText(/^\s*Assets\s*$/);
     await detail.ensureAssetsOpen();
-    await expect(detail.section('Assets')).toContainText("don't have permission to view assets");
+    await expect(detail.section('Assets')).toContainText("don't have access to assets");
     await expect(page.locator('[data-view-only]')).toContainText('View only');
   });
 });

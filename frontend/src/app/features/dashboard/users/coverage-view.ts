@@ -204,9 +204,9 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
       </button>
     </div>
 
-    <h3 class="head" id="cv-h" data-coverage-heading>
+    <h2 class="head" id="cv-h" data-coverage-heading>
       Task type coverage - use this to plan training and cross-coverage, not to rank people
-    </h3>
+    </h2>
     <p class="frame" data-coverage-frame>
       @if (orientation() === 'type') {
         <span>People who completed tasks of each type {{ phrase() }}.</span>

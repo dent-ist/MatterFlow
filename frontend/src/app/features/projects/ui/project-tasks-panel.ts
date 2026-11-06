@@ -71,7 +71,7 @@ const PAGE = 100;
         </div>
 
         @if (!canView()) {
-          <p class="ptp__note" data-no-access="tasks">You don't have permission to view tasks.</p>
+          <p class="ptp__note" data-no-access="tasks">You don't have access to tasks.</p>
         } @else {
           @if (adding()) {
             <section class="ptp__add" aria-label="Add tasks to this project" data-add-section>

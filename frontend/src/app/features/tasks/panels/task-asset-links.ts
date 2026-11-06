@@ -69,7 +69,7 @@ export const ASSETS_CLOSED_NOTE =
       <div class="tl__panel" [id]="panelId">
         @if (!canSee()) {
           <p class="tl__note" data-no-access>
-            You don't have permission to view assets, so linked assets aren't shown here.
+            You don't have access to assets, so linked assets aren't shown here.
           </p>
         } @else if (closedNote()) {
           <p class="tl__note" data-closed-note>{{ closedNoteText }}</p>
