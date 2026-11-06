@@ -370,6 +370,12 @@ describe('DashboardPage', () => {
       expect(calls).toBeGreaterThan(0);
       // No card: not the unassigned query.
       expect(sizes().at(-1)).not.toBe(true);
+      // The default columns (#1236): Type, Title, Priority, Assignee, Due; Ref and Status are one click away in Columns.
+      const heads = () =>
+        Array.from(el.querySelectorAll('mf-dash-grid thead th')).map((th) =>
+          th.getAttribute('data-col'),
+        );
+      expect(heads()).toEqual(['type', 'title', 'priority', 'assignee', 'due']);
 
       card(el, 'unassigned').click();
       await settle();
@@ -382,6 +388,8 @@ describe('DashboardPage', () => {
       expect(last[36]).toBe('asc');
       // The Unassigned for column joins the grid only while the card is on.
       expect(el.querySelector('th[data-col="unassignedFor"]')).not.toBeNull();
+      // ... and takes the place of Due, so the row keeps its width (#1236).
+      expect(heads()).toEqual(['type', 'title', 'priority', 'assignee', 'unassignedFor']);
       expect(text(el.querySelector('[data-chip="card"]'))).toContain('Unassigned');
 
       card(el, 'unassigned').click();

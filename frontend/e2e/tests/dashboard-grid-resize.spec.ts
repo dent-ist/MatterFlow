@@ -26,6 +26,7 @@ test('Dashboard grid: every divider resizes only its own column and follows the 
   await expect(page.locator('mf-dash-grid [data-task]').first()).toBeVisible();
 
   const keys = Object.keys(await heads(page));
+  // Default Summary columns (#1236): Type, Title, Priority, Assignee, Due (Ref and Status are in Columns); the Title is the spring and has no handle.
   expect(keys.length).toBeGreaterThanOrEqual(5);
   let dragged = 0;
   for (const key of keys) {
@@ -60,7 +61,7 @@ test('Dashboard grid: every divider resizes only its own column and follows the 
     }
     dragged++;
   }
-  expect(dragged).toBeGreaterThanOrEqual(5);
+  expect(dragged).toBeGreaterThanOrEqual(4);
 
   // Remembered: a reload keeps the widths.
   const widths = await heads(page);

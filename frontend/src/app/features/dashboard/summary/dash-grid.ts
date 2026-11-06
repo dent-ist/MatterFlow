@@ -56,9 +56,12 @@ import { CARD_KEYS, CardKey, isCardKey } from './dash-cards';
 import { IntPipe } from '../../../shared/ui/number-format';
 export { DASH_GRID_PARAMS } from './dash-grid-params';
 
-/** The standard task column order (decision AR 5 to 7). Ref is pinned first and Title cannot be hidden; Matter Name, Project and Progress are one click away in Columns (D-43a, #1230). */
+/**
+ * The standard task column order (decision AR 5 to 7). Title cannot be hidden. The default set fits the 718 px frame of 1366 with the right panel shown (D-43a, #1236):
+ * Type (128, chip and name), Title, Priority, Assignee, Due. Ref (pinned first when added), CM Number, Matter Name, Project, Status and Progress are one click away in Columns.
+ */
 export const SUMMARY_GRID_COLUMNS: readonly GridColumnDef[] = [
-  { key: 'ref', label: 'Ref', locked: true, pinned: true },
+  { key: 'ref', label: 'Ref', pinned: true, defaultHidden: true },
   { key: 'type', label: 'Type' },
   { key: 'title', label: 'Title', locked: true },
   { key: 'matter', label: 'CM Number', defaultHidden: true },
@@ -67,14 +70,14 @@ export const SUMMARY_GRID_COLUMNS: readonly GridColumnDef[] = [
   { key: 'priority', label: 'Priority' },
   { key: 'assignee', label: 'Assignee' },
   { key: 'due', label: 'Due' },
-  { key: 'status', label: 'Status' },
+  { key: 'status', label: 'Status', defaultHidden: true },
   { key: 'progress', label: 'Progress', defaultHidden: true },
 ];
 
 /** The page size of a list (decision AR 10): 50, chosen from 25 / 50 / 100. */
 const PAGE_SIZE = 50;
-/** Default width of the Assignee column (px): "Unassigned" and the Assign control sit on one line. */
-export const ASSIGNEE_PX = 200;
+/** Default width of the Assignee column (px): the person's name, or "Unassigned" with its chevron (the one control), on one line, as in Task Queue. */
+export const ASSIGNEE_PX = 136;
 const CARD_NAMES: Record<CardKey, string> = {
   overdue: 'Overdue',
   unassigned: 'Unassigned',
@@ -281,16 +284,20 @@ export class DashGrid {
   private readonly prefsKey = computed(() =>
     gridPrefsKey('dashboardSummary', this.auth.profile()?.userId),
   );
-  /** The shown columns; "Unassigned for" joins them after Assignee only while the Unassigned card is on (it is not in the Columns menu). */
+  /**
+   * The shown columns; "Unassigned for" joins them after Assignee only while the Unassigned card is on (it is not in the Columns menu) and takes the place of Due, so the row keeps
+   * the same width (#1236). The saved column choice is never changed.
+   */
   protected readonly columns = computed(() => {
     const keys = shownKeys(this.gridDefs(), this.prefs());
     if (this.card() !== 'unassigned') return keys;
-    const at = keys.indexOf('assignee');
+    const rest = keys.filter((k) => k !== 'due');
+    const at = rest.indexOf('assignee');
     return at < 0
-      ? [...keys, 'unassignedFor']
-      : [...keys.slice(0, at + 1), 'unassignedFor', ...keys.slice(at + 1)];
+      ? [...rest, 'unassignedFor']
+      : [...rest.slice(0, at + 1), 'unassignedFor', ...rest.slice(at + 1)];
   });
-  /** The Assignee column is wide enough for the word Unassigned and the Assign control side by side; a width the person chose wins. */
+  /** The Assignee column default of this grid; a width the person chose wins. */
   protected readonly colWidths = computed<ColumnWidthMap>(() => ({
     assignee: pxToRem(ASSIGNEE_PX),
     ...this.widthStore.widths('dashboardSummary', this.auth.profile()?.userId ?? null),

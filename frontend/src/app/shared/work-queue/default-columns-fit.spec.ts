@@ -8,6 +8,8 @@ import { ASSIGNEE_WITH_LINK_PX } from './column-widths';
  * plus a Title of at least 160 px add up to 1,098 px or less, so there is no sideways scroll and Status is whole. Everything else is one click away in Columns.
  */
 const FRAME_1366_PX = 1098;
+/** The Summary grid frame at 1366 while the right panel is shown (measured: the table area is 718 px, #1236). */
+const SUMMARY_FRAME_PX = 718;
 const TITLE_MIN_PX = WORK_COLUMNS.find((c) => c.key === 'title')!.minWidth;
 
 const width = (key: string, assignee: number): number => {
@@ -39,9 +41,13 @@ describe('default task columns fit the 1366 frame (D-43a, #1230)', () => {
     },
   );
 
-  it('the Dashboard Summary grid fits too (its Assignee is wider: Unassigned and the Assign control)', () => {
+  it('the Dashboard Summary grid fits the 718 px frame of 1366 with the right panel shown: Type, Title, Priority, Assignee, Due (#1236)', () => {
     const keys = shownKeys(SUMMARY_GRID_COLUMNS, DEFAULT_GRID_PREFS);
-    expect(sum(keys, ASSIGNEE_PX) + TITLE_MIN_PX).toBeLessThanOrEqual(FRAME_1366_PX);
+    expect(keys).toEqual(['type', 'title', 'priority', 'assignee', 'due']);
+    expect(sum(keys, ASSIGNEE_PX) + TITLE_MIN_PX).toBeLessThanOrEqual(SUMMARY_FRAME_PX);
+    // The Unassigned card swaps Due for "Unassigned for": the same room.
+    const unassigned = keys.map((k) => (k === 'due' ? 'unassignedFor' : k));
+    expect(sum(unassigned, ASSIGNEE_PX) + TITLE_MIN_PX).toBeLessThanOrEqual(SUMMARY_FRAME_PX);
   });
 
   it('Type is the chip and the name at 128 px (min 96, max 260; #1237); the Title minimum is 120 px', () => {
@@ -69,7 +75,8 @@ describe('default task columns fit the 1366 frame (D-43a, #1230)', () => {
       expect(keys, scope).toContain('matter');
     }
     const summary = shownKeys(SUMMARY_GRID_COLUMNS, DEFAULT_GRID_PREFS);
-    for (const off of ['project', 'matterName', 'progress']) expect(summary).not.toContain(off);
+    for (const off of ['project', 'matterName', 'progress', 'ref', 'status'])
+      expect(summary).not.toContain(off);
     expect(summary).not.toContain('matter');
   });
 });

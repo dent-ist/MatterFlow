@@ -1004,7 +1004,8 @@ export class TaskTable {
     const hide = this.hideContext();
     const wide = WORK_COLUMNS.filter(
       (c) =>
-        (c.locked || wanted.has(c.key)) &&
+        // The Ref is locked everywhere but the Dashboard Summary grid (#1236), where it is one click away in Columns.
+        ((c.locked && !(this.dash() && c.key === 'ref')) || wanted.has(c.key)) &&
         !(hide && (c.key === 'matter' || c.key === 'matterName' || c.key === 'client')),
     );
     const order = this.columns();
