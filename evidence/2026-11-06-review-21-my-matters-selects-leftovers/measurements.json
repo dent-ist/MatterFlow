@@ -1,0 +1,7 @@
+{"date":"2026-11-06","tip":"d9850bf",
+"1252":{"default_1366":{"panel":"collapsed","th":[446,176,112,150,152]},"open_1366":{"th":[304,176,112,0,152],"typeName":"tile only","ref":"whole, above title","atRisk":"full pill (should be icon)"},"stored":"mf.mymatters.v2.46 sidePref open, kept after reload","default_1920":"panel open, Task 708","focusNames":["Access Request:106","Analytics / TAR Setup:143","Archive and Disposition:156"],"crumb":["Back to Task Queue","Task Queue"],"createTask":{"typeBlocks":1,"changeType":"under the name"}},
+"1253":"Matter Summary on mf-details-card, rows at y 300/355/410/465/520 same as before, card 1098 px at 1366",
+"1251":{"nativeSelectsAfter":0,"pages":["new production","ooo","task edit","matter edit","change managers","asset form","holidays","add holiday","report editor","asset type","new asset type","priority dialog","users"],"blueFormDropdowns":["New Production Direction","Add Out of Office Type"]},
+"1254":{"seeAllMenu":["See All 12","See All 5","See All 204","See All 4","See All 60","See All Results"],"seeAllPage":["See All 12 Matters","See All 204 Tasks","See All 60 Assets"],"notFoundFocus":"H1","errorButtons":["Retry"],"swimlaneMenu":["Put on Hold","Complete... (needs step inputs)","Cancel Task"]},
+"1255":"ooo overlap banner: pg-banner--danger radius 4, 54 px (two lines), role alert, icon",
+"1258":"day panel: chip row 'Data Technician 6 | Director 1 | Pod Lead 4' repeats the group headers; person rows have no role chip"}
