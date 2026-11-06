@@ -275,11 +275,7 @@ type BatteryState = 'loading' | 'ready' | 'error';
       transition: width 0.4s ease;
     }
     .shell--neutral {
-      background: repeating-linear-gradient(
-        45deg,
-        var(--mf-p-slate-bg) 0 4px,
-        var(--mf-p-slate-line) 4px 7px
-      );
+      background: var(--mf-sem-neutral-bg);
     }
     /* The number is plain text on the fill (no ring); the fill colours are chosen so the text colour of each step passes 4.5:1. When the fill is shorter than the number (under about 20 percent) the number sits on the battery's empty part: see .val--empty. */
     .val {
@@ -399,17 +395,13 @@ type BatteryState = 'loading' | 'ready' | 'error';
       background: var(--mf-cap-3);
     }
     .sw--out {
-      color: var(--mf-p-slate-fg);
-      background: repeating-linear-gradient(
-        45deg,
-        var(--mf-p-slate-bg) 0 4px,
-        var(--mf-p-slate-line) 4px 7px
-      );
+      color: var(--mf-sem-neutral-fg);
+      background: var(--mf-sem-neutral-line);
     }
     .sw--off {
-      color: var(--mf-p-slate-fg);
+      color: var(--mf-sem-neutral-fg);
       background: var(--mf-surface);
-      border: 2px dashed var(--mf-p-slate-solid);
+      border: 2px dashed var(--mf-sem-neutral-solid);
     }
     .fine {
       margin: var(--mf-s2) 0 0;

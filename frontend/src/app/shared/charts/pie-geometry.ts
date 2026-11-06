@@ -10,7 +10,7 @@ export function sharePercent(count: number, total: number): string {
   return value < 1 ? '<1%' : `${Math.round(value)}%`;
 }
 
-/** What the geometry needs of a slice: its size and, optionally, the part of it drawn as a hatched outer ring segment (for example "overdue"). */
+/** What the geometry needs of a slice: its size and, optionally, the part of it drawn as a solid red outer ring segment (for example "overdue"). */
 export interface SizedSlice {
   count: number;
   overdue?: number;

@@ -170,7 +170,7 @@ test.describe('Dashboard Breakdowns', () => {
           return `${s.borderTopStyle} ${s.borderTopWidth}`;
         });
     expect(await stroke('Normal')).toBe('solid 1px');
-    expect(await stroke('Low')).toBe('dashed 2px');
+    expect(await stroke('Low')).toBe('solid 2px');
     // Bars -> pie -> table.
     await priority.getByRole('button', { name: /View as pie/ }).click();
     await priority.getByRole('button', { name: /View as table/ }).click();

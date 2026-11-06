@@ -209,7 +209,7 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
         color: inherit;
         text-decoration: none;
       }
-      /* The overdue share of the band: a hatched strip along the bottom, from the right edge, proportional to the band. */
+      /* The overdue share of the band: a solid red strip along the bottom, from the right edge, proportional to the band. */
       .seg .od {
         position: absolute;
         right: 0;

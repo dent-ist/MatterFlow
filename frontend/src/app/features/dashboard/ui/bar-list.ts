@@ -558,7 +558,6 @@ export class BarList implements OnInit {
               item.stroke ?? NORMAL_STROKE,
             ),
         outline: item.outline ?? (item.muted ? 'var(--mf-text-muted)' : null),
-        dashed: item.stroke?.style === 'dashed',
       })),
     ),
   );

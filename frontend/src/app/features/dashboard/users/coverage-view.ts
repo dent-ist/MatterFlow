@@ -617,7 +617,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
       border-radius: var(--mf-radius);
       font-weight: 700;
     }
-    /* A zero is a blank cell on a light neutral background: no hatch, no dashed edge (C2, #135). */
+    /* A zero is a blank cell on a light neutral background: no pattern, no dashed edge (C2, #135). */
     .sw--zero,
     .cell--zero {
       background: var(--mf-surface-alt);

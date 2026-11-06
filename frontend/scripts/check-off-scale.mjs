@@ -43,7 +43,6 @@ const ALLOW_UPPERCASE = new Set([
 const LEDGER = {
   'src/app/shared/charts/pie-chart.ts|font-size': [1, 'SVG centre figure of the pie chart (chart internals, out of scope of #1155)'],
   'src/app/features/dashboard/ui/trend-chart.ts|font-size': [1, 'SVG end-of-line labels of the trend chart (chart internals)'],
-  'src/app/features/dashboard/summary/dash-gauge.ts|font-size': [1, 'SVG tick numbers of the gauge (chart internals)'],
   'src/app/features/dashboard/swimlane/swimlane-card.ts|font-size': [1, 'a 7 px glyph inside the 12 px out-of-office dot; no token fits the dot (needs the designer)'],
 };
 

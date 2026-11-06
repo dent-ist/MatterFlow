@@ -26,16 +26,6 @@ let nextId = 0;
         <div class="figure">
           <svg class="svg" viewBox="0 0 200 200" role="img" [attr.aria-label]="summary()">
             <defs>
-              <pattern
-                [id]="id + '-od'"
-                width="6"
-                height="6"
-                patternUnits="userSpaceOnUse"
-                patternTransform="rotate(45)"
-              >
-                <rect class="od-a" width="6" height="6" />
-                <rect class="od-b" width="3" height="6" />
-              </pattern>
               @if (patterns()) {
                 @for (h of hatches; track h.n) {
                   <pattern
@@ -95,12 +85,7 @@ let nextId = 0;
                   </text>
                 }
                 @if (arc.overduePath; as p) {
-                  <path
-                    class="od-ring"
-                    data-overdue-ring
-                    [attr.d]="p"
-                    [attr.fill]="'url(#' + id + '-od)'"
-                  >
+                  <path class="od-ring" data-overdue-ring [attr.d]="p">
                     <title>{{ tip(arc.slice) }}</title>
                   </path>
                 }
@@ -237,14 +222,10 @@ let nextId = 0;
         font-size: 12px;
         fill: var(--mf-text-muted);
       }
-      .od-a {
-        fill: var(--mf-danger-bg);
-      }
-      .od-b {
-        fill: var(--mf-danger);
-      }
+      /* The overdue part of a slice: solid red (D-04, no hatching); its legend row says "N overdue" in words. */
       .od-ring {
-        stroke: var(--mf-danger);
+        fill: var(--mf-sem-overdue-solid);
+        stroke: var(--mf-surface);
         stroke-width: 1;
       }
       /* A reserved caption area: always three lines tall (empty when nothing is hovered) and never wider than the donut's column
@@ -381,15 +362,10 @@ let nextId = 0;
           fill: Canvas !important;
           stroke: CanvasText !important;
         }
-        .od-a {
-          fill: Canvas;
-        }
-        .od-b {
-          fill: CanvasText;
-        }
         .od-ring {
           forced-color-adjust: none;
-          stroke: CanvasText;
+          fill: CanvasText;
+          stroke: Canvas;
         }
         .num,
         .centre {

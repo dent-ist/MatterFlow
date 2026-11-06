@@ -48,7 +48,6 @@ export class BreakdownPie {
         overdueLink: od ? { commands: ['/tasks'], queryParams: od } : null,
         fill: s.fill,
         outline: s.outline,
-        dashed: s.dashed,
       };
     }),
   );

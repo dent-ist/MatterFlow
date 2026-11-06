@@ -15,7 +15,7 @@ export const isScale = (v: unknown): v is Scale => v === 'relative' || v === 'ab
 
 /**
  * Fill and text of the non-zero steps (one blue family, light to dark). The numbers are always written in the cell, so colour is never the
- * only cue; every pair reaches 4.5:1 (checked in the spec). Step 0 (no completions) is a blank cell on a light neutral background: no hatch and no dashed edge (C2, #135).
+ * only cue; every pair reaches 4.5:1 (checked in the spec). Step 0 (no completions) is a blank cell on a light neutral background: no pattern and no dashed edge (C2, #135).
  */
 export const STEP_COLORS: Record<Exclude<Step, 0>, { bg: string; fg: string }> = {
   1: { bg: 'var(--mf-heat-1-bg)', fg: 'var(--mf-heat-1-fg)' },
