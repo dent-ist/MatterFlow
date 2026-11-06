@@ -24,6 +24,7 @@ import {
   sameSettings,
   validateGaugeSettings,
 } from './dashboard-settings-model';
+import { FilterChip, FilterChips } from '../../../shared/ui/filter-chips';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 /**
@@ -33,7 +34,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
  */
 @Component({
   selector: 'mf-dashboard-settings',
-  imports: [NumericDatePipe, Button],
+  imports: [NumericDatePipe, Button, FilterChips],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form class="ds" novalidate (submit)="$event.preventDefault(); save()" data-dashboard-settings>
@@ -97,18 +98,12 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
           aria-describedby="ds-days-help"
         >
           <span class="mf-field__label" id="ds-days-l">Working Days</span>
-          <div class="ds__days">
-            @for (d of weekdays; track d) {
-              <label class="ds__day">
-                <input
-                  type="checkbox"
-                  [checked]="form().workDays.includes(d)"
-                  [attr.data-day]="d"
-                  (change)="toggleDay(d, $any($event.target).checked)"
-                />
-                {{ dayLabels[d] }}
-              </label>
-            }
+          <div data-day-toggles>
+            <mf-filter-chips
+              label="Working Days"
+              [chips]="dayChips()"
+              (valueChange)="toggleDay(+$event)"
+            />
           </div>
           <p class="mf-field__help" id="ds-days-help">
             Default Monday to Friday. The firm's time zone applies to everyone.
@@ -325,7 +320,6 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
     .ds__row > .mf-field {
       flex: 1 1 14rem;
     }
-    .ds__days,
     .ds__levels {
       display: flex;
       flex-wrap: wrap;
@@ -335,13 +329,13 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
       display: inline-flex;
       align-items: center;
       gap: var(--mf-s2);
-      min-height: 24px;
+      min-height: var(--mf-ctl-h);
     }
     .ds__lv {
       display: grid;
       grid-template-columns: minmax(0, 1fr);
       gap: var(--mf-s1);
-      width: 6rem;
+      width: 96px;
     }
     .ds__lv .mf-field__input {
       box-sizing: border-box;
@@ -419,10 +413,20 @@ export class DashboardSettings implements OnInit {
     this.serverMessage.set(null);
   }
 
-  protected toggleDay(day: Weekday, on: boolean): void {
-    const days = new Set(this.form().workDays);
-    if (on) days.add(day);
-    else days.delete(day);
+  /** The seven working days as filter chips (D-12, kind 3): each is on or off by itself; the full day name is the accessible name. */
+  protected readonly dayChips = computed<readonly FilterChip[]>(() =>
+    WEEKDAYS.map((d) => ({
+      key: String(d),
+      label: this.dayLabels[d].slice(0, 3),
+      ariaLabel: this.dayLabels[d],
+      pressed: this.form().workDays.includes(d),
+    })),
+  );
+
+  protected toggleDay(day: number): void {
+    const days = new Set<number>(this.form().workDays);
+    if (days.has(day)) days.delete(day);
+    else days.add(day);
     this.patch({ workDays: WEEKDAYS.filter((d) => days.has(d)) });
   }
 
