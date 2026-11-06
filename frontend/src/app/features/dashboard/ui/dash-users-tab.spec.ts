@@ -747,7 +747,7 @@ describe('DashUsersTab', () => {
 
     it('explains a team with nobody in it', async () => {
       await open(of(aBoard([])));
-      expect(text(q('[data-users-empty]'))).toContain('no team members');
+      expect(text(q('[data-users-empty]'))).toContain('No team members yet.');
     });
 
     it('keeps the cards when a background refresh fails and says so with Retry', async () => {

@@ -88,10 +88,7 @@ let nextId = 0;
           <!-- Decorative: the board has one "Loading" status (it is aria-busy), not one announcement per lane. -->
           <mf-dash-skeleton kind="lane" [compact]="density() === 'compact'" aria-hidden="true" />
         } @else if (m.rows.length === 0) {
-          <p class="empty" data-lane-empty>
-            <i class="pi pi-inbox" aria-hidden="true"></i>
-            <span>{{ emptyText() }}</span>
-          </p>
+          <p class="empty" data-lane-empty>{{ emptyText() }}</p>
         } @else {
           @if (!single()) {
             <button
@@ -455,15 +452,11 @@ let nextId = 0;
       font-size: var(--mf-fs-xs);
       font-weight: 700;
     }
+    /* A lane is a small card: the muted one-line sentence, no box and no icon (D-51, compact variant). */
     .empty {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
       margin: 0;
       padding: var(--mf-s4) var(--mf-s2);
       color: var(--mf-text-muted);
-      border: 1px dashed var(--mf-border-strong);
-      border-radius: var(--mf-radius);
       font-size: var(--mf-fs-sm);
     }
     .trunc {

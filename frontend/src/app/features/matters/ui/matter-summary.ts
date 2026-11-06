@@ -5,6 +5,7 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { ActiveBadge, Badge, SensitiveBadge } from '../../../shared/ui/badge';
 import { AssetTypeChip } from '../../../shared/ui/asset-type-chip';
+import { StateBlock } from '../../../shared/ui/state-block';
 import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { DetailField, DetailsCard } from '../../../shared/ui/details-card';
 import { MatterRef } from '../../../shared/ui/matter-ref';
@@ -28,6 +29,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
 @Component({
   selector: 'mf-matter-summary',
   imports: [
+    StateBlock,
     IntPipe,
     RouterLink,
     ActiveBadge,
@@ -85,16 +87,6 @@ import { IntPipe } from '../../../shared/ui/number-format';
       font-weight: 700;
       font-variant-numeric: tabular-nums;
     }
-    .ms__empty-assets {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--mf-s2);
-      padding: var(--mf-s2) var(--mf-s3);
-      border: 1px dashed var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
-      color: var(--mf-text-muted);
-    }
     /* The Details card is the shared mf-details-card (D-44f); it fits its content and scrolls inside when the room is used up. */
     .ms__body {
       display: flex;
@@ -140,12 +132,14 @@ import { IntPipe } from '../../../shared/ui/number-format';
     @if (showAssets()) {
       <section aria-label="Assets by type" data-summary-assets>
         @if (assetsLoader.state() === 'error') {
-          <p class="ms__empty-assets" role="alert" data-assets-error>
-            Couldn't load the assets.
-            <button type="button" class="mf-btn mf-btn--text" (click)="assetsLoader.load()">
-              Retry
-            </button>
-          </p>
+          <div data-assets-error>
+            <mf-state-block kind="error">
+              Couldn't load assets.
+              <button type="button" mfStateAction class="mf-btn" (click)="assetsLoader.load()">
+                Retry
+              </button>
+            </mf-state-block>
+          </div>
         } @else if (assetTypes().length > 0) {
           <ul class="ms__tiles">
             @for (t of assetTypes(); track t.assetTypeId) {
@@ -170,19 +164,22 @@ import { IntPipe } from '../../../shared/ui/number-format';
             }
           </ul>
         } @else if (assetsLoader.state() === 'ready') {
-          <p class="ms__empty-assets" data-no-assets>
-            <span>This matter has no assets yet.</span>
-            @if (canCreateAsset()) {
-              <button
-                type="button"
-                class="mf-btn mf-btn--text"
-                data-new-asset
-                (click)="newAsset.emit()"
-              >
-                New Asset
-              </button>
-            }
-          </p>
+          <div data-no-assets>
+            <mf-state-block>
+              No assets yet.
+              @if (canCreateAsset()) {
+                <button
+                  type="button"
+                  mfStateAction
+                  class="mf-btn"
+                  data-new-asset
+                  (click)="newAsset.emit()"
+                >
+                  <i class="pi pi-plus" aria-hidden="true"></i> New Asset
+                </button>
+              }
+            </mf-state-block>
+          </div>
         }
       </section>
     }

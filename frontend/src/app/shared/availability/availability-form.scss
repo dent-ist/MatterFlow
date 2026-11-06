@@ -43,10 +43,10 @@
   scroll-margin-bottom: 5rem;
 }
 
+/* The plain "Loading..." line of the dialog (D-50); a failed load is the .av-alert banner. */
 .av-state {
   padding: var(--mf-s5);
-  border: 1px dashed var(--mf-border-strong);
-  border-radius: var(--mf-radius);
+  color: var(--mf-text-muted);
   text-align: center;
 }
 

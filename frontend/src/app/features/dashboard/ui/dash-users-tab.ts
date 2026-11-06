@@ -62,6 +62,7 @@ import {
   sortUsers,
 } from '../users/users-model';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
+import { StateBlock } from '../../../shared/ui/state-block';
 import { UsersPrefs } from '../users/users-prefs';
 import { UsersSummary } from '../users/users-summary';
 import { UsersTable } from '../users/users-table';
@@ -94,6 +95,7 @@ export const USERS_PAGE = 200;
 @Component({
   selector: 'mf-dash-users-tab',
   imports: [
+    StateBlock,
     UsersToolbar,
     UsersViews,
     UsersCapacity,
@@ -171,34 +173,34 @@ export const USERS_PAGE = 200;
             />
           }
           @case ('forbidden') {
-            <p class="empty" role="status" data-users-forbidden>
-              <i class="pi pi-lock" aria-hidden="true"></i>
-              <span
-                >You do not have access to the team workload. Ask a Pod Lead or a Director.</span
-              >
-            </p>
+            <div data-users-forbidden>
+              <mf-state-block icon="pi-lock">
+                You don't have access to the team workload.
+                <span mfStateReason>Ask a Pod Lead or a Director.</span>
+              </mf-state-block>
+            </div>
           }
           @case ('loading') {
             <mf-dash-skeleton kind="users" label="Loading the team workload" data-users-loading />
           }
           @default {
             @if (users().length === 0) {
-              <div class="empty" data-users-empty>
-                <i class="pi pi-users" aria-hidden="true"></i>
+              <div data-users-empty>
                 @if (filtered()) {
-                  <span>No people match these filters.</span>
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--icon"
-                    data-users-clear
-                    aria-label="Clear filters"
-                    title="Clear filters"
-                    (click)="clearFilters()"
-                  >
-                    <i class="pi pi-filter-slash" aria-hidden="true"></i>
-                  </button>
+                  <mf-state-block icon="pi-users">
+                    No people match these filters.
+                    <button
+                      type="button"
+                      mfStateAction
+                      class="mf-btn"
+                      data-users-clear
+                      (click)="clearFilters()"
+                    >
+                      Clear Filters
+                    </button>
+                  </mf-state-block>
                 } @else {
-                  <span>There are no team members to show yet.</span>
+                  <mf-state-block icon="pi-users">No team members yet.</mf-state-block>
                 }
               </div>
             } @else if (layout() === 'table') {
@@ -332,18 +334,6 @@ export const USERS_PAGE = 200;
       gap: var(--mf-s2);
       margin: var(--mf-s3) 0 0;
       color: var(--mf-text-muted);
-    }
-    .empty {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--mf-s3);
-      margin: 0;
-      padding: var(--mf-s4);
-      color: var(--mf-text-muted);
-      background: var(--mf-surface);
-      border: 1px dashed var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
     }
   `,
 })

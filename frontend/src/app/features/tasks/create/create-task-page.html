@@ -53,10 +53,15 @@
             </p>
           }
           @if (usableChoices().length === 0) {
-            <p class="pg-state" data-type-empty>
-              No task types are available yet. Ask an administrator to set up a task type with a
-              published request form and workflow.
-            </p>
+            <div data-type-empty>
+              <mf-state-block>
+                No task types are available yet.
+                <span mfStateReason
+                  >Ask an administrator to set up a task type with a published request form and
+                  workflow.</span
+                >
+              </mf-state-block>
+            </div>
           } @else {
             @if (focusChoices().length > 0) {
               <div class="ct__recent" role="group" aria-labelledby="ct-focus-h" data-focus-types>
@@ -127,9 +132,9 @@
               </p>
             }
             @if (shownChoices().length === 0) {
-              <p class="pg-state" data-type-none>
-                No task type matches "{{ typeQuery() }}". Try another word.
-              </p>
+              <div data-type-none>
+                <mf-state-block>No task types match "{{ typeQuery() }}".</mf-state-block>
+              </div>
             }
             <div
               class="ct__cards"

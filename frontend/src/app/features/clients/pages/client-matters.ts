@@ -22,6 +22,7 @@ import { FilterDef } from '../../../shared/filters/filter-def';
 import { ListToolbar } from '../../../shared/filters/list-toolbar';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { ActiveBadge, SensitiveBadge } from '../../../shared/ui/badge';
+import { StateBlock } from '../../../shared/ui/state-block';
 import { ActionMenu } from '../../../shared/ui/action-menu';
 import { AddCommentDialog } from '../../../shared/matter-actions/add-comment-dialog';
 import { matterActionMenu } from '../../../shared/matter-actions/matter-actions';
@@ -70,6 +71,7 @@ const BONES: Record<string, string> = {
 @Component({
   selector: 'mf-client-matters',
   imports: [
+    StateBlock,
     NgTemplateOutlet,
     HasPermissionDirective,
     ActiveBadge,
@@ -109,8 +111,8 @@ const BONES: Record<string, string> = {
   `,
   template: `
     @if (!canView()) {
-      <div class="pg-state" data-no-access="matters">
-        You don't have permission to view matters.
+      <div data-no-access="matters">
+        <mf-state-block icon="pi-lock">You don't have access to matters.</mf-state-block>
       </div>
     } @else {
       <mf-list-toolbar [filters]="filters" controls="client-matter-filter-row" [clearAlso]="['q']">

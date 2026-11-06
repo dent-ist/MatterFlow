@@ -34,6 +34,7 @@ import { PeriodControl } from '../ui/period-control';
 import { DashSkeleton } from '../ui/dash-skeleton';
 import { DashState, focusAfterRetry } from '../ui/dash-state';
 import { SearchBox } from '../../../shared/ui/search-box';
+import { StateBlock } from '../../../shared/ui/state-block';
 import { Tip } from '../../../shared/ui/tip';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { UsersFilterPopover } from './users-filter-popover';
@@ -92,6 +93,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
   selector: 'mf-coverage-view',
   imports: [
     Badge,
+    StateBlock,
     CountChip,
     IntPipe,
     PeriodControl,
@@ -228,10 +230,12 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
         />
       }
       @case ('forbidden') {
-        <p class="empty" role="status" data-coverage-forbidden>
-          <i class="pi pi-lock" aria-hidden="true"></i>
-          <span>You do not have access to the task type coverage. Ask a Director.</span>
-        </p>
+        <div data-coverage-forbidden>
+          <mf-state-block icon="pi-lock">
+            You don't have access to the task type coverage.
+            <span mfStateReason>Ask a Director.</span>
+          </mf-state-block>
+        </div>
       }
       @case ('loading') {
         <mf-dash-skeleton kind="coverage" label="Loading the coverage" data-coverage-loading />
@@ -256,12 +260,22 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
               </li>
             </ul>
             @if (typeRows().length === 0) {
-              <div class="empty" data-coverage-empty>
-                <i class="pi pi-table" aria-hidden="true"></i>
+              <div data-coverage-empty>
                 @if (filtered()) {
-                  <span>No task types or people match these filters.</span>
+                  <mf-state-block icon="pi-table">
+                    No task types or people match these filters.
+                    <button
+                      type="button"
+                      mfStateAction
+                      class="mf-btn"
+                      data-coverage-clear
+                      (click)="filtersChange.emit({ q: '' })"
+                    >
+                      Clear Filters
+                    </button>
+                  </mf-state-block>
                 } @else {
-                  <span>There is nothing to show for this period.</span>
+                  <mf-state-block icon="pi-table">No coverage for this period.</mf-state-block>
                 }
               </div>
             } @else {
@@ -320,12 +334,22 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
           </ul>
 
           @if (m.rows.length === 0 || m.cols.length === 0) {
-            <div class="empty" data-coverage-empty>
-              <i class="pi pi-table" aria-hidden="true"></i>
+            <div data-coverage-empty>
               @if (filtered()) {
-                <span>No people match these filters.</span>
+                <mf-state-block icon="pi-table">
+                  No people match these filters.
+                  <button
+                    type="button"
+                    mfStateAction
+                    class="mf-btn"
+                    data-coverage-clear
+                    (click)="filtersChange.emit({ q: '' })"
+                  >
+                    Clear Filters
+                  </button>
+                </mf-state-block>
               } @else {
-                <span>There is nothing to show for this period.</span>
+                <mf-state-block icon="pi-table">No coverage for this period.</mf-state-block>
               }
             </div>
           } @else {
@@ -766,18 +790,6 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
     tfoot td,
     tfoot th {
       border-bottom: 0;
-    }
-    .empty {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--mf-s3);
-      margin: 0;
-      padding: var(--mf-s4);
-      color: var(--mf-text-muted);
-      background: var(--mf-surface);
-      border: 1px dashed var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
     }
     @media (max-width: 560px) {
       .search {

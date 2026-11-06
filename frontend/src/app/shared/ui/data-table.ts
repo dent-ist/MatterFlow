@@ -140,7 +140,7 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
 
 /**
  * Loading, error and empty states for every list (UXR-19, UXR-20). While `state` is `loading` it shows five skeleton rows; on `error` an
- * inline alert with the error reference and Retry; when `empty` a dashed card whose text depends on `filtered` ("No clients match these
+ * inline alert with the error reference and Retry; when `empty` the shared state block whose text depends on `filtered` ("No clients match these
  * filters." with Clear filters, or "No clients yet." with the page's own action in the `mfEmptyAction` slot). Otherwise the table is
  * projected. `noun` is the plural, lowercase.
  */
@@ -237,21 +237,13 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4];
       clip-path: inset(50%);
       white-space: nowrap;
     }
-    .pg-alert,
-    .pg-state {
+    .pg-alert {
       margin: 0 0 var(--mf-s3);
       padding: var(--mf-s4);
       border-radius: var(--mf-radius);
-    }
-    .pg-alert {
       border: 1px solid var(--mf-danger);
       background: var(--mf-danger-bg);
       color: var(--mf-danger);
-    }
-    .pg-state {
-      background: var(--mf-surface);
-      border: 1px dashed var(--mf-border-strong);
-      text-align: center;
     }
   `,
 })

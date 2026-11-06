@@ -563,7 +563,7 @@ describe('MatterDetailPage', () => {
     assets.getAssetCountsByType.mockReturnValue(ok([]));
     (fixture.componentInstance as unknown as { projectSaved(): void }).projectSaved();
     await settle(fixture);
-    expect(el().querySelector('[data-no-assets]')!.textContent).toContain('no assets yet');
+    expect(el().querySelector('[data-no-assets]')!.textContent).toContain('No assets yet.');
     el().querySelector<HTMLButtonElement>('[data-new-asset]')!.click();
     expect(navigateByUrl).toHaveBeenCalledWith('/assets/new?matterId=7');
   });

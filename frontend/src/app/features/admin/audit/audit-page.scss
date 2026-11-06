@@ -31,15 +31,6 @@
   margin-left: auto;
 }
 
-.au-state {
-  padding: var(--mf-s5) var(--mf-s4);
-  text-align: center;
-  color: var(--mf-text-muted);
-  background: var(--mf-surface);
-  border: 1px dashed var(--mf-border-strong);
-  border-radius: var(--mf-radius);
-}
-
 /* ---- the grid (the kit's contract; these are the audit columns) */
 .au-cell-toggle {
   width: 44px;

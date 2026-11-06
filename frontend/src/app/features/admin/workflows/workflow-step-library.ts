@@ -16,6 +16,7 @@ import { StepDefinitionSummary, StepDefinitionsClient } from '../../../api/gener
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { SearchBox } from '../../../shared/ui/search-box';
+import { StateBlock } from '../../../shared/ui/state-block';
 import { TagChips } from '../../../shared/ui/tag-chips';
 import { TagFilter, TagMatch, TagOption } from '../../../shared/ui/tag-filter';
 
@@ -91,6 +92,13 @@ export class StepLibraryModel {
     void this.load();
   }
 
+  /** Empties the search text and the tags in one request (the "Clear Filters" button of the empty result). */
+  clearFilters(): void {
+    this.q.set('');
+    this.tags.set([]);
+    void this.load();
+  }
+
   setTags(tags: string[]): void {
     this.tags.set(tags);
     void this.load();
@@ -109,7 +117,7 @@ export class StepLibraryModel {
  */
 @Component({
   selector: 'mf-workflow-step-library',
-  imports: [Button, ErrorReference, ScrollArea, SearchBox, TagChips, TagFilter],
+  imports: [Button, ErrorReference, ScrollArea, SearchBox, StateBlock, TagChips, TagFilter],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './workflow-step-library.scss',
   template: `
@@ -148,12 +156,22 @@ export class StepLibraryModel {
         }
         @if (model().state() !== 'error') {
           @if (model().items().length === 0 && model().state() === 'ready') {
-            <div class="pg-state" data-lib-empty>
-              {{
-                model().q() || model().tags().length > 0
-                  ? 'No steps match that search. Try a different word, or clear the search and the tags.'
-                  : 'There are no active workflow steps.'
-              }}
+            <div data-lib-empty>
+              @if (model().q() || model().tags().length > 0) {
+                <mf-state-block>
+                  No steps match these filters.
+                  <button
+                    type="button"
+                    mfStateAction
+                    class="mf-btn"
+                    (click)="model().clearFilters()"
+                  >
+                    Clear Filters
+                  </button>
+                </mf-state-block>
+              } @else {
+                <mf-state-block>No active workflow steps.</mf-state-block>
+              }
             </div>
           } @else if (model().items().length > 0) {
             <p class="wsl__count" data-lib-count>{{ model().countText() }}</p>

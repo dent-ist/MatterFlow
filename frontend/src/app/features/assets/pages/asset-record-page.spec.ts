@@ -338,7 +338,7 @@ describe('AssetRecordPage', () => {
     expect(tab('Details').getAttribute('aria-selected')).toBe('true');
     await openTab('tasks');
     expect(el().querySelector('[data-no-access="linked-tasks"]')?.textContent).toContain(
-      "You don't have permission to view tasks.",
+      "You don't have access to tasks.",
     );
   });
 

@@ -297,7 +297,7 @@ test.describe('#285: permission matrix, no dead links', () => {
         await settle(page);
         expect(seen.failed, `requests that failed behind ${target}`).toEqual([]);
         await expect(
-          // "You don't have permission to view tasks." on a Tasks tab and the one sentence on a Task page's Assets tab without Asset.View
+          // "You don't have access to tasks." on a Tasks tab and the one sentence on a Task page's Assets tab without Asset.View
           // (#347) are the designed explanations, not errors.
           page.locator(
             '#mf-main [role=alert], [data-toast], [data-no-access]:not([data-no-access=tasks]):not(.tl__note), [data-forbidden]',

@@ -97,7 +97,7 @@ test.describe('Asset record page, complete (WP-AS4)', () => {
     await plain.setViewportSize({ width: 1366, height: 768 });
     await plain.goto(`/assets/${asset.assetId}?tab=tasks`);
     await expect(plain.locator('[data-no-access="linked-tasks"]')).toContainText(
-      "You don't have permission to view tasks.",
+      "You don't have access to tasks.",
     );
     await expect(plain.getByRole('tab', { name: /^Linked tasks/ })).not.toContainText('(');
     const strip = plain.locator('[data-asset-strip]');
