@@ -1,4 +1,5 @@
 import { Page } from '@playwright/test';
+import { dropdownByAttr } from '../support/dropdown';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
@@ -12,6 +13,10 @@ import { dateInZone, FIRM_ZONE } from '../support/time';
 let tag: string;
 let types: { id: number; name: string }[] = [];
 let titles: string[][] = [];
+/** The trigger button of the measure dropdown of a Trends panel ("Measure: Created"). */
+const measureButton = (page: Page, panel: 'flows' | 'backlog') =>
+  page.locator(`[data-measure-select="${panel}"] button`);
+
 let world: Awaited<ReturnType<import('../support/seed').Seeder['world']>>;
 
 test.beforeAll(async ({ admin, seed }) => {
@@ -93,7 +98,7 @@ test.describe('Trends by task type', () => {
     await expect(lines(page)).toHaveCount(4); // Created and Completed + Open and Overdue
     await expect(page.getByRole('checkbox', { name: 'All Task Types' })).toBeChecked();
     await expect(page.locator('input:disabled, select:disabled')).toHaveCount(0);
-    await expect(page.getByRole('radio', { name: 'Created and Completed' })).toBeChecked();
+    await expect(measureButton(page, 'flows')).toHaveText('Measure: Created and Completed');
 
     // The first type is the seeded world's own; search by its name when the list is long.
     await search(page, types[0].name);
@@ -102,7 +107,7 @@ test.describe('Trends by task type', () => {
     await expect(page.getByRole('checkbox', { name: /All task types/ })).not.toBeChecked();
     await expect(page).toHaveURL(new RegExp(`types=${types[0].id}`));
     await expect(page.getByRole('heading', { name: 'Created and Completed' })).toHaveCount(1);
-    await expect(page.getByRole('radio', { name: 'Created', exact: true })).toBeChecked();
+    await expect(measureButton(page, 'flows')).toHaveText('Measure: Created');
     await expect(page.locator('[data-trend-live]')).toHaveText(/Showing Created/);
 
     // The legend total is the number of tasks and opens the queue filtered by the task type.
@@ -120,7 +125,7 @@ test.describe('Trends by task type', () => {
     await page.goto(`${TREND}&types=${types[0].id},${types[1].id}&metric=completed`);
     await expect(box(page, types[0].id)).toBeChecked();
     await expect(box(page, types[1].id)).toBeChecked();
-    await expect(page.getByRole('radio', { name: 'Completed', exact: true })).toBeChecked();
+    await expect(measureButton(page, 'flows')).toHaveText('Measure: Completed');
     await expect(lines(page)).toHaveCount(4); // two types in each of the two panels
 
     // Leave and come back by the plain tab link: the selection is remembered for this user in this browser.
@@ -199,19 +204,16 @@ test.describe('Trends by task type', () => {
     await expect(page).toHaveURL(/createdFrom=.*createdTo=.*type=\d+/);
   });
 
-  test('the segmented control switches the measure; the backlog panel compares Overdue per task type', async ({
+  test('the measure dropdown switches the measure; the backlog panel compares Overdue per task type', async ({
     page,
   }) => {
     await page.goto(`${TREND}&types=${types[0].id},${types[1].id}`);
     await expect(lines(page)).toHaveCount(4);
     // Picking types turns the backlog panel's "Open and overdue" into Open; Overdue per task type is one click away.
-    await expect(page.locator('[data-measure="backlog"] input:checked')).toHaveAttribute(
-      'data-measure-option',
-      'open',
-    );
-    await page.locator('[data-measure="backlog"] [data-measure-option="overdue"]').check();
+    await expect(measureButton(page, 'backlog')).toHaveText('Measure: Open');
+    await dropdownByAttr(page, 'data-measure-select="backlog"').selectOption('overdue');
     await expect(page).toHaveURL(/bmetric=overdue/);
-    await page.getByRole('radio', { name: 'On time' }).check();
+    await dropdownByAttr(page, 'data-measure-select="flows"').selectOption('onTime');
     await expect(page).toHaveURL(/metric=ontime/);
     // Overdue per task type is drawn in the backlog panel: today's value links to the queue's overdue filter for that type (the first task
     // of every type was due yesterday and is still open).
@@ -233,14 +235,14 @@ test.describe('Trends by task type', () => {
     page,
   }) => {
     await page.goto(`${TREND}&due=overdue,ontime`);
-    await expect(page.getByRole('radio', { name: 'On time' })).toBeChecked();
+    await expect(measureButton(page, 'flows')).toHaveText('Measure: On time');
     await expect(page.locator('[data-panel="backlog"]')).toBeVisible();
     await expect(lines(page)).toHaveCount(2); // On time (flows) and Overdue (backlog)
     await page.goto(`${TREND}&types=${types[0].id},${types[1].id}&metric=overdue`);
     await expect(page.locator('[data-panel="backlog"] polyline.series:not(.partial)')).toHaveCount(
       2,
     );
-    await expect(page.getByRole('radio', { name: 'Created', exact: true })).toBeChecked();
+    await expect(measureButton(page, 'flows')).toHaveText('Measure: Created');
   });
 
   test('hides the backlog panel, remembered for the user but not in the address', async ({
@@ -302,7 +304,6 @@ test.describe('Trends by task type', () => {
       (await page.locator('[data-panel="backlog"] svg').boundingBox())!.height,
     ).toBeGreaterThanOrEqual(160);
     await expect(page.locator('[data-measure-select="flows"]')).toBeVisible();
-    await expect(page.locator('[data-measure="flows"]')).toBeHidden();
   });
 
   test('has no axe violations with task types selected, in the table and with the due dates lines', async ({
@@ -389,10 +390,7 @@ test.describe('Trends backlog and labels', () => {
     await expect(page.locator('[data-panel="backlog"] polyline.series:not(.partial)')).toHaveCount(
       2,
     );
-    await expect(page.locator('[data-measure="backlog"] input:checked')).toHaveAttribute(
-      'data-measure-option',
-      'both',
-    );
+    await expect(measureButton(page, 'backlog')).toHaveText('Measure: Open and overdue');
     const labels = page.locator('[data-end-label]');
     await expect(labels).toHaveCount(4);
     const texts = (await labels.allTextContents()).map((t) => t.trim());

@@ -15,7 +15,7 @@ import { plural } from './users-model';
       @if (summary()) {
         <button
           type="button"
-          class="unassigned"
+          class="mf-btn unassigned"
           data-summary-unassigned
           aria-haspopup="dialog"
           [attr.aria-expanded]="expanded()"
@@ -45,23 +45,7 @@ import { plural } from './users-model';
       display: inline-flex;
       align-items: center;
       gap: var(--mf-s1);
-      min-height: var(--mf-ctl-h);
-      padding: 0 var(--mf-s3);
-      color: var(--mf-text);
-      background: var(--mf-surface);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
-      font: inherit;
-      font-size: var(--mf-fs-sm);
       white-space: nowrap;
-      cursor: pointer;
-    }
-    .unassigned:hover {
-      background: var(--mf-surface-alt);
-    }
-    .unassigned:focus-visible {
-      outline: 2px solid var(--mf-focus);
-      outline-offset: 1px;
     }
     .unassigned .pi:first-child {
       color: var(--mf-warning);

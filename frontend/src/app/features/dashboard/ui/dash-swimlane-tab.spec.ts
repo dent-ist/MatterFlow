@@ -448,7 +448,7 @@ describe('DashSwimlaneTab', () => {
       expect(text(q('[data-active-settings]'))).toContain('Only Mine');
       // assignee, type, priority and overdue are the four data filters (the pod is the page-wide scope); "Only Mine" has its own toggle.
       expect(text(q('[data-filter-count]'))).toBe('(4)');
-      q<HTMLButtonElement>('[data-filters]').click();
+      q<HTMLButtonElement>('[data-filters-toggle]').click();
       await settle();
       expect(ddValue(q('[data-filter="priority"]'))).toBe('2');
       expect(q<HTMLInputElement>('[data-filter="overdue"]').checked).toBe(true);
@@ -542,7 +542,7 @@ describe('DashSwimlaneTab', () => {
         'all',
       );
       expect(url()).toContain('mine=true');
-      q<HTMLButtonElement>('[data-filters]').click();
+      q<HTMLButtonElement>('[data-filters-toggle]').click();
       await settle();
       const overdue = q<HTMLInputElement>('[data-filter="overdue"]');
       overdue.checked = true;
@@ -585,7 +585,7 @@ describe('DashSwimlaneTab', () => {
         '/dashboard?tab=swimlane',
         PERMS.filter((p) => p !== 'Pod.View'),
       );
-      q<HTMLButtonElement>('[data-filters]').click();
+      q<HTMLButtonElement>('[data-filters-toggle]').click();
       await settle();
       expect(ddOptionTexts(q('[data-filter="assignee"]'))).toEqual([
         'Anyone',
@@ -713,7 +713,7 @@ describe('DashSwimlaneTab', () => {
       expect(items[1].getAttribute('aria-label')).toBe('Merger, matter 00010-00001, 1 task');
       // Only the first item is a tab stop.
       expect(items.map((i) => i.getAttribute('tabindex'))).toEqual(['0', '-1', '-1', '-1', '-1']);
-      expect(text(items[0].querySelector('.count'))).toBe('2');
+      expect(text(items[0].querySelector('.count--node'))).toBe('2');
       // Cards of the tree are items, not tab stops of their own.
       expect(items[2].querySelector('[data-card-open]')!.getAttribute('tabindex')).toBe('-1');
       // The other lanes have their own trees.
@@ -801,7 +801,7 @@ describe('DashSwimlaneTab', () => {
       expect(heads.map((h) => text(h.querySelector('.grp-title')))).toEqual(['High']);
       expect(heads[0].getAttribute('aria-expanded')).toBe('true');
       expect(heads[0].style.background).toContain('--mf-pr-high-bg');
-      expect(text(heads[0].querySelector('.count'))).toBe('2 tasks');
+      expect(text(heads[0].querySelector('.count--node'))).toBe('2 tasks');
       heads[0].click();
       await settle();
       expect(qa('[data-lane="NEW"] mf-swimlane-card').length).toBe(0);

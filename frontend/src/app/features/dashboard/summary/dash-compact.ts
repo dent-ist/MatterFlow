@@ -170,11 +170,7 @@ const SEGMENTS = [0, 1, 2, 3, 4, 5] as const;
         border-radius: var(--mf-radius);
       }
       .shell--neutral {
-        background: repeating-linear-gradient(
-          45deg,
-          var(--mf-p-slate-bg) 0 4px,
-          var(--mf-p-slate-line) 4px 7px
-        );
+        background: var(--mf-sem-neutral-bg);
       }
       .fill {
         height: 100%;

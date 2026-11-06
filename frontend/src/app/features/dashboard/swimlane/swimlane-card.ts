@@ -7,6 +7,7 @@ import { LookupStore } from '../../../core/lookups/lookup-store';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { levelBars } from '../../../shared/ui/priority-badge';
 import { PriorityFlag } from '../../../shared/ui/priority-flag';
+import { Badge, SensitiveBadge } from '../../../shared/ui/badge';
 import { StatusBadge } from '../../../shared/ui/status-badge';
 import { canEditField } from '../../../shared/work-queue/inline-edit';
 import { DueCell } from '../../../shared/work-queue/due-cell';
@@ -31,11 +32,13 @@ export function initials(name: string): string {
 @Component({
   selector: 'mf-swimlane-card',
   imports: [
+    Badge,
     IntPipe,
     NumericDatePipe,
     RouterLink,
     NgTemplateOutlet,
     PriorityFlag,
+    SensitiveBadge,
     StatusBadge,
     TaskTypeIcon,
     RowEdit,
@@ -166,10 +169,7 @@ export function initials(name: string): string {
               >{{ c.ref }}</a
             >
             @if (!showWhere() && c.matterIsSensitive) {
-              <span class="mark mark--sens" data-sensitive title="Sensitive matter">
-                <i class="pi pi-lock" aria-hidden="true"></i>
-                <span class="mark-text">Sensitive</span>
-              </span>
+              <mf-sensitive-badge data-sensitive />
             }
             <span class="grow"></span>
             <span class="field" data-field="priority">
@@ -188,10 +188,7 @@ export function initials(name: string): string {
                 <span class="matter-name">{{ c.matterName }}</span></span
               >
               @if (c.matterIsSensitive) {
-                <span class="mark mark--sens" data-sensitive title="Sensitive matter">
-                  <i class="pi pi-lock" aria-hidden="true"></i>
-                  <span class="mark-text">Sensitive</span>
-                </span>
+                <mf-sensitive-badge data-sensitive />
               }
             </div>
           }
@@ -209,10 +206,9 @@ export function initials(name: string): string {
                 }
               </span>
               @if (outOfOffice()) {
-                <span class="mark mark--ooo" data-ooo [title]="oooTitle()">
-                  <i class="pi pi-calendar-minus" aria-hidden="true"></i>
-                  <span class="mark-text">Out of Office</span>
-                </span>
+                <mf-badge tone="warning" icon="pi-calendar-minus" data-ooo [title]="oooTitle()"
+                  >Out of Office</mf-badge
+                >
               }
             </div>
           }
@@ -415,28 +411,6 @@ export function initials(name: string): string {
     }
     .who-text {
       color: var(--mf-text-muted);
-    }
-    .mark {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
-      flex: none;
-      padding: 0 var(--mf-s2);
-      border: 1px solid currentColor;
-      border-radius: var(--mf-radius);
-      font-size: var(--mf-fs-xs);
-      font-weight: 600;
-      line-height: 1.5;
-      white-space: nowrap;
-    }
-    .mark--ooo {
-      position: relative;
-      color: var(--mf-warning);
-      background: var(--mf-warning-bg);
-    }
-    .mark--sens {
-      color: var(--mf-text);
-      background: var(--mf-surface-alt);
     }
     .meta {
       justify-content: space-between;

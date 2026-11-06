@@ -68,12 +68,12 @@ describe('dashboard chart colours', () => {
   });
 
   describe('Low and Normal priority bars (Breakdowns B4)', () => {
-    it('differ by stroke style, width and fill weight, with no new colour', () => {
+    it('differ by stroke width and fill weight (both solid outlines, no dashes), with no new colour', () => {
       expect(strokeFor('normal')).toBe(NORMAL_STROKE);
       expect(strokeFor('low')).toBe(LOW_STROKE);
       expect(strokeFor(null)).toBe(NORMAL_STROKE);
       expect(NORMAL_STROKE.style).toBe('solid');
-      expect(LOW_STROKE.style).toBe('dashed');
+      expect(LOW_STROKE.style).toBe('solid');
       expect(LOW_STROKE.width).toBeGreaterThan(NORMAL_STROKE.width);
       expect(LOW_STROKE.fillWeight).toBeLessThan(NORMAL_STROKE.fillWeight);
     });
@@ -93,9 +93,9 @@ describe('dashboard chart colours', () => {
       );
     });
 
-    it('the overdue hatch (danger on its tint) and its solid edge are visible on the card', () => {
-      expect(contrastRatio(t['mf-danger'], t['mf-surface'])).toBeGreaterThanOrEqual(3);
-      expect(contrastRatio(t['mf-danger'], t['mf-danger-bg'])).toBeGreaterThanOrEqual(4.5);
+    it('the solid overdue fill is visible on the card and its word (danger text) reads on the card', () => {
+      expect(contrastRatio(t['mf-sem-overdue-solid'], t['mf-surface'])).toBeGreaterThanOrEqual(3);
+      expect(contrastRatio(t['mf-danger'], t['mf-surface'])).toBeGreaterThanOrEqual(4.5);
     });
   });
 
@@ -128,6 +128,21 @@ describe('dashboard chart colours', () => {
 
     it('the white level glyph on the red overdue bar is readable', () => {
       expect(contrastRatio('#FFFFFF', t['mf-danger'])).toBeGreaterThanOrEqual(4.5);
+    });
+  });
+
+  describe('Unassigned gauge numbers (inside the solid segments, #1158)', () => {
+    it('the number on every reached segment reads at 4.5:1 (white on the dark tints, dark text on the light amber one)', () => {
+      for (const n of [0, 2, 3, 4, 5]) {
+        expect(contrastRatio('#FFFFFF', t[`mf-wait-${n}`]), `wait-${n}`).toBeGreaterThanOrEqual(
+          4.5,
+        );
+      }
+      expect(contrastRatio(t['mf-text'], t['mf-wait-1'])).toBeGreaterThanOrEqual(4.5);
+    });
+
+    it('the muted number on a segment the level has not reached reads on the neutral track', () => {
+      expect(contrastRatio(t['mf-text-muted'], t['mf-surface-alt'])).toBeGreaterThanOrEqual(4.5);
     });
   });
 });

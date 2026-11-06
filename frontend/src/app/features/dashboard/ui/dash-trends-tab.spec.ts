@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ddChoose } from '../../../testing/dropdown-testing.spec-util';
+import { ddChoose, ddOptionValues } from '../../../testing/dropdown-testing.spec-util';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -83,13 +83,14 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
   const panelLines = (key: string) =>
     Array.from(el.querySelectorAll(`[data-panel=${key}] polyline.series:not(.partial)`));
   const choose = async (panel: string, value: string) => {
-    const radio = el.querySelector<HTMLInputElement>(
-      `[data-measure=${panel}] [data-measure-option="${value}"]`,
-    )!;
-    radio.checked = true;
-    radio.dispatchEvent(new Event('change', { bubbles: true }));
+    ddChoose(el.querySelector(`[data-measure-select=${panel}]`)!, undefined, value);
     await settle();
   };
+  /** The measure dropdown of a panel shows this label ("Measure: Created"). */
+  const measureText = (panel: string): string =>
+    text(el.querySelector(`[data-measure-select=${panel}] button`)).replace(/^Measure:\s*/, '');
+  const measureValues = (panel: string): string[] =>
+    ddOptionValues(el.querySelector(`[data-measure-select=${panel}]`)!);
   const live = () => text(el.querySelector('[data-trend-live]'));
   const stored = () => JSON.parse(localStorage.getItem(STORE_KEY(1)) ?? 'null');
 
@@ -132,14 +133,11 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     expect(
       el.querySelectorAll('input:disabled, select:disabled, [data-select-all]:disabled').length,
     ).toBe(0);
-    expect(el.querySelector<HTMLInputElement>('[data-measure-option="both"]')!.checked).toBe(true);
+    expect(measureText('flows')).toBe('Created and Completed');
     expect(text(el.querySelector('[data-two-line]'))).toBe(
       'Pick a task type and the chart switches to Created.',
     );
-    expect(
-      el.querySelector<HTMLInputElement>('[data-measure="backlog"] [data-measure-option="both"]')!
-        .checked,
-    ).toBe(true);
+    expect(measureText('backlog')).toBe('Open and overdue');
     // One title per panel; the card has no title of its own (the page's section heading names the tab).
     expect(Array.from(el.querySelectorAll('h3')).map((h) => text(h))).toEqual([
       'Created and Completed',
@@ -194,7 +192,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     expect(live()).toBe('Showing Created and Open to compare task types.');
     expect(el.querySelector<HTMLInputElement>('[data-all]')!.checked).toBe(false);
     expect(text(el.querySelector('[data-hidden-for-scale]'))).toBe('(hidden for scale)');
-    expect(el.querySelector('[data-measure-option="both"]')).toBeNull();
+    expect(measureValues('flows')).not.toContain('both');
     // No disabled control: the two-line hint is replaced by the total's meaning.
     expect(el.querySelector('[data-two-line]')).toBeNull();
     expect(el.querySelectorAll('input:disabled, select:disabled').length).toBe(0);
@@ -282,23 +280,20 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     );
   });
 
-  it('is never a dead end: the control is a radiogroup and a select, and a type switches a two-line measure', async () => {
+  it('is never a dead end: the measure control is a dropdown, and a type switches a two-line measure', async () => {
     await open();
-    const group = el.querySelector('[data-measure=flows]')!;
-    expect(group.getAttribute('role')).toBe('radiogroup');
-    expect(Array.from(group.querySelectorAll('label span:last-child')).map((l) => text(l))).toEqual(
-      ['Created and Completed', 'Created', 'Completed', 'On time', 'Completed late'],
-    );
+    const group = el.querySelector('[data-measure-select=flows]')!;
+    // The shared dropdown with the prefix "Measure:" (five measures, more than the segmented switch takes, D-16).
+    expect(group.querySelector('input, [role=radiogroup], .mf-seg')).toBeNull();
+    expect(measureText('flows')).toBe('Created and Completed');
+    expect(measureValues('flows')).toEqual(['both', 'created', 'completed', 'onTime', 'late']);
     expect(el.querySelector('[data-measure-select=flows]')).not.toBeNull();
-    // The select (below 600 px) works the same.
     ddChoose(el.querySelector('[data-measure-select=flows]')!, undefined, 'onTime');
     await settle();
     expect(url()).toBe('/trends?metric=ontime');
     await choose('flows', 'both');
     await check(5);
-    expect(el.querySelector<HTMLInputElement>('[data-measure-option="created"]')!.checked).toBe(
-      true,
-    );
+    expect(measureText('flows')).toBe('Created');
   });
 
   it('hides and shows the backlog panel, remembered in the browser but not in the address', async () => {
@@ -322,9 +317,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
 
   it('opens a legacy address: due=overdue,ontime is Overdue in the backlog panel and On time as the flow measure', async () => {
     await open('/trends?due=overdue,ontime');
-    expect(el.querySelector<HTMLInputElement>('[data-measure-option="onTime"]')!.checked).toBe(
-      true,
-    );
+    expect(measureText('flows')).toBe('On time');
     expect(panelLines('flows').length).toBe(1);
     expect(panelLines('backlog').length).toBe(1);
     // metric=overdue with types: the types are compared in the backlog panel.
@@ -417,7 +410,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
     expect(tip).toContain('Beta 2');
     expect(tip).toContain('Backlog at End of Day');
     expect(text(el.querySelector('[data-readout]'))).toContain('Backlog at End of Day: Alpha');
-    el.querySelector<HTMLButtonElement>('[data-backlog-toggle] ~ .toggle')!.click();
+    el.querySelector<HTMLButtonElement>('[data-backlog-toggle] ~ button')!.click();
     harness.detectChanges();
     expect(Array.from(el.querySelectorAll('thead th[scope=colgroup]')).map((t) => text(t))).toEqual(
       ['Created and Completed', 'Backlog at End of Day'],
@@ -453,9 +446,7 @@ describe('DashTrendsTab', { timeout: 30_000 }, () => {
       expect(box(7).checked).toBe(true);
       expect(box(5).checked).toBe(true);
       expect(el.querySelector<HTMLInputElement>('[data-all]')!.checked).toBe(false);
-      expect(el.querySelector<HTMLInputElement>('[data-measure-option="completed"]')!.checked).toBe(
-        true,
-      );
+      expect(measureText('flows')).toBe('Completed');
       expect(panelLines('flows').length).toBe(2);
       expect(text(el.querySelector('[data-panel=flows] h3'))).toBe('Created and Completed');
     });

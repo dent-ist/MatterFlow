@@ -58,6 +58,8 @@ interface Stored {
   period: PeriodKey;
   /** The Summary's right panel (battery and gauge) is hidden (#1233). Written only while true, so the stored value of a person who never hid it is unchanged. */
   panelCollapsed?: true;
+  /** The Calendar day panel: the role groups the person collapsed (#1242). Written only while some are collapsed. */
+  calendarCollapsed?: number[];
 }
 
 /**
@@ -76,6 +78,9 @@ export class DashboardPrefs {
   /** The Summary's right column (Team Capacity and Unassigned Wait) is hidden; the battery and gauge then sit compact on the cards row. Default: shown. */
   readonly panelCollapsed = signal(false);
 
+  /** The role groups of the Calendar day panel that are collapsed (Available and Not Available share the choice); the default is every group expanded (#1242). */
+  readonly calendarCollapsed = signal<ReadonlySet<number>>(new Set());
+
   /** The period in effect on the page (the shared value of Summary, Trends and Coverage): the address, else the remembered choice. */
   readonly period = signal<Period>(DEFAULT_PERIOD);
 
@@ -87,6 +92,7 @@ export class DashboardPrefs {
     const stored = this.read(userId);
     this.remembered = stored.period;
     this.panelCollapsed.set(stored.collapsed);
+    this.calendarCollapsed.set(new Set(stored.roles));
     this.period.set({ key: this.remembered, from: null, to: null });
   }
 
@@ -94,6 +100,13 @@ export class DashboardPrefs {
   setPanelCollapsed(collapsed: boolean): void {
     this.ensureLoaded();
     this.panelCollapsed.set(collapsed);
+    this.save();
+  }
+
+  /** The person collapsed or expanded role groups of the Calendar day panel: in effect now and remembered for this user. */
+  setCalendarCollapsed(roleIds: Iterable<number>): void {
+    this.ensureLoaded();
+    this.calendarCollapsed.set(new Set(roleIds));
     this.save();
   }
 
@@ -127,16 +140,20 @@ export class DashboardPrefs {
     return PREFIX + userId;
   }
 
-  private read(userId: number): { period: PeriodKey; collapsed: boolean } {
+  private read(userId: number): { period: PeriodKey; collapsed: boolean; roles: number[] } {
     try {
       const raw = localStorage.getItem(this.storageKey(userId));
-      if (!raw) return { period: DEFAULT_PERIOD_KEY, collapsed: false };
+      if (!raw) return { period: DEFAULT_PERIOD_KEY, collapsed: false, roles: [] };
       const parsed = JSON.parse(raw) as Partial<{
         period: unknown;
         panelCollapsed: unknown;
+        calendarCollapsed: unknown;
       }> | null;
       const stored = parsed?.period;
       const collapsed = parsed?.panelCollapsed === true;
+      const roles = Array.isArray(parsed?.calendarCollapsed)
+        ? (parsed.calendarCollapsed as unknown[]).filter((n): n is number => Number.isInteger(n))
+        : [];
       const migrated = migrateStoredPeriod(stored);
       if (migrated !== stored && migrated !== null) {
         // Saved by an earlier list: write it back in the new vocabulary so the old value is gone.
@@ -145,12 +162,13 @@ export class DashboardPrefs {
           JSON.stringify({
             period: migrated,
             ...(collapsed ? { panelCollapsed: true } : {}),
+            ...(roles.length > 0 ? { calendarCollapsed: roles } : {}),
           } satisfies Stored),
         );
       }
-      return { period: migrated ?? DEFAULT_PERIOD_KEY, collapsed };
+      return { period: migrated ?? DEFAULT_PERIOD_KEY, collapsed, roles };
     } catch {
-      return { period: DEFAULT_PERIOD_KEY, collapsed: false };
+      return { period: DEFAULT_PERIOD_KEY, collapsed: false, roles: [] };
     }
   }
 
@@ -159,6 +177,9 @@ export class DashboardPrefs {
       const stored: Stored = {
         period: this.remembered,
         ...(this.panelCollapsed() ? { panelCollapsed: true as const } : {}),
+        ...(this.calendarCollapsed().size > 0
+          ? { calendarCollapsed: [...this.calendarCollapsed()].sort((a, b) => a - b) }
+          : {}),
       };
       localStorage.setItem(this.storageKey(this.loadedFor ?? 0), JSON.stringify(stored));
     } catch {

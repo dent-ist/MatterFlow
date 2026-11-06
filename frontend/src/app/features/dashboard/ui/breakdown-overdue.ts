@@ -19,18 +19,18 @@ export function overdueShare(overdue: number, count: number): number {
 }
 
 /**
- * The stroke rules of the bars. Normal keeps a solid 1 px outline; Low gets a dashed 2 px outline and a lighter fill, so the two neutral
- * priorities differ without a new colour token (shape, not hue; it survives greyscale and forced colours).
+ * The stroke rules of the bars. Normal keeps a solid 1 px outline; Low gets a solid 2 px outline and a lighter fill, so the two neutral
+ * priorities differ without a new colour token (shape, not hue; it survives greyscale and forced colours). No dashes or stripes (D-04).
  */
 export interface BarStroke {
-  style: 'solid' | 'dashed';
+  style: 'solid';
   width: number;
   /** Share of the priority's own fill that is kept (the rest is the card surface). */
   fillWeight: number;
 }
 
 export const NORMAL_STROKE: BarStroke = { style: 'solid', width: 1, fillWeight: 100 };
-export const LOW_STROKE: BarStroke = { style: 'dashed', width: 2, fillWeight: 45 };
+export const LOW_STROKE: BarStroke = { style: 'solid', width: 2, fillWeight: 45 };
 
 export function strokeFor(tone: string | null | undefined): BarStroke {
   return tone === 'low' ? LOW_STROKE : NORMAL_STROKE;
@@ -44,18 +44,14 @@ export function strokeFill(fill: string, stroke: BarStroke): string {
 }
 
 /**
- * Shared styles of the overdue segment and its legend sample: the existing overdue (danger) tokens, a diagonal hatch and a solid edge,
- * so colour is never the only cue (greyscale, forced colours). The pattern is the same in the bars, the age bar and the legend.
+ * Shared styles of the overdue segment and its legend sample: a solid red fill (`--mf-sem-overdue-solid`, D-04: no diagonal patterns)
+ * with the "N overdue" word next to the bar, so colour is never the only cue. The same fill is used in the bars, the age bar and the legend.
  */
 export const OVERDUE_CSS = `
   .od {
     box-sizing: border-box;
-    background: repeating-linear-gradient(
-      135deg,
-      var(--mf-danger) 0 3px,
-      var(--mf-danger-bg) 3px 6px
-    );
-    border-left: 1px solid var(--mf-danger);
+    background: var(--mf-sem-overdue-solid);
+    border-left: 1px solid var(--mf-surface);
     min-width: 2px;
     forced-color-adjust: none;
   }
@@ -74,8 +70,8 @@ export const OVERDUE_CSS = `
   }
   @media (forced-colors: active) {
     .od {
-      background: repeating-linear-gradient(135deg, CanvasText 0 3px, Canvas 3px 6px);
-      border-left-color: CanvasText;
+      background: CanvasText;
+      border-left-color: Canvas;
     }
     .od-text {
       color: LinkText;

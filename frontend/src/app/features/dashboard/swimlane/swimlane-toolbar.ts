@@ -11,7 +11,9 @@ import {
   signal,
 } from '@angular/core';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
+import { FiltersToggle } from '../../../shared/ui/column-filters';
 import { SearchBox } from '../../../shared/ui/search-box';
+import { Tip } from '../../../shared/ui/tip';
 import {
   COMPLETED_WINDOWS,
   DEFAULT_COMPLETED_DAYS,
@@ -29,7 +31,6 @@ import {
   isGroupBy,
   isSortKey,
 } from './swimlane-model';
-import { IntPipe } from '../../../shared/ui/number-format';
 
 let nextId = 0;
 
@@ -46,7 +47,7 @@ export interface Option {
  */
 @Component({
   selector: 'mf-swimlane-toolbar',
-  imports: [IntPipe, Dropdown, SearchBox, TagChip, NgTemplateOutlet],
+  imports: [Dropdown, FiltersToggle, SearchBox, TagChip, Tip, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:click)': 'onDocumentClick($event)' },
   template: `
@@ -66,20 +67,13 @@ export interface Option {
       @if (!compact()) {
         <ng-container *ngTemplateOutlet="groupSort" />
       }
-      <button
-        type="button"
-        class="mf-btn"
+      <mf-filters-toggle
         data-filters
-        [attr.aria-expanded]="panel()"
-        [attr.aria-controls]="panel() ? 'sl-filters' : null"
-        (click)="panel.set(!panel())"
-      >
-        <i class="pi pi-filter" aria-hidden="true"></i>
-        Filters
-        @if (shownCount() > 0) {
-          <span class="n" data-filter-count>({{ shownCount() | mfInt }})</span>
-        }
-      </button>
+        [controls]="panel() ? 'sl-filters' : ''"
+        [open]="panel()"
+        [count]="shownCount()"
+        (toggled)="panel.set(!panel())"
+      />
       <span class="grow"></span>
       @if (settings().length > 0) {
         <ul class="chips" data-active-settings aria-label="Board settings in effect">
@@ -94,10 +88,11 @@ export interface Option {
         <button
           #trigger
           type="button"
-          class="mf-btn more-btn"
+          class="mf-btn mf-btn--icon"
           data-more
           aria-haspopup="menu"
           aria-label="More options"
+          mfTip="More options"
           [attr.aria-expanded]="menu()"
           [attr.aria-controls]="menu() ? uid + '-menu' : null"
           (click)="toggleMenu($event)"
@@ -107,7 +102,7 @@ export interface Option {
         </button>
         @if (menu()) {
           <div
-            class="menu"
+            class="menu mf-menu"
             role="menu"
             tabindex="-1"
             data-more-menu
@@ -121,7 +116,7 @@ export interface Option {
                 <button
                   type="button"
                   role="menuitemradio"
-                  class="mi"
+                  class="mi mf-menu__item"
                   tabindex="-1"
                   [attr.data-density]="d.id"
                   [attr.aria-checked]="density() === d.id"
@@ -138,7 +133,7 @@ export interface Option {
                 <button
                   type="button"
                   role="menuitemradio"
-                  class="mi"
+                  class="mi mf-menu__item"
                   tabindex="-1"
                   [attr.data-days]="d"
                   [attr.aria-checked]="v.days === d"
@@ -149,11 +144,11 @@ export interface Option {
                 </button>
               }
             </div>
-            <div class="sep" role="separator"></div>
+            <div class="mf-menu__sep" role="separator"></div>
             <button
               type="button"
               role="menuitemcheckbox"
-              class="mi"
+              class="mi mf-menu__item"
               tabindex="-1"
               data-mine
               [attr.aria-checked]="v.mine"
@@ -163,11 +158,11 @@ export interface Option {
               Only Mine
             </button>
             @if (v.groupBy !== 'none') {
-              <div class="sep" role="separator"></div>
+              <div class="mf-menu__sep" role="separator"></div>
               <button
                 type="button"
                 role="menuitem"
-                class="mi"
+                class="mi mf-menu__item"
                 tabindex="-1"
                 data-expand-all
                 (click)="run(expandAll)"
@@ -177,7 +172,7 @@ export interface Option {
               <button
                 type="button"
                 role="menuitem"
-                class="mi"
+                class="mi mf-menu__item"
                 tabindex="-1"
                 data-collapse-all
                 (click)="run(collapseAll)"
@@ -191,30 +186,26 @@ export interface Option {
     </div>
 
     <ng-template #groupSort>
-      <div class="fld">
-        <label class="lbl" for="sl-group">Group</label>
-        <mf-dropdown
-          data-group-by
-          buttonId="sl-group"
-          label="Group"
-          [items]="groupItems"
-          [value]="v.groupBy"
-          [neutralValue]="null"
-          (valueChange)="onGroup($event)"
-        />
-      </div>
-      <div class="fld">
-        <label class="lbl" for="sl-sort">Sort</label>
-        <mf-dropdown
-          data-sort
-          buttonId="sl-sort"
-          label="Sort"
-          [items]="sortItems"
-          [value]="v.sort"
-          [neutralValue]="null"
-          (valueChange)="onSort($event)"
-        />
-      </div>
+      <mf-dropdown
+        data-group-by
+        buttonId="sl-group"
+        label="Group"
+        prefix="Group:"
+        [items]="groupItems"
+        [value]="v.groupBy"
+        [neutralValue]="null"
+        (valueChange)="onGroup($event)"
+      />
+      <mf-dropdown
+        data-sort
+        buttonId="sl-sort"
+        label="Sort"
+        prefix="Sort:"
+        [items]="sortItems"
+        [value]="v.sort"
+        [neutralValue]="null"
+        (valueChange)="onSort($event)"
+      />
     </ng-template>
 
     @if (panel()) {
@@ -316,9 +307,6 @@ export interface Option {
       flex: 1 1 18rem;
       max-width: 22rem;
     }
-    .n {
-      font-variant-numeric: tabular-nums;
-    }
     .chips {
       display: flex;
       flex-wrap: wrap;
@@ -330,55 +318,18 @@ export interface Option {
     .more {
       position: relative;
     }
+    /* The surface and the items are the shared menu (mf-menu, D-36); only where it opens is here. */
     .menu {
       position: absolute;
       top: calc(100% + 4px);
       right: 0;
       z-index: 30;
-      min-width: 14rem;
-      padding: var(--mf-s1);
-      background: var(--mf-surface);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
-      box-shadow: var(--mf-shadow-pop);
     }
     .mh {
-      padding: var(--mf-s1) var(--mf-s2) 0;
+      padding: var(--mf-s1) var(--mf-s3) 0;
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
-      font-weight: 600;
-    }
-    .mi {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      width: 100%;
-      min-height: 1.75rem;
-      padding: var(--mf-s1) var(--mf-s2);
-      border: 0;
-      border-radius: var(--mf-radius);
-      background: none;
-      color: var(--mf-text);
-      font: inherit;
-      text-align: left;
-      cursor: pointer;
-    }
-    .mi i {
-      width: 1rem;
-      font-size: var(--mf-icon-xs);
-    }
-    .mi:hover,
-    .mi:focus-visible {
-      background: var(--mf-selected-bg);
-    }
-    .mi:focus-visible {
-      outline: 2px solid var(--mf-focus);
-      outline-offset: -2px;
-    }
-    .sep {
-      height: 1px;
-      margin: var(--mf-s1) 0;
-      background: var(--mf-border);
+      font-size: var(--mf-fs-sm);
+      font-weight: var(--mf-fw-semibold);
     }
     .panel {
       display: flex;

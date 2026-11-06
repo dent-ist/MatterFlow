@@ -235,14 +235,17 @@ describe('DashCalendarTab', () => {
     expect(q('[data-panel-pods]').hidden).toBe(false);
     expect(qa('[data-pod]').length).toBe(5);
     const loads = (list: string) =>
-      qa(`[data-list="${list}"] [data-role]`).map((role) => {
-        const ul = role.nextElementSibling!;
-        return Array.from(ul.querySelectorAll('.ld__n')).map((n) => Number(n.textContent));
-      });
+      qa(`[data-list="${list}"] [data-role-group]`).map((group) =>
+        Array.from(group.querySelectorAll('.ld__n')).map((n) => Number(n.textContent)),
+      );
     for (const l of loads('available')) expect(l).toEqual([...l].sort((a, b) => a - b));
-    for (const l of loads('unavailable')) expect(l).toEqual([...l].sort((a, b) => b - a));
-    expect(q('[data-list="unavailable"]').querySelector('[data-absence-type]')).not.toBeNull();
-    expect(text(q('[data-list="unavailable"]'))).toContain('back ');
+    // Not Available rows show the reason chip instead of the load (the server's order, heaviest first, is kept).
+    expect(q('[data-list="unavailable"]').querySelector('.ld__n')).toBeNull();
+    expect(q('[data-list="unavailable"]').querySelectorAll('[data-reason]').length).toBeGreaterThan(
+      0,
+    );
+    expect(text(q('[data-list="unavailable"]'))).toMatch(/Vacation|Sick|Training|Conference/);
+    expect(text(q('[data-list="unavailable"]'))).toContain('Back ');
   });
 
   it('the day panel has three count tiles (Available, Out of Office, Off Hours), no On Holiday tile, each with its one-sentence tooltip and description (#1234)', async () => {
@@ -269,7 +272,6 @@ describe('DashCalendarTab', () => {
       PERMS.filter((p) => p !== 'Dashboard.ViewAbsenceReasons'),
     );
     expect(host.querySelector('[data-cal-panel]')).not.toBeNull();
-    expect(host.querySelector('[data-absence-type]')).toBeNull();
     for (const t of ['Vacation', 'Sick', 'Training', 'Conference'])
       expect(text(host)).not.toContain(t);
   });
@@ -286,6 +288,135 @@ describe('DashCalendarTab', () => {
     await settle();
     expect(qa('[data-list-empty]').length).toBe(2);
     expect(text(q('[data-list-empty]'))).toContain('No one matches "zzzz"');
+  });
+
+  describe('the day panel people lists (#1242)', () => {
+    const bands = (list: string) => qa<HTMLButtonElement>(`[data-list="${list}"] .gh`);
+    const rows = (list: string) => qa(`[data-list="${list}"] .person`);
+    const stored = () => JSON.parse(localStorage.getItem('mf.dashboard.v2.5') ?? 'null');
+
+    beforeEach(() => {
+      try {
+        localStorage.clear();
+      } catch {
+        /* storage blocked: the spec still runs */
+      }
+    });
+
+    it('every role is a header band (a button with aria-expanded and aria-controls) that sticks to the top of the panel, and the groups start expanded', async () => {
+      await open('/dashboard?day=2026-11-25');
+      expect(bands('available').length).toBeGreaterThan(1);
+      for (const band of bands('available')) {
+        expect(band.getAttribute('aria-expanded')).toBe('true');
+        const list = host.querySelector(`#${band.getAttribute('aria-controls')}`)!;
+        expect(list.hasAttribute('hidden')).toBe(false);
+        expect(band.closest('h4')!.classList.contains('role')).toBe(true);
+        expect(getComputedStyle(band.closest('h4')!).position).toBe('sticky');
+        expect(band.querySelector('mf-count-chip')).not.toBeNull();
+      }
+      expect(text(q('#cp-av'))).toContain('Available');
+      expect(text(q('#cp-un'))).toBe(
+        `Not Available ${qa('[data-list="unavailable"] .person').length}`,
+      );
+    });
+
+    it('clicking a band collapses that role in both lists and the choice is remembered for the user', async () => {
+      await open('/dashboard?day=2026-11-25');
+      const first = bands('available')[0];
+      const roleId = first.getAttribute('data-role')!;
+      const before = rows('available').length;
+      first.click();
+      await settle();
+      expect(first.getAttribute('aria-expanded')).toBe('false');
+      expect(
+        host.querySelector(`#${first.getAttribute('aria-controls')}`)!.hasAttribute('hidden'),
+      ).toBe(true);
+      // The same role in Not Available follows (one choice per role).
+      for (const band of bands('unavailable').filter((b) => b.getAttribute('data-role') === roleId))
+        expect(band.getAttribute('aria-expanded')).toBe('false');
+      expect(stored().calendarCollapsed).toEqual([Number(roleId)]);
+      expect(rows('available').length).toBe(before);
+      // A new visit to the page keeps the role collapsed.
+      host.remove();
+      TestBed.resetTestingModule();
+      await open('/dashboard?day=2026-11-25');
+      expect(bands('available')[0].getAttribute('aria-expanded')).toBe('false');
+      // Pressing again expands it and the stored list is empty again (the key is removed).
+      bands('available')[0].click();
+      await settle();
+      expect(bands('available')[0].getAttribute('aria-expanded')).toBe('true');
+      expect(stored().calendarCollapsed).toBeUndefined();
+    });
+
+    it('Collapse All and Expand All act on every role shown', async () => {
+      await open('/dashboard?day=2026-11-25');
+      const button = () => q<HTMLButtonElement>('[data-collapse-all]');
+      expect(text(button())).toBe('Collapse All');
+      button().click();
+      await settle();
+      expect(text(button())).toBe('Expand All');
+      for (const band of [...bands('available'), ...bands('unavailable')])
+        expect(band.getAttribute('aria-expanded')).toBe('false');
+      button().click();
+      await settle();
+      expect(text(button())).toBe('Collapse All');
+      for (const band of [...bands('available'), ...bands('unavailable')])
+        expect(band.getAttribute('aria-expanded')).toBe('true');
+    });
+
+    it('one jump chip per Available role, in the order of the groups, with its count; a chip expands a collapsed role and moves the focus to its band', async () => {
+      await open('/dashboard?day=2026-11-25');
+      const chips = qa<HTMLButtonElement>('[data-jump] button.chip');
+      const groups = qa('[data-list="available"] [data-role-group]');
+      expect(chips.length).toBe(groups.length);
+      chips.forEach((chip, i) => {
+        const name = text(groups[i].querySelector('.gh__n'));
+        const count = groups[i].querySelectorAll('.person').length;
+        expect(text(chip)).toBe(`${name} ${count}`);
+      });
+      const roleId = bands('available')[1].getAttribute('data-role')!;
+      bands('available')[1].click();
+      await settle();
+      expect(bands('available')[1].getAttribute('aria-expanded')).toBe('false');
+      chips[1].click();
+      await settle();
+      expect(bands('available')[1].getAttribute('aria-expanded')).toBe('true');
+      expect(stored()?.calendarCollapsed ?? []).not.toContain(Number(roleId));
+      expect(document.activeElement).toBe(bands('available')[1]);
+    });
+
+    it('a row is compact: the state icon, the name, the pods on one line and the load with three dots; the state is in the accessible name, not in a chip', async () => {
+      await open('/dashboard?day=2026-11-25');
+      const row = rows('available')[0];
+      expect(row.querySelector('mf-user-state-icon')).not.toBeNull();
+      expect(row.querySelector('.who__p')).not.toBeNull();
+      expect(row.querySelectorAll('.dot').length).toBe(3);
+      expect(row.querySelector('mf-status-chip, .cs, .chips')).toBeNull();
+      const name = row.getAttribute('aria-label')!;
+      expect(name).toMatch(/^.+, \d+ open tasks?, (Idle|Light|Normal|Heavy), Available$/);
+      // The icon shape follows the load: 0 Idle, 1 Light, 2 Normal, 3 or more Heavy.
+      for (const r of rows('available')) {
+        const load = Number(text(r.querySelector('.ld__n')));
+        const state = ['idle', 'light', 'normal'][load] ?? 'heavy';
+        expect(r.getAttribute('data-state')).toBe(state);
+        expect(r.querySelectorAll('.dot--on').length).toBe(Math.min(load, 3));
+      }
+    });
+
+    it('Not Available rows show the reason chip (Back MM/DD, Holiday, Off Hours) and the out-of-office or off-hours icon', async () => {
+      await open('/dashboard?day=2026-11-25');
+      const out = rows('unavailable').find((r) => r.getAttribute('data-state') === 'out')!;
+      expect(text(out.querySelector('[data-reason]'))).toMatch(/^Back \d\d\/\d\d$/);
+      expect(out.getAttribute('aria-label')).toMatch(/Out of Office/);
+      host.remove();
+      TestBed.resetTestingModule();
+      await open('/dashboard?day=2026-11-26');
+      expect(
+        rows('unavailable').some((r) =>
+          /Holiday|Off Hours/.test(text(r.querySelector('[data-reason]'))),
+        ),
+      ).toBe(true);
+    });
   });
 
   it('the Close button closes the panel and the address forgets the day', async () => {

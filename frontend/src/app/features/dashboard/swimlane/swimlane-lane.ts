@@ -12,6 +12,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { CountChip } from '../../../shared/ui/count-chip';
 import { Badge } from '../../../shared/ui/badge';
 import { RouterLink } from '@angular/router';
 import { SwimlaneCard } from '../../../api/generated/api-client';
@@ -42,7 +43,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-swimlane-lane',
-  imports: [Badge, IntPipe, DashSkeleton, SwimlaneCardView, RouterLink],
+  imports: [Badge, CountChip, IntPipe, DashSkeleton, SwimlaneCardView, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(keydown)': 'onKey($event)',
@@ -60,14 +61,14 @@ let nextId = 0;
       <header class="head">
         <h3 class="name" aria-level="2" [id]="hid">{{ m.label }}</h3>
         <a
-          class="count mf-link"
+          class="count"
           data-lane-count
           [class.count--caveat]="searching()"
           [routerLink]="['/tasks']"
           [queryParams]="countParams()"
           [attr.aria-label]="countLabel()"
           [attr.title]="searching() ? 'Search text is not included' : 'Open in the Task Queue'"
-          >{{ m.count | mfInt }}</a
+          ><mf-count-chip>{{ m.count | mfInt }}</mf-count-chip></a
         >
         <p class="hint">
           {{ hint }}
@@ -138,9 +139,9 @@ let nextId = 0;
                       }
                       <span class="node-name">{{ row.node.label }}</span>
                     </span>
-                    <span class="count count--node" [attr.aria-hidden]="true">{{
+                    <mf-count-chip class="count--node" [attr.aria-hidden]="true">{{
                       row.node.count | mfInt
-                    }}</span>
+                    }}</mf-count-chip>
                   </li>
                 } @else {
                   <li
@@ -202,11 +203,11 @@ let nextId = 0;
                           <mf-badge tone="warning" icon="pi-calendar-minus">Out of Office</mf-badge>
                         }
                       }
-                      <span class="count count--node"
+                      <mf-count-chip class="count--node"
                         >{{ row.node.count | mfInt
                         }}<span class="sr-only">
                           {{ row.node.count === 1 ? 'task' : 'tasks' }}</span
-                        ></span
+                        ></mf-count-chip
                       >
                     </button>
                   </li>
@@ -284,25 +285,23 @@ let nextId = 0;
       margin: 0;
       font-size: var(--mf-fs-lg);
     }
-    .count {
-      display: inline-block;
-      min-width: 1.5rem;
-      padding: 0 var(--mf-s2);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: 999px;
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font-size: var(--mf-fs-sm);
-      font-weight: 600;
-      text-align: center;
-      font-variant-numeric: tabular-nums;
+    /* The lane count is the shared count chip inside a link to the Task Queue (W2): the chip is not underlined, the link keeps the focus ring. */
+    .head {
+      --mf-cc-bg: var(--mf-surface);
     }
-    /* The lane count is a link to the Task Queue (W2): a 24 px target, underlined, with the focus ring of links. */
-    /* With search text the target may show other tasks: the link is not drawn as an exact match. */
+    .count {
+      display: inline-flex;
+      border-radius: var(--mf-radius-pill);
+      text-decoration: none;
+    }
+    .count:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: 2px;
+    }
+    /* With search text the target may show other tasks: the link is not drawn as an exact match (dashed edge). */
     .count--caveat {
-      font-variant-numeric: tabular-nums;
-      border-style: dashed;
-      text-decoration-style: dashed;
+      outline: 1px dashed var(--mf-border-strong);
+      outline-offset: 1px;
     }
     /* Phone layout (W4): the only lane shown takes its natural height and the page scrolls; no scroll box of its own, header not sticky. */
     .lane--natural {
@@ -329,7 +328,7 @@ let nextId = 0;
       flex: 1 1 auto;
       margin: 0;
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
+      font-size: var(--mf-fs-sm);
       text-align: right;
     }
     .body {

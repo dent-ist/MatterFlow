@@ -24,7 +24,7 @@ import { DashScope } from '../dash-scope';
 import { DashState } from '../ui/dash-state';
 import { DASH_FIXED_QUERY, mediaMatch } from '../ui/dash-media';
 import { CALENDAR_API } from './calendar-api';
-import { CalDay, CalDays, CalQuery, CalSummary } from './calendar-contract';
+import { CalDay, CalDays, CalQuery, CalSummary, CoverageLevel } from './calendar-contract';
 import { CalInsights } from './calendar-insights';
 import { CalMonthGrid } from './calendar-month-grid';
 import {
@@ -44,6 +44,7 @@ import {
 import { CalPanel } from './calendar-panel';
 import { cellClass } from './calendar-month-grid';
 import { CalWeekGrid } from './calendar-week-grid';
+import { Badge, BadgeTone } from '../../../shared/ui/badge';
 import { TagChip } from '../../../shared/ui/tag-chip';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -62,6 +63,7 @@ const ALL_ROLES = '';
   selector: 'mf-dash-calendar-tab',
   imports: [
     TagChip,
+    Badge,
     AbsenceDialog,
     CalInsights,
     CalMonthGrid,
@@ -240,9 +242,12 @@ const ALL_ROLES = '';
             <li class="lgrp">
               <span class="legend__h">Coverage</span>
               @for (l of legend; track l) {
-                <span [class]="'lg ' + cls(l)" [attr.title]="LEVELS[l].hint">
-                  <i class="pi" [class]="LEVELS[l].icon" aria-hidden="true"></i>{{ LEVELS[l].word }}
-                </span>
+                <mf-badge
+                  [tone]="legendTone[l]"
+                  [icon]="LEVELS[l].icon"
+                  [attr.title]="LEVELS[l].hint"
+                  >{{ LEVELS[l].word }}</mf-badge
+                >
               }
             </li>
             <li class="lgrp">
@@ -419,24 +424,6 @@ const ALL_ROLES = '';
       gap: var(--mf-s1);
       white-space: nowrap;
     }
-    .lg.cv-quiet {
-      padding: 1px var(--mf-s2);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-pill);
-      color: var(--mf-text);
-      font-weight: 600;
-    }
-    .lg.cv-good,
-    .lg.cv-watch,
-    .lg.cv-low,
-    .lg.cv-crit,
-    .lg.cv-none {
-      padding: 1px var(--mf-s2);
-      border-radius: var(--mf-radius-pill);
-      background: var(--cb);
-      color: var(--cf);
-      font-weight: 600;
-    }
     .pc {
       flex: none;
       width: 340px;
@@ -546,6 +533,15 @@ export class DashCalendarTab {
   private readonly panelRef = viewChild(CalPanel);
 
   protected readonly legend = LEGEND_LEVELS;
+  /** The legend words are status chips (D-12): the chip tone that matches the cell colour of each coverage level. */
+  protected readonly legendTone: Readonly<Record<CoverageLevel, BadgeTone>> = {
+    GOOD: 'success',
+    WATCH: 'warning',
+    LOW: 'critical',
+    CRITICAL: 'danger',
+    CLOSED: 'neutral',
+    NON_WORKING: 'neutral',
+  };
   protected readonly LEVELS = LEVELS;
   protected readonly skeleton = Array.from({ length: 35 }, (_, i) => i);
   protected readonly cls = cellClass;

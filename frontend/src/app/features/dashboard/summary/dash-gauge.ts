@@ -33,7 +33,7 @@ export function arcPath(a0: number, a1: number): string {
 /**
  * The unassigned-wait gauge, design A of the approved mockup (epic #1063, DB-06): a half circle with a needle on a 0 to 5 scale, fed by the `unassignedGauge` block of the summary.
  * Under it: the count, the age of the oldest unassigned task, the level word and one "what to do" line. The level is the server's; this only draws it. Colour is never the only
- * signal: each segment has its number, the badge says the level in words, and the segments up to the current level carry a stripe pattern. A level CHANGE (not a refresh that
+ * signal: each segment has its number, the badge says the level in words, and the segments up to the current level are solid tints with the number inside. A level CHANGE (not a refresh that
  * keeps the level) is announced politely; the soft pulse of levels 4 and 5 and the needle's movement are off under `prefers-reduced-motion`. The visual and the button both
  * ask the page to show the unassigned tasks, longest waiting first.
  */
@@ -100,28 +100,20 @@ export function arcPath(a0: number, a1: number): string {
 
     <ng-template #dial>
       <svg viewBox="0 0 260 134" aria-hidden="true" focusable="false">
-        <defs>
-          <pattern
-            id="dg-stripe"
-            width="6"
-            height="6"
-            patternUnits="userSpaceOnUse"
-            patternTransform="rotate(45)"
-          >
-            <line x1="0" y1="0" x2="0" y2="6" class="stripe" />
-          </pattern>
-        </defs>
         @for (i of segments; track i) {
           <path
             class="seg"
             [attr.d]="seg(i)"
-            [style.stroke]="'var(--mf-wait-' + i + ')'"
-            [attr.opacity]="segOpacity(i)"
+            [style.stroke]="reached(i) ? 'var(--mf-wait-' + i + ')' : 'var(--mf-surface-alt)'"
           />
-          @if (!view().clear && i <= view().level) {
-            <path class="seg seg--stripe" [attr.d]="seg(i)" stroke="url(#dg-stripe)" />
-          }
-          <text class="num" [attr.x]="numX(i)" [attr.y]="numY(i)" text-anchor="middle">
+          <text
+            class="num"
+            [class.num--reached]="reached(i)"
+            [class.num--light]="i === 1"
+            [attr.x]="numX(i)"
+            [attr.y]="numY(i)"
+            text-anchor="middle"
+          >
             {{ i }}
           </text>
         }
@@ -220,18 +212,18 @@ export function arcPath(a0: number, a1: number): string {
         fill: none;
         stroke-width: 20;
       }
-      .seg--stripe {
-        stroke-width: 20;
-        opacity: 0.55;
-      }
-      .stripe {
-        stroke: var(--mf-surface);
-        stroke-width: 2;
-      }
+      /* The number sits inside its segment: white on the dark solid tints, dark text on the light amber one (segment 1), muted on a segment the level has not reached. */
       .num {
         font-variant-numeric: tabular-nums;
         fill: var(--mf-text-muted);
-        font-size: 11px;
+        font-size: var(--mf-fs-xs);
+        font-weight: 700;
+      }
+      .num--reached {
+        fill: var(--mf-white);
+      }
+      .num--reached.num--light {
+        fill: var(--mf-text);
       }
       .needle {
         transform-origin: 130px 122px;
@@ -326,16 +318,17 @@ export class DashGauge {
     return arcPath(180 + i * 30 + 1.5, 180 + (i + 1) * 30 - 1.5);
   }
 
-  protected segOpacity(i: number): number {
+  /** A segment is drawn in its solid tint up to the current level; the rest (and a clear gauge) is the neutral track. */
+  protected reached(i: number): boolean {
     const v = this.view();
-    return v.clear ? 0.35 : i <= v.level ? 1 : 0.28;
+    return !v.clear && i <= v.level;
   }
 
   protected numX(i: number): string {
-    return (CX + 118 * Math.cos(((180 + i * 30 + 15) * Math.PI) / 180)).toFixed(1);
+    return (CX + R * Math.cos(((180 + i * 30 + 15) * Math.PI) / 180)).toFixed(1);
   }
 
   protected numY(i: number): string {
-    return (126 + 118 * Math.sin(((180 + i * 30 + 15) * Math.PI) / 180)).toFixed(1);
+    return (CY + 4 + R * Math.sin(((180 + i * 30 + 15) * Math.PI) / 180)).toFixed(1);
   }
 }

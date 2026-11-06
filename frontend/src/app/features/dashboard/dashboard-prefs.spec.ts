@@ -146,4 +146,26 @@ describe('DashboardPrefs (the Summary right panel, #1233)', () => {
     p.ensureLoaded();
     expect(p.panelCollapsed()).toBe(false);
   });
+
+  it('remembers the collapsed role groups of the Calendar day panel per user, writes them only while some are collapsed, and ignores damaged values (#1242)', async () => {
+    const p = await prefs();
+    expect(p.calendarCollapsed().size).toBe(0);
+    p.setCalendarCollapsed([3, 1]);
+    expect(JSON.parse(localStorage.getItem(KEY)!)).toEqual({
+      period: '30d',
+      calendarCollapsed: [1, 3],
+    });
+    p.setCalendarCollapsed([]);
+    expect(JSON.parse(localStorage.getItem(KEY)!)).toEqual({ period: '30d' });
+    for (const raw of [
+      '{"period":"7d","calendarCollapsed":"x"}',
+      '{"period":"7d","calendarCollapsed":[2,"a",null]}',
+    ]) {
+      localStorage.setItem(KEY, raw);
+      TestBed.resetTestingModule();
+      const q = await prefs();
+      q.ensureLoaded();
+      expect([...q.calendarCollapsed()]).toEqual(raw.includes('[2') ? [2] : []);
+    }
+  });
 });

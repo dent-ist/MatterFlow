@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
-export type BadgeTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
+export type BadgeTone = 'neutral' | 'info' | 'success' | 'warning' | 'critical' | 'danger';
 
 /** Tone of a workflow version status: Draft amber, Published green, Retired grey. */
 export function workflowStatusTone(status: string | null | undefined): BadgeTone {
@@ -20,6 +20,7 @@ const TONE_ICONS: Readonly<Record<BadgeTone, string>> = {
   info: 'pi-info-circle',
   success: 'pi-check-circle',
   warning: 'pi-exclamation-triangle',
+  critical: 'pi-exclamation-circle',
   danger: 'pi-exclamation-circle',
 };
 
@@ -87,6 +88,11 @@ const TONE_ICONS: Readonly<Record<BadgeTone, string>> = {
       --bd-bg: var(--mf-sem-risk-bg);
       --bd-fg: var(--mf-sem-risk-fg);
       --bd-line: var(--mf-sem-risk-line);
+    }
+    [data-tone='critical'] {
+      --bd-bg: var(--mf-sem-critical-bg);
+      --bd-fg: var(--mf-sem-critical-fg);
+      --bd-line: var(--mf-sem-critical-line);
     }
     [data-tone='danger'] {
       --bd-bg: var(--mf-sem-overdue-bg);

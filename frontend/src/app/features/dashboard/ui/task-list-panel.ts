@@ -107,10 +107,13 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
           </div>
         }
         @case ('error') {
-          <p class="msg" role="alert" data-error>
-            Couldn't load this list.
-            <button type="button" class="mf-btn mf-btn--text" (click)="retry.emit()">Retry</button>
-          </p>
+          <div data-error>
+            <mf-dash-state
+              variant="error"
+              message="Couldn't load this list."
+              (retry)="retry.emit()"
+            />
+          </div>
         }
         @default {
           @if (shown().length === 0) {
@@ -133,9 +136,9 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
                 }
               </div>
             } @else {
-              <p class="msg" data-empty>
-                <i class="pi pi-check-circle" aria-hidden="true"></i> {{ emptyText() }}
-              </p>
+              <div data-empty>
+                <mf-dash-state variant="empty" [message]="emptyText()" />
+              </div>
             }
           } @else {
             <div
@@ -288,6 +291,7 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
     h3 {
       margin: 0;
       font-size: var(--mf-fs-lg);
+      font-weight: var(--mf-fw-semibold);
     }
     .count {
       font-weight: 700;
@@ -487,14 +491,6 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
     }
     .muted {
       color: var(--mf-text-muted);
-    }
-    .msg {
-      margin: 0 0 var(--mf-s2);
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-    }
-    .msg .pi {
-      color: var(--mf-success);
     }
     /* Five rows of 44 px, as a full loaded list: its height does not change when the rows arrive (px: the root font size is 14 px). */
     .bones {

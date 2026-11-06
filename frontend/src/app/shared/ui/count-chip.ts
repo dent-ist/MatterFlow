@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, booleanAttribute, input } from '@an
 /**
  * Chip kind 2 of the four (D-12, #1129): the count chip. A number beside a title or a tab (the list count in a page header, the number of things waiting in a tab): 22 px high, at least
  * 22 px wide, `--mf-surface-alt`, 12 / 600 text, no icon, never wraps. It is plain information, not a button. Put the number in the content; say what it counts in the surrounding
- * text, a number alone is not a name.
+ * text, a number alone is not a name. On a `--mf-surface-alt` panel (a Swimlane lane header) the page sets `--mf-cc-bg: var(--mf-surface)` so the chip stays visible.
  *
  * `overlay` (#1238) is the same chip over the corner of an icon button (the notification bell, the Notes History and Referenced Items buttons, the rail buttons of a side panel): 18 px,
  * `--mf-primary` with white text and a 2 px ring in the surface colour, positioned 7 px above and to the right of the nearest `position: relative` parent. `alert` makes it
@@ -34,7 +34,7 @@ import { ChangeDetectionStrategy, Component, booleanAttribute, input } from '@an
       min-width: 22px;
       padding: 0 6px;
       border-radius: var(--mf-radius-pill);
-      background: var(--mf-surface-alt);
+      background: var(--mf-cc-bg, var(--mf-surface-alt));
       color: var(--mf-text);
       font-size: var(--mf-fs-chip);
       font-weight: var(--mf-fw-semibold);

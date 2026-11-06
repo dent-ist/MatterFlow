@@ -10,7 +10,7 @@ export interface ChartLink {
 export interface ChartSlice extends SizedSlice {
   label: string;
   count: number;
-  /** The part of `count` drawn as a hatched outer ring segment and named in the legend (for example overdue tasks); undefined: no split. */
+  /** The part of `count` drawn as a solid red outer ring segment and named in the legend (for example overdue tasks); undefined: no split. */
   overdue?: number;
   /** Where the slice and its legend row lead (null: not linkable). */
   link: ChartLink | null;

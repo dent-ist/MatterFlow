@@ -11,15 +11,13 @@ export { sharePercent };
 export interface PieSlice {
   label: string;
   count: number;
-  /** How many of `count` are overdue (drawn as a hatched outer ring segment); undefined: no split. */
+  /** How many of `count` are overdue (drawn as a solid red outer ring segment); undefined: no split. */
   overdue?: number;
   /** Task Queue query of the slice (null: not linkable). */
   query: string | null;
   /** CSS colours of the slice and of its outline. */
   fill: string;
   outline: string | null;
-  /** Dashed outline (the Low priority, as in the bars). */
-  dashed?: boolean;
 }
 
 /** The colour of a status code, as in the bars; null: no own colour (the pie takes a palette colour instead). */

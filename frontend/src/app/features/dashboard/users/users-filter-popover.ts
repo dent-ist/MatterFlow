@@ -34,7 +34,7 @@ let nextId = 0;
     </button>
     @if (open()) {
       <div
-        class="panel"
+        class="panel mf-menu mf-menu--filter"
         role="dialog"
         [attr.aria-label]="label()"
         data-filters-panel
@@ -42,7 +42,7 @@ let nextId = 0;
         [mfDismissable]="btn"
         (dismissed)="open.set(false)"
       >
-        <div class="fields"><ng-content /></div>
+        <div class="fields mf-menu__body"><ng-content /></div>
         @if (count() > 0) {
           <button
             type="button"
@@ -87,14 +87,7 @@ let nextId = 0;
       left: 0;
       z-index: 40;
       display: grid;
-      gap: var(--mf-s3);
-      min-width: 17rem;
-      max-width: min(22rem, 90vw);
-      padding: var(--mf-s3);
-      background: var(--mf-surface);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
-      box-shadow: var(--mf-shadow-pop);
+      gap: var(--mf-s1);
     }
     .fields {
       display: grid;

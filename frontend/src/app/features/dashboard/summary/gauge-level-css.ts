@@ -4,37 +4,37 @@
  */
 export const GAUGE_LEVEL_CSS = `
   .Lc {
-    --lbg: var(--mf-p-teal-bg);
-    --lfg: var(--mf-p-teal-fg);
-    --lbd: var(--mf-p-teal-line);
+    --lbg: var(--mf-sem-healthy-bg);
+    --lfg: var(--mf-sem-healthy-fg);
+    --lbd: var(--mf-sem-healthy-line);
   }
   .L0 {
-    --lbg: var(--mf-p-slate-bg);
-    --lfg: var(--mf-p-slate-fg);
-    --lbd: var(--mf-p-slate-line);
+    --lbg: var(--mf-sem-neutral-bg);
+    --lfg: var(--mf-sem-neutral-fg);
+    --lbd: var(--mf-sem-neutral-line);
   }
   .L1 {
-    --lbg: var(--mf-p-amber-bg);
-    --lfg: var(--mf-p-amber-fg);
-    --lbd: var(--mf-p-amber-line);
+    --lbg: var(--mf-sem-risk-bg);
+    --lfg: var(--mf-sem-risk-fg);
+    --lbd: var(--mf-sem-risk-line);
   }
   .L2 {
-    --lbg: var(--mf-p-amber-bg);
-    --lfg: var(--mf-p-amber-fg);
-    --lbd: var(--mf-p-amber-solid);
+    --lbg: var(--mf-sem-risk-bg);
+    --lfg: var(--mf-sem-risk-fg);
+    --lbd: var(--mf-sem-risk-solid);
   }
   .L3 {
-    --lbg: var(--mf-p-orange-bg);
-    --lfg: var(--mf-p-orange-fg);
-    --lbd: var(--mf-p-orange-solid);
+    --lbg: var(--mf-sem-critical-bg);
+    --lfg: var(--mf-sem-critical-fg);
+    --lbd: var(--mf-sem-critical-solid);
   }
   .L4 {
-    --lbg: var(--mf-p-red-bg);
-    --lfg: var(--mf-p-red-fg);
-    --lbd: var(--mf-p-red-solid);
+    --lbg: var(--mf-sem-overdue-bg);
+    --lfg: var(--mf-sem-overdue-fg);
+    --lbd: var(--mf-sem-overdue-solid);
   }
   .L5 {
-    --lbg: var(--mf-p-red-fg);
+    --lbg: var(--mf-sem-overdue-fg);
     --lfg: var(--mf-white);
     --lbd: var(--mf-tag-red-fg);
   }

@@ -201,16 +201,14 @@ test.describe('trends screenshots', () => {
       await page.getByRole('button', { name: /View as chart/ }).click();
 
       await page.locator('[data-clear]').click();
-      await expect(
-        page.locator('[data-measure="flows"] [data-measure-option="both"]'),
-      ).toBeChecked();
+      await expect(page.locator('[data-measure-select="flows"] button')).toHaveText(
+        'Measure: Created and Completed',
+      );
       await shot(`08-measure-both-${w}`);
-      const measure = w < 600 ? page.locator('[data-measure-select="flows"]') : null;
-      if (measure) await dropdownByAttr(page, 'data-measure-select="flows"').selectOption('onTime');
-      else await page.locator('[data-measure-option="onTime"]').check();
-      await expect(
-        page.locator('[data-measure-option="onTime"], [data-measure-select]').first(),
-      ).toBeAttached();
+      await dropdownByAttr(page, 'data-measure-select="flows"').selectOption('onTime');
+      await expect(page.locator('[data-measure-select="flows"] button')).toHaveText(
+        'Measure: On time',
+      );
       await shot(`09-measure-on-time-${w}`);
 
       // A legacy address: Overdue per task type lives in the backlog panel.

@@ -85,18 +85,67 @@ test.describe('Dashboard > Calendar', () => {
     const name = (await admin.get(`/api/v1/users/${a.userId}`)).displayName as string;
     const other = (await admin.get(`/api/v1/users/${b.userId}`)).displayName as string;
     await expect(panel.locator('[data-list="unavailable"]')).toContainText(name);
-    await expect(
-      panel.locator('[data-list="unavailable"] [data-absence-type]').first(),
-    ).toContainText('Sick');
+    // The absence type is the front of the pods line of the Not Available row (only with the reasons permission).
+    await expect(panel.locator('[data-list="unavailable"] [data-pods]').first()).toContainText(
+      'Sick',
+    );
     await expect(panel.locator('[data-list="available"]')).toContainText(other);
     await expect(panel).not.toContainText('private note');
-    // Reading order is the visual order: the counts, the pods, then Available, then Unavailable.
+    // Reading order is the visual order: the counts, the pods, then Available, then Not Available.
     const order = await panel.locator('h3').allTextContents();
-    expect(order.map((t) => t.trim().split(' ')[0])).toEqual([
-      'Coverage',
-      'Available',
-      'Unavailable',
-    ]);
+    expect(order.map((t) => t.trim().split(' ')[0])).toEqual(['Coverage', 'Available', 'Not']);
+  });
+
+  test('the day panel lists people under role bands: collapse, remembered choice, compact rows with the state in the accessible name, and a Not Available section (#1242)', async ({
+    asUser,
+    personas,
+    seed,
+    admin,
+  }) => {
+    const { a, b } = await podWithTwo(seed);
+    const day = weekdayFrom(11);
+    await absent(admin, a.userId, day, 'VACATION');
+    const director = await personas.named('director');
+    const page = await asUser(director.username);
+    await page.goto(`/dashboard?tab=calendar&day=${day}`);
+    const panel = page.locator('[data-cal-panel]');
+    await expect(panel).toBeVisible();
+    const nameB = (await admin.get(`/api/v1/users/${b.userId}`)).displayName as string;
+    const nameA = (await admin.get(`/api/v1/users/${a.userId}`)).displayName as string;
+    // A header band per role: a button, expanded by default, sticky at the top of the scrolling panel body.
+    const band = panel.locator('[data-list="available"] .gh').first();
+    await expect(band).toHaveAttribute('aria-expanded', 'true');
+    expect(await band.evaluate((e) => getComputedStyle(e.closest('h4')!).position)).toBe('sticky');
+    // A compact row: 44 px, the state icon and the accessible name with the load and the state.
+    const row = panel.locator(`[data-list="available"] .person`, { hasText: nameB });
+    await expect(row).toHaveAttribute(
+      'aria-label',
+      new RegExp(`^${nameB}, \\d+ open tasks?, \\w+, Available$`),
+    );
+    expect(Math.round((await row.boundingBox())!.height)).toBe(44);
+    await expect(row.locator('mf-user-state-icon')).toHaveCount(1);
+    // Not Available: the person on vacation with the "Back" chip and the out-of-office icon.
+    const away = panel.locator('[data-list="unavailable"] .person', { hasText: nameA });
+    await expect(away).toHaveAttribute('data-state', 'out');
+    await expect(away.locator('[data-reason]')).toContainText(/^\s*Back \d\d\/\d\d\s*$/);
+    // Collapse the role: its people are hidden in both lists and the choice survives a reload.
+    await band.click();
+    await expect(band).toHaveAttribute('aria-expanded', 'false');
+    await expect(row).toBeHidden();
+    await page.reload();
+    await expect(panel.locator('[data-list="available"] .gh').first()).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    await panel.locator('[data-collapse-all]').click();
+    await expect(panel.locator('[data-collapse-all]')).toHaveText(/Collapse All|Expand All/);
+    await panel.locator('[data-collapse-all]').click();
+    await expect(panel.locator('[data-list="available"] .gh').first()).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    // The jump chip of the role is there and keeps the keyboard order: search, chips, bands.
+    await expect(panel.locator('[data-jump] button').first()).toBeVisible();
   });
 
   test('without Dashboard.ViewAbsenceReasons the type and the note do not exist in the page', async ({
@@ -121,7 +170,9 @@ test.describe('Dashboard > Calendar', () => {
     const page = await asUser(viewer.username);
     await page.goto(`/dashboard?tab=calendar&day=${day}`);
     await expect(page.locator('[data-cal-panel] [data-list="unavailable"]')).toBeVisible();
-    await expect(page.locator('[data-absence-type]')).toHaveCount(0);
+    await expect(page.locator('[data-list="unavailable"] [data-pods]').first()).not.toContainText(
+      'Sick',
+    );
     const html = await page.content();
     expect(html).not.toContain('private note');
     for (const word of ['Sick', 'Vacation', 'Conference']) expect(html).not.toContain(`>${word}<`);
