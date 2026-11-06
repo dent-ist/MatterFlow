@@ -217,6 +217,26 @@ th:not([aria-sort]) .wt-sort .pi {
   border-radius: var(--mf-radius);
 }
 
+/* The Progress column of every task list (#1227): the bar and the short "2 of 5" on one line, the step name is the tooltip. */
+.wt-progwrap {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s2);
+}
+
+.wt-stepbar--cell {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 24px;
+  max-width: 48px;
+}
+
+.wt-progtext {
+  flex: none;
+  font-size: var(--mf-fs-sm);
+  white-space: nowrap;
+}
+
 .wt-stepbar__fill {
   display: block;
   height: 6px;
@@ -260,7 +280,7 @@ th:not([aria-sort]) .wt-sort .pi {
   font-style: italic;
 }
 
-/* One line: "2 of 5 done · Dedup and Review", cut at the end only (the full text is the tooltip). */
+/* One line: the bar and "2 of 5" (the step name is the tooltip, #1227). */
 .wt-progress {
   display: block;
   overflow: hidden;

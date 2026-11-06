@@ -169,7 +169,7 @@ describe('WorkWidths store (#203)', () => {
 
   it('a default that differs (Pod Work Assignee) is not stored', () => {
     const store = TestBed.inject(WorkWidths);
-    store.set(columnScope('pod-work', null), 7, 'assignee', pxToRem(216), pxToRem(216));
+    store.set(columnScope('pod-work', null), 7, 'assignee', pxToRem(160), pxToRem(160));
     expect(store.has(columnScope('pod-work', null), 7)).toBe(false);
   });
 });

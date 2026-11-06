@@ -209,7 +209,9 @@ describe('TaskCardList', () => {
     await create([aRow({ assignedUser: undefined })], DEFAULT, { assignLink: true }, [
       'Task.Assign',
     ]);
-    expect(el().querySelector('[data-assign-link]')!.textContent?.trim()).toBe('Assign to Me');
+    expect(el().querySelector('[data-assign-link]')!.getAttribute('aria-label')).toBe(
+      'Assign TSK-1042 to me',
+    );
   });
 
   it('puts the task number on line 2 when the tab has no assignee line', async () => {

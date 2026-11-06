@@ -36,8 +36,9 @@ describe('standard task columns', () => {
 
   it('shows the standard order in the Task Queue and Pod Work (global lists)', () => {
     expect(labels('taskQueue')).toEqual(STANDARD);
-    expect(labels('podWork')).toEqual(STANDARD);
-    expect(labels('podWork.all')).toEqual(STANDARD);
+    // Pod Work: the same order without Matter Name (#1227; it is in the Columns menu).
+    expect(labels('podWork')).toEqual(STANDARD.filter((l) => l !== 'Matter Name'));
+    expect(labels('podWork.all')).toEqual(STANDARD.filter((l) => l !== 'Matter Name'));
   });
 
   it('keeps the order on My Work and drops the obvious columns: no Assignee; Closed in place of Due', () => {

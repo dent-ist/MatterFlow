@@ -104,6 +104,6 @@ describe('ColumnWidthsPanel', () => {
   it('the Pod Work Assignee default is the wider one', async () => {
     fixture.componentRef.setInput('assignLink', true);
     await fixture.whenStable();
-    expect(input('assignee').value).toBe('216');
+    expect(input('assignee').value).toBe('160');
   });
 });

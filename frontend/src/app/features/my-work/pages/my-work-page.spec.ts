@@ -222,8 +222,7 @@ describe('MyWorkPage', () => {
     expect(row.querySelector('td[data-col="matter"]')!.textContent).toContain('00343-00012');
     expect(row.querySelector('td[data-col="matter"]')!.textContent).not.toContain('Merger');
     expect(row.querySelector('td[data-col="matterName"]')!.textContent).toContain('Merger');
-    expect(row.textContent).toContain('2 of 6 done');
-    expect(row.textContent).toContain('Dedup');
+    expect(row.textContent).toContain('2 of 6');
     expect(row.textContent).toContain('ASAP');
     expect(row.textContent).toContain('In Progress');
   });

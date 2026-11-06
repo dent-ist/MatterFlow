@@ -15,8 +15,8 @@ import { ColumnDef } from './column-prefs';
  */
 export type ColumnWidthMap = Readonly<Record<string, number>>;
 
-/** Default width of the Assignee column where a row says "Unassigned" and offers "Assign to me" beside it (Pod Work, #199): both on one line. */
-export const ASSIGNEE_WITH_LINK_PX = 216;
+/** Default width of the Assignee column where a row says "Unassigned" and offers the "Assign to me" icon button at the right end (Pod Work, #199, #1227). Same as `--mf-col-assignee-pod-work-w`. */
+export const ASSIGNEE_WITH_LINK_PX = 160;
 
 /** The root font size of the app (styles.scss: `html { font-size: var(--mf-fs-md) }`, 14 px). */
 export const ROOT_PX = 14;

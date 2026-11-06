@@ -303,10 +303,10 @@ test.describe('WP7: inline row actions', () => {
     await myWork.open();
     const row = myWork.row(`Step ${token}`);
     const link = row.locator('[data-step-link]');
-    await expect(link).toHaveText(world.workflow.stepTitles[1]);
+    await expect(link).toHaveText('1 of 2');
     await expect(link).toHaveAttribute(
       'aria-label',
-      `Workflow progress: 1 of 2 done, current step ${world.workflow.stepTitles[1]}. Open step.`,
+      `1 of 2 steps done. Current step: ${world.workflow.stepTitles[1]}. Open step.`,
     );
     await expect(link).toHaveAttribute('href', new RegExp(`step=${current.stepInstanceId}`));
     await shot(page, 'step-link-1920x1080');

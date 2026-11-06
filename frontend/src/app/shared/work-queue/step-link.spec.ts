@@ -20,6 +20,6 @@ describe('step link', () => {
   });
 
   it('names progress, step and action', () => {
-    expect(stepLinkLabel(aRow())).toBe('Progress: 2 of 6 done, current step Dedup. Open step.');
+    expect(stepLinkLabel(aRow())).toBe('2 of 6 steps done. Current step: Dedup. Open step.');
   });
 });

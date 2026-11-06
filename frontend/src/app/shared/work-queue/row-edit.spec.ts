@@ -484,7 +484,8 @@ describe('RowEdit', () => {
     fixture.detectChanges();
     const link = el().querySelector<HTMLButtonElement>('[data-assign-link]')!;
     expect(link.getAttribute('aria-label')).toBe('Assign TSK-1042 to me');
-    expect(link.textContent!.trim()).toBe('Assign to Me');
+    expect(link.textContent!.trim()).toBe('');
+    expect(link.querySelector('i.pi-user-plus')).not.toBeNull();
     link.click();
     await fixture.whenStable();
     expect(tasks['assignTask']).toHaveBeenCalledWith(1042, {

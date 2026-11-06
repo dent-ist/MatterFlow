@@ -462,11 +462,11 @@ describe('TaskTable', () => {
     );
   });
 
-  it('shows the resolved count and the current step on one line, without a bar (A3)', async () => {
+  it('shows the thin bar and the short "2 of 6" on one line; the step is the tooltip (#1227)', async () => {
     await create([aRow()], ['progress']);
     const progress = cell('progress');
-    expect(progress.textContent?.replace(/\s+/g, ' ').trim()).toBe('2 of 6 done · Dedup');
-    expect(progress.querySelector('progress')).toBeNull();
+    expect(progress.textContent?.replace(/\s+/g, ' ').trim()).toBe('2 of 6');
+    expect(progress.querySelector('.wt-stepbar--cell .wt-stepbar__fill')).not.toBeNull();
     expect(progress.querySelector('.wt-progress')?.getAttribute('title')).toBe(
       '2 of 6 steps done. Current step: Dedup',
     );
@@ -475,17 +475,20 @@ describe('TaskTable', () => {
   it('makes the current step of an open task a link to the Workflow section at that step (M12.3)', async () => {
     await create([aRow()], ['progress']);
     const link = cell('progress').querySelector<HTMLAnchorElement>('[data-step-link]')!;
-    expect(link.textContent?.trim()).toBe('Dedup');
+    expect(link.textContent?.trim()).toBe('2 of 6');
     expect(link.getAttribute('href')).toBe('/tasks/1042?tab=workflow&step=903');
     expect(link.getAttribute('aria-label')).toBe(
-      'Progress: 2 of 6 done, current step Dedup. Open step.',
+      '2 of 6 steps done. Current step: Dedup. Open step.',
     );
   });
 
   it('shows the step as plain text on a closed task', async () => {
     await create([aRow({ status: 'COMPLETED', statusLabel: 'Completed' })], ['progress']);
     expect(cell('progress').querySelector('[data-step-link]')).toBeNull();
-    expect(cell('progress').textContent).toContain('Dedup');
+    expect(cell('progress').textContent?.trim()).toBe('2 of 6');
+    expect(cell('progress').querySelector('.wt-progress')?.getAttribute('title')).toContain(
+      'Dedup',
+    );
   });
 
   it('says when every step is resolved or the workflow has no steps', async () => {
@@ -513,7 +516,10 @@ describe('TaskTable', () => {
       ['progress'],
     );
     const cells = Array.from(el().querySelectorAll('tbody td[data-col="progress"]'));
-    expect(cells[0].textContent).toContain('All steps resolved');
+    expect(cells[0].textContent?.trim()).toBe('2 of 2');
+    expect(cells[0].querySelector('.wt-progress')?.getAttribute('title')).toContain(
+      'All steps resolved',
+    );
     expect(cells[1].textContent?.trim()).toBe('-');
   });
 

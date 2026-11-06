@@ -114,9 +114,9 @@ test.describe('My Work per-tab columns', () => {
     await expect(matterCell.locator('.mf-ref')).toHaveText(String(world.matter.matterRef));
     await expect(matterCell.locator('[data-matter-name]')).toHaveCount(0);
 
-    // A3: "0 of 3 done · Step", no bar.
+    // #1227: the thin bar and "0 of 3"; the step name is the tooltip.
     const progress = row.locator('td[data-col="progress"]');
-    await expect(progress).toHaveText(/^\s*0 of 3 done · \S+/);
+    await expect(progress).toHaveText(/^\s*0 of 3\s*$/);
     await expect(row.locator('progress')).toHaveCount(0);
     const progressHeight = await progress
       .locator('.wt-progress')

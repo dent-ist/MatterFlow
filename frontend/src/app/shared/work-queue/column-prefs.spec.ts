@@ -92,7 +92,6 @@ describe('work table preferences', () => {
     );
     for (const sc of [
       'taskQueue',
-      'podWork.all',
       'myWork.active',
       'myWork.dueSoon',
       'myWork.closed',
@@ -103,6 +102,12 @@ describe('work table preferences', () => {
       expect(defaultColumns(sc)).not.toContain('client');
     }
     expect(defaultColumns('podWork.all')).toEqual(defaultColumns('podWork'));
+    // #1227: Pod Work keeps Matter Name in the Columns menu only, so Assignee, Due and Status fit at 1366.
+    expect(defaultColumns('podWork')).toContain('matter');
+    expect(defaultColumns('podWork')).not.toContain('matterName');
+    expect(defaultColumns('podWork')).toEqual(
+      expect.arrayContaining(['assignee', 'due', 'status']),
+    );
     // The Closed tab shows the Closed column by default (C1); Active does not.
     expect(defaultColumns('myWork.closed')).toContain('closed');
     expect(defaultColumns('myWork.active')).not.toContain('closed');
@@ -178,7 +183,7 @@ describe('work table preferences', () => {
       JSON.parse(localStorage.getItem(`mf.work-columns.v2.${scope}.${id}`) ?? 'null');
 
     it('puts Matter Name into the default of every page and tab, next to Matter Number', () => {
-      for (const sc of ['taskQueue', 'podWork', 'myWork', 'myWork.closed', 'myWork.createdByMe']) {
+      for (const sc of ['taskQueue', 'myWork', 'myWork.closed', 'myWork.createdByMe']) {
         const cols = defaultColumns(sc);
         expect(cols.indexOf('matterName'), sc).toBe(cols.indexOf('matter') + 1);
       }
@@ -199,10 +204,13 @@ describe('work table preferences', () => {
     });
 
     it('gives a person who never chose the new standard default, Matter Name included', () => {
-      for (const sc of ['taskQueue', 'podWork.all', 'myWork.active', 'myWork.closed']) {
+      for (const sc of ['taskQueue', 'myWork.active', 'myWork.closed']) {
         expect(loadColumns(sc, 9)).toEqual(defaultColumns(sc));
         expect(loadColumns(sc, 9)).toContain('matterName');
       }
+      // Pod Work (#1227): Matter Name is in the Columns menu, not in the default.
+      expect(loadColumns('podWork.all', 9)).toEqual(defaultColumns('podWork.all'));
+      expect(loadColumns('podWork.all', 9)).not.toContain('matterName');
     });
 
     it('leaves a customised set alone, once: the column is added by the user afterwards', () => {

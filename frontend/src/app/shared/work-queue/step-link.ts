@@ -16,8 +16,8 @@ export function hasStepLink(row: Pick<TaskQueueRow, 'status' | 'workflow'>): boo
   );
 }
 
-/** "Progress: 2 of 5 done, current step Dedup. Open step." */
+/** "2 of 5 steps done. Current step: Dedup. Open step." (the visible text is only "2 of 5") */
 export function stepLinkLabel(row: Pick<TaskQueueRow, 'workflow'>): string {
   const w = row.workflow;
-  return `Progress: ${w.stepsResolved} of ${w.stepsTotal} done, current step ${w.currentStepName}. Open step.`;
+  return `${w.stepsResolved} of ${w.stepsTotal} steps done. Current step: ${w.currentStepName}. Open step.`;
 }

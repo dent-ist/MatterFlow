@@ -134,7 +134,7 @@ test.describe('Print (#215)', () => {
       'Page 1 of 2, 60 tasks, showing 1-50',
     );
     await expect(line.locator('[data-print-when]')).toHaveText(
-      /^Printed [A-Z][a-z]{2} \d{1,2}, \d{4}, \d{1,2}:\d{2} [AP]M E[SD]T$/,
+      /^Printed [A-Z][a-z]+ \d{1,2}, \d{4}, \d{1,2}:\d{2} [AP]M$/,
     );
     await expect(page.locator('[data-filter-print]')).toBeVisible();
     // The Due cell prints both lines.

@@ -163,7 +163,7 @@
   --mf-col-updated-min: 96px;
   --mf-col-updated-max: 180px;
   --mf-col-title-min: 160px;
-  --mf-col-assignee-pod-work-w: 216px; /* Assignee on Pod Work, where "Assign to me" shares the cell */
+  --mf-col-assignee-pod-work-w: 160px; /* Assignee on Pod Work, where the "Assign to me" icon button shares the cell (#1227) */
   --mf-narrow-title-min: 200px; /* the narrow-box rule: autoHide columns drop out while the Title would be narrower than this */
   /* Clients, Matters and Projects (epic #245, ux-spec 5.9 and S05 to S07): NO token was added. The record pages and lists are built on the
      tokens above. Numbers they rely on: record lists use the Comfortable work-grid row height (grid-row-h, 44px, in page.scss for .pg-table);

@@ -280,7 +280,7 @@ test.describe('WP13c: Task Queue and Pod Work cards', () => {
     await expect(page.locator('table.wt')).toHaveCount(0);
     const card = cards(page).filter({ hasText: px.titles[2] });
     const link = card.locator('[data-assign-link]');
-    await expect(link).toHaveText('Assign to Me');
+    await expect(link).toHaveAttribute('aria-label', /^Assign .+ to me$/);
     expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     expect(await pageSideScroll(page)).toBe(false);
     await axeClean(page, 'pod work cards at 375');

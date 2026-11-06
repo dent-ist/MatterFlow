@@ -25,6 +25,7 @@ import { UndoService } from '../../core/notify/undo.service';
 import { ACTION_LABELS } from '../../features/tasks/detail/task-detail.store';
 import { PriorityFlag } from '../ui/priority-flag';
 import { StatusBadge } from '../ui/status-badge';
+import { Tip } from '../ui/tip';
 import {
   InlineField,
   MATTER_INACTIVE_TEXT,
@@ -86,14 +87,16 @@ const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN
  */
 @Component({
   selector: 'mf-row-edit',
-  imports: [InlineMenu, InlineStatusFlow, PriorityFlag, StatusBadge],
+  imports: [InlineMenu, InlineStatusFlow, PriorityFlag, StatusBadge, Tip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.re-with-link]': 'showLink()' },
   styles: `
     :host.re-with-link {
       display: inline-flex;
       align-items: center;
+      justify-content: space-between;
       gap: var(--mf-s1);
+      width: 100%;
       max-width: 100%;
       white-space: nowrap;
     }
@@ -150,16 +153,17 @@ const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN
       }
     </mf-inline-menu>
     @if (showLink()) {
-      <!-- Pod Work: the same "Assign to me" as the menu's first item, next to "Unassigned" so it is one click (#199). -->
+      <!-- Pod Work: the same "Assign to me" as the menu's first item, an icon-only text button at the right end of the cell so it is one click (#199, #1227). -->
       <button
         type="button"
-        class="mf-btn mf-btn--text re-link"
+        class="mf-btn mf-btn--text mf-btn--icon re-link"
         data-assign-link
+        mfTip="Assign to me"
         [attr.aria-label]="'Assign ' + r.taskNumber + ' to me'"
         [attr.aria-disabled]="busy() ? 'true' : null"
         (click)="$event.stopPropagation(); assignToMe()"
       >
-        Assign to Me
+        <i class="pi pi-user-plus" aria-hidden="true"></i>
       </button>
     }
     @if (flow(); as action) {

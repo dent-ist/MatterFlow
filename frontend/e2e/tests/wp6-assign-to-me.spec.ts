@@ -181,7 +181,7 @@ test.describe('WP6: Assign to me', () => {
 
     const link = podWork.assignToMe(task.taskNumber);
     await expect(link).toBeVisible();
-    await expect(link).toHaveText('Assign to Me');
+    await expect(link).toHaveAttribute('aria-label', /^Assign .+ to me$/);
     // One line: the "Unassigned" menu trigger and the link share a row, in both densities.
     for (const density of ['Comfortable', 'Compact'] as const) {
       await setDensity(page, density);

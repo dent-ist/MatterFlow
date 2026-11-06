@@ -459,7 +459,8 @@ describe('PodWorkPage', () => {
     const el = await open('/pods/work?podId=5');
     expect(el.querySelector('th.wt-actions, td.wt-actions')).toBeNull();
     const button = link(el)!;
-    expect(button.textContent!.trim()).toBe('Assign to Me');
+    expect(button.textContent!.trim()).toBe('');
+    expect(button.querySelector('i.pi-user-plus')).not.toBeNull();
     expect(button.getAttribute('aria-label')).toBe('Assign TSK-1042 to me');
     expect(button.closest('td')!.getAttribute('data-col')).toBe('assignee');
     expect(button.closest('td')!.textContent).toContain('Unassigned');

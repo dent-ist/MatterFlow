@@ -107,7 +107,7 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
   // The Closed tab shows the day a task closed IN PLACE OF Due (directly before Status).
   { key: 'closed', label: 'Closed', sortField: 'closed', width: 104, minWidth: 88, maxWidth: 160 },
   { key: 'status', label: 'Status', sortField: 'status', width: 140, minWidth: 112, maxWidth: 200 },
-  // Progress is the one name of the workflow progress (it was "Workflow progress"): "2 of 5 done, current step" here, a thin bar in a Matter's grid (`steps`).
+  // Progress is the one name of the workflow progress (it was "Workflow progress"): a thin bar and "2 of 5" here (the current step is the tooltip), a thin bar alone in a Matter's grid (`steps`).
   {
     key: 'progress',
     label: 'Progress',
@@ -205,6 +205,8 @@ const QUEUE_DEFAULT = [
   'status',
   'progress',
 ];
+/** Pod Work (#1227): the standard order without Matter Name (in the Columns menu), so Assignee, Due and Status fit at 1366 without sideways scrolling. */
+const POD_WORK_DEFAULT = QUEUE_DEFAULT.filter((c) => c !== 'matterName');
 /** What the Task Queue and Pod Work showed before Matter Name (#348): a stored set equal to it was never customised. */
 const QUEUE_BEFORE_NAME = ['ref', 'title', 'matter', 'priority', 'assignee', 'due', 'status'];
 /** What My Work showed before X1 and WP6b: a stored set equal to it was never customised. */
@@ -230,7 +232,7 @@ const MY_WORK_DEFAULT = [
 export const DEFAULT_COLUMNS: Readonly<Record<string, readonly string[]>> = {
   taskQueue: QUEUE_DEFAULT,
   myWork: MY_WORK_DEFAULT,
-  podWork: QUEUE_DEFAULT,
+  podWork: POD_WORK_DEFAULT,
   // Closed (C2): finished work has no progress and no urgency; the date it closed (C1) and the outcome matter. Priority and Due are in the chooser.
   'myWork.closed': ['ref', 'type', 'title', 'matter', 'matterName', 'closed', 'status'],
   // Created by me (B1, B3): where did the work I handed off go: who has it, how urgent, when due, what state, how old.

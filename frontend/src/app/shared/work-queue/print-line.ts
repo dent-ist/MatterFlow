@@ -8,14 +8,14 @@ import {
   signal,
 } from '@angular/core';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
-import { calendarDayInZone, formatCalendarDayLong } from '../../core/time/time';
+import { calendarDayInZone, formatCalendarDayLong, formatInstantClock } from '../../core/time/time';
 import { SortDirection } from './queue-filters';
 import { directionWords } from './sort-sentences';
 import { SORT_LABELS } from './sort-note';
 
 /**
  * The line only the printed page shows (BUG-TQ6, TQ39), under the page title: the page and view, the sort, where this page sits
- * in the list ("Page 1 of 9 . 442 tasks, showing 1-50") and the day it was printed in the viewer's time zone ("Printed October 14, 2026"). The screen shows nothing
+ * in the list ("Page 1 of 9 . 442 tasks, showing 1-50") and the day and time it was printed in the viewer's time zone, without the zone ("Printed November 6, 2026, 10:23 AM"). The screen shows nothing
  * (the toolbar and the footer say the same things); the filters line is the one the filters bar prints just above.
  */
 @Component({
@@ -71,9 +71,10 @@ export class PrintLine {
     inject(DestroyRef).onDestroy(() => window.removeEventListener('beforeprint', refresh));
   }
 
-  /** "October 14, 2026": a sentence, so the FULL month (D-60). */
-  protected readonly printed = computed(() =>
-    formatCalendarDayLong(calendarDayInZone(this.now(), this.zone)),
+  /** "November 6, 2026, 10:23 AM": a sentence, so the FULL month and the time without the zone (D-60, #1227). */
+  protected readonly printed = computed(
+    () =>
+      `${formatCalendarDayLong(calendarDayInZone(this.now(), this.zone))}, ${formatInstantClock(this.now(), this.zone)}`,
   );
 
   protected readonly sortText = computed(() => {

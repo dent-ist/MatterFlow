@@ -624,26 +624,34 @@ const LONG_PRESS_MS = 500;
       <ng-template #prog let-row>
         @if (row.workflow.stepsTotal === 0) {
           -
-        } @else if (!row.workflow.currentStepName) {
-          <span class="wt-muted">All steps resolved</span>
         } @else {
-          {{ row.workflow.stepsResolved }} of {{ row.workflow.stepsTotal | mfInt }} done ·
-          @if (stepLinked(row)) {
-            <a
-              class="wt-steplink"
-              data-step-link
-              [routerLink]="['/tasks', row.taskId]"
-              [queryParams]="stepQuery(row)"
-              [state]="linkState()"
-              [mfRowLink]="rowList()"
-              [rowKey]="row.taskId"
-              (click)="drillOut($event, row)"
-              [attr.aria-label]="stepLabel(row)"
-              >{{ row.workflow.currentStepName }}</a
-            >
-          } @else {
-            {{ row.workflow.currentStepName }}
-          }
+          <!-- #1227: the thin bar and the short "2 of 5"; the current step is the tooltip and the accessible name (never cut). -->
+          <span class="wt-progwrap">
+            <span class="wt-stepbar wt-stepbar--cell" aria-hidden="true"
+              ><span
+                class="wt-stepbar__fill"
+                [style.width.%]="(100 * row.workflow.stepsResolved) / row.workflow.stepsTotal"
+              ></span
+            ></span>
+            @if (stepLinked(row)) {
+              <a
+                class="wt-steplink wt-progtext"
+                data-step-link
+                [routerLink]="['/tasks', row.taskId]"
+                [queryParams]="stepQuery(row)"
+                [state]="linkState()"
+                [mfRowLink]="rowList()"
+                [rowKey]="row.taskId"
+                (click)="drillOut($event, row)"
+                [attr.aria-label]="stepLabel(row)"
+                >{{ row.workflow.stepsResolved }} of {{ row.workflow.stepsTotal | mfInt }}</a
+              >
+            } @else {
+              <span class="wt-progtext" data-progress-text
+                >{{ row.workflow.stepsResolved }} of {{ row.workflow.stepsTotal | mfInt }}</span
+              >
+            }
+          </span>
         }
       </ng-template>
       @if (nearEmpty()) {
@@ -1341,7 +1349,7 @@ export class TaskTable {
     if (w.stepsTotal === 0) return 'No workflow steps';
     return w.currentStepName
       ? `${w.stepsResolved} of ${w.stepsTotal} steps done. Current step: ${w.currentStepName}`
-      : 'All steps resolved';
+      : `${w.stepsResolved} of ${w.stepsTotal} steps done. All steps resolved`;
   }
 
   protected closed(row: TaskQueueRow): boolean {
