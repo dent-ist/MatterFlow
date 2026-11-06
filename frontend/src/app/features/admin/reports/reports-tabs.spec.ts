@@ -218,7 +218,7 @@ describe('ReportRunsTab (#712)', () => {
       undefined,
       50,
     );
-    expect(el.querySelector('[data-empty]')!.textContent).toContain('No runs yet.');
+    expect(el.querySelector('[data-empty]')!.textContent).toContain('No runs match these filters.');
   });
 });
 
