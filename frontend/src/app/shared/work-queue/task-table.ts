@@ -55,6 +55,7 @@ import {
   columnWidthRem,
   pxToRem,
   remToPx,
+  fixedTitleRem,
   tableMinRem,
   widthVars,
 } from './column-widths';
@@ -171,6 +172,7 @@ const LONG_PRESS_MS = 500;
           [class.wt--compact]="density() === 'compact'"
           [class.wt--narrow]="narrow()"
           [class.wt--scroll]="overflowing()"
+          [class.wt--title-fixed]="titleFixed()"
           [style]="tableVars()"
           [attr.aria-busy]="loading() ? 'true' : null"
         >
@@ -180,7 +182,7 @@ const LONG_PRESS_MS = 500;
             @for (col of shownColumns(); track col.key) {
               <col
                 [attr.data-col]="col.key"
-                [style.width]="col.fill ? null : 'var(--w-' + col.key + ')'"
+                [style.width]="col.fill && !titleFixed() ? null : 'var(--w-' + col.key + ')'"
               />
             }
           </colgroup>
@@ -1038,6 +1040,13 @@ export class TaskTable {
   protected readonly skeletonRows = [1, 2, 3, 4, 5, 6, 7, 8];
   protected readonly shownKeyList = computed(() => this.shownColumns().map((c) => c.key));
 
+  /** The person dragged the Title: it keeps that width instead of springing (#1231). */
+  protected readonly titleFixed = computed(() =>
+    this.shownColumns().some(
+      (c) => c.fill && fixedTitleRem(c, this.effectiveWidths()) !== undefined,
+    ),
+  );
+
   /** The `--w-<key>` custom properties read by the `<col>` elements, and the narrowest the table may get before the grid scrolls. */
   protected readonly tableVars = computed(() => {
     const widths = this.effectiveWidths();
@@ -1268,7 +1277,7 @@ export class TaskTable {
       side,
       rootPx: this.rootPx(),
       fillKey: this.shownColumns().find((c) => c.fill)?.key ?? null,
-      commitTitle: (rem) => this.columnResized.emit({ key: 'title', rem }),
+      commitTitle: (rem) => this.columnResized.emit({ key: col.key, rem }),
       commit: (rem) =>
         this.columnResized.emit({
           key: col.key,

@@ -641,9 +641,11 @@ describe('TaskTable', () => {
     fixture.componentRef.setInput('colWidths', { due: 9, title: 40, status: 2 });
     fixture.detectChanges();
     expect(px('--w-due')).toBe('9rem');
-    // Clamped to the column's minimum (112 px) and never set for the Title.
+    // Clamped to the column's minimum (112 px); the Title is fixed only because it has a stored width (#1231).
     expect(px('--w-status')).toBe(`${112 / 14}rem`);
-    expect(px('--w-title')).toBe('');
+    expect(px('--w-title')).toBe('40rem');
+    expect(table.classList.contains('wt--title-fixed')).toBe(true);
+    expect(cols()[1].style.width).toBe('var(--w-title)');
     expect(parseFloat(table.style.getPropertyValue('--wt-min'))).toBeGreaterThan(20);
   });
 

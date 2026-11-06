@@ -5,7 +5,7 @@ import { ColumnDef } from './column-prefs';
  *
  *  - a `ColumnWidthMap` is a sparse map `column key -> width in rem`; the grid takes it as its `colWidths` input (one signal map);
  *  - a column without an entry has its `ColumnDef.width` default; an entry is clamped to the column's `minWidth` and `maxWidth`;
- *  - the Title (`fill`) never takes an entry;
+ *  - the Title (`fill`) is the spring until the person drags it: only then it takes an entry, a fixed width (#1231, `fixedTitleRem`);
  *  - the grid writes the result as CSS custom properties on the table (`--w-due: 8.5rem`), read by the `<col>` of each column.
  *
  * Widths are px in the definitions (the review's numbers) and `rem` everywhere they are applied, so text-only zoom scales the columns
@@ -41,7 +41,17 @@ export function fillMinRem(def: ColumnDef, overrides?: ColumnWidthMap): number {
   return Math.min(pxToRem(1600), Math.max(pxToRem(96), stored));
 }
 
-/** The CSS custom properties of the table: `--w-<key>` per column (not the fill column). */
+/**
+ * The fixed width of the Title in rem, or undefined while it is the spring (#1231). Dragging the Title's divider stores a width (clamped to 96 and 1600 px); from then on the Title
+ * keeps it and free room stays an empty area at the right of the grid. "Reset width" removes the entry and the Title springs again.
+ */
+export function fixedTitleRem(def: ColumnDef, overrides?: ColumnWidthMap): number | undefined {
+  const stored = def.fill ? overrides?.[def.key] : undefined;
+  if (stored === undefined || !Number.isFinite(stored)) return undefined;
+  return Math.min(pxToRem(1600), Math.max(pxToRem(96), stored));
+}
+
+/** The CSS custom properties of the table: `--w-<key>` per column (the fill column only while it has a fixed width). */
 export function widthVars(
   defs: readonly ColumnDef[],
   overrides: ColumnWidthMap | undefined,
@@ -49,6 +59,10 @@ export function widthVars(
   const vars: Record<string, string> = {};
   for (const d of defs) {
     if (!d.fill) vars[`--w-${d.key}`] = `${columnWidthRem(d, overrides)}rem`;
+    else {
+      const fixed = fixedTitleRem(d, overrides);
+      if (fixed !== undefined) vars[`--w-${d.key}`] = `${fixed}rem`;
+    }
   }
   return vars;
 }

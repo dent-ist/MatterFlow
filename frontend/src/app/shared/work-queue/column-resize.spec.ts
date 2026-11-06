@@ -147,7 +147,7 @@ describe('TaskTable resize handles (#204)', () => {
     expect(el.querySelector('tbody .wt-resize')).toBeNull();
   });
 
-  it('drags a handle: the live width follows the pointer to the right, and release emits the Title it keeps and the column, once', async () => {
+  it('drags a handle: the live width follows the pointer to the right, and release emits the column only (the Title stays the spring), once', async () => {
     await create();
     expect(width('due')).toBe(`${136 / 14}rem`);
     const h = handle('due');
@@ -158,8 +158,8 @@ describe('TaskTable resize handles (#204)', () => {
     expect(resized).toEqual([]); // nothing is stored per frame
     fire(h, 'pointermove', 530);
     fire(h, 'pointerup', 530);
-    expect(resized.map((r) => r.key)).toEqual(['title', 'due']);
-    expect(resized[1]).toEqual({ key: 'due', rem: 166 / 14, defaultRem: undefined });
+    expect(resized.map((r) => r.key)).toEqual(['due']);
+    expect(resized[0]).toEqual({ key: 'due', rem: 166 / 14, defaultRem: undefined });
     expect(document.body.classList.contains('wt-resizing')).toBe(false);
   });
 
@@ -184,6 +184,23 @@ describe('TaskTable resize handles (#204)', () => {
     expect(['ref', 'matter', 'due', 'status'].map((k) => width(k))).toEqual(before);
     fire(handle('title'), 'pointerup', 360);
     expect(resized).toEqual([{ key: 'title', rem: 220 / 14 }]);
+  });
+
+  it('a Title drag makes it a fixed width that can also get SMALLER; the grid is then as wide as its columns (#1231)', async () => {
+    await create();
+    const table = el.querySelector<HTMLTableElement>('table')!;
+    fire(handle('title'), 'pointerdown', 300);
+    fire(handle('title'), 'pointermove', 200);
+    expect(table.style.width).not.toBe('');
+    fire(handle('title'), 'pointerup', 200);
+    expect(resized).toHaveLength(1);
+    expect(resized[0].key).toBe('title');
+    expect(resized[0].rem).toBeLessThan(160 / 14);
+  });
+
+  it('the Title handle exists with a real size and a side (#1231)', async () => {
+    await create();
+    expect(handle('title').getAttribute('data-side')).toBe('end');
   });
 
   it('clamps at the minimum and maximum', async () => {

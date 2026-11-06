@@ -1,5 +1,12 @@
 import { WORK_COLUMNS } from './column-prefs';
-import { columnWidthRem, pxToRem, remToPx, tableMinRem, widthVars } from './column-widths';
+import {
+  columnWidthRem,
+  fixedTitleRem,
+  pxToRem,
+  remToPx,
+  tableMinRem,
+  widthVars,
+} from './column-widths';
 
 const def = (key: string) => WORK_COLUMNS.find((c) => c.key === key)!;
 
@@ -26,10 +33,16 @@ describe('column widths (#200)', () => {
     expect(columnWidthRem(def('due'), { due: 9 })).toBe(9);
     expect(Math.round(remToPx(columnWidthRem(def('due'))))).toBe(136);
     expect(columnWidthRem(def('title'), { title: 30 })).toBe(160 / 14);
+    // The Title is fixed only once it was dragged (#1231), clamped to 96 and 1600 px.
+    expect(fixedTitleRem(def('title'), undefined)).toBeUndefined();
+    expect(fixedTitleRem(def('title'), { title: 20 })).toBe(20);
+    expect(fixedTitleRem(def('title'), { title: 5 })).toBe(96 / 14);
+    expect(fixedTitleRem(def('due'), { due: 9 })).toBeUndefined();
     expect(columnWidthRem(def('due'), { due: NaN })).toBe(136 / 14);
   });
 
-  it('writes one custom property per fixed column and none for the Title', () => {
+  it('writes one custom property per fixed column, and for the Title only once it was dragged (#1231)', () => {
+    expect(widthVars([def('title')], { title: 20 })).toEqual({ '--w-title': '20rem' });
     const vars = widthVars([def('ref'), def('title'), def('due')], { due: 9 });
     expect(vars).toEqual({
       '--w-ref': `${112 / 14}rem`,

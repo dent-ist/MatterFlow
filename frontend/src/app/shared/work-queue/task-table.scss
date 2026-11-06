@@ -34,6 +34,11 @@
   font-size: var(--mf-fs-md);
 }
 
+/* A dragged Title keeps its width (#1231): the grid is as wide as its columns, free room is an empty area at the right (no column stretches). */
+.wt.wt--title-fixed {
+  width: var(--wt-min, 100%);
+}
+
 .wt th,
 .wt td {
   /* Tight side padding keeps the default columns inside 1280 px for a user with the inline editors (UXR2-01). */

@@ -8,7 +8,8 @@ import { ROOT_PX } from './column-widths';
  * Which edge carries the handle: the Title is the spring, so the columns left of it (Ref) are resized from their right edge, and the
  * columns right of it from their LEFT edge, which is the edge that really moves with the pointer (a right-hand column's right edge stays
  * at the table's right side while the Title absorbs the change). The border between the Title and its right neighbour is therefore the
- * left handle of that neighbour: dragging it right shrinks the neighbour and widens the Title (the Title is never stored).
+ * left handle of that neighbour: dragging it right shrinks the neighbour and widens the Title. The Title stays the spring until the person drags ITS divider: that stores a
+ * fixed width (#1231), so it can be made smaller too and the free room stays an empty area at the right; "Reset width" brings the spring back.
  */
 export type ResizeSide = 'start' | 'end';
 
@@ -142,16 +143,20 @@ export function startColumnResize(o: ColumnResizeOptions): boolean {
   let line: HTMLElement | null = null;
   let tip: HTMLElement | null = null;
 
-  const colEl = isTitle ? null : table.querySelector<HTMLElement>(`col[data-col="${def.key}"]`);
+  const colEl = table.querySelector<HTMLElement>(`col[data-col="${def.key}"]`);
+  const startTableWidth = table.style.width;
   const startColWidth = colEl?.style.width ?? '';
   const startMinWidth = table.style.minWidth;
   const apply = (): void => {
     if (colEl) colEl.style.width = `${layout.widthPx}px`;
     table.style.minWidth = `${layout.tableMinPx}px`;
+    if (isTitle || table.classList.contains('wt--title-fixed'))
+      table.style.width = `${layout.tableMinPx}px`;
   };
   const restore = (): void => {
     if (colEl) colEl.style.width = startColWidth;
     table.style.minWidth = startMinWidth;
+    table.style.width = startTableWidth;
   };
   const drawGuide = (): void => {
     if (!line) {
@@ -216,10 +221,11 @@ export function startColumnResize(o: ColumnResizeOptions): boolean {
     const changed = Math.round(layout.widthPx) !== Math.round(startPx);
     if (commit && changed) {
       // The variables first, so the column keeps its new width when the inline overrides go; Angular writes the same values next.
-      if (!isTitle) table.style.setProperty(`--w-${def.key}`, `${layout.widthPx / rootPx}rem`);
+      table.style.setProperty(`--w-${def.key}`, `${layout.widthPx / rootPx}rem`);
       restore();
-      if (o.fillKey && o.commitTitle) o.commitTitle(layout.titleMinPx / rootPx);
-      if (!isTitle) o.commit(layout.widthPx / rootPx);
+      // The Title is stored only when its own divider was dragged (a fixed width); another divider leaves it the spring.
+      if (isTitle) o.commitTitle?.(layout.widthPx / rootPx);
+      else o.commit(layout.widthPx / rootPx);
     } else {
       restore();
     }
