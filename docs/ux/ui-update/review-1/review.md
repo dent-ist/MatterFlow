@@ -230,3 +230,21 @@ Evidence: `design-evidence` branch, `evidence/2026-11-06-review-13-record-grid/`
 | #1246 Clients and Matters leftovers | PASS with two leftovers | Client Overview and Matters tab headings correct; unsaved-changes question reads "Keep Editing / Discard Changes"; Clients placeholder "Number". Matter > Activities stays "Show More". Left over: Client > Matters tab filter placeholders "Matter" and "Name", and a white sticky first cell in a grey filter row; "Save and leave" extra buttons. Fix issue #1248. |
 
 Decisions: (a) heading keyboard resize accepted as keys of one focused widget, not shortcuts, outside `shortcut-registry.ts` (D-44b); (b) Ref cell 8/0 padding accepted (D-44c); (c) Activities keeps "Show More", no total needed (D-44d); (d) "Save and Leave" and placeholders "Number" and "Name" (D-44d, D-44e), issue #1248.
+
+## review-14 Projects, Assets and fixes (2026-11-06, tip 760cae2, 1366 and 1920)
+
+Evidence: `design-evidence` branch, `evidence/2026-11-06-review-14-projects-assets/` (13 JPEG, `measurements.json`, `axe.json`). The demo API was rebuilt from 760cae2 so Asset linked tasks carry the task type name. Axe: 0 violations on 10 pages at both sizes (Projects, Project, Assets, Asset, Asset Reports, Dashboard Swimlane, Calendar, Summary, Client, Task Types) and on the Calendar with a day panel open.
+
+| Issue | Result | Notes |
+|---|---|---|
+| #1247 Calendar names, Swimlane skips | PASS | Day panel names are `mf-btn--text` buttons (blue, no underline); the four Swimlane lane skip links are `mf-sr-only` (1 x 1 px, visible only on focus). Names are 19 px high (inline in a dense list; axe target-size clean). |
+| #1248 review 13 leftovers | PASS | Summary: Columns panel has "Reset Width" (Title 110 -> 190, 664 -> 744) and "Reset to Default" returns the Title to the spring; Client > Matters placeholders "Number" and "Name"; "Save and Leave" on Task Type, Asset Type, Workflow and Step pages. Ruling: one "Reset Width" for all widths is right (D-44h). |
+| #1182 Projects on record grid | PASS with leftovers | 48 px actions column, widths stored per person and kept after reload, Reset Width, row menu, tab order name link, matter link, counts, menu. Left over (#1250): filter row has 6 cells so the grey band stops before the Actions column; headings jump while loading (Project Name 277 and Client 192, loaded 301 and 168). |
+| #1183 Project record | PASS with one point | Header, Tasks tab and crumb are in place. Details tab is a bare label-left list: card anatomy D-44f, built in #1250. |
+| #1184 | PASS | No change needed. |
+| #1185 Assets on record grid | FAIL (small) | Resize stored per person, Columns, Reset Width and Disposition chip (162 px holds the 154 px "Pending Disposition" chip) all work. Default columns total 1105 px in a 1096 px frame at 1366 (9 px sideways scroll, "..." cut); headings jump while loading (Name 220, External Reference 150 vs 200 and 140); "External Reference" heading wraps. Fix in #1249. |
+| #1186 Asset Linked Tasks | PASS | Record grid, 44 px rows, Ref/Type/Title/Priority/Assignee/Due/Status inside 1096 px at 1366 (no scroll); with the rebuilt API the task type NAME is in the Type cell (chip plus "Collection Receipt", "Archive and Disposition", "Search and Culling"). |
+| #1187 Asset forms, dialog | PASS | Dialog title "Change Disposition", `[Cancel] [Change Disposition]` (bulk: "Change N Assets"); width is 576 px (four options with descriptions), accepted (D-44g). |
+| #1188 Asset reports | NOT DONE, rulings below | No native select (verified). Saved list still has two text buttons per row. Build in #1249. |
+
+Rulings: (1) Disposition 162 px accepted, paid for by Type 128 px (D-43a); (2) Assets row menu stays Change Disposition only, no Edit Asset (D-44g); (3) dialog primary stays "Change Disposition", it does not follow the option (D-44g); (4) saved reports stay a side card, 44 px rows with name button and one "..." menu (Rename, Delete), not a table (D-44g, #1249); (5) Details tabs use the Matter Summary card (D-44f): Project in #1250, Asset in #1249.
