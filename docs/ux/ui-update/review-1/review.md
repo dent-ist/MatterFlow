@@ -355,3 +355,15 @@ Evidence: `design-evidence`, `evidence/2026-11-06-review-21-my-matters-selects-l
 | #1258 Calendar day panel | PASS with a finding | Role groups open and close on their own; the repeat is the chip row "Data Technician 6, Director 1, Pod Lead 4" above the groups: #1263. |
 
 Rulings: D-44r (white form dropdowns; Assignee hides only while a user-opened panel leaves the frame under 900 px; Ref natural width; Change Type under the name; banner icon 18 px on the first line; each role once per section).
+
+## review-22 Admin lookups, report editor and chart casing (2026-11-06, tip eea249f, 1366 and 1920)
+
+Evidence: `design-evidence`, `evidence/2026-11-06-review-22-admin-reports-casing/` (JPEG, `measurements.json`, `axe.json`). Axe: 0 violations on 8 pages at both sizes. To see the real report flow I created one category ("UD Review Category") and one report ("UD Review Report", inactive, two versions) on the demo stack; categories are never deleted and the API has no report delete, so they stay (demo data). The report preview fails on the demo stack (SQL error 18456, the report login is not configured), so Activate could not be run.
+
+| Issue | Result | Notes |
+|---|---|---|
+| #1260 lookups | PASS with a point | Priorities and the dialog preview use `mf-priority-flag`; 16 px grips (grab cursor) on Priorities, On-Hold Reasons and Link Roles, none on Status Labels; "Color" everywhere (0 "colour" left); Asset Type header is Activity, Edit Fields, "...". Plain priorities are link-blue with no underline: #1265. |
+| #1261 report editor | PASS with points | Clean: Activity and "...". Changed: [Discard Changes] [Save Changes]; query changed: "Save as New Version" and the information banner with its icon; History shows Version 2 (Inactive, Compare with version 1, Activate disabled until previewed) and Version 1 (Restore); Activity drawer 520 px. Duplicate toasts, two error toasts on a failed preview, Categories add row order: #1266. |
+| #1262 casing | PASS | "Pending Disposition", "All Matters", "All Asset Types" in the table, bar, pie legend and Metrics; Trends "Open and Overdue"; Breakdowns "Not Overdue". |
+
+Rulings: D-44s (banner wording for an active report, Activate only for the current version with Restore for older ones, "..." stays in the changed state, plain priorities, no grip on Status Labels).
