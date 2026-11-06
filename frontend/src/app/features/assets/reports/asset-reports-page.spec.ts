@@ -161,7 +161,14 @@ describe('AssetReportsPage', () => {
   it('shows the define form, an idle result and the saved reports', async () => {
     await create();
     expect(q('h1').textContent).toContain('Asset Reports');
-    expect(q('[data-result-idle]')).toBeTruthy();
+    // The idle result is the shared state block (D-51), not a private dashed box (#1278); the table / pie / bar hint is a help line under Run.
+    const idle = q('[data-result-idle]');
+    expect(idle.tagName).toBe('MF-STATE-BLOCK');
+    expect(idle.querySelector('.pi-chart-bar')).toBeTruthy();
+    expect(idle.textContent!.trim()).toBe('Choose what to count, then run the report.');
+    expect(idle.querySelector('button')).toBeNull();
+    expect(q('[data-run-hint]').textContent).toContain('pie or bars');
+    expect(q('[data-result]').contains(q('[data-run-hint]'))).toBe(false);
     expect(el().querySelectorAll('[data-saved-item]')).toHaveLength(1);
     expect(ddOptionValues(q('[data-type]'))).toHaveLength(3);
     expect(q('[data-number-field]')).toBeNull();
@@ -262,8 +269,31 @@ describe('AssetReportsPage', () => {
       ok(countResult({ rows: [], totals: { key: '', label: 'Total', cells: [0] }, assets: 0 })),
     );
     await click_('[data-run]');
-    expect(q('[data-result-empty]')).toBeTruthy();
+    const empty = q('[data-result-empty]');
+    expect(empty.tagName).toBe('MF-STATE-BLOCK');
+    expect(empty.querySelector('.pi-search')).toBeTruthy();
+    expect(empty.querySelector('.sb__text')!.textContent!.trim()).toBe(
+      'No assets match this report.',
+    );
+    // No type or disposition is set, so there is nothing to clear.
+    expect(q('[data-clear-filters]')).toBeNull();
     expect(q('[data-export-csv]')).toBeNull();
+  });
+
+  it('offers Clear Filters under "No assets match this report." when a type or disposition is set, and runs again without them', async () => {
+    await create();
+    run['runAssetReport'].mockReturnValue(
+      ok(countResult({ rows: [], totals: { key: '', label: 'Total', cells: [0] }, assets: 0 })),
+    );
+    await choose('[data-disposition]', 'DISPOSED');
+    await click_('[data-run]');
+    const clear = q('[data-result-empty] [data-clear-filters]');
+    expect(clear.textContent!.trim()).toBe('Clear Filters');
+    run['runAssetReport'].mockClear();
+    await click_('[data-clear-filters]');
+    expect(ddValue(q('[data-disposition]'))).toBe('');
+    expect(run['runAssetReport']).toHaveBeenCalledTimes(1);
+    expect(q('[data-clear-filters]')).toBeNull();
   });
 
   it('shows a failed run with a way to try again, and the cut-off note for hidden groups', async () => {

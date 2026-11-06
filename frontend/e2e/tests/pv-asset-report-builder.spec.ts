@@ -287,6 +287,11 @@ test.describe('Asset report builder (PM v2)', () => {
     await dropdownByAttr(page, 'data-disposition').selectOption('DISPOSED');
     await page.locator('[data-run]').click();
     await expect(page.locator('[data-result-empty]')).toContainText('No assets match this report');
+    // The shared state block with its Clear Filters button (a type and a disposition are set), never a dashed private box (#1278).
+    await expect(page.locator('[data-result-empty] [data-state-block]')).toBeVisible();
+    await expect(
+      page.locator('[data-result-empty]').getByRole('button', { name: 'Clear Filters' }),
+    ).toBeVisible();
     await expect(page.locator('[data-export-menu]')).toHaveCount(0);
     await shot(page, 'pv-report-empty');
 

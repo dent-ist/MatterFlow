@@ -37,6 +37,7 @@ import { ExportService } from '../../../shared/ui/export.service';
 import { ExportFormat } from '../../../shared/ui/list-export';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { StateBlock } from '../../../shared/ui/state-block';
 import { StillLoading } from '../../../shared/ui/still-loading';
 import { exportFileName, reportDocument } from './report-csv';
 import {
@@ -75,6 +76,7 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
     ExportMenu,
     ErrorReference,
     StillLoading,
+    StateBlock,
     SavedReports,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -183,11 +185,10 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
-    .ar__empty {
+    .ar__loading {
       margin: 0;
       padding: var(--mf-s5);
-      border: 1px dashed var(--mf-border-strong);
-      border-radius: var(--mf-radius);
+      color: var(--mf-text-muted);
       text-align: center;
     }
     .ar__tools {
@@ -461,6 +462,9 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
                   </button>
                 }
               </div>
+              <p class="ar__muted ar__wide" data-run-hint>
+                The result appears as a table; you can then draw it as a pie or bars.
+              </p>
               @if (saveError()) {
                 <p class="ar__alert ar__wide" role="alert" data-save-error>{{ saveError() }}</p>
               }
@@ -471,13 +475,12 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
             <h2 id="ar-result-h">Result</h2>
             @switch (runState()) {
               @case ('idle') {
-                <p class="ar__empty" data-result-idle>
-                  Choose what to count, then Run. The result appears here as a table; you can then
-                  draw it as a pie or bars.
-                </p>
+                <mf-state-block icon="pi-chart-bar" data-result-idle>
+                  Choose what to count, then run the report.
+                </mf-state-block>
               }
               @case ('running') {
-                <div class="ar__empty" role="status" aria-busy="true" data-result-loading>
+                <div class="ar__loading" role="status" aria-busy="true" data-result-loading>
                   Running the report.
                   <mf-still-loading (retry)="run()" />
                 </div>
@@ -509,11 +512,20 @@ type RunState = 'idle' | 'running' | 'ok' | 'error';
                     }}{{ r.assetTypeName ? ', ' + r.assetTypeName : ', all asset types' }}.
                   </p>
                   @if (r.rows.length === 0) {
-                    <p class="ar__empty" data-result-empty>
-                      No assets match this report. Try another disposition or asset type{{
-                        scopes.canAll() && draft().scope === 'mine' ? ', or all matters' : ''
-                      }}.
-                    </p>
+                    <mf-state-block icon="pi-search" data-result-empty>
+                      No assets match this report.
+                      @if (filtered()) {
+                        <button
+                          mfStateAction
+                          type="button"
+                          class="mf-btn mf-btn--text"
+                          data-clear-filters
+                          (click)="clearFilters()"
+                        >
+                          Clear Filters
+                        </button>
+                      }
+                    </mf-state-block>
                   } @else {
                     <div class="ar__tools">
                       <mf-export-menu
@@ -841,6 +853,19 @@ export class AssetReportsPage {
     this.draft.update((d) => ({ ...d, [key]: value }));
     this.errors.update((e) => ({ ...e, [key]: undefined }));
     this.touch();
+  }
+
+  /** True while an asset type or a disposition narrows the report (the "no match" block then offers Clear Filters). */
+  protected readonly filtered = computed(
+    () => this.draft().typeId !== null || this.draft().disposition !== '',
+  );
+
+  /** "Clear Filters" under "No assets match this report.": all asset types, any disposition, and the report runs again. */
+  protected async clearFilters(): Promise<void> {
+    this.draft.update((d) => ({ ...d, typeId: null, disposition: '' }));
+    this.touch();
+    await this.loadFields(true);
+    await this.run();
   }
 
   protected onType(value: string): void {
