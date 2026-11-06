@@ -221,7 +221,11 @@ type Column = (typeof COLUMNS)[number];
   `,
   template: `
     <mf-fixed-page>
-      <mf-page-header heading="Assets" [count]="state() === 'ready' ? total() : null">
+      <mf-page-header
+        heading="Assets"
+        [count]="state() === 'ready' ? total() : null"
+        [countPending]="state() !== 'ready'"
+      >
         <mf-scope-switch
           mfActions
           [scope]="scope.value()"

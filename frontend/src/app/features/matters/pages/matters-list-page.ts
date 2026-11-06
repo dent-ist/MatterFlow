@@ -196,7 +196,11 @@ const BONES: Record<string, string> = {
   `,
   template: `
     <mf-fixed-page>
-      <mf-page-header heading="Matters" [count]="state() === 'ready' ? total() : null">
+      <mf-page-header
+        heading="Matters"
+        [count]="state() === 'ready' ? total() : null"
+        [countPending]="state() !== 'ready'"
+      >
         @if (scopeText()) {
           <span mfDescription class="sl-line" data-scope-line>{{ scopeText() }}</span>
         }

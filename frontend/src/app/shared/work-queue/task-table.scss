@@ -253,6 +253,12 @@ th:not([aria-sort]) .wt-sort .pi {
   overflow-wrap: anywhere;
 }
 
+/* The Ref cell keeps its 8 px at the left (the text lines up with the heading) and none at the right, so the hold marker plus a four-digit number
+   ("|| TSK-1234", 87 px in the mono font) fits the 100 px column without clipping (#1244). */
+.wt td[data-col='ref'] {
+  padding-inline: var(--mf-s2) 0;
+}
+
 /* Short, fixed-content columns never wrap: the Status badge, Priority, Due, Ref and dates stay whole. */
 .wt td[data-col='ref'],
 .wt td[data-col='priority'],

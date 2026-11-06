@@ -92,7 +92,11 @@ const BONES: Record<string, string> = {
   styleUrl: '../../../shared/ui/page.scss',
   template: `
     <mf-fixed-page>
-      <mf-page-header heading="Projects" [count]="state() === 'ready' ? total() : null">
+      <mf-page-header
+        heading="Projects"
+        [count]="state() === 'ready' ? total() : null"
+        [countPending]="state() !== 'ready'"
+      >
         <mf-scope-switch
           mfActions
           [scope]="scope.value()"

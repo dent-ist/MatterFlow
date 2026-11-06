@@ -102,7 +102,11 @@ const BONES: Record<string, string> = {
   `,
   template: `
     <mf-fixed-page>
-      <mf-page-header heading="Clients" [count]="state() === 'ready' ? total() : null">
+      <mf-page-header
+        heading="Clients"
+        [count]="state() === 'ready' ? total() : null"
+        [countPending]="state() !== 'ready'"
+      >
         <mf-scope-switch
           mfActions
           [scope]="scope.value()"

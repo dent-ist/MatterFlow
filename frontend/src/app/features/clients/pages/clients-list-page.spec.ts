@@ -1,6 +1,7 @@
 import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
+import { NEVER, Observable } from 'rxjs';
 import { ClientsClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
@@ -26,9 +27,10 @@ describe('ClientsListPage', () => {
   async function create(
     permissions: Permission[] = ['Client.View', 'Client.Create'],
     params: Record<string, string> = {},
+    listResult: Observable<unknown> = ok(pageOfClients(aClient())),
   ) {
     localStorage.clear();
-    api = { listClients: vi.fn().mockReturnValue(ok(pageOfClients(aClient()))) };
+    api = { listClients: vi.fn().mockReturnValue(listResult) };
     query = fakeQuery();
     TestBed.configureTestingModule({
       providers: [
@@ -51,6 +53,32 @@ describe('ClientsListPage', () => {
   /** The toolbar's Search box: it drives the `name` filter (LC-01). */
   const search = (el: HTMLElement): HTMLInputElement =>
     el.querySelector<HTMLInputElement>('[data-list-search] input')!;
+
+  it('shows "-" in the count chip while the list loads (#1244)', async () => {
+    const fixture = await create(['Client.View'], {}, NEVER);
+    const chip = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+      'mf-page-header [data-list-count]',
+    )!;
+    expect(chip.hasAttribute('data-count-pending')).toBe(true);
+    expect(chip.textContent).toContain('Total: not available');
+    expect(chip.textContent).toContain('-');
+  });
+
+  it('shows "-" in the count chip after a failed load and the total once it is there (#1244)', async () => {
+    const failed = await create(
+      ['Client.View'],
+      {},
+      apiError(500, { status: 500, code: 'INTERNAL_ERROR' }),
+    );
+    expect(
+      (failed.nativeElement as HTMLElement).querySelector('mf-page-header [data-count-pending]'),
+    ).not.toBeNull();
+    TestBed.resetTestingModule();
+    const ready = await create();
+    const el: HTMLElement = ready.nativeElement;
+    expect(el.querySelector('mf-page-header [data-count-pending]')).toBeNull();
+    expect(el.querySelector('mf-page-header [data-list-count]')!.textContent).toContain('1');
+  });
 
   it('lists clients with the padded number prominently and a link to the detail page', async () => {
     const fixture = await create();
