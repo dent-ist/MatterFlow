@@ -380,3 +380,28 @@ Evidence: `design-evidence`, `evidence/2026-11-06-review-23-calendar-dropdowns-a
 | #1252, #1164, #1173 | PASS | Their remaining point (At Risk icon) is delivered; the 460 px rule is a refinement (#1267). |
 
 Rulings: whole-cell threshold of 460 px (D-44t); icon circle 26 px with 18 px icon accepted; Asset Reports criteria, Metrics Unit pickers, Comments sort and Note editor text style count as toolbar controls.
+
+## review-24 sticky grid bands, Users and Task Types (2026-11-06, tip 23ace03, 1366 and 1920)
+
+Evidence: `design-evidence`, `evidence/2026-11-06-review-24-sticky-users-task-types/` (JPEG, `measurements.json`).
+
+| Issue | Result | Notes |
+|---|---|---|
+| #1259 sticky bands | PASS | Mouse-wheel test on 20 grids at both sizes: the header and filter bands keep their position while the data rows move (Matters, Assets, Task Queue, Dashboard Summary, Matter Tasks, Project Tasks, Task Types, Steps, Audit Logs at 1366; Assets, Task Queue, Dashboard Summary at 1920); the band is on top of the rows; the first column keeps its x after a sideways wheel. Clients, Projects, My Work, Pod Work, Users, Pods, Workflows, Asset Types, Custom Fields, Priorities and Asset Linked Tasks have too few rows to scroll in the demo data (Pod Work: 6 rows). Filters button: standard focus ring (2 px solid `--mf-focus`, offset 2) only for keyboard focus; none after a mouse click. |
+| #1257 | PASS | Names are `mf-btn--name` (underlined), no `.us-open`; Roles Name and the chip on one line; Pods popover on the menu surface with the Primary chip. |
+| #1256 | PASS | Task Types list is 1096 px, no sideways scroll; Workflow and Step rows keyed by id; no header "Edit" on Task Type, Workflow, Step; designer on the record header with `[Retire Version] [Create New Draft]`, information banner with icon, tabs 40 px, "Access Request Form". |
+
+Rulings: D-44u and D-82 (widths, `[Save Draft] [Publish...]` without Discard, 32 px tile, library tab copy, "<Name> Form", delete the phone spec). Fix issue #1268.
+
+## review-25 priority names, report toasts and At Risk threshold (2026-11-06, tip 6cb1083, 1366 and 1920)
+
+Evidence: `design-evidence`, `evidence/2026-11-06-review-25-priorities-toasts-at-risk/`.
+
+| Issue | Result | Notes |
+|---|---|---|
+| #1265 | PASS | Critical and High are pills in `mf-btn--chip` ("Edit Critical", 1 px outline on hover); Normal, Low and custom names are `mf-btn--name`; no `.pr-open`; three Tab stops per row (name, count, menu). |
+| #1266 | PASS | One visible toast per report event ("Saved as version 3" with the detail); a failed preview shows one error toast with "Copy Reference" and "Dismiss"; Categories add row `[Cancel] [Add Category]`, 32 px (D-02). |
+| #1267 | PASS | Task cell 446 px (1366 closed) and 304 px (open) show the clock icon, 1920 (1000 and 708 px) shows the word. At Risk rows have a title about 170 px, other rows 262 px at 1366 closed: accepted (D-44v). |
+| axe region | not from #1267 | `region` comes from the shared tooltip element (`role="tooltip"` appended to `body`), visible after hovering the panel toggle at 1366 open and at 1920 closed; fix in #1268. |
+
+Rulings: D-44v; `mf-btn--name`, `mf-btn--chip` and the toast copy action are added to the catalogue (section 3).
