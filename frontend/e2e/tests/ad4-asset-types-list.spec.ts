@@ -12,7 +12,7 @@ import { uid } from '../support/seed';
  * up and Move down in the menu (#637). Screenshots go to E2E_SCREENSHOTS (docs/ux/admin-pages-review/fixes/ad4-asset-types).
  */
 const crumbs = (page: Page) => page.getByRole('navigation', { name: 'Breadcrumb' }).locator('li');
-const row = (page: Page, name: string) => page.locator(`tr[data-row="${name}"]`);
+const row = (page: Page, name: string) => page.locator(`tr:has(td[data-row="${name}"])`);
 const menuButton = (page: Page, name: string) =>
   page.getByRole('button', { name: `Actions for ${name}` });
 
@@ -65,7 +65,7 @@ test.beforeAll(async ({ admin }) => {
 
 const filterToken = async (page: Page, token: string) => {
   await page.goto(`/admin/asset-types?name=${token}&status=all`);
-  await expect(page.locator('[data-types] tbody tr[data-row]').first()).toBeVisible();
+  await expect(page.locator('[data-types] tbody tr[data-record-id]').first()).toBeVisible();
 };
 
 test.describe('Asset Types page chrome (#633)', () => {
@@ -114,7 +114,7 @@ test.describe('Asset Types page chrome (#633)', () => {
 
   test('"Skip to Table" is the first Tab stop and moves focus to the table', async ({ page }) => {
     await page.goto('/admin/asset-types');
-    await expect(page.locator('[data-types] tbody tr[data-row]').first()).toBeVisible();
+    await expect(page.locator('[data-types] tbody tr[data-record-id]').first()).toBeVisible();
     await page.keyboard.press('Tab');
     const skip = page.getByRole('link', { name: 'Skip to Table' });
     await expect(skip).toBeFocused();
@@ -205,7 +205,7 @@ test.describe('Asset Types list (#634, #637)', () => {
     await page.goto('/admin/asset-types?name=zzzz-nothing-' + uid());
     await expect(page.locator('td[data-empty="filtered"]')).toContainText('No asset types match');
     await page.getByRole('button', { name: 'Clear Filters' }).first().click();
-    await expect(page.locator('[data-types] tbody tr[data-row]').first()).toBeVisible();
+    await expect(page.locator('[data-types] tbody tr[data-record-id]').first()).toBeVisible();
   });
 
   test('the row menu: Edit, Edit fields, History (Audit.View), Move up, Move down, Deactivate; Esc returns focus to its button', async ({
@@ -335,8 +335,12 @@ test.describe('Asset Types list (#634, #637)', () => {
     await filterToken(page, s.token);
     const order = () =>
       page
-        .locator('[data-types] tbody tr[data-row]')
-        .evaluateAll((rows) => rows.map((r) => (r.getAttribute('data-row') ?? '').split(' ')[0]));
+        .locator('[data-types] tbody tr[data-record-id]')
+        .evaluateAll((rows) =>
+          rows.map(
+            (r) => (r.querySelector('td[data-row]')?.getAttribute('data-row') ?? '').split(' ')[0],
+          ),
+        );
     expect(await order()).toEqual(['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon']);
 
     await menuButton(page, s.published.name).click();

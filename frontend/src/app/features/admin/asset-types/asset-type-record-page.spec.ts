@@ -266,12 +266,12 @@ describe('AssetTypeRecordPage', () => {
       expect(text).toContain('Published v2');
       expect(text).toContain('8 fields');
       expect(text).toContain(
-        'FieldsPublished v2Draft v38 fields · Updated 10/12Last published 10/12.Draft v3 is in progress. Edit fields The fields are what people fill in for an asset of this type. They are designed on their own page and published as a version; changing them never alters values already saved. ',
+        'FieldsPublished v2Draft v38 fields · Updated 10/12Last published 10/12.Draft v3 is in progress. Edit Fields The fields are what people fill in for an asset of this type. They are designed on their own page and published as a version; changing them never alters values already saved. ',
       );
       expect(text).toContain('Draft v3');
       expect(q('[data-form-draft]').textContent).toContain('Draft v3 is in progress.');
       expect(el().querySelector('[data-no-fields]')).toBeNull();
-      expect(q('[data-open-fields]').textContent).toContain(' Edit fields ');
+      expect(q('[data-open-fields]').textContent).toContain(' Edit Fields ');
     });
 
     it('says so, neutrally, when nothing is published', async () => {
@@ -287,7 +287,7 @@ describe('AssetTypeRecordPage', () => {
         }),
       );
       expect(q('[data-no-fields]').textContent).toContain('no published fields');
-      expect(q('[data-open-fields]').textContent).toContain('Create fields');
+      expect(q('[data-open-fields]').textContent).toContain('Create Fields');
       expect(all('[role=tab]').map((t) => t.textContent!.replace(/\s+/g, ' ').trim())[1]).toBe(
         'Fields',
       );

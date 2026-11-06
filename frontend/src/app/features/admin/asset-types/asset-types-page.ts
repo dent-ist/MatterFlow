@@ -11,6 +11,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AssetTypeResponse, AssetTypesClient } from '../../../api/generated/api-client';
@@ -24,12 +25,16 @@ import { ListFilters } from '../../../shared/filters/list-filters';
 import { ActionMenu } from '../../../shared/ui/action-menu';
 import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
 import { AdminCardList, AdminCardSpec, activeCardBadge } from '../../../shared/ui/admin-card-spec';
-import { AdminColumn, adminListState } from '../../../shared/ui/admin-list-state';
+import { adminListState } from '../../../shared/ui/admin-list-state';
 import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
-import { ScrollArea } from '../../../shared/ui/fixed-page';
-import { GridBody } from '../../../shared/ui/grid-body';
+import {
+  RecordCell,
+  RecordGrid,
+  RecordGridColumn,
+  RecordGridState,
+} from '../../../shared/ui/record-grid';
 import { LocalListPage } from '../../../shared/ui/list-query';
 import { parseStatus } from '../../../shared/ui/list-helpers';
 import { Pager } from '../../../shared/ui/pager';
@@ -55,16 +60,12 @@ import { FormStatusCell } from '../shared/form-status-cell';
 import { IntPipe } from '../../../shared/ui/number-format';
 import { Button } from 'primeng/button';
 
-/** Every column of the grid, in order; the keys the filter definitions point at. */
-type Column = 'name' | 'fields' | 'assets' | 'status' | 'actions';
-
-/** The loaded cell class and the skeleton bone of each column: one definition for the table and its loading rows (#575). */
-const COLUMN_SPEC: Record<Column, AdminColumn> = {
-  name: { cls: 'mf-cell-name', bone: '12rem' },
-  fields: { cls: 'mf-cell-badge', bone: '14rem' },
-  assets: { cls: 'mf-cell-num', bone: '1.5rem' },
-  status: { cls: 'mf-cell-badge', bone: '4rem' },
-  actions: { cls: 'mf-cell-actions', bone: '1.5rem' },
+/** The skeleton bone of each column (the loading rows of the grid). */
+const BONES: Record<string, string> = {
+  name: '12rem',
+  fields: '14rem',
+  assets: '1.5rem',
+  status: '4rem',
 };
 
 /** The most asset types one request returns; the list is loaded whole (a firm has a handful), page after page when there are more. */
@@ -91,11 +92,12 @@ const LOAD_PAGE_SIZE = 100;
     ConfirmDialog,
     FiltersBar,
     FormStatusCell,
-    GridBody,
+    NgTemplateOutlet,
     Pager,
+    RecordCell,
+    RecordGrid,
     RouterLink,
     RowLink,
-    ScrollArea,
     TaskTypeChip,
     FilterChips,
   ],
@@ -107,7 +109,7 @@ const LOAD_PAGE_SIZE = 100;
     </div>
 
     @if (failure()) {
-      <p class="at-failure" role="alert" data-failure>
+      <p class="pg-banner pg-banner--danger" role="alert" data-failure>
         <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ failure() }}
       </p>
     }
@@ -142,118 +144,117 @@ const LOAD_PAGE_SIZE = 100;
         (showAll)="showAll()"
       />
     } @else {
-      <div class="mf-table-wrap" mfScrollArea="Asset types list" #scroll>
-        <div class="mf-scroll">
-          <table class="mf-grid" id="asset-types-table" data-types>
-            <caption class="mf-sr-only">
-              Asset types, in the order they are offered
-            </caption>
-            <thead>
-              <tr>
-                <th class="mf-cell-name" scope="col">Name</th>
-                <th class="mf-cell-badge" scope="col">Fields</th>
-                @if (assetsShown()) {
-                  <th class="mf-cell-num" scope="col">Assets</th>
-                }
-                <th class="mf-cell-badge" scope="col">Status</th>
-                <th class="mf-cell-actions" scope="col"><span class="mf-sr-only">Actions</span></th>
-              </tr>
-              @if (filters.rowVisible()) {
-                <tr
-                  mfColumnFilterRow
-                  id="asset-type-filter-row"
-                  [filters]="filters"
-                  [columns]="columns()"
-                ></tr>
-              }
-            </thead>
-            <tbody
-              mfGridBody
-              noun="asset types"
-              [columnSpec]="columnSpec()"
+      <div class="mf-fill">
+        <mf-record-grid
+          #scroll
+          data-types
+          tableId="asset-types-table"
+          label="Asset types list"
+          caption="Asset types, in the order they are offered"
+          noun="asset types"
+          [grid]="grid"
+          [rows]="rows()"
+          [rowKey]="typeKey"
+          [loadState]="ls.state()"
+          [empty]="ls.empty()"
+          [filtered]="ls.filtered()"
+          [filters]="filters"
+          emptyText="No asset types yet."
+          [hidden]="ls.hidden()"
+          hiddenLabel="inactive"
+          [actions]="true"
+          [rowClass]="rowClass"
+          [bones]="bones"
+          (retry)="load()"
+          (clear)="clear()"
+          (showAll)="showAll()"
+        >
+          @if (filters.rowVisible()) {
+            <tr
+              mfGridFilterRow
+              mfColumnFilterRow
+              id="asset-type-filter-row"
               [filters]="filters"
-              emptyText="No asset types yet."
-              [state]="ls.state()"
-              [empty]="ls.empty()"
-              [filtered]="ls.filtered()"
-              [hidden]="ls.hidden()"
-              hiddenLabel="inactive"
-              (retry)="load()"
-              (clear)="clear()"
-              (showAll)="showAll()"
-            >
-              <p-button
-                mfEmptyAction
-                label="New Asset Type"
-                icon="pi pi-plus"
-                (onClick)="newType()"
+              [columns]="columns()"
+            ></tr>
+          }
+          <p-button mfEmptyAction label="New Asset Type" icon="pi pi-plus" (onClick)="newType()" />
+          <ng-template mfCell="name" let-t>
+            <td class="at-namecell" [attr.data-row]="t.name">
+              <div class="at-name">
+                <mf-task-type-chip
+                  class="at-chip"
+                  [decorative]="true"
+                  [iconKey]="t.iconKey"
+                  [colourKey]="t.colourKey"
+                  [typeId]="t.assetTypeId"
+                  [name]="t.name"
+                />
+                <a
+                  class="mf-link pg-clip"
+                  [routerLink]="['/admin/asset-types', t.assetTypeId]"
+                  [mfRowLink]="listId"
+                  [rowKey]="t.assetTypeId"
+                  [state]="leave.state()"
+                  [attr.title]="t.name"
+                  data-open
+                  >{{ t.name }}</a
+                >
+              </div>
+            </td>
+          </ng-template>
+          <ng-template mfCell="fields" let-t>
+            <td class="pg-nowrap" data-fields>
+              <mf-form-status-cell
+                [publishedVersion]="t.publishedFormVersionNo ?? null"
+                [fieldCount]="t.fieldCount ?? null"
+                [publishedAtUtc]="t.publishedAtUtc ?? null"
+                [draftVersion]="t.draftVersionNo ?? null"
               />
-              @for (t of rows(); track t.assetTypeId) {
-                <tr [attr.data-row]="t.name" [class.inactive]="!t.isActive">
-                  <td class="mf-cell-name">
-                    <div class="at-name">
-                      <mf-task-type-chip
-                        class="at-chip"
-                        [decorative]="true"
-                        [iconKey]="t.iconKey"
-                        [colourKey]="t.colourKey"
-                        [typeId]="t.assetTypeId"
-                        [name]="t.name"
-                      />
-                      <a
-                        class="mf-name"
-                        [routerLink]="['/admin/asset-types', t.assetTypeId]"
-                        [mfRowLink]="listId"
-                        [rowKey]="t.assetTypeId"
-                        [state]="leave.state()"
-                        [attr.title]="t.name"
-                        data-open
-                        >{{ t.name }}</a
-                      >
-                    </div>
-                  </td>
-                  <td class="mf-cell-badge" data-fields>
-                    <mf-form-status-cell
-                      [publishedVersion]="t.publishedFormVersionNo ?? null"
-                      [fieldCount]="t.fieldCount ?? null"
-                      [publishedAtUtc]="t.publishedAtUtc ?? null"
-                      [draftVersion]="t.draftVersionNo ?? null"
-                    />
-                  </td>
-                  @if (assetsShown()) {
-                    <td class="mf-cell-num" data-assets>
-                      @if (t.assetCount !== undefined && t.assetCount !== null) {
-                        {{ t.assetCount | mfInt }}
-                      }
-                    </td>
-                  }
-                  <td class="mf-cell-badge"><mf-active-badge [active]="t.isActive" /></td>
-                  <td class="mf-cell-actions" [attr.data-actions-of]="t.assetTypeId">
-                    @if (menus().get(t.assetTypeId); as menu) {
-                      <mf-action-menu [floating]="true" [label]="menu.label" [items]="menu.items" />
-                    }
-                  </td>
-                </tr>
+            </td>
+          </ng-template>
+          <ng-template mfCell="assets" let-t>
+            <td class="pg-num" data-assets>
+              @if (t.assetCount !== undefined && t.assetCount !== null) {
+                {{ t.assetCount | mfInt }}
               }
-            </tbody>
-          </table>
-        </div>
+            </td>
+          </ng-template>
+          <ng-template mfCell="status" let-t>
+            <td><mf-active-badge [active]="t.isActive" /></td>
+          </ng-template>
+          <ng-template mfCell="actions" let-t>
+            <td class="mf-col-actions" [attr.data-actions-of]="t.assetTypeId">
+              @if (menus().get(t.assetTypeId); as menu) {
+                <mf-action-menu [floating]="true" [label]="menu.label" [items]="menu.items" />
+              }
+            </td>
+          </ng-template>
+          <div mfGridFoot>
+            <ng-container *ngTemplateOutlet="pager" />
+          </div>
+        </mf-record-grid>
       </div>
     }
 
-    @if (state() === 'ready' && total() > 0) {
-      <mf-pager
-        [page]="shownPage()"
-        [pageSize]="pageSize()"
-        [pageSizes]="pageSizes"
-        [total]="total()"
-        [hidden]="hiddenCount()"
-        hiddenLabel="inactive"
-        (showAll)="showAll()"
-        (pageChange)="goToPage($event)"
-        (pageSizeChange)="setPageSize($event)"
-      />
+    @if (phone()) {
+      <ng-container *ngTemplateOutlet="pager" />
     }
+    <ng-template #pager>
+      @if (state() === 'ready' && total() > 0) {
+        <mf-pager
+          [page]="shownPage()"
+          [pageSize]="pageSize()"
+          [pageSizes]="pageSizes"
+          [total]="total()"
+          [hidden]="hiddenCount()"
+          hiddenLabel="inactive"
+          (showAll)="showAll()"
+          (pageChange)="goToPage($event)"
+          (pageSizeChange)="setPageSize($event)"
+        />
+      }
+    </ng-template>
 
     <mf-confirm-dialog
       [title]="deactivateCopy().title"
@@ -287,17 +288,12 @@ const LOAD_PAGE_SIZE = 100;
       gap: var(--mf-s2);
       min-width: 0;
     }
-    .at-name .mf-name {
+    .at-name .pg-clip {
       flex: 1 1 0;
       min-width: 0;
     }
-    .at-failure {
-      display: flex;
-      gap: var(--mf-s2);
-      align-items: center;
-      margin: var(--mf-s2) 0;
-      color: var(--mf-danger);
-      font-size: var(--mf-fs-sm);
+    .at-namecell {
+      max-width: 0;
     }
   `,
 })
@@ -318,16 +314,34 @@ export class AssetTypesPage extends LocalListPage<AssetTypeResponse> {
   protected readonly canManage = computed(() => this.auth.has('AssetType.Manage'));
   /** The Assets count is null in the API without `Asset.View`: the column is not there for a person without it. */
   protected readonly assetsShown = computed(() => this.assetsRoom() && this.auth.has('Asset.View'));
-  protected readonly columns = computed<readonly Column[]>(() => [
-    'name',
-    'fields',
-    ...(this.assetsShown() ? (['assets'] as const) : []),
-    'status',
-    'actions',
+  /** The columns of the shared record grid (D-44a): Name is the spring; the others have fixed widths so the headings never move. */
+  protected readonly gridDefs = signal<readonly RecordGridColumn[]>([
+    { key: 'name', label: 'Name', locked: true, minWidth: '200px' },
+    { key: 'fields', label: 'Fields', width: '300px', minWidth: '300px' },
+    {
+      key: 'assets',
+      label: 'Assets',
+      num: true,
+      width: 'var(--mf-col-count-w)',
+      minWidth: 'var(--mf-col-count-w)',
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      width: 'var(--mf-col-status-w)',
+      minWidth: 'var(--mf-col-status-w)',
+    },
   ]);
-  protected readonly columnSpec = computed<readonly AdminColumn[]>(() =>
-    this.columns().map((c) => COLUMN_SPEC[c]),
+  protected readonly grid = new RecordGridState('admin-asset-types', this.gridDefs, () =>
+    this.assetsShown() ? [] : ['assets'],
   );
+  protected readonly bones = BONES;
+  protected readonly typeKey = (t: AssetTypeResponse): number => t.assetTypeId;
+  /** An inactive type keeps the `inactive` hook of its row (the muted look, the order test). */
+  protected readonly rowClass = (t: AssetTypeResponse): string | null =>
+    t.isActive ? null : 'inactive';
+  /** The columns of the table in order, the row action last: what the filter row builds its cells from. */
+  protected readonly columns = computed<readonly string[]>(() => [...this.grid.shown(), 'actions']);
 
   protected readonly busy = signal(false);
   protected readonly failure = signal('');

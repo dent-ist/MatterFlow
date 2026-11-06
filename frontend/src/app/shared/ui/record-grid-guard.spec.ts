@@ -11,8 +11,6 @@ import { join, relative } from 'node:path';
 const APP = join(process.cwd(), 'src', 'app');
 
 const ALLOWED: Readonly<Record<string, string>> = {
-  'features/admin/asset-types/asset-types-page.ts':
-    'Administration list, adopts the shared grid in its Administration issue',
   'features/admin/custom-fields/custom-fields-page.ts':
     'Administration list, adopts the shared grid in its Administration issue',
   'features/admin/reports/preview-panel.ts': 'a report preview, not a record list',

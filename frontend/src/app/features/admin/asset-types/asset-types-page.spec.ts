@@ -99,10 +99,13 @@ describe('AssetTypesPage (#634, #637)', () => {
   }
 
   const rowNames = (): string[] =>
-    all('[data-types] tbody tr[data-row]').map((r) => r.getAttribute('data-row')!);
+    all('[data-types] tbody td[data-row]').map((r) => r.getAttribute('data-row')!);
 
   async function menuOf(name: string): Promise<HTMLElement[]> {
-    q<HTMLButtonElement>(`tr[data-row="${name}"] button[data-overflow]`).click();
+    q(`td[data-row="${name}"]`)
+      .closest('tr')!
+      .querySelector<HTMLButtonElement>('button[data-overflow]')!
+      .click();
     await settle(fixture);
     return all('[role=menuitem]');
   }
@@ -132,7 +135,7 @@ describe('AssetTypesPage (#634, #637)', () => {
     });
 
     it('has the name as the one link, the form status, the asset count, the status and one menu', () => {
-      const row = q('tr[data-row="Document Set"]');
+      const row = q('td[data-row="Document Set"]').closest('tr')!;
       expect(row.querySelectorAll('a')).toHaveLength(1);
       expect(row.querySelector('a')!.getAttribute('href')).toBe('/admin/asset-types/4');
       const fields = row.querySelector('[data-fields]')!.textContent!.replace(/\s+/g, ' ');
@@ -142,7 +145,10 @@ describe('AssetTypesPage (#634, #637)', () => {
       expect(row.querySelector('[data-assets]')!.textContent!.trim()).toBe('12');
       expect(row.textContent).toContain('Active');
       expect(row.querySelectorAll('button[data-overflow]')).toHaveLength(1);
-      const draft = q('tr[data-row="Data Room"] [data-fields]').textContent!.replace(/\s+/g, ' ');
+      const draft = q('td[data-row="Data Room"]')
+        .closest('tr')!
+        .querySelector('[data-fields]')!
+        .textContent!.replace(/\s+/g, ' ');
       expect(draft).toContain('No Published Fields');
       expect(draft).toContain('Draft v1');
     });

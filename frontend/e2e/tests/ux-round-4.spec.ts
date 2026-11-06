@@ -392,10 +392,10 @@ test.describe('Round 4: administration naming', () => {
     await page.goto('/admin/asset-types');
     await page.getByRole('button', { name: /^Filters/ }).click();
     await page.getByRole('textbox', { name: 'Filter by Name' }).fill(name);
-    await expect(page.locator('[data-types] tr[data-row]')).toHaveCount(1);
+    await expect(page.locator('[data-types] tbody tr[data-record-id]')).toHaveCount(1);
     await expect(page.locator(`[data-row="${name}"]`)).toBeVisible();
     await filterDropdown(page, 'Status').selectOption('inactive');
-    await expect(page.locator('[data-types] tr[data-row]')).toHaveCount(0);
+    await expect(page.locator('[data-types] tbody tr[data-record-id]')).toHaveCount(0);
   });
 
   test('UXR4-14: the Users tab opens on Pending access when people are waiting (product owner decision)', async ({

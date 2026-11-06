@@ -5,7 +5,7 @@
     <!-- Palette -->
     @if (!readOnly() && !narrow()) {
       <section class="fd__palette fd__pane" aria-labelledby="{{ uid }}-palette-h">
-        <h3 class="fd__h" [id]="uid + '-palette-h'">Add a field</h3>
+        <h3 class="fd__h" [id]="uid + '-palette-h'">Add a Field</h3>
         <div class="fd__scroll" mfFdScroll="Field types">
           <ng-container *ngTemplateOutlet="paletteTpl" />
         </div>
@@ -28,7 +28,7 @@
                 aria-haspopup="dialog"
                 (click)="openSheet('add')"
               >
-                <span aria-hidden="true">+</span> Add field
+                <span aria-hidden="true">+</span> Add Field
               </button>
             }
             <button
@@ -160,7 +160,7 @@
     >
       @if (sheet() === 'add') {
         <div class="fd__sheet-head">
-          <h3 class="fd__h" [id]="uid + '-sheet-h'">Add a field</h3>
+          <h3 class="fd__h" [id]="uid + '-sheet-h'">Add a Field</h3>
           <button type="button" class="mf-btn fd__btn" data-sheet-close (click)="closeSheet()">
             Close
           </button>

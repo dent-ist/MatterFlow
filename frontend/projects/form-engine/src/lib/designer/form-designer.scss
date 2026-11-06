@@ -112,7 +112,7 @@
 
 .fd__icon,
 .fd__link {
-  min-height: 2.25rem;
+  min-height: var(--mf-ctl-h, 36px);
   padding: 0.25rem 0.625rem;
   border: 1px solid var(--mf-border-strong);
   border-radius: var(--mf-radius);
@@ -208,7 +208,7 @@ input[type='number'],
 input[type='date'],
 select,
 textarea {
-  min-height: 2.25rem;
+  min-height: var(--mf-ctl-h, 36px);
   padding: 0.25rem 0.5rem;
   border: 1px solid var(--mf-border-strong);
   border-radius: var(--mf-radius);

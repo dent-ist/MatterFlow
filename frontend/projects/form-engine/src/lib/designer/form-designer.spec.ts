@@ -403,7 +403,7 @@ describe('FormDesigner', () => {
       await create([{ key: 'a', control: 'TEXT', label: 'A' }]);
       expect(el().querySelector('.fd__palette')).toBeNull();
       expect(el().querySelector('.fd__side')).toBeNull();
-      expect(q('[data-open-add]').textContent).toContain('Add field');
+      expect(q('[data-open-add]').textContent).toContain('Add Field');
       expect(q('[data-open-add]').getAttribute('aria-haspopup')).toBe('dialog');
       const order = Array.from(el().querySelectorAll('section')).map((s) => s.className);
       expect(order[0]).toContain('fd__canvas');

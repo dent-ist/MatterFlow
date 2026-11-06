@@ -34,6 +34,7 @@ import { RecordHeader, RecordAction } from '../../../shared/ui/record-header';
 import { RecordSkeleton } from '../../../shared/ui/record-skeleton';
 import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
 import { TextField } from '../../../shared/ui/text-field';
+import { DetailsCard } from '../../../shared/ui/details-card';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { tabIcon } from '../../../shared/ui/tab-icons';
 import { focusStatusAfterAction } from '../after-action';
@@ -121,6 +122,7 @@ const modelKey = (m: Model): string =>
     RecordState,
     RouterLink,
     Tabs,
+    DetailsCard,
     TextField,
     TaskTypeIconPicker,
     TaskTypeChip,

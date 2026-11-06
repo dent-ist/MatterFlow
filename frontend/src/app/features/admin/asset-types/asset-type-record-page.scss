@@ -18,30 +18,23 @@
   min-width: 0;
 }
 
-/* The 720 px form card of the record pages (#361): one column, the fields keep --mf-field-max. */
+/* The record page cards are the shared `mf-details-card` (D-44f, #1207); the form cards keep 720 px, the fields keep --mf-field-max. */
 .at__card {
-  display: grid;
-  gap: var(--mf-s4);
-  box-sizing: border-box;
+  display: block;
   max-width: 720px;
-  padding: var(--mf-s5);
-  background: var(--mf-surface);
-  border-radius: var(--mf-radius-lg);
-  box-shadow: var(--mf-shadow-1);
-
-  h2 {
-    margin: 0;
-    font-size: var(--mf-fs-h3);
-  }
 }
 
-.at__card--fields {
-  justify-items: start;
+.at__stack {
+  display: grid;
   gap: var(--mf-s3);
 
   p {
     margin: 0;
   }
+}
+
+.at__stack--start {
+  justify-items: start;
 }
 
 .at__hint {
@@ -130,8 +123,8 @@
     margin: 0;
   }
 
-  select.text {
-    min-height: var(--mf-row-h);
-    padding: 0 var(--mf-s3);
+  select.mf-control {
+    width: var(--mf-field-max);
+    max-width: 100%;
   }
 }

@@ -30,7 +30,7 @@ test.describe('FD4: phone order', () => {
     expect(box!.y + box!.height).toBeLessThanOrEqual(812);
     expect(box!.y).toBeLessThan(500); // was y = 810 under the 14 palette buttons
     await expect(page.locator('[data-palette]')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Add field' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Add Field' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Add Text' })).toHaveCount(0);
     await noSideScroll(page);
     await shoot(page, 'phone-fields-first', { w: 375, h: 812 });
@@ -43,10 +43,10 @@ test.describe('FD4: phone order', () => {
   }) => {
     const world = await typeWorld(seed, admin, { draft: true });
     await page.goto(world.url);
-    const add = page.getByRole('button', { name: 'Add field' });
+    const add = page.getByRole('button', { name: 'Add Field' });
     await add.focus();
     await page.keyboard.press('Enter');
-    const sheet = page.getByRole('dialog', { name: 'Add a field' });
+    const sheet = page.getByRole('dialog', { name: 'Add a Field' });
     await expect(sheet).toBeVisible();
     await expect(sheet.getByRole('button', { name: /^Add / })).toHaveCount(14);
     await expectNoViolations(page, 'palette sheet');
@@ -79,7 +79,7 @@ test.describe('FD4: phone order', () => {
   }) => {
     const world = await typeWorld(seed, admin, { draft: true, fields: manyFields(4) });
     await page.goto(world.url);
-    await page.getByRole('button', { name: 'Add field' }).click();
+    await page.getByRole('button', { name: 'Add Field' }).click();
     await page.getByRole('button', { name: 'Add Text' }).click();
     // The palette sheet turns into the properties of the new field, with its label ready to type.
     const sheet = page.getByRole('dialog', { name: 'Field details' });
@@ -107,7 +107,7 @@ test.describe('FD4: phone order', () => {
   }) => {
     const world = await typeWorld(seed, admin, { draft: true, fields: manyFields(3) });
     await page.goto(world.url);
-    await page.getByRole('button', { name: 'Add field' }).focus();
+    await page.getByRole('button', { name: 'Add Field' }).focus();
     await page.keyboard.press('Space');
     await page.getByRole('button', { name: 'Add Number' }).focus();
     await page.keyboard.press('Enter');
@@ -131,7 +131,7 @@ test.describe('FD4: phone order', () => {
   }) => {
     const world = await typeWorld(seed, admin, { published: true });
     await page.goto(world.url);
-    await expect(page.getByRole('button', { name: 'Add field' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Add Field' })).toHaveCount(0);
     await page.getByRole('button', { name: 'Preview', exact: true }).click();
     await expect(page.getByRole('dialog', { name: 'Field details' })).toBeVisible();
     await expect(page.getByRole('tab', { name: 'Preview' })).toHaveAttribute(
@@ -150,15 +150,15 @@ test.describe('FD4: the sheets follow the window', () => {
     const world = await typeWorld(seed, admin, { draft: true });
     await page.setViewportSize({ width: 1000, height: 800 });
     await page.goto(world.url);
-    await page.getByRole('button', { name: 'Add field' }).click();
-    await expect(page.getByRole('dialog', { name: 'Add a field' })).toBeVisible();
+    await page.getByRole('button', { name: 'Add Field' }).click();
+    await expect(page.getByRole('dialog', { name: 'Add a Field' })).toBeVisible();
     await page.setViewportSize({ width: 1400, height: 800 });
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(page.locator('[data-palette]')).toBeVisible();
     await expect(page.getByRole('tab', { name: 'Properties' })).toBeVisible();
     await page.setViewportSize({ width: 1000, height: 800 });
     await expect(page.locator('[data-palette]')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Add field' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Add Field' })).toBeVisible();
   });
 });
 
@@ -180,7 +180,7 @@ for (const size of SIZES) {
       await page.getByRole('button', { name: 'Add Text' }).click();
       await expect(page.getByLabel('Label', { exact: true })).toBeFocused();
     } else {
-      await page.getByRole('button', { name: 'Add field' }).click();
+      await page.getByRole('button', { name: 'Add Field' }).click();
       await shoot(page, 'palette-sheet', size);
       await expectNoViolations(page, 'palette sheet');
       await page.getByRole('button', { name: 'Add Text' }).click();
@@ -212,7 +212,7 @@ test.describe('FD4 permissions', () => {
       const page = await asUser((await seed.user([role.name], r.label)).username);
       await page.setViewportSize({ width: 375, height: 812 });
       await page.goto(r.world.url);
-      await page.getByRole('button', { name: 'Add field' }).click();
+      await page.getByRole('button', { name: 'Add Field' }).click();
       await page.getByRole('button', { name: 'Add Checkbox' }).click();
       await expect(page.getByRole('dialog', { name: 'Field details' })).toBeVisible();
     }
