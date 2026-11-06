@@ -13,10 +13,10 @@ export interface HasUnsavedChanges {
   readonly saveForLeaveLabel?: string;
 }
 
-export const UNSAVED_CHANGES_MESSAGE = 'You have unsaved changes. Leave without saving?';
+export const UNSAVED_CHANGES_MESSAGE = 'You have unsaved changes. Discard them?';
 
 /**
- * Asks "Leave without saving?" in the themed confirm dialog (`mf-leave-confirm-host` in the app shell renders it). One question at a
+ * Asks "You have unsaved changes. Discard them?" ([Keep Editing] [Discard Changes], D-31) in the themed confirm dialog (`mf-leave-confirm-host` in the app shell renders it). One question at a
  * time; asking again while one is open declines the earlier one.
  */
 @Injectable({ providedIn: 'root' })
@@ -25,7 +25,7 @@ export class LeaveConfirmService {
 
   /** True while the question is on screen. */
   readonly open = signal(false);
-  /** The primary "save and leave" choice of the question on screen (label and what it runs), or null for the plain Stay / Leave. */
+  /** The primary "save and leave" choice of the question on screen (label and what it runs), or null for the plain Keep Editing / Discard Changes. */
   readonly saveOffer = signal<{ label: string; run: () => Promise<boolean> } | null>(null);
   /** True while "save and leave" is saving. */
   readonly saving = signal(false);

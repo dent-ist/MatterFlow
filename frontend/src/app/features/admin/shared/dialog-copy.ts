@@ -40,7 +40,7 @@ export const DIALOG_COPY = {
     danger: true,
   },
   discardChanges: {
-    title: 'Discard Unsaved Changes',
+    title: 'Unsaved Changes',
     confirm: 'Discard Changes',
     cancel: 'Keep Editing',
     danger: true,

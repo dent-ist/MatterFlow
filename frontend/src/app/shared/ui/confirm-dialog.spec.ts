@@ -47,7 +47,7 @@ describe('ConfirmDialog', () => {
   imports: [ConfirmDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<mf-confirm-dialog
-    title="Discard Unsaved Changes"
+    title="Unsaved Changes"
     confirmLabel="Discard Changes"
     cancelLabel="Keep Editing"
     [danger]="true"

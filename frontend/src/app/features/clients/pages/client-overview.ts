@@ -150,10 +150,10 @@ export function rowsFromMatters(matters: readonly MatterResponse[]): OverviewMat
             <table class="ov-table" data-top-matters>
               <thead>
                 <tr>
-                  <th scope="col">Matter</th>
-                  <th scope="col">Name</th>
+                  <th scope="col">CM Number</th>
+                  <th scope="col">Matter Name</th>
                   @if (canSeeTasks()) {
-                    <th scope="col" class="ov-num">Open</th>
+                    <th scope="col" class="ov-num">Open Tasks</th>
                     <th scope="col" class="ov-num">Overdue</th>
                   }
                   <th scope="col">Status</th>
@@ -171,7 +171,7 @@ export function rowsFromMatters(matters: readonly MatterResponse[]): OverviewMat
                       <span class="ov-clamp" [attr.title]="m.name">{{ m.name }}</span>
                     </td>
                     @if (canSeeTasks()) {
-                      <td class="ov-num" data-label="Open">{{ m.open ?? '--' }}</td>
+                      <td class="ov-num" data-label="Open Tasks">{{ m.open ?? '--' }}</td>
                       <td class="ov-num" [attr.data-label]="m.overdue ? null : 'Overdue'">
                         @if (m.overdue) {
                           <mf-badge tone="danger" data-overdue-chip

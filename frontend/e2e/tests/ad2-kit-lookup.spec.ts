@@ -95,7 +95,7 @@ test.describe('lookup dialog on the Status Labels rename (#564)', () => {
     // Edits: Escape asks; Stay is the default button.
     await field(page).fill(dropped);
     await page.keyboard.press('Escape');
-    const ask = page.getByRole('dialog', { name: 'Discard Unsaved Changes' });
+    const ask = page.getByRole('dialog', { name: 'Unsaved Changes' });
     await expect(ask).toBeVisible();
     await expect(ask.getByRole('button', { name: 'Keep Editing' })).toBeFocused();
     await page.keyboard.press('Enter');
@@ -130,7 +130,7 @@ test.describe('lookup dialog on the Status Labels rename (#564)', () => {
     }
     await page.keyboard.press('Escape');
     await expect(dialog(page)).toBeHidden();
-    await expect(page.getByRole('dialog', { name: 'Discard Unsaved Changes' })).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: 'Unsaved Changes' })).toHaveCount(0);
     await expect(rename(page, 'NEW')).toBeFocused();
   });
 

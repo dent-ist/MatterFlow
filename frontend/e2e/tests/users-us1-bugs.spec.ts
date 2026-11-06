@@ -156,7 +156,7 @@ test.describe('BUG-2: focus and Esc', () => {
     const name = page.locator('[data-name]');
     await name.fill('Someone Else Entirely');
     await page.keyboard.press('Escape');
-    const dialog = page.getByRole('dialog', { name: 'Discard Unsaved Changes' });
+    const dialog = page.getByRole('dialog', { name: 'Unsaved Changes' });
     await expect(dialog).toBeVisible();
     await dialog.getByRole('button', { name: 'Keep Editing' }).click();
     await expect(dialog).toBeHidden();

@@ -34,7 +34,7 @@ import { DIALOG_WIDTHS } from './form-dialog';
  * - Validation (#361): the page validates on `(save)` and passes the messages as `summary`. The summary shows at the top ("Fix the following to
  *   save:", role=alert), each field shows its own message with the icon (`mf-text-field [error]`), and focus goes to the first field marked
  *   `aria-invalid`. A server failure goes in `error` (role=alert, the dialog stays open, focus stays on the button).
- * - Closing with unsaved edits (`dirty`) asks "Leave without saving?" through `LeaveConfirmService` (Stay is the default); Escape, the X and
+ * - Closing with unsaved edits (`dirty`) asks "You have unsaved changes. Discard them?" through `LeaveConfirmService` ([Keep Editing] is the default); Escape, the X and
  *   Cancel all go through it. `(cancel)` fires once the dialog has closed without saving. The page closes the dialog itself after a save.
  * - Focus: the first field when it opens; back to the control that opened it (the row menu button or the New button) when it closes
  *   (`DialogFocus`); the focus trap is the dialog's own. Enter in a field saves. While `saving` the buttons keep focus and ignore clicks.
@@ -106,7 +106,7 @@ import { DIALOG_WIDTHS } from './form-dialog';
       (onShow)="focusFirstField()"
       [style]="{ width: width(), whiteSpace: 'normal' }"
     >
-      <!-- PrimeNG closes a dialog by itself on Escape and on the X, which would leave it hidden after "Stay"; this dialog closes through
+      <!-- PrimeNG closes a dialog by itself on Escape and on the X, which would leave it hidden after "Keep Editing"; this dialog closes through
            request() only, so it has its own header (the title names the dialog) and handles Escape itself. -->
       <ng-template #header let-labelId="ariaLabelledBy">
         <span class="mf-dlg__title" [id]="labelId" data-lookup-title>{{ title() }}</span>
@@ -235,7 +235,7 @@ export class LookupDialog {
   }
 
   /**
-   * `DialogFocus` returns focus too, but the leave question ("Stay / Leave") closes at the same moment and takes it to a button that is
+   * `DialogFocus` returns focus too, but the leave question ("Keep Editing / Discard Changes") closes at the same moment and takes it to a button that is
    * gone; once every dialog layer is away, a focus that fell to the page body (or to the page's `main`, where the browser puts it after a
    * navigation that only changed the address, the `?edit=` of a Labels dialog) goes back to the opener.
    */

@@ -1737,17 +1737,14 @@ interface RefChip {
       </p>
     </mf-confirm-dialog>
     <mf-confirm-dialog
-      title="Discard Unsaved Changes"
+      title="Unsaved Changes"
       confirmLabel="Discard Changes"
       cancelLabel="Keep Editing"
       [danger]="true"
       [(visible)]="confirmDiscard"
       (confirmed)="proceedDiscard()"
     >
-      <p>
-        You have unsaved changes to <b>{{ draftTitle() || 'a new note' }}</b
-        >. If you leave now they are lost.
-      </p>
+      <p>You have unsaved changes. Discard them?</p>
     </mf-confirm-dialog>
   `,
 })
@@ -2037,7 +2034,6 @@ export class NotesTab {
     this.note() ? this.dirty() : titleOfHtml(this.currentHtml()) !== '' || this.dirty(),
   );
   protected readonly saveBlocked = computed(() => this.lockedWhileEditing() !== '');
-  protected readonly draftTitle = computed(() => titleOfHtml(this.currentHtml()));
   /** The tags a person can pick: the active ones, plus an inactive one the note already has (it stays visible and can be removed). */
   protected readonly pickableTags = computed(() => {
     const q = this.tagQuery().trim().toLowerCase();

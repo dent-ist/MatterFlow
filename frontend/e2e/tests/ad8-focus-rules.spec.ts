@@ -19,7 +19,7 @@ async function notOnBody(page: Page, what: string): Promise<void> {
 const dialog = (page: Page, name: string | RegExp) => page.getByRole('dialog', { name });
 const menu = (page: Page, name: string) =>
   page.getByRole('button', { name: `Actions for ${name}`, exact: true });
-const leave = (page: Page) => page.getByRole('dialog', { name: 'Discard Unsaved Changes' });
+const leave = (page: Page) => page.getByRole('dialog', { name: 'Unsaved Changes' });
 
 test.describe('Focus rules: Priorities (#657)', () => {
   test('New priority: focus goes in, a failed submit focuses the first invalid field, Escape returns to the New button', async ({

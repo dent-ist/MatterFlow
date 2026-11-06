@@ -88,7 +88,7 @@ test.describe('Asset forms (WP-AS5)', () => {
 
     // Leaving with typed values asks first.
     await page.getByRole('link', { name: 'Assets', exact: true }).first().click();
-    const ask = page.getByRole('dialog', { name: 'Discard Unsaved Changes' });
+    const ask = page.getByRole('dialog', { name: 'Unsaved Changes' });
     await expect(ask).toBeVisible();
     await ask.getByRole('button', { name: 'Keep Editing' }).click();
     await expect(page).toHaveURL(/\/assets\/new/);

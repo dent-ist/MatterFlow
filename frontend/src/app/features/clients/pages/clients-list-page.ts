@@ -462,7 +462,14 @@ export class ClientsListPage extends ServerListPage<ClientResponse> {
 
   /** One definition per filter: the row, the sheet, the chips, the count, the URL and the API arguments all come from it. */
   private readonly defs = computed((): FilterDef[] => [
-    { key: 'clientNumber', label: 'Client Number', column: 'clientNumber', type: 'text' },
+    {
+      key: 'clientNumber',
+      label: 'Client Number',
+      column: 'clientNumber',
+      type: 'text',
+      // The input is 130 px wide in the 154 px column: "Client Number" would be cut ("Client Num...", #1246).
+      placeholder: 'Number',
+    },
     { key: 'name', label: 'Client Name', column: 'name', type: 'text', search: true },
     statusDef(),
   ]);

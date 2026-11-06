@@ -14,7 +14,7 @@ import { toasts } from '../support/toasts';
 const TAB_URL = '/admin/asset-types?tab=link-roles';
 const dialog = (page: Page) => page.getByRole('dialog', { name: /link role/i });
 const field = (page: Page) => page.locator('#link-role-name');
-const ask = (page: Page) => page.getByRole('dialog', { name: 'Discard Unsaved Changes' });
+const ask = (page: Page) => page.getByRole('dialog', { name: 'Unsaved Changes' });
 const menu = (page: Page, name: string) =>
   page.getByRole('button', { name: `Actions for ${name}`, exact: true });
 const row = (page: Page, name: string) => page.locator(`tr[data-row="${name}"]`);

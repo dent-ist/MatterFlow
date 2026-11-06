@@ -99,8 +99,8 @@ describe('ClientOverview', () => {
     expect(el().querySelector('[data-strip]')).toBeNull();
     expect(text(el().querySelector('.ov-h'))).toBe('Matters');
     expect(Array.from(el().querySelectorAll('th')).map((h) => text(h))).toEqual([
-      'Matter',
-      'Name',
+      'CM Number',
+      'Matter Name',
       'Status',
     ]);
     expect(el().querySelectorAll('[data-top-matters] tbody tr').length).toBe(2);

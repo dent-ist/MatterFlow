@@ -117,6 +117,7 @@ describe('ClientsListPage', () => {
     expect(el.querySelector('mf-list-toolbar [data-filters-toggle]')).not.toBeNull();
     expect(el.querySelector('mf-page-header [data-list-count]')?.textContent).toContain('1');
     expect(control<HTMLInputElement>(el, 'Client Number')).not.toBeNull();
+    expect(control<HTMLInputElement>(el, 'Client Number').placeholder).toBe('Number');
     // Name is the Search box, not a cell of the filter row.
     expect(control<HTMLInputElement>(el, 'Name')).toBeNull();
     // Active is the default: shown, not counted, not chipped, no Clear filters.

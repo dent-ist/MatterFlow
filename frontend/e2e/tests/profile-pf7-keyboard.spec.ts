@@ -172,7 +172,7 @@ test.describe('pf7-keyboard: keyboard-only flows on My profile (#582)', () => {
     await press(me, 'Space');
     await me.getByRole('link', { name: 'My Work' }).focus();
     await press(me, 'Enter');
-    const ask = me.getByRole('dialog', { name: 'Discard Unsaved Changes' });
+    const ask = me.getByRole('dialog', { name: 'Unsaved Changes' });
     await expect(ask).toBeVisible();
     await ask.getByRole('button', { name: 'Keep Editing' }).focus();
     await press(me, 'Enter');
@@ -184,7 +184,7 @@ test.describe('pf7-keyboard: keyboard-only flows on My profile (#582)', () => {
     await me.getByRole('link', { name: 'My Work' }).focus();
     await press(me, 'Enter');
     await me
-      .getByRole('dialog', { name: 'Discard Unsaved Changes' })
+      .getByRole('dialog', { name: 'Unsaved Changes' })
       .getByRole('button', { name: 'Discard Changes' })
       .focus();
     await press(me, 'Enter');

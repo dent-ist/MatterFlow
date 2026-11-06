@@ -13,7 +13,7 @@ import { uid } from '../support/seed';
 const heading = (page: Page) => page.getByRole('heading', { level: 1 });
 const crumbs = (page: Page) => page.getByRole('navigation', { name: 'Breadcrumb' }).locator('li');
 const name = (page: Page) => page.getByLabel('Name', { exact: false }).first();
-const ask = (page: Page) => page.getByRole('dialog', { name: 'Discard Unsaved Changes' });
+const ask = (page: Page) => page.getByRole('dialog', { name: 'Unsaved Changes' });
 const WIDTHS = [
   { width: 1920, height: 1080 },
   { width: 1366, height: 768 },

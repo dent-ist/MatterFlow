@@ -181,13 +181,13 @@ test.describe('New priority and Edit priority (#609)', () => {
     await expect(label(page)).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(dialog(page)).toBeHidden();
-    await expect(page.getByRole('dialog', { name: 'Discard Unsaved Changes' })).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: 'Unsaved Changes' })).toHaveCount(0);
     await expect(opener).toBeFocused();
 
     await opener.click();
     await label(page).fill('half typed');
     await page.keyboard.press('Escape');
-    const ask = page.getByRole('dialog', { name: 'Discard Unsaved Changes' });
+    const ask = page.getByRole('dialog', { name: 'Unsaved Changes' });
     await expect(ask).toBeVisible();
     await expect(ask.getByRole('button', { name: 'Keep Editing' })).toBeFocused();
     await page.keyboard.press('Enter');

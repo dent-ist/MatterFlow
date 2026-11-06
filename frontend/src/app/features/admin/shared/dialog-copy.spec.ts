@@ -28,7 +28,7 @@ describe('dialog wording table (#362)', () => {
     expect(DIALOG_COPY.discardDraft.confirm).toBe('Discard Draft');
     // The unsaved-changes question is the one dialog whose cancel is not "Cancel" (D-34).
     expect(DIALOG_COPY.discardChanges).toEqual({
-      title: 'Discard Unsaved Changes',
+      title: 'Unsaved Changes',
       confirm: 'Discard Changes',
       cancel: 'Keep Editing',
       danger: true,

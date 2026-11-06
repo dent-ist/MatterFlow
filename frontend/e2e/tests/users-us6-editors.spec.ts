@@ -248,7 +248,7 @@ test.describe('axe and layout with the editors open', () => {
       await shot(page, 'role-editor-changed', width, height);
       // Leave without saving (the guard asks): load the pod page fresh instead.
       await page.goto(`/admin/pods?pod=${podId}`).catch(() => undefined);
-      const leave = page.getByRole('dialog', { name: 'Discard Unsaved Changes' });
+      const leave = page.getByRole('dialog', { name: 'Unsaved Changes' });
       if (await leave.isVisible().catch(() => false)) {
         await leave.getByRole('button', { name: 'Discard Changes' }).click();
       }

@@ -17,7 +17,7 @@ test.describe('Version editor: leaving a dirty draft (VP8, #398)', () => {
   }
   const crumb = (page: Page, name: string) =>
     page.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('link', { name });
-  const ask = (page: Page) => page.getByRole('dialog', { name: 'Discard Unsaved Changes' });
+  const ask = (page: Page) => page.getByRole('dialog', { name: 'Unsaved Changes' });
 
   test('a breadcrumb offers Stay (default), Leave and Save draft and leave; Save draft and leave saves, then goes', async ({
     page,

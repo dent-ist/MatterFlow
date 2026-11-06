@@ -192,7 +192,7 @@ const BONES: Record<string, string> = {
                     [defaultSort]="defaultSort"
                     (sorted)="setSort($event)"
                   >
-                    Matter
+                    CM Number
                   </th>
                   <th
                     mfSort="name"
@@ -200,7 +200,7 @@ const BONES: Record<string, string> = {
                     [defaultSort]="defaultSort"
                     (sorted)="setSort($event)"
                   >
-                    Name
+                    Matter Name
                   </th>
                   @if (counts()) {
                     <th

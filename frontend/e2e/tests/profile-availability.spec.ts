@@ -140,7 +140,7 @@ test.describe('My profile: availability and work hours', () => {
     await me.goto('/profile');
     await me.getByLabel('Start time', { exact: true }).fill('07:00');
     await me.getByRole('link', { name: 'My Work' }).click();
-    const ask = me.getByRole('dialog', { name: 'Discard Unsaved Changes' });
+    const ask = me.getByRole('dialog', { name: 'Unsaved Changes' });
     await expect(ask).toBeVisible();
     await ask.getByRole('button', { name: 'Keep Editing' }).click();
     await expect(me).toHaveURL(/\/profile$/);
@@ -148,7 +148,7 @@ test.describe('My profile: availability and work hours', () => {
 
     await me.getByRole('link', { name: 'My Work' }).click();
     await me
-      .getByRole('dialog', { name: 'Discard Unsaved Changes' })
+      .getByRole('dialog', { name: 'Unsaved Changes' })
       .getByRole('button', { name: 'Discard Changes' })
       .click();
     await expect(me).toHaveURL(/\/my-work$/);
