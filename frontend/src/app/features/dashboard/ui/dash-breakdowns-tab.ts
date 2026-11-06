@@ -89,7 +89,7 @@ const PRIORITY_ICONS: Record<string, string> = {
           target.</span
         >
         <span class="legend" data-bd-legend>
-          <span class="key"><span class="sample plain" aria-hidden="true"></span>Not overdue</span>
+          <span class="key"><span class="sample plain" aria-hidden="true"></span>Not Overdue</span>
           <span class="key"><span class="sample od" aria-hidden="true"></span>Overdue</span>
         </span>
       </p>

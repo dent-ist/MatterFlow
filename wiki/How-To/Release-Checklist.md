@@ -2,7 +2,7 @@
 
 [[_TOC_]]
 
-**What this page is for.** What to check before and during a release. MatterFlow has not been deployed yet (`CLAUDE.md`), so this checklist is built from the CI definitions and `docs/runbook.md` (sections 5 to 9, 12) and has not been rehearsed on a real server. The remaining owner items are in runbook section 9 ("What the product owner must verify on the real server").
+**What this page is for.** What to check before and during a release. MatterFlow has not been deployed yet (`CLAUDE.md`), so this checklist is built from the CI definitions and `docs/runbook.md` (sections 5 to 9, 12) and has not been rehearsed on a real server. The remaining owner items are in runbook section 9 ("What the product owner must verify on the real server"). Which branch a release comes from and the steps before it (pull request, full QA, security check, UAT, tag) are on [Change Management Process](../Getting-Started/Change-Management-Process.md).
 
 ## Before the release branch is merged to `dev`
 

@@ -179,6 +179,26 @@ describe('AssetReportsPage', () => {
     expect(el().querySelector('mf-pie-chart, mf-bar-chart')).toBeNull();
   });
 
+  it('names the disposition groups in Title Case in the table and the legends, from the shared disposition words (D-20, #1262)', async () => {
+    await create();
+    run['runAssetReport'].mockReturnValue(
+      ok(
+        countResult({
+          rows: [
+            { key: 'ACTIVE', label: 'Active', cells: [12] },
+            { key: 'PENDING_DISPOSITION', label: 'Pending disposition', cells: [4] },
+          ],
+        }),
+      ),
+    );
+    await click_('[data-run]');
+    const labels = [...el().querySelectorAll('[data-result-row] th')].map((th) =>
+      th.textContent!.trim(),
+    );
+    expect(labels).toEqual(['Active', 'Pending Disposition']);
+    expect(el().textContent).not.toContain('Pending disposition');
+  });
+
   it('a sum for a type asks for its number field, adds a measure column and offers the unit only for a non-default field', async () => {
     await create();
     await choose('[data-type]', '4');

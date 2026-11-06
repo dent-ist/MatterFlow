@@ -274,7 +274,7 @@ describe('trend model', () => {
 
     it('a single flow measure draws one line of All; On time and Completed late are flow measures', () => {
       const v = buildView({ ...DEFAULT_CHOICE, metric: 'onTime' }, DATA, new Map(), DATA.types);
-      expect(v.flows.lines.map((l) => [l.name, l.values.join()])).toEqual([['On time', '4,5']]);
+      expect(v.flows.lines.map((l) => [l.name, l.values.join()])).toEqual([['On Time', '4,5']]);
       expect(v.flows.title).toBe('Created and Completed');
       const hidden = buildView({ ...DEFAULT_CHOICE, all: 'off' }, DATA, new Map(), DATA.types);
       expect(hidden.flows.lines).toEqual([]);

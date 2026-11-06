@@ -2,8 +2,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
-  Injector,
-  afterNextRender,
   computed,
   effect,
   inject,
@@ -24,7 +22,6 @@ import {
 } from '../../../shared/icons/user-state-icon';
 import { Badge, BadgeTone } from '../../../shared/ui/badge';
 import { CountChip } from '../../../shared/ui/count-chip';
-import { FilterChip, FilterChips } from '../../../shared/ui/filter-chips';
 import { DashboardPrefs } from '../dashboard-prefs';
 import { DashState } from '../ui/dash-state';
 import { CALENDAR_API } from './calendar-api';
@@ -79,17 +76,7 @@ export function groupKey(kind: string, roleId: number): number {
 
 @Component({
   selector: 'mf-cal-panel',
-  imports: [
-    IntPipe,
-    NgTemplateOutlet,
-    Tip,
-    TagChip,
-    Badge,
-    CountChip,
-    FilterChips,
-    UserStateIcon,
-    DashState,
-  ],
+  imports: [IntPipe, NgTemplateOutlet, Tip, TagChip, Badge, CountChip, UserStateIcon, DashState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './calendar-coverage.scss',
   host: { '(keydown.escape)': 'closed.emit()' },
@@ -265,15 +252,6 @@ export function groupKey(kind: string, roleId: number): number {
                   }
                 </div>
                 <p class="note">By role. Lightest load first: who can take work.</p>
-                @if (avail().length > 0) {
-                  <mf-filter-chips
-                    class="jump"
-                    label="Jump to a role"
-                    data-jump
-                    [chips]="jumpChips()"
-                    (valueChange)="jumpTo($event)"
-                  />
-                }
                 <ng-container
                   *ngTemplateOutlet="list; context: { $implicit: avail(), kind: 'available' }"
                 />
@@ -527,9 +505,6 @@ export function groupKey(kind: string, roleId: number): number {
     }
     .secrow .h3 {
       margin: 0;
-    }
-    .jump {
-      margin: 0 0 var(--mf-s2);
     }
     .note {
       margin: 0 0 var(--mf-s2);
@@ -834,7 +809,6 @@ export class CalPanel {
 
   private readonly api = inject(CALENDAR_API);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
-  private readonly injector = inject(Injector);
   private readonly prefs = inject(DashboardPrefs);
   private readonly clock = inject(Clock);
   private readonly zone = inject(USER_TIME_ZONE);
@@ -872,16 +846,6 @@ export class CalPanel {
   protected readonly allCollapsed = computed(
     () => this.roleIds().length > 0 && this.roleIds().every((id) => this.collapsed().has(id)),
   );
-  /** One jump chip per Available role, with its count, in the order of the groups. */
-  protected readonly jumpChips = computed<FilterChip[]>(() =>
-    this.avail().map((g) => ({
-      key: String(g.roleId),
-      label: g.roleName,
-      count: g.people.length,
-      hint: `Go to ${g.roleName}`,
-    })),
-  );
-
   constructor() {
     this.prefs.ensureLoaded();
     effect(() => {
@@ -943,22 +907,6 @@ export class CalPanel {
     if (this.allCollapsed()) for (const id of ids) next.delete(id);
     else for (const id of ids) next.add(id);
     this.prefs.setCalendarCollapsed(next);
-  }
-
-  /** A jump chip: expand the role when it is collapsed, then bring its header band to the top of the panel and put the focus on it. */
-  protected jumpTo(key: string): void {
-    const id = Number(key);
-    if (this.isCollapsed('available', id)) this.toggleRole('available', id);
-    afterNextRender(
-      () => {
-        const band = this.host.nativeElement.querySelector<HTMLElement>(
-          `[data-role-group="available-${id}"] .gh`,
-        );
-        band?.closest<HTMLElement>('.grp')?.scrollIntoView?.({ block: 'start' });
-        band?.focus({ preventScroll: true });
-      },
-      { injector: this.injector },
-    );
   }
 
   /** The state of a person's icon: the load level for an available person (0 Idle, 1 Light, 2 Normal, 3 or more Heavy), Out of Office or Off Hours for the others. */

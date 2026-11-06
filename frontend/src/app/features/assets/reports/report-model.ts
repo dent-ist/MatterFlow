@@ -5,6 +5,10 @@ import {
 } from '../../../api/generated/api-client';
 import { ChartFormat, ChartRow } from '../../../shared/charts/chart-types';
 import { formatDecimal } from '../../../shared/ui/number-format';
+import {
+  DISPOSITIONS as DISPOSITION_OPTIONS,
+  dispositionLabel,
+} from '../disposition/asset-disposition';
 
 /** What the form holds; `typeId` null is "All asset types". */
 export interface ReportDraft {
@@ -25,12 +29,10 @@ export const MEASURES: readonly { value: ReportDraft['measure']; label: string }
   { value: 'average', label: 'Average' },
 ];
 
+/** "Any Disposition" and the four dispositions, worded by the shared table (`asset-disposition.ts`), never typed again here. */
 export const DISPOSITIONS: readonly { value: string; label: string }[] = [
   { value: '', label: 'Any Disposition' },
-  { value: 'ACTIVE', label: 'Active' },
-  { value: 'INACTIVE', label: 'Inactive' },
-  { value: 'PENDING_DISPOSITION', label: 'Pending Disposition' },
-  { value: 'DISPOSED', label: 'Disposed' },
+  ...DISPOSITION_OPTIONS.map((d) => ({ value: d.code, label: d.label })),
 ];
 
 export const NEW_DRAFT: ReportDraft = {
@@ -99,6 +101,39 @@ export function chartRows(result: AssetReportResult, column: number): ChartRow[]
   return result.rows
     .filter((r) => r.cells[column] !== null && r.cells[column] !== undefined)
     .map((r) => ({ label: r.label || '(none)', value: r.cells[column] as number, link: null }));
+}
+
+/** The grouping choices the API offers by itself, worded in Title Case (D-20: dropdown options and column headings); a custom field's name is shown as stored. */
+export const GROUP_BY_LABELS: Readonly<Record<string, string>> = {
+  disposition: 'Disposition',
+  matter: 'Matter',
+  client: 'Client',
+  assetType: 'Asset Type',
+};
+
+/** The label of a grouping choice: our Title Case word for a built-in one, the API's own text for a field. */
+export function groupByLabel(key: string, apiLabel: string): string {
+  return GROUP_BY_LABELS[key] ?? apiLabel;
+}
+
+/**
+ * The result worded as everywhere else (D-20, #1262): the disposition groups use the fixed chip words of `dispositionLabel` ("Pending Disposition"; the API
+ * writes "Pending disposition") and a built-in grouping heading is Title Case ("Asset Type"). The table, the chart legends and the export all read these
+ * labels, so they are set once, here.
+ */
+export function withStandardLabels(result: AssetReportResult): AssetReportResult {
+  const heading = groupByLabel(result.groupBy, result.groupByLabel);
+  const named =
+    result.groupBy !== 'disposition'
+      ? result.rows
+      : result.rows.map((row) =>
+          DISPOSITION_OPTIONS.some((d) => d.code === row.key)
+            ? { ...row, label: dispositionLabel(row.key) }
+            : row,
+        );
+  return named === result.rows && heading === result.groupByLabel
+    ? result
+    : { ...result, groupByLabel: heading, rows: named };
 }
 
 /** How many groups have no value in the column (not drawn by a chart). */

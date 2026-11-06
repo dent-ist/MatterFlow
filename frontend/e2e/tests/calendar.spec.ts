@@ -144,8 +144,8 @@ test.describe('Dashboard > Calendar', () => {
       'aria-expanded',
       'true',
     );
-    // The jump chip of the role is there and keeps the keyboard order: search, chips, bands.
-    await expect(panel.locator('[data-jump] button').first()).toBeVisible();
+    // No chip row repeats the role (D-44r): the group headers are the only place.
+    await expect(panel.locator('[data-jump]')).toHaveCount(0);
   });
 
   test('without Dashboard.ViewAbsenceReasons the type and the note do not exist in the page', async ({

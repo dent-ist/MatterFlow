@@ -398,25 +398,21 @@ describe('DashCalendarTab', () => {
         expect(band.getAttribute('aria-expanded')).toBe('true');
     });
 
-    it('one jump chip per Available role, in the order of the groups, with its count; a chip expands a collapsed role and moves the focus to its band', async () => {
+    it('names each role once per section: the group header is the only place, no chip row repeats it (D-44r)', async () => {
       await open('/dashboard?day=2026-11-25');
-      const chips = qa<HTMLButtonElement>('[data-jump] button.chip');
-      const groups = qa('[data-list="available"] [data-role-group]');
-      expect(chips.length).toBe(groups.length);
-      chips.forEach((chip, i) => {
-        const name = text(groups[i].querySelector('.gh__n'));
-        const count = groups[i].querySelectorAll('.person').length;
-        expect(text(chip)).toBe(`${name} ${count}`);
-      });
-      const roleId = bands('available')[1].getAttribute('data-role')!;
-      bands('available')[1].click();
-      await settle();
-      expect(bands('available')[1].getAttribute('aria-expanded')).toBe('false');
-      chips[1].click();
-      await settle();
-      expect(bands('available')[1].getAttribute('aria-expanded')).toBe('true');
-      expect(stored()?.calendarCollapsed ?? []).not.toContain(Number(roleId));
-      expect(document.activeElement).toBe(bands('available')[1]);
+      expect(host.querySelector('[data-jump]')).toBeNull();
+      for (const kind of ['available', 'unavailable']) {
+        const names = bands(kind).map((b) => text(b.querySelector('.gh__n')));
+        if (kind === 'available') expect(names.length).toBeGreaterThan(0);
+        expect(new Set(names).size).toBe(names.length);
+        const section = q(`[data-list="${kind}"]`)!;
+        for (const n of names) {
+          const hits = [...section.querySelectorAll('button, .chip, mf-count-chip')].filter((e) =>
+            text(e).startsWith(n),
+          );
+          expect(hits.length).toBe(1);
+        }
+      }
     });
 
     it('a row is compact: the state icon, the name, the pods on one line and the load with three dots; the state is in the accessible name, not in a chip', async () => {

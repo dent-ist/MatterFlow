@@ -235,7 +235,7 @@ test.describe('Trends by task type', () => {
     page,
   }) => {
     await page.goto(`${TREND}&due=overdue,ontime`);
-    await expect(measureButton(page, 'flows')).toHaveText('Measure: On time');
+    await expect(measureButton(page, 'flows')).toHaveText('Measure: On Time');
     await expect(page.locator('[data-panel="backlog"]')).toBeVisible();
     await expect(lines(page)).toHaveCount(2); // On time (flows) and Overdue (backlog)
     await page.goto(`${TREND}&types=${types[0].id},${types[1].id}&metric=overdue`);
@@ -390,7 +390,7 @@ test.describe('Trends backlog and labels', () => {
     await expect(page.locator('[data-panel="backlog"] polyline.series:not(.partial)')).toHaveCount(
       2,
     );
-    await expect(measureButton(page, 'backlog')).toHaveText('Measure: Open and overdue');
+    await expect(measureButton(page, 'backlog')).toHaveText('Measure: Open and Overdue');
     const labels = page.locator('[data-end-label]');
     await expect(labels).toHaveCount(4);
     const texts = (await labels.allTextContents()).map((t) => t.trim());

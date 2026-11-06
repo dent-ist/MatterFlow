@@ -47,9 +47,11 @@ import {
   cellText,
   chartRows,
   formatCell,
+  groupByLabel,
   toDefinition,
   toDraft,
   undrawnGroups,
+  withStandardLabels,
 } from './report-model';
 import { SavedReports, failure } from './saved-reports';
 
@@ -682,7 +684,7 @@ export class AssetReportsPage {
     })),
   ]);
   protected readonly groupItems = computed<DropdownItem[]>(() =>
-    this.groupOptions().map((g) => ({ value: g.key, label: g.label })),
+    this.groupOptions().map((g) => ({ value: g.key, label: groupByLabel(g.key, g.label) })),
   );
   protected readonly numberItems = computed<DropdownItem[]>(() =>
     this.numberFields().map((f) => ({
@@ -905,7 +907,7 @@ export class AssetReportsPage {
     try {
       const r = await this.quiet.runInline(() => firstValueFrom(call()));
       if (seq !== this.runSeq) return;
-      this.result.set(r);
+      this.result.set(withStandardLabels(r));
       this.ranWith.set(definition);
       this.graphChoice.set(null);
       this.stale.set(false);
