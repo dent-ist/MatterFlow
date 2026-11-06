@@ -367,3 +367,16 @@ Evidence: `design-evidence`, `evidence/2026-11-06-review-22-admin-reports-casing
 | #1262 casing | PASS | "Pending Disposition", "All Matters", "All Asset Types" in the table, bar, pie legend and Metrics; Trends "Open and Overdue"; Breakdowns "Not Overdue". |
 
 Rulings: D-44s (banner wording for an active report, Activate only for the current version with Restore for older ones, "..." stays in the changed state, plain priorities, no grip on Status Labels).
+
+## review-23 Calendar role chips, form dropdowns and At Risk icon (2026-11-06, tip 18f737a, 1366 and 1920)
+
+Evidence: `design-evidence`, `evidence/2026-11-06-review-23-calendar-dropdowns-at-risk/` (JPEG, `measurements.json`, `axe.json`). Axe: 0 violations on 7 pages at both sizes. (The dev server on port 4200 had died; I restarted it from the same worktree.)
+
+| Issue | Result | Notes |
+|---|---|---|
+| #1263 Calendar day panel | PASS | Busy day (Mon 11/16, Director): the role chip row is gone; group headers "Data Technician 6", "Director 1", "Pod Lead 4" open and close independently; legend "Chip color = category". |
+| #1264 form dropdowns | PASS | 20 form, dialog and record dropdowns checked: all white with a value (New Production, Add Out of Office, Task edit, Matter edit, Change Managers, Asset form, Calendar Out of Office, Holidays, Add Holiday, Priority, Task Type, Asset Type, new Asset Type, Report editor, Copy From Role, Profile time zone); filter dropdowns stay blue when valued (Assets, Matters, Task Types "Active"). Create Task Project is grey while disabled (no matter chosen). Bulk Update dialog not reached. |
+| #1264 At Risk icon | PASS with a rule change | Open panel at 1366: 26 px clock circle, title 240 px. At 1920 the word stays. Panel closed at 1366 (Task cell 446 px) the word shows while the title is cut: rule changed to the whole cell under 460 px (#1267). |
+| #1252, #1164, #1173 | PASS | Their remaining point (At Risk icon) is delivered; the 460 px rule is a refinement (#1267). |
+
+Rulings: whole-cell threshold of 460 px (D-44t); icon circle 26 px with 18 px icon accepted; Asset Reports criteria, Metrics Unit pickers, Comments sort and Note editor text style count as toolbar controls.
