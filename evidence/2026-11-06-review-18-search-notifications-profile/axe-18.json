@@ -1,0 +1,62 @@
+[
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/search?q=Demo",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/search?q=zzzqq",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "admin",
+  "url": "/notifications",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/notifications",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/profile",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/search?q=Demo",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/search?q=zzzqq",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "admin",
+  "url": "/notifications",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/notifications",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/profile",
+  "v": []
+ }
+]
