@@ -1,0 +1,12 @@
+{"date":"2026-11-06","tip":"ca11f21 (AQ 44f1417)",
+"1163":{"optionsButton":"36 px, weight 600, same as other secondary buttons (My Matters header)"},
+"1164":{"overview_1366_panelOpen":{"Task":304,"Status":176,"Priority":112,"Assignee":0,"Due":152,"rowH":44},"overview_1366_panelCollapsed":{"Task":446,"Status":176,"Priority":112,"Assignee":150,"Due":152},"overview_1920":{"Task":708,"Status":176,"Priority":112,"Assignee":150,"Due":152},"issue":"Ref truncated (TSK-10..) with panel open at 1366"},
+"1165":"cards with 36 px header buttons, Upcoming Events and Recent Activity",
+"1166":"no native select on My Matters; Unit dropdown is mf-dropdown in code (shown only with more than one unit, not reachable in demo data)",
+"nativeSelectsStillPresent":{"New Production dialog":2,"Add Out of Office dialog":2,"files":["productions-tab.ts","set-out-of-office-dialog.ts","absence-dialog.ts","bulk-tasks-dialog.ts","holiday-dialog.ts","dev-auth-banner.ts"]},
+"1171":{"header":"Edit/Activity/Complete Task/More 36 px, facts strip triggers 36 px, status menu Put on Hold / Complete / Cancel Task (36 px items)","crumb":"Tasks (directly opened)"},
+"1172":{"requestDetailsToggle":"text button, 36 px high when two lines at 1366, 24 at 1920","commentEditDelete":"mf-btn--text 24 px, Delete danger"},
+"1173":{"crumb":"Task Queue","fields_1366_1920":"480 px incl Title (textarea 99 px), selects 480x36","duplicateTaskTypeBlock":true},
+"focusOptionNames":"hidden (container query on mf-task-type-cell, width 0 in flex label) -> #1252",
+"newMenuItemHeight":50,
+"1249_1250_1188":{"assets_1366":{"th":[24,128,201,123,105,137,168,162,48],"table":1096,"frame":1096,"headingsStableLoadingEmptyErrorRows":true},"projects":{"th":[301,210,168,125,105,140,48],"filterRowCoversActions":true,"stable":true},"savedReportRow":{"h":44,"nameBtn":38,"menu":36,"items":["Rename","Delete"]},"selectColumn":{"width":24,"headerCheckbox":"x249","rowCheckbox":"x249"},"matters_1366":[158,223,152,125,125,105,161,48],"detailsCards":"outer mf-details-card 0 radius, inner mf-card 12 px; Asset: Details + Relativity Workspace Fields (8)"}}
