@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { NotificationService, ToastSeverity } from '../../core/notify/notification.service';
 import { UndoService } from '../../core/notify/undo.service';
+import { CopyButton } from './copy-button';
 import { IntPipe } from './number-format';
 
 /** The most toasts on screen at once; older ones stay in the list and show again when newer ones close. */
@@ -23,6 +24,8 @@ interface Item {
   readonly severity: ToastSeverity;
   readonly summary: string;
   readonly detail?: string;
+  /** The reference of an error: text for the "Copy Reference" button. */
+  readonly copy?: string;
   /** The long explanation of an Undo offer: the Undo button's tooltip. */
   readonly hint?: string;
   readonly count: number;
@@ -88,6 +91,16 @@ const ICONS: Record<ToastSeverity, string> = {
           @if (item.detail) {
             <span class="th__detail" data-toast-detail>{{ item.detail }}</span>
           }
+          @if (item.copy) {
+            <mf-copy-button
+              class="th__copy"
+              [text]="item.copy"
+              label="reference"
+              [showText]="true"
+              caption="Copy Reference"
+              doneCaption="Reference copied"
+            />
+          }
         </div>
         @if (item.undo) {
           <button
@@ -115,7 +128,7 @@ const ICONS: Record<ToastSeverity, string> = {
       </div>
     </ng-template>
   `,
-  imports: [IntPipe, NgTemplateOutlet],
+  imports: [CopyButton, IntPipe, NgTemplateOutlet],
   styles: `
     :host {
       display: contents;
@@ -203,6 +216,10 @@ const ICONS: Record<ToastSeverity, string> = {
     }
     .th__detail {
       flex-basis: 100%;
+    }
+    .th__copy {
+      flex-basis: 100%;
+      margin-left: calc(-1 * var(--mf-s2));
     }
     .th__action,
     .th__close {

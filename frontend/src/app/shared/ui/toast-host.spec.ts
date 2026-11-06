@@ -46,6 +46,17 @@ describe('ToastHost (#616)', () => {
     expect(polite.querySelector('[role="alert"]')).toBeNull();
   });
 
+  it('offers a Copy Reference button for an error that carries one (#1266)', async () => {
+    const { fixture, el } = setup();
+    notify.error("Couldn't run the preview.", 'The login failed.', { copy: 'trace-9' });
+    notify.error('Plain failure');
+    await flush(fixture);
+    const buttons = el.querySelectorAll('mf-copy-button button');
+    expect(buttons.length).toBe(1);
+    expect(buttons[0].getAttribute('aria-label')).toBe('Copy reference');
+    expect(buttons[0].textContent).toContain('Copy Reference');
+  });
+
   it('leaves no --mf-toast-h on the page while no toast is shown or after the host is destroyed (#754)', async () => {
     const root = document.documentElement;
     root.style.setProperty('--mf-toast-h', '99px');

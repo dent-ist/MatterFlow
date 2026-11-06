@@ -187,7 +187,7 @@ test.describe('the Reports list (#712)', () => {
     await page.getByRole('button', { name: 'New category' }).click();
     const name = `Added ${s.token}`;
     await page.locator('#cat-name').fill(name);
-    await page.getByRole('button', { name: 'Add', exact: true }).click();
+    await page.getByRole('button', { name: 'Add Category', exact: true }).click();
     await expect(page.locator(`tr:has(td[data-row="${name}"])`)).toBeVisible();
     await expect(page.locator(`tr:has(td[data-row="${name}"])`)).toContainText('Active');
   });

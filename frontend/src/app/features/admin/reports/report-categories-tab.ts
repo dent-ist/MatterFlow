@@ -177,16 +177,18 @@ interface Draft {
         }
       </td>
       <td class="mf-cell-actions">
-        <button
-          type="button"
-          class="mf-btn mf-btn--primary"
-          (click)="save()"
-          [disabled]="busy()"
-          data-save
-        >
-          {{ d.id === 0 ? 'Add' : 'Save' }}
-        </button>
-        <button type="button" class="mf-btn" (click)="cancel()" data-cancel>Cancel</button>
+        <span class="mf-row-actions">
+          <button type="button" class="mf-btn" (click)="cancel()" data-cancel>Cancel</button>
+          <button
+            type="button"
+            class="mf-btn mf-btn--primary"
+            (click)="save()"
+            [disabled]="busy()"
+            data-save
+          >
+            {{ d.id === 0 ? 'Add Category' : 'Save Changes' }}
+          </button>
+        </span>
       </td>
     </ng-template>
   `,
@@ -194,6 +196,11 @@ interface Draft {
     .rc__error {
       margin: 0;
       color: var(--mf-danger);
+    }
+
+    /* The edit row's two buttons sit inside the sticky actions cell (padding 0): keep 8 px from the frame edge. */
+    .mf-row-actions {
+      margin-inline: var(--mf-s2);
     }
 
     .rc__hint {

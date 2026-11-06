@@ -26,6 +26,7 @@ import {
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
+import { QuietRequests } from '../../../core/http/interceptors';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { PageTitle, shortTitleText } from '../../../core/title/page-title';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
@@ -152,6 +153,7 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthStore);
   private readonly notify = inject(NotificationService);
+  private readonly quiet = inject(QuietRequests);
   private readonly pageTitle = inject(PageTitle);
   private readonly injector = inject(Injector);
   private readonly editor = viewChild(SqlEditor);
@@ -616,20 +618,20 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
       if (result.preview) this.preview.set(result.preview);
       await this.reloadAfterSave();
       this.versionsKey.update((n) => n + 1);
+      // One toast per save (D-52, #1266): the toast host announces it, so the page's own live region stays quiet. The key makes a repeat replace it.
+      const key = 'report-saved';
       if (result.deactivated) {
-        this.announcement.set(`Saved as version ${result.versionNo}. Preview it to activate.`);
-        this.notify.warn(`Saved as version ${result.versionNo}`, 'Preview it to activate.');
+        this.notify.warn(`Saved as version ${result.versionNo}`, 'Preview it to activate.', {
+          key,
+        });
       } else if (result.unchanged) {
-        this.announcement.set(
-          'Saved. The query and parameters did not change, so no new version was written.',
-        );
         this.notify.success(
           'Report saved',
           'The query and parameters did not change, so no new version was written.',
+          { key },
         );
       } else {
-        this.announcement.set(`Saved as version ${result.versionNo}.`);
-        this.notify.success(`Saved as version ${result.versionNo}`);
+        this.notify.success(`Saved as version ${result.versionNo}`, this.validDetail(), { key });
       }
       return true;
     } catch (e) {
@@ -638,6 +640,14 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  /** "Valid: one SELECT, 2 parameters." for the detail line of the save toast; nothing while the query has not been checked or has problems. */
+  private validDetail(): string | undefined {
+    const a = this.analysis();
+    if (!a?.validation.isValid) return undefined;
+    const n = this.detected().length;
+    return `Valid: one SELECT, ${n} ${n === 1 ? 'parameter' : 'parameters'}.`;
   }
 
   private async reloadAfterSave(): Promise<void> {
@@ -717,12 +727,15 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
     this.previewBusy.set(true);
     this.preview.set(null);
     try {
-      const result = await firstValueFrom(
-        this.admin.previewReport(current.reportId, {
-          sql: this.sql(),
-          parameters: toRequestParameters(this.defs(), this.unused()),
-          sampleValues: samples,
-        }),
+      // A failed preview is one error toast written here (D-52, #1266), not the generic request toast plus an inline banner.
+      const result = await this.quiet.run(() =>
+        firstValueFrom(
+          this.admin.previewReport(current.reportId, {
+            sql: this.sql(),
+            parameters: toRequestParameters(this.defs(), this.unused()),
+            sampleValues: samples,
+          }),
+        ),
       );
       this.preview.set(result);
       if (result.countsForActivation && result.rowVersion) {
@@ -740,7 +753,11 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
       }
     } catch (e) {
       this.preview.set(null);
-      this.failure.set(e instanceof ApiError ? e.message : "Couldn't run the preview.");
+      this.notify.error(
+        "Couldn't run the preview.",
+        e instanceof ApiError && e.message ? e.message : undefined,
+        { key: 'report-preview', copy: e instanceof ApiError ? e.traceId : undefined },
+      );
     } finally {
       this.previewBusy.set(false);
     }
@@ -759,7 +776,6 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
     if (!current || this.busy()) return;
     await this.changeState(
       () => firstValueFrom(this.admin.activateReport(current.reportId)),
-      `${current.name} is active. Roles it is assigned to can run it.`,
       ['Report activated', 'Roles it is assigned to can run it.'],
     );
   }
@@ -770,14 +786,12 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
     if (!current || this.busy()) return;
     await this.changeState(
       () => firstValueFrom(this.admin.deactivateReport(current.reportId)),
-      `${current.name} is inactive. It is hidden from people and cannot run.`,
       ['Report deactivated', 'It is hidden from people and cannot run.'],
     );
   }
 
   private async changeState(
     call: () => Promise<unknown>,
-    message: string,
     toast: readonly [title: string, detail: string],
   ): Promise<void> {
     this.busy.set(true);
@@ -789,8 +803,7 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
         const fresh = await firstValueFrom(this.api.getAdminReport(id));
         this.report.set(fresh);
       }
-      this.announcement.set(message);
-      this.notify.success(toast[0], toast[1]);
+      this.notify.success(toast[0], toast[1], { key: 'report-state' });
     } catch (e) {
       this.failure.set(e instanceof ApiError ? e.message : "Couldn't change the state.");
     } finally {
@@ -812,11 +825,10 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
       this.apply(fresh);
       this.preview.set(null);
       this.versionsKey.update((n) => n + 1);
-      const text = `Version ${versionNo} restored as version ${result.versionNo}. Preview it to activate.`;
-      this.announcement.set(text);
       this.notify.success(
         `Version ${versionNo} restored`,
         `Saved as version ${result.versionNo}. Preview it to activate.`,
+        { key: 'report-restored' },
       );
     } catch (e) {
       if (serverFormErrors(e).conflict) this.conflict.set(true);

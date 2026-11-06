@@ -8,6 +8,8 @@ export type ToastSeverity = 'success' | 'info' | 'warn' | 'error';
 export interface ToastOptions {
   /** A toast with the same key replaces the one before it (for example out of office, then "I'm back"). */
   readonly key?: string;
+  /** Text the person can copy from the toast (the support reference of an error); shown as a "Copy Reference" button under the detail line. */
+  readonly copy?: string;
 }
 
 export interface Toast {
@@ -16,6 +18,8 @@ export interface Toast {
   readonly summary: string;
   readonly detail: string | undefined;
   readonly key: string | undefined;
+  /** The reference of an error, with its "Copy Reference" button (D-52). */
+  readonly copy: string | undefined;
   /** How many identical messages this toast stands for ("x3"). */
   readonly count: number;
   /** Milliseconds it stays after the last identical message (success 4 s, info 6 s, warning 8 s); 0 = until it is closed (errors, D-52). */
@@ -107,6 +111,7 @@ export class NotificationService {
       summary,
       detail,
       key,
+      copy: options?.copy,
       count: 1,
       life: LIFE_MS[severity],
     };

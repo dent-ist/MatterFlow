@@ -1,7 +1,9 @@
 import { ddOptionTexts, ddText } from '../../../testing/dropdown-testing.spec-util';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { of, throwError } from 'rxjs';
+import { ApiError, ProblemDetails } from '../../../core/http/api-error';
 import {
   ReportAdminClient,
   ReportAssignmentClient,
@@ -315,6 +317,7 @@ describe('ReportEditorPage (#713, #714)', () => {
       expect(success).toHaveBeenCalledWith(
         'Report saved',
         expect.stringContaining('did not change'),
+        { key: 'report-saved' },
       );
     });
 
@@ -384,7 +387,14 @@ describe('ReportEditorPage (#713, #714)', () => {
         changeNote: 'renamed',
         keepActive: false,
       });
-      expect(success).toHaveBeenCalledWith('Saved as version 4');
+      expect(success).toHaveBeenCalledTimes(1);
+      expect(success).toHaveBeenCalledWith(
+        'Saved as version 4',
+        'Valid: one SELECT, 0 parameters.',
+        {
+          key: 'report-saved',
+        },
+      );
       expect(defs.getAdminReport).toHaveBeenCalledTimes(2);
       expect(q('[data-state-line]').textContent).toContain('Version 4');
     });
@@ -442,6 +452,32 @@ describe('ReportEditorPage (#713, #714)', () => {
       q<HTMLButtonElement>('[data-save]').click();
       await settle(fixture);
       expect(defs.updateReport.mock.calls[0][2]).toBe('RV9');
+    });
+
+    it('shows one error toast for a failed preview: the summary, the reason and the reference to copy', async () => {
+      const notify = TestBed.inject(NotificationService);
+      const error = vi.spyOn(notify, 'error');
+      const response = new HttpErrorResponse({ status: 503 });
+      admin.previewReport.mockReturnValue(
+        throwError(
+          () =>
+            new ApiError(
+              503,
+              'REPORT_LOGIN',
+              'The report login could not connect or be checked.',
+              { traceId: 'trace-1' } as ProblemDetails,
+              response,
+            ),
+        ),
+      );
+      await menuAction('preview');
+      expect(error).toHaveBeenCalledTimes(1);
+      expect(error).toHaveBeenCalledWith(
+        "Couldn't run the preview.",
+        'The report login could not connect or be checked.',
+        { key: 'report-preview', copy: 'trace-1' },
+      );
+      expect(fixture.nativeElement.querySelector('[data-failure]')).toBeNull();
     });
 
     it('does not offer Activate while the editor holds unsaved changes', async () => {
@@ -505,6 +541,7 @@ describe('ReportEditorPage (#713, #714)', () => {
       expect(success).toHaveBeenCalledWith(
         'Version 1 restored',
         'Saved as version 5. Preview it to activate.',
+        { key: 'report-restored' },
       );
     });
 
