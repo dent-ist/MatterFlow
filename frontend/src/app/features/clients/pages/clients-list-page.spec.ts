@@ -390,6 +390,17 @@ describe('ClientsListPage', () => {
       expect(localStorage.getItem(key)).toBeNull();
     });
 
+    it('gives every heading but the Client Name spring a width, so nothing moves between loading, empty, error and rows (#1245)', async () => {
+      const fixture = await create(['Client.View', 'Task.View']);
+      const el: HTMLElement = fixture.nativeElement;
+      const heads = Array.from(el.querySelectorAll<HTMLElement>('thead tr:first-child th'));
+      const bare = heads
+        .filter((h) => !h.style.width && !h.style.minWidth)
+        .map((h) => h.textContent!.trim());
+      expect(bare).toEqual([]);
+      expect(heads.filter((h) => !h.style.width).map((h) => h.dataset['col'])).toEqual(['name']);
+    });
+
     it('leaves both columns out without Task.View', async () => {
       const fixture = await create(['Client.View']);
       const el: HTMLElement = fixture.nativeElement;

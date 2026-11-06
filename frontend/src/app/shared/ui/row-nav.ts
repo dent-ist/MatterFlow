@@ -296,15 +296,26 @@ const OWN_CLICK =
  * for every click on the page; a row without such a link does nothing.
  */
 export function openRowOnClick(event: MouseEvent): void {
-  if (event.defaultPrevented || !isPlainClick(event)) return;
-  const target = event.target;
-  if (!(target instanceof Element) || target.closest(OWN_CLICK)) return;
-  const row = target.closest<HTMLTableRowElement>('tbody > tr');
+  const row = rowOfBareClick(event);
   if (!row) return;
-  // A row with a checkbox is in selection mode (bulk actions): a click on the row is not "open".
-  if (row.querySelector('input[type="checkbox"]')) return;
-  const cell = target.closest('td, th');
-  if (cell?.querySelector('input, select, textarea, button, mf-dropdown, mf-row-edit')) return;
-  if (!window.getSelection()?.isCollapsed) return;
   row.querySelector<HTMLElement>('a[data-row-list], [data-row-open]')?.click();
+}
+
+/**
+ * The body row a click belongs to, when the click is a plain "open this row" click (#1245): a plain left click on the row itself, not on a link, button,
+ * field or menu inside it, not in a row with a checkbox (selection mode), not in a cell that holds a control, and not the end of a text selection.
+ * Shared by the shell's click-to-open rule and the record grid's `rowClick`.
+ */
+export function rowOfBareClick(event: MouseEvent): HTMLTableRowElement | null {
+  if (event.defaultPrevented || !isPlainClick(event)) return null;
+  const target = event.target;
+  if (!(target instanceof Element) || target.closest(OWN_CLICK)) return null;
+  const row = target.closest<HTMLTableRowElement>('tbody > tr');
+  if (!row) return null;
+  // A row with a checkbox is in selection mode (bulk actions): a click on the row is not "open".
+  if (row.querySelector('input[type="checkbox"]')) return null;
+  const cell = target.closest('td, th');
+  if (cell?.querySelector('input, select, textarea, button, mf-dropdown, mf-row-edit')) return null;
+  if (!window.getSelection()?.isCollapsed) return null;
+  return row;
 }

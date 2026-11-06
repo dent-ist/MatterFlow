@@ -70,13 +70,15 @@ export function columnKeyOf(th: HTMLElement): string {
  * header row gets a handle on its right edge (hover shows the divider, 24 px hit area):
  *
  *  - Drag the handle with the mouse or touch (Esc cancels).
- *  - Keyboard: Tab to the handle (it is a focusable `separator`), Left and Right resize by 16 px (Shift: 64 px), Home sets the minimum, Enter or
- *    a double-click fits the column to its content.
+ *  - Keyboard (#1245): ONE Tab stop per header cell (the sort button, or the cell itself when it has none); the handles are not Tab stops. With the
+ *    heading focused, Shift + Left or Right resizes by 16 px (Ctrl + Shift: 64 px) and Shift + Home sets the minimum. A focused handle (reached by
+ *    pointer or a screen reader) keeps Left, Right (Shift: 64 px), Home and Enter. A double-click on the handle fits the column to its content.
  *  - The widths are remembered per person and per grid in `localStorage` (`mf.col-widths.v1.<grid>.<userId>`), guarded by try/catch.
  *  - No layout shift: before the first change the table is measured and every column is frozen at the width it had (fixed table layout), so
  *    nothing jumps; without a stored or chosen width the table keeps its automatic layout.
  *
- * Opt a header cell out with `data-no-resize` (the select checkbox and the actions column). Give a cell a stable key with `data-col`; without
+ * Opt a header cell out with `data-no-resize` (the select checkbox and the actions column): it keeps the width of its own style (the actions
+ * column is `--mf-col-actions-w`, 48 px) and ignores every stored width (#1245). Give a cell a stable key with `data-col`; without
  * one the `mfSort` field or the header text is used. Not active below 640 px.
  */
 @Directive({
@@ -145,7 +147,14 @@ export class ResizableColumns {
     const stored = cells.some((th) => this.widths[columnKeyOf(th)] !== undefined);
     if (stored) this.applyWidths(cells, (th) => this.widths[columnKeyOf(th)] ?? FALLBACK_PX);
     cells.forEach((th, i) => {
-      if (th.hasAttribute('data-no-resize') || th.querySelector(':scope > .mf-resize')) return;
+      if (th.hasAttribute('data-no-resize')) return;
+      // One Tab stop per header cell (#1245): a heading without a button of its own is focusable itself, the handle is not.
+      if (!th.querySelector('button, a[href], [tabindex]:not(.mf-resize)')) th.tabIndex = 0;
+      if (th.dataset['mfRzKeys'] !== '1') {
+        th.dataset['mfRzKeys'] = '1';
+        th.addEventListener('keydown', (e) => this.onHeadKey(e, th));
+      }
+      if (th.querySelector(':scope > .mf-resize')) return;
       th.append(this.createHandle(th, i === cells.length - 1));
     });
   }
@@ -153,6 +162,12 @@ export class ResizableColumns {
   private applyWidths(cells: HTMLTableCellElement[], widthOf: (th: HTMLElement) => number): void {
     let sum = 0;
     for (const th of cells) {
+      if (th.hasAttribute('data-no-resize')) {
+        // A fixed column (selection, actions) is never given a stored or measured width; it counts with the width its own style gives it.
+        th.style.removeProperty('width');
+        sum += th.getBoundingClientRect().width || 0;
+        continue;
+      }
       const w = widthOf(th);
       th.style.width = `${w}px`;
       sum += w;
@@ -177,11 +192,11 @@ export class ResizableColumns {
     handle.className = 'wt-resize mf-resize';
     handle.dataset['side'] = 'end';
     if (last) handle.style.right = '0';
-    handle.tabIndex = 0;
+    handle.tabIndex = -1;
     handle.setAttribute('role', 'separator');
     handle.setAttribute('aria-orientation', 'vertical');
     handle.setAttribute('aria-label', `Resize ${label} column`);
-    handle.title = `Drag to resize ${label}. Double-click to fit.`;
+    handle.title = `Drag to resize ${label}. Double-click to fit. With the heading focused: Shift and Left or Right.`;
     this.syncAria(handle, th);
     handle.addEventListener('pointerdown', (e) => this.onPointerDown(e, th, handle));
     handle.addEventListener('keydown', (e) => this.onKey(e, th, handle));
@@ -204,13 +219,20 @@ export class ResizableColumns {
   private setWidth(th: HTMLElement, px: number, persist: boolean): void {
     const cells = this.headCells();
     th.style.width = `${px}px`;
-    this.table.style.width = `${cells.reduce((s, c) => s + parseFloat(c.style.width || '0'), 0)}px`;
+    this.table.style.width = `${cells.reduce(
+      (s, c) =>
+        s +
+        (c.hasAttribute('data-no-resize')
+          ? c.getBoundingClientRect().width
+          : parseFloat(c.style.width || '0')),
+      0,
+    )}px`;
     if (persist) this.persist(cells);
   }
 
   private persist(cells: HTMLTableCellElement[]): void {
     for (const c of cells) {
-      if (c.hasAttribute('data-no-resize') && !c.style.width) continue;
+      if (c.hasAttribute('data-no-resize')) continue;
       this.widths[columnKeyOf(c)] = Math.round(parseFloat(c.style.width) || FALLBACK_PX);
     }
     saveColumnWidths(this.storageKey, this.widths);
@@ -280,6 +302,26 @@ export class ResizableColumns {
     e.stopPropagation();
     this.setWidth(th, clampColumnWidth(target, min), true);
     this.syncAria(handle, th);
+  }
+
+  /** Keyboard resize from the focused heading (#1245): Shift + Left or Right 16 px (with Ctrl 64 px), Shift + Home the minimum. */
+  private onHeadKey(e: KeyboardEvent, th: HTMLTableCellElement): void {
+    if (e.target instanceof HTMLElement && e.target.classList.contains('mf-resize')) return;
+    if (!e.shiftKey || e.altKey || e.metaKey) return;
+    const step = e.ctrlKey ? RESIZE_BIG_STEP_PX : RESIZE_STEP_PX;
+    this.freeze();
+    const min = this.mfResizeMin();
+    const current = th.getBoundingClientRect().width;
+    let target: number;
+    if (e.key === 'ArrowRight') target = current + step;
+    else if (e.key === 'ArrowLeft') target = current - step;
+    else if (e.key === 'Home') target = min;
+    else return;
+    e.preventDefault();
+    e.stopPropagation();
+    this.setWidth(th, clampColumnWidth(target, min), true);
+    const handle = th.querySelector<HTMLElement>(':scope > .mf-resize');
+    if (handle) this.syncAria(handle, th);
   }
 
   /** Fits the column to the widest of its header and the rows on the page (at most 100). */

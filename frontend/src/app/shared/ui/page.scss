@@ -80,8 +80,8 @@
 
 .pg-table :is(th, td):is(.mf-col-actions, .mf-col-menu) {
   /* The row action cell (D-44, #1153): 48 px, the 36 px "..." button centred. */
-  width: 48px;
-  min-width: 48px;
+  width: var(--mf-col-actions-w);
+  min-width: var(--mf-col-actions-w);
   padding-inline: 0;
   text-align: center;
 }

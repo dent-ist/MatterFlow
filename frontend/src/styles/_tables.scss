@@ -14,8 +14,8 @@
 /* The last cell of a grid, the row action (D-44, #1153): 48 px wide, the one 36 px "..." button centred in it. */
 table th:is(.mf-col-actions, .mf-col-menu),
 table td:is(.mf-col-actions, .mf-col-menu) {
-  width: 48px;
-  min-width: 48px;
+  width: var(--mf-col-actions-w);
+  min-width: var(--mf-col-actions-w);
   padding-inline: 0;
   white-space: nowrap;
   text-align: center;

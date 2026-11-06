@@ -23,7 +23,7 @@ Paths are under `frontend/src/app/`.
 |---|---|---|
 | List toolbar, filters button, search box, sorted line | `mf-list-toolbar`, `mf-list-filters-button`, `mf-search-box`, `mf-sorted-line` | `shared/filters/list-toolbar.ts`, `shared/ui/search-box.ts`, `sorted-line.ts` |
 | Column filters in a grid | `mfColumnFilterRow` | `shared/filters/column-filter-row.ts` |
-| Record grid (a list of records: table, sort, resize, reorder, Columns, states) | `mf-record-grid`, `mf-record-columns`, `RecordGridState`, `mfCell` | `shared/ui/record-grid.ts` |
+| Record grid (a list of records: table, sort, resize, reorder, Columns, states, `groupBy`, `rowClass`, `rowClick`) | `mf-record-grid`, `mf-record-columns`, `RecordGridState`, `mfCell` | `shared/ui/record-grid.ts` |
 | Grid frame, pager, columns | `mf-grid-frame`, `mf-pager`, `mf-grid-columns`, `mf-zero-dash` | `shared/ui/grid-frame.ts`, `pager.ts`, `grid-columns.ts` |
 | Task table (Task Queue, My Work, Pod Work, Dashboard, Matter and Project Tasks) | `mf-task-table` | `shared/work-queue/task-table.ts` |
 | Row actions | `mf-action-menu`, `mf-options-menu` | `shared/ui/action-menu.ts`, `options-menu.ts` |

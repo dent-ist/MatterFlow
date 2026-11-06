@@ -54,6 +54,18 @@ protected readonly grid = new RecordGridState('clients', this.gridDefs);   // gr
 
 The grid id (`'matters'`, `'clients'`) is the storage key: `mf.grid.v1.<id>.<userId>` (order and visibility) and `mf.col-widths.v1.<id>.<userId>` (widths). `exclude` (third constructor argument) drops columns that a permission or the window hides. The heading cell carries the width rules (`width`, `minWidth`), so the columns do not move between loading, empty, error and rows; the cell templates belong to the page (the grid styles are not encapsulated, so `.pg-table td` rules reach them). **Guard:** `record-grid-guard.spec.ts` fails on a hand-built `<table class="pg-table">` outside its allowed list (the Administration lists, Assets, Projects and the record tabs until they migrate).
 
+### Extension points, the action column and the keyboard (#1245)
+
+| Input or output | What it does |
+| --- | --- |
+| `[groupBy]="fn"` | `fn(row)` returns `{ key, label }` or null. Rows of one group must be next to each other. Each run gets a 36 px header row ("Archived (3)", a text button with `aria-expanded`; Enter and Space toggle it). |
+| `[collapsedGroups]` and `(groupToggle)` | The group keys that start closed (a new array resets the person's choice), and the toggle report. |
+| `[rowClass]="fn"` | Extra CSS classes of a row (inactive, selected). |
+| `[rowClickable]` and `(rowClick)` | A click on the row (not on a link, button, field or menu inside it) and Enter or Space on the focused row emit the row. A row with its own link is opened through the link, so `rowClick` does not fire for it. |
+| `[actions]` | The "..." column, always 48 px (`--mf-col-actions-w`); a `data-no-resize` column ignores stored widths. |
+
+Every column definition gives a `width` or `minWidth` (the tokens `--mf-col-*-w`, counts `--mf-col-count-w`), except the one spring column. Keyboard: one Tab stop per heading; the resize handle is not a Tab stop. With a heading focused, Shift + Left or Right resizes by 16 px (Ctrl + Shift: 64 px) and Shift + Home sets the minimum.
+
 ## Adding a grid or a column
 
 1. Use `mf-record-grid`; do not hand-build a table. Start from a similar list page (for example `features/clients/pages/clients-list-page.ts`).

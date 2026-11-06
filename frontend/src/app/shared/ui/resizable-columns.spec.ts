@@ -110,7 +110,8 @@ describe('resizable columns (MD-21, #1025)', () => {
       expect(hs[0].getAttribute('role')).toBe('separator');
       expect(hs[0].getAttribute('aria-orientation')).toBe('vertical');
       expect(hs[0].getAttribute('aria-label')).toBe('Resize Name column');
-      expect(hs[0].tabIndex).toBe(0);
+      // The handle is not a Tab stop (#1245): the heading is.
+      expect(hs[0].tabIndex).toBe(-1);
       expect(hs[0].getAttribute('aria-valuemin')).toBe(String(RESIZE_MIN_PX));
       expect(hs[0].hasAttribute('aria-valuenow')).toBe(true);
       expect(el.querySelector('thead th[data-no-resize] > .mf-resize')).toBeNull();
@@ -138,6 +139,49 @@ describe('resizable columns (MD-21, #1025)', () => {
       expect(parseFloat(th.style.width)).toBe(RESIZE_MIN_PX);
       const stored = loadColumnWidths(columnWidthsKey('test-grid', undefined));
       expect(stored['name']).toBe(RESIZE_MIN_PX);
+    });
+
+    it('has one Tab stop per header cell: the heading itself, never the handle (#1245)', async () => {
+      const el = await start();
+      const heads = Array.from(el.querySelectorAll<HTMLElement>('thead th'));
+      expect(heads.map((h) => h.tabIndex)).toEqual([-1, 0, 0]);
+      expect(handles(el).every((h) => h.tabIndex === -1)).toBe(true);
+    });
+
+    it('resizes from the focused heading with Shift and the arrow keys, and ignores the plain arrows (#1245)', async () => {
+      const el = await start();
+      el.querySelectorAll('thead th').forEach((c) => {
+        (c as HTMLElement).getBoundingClientRect = () =>
+          ({ width: parseFloat((c as HTMLElement).style.width) || 200 }) as DOMRect;
+      });
+      const th = el.querySelector<HTMLElement>('thead th[data-col="name"]')!;
+      th.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      expect(th.style.width).toBe('');
+      th.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true, bubbles: true }),
+      );
+      expect(parseFloat(th.style.width)).toBe(216);
+      th.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'ArrowLeft',
+          shiftKey: true,
+          ctrlKey: true,
+          bubbles: true,
+        }),
+      );
+      expect(parseFloat(th.style.width)).toBe(152);
+      expect(loadColumnWidths(columnWidthsKey('test-grid', undefined))['name']).toBe(152);
+    });
+
+    it('never gives a width to a data-no-resize column, stored or not (#1245)', async () => {
+      localStorage.setItem(
+        columnWidthsKey('test-grid', undefined),
+        JSON.stringify({ v: 1, w: { pick: 72, name: 300, client: 200 } }),
+      );
+      const el = await start();
+      const pick = el.querySelector<HTMLElement>('thead th[data-no-resize]')!;
+      expect(pick.style.width).toBe('');
+      expect(el.querySelector<HTMLElement>('thead th[data-col="name"]')!.style.width).toBe('300px');
     });
 
     it('does not let an arrow key reach the sort button or the row navigation', async () => {

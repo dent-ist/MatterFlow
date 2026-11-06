@@ -397,18 +397,57 @@ export class ClientsListPage extends ServerListPage<ClientResponse> {
       label: 'Client Number',
       locked: true,
       sort: 'clientNumber',
+      width: '11rem',
       minWidth: '11rem',
     },
+    // The spring: no width, so it takes the free room in every state (#1245).
     { key: 'name', label: 'Client Name', locked: true, sort: 'name', minWidth: '200px' },
-    { key: 'matters', label: 'Matters', num: true },
-    ...(this.myCount() ? [{ key: 'myMatters', label: 'My Matters', num: true }] : []),
-    ...(this.counts()
+    {
+      key: 'matters',
+      label: 'Matters',
+      num: true,
+      width: 'var(--mf-col-count-w)',
+      minWidth: 'var(--mf-col-count-w)',
+    },
+    ...(this.myCount()
       ? [
-          { key: 'openTasks', label: 'Open Tasks', sort: 'openTasks', firstDesc: true, num: true },
-          { key: 'overdue', label: 'Overdue', sort: 'overdue', firstDesc: true, num: true },
+          {
+            key: 'myMatters',
+            label: 'My Matters',
+            num: true,
+            width: 'var(--mf-col-count-w)',
+            minWidth: 'var(--mf-col-count-w)',
+          },
         ]
       : []),
-    { key: 'status', label: 'Status', minWidth: 'var(--mf-col-status-w)' },
+    ...(this.counts()
+      ? [
+          {
+            key: 'openTasks',
+            label: 'Open Tasks',
+            sort: 'openTasks',
+            firstDesc: true,
+            num: true,
+            width: 'var(--mf-col-count-w)',
+            minWidth: 'var(--mf-col-count-w)',
+          },
+          {
+            key: 'overdue',
+            label: 'Overdue',
+            sort: 'overdue',
+            firstDesc: true,
+            num: true,
+            width: 'var(--mf-col-count-w)',
+            minWidth: 'var(--mf-col-count-w)',
+          },
+        ]
+      : []),
+    {
+      key: 'status',
+      label: 'Status',
+      width: 'var(--mf-col-status-w)',
+      minWidth: 'var(--mf-col-status-w)',
+    },
   ]);
   /** The grid state (shared record grid, #1241): order, visibility and stored widths per person under the id "clients". */
   protected readonly grid = new RecordGridState('clients', this.gridDefs);
