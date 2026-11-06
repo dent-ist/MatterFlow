@@ -357,7 +357,7 @@ Every list page puts the same things in the same place with the same names. A zo
 
 ```
 Row 1  [icon] Title  (count chip)                                          [+ New Thing]
-Row 2  [Search tasks]  [Filters (2)]  [Other filters]  [view slot]  ...  Sorted by Name, A to Z  [Columns]  [...]  [+ New]
+Row 2  [Search tasks]  [Filters (2)]  [view slot]  ...  Sorted by Name, A to Z  [Columns]  [...]  [+ New]
 Row 3  (only with chips or a notice) filter chips  Clear filters                  Sorted by Name, A to Z   Reset sort
 Grid   sort by header click; a bulk bar REPLACES row 2 while rows are selected
 Foot   Rows per page [50]   Showing 1-50 of 139   Page 1 of 3   First  Previous  Next  Last
@@ -370,7 +370,6 @@ Foot   Rows per page [50]   Showing 1-50 of 139   Page 1 of 3   First  Previous 
 | Row 3 | `mf-list-toolbar` + `mf-sorted-line` (`shared/ui/sorted-line.ts`, in the `[mfBarEnd]` slot) | chips with "Clear filters" show whenever a filter is active, with the filter row open or closed; the Sorted by line always names the sort, the default order included, and "Reset sort" shows only while the person chose a sort. With no chip and no notice there is no row 3: the Sorted by line moves up into row 2, before Columns (owner decision 2026-11-02), so a list keeps one toolbar row. A page whose row 2 is already full (the Task Queue's quick-view chips) sets `[sortedBelow]="true"` and keeps row 3 for the line in every state |
 | Bulk bar | `[mfBulk]` slot, `[bulkActive]` | replaces row 2 ("3 selected", the actions, Clear) |
 | Footer | `mf-pager` | rows per page 25 / 50 / 100 (default 50, `DEFAULT_PAGE_SIZE` in `list-query.ts`), Showing a-b of n, Page n of m, First / Previous / Next / Last; no "Load more" |
-| Phone (under 640 px) | the same component | Search and Filters stay (the Filters sheet holds every filter and the Sort select), Columns and Other filters are hidden, the primary button stays |
 
 Rules: the Search box is `mf-search-box` (live after 300 ms, Enter at once, x to clear); a filter with `search: true` has no cell in the filter row and no field in the sheet, makes no chip and is not counted in the Filters badge, but it still counts as an active filter for Clear filters and the empty state. The `/` shortcut (unchanged, `shortcut-registry.ts`) focuses Search first. Sort is by header click (Enter or Space on the header button); nothing here adds or changes a keyboard shortcut (#420). Both Columns menus stay in phase 1 (the work lists keep their chooser, the record lists keep `mf-grid-columns`: same place, same name "Columns").
 
