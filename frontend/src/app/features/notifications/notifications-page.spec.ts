@@ -118,7 +118,7 @@ describe('NotificationsPage', () => {
     TestBed.resetTestingModule();
     const again = await open('/notifications', 0);
     expect(root(again.harness).querySelector('[data-page-empty]')!.textContent).toContain(
-      'No notifications.',
+      'No notifications yet.',
     );
   });
 

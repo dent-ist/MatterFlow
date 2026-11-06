@@ -95,7 +95,7 @@ type Filter = 'all' | 'unread';
           @case ('ready') {
             @if (items().length === 0) {
               <mf-state-block icon="pi-bell" [fill]="true" data-page-empty>
-                {{ filter() === 'unread' ? 'No unread notifications.' : 'No notifications.' }}
+                {{ filter() === 'unread' ? 'No unread notifications.' : 'No notifications yet.' }}
                 @if (filter() === 'unread') {
                   <button
                     mfStateAction
@@ -255,10 +255,10 @@ type Filter = 'all' | 'unread';
     }
     .npg__row {
       display: flex;
-      align-items: baseline;
+      align-items: center;
       gap: var(--mf-s3);
       box-sizing: border-box;
-      min-height: 44px;
+      min-height: 56px;
       padding: var(--mf-s2) var(--mf-s3);
       color: var(--mf-text);
       text-decoration: none;
@@ -424,7 +424,7 @@ export class NotificationsPage {
 
   private countText(total: number): string {
     if (total === 0)
-      return this.filter() === 'unread' ? 'No unread notifications.' : 'No notifications.';
+      return this.filter() === 'unread' ? 'No unread notifications.' : 'No notifications yet.';
     const noun = total === 1 ? 'notification' : 'notifications';
     return `${total} ${this.filter() === 'unread' ? 'unread ' : ''}${noun}, page ${this.page()}.`;
   }
