@@ -1,0 +1,86 @@
+[
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/dashboard?tab=calendar",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/dashboard?tab=breakdowns",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/dashboard?tab=users",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/dashboard?tab=trends",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/dashboard?tab=swimlane",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/matters/1?tab=notes",
+  "v": []
+ },
+ {
+  "size": "1366x768",
+  "p": "director",
+  "url": "/tasks/new",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/dashboard?tab=calendar",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/dashboard?tab=breakdowns",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/dashboard?tab=users",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/dashboard?tab=trends",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/dashboard?tab=swimlane",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/matters/1?tab=notes",
+  "v": []
+ },
+ {
+  "size": "1920x1080",
+  "p": "director",
+  "url": "/tasks/new",
+  "v": []
+ }
+]

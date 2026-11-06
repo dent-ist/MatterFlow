@@ -38,7 +38,7 @@ Each rule: **Do** exactly this; **Don't** the listed things; **Ref** the page or
 
 ### 2.1 Foundations
 
-**D-01 Scales.** Type 12 / 13 / 14 (body and controls) / 16 (card, dialog and menu titles) / 18 / 22 (page title) px (`--mf-fs-xs`..`--mf-fs-h2`); figures 24 and 32 px (`--mf-fs-figure`, `--mf-fs-figure-lg`). Weights 400, 600, 700. Spacing 4, 8, 12, 16, 24, 32, 48 (`--mf-s1`..`--mf-s7`): inside a control 0 12, between controls 8, header to toolbar 12, card padding 16, dialog body 16, between fields 16, label to field 4, between sections 24, page gutter 16. Radius: 4 controls (`--mf-radius`), 8 menus, popovers, tooltips and inner boxes (`--mf-radius-lg`), 12 cards, grid frames and dialogs (`--mf-radius-xl`), 6 only the navigation pill, pill for chips, 50% for avatars. Shadow: `--mf-shadow-card` on cards, `--mf-shadow-pop` on menus, popovers and dialogs. Don't: other values, weight 500 or 800, a colour literal, a thick coloured edge, a font size in rem or em, a size token that does not exist (`--mf-fs-body`, `--mf-fs-xl`, `--mf-radius-sm`). Guards: `check-theme-colours`, `check-off-scale` (radius, font size, weight, capitals and undefined size tokens; #1155), `size-tokens.spec`.
+**D-01 Scales.** Type 12 / 13 / 14 (body and controls) / 16 (card, dialog and menu titles) / 18 / 22 (page title) px (`--mf-fs-xs`..`--mf-fs-h2`); figures 24 and 32 px (`--mf-fs-figure`, `--mf-fs-figure-lg`). Weights 400, 600, 700. Spacing 4, 8, 12, 16, 24, 32, 48 (`--mf-s1`..`--mf-s7`): inside a control 0 12, between controls 8, header to toolbar 12, card padding 16, dialog body 16, between fields 16, label to field 4, between sections 24, page gutter 16. Radius: 4 controls (`--mf-radius`), 8 menus, popovers, tooltips and inner boxes (`--mf-radius-lg`), 12 cards, grid frames and dialogs (`--mf-radius-xl`), 6 only the navigation pill (`--mf-nav-item-radius`; the `--mf-radius-md` token is retired, #1229), pill for chips, 50% for avatars. Shadow: `--mf-shadow-card` on cards, `--mf-shadow-pop` on menus, popovers and dialogs. Don't: other values, weight 500 or 800, a colour literal, a thick coloured edge, a font size in rem or em, a size token that does not exist (`--mf-fs-body`, `--mf-fs-xl`, `--mf-radius-sm`). Guards: `check-theme-colours`, `check-off-scale` (radius, font size, weight, capitals and undefined size tokens; #1155), `size-tokens.spec`.
 
 **D-02 Control height [OWNER, owner approved 36 px].** Button, segmented switch, dropdown trigger, search, input, textarea row, date and time field, icon button: 36 px (`--mf-ctl-h`; icon buttons 36 x 36). Inside a table cell or the inline filter row: 32 px (`--mf-ctl-h-sm`). Text buttons: 24 px **[OWNER]** (`--mf-target-min`). Targets are never below 24 px. Ref: Dashboard > Users toolbar.
 
@@ -73,6 +73,10 @@ Each rule: **Do** exactly this; **Don't** the listed things; **Ref** the page or
 **D-21 Page header.** `mf-page-header` (`shared/ui/page-header.ts`): breadcrumb row on non-top-level pages (13 px muted, cut at 40 characters), title row 36 px: icon tile 32 x 32 (radius 8, `--mf-primary`, white icon 20, `--mf-tile-size`), H1 22/700, count chip (lists), actions right `[secondary] [Filters] [primary]`; optional one-line description (13 muted). Record pages: `mf-record-header` (`shared/ui/record-header.ts`): same tile with the record-type icon, bold title, actions `[Edit] [Activity] [primary] [...]`. Scope and period selectors in the actions are capped at 22 rem. The top-bar "New Task" button is hidden where the page has its own.
 
 **D-22 Vocabulary** (section 4.4).
+
+**D-42a Header rule (decided after review 5).** ONE look for every data grid header: 12/700 uppercase `--mf-text-muted` on `--mf-surface-alt`, 40 px. Calendars are date grids, not data grids: their weekday row is the exception (13/600 normal case, "Sun", red on Sunday and Saturday, `--mf-cal-off-bg` tint for non-working cells). Existing data grids do not change; the Calendar Week table header goes from 45 to 40 px.
+
+**D-04a Hatching.** Dashboard > Breakdowns bars, the Age bar and the Summary gauge still show diagonal stripes; they are removed under #1158 (overdue = solid `--mf-sem-overdue-solid` fill next to the "N overdue" chip; gauge segments solid tints).
 
 **D-23 Uppercase** only for grid column headings (12/700 muted) and the navigation section label "ADMINISTRATION"; tile captions, group headings ("Data Technician"), menu group labels and calendar weekdays ("Sun") are normal case, 13/600 for a group heading (#1155). `scripts/check-off-scale.mjs` lists the files that may use capitals.
 
@@ -302,6 +306,8 @@ A guard that fails is fixed by changing the code, not the guard. A legitimate ex
 | A dialog with no primary action has one right-aligned `[Close]` | nothing to cancel (icon picker, read-only picker) |
 | Grid filter row and cell editors are 32 px | dense cells (D-02) |
 | Navigation item radius 6 px | owner decision for the selected white pill |
+| Printed lines ("Printed November 6, 2026, 10:23 AM") use the full month and the time, no zone | a sentence on paper |
+| Calendar weekday row is normal case 13/600, red on weekends | date grid, not a data grid (D-42a) |
 | Chart axes use the same `MM/DD` as cells | consistency; month names only in tooltips |
 | Profile account field and Audit Logs show `KE\account` | raw account is the data there |
 | Brief known gaps: the 403 page is not yet the `mf-state-page` card; Task Queue, My Work and Pod Work still show the top-bar "New Task" beside the page's own | tracked in epics #1117 and #1110, remove when done |

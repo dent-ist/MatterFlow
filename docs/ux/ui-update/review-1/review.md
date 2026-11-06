@@ -87,3 +87,17 @@ Real stack, 1366x768 and 1920x1080, `../review-4/measurements-review4.json`, axe
 | #1149 capitalisation | PASS WITH NOTES | leftovers column menu, step badge, "by" rule (fix #1226) |
 
 New fix issue #1226 (AD leftovers; decision: "by" and other short prepositions stay lowercase in Title Case). #1224: comment posted (source of the colour and the shared solid chip).
+
+## Review 5: batch 5b (tip a8d7b0d, 2026-11-06, screenshots in `../review-5/`)
+
+Real stack, 1366x768 and 1920x1080 (54 screenshots, `measurements-review5.json`); axe on 50 pages/tabs at both sizes: 0 violations (`axe-review5-a/b/c.json`); clipped-element probe `crawl/clip.js`.
+
+| Issue | Result | Evidence |
+| --- | --- | --- |
+| #1226 | PASS | Trends axis `10/08`, `10/12`; calendar "Week of 11/01 to 11/07"; column menu "Sort Ascending", "Hide Column"; "Produced by Us"; "Skippable - Comment"; guard `MINOR` has "by" |
+| #1225 | PASS WITH NOTES | red Sun/Sat headers and numbers, `--mf-cal-off-bg` tint distinct from the header; red on `#dde2ea` 5.05:1; legend line "12 Red numbers = weekend or holiday". Notes: the legend row wraps ("Days" and "Holidays" labels orphaned), Week table header is 45 px, not 40 |
+| #1224 | PASS WITH NOTES | picker cards show solid colour chips (blue, teal, green, orange, purple, rose) as the grids; selected strip still plain black (#1228) |
+| #1154 | PASS WITH NOTES | Status, Priority, Assignee, Project whole; Type column tile only; Matter and Project Tasks Progress off by default; probe: all clipped text elements are ellipsis with a tooltip except an empty sizing span. Notes: Pod Work "Assign" cut at 1366, Progress text cut (#1227) |
+| #1155 | PASS | off-scale lint present in `npm run lint`; Summary, Breakdowns, Swimlane, Users, Calendar, Notes editor, My Matters, Task Types form designer show no regression |
+
+Decisions: (a) grid headers 12/700 uppercase for data grids, calendar weekday row is the exception, no existing grid changes; (b) print line: full month, time, no zone; (c) stripes remain in Breakdowns and the gauge, covered by #1158; (d) `--mf-radius-md` retired (#1229); (e) Progress = bar + "2 of 5", step in tooltip (#1227); (f) selected-type strip coloured chip (#1228); (g) Pod Work "Assign to Me" becomes an icon button in a 160 px Assignee cell (#1227).
