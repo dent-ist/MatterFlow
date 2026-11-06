@@ -39,9 +39,9 @@ export type ActResult = { ok: true; task: TaskResponse } | { ok: false; error: u
 export const ACTION_LABELS: Readonly<Record<string, string>> = {
   START: 'Start',
   RESUME: 'Resume',
-  HOLD: 'Put on hold',
+  HOLD: 'Put on Hold',
   COMPLETE: 'Complete',
-  CANCEL: 'Cancel task',
+  CANCEL: 'Cancel Task',
   REOPEN: 'Reopen',
 };
 

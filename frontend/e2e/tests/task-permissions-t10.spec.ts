@@ -459,7 +459,7 @@ test.describe('#329: Task page permission matrix, no dead links', () => {
       if (menus['assignee'] && known(role)) expect(menus['assignee'][0]).toBe('LEAD:Assign to me');
       if (menus['overflow']) {
         expect(menus['overflow']).toContain('Copy Link');
-        expect(menus['overflow'].some((i) => /^Cancel task/.test(i))).toBe(
+        expect(menus['overflow'].some((i) => /^Cancel Task/.test(i))).toBe(
           offered.some((o) => o.action === 'CANCEL'),
         );
       }
