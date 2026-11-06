@@ -81,7 +81,7 @@ function clientOption(c: ClientResponse): PickerOption {
       margin-bottom: var(--mf-s3);
       padding: var(--mf-s2) var(--mf-s3);
       border: 1px solid var(--mf-sem-overdue-solid);
-      border-radius: var(--mf-radius-md);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-sem-overdue-bg);
       color: var(--mf-sem-overdue-fg);
     }
@@ -91,7 +91,7 @@ function clientOption(c: ClientResponse): PickerOption {
       width: fit-content;
       min-height: var(--mf-chip-h);
       padding: 0 var(--mf-s2);
-      border-radius: var(--mf-radius-md);
+      border-radius: var(--mf-radius);
       background: var(--mf-sem-info-bg);
       font-weight: 700;
     }

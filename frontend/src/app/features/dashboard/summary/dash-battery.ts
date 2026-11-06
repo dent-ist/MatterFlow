@@ -444,7 +444,7 @@ type BatteryState = 'loading' | 'ready' | 'error';
     }
     .sk {
       display: block;
-      border-radius: var(--mf-radius-md);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-surface-alt);
     }
     .sk--big {

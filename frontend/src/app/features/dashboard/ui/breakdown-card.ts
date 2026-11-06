@@ -54,7 +54,7 @@ export const BD_CARD_CSS = `
     height: 28px;
     box-sizing: border-box;
     border: 1px solid var(--mf-border-soft);
-    border-radius: var(--mf-radius-md);
+    border-radius: var(--mf-radius);
     font-size: var(--mf-icon-xs);
   }
   @media (forced-colors: active) {

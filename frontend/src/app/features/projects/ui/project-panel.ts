@@ -90,7 +90,7 @@ import { TextField } from '../../../shared/ui/text-field';
       margin-bottom: var(--mf-s3);
       padding: var(--mf-s2) var(--mf-s3);
       border: 1px solid var(--mf-sem-overdue-solid);
-      border-radius: var(--mf-radius-md);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-sem-overdue-bg);
       color: var(--mf-sem-overdue-fg);
     }

@@ -89,7 +89,7 @@ import { SENSITIVE_LEAD, SENSITIVE_TEXT } from '../../../shared/ui/record-header
       margin: var(--mf-s2) 0 0;
       padding: var(--mf-s1) var(--mf-s3);
       border: 1px solid var(--mf-sem-risk-line);
-      border-radius: var(--mf-radius-md);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-sem-risk-bg);
       color: var(--mf-sem-risk-fg);
       font-size: var(--mf-fs-sm);

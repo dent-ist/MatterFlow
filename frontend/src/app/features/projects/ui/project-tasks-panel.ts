@@ -204,7 +204,7 @@ const PAGE = 100;
       margin-bottom: var(--mf-s3);
       padding: var(--mf-s3);
       border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-md);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-surface);
     }
     .ptp__actions {

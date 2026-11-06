@@ -68,7 +68,7 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
     .ma__banner {
       margin: 0 var(--mf-s3) var(--mf-s2);
       padding: var(--mf-s2) var(--mf-s3);
-      border-radius: var(--mf-radius-md);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-sem-info-bg);
       color: var(--mf-sem-info-fg);
     }

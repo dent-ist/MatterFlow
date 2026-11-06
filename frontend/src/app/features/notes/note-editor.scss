@@ -23,7 +23,7 @@
   padding: 6px 8px;
   border: 1px solid var(--mf-border);
   border-bottom: 0;
-  border-radius: var(--mf-radius-md) var(--mf-radius-md) 0 0;
+  border-radius: var(--mf-radius-lg) var(--mf-radius-lg) 0 0;
   background: var(--mf-surface-2, var(--mf-sem-neutral-bg));
 }
 
@@ -183,7 +183,7 @@
     blockquote {
       margin: 0 0 0.8em;
       padding: 8px 14px;
-      border-radius: var(--mf-radius-md);
+      border-radius: var(--mf-radius);
       background: var(--mf-surface-2, var(--mf-sem-neutral-bg));
       box-shadow: inset 0 0 0 1px var(--mf-border);
       color: var(--mf-text);
@@ -251,7 +251,7 @@
 .ne--edit .ne__area {
   padding: 14px 16px;
   border: 1px solid var(--mf-border-strong);
-  border-radius: 0 0 var(--mf-radius-md) var(--mf-radius-md);
+  border-radius: 0 0 var(--mf-radius-lg) var(--mf-radius-lg);
   background: var(--mf-surface);
 
   &:focus-within {

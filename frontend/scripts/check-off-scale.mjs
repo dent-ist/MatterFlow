@@ -4,6 +4,7 @@
  *  - border-radius: 0, 50%, 4 px (--mf-radius), 8 px (--mf-radius-lg), 12 px (--mf-radius-xl), 999 px (--mf-radius-pill), or a var(...)
  *  - font-size: 12, 13, 14, 16, 18, 22, 24, 32 px, or a var(...) / inherit (never rem or em, never 10, 11, 11.5, 12.5, 13.5, 15, 17, 19, 26 ...)
  *  - font-weight: 400, 600, 700, normal, inherit, or a var(...) (never 500 or 800)
+ *  - the 6 px --mf-radius-md token is retired (#1229); a use of it fails here as an undefined token (6 px lives in --mf-nav-item-radius only)
  *  - a --mf-fs-*, --mf-radius-* or --mf-fw-* token must exist in docs/ux/tokens.css
  *  - text-transform: uppercase only in the files of ALLOW_UPPERCASE (grid column headings and the navigation section label, D-23)
  * Scans src/ and projects/ (ts, html, scss, css; specs and generated files are skipped). A line with `off-scale-ok: <reason>` (or the line right after a comment line

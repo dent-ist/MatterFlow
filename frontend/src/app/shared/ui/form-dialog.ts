@@ -54,7 +54,7 @@ export const DIALOG_WIDTHS = {
       gap: var(--mf-s2);
       padding: var(--mf-s2) var(--mf-s3);
       border: 1px solid var(--mf-sem-risk-solid);
-      border-radius: var(--mf-radius-md);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-sem-risk-bg);
       color: var(--mf-sem-risk-fg);
     }

@@ -161,7 +161,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
       align-self: start;
       width: fit-content;
       padding: 0 var(--mf-s2);
-      border-radius: var(--mf-radius-md);
+      border-radius: var(--mf-radius);
       background: var(--mf-sem-info-bg);
       font-weight: 700;
     }

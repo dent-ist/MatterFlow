@@ -43,7 +43,7 @@ import { TASK_TYPE_COLOURS, isTaskTypeColour } from '../task-type/task-type-colo
     .chip.sm {
       width: 24px;
       height: 24px;
-      border-radius: var(--mf-radius-md);
+      border-radius: var(--mf-radius);
     }
     @media (forced-colors: active) {
       .chip {

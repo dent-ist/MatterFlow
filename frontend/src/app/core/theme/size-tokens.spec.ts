@@ -39,7 +39,8 @@ describe('size tokens (docs/ux/tokens.css)', () => {
     expect(value('mf-radius')).toBe('4px');
     expect(value('mf-radius-lg')).toBe('8px');
     expect(value('mf-radius-xl')).toBe('12px');
-    expect(value('mf-radius-md')).toBe('6px');
+    expect(value('mf-radius-md')).toBeNull(); // retired, #1229
+    expect(value('mf-nav-item-radius')?.replace(/\s*\/\*.*$/, '')).toBe('6px');
   });
 
   it('styles.scss does not override --mf-target-min (tokens.css keeps 24 px)', () => {

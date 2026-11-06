@@ -193,7 +193,7 @@
 .pg-alert {
   margin: 0 0 var(--mf-s3);
   padding: var(--mf-s3) var(--mf-s4);
-  border-radius: var(--mf-radius-md);
+  border-radius: var(--mf-radius-lg);
   border: 1px solid var(--mf-sem-overdue-line);
   background: var(--mf-sem-overdue-bg);
   color: var(--mf-sem-overdue-fg);
@@ -202,7 +202,7 @@
 .pg-banner {
   margin: 0 0 var(--mf-s3);
   padding: var(--mf-s3) var(--mf-s4);
-  border-radius: var(--mf-radius-md);
+  border-radius: var(--mf-radius-lg);
   border: 1px solid var(--mf-sem-risk-line);
   background: var(--mf-sem-risk-bg);
   color: var(--mf-sem-risk-fg);
@@ -242,7 +242,7 @@
 .pg-summary {
   margin: 0 0 var(--mf-s4);
   padding: var(--mf-s3) var(--mf-s4);
-  border-radius: var(--mf-radius-md);
+  border-radius: var(--mf-radius-lg);
   border: 1px solid var(--mf-sem-overdue-line);
   background: var(--mf-sem-overdue-bg);
   color: var(--mf-sem-overdue-fg);
