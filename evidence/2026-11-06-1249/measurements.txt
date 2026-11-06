@@ -1,0 +1,7 @@
+# Assets: heading widths in px, loading vs loaded (real stack, KE\kekim)
+skeleton rows 5
+1366 loading {"ths":[":24","Type:128","Name:201","CM Number:123","Size:105","Linked Tasks:137","External Reference:168","Disposition:162","Actions:48"],"fr":[24,128,201,123,105,137,168,162,48],"table":1096,"scroll":[1096,1096]}
+1366 loaded  {"ths":[":24","Type:128","Name:201","CM Number:123","Size:105","Linked Tasks:137","External Reference:168","Disposition:162","Actions:48"],"fr":[24,128,201,123,105,137,168,162,48],"table":1096,"scroll":[1096,1096]}
+skeleton rows 5
+1920 loading {"ths":[":24","Type:128","Name:755","CM Number:123","Size:105","Linked Tasks:137","External Reference:168","Disposition:162","Actions:48"],"fr":[24,128,755,123,105,137,168,162,48],"table":1650,"scroll":[1650,1650]}
+1920 loaded  {"ths":[":24","Type:128","Name:755","CM Number:123","Size:105","Linked Tasks:137","External Reference:168","Disposition:162","Actions:48"],"fr":[24,128,755,123,105,137,168,162,48],"table":1650,"scroll":[1650,1650]}

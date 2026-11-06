@@ -1,0 +1,74 @@
+[
+ {
+  "size": "1366x768",
+  "url": "/projects",
+  "violations": [],
+  "scroll": [
+   1096,
+   1096
+  ]
+ },
+ {
+  "size": "1366x768",
+  "url": "/projects/1?tab=details",
+  "violations": [],
+  "scroll": null
+ },
+ {
+  "size": "1366x768",
+  "url": "/assets",
+  "violations": [],
+  "scroll": [
+   1096,
+   1096
+  ]
+ },
+ {
+  "size": "1366x768",
+  "url": "/assets/1?tab=details",
+  "violations": [],
+  "scroll": null
+ },
+ {
+  "size": "1366x768",
+  "url": "/assets/reports",
+  "violations": [],
+  "scroll": null
+ },
+ {
+  "size": "1920x1080",
+  "url": "/projects",
+  "violations": [],
+  "scroll": [
+   1650,
+   1650
+  ]
+ },
+ {
+  "size": "1920x1080",
+  "url": "/projects/1?tab=details",
+  "violations": [],
+  "scroll": null
+ },
+ {
+  "size": "1920x1080",
+  "url": "/assets",
+  "violations": [],
+  "scroll": [
+   1650,
+   1650
+  ]
+ },
+ {
+  "size": "1920x1080",
+  "url": "/assets/1?tab=details",
+  "violations": [],
+  "scroll": null
+ },
+ {
+  "size": "1920x1080",
+  "url": "/assets/reports",
+  "violations": [],
+  "scroll": null
+ }
+]

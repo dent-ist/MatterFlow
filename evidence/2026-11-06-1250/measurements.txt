@@ -1,0 +1,7 @@
+# Projects: heading and filter-row cell widths in px, loading vs loaded (real stack)
+skeleton rows 5
+1366 loading {"ths":["Project Name:301","Matter:210","Client:168","Open Tasks:125","Overdue:105","Status:140","Actions:48"],"fr":[301,210,168,125,105,140,48],"table":1096,"scroll":[1096,1096]}
+1366 loaded  {"ths":["Project Name:301","Matter:210","Client:168","Open Tasks:125","Overdue:105","Status:140","Actions:48"],"fr":[301,210,168,125,105,140,48],"table":1096,"scroll":[1096,1096]}
+skeleton rows 5
+1920 loading {"ths":["Project Name:855","Matter:210","Client:168","Open Tasks:125","Overdue:105","Status:140","Actions:48"],"fr":[855,210,168,125,105,140,48],"table":1650,"scroll":[1650,1650]}
+1920 loaded  {"ths":["Project Name:855","Matter:210","Client:168","Open Tasks:125","Overdue:105","Status:140","Actions:48"],"fr":[855,210,168,125,105,140,48],"table":1650,"scroll":[1650,1650]}
