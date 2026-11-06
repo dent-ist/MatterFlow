@@ -137,7 +137,7 @@ describe('BarChart', () => {
       (v as HTMLElement).textContent!.trim(),
     );
     expect(values).toEqual(['50', '5', '0']);
-    const link = fixture.nativeElement.querySelector('a.link') as HTMLAnchorElement;
+    const link = fixture.nativeElement.querySelector('a.mf-link') as HTMLAnchorElement;
     expect(link.getAttribute('aria-label')).toBe('Big: 50 GB');
     expect(fixture.nativeElement.querySelector('.track')!.getAttribute('aria-hidden')).toBe('true');
   });

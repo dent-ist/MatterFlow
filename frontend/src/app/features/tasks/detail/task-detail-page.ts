@@ -81,7 +81,7 @@ const isTab = (v: unknown): v is TaskPageTab => TABS.includes(v as string);
             <div class="pg-alert" role="alert" data-conflict-banner>
               This task was changed by someone else, so your change wasn't saved. Reload to see the
               latest version.
-              <button type="button" class="link-btn" data-reload (click)="store.load()">
+              <button type="button" class="mf-btn mf-btn--text" data-reload (click)="store.load()">
                 Reload Latest
               </button>
             </div>
@@ -185,17 +185,6 @@ const isTab = (v: unknown): v is TaskPageTab => TABS.includes(v as string);
     }
   `,
   styles: `
-    .link-btn {
-      margin-left: var(--mf-s2);
-      padding: 0;
-      border: 0;
-      background: transparent;
-      color: inherit;
-      font: inherit;
-      font-weight: 600;
-      text-decoration: underline;
-      cursor: pointer;
-    }
     /*
      * The three tab panes fill the left column. Each list is its own scroll area, capped at 60vh (--mf-panel-max); on phones everything flows.
      */

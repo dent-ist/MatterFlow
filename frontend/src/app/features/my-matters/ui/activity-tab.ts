@@ -78,7 +78,7 @@ const PAGE_SIZE = 25;
       @if (loader.state() === 'error') {
         <p class="msg" role="alert">
           Couldn't load activity.
-          <button type="button" class="lnk" (click)="loader.load()">Retry</button>
+          <button type="button" class="mf-btn mf-btn--text" (click)="loader.load()">Retry</button>
         </p>
       } @else if (loader.state() === 'loading' && items().length === 0) {
         <p class="msg" role="status">Loading activity</p>
@@ -150,7 +150,7 @@ const PAGE_SIZE = 25;
                     <span class="kt">
                       @if (i.taskId !== null) {
                         <a
-                          class="lnk"
+                          class="mf-link"
                           [href]="taskHref(i.taskId)"
                           target="_blank"
                           rel="noopener"
@@ -160,7 +160,7 @@ const PAGE_SIZE = 25;
                       } @else {
                         <button
                           type="button"
-                          class="lnk"
+                          class="mf-btn mf-btn--text"
                           [attr.data-feed]="i.itemKey"
                           (click)="assetOpened.emit(i.assetId!)"
                         >
@@ -245,19 +245,6 @@ const PAGE_SIZE = 25;
     .msg {
       margin: var(--mf-s4);
       color: var(--mf-text-muted);
-    }
-    .lnk {
-      color: var(--mf-link);
-      background: none;
-      border: 0;
-      padding: 0;
-      font: inherit;
-      text-align: left;
-      cursor: pointer;
-      text-decoration: none;
-    }
-    .lnk:hover {
-      text-decoration: underline;
     }
     .tt td {
       padding: var(--mf-s2) var(--mf-s3);
@@ -391,7 +378,6 @@ const PAGE_SIZE = 25;
       .c-who {
         display: block;
       }
-      .lnk,
       .mf-btn {
         min-height: 44px;
       }

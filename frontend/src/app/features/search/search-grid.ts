@@ -123,9 +123,6 @@ export const SEARCH_COLUMNS: Record<SearchType | 'mixed', readonly Column[]> = {
       gap: var(--mf-s2);
       min-width: 0;
     }
-    .sg-name .pg-link {
-      min-width: 0;
-    }
     .sg-lock {
       flex: none;
       font-size: var(--mf-fs-xs);
@@ -222,7 +219,7 @@ export const SEARCH_COLUMNS: Record<SearchType | 'mixed', readonly Column[]> = {
                         <span class="sg-name">
                           <!-- A task result remembers this view (T9, #324): its Back link and crumb return here and focus this link. -->
                           <a
-                            class="pg-link pg-name"
+                            class="mf-link pg-name"
                             [routerLink]="hit.path"
                             [queryParams]="hit.type === 'task' ? origin.params('search') : null"
                             [state]="hit.type === 'task' ? origin.state() : undefined"

@@ -81,7 +81,9 @@ const UPCOMING_DAYS = 14;
           @if (upcoming.state() === 'error') {
             <p class="msg" role="alert">
               Couldn't load events.
-              <button type="button" class="lnk" (click)="upcoming.load()">Retry</button>
+              <button type="button" class="mf-btn mf-btn--text" (click)="upcoming.load()">
+                Retry
+              </button>
             </p>
           } @else if ((upcoming.data()?.items?.length ?? 0) === 0) {
             <p class="msg">
@@ -119,7 +121,12 @@ const UPCOMING_DAYS = 14;
           }
         </div>
         <div class="cf">
-          <button type="button" class="lnk" data-view-calendar (click)="viewCalendar.emit(null)">
+          <button
+            type="button"
+            class="mf-btn mf-btn--text"
+            data-view-calendar
+            (click)="viewCalendar.emit(null)"
+          >
             Open the Calendar
           </button>
         </div>
@@ -153,7 +160,7 @@ const UPCOMING_DAYS = 14;
           @if (feed.state() === 'error') {
             <p class="msg" role="alert">
               Couldn't load activity.
-              <button type="button" class="lnk" (click)="feed.load()">Retry</button>
+              <button type="button" class="mf-btn mf-btn--text" (click)="feed.load()">Retry</button>
             </p>
           } @else if (items().length === 0) {
             <p class="msg">
@@ -191,7 +198,9 @@ const UPCOMING_DAYS = 14;
           }
         </div>
         <div class="cf">
-          <button type="button" class="lnk" data-view-activity (click)="viewAll()">View All</button>
+          <button type="button" class="mf-btn mf-btn--text" data-view-activity (click)="viewAll()">
+            View All
+          </button>
         </div>
       </section>
     </ng-template>
@@ -402,18 +411,6 @@ const UPCOMING_DAYS = 14;
       padding: var(--mf-s2) var(--mf-s4);
       border-top: 1px solid var(--mf-border);
     }
-    .lnk {
-      border: 0;
-      background: none;
-      padding: 0;
-      min-height: 28px;
-      color: var(--mf-link);
-      font: inherit;
-      cursor: pointer;
-    }
-    .lnk:hover {
-      text-decoration: underline;
-    }
     .msg {
       margin: var(--mf-s4);
       color: var(--mf-text-muted);
@@ -434,8 +431,7 @@ const UPCOMING_DAYS = 14;
       .list {
         overflow: visible;
       }
-      .it,
-      .lnk {
+      .it {
         min-height: 44px;
       }
     }

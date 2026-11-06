@@ -30,7 +30,7 @@ export function isPlainClick(event: MouseEvent): boolean {
  * when it is used (so Back puts focus on this link again, see `restoreRowFocus`) and is the place from which the right arrow reaches the
  * row's copy button (`mf-copy-button` with `rowStop`), which is not a Tab stop of its own.
  *
- *   <a class="pg-link pg-name" [routerLink]="..." mfRowLink="clients" [rowKey]="c.clientId">...</a>
+ *   <a class="mf-link pg-name" [routerLink]="..." mfRowLink="clients" [rowKey]="c.clientId">...</a>
  *
  * Task Detail (T9) uses the same directive on the task links of the Matter and Project Tasks grids with its own list id.
  */

@@ -60,7 +60,7 @@
   }
 }
 
-.ub__link {
+.ub__name {
   flex: 1 1 auto;
   min-width: 0;
   display: -webkit-box;
@@ -70,7 +70,6 @@
   overflow: hidden;
   overflow-wrap: anywhere;
   line-height: 18px;
-  color: var(--mf-link);
 }
 
 .ub__badges {

@@ -125,7 +125,11 @@ import { TaskDetailStore } from './task-detail.store';
         <ul class="steps" data-blocked-steps>
           @for (s of blocked(); track s.stepInstanceId) {
             <li>
-              <button type="button" class="link" (click)="store.showStep(s.stepInstanceId)">
+              <button
+                type="button"
+                class="mf-btn mf-btn--text"
+                (click)="store.showStep(s.stepInstanceId)"
+              >
                 Step {{ s.sequenceNo }}: {{ s.title }}
               </button>
             </li>
@@ -176,19 +180,6 @@ import { TaskDetailStore } from './task-detail.store';
     .steps {
       margin: 0 0 var(--mf-s3);
       padding-left: var(--mf-s5);
-    }
-    .link {
-      /* A 24 px target (WCAG 2.5.8): the step names are links to tap on a phone. */
-      display: inline-flex;
-      align-items: center;
-      min-height: var(--mf-target-min, 1.5rem);
-      padding: 0;
-      border: 0;
-      background: transparent;
-      color: var(--mf-link);
-      font: inherit;
-      text-decoration: underline;
-      cursor: pointer;
     }
   `,
 })

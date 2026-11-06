@@ -57,7 +57,7 @@ const PAGE = 100;
               <i class="pi pi-pencil" aria-hidden="true"></i> Edit Project
             </button>
           }
-          <a class="pg-link" data-open-project [routerLink]="['/projects', p.projectId]"
+          <a class="mf-link" data-open-project [routerLink]="['/projects', p.projectId]"
             >Open the project page</a
           >
         </p>
@@ -130,7 +130,7 @@ const PAGE = 100;
               @for (t of linked(); track t.taskId) {
                 <li class="ptp__row" data-linked-row>
                   <span class="ptp__title">
-                    <a class="pg-link" [routerLink]="['/tasks', t.taskId]"
+                    <a class="mf-link" [routerLink]="['/tasks', t.taskId]"
                       ><span class="pg-mono">{{ t.taskNumber }}</span> {{ t.title }}</a
                     >
                     <span class="pg-muted"> {{ t.statusLabel }}</span>

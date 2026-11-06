@@ -272,7 +272,7 @@ const BONES: Record<string, string> = {
                     <td>
                       <div class="pg-namecell">
                         <a
-                          class="pg-link pg-name"
+                          class="mf-link pg-name"
                           [routerLink]="['/matters', m.matterId]"
                           mfRowLink="client-matters"
                           [rowKey]="m.matterId"

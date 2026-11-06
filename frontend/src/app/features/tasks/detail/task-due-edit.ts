@@ -163,16 +163,6 @@ const BAD_DATE = 'Enter a valid date, for example Oct 12, 2026 or 10/12/2026.';
     .de-clear {
       justify-self: start;
     }
-    .de-link {
-      justify-self: start;
-      padding: 0;
-      border: 0;
-      background: transparent;
-      color: var(--mf-primary);
-      font: inherit;
-      text-decoration: underline;
-      cursor: pointer;
-    }
   `,
   template: `
     @let t = store.task();
@@ -268,7 +258,7 @@ const BAD_DATE = 'Enter a valid date, for example Oct 12, 2026 or 10/12/2026.';
                 This task was changed by someone else, so your change wasn't saved. Reload to see
                 the latest version.
               </span>
-              <button type="button" class="de-link" data-due-reload (click)="reload()">
+              <button type="button" class="mf-btn mf-btn--text" data-due-reload (click)="reload()">
                 Reload Latest
               </button>
             </p>

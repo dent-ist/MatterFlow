@@ -224,7 +224,7 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
                 <tr [attr.data-row]="s.title">
                   <td class="ad-spring">
                     <a
-                      class="pg-link pg-name"
+                      class="mf-link pg-name"
                       [routerLink]="['/admin/steps', s.stepDefinitionId]"
                       [mfRowLink]="listId"
                       [rowKey]="s.stepDefinitionId"
@@ -250,7 +250,7 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
                       <span class="pg-muted">Not Used</span>
                     } @else {
                       <a
-                        class="pg-link"
+                        class="mf-link"
                         mfRowStop
                         data-used-in-link
                         [routerLink]="['/admin/workflows']"

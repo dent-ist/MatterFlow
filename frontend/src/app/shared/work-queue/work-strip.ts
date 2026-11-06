@@ -66,7 +66,7 @@ export interface WorkStripItem {
               <!-- A fact (a word or phrase, or a count nobody can press) is plain label and value text, not a chip. -->
               @if (!interactive() && item.link) {
                 <a
-                  class="fact fact--link"
+                  class="fact mf-link"
                   [class.zero]="item.count === 0"
                   [class.alert]="item.alert && !!item.count"
                   [routerLink]="item.link.path"
@@ -259,18 +259,10 @@ export interface WorkStripItem {
     .fact .pi {
       font-size: var(--mf-icon-sm);
     }
-    a.fact--link {
-      color: var(--mf-link);
-      text-decoration: underline;
-      text-underline-offset: 2px;
-    }
-    a.fact--link .n,
-    a.fact--link.zero .n {
+    a.fact.mf-link .n,
+    a.fact.mf-link.zero .n {
       font-variant-numeric: tabular-nums;
       color: inherit;
-    }
-    a.fact--link:hover {
-      color: var(--mf-primary-hover);
     }
     /* Somebody is waiting (Pending access): the warning colours while the count is above zero; the pressed segment keeps its fill. */
     button.item.tinted:not(.on) {

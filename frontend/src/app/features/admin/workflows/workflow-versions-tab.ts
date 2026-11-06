@@ -43,7 +43,7 @@ export const DRAFT_EXISTS_REASON = 'A draft is already in progress. Open it or d
             <li class="wv__card" [attr.data-version]="v.versionNo">
               <div class="wv__card-top">
                 <a
-                  class="pg-link wv__link"
+                  class="mf-link wv__link"
                   [routerLink]="link(v)"
                   [state]="carry()"
                   [attr.aria-label]="(isDraft(v) ? 'Edit draft v' : 'View v') + v.versionNo"
@@ -119,7 +119,7 @@ export const DRAFT_EXISTS_REASON = 'A draft is already in progress. Open it or d
                 <tr [attr.data-version]="v.versionNo">
                   <td class="wv__ver">
                     <a
-                      class="pg-link wv__link"
+                      class="mf-link wv__link"
                       [routerLink]="link(v)"
                       [state]="carry()"
                       [attr.aria-label]="(isDraft(v) ? 'Edit draft v' : 'View v') + v.versionNo"

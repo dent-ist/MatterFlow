@@ -92,7 +92,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
                 <span class="ad__ref">
                   @if (isUrl(asset().externalReference!)) {
                     <a
-                      class="pg-link ad__ref-text"
+                      class="mf-link ad__ref-text"
                       [href]="asset().externalReference"
                       [attr.title]="asset().externalReference"
                       target="_blank"

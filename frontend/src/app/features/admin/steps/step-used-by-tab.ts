@@ -25,7 +25,7 @@ import { USED_BY_NOTE, UsedWorkflow } from './step-record';
             @for (v of w.versions; track v.versionId) {
               <li class="ub__row" [attr.data-used-version]="v.versionId">
                 <a
-                  class="ub__link"
+                  class="mf-link ub__name"
                   data-used-link
                   [routerLink]="['/admin/workflows', w.workflowId, 'versions', v.versionId]"
                   [attr.title]="v.label"

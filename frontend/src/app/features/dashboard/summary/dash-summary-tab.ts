@@ -32,9 +32,14 @@ import { DashV4Api } from './dash-v4-api';
       <!-- Tasks with no pod are in no scope but All pods: a quiet line so they cannot be lost. -->
       <p class="no-pod" data-no-pod-hint>
         {{ note }}
-        <a href="#" class="no-pod-link" data-show-all-pods (click)="showAll($event)"
-          >Show all pods</a
+        <button
+          type="button"
+          class="mf-btn mf-btn--text"
+          data-show-all-pods
+          (click)="showAll($event)"
         >
+          Show All Pods
+        </button>
       </p>
     }
     <div class="body" [class.body--one]="!showRight()">
@@ -73,12 +78,6 @@ import { DashV4Api } from './dash-v4-api';
       margin: 0;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
-    }
-    .no-pod-link {
-      display: inline-block;
-      min-height: 24px;
-      line-height: 24px;
-      color: var(--mf-link);
     }
     .body {
       display: grid;

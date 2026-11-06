@@ -138,7 +138,7 @@ const COLUMNS: readonly AdminColumn[] = [
                   <tr [attr.data-row]="r.label">
                     <td class="mf-cell-name">
                       <a
-                        class="mf-name cf-link"
+                        class="mf-name mf-link cf-name"
                         [routerLink]="['/admin/custom-fields', r.key, 'form']"
                         [mfRowLink]="listId"
                         [rowKey]="r.key"
@@ -203,10 +203,7 @@ const COLUMNS: readonly AdminColumn[] = [
     </mf-admin-list-shell>
   `,
   styles: `
-    .cf-link {
-      text-decoration: none;
-    }
-    .cf-link i {
+    .cf-name i {
       margin-right: var(--mf-s2);
       color: var(--mf-text-muted);
     }

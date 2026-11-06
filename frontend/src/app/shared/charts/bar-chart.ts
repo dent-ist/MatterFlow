@@ -21,7 +21,7 @@ import { ChartFormat, ChartRow, plainFormat } from './chart-types';
           <li class="bar" data-bar>
             @if (row.link; as l) {
               <a
-                class="label link"
+                class="label mf-link"
                 [routerLink]="l.commands"
                 [queryParams]="l.queryParams"
                 [attr.title]="row.label"
@@ -76,10 +76,6 @@ import { ChartFormat, ChartRow, plainFormat } from './chart-types';
         line-clamp: 2;
         overflow: hidden;
         color: var(--mf-text);
-      }
-      .link {
-        text-decoration: underline;
-        min-height: 24px;
       }
       .track {
         display: block;

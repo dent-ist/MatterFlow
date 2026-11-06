@@ -200,7 +200,7 @@ type SkillsState = 'loading' | 'ready' | 'error';
                       <th scope="row" class="pcol">
                         <button
                           type="button"
-                          class="link"
+                          class="mf-btn mf-btn--text pname"
                           data-skills-open
                           [attr.aria-label]="p.displayName + '. Open details'"
                           (click)="open.emit(p)"
@@ -320,7 +320,6 @@ type SkillsState = 'loading' | 'ready' | 'error';
       background: var(--mf-surface-alt);
     }
     .cand:focus-visible,
-    .link:focus-visible,
     .frame:focus-visible,
     .thin:focus-visible {
       outline: 2px solid var(--mf-focus);
@@ -418,19 +417,10 @@ type SkillsState = 'loading' | 'ready' | 'error';
     .thin .pi {
       font-size: var(--mf-icon-sm);
     }
-    .link {
+    .pname {
       max-width: 13rem;
       overflow: hidden;
       text-overflow: ellipsis;
-      padding: 0;
-      border: 0;
-      background: none;
-      color: var(--mf-link);
-      font: inherit;
-      font-weight: 600;
-      text-decoration: underline;
-      text-underline-offset: 2px;
-      cursor: pointer;
     }
     .mx td {
       box-sizing: border-box;

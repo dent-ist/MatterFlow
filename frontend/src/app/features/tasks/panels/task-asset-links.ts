@@ -127,7 +127,7 @@ export const ASSETS_CLOSED_NOTE =
             @case ('error') {
               <p class="tl__alert" role="alert" data-load-error>
                 Couldn't load assets.
-                <button type="button" class="tl__link" (click)="reload()">Retry</button>
+                <button type="button" class="mf-btn mf-btn--text" (click)="reload()">Retry</button>
               </p>
             }
             @default {
@@ -324,14 +324,6 @@ export const ASSETS_CLOSED_NOTE =
     .tl__open {
       color: var(--mf-link);
       text-underline-offset: 2px;
-    }
-    .tl__link {
-      border: 0;
-      background: transparent;
-      color: var(--mf-link);
-      font: inherit;
-      text-decoration: underline;
-      cursor: pointer;
     }
   `,
 })

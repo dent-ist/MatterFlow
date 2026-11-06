@@ -186,7 +186,7 @@ const COLUMNS = ['type', 'name', 'size', 'externalReference', 'status'] as const
                 </td>
                 <td>
                   <a
-                    class="pg-link pg-name"
+                    class="mf-link pg-name"
                     [routerLink]="['/assets', a.assetId]"
                     [title]="a.displayName"
                     >{{ a.displayName }}</a

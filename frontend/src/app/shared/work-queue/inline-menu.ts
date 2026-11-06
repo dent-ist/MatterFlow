@@ -196,7 +196,12 @@ let nextId = 0;
           <p class="im-foot" data-menu-note>
             {{ footnote() }}
             @if (footAction(); as action) {
-              <button type="button" class="im-foot-link" data-foot-action (click)="pickFoot()">
+              <button
+                type="button"
+                class="mf-btn mf-btn--text"
+                data-foot-action
+                (click)="pickFoot()"
+              >
                 {{ action }}
               </button>
             }
@@ -350,16 +355,6 @@ let nextId = 0;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
       font-weight: var(--mf-fw-semibold);
-    }
-    .im-foot-link {
-      min-height: var(--mf-target-min, 1.5rem);
-      padding: 0 var(--mf-s1);
-      border: 0;
-      background: transparent;
-      color: var(--mf-link, var(--mf-primary));
-      font: inherit;
-      text-decoration: underline;
-      cursor: pointer;
     }
     .im-spin {
       font-size: var(--mf-icon-xs);
@@ -588,7 +583,7 @@ export class InlineMenu implements OnDestroy {
   private focusables(): HTMLElement[] {
     return Array.from(
       this.host.nativeElement.querySelectorAll<HTMLElement>(
-        '.im-lead, .im-search, .im-item:not([aria-disabled="true"]), .im-foot-link',
+        '.im-lead, .im-search, .im-item:not([aria-disabled="true"]), [data-foot-action]',
       ),
     );
   }

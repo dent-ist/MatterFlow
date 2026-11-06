@@ -157,7 +157,7 @@ interface Section {
                 ) {
                   <p class="res-more">
                     <a
-                      class="pg-link"
+                      class="mf-link"
                       data-see-all
                       [routerLink]="[]"
                       [queryParams]="seeAllParams(section.info.type)"

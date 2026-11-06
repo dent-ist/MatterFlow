@@ -79,9 +79,6 @@ import { WorkflowModeControl } from './workflow-mode-control';
       gap: var(--mf-s2);
       margin-left: auto;
     }
-    .wvb__link {
-      text-decoration: none;
-    }
   `,
   template: `
     <div class="wvb" role="group" aria-label="Version actions" data-action-bar>
@@ -112,7 +109,7 @@ import { WorkflowModeControl } from './workflow-mode-control';
           />
         } @else if (draftVersionId(); as d) {
           <a
-            class="mf-btn mf-btn--primary wvb__link"
+            class="mf-btn mf-btn--primary"
             data-open-draft
             [routerLink]="['/admin/workflows', workflowId(), 'versions', d]"
             >Open draft v{{ draftVersionNo() }}</a

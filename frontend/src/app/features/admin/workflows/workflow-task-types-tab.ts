@@ -28,7 +28,7 @@ import { Badge } from '../../../shared/ui/badge';
             <li class="wt__row" [attr.data-task-type]="t.taskTypeId">
               @if (canOpen()) {
                 <a
-                  class="pg-link wt__name"
+                  class="mf-link wt__name"
                   [routerLink]="['/admin/task-types', t.taskTypeId]"
                   [attr.title]="t.name"
                   >{{ t.name }}</a

@@ -278,13 +278,14 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                                 <!-- Tasks with no pod are in no scope but All pods: a quiet line so they cannot be lost. -->
                                 <p class="no-pod" data-no-pod-hint>
                                   {{ hint.text }}
-                                  <a
-                                    href="#"
-                                    class="no-pod-link"
+                                  <button
+                                    type="button"
+                                    class="mf-btn mf-btn--text"
                                     data-show-all-pods
                                     (click)="showAllPods($event)"
-                                    >Show all pods</a
                                   >
+                                    Show All Pods
+                                  </button>
                                 </p>
                               }
                               @for (panel of panels(); track panel.kind) {
@@ -527,12 +528,6 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
       margin: 0;
       font-size: var(--mf-fs-sm);
       color: var(--mf-text-muted);
-    }
-    .no-pod-link {
-      display: inline-block;
-      min-height: 24px;
-      line-height: 24px;
-      color: var(--mf-link);
     }
     .sr-only {
       position: absolute;

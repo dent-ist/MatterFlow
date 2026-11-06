@@ -36,7 +36,7 @@ const ATTENTION = [
     @if (loads.state() === 'error') {
       <p class="msg" role="alert">
         Couldn't load the metrics.
-        <button type="button" class="lnk" (click)="loads.load()">Retry</button>
+        <button type="button" class="mf-btn mf-btn--text" (click)="loads.load()">Retry</button>
       </p>
     }
     <div class="grid">
@@ -210,13 +210,6 @@ const ATTENTION = [
     .msg {
       margin: 0;
       color: var(--mf-text-muted);
-    }
-    .lnk {
-      border: 0;
-      background: none;
-      color: var(--mf-link);
-      font: inherit;
-      cursor: pointer;
     }
     .bar {
       display: flex;

@@ -162,7 +162,7 @@ export function rowsFromMatters(matters: readonly MatterResponse[]): OverviewMat
                 @for (m of rows(); track m.matterId) {
                   <tr [attr.data-matter]="m.matterId">
                     <td class="ov-ref">
-                      <a class="ov-link pg-mono" [routerLink]="['/matters', m.matterId]">{{
+                      <a class="mf-link pg-mono" [routerLink]="['/matters', m.matterId]">{{
                         m.reference
                       }}</a>
                     </td>

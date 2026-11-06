@@ -51,7 +51,7 @@ import { shortAccountName } from '../../../shared/ui/person-name';
             <dd>
               {{ t.requestorName }}
               @if (t.requestorEmail) {
-                &lt;<a class="pg-link" [href]="'mailto:' + t.requestorEmail">{{
+                &lt;<a class="mf-link" [href]="'mailto:' + t.requestorEmail">{{
                   t.requestorEmail
                 }}</a
                 >&gt;

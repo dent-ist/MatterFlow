@@ -306,7 +306,7 @@ const BONES: Record<string, string> = {
                       <td class="pg-mono pg-nowrap">{{ c.clientNumber }}</td>
                       <td>
                         <a
-                          class="pg-link pg-name"
+                          class="mf-link pg-name"
                           [routerLink]="['/clients', c.clientId]"
                           mfRowLink="clients"
                           [rowKey]="c.clientId"

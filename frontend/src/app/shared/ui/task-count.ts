@@ -37,7 +37,7 @@ export function taskQueueQuery(
   template: `
     @if (count() > 0) {
       <a
-        class="tc"
+        class="tc mf-link"
         [mfRowStop]="rowStop()"
         [class.tc-over]="kind() === 'overdue'"
         routerLink="/tasks"
@@ -76,17 +76,9 @@ export function taskQueueQuery(
       line-height: 24px;
       white-space: nowrap;
     }
-    a.tc {
-      color: var(--mf-link);
-      text-decoration: underline;
-      text-underline-offset: 2px;
-    }
     a.tc-over {
       color: var(--mf-due-overdue);
       font-weight: 700;
-    }
-    a.tc:hover {
-      text-decoration-thickness: 2px;
     }
     .tc-zero {
       color: var(--mf-text-muted);

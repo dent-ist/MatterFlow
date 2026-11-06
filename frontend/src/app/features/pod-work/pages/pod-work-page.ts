@@ -214,7 +214,7 @@ type TabKey = 'queue' | 'members' | 'all';
           <p class="pw-empty__text">There are no pods yet.</p>
           @if (canManagePods()) {
             <a
-              class="wp-link"
+              class="mf-link"
               data-create-pod
               routerLink="/admin/pods"
               [queryParams]="{ pod: 'new' }"
@@ -260,7 +260,7 @@ type TabKey = 'queue' | 'members' | 'all';
                   <p class="pw-empty__text">No members yet.</p>
                   @if (canAddMembers() && d.pod) {
                     <a
-                      class="wp-link"
+                      class="mf-link"
                       data-add-members
                       routerLink="/admin/pods"
                       [queryParams]="{ pod: d.pod.podId }"

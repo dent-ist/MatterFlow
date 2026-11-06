@@ -348,7 +348,7 @@ test.describe('Dashboard Scope', () => {
     await expect(hint).toContainText(`${n} unassigned tasks have no pod.`);
     // None of them is in the lists under a pod scope.
     await expect(page.getByText(s.titles.n1)).toHaveCount(0);
-    await hint.getByRole('link', { name: 'Show All Pods' }).click();
+    await hint.getByRole('button', { name: 'Show All Pods' }).click();
     await expect(page).toHaveURL(/pod=all/);
     await expect(scopeSelect(page)).toHaveAttribute('data-value', 'all');
     await expect(page.locator('[data-no-pod-hint]')).toHaveCount(0);

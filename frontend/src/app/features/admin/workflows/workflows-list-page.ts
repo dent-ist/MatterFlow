@@ -286,7 +286,7 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
                   <td class="ad-name">
                     <!-- Two lines of name, or one line of name and one of description: the row is 44 px; the full texts are the tooltips. -->
                     <a
-                      class="pg-link pg-name"
+                      class="mf-link pg-name"
                       [class.pg-name--one]="!!w.description"
                       [routerLink]="['/admin/workflows', w.workflowDefinitionId]"
                       [mfRowLink]="listId"
@@ -355,7 +355,7 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
                         <span class="pg-muted">0</span>
                       } @else if (canOpenTaskTypes()) {
                         <a
-                          class="pg-link"
+                          class="mf-link"
                           mfRowStop
                           data-task-types-link
                           routerLink="/admin/task-types"

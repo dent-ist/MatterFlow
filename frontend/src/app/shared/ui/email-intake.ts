@@ -199,7 +199,7 @@ const DROP_FAILED = "We couldn't read that drop. Paste the email text or choose 
                 <div class="ei__done" data-done>
                   <i class="pi pi-check-circle" aria-hidden="true"></i>
                   {{ doneMessage() }}
-                  <button type="button" class="ei__link" (click)="clear()">Clear</button>
+                  <button type="button" class="mf-btn mf-btn--text" (click)="clear()">Clear</button>
                 </div>
               }
               @case ('review') {

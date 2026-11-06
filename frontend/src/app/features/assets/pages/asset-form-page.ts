@@ -118,7 +118,7 @@ export function externalReferenceError(text: string): string | null {
     } @else if (original() && !original()!.isActive) {
       <div class="pg-banner af__main" role="note" data-inactive-banner>
         This asset is inactive, so it can't be edited. Reactivate it on its asset page first.
-        <a class="pg-link" [routerLink]="recordUrl()" data-record-link>Open the Asset</a>
+        <a class="mf-link" [routerLink]="recordUrl()" data-record-link>Open the Asset</a>
       </div>
     } @else {
       <div class="af__main">

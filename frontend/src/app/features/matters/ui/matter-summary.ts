@@ -259,7 +259,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
               <dt>Client</dt>
               <dd data-client-value>
                 @if (canLinkClient()) {
-                  <a class="pg-link" [routerLink]="['/clients', matter().clientId]"
+                  <a class="mf-link" [routerLink]="['/clients', matter().clientId]"
                     ><span class="pg-mono">{{ matter().clientNumber }}</span>
                     {{ matter().clientName }}</a
                   >

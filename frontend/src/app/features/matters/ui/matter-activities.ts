@@ -151,7 +151,7 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
                         {{ what(e) }}
                         @if (link(e); as l) {
                           <a
-                            class="pg-link ma__obj"
+                            class="mf-link ma__obj"
                             data-object-link
                             [routerLink]="l.commands"
                             [queryParams]="l.queryParams"

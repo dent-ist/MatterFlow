@@ -612,7 +612,7 @@ const BONES: Record<string, string> = {
                             <td class="ml-name">
                               <div class="pg-namecell ml-namecell">
                                 <a
-                                  class="pg-link pg-name"
+                                  class="mf-link pg-name"
                                   [routerLink]="['/matters', m.matterId]"
                                   mfRowLink="matters"
                                   [rowKey]="m.matterId"
@@ -629,7 +629,7 @@ const BONES: Record<string, string> = {
                             <td class="ml-client">
                               @if (clientLink()) {
                                 <a
-                                  class="pg-link pg-name"
+                                  class="mf-link pg-name"
                                   [routerLink]="['/clients', m.clientId]"
                                   [title]="m.clientNumber + ' ' + m.clientName"
                                   ><span class="pg-mono">{{ m.clientNumber }}</span>

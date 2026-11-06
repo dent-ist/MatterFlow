@@ -91,7 +91,7 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
             />
             Active only</label
           >
-          <button type="button" class="lnk" data-tree-expand (click)="toggleAll()">
+          <button type="button" class="mf-btn mf-btn--text" data-tree-expand (click)="toggleAll()">
             {{ allOpen() ? 'Collapse All' : 'Expand All' }}
           </button>
         </div>
@@ -100,7 +100,14 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
         @if (failed()) {
           <p class="none" role="alert" data-tree-error>
             Couldn't load the clients and matters.
-            <button type="button" class="lnk" data-tree-retry (click)="retry.emit()">Retry</button>
+            <button
+              type="button"
+              class="mf-btn mf-btn--text"
+              data-tree-retry
+              (click)="retry.emit()"
+            >
+              Retry
+            </button>
           </p>
         } @else if (nodes().length === 0) {
           <p class="none" role="status">
@@ -207,18 +214,6 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
       align-items: center;
       gap: var(--mf-s2);
       min-height: 28px;
-    }
-    .lnk {
-      border: 0;
-      background: none;
-      padding: 0 var(--mf-s1);
-      min-height: 28px;
-      color: var(--mf-link);
-      font: inherit;
-      cursor: pointer;
-    }
-    .lnk:hover {
-      text-decoration: underline;
     }
     .body {
       flex: 1 1 0;

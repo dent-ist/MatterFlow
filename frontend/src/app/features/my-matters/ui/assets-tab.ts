@@ -103,7 +103,7 @@ const HEADS = [
           />
           <button
             type="button"
-            class="lnk dt"
+            class="mf-btn mf-btn--text dt"
             data-dates
             [attr.aria-expanded]="dates()"
             (click)="dates.set(!dates())"
@@ -146,7 +146,12 @@ const HEADS = [
             /></label>
           }
           @if (filtered()) {
-            <button type="button" class="lnk" data-clear-filters (click)="clearFilters()">
+            <button
+              type="button"
+              class="mf-btn mf-btn--text"
+              data-clear-filters
+              (click)="clearFilters()"
+            >
               Clear Filters
             </button>
           }
@@ -155,7 +160,7 @@ const HEADS = [
         @if (list.state() === 'error') {
           <p class="msg" role="alert">
             Couldn't load assets.
-            <button type="button" class="lnk" (click)="list.load()">Retry</button>
+            <button type="button" class="mf-btn mf-btn--text" (click)="list.load()">Retry</button>
           </p>
         } @else if (list.state() === 'loading' && rows().length === 0) {
           <p class="msg" role="status">Loading assets</p>
@@ -291,7 +296,7 @@ const HEADS = [
                 <dd>{{ d.description }}</dd>
               }
             </dl>
-            <p><a class="lnk" [routerLink]="['/assets', d.assetId]">Open the Asset</a></p>
+            <p><a class="mf-link" [routerLink]="['/assets', d.assetId]">Open the Asset</a></p>
             <h3>Linked Tasks</h3>
             @if (d.linkedTasks.length === 0) {
               <p class="msg">No tasks are linked to this asset.</p>
@@ -300,7 +305,7 @@ const HEADS = [
                 @for (t of d.linkedTasks; track t.taskId) {
                   <li>
                     <div class="l1">
-                      <a class="lnk" [routerLink]="['/tasks', t.taskId]"
+                      <a class="mf-link" [routerLink]="['/tasks', t.taskId]"
                         >{{ t.taskNumber }} {{ t.title }}</a
                       >
                       <mf-status-chip [code]="t.statusCode" />
@@ -428,23 +433,11 @@ const HEADS = [
       color: var(--mf-text);
       font: inherit;
     }
-    .lnk {
-      color: var(--mf-link);
-      background: none;
-      border: 0;
-      padding: 0;
-      font: inherit;
-      cursor: pointer;
-      text-decoration: none;
-    }
     .dt {
       display: inline-flex;
       align-items: center;
       gap: var(--mf-s1);
       min-height: 32px;
-    }
-    .lnk:hover {
-      text-decoration: underline;
     }
     .msg {
       margin: var(--mf-s4);

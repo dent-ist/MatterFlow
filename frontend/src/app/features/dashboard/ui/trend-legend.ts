@@ -39,12 +39,17 @@ export const SEARCH_ABOVE = 8;
       <div class="group-head">
         <h3 [id]="id + '-types'">Compare Task Types</h3>
         <span class="actions">
-          <button type="button" class="link" data-select-all (click)="selectTop.emit()">
+          <button
+            type="button"
+            class="mf-btn mf-btn--text"
+            data-select-all
+            (click)="selectTop.emit()"
+          >
             Select All
           </button>
           <button
             type="button"
-            class="link"
+            class="mf-btn mf-btn--text"
             data-clear
             [disabled]="choice().types.length === 0"
             (click)="clear.emit()"
@@ -209,22 +214,6 @@ export const SEARCH_ABOVE = 8;
     .actions {
       display: inline-flex;
       gap: var(--mf-s3);
-    }
-    .link {
-      min-height: var(--mf-target-min);
-      padding: 0;
-      background: none;
-      border: 0;
-      color: var(--mf-link);
-      font: inherit;
-      font-size: var(--mf-fs-sm);
-      text-decoration: underline;
-      cursor: pointer;
-    }
-    .link:disabled {
-      color: var(--mf-text-disabled);
-      cursor: default;
-      text-decoration: none;
     }
     .list {
       display: grid;

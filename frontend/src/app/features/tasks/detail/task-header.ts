@@ -83,7 +83,7 @@ function blockedText(action: string, reason: string | undefined): string {
             <span data-client
               >Client
               @if (auth.canLink('client')) {
-                <a class="pg-link pg-mono" [routerLink]="['/clients', t.matter.clientId]">{{
+                <a class="mf-link pg-mono" [routerLink]="['/clients', t.matter.clientId]">{{
                   t.matter.clientNumber
                 }}</a>
               } @else {

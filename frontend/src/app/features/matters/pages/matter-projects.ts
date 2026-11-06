@@ -167,7 +167,7 @@ import { groupProjects } from './matter-project-groups';
         <td class="mp-name" [class.mp-name--desc]="!!p.description">
           <div class="pg-namecell">
             <a
-              class="pg-link pg-name"
+              class="mf-link pg-name"
               data-project-name
               [attr.href]="'/projects/' + p.projectId"
               (click)="open($event, p)"

@@ -369,7 +369,7 @@ export class AuditPage {
       this.focusChipPending = false;
       afterNextRender(
         () =>
-          document.querySelector<HTMLElement>('[data-chip="correlationId"] button.fch__x')?.focus(),
+          document.querySelector<HTMLElement>('[data-chip="correlationId"] button.tg__x')?.focus(),
         { injector: this.injector },
       );
     });

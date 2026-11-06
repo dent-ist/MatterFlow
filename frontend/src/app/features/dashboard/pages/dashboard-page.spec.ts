@@ -1747,7 +1747,7 @@ describe('DashboardPage', () => {
       const scoped = summary({ scope: { scope: 'mine', podIds: [1, 2], unassignedNoPod: 4 } });
       const el = await open(of(scoped));
       const hint = el.querySelector('[data-no-pod-hint]')!;
-      expect(text(hint)).toBe('4 unassigned tasks have no pod. Show all pods');
+      expect(text(hint)).toBe('4 unassigned tasks have no pod. Show All Pods');
       getDashboard.mockReturnValue(of(summary()));
       (hint.querySelector('[data-show-all-pods]') as HTMLAnchorElement).click();
       await settle();

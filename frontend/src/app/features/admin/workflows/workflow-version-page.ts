@@ -190,7 +190,7 @@ const LIBRARY_PANE_MIN = 1280;
                   edited.
                   @if (workflow()?.draftVersionId; as d) {
                     <a
-                      class="pg-link"
+                      class="mf-link"
                       [routerLink]="['/admin/workflows', workflowId(), 'versions', d]"
                       [state]="back.carry"
                       >Open the draft (v{{ workflow()?.draftVersionNo }})</a

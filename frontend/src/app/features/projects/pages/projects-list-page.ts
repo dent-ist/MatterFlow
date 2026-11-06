@@ -303,7 +303,7 @@ const BONES: Record<string, string> = {
                     <tr>
                       <td>
                         <a
-                          class="pg-link pg-name"
+                          class="mf-link pg-name"
                           [routerLink]="['/projects', p.projectId]"
                           mfRowLink="projects"
                           [rowKey]="p.projectId"

@@ -60,7 +60,7 @@ const toChoice = (a: AssetLookupItem): Choice => ({
     @if (readOnly()) {
       @if (chosen(); as c) {
         <span data-readonly>
-          <a class="ap__link" [href]="'/assets/' + c.id" (click)="openAsset($event, c.id)">{{
+          <a class="mf-link" [href]="'/assets/' + c.id" (click)="openAsset($event, c.id)">{{
             c.label
           }}</a>
           <span class="ap__detail">{{ ' ' }}{{ c.detail }}</span>
@@ -223,9 +223,6 @@ const toChoice = (a: AssetLookupItem): Choice => ({
       font: inherit;
       text-decoration: underline;
       cursor: pointer;
-    }
-    .ap__link {
-      color: var(--mf-link);
     }
     .ap__sr {
       position: absolute;

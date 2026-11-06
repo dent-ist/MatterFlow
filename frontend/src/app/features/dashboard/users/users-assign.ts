@@ -232,7 +232,7 @@ export function assignHint(
                       No unassigned tasks in {{ firstName() }}'s pods.
                       <button
                         type="button"
-                        class="linkbtn"
+                        class="mf-btn mf-btn--text"
                         data-assign-show-all
                         (click)="setAllPods(true)"
                       >
@@ -449,15 +449,6 @@ export function assignHint(
     .confirm {
       display: grid;
       gap: var(--mf-s3);
-    }
-    .linkbtn {
-      padding: 0;
-      border: 0;
-      background: none;
-      color: var(--mf-link);
-      font: inherit;
-      text-decoration: underline;
-      cursor: pointer;
     }
     .empty {
       display: flex;

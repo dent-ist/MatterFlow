@@ -109,7 +109,7 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
         @case ('error') {
           <p class="msg" role="alert" data-error>
             Couldn't load this list.
-            <button type="button" class="link" (click)="retry.emit()">Retry</button>
+            <button type="button" class="mf-btn mf-btn--text" (click)="retry.emit()">Retry</button>
           </p>
         }
         @default {
@@ -495,15 +495,6 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
     }
     .msg .pi {
       color: var(--mf-success);
-    }
-    .link {
-      padding: 0;
-      background: none;
-      border: 0;
-      color: var(--mf-link);
-      font: inherit;
-      text-decoration: underline;
-      cursor: pointer;
     }
     /* Five rows of 44 px, as a full loaded list: its height does not change when the rows arrive (px: the root font size is 14 px). */
     .bones {
