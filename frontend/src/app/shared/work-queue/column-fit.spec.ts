@@ -17,8 +17,8 @@ describe('fitWidth (#205)', () => {
   });
 
   it('an empty page, or nothing usable, keeps the default width', () => {
-    expect(fitWidth(def('due'), [])).toBe(136);
-    expect(fitWidth(def('due'), [NaN, 0, -4])).toBe(136);
+    expect(fitWidth(def('due'), [])).toBe(152);
+    expect(fitWidth(def('due'), [NaN, 0, -4])).toBe(152);
   });
 
   it('ignores numbers that are not widths', () => {

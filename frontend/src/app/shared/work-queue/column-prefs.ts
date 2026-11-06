@@ -102,8 +102,8 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
   },
   { key: 'creator', label: 'Creator', width: 140, minWidth: 96, maxWidth: 280 },
   { key: 'requestor', label: 'Requestor', width: 140, minWidth: 96, maxWidth: 280 },
-  // Due: 120 px is the least that holds "Overdue 120d" with its icon (PM ruling on #200).
-  { key: 'due', label: 'Due', sortField: 'due', width: 136, minWidth: 120, maxWidth: 200 },
+  // Due: 120 px is the least that holds "Overdue 120d" with its icon (PM ruling on #200); 152 px by default so "11/04 05:00 PM +1d" has 8 px each side (#1239).
+  { key: 'due', label: 'Due', sortField: 'due', width: 152, minWidth: 120, maxWidth: 200 },
   // The Closed tab shows the day a task closed IN PLACE OF Due (directly before Status).
   { key: 'closed', label: 'Closed', sortField: 'closed', width: 104, minWidth: 88, maxWidth: 160 },
   { key: 'status', label: 'Status', sortField: 'status', width: 140, minWidth: 112, maxWidth: 200 },

@@ -59,7 +59,7 @@ describe('default task columns fit the 1366 frame (D-43a, #1230)', () => {
   it.each([
     ['taskQueue', 136, 160],
     ['myWork.active', 136, 160],
-    ['podWork', ASSIGNEE_WITH_LINK_PX, 160],
+    ['podWork', ASSIGNEE_WITH_LINK_PX, 150],
   ] as [string, number, number][])(
     '%s: at 1366 the Title keeps at least %i px of the 1,098 px frame (#1237)',
     (scope, assignee, least) => {

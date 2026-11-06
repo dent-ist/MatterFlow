@@ -34,7 +34,7 @@ describe('ColumnWidthsPanel', () => {
     expect(el().querySelectorAll('[data-width-row]').length).toBe(4);
     expect(row('title').textContent).toContain('Fills the space left');
     expect(row('title').querySelector('input')).toBeNull();
-    expect(input('due').value).toBe('136');
+    expect(input('due').value).toBe('152');
   });
 
   it('+ and - step 8 px, Shift steps 32 px, and each change is announced', async () => {
@@ -43,21 +43,21 @@ describe('ColumnWidthsPanel', () => {
       fixture.detectChanges();
     }
     await fixture.whenStable();
-    expect(input('due').value).toBe('160');
-    expect(said.at(-1)).toBe('Due column 160 pixels');
-    expect(store.widths('taskQueue', 7)['due']).toBeCloseTo(160 / 14);
+    expect(input('due').value).toBe('176');
+    expect(said.at(-1)).toBe('Due column 176 pixels');
+    expect(store.widths('taskQueue', 7)['due']).toBeCloseTo(176 / 14);
     click('due', '[data-width-minus]', { shiftKey: true });
     await fixture.whenStable();
-    expect(input('due').value).toBe('128');
-    expect(said.at(-1)).toBe('Due column 128 pixels');
+    expect(input('due').value).toBe('144');
+    expect(said.at(-1)).toBe('Due column 144 pixels');
   });
 
   it('three quick presses before the next render still step three times (the step reads the current width, not the rendered one)', async () => {
     for (let i = 0; i < 3; i++) click('due', '[data-width-plus]');
     fixture.detectChanges();
     await fixture.whenStable();
-    expect(input('due').value).toBe('160');
-    expect(said.at(-1)).toBe('Due column 160 pixels');
+    expect(input('due').value).toBe('176');
+    expect(said.at(-1)).toBe('Due column 176 pixels');
   });
 
   it('clamps a typed value to the minimum or maximum and shows the clamped value', async () => {
@@ -77,7 +77,7 @@ describe('ColumnWidthsPanel', () => {
   it('Up and Down in the field step by 8', async () => {
     input('due').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
     await fixture.whenStable();
-    expect(input('due').value).toBe('144');
+    expect(input('due').value).toBe('160');
   });
 
   it('Reset width is off until the column has a width of its own, then restores the default', async () => {
@@ -90,15 +90,15 @@ describe('ColumnWidthsPanel', () => {
     expect(reset.getAttribute('aria-disabled')).toBeNull();
     click('due', '[data-width-reset]');
     await fixture.whenStable();
-    expect(input('due').value).toBe('136');
-    expect(said.at(-1)).toBe('Due column 136 pixels');
+    expect(input('due').value).toBe('152');
+    expect(said.at(-1)).toBe('Due column 152 pixels');
     expect(store.has('taskQueue', 7)).toBe(false);
   });
 
   it('stops at the limits', () => {
     expect(stepWidth(due, 200, 8)).toBe(200);
     expect(stepWidth(due, 124, -8)).toBe(120);
-    expect(stepWidth(due, 136, 32)).toBe(168);
+    expect(stepWidth(due, 152, 32)).toBe(184);
   });
 
   it('the Pod Work Assignee default is the wider one', async () => {

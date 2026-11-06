@@ -43,13 +43,13 @@ describe('work widths (#203)', () => {
   });
 
   it('stores nothing for the default, the Title at its minimum, unknown keys and non-numbers', () => {
-    saveWidth(TQ, 7, 'due', pxToRem(136));
+    saveWidth(TQ, 7, 'due', pxToRem(152));
     saveWidth(TQ, 7, 'title', pxToRem(120));
     saveWidth(TQ, 7, 'foo', 20);
     saveWidth(TQ, 7, 'matter', NaN);
     expect(localStorage.length).toBe(0);
     saveWidth(TQ, 7, 'due', pxToRem(150));
-    saveWidth(TQ, 7, 'due', pxToRem(136));
+    saveWidth(TQ, 7, 'due', pxToRem(152));
     expect(localStorage.length).toBe(0);
   });
 
@@ -134,7 +134,7 @@ describe('work widths (#203)', () => {
     saveWidth(TQ, 7, 'due', pxToRem(180));
     const due = WORK_COLUMNS.find((c) => c.key === 'due')!;
     expect(columnWidthRem(due, loadWidths(TQ, 7))).toBe(180 / 14);
-    expect(columnWidthRem(due, loadWidths(MY, 7))).toBe(136 / 14);
+    expect(columnWidthRem(due, loadWidths(MY, 7))).toBe(152 / 14);
   });
 });
 
