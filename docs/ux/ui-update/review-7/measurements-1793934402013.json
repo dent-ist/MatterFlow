@@ -1,0 +1,2683 @@
+{
+ "clients/director-list-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 2,
+   "36h/14px/600/r4px": 6
+  },
+  "input": {
+   "36h/14px/400/r4px": 2,
+   "32h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 2
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 6
+  },
+  "row": {
+   "44h/14px/400/r0px": 5
+  },
+  "chip": {
+   "26h/14px/400/r0px": 5
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "clients/director-new-form-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 3,
+   "36h/14px/600/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 3
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "clients/director-record-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 5
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 1
+  },
+  "th": {
+   "44h/12px/700/r0px": 5
+  },
+  "row": {
+   "44h/14px/400/r0px": 3
+  },
+  "chip": {
+   "26h/14px/700/r0px": 1,
+   "26h/14px/400/r0px": 3
+  },
+  "h1": {
+   "32h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "16h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "clients/director-activity-drawer-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 5
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 1
+  },
+  "th": {
+   "44h/12px/700/r0px": 5
+  },
+  "row": {
+   "44h/14px/400/r0px": 3
+  },
+  "chip": {
+   "26h/14px/700/r0px": 1,
+   "26h/14px/400/r0px": 3
+  },
+  "h1": {
+   "32h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {
+   "768h/14px/400/r0px/w520": 1
+  },
+  "link": {
+   "16h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "clients/director-edit-form-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 4,
+   "36h/14px/600/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 2
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "projects/director-list-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 2,
+   "36h/14px/600/r4px": 6
+  },
+  "input": {
+   "36h/14px/400/r4px": 2,
+   "32h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 2
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 6
+  },
+  "row": {
+   "44h/14px/400/r0px": 4
+  },
+  "chip": {
+   "26h/14px/400/r0px": 4
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "projects/director-new-dialog-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 3,
+   "36h/14px/600/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 3,
+   "99h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "projects/director-record-1366x768": {
+  "button": {
+   "36h/14px/600/r4px": 12
+  },
+  "input": {
+   "36h/14px/400/r4px": 2
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 2
+  },
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 1
+  },
+  "th": {
+   "41h/12px/700/r0px": 7
+  },
+  "row": {
+   "44h/14px/400/r0px": 13
+  },
+  "chip": {
+   "26h/14px/700/r0px": 1,
+   "32h/14px/400/r8px": 13,
+   "26h/14px/400/r0px": 17,
+   "26h/12px/600/r999px": 13
+  },
+  "h1": {
+   "32h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "16h/13px/400/r0px": 2,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "projects/director-edit-form-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 3,
+   "36h/14px/600/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 2,
+   "99h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "assets/director-list-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 2,
+   "36h/14px/600/r4px": 7,
+   "24h/14px/400/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 2,
+   "32h/14px/400/r4px": 2
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 2
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 8
+  },
+  "row": {
+   "44h/14px/400/r0px": 42
+  },
+  "chip": {
+   "24h/14px/400/r4px": 42
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "assets/director-record-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 4
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 2
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "26h/14px/700/r0px": 1,
+   "26h/14px/400/r0px": 1,
+   "26h/12px/600/r999px": 1
+  },
+  "h1": {
+   "32h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "16h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "assets/director-new-form-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 3,
+   "36h/14px/600/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 5,
+   "99h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "32h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "16h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "assets/director-reports-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 4
+  },
+  "input": {
+   "36h/14px/400/r4px": 2
+  },
+  "dropdown": {
+   "36h/14px/400/r0px": 3
+  },
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "360h/14px/400/r8px": 1,
+   "169h/14px/400/r8px": 1,
+   "132h/14px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "notifications-search-profile/director-notifications-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "26h/12px/600/r999px": 2
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 10
+  }
+ },
+ "notifications-search-profile/director-search-results-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 5
+  },
+  "th": {
+   "40h/12px/700/r0px": 21
+  },
+  "row": {
+   "44h/14px/400/r0px": 24
+  },
+  "chip": {
+   "26h/14px/400/r0px": 25,
+   "32h/14px/400/r8px": 5,
+   "26h/12px/600/r999px": 10
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 10
+  }
+ },
+ "notifications-search-profile/director-profile-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 3,
+   "36h/14px/600/r4px": 2,
+   "24h/14px/400/r4px": 8
+  },
+  "input": {
+   "36h/14px/400/r4px": 3
+  },
+  "dropdown": {
+   "36h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "26h/13px/400/r0px": 1
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "273h/14px/400/r12px": 1,
+   "21h/16px/600/r0px": 5,
+   "340h/14px/400/r12px": 1,
+   "249h/14px/400/r12px": 1,
+   "257h/14px/400/r12px": 1,
+   "438h/14px/400/r12px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 10
+  }
+ },
+ "notifications-search-profile/director-profile-ooo-dialog-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 5,
+   "36h/14px/600/r4px": 2,
+   "24h/14px/400/r4px": 8
+  },
+  "input": {
+   "36h/14px/400/r4px": 6,
+   "59h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "36h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "26h/13px/400/r0px": 1
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "273h/14px/400/r12px": 1,
+   "21h/16px/600/r0px": 5,
+   "340h/14px/400/r12px": 1,
+   "249h/14px/400/r12px": 1,
+   "257h/14px/400/r12px": 1,
+   "438h/14px/400/r12px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {
+   "477h/14px/400/r12px/w576": 1
+  },
+  "link": {
+   "36h/14px/400/r6px": 10
+  }
+ },
+ "shell/director-user-menu-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 11,
+   "24h/14px/400/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 2
+  },
+  "dropdown": {
+   "36h/14px/400/r0px": 1,
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 5
+  },
+  "th": {
+   "41h/12px/700/r0px": 7
+  },
+  "row": {
+   "44h/14px/400/r0px": 30
+  },
+  "chip": {
+   "32h/14px/400/r8px": 30,
+   "26h/14px/400/r0px": 40,
+   "26h/12px/600/r999px": 30
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "64h/14px/400/r0px": 1,
+   "64h/14px/400/r12px": 3,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "shell/director-bell-panel-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 11,
+   "24h/14px/400/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 2
+  },
+  "dropdown": {
+   "36h/14px/400/r0px": 1,
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 5
+  },
+  "th": {
+   "41h/12px/700/r0px": 7
+  },
+  "row": {
+   "44h/14px/400/r0px": 30
+  },
+  "chip": {
+   "32h/14px/400/r8px": 30,
+   "26h/14px/400/r0px": 40,
+   "26h/12px/600/r999px": 30
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "64h/14px/400/r0px": 1,
+   "64h/14px/400/r12px": 3,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "shell/director-global-search-1366x768": {
+  "button": {
+   "24h/14px/400/r4px": 7,
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 11
+  },
+  "input": {
+   "36h/14px/400/r4px": 2
+  },
+  "dropdown": {
+   "36h/14px/400/r0px": 1,
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 5
+  },
+  "th": {
+   "41h/12px/700/r0px": 7
+  },
+  "row": {
+   "44h/14px/400/r0px": 30
+  },
+  "chip": {
+   "26h/14px/400/r0px": 43,
+   "32h/14px/400/r8px": 30,
+   "26h/12px/600/r999px": 30
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "64h/14px/400/r0px": 1,
+   "64h/14px/400/r12px": 3,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "shell/director-create-task-from-shell-1366x768": {
+  "button": {
+   "36h/14px/600/r4px": 2
+  },
+  "input": {
+   "36h/14px/400/r4px": 2
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "32h/14px/400/r8px": 15
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "798h/14px/400/r0px": 1,
+   "150h/14px/400/r12px": 15,
+   "20h/16px/600/r0px": 15,
+   "48h/13px/400/r0px": 11,
+   "32h/13px/400/r0px": 4,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 8
+  }
+ },
+ "notifications-search-profile/tech-profile-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 3,
+   "36h/14px/600/r4px": 2,
+   "24h/14px/400/r4px": 6
+  },
+  "input": {
+   "36h/14px/400/r4px": 3
+  },
+  "dropdown": {
+   "36h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "26h/13px/400/r0px": 1
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "232h/14px/400/r12px": 1,
+   "21h/16px/600/r0px": 5,
+   "340h/14px/400/r12px": 1,
+   "249h/14px/400/r12px": 1,
+   "257h/14px/400/r12px": 1,
+   "361h/14px/400/r12px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 8
+  }
+ },
+ "admin-users-roles-pods/admin-landing-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 7,
+   "32h/14px/400/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 1,
+   "32h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 2
+  },
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 2
+  },
+  "th": {
+   "40h/12px/700/r0px": 7
+  },
+  "row": {
+   "44h/14px/400/r0px": 1
+  },
+  "chip": {
+   "26h/12px/600/r999px": 4,
+   "26h/14px/400/r0px": 1
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "32h/20px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-users-roles-pods/admin-tab-users-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 7,
+   "32h/14px/400/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 1,
+   "32h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 2
+  },
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 2
+  },
+  "th": {
+   "40h/12px/700/r0px": 7
+  },
+  "row": {
+   "44h/14px/400/r0px": 1
+  },
+  "chip": {
+   "26h/12px/600/r999px": 4,
+   "26h/14px/400/r0px": 1
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "32h/20px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-users-roles-pods/admin-tab-roles-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 2,
+   "36h/14px/600/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "40h/14px/400/r0px": 2,
+   "40h/14px/600/r0px": 1
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "17h/14px/400/r0px": 1
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "32h/20px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-users-roles-pods/admin-tab-pods-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 2,
+   "36h/14px/600/r4px": 6
+  },
+  "input": {
+   "36h/14px/400/r4px": 1,
+   "32h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 2
+  },
+  "tab": {
+   "40h/14px/400/r0px": 2,
+   "40h/14px/600/r0px": 1
+  },
+  "th": {
+   "40h/12px/700/r0px": 3
+  },
+  "row": {
+   "44h/14px/400/r0px": 4
+  },
+  "chip": {
+   "26h/14px/400/r0px": 4
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "32h/20px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-users-roles-pods/admin-new-click-1366x768": {
+  "button": {
+   "36h/14px/600/r4px": 2
+  },
+  "input": {
+   "36h/14px/400/r4px": 2
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "32h/14px/400/r8px": 15
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "798h/14px/400/r0px": 1,
+   "150h/14px/400/r12px": 15,
+   "20h/16px/600/r0px": 15,
+   "48h/13px/400/r0px": 11,
+   "32h/13px/400/r0px": 4,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 15
+  }
+ },
+ "admin-lookups/admin-landing-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 2,
+   "36h/14px/600/r4px": 11
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 3
+  },
+  "th": {
+   "40h/12px/700/r0px": 6
+  },
+  "row": {
+   "44h/14px/400/r0px": 6
+  },
+  "chip": {
+   "26h/14px/400/r0px": 7
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-tab-priorities-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 2,
+   "36h/14px/600/r4px": 11
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 3
+  },
+  "th": {
+   "40h/12px/700/r0px": 6
+  },
+  "row": {
+   "44h/14px/400/r0px": 6
+  },
+  "chip": {
+   "26h/14px/400/r0px": 7
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-tab-status-labels-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 10
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "40h/14px/400/r0px": 3,
+   "40h/14px/600/r0px": 1
+  },
+  "th": {
+   "40h/12px/700/r0px": 3
+  },
+  "row": {
+   "44h/14px/400/r0px": 5
+  },
+  "chip": {
+   "26h/14px/400/r0px": 5,
+   "26h/12px/600/r999px": 5
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "25h/14px/400/r0px": 5,
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-tab-on-hold-reasons-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 2,
+   "36h/14px/600/r4px": 9
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "40h/14px/400/r0px": 3,
+   "40h/14px/600/r0px": 1
+  },
+  "th": {
+   "40h/12px/700/r0px": 4
+  },
+  "row": {
+   "44h/14px/400/r0px": 4
+  },
+  "chip": {
+   "26h/14px/400/r0px": 4
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-tab-note-tags-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 3,
+   "36h/14px/600/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "40h/14px/400/r0px": 3,
+   "40h/14px/600/r0px": 1
+  },
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-new-click-1366x768": {
+  "button": {
+   "36h/14px/600/r4px": 2
+  },
+  "input": {
+   "36h/14px/400/r4px": 2
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "32h/14px/400/r8px": 15
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "798h/14px/400/r0px": 1,
+   "150h/14px/400/r12px": 15,
+   "20h/16px/600/r0px": 15,
+   "48h/13px/400/r0px": 11,
+   "32h/13px/400/r0px": 4,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 15
+  }
+ },
+ "admin-lookups/admin-asset-types-landing-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 2,
+   "36h/14px/600/r4px": 13
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 1
+  },
+  "th": {
+   "40h/12px/700/r0px": 5
+  },
+  "row": {
+   "44h/14px/400/r0px": 7
+  },
+  "chip": {
+   "26h/12px/600/r999px": 3,
+   "32h/14px/400/r0px": 7,
+   "32h/14px/400/r8px": 7,
+   "26h/14px/400/r0px": 14
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-asset-types-tab-asset-types-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 2,
+   "36h/14px/600/r4px": 13
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 1
+  },
+  "th": {
+   "40h/12px/700/r0px": 5
+  },
+  "row": {
+   "44h/14px/400/r0px": 7
+  },
+  "chip": {
+   "26h/12px/600/r999px": 3,
+   "32h/14px/400/r0px": 7,
+   "32h/14px/400/r8px": 7,
+   "26h/14px/400/r0px": 14
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-asset-types-tab-link-roles-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 2,
+   "36h/14px/600/r4px": 9
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "40h/14px/400/r0px": 1,
+   "40h/14px/600/r0px": 1
+  },
+  "th": {
+   "40h/12px/700/r0px": 5
+  },
+  "row": {
+   "44h/14px/400/r0px": 4
+  },
+  "chip": {
+   "26h/14px/400/r0px": 4
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-asset-types-new-click-1366x768": {
+  "button": {
+   "36h/14px/600/r4px": 2
+  },
+  "input": {
+   "36h/14px/400/r4px": 2
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "32h/14px/400/r8px": 15
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "798h/14px/400/r0px": 1,
+   "150h/14px/400/r12px": 15,
+   "20h/16px/600/r0px": 15,
+   "48h/13px/400/r0px": 11,
+   "32h/13px/400/r0px": 4,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 15
+  }
+ },
+ "admin-lookups/admin-custom-fields-landing-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 8
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 5
+  },
+  "row": {
+   "44h/14px/400/r0px": 3
+  },
+  "chip": {
+   "26h/14px/400/r0px": 3
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-custom-fields-new-click-1366x768": {
+  "button": {
+   "36h/14px/600/r4px": 2
+  },
+  "input": {
+   "36h/14px/400/r4px": 2
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "32h/14px/400/r8px": 15
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "798h/14px/400/r0px": 1,
+   "150h/14px/400/r12px": 15,
+   "20h/16px/600/r0px": 15,
+   "48h/13px/400/r0px": 11,
+   "32h/13px/400/r0px": 4,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 15
+  }
+ },
+ "admin-users-roles-pods/admin-user-drawer-1366x768": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 7,
+   "32h/14px/600/r4px": 2,
+   "32h/14px/400/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 1,
+   "32h/14px/400/r4px": 1,
+   "28h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 2
+  },
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 2
+  },
+  "th": {
+   "40h/12px/700/r0px": 7
+  },
+  "row": {
+   "44h/14px/400/r0px": 1
+  },
+  "chip": {
+   "26h/12px/600/r999px": 4,
+   "26h/14px/400/r0px": 1
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "32h/20px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "clients/director-list-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 2,
+   "36h/14px/600/r4px": 6
+  },
+  "input": {
+   "36h/14px/400/r4px": 2,
+   "32h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 2
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 6
+  },
+  "row": {
+   "44h/14px/400/r0px": 5
+  },
+  "chip": {
+   "26h/14px/400/r0px": 5
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "clients/director-new-form-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 3,
+   "36h/14px/600/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 3
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "clients/director-record-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 5
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 1
+  },
+  "th": {
+   "44h/12px/700/r0px": 5
+  },
+  "row": {
+   "44h/14px/400/r0px": 3
+  },
+  "chip": {
+   "26h/14px/700/r0px": 1,
+   "26h/14px/400/r0px": 3
+  },
+  "h1": {
+   "32h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "16h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "clients/director-activity-drawer-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 5
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 1
+  },
+  "th": {
+   "44h/12px/700/r0px": 5
+  },
+  "row": {
+   "44h/14px/400/r0px": 3
+  },
+  "chip": {
+   "26h/14px/700/r0px": 1,
+   "26h/14px/400/r0px": 3
+  },
+  "h1": {
+   "32h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {
+   "1080h/14px/400/r0px/w520": 1
+  },
+  "link": {
+   "16h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "clients/director-edit-form-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 4,
+   "36h/14px/600/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 2
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "projects/director-list-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 2,
+   "36h/14px/600/r4px": 6
+  },
+  "input": {
+   "36h/14px/400/r4px": 2,
+   "32h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 2
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 6
+  },
+  "row": {
+   "44h/14px/400/r0px": 4
+  },
+  "chip": {
+   "26h/14px/400/r0px": 4
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "projects/director-new-dialog-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 3,
+   "36h/14px/600/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 3,
+   "99h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "projects/director-record-1920x1080": {
+  "button": {
+   "36h/14px/600/r4px": 12
+  },
+  "input": {
+   "36h/14px/400/r4px": 2
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 2
+  },
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 1
+  },
+  "th": {
+   "41h/12px/700/r0px": 7
+  },
+  "row": {
+   "44h/14px/400/r0px": 13
+  },
+  "chip": {
+   "26h/14px/700/r0px": 1,
+   "32h/14px/400/r8px": 13,
+   "26h/14px/400/r0px": 17,
+   "26h/12px/600/r999px": 13
+  },
+  "h1": {
+   "32h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "16h/13px/400/r0px": 2,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "projects/director-edit-form-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 3,
+   "36h/14px/600/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 2,
+   "99h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "assets/director-list-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 2,
+   "36h/14px/600/r4px": 7,
+   "24h/14px/400/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 2,
+   "32h/14px/400/r4px": 2
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 2
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 8
+  },
+  "row": {
+   "44h/14px/400/r0px": 42
+  },
+  "chip": {
+   "24h/14px/400/r4px": 42
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "assets/director-record-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 4
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 2
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "26h/14px/700/r0px": 1,
+   "26h/14px/400/r0px": 1,
+   "26h/12px/600/r999px": 1
+  },
+  "h1": {
+   "32h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "16h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "assets/director-new-form-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 3,
+   "36h/14px/600/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 5,
+   "99h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "32h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "16h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "assets/director-reports-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 4
+  },
+  "input": {
+   "36h/14px/400/r4px": 2
+  },
+  "dropdown": {
+   "36h/14px/400/r0px": 3
+  },
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "360h/14px/400/r8px": 1,
+   "152h/14px/400/r8px": 1,
+   "132h/14px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "notifications-search-profile/director-notifications-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "26h/12px/600/r999px": 2
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 10
+  }
+ },
+ "notifications-search-profile/director-search-results-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 5
+  },
+  "th": {
+   "40h/12px/700/r0px": 21
+  },
+  "row": {
+   "44h/14px/400/r0px": 24
+  },
+  "chip": {
+   "26h/14px/400/r0px": 25,
+   "32h/14px/400/r8px": 5,
+   "26h/12px/600/r999px": 10
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 10
+  }
+ },
+ "notifications-search-profile/director-profile-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 3,
+   "36h/14px/600/r4px": 2,
+   "24h/14px/400/r4px": 8
+  },
+  "input": {
+   "36h/14px/400/r4px": 3
+  },
+  "dropdown": {
+   "36h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "26h/13px/400/r0px": 1
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "229h/14px/400/r12px": 1,
+   "21h/16px/600/r0px": 5,
+   "340h/14px/400/r12px": 1,
+   "249h/14px/400/r12px": 1,
+   "257h/14px/400/r12px": 1,
+   "404h/14px/400/r12px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 10
+  }
+ },
+ "notifications-search-profile/director-profile-ooo-dialog-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 5,
+   "36h/14px/600/r4px": 2,
+   "24h/14px/400/r4px": 8
+  },
+  "input": {
+   "36h/14px/400/r4px": 6,
+   "59h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "36h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "26h/13px/400/r0px": 1
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "229h/14px/400/r12px": 1,
+   "21h/16px/600/r0px": 5,
+   "340h/14px/400/r12px": 1,
+   "249h/14px/400/r12px": 1,
+   "257h/14px/400/r12px": 1,
+   "404h/14px/400/r12px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {
+   "477h/14px/400/r12px/w576": 1
+  },
+  "link": {
+   "36h/14px/400/r6px": 10
+  }
+ },
+ "shell/director-user-menu-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 11,
+   "24h/14px/400/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 2
+  },
+  "dropdown": {
+   "36h/14px/400/r0px": 1,
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 5
+  },
+  "th": {
+   "41h/12px/700/r0px": 7
+  },
+  "row": {
+   "44h/14px/400/r0px": 30
+  },
+  "chip": {
+   "32h/14px/400/r8px": 30,
+   "26h/14px/400/r0px": 40,
+   "26h/12px/600/r999px": 30
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "64h/14px/400/r0px": 1,
+   "64h/14px/400/r12px": 3,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "shell/director-bell-panel-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 11,
+   "24h/14px/400/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 2
+  },
+  "dropdown": {
+   "36h/14px/400/r0px": 1,
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 5
+  },
+  "th": {
+   "41h/12px/700/r0px": 7
+  },
+  "row": {
+   "44h/14px/400/r0px": 30
+  },
+  "chip": {
+   "32h/14px/400/r8px": 30,
+   "26h/14px/400/r0px": 40,
+   "26h/12px/600/r999px": 30
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "64h/14px/400/r0px": 1,
+   "64h/14px/400/r12px": 3,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "shell/director-global-search-1920x1080": {
+  "button": {
+   "24h/14px/400/r4px": 7,
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 11
+  },
+  "input": {
+   "36h/14px/400/r4px": 2
+  },
+  "dropdown": {
+   "36h/14px/400/r0px": 1,
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 5
+  },
+  "th": {
+   "41h/12px/700/r0px": 7
+  },
+  "row": {
+   "44h/14px/400/r0px": 30
+  },
+  "chip": {
+   "26h/14px/400/r0px": 43,
+   "32h/14px/400/r8px": 30,
+   "26h/12px/600/r999px": 30
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "64h/14px/400/r0px": 1,
+   "64h/14px/400/r12px": 3,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 9
+  }
+ },
+ "shell/director-create-task-from-shell-1920x1080": {
+  "button": {
+   "36h/14px/600/r4px": 2
+  },
+  "input": {
+   "36h/14px/400/r4px": 2
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "32h/14px/400/r8px": 15
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "718h/14px/400/r0px": 1,
+   "134h/14px/400/r12px": 15,
+   "20h/16px/600/r0px": 15,
+   "32h/13px/400/r0px": 15,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 8
+  }
+ },
+ "notifications-search-profile/tech-profile-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 3,
+   "36h/14px/600/r4px": 2,
+   "24h/14px/400/r4px": 6
+  },
+  "input": {
+   "36h/14px/400/r4px": 3
+  },
+  "dropdown": {
+   "36h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "26h/13px/400/r0px": 1
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "188h/14px/400/r12px": 1,
+   "21h/16px/600/r0px": 5,
+   "340h/14px/400/r12px": 1,
+   "249h/14px/400/r12px": 1,
+   "257h/14px/400/r12px": 1,
+   "327h/14px/400/r12px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 8
+  }
+ },
+ "admin-users-roles-pods/admin-landing-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 7,
+   "32h/14px/400/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 1,
+   "32h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 2
+  },
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 2
+  },
+  "th": {
+   "40h/12px/700/r0px": 7
+  },
+  "row": {
+   "44h/14px/400/r0px": 1
+  },
+  "chip": {
+   "26h/12px/600/r999px": 4,
+   "26h/14px/400/r0px": 1
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "32h/20px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-users-roles-pods/admin-tab-users-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 7,
+   "32h/14px/400/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 1,
+   "32h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 2
+  },
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 2
+  },
+  "th": {
+   "40h/12px/700/r0px": 7
+  },
+  "row": {
+   "44h/14px/400/r0px": 1
+  },
+  "chip": {
+   "26h/12px/600/r999px": 4,
+   "26h/14px/400/r0px": 1
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "32h/20px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-users-roles-pods/admin-tab-roles-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 2,
+   "36h/14px/600/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "40h/14px/400/r0px": 2,
+   "40h/14px/600/r0px": 1
+  },
+  "th": {},
+  "row": {},
+  "chip": {
+   "17h/14px/400/r0px": 1
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "32h/20px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-users-roles-pods/admin-tab-pods-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 2,
+   "36h/14px/600/r4px": 6
+  },
+  "input": {
+   "36h/14px/400/r4px": 1,
+   "32h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 2
+  },
+  "tab": {
+   "40h/14px/400/r0px": 2,
+   "40h/14px/600/r0px": 1
+  },
+  "th": {
+   "40h/12px/700/r0px": 3
+  },
+  "row": {
+   "44h/14px/400/r0px": 4
+  },
+  "chip": {
+   "26h/14px/400/r0px": 4
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "32h/20px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-users-roles-pods/admin-new-click-1920x1080": {
+  "button": {
+   "36h/14px/600/r4px": 2
+  },
+  "input": {
+   "36h/14px/400/r4px": 2
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "32h/14px/400/r8px": 15
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "718h/14px/400/r0px": 1,
+   "134h/14px/400/r12px": 15,
+   "20h/16px/600/r0px": 15,
+   "32h/13px/400/r0px": 15,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 15
+  }
+ },
+ "admin-lookups/admin-landing-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 2,
+   "36h/14px/600/r4px": 11
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 3
+  },
+  "th": {
+   "40h/12px/700/r0px": 6
+  },
+  "row": {
+   "44h/14px/400/r0px": 6
+  },
+  "chip": {
+   "26h/14px/400/r0px": 7
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-tab-priorities-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 2,
+   "36h/14px/600/r4px": 11
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 3
+  },
+  "th": {
+   "40h/12px/700/r0px": 6
+  },
+  "row": {
+   "44h/14px/400/r0px": 6
+  },
+  "chip": {
+   "26h/14px/400/r0px": 7
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-tab-status-labels-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 10
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "40h/14px/400/r0px": 3,
+   "40h/14px/600/r0px": 1
+  },
+  "th": {
+   "40h/12px/700/r0px": 3
+  },
+  "row": {
+   "44h/14px/400/r0px": 5
+  },
+  "chip": {
+   "26h/14px/400/r0px": 5,
+   "26h/12px/600/r999px": 5
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "25h/14px/400/r0px": 5,
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-tab-on-hold-reasons-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 2,
+   "36h/14px/600/r4px": 9
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "40h/14px/400/r0px": 3,
+   "40h/14px/600/r0px": 1
+  },
+  "th": {
+   "40h/12px/700/r0px": 4
+  },
+  "row": {
+   "44h/14px/400/r0px": 4
+  },
+  "chip": {
+   "26h/14px/400/r0px": 4
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-tab-note-tags-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 3,
+   "36h/14px/600/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {},
+  "tab": {
+   "40h/14px/400/r0px": 3,
+   "40h/14px/600/r0px": 1
+  },
+  "th": {},
+  "row": {},
+  "chip": {},
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-new-click-1920x1080": {
+  "button": {
+   "36h/14px/600/r4px": 2
+  },
+  "input": {
+   "36h/14px/400/r4px": 2
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "32h/14px/400/r8px": 15
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "718h/14px/400/r0px": 1,
+   "134h/14px/400/r12px": 15,
+   "20h/16px/600/r0px": 15,
+   "32h/13px/400/r0px": 15,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 15
+  }
+ },
+ "admin-lookups/admin-asset-types-landing-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 2,
+   "36h/14px/600/r4px": 13
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 1
+  },
+  "th": {
+   "40h/12px/700/r0px": 5
+  },
+  "row": {
+   "44h/14px/400/r0px": 7
+  },
+  "chip": {
+   "26h/12px/600/r999px": 3,
+   "32h/14px/400/r0px": 7,
+   "32h/14px/400/r8px": 7,
+   "26h/14px/400/r0px": 14
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-asset-types-tab-asset-types-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 2,
+   "36h/14px/600/r4px": 13
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 1
+  },
+  "th": {
+   "40h/12px/700/r0px": 5
+  },
+  "row": {
+   "44h/14px/400/r0px": 7
+  },
+  "chip": {
+   "26h/12px/600/r999px": 3,
+   "32h/14px/400/r0px": 7,
+   "32h/14px/400/r8px": 7,
+   "26h/14px/400/r0px": 14
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-asset-types-tab-link-roles-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 2,
+   "36h/14px/600/r4px": 9
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {
+   "40h/14px/400/r0px": 1,
+   "40h/14px/600/r0px": 1
+  },
+  "th": {
+   "40h/12px/700/r0px": 5
+  },
+  "row": {
+   "44h/14px/400/r0px": 4
+  },
+  "chip": {
+   "26h/14px/400/r0px": 4
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-asset-types-new-click-1920x1080": {
+  "button": {
+   "36h/14px/600/r4px": 2
+  },
+  "input": {
+   "36h/14px/400/r4px": 2
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "32h/14px/400/r8px": 15
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "718h/14px/400/r0px": 1,
+   "134h/14px/400/r12px": 15,
+   "20h/16px/600/r0px": 15,
+   "32h/13px/400/r0px": 15,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 15
+  }
+ },
+ "admin-lookups/admin-custom-fields-landing-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 8
+  },
+  "input": {
+   "36h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 1
+  },
+  "tab": {},
+  "th": {
+   "40h/12px/700/r0px": 5
+  },
+  "row": {
+   "44h/14px/400/r0px": 3
+  },
+  "chip": {
+   "26h/14px/400/r0px": 3
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ },
+ "admin-lookups/admin-custom-fields-new-click-1920x1080": {
+  "button": {
+   "36h/14px/600/r4px": 2
+  },
+  "input": {
+   "36h/14px/400/r4px": 2
+  },
+  "dropdown": {},
+  "tab": {},
+  "th": {},
+  "row": {},
+  "chip": {
+   "32h/14px/400/r8px": 15
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "718h/14px/400/r0px": 1,
+   "134h/14px/400/r12px": 15,
+   "20h/16px/600/r0px": 15,
+   "32h/13px/400/r0px": 15,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "24h/13px/400/r0px": 1,
+   "36h/14px/400/r6px": 15
+  }
+ },
+ "admin-users-roles-pods/admin-user-drawer-1920x1080": {
+  "button": {
+   "36h/14px/400/r4px": 1,
+   "36h/14px/600/r4px": 7,
+   "32h/14px/400/r4px": 1
+  },
+  "input": {
+   "36h/14px/400/r4px": 1,
+   "32h/14px/400/r4px": 1
+  },
+  "dropdown": {
+   "32h/14px/400/r0px": 2
+  },
+  "tab": {
+   "40h/14px/600/r0px": 1,
+   "40h/14px/400/r0px": 2
+  },
+  "th": {
+   "40h/12px/700/r0px": 7
+  },
+  "row": {
+   "44h/14px/400/r0px": 1
+  },
+  "chip": {
+   "26h/12px/600/r999px": 4,
+   "26h/14px/400/r0px": 1
+  },
+  "h1": {
+   "39h/22px/700/r0px": 1
+  },
+  "card": {
+   "32h/20px/400/r8px": 1,
+   "19h/19px/400/r0px": 1
+  },
+  "dialog": {},
+  "link": {
+   "36h/14px/400/r6px": 16
+  }
+ }
+}

@@ -132,3 +132,18 @@ Real stack, both sizes (87 screenshots, `measurements-review7.json`), axe on 15 
 | #1154 | PASS | nothing clipped at 1366 in the default views |
 
 New: #1236 (Summary defaults), #1237 (Type 128 px, Title at least 160), #1238 (last chip classes). #1235: comment posted (colour fallback stays, more sources, order, sensitive personas).
+
+## Review 8: batch 7a (tip f01fd37, 2026-11-06, screenshots in `../review-8/`)
+
+Real stack, both sizes; axe on 13 pages and tabs at both sizes: 0 violations (`axe-review8.json`); scripts `crawl/sum.js`, `sum2.js`, `sum3.js`, `rs3.js`, `g.js`.
+
+| Issue | Result | Evidence |
+| --- | --- | --- |
+| #1237 | PASS | Type 128, Title at 1366: Pod Work 166, Task Queue 190, My Work 326; default sum 1,096; no sideways scroll |
+| #1236 | PASS WITH NOTES | Summary frame 718, columns Type 128, Title 206, Priority 112, Assignee 136, Due 136 = no scroll; "Unassigned for" 152 replaces Due while the card is on; Columns menu offers Ref and Status. Notes: type name cut ("Incomin...", tooltip), Due text touches the edge (#1239) |
+| #1233 | PASS WITH NOTES | button at x=1306/1860, y=174, 36 px in both states and both sizes; aria-expanded true/false; "Hide Panel" tooltip; collapsed grid 1,070 / 1,624 px; state remembered after reload; compact battery and gauge on the row; gauge click selects Unassigned and shows "Unassigned for"; Technician has no button, Pod Lead has it. Notes: at 1366 collapsed the gauge level word is dropped and only "5" and "4 over" stay (acceptable) |
+| #1234 | PASS | three tiles Available / Out of Office / Off Hours, number at the bottom; Thanksgiving: Available 2, Off Hours 10; Month and Week |
+| #1230 | PASS | Type 128 and Title >= 160 on every task grid at 1366 |
+| #1231 | PASS WITH NOTES | drag both ways persists; Title has no "Reset Width" in the Columns panel (the other columns do, disabled until changed); the header-menu reset could not be reached by script: confirm by hand |
+
+New: #1239 (Due 152). Comments on #1238 and #1235 (Type 128).
