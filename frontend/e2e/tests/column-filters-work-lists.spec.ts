@@ -466,6 +466,10 @@ test.describe('Column filters on the work lists', () => {
       await page.goto(`/matters/${world.matter.matterId}?tab=tasks&project=${project.projectId}`);
       await expect(tasks.locator(`[data-task="${open.taskNumber}"]`)).toBeVisible();
       await expect(tasks.locator(`[data-task="${closed.taskNumber}"]`)).toHaveCount(0);
+      // Project is off by default on a Matter's Tasks tab (#1176): one click in Columns brings the column and its filter.
+      await page.getByRole('button', { name: 'Columns', exact: true }).click();
+      await page.locator('[data-grid-columns-panel] [data-column="project"]').check();
+      await page.getByRole('button', { name: 'Columns', exact: true }).click();
       await expect(filterDropdown(page, 'Project')).toBeVisible();
       await text(page, 'Title or Ref').fill(`nothing-${token}`);
       await expect(tasks.locator('td[data-empty="filtered"]')).toContainText(

@@ -192,7 +192,7 @@ const COLUMNS = ['type', 'name', 'size', 'externalReference', 'status'] as const
                     >{{ a.displayName }}</a
                   >
                 </td>
-                <td class="pg-num ma-size" data-size>
+                <td class="pg-num pg-nowrap ma-size" data-size>
                   @if (sizeText(a); as size) {
                     {{ size }}
                   } @else {

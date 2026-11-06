@@ -25,20 +25,11 @@ test('Tasks tab at 1366x768: columns fit and the cells show what they should', a
   });
   expect(overflow, 'the Tasks table scrolls sideways').toBeLessThanOrEqual(1);
 
-  // Default order (MD-29, #1154): Ref, Type, Title, Project, Priority, Assignee, Due, Status; Progress is off by default and added in the Columns menu below.
+  // Default order (MD-29, #1154, #1176): Ref, Type, Title, Priority, Assignee, Due, Status; Project and Progress are off by default and added in the Columns menu below.
   const order = (await page.locator('mf-task-table thead tr:first-child th').allTextContents()).map(
     (t) => t.trim(),
   );
-  expect(order).toEqual([
-    'Ref',
-    'Type',
-    'Title',
-    'Project',
-    'Priority',
-    'Assignee',
-    'Due',
-    'Status',
-  ]);
+  expect(order).toEqual(['Ref', 'Type', 'Title', 'Priority', 'Assignee', 'Due', 'Status']);
 
   // Every header is fully visible (not cut by the cell).
   const clippedHeaders = await page.evaluate(() =>
@@ -68,6 +59,7 @@ test('Tasks tab at 1366x768: columns fit and the cells show what they should', a
   await expect(page.locator('mf-task-table thead th', { hasText: /^\s*Type\s*$/ })).toBeVisible();
   await page.locator('[data-grid-columns]').click();
   await page.locator('[data-grid-columns-panel] [data-column="steps"]').check();
+  await page.locator('[data-grid-columns-panel] [data-column="project"]').check();
   await page.keyboard.press('Escape');
   await expect(
     page.locator('mf-task-table thead th', { hasText: /^\s*Progress\s*$/ }),

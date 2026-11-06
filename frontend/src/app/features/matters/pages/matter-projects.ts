@@ -16,6 +16,7 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { GridFrame } from '../../../shared/ui/grid-frame';
+import { StateBlock } from '../../../shared/ui/state-block';
 import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { TaskCount } from '../../../shared/ui/task-count';
 import { groupProjects } from './matter-project-groups';
@@ -38,6 +39,7 @@ import { groupProjects } from './matter-project-groups';
     TaskCount,
     RowLink,
     ListToolbar,
+    StateBlock,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -76,16 +78,18 @@ import { groupProjects } from './matter-project-groups';
   `,
   template: `
     @if (projects().length === 0) {
-      <div class="pg-state" data-empty="projects">
-        No projects in this matter yet.
-        <p-button
-          *mfHasPermission="'Project.Create'"
-          label="New Project"
-          icon="pi pi-plus"
-          severity="secondary"
-          data-empty-new-project
-          (onClick)="newProject.emit()"
-        />
+      <div data-empty="projects">
+        <mf-state-block>
+          No projects yet.
+          <p-button
+            mfStateAction
+            *mfHasPermission="'Project.Create'"
+            label="New Project"
+            icon="pi pi-plus"
+            data-empty-new-project
+            (onClick)="newProject.emit()"
+          />
+        </mf-state-block>
       </div>
     } @else {
       <!-- A tab has no H1: its primary action ends the row above the grid (LC-07, #1045), as "New Task" does on the Tasks tab. The header's New menu keeps its Project entry. -->
