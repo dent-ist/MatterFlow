@@ -38,7 +38,7 @@ interface Cell {
     @for (cell of cells(); track cell.column) {
       <td [attr.colspan]="cell.span > 1 ? cell.span : null">
         @if (cell.beside) {
-          <div class="cfr-pair">
+          <div class="cfr-pair" [class.cfr-pair--stacked]="stacked()">
             @for (d of cell.defs; track d.key) {
               <mf-filter-control [def]="d" [filters]="filters()" />
             }
@@ -72,7 +72,7 @@ interface Cell {
       min-width: 0;
     }
     @media (min-width: 1500px) {
-      .cfr-pair {
+      .cfr-pair:not(.cfr-pair--stacked) {
         grid-template-columns: 5.5rem minmax(9.5rem, 1fr);
         min-width: 15rem;
       }
@@ -83,6 +83,8 @@ export class ColumnFilterRow {
   readonly filters = input.required<ListFilters>();
   /** Keys of the columns on screen, in order. */
   readonly columns = input.required<readonly string[]>();
+  /** Keep two filters of one column stacked at every width (a grid whose Status column is as narrow as the chip, the Client > Matters tab; #1272). */
+  readonly stacked = input(false);
 
   protected readonly cells = computed<Cell[]>(() => {
     const defs = this.filters().defs();

@@ -227,8 +227,10 @@ describe('ClientDetailPage', () => {
     expect(widths).toEqual([
       ['matterRef', '157px'],
       ['name', null],
-      ['status', '238px'],
+      ['status', '160px'],
     ]);
+    // The Status cell keeps Active and Sensitive stacked at every width (#1272).
+    expect(tab.querySelector('.cfr-pair')!.classList.contains('cfr-pair--stacked')).toBe(true);
   });
 
   it('filters, sorts and pages the matters through the address', async () => {

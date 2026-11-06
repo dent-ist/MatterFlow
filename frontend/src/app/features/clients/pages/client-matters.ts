@@ -63,7 +63,7 @@ const BONES: Record<string, string> = {
 
 /**
  * The main area of the Client detail page: the client's Matters as a list in the shared pattern (inline column filters for Matter and
- * Name, Status defaulting to Active, Sensitive beside Status; the row is open by default; sortable columns (Reference, Name, Open tasks and Overdue; the two counts are left out without Task.View), paging, loading / empty / error states).
+ * Name, Status defaulting to Active with Sensitive stacked under it; the row is open by default; sortable columns (Reference, Name, Open tasks and Overdue; the two counts are left out without Task.View), paging, loading / empty / error states).
  * New matter lives in the page header (the empty state keeps its own button) and prefills the client. The filters (`matterRef`, `name`, `status`, `isSensitive`) are read from the address
  * by `ListFilters`; the page binds `status`, `page`, `size` and `sort` like every other list. Needs `Matter.View`.
  */
@@ -233,6 +233,7 @@ const BONES: Record<string, string> = {
               id="client-matter-filter-row"
               [filters]="filters"
               [columns]="columns()"
+              [stacked]="true"
             ></tr>
           }
           <span mfEmptyAction *mfHasPermission="'Matter.Create'">
@@ -403,9 +404,9 @@ export class ClientMatters extends ServerListPage<MatterResponse> {
     {
       key: 'status',
       label: 'Status',
-      // 238 px, not the 140 of the chip alone: the filter row's Status cell holds the Active dropdown and the Sensitive choice side by side (214 px), and the column must not move when the row is open.
-      width: '238px',
-      minWidth: '238px',
+      // 160 px, the Matters list value: the filter row's Status cell stacks the Active dropdown above the Sensitive one, and the column must not move when the row is open (#1272).
+      width: '160px',
+      minWidth: '160px',
     },
   ]);
   /** The grid state (shared record grid, #1241): order, visibility and stored widths per person under the id "client-matters". */
