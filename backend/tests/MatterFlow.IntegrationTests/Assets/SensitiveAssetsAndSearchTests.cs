@@ -133,6 +133,18 @@ public sealed class SensitiveAssetsAndSearchTests(SqlServerFixture sql)
             (await GetAsync(u.AssigneeClient, $"/api/v1/assets/{d.A3}/linked-tasks")).GetProperty("items").EnumerateArray().Select(i => i.GetProperty("taskId").GetInt64()).ShouldBe([u.TS3]);
             (await GetAsync(u.ViewerClient, $"/api/v1/assets/{d.A3}")).GetProperty("linkedTaskCount").GetInt32().ShouldBe(2);
             (await GetAsync(u.ViewerClient, $"/api/v1/assets/{d.A3}/linked-tasks")).GetProperty("items").GetArrayLength().ShouldBe(2);
+            // The task type fields (#1235) only ever ride on a task the caller may see: the assignee's one item carries the type of that task (same as the task's own read), and the
+            // response names no other task, so a hidden task cannot leak its type name.
+            var ownItem = (await GetAsync(u.AssigneeClient, $"/api/v1/assets/{d.A3}/linked-tasks")).GetProperty("items").EnumerateArray().Single();
+            var ownTask = await GetAsync(u.AssigneeClient, $"/api/v1/tasks/{u.TS3}");
+            ownItem.GetProperty("taskTypeId").GetInt32().ShouldBe(ownTask.GetProperty("taskType").GetProperty("taskTypeId").GetInt32());
+            ownItem.GetProperty("taskTypeName").GetString().ShouldBe(ownTask.GetProperty("taskType").GetProperty("name").GetString());
+            ownItem.GetProperty("taskTypeIconKey").GetString().ShouldBe(ownTask.GetProperty("taskType").GetProperty("iconKey").GetString());
+            foreach (var item in (await GetAsync(u.ViewerClient, $"/api/v1/assets/{d.A3}/linked-tasks")).GetProperty("items").EnumerateArray())
+            {
+                var task = await GetAsync(u.ViewerClient, $"/api/v1/tasks/{item.GetProperty("taskId").GetInt64()}");
+                item.GetProperty("taskTypeName").GetString().ShouldBe(task.GetProperty("taskType").GetProperty("name").GetString());
+            }
             (await GetAsync(u.AssigneeClient, "/api/v1/assets?pageSize=100")).GetProperty("items").EnumerateArray()
                 .Single(i => i.GetProperty("assetId").GetInt32() == d.A3).GetProperty("linkedTaskCount").GetInt32().ShouldBe(1);
         }
