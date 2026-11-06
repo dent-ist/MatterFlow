@@ -53,6 +53,7 @@ What the agent must not touch (other pages of the same family that have their ow
 - UI work must follow `docs/ux/design-guidelines.md` (rules, component catalogue, wording tables, checklist).
 - Tokens only (`docs/ux/tokens.css`); no colour literal, no px icon size; buttons, dialogs, chips, links, tabs, dropdowns come from the shared components.
 - No new or changed keyboard shortcut (#420).
+- Screenshots go to the `design-evidence` branch (see its README), at most 15 compressed images per issue (about 150 KB each), never to dev, main or the feature branch; link them from the issue comment.
 - Bundle: initial under 700 kB.
 - Before pushing, in your own worktree under `/home/user/wt/<name>` created from `origin/ui-update-2`: `tsc` for app, spec and e2e, `npm run lint`, `npm run format:check`, a real `npm run ng -- build`, and the unit tests for the touched files (`npm test`). Heavy jobs only through `/home/user/.mf-heavy/heavy.sh timeout <s> <cmd>`; disk 5 GB free; kill only your own processes, never `pkill`.
 - Branch from `ui-update-2` and open the PR into `ui-update-2`. Never push to `dev` or `main`. No `git pull` in `/home/user/MatterFlow`.

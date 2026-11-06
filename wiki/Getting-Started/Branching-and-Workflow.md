@@ -21,6 +21,8 @@ Rules of the UI-update rounds (`docs/ux/ui-update/README.md`):
 - After merging or pulling, regenerate the OpenAPI document and the NSwag client from code; never merge those two files by hand.
 - SQL script numbers are allocated by one person per round (the next free number); scripts stay immutable once pushed.
 
+**Screenshots and the `design-evidence` branch.** Do not commit screenshots to `dev`, `main` or a feature branch. Screenshot and measurement evidence for UI work goes to the orphan branch `design-evidence` (never merged), in `evidence/<yyyy-mm-dd>-<issue-or-review>/`, at most 15 compressed images per issue (JPEG q82 or optimised PNG, 1366 or 1920 wide, about 150 KB each). Link them from the issue comment with the GitHub blob URL. Older screenshot rounds were removed from the tree and are kept in the branch `archive/docs-screenshots-2026-11`; restore a folder with `git checkout archive/docs-screenshots-2026-11 -- docs/ux/<folder>`.
+
 ## Commit messages
 
 Two forms are used.
