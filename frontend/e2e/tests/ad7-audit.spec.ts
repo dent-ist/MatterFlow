@@ -137,8 +137,8 @@ test.describe('Audit grid, cards, dividers and counter (#647, #651, #653, #655)'
       'Details',
       'When',
       'Who',
-      'What Happened',
-      'Object',
+      'What',
+      'Target',
       'Actions',
     ]);
     await expect(page.locator('tr.au-day th').first()).toHaveText('Today');
@@ -155,8 +155,8 @@ test.describe('Audit grid, cards, dividers and counter (#647, #651, #653, #655)'
     await expect(page.locator('#audit-table thead th')).toHaveText([
       'Details',
       'When',
-      'What Happened',
-      'Object',
+      'What',
+      'Target',
       'Actions',
     ]);
     await expect(page.locator('tr[data-event]').first().locator('.au-sub')).toContainText('kekim', {
@@ -200,7 +200,7 @@ test.describe('Audit grid, cards, dividers and counter (#647, #651, #653, #655)'
     ).toHaveCount(1);
   });
 
-  test('the loaded count is a polite status line, next to Load more', async ({ page }) => {
+  test('the loaded count is a polite status line, next to Show More', async ({ page }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/admin/audit');
     await expect(anyRow(page).first()).toBeVisible();

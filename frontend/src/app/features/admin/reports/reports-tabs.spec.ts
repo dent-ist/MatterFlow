@@ -189,7 +189,9 @@ describe('ReportRunsTab (#712)', () => {
     );
     expect(el.querySelector('tr[data-record-id="9"]')!.textContent).toContain('Overdue tasks');
     expect(el.querySelector('tr[data-record-id="9"]')!.textContent).toContain('MAX=2');
-    expect(el.querySelector('tr[data-record-id="8"]')!.textContent).toContain('SQL_8134');
+    const failed = el.querySelector('tr[data-record-id="8"]')!;
+    expect(failed.textContent).toContain('Failed');
+    expect(failed.querySelector('[title="SQL_8134"]')).not.toBeNull();
 
     api.listReportRuns.mockReturnValueOnce(of({ items: [run(7)], nextBefore: undefined }));
     el.querySelector<HTMLButtonElement>('[data-more]')!.click();

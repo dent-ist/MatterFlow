@@ -62,6 +62,7 @@ import {
   withDayDividers,
 } from './audit-rows';
 import { IntPipe } from '../../../shared/ui/number-format';
+import { shortAccountName } from '../../../shared/ui/person-name';
 
 const PAGE_SIZE = 50;
 /** People offered in the Who filter: the first pages of the user list (100 each). */
@@ -90,7 +91,7 @@ const ACCESS_VALUE = ACCESS_OBJECT_TYPES.join(',');
  * `correlationId`). Results newest first on the grid contract (#647): a day divider ("Today", "Oct 19") and the time alone in the When column
  * (#655), Who joining the When cell below 1100 px, phone cards below 640 px; one readable sentence per event, an optional grouping of the
  * events of one operation, details with the Old -> New pair and the technical facts on request (#652), links to the audited object only
- * where the viewer may open it (#648), four quick views (#654), the count of what is loaded (#653) and cursor paging ("Load More").
+ * where the viewer may open it (#648), four quick views (#654), the count of what is loaded (#653) and cursor paging ("Show More", D-44d).
  * Read only: there is no export.
  */
 @Component({
@@ -271,6 +272,11 @@ export class AuditPage {
       ? 'No audit events'
       : `Showing ${n} audit events${this.nextCursor() !== null ? ', more available' : ''}`;
   });
+  /** Who did it (D-62): the display name, else the account without its domain ("kekim", not "KE\\kekim"). */
+  protected who(item: { actor: { displayName: string } }): string {
+    return shortAccountName(item.actor.displayName);
+  }
+
   /** "150 events loaded" (#653), spoken politely when it changes. */
   protected readonly loadedText = computed(() => {
     const n = this.items().length;
