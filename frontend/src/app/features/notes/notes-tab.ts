@@ -40,6 +40,7 @@ import { ApiError } from '../../core/http/api-error';
 import { NotificationService } from '../../core/notify/notification.service';
 import { taskTypeChipColours } from '../../shared/task-type/task-type-colours';
 import { ConfirmDialog } from '../../shared/ui/confirm-dialog';
+import { Segmented } from '../../shared/ui/segmented';
 import { Dropdown, DropdownItem } from '../../shared/ui/dropdown';
 import { AiButton, AiComingSoon } from '../../shared/ui/ai/ai-assist';
 import { NumericDatePipe } from '../../shared/ui/numeric-date';
@@ -128,6 +129,7 @@ interface RefChip {
     NoteEditor,
     NoteTagChip,
     NumericDatePipe,
+    Segmented,
     RouterLink,
     SearchBox,
     SlidePanel,
@@ -194,18 +196,18 @@ interface RefChip {
                 }
               </div>
               <div class="nt__lc2">
-                <div class="nt__seg" role="group" aria-label="Notes view" data-notes-views>
+                <div mfSegmented role="group" aria-label="Notes view" data-notes-views>
                   @for (v of views; track v.id) {
                     <button
                       type="button"
+                      class="mf-btn"
                       [attr.data-view]="v.id"
                       [attr.aria-pressed]="view() === v.id"
                       [attr.aria-label]="v.label"
                       [title]="v.label"
                       (click)="setView(v.id)"
                     >
-                      <i class="pi" [class]="v.icon" aria-hidden="true"></i
-                      ><span class="nt__lbl">{{ v.short }}</span>
+                      {{ v.short }}
                     </button>
                   }
                 </div>

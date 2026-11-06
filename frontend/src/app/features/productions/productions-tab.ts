@@ -643,14 +643,19 @@ const emptySpec = (): SpecDraft => ({
               (valueChange)="setP('volumeNo', $event)"
             />
             <div>
-              <span class="pt__label" id="pf-dir-label">Direction</span>
-              <mf-dropdown
-                buttonId="pf-direction"
-                label="Direction"
-                [items]="directionChoices"
-                [value]="pd().direction"
-                (valueChange)="setP('direction', $event)"
-              />
+              <label class="pt__label" for="pf-direction">Direction</label>
+              <select
+                id="pf-direction"
+                class="mf-field__input mf-control--fill"
+                data-direction-select
+                (change)="setP('direction', $any($event.target).value)"
+              >
+                @for (o of directionChoices; track o.value) {
+                  <option [value]="o.value" [selected]="pd().direction === o.value">
+                    {{ o.label }}
+                  </option>
+                }
+              </select>
             </div>
           </div>
           <mf-text-field
@@ -661,15 +666,19 @@ const emptySpec = (): SpecDraft => ({
             (valueChange)="setP('partyName', $event)"
           />
           <div>
-            <span class="pt__label">Spec</span>
-            <mf-dropdown
-              buttonId="pf-spec"
-              label="Spec"
-              placeholder="None (for a received production)"
-              [items]="specChoices()"
-              [value]="pd().productionSpecId"
-              (valueChange)="setP('productionSpecId', $event)"
-            />
+            <label class="pt__label" for="pf-spec">Spec</label>
+            <select
+              id="pf-spec"
+              class="mf-field__input mf-control--fill"
+              data-spec-select
+              (change)="setP('productionSpecId', $any($event.target).value)"
+            >
+              @for (o of specChoices(); track o.value) {
+                <option [value]="o.value" [selected]="pd().productionSpecId === o.value">
+                  {{ o.label }}
+                </option>
+              }
+            </select>
           </div>
           <div class="pt__row">
             <mf-text-field

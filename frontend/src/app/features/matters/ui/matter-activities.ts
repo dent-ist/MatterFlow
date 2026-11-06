@@ -12,12 +12,12 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuditSearchClient, AuditSearchItem } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
-import { USER_TIME_ZONE } from '../../../core/time/clock';
+import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { GridFrame } from '../../../shared/ui/grid-frame';
 import { friendlyText } from '../../../shared/ui/audit-format';
 import { auditObjectLink, auditObjectText } from '../../admin/audit/audit-links';
-import { stampText } from '../../admin/audit/audit-rows';
+import { numericInstant, readableInstant } from '../../../shared/ui/numeric-date';
 import { StateBlock } from '../../../shared/ui/state-block';
 import { IntPipe } from '../../../shared/ui/number-format';
 import { shortAccountName } from '../../../shared/ui/person-name';
@@ -144,7 +144,9 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
                 @for (e of items(); track e.auditEventId) {
                   <tr data-activity-row [attr.data-object-type]="e.object.type">
                     <td class="ma__when">
-                      <time [attr.datetime]="e.occurredAtUtc">{{ stamp(e) }}</time>
+                      <time [attr.datetime]="e.occurredAtUtc" [attr.title]="stampLong(e)">{{
+                        stamp(e)
+                      }}</time>
                     </td>
                     <td>
                       <div class="pg-name" [attr.title]="what(e) + ' ' + objectText(e)">
@@ -194,6 +196,7 @@ export class MatterActivities {
   private readonly api = inject(AuditSearchClient);
   private readonly auth = inject(AuthStore);
   private readonly zone = inject(USER_TIME_ZONE);
+  private readonly clock = inject(Clock);
   /** The highest event id the person had seen when this visit began (0 when there was no earlier visit). */
   private seenBefore = 0;
   private turn = 0;
@@ -227,8 +230,13 @@ export class MatterActivities {
     return this.seenBefore > 0 && e.auditEventId > this.seenBefore;
   }
 
+  /** `MM/DD hh:mm AM/PM` (D-60); the long form is the tooltip. */
   protected stamp(e: AuditSearchItem): string {
-    return stampText(e, this.zone);
+    return numericInstant(e.occurredAtUtc, this.clock.now(), this.zone);
+  }
+
+  protected stampLong(e: AuditSearchItem): string {
+    return readableInstant(e.occurredAtUtc, this.zone);
   }
 
   /** The event as a sentence, without the object (the link follows it). */
