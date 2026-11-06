@@ -39,7 +39,7 @@ One of: an exact description with numbers; an ASCII sketch; or a small HTML snip
 - [ ] Wording matches D-20 and D-22 (list the exact strings that must appear).
 - [ ] States per D-05: hover, focus ring, disabled, selected checked by script or by hand.
 - [ ] axe: 0 violations at 1366x768 and 1920x1080 on every changed page and dialog.
-- [ ] Screenshots attached to the PR: 1366x768 and 1920x1080 (desktop only; the app is desktop-only, no phone or tablet sizes), before next to after, with the dialog or drawer open when the issue touches one. Stored under `docs/ux/ui-update/screenshots/<page>/after/`.
+- [ ] Screenshots at 1366x768 and 1920x1080 (desktop only; no phone or tablet sizes), before next to after, with the dialog or drawer open when the issue touches one: at most 15 compressed JPEG or optimised PNG (about 150 KB each) on the `design-evidence` branch under `evidence/<yyyy-mm-dd>-<issue>/` (see its README and the rule in CLAUDE.md), linked from the issue comment; never bulk PNGs in the repo.
 - [ ] No private chip, link, button or dialog class is added; the shared component is used or extended.
 - [ ] No keyboard shortcut added or changed (#420); `shortcut-registry.ts` untouched.
 - [ ] Initial bundle under 700 kB (`npm run build` output quoted in the PR).

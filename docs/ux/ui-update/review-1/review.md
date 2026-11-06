@@ -161,3 +161,41 @@ Real stack, API rebuilt and restarted from the branch tip (demo database untouch
 | #1130 | PASS | private chip classes replaced; scan allows only the skeleton |
 
 Decisions: Pod Work Title guard stays 160, Ref 100 px (#1240). Link role removed from the table is acceptable; it becomes a tooltip (#1240). The Set Out of Office and Add Out of Office dialogs keep a native Type select (shared input style, chevron) and the native date field: both are allowed by D-14 and D-35, so no fix issue. When Type is hidden the Task Queue title cell draws no small type icon: acceptable (the Columns menu brings it back). My Matters Overview Due column is still cut at 1366 (belongs to #1164).
+
+## review-10 Tasks group (tip 06b7a76, 2026-11-06)
+
+Evidence (13 JPEG at 1366, measurements, axe) is on the `design-evidence` branch: `evidence/2026-11-06-review-10-tasks/`. Real stack, both sizes, axe on 12 pages at both sizes: 0 violations. Scripts in `docs/ux/ui-update/crawl/` (`rs4.js`, `r10*.js`).
+
+| Issue | Result | Evidence |
+| --- | --- | --- |
+| #1240 | PASS WITH NOTES | Title at 1366: Pod Work 162, Task Queue 186, My Work 322 (Ref 100); one "New Task" button on the three pages; link role tooltip not sampled (no linked data). Note: four-digit On Hold ref "|| TSK-1234" is about 92 px: fix #1244 (cell padding 8 px) |
+| #1167 | PASS | top bar button hidden on Task Queue, My Work, Pod Work and shown on Matters; Pod Work chips in the toolbar row (26 px), My Work chips under the tabs; Search box 201 px on Pod Work, 252 px elsewhere: Matters, Clients, Projects, Assets, Users toolbars unchanged |
+| #1168 | PASS | Normal and Low are 14 px, weight 400, normal text colour |
+| #1169 | PASS WITH NOTES | menu entries 36 px (Other Filters list, Columns); decision: drop the bulk bar part (the work lists have no selection or bulk action; no backend issue now); steppers in Column Widths stay 24 px (text buttons, owner rule); date presets and ASAP are 36 px menu entries |
+| #1170 | PASS WITH NOTES | work lists show "-" (accessible "not available") while loading and on error; Matters and the other lists show no chip while loading; empty sentences "No tasks match these filters." are correct for a filtered list. One rule for all lists: fix #1244 |
+| #1231 | FAIL | Title width is stored, but there is no way back: header menu has no Reset Width (Fit disabled), double-click does nothing, the Columns panel has no Title row: fix #1243 |
+| #1235 | PASS WITH NOTES | colours equal the Task Queue for the person drawer and the Assign Work list (0 mismatches over the types shown); backend integration tests for the Asset linked tasks were NOT run (need Docker/SQL test containers): QA to run `dotnet test` for `TaskAssetLinksApiTests` and `SensitiveAssetsAndSearchTests` |
+
+New: #1243, #1244.
+
+## review-11 Matters, Clients and record grid (tip d6fadfe+, 2026-11-06)
+
+Evidence on `design-evidence` (`evidence/2026-11-06-review-11-record-grid/`: 15 JPEG, measurements, axe). Real stack, both sizes, axe on 11 pages at both sizes: 0 violations. Scripts `crawl/rg.js`, `rg2.js`, `rg3.js`.
+
+**Shared record grid (`shared/ui/record-grid.ts`), Matters and Clients at 1366 and 1920.**
+Pass: resize (stored `mf.col-widths.v1.<grid>.<user>`, survives reload), reorder (survives reload), Columns show/hide, "Reset to Default", **"Reset Width" works** (stored key removed, Clients name 548 back to the spring 488 px; the primary column is the spring), sticky first column, sort by heading (`aria-sort`), Enter on the heading, default columns fit the 1,096 px frame (Matters: Secondary PM off by default: acceptable, it is in Columns). Fails: the actions column is 48 px but **72 px after a reload with a resized grid** (confirmed at both sizes); Clients headings jump between loading, empty, error and rows (Matters is stable); every resize handle is a Tab stop. The component API is good for Clients, Matters and the Assets list; for Projects (group rows), row click and inactive rows it needs `groupBy`, `rowClass` and `(rowClick)`: fix #1245 (under #1107) before those pages adopt it.
+
+| Issue | Result | Evidence |
+| --- | --- | --- |
+| #1241 steps 1, 2, 4 | PASS WITH NOTES | see above (#1245) |
+| #1174 Matters list | PASS | columns fit 1366, "..." column 48, New Matter dialog 576 px |
+| #1175 Matter record | PASS | tile, Edit, New primary 36 px, asset tiles with 24 px counts, banners one bar |
+| #1176 Tasks, Projects, Assets tabs | PASS WITH NOTES | Tasks tab whole at 1366 (Project in Columns); Projects and Assets tabs not on the record grid yet (follow #1245) |
+| #1177 Notes, Productions, Activities | PASS WITH NOTES | Activities still ends with "Show More" instead of the pager (fix #1246) |
+| #1178 Matter dialogs | PASS | New Matter 576 px, Cancel left, primary right |
+| #1179 Clients list | PASS | Columns menu, no row action: decision, Clients get none (Edit and Activity are in the record header) |
+| #1180 Client record | PASS WITH NOTES | overdue chips, 16/600 heading, View all link; mini-table headings "Matter, Name, Open" differ from the Matters list (fix #1246) |
+| #1181 Client forms | PASS WITH NOTES | unsaved-changes wording (fix #1246) |
+| #1174-#1181 shared side effects | PASS | Action Menu text trigger 36 px and the shared amber banner (one compact bar) look right on Project, Asset and Task records; no regression seen |
+
+New: #1245, #1246.
