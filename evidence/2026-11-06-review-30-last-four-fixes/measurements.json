@@ -1,0 +1,6 @@
+{"date":"2026-11-06","tip":"bf2dd16",
+"1275":{"matterTasks_1366":{"th":[100,128,142,140,112,136,152,140,48],"button":"Move to Project 32 px icon, tooltip Move to Project","dialog":"416 px, options No Project / Demo Custodian wave 1","toasts":["Task moved | TSK-59 is in Demo Custodian wave 1.","Task moved | TSK-59 is no longer in a project."],"dashSpeaks":"No project","restored":"TSK-59 moved to the project and back to No Project"},
+"1276":{"matters_1366":[158,223,152,125,125,105,161,48],"matters_1920":[158,577,353,125,125,105,161,48],"client":[157,501,125,105,161,48],"stacked":"Active over Sensitive at both sizes"},
+"1277":{"createTask":{"1366":{"h1Top":93,"crumbTop":65,"focus":"ct-matter","tab":"ct-title"},"1920":{"h1Top":93,"crumbTop":65,"focus":"ct-matter","tab":"ct-title"}}},
+"1278":{"idle":"Choose what to count, then run the report. (pi-chart-bar, no button)","noRows":"No assets match this report. | Clear Filters (pi-search)","dashed":0,"clearFilters":"resets Disposition and Asset Type"},
+"dashedScan":{"pages":22,"visibleDashed":"none on the pages and their tabs","visibleInVariants":"Holidays search no match: p.ha__empty","deadCss":[".wl-empty",".wl-empty-note"]}}
