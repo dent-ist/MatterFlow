@@ -10,7 +10,6 @@ import {
   untracked,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { AssetTaskLink, AssetsClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -20,8 +19,12 @@ import { columnWidthRem } from '../../../shared/work-queue/column-widths';
 import { PriorityFlag } from '../../../shared/ui/priority-flag';
 import { TaskTypeCell } from '../../../shared/ui/task-type-cell';
 import { Tip } from '../../../shared/ui/tip';
-import { SortHeader } from '../../../shared/ui/data-table';
-import { ErrorReference } from '../../../shared/ui/error-reference';
+import {
+  RecordCell,
+  RecordGrid,
+  RecordGridColumn,
+  RecordGridState,
+} from '../../../shared/ui/record-grid';
 import {
   RecordCard,
   RecordCardDef,
@@ -63,15 +66,14 @@ function dueKey(t: AssetTaskLink): number | null {
   selector: 'mf-asset-linked-tasks',
   imports: [
     IntPipe,
-    ErrorReference,
     RouterLink,
-    Button,
     StatusBadge,
     DueCell,
     PriorityFlag,
     TaskTypeCell,
     Tip,
-    SortHeader,
+    RecordGrid,
+    RecordCell,
     RecordCardList,
     RecordCardDef,
     RecordCard,
@@ -79,13 +81,6 @@ function dueKey(t: AssetTaskLink): number | null {
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   styles: `
-    /* The grid sits in the card of the theme; overflow clip (not hidden) keeps the heading row sticky in the tab's scroll region. */
-    .lt-card {
-      overflow: clip;
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-xl);
-      box-shadow: var(--mf-shadow-card);
-    }
     .lt-summary {
       margin: 0 0 var(--mf-s2);
       color: var(--mf-text-muted);
@@ -94,10 +89,14 @@ function dueKey(t: AssetTaskLink): number | null {
       color: var(--mf-due-overdue);
       font-weight: 700;
     }
-    /* The task grid widths (D-43): fixed columns, the Title takes the rest and never less than 120 px; a narrower box scrolls inside the card. */
-    .lt-table {
-      table-layout: fixed;
-      min-width: calc(var(--lt-fixed) + 8.5rem);
+    /* The record grid is a card that takes the height of its parent; in the tab it is as tall as its rows. */
+    .lt-grid {
+      display: flex;
+      flex-direction: column;
+    }
+    td.lt-title {
+      width: 100%;
+      max-width: 0;
     }
     td.lt-ref {
       font-family: var(--mf-font-mono);
@@ -149,124 +148,88 @@ function dueKey(t: AssetTaskLink): number | null {
         </ng-template>
       </mf-record-card-list>
     } @else {
-      @switch (state()) {
-        @case ('loading') {
-          <div class="pg-state" role="status" aria-busy="true" data-loading>
-            Loading linked tasks
-          </div>
-        }
-        @case ('error') {
-          <div class="pg-alert" role="alert" data-error>
-            We couldn't load the linked tasks.
-            <mf-error-reference />
-            <p-button label="Retry" severity="secondary" (onClick)="load()" />
-          </div>
-        }
-        @default {
-          @if (links().length === 0) {
-            <div class="pg-state" data-empty="linked-tasks">
-              No tasks are linked to this asset yet.
-            </div>
-          } @else {
-            <p class="lt-summary" data-linked-summary>
-              {{ totals().total | mfInt }} linked - {{ totals().open }} open -
-              <span [class.lt-over]="totals().overdue > 0">{{ totals().overdue }} overdue</span>
-            </p>
-            <div class="mf-scroll lt-card">
-              <table class="mf-grid tt lt-table" data-linked-table [style.--lt-fixed]="fixedRem">
-                <colgroup>
-                  <col [style.width.rem]="w.ref" />
-                  <col [style.width.rem]="w.type" />
-                  <col />
-                  <col [style.width.rem]="w.priority" />
-                  <col [style.width.rem]="w.assignee" />
-                  <col [style.width.rem]="w.due" />
-                  <col [style.width.rem]="w.status" />
-                </colgroup>
-                <caption class="mf-sr-only">
-                  Tasks linked to this asset
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Ref</th>
-                    <th scope="col">Type</th>
-                    <th class="mf-cell-name" scope="col">Title</th>
-                    <th scope="col">Priority</th>
-                    <th scope="col">Assignee</th>
-                    <th
-                      class="mf-cell-date"
-                      mfSort="due"
-                      [sort]="sort()"
-                      defaultSort="due"
-                      (sorted)="sort.set($event)"
-                    >
-                      Due
-                    </th>
-                    <th
-                      class="mf-cell-badge"
-                      mfSort="status"
-                      [sort]="sort()"
-                      defaultSort="due"
-                      (sorted)="sort.set($event)"
-                    >
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (t of sorted(); track t.taskId) {
-                    <tr [attr.data-task]="t.taskNumber">
-                      <td class="lt-ref">{{ t.taskNumber }}</td>
-                      <td data-type>
-                        <mf-task-type-cell
-                          [name]="t.taskTypeName"
-                          [iconKey]="t.taskTypeIconKey"
-                          [colourKey]="t.taskTypeColourKey"
-                          [typeId]="t.taskTypeId"
-                        />
-                      </td>
-                      <td class="mf-cell-name">
-                        <a
-                          class="mf-name"
-                          [routerLink]="['/tasks', t.taskId]"
-                          [mfTip]="linkTip(t)"
-                          data-title-link
-                          >{{ t.title }}</a
-                        >
-                        @if (t.assetLinkRoleName) {
-                          <span class="mf-sr-only">, linked as {{ t.assetLinkRoleName }}</span>
-                        }
-                      </td>
-                      <td data-priority>
-                        @if (t.priorityLabel) {
-                          <mf-priority-flag
-                            [label]="t.priorityLabel"
-                            [color]="t.priorityColor"
-                            [muted]="!t.isOpen"
-                          />
-                        } @else {
-                          <span class="lt-none">-</span>
-                        }
-                      </td>
-                      <td class="lt-who" [attr.title]="t.assigneeName ?? null" data-assignee>
-                        @if (t.assigneeName) {
-                          {{ t.assigneeName }}
-                        } @else {
-                          <span class="lt-none">Unassigned</span>
-                        }
-                      </td>
-                      <td class="mf-cell-date" data-due>
-                        <mf-due-cell [due]="t" [status]="t.statusCode" />
-                      </td>
-                      <td class="mf-cell-badge"><mf-status-badge [code]="t.statusCode" /></td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
-        }
+      @if (state() === 'ready' && links().length > 0) {
+        <p class="lt-summary" data-linked-summary>
+          {{ totals().total | mfInt }} linked - {{ totals().open }} open -
+          <span [class.lt-over]="totals().overdue > 0">{{ totals().overdue }} overdue</span>
+        </p>
       }
+      <div class="lt-grid" data-linked-table>
+        <mf-record-grid
+          label="Tasks linked to this asset"
+          caption="Tasks linked to this asset"
+          noun="linked tasks"
+          [grid]="grid"
+          [rows]="sorted()"
+          [rowKey]="linkKey"
+          [loadState]="state()"
+          [empty]="links().length === 0"
+          emptyText="No tasks are linked to this asset yet."
+          [bones]="bones"
+          [sort]="sort()"
+          defaultSort="due"
+          (sorted)="sort.set($event)"
+          (retry)="load()"
+        >
+          <ng-template mfCell="ref" let-t>
+            <td class="lt-ref">{{ t.taskNumber }}</td>
+          </ng-template>
+          <ng-template mfCell="type" let-t>
+            <td data-type>
+              <mf-task-type-cell
+                [name]="t.taskTypeName"
+                [iconKey]="t.taskTypeIconKey"
+                [colourKey]="t.taskTypeColourKey"
+                [typeId]="t.taskTypeId"
+              />
+            </td>
+          </ng-template>
+          <ng-template mfCell="title" let-t>
+            <td class="lt-title">
+              <a
+                class="mf-link pg-clip"
+                [routerLink]="['/tasks', t.taskId]"
+                [mfTip]="linkTip(t)"
+                data-title-link
+                >{{ t.title }}</a
+              >
+              @if (t.assetLinkRoleName) {
+                <span class="mf-sr-only">, linked as {{ t.assetLinkRoleName }}</span>
+              }
+            </td>
+          </ng-template>
+          <ng-template mfCell="priority" let-t>
+            <td data-priority>
+              @if (t.priorityLabel) {
+                <mf-priority-flag
+                  [label]="t.priorityLabel"
+                  [color]="t.priorityColor"
+                  [muted]="!t.isOpen"
+                />
+              } @else {
+                <span class="lt-none">-</span>
+              }
+            </td>
+          </ng-template>
+          <ng-template mfCell="assignee" let-t>
+            <td class="lt-who" [attr.title]="t.assigneeName ?? null" data-assignee>
+              @if (t.assigneeName) {
+                {{ t.assigneeName }}
+              } @else {
+                <span class="lt-none">Unassigned</span>
+              }
+            </td>
+          </ng-template>
+          <ng-template mfCell="due" let-t>
+            <td data-due>
+              <mf-due-cell [due]="t" [status]="t.statusCode" />
+            </td>
+          </ng-template>
+          <ng-template mfCell="status" let-t>
+            <td><mf-status-badge [code]="t.statusCode" /></td>
+          </ng-template>
+        </mf-record-grid>
+      </div>
     }
   `,
 })
@@ -279,16 +242,31 @@ export class AssetLinkedTasks {
   private readonly auth = inject(AuthStore);
 
   protected readonly phone = phoneCards();
-  /** The column widths in rem (the task grid standard) and their sum, for the table's minimum width. */
-  protected readonly w = {
-    ref: widthRem('ref'),
-    type: widthRem('type'),
-    priority: widthRem('priority'),
-    assignee: widthRem('assignee'),
-    due: widthRem('due'),
-    status: widthRem('status'),
+  /** The columns in the standard task column order (D-43: the widths of `WORK_COLUMNS`, the Title is the spring). Resizing is stored per person under "asset-linked-tasks". */
+  protected readonly gridDefs = signal<readonly RecordGridColumn[]>([
+    { key: 'ref', label: 'Ref', locked: true, ...this.fixed('ref') },
+    { key: 'type', label: 'Type', ...this.fixed('type') },
+    { key: 'title', label: 'Title', locked: true, minWidth: '8.5rem' },
+    { key: 'priority', label: 'Priority', ...this.fixed('priority') },
+    { key: 'assignee', label: 'Assignee', ...this.fixed('assignee') },
+    { key: 'due', label: 'Due', sort: 'due', ...this.fixed('due') },
+    { key: 'status', label: 'Status', sort: 'status', ...this.fixed('status') },
+  ]);
+  protected readonly grid = new RecordGridState('asset-linked-tasks', this.gridDefs);
+  protected readonly bones: Record<string, string> = {
+    ref: '5rem',
+    type: '6rem',
+    title: '14rem',
+    priority: '4rem',
+    assignee: '7rem',
+    due: '5rem',
+    status: '5rem',
   };
-  protected readonly fixedRem = `${Object.values(this.w).reduce((a, b) => a + b, 0)}rem`;
+  protected readonly linkKey = (t: AssetTaskLink): number => t.taskId;
+  private fixed(key: string): { width: string; minWidth: string } {
+    const w = `${widthRem(key)}rem`;
+    return { width: w, minWidth: w };
+  }
   /** The tooltip of the Title link: the role the asset is linked as (#1240); a link without a role keeps the full title. */
   protected linkTip(t: AssetTaskLink): string {
     return t.assetLinkRoleName ? `Linked as ${t.assetLinkRoleName}` : t.title;

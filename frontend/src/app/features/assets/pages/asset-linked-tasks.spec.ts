@@ -73,7 +73,7 @@ describe('AssetLinkedTasks', () => {
   let totals: LinkedTaskTotals | null;
   const el = (): HTMLElement => fixture.nativeElement;
   const titles = (): string[] =>
-    Array.from(el().querySelectorAll('tbody td.mf-cell-name a')).map((a) => a.textContent!.trim());
+    Array.from(el().querySelectorAll('tbody td.lt-title a')).map((a) => a.textContent!.trim());
 
   async function create(permissions: Permission[], items = [SOON, NONE, LATE, DONE]) {
     api = { listAssetLinkedTasks: vi.fn().mockReturnValue(ok({ items })) };
@@ -98,7 +98,7 @@ describe('AssetLinkedTasks', () => {
     expect(Array.from(el().querySelectorAll('thead th')).map((h) => h.textContent!.trim())).toEqual(
       ['Ref', 'Type', 'Title', 'Priority', 'Assignee', 'Due', 'Status'],
     );
-    const row = el().querySelector('tbody tr[data-task="TSK-2"]')!;
+    const row = el().querySelector('tbody tr[data-record-id="2"]')!;
     expect(row.querySelector('td')?.textContent).toBe('TSK-2');
     expect(row.querySelectorAll('a')).toHaveLength(1);
     expect(row.querySelector('a')?.getAttribute('href')).toBe('/tasks/2');
@@ -106,7 +106,7 @@ describe('AssetLinkedTasks', () => {
     expect(row.querySelector('mf-due-cell')).not.toBeNull();
     expect(row.querySelector('[data-assignee]')?.textContent).toContain('Ada Lovelace');
     expect(row.querySelector('[data-priority]')?.textContent).toContain('High');
-    expect(el().querySelector('tr[data-task="TSK-3"] [data-assignee]')?.textContent).toContain(
+    expect(el().querySelector('tr[data-record-id="3"] [data-assignee]')?.textContent).toContain(
       'Unassigned',
     );
     expect(api.listAssetLinkedTasks).toHaveBeenCalledWith(9);
@@ -120,7 +120,8 @@ describe('AssetLinkedTasks', () => {
         link({ taskId: 2, taskNumber: 'TSK-2', taskTypeId: 4, taskTypeColourKey: undefined }),
       ],
     );
-    const cell = (n: string) => el().querySelector(`tr[data-task="${n}"] mf-task-type-cell`)!;
+    const cell = (n: string) =>
+      el().querySelector(`tr[data-record-id="${n.slice(4)}"] mf-task-type-cell`)!;
     expect(cell('TSK-1').querySelector('[data-type-name]')?.textContent).toBe('Data Processing');
     expect(cell('TSK-1').querySelector('mf-task-type-chip')?.getAttribute('data-colour')).toBe(
       'teal',
@@ -134,13 +135,13 @@ describe('AssetLinkedTasks', () => {
   it('the link role is the tooltip of the Title link and part of the row name, not a column (#1240)', async () => {
     await create(['Asset.View', 'Task.View']);
     const title = (n: string) =>
-      el().querySelector<HTMLElement>(`tr[data-task="${n}"] a[data-title-link]`)!;
+      el().querySelector<HTMLElement>(`tr[data-record-id="${n.slice(4)}"] a[data-title-link]`)!;
     title('TSK-1').dispatchEvent(new Event('mouseenter'));
     expect(document.querySelector('[role="tooltip"]')?.textContent).toBe('Linked as Source');
     title('TSK-1').dispatchEvent(new Event('mouseleave'));
-    expect(el().querySelector('tr[data-task="TSK-1"]')?.textContent).toContain('linked as Source');
+    expect(el().querySelector('tr[data-record-id="1"]')?.textContent).toContain('linked as Source');
     // A link without a role has nothing to add to the row name.
-    expect(el().querySelector('tr[data-task="TSK-3"]')?.textContent).not.toContain('linked as');
+    expect(el().querySelector('tr[data-record-id="3"]')?.textContent).not.toContain('linked as');
   });
 
   it('is sorted by due date, no due date last, and sorts by Due and Status', async () => {
@@ -171,7 +172,7 @@ describe('AssetLinkedTasks', () => {
 
   it('shows the empty, error (with Retry) and no-permission states', async () => {
     await create(['Asset.View', 'Task.View'], []);
-    expect(el().querySelector('[data-empty="linked-tasks"]')).not.toBeNull();
+    expect(el().querySelector('[data-empty]')).not.toBeNull();
 
     TestBed.resetTestingModule();
     await create(['Asset.View', 'Task.View']);
