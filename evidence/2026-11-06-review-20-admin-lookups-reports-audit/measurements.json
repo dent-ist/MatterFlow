@@ -1,0 +1,8 @@
+{"date":"2026-11-06","tip":"6f2b312",
+"labels":{"priorities_1366":[67,649,129,104,99,48],"statusLabels":[982,66,48],"onHold":[67,882,99,48],"noteTags":[672,140,96,140,48],"rowH":44,"draggableRows":6,"dragHandles":0,"menu":["Edit Priority","Move Up","Move Down","Set as Default","Deactivate"],"priorityGlyph":"mf-priority-badge (bars) vs mf-priority-flag in grids"},
+"assetTypes":{"list":[512,300,96,140,48],"linkRoles":[67,821,61,99,48],"record":"Overview details card, header Edit + Edit Fields"},
+"customFields":[560,96,152,240,48],"settings":{"workingDays":"7 filter chips 26 px","holidays":[144,164,164,110,165,48],"nativeSelects":{"holidays":5,"assetTypeRecord":1,"newAssetType":1,"reportEditor":1}},
+"reports":{"reports":[480,180,96,152,140,48],"runLog":[152,200,150,120,160,96,96,240]},
+"audit":{"th":[44,127,109,615,154,48],"showMore":true,"director":"works"},
+"pies":{"assetsReports":"solid, numbered legend, no pattern","metrics":"solid, numbered legend","breakdowns":"no pattern","patternElements":0,"repeatingGradients":0},
+"casing":["Pending disposition (legend)","All matters","All asset types (Metrics)"]}
