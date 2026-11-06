@@ -36,18 +36,10 @@ function reasonOf(error: unknown): string {
   styles: `
     :host {
       position: relative;
-      display: inline-block;
+      display: block;
     }
+    /* The entry is the shared menu item (mf-menu__item: 36 px, 14 px, row hover, #1169), the same as Download CSV beside it. */
     .vm__summary {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
-      min-height: 32px;
-      padding: 0 var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      cursor: pointer;
       list-style: none;
     }
     .vm__summary::-webkit-details-marker {
@@ -83,7 +75,7 @@ function reasonOf(error: unknown): string {
     }
     .vm__apply {
       flex: 1 1 8rem;
-      min-height: 32px;
+      min-height: var(--mf-ctl-h);
       padding: 0 var(--mf-s2);
       border: 0;
       background: transparent;
@@ -93,8 +85,8 @@ function reasonOf(error: unknown): string {
       cursor: pointer;
     }
     .vm__icon {
-      min-width: 32px;
-      min-height: 32px;
+      min-width: var(--mf-ctl-h);
+      min-height: var(--mf-ctl-h);
       border: 0;
       background: transparent;
       color: inherit;
@@ -116,7 +108,7 @@ function reasonOf(error: unknown): string {
     }
     .vm__inline input[type='text'] {
       flex: 1 1 10rem;
-      min-height: 32px;
+      min-height: var(--mf-ctl-h);
     }
     .vm__error {
       margin: 0;
@@ -138,7 +130,7 @@ function reasonOf(error: unknown): string {
   `,
   template: `
     <details #details (toggle)="opened($event)" data-views>
-      <summary class="vm__summary" data-views-trigger>
+      <summary class="vm__summary mf-menu__item" data-views-trigger>
         <i class="pi pi-bookmark" aria-hidden="true"></i>
         <span>Views</span>
         @if (views().length > 0) {

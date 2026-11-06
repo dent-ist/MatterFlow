@@ -228,9 +228,9 @@ const GROUPS: readonly { label: string; keys: readonly string[] }[] = [
     .cc {
       position: relative;
     }
-    /* Same height as the Filters and Other filters buttons beside it in the bar (UXR4-16): the compact 32 px. */
+    /* Same 36 px as the Filters and Other Filters buttons beside it in the bar (D-02, #1169). */
     .cc-button {
-      min-height: var(--mf-row-h-compact);
+      min-height: var(--mf-ctl-h);
     }
     .cc-panel {
       position: absolute;
@@ -240,12 +240,13 @@ const GROUPS: readonly { label: string; keys: readonly string[] }[] = [
       display: flex;
       flex-direction: column;
       /* Never taller than the window below the header (a fixed-header page cannot scroll to it): the list scrolls, the footer stays. */
-      max-height: min(36rem, var(--cc-max, calc(100dvh - var(--mf-header-h, 3.75rem) - 16px)));
+      max-height: min(40rem, var(--cc-max, calc(100dvh - var(--mf-header-h, 3.75rem) - 16px)));
       margin-top: var(--mf-s1);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
+      /* The surface of the shared menu (D-36, #1169): radius 8, 1 px soft border, the popover shadow. */
+      border: 1px solid var(--mf-border-soft);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-2);
+      box-shadow: var(--mf-shadow-pop);
     }
     /* Scroll shadow: the gradients stay at the edges (scroll) and are covered by the fading surface layers (local) until content is cut. */
     .cc-body {
@@ -288,9 +289,10 @@ const GROUPS: readonly { label: string; keys: readonly string[] }[] = [
       }
     }
     /* The groups sit in two columns where there is room (#230); Density and Group by stand beside them. */
+    /* Three columns of groups (Task, Where, Who / When, State) so the 36 px entries of the shared menu (D-36, #1169) fit the window at 1366x768 without scrolling. */
     .cc-cols {
       display: grid;
-      grid-template-columns: repeat(2, max-content);
+      grid-template-columns: repeat(3, max-content);
       align-content: start;
       gap: var(--mf-s3) var(--mf-s5);
     }
@@ -305,7 +307,7 @@ const GROUPS: readonly { label: string; keys: readonly string[] }[] = [
     }
     .cc-panel {
       width: max-content;
-      max-width: min(46rem, var(--cc-maxw, calc(100vw - 2rem)));
+      max-width: min(54rem, var(--cc-maxw, calc(100vw - 2rem)));
     }
     /* A phone: the panel is a bottom sheet, full width, at most 70% of the screen. */
     @media (max-width: 480px) {
@@ -333,7 +335,7 @@ const GROUPS: readonly { label: string; keys: readonly string[] }[] = [
     .cc-set {
       display: grid;
       align-content: start;
-      gap: var(--mf-s1);
+      gap: 0;
       margin: 0;
       padding: 0;
       border: 0;
@@ -345,7 +347,8 @@ const GROUPS: readonly { label: string; keys: readonly string[] }[] = [
       display: flex;
       align-items: center;
       gap: var(--mf-s2);
-      min-height: var(--mf-target-min);
+      /* 36 px entries like every menu (D-36, #1169). */
+      min-height: var(--mf-row-h);
       white-space: nowrap;
     }
     .cc-note {
