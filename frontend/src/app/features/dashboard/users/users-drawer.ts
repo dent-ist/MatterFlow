@@ -1,3 +1,4 @@
+import { TaskTypeCell } from '../../../shared/ui/task-type-cell';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -31,7 +32,6 @@ import { Tip } from '../../../shared/ui/tip';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { UsersHistory } from './users-history';
 import { ErrorReference } from '../../../shared/ui/error-reference';
-import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { canEditField } from '../../../shared/work-queue/inline-edit';
 import { PriorityFlag } from '../../../shared/ui/priority-flag';
 import { StatusBadge } from '../../../shared/ui/status-badge';
@@ -88,6 +88,7 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
 @Component({
   selector: 'mf-users-drawer',
   imports: [
+    TaskTypeCell,
     Badge,
     IntPipe,
     SlidePanel,
@@ -95,7 +96,6 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
     RowEdit,
     PriorityFlag,
     StatusBadge,
-    TaskTypeIcon,
     DueCell,
     ErrorReference,
     Tabs,
@@ -271,15 +271,14 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
                                 [state]="origin.state()"
                                 >{{ r.taskNumber }}</a
                               >
-                              <span
+                              <mf-task-type-cell
                                 class="type"
-                                role="img"
                                 data-type
-                                [attr.aria-label]="r.taskTypeName"
-                                [attr.title]="r.taskTypeName"
-                              >
-                                <mf-task-type-icon [iconKey]="r.taskTypeIconKey" size="sm" />
-                              </span>
+                                size="sm"
+                                [name]="r.taskTypeName"
+                                [iconKey]="r.taskTypeIconKey"
+                                [typeId]="r.taskTypeId"
+                              />
                               <span class="title" [attr.title]="r.title">{{ r.title }}</span>
                             </div>
                             <div class="meta">
@@ -443,10 +442,9 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
       margin: 0 0 var(--mf-s2);
     }
     .type {
-      flex: none;
-      display: inline-flex;
-      align-self: center;
-      color: var(--mf-text-muted);
+      flex: 0 1 9rem;
+      min-width: 3.5rem;
+      max-width: 9rem;
     }
     .reassign {
       grid-row: 1 / span 2;

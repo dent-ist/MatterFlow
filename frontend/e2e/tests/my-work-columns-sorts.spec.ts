@@ -162,10 +162,11 @@ test.describe('My Work sorts, Closed column and column sets', () => {
     const col = (key: string) => page.locator(`th[data-col="${key}"]`);
     const columns = page.getByRole('button', { name: 'Columns', exact: true });
 
-    await expect(col('progress')).toBeVisible();
-    await columns.click();
-    await page.getByLabel('Progress', { exact: true }).uncheck();
+    // Progress is off by default (D-43a, #1230).
     await expect(col('progress')).toHaveCount(0);
+    await columns.click();
+    await page.getByLabel('Progress', { exact: true }).check();
+    await expect(col('progress')).toBeVisible();
     if (axeAvailable()) expect(await axeViolations(page), 'chooser open at 1366').toEqual([]);
     await columns.click();
 
@@ -176,16 +177,16 @@ test.describe('My Work sorts, Closed column and column sets', () => {
 
     // The choice survives a reload, per tab.
     await myWork.open();
-    await expect(col('progress')).toHaveCount(0);
+    await expect(col('progress')).toBeVisible();
     await myWork.open('?view=completed');
     await expect(col('closed')).toBeVisible();
 
     // Reset columns on Active restores Active only.
     await myWork.tab(/^Active/).click();
-    await expect(col('progress')).toHaveCount(0);
+    await expect(col('progress')).toBeVisible();
     await columns.click();
     await page.getByRole('button', { name: 'Reset Columns' }).click();
-    await expect(col('progress')).toBeVisible();
+    await expect(col('progress')).toHaveCount(0);
     await expect(
       page.getByRole('status').filter({ hasText: 'Columns reset to the default set.' }),
     ).toHaveCount(1);

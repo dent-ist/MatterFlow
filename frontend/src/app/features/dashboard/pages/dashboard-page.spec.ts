@@ -891,7 +891,7 @@ describe('DashboardPage', () => {
     expect(text(row.querySelector('.title'))).toBe('Unassigned intake');
     expect(text(row.querySelector('mf-matter-ref'))).toContain('00343-00012');
     // Row content (S7): task type icon with its name, client (matter number and name in the tooltip), due chip when there is a date.
-    expect(row.querySelector('[data-type]')!.getAttribute('aria-label')).toBe(
+    expect(row.querySelector('[data-type] [data-type-name]')!.textContent).toBe(
       unassignedRow.taskTypeName,
     );
     expect(text(row.querySelector('[data-client]'))).toContain(unassignedRow.clientName);

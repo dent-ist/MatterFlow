@@ -153,8 +153,8 @@ test.describe('Fixed layout (#200)', () => {
       expect(Math.round(m.widths['due'])).toBe(136);
       expect(Math.round(m.widths['ref'])).toBe(112);
       expect(Math.round(m.widths['matter'])).toBe(142);
-      // #348 / LC-09: Matter Name is 160 px at every width (the frame scrolls sideways when the box is too narrow).
-      expect(Math.round(m.widths['matterName'])).toBe(160);
+      // Matter Name is off by default (D-43a, #1230): it has no column here.
+      expect(m.widths['matterName'] ?? 0).toBe(0);
       expect(Math.round(m.widths['priority'])).toBe(112);
       expect(m.widths['title']).toBeGreaterThanOrEqual(160);
       await shot(page, `task-queue-default-${width}x${height}`);

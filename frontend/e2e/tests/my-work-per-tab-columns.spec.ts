@@ -74,18 +74,15 @@ test.describe('My Work per-tab columns', () => {
     const myWork = new MyWorkPage(page);
     await myWork.open();
     await expect(page.locator('[data-task]')).toHaveCount(14);
-    // 1366 px: every column of the standard order stays (LC-09), the frame scrolls sideways.
+    // 1366 px: the default columns fit the frame (D-43a); Matter Name, Project and Progress are in the Columns menu.
     expect(await headers(page)).toEqual([
       'Ref',
       'Type',
       'Title',
       'CM Number',
-      'Matter Name',
-      'Project',
       'Priority',
       'Due',
       'Status',
-      'Progress',
     ]);
     // Same set on Due soon and overdue.
     await myWork.tab(/^Due soon and overdue/).click();
@@ -94,12 +91,9 @@ test.describe('My Work per-tab columns', () => {
       'Type',
       'Title',
       'CM Number',
-      'Matter Name',
-      'Project',
       'Priority',
       'Due',
       'Status',
-      'Progress',
     ]);
     await myWork.open('?view=active');
 
@@ -114,7 +108,10 @@ test.describe('My Work per-tab columns', () => {
     await expect(matterCell.locator('.mf-ref')).toHaveText(String(world.matter.matterRef));
     await expect(matterCell.locator('[data-matter-name]')).toHaveCount(0);
 
-    // #1227: the thin bar and "0 of 3"; the step name is the tooltip.
+    // #1227: the thin bar and "0 of 3"; the step name is the tooltip. Progress is off by default (D-43a, #1230): one click in Columns.
+    await page.getByRole('button', { name: 'Columns', exact: true }).click();
+    await page.getByLabel('Progress', { exact: true }).check();
+    await page.getByRole('button', { name: 'Columns', exact: true }).click();
     const progress = row.locator('td[data-col="progress"]');
     await expect(progress).toHaveText(/^\s*0 of 3\s*$/);
     await expect(row.locator('progress')).toHaveCount(0);
@@ -175,13 +172,10 @@ test.describe('My Work per-tab columns', () => {
       'Type',
       'Title',
       'CM Number',
-      'Matter Name',
-      'Project',
       'Priority',
       'Assignee',
       'Due',
       'Status',
-      'Age',
     ]);
     await myWork.tab(/^Active/).click();
     await page.locator('[data-dismiss-notice]').click();
@@ -222,7 +216,7 @@ test.describe('My Work per-tab columns', () => {
     }
 
     const page = await asUser(boss.username);
-    // 1920 px: the whole Created by me default fits; at 1366 the narrow-box rule drops Matter Name, Project and Age (the standard order has more columns than the box holds).
+    // 1920 px: the whole Created by me default fits; the default set has no Matter Name, Project, Progress or Age (D-43a, #1230).
     await page.setViewportSize({ width: 1920, height: 1080 });
     const myWork = new MyWorkPage(page);
     await myWork.open('?view=createdByMe');
@@ -232,13 +226,10 @@ test.describe('My Work per-tab columns', () => {
       'Type',
       'Title',
       'CM Number',
-      'Matter Name',
-      'Project',
       'Priority',
       'Assignee',
       'Due',
       'Status',
-      'Age',
     ]);
     // Open by default: the closed task is not here, the Status filter says Open without a chip, and the tab count follows the grid.
     await expect(page.locator('[data-task]')).toHaveCount(2);
@@ -365,15 +356,7 @@ test.describe('My Work per-tab columns', () => {
     await myWork.open('?view=completed');
     await myWork.search(tag);
     await expect(page.locator('[data-task]')).toHaveCount(1);
-    expect(await headers(page)).toEqual([
-      'Ref',
-      'Type',
-      'Title',
-      'CM Number',
-      'Matter Name',
-      'Closed',
-      'Status',
-    ]);
+    expect(await headers(page)).toEqual(['Ref', 'Type', 'Title', 'CM Number', 'Closed', 'Status']);
     await expect(page.locator('.pi-bolt')).toHaveCount(0);
     await shot(page, 'c2-closed-1366x768');
 

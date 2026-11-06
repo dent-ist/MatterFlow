@@ -79,7 +79,10 @@ test.describe('Matter Number and Matter Name cells (#197, #348)', () => {
           'title',
           `${w.client.name} · ${w.longName}`,
         );
-        // LC-09: Matter Name stays at every width (the frame scrolls sideways).
+        // Matter Name is off by default (D-43a, #1230): one click in Columns.
+        await page.getByRole('button', { name: 'Columns', exact: true }).click();
+        await page.getByLabel('Matter Name', { exact: true }).check();
+        await page.getByRole('button', { name: 'Columns', exact: true }).click();
         const nameCell = longRow.locator('td[data-col="matterName"]');
         await expect(nameCell).toContainText('Matter Name');
         await expect(nameCell.locator('a')).toHaveCount(0);

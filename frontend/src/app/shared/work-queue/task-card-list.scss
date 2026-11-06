@@ -382,3 +382,9 @@
   border-radius: var(--mf-radius);
   background: var(--mf-status-progress-fg);
 }
+
+.tc-type {
+  flex: 0 1 8rem;
+  min-width: 3.5rem;
+  max-width: 8rem;
+}

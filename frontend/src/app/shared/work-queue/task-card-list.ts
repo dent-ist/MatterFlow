@@ -25,7 +25,7 @@ import { loudPriority, loudStatus } from './quiet-badges';
 import { PriorityFlag } from '../ui/priority-flag';
 import { PriorityPill } from '../ui/priority-pill';
 import { StatusBadge } from '../ui/status-badge';
-import { TaskTypeBadge } from '../task-type/task-type-badge';
+import { TaskTypeCell } from '../ui/task-type-cell';
 import { DueCell } from './due-cell';
 import { RowGroup } from './due-groups';
 import { HoldNote } from './hold-note';
@@ -70,7 +70,7 @@ export function initialsOf(name: string): string {
     PriorityPill,
     RowEdit,
     StatusBadge,
-    TaskTypeBadge,
+    TaskTypeCell,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
@@ -162,11 +162,12 @@ export function initialsOf(name: string): string {
               >
                 <article [attr.aria-label]="row.taskNumber + ', ' + row.title">
                   <h2 class="tc-h">
-                    <mf-task-type-badge
-                      #tt
-                      class="wt-typeicon"
+                    <mf-task-type-cell
+                      class="tc-type"
+                      size="sm"
                       [iconKey]="row.taskTypeIconKey"
                       [colourKey]="row.taskTypeColourKey"
+                      [typeId]="row.taskTypeId"
                       [name]="row.taskTypeName"
                       data-type-icon
                     />
@@ -177,7 +178,6 @@ export function initialsOf(name: string): string {
                       [state]="linkState()"
                       [attr.data-task-id]="row.taskId"
                       [attr.title]="row.title"
-                      [attr.aria-describedby]="tt.descriptionId"
                       (click)="drilled.emit({ event: $event, row })"
                       >{{ row.title }}</a
                     >

@@ -111,9 +111,12 @@ test.describe('Fit to content (#205)', () => {
     const tag = uid();
     await seedLong(seed, tag);
     const page = await asUser('ke\\kekim');
-    // 1920 px: at 1366 the narrow-box rule drops Matter Name (#348).
+    // 1920 px: Matter Name is off by default (D-43a), so the test shows it first.
     await page.setViewportSize({ width: 1920, height: 1080 });
     await openQueue(page, tag, 4);
+    await page.getByRole('button', { name: 'Columns', exact: true }).click();
+    await page.getByLabel('Matter Name', { exact: true }).check();
+    await page.getByRole('button', { name: 'Columns', exact: true }).click();
     await expect(handle(page, 'matter')).toHaveAttribute(
       'title',
       'Double-click to fit the rows on this page',
@@ -406,7 +409,7 @@ test.describe('Column header menu (#207)', () => {
     await item(page, 'hide').click();
     await expect(th(page, 'matter')).toHaveCount(0);
     await expect(note(page)).toHaveText('CM Number column hidden');
-    await expect(sortButton(page, 'matterName')).toBeFocused();
+    await expect(sortButton(page, 'priority')).toBeFocused();
     await page.getByRole('button', { name: 'Columns', exact: true }).click();
     await expect(page.getByRole('checkbox', { name: 'CM Number' })).not.toBeChecked();
     await page.keyboard.press('Escape');

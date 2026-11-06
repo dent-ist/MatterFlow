@@ -160,10 +160,12 @@ test.describe('Column widths in the Columns panel (#206)', () => {
     const tag = uid();
     await seedTasks(seed, tag);
     const page = await asUser('ke\\kekim');
-    // 1920 px: at 1366 the narrow-box rule drops Matter Name (#348).
+    // 1920 px: Matter Name is off by default (D-43a).
     await page.setViewportSize({ width: 1920, height: 1080 });
     await openQueue(page, tag, 3);
     await openPanel(page);
+    // Matter Name is off by default (D-43a, #1230): tick it in the open panel.
+    await page.getByLabel('Matter Name', { exact: true }).check();
 
     const resetDue = row(page, 'due').getByRole('button', { name: /^Reset width/ });
     const resetAll = page.locator('[data-widths-reset]');

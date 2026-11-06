@@ -1,3 +1,4 @@
+import { TaskTypeCell } from '../../../shared/ui/task-type-cell';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -27,7 +28,6 @@ import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { UndoService } from '../../../core/notify/undo.service';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { FormDialog } from '../../../shared/ui/form-dialog';
 import { MatterRef } from '../../../shared/ui/matter-ref';
@@ -91,6 +91,7 @@ export function assignHint(
 @Component({
   selector: 'mf-users-assign',
   imports: [
+    TaskTypeCell,
     IntPipe,
     FormDialog,
     RouterLink,
@@ -98,7 +99,6 @@ export function assignHint(
     MatterRef,
     ErrorReference,
     SearchBox,
-    TaskTypeIcon,
     DueCell,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -267,15 +267,14 @@ export function assignHint(
                             target="_blank"
                             >{{ r.taskNumber }}</a
                           >
-                          <span
+                          <mf-task-type-cell
                             class="type"
-                            role="img"
                             data-type
-                            [attr.aria-label]="r.taskTypeName"
-                            [attr.title]="r.taskTypeName"
-                          >
-                            <mf-task-type-icon [iconKey]="r.taskTypeIconKey" size="sm" />
-                          </span>
+                            size="sm"
+                            [name]="r.taskTypeName"
+                            [iconKey]="r.taskTypeIconKey"
+                            [typeId]="r.taskTypeId"
+                          />
                           <span class="title" [attr.title]="r.title">{{ r.title }}</span>
                         </div>
                         <div class="meta">
@@ -424,10 +423,9 @@ export function assignHint(
       grid-column: 3;
     }
     .type {
-      flex: none;
-      display: inline-flex;
-      align-self: center;
-      color: var(--mf-text-muted);
+      flex: 0 1 9rem;
+      min-width: 3.5rem;
+      max-width: 9rem;
     }
     .muted,
     .note {

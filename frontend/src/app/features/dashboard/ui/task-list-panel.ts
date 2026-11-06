@@ -1,3 +1,4 @@
+import { TaskTypeCell } from '../../../shared/ui/task-type-cell';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -13,7 +14,6 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { calendarDayInZone, dayIndex } from '../../../core/time/time';
 import { UndoService } from '../../../core/notify/undo.service';
-import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { DueCell } from '../../../shared/work-queue/due-cell';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { PriorityFlag } from '../../../shared/ui/priority-flag';
@@ -59,13 +59,13 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
 @Component({
   selector: 'mf-dash-task-list',
   imports: [
+    TaskTypeCell,
     IntPipe,
     RouterLink,
     RowLink,
     MatterRef,
     PriorityFlag,
     RowEdit,
-    TaskTypeIcon,
     DueCell,
     DashState,
   ],
@@ -164,15 +164,14 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
                       [attr.title]="row.title"
                     >
                       <span class="ref">{{ row.taskNumber }}</span>
-                      <span
+                      <mf-task-type-cell
                         class="type"
-                        role="img"
                         data-type
-                        [attr.aria-label]="row.taskTypeName"
-                        [attr.title]="row.taskTypeName"
-                      >
-                        <mf-task-type-icon [iconKey]="row.taskTypeIconKey" size="sm" />
-                      </span>
+                        size="sm"
+                        [name]="row.taskTypeName"
+                        [iconKey]="row.taskTypeIconKey"
+                        [typeId]="row.taskTypeId"
+                      />
                       <span class="title">{{ row.title }}</span>
                     </a>
                     @if (kind() === 'unassigned') {
@@ -367,9 +366,9 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
       text-decoration: underline;
     }
     .type {
-      flex: none;
-      display: inline-flex;
-      color: var(--mf-text-muted);
+      flex: 0 1 9rem;
+      min-width: 3.5rem;
+      max-width: 9rem;
     }
     .client {
       min-width: 0;

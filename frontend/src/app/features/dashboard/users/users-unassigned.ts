@@ -1,3 +1,4 @@
+import { TaskTypeCell } from '../../../shared/ui/task-type-cell';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -16,7 +17,6 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { TaskQueueClient, TaskQueueRow } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
-import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { SlidePanel } from '../../../shared/ui/slide-panel';
 import { Tip } from '../../../shared/ui/tip';
 import { ErrorReference } from '../../../shared/ui/error-reference';
@@ -45,13 +45,13 @@ export const UNASSIGNED_PAGE = 50;
 @Component({
   selector: 'mf-users-unassigned',
   imports: [
+    TaskTypeCell,
     IntPipe,
     SlidePanel,
     Tip,
     RouterLink,
     RowEdit,
     PriorityFlag,
-    TaskTypeIcon,
     DueCell,
     ErrorReference,
   ],
@@ -116,15 +116,14 @@ export const UNASSIGNED_PAGE = 50;
                           [state]="origin.state()"
                           >{{ r.taskNumber }}</a
                         >
-                        <span
+                        <mf-task-type-cell
                           class="type"
-                          role="img"
                           data-type
-                          [attr.aria-label]="r.taskTypeName"
-                          [attr.title]="r.taskTypeName"
-                        >
-                          <mf-task-type-icon [iconKey]="r.taskTypeIconKey" size="sm" />
-                        </span>
+                          size="sm"
+                          [name]="r.taskTypeName"
+                          [iconKey]="r.taskTypeIconKey"
+                          [typeId]="r.taskTypeId"
+                        />
                         <span class="title" [attr.title]="r.title">{{ r.title }}</span>
                       </div>
                       <div class="meta">
@@ -189,10 +188,9 @@ export const UNASSIGNED_PAGE = 50;
       color: var(--mf-link);
     }
     .type {
-      flex: none;
-      display: inline-flex;
-      align-self: center;
-      color: var(--mf-text-muted);
+      flex: 0 1 9rem;
+      min-width: 3.5rem;
+      max-width: 9rem;
     }
     .title {
       min-width: 0;

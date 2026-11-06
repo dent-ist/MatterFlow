@@ -1,3 +1,4 @@
+import { TaskTypeCell } from '../../../shared/ui/task-type-cell';
 import { TagChip } from '../../../shared/ui/tag-chip';
 import {
   ChangeDetectionStrategy,
@@ -30,7 +31,6 @@ import {
   readableInstant,
 } from '../../../shared/ui/numeric-date';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
-import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
 import { GridFrame } from '../../../shared/ui/grid-frame';
 import { Pager } from '../../../shared/ui/pager';
 import { PriorityPill } from '../../../shared/ui/priority-pill';
@@ -125,7 +125,7 @@ export function statusCodes(status: StatusFilter): string[] {
     RouterLink,
     StatusChip,
     TagChip,
-    TaskTypeChip,
+    TaskTypeCell,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -341,7 +341,9 @@ export function statusCodes(status: StatusFilter): string[] {
               <tr [attr.data-task]="t.taskId">
                 <td class="td-t" data-cell="title">
                   <div class="cell">
-                    <mf-task-type-chip
+                    <mf-task-type-cell
+                      class="ttype"
+                      size="sm"
                       [iconKey]="t.taskTypeIconKey"
                       [colourKey]="t.taskTypeColourKey"
                       [typeId]="t.taskTypeId"
@@ -576,6 +578,10 @@ export function statusCodes(status: StatusFilter): string[] {
       align-items: center;
       gap: var(--mf-s2);
       min-width: 0;
+    }
+    .ttype {
+      flex: 0 0 7.5rem;
+      width: 7.5rem;
     }
     .tcell {
       display: flex;

@@ -329,6 +329,9 @@ test.describe('Sorting by Matter Name (#348)', () => {
     const page = await asUser(w.me.username);
     await page.setViewportSize({ width: 1920, height: 1080 });
     const queue = new TaskQueuePage(page);
+    // Matter Name is off by default (D-43a): show it once on each list, the choice is remembered.
+    await queue.open(`?q=${w.tag}`);
+    await showColumns(page, 'Matter Name');
 
     const all = async (dir: 'asc' | 'desc'): Promise<{ names: string[]; titles: string[] }> => {
       const names: string[] = [];
@@ -384,6 +387,7 @@ test.describe('Sorting by Matter Name (#348)', () => {
     // My Work and Pod Work take the same sort key.
     const mw = new MyWorkPage(page);
     await mw.open(`?sort=matterName&dir=asc`);
+    await showColumns(page, 'Matter Name');
     await expect(th(page, 'matterName')).toHaveAttribute('aria-sort', 'ascending');
     await expect(page.locator('[data-sort-note]')).toContainText('Sorted by Matter Name');
     const mine = await columnText(page, 'matterName');
@@ -392,6 +396,7 @@ test.describe('Sorting by Matter Name (#348)', () => {
     const pod = new PodWorkPage(page);
     await page.goto(`/pods/work?sort=matterName&dir=desc`);
     await pod.choosePod(String(w.pod['name']));
+    await showColumns(page, 'Matter Name');
     await expect(th(page, 'matterName')).toHaveAttribute('aria-sort', 'descending');
 
     // Unknown keys are still a 400.
@@ -512,16 +517,16 @@ test.describe('Columns panel, header menu, resize and fit for Matter Name (#348)
     ]);
     await shot(page, 'columns-panel-1920x1080');
     const check = panel.getByLabel('Matter Name', { exact: true });
-    await expect(check).toBeChecked();
-    await check.uncheck();
+    // Off by default (D-43a, #1230).
+    await expect(check).not.toBeChecked();
     await expect(th(page, 'matterName')).toHaveCount(0);
-    await expect(th(page, 'matter')).toBeVisible();
     await check.check();
     await expect(th(page, 'matterName')).toBeVisible();
-    // Reset columns after hiding returns the default.
-    await check.uncheck();
+    await expect(th(page, 'matter')).toBeVisible();
+    // Reset columns after showing it returns the default (hidden).
     await panel.getByRole('button', { name: /Reset columns/ }).click();
-    await expect(th(page, 'matterName')).toBeVisible();
+    await expect(th(page, 'matterName')).toHaveCount(0);
+    await check.check();
 
     // Column widths: the numbers of the contract.
     const row = page.locator('[data-width-row="matterName"]');

@@ -1,0 +1,64 @@
+[
+ {
+  "page": "1232-cards-dashboard-unassigned",
+  "size": "1366x768",
+  "scrolls": true,
+  "sw": 1140,
+  "cw": 718,
+  "ths": [
+   "Ref:112",
+   "Type:168",
+   "Title:120",
+   "Priority:112",
+   "Assignee:200",
+   "Unassigned for:152",
+   "Due:136",
+   "Status:140"
+  ]
+ },
+ {
+  "page": "1232-cards-my-matters",
+  "size": "1366x768",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": [
+   "Task:398",
+   "Status:176",
+   "Priority:116",
+   "Assignee:0",
+   "Due:150"
+  ]
+ },
+ {
+  "page": "1232-cards-dashboard-unassigned",
+  "size": "1920x1080",
+  "scrolls": false,
+  "sw": 1272,
+  "cw": 1272,
+  "ths": [
+   "Ref:112",
+   "Type:168",
+   "Title:252",
+   "Priority:112",
+   "Assignee:200",
+   "Unassigned for:152",
+   "Due:136",
+   "Status:140"
+  ]
+ },
+ {
+  "page": "1232-cards-my-matters",
+  "size": "1920x1080",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": [
+   "Task:706",
+   "Status:176",
+   "Priority:116",
+   "Assignee:150",
+   "Due:150"
+  ]
+ }
+]
