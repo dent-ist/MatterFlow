@@ -10,7 +10,8 @@ Every list uses the same anatomy: rows 44 px (36 compact), header 40 px, pager 2
 
 | Piece | File |
 |---|---|
-| Frame, header, body | `shared/ui/grid-frame.ts`, `grid-body.ts`, `data-table.ts` |
+| **Record grid (every list of records)** | `shared/ui/record-grid.ts`: `mf-record-grid` (the table), `RecordGridState` (columns, order, visibility, widths per person and grid id), `mf-record-columns` (the Columns button), `mfCell` templates (#1241) |
+| Frame, header, body (inside the record grid) | `shared/ui/grid-frame.ts`, `grid-body.ts`, `data-table.ts` |
 | Columns menu, reorder, resize | `shared/ui/grid-columns.ts`, `reorder-columns.ts`, `resizable-columns.ts` |
 | Pager | `shared/ui/pager.ts`, `local-paging.ts` |
 | Keyboard and row navigation | `shared/ui/grid-nav.ts`, `row-nav.ts` |
@@ -35,11 +36,29 @@ Every list uses the same anatomy: rows 44 px (36 compact), header 40 px, pager 2
 
 Nothing about a matter is stored in the browser (Sensitive matter rule): the keys hold only a person's own preference ids.
 
+## The record grid (#1241)
+
+A list of records (Matters, Clients; Projects and Assets follow) is `<mf-record-grid>`: one place for the frame, sortable headings, drag-to-resize handles with the width stored per person and grid, drag-to-reorder, the Columns chooser (show, hide, move, "Reset to Default", "Reset Width"), the loading, empty and error body and the optional selection and row-action columns. A page gives it a `RecordGridState` and one `<ng-template mfCell="key" let-row><td>...</td></ng-template>` per column:
+
+```ts
+protected readonly grid = new RecordGridState('clients', this.gridDefs);   // gridDefs: RecordGridColumn[] (key, label, sort, num, width, minWidth, locked, defaultHidden, pinned)
+```
+```html
+<mf-record-columns mfColumns [grid]="grid" />                              <!-- in mf-list-toolbar -->
+<mf-record-grid label="Clients list" noun="clients" [grid]="grid" [rows]="rows()" [loadState]="state()" ...>
+  <tr mfGridFilterRow mfColumnFilterRow [filters]="filters" [columns]="columns()"></tr>
+  <ng-template mfCell="name" let-c><td>...</td></ng-template>
+  <div mfGridFoot><mf-pager ... /></div>
+</mf-record-grid>
+```
+
+The grid id (`'matters'`, `'clients'`) is the storage key: `mf.grid.v1.<id>.<userId>` (order and visibility) and `mf.col-widths.v1.<id>.<userId>` (widths). `exclude` (third constructor argument) drops columns that a permission or the window hides. The heading cell carries the width rules (`width`, `minWidth`), so the columns do not move between loading, empty, error and rows; the cell templates belong to the page (the grid styles are not encapsulated, so `.pg-table td` rules reach them). **Guard:** `record-grid-guard.spec.ts` fails on a hand-built `<table class="pg-table">` outside its allowed list (the Administration lists, Assets, Projects and the record tabs until they migrate).
+
 ## Adding a grid or a column
 
-1. Use the shared components; do not hand-build a table. Start from a similar list page (for example `features/clients/pages/clients-list-page.ts`).
+1. Use `mf-record-grid`; do not hand-build a table. Start from a similar list page (for example `features/clients/pages/clients-list-page.ts`).
 2. Declare column definitions with widths. Put the identifier first and the row action last.
-3. Wire the Columns menu and `gridPrefsKey('<grid-name>', userId)`.
+3. Create the `RecordGridState` with a stable grid id and add `mf-record-columns` to the toolbar.
 4. Add the filter definitions in `shared/filters` if the list is filterable; the server must accept the same filter parameters (unknown parameters are a 400).
 5. Check at 1366 px width that the Title column keeps at least 160 px and nothing scrolls sideways (guideline D-43a, specs `grid-anatomy.spec.ts`, the default-columns spec).
 6. Update the design guidelines column table if you add a shared column.

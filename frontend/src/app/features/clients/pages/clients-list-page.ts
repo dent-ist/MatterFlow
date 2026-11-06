@@ -22,10 +22,14 @@ import { ListToolbar } from '../../../shared/filters/list-toolbar';
 import { SortedLine, sortLabelsOf } from '../../../shared/ui/sorted-line';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { ActiveBadge } from '../../../shared/ui/badge';
-import { SortHeader } from '../../../shared/ui/data-table';
+import {
+  RecordCell,
+  RecordColumns,
+  RecordGrid,
+  RecordGridColumn,
+  RecordGridState,
+} from '../../../shared/ui/record-grid';
 import { FixedPage } from '../../../shared/ui/fixed-page';
-import { GridFrame } from '../../../shared/ui/grid-frame';
-import { GridBody } from '../../../shared/ui/grid-body';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
 import {
@@ -66,7 +70,6 @@ const BONES: Record<string, string> = {
   imports: [
     IntPipe,
     FixedPage,
-    GridFrame,
     NgTemplateOutlet,
     PageHeader,
     ScopeSwitch,
@@ -75,8 +78,9 @@ const BONES: Record<string, string> = {
     Button,
     HasPermissionDirective,
     Pager,
-    SortHeader,
-    GridBody,
+    RecordGrid,
+    RecordCell,
+    RecordColumns,
     ListToolbar,
     SortedLine,
     ColumnFilterRow,
@@ -89,6 +93,13 @@ const BONES: Record<string, string> = {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
+  styles: `
+    /* Client Name is the spring of the table: one line with an ellipsis (D-45); the floor is on the heading (the column definition). */
+    td.cl-name {
+      width: 100%;
+      max-width: 0;
+    }
+  `,
   template: `
     <mf-fixed-page>
       <mf-page-header heading="Clients" [count]="state() === 'ready' ? total() : null">
@@ -118,6 +129,9 @@ const BONES: Record<string, string> = {
         searchLabel="Search clients"
         [clearAlso]="['q']"
       >
+        @if (!phone()) {
+          <mf-record-columns mfColumns [grid]="grid" />
+        }
         <mf-sorted-line
           mfBarEnd
           [sort]="sort()"
@@ -208,148 +222,106 @@ const BONES: Record<string, string> = {
             </ng-template>
           </mf-record-card-list>
         } @else {
-          <mf-grid-frame scrollLabel="Clients list" #scroll>
-            <div class="mf-scroll">
-              <table class="pg-table tt">
-                <caption class="pg-sr">
-                  Clients
-                </caption>
-                <thead>
-                  <tr>
-                    <th
-                      mfSort="clientNumber"
-                      [sort]="sort()"
-                      [defaultSort]="defaultSort"
-                      (sorted)="setSort($event)"
-                    >
-                      Client Number
-                    </th>
-                    <th
-                      mfSort="name"
-                      [sort]="sort()"
-                      [defaultSort]="defaultSort"
-                      (sorted)="setSort($event)"
-                    >
-                      Name
-                    </th>
-                    <th scope="col" class="pg-num">Matters</th>
-                    @if (myCount()) {
-                      <th scope="col" class="pg-num" data-my-matters-col>My Matters</th>
-                    }
-                    @if (counts()) {
-                      <th
-                        class="pg-num"
-                        mfSort="openTasks"
-                        [firstDesc]="true"
-                        [sort]="sort()"
-                        [defaultSort]="defaultSort"
-                        (sorted)="setSort($event)"
-                      >
-                        Open Tasks
-                      </th>
-                      <th
-                        class="pg-num"
-                        mfSort="overdue"
-                        [firstDesc]="true"
-                        [sort]="sort()"
-                        [defaultSort]="defaultSort"
-                        (sorted)="setSort($event)"
-                      >
-                        Overdue
-                      </th>
-                    }
-                    <th scope="col">Status</th>
-                  </tr>
-                  @if (filters.rowVisible()) {
-                    <tr
-                      mfColumnFilterRow
-                      id="client-filter-row"
-                      [filters]="filters"
-                      [columns]="columns()"
-                    ></tr>
-                  }
-                </thead>
-                <tbody
-                  mfGridBody
-                  noun="clients"
-                  [state]="state()"
-                  [empty]="rows().length === 0"
-                  [filtered]="filters.activeCount() > 0"
-                  [columns]="columns().length"
-                  [skeleton]="skeleton()"
-                  (retry)="load()"
-                  (clear)="clear()"
-                  [hidden]="hiddenCount()"
-                  hiddenLabel="inactive"
-                  [emptyText]="emptyText()"
-                  (showAll)="showAll()"
+          <mf-record-grid
+            #scroll
+            label="Clients list"
+            caption="Clients"
+            noun="clients"
+            [grid]="grid"
+            [rows]="rows()"
+            [rowKey]="clientKey"
+            [loadState]="state()"
+            [empty]="rows().length === 0"
+            [filtered]="filters.activeCount() > 0"
+            [emptyText]="emptyText()"
+            [hidden]="hiddenCount()"
+            hiddenLabel="inactive"
+            [bones]="bones"
+            [sort]="sort()"
+            [defaultSort]="defaultSort"
+            (sorted)="setSort($event)"
+            (retry)="load()"
+            (clear)="clear()"
+            (showAll)="showAll()"
+          >
+            @if (filters.rowVisible()) {
+              <tr
+                mfGridFilterRow
+                mfColumnFilterRow
+                id="client-filter-row"
+                [filters]="filters"
+                [columns]="columns()"
+              ></tr>
+            }
+            @if (scope.mine() && scope.canAll()) {
+              <button
+                mfEmptyAction
+                type="button"
+                class="mf-btn"
+                data-show-all-matters
+                (click)="scope.set('all')"
+              >
+                Show All Matters
+              </button>
+            }
+            <p-button
+              mfEmptyAction
+              *mfHasPermission="'Client.Create'"
+              label="New Client"
+              (onClick)="go('/clients/new')"
+            />
+            <ng-template mfCell="clientNumber" let-c>
+              <td class="pg-mono pg-nowrap">{{ c.clientNumber }}</td>
+            </ng-template>
+            <ng-template mfCell="name" let-c>
+              <td class="cl-name">
+                <a
+                  class="mf-link pg-clip"
+                  [routerLink]="['/clients', c.clientId]"
+                  mfRowLink="clients"
+                  [rowKey]="c.clientId"
+                  [title]="c.name"
+                  >{{ c.name }}</a
                 >
-                  @if (scope.mine() && scope.canAll()) {
-                    <button
-                      mfEmptyAction
-                      type="button"
-                      class="mf-btn"
-                      data-show-all-matters
-                      (click)="scope.set('all')"
-                    >
-                      Show All Matters
-                    </button>
-                  }
-                  <p-button
-                    mfEmptyAction
-                    *mfHasPermission="'Client.Create'"
-                    label="New Client"
-                    (onClick)="go('/clients/new')"
-                  />
-                  @for (c of rows(); track c.clientId) {
-                    <tr>
-                      <td class="pg-mono pg-nowrap">{{ c.clientNumber }}</td>
-                      <td>
-                        <a
-                          class="mf-link pg-name"
-                          [routerLink]="['/clients', c.clientId]"
-                          mfRowLink="clients"
-                          [rowKey]="c.clientId"
-                          [title]="c.name"
-                          >{{ c.name }}</a
-                        >
-                      </td>
-                      <td class="pg-num">{{ c.matterCount | mfInt }}</td>
-                      @if (myCount()) {
-                        <td class="pg-num" data-my-matters-cell>{{ c.myMatterCount ?? 0 }}</td>
-                      }
-                      @if (counts()) {
-                        <td class="pg-num">
-                          <mf-task-count
-                            kind="open"
-                            scope="client"
-                            [recordId]="c.clientId"
-                            [name]="c.name"
-                            [count]="c.openTaskCount ?? 0"
-                          />
-                        </td>
-                        <td class="pg-num">
-                          <mf-task-count
-                            kind="overdue"
-                            scope="client"
-                            [recordId]="c.clientId"
-                            [name]="c.name"
-                            [count]="c.overdueTaskCount ?? 0"
-                          />
-                        </td>
-                      }
-                      <td>
-                        <mf-active-badge [active]="c.isActive" />
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-            <div frameFoot>
+              </td>
+            </ng-template>
+            <ng-template mfCell="matters" let-c>
+              <td class="pg-num">{{ c.matterCount | mfInt }}</td>
+            </ng-template>
+            <ng-template mfCell="myMatters" let-c>
+              <td class="pg-num" data-my-matters-cell>{{ c.myMatterCount ?? 0 }}</td>
+            </ng-template>
+            <ng-template mfCell="openTasks" let-c>
+              <td class="pg-num">
+                <mf-task-count
+                  kind="open"
+                  scope="client"
+                  [recordId]="c.clientId"
+                  [name]="c.name"
+                  [count]="c.openTaskCount ?? 0"
+                />
+              </td>
+            </ng-template>
+            <ng-template mfCell="overdue" let-c>
+              <td class="pg-num">
+                <mf-task-count
+                  kind="overdue"
+                  scope="client"
+                  [recordId]="c.clientId"
+                  [name]="c.name"
+                  [count]="c.overdueTaskCount ?? 0"
+                />
+              </td>
+            </ng-template>
+            <ng-template mfCell="status" let-c>
+              <td>
+                <mf-active-badge [active]="c.isActive" />
+              </td>
+            </ng-template>
+            <div mfGridFoot>
               <ng-container *ngTemplateOutlet="pager" />
             </div>
-          </mf-grid-frame>
+          </mf-record-grid>
         }
         @if (phone()) {
           <ng-container *ngTemplateOutlet="pager" />
@@ -401,7 +373,7 @@ export class ClientsListPage extends ServerListPage<ClientResponse> {
   /** The phone's Sort by select: the sortable columns, counts only with Task.View (the headers' keys). */
   protected readonly sortOptions = computed((): SortOption[] => [
     { value: 'clientNumber', label: 'Client Number' },
-    { value: 'name', label: 'Name' },
+    { value: 'name', label: 'Client Name' },
     ...(this.counts()
       ? [
           { value: 'openTasks', label: 'Open Tasks', descFirst: true },
@@ -418,21 +390,37 @@ export class ClientsListPage extends ServerListPage<ClientResponse> {
   protected readonly myCount = computed(
     () => this.scope.mine() && this.auth.has('Matter.BeManager'),
   );
-  /** The columns of the grid, in order; the keys the filter definitions point at. */
-  protected readonly columns = computed(() => [
-    'clientNumber',
-    'name',
-    'matters',
-    ...(this.myCount() ? ['myMatters'] : []),
-    ...(this.counts() ? ['openTasks', 'overdue'] : []),
-    'status',
+  /** The columns this person may have, in the default order (Client Number and Client Name cannot be hidden). */
+  protected readonly gridDefs = computed((): RecordGridColumn[] => [
+    {
+      key: 'clientNumber',
+      label: 'Client Number',
+      locked: true,
+      sort: 'clientNumber',
+      minWidth: '11rem',
+    },
+    { key: 'name', label: 'Client Name', locked: true, sort: 'name', minWidth: '200px' },
+    { key: 'matters', label: 'Matters', num: true },
+    ...(this.myCount() ? [{ key: 'myMatters', label: 'My Matters', num: true }] : []),
+    ...(this.counts()
+      ? [
+          { key: 'openTasks', label: 'Open Tasks', sort: 'openTasks', firstDesc: true, num: true },
+          { key: 'overdue', label: 'Overdue', sort: 'overdue', firstDesc: true, num: true },
+        ]
+      : []),
+    { key: 'status', label: 'Status', minWidth: 'var(--mf-col-status-w)' },
   ]);
-  protected readonly skeleton = computed(() => this.columns().map((key) => BONES[key]));
+  /** The grid state (shared record grid, #1241): order, visibility and stored widths per person under the id "clients". */
+  protected readonly grid = new RecordGridState('clients', this.gridDefs);
+  protected readonly bones = BONES;
+  protected readonly clientKey = (c: ClientResponse): number => c.clientId;
+  /** The columns of the grid, in order; the keys the filter definitions point at. */
+  protected readonly columns = computed(() => this.grid.shown());
 
   /** One definition per filter: the row, the sheet, the chips, the count, the URL and the API arguments all come from it. */
   private readonly defs = computed((): FilterDef[] => [
     { key: 'clientNumber', label: 'Client Number', column: 'clientNumber', type: 'text' },
-    { key: 'name', label: 'Name', column: 'name', type: 'text', search: true },
+    { key: 'name', label: 'Client Name', column: 'name', type: 'text', search: true },
     statusDef(),
   ]);
 

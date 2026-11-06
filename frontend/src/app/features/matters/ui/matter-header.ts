@@ -136,7 +136,7 @@ import { SENSITIVE_LEAD, SENSITIVE_TEXT } from '../../../shared/ui/record-header
               Edit
             </button>
           }
-          <mf-action-menu label="Create" triggerText="New" [items]="newItems()" />
+          <mf-action-menu label="Create" triggerText="New" [primary]="true" [items]="newItems()" />
           <mf-action-menu label="More actions" [items]="moreItems()" />
         </div>
       </div>

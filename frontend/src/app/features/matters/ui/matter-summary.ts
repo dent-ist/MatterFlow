@@ -71,13 +71,14 @@ import { IntPipe } from '../../../shared/ui/number-format';
     }
     .ms__tile-name {
       flex: 1 1 auto;
+      font-size: var(--mf-fs-md);
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
     .ms__count {
-      font-size: var(--mf-fs-lg);
+      font-size: var(--mf-fs-figure);
       font-weight: 700;
       font-variant-numeric: tabular-nums;
     }

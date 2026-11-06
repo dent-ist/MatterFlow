@@ -664,6 +664,15 @@ describe('MatterDetailPage', () => {
     await create(['Matter.View', 'Task.View', 'Project.View']);
     await openTab('tasks');
     const grid = el().querySelector('mf-scoped-tasks')!;
+    // Project is off by default on the Tasks tab (#1176): one click in Columns brings the column and its filter.
+    grid.querySelector<HTMLButtonElement>('[data-grid-columns]')!.click();
+    fixture.detectChanges();
+    const projectBox = grid.querySelector<HTMLInputElement>(
+      '[data-grid-columns-panel] [data-column="project"]',
+    )!;
+    projectBox.checked = true;
+    projectBox.dispatchEvent(new Event('change'));
+    await settle(fixture);
     grid.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
     await settle(fixture);
     // Title or Ref is the toolbar's Search box (LC-01): Search first, Filters right after it, no cell for it in the row.

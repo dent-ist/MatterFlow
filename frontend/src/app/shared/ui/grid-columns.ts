@@ -71,6 +71,7 @@ import {
     .gc-foot {
       display: flex;
       justify-content: flex-end;
+      gap: var(--mf-s2);
       margin-top: var(--mf-s2);
       padding-top: var(--mf-s2);
       border-top: 1px solid var(--mf-border-soft);
@@ -141,6 +142,16 @@ import {
             }
           </ul>
           <div class="gc-foot">
+            @if (widthReset()) {
+              <button
+                type="button"
+                class="mf-btn"
+                data-grid-columns-reset-width
+                (click)="resetWidth()"
+              >
+                Reset Width
+              </button>
+            }
             <button type="button" class="mf-btn" data-grid-columns-reset (click)="resetAll()">
               Reset to Default
             </button>
@@ -161,6 +172,9 @@ export class GridColumns {
   readonly prefs = input<GridPrefs>(DEFAULT_GRID_PREFS);
   readonly prefsChange = output<GridPrefs>();
   readonly resetColumns = output<void>();
+  /** Offer "Reset Width" (the grid keeps stored widths, `mfResizable`): the spring column fills the free room again. */
+  readonly widthReset = input(false);
+  readonly resetWidths = output<void>();
 
   protected readonly open = signal(false);
   protected readonly status = signal('');
@@ -208,6 +222,11 @@ export class GridColumns {
   protected resetAll(): void {
     this.resetColumns.emit();
     this.status.set('Columns reset to the default');
+  }
+
+  protected resetWidth(): void {
+    this.resetWidths.emit();
+    this.status.set('Column widths reset');
   }
 
   private label(key: string): string {

@@ -114,6 +114,18 @@ describe('ScopedTasks', () => {
         { value: '4', label: 'Wave 2' },
       ],
     });
+    // Project is off by default (#1176): one click away in Columns.
+    expect(
+      el().querySelector('tbody mf-dropdown[data-project-dropdown], tbody [data-project-dropdown]'),
+    ).toBeNull();
+    el().querySelector<HTMLButtonElement>('[data-grid-columns]')!.click();
+    fixture.detectChanges();
+    const box = el().querySelector<HTMLInputElement>(
+      '[data-grid-columns-panel] [data-column="project"]',
+    )!;
+    box.checked = true;
+    box.dispatchEvent(new Event('change'));
+    await settle(fixture);
     expect(ddValue(el().querySelector('tbody')!, 'Project')).toBe('3');
     ddChoose(el().querySelector('tbody')!, 'Project', '4');
     await settle(fixture);
@@ -218,7 +230,19 @@ describe('ScopedTasks', () => {
     expect(opened).toHaveBeenCalledWith(9);
   });
 
-  it('shows the Project column by default for a matter that has projects, and leaves it out for one that has none (MD-29)', async () => {
+  /** Project is off by default on a Matter's Tasks tab (#1176): one click in the Columns menu. */
+  async function showProject(): Promise<void> {
+    el().querySelector<HTMLButtonElement>('[data-grid-columns]')!.click();
+    fixture.detectChanges();
+    const box = el().querySelector<HTMLInputElement>(
+      '[data-grid-columns-panel] [data-column="project"]',
+    )!;
+    box.checked = true;
+    box.dispatchEvent(new Event('change'));
+    await settle(fixture);
+  }
+
+  it('offers the Project column (off by default, #1176) for a matter that has projects, and leaves it out for one that has none (MD-29)', async () => {
     await create(['Task.View'], { projectCount: 0 });
     expect(el().querySelector('th[data-col=project], [data-col=project]')).toBeNull();
     el().querySelector<HTMLButtonElement>('[data-grid-columns]')!.click();
@@ -227,10 +251,10 @@ describe('ScopedTasks', () => {
 
     TestBed.resetTestingModule();
     await create(['Task.View'], { projectCount: 2 });
+    expect(text(el().querySelector('thead'))).not.toContain('Project');
+    await showProject();
     expect(text(el().querySelector('thead'))).toContain('Project');
-    // It can be hidden in the Columns menu and comes back with Reset.
-    el().querySelector<HTMLButtonElement>('[data-grid-columns]')!.click();
-    fixture.detectChanges();
+    // It can be hidden in the Columns menu again (the panel is still open).
     const box = el().querySelector<HTMLInputElement>(
       '[data-grid-columns-panel] [data-column=project]',
     )!;
@@ -240,19 +264,10 @@ describe('ScopedTasks', () => {
     expect(text(el().querySelector('thead'))).not.toContain('Project');
   });
 
-  it('has the default column order Ref, Type, Title, Project, Priority, Assignee, Due, Status (Progress is off by default, #1154), with the type name beside the chip (MD-29)', async () => {
+  it('has the default column order Ref, Type, Title, Priority, Assignee, Due, Status (Project and Progress are off by default, #1154, #1176), with the type name beside the chip (MD-29)', async () => {
     await create(['Task.View'], { projectCount: 2 });
     const heads = Array.from(el().querySelectorAll('thead tr:first-child th')).map((h) => text(h));
-    expect(heads).toEqual([
-      'Ref',
-      'Type',
-      'Title',
-      'Project',
-      'Priority',
-      'Assignee',
-      'Due',
-      'Status',
-    ]);
+    expect(heads).toEqual(['Ref', 'Type', 'Title', 'Priority', 'Assignee', 'Due', 'Status']);
     expect(el().querySelector('[data-type-chip]')).not.toBeNull();
     expect(text(el().querySelector('[data-type-name]'))).not.toBe('');
   });
@@ -272,6 +287,7 @@ describe('ScopedTasks', () => {
 
   it('draws the project name on one line with a tooltip, a link with Project.View', async () => {
     await create(['Task.View', 'Project.View'], { projectCount: 2 });
+    await showProject();
     const cell = el().querySelector('mf-project-cell')!;
     expect(text(cell)).toBe('Wave 1');
     expect(cell.querySelector('a')!.getAttribute('title')).toBe('Wave 1');
@@ -279,6 +295,7 @@ describe('ScopedTasks', () => {
 
     TestBed.resetTestingModule();
     await create(['Task.View'], { projectCount: 2 });
+    await showProject();
     expect(el().querySelector('mf-project-cell a')).toBeNull();
     expect(el().querySelector('mf-project-cell span')!.getAttribute('title')).toBe('Wave 1');
   });

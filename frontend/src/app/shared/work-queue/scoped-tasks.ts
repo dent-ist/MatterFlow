@@ -497,14 +497,15 @@ export class ScopedTasks {
     () => this.projectId() === null && (this.projectCount() ?? 1) > 0,
   );
   /**
-   * The columns this grid may have (MD-28/MD-29): the default order is Ref, Type, Title, Project, Priority, Assignee, Due, Status (Progress is in the Columns menu, off by default so Status and Priority are whole at 1366, #1154). Project is
+   * The columns this grid may have (MD-28/MD-29): the default order is Ref, Type, Title, Priority, Assignee, Due, Status (Project and Progress are in the Columns menu, off by default so every cell is whole at 1366, #1154, #1176). Project is
    * shown for a Matter that has projects (a Matter without any has nothing to choose, so the column is left out) and can be hidden in the Columns menu; Ref is pinned first and Title cannot be hidden.
    */
   protected readonly gridDefs = computed((): GridColumnDef[] => [
     { key: 'ref', label: 'Ref', locked: true, pinned: true },
     { key: 'typeChip', label: 'Type' },
     { key: 'title', label: 'Title', locked: true },
-    ...(this.withProject() ? [{ key: 'project', label: 'Project' }] : []),
+    // Off by default so Title, Priority, Assignee, Due and Status are whole at 1366 (1176); one click away in Columns.
+    ...(this.withProject() ? [{ key: 'project', label: 'Project', defaultHidden: true }] : []),
     { key: 'priority', label: 'Priority' },
     { key: 'assignee', label: 'Assignee' },
     { key: 'due', label: 'Due' },

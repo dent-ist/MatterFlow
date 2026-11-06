@@ -36,7 +36,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--mf-s2);
-  min-height: 32px;
+  min-height: var(--mf-ctl-h);
 }
 
 /* The surface and the items are the shared menu anatomy (`mf-menu`, `mf-menu__item`: styles/_menus.scss, D-36); this file only says where the menu opens. */

@@ -18,6 +18,14 @@ const SIZES: [number, number][] = [
 
 const rowOf = (page: Page, name: string) => page.locator('tbody tr', { hasText: name });
 
+/** Secondary PM is off by default so the default columns fit the 1366 frame (D-43a); the Columns menu turns it on (the choice is remembered). */
+async function showSecondaryPm(page: Page) {
+  const columns = page.getByRole('button', { name: 'Columns', exact: true });
+  await columns.click();
+  await page.getByLabel('Secondary PM', { exact: true }).check();
+  await columns.click();
+}
+
 async function noSideScroll(page: Page) {
   const wide = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
@@ -34,6 +42,7 @@ test.describe('Matters list: project managers', () => {
     const fx = await pmFixtures(seed, personas);
     const page = await asUser(fx.pmA.username);
     await page.goto(`/matters?name=${fx.token}`);
+    await showSecondaryPm(page);
 
     await expect(page.locator('tbody tr')).toHaveCount(14); // the twelve of epic #667, the NoAssign matter and the other client's matter
     await expect(rowOf(page, 'Alpha primary').locator('[data-primary-manager]')).toContainText(

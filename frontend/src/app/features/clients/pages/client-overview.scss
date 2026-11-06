@@ -4,9 +4,11 @@
   padding-bottom: var(--mf-s4);
 }
 
+/* A section heading (D-11): 16 / 600, 24 px above, 8 px below. */
 .ov-h {
-  margin: var(--mf-s4) 0 var(--mf-s2);
-  font-size: var(--mf-fs-h3);
+  margin: var(--mf-s5) 0 var(--mf-s2);
+  font-size: var(--mf-fs-lg);
+  font-weight: var(--mf-fw-semibold);
 }
 
 .ov-muted {
@@ -81,6 +83,8 @@
 }
 
 .ov-table th {
+  height: var(--mf-grid-head-h, 40px);
+  padding-block: 0;
   background: var(--mf-surface-alt);
   color: var(--mf-text-muted);
   font-size: var(--mf-fs-xs);
@@ -112,18 +116,10 @@
   overflow-wrap: anywhere;
 }
 
-/* The shared overdue style: red text, an icon and the word (never colour alone). */
-.ov-overdue {
-  color: var(--mf-danger);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
 .ov-all {
   display: inline-block;
   margin-top: var(--mf-s2);
   padding-block: var(--mf-s1);
-  color: var(--mf-link);
 }
 
 .ov-when {

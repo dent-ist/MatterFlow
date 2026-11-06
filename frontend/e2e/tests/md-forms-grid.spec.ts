@@ -6,7 +6,7 @@ import { axeClean, shot } from '../support/pod-work-checks';
  * Summary rows, the Assets column order, the "+ New ..." labels and the buttons of the Matter detail tabs against the shared theme.
  */
 test.describe('Matters list: columns and resize (MD-21)', () => {
-  test('CM Number, Primary PM and Secondary PM; a handle resizes by keyboard, the width is remembered and survives a reload', async ({
+  test('CM Number and Primary PM; Secondary PM is one click away in Columns; a handle resizes by keyboard, the width is remembered and survives a reload', async ({
     page,
     seed,
   }) => {
@@ -18,14 +18,15 @@ test.describe('Matters list: columns and resize (MD-21)', () => {
     const texts = (await heads.allTextContents()).map((t) => t.trim());
     expect(texts).toContain('CM Number');
     expect(texts).toContain('Primary PM');
-    expect(texts).toContain('Secondary PM');
+    expect(texts).not.toContain('Secondary PM');
+    expect(texts).toContain('Matter Name');
     expect(texts).not.toContain('Matter reference');
     expect(texts).not.toContain('Project Manager');
     await shot(page, 'matters-list-1366x768');
 
-    const name = page.getByRole('separator', { name: 'Resize Name column' });
+    const name = page.getByRole('separator', { name: 'Resize Matter Name column' });
     await expect(name).toHaveAttribute('aria-valuemin', /\d+/);
-    const th = page.locator('thead tr:first-child th', { hasText: /^\s*Name\s*$/ });
+    const th = page.locator('thead tr:first-child th', { hasText: /^\s*Matter Name\s*$/ });
     const before = (await th.boundingBox())!.width;
     await name.focus();
     await page.keyboard.press('ArrowRight');

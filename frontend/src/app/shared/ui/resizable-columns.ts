@@ -114,6 +114,17 @@ export class ResizableColumns {
     );
   }
 
+  /** "Reset Width" (#1241): forgets the stored widths and lets the table lay itself out again (the spring column fills the free room). */
+  reset(): void {
+    this.widths = {};
+    for (const th of this.headCells()) {
+      // A grid that gives its heading a width of its own (`data-rg-width`, the record grid's spring) gets it back.
+      th.style.width = th.dataset['rgWidth'] ?? '';
+    }
+    this.table.style.removeProperty('width');
+    this.table.classList.remove('mf-rz--fixed');
+  }
+
   private headCells(): HTMLTableCellElement[] {
     const row = this.table.tHead?.rows[0];
     return row ? Array.from(row.cells) : [];
