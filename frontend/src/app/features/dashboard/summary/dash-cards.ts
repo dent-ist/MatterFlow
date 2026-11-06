@@ -123,16 +123,16 @@ const CARDS: readonly CardSpec[] = [
       cursor: pointer;
     }
     .t-red {
-      --tone: var(--mf-p-red-solid);
-      --tbg: var(--mf-p-red-bg);
+      --tone: var(--mf-sem-overdue-solid);
+      --tbg: var(--mf-sem-overdue-bg);
     }
     .t-violet {
-      --tone: var(--mf-p-violet-solid);
-      --tbg: var(--mf-p-violet-bg);
+      --tone: var(--mf-sem-person-solid);
+      --tbg: var(--mf-sem-person-bg);
     }
     .t-slate {
-      --tone: var(--mf-p-slate-solid);
-      --tbg: var(--mf-p-slate-bg);
+      --tone: var(--mf-sem-neutral-solid);
+      --tbg: var(--mf-sem-neutral-bg);
     }
     .card:hover {
       background: var(--mf-row-hover);
@@ -189,7 +189,7 @@ const CARDS: readonly CardSpec[] = [
       display: grid;
     }
     .card.zero .ci {
-      background: var(--mf-p-teal-solid);
+      background: var(--mf-sem-healthy-solid);
     }
     /* A phone: the three cards stay in one compact row. */
     @media (max-width: 767.98px) {

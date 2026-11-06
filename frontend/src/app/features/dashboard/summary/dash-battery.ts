@@ -355,19 +355,22 @@ type BatteryState = 'loading' | 'ready' | 'error';
       grid-template-rows: auto auto;
       align-items: center;
       column-gap: 6px;
-      padding: 4px 8px;
+      padding: 4px var(--mf-s1) 4px 6px;
       border: 1px solid var(--mf-border-soft);
       border-radius: var(--mf-radius-lg);
-      font-size: 12px;
+      font-size: var(--mf-fs-sm);
       line-height: 1.2;
     }
+    /* A legend tile is a figure tile (D-10): the number 24 / 700, the label 13 / 600 muted. */
     .lg b {
-      font-size: var(--mf-fs-lg);
+      font-size: var(--mf-fs-figure);
+      font-weight: 700;
       line-height: 1.1;
     }
     .lg .t {
       grid-column: 1 / -1;
       color: var(--mf-text-muted);
+      font-weight: 600;
     }
     .sw {
       display: grid;
