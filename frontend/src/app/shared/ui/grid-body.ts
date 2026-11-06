@@ -63,7 +63,12 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4] as const;
           <tr class="gb-sk" aria-hidden="true" data-skeleton>
             @for (w of bones(); track $index) {
               <td [class]="cellClasses()[$index]" [attr.data-drop]="drops()[$index]">
-                <span class="gb-bone" [style.width]="w"></span>
+                <span
+                  class="gb-bone"
+                  [class.gb-bone--fit]="fixed()"
+                  [style.width]="fixed() ? null : w"
+                  [style.max-width]="fixed() ? w : null"
+                ></span>
               </td>
             }
           </tr>
@@ -170,6 +175,10 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4] as const;
       background: var(--mf-border);
       opacity: 0.55;
     }
+    /* A grid with fixed column widths (the record grid, D-44h): the bone fills its cell up to its own width, so it never sizes the column. */
+    .gb-bone--fit {
+      width: 100%;
+    }
     @media (prefers-reduced-motion: no-preference) {
       .gb-bone {
         animation: gb-pulse 1.4s ease-in-out infinite;
@@ -219,6 +228,8 @@ export class GridBody {
   readonly skeleton = input<readonly string[]>(DEFAULT_BONES);
   /** CSS classes of the skeleton cell of each column (the classes the loaded cell has), so a column that is sized by its class keeps its width while loading. */
   readonly skeletonCells = input<readonly string[]>([]);
+  /** True when the grid's columns have fixed widths (the record grid, D-44h): the skeleton bones only fill their cell and never size a column, so the headings keep their widths while loading. */
+  readonly fixed = input(false);
 
   /** The text of the list's Search box while it is the only filter on: the empty list then reads `No results for "text".` (D-51). */
   protected readonly searched = computed(() => {

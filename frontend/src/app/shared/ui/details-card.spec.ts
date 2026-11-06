@@ -1,0 +1,55 @@
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { DetailField, DetailsCard } from './details-card';
+
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DetailsCard, DetailField],
+  template: `
+    <mf-details-card title="Details">
+      <div mfDetailField label="Status">Active</div>
+      <div mfDetailField label="Description" wide>Long text</div>
+    </mf-details-card>
+    <mf-details-card title="Relativity Workspace Fields" [count]="8">
+      <p data-extra>Body</p>
+    </mf-details-card>
+  `,
+})
+class Host {}
+
+describe('DetailsCard (D-44f)', () => {
+  function render(): HTMLElement {
+    const fixture = TestBed.createComponent(Host);
+    fixture.detectChanges();
+    return fixture.nativeElement;
+  }
+
+  it('is one mf-card with an h2 title, valid dl > div > dt + dd markup and the label above the value', () => {
+    const el = render();
+    const card = el.querySelector('mf-details-card')!;
+    expect(card.querySelectorAll('section.mf-card')).toHaveLength(1);
+    const title = card.querySelector('h2.mf-card__title')!;
+    expect(title.textContent).toBe('Details');
+    expect(card.querySelector('section')?.getAttribute('aria-labelledby')).toBe(title.id);
+    const fields = card.querySelectorAll('dl > div[mfDetailField]');
+    expect(fields).toHaveLength(2);
+    expect(fields[0].querySelector('dt')?.textContent).toBe('Status');
+    expect(fields[0].querySelector('dd')?.textContent?.trim()).toBe('Active');
+    expect(card.querySelector('mf-count-chip')).toBeNull();
+  });
+
+  it('a wide field spans both columns', () => {
+    const el = render();
+    const fields = el.querySelectorAll('mf-details-card:first-of-type [mfDetailField]');
+    expect(fields[0].classList.contains('df--wide')).toBe(false);
+    expect(fields[1].classList.contains('df--wide')).toBe(true);
+  });
+
+  it('shows the count chip beside the title and puts other content below the fields', () => {
+    const el = render();
+    const second = el.querySelectorAll('mf-details-card')[1];
+    expect(second.querySelector('mf-count-chip')?.textContent?.trim()).toBe('8');
+    expect(second.querySelector('[data-extra]')?.textContent).toBe('Body');
+    expect(second.querySelector('dl [data-extra]')).toBeNull();
+  });
+});

@@ -444,8 +444,11 @@ export class ProjectsListPage extends ServerListPage<ProjectResponse> {
   protected readonly grid = new RecordGridState('projects', this.gridDefs);
   protected readonly bones = BONES;
   protected readonly projectKey = (p: ProjectResponse): number => p.projectId;
-  /** The columns of the grid, in order; the keys the filter definitions point at. */
-  protected readonly columns = computed(() => this.grid.shown());
+  /** Every column of the table, in order, the Actions one included (its filter cell is empty but grey, so the band covers the whole row); the keys the filter definitions point at. */
+  protected readonly columns = computed(() => [
+    ...this.grid.shown(),
+    ...(this.hasActions() ? ['actions'] : []),
+  ]);
   /** The quick actions of a row, built once per page of rows. */
   protected readonly menus = computed(
     () => new Map(this.rows().map((p) => [p.projectId, this.buildMenu(p)] as const)),

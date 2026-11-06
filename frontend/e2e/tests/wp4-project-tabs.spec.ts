@@ -151,7 +151,7 @@ test.describe('WP4: project tabs at four sizes', () => {
       await page.getByRole('tab', { name: 'Details' }).click();
       await expect(page).toHaveURL(/tab=details/);
       const body = page.locator('[data-details-tab]');
-      await expect(body.locator('dt')).toHaveText(['Matter', 'Description', 'Status', 'Created']);
+      await expect(body.locator('dt')).toHaveText(['Matter', 'Status', 'Description', 'Created']);
       await expect(body).toContainText(DESCRIPTION);
       await expect(body).toContainText('Active');
       await expect(body).not.toContainText(PROJECT_130);

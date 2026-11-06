@@ -236,6 +236,15 @@ describe('Projects pages', () => {
       expect(cell.querySelector('a')).toBeNull();
     });
 
+    it('the grey filter row has one cell for every heading, the Actions one included (#1250)', async () => {
+      const fixture = await create(['Project.View', 'Task.View']);
+      const el: HTMLElement = fixture.nativeElement;
+      const heads = el.querySelectorAll('thead tr:first-child th').length;
+      const cells = el.querySelectorAll('thead tr[data-filter-row] > td').length;
+      expect(heads).toBeGreaterThan(0);
+      expect(cells).toBe(heads);
+    });
+
     it('has column filters instead of a search box: Name, Matter and Status (Active shown, Archived by name)', async () => {
       const fixture = await create(['Project.View']);
       const el: HTMLElement = fixture.nativeElement;
@@ -509,7 +518,10 @@ describe('Projects pages', () => {
       );
       const body = el().querySelector<HTMLElement>('[data-details-tab]')!;
       const labels = Array.from(body.querySelectorAll('dt')).map((d) => d.textContent!.trim());
-      expect(labels).toEqual(['Matter', 'Description', 'Status', 'Created']);
+      expect(labels).toEqual(['Matter', 'Status', 'Description', 'Created']);
+      // The Matter Summary card (D-44f): one mf-card titled "Details", the label above the value.
+      expect(body.querySelectorAll('section.mf-card')).toHaveLength(1);
+      expect(body.querySelector('h2.mf-card__title')?.textContent).toBe('Details');
       expect(body.textContent).toContain('00343-00012');
       expect(body.textContent).not.toContain('Custodian Processing');
       expect(body.textContent).toContain('Active');

@@ -13,6 +13,7 @@ import { DynamicForm, FormDefinition, ServerFieldError, errorSummary } from 'for
 import { firstValueFrom } from 'rxjs';
 import { FormsClient } from '../../api/generated/api-client';
 import { toFormDefinition } from '../forms/form-schema';
+import { DetailsCard } from './details-card';
 
 /** Splits the server's field errors into those of the record itself and those of custom fields (keyed `form:<fieldKey>`). */
 export function splitFormErrors(fields: Record<string, string>): {
@@ -155,21 +156,31 @@ export class CustomFieldsEditor {
 /** Read-only 'Custom fields' section for detail pages; values are shown with the form version they were captured under. */
 @Component({
   selector: 'mf-custom-fields-view',
-  imports: [DynamicForm],
+  imports: [DynamicForm, DetailsCard],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (schema(); as definition) {
-      <section
-        class="cf-view"
-        [class.cf-view--bare]="!heading()"
-        [attr.aria-labelledby]="heading() ? 'custom-fields-h' : null"
-        data-custom-fields
-      >
-        @if (heading()) {
-          <h3 id="custom-fields-h" class="cf-title">Custom Fields</h3>
-        }
-        <mf-dynamic-form [definition]="definition" [values]="values()" [readOnly]="true" />
-      </section>
+      @if (card()) {
+        <mf-details-card
+          [title]="cardTitle()"
+          [count]="definition.fields.length"
+          data-custom-fields
+        >
+          <mf-dynamic-form [definition]="definition" [values]="values()" [readOnly]="true" />
+        </mf-details-card>
+      } @else {
+        <section
+          class="cf-view"
+          [class.cf-view--bare]="!heading()"
+          [attr.aria-labelledby]="heading() ? 'custom-fields-h' : null"
+          data-custom-fields
+        >
+          @if (heading()) {
+            <h3 id="custom-fields-h" class="cf-title">Custom Fields</h3>
+          }
+          <mf-dynamic-form [definition]="definition" [values]="values()" [readOnly]="true" />
+        </section>
+      }
     }
   `,
   styles: `
@@ -192,6 +203,9 @@ export class CustomFieldsView {
   readonly values = input<Record<string, unknown>>({});
   /** False draws no "Custom fields" heading (the Matter Summary lists them as ordinary rows). */
   readonly heading = input(true);
+  /** True frames the fields as a second Details card (D-44f): the title and the number of fields as a count chip. */
+  readonly card = input(false);
+  readonly cardTitle = input('Custom Fields');
 
   private readonly forms = inject(FormsClient);
   protected readonly schema = signal<FormDefinition | null>(null);

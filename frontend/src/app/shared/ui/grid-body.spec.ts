@@ -216,3 +216,44 @@ describe('GridBody', () => {
     expect(el(f).querySelector('[data-hidden-hint]')).toBeNull();
   });
 });
+
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [GridBody],
+  template: `
+    <table>
+      <tbody
+        mfGridBody
+        noun="assets"
+        state="loading"
+        [columns]="2"
+        [skeleton]="['7rem', '14rem']"
+        [fixed]="true"
+      >
+        <tr>
+          <td>row</td>
+          <td>row</td>
+        </tr>
+      </tbody>
+    </table>
+  `,
+})
+class FixedHost {}
+
+describe('GridBody with fixed column widths (D-44h)', () => {
+  it('a bone fills its cell up to its width and never sets a width that could size the column', () => {
+    const fixture = TestBed.createComponent(FixedHost);
+    document.body.appendChild(fixture.nativeElement);
+    fixture.detectChanges();
+    const host: HTMLElement = fixture.nativeElement;
+    const bones = Array.from(host.querySelectorAll<HTMLElement>('tr[data-skeleton] .gb-bone'));
+    expect(bones.length).toBeGreaterThan(0);
+    for (const bone of bones) {
+      expect(bone.style.width).toBe('');
+      expect(bone.classList.contains('gb-bone--fit')).toBe(true);
+    }
+    expect(bones[0].style.maxWidth).toBe('7rem');
+    expect(bones[1].style.maxWidth).toBe('14rem');
+    fixture.nativeElement.remove();
+  });
+});

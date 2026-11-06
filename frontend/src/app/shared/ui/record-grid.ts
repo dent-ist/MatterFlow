@@ -242,8 +242,14 @@ export class RecordCell {
     mf-record-grid {
       display: contents;
     }
-    .rg-select {
-      width: 2.25rem;
+    /* The select column is as wide as its checkbox and 4 px each side (a page may ask for more on its row cell): the header checkbox sits over the row checkboxes, both centred. */
+    .pg-table.tt th.rg-select {
+      width: 1.5rem;
+      padding-inline: var(--mf-s1);
+      text-align: center;
+    }
+    .pg-table.tt th.rg-select input {
+      margin: 0;
     }
     /* A group header row (#1245): 36 px, under the rows above it, the toggle is a text button. */
     .pg-table .rg-group th {
@@ -342,6 +348,7 @@ export class RecordCell {
             [filtered]="filtered()"
             [columns]="columnKeys().length"
             [skeleton]="skeleton()"
+            [fixed]="true"
             [emptyText]="emptyText()"
             [emptyParts]="emptyParts()"
             [filters]="filters()"

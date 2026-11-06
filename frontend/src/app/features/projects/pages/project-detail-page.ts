@@ -16,6 +16,7 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
 import { CustomFieldsView } from '../../../shared/ui/custom-fields';
+import { DetailField, DetailsCard } from '../../../shared/ui/details-card';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
@@ -31,7 +32,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 /**
  * Project detail (UX S07, #257): Tasks (n) / Details tabs across the full page width, as on Client and Matter. Tasks is the default and absent
- * from the address; `?tab=details` shows Details (Matter, Description when set, Status, dates, custom fields). The header holds Edit, Activity,
+ * from the address; `?tab=details` shows Details (the Details card: Matter, Status, Description when set, dates; custom fields in a second card). The header holds Edit, Activity,
  * Create task and the overflow (Archive / Restore). Activity opens in a right-side drawer; an old `?tab=activity` link opens it too.
  */
 @Component({
@@ -49,10 +50,20 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
     Tabs,
     ScrollArea,
     CustomFieldsView,
+    DetailsCard,
+    DetailField,
     ScopedTasks,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
+  styles: `
+    .pd-details {
+      display: flex;
+      flex-direction: column;
+      gap: var(--mf-s3);
+      padding: var(--mf-s3) var(--mf-s4);
+    }
+  `,
   template: `
     <mf-fixed-page>
       <span class="pg-sr" role="status" data-record-live>{{ flow.live() }}</span>
@@ -120,31 +131,32 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
               </div>
               @if (current() === 'details') {
                 <div class="mf-scroll-area" mfScrollArea="Project details" data-details-tab>
-                  <div class="pg-details">
-                    <h2 class="pg-sr">Details</h2>
-                    <dl class="pg-dl">
-                      <dt>Matter</dt>
-                      <dd data-matter-value>
+                  <div class="pd-details">
+                    <mf-details-card title="Details">
+                      <div mfDetailField label="Matter" data-matter-value>
                         <mf-matter-ref
                           [value]="p.matterRef"
                           [link]="canLinkMatter() ? ['/matters', p.matterId] : null"
                         />
-                        {{ p.matterName }}
-                      </dd>
+                        <span>{{ p.matterName }}</span>
+                      </div>
+                      <div mfDetailField label="Status">
+                        <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
+                      </div>
                       @if (p.description) {
-                        <dt>Description</dt>
-                        <dd data-description class="pg-pre">{{ p.description }}</dd>
+                        <div mfDetailField label="Description" wide>
+                          <span data-description class="pg-pre">{{ p.description }}</span>
+                        </div>
                       }
-                      <dt>Status</dt>
-                      <dd><mf-active-badge [active]="p.isActive" inactiveLabel="Archived" /></dd>
-                      <dt>Created</dt>
-                      <dd>{{ p.createdAtUtc | mfNum }}</dd>
+                      <div mfDetailField label="Created">{{ p.createdAtUtc | mfNum }}</div>
                       @if (p.modifiedAtUtc) {
-                        <dt>Last Updated</dt>
-                        <dd>{{ p.modifiedAtUtc | mfNum }}</dd>
+                        <div mfDetailField label="Last Updated">
+                          {{ p.modifiedAtUtc | mfNum }}
+                        </div>
                       }
-                    </dl>
+                    </mf-details-card>
                     <mf-custom-fields-view
+                      [card]="true"
                       [versionId]="p.formVersionId"
                       [values]="p.formValues ?? {}"
                     />
