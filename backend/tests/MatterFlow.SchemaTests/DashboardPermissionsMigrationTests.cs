@@ -85,7 +85,7 @@ public class DashboardPermissionsMigrationTests(SqlServerFixture sql)
         (await ReadAsync(cs, "SELECT Code FROM dbo.Permission WHERE Code = 'Dashboard.ViewDepartment'")).ShouldBeEmpty();
 
         // The new rows carry the catalog group, so the roles page lists them under Dashboard even before the startup sync.
-        (await ReadAsync(cs, "SELECT Code FROM dbo.Permission WHERE GroupName = 'Dashboard' ORDER BY Code")).ShouldBe(["Dashboard.View", .. Tabs.Append("Dashboard.ViewCoverage").Append("Dashboard.ViewUnassigned").Order(StringComparer.Ordinal)]);
+        (await ReadAsync(cs, "SELECT Code FROM dbo.Permission WHERE GroupName = 'Dashboard' ORDER BY Code")).ShouldBe(["Dashboard.View", .. Tabs.Append("Dashboard.ViewCoverage").Append("Dashboard.ViewUnassigned").Append("Dashboard.ViewCalendar").Append("Dashboard.ViewAbsenceReasons").Order(StringComparer.Ordinal)]);
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public class DashboardPermissionsMigrationTests(SqlServerFixture sql)
 
         await RunAsync(cs, new EmbeddedMigrationScriptSource());
 
-        (await ReadAsync(cs, "SELECT Code FROM dbo.Permission WHERE GroupName = 'Dashboard' ORDER BY Code")).Count.ShouldBe(8);
+        (await ReadAsync(cs, "SELECT Code FROM dbo.Permission WHERE GroupName = 'Dashboard' ORDER BY Code")).Count.ShouldBe(10);
         (await ReadAsync(cs, "SELECT CAST(COUNT(*) AS VARCHAR(10)) FROM dbo.RolePermission")).Single().ShouldBe("0");
     }
 

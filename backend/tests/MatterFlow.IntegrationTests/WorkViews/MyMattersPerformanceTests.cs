@@ -223,7 +223,10 @@ public sealed partial class MyMattersPerformanceTests(SqlServerFixture sql, ITes
         // Epic #893 (#942, #944): the Overview's pre-filter counts with a matter chosen, and one month of the Calendar.
         ("summary (Focus)", "/api/v1/my-matters/summary?fresh=true&taskTypeId=1"),
         ("calendar (month)", "/api/v1/my-matters/calendar"),
-        ("calendar (month, overdue)", "/api/v1/my-matters/calendar?show=overdue"),
+        // The month is the one of "ten days ago", not the current one: the seeded due dates run from 12 days ago to 47 days ahead, so a person with 5 matters has
+        // overdue tasks only 8 to 12 days back. On days 2 to 8 of a month the current month holds none of them, the read skips its detail statements and the
+        // statement count then differed from the other callers for a reason that has nothing to do with the number of matters (QA ui-update-2, 2026-11-06).
+        ("calendar (month, overdue)", $"/api/v1/my-matters/calendar?show=overdue&month={DateTime.UtcNow.AddDays(-10):yyyy-MM}"),
     ];
 
     [Fact]
