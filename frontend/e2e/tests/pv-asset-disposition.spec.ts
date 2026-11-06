@@ -120,16 +120,16 @@ test.describe('Asset disposition (PM v2)', () => {
 
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/assets?name=${token}&status=all`);
-    const row = page.locator(`tr[data-asset-id="${asset.assetId}"]`);
+    const row = page.locator(`tr[data-record-id="${asset.assetId}"]`);
     await expect(row.locator('[data-disposition-badge]')).toContainText('Pending Disposition');
     await expect(row.locator('[data-inactive-linked]')).toContainText('Still linked to open tasks');
 
     await page.goto(`/assets?name=${token}&status=pending`);
-    await expect(page.locator('tbody tr[data-asset-id]')).toHaveCount(1);
+    await expect(page.locator('tbody tr[data-record-id]')).toHaveCount(1);
     await page.goto(`/assets?name=${token}&status=all`);
-    await expect(page.locator('tbody tr[data-asset-id]')).toHaveCount(2);
+    await expect(page.locator('tbody tr[data-record-id]')).toHaveCount(2);
 
-    await page.locator(`tr[data-asset-id="${other.assetId}"] [data-select-row]`).check();
+    await page.locator(`tr[data-record-id="${other.assetId}"] [data-select-row]`).check();
     await expect(page.locator('[data-bulk-count]')).toContainText('1 asset selected');
     await page.locator('[data-select-all]').check();
     await expect(page.locator('[data-bulk-count]')).toContainText('2 assets selected');
@@ -140,7 +140,7 @@ test.describe('Asset disposition (PM v2)', () => {
     await expect(dialog.locator('[data-disposition-summary]')).toContainText('2 changed');
     await dialog.getByRole('button', { name: 'Close' }).first().click();
     await expect(
-      page.locator(`tr[data-asset-id="${other.assetId}"] [data-disposition-badge]`),
+      page.locator(`tr[data-record-id="${other.assetId}"] [data-disposition-badge]`),
     ).toContainText('Inactive');
   });
 
@@ -167,7 +167,7 @@ test.describe('Asset disposition (PM v2)', () => {
       await expect(page.getByRole('dialog')).toHaveCount(0);
 
       await page.goto(`/assets?name=${token}&status=all`);
-      await expect(page.locator('tbody tr[data-asset-id], li.rc').first()).toBeVisible();
+      await expect(page.locator('tbody tr[data-record-id], li.rc').first()).toBeVisible();
       expect(await axeViolations(page), `list at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
       if (size.width === 1366 || size.width === 375) await shot(page, 'pv-disposition-list');

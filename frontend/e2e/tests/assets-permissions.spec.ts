@@ -129,7 +129,7 @@ test.describe('Assets permission matrix (WP-AS6)', () => {
       await page.goto(`/assets?name=${token}`);
       await settled();
       if (variant.opens.list) {
-        await expect(page.locator('tbody tr[data-asset-id]')).toHaveCount(1);
+        await expect(page.locator('tbody tr[data-record-id]')).toHaveCount(1);
         await expect(forbidden).toHaveCount(0);
         expect(await deadLinks(page, variant.permissions), 'dead links in the list').toEqual([]);
         // The Linked tasks column and the New asset button follow the permissions.
@@ -193,7 +193,7 @@ test.describe('Assets permission matrix (WP-AS6)', () => {
     const failed = watchFailures(page);
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/assets?name=${token}`);
-    await expect(page.locator('tbody tr[data-asset-id]')).toHaveCount(1);
+    await expect(page.locator('tbody tr[data-record-id]')).toHaveCount(1);
     await page.goto(`/assets/${asset.assetId}?tab=history`);
     await expect(page.getByRole('tab', { selected: true })).toContainText('History');
     await page.goto(`/assets/new`);

@@ -17,7 +17,7 @@ test.describe('Column filters on the Assets screen', () => {
   // A table row above 640 px, a card (a list named Assets, one name link per item) on a phone.
   const names = (page: Page) =>
     page
-      .locator('tbody tr[data-asset-id] a.mf-name')
+      .locator('tbody tr[data-record-id] a[data-asset-name]')
       .or(page.getByRole('list', { name: 'Assets' }).getByRole('link'));
   const sheet = (page: Page) => page.getByRole('dialog', { name: 'Filters' });
   // The Assets filter row opens by default since the list chrome of #499, and its Status column is the Disposition column since PM v2 (#864, #883; the `status` address key stays).

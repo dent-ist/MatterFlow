@@ -384,7 +384,7 @@ test.describe('Column filters on the record lists', () => {
       await page.goto(
         `/assets?matter=${token}&typeId=${typeA.assetTypeId}&typeId=${typeB.assetTypeId}`,
       );
-      await expect(page.locator('tbody tr[data-asset-id]')).toHaveCount(2);
+      await expect(page.locator('tbody tr[data-record-id]')).toHaveCount(2);
       await expect(page.getByRole('button', { name: /^Filter by Type, 2 selected/ })).toBeVisible();
     });
   });

@@ -32,10 +32,6 @@ const ALLOWED: Readonly<Record<string, string>> = {
     'Administration list, adopts the shared grid in its Administration issue',
   'features/admin/workflows/workflows-list-page.ts':
     'Administration list, adopts the shared grid in its Administration issue',
-  'features/assets/pages/asset-linked-tasks.ts':
-    'Asset > Linked Tasks, adopts the shared grid in the Assets group (#1241 step 2)',
-  'features/assets/pages/assets-list-page.ts':
-    'Assets list, adopts the shared grid in the Assets group (#1241 step 2)',
   'features/clients/pages/client-matters.ts':
     'Client > Matters tab, adopts the shared grid with the Clients record issues',
   'features/matters/pages/matter-projects.ts':
@@ -89,11 +85,12 @@ describe('record grid guard (#1241)', () => {
     expect(stale, 'remove the migrated pages from ALLOWED').toEqual([]);
   });
 
-  it('the Matters, Clients and Projects lists are drawn by the shared grid', () => {
+  it('the Matters, Clients, Projects and Assets lists are drawn by the shared grid', () => {
     for (const file of [
       'features/matters/pages/matters-list-page.ts',
       'features/clients/pages/clients-list-page.ts',
       'features/projects/pages/projects-list-page.ts',
+      'features/assets/pages/assets-list-page.ts',
     ]) {
       const text = files.find((f) => f.file === file)!.text;
       expect(text, file).toContain('<mf-record-grid');

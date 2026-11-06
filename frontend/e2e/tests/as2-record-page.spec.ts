@@ -318,7 +318,7 @@ test.describe('Asset record page (WP-AS2)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const address = `/assets?name=${token}&sort=displayName&page=2&size=25`;
     await page.goto(address);
-    const rows = page.locator('tbody tr[data-asset-id] a.mf-name');
+    const rows = page.locator('tbody tr[data-record-id] a[data-asset-name]');
     await expect(rows).toHaveCount(5);
     const name = (await rows.nth(2).textContent())!.trim();
     await rows.nth(2).click();

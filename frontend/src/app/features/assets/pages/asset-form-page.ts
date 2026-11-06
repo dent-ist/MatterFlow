@@ -86,8 +86,8 @@ export function externalReferenceError(text: string): string | null {
     <mf-record-header
       kind="asset"
       [parents]="parents()"
-      [current]="isEdit() ? 'Edit' : 'New asset'"
-      [name]="isEdit() ? original()?.displayName || 'Edit asset' : 'New asset'"
+      [current]="isEdit() ? 'Edit' : 'New Asset'"
+      [name]="isEdit() ? original()?.displayName || 'Edit Asset' : 'New Asset'"
       [showStatus]="isEdit() && !!original()"
       [active]="original()?.isActive ?? true"
     >
@@ -158,7 +158,7 @@ export function externalReferenceError(text: string): string | null {
 
             <div class="pg-filter">
               <label for="asset-type">
-                Asset type
+                Asset Type
                 @if (!isEdit()) {
                   <span class="mf-field__req">(required)</span>
                 }

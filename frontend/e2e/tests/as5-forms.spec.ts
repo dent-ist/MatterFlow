@@ -49,7 +49,7 @@ test.describe('Asset forms (WP-AS5)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/assets/new');
 
-    await expect(page.getByRole('heading', { level: 1, name: 'New asset' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'New Asset' })).toBeVisible();
     await expect(page.locator('[data-record-header] mf-active-badge')).toHaveCount(0);
     await expect(page.locator('#asset-matter')).toHaveAttribute(
       'placeholder',

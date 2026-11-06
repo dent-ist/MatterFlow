@@ -100,7 +100,7 @@ test.describe('Assets list: column filters and the record page link', () => {
 
     await page.goto('/assets');
     await openFilters(page);
-    const names = page.locator('tbody tr[data-asset-id] a.mf-name');
+    const names = page.locator('tbody tr[data-record-id] a[data-asset-name]');
 
     // Type (multi-select) narrows to the type's assets; Active is the default status, so the inactive one is hidden.
     await page.getByRole('button', { name: /^Filter by Type/ }).click();

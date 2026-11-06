@@ -21,12 +21,12 @@ test.describe('PM v2 page fixes: Assets tab and list (#883)', () => {
     const page = await asUser(d.w.pm.username);
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/assets?matterId=${d.matterA.matterId}&status=all`);
-    await expect(page.locator('tbody tr[data-asset-id]')).toHaveCount(2);
+    await expect(page.locator('tbody tr[data-record-id]')).toHaveCount(2);
     const select = filterDropdown(page, 'Disposition');
     const box = (await select.boundingBox())!;
     expect(box.width, 'the Disposition select is not squeezed').toBeGreaterThanOrEqual(100);
-    await expect(page.locator('tr[data-asset-id] td[data-linked]').first()).toContainText('0 / 0');
-    await expect(page.locator('tr[data-asset-id] td[data-size]').first()).toContainText('GB');
+    await expect(page.locator('tr[data-record-id] td[data-linked]').first()).toContainText('0 / 0');
+    await expect(page.locator('tr[data-record-id] td[data-size]').first()).toContainText('GB');
     if (await page.locator('thead th[data-drop]').count()) {
       await noHorizontalScroll(page);
     }
@@ -56,7 +56,9 @@ test.describe('PM v2 page fixes: Assets tab and list (#883)', () => {
     for (const size of SIZES) {
       await page.setViewportSize(size);
       await page.goto(`/assets?matterId=${d.matterA.matterId}&status=all`);
-      await expect(page.locator('tbody tr[data-asset-id], [data-card-name]').first()).toBeVisible();
+      await expect(
+        page.locator('tbody tr[data-record-id], [data-card-name]').first(),
+      ).toBeVisible();
       expect(await axeViolations(page), `assets list at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
       if (size.width === 1366 || size.width === 375) await shot(page, 'pv-assets-list');

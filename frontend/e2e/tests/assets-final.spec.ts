@@ -69,14 +69,14 @@ test.describe('Assets final verification (#517)', () => {
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/assets?name=${token}`);
-    await expect(page.locator('tbody tr[data-asset-id]').first()).toBeVisible();
+    await expect(page.locator('tbody tr[data-record-id]').first()).toBeVisible();
     const grid = (await page.locator('mf-grid-frame').first().boundingBox())!;
     measure('grid height at 1366x768 (review: 277 px with a selection)', Math.round(grid.height));
     expect(grid.height).toBeGreaterThan(400);
     await expect(page.locator('#asset-panel, [data-asset-panel]')).toHaveCount(0);
 
     const heights = await page
-      .locator('tbody tr[data-asset-id]')
+      .locator('tbody tr[data-record-id]')
       .evaluateAll((rows) => rows.map((r) => Math.round(r.getBoundingClientRect().height)));
     measure(
       'row heights (review: 55 to 77 px)',
@@ -111,8 +111,8 @@ test.describe('Assets final verification (#517)', () => {
     });
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/assets?name=${token}&size=50`);
-    await expect(page.locator('tbody tr[data-asset-id]').first()).toBeVisible();
-    const rows = await page.locator('tbody tr[data-asset-id]').count();
+    await expect(page.locator('tbody tr[data-record-id]').first()).toBeVisible();
+    const rows = await page.locator('tbody tr[data-record-id]').count();
     const dead = await page
       .locator('main a[href^="/matters"], main a[href^="/tasks/"], main a[href^="/clients"]')
       .count();
@@ -137,7 +137,7 @@ test.describe('Assets final verification (#517)', () => {
     await page.goto(`/assets?name=${token}&size=50`);
     const stops = (p: Page) =>
       p
-        .locator('tbody tr[data-asset-id]')
+        .locator('tbody tr[data-record-id]')
         .first()
         .evaluate(
           (tr) =>
@@ -145,13 +145,13 @@ test.describe('Assets final verification (#517)', () => {
               tr.querySelectorAll<HTMLElement>('a[href], button, input, select, [tabindex]'),
             ).filter((e) => e.tabIndex >= 0).length,
         );
-    await expect(page.locator('tbody tr[data-asset-id]').first()).toBeVisible();
+    await expect(page.locator('tbody tr[data-record-id]').first()).toBeVisible();
     measure('Tab stops per row for a System Admin (review: 3)', await stops(page));
     expect(await stops(page)).toBe(3); // the select box for bulk disposition (#866), the name and the matter link
     const viewer = await personas.create({ label: 'finalstops', permissions: ['Asset.View'] });
     const plain = await asUser(viewer.username);
     await plain.goto(`/assets?name=${token}&size=50`);
-    await expect(plain.locator('tbody tr[data-asset-id]').first()).toBeVisible();
+    await expect(plain.locator('tbody tr[data-record-id]').first()).toBeVisible();
     measure('Tab stops per row without Matter.View', await stops(plain));
     expect(await stops(plain)).toBe(1);
     // From the first row to the end of the page: 50 rows * 2 plus the pager; the review counted 77 up to the panel for 25 rows.
@@ -239,7 +239,7 @@ test.describe('Assets final verification (#517)', () => {
       await expect(
         size.width < 640
           ? page.locator('li.rc').first()
-          : page.locator('tbody tr[data-asset-id]').first(),
+          : page.locator('tbody tr[data-record-id]').first(),
       ).toBeVisible();
       expect(await axeViolations(page), `list at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
@@ -294,13 +294,13 @@ test.describe('Assets final verification (#517)', () => {
 
     // Offline: a list that cannot load says so and recovers when the connection is back.
     await page.goto(`/assets?name=${token}`);
-    await expect(page.locator('tbody tr[data-asset-id]').first()).toBeVisible();
+    await expect(page.locator('tbody tr[data-record-id]').first()).toBeVisible();
     await goOffline(page, true);
     await page.getByRole('searchbox', { name: 'Search assets' }).fill(`${token} 1`);
     await expect(page.locator('[data-error]')).toContainText("Couldn't load assets");
     await shot(page, 'final-state-offline');
     await goOffline(page, false);
-    await expect(page.locator('tbody tr[data-asset-id]').first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('tbody tr[data-record-id]').first()).toBeVisible({ timeout: 20_000 });
 
     // Reduced motion: the skeleton does not shimmer.
     await page.emulateMedia({ reducedMotion: 'reduce' });

@@ -34,7 +34,7 @@ test.describe('column filters screenshots', () => {
       await p.screenshot({ path: path.join(OUT!, `${name}-${size.width}x${size.height}.png`) });
     };
     const toggle = page.getByRole('button', { name: /^Filters/ });
-    const rows = page.locator('tbody tr[data-asset-id]');
+    const rows = page.locator('tbody tr[data-record-id]');
 
     // Wide window: the row.
     await page.setViewportSize({ width: 1366, height: 768 });

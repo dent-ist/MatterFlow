@@ -36,7 +36,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
     const { busy, idle } = await rows(seed, token, 3);
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/assets?name=${token}`);
-    const cell = (id: number) => page.locator(`tr[data-asset-id="${id}"] td[data-linked]`);
+    const cell = (id: number) => page.locator(`tr[data-record-id="${id}"] td[data-linked]`);
     await expect(cell(busy.assetId)).toContainText('3 open of 3 linked tasks');
     await expect(cell(busy.assetId).locator('[title]')).toHaveAttribute(
       'title',
@@ -45,7 +45,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
     await expect(cell(busy.assetId).locator('[aria-hidden="true"]')).toHaveText('3 / 3');
     await expect(cell(idle.assetId)).toContainText('0 open of 0 linked tasks');
     await expect(cell(busy.assetId).locator('a')).toHaveCount(0);
-    const box = (await page.locator(`tr[data-asset-id="${busy.assetId}"]`).boundingBox())!;
+    const box = (await page.locator(`tr[data-record-id="${busy.assetId}"]`).boundingBox())!;
     expect(Math.round(box.height)).toBeLessThanOrEqual(45);
 
     await page.getByRole('columnheader', { name: 'Linked Tasks' }).getByRole('button').click();
@@ -54,7 +54,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
       'aria-sort',
       'descending',
     );
-    await expect(page.locator('tbody tr[data-asset-id]').first()).toHaveAttribute(
+    await expect(page.locator('tbody tr[data-record-id]').first()).toHaveAttribute(
       'data-asset-id',
       String(busy.assetId),
     );
@@ -72,7 +72,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
     const plain = await asUser(viewer.username);
     await plain.setViewportSize({ width: 1366, height: 768 });
     await plain.goto(`/assets?name=${token}`);
-    await expect(plain.locator('tbody tr[data-asset-id]')).toHaveCount(2);
+    await expect(plain.locator('tbody tr[data-record-id]')).toHaveCount(2);
     await expect(plain.getByRole('columnheader', { name: 'Linked Tasks' })).toHaveCount(0);
     await expect(plain.locator('td[data-linked]')).toHaveCount(0);
   });
@@ -117,7 +117,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
     await expect(page.locator('tbody [data-skeleton]')).toHaveCount(5);
     const head = (await page.locator('table.mf-grid').boundingBox())!;
     await shot(page, 'as3-loading');
-    await expect(page.locator('tbody tr[data-asset-id]').first()).toBeVisible();
+    await expect(page.locator('tbody tr[data-record-id]').first()).toBeVisible();
     const after = (await page.locator('table.mf-grid').boundingBox())!;
     expect(Math.round(after.width)).toBe(Math.round(head.width));
     await undelay();
@@ -130,7 +130,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
     expect(await axeViolations(page), 'error state').toEqual([]);
     await unfail();
     await page.getByRole('button', { name: 'Retry' }).click();
-    await expect(page.locator('tbody tr[data-asset-id]').first()).toBeVisible();
+    await expect(page.locator('tbody tr[data-record-id]').first()).toBeVisible();
 
     await page.goto(`/assets?name=${token}-nothing`);
     await expect(page.locator('[data-empty="filtered"]')).toContainText('No assets match');
@@ -158,7 +158,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
     await expect(page).toHaveURL(/sort=matter(&|$)/);
     await expect(header).toHaveAttribute('aria-sort', 'ascending');
     // One matter: the ties are ordered by name.
-    const names = await page.locator('tbody a.mf-name').allTextContents();
+    const names = await page.locator('tbody a[data-asset-name]').allTextContents();
     expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
     await header.getByRole('button').click();
     await expect(page).toHaveURL(/sort=-matter/);
@@ -197,7 +197,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
 
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto(`/assets?name=${token}`);
-    await expect(page.locator('tbody tr[data-asset-id]')).toHaveCount(2);
+    await expect(page.locator('tbody tr[data-record-id]')).toHaveCount(2);
     const wrap = page.locator('mf-grid-frame .mf-scroll').first();
     // LC-09: no column is dropped by width; the frame scrolls sideways and the page does not.
     expect(await wrap.evaluate((e) => e.scrollWidth - e.clientWidth)).toBeGreaterThan(0);
@@ -216,17 +216,17 @@ test.describe('Assets list contract (WP-AS3)', () => {
     const { busy } = await rows(seed, token, 1);
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/assets?name=${token}`);
-    await expect(page.locator('tbody tr[data-asset-id]').first()).toBeVisible();
+    await expect(page.locator('tbody tr[data-record-id]').first()).toBeVisible();
     await page.keyboard.press('Tab');
     const skip = page.getByRole('link', { name: 'Skip to Table' });
     await expect(skip).toBeFocused();
     await expect(skip).toBeVisible();
     await page.keyboard.press('Enter');
-    await expect(page.locator('tbody a.mf-name').first()).toBeFocused();
+    await expect(page.locator('tbody a[data-asset-name]').first()).toBeFocused();
 
     const stops = (p: Page, id: number) =>
       p
-        .locator(`tr[data-asset-id="${id}"]`)
+        .locator(`tr[data-record-id="${id}"]`)
         .evaluate(
           (tr) =>
             Array.from(
@@ -237,11 +237,11 @@ test.describe('Assets list contract (WP-AS3)', () => {
     const viewer = await personas.create({ label: 'assetonly', permissions: ['Asset.View'] });
     const plain = await asUser(viewer.username);
     await plain.goto(`/assets?name=${token}`);
-    await expect(plain.locator('tr[data-asset-id]').first()).toBeVisible();
+    await expect(plain.locator('tr[data-record-id]').first()).toBeVisible();
     expect(await stops(plain, busy.assetId)).toBe(1);
 
     // No shortcut was added: a letter typed on a row does nothing.
-    await plain.locator('tbody a.mf-name').first().focus();
+    await plain.locator('tbody a[data-asset-name]').first().focus();
     const url = plain.url();
     await plain.keyboard.press('e');
     expect(plain.url()).toBe(url);
@@ -258,12 +258,12 @@ test.describe('Assets list contract (WP-AS3)', () => {
     await page.goto(`/assets?name=${token}`);
     await atEverySize(page, 'as3-list', async (size) => {
       if (size.width >= 640)
-        await expect(page.locator('tbody tr[data-asset-id]').first()).toBeVisible();
+        await expect(page.locator('tbody tr[data-record-id]').first()).toBeVisible();
       else await expect(page.locator('li.rc').first()).toBeVisible();
     });
     for (const size of [SIZES[1], SIZES[3]]) {
       await page.setViewportSize(size);
-      await expect(page.locator('tbody tr[data-asset-id]').first()).toBeVisible();
+      await expect(page.locator('tbody tr[data-record-id]').first()).toBeVisible();
       await shot(page, 'as3-list');
     }
     expect(SIZES.length).toBe(4);

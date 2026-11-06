@@ -227,7 +227,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     const toggle = (): HTMLButtonElement =>
       el().querySelector<HTMLButtonElement>('[data-filters-toggle]')!;
     const rowOf = (id: number): HTMLElement | null =>
-      el().querySelector(`tbody tr[data-asset-id="${id}"]`);
+      el().querySelector(`tbody tr[data-record-id="${id}"]`);
 
     const width = window.innerWidth;
     beforeEach(() => {
@@ -287,7 +287,9 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       const rows = el().querySelectorAll('tbody tr');
 
       expect(rows).toHaveLength(2);
-      expect(rows[0].querySelector('td a.mf-name')?.textContent?.trim()).toBe('Contract bundle');
+      expect(rows[0].querySelector('td a[data-asset-name]')?.textContent?.trim()).toBe(
+        'Contract bundle',
+      );
       expect(rows[0].textContent).toContain('Document Set');
       expect(rows[0].querySelector('.mf-ref')?.textContent).toBe('00343-00012');
       expect(rows[0].querySelector('.mf-ref')?.closest('a')?.getAttribute('href')).toBe(
@@ -348,19 +350,19 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       expect(empty.textContent).toContain('No external reference');
     });
 
-    it('draws 44 px rows: one link and no copy button in a row but the reference, matter name only as a tooltip, only Inactive has a badge (A2)', async () => {
+    it('draws 44 px rows: one link and no copy button in a row but the reference, matter name only as a tooltip, every state has its chip, Active too (A2, #1185)', async () => {
       await create(['Asset.View', 'Matter.View']);
       const row = rowOf(9)!;
       expect(row.querySelectorAll('a')).toHaveLength(2); // the name and the matter number
       expect(row.querySelectorAll('mf-matter-ref mf-copy-button')).toHaveLength(0);
       expect(row.querySelector('.as-sub')).toBeNull();
       expect(row.querySelector('td[data-matter]')?.getAttribute('title')).toBe('Merger Review');
-      expect(row.querySelector('[data-status] mf-status-chip')).toBeNull();
+      expect(row.querySelector('[data-status] mf-status-chip')?.textContent).toContain('Active');
       expect(row.querySelector('[data-status]')?.textContent).toContain('Active');
       expect(rowOf(10)!.querySelector('[data-status] mf-status-chip')?.textContent).toContain(
         'Inactive',
       );
-      expect(el().querySelector('table.mf-grid')).not.toBeNull();
+      expect(el().querySelector('table.pg-table')).not.toBeNull();
     });
 
     describe('disposition, size and the bulk change (epic #851, issue #866)', () => {
@@ -393,7 +395,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
           ),
         );
 
-      it('shows the size, a badge for every state but Active, and a warning for a not-active asset that is still linked', async () => {
+      it('shows the size, a disposition chip for every state (Active too, #1185), and a warning for a not-active asset that is still linked', async () => {
         await create(['Asset.View', 'Task.View']);
         assets.listAssets.mockReturnValue(rows());
         await setInputs({ sort: 'assetType' });
@@ -401,7 +403,9 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         expect(rowOf(9)!.querySelector('td[data-size]')?.textContent?.trim()).toBe('412 GB');
         expect(rowOf(10)!.querySelector('td[data-size]')?.textContent).toContain('No size');
         expect(rowOf(11)!.querySelector('td[data-size]')?.textContent?.trim()).toBe('26,400 Items');
-        expect(rowOf(9)!.querySelector('[data-status] mf-status-chip')).toBeNull();
+        expect(rowOf(9)!.querySelector('[data-disposition-badge]')?.textContent).toContain(
+          'Active',
+        );
         expect(rowOf(10)!.querySelector('[data-disposition-badge]')?.textContent).toContain(
           'Pending Disposition',
         );
@@ -576,7 +580,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       expect(target.label).toBe('Skip to Table');
       document.body.appendChild(el());
       target.focus();
-      expect(document.activeElement).toBe(rowOf(9)!.querySelector('a.mf-name'));
+      expect(document.activeElement).toBe(rowOf(9)!.querySelector('a[data-asset-name]'));
       el().remove();
       // One Tab stop in a row without Matter.View: the name link and nothing else (the reference copy button is not a stop).
       expect(
@@ -972,7 +976,9 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       expect(el().querySelector('[data-asset-panel], #asset-panel, mf-asset-details')).toBeNull();
       expect(rowOf(9)!.hasAttribute('aria-current')).toBe(false);
 
-      const name = rowOf(9)!.querySelector<HTMLAnchorElement>('a.mf-name[data-asset-name="9"]')!;
+      const name = rowOf(9)!.querySelector<HTMLAnchorElement>(
+        'a[data-asset-name][data-asset-name="9"]',
+      )!;
       expect(name.tagName).toBe('A');
       expect(name.getAttribute('href')).toBe('/assets/9');
       expect(name.textContent?.trim()).toBe('Contract bundle');
@@ -1186,7 +1192,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     it('New asset: the record header, the Asset and type-fields sections, the real matter format and the way back (A10)', async () => {
       await create({}, ['Asset.View', 'Asset.Create', 'Task.View']);
 
-      expect(el().querySelector('h1')?.textContent).toContain('New asset');
+      expect(el().querySelector('h1')?.textContent).toContain('New Asset');
       expect(el().querySelector('[data-record-header] [data-back-link]')?.textContent).toContain(
         'Assets',
       );

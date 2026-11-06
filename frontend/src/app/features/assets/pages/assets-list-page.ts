@@ -24,21 +24,26 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { AssetTypeChip } from '../../../shared/ui/asset-type-chip';
 import { StatusChip } from '../../../shared/ui/status-chip';
-import { GridFrame } from '../../../shared/ui/grid-frame';
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { FilterDef, FilterOption } from '../../../shared/filters/filter-def';
 import { ListToolbar } from '../../../shared/filters/list-toolbar';
 import { SortedLine, sortLabelsOf } from '../../../shared/ui/sorted-line';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { AdminCardList, AdminCardSpec } from '../../../shared/ui/admin-card-spec';
-import { AdminColumn } from '../../../shared/ui/admin-list-state';
+import { ActionMenu } from '../../../shared/ui/action-menu';
+import { RowActionSpec, rowActions } from '../../../shared/ui/row-actions';
+import {
+  RecordCell,
+  RecordColumns,
+  RecordGrid,
+  RecordGridColumn,
+  RecordGridState,
+} from '../../../shared/ui/record-grid';
 import { CopyButton } from '../../../shared/ui/copy-button';
-import { GridBody } from '../../../shared/ui/grid-body';
 import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { phoneCards } from '../../../shared/ui/record-card-list';
 import { RecordSort } from '../../../shared/ui/record-sort';
 import { SortOption } from '../../../shared/work-queue/phone-sort';
-import { SortHeader } from '../../../shared/ui/data-table';
 import { FixedPage } from '../../../shared/ui/fixed-page';
 import { ServerListPage } from '../../../shared/ui/list-query';
 import { MatterRef } from '../../../shared/ui/matter-ref';
@@ -62,18 +67,16 @@ import {
   parseAssetStatusKey as parseStatusKey,
 } from '../../../shared/filters/asset-status-filter';
 
-/** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = [
-  'select',
-  'type',
-  'name',
-  'matter',
-  'size',
-  'linkedTasks',
-  'externalReference',
-  'status',
-] as const;
-type Column = (typeof COLUMNS)[number];
+/** Bone widths of a skeleton row, per column key. */
+const BONES: Record<string, string> = {
+  type: '7rem',
+  name: '14rem',
+  matter: '6rem',
+  size: '4rem',
+  linkedTasks: '2rem',
+  externalReference: '9rem',
+  status: '6rem',
+};
 
 /**
  * Global Assets list (UX S08): 44 px rows on the admin grid, one inline filter per filterable column (a second header row, open from 640 px;
@@ -86,7 +89,6 @@ type Column = (typeof COLUMNS)[number];
   selector: 'mf-assets-list-page',
   imports: [
     FixedPage,
-    GridFrame,
     NgTemplateOutlet,
     PageHeader,
     ScopeSwitch,
@@ -94,13 +96,15 @@ type Column = (typeof COLUMNS)[number];
     AssetTypeChip,
     Button,
     CopyButton,
-    GridBody,
     RouterLink,
     RowLink,
     HasPermissionDirective,
     Pager,
     MatterRef,
-    SortHeader,
+    RecordGrid,
+    RecordCell,
+    RecordColumns,
+    ActionMenu,
     ListToolbar,
     SortedLine,
     ColumnFilterRow,
@@ -111,17 +115,17 @@ type Column = (typeof COLUMNS)[number];
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   styles: `
+    /* Name is the spring of the table: one line with an ellipsis (D-45); the floor is on the heading (the column definition). */
+    td.as-name {
+      width: 100%;
+      max-width: 0;
+    }
     .as-matter {
-      width: 1%;
       white-space: nowrap;
     }
-    @media (max-width: 899.98px) {
-      td.as-type {
-        max-width: 9rem;
-      }
-    }
-    .as-type {
-      max-width: 11rem;
+    /* The type cell never grows its column: the name is cut with an ellipsis (the full name is the tooltip). */
+    td.as-type {
+      max-width: 10rem;
     }
     .as-tycell {
       display: flex;
@@ -153,8 +157,7 @@ type Column = (typeof COLUMNS)[number];
       color: var(--mf-text-muted);
     }
     td.as-refcell {
-      width: 11rem;
-      max-width: 11rem;
+      max-width: 10rem;
     }
     .as-zero {
       color: var(--mf-text-muted);
@@ -163,7 +166,6 @@ type Column = (typeof COLUMNS)[number];
       color: var(--mf-text-muted);
     }
     .as-check {
-      width: 2rem;
       padding-inline: var(--mf-s1);
       text-align: center;
     }
@@ -173,19 +175,6 @@ type Column = (typeof COLUMNS)[number];
     .as-disposition {
       padding-inline: var(--mf-s1);
       white-space: nowrap;
-    }
-    /* The Disposition filter is a select in this column: from 768 px it keeps room for "Disposed" and "Inactive" instead of being squeezed to "Act" (PM v2, #883). */
-    @media (min-width: 1100px) {
-      th.as-disposition,
-      td.as-disposition {
-        min-width: 10.5rem;
-      }
-    }
-    @media (min-width: 768px) and (max-width: 1099.98px) {
-      th.as-disposition,
-      td.as-disposition {
-        min-width: 8rem;
-      }
     }
     /* The warning is the icon beside the chip (its words are the tooltip and the accessible text), so a row stays 44 px (D-42, #1152). */
     .as-warn {
@@ -214,9 +203,6 @@ type Column = (typeof COLUMNS)[number];
     }
     .as-bulk__count {
       font-weight: 600;
-    }
-    tr.as-row--on {
-      background: var(--mf-selected-bg);
     }
   `,
   template: `
@@ -261,6 +247,9 @@ type Column = (typeof COLUMNS)[number];
         [clearAlso]="['q']"
         [bulkActive]="canChange() && selected().size > 0"
       >
+        @if (!phone()) {
+          <mf-record-columns mfColumns [grid]="grid" />
+        }
         <mf-sorted-line
           mfBarEnd
           [sort]="sort()"
@@ -339,251 +328,180 @@ type Column = (typeof COLUMNS)[number];
             }
           </mf-admin-card-list>
         } @else {
-          <mf-grid-frame scrollLabel="Assets list" #scroll>
-            <div class="mf-scroll">
-              <table class="mf-grid tt" id="assets-table" data-assets>
-                <caption class="mf-sr-only">
-                  Assets
-                </caption>
-                <thead>
-                  <tr>
-                    @if (canChange()) {
-                      <th class="as-check" scope="col">
-                        <input
-                          type="checkbox"
-                          data-select-all
-                          aria-label="Select all assets on this page"
-                          [checked]="allSelected()"
-                          [indeterminate]="selected().size > 0 && !allSelected()"
-                          (change)="toggleAll($any($event.target).checked)"
-                        />
-                      </th>
-                    }
-                    <th
-                      mfSort="assetType"
-                      [sort]="sort()"
-                      [defaultSort]="defaultSort"
-                      (sorted)="setSort($event)"
-                    >
-                      Type
-                    </th>
-                    <th
-                      class="mf-cell-name"
-                      mfSort="displayName"
-                      [sort]="sort()"
-                      [defaultSort]="defaultSort"
-                      (sorted)="setSort($event)"
-                    >
-                      Name
-                    </th>
-                    <th
-                      class="as-matter"
-                      mfSort="matter"
-                      [sort]="sort()"
-                      [defaultSort]="defaultSort"
-                      (sorted)="setSort($event)"
-                    >
-                      CM Number
-                    </th>
-                    <th
-                      class="mf-cell-num as-size"
-                      mfSort="size"
-                      [firstDesc]="true"
-                      [sort]="sort()"
-                      [defaultSort]="defaultSort"
-                      [attr.data-drop]="drop.size"
-                      (sorted)="setSort($event)"
-                    >
-                      Size
-                    </th>
-                    @if (tasksShown()) {
-                      <th
-                        class="mf-cell-num"
-                        mfSort="linkedTaskCount"
-                        [firstDesc]="true"
-                        [sort]="sort()"
-                        [defaultSort]="defaultSort"
-                        [attr.data-drop]="drop.linkedTasks"
-                        (sorted)="setSort($event)"
-                      >
-                        <span title="Open of all linked tasks">Linked Tasks</span>
-                      </th>
-                    }
-                    <th class="as-refcell" scope="col" [attr.data-drop]="drop.externalReference">
-                      External Reference
-                    </th>
-                    <th
-                      class="as-disposition"
-                      mfSort="disposition"
-                      [sort]="sort()"
-                      [defaultSort]="defaultSort"
-                      (sorted)="setSort($event)"
-                    >
-                      <!-- The short word below 768 px: the header sets the width of the column and the grid must fit at 640 px. -->
-                      Disposition
-                    </th>
-                  </tr>
-                  @if (filters.rowVisible()) {
-                    <tr
-                      mfColumnFilterRow
-                      id="asset-filter-row"
-                      [filters]="filters"
-                      [columns]="visibleColumns()"
-                    ></tr>
-                  }
-                </thead>
-                <tbody
-                  mfGridBody
-                  noun="assets"
-                  [columnSpec]="columnSpec()"
-                  [filters]="filters"
-                  [state]="state()"
-                  [empty]="rows().length === 0"
-                  [filtered]="filters.activeCount() > 0"
-                  [hidden]="hiddenCount()"
-                  hiddenLabel="inactive"
-                  (retry)="load()"
-                  (clear)="clear()"
-                  [emptyText]="emptyText()"
-                  (showAll)="showAll()"
+          <mf-record-grid
+            #scroll
+            label="Assets list"
+            caption="Assets"
+            noun="assets"
+            [grid]="grid"
+            [rows]="rows()"
+            [rowKey]="assetKey"
+            [loadState]="state()"
+            [empty]="rows().length === 0"
+            [filtered]="filters.activeCount() > 0"
+            [emptyText]="emptyText()"
+            [filters]="filters"
+            [hidden]="hiddenCount()"
+            hiddenLabel="inactive"
+            [bones]="bones"
+            [selecting]="canChange()"
+            [allSelected]="allSelected()"
+            [someSelected]="selected().size > 0"
+            selectAllLabel="Select all assets on this page"
+            (selectAll)="toggleAll($event)"
+            [rowClass]="rowClass"
+            [actions]="canChange()"
+            [sort]="sort()"
+            [defaultSort]="defaultSort"
+            (sorted)="setSort($event)"
+            (retry)="load()"
+            (clear)="clear()"
+            (showAll)="showAll()"
+          >
+            @if (filters.rowVisible()) {
+              <tr
+                mfGridFilterRow
+                mfColumnFilterRow
+                id="asset-filter-row"
+                [filters]="filters"
+                [columns]="columns()"
+              ></tr>
+            }
+            @if (scope.mine() && scope.canAll()) {
+              <button
+                mfEmptyAction
+                type="button"
+                class="mf-btn"
+                data-show-all-matters
+                (click)="scope.set('all')"
+              >
+                Show All Matters
+              </button>
+            }
+            <ng-template mfCell="select" let-a>
+              <td class="as-check">
+                <input
+                  type="checkbox"
+                  data-select-row
+                  [attr.aria-label]="'Select ' + a.displayName"
+                  [checked]="selected().has(a.assetId)"
+                  (change)="toggle(a.assetId, $any($event.target).checked)"
+                />
+              </td>
+            </ng-template>
+            <ng-template mfCell="type" let-a>
+              <td class="as-type" [attr.title]="a.assetTypeName">
+                <span class="as-tycell"
+                  ><mf-asset-type-chip
+                    size="sm"
+                    [decorative]="true"
+                    [iconKey]="a.assetTypeIconKey"
+                    [colourKey]="a.assetTypeColourKey"
+                    [typeId]="a.assetTypeId"
+                    [name]="a.assetTypeName"
+                  /><span class="as-tyname">{{ a.assetTypeName }}</span></span
                 >
-                  @if (scope.mine() && scope.canAll()) {
-                    <button
-                      mfEmptyAction
-                      type="button"
-                      class="mf-btn"
-                      data-show-all-matters
-                      (click)="scope.set('all')"
-                    >
-                      Show All Matters
-                    </button>
-                  }
-                  @for (a of rows(); track a.assetId) {
-                    <tr
-                      [attr.data-asset-id]="a.assetId"
-                      [class.as-row--on]="selected().has(a.assetId)"
-                    >
-                      @if (canChange()) {
-                        <td class="as-check">
-                          <input
-                            type="checkbox"
-                            data-select-row
-                            [attr.aria-label]="'Select ' + a.displayName"
-                            [checked]="selected().has(a.assetId)"
-                            (change)="toggle(a.assetId, $any($event.target).checked)"
-                          />
-                        </td>
-                      }
-                      <td class="as-type" [attr.title]="a.assetTypeName">
-                        <span class="as-tycell"
-                          ><mf-asset-type-chip
-                            size="sm"
-                            [decorative]="true"
-                            [iconKey]="a.assetTypeIconKey"
-                            [colourKey]="a.assetTypeColourKey"
-                            [typeId]="a.assetTypeId"
-                            [name]="a.assetTypeName"
-                          /><span class="as-tyname">{{ a.assetTypeName }}</span></span
-                        >
-                      </td>
-                      <td class="mf-cell-name">
-                        <a
-                          class="mf-name"
-                          [routerLink]="['/assets', a.assetId]"
-                          mfRowLink="assets"
-                          [rowKey]="a.assetId"
-                          [attr.title]="a.displayName"
-                          [attr.data-asset-name]="a.assetId"
-                          >{{ a.displayName }}</a
-                        >
-                      </td>
-                      <td class="as-matter" [attr.title]="a.matterName" data-matter>
-                        <mf-matter-ref
-                          [value]="a.matterRef"
-                          [link]="matterLink(a.matterId)"
-                          [copy]="false"
-                        />
-                      </td>
-                      <td class="mf-cell-num as-size" [attr.data-drop]="drop.size" data-size>
-                        @if (sizeText(a); as size) {
-                          {{ size }}
-                        } @else {
-                          <span class="as-ref__none" aria-hidden="true">&ndash;</span>
-                          <span class="mf-sr-only">No size</span>
-                        }
-                      </td>
-                      @if (tasksShown()) {
-                        <td class="mf-cell-num" [attr.data-drop]="drop.linkedTasks" data-linked>
-                          <!-- "2 / 5": open of all linked (PM v2, #883); the words are for a screen reader, the tooltip says it in full. -->
-                          <span
-                            [attr.title]="
-                              (a.openLinkedTaskCount ?? 0) +
-                              ' open of ' +
-                              (a.linkedTaskCount ?? 0) +
-                              ' linked tasks'
-                            "
-                            [class.as-zero]="!a.linkedTaskCount"
-                            aria-hidden="true"
-                            >{{ a.openLinkedTaskCount ?? 0 }} / {{ a.linkedTaskCount ?? 0 }}</span
-                          >
-                          <span class="mf-sr-only"
-                            >{{ a.openLinkedTaskCount ?? 0 }} open of
-                            {{ a.linkedTaskCount ?? 0 }} linked tasks</span
-                          >
-                        </td>
-                      }
-                      <td
-                        class="as-refcell"
-                        [attr.data-drop]="drop.externalReference"
-                        data-reference
-                      >
-                        @if (a.externalReference) {
-                          <div class="as-ref">
-                            <span class="as-ref__text" [attr.title]="a.externalReference">{{
-                              a.externalReference
-                            }}</span>
-                            <mf-copy-button
-                              [text]="a.externalReference"
-                              label="external reference"
-                              [rowStop]="true"
-                            />
-                          </div>
-                        } @else {
-                          <span class="as-ref__none" aria-hidden="true">&ndash;</span>
-                          <span class="mf-sr-only">No external reference</span>
-                        }
-                      </td>
-                      <td class="as-disposition" data-status>
-                        @if (a.dispositionCode === 'ACTIVE') {
-                          <!-- Active is the ordinary state: no badge, only the words for a screen reader. -->
-                          <span class="mf-sr-only">Active</span>
-                        } @else {
-                          <mf-status-chip
-                            kind="disposition"
-                            [code]="a.dispositionCode"
-                            data-disposition-badge
-                          />
-                        }
-                        @if (a.inactiveLinked) {
-                          <span
-                            class="as-warn"
-                            data-inactive-linked
-                            title="Still linked to open tasks"
-                          >
-                            <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-                            <span class="as-warn__text">Still linked to open tasks</span>
-                          </span>
-                        }
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-            <div frameFoot>
+              </td>
+            </ng-template>
+            <ng-template mfCell="name" let-a>
+              <td class="as-name">
+                <a
+                  class="mf-link pg-clip"
+                  [routerLink]="['/assets', a.assetId]"
+                  mfRowLink="assets"
+                  [rowKey]="a.assetId"
+                  [attr.title]="a.displayName"
+                  [attr.data-asset-name]="a.assetId"
+                  >{{ a.displayName }}</a
+                >
+              </td>
+            </ng-template>
+            <ng-template mfCell="matter" let-a>
+              <td class="as-matter" [attr.title]="a.matterName" data-matter>
+                <mf-matter-ref
+                  [value]="a.matterRef"
+                  [link]="matterLink(a.matterId)"
+                  [copy]="false"
+                />
+              </td>
+            </ng-template>
+            <ng-template mfCell="size" let-a>
+              <td class="pg-num as-size" data-size>
+                @if (sizeText(a); as size) {
+                  {{ size }}
+                } @else {
+                  <span class="as-ref__none" aria-hidden="true">&ndash;</span>
+                  <span class="mf-sr-only">No size</span>
+                }
+              </td>
+            </ng-template>
+            <ng-template mfCell="linkedTasks" let-a>
+              <td class="pg-num" data-linked>
+                <!-- "2 / 5": open of all linked (PM v2, #883); the words are for a screen reader, the tooltip says it in full. -->
+                <span
+                  [attr.title]="
+                    (a.openLinkedTaskCount ?? 0) +
+                    ' open of ' +
+                    (a.linkedTaskCount ?? 0) +
+                    ' linked tasks'
+                  "
+                  [class.as-zero]="!a.linkedTaskCount"
+                  aria-hidden="true"
+                  >{{ a.openLinkedTaskCount ?? 0 }} / {{ a.linkedTaskCount ?? 0 }}</span
+                >
+                <span class="mf-sr-only"
+                  >{{ a.openLinkedTaskCount ?? 0 }} open of {{ a.linkedTaskCount ?? 0 }} linked
+                  tasks</span
+                >
+              </td>
+            </ng-template>
+            <ng-template mfCell="externalReference" let-a>
+              <td class="as-refcell" data-reference>
+                @if (a.externalReference) {
+                  <div class="as-ref">
+                    <span class="as-ref__text" [attr.title]="a.externalReference">{{
+                      a.externalReference
+                    }}</span>
+                    <mf-copy-button
+                      [text]="a.externalReference"
+                      label="external reference"
+                      [rowStop]="true"
+                    />
+                  </div>
+                } @else {
+                  <span class="as-ref__none" aria-hidden="true">&ndash;</span>
+                  <span class="mf-sr-only">No external reference</span>
+                }
+              </td>
+            </ng-template>
+            <ng-template mfCell="status" let-a>
+              <td class="as-disposition" data-status>
+                <mf-status-chip
+                  kind="disposition"
+                  [code]="a.dispositionCode"
+                  data-disposition-badge
+                />
+                @if (a.inactiveLinked) {
+                  <span class="as-warn" data-inactive-linked title="Still linked to open tasks">
+                    <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+                    <span class="as-warn__text">Still linked to open tasks</span>
+                  </span>
+                }
+              </td>
+            </ng-template>
+            <ng-template mfCell="actions" let-a>
+              <td class="mf-col-actions" data-row-actions>
+                <mf-action-menu
+                  [floating]="true"
+                  [label]="menus().get(a.assetId)!.label"
+                  [items]="menus().get(a.assetId)!.items"
+                />
+              </td>
+            </ng-template>
+            <div mfGridFoot>
               <ng-container *ngTemplateOutlet="pager" />
             </div>
-          </mf-grid-frame>
+          </mf-record-grid>
         }
         @if (phone()) {
           <ng-container *ngTemplateOutlet="pager" />
@@ -631,36 +549,74 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
   protected readonly emptyText = computed(() =>
     this.scope.mine() ? 'You do not manage any matter yet.' : 'No assets yet.',
   );
-  /** No column leaves by window width (LC-09): the grid frame scrolls sideways; `drop` is a marker only. */
-  protected readonly drop = {
-    externalReference: 1280,
-    linkedTasks: 900,
-    size: 1100,
-    select: 768,
-  } as const;
   protected readonly dispositionOf = dispositionOf;
   /** The Linked tasks column is for people who may see tasks: the API sends no counts without `Task.View` (#498). */
   protected readonly tasksShown = computed(() => this.auth.has('Task.View'));
-  /** People who may change an asset's disposition get a checkbox column and the bulk bar. */
+  /** People who may change an asset's disposition get a checkbox column, the bulk bar and the row menu. */
   protected readonly canChange = computed(
     () => this.auth.has('Asset.Edit') || this.auth.has('Asset.Dispose'),
   );
-  protected readonly columnSpec = computed<AdminColumn[]>(() => [
-    ...(this.canChange() ? [{ cls: 'as-check', bone: '1rem' }] : []),
-    { cls: 'as-type', bone: '7rem' },
-    { cls: 'mf-cell-name', bone: '14rem' },
-    { cls: 'as-matter', bone: '6rem' },
-    { cls: 'mf-cell-num as-size', bone: '4rem', drop: this.drop.size },
+  /** The columns this person may have, in the default order (Name cannot be hidden; Linked Tasks needs Task.View). The grid frame scrolls sideways when they do not fit. */
+  protected readonly gridDefs = computed((): RecordGridColumn[] => [
+    {
+      key: 'type',
+      label: 'Type',
+      sort: 'assetType',
+      width: '10rem',
+      minWidth: '10rem',
+    },
+    // The spring: no width, so it takes the free room in every state.
+    { key: 'name', label: 'Name', locked: true, sort: 'displayName', minWidth: '200px' },
+    { key: 'matter', label: 'CM Number', sort: 'matter', width: '9rem', minWidth: '9rem' },
+    {
+      key: 'size',
+      label: 'Size',
+      sort: 'size',
+      firstDesc: true,
+      num: true,
+      width: '7.5rem',
+      minWidth: '7.5rem',
+    },
     ...(this.tasksShown()
-      ? [{ cls: 'mf-cell-num', bone: '2rem', drop: this.drop.linkedTasks }]
+      ? [
+          {
+            key: 'linkedTasks',
+            label: 'Linked Tasks',
+            sort: 'linkedTaskCount',
+            firstDesc: true,
+            num: true,
+            width: '9.75rem',
+            minWidth: '9.75rem',
+          },
+        ]
       : []),
-    { cls: 'as-refcell', bone: '12rem', drop: this.drop.externalReference },
-    { cls: 'as-disposition', bone: '6rem' },
+    { key: 'externalReference', label: 'External Reference', width: '10rem', minWidth: '10rem' },
+    // The chip is shown whole: "Pending Disposition" is 154 px, so the column is wider than the 140 px Status of the other lists (D-43 deviation, to be ruled).
+    {
+      key: 'status',
+      label: 'Disposition',
+      sort: 'disposition',
+      width: '11.6rem',
+      minWidth: '11.6rem',
+    },
   ]);
-  protected readonly visibleColumns = computed<readonly Column[]>(() =>
-    COLUMNS.filter(
-      (c) => !(c === 'select' && !this.canChange()) && !(c === 'linkedTasks' && !this.tasksShown()),
-    ),
+  /** The grid state (shared record grid, #1241): order, visibility and stored widths per person under the id "assets". */
+  protected readonly grid = new RecordGridState('assets', this.gridDefs);
+  protected readonly bones = BONES;
+  protected readonly assetKey = (a: AssetListItem): number => a.assetId;
+  /** Every column of the table, in order, the checkbox and action ones included: the keys the filter definitions point at. */
+  protected readonly columns = computed(() => [
+    ...(this.canChange() ? ['select'] : []),
+    ...this.grid.shown(),
+    ...(this.canChange() ? ['actions'] : []),
+  ]);
+  protected readonly rowClass = (a: AssetListItem): string | null =>
+    this.selected().has(a.assetId) ? 'is-selected' : null;
+  /** The asset a row menu works on (Change Disposition for this one asset), instead of the ticked rows. */
+  private readonly single = signal<AssetListItem | null>(null);
+  /** The quick actions of a row, built once per page of rows. */
+  protected readonly menus = computed(
+    () => new Map(this.rows().map((a) => [a.assetId, this.buildMenu(a)] as const)),
   );
   /** Below 640 px the list is cards, not a table (#502). */
   protected readonly phone = phoneCards();
@@ -713,15 +669,16 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     () => this.rows().length > 0 && this.rows().every((r) => this.selected().has(r.assetId)),
   );
   protected readonly targets = computed<DispositionTarget[]>(() =>
-    this.rows()
-      .filter((r) => this.selected().has(r.assetId))
-      .map((r) => ({
-        assetId: r.assetId,
-        name: r.displayName,
-        code: r.dispositionCode as DispositionCode,
-        openLinkedTaskCount: this.tasksShown() ? (r.openLinkedTaskCount ?? null) : null,
-        rowVersion: r.rowVersion,
-      })),
+    (this.single()
+      ? [this.single()!]
+      : this.rows().filter((r) => this.selected().has(r.assetId))
+    ).map((r) => ({
+      assetId: r.assetId,
+      name: r.displayName,
+      code: r.dispositionCode as DispositionCode,
+      openLinkedTaskCount: this.tasksShown() ? (r.openLinkedTaskCount ?? null) : null,
+      rowVersion: r.rowVersion,
+    })),
   );
   protected readonly types = signal<AssetTypeResponse[]>([]);
 
@@ -759,8 +716,15 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
       emptyLabel: 'All Types',
       options: this.typeOptions(),
     },
-    { key: 'matter', label: 'Matter', column: 'matter', type: 'text' },
-    { key: 'extref', label: 'External Reference', column: 'externalReference', type: 'text' },
+    // The input says the short heading word (D-44d): the column is CM Number.
+    { key: 'matter', label: 'Matter', column: 'matter', type: 'text', placeholder: 'Number' },
+    {
+      key: 'extref',
+      label: 'External Reference',
+      column: 'externalReference',
+      type: 'text',
+      placeholder: 'Reference',
+    },
     {
       key: 'status',
       label: 'Disposition',
@@ -798,7 +762,7 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     screen: 'assets',
     noun: 'assets',
     defs: this.defs,
-    visibleColumns: computed(() => (this.phone() ? null : this.visibleColumns())),
+    visibleColumns: computed(() => (this.phone() ? null : this.columns())),
     // Open from 640 px (a sheet below), like Clients, Matters and Projects (#499).
     openByDefault: true,
     sheetBelow: 640,
@@ -811,6 +775,10 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     // "Skip to table" is the first Tab stop of the page (#503); it lands on the first row's name, or on the first card on a phone.
     registerTableSkip();
     void this.loadTypes();
+    // The row menu's single asset is forgotten when the dialog closes, so the bulk bar works on the ticked rows again.
+    effect(() => {
+      if (!this.dispositionOpen()) untracked(() => this.single.set(null));
+    });
 
     // The controls move into the sheet while the grid scrolls sideways.
     effect(() => {
@@ -918,6 +886,23 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     this.selected.set(on ? new Set(this.rows().map((r) => r.assetId)) : new Set());
   }
 
+  private buildMenu(a: AssetListItem) {
+    const specs: RowActionSpec[] = [
+      {
+        id: 'change-disposition',
+        label: 'Change Disposition',
+        icon: 'pi-sliders-h',
+        permission: ['Asset.Edit', 'Asset.Dispose'],
+        run: () => {
+          this.single.set(a);
+          this.dispositionOpen.set(true);
+        },
+      },
+    ];
+    const menu = rowActions(a.displayName, specs, { can: (perm) => this.auth.has(perm) });
+    return { ...menu, label: `More actions for ${a.displayName}` };
+  }
+
   protected clearSelection(): void {
     this.selected.set(new Set());
   }
@@ -925,7 +910,8 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
   /** After the dialog: the list reloads; the assets that could not be changed stay selected so the person sees which. */
   protected dispositionDone(outcome: DispositionOutcome): void {
     const failed = outcome.bulk?.results.filter((r) => !r.ok).map((r) => r.assetId) ?? [];
-    this.selected.set(new Set(failed));
+    // A change through a row menu leaves the ticked rows as they are.
+    if (!this.single()) this.selected.set(new Set(failed));
     this.load();
   }
 }

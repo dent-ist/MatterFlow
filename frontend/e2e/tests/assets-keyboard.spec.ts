@@ -67,12 +67,12 @@ test.describe('Assets keyboard audit (WP-AS6)', () => {
     const { token } = await seeded(seed, 3);
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/assets?name=${token}`);
-    await expect(page.locator('tbody tr[data-asset-id]')).toHaveCount(3);
+    await expect(page.locator('tbody tr[data-record-id]')).toHaveCount(3);
 
     await page.keyboard.press('Tab');
     await expect(page.getByRole('link', { name: 'Skip to Table' })).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(page.locator('tbody a.mf-name').first()).toBeFocused();
+    await expect(page.locator('tbody a[data-asset-name]').first()).toBeFocused();
 
     // From the first name to the end of the page: the stops are the name and matter link of each row, then the pager.
     const stops = await tabUntil(page, (n) => n.startsWith('body'), 40);
@@ -127,7 +127,7 @@ test.describe('Assets keyboard audit (WP-AS6)', () => {
     const { token, assets } = await seeded(seed, 2);
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/assets?name=${token}&sort=displayName`);
-    const first = page.locator('tbody a.mf-name').first();
+    const first = page.locator('tbody a[data-asset-name]').first();
     await first.focus();
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(new RegExp(`/assets/${assets[0].assetId}$`));
@@ -264,7 +264,7 @@ test.describe('Assets keyboard audit (WP-AS6)', () => {
       await expect(
         size.width < 640
           ? page.locator('li.rc').first()
-          : page.locator('tbody tr[data-asset-id]').first(),
+          : page.locator('tbody tr[data-record-id]').first(),
       ).toBeVisible();
       expect(await axeViolations(page), `list at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);

@@ -48,7 +48,7 @@ test.describe('assets screen screenshots', () => {
       await page.addInitScript(() => localStorage.clear());
 
       // The filter row is open on arrival from 640 px; below that the Filters button opens the sheet (WP-AS3).
-      const rows = size.w < 640 ? page.locator('li.rc') : page.locator('tbody tr[data-asset-id]');
+      const rows = size.w < 640 ? page.locator('li.rc') : page.locator('tbody tr[data-record-id]');
       await page.goto('/assets');
       await expect(page.getByRole('heading', { name: 'Assets', level: 1 })).toBeVisible();
       await expect(rows.first()).toBeVisible();

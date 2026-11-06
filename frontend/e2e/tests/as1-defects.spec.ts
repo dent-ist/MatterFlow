@@ -60,7 +60,7 @@ test.describe('Assets list defects (WP-AS1)', () => {
         await expect(plain.locator('li.rc')).toHaveCount(3);
         await expect(plain.locator('li.rc').first()).toContainText(rows.matter.matterRef);
       } else {
-        await expect(plain.locator('tbody tr[data-asset-id]')).toHaveCount(3);
+        await expect(plain.locator('tbody tr[data-record-id]')).toHaveCount(3);
         await expect(plain.locator('tbody .mf-ref').first()).toHaveText(rows.matter.matterRef);
       }
       await expect(plain.locator('a[href^="/matters"]')).toHaveCount(0);
@@ -106,7 +106,7 @@ test.describe('Assets list defects (WP-AS1)', () => {
     const rows = await seedRows(seed, token);
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/assets?name=${token}`);
-    const trs = page.locator('tbody tr[data-asset-id]');
+    const trs = page.locator('tbody tr[data-record-id]');
     await expect(trs).toHaveCount(3);
     for (let i = 0; i < 3; i++) {
       const box = (await trs.nth(i).boundingBox())!;
@@ -114,7 +114,7 @@ test.describe('Assets list defects (WP-AS1)', () => {
       expect(Math.round(box.height), `row ${i}`).toBeGreaterThanOrEqual(44);
     }
 
-    const longRow = page.locator(`tr[data-asset-id="${rows.long.assetId}"]`);
+    const longRow = page.locator(`tr[data-record-id="${rows.long.assetId}"]`);
     const text = longRow.locator('.as-ref__text');
     await expect(text).toHaveAttribute('title', LONG_URL);
     expect(
@@ -123,13 +123,16 @@ test.describe('Assets list defects (WP-AS1)', () => {
         cut: e.scrollWidth > e.clientWidth,
       })),
     ).toEqual({ one: true, cut: true });
-    await expect(longRow.locator('a.mf-name')).toHaveAttribute('title', rows.long.displayName);
+    await expect(longRow.locator('a[data-asset-name]')).toHaveAttribute(
+      'title',
+      rows.long.displayName,
+    );
 
     await longRow.hover();
     await longRow.getByRole('button', { name: 'Copy external reference' }).click();
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(LONG_URL);
 
-    const none = page.locator(`tr[data-asset-id="${rows.none.assetId}"] td[data-reference]`);
+    const none = page.locator(`tr[data-record-id="${rows.none.assetId}"] td[data-reference]`);
     await expect(none).toContainText('–');
     await expect(none.locator('button')).toHaveCount(0);
   });
@@ -145,7 +148,7 @@ test.describe('Assets list defects (WP-AS1)', () => {
     const page = await asUser(viewer.username);
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/assets?name=${token}`);
-    const row = page.locator(`tr[data-asset-id="${rows.plain.assetId}"]`);
+    const row = page.locator(`tr[data-record-id="${rows.plain.assetId}"]`);
     const stops = await row.evaluate(
       (tr) =>
         Array.from(
@@ -154,7 +157,7 @@ test.describe('Assets list defects (WP-AS1)', () => {
     );
     expect(stops).toBe(1);
 
-    await row.locator('a.mf-name').focus();
+    await row.locator('a[data-asset-name]').focus();
     await page.keyboard.press('ArrowRight');
     await expect(row.getByRole('button', { name: 'Copy external reference' })).toBeFocused();
   });
@@ -208,7 +211,7 @@ test.describe('Assets list defects (WP-AS1)', () => {
     const token = uid();
     await seedRows(seed, token);
     await page.goto(`/assets?name=${token}&size=25`);
-    await expect(page.locator('tbody tr[data-asset-id]')).toHaveCount(3);
+    await expect(page.locator('tbody tr[data-record-id]')).toHaveCount(3);
     await atEverySize(page, 'as1-assets-list', async (size) => {
       await expect(page.getByRole('columnheader', { name: 'External Reference' })).toHaveCount(
         size.width >= 640 ? 1 : 0,
@@ -216,7 +219,7 @@ test.describe('Assets list defects (WP-AS1)', () => {
       await expect(
         size.width < 640
           ? page.locator('li.rc').first()
-          : page.locator('tbody tr[data-asset-id]').first(),
+          : page.locator('tbody tr[data-record-id]').first(),
       ).toBeVisible();
     });
     await page.setViewportSize({ width: 1366, height: 768 });
