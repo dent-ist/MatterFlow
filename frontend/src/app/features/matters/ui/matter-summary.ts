@@ -5,6 +5,7 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { ActiveBadge, Badge, SensitiveBadge } from '../../../shared/ui/badge';
 import { AssetTypeChip } from '../../../shared/ui/asset-type-chip';
+import { StateBlock } from '../../../shared/ui/state-block';
 import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { DetailField, DetailsCard } from '../../../shared/ui/details-card';
 import { MatterRef } from '../../../shared/ui/matter-ref';
@@ -28,6 +29,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
 @Component({
   selector: 'mf-matter-summary',
   imports: [
+    StateBlock,
     IntPipe,
     RouterLink,
     ActiveBadge,
@@ -51,6 +53,16 @@ import { IntPipe } from '../../../shared/ui/number-format';
     /* The strip's room is kept while it loads, so the Details card does not jump when the tiles arrive (layout shift). */
     [data-summary-assets] {
       min-height: 3rem;
+    }
+    /* No assets: one 52 px card row in the place of the tile strip (D-44x): muted sentence at the left, the text button at the right. */
+    .ms__no-assets {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--mf-s3);
+      height: calc(var(--mf-ctl-h) + 2 * var(--mf-s2));
+      padding: 0 var(--mf-s4);
+      font-size: var(--mf-fs-md);
     }
     /* The asset strip: equal tiles in one row that scrolls sideways when there are too many. */
     .ms__tiles {
@@ -84,16 +96,6 @@ import { IntPipe } from '../../../shared/ui/number-format';
       font-size: var(--mf-fs-figure);
       font-weight: 700;
       font-variant-numeric: tabular-nums;
-    }
-    .ms__empty-assets {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--mf-s2);
-      padding: var(--mf-s2) var(--mf-s3);
-      border: 1px dashed var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
-      color: var(--mf-text-muted);
     }
     /* The Details card is the shared mf-details-card (D-44f); it fits its content and scrolls inside when the room is used up. */
     .ms__body {
@@ -140,12 +142,14 @@ import { IntPipe } from '../../../shared/ui/number-format';
     @if (showAssets()) {
       <section aria-label="Assets by type" data-summary-assets>
         @if (assetsLoader.state() === 'error') {
-          <p class="ms__empty-assets" role="alert" data-assets-error>
-            Couldn't load the assets.
-            <button type="button" class="mf-btn mf-btn--text" (click)="assetsLoader.load()">
-              Retry
-            </button>
-          </p>
+          <div data-assets-error>
+            <mf-state-block kind="error">
+              Couldn't load assets.
+              <button type="button" mfStateAction class="mf-btn" (click)="assetsLoader.load()">
+                Retry
+              </button>
+            </mf-state-block>
+          </div>
         } @else if (assetTypes().length > 0) {
           <ul class="ms__tiles">
             @for (t of assetTypes(); track t.assetTypeId) {
@@ -170,8 +174,8 @@ import { IntPipe } from '../../../shared/ui/number-format';
             }
           </ul>
         } @else if (assetsLoader.state() === 'ready') {
-          <p class="ms__empty-assets" data-no-assets>
-            <span>This matter has no assets yet.</span>
+          <div class="ms__no-assets mf-card" data-no-assets>
+            <span class="ms__none">No assets yet.</span>
             @if (canCreateAsset()) {
               <button
                 type="button"
@@ -182,7 +186,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
                 New Asset
               </button>
             }
-          </p>
+          </div>
         }
       </section>
     }

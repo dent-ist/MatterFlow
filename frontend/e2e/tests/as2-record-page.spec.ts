@@ -119,7 +119,7 @@ test.describe('Asset record page (WP-AS2)', () => {
     );
     await page.goto(`/assets/${asset.assetId}?tab=tasks`);
     await expect(page.locator('[data-no-access="linked-tasks"]')).toContainText(
-      "You don't have permission to view tasks.",
+      "You don't have access to tasks.",
     );
 
     const edit = await asUser(editor.username);

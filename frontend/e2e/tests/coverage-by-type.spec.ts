@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Page } from '@playwright/test';
 import { Json } from '../support/api';
-import { axeAvailable, axeViolations } from '../support/axe';
+import { axeAvailable, axeBestPractice, axeViolations } from '../support/axe';
 import { usersFilter } from '../support/dropdown';
 import { expect, test } from '../support/fixtures';
 import { CoverageSeed, seedCoverage } from '../support/workload';
@@ -294,6 +294,11 @@ test.describe('Screens and accessibility', () => {
         );
       expect(await overflow()).toBeLessThanOrEqual(0);
       if (axeAvailable()) expect(await axeViolations(page), `types ${size.width}`).toEqual([]);
+      if (axeAvailable()) {
+        // The view heading is an h2 under the page h1 (heading-order, #1280).
+        await expect(page.locator('[data-coverage-heading]')).toHaveJSProperty('tagName', 'H2');
+        expect(await axeBestPractice(page), `types best practice ${size.width}`).toEqual([]);
+      }
       await shoot(page, `by-type-${size.width}`);
 
       // The reviewed type, expanded.

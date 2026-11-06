@@ -82,7 +82,13 @@ describe('HolidaysAdmin (Settings > Holidays)', () => {
     input.value = 'zzz';
     input.dispatchEvent(new Event('input'));
     await settle(f);
-    expect(text(q(f, '[data-no-holidays]'))).toContain('No holiday matches "zzz"');
+    expect(text(q(f, '[data-no-holidays]'))).toContain('No holidays match "zzz".');
+    // D-51: the shared state block, no dashed box, and Clear Search brings the rows back.
+    expect(q(f, '[data-no-holidays] [data-state-block]')).toBeTruthy();
+    q<HTMLButtonElement>(f, '[data-no-holidays] [data-clear-search]').click();
+    await settle(f);
+    expect(input.value).toBe('');
+    expect(qa(f, '[data-holiday]').length).toBeGreaterThan(1);
   });
 
   it('deleting a holiday asks first', async () => {

@@ -31,6 +31,7 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { mfDateLong } from '../../../core/time/time';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { FixedPage } from '../../../shared/ui/fixed-page';
+import { StateBlock } from '../../../shared/ui/state-block';
 import { LIST_ORDER, ListKind, queueArgsFor } from '../dashboard-links';
 import {
   Period,
@@ -132,6 +133,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
   selector: 'mf-dashboard-page',
   imports: [
     FixedPage,
+    StateBlock,
     DashSkeleton,
     DashState,
     DashNote,
@@ -217,12 +219,18 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
           @default {
             @if (data(); as d) {
               @if (isEmpty()) {
-                <div class="empty" data-empty>
-                  <i class="pi pi-inbox empty-icon" aria-hidden="true"></i>
-                  <p>No open tasks, and none were created or completed in this period.</p>
-                  <a *mfHasPermission="'Task.Create'" class="cta" routerLink="/tasks/new">
-                    Create the First Task
-                  </a>
+                <div data-empty data-dash-empty>
+                  <mf-state-block>
+                    No open tasks, and none were created or completed in this period.
+                    <a
+                      *mfHasPermission="'Task.Create'"
+                      mfStateAction
+                      class="mf-btn mf-btn--primary"
+                      routerLink="/tasks/new"
+                    >
+                      <i class="pi pi-plus" aria-hidden="true"></i> New Task
+                    </a>
+                  </mf-state-block>
                 </div>
               } @else {
                 @switch (activeTab()) {
@@ -568,32 +576,6 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
       .grid {
         grid-template-columns: minmax(0, 1fr);
       }
-    }
-    .empty-icon {
-      display: block;
-      margin-bottom: var(--mf-s2);
-      font-size: var(--mf-icon-lg);
-      color: var(--mf-text-muted);
-    }
-    .empty {
-      max-width: 40rem;
-      padding: var(--mf-s6) var(--mf-s4);
-      text-align: center;
-      color: var(--mf-text-muted);
-      background: var(--mf-surface);
-      border: 1px dashed var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
-    }
-    .cta {
-      display: inline-block;
-      padding: var(--mf-s2) var(--mf-s4);
-      color: #fff;
-      background: var(--mf-primary);
-      border-radius: var(--mf-radius);
-      text-decoration: none;
-    }
-    .cta:hover {
-      background: var(--mf-primary-hover);
     }
   `,
 })

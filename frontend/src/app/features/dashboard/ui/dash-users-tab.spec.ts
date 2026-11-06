@@ -747,7 +747,7 @@ describe('DashUsersTab', () => {
 
     it('explains a team with nobody in it', async () => {
       await open(of(aBoard([])));
-      expect(text(q('[data-users-empty]'))).toContain('no team members');
+      expect(text(q('[data-users-empty]'))).toContain('No team members yet.');
     });
 
     it('keeps the cards when a background refresh fails and says so with Retry', async () => {
@@ -1185,6 +1185,12 @@ describe('DashUsersTab', () => {
         expect(text(q('[data-coverage-heading]'))).toBe(
           'Task type coverage - use this to plan training and cross-coverage, not to rank people',
         );
+      });
+
+      it('has the view heading as an h2 and no heading above it in the view (heading order, #1280)', async () => {
+        await typeView();
+        expect(q('[data-coverage-heading]').tagName).toBe('H2');
+        expect(qa('mf-coverage-view h1, mf-coverage-view h2, mf-coverage-view h3').length).toBe(1);
       });
 
       it('lists the names alphabetically with the people count, the completed total and the status', async () => {

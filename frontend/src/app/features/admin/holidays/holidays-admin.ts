@@ -13,6 +13,7 @@ import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { ActionMenu } from '../../../shared/ui/action-menu';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { StateBlock } from '../../../shared/ui/state-block';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { rowActions } from '../../../shared/ui/row-actions';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
@@ -42,6 +43,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     IntPipe,
     CalendarDialog,
     ConfirmDialog,
+    StateBlock,
     HolidayDialog,
     ImportDialog,
     NumericDatePipe,
@@ -59,10 +61,11 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
           </div>
         }
         @case ('error') {
-          <div class="ha__state ha__state--err" role="alert" data-holidays-error>
-            <i class="pi pi-exclamation-triangle" aria-hidden="true"></i> We could not load the
-            holiday calendars.
-            <button type="button" class="mf-btn" (click)="load()">Retry</button>
+          <div data-holidays-error>
+            <mf-state-block kind="error">
+              Couldn't load holiday calendars.
+              <button type="button" mfStateAction class="mf-btn" (click)="load()">Retry</button>
+            </mf-state-block>
           </div>
         }
         @default {
@@ -82,10 +85,14 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                 </button>
               </div>
               @if (calendars().length === 0) {
-                <p class="ha__empty" data-holidays-empty>
-                  <i class="pi pi-calendar" aria-hidden="true"></i> No holiday calendars yet. Create
-                  one for a country or a closure, then add its days.
-                </p>
+                <div data-holidays-empty>
+                  <mf-state-block icon="pi-calendar">
+                    No holiday calendars yet.
+                    <span mfStateReason
+                      >Create one for a country or a closure, then add its days.</span
+                    >
+                  </mf-state-block>
+                </div>
               }
               <ul class="ha__cals" aria-label="Holiday Calendars">
                 @for (c of calendars(); track c.calendarId) {
@@ -250,19 +257,36 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                     <span class="ha__sk"></span><span class="mf-sr-only">Loading the holidays</span>
                   </div>
                 } @else if (listState() === 'error') {
-                  <div class="ha__state ha__state--err" role="alert">
-                    <i class="pi pi-exclamation-triangle" aria-hidden="true"></i> The holidays could
-                    not be loaded.
-                    <button type="button" class="mf-btn" (click)="loadHolidays()">Retry</button>
+                  <div data-holidays-load-error>
+                    <mf-state-block kind="error">
+                      Couldn't load holidays.
+                      <button type="button" mfStateAction class="mf-btn" (click)="loadHolidays()">
+                        Retry
+                      </button>
+                    </mf-state-block>
                   </div>
                 } @else if (rows().length === 0) {
-                  <p class="ha__empty" data-no-holidays>
+                  <div data-no-holidays>
                     @if (query().trim()) {
-                      No holiday matches "{{ query().trim() }}".
+                      <mf-state-block icon="pi-search">
+                        No holidays match "{{ query().trim() }}".
+                        <button
+                          type="button"
+                          mfStateAction
+                          class="mf-btn"
+                          data-clear-search
+                          (click)="query.set('')"
+                        >
+                          Clear Search
+                        </button>
+                      </mf-state-block>
                     } @else {
-                      This calendar has no days yet. Add a holiday or paste a list.
+                      <mf-state-block icon="pi-calendar">
+                        No holidays yet.
+                        <span mfStateReason>Add a holiday or paste a list.</span>
+                      </mf-state-block>
                     }
-                  </p>
+                  </div>
                 } @else {
                   <div
                     class="ha__tw"
@@ -338,7 +362,9 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                   </div>
                 }
               } @else {
-                <p class="ha__empty">Choose a calendar to see its days.</p>
+                <mf-state-block icon="pi-calendar"
+                  >Choose a calendar to see its days.</mf-state-block
+                >
               }
             </div>
           </div>
@@ -683,23 +709,14 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       white-space: nowrap;
       text-align: center !important;
     }
-    .ha__state,
-    .ha__empty {
+    .ha__state {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: var(--mf-s2);
       margin: 0;
       padding: var(--mf-s3) var(--mf-s4);
-      border: 1px dashed var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
       color: var(--mf-text-muted);
-    }
-    .ha__state--err {
-      border-style: solid;
-      border-color: var(--mf-sem-overdue-line);
-      background: var(--mf-sem-overdue-bg);
-      color: var(--mf-sem-overdue-fg);
     }
     .ha__sk {
       display: block;

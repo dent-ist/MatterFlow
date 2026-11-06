@@ -563,9 +563,26 @@ describe('MatterDetailPage', () => {
     assets.getAssetCountsByType.mockReturnValue(ok([]));
     (fixture.componentInstance as unknown as { projectSaved(): void }).projectSaved();
     await settle(fixture);
-    expect(el().querySelector('[data-no-assets]')!.textContent).toContain('no assets yet');
-    el().querySelector<HTMLButtonElement>('[data-new-asset]')!.click();
+    const row = el().querySelector('[data-no-assets]')!;
+    expect(row.textContent).toContain('No assets yet.');
+    // One compact card row (D-44x): no state block, no icon, no dashed border, a text button.
+    expect(row.classList.contains('mf-card')).toBe(true);
+    expect(el().querySelector('[data-summary-assets] mf-state-block')).toBeNull();
+    expect(row.querySelector('i, svg')).toBeNull();
+    const btn = el().querySelector<HTMLButtonElement>('[data-new-asset]')!;
+    expect(btn.classList.contains('mf-btn--text')).toBe(true);
+    expect(btn.textContent!.trim()).toBe('New Asset');
+    btn.click();
     expect(navigateByUrl).toHaveBeenCalledWith('/assets/new?matterId=7');
+
+    // Without Asset.Create the row keeps the sentence and has no button.
+    TestBed.resetTestingModule();
+    await create(['Matter.View', 'Asset.View']);
+    assets.getAssetCountsByType.mockReturnValue(ok([]));
+    (fixture.componentInstance as unknown as { projectSaved(): void }).projectSaved();
+    await settle(fixture);
+    expect(el().querySelector('[data-no-assets]')!.textContent).toContain('No assets yet.');
+    expect(el().querySelector('[data-new-asset]')).toBeNull();
   });
 
   it('shows no task counts in the header and asks for the summary once (MD-01)', async () => {

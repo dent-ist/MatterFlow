@@ -912,7 +912,7 @@ describe('DashboardPage', () => {
           '[data-dash-cards], mf-dash-gauge, mf-dash-battery, mf-dropdown[data-period]',
         ),
       ).toBeNull();
-      expect(el.querySelector('.empty[data-empty]')).toBeNull();
+      expect(el.querySelector('[data-dash-empty]')).toBeNull();
       expect(
         Array.from(el.querySelectorAll('[data-panel]')).map((p) => p.getAttribute('data-panel')),
       ).toEqual(['unassigned']);
@@ -1347,9 +1347,7 @@ describe('DashboardPage', () => {
 
     TestBed.resetTestingModule();
     el = await open(of(empty), ['Task.View', 'Task.Create', ...DATA_TABS]);
-    expect(el.querySelector('a[href="/tasks/new"]')!.textContent).toContain(
-      'Create the First Task',
-    );
+    expect(el.querySelector('a[href="/tasks/new"]')!.textContent).toContain('New Task');
   });
 
   it('shows a loading placeholder while waiting', async () => {

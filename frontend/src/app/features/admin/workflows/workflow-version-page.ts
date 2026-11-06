@@ -39,6 +39,7 @@ import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { WorkflowDiff, diffVersions } from './workflow-diff';
 import { workflowErrors } from './workflow-errors';
+import { StateBlock } from '../../../shared/ui/state-block';
 import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
 import { ActionMenu, MenuAction } from '../../../shared/ui/action-menu';
 import { Badge, workflowStatusTone } from '../../../shared/ui/badge';
@@ -81,6 +82,7 @@ const LIBRARY_PANE_MIN = 1280;
     Tabs,
     WorkflowTaskTypesTab,
     RecordState,
+    StateBlock,
     RouterLink,
     Button,
     SlidePanel,
@@ -288,12 +290,16 @@ const LIBRARY_PANE_MIN = 1280;
               </div>
               <div class="pg-sr" role="status" aria-live="polite" data-live>{{ live() }}</div>
               @if (rows().length === 0) {
-                <div class="pg-state" data-steps-empty>
-                  {{
-                    editable()
-                      ? 'No steps yet. Add steps from Workflow Steps. A workflow needs at least one step to be published.'
-                      : 'This version has no steps.'
-                  }}
+                <div data-steps-empty>
+                  <mf-state-block>
+                    {{ editable() ? 'No steps yet.' : 'No steps.' }}
+                    @if (editable()) {
+                      <span mfStateReason
+                        >Add steps from Workflow Steps. A workflow needs at least one step to be
+                        published.</span
+                      >
+                    }
+                  </mf-state-block>
                 </div>
               } @else {
                 <div class="wf-steps-scroll" mfScrollArea="Steps in this version">

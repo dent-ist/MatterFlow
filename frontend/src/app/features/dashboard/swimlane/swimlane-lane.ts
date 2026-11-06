@@ -60,16 +60,22 @@ let nextId = 0;
     >
       <header class="head">
         <h3 class="name" aria-level="2" [id]="hid">{{ m.label }}</h3>
-        <a
-          class="count"
-          data-lane-count
-          [class.count--caveat]="searching()"
-          [routerLink]="['/tasks']"
-          [queryParams]="countParams()"
-          [attr.aria-label]="countLabel()"
-          [attr.title]="searching() ? 'Search text is not included' : 'Open in the Task Queue'"
-          ><mf-count-chip>{{ m.count | mfInt }}</mf-count-chip></a
-        >
+        @if (searching()) {
+          <!-- The Task Queue does not know the search text, so a link would open another number: a plain chip while searching. -->
+          <span class="count" data-lane-count [attr.aria-label]="countLabel()"
+            ><mf-count-chip>{{ m.count | mfInt }}</mf-count-chip></span
+          >
+        } @else {
+          <a
+            class="count"
+            data-lane-count
+            [routerLink]="['/tasks']"
+            [queryParams]="countParams()"
+            [attr.aria-label]="countLabel()"
+            title="Open in the Task Queue"
+            ><mf-count-chip>{{ m.count | mfInt }}</mf-count-chip></a
+          >
+        }
         <p class="hint">
           {{ hint }}
           @if (loading() && m.code !== 'COMPLETED') {
@@ -88,10 +94,7 @@ let nextId = 0;
           <!-- Decorative: the board has one "Loading" status (it is aria-busy), not one announcement per lane. -->
           <mf-dash-skeleton kind="lane" [compact]="density() === 'compact'" aria-hidden="true" />
         } @else if (m.rows.length === 0) {
-          <p class="empty" data-lane-empty>
-            <i class="pi pi-inbox" aria-hidden="true"></i>
-            <span>{{ emptyText() }}</span>
-          </p>
+          <p class="empty" data-lane-empty>{{ emptyText() }}</p>
         } @else {
           @if (!single()) {
             <button
@@ -303,11 +306,6 @@ let nextId = 0;
       outline: 2px solid var(--mf-focus);
       outline-offset: 2px;
     }
-    /* With search text the target may show other tasks: the link is not drawn as an exact match (dashed edge). */
-    .count--caveat {
-      outline: 1px dashed var(--mf-border-strong);
-      outline-offset: 1px;
-    }
     /* Phone layout (W4): the only lane shown takes its natural height and the page scrolls; no scroll box of its own, header not sticky. */
     .lane--natural {
       flex: none;
@@ -455,15 +453,11 @@ let nextId = 0;
       font-size: var(--mf-fs-xs);
       font-weight: 700;
     }
+    /* A lane is a small card: the muted one-line sentence, no box and no icon (D-51, compact variant). */
     .empty {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
       margin: 0;
       padding: var(--mf-s4) var(--mf-s2);
       color: var(--mf-text-muted);
-      border: 1px dashed var(--mf-border-strong);
-      border-radius: var(--mf-radius);
       font-size: var(--mf-fs-sm);
     }
     .trunc {
@@ -543,7 +537,7 @@ export class SwimlaneLane {
   private readonly active = signal<string | null>(null);
 
   protected readonly tree = computed(() => this.groupBy() === 'clientMatter');
-  /** The count link carries every filter the Task Queue can show, but not the search text (the link then says so). */
+  /** The count link carries every filter the Task Queue can show, but not the search text; while searching the count is a plain chip. */
   protected readonly searching = computed(() => 'q' in this.queueParams());
   protected readonly countParams = computed(() => {
     const rest = { ...this.queueParams() };
@@ -552,7 +546,9 @@ export class SwimlaneLane {
   });
   protected readonly countLabel = computed(() => {
     const m = this.model();
-    return `${m.count} ${m.label} tasks in the Task Queue${this.searching() ? '. Search text is not included' : ''}`;
+    return this.searching()
+      ? `${m.count} ${m.label} tasks match the search`
+      : `${m.count} ${m.label} tasks in the Task Queue`;
   });
   protected get hint(): string {
     return LANE_HINTS[this.model().code];

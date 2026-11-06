@@ -1268,13 +1268,15 @@ describe('DashSwimlaneTab', () => {
       expect(done).toContain('completedFrom=2026-10-09');
     });
 
-    it('leaves the search text out of the count link and says so', async () => {
+    it('shows the lane count as a plain chip, not a link, while the search box has text', async () => {
       await open(of(board()), '/dashboard?tab=swimlane&q=wage');
-      const a = lane('NEW').querySelector<HTMLAnchorElement>('a[data-lane-count]')!;
-      expect(a.getAttribute('href')).not.toContain('q=');
-      expect(a.getAttribute('title')).toBe('Search text is not included');
-      expect(a.getAttribute('aria-label')).toContain('Search text is not included');
-      expect(a.className).toContain('count--caveat');
+      expect(lane('NEW').querySelector('a[data-lane-count]')).toBeNull();
+      const c = lane('NEW').querySelector<HTMLElement>('[data-lane-count]')!;
+      expect(c.tagName).toBe('SPAN');
+      expect(c.hasAttribute('href')).toBe(false);
+      expect(c.hasAttribute('title')).toBe(false);
+      expect(c.getAttribute('aria-label')).toMatch(/^\d+ New tasks match the search$/);
+      expect(c.className).not.toContain('count--caveat');
       // The note of a capped lane still opens the queue with the search.
     });
 

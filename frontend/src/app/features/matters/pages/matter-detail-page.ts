@@ -25,6 +25,7 @@ import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { MenuAction } from '../../../shared/ui/action-menu';
+import { StateBlock } from '../../../shared/ui/state-block';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { MatterAssets } from '../../../shared/ui/matter-assets';
 import { SCOPED_TASK_PARAMS, ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
@@ -64,6 +65,7 @@ type Tab = MatterTabKey;
 @Component({
   selector: 'mf-matter-detail-page',
   imports: [
+    StateBlock,
     IntPipe,
     FixedPage,
     MatterHeader,
@@ -222,8 +224,10 @@ type Tab = MatterTabKey;
                       [sort]="sort()"
                     />
                   } @else {
-                    <div class="pg-state" data-no-access="assets">
-                      You don't have permission to view assets.
+                    <div data-no-access="assets">
+                      <mf-state-block icon="pi-lock"
+                        >You don't have access to assets.</mf-state-block
+                      >
                     </div>
                   }
                 }

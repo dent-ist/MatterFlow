@@ -21,16 +21,8 @@
 }
 
 .wt__lead,
-.wt__help,
-.wt__empty {
+.wt__help {
   margin: 0;
-}
-
-.wt__empty {
-  padding: var(--mf-s4);
-  border: 1px dashed var(--mf-border-strong);
-  border-radius: var(--mf-radius);
-  color: var(--mf-text-muted);
 }
 
 .wt__table {

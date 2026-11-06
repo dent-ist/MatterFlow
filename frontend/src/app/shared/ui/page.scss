@@ -198,11 +198,10 @@
   font-size: var(--mf-fs-sm);
 }
 
+/* The plain "Loading..." line of a page (D-50). An empty, no-access or error state is `mf-state-block`, never a box (D-51). */
 .pg-state {
   padding: var(--mf-s5);
-  background: var(--mf-surface);
-  border: 1px dashed var(--mf-border-mid);
-  border-radius: var(--mf-radius-xl);
+  color: var(--mf-text-muted);
   text-align: center;
 }
 

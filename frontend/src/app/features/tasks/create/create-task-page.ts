@@ -48,6 +48,7 @@ import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { toFormDefinition } from '../../../shared/forms/form-schema';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
+import { StateBlock } from '../../../shared/ui/state-block';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
@@ -116,6 +117,7 @@ const matterOption = (m: MatterResponse): PickerOption => ({
   selector: 'mf-create-task-page',
   imports: [
     Dropdown,
+    StateBlock,
     IntPipe,
     NumericDatePipe,
     ErrorReference,

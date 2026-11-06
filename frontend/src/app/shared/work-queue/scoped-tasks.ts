@@ -31,6 +31,7 @@ import { HasPermissionDirective } from '../directives/has-permission.directive';
 import { FilterDef, FilterOption } from '../filters/filter-def';
 import { ListToolbar } from '../filters/list-toolbar';
 import { SortedLine } from '../ui/sorted-line';
+import { StateBlock } from '../ui/state-block';
 import { SORT_LABELS } from './sort-note';
 import { PhoneSort, SortChoice, SortOption } from './phone-sort';
 import { ListFilters } from '../filters/list-filters';
@@ -125,6 +126,7 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
   selector: 'mf-scoped-tasks',
   imports: [
     Dropdown,
+    StateBlock,
     BulkTasksDialog,
     MoveTaskDialog,
     Button,
@@ -164,18 +166,12 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
         min-height: 44px;
       }
     }
-    .st-state {
-      padding: var(--mf-s5) var(--mf-s4);
-      text-align: center;
-      color: var(--mf-text-muted);
-      background: var(--mf-surface);
-      border: 1px dashed var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-    }
   `,
   template: `
     @if (!canView()) {
-      <div class="st-state" data-no-access="tasks">You don't have permission to view tasks.</div>
+      <div data-no-access="tasks">
+        <mf-state-block icon="pi-lock">You don't have access to tasks.</mf-state-block>
+      </div>
     } @else {
       <mf-list-toolbar
         [filters]="filters"

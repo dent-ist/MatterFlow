@@ -189,7 +189,7 @@ describe('AssetLinkedTasks', () => {
     TestBed.resetTestingModule();
     await create(['Asset.View']);
     expect(el().querySelector('[data-no-access="linked-tasks"]')?.textContent).toContain(
-      "You don't have permission to view tasks.",
+      "You don't have access to tasks.",
     );
     expect(api.listAssetLinkedTasks).not.toHaveBeenCalled();
     expect(totals).toBeNull();

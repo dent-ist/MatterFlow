@@ -1,7 +1,9 @@
 @if (!canView()) {
-  <p class="au-state" role="alert" data-no-access>
-    You don't have permission to view the audit logs.
-  </p>
+  <div data-no-access>
+    <mf-state-block icon="pi-lock" [announce]="true"
+      >You don't have access to audit logs.</mf-state-block
+    >
+  </div>
 } @else {
   <mf-admin-list-shell
     heading="Audit Logs"

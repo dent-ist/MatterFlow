@@ -17,6 +17,7 @@ import { DueCell } from '../../../shared/work-queue/due-cell';
 import { WORK_COLUMNS } from '../../../shared/work-queue/column-prefs';
 import { columnWidthRem } from '../../../shared/work-queue/column-widths';
 import { PriorityFlag } from '../../../shared/ui/priority-flag';
+import { StateBlock } from '../../../shared/ui/state-block';
 import { TaskTypeCell } from '../../../shared/ui/task-type-cell';
 import { Tip } from '../../../shared/ui/tip';
 import {
@@ -65,6 +66,7 @@ function dueKey(t: AssetTaskLink): number | null {
 @Component({
   selector: 'mf-asset-linked-tasks',
   imports: [
+    StateBlock,
     IntPipe,
     RouterLink,
     StatusBadge,
@@ -114,8 +116,8 @@ function dueKey(t: AssetTaskLink): number | null {
   `,
   template: `
     @if (!canView()) {
-      <div class="pg-state" data-no-access="linked-tasks">
-        You don't have permission to view tasks.
+      <div data-no-access="linked-tasks">
+        <mf-state-block icon="pi-lock">You don't have access to tasks.</mf-state-block>
       </div>
     } @else if (phone()) {
       <mf-record-card-list

@@ -263,7 +263,7 @@ describe('TaskAssetLinks', () => {
   it('shows a note instead of the list, and loads nothing, without the Asset.View permission', async () => {
     await create({ items: [aLink()], canEdit: false }, {}, ['Task.View']);
 
-    expect(q('[data-no-access]').textContent).toContain("don't have permission to view assets");
+    expect(q('[data-no-access]').textContent).toContain("don't have access to assets");
     expect(api.listTaskAssets).not.toHaveBeenCalled();
     expect(el().querySelector('[data-asset-id]')).toBeNull();
     expect(el().querySelector('[data-link-open]')).toBeNull();

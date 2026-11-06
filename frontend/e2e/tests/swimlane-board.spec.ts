@@ -384,13 +384,18 @@ test.describe('Swimlane lane counts (WP9a, #123)', () => {
     expect(a.params.get('completedFrom')! < b.params.get('completedFrom')!).toBe(true);
   });
 
-  test('with search text the link leaves it out and says so; the lane count stays the lane own number', async ({
+  test('with search text the lane count is a plain chip, not a link; without it the count links to the Task Queue', async ({
     page,
   }) => {
     await openBoard(page);
+    const chip = lane(page, 'NEW').locator('[data-lane-count]');
+    await expect(chip).toHaveJSProperty('tagName', 'SPAN');
+    await expect(chip).not.toHaveAttribute('href', /.*/);
+    await expect(chip).not.toHaveAttribute('title', /.*/);
+    await expect(chip).toHaveAttribute('aria-label', /^\d+ New tasks match the search$/);
+    await openBoard(page, '', '/dashboard?tab=swimlane');
     const link = lane(page, 'NEW').locator('a[data-lane-count]');
-    await expect(link).toHaveAttribute('title', 'Search text is not included');
-    await expect(link).toHaveAttribute('aria-label', /Search text is not included/);
+    await expect(link).toHaveAttribute('title', 'Open in the Task Queue');
     const href = (await link.getAttribute('href'))!;
     expect(new URL(href, 'http://x').searchParams.has('q')).toBe(false);
     await link.focus();
@@ -403,7 +408,7 @@ test.describe('Swimlane lane counts (WP9a, #123)', () => {
   test('the count link is reachable with Tab before the lane and is not part of the lane roving tab stop', async ({
     page,
   }) => {
-    await openBoard(page);
+    await openBoard(page, '', '/dashboard?tab=swimlane');
     const link = lane(page, 'NEW').locator('a[data-lane-count]');
     await link.focus();
     await page.keyboard.press('Tab');

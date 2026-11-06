@@ -13,6 +13,7 @@ import {
 import { RouterLink } from '@angular/router';
 import { WorkflowOption } from '../../../core/lookups/workflow-lookup';
 import { Badge } from '../../../shared/ui/badge';
+import { StateBlock } from '../../../shared/ui/state-block';
 import { IntPipe } from '../../../shared/ui/number-format';
 
 /** One row of the table: a workflow the type is eligible for. `known` is false for an id the lookup does not list (no permission, or gone). */
@@ -166,7 +167,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-task-type-workflows-tab',
-  imports: [IntPipe, RouterLink, Badge],
+  imports: [IntPipe, RouterLink, Badge, StateBlock],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './task-type-workflows-tab.scss',
   template: `
@@ -260,10 +261,14 @@ let nextId = 0;
       }
 
       @if (rows().length === 0) {
-        <p class="wt__empty" data-no-workflows>
-          No workflows yet. Add one with the search below; the first one you add becomes the
-          default.
-        </p>
+        <div data-no-workflows>
+          <mf-state-block>
+            No workflows yet.
+            <span mfStateReason
+              >Add one with the search below; the first one you add becomes the default.</span
+            >
+          </mf-state-block>
+        </div>
       } @else {
         <table class="wt__table" data-workflows>
           <caption class="mf-sr-only">

@@ -26,6 +26,7 @@ import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { presetRange, todayInZone } from '../../../shared/filters/date-presets';
 import { FilterDef, FilterOption, RangeValue } from '../../../shared/filters/filter-def';
 import { FilterChips } from '../../../shared/ui/filter-chips';
+import { StateBlock } from '../../../shared/ui/state-block';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { ActionMenu } from '../../../shared/ui/action-menu';
@@ -98,6 +99,7 @@ const ACCESS_VALUE = ACCESS_OBJECT_TYPES.join(',');
   selector: 'mf-audit-page',
   imports: [
     IntPipe,
+    StateBlock,
     ActionMenu,
     AdminListShell,
     ColumnFilterRow,

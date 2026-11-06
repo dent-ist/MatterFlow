@@ -14,6 +14,7 @@ import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { Badge, BadgeTone } from '../../ui/badge';
 import { ConfirmDialog } from '../../ui/confirm-dialog';
+import { StateBlock } from '../../ui/state-block';
 import { NumericDatePipe, readableDate } from '../../ui/numeric-date';
 import { AbsenceDialog, AbsencePerson } from './absence-dialog';
 import { ABSENCE_API } from './absence-api';
@@ -42,7 +43,7 @@ const HUE_TONES: Readonly<Record<string, BadgeTone>> = {
  */
 @Component({
   selector: 'mf-absence-list',
-  imports: [AbsenceDialog, Badge, ConfirmDialog, NgTemplateOutlet, NumericDatePipe],
+  imports: [AbsenceDialog, Badge, ConfirmDialog, NgTemplateOutlet, NumericDatePipe, StateBlock],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="al mf-card" aria-labelledby="al-title" data-absence-list>
@@ -76,17 +77,20 @@ const HUE_TONES: Readonly<Record<string, BadgeTone>> = {
           </div>
         }
         @case ('error') {
-          <div class="al__state al__state--error" role="alert" data-absence-error>
-            <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-            <span>We could not load the out of office entries.</span>
-            <button type="button" class="mf-btn" (click)="load()">Retry</button>
+          <div data-absence-error>
+            <mf-state-block kind="error">
+              Couldn't load out of office entries.
+              <button type="button" mfStateAction class="mf-btn" (click)="load()">Retry</button>
+            </mf-state-block>
           </div>
         }
         @default {
           @if (entries().length === 0) {
-            <div class="al__state" data-absence-empty>
-              <i class="pi pi-calendar" aria-hidden="true"></i>
-              <span>No out of office entries. Add one when you plan to be away.</span>
+            <div data-absence-empty>
+              <mf-state-block icon="pi-calendar">
+                No out of office entries yet.
+                <span mfStateReason>Add one when you plan to be away.</span>
+              </mf-state-block>
             </div>
           }
           @if (groups().now.length > 0) {
@@ -326,21 +330,8 @@ const HUE_TONES: Readonly<Record<string, BadgeTone>> = {
       gap: var(--mf-s1);
     }
     .al__state {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--mf-s2);
       margin-top: var(--mf-s3);
       padding: var(--mf-s3) var(--mf-s4);
-      border: 1px dashed var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
-      color: var(--mf-text-muted);
-    }
-    .al__state--error {
-      border-style: solid;
-      border-color: var(--mf-sem-overdue-line);
-      background: var(--mf-sem-overdue-bg);
-      color: var(--mf-sem-overdue-fg);
     }
     .al__sk {
       display: block;

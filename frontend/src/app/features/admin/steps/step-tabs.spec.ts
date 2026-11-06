@@ -237,7 +237,7 @@ describe('Step page, Inputs tab (#405)', () => {
       },
     });
     expect(el.querySelector('[data-inputs-denied]')?.textContent).toContain(
-      "don't have permission to see the inputs",
+      "don't have access to the inputs",
     );
     expect(el.querySelector('[data-status-published]')?.textContent).toContain('Published');
     expect(el.querySelector('[data-inputs-table]')).toBeNull();

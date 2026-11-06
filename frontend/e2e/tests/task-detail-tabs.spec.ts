@@ -417,7 +417,7 @@ test.describe('Task tabs: permission variants', () => {
       await detail.open(task.taskId);
       await expect(tabOf(page, 'Assets')).toHaveText(/^\s*Assets\s*$/);
       await detail.selectTab('Assets');
-      await expect(detail.section('Assets')).toContainText("don't have permission to view assets");
+      await expect(detail.section('Assets')).toContainText("don't have access to assets");
       await expect(detail.section('Assets').locator('[data-asset-id]')).toHaveCount(0);
       await check(page, 'no-asset-view');
     }
