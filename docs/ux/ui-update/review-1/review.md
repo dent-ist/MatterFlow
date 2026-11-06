@@ -476,3 +476,14 @@ Evidence: `design-evidence`, `evidence/2026-11-06-review-30-last-four-fixes/`. I
 | #1278 | PASS | Idle "Choose what to count, then run the report."; Disposed plus Harvey Vault: "No assets match this report." with "Clear Filters", which resets both. |
 
 Rulings: the `window.scrollTo({ top: 0 })` at the step change stays (a new step starts at the top; do it only when the step changes). Dashed boxes: one real one seen (Holidays no match), two dead CSS rules, the rest used by states that cannot be reached with the demo data: #1279.
+
+## review-31 dashed boxes replaced by the shared state block (2026-11-06, tip 25e2f99, 1366 and 1920)
+
+Evidence: `design-evidence`, `evidence/2026-11-06-review-31-dashed-boxes/`. Axe: 0 violations on Holidays no-match, Audit Logs, Users no-match, Swimlane no-match and Profile at both sizes.
+
+| Item | Verdict | Notes |
+|---|---|---|
+| #1279 | PASS with leftovers | Holidays no-match reads `No holidays match "zzzzqq".` with `Clear Search` (back to 10 rows); Dashboard > Users no match reads "No people match these filters." with `Clear Filters`; Swimlane lanes are one muted line. No dashed box is left except the Swimlane lane count chips (`.count--caveat`, 4 visible dashed outlines when a search is typed). Leftovers in #1280. |
+| axe heading-order, Coverage | real, older than #1279 | `h3#cv-h` under the page `h1`: #1280. |
+
+Rulings (D-44x): the lane count is a plain chip while searching, no dashed marker; "You don't have access to <things>" for the three read-permission places (project tasks panel, task asset links, step inputs), "permission" stays for actions; the Matter Summary no-assets block is a 52 px row.
