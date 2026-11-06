@@ -216,3 +216,15 @@ export async function expectNoViolations(page: Page, label: string): Promise<voi
   const found = await axeViolations(page);
   expect(found, `${label}: ${JSON.stringify(found)}`).toEqual([]);
 }
+
+/**
+ * "Versions (n)" is the first entry of the "..." menu of the designer's record header (D-44n); it opens the "Form Versions" drawer.
+ * Returns the drawer.
+ */
+export async function openVersionsDrawer(page: Page) {
+  await page.locator('[data-page-actions] button[data-overflow]').click();
+  await page.getByRole('menuitem', { name: /^Versions \(\d+\)/ }).click();
+  const drawer = page.getByRole('dialog', { name: 'Form Versions' });
+  await expect(drawer).toBeVisible();
+  return drawer;
+}

@@ -23,7 +23,9 @@ export class HttpFormDesignerApi extends FormDesignerApi {
   getOwner(ownerId: string): Observable<FormOwner> {
     return this.taskTypes
       .getTaskType(Number(ownerId))
-      .pipe(map((t) => ({ id: ownerId, name: t.name })));
+      .pipe(
+        map((t) => ({ id: ownerId, name: t.name, iconKey: t.iconKey, colourKey: t.colourKey })),
+      );
   }
 
   listVersions(ownerId: string): Observable<FormVersionSummary[]> {

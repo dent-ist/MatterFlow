@@ -8,6 +8,7 @@ import {
   manyFields,
   noPageScroll,
   noSideScroll,
+  openVersionsDrawer,
   shoot,
   typeWorld,
 } from '../support/designer';
@@ -22,7 +23,8 @@ import {
  * Screenshots go to the folder in E2E_SCREENSHOTS (docs/ux/task-types-review/fixes/ty8-designer) when it is set.
  */
 const CUSTOM = ['client', 'matter', 'project'] as const;
-const badge = (page: Page) => page.getByRole('heading', { level: 1 }).locator('[data-status]');
+const badge = (page: Page) =>
+  page.getByRole('heading', { level: 1 }).locator('[data-status-badge]');
 
 test.describe('Asset Type designer: the whole lifecycle in the shared layout', () => {
   test('create a draft, add a field, save, publish, read-only view, new draft, retire', async ({
@@ -33,7 +35,7 @@ test.describe('Asset Type designer: the whole lifecycle in the shared layout', (
     await page.setViewportSize({ width: 1366, height: 768 });
     const world = await assetTypeWorld(admin);
     await page.goto(world.url);
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(`Form: ${world.name}`);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(`${world.name} Fields`);
     await expect(page.getByText('This asset type has no form yet.')).toBeVisible();
     await page.getByRole('button', { name: 'Create New Draft' }).click();
     await expect(badge(page)).toHaveText('Draft v1');
@@ -66,8 +68,8 @@ test.describe('Asset Type designer: the whole lifecycle in the shared layout', (
     await page.getByRole('button', { name: 'Create New Draft' }).click();
     await expect(badge(page)).toHaveText('Draft v2');
     await expect(page.locator('[data-published-note]')).toHaveText('(published: v1)');
-    await page.getByRole('button', { name: 'Versions (2)' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'v1' }).click();
+    const drawer = await openVersionsDrawer(page);
+    await drawer.getByRole('button', { name: 'v1' }).click();
     await expect(badge(page)).toHaveText('Published v1');
     await page.getByRole('button', { name: 'Retire Version' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Retire v1' }).click();
@@ -120,7 +122,7 @@ test.describe('Custom Fields designer (Client, Matter, Project)', () => {
         // The object is named by what it is, "Matter custom fields" (#645), without the "Form:" of the other owners.
         await expect(page.getByRole('heading', { level: 1 })).toContainText(label);
         await expect(page.getByRole('heading', { level: 1 })).not.toContainText('Form:');
-        await expect(page.getByRole('group', { name: 'Form actions' })).toBeVisible();
+        await expect(page.locator('[data-page-actions]')).toBeVisible();
         await noSideScroll(page);
         if (size.w >= 768) await noPageScroll(page);
         await shoot(page, `customfields-${object}`, size);

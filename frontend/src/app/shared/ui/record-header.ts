@@ -37,13 +37,14 @@ const DESKTOP_QUERY = '(min-width: 1024px)';
 
 /**
  * One action of a record header. `role` decides where it sits (C3, #255):
- *   edit, activity, primary   buttons in the header (primary = the create action, last so it sits top right)
+ *   edit, activity, button, primary   buttons in the header (primary = the create action, last so it sits top right; `button` is another secondary
+ *                              button before it, such as the form designer's Retire Version or Save Draft)
  *   secondary, state          always in the overflow (secondary creates; Set inactive / Set active / Archive / Restore)
  * On a tablet (640 to 1023 px) only the primary action and the next one of Edit and Activity stay in the header; on a phone only the
  * primary action does. Everything that does not fit moves to the overflow, in the order Edit, Activity, secondary, state.
  */
 export interface RecordAction extends MenuAction {
-  role: 'edit' | 'activity' | 'primary' | 'secondary' | 'state';
+  role: 'edit' | 'activity' | 'button' | 'primary' | 'secondary' | 'state';
   /** Extra sentence for an enabled button (tooltip and `aria-describedby`), for example "2 steps need information". */
   hint?: string | null;
 }
@@ -296,23 +297,24 @@ export class RecordHeader {
   /** The actions that are buttons at this width: desktop all of Edit, Activity and the primary one; tablet two of them; phone the primary one. */
   protected readonly buttons = computed(() => {
     const all = this.actions().filter(
-      (a) => a.role === 'edit' || a.role === 'activity' || a.role === 'primary',
+      (a) =>
+        a.role === 'edit' || a.role === 'activity' || a.role === 'button' || a.role === 'primary',
     );
-    const room = this.phone() ? 1 : this.desktop() ? 3 : 2;
+    const room = this.phone() ? 1 : this.desktop() ? 4 : 2;
     const keep = new Set(
-      ['primary', 'edit', 'activity']
+      ['primary', 'edit', 'activity', 'button']
         .flatMap((role) => all.filter((a) => a.role === role))
         .slice(0, room),
     );
     // One order on every record page (D-21, #1136): Edit, Activity, the primary action; the overflow "..." follows.
-    return ['edit', 'activity', 'primary'].flatMap((role) =>
+    return ['edit', 'activity', 'button', 'primary'].flatMap((role) =>
       all.filter((a) => a.role === role && keep.has(a)),
     );
   });
 
   protected readonly menu = computed<MenuAction[]>(() => {
     const shown = new Set(this.buttons());
-    const order = ['edit', 'activity', 'primary', 'secondary', 'state'];
+    const order = ['edit', 'activity', 'button', 'primary', 'secondary', 'state'];
     return order
       .flatMap((role) => this.actions().filter((a) => a.role === role))
       .filter((a) => !shown.has(a));

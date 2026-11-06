@@ -20,6 +20,13 @@ const grid = (page: Page, name: string) =>
 const sheet = (page: Page) => page.getByRole('dialog', { name: 'Filters' });
 const chips = (page: Page) => page.getByRole('list', { name: 'Active filters' });
 
+/** An optional column of the Users list (Windows Account, Email, First Seen) is shown from the Columns button; its filter then joins the filter row. */
+async function showColumn(page: Page, name: string): Promise<void> {
+  await page.getByRole('button', { name: 'Columns', exact: true }).click();
+  await page.getByLabel(name, { exact: true }).check();
+  await page.keyboard.press('Escape');
+}
+
 async function openRow(page: Page): Promise<void> {
   if ((await toggle(page).getAttribute('aria-pressed')) !== 'true') await toggle(page).click();
 }
@@ -88,15 +95,10 @@ test.describe('Column filters on the administration lists', () => {
 
       // Name and Email narrow it further, with no match the headers and the row stay.
       await select(page, 'Availability').selectOption('');
-      // Email is in "Other Filters" (not a column of the grid).
-      await page.locator('[data-more-filters]').click();
-      await page.locator('[data-more-filter="email"]').click();
-      await page
-        .getByRole('dialog', { name: 'Other Filters' })
-        .getByRole('textbox')
-        .fill(`nobody-${token}`);
+      // Email is an optional column (the Columns button, no "Other Filters" button any more): show it, then its filter is in the filter row.
+      await showColumn(page, 'Email');
+      await text(page, 'Email').fill(`nobody-${token}`);
       await expect(page).toHaveURL(/email=/);
-      await page.keyboard.press('Escape');
       await expect(grid(page, 'Users list').locator('td[data-empty="filtered"]')).toContainText(
         'No users match these filters',
       );
@@ -116,9 +118,10 @@ test.describe('Column filters on the administration lists', () => {
       const rows = grid(page, 'Users list').locator('tbody tr');
       await expect(rows).toHaveCount(1);
 
-      await page.locator('[data-more-filters]').click();
-      await page.locator('[data-more-filter="registered"]').click();
-      await page.getByRole('button', { name: 'Today' }).click();
+      // First Seen is an optional column too: show it from the Columns button, then use its date filter in the filter row.
+      await showColumn(page, 'First Seen');
+      await page.getByRole('button', { name: /^Filter by First Seen/ }).click();
+      await page.getByLabel('Presets').getByRole('button', { name: 'Today', exact: true }).click();
       await expect(page).toHaveURL(/registeredFrom=\d{4}-\d{2}-\d{2}/);
       await expect(page).toHaveURL(/registeredTo=/);
       await expect(rows).toHaveCount(1);

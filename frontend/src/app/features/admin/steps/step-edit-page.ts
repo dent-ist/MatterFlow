@@ -2,7 +2,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   HostListener,
-  afterNextRender,
   computed,
   effect,
   inject,
@@ -81,7 +80,7 @@ function sameTags(a: readonly string[], b: readonly string[]): boolean {
 
 /**
  * Admin: the Step record page (UX S15, SE1 to SE5, #403 to #406). Option A of the review: inline editing under a record header
- * (`mf-record-header`: the step title as the H1 with Active / Inactive, Edit, Activity, the primary Edit inputs and an overflow with Deactivate
+ * (`mf-record-header`: the step title as the H1 with Active / Inactive, Activity, the primary Edit inputs and an overflow with Deactivate
  * or Activate), a summary strip (Status, Used in n workflows, Inputs, Tags) and tabs Details | Inputs | Used by (n) (`?tab=`, replaced not
  * added). Details is the only tab with edits and saves on its own; switching tabs or leaving with edits asks first and offers Save and Leave.
  * Inputs lists the step's form read-only (the designer is `/admin/steps/:id/form`); Used by links to every workflow version that contains the
@@ -263,13 +262,11 @@ export class StepEditPage implements HasUnsavedChanges {
     ];
   });
 
-  /** The actions of the header: Edit, Activity, the primary Edit inputs and, in the overflow, Deactivate or Activate. None on a new step. */
+  /** The actions of the header (D-44n): Activity, the primary Edit inputs and, in the overflow, Deactivate or Activate. None on a new step. */
   protected readonly headerActions = computed<RecordAction[]>(() => {
     const o = this.original();
     if (!this.isEdit() || !o) return [];
-    const list: RecordAction[] = [
-      { id: 'edit', role: 'edit', label: 'Edit', run: () => void this.editHere() },
-    ];
+    const list: RecordAction[] = [];
     if (this.canSeeActivity()) {
       list.push({
         id: 'activity',
@@ -497,14 +494,6 @@ export class StepEditPage implements HasUnsavedChanges {
     }
     this.revert();
     this.announcement.set('Changes discarded.');
-  }
-
-  /** Edit in the header: the fields are always editable, so it takes the person to the title. */
-  protected async editHere(): Promise<void> {
-    if (this.current() !== 'details' && !(await this.select('details'))) return;
-    afterNextRender(() => document.getElementById('step-title')?.focus(), {
-      injector: this.injector,
-    });
   }
 
   /** Edit inputs (header and Inputs tab): the form designer of the step; a page with edits asks first (the route's leave guard). */

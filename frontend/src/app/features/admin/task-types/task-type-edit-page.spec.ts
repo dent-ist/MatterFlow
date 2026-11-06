@@ -86,7 +86,7 @@ describe('TaskTypeEditPage', () => {
   describe('the record header, strip and tabs (#380, #381)', () => {
     beforeEach(() => open('1'));
 
-    it('shows the name, the Active badge, Edit and the primary Edit form last (Activity too where the width allows it)', () => {
+    it('shows the name, the Active badge and the primary Edit form last, no Edit (the Overview is the form, D-44n), the type tile in its own colour', () => {
       expect(q('[data-page-title]').textContent).toContain('Data Processing');
       expect(q('[data-status-badge], mf-active-badge').textContent).toContain('Active');
       const ids = all('[data-page-actions] button[data-action]').map((b) =>
@@ -94,8 +94,10 @@ describe('TaskTypeEditPage', () => {
       );
       // The buttons that fit the window are in the header (Activity moves to the overflow on a narrow one); Edit form is always one.
       expect(ids[ids.length - 1]).toBe('edit-form');
-      expect(ids).toContain('edit');
+      expect(ids).not.toContain('edit');
       expect(q('[data-action="edit-form"]').classList).toContain('mf-btn--primary');
+      // The tile is the task type chip: the type's own icon on its own colour (not a bare glyph).
+      expect(q('[data-page-title] mf-task-type-chip[data-title-icon] .chip')).not.toBeNull();
     });
 
     it('has the three tabs with the count of active workflows, Overview open and no footer while nothing changed', () => {
@@ -166,7 +168,7 @@ describe('TaskTypeEditPage', () => {
       await open('1', undefined, ['TaskType.Manage']);
       expect(
         all('[data-page-actions] button[data-action]').map((b) => b.dataset['action']),
-      ).toEqual(['edit', 'edit-form']);
+      ).toEqual(['edit-form']);
     });
   });
 

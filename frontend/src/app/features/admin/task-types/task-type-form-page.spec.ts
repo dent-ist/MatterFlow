@@ -20,6 +20,8 @@ describe('TaskTypeFormPage', () => {
   const el = (): HTMLElement => fixture.nativeElement;
   const q = <T extends HTMLElement = HTMLElement>(sel: string, root: ParentNode = el()): T =>
     root.querySelector<T>(sel)!;
+  const all = (sel: string, root: ParentNode = el()): HTMLElement[] =>
+    Array.from(root.querySelectorAll<HTMLElement>(sel));
 
   async function settle(): Promise<void> {
     for (let i = 0; i < 3; i++) {
@@ -29,22 +31,32 @@ describe('TaskTypeFormPage', () => {
     await fixture.whenStable();
   }
 
+  /** A button of the header (`[data-page-actions]`) or of a dialog (`p-button`). */
   const button = (label: string, root: ParentNode = el()): HTMLButtonElement | undefined =>
-    Array.from(root.querySelectorAll<HTMLButtonElement>('p-button button')).find(
-      (b) => b.textContent!.trim() === label,
-    );
+    Array.from(
+      root.querySelectorAll<HTMLButtonElement>('p-button button, [data-page-actions] button'),
+    ).find((b) => b.textContent!.trim() === label);
+  const disabled = (b: HTMLButtonElement | undefined): boolean =>
+    !!b && (b.disabled || b.getAttribute('aria-disabled') === 'true');
+
+  /** "Versions (n)": the first entry of the "..." menu of the header; it opens the drawer. */
+  async function openVersions(): Promise<void> {
+    q('[data-page-actions] button[data-overflow]').click();
+    await settle();
+    q('[role=menuitem][data-action="versions"]').click();
+    await settle();
+  }
 
   async function press(label: string, root: ParentNode = el()): Promise<void> {
     button(label, root)!.click();
     await settle();
   }
 
-  /** Opens the Versions dialog and chooses a version in it. */
+  /** Opens the Versions drawer and chooses a version in it. */
   async function chooseVersion(label: string): Promise<void> {
-    q('[data-versions]').click();
-    await settle();
+    await openVersions();
     const link = Array.from(
-      document.body.querySelectorAll<HTMLButtonElement>('[data-dialog="versions"] .ttf__link'),
+      document.body.querySelectorAll<HTMLButtonElement>('[data-dialog="versions"] button'),
     ).find((b) => b.textContent!.trim() === label)!;
     link.click();
     await settle();
@@ -66,12 +78,12 @@ describe('TaskTypeFormPage', () => {
   it('renders when the router leaves parentCrumbs undefined (routes without that data key, e.g. Custom Fields and Task Types)', async () => {
     fixture.componentRef.setInput('parentCrumbs', undefined);
     await settle();
-    expect(q('[data-status]').textContent).toContain('Published v1');
+    expect(q('[data-status-badge]').textContent).toContain('Published v1');
     expect(el().querySelector('nav[aria-label="Breadcrumb"]')).not.toBeNull();
   });
 
   it('opens the published version read-only with a Create new draft action', async () => {
-    expect(q('[data-status]').textContent).toContain('Published v1');
+    expect(q('[data-status-badge]').textContent).toContain('Published v1');
     expect(q('[data-readonly-banner]').textContent).toContain("can't be edited");
     expect(el().querySelector('[data-add]')).toBeNull();
     expect(button('Save Draft')).toBeUndefined();
@@ -83,16 +95,16 @@ describe('TaskTypeFormPage', () => {
 
   it('creates a draft from the published version, edits and saves it', async () => {
     await press('Create New Draft');
-    expect(q('[data-status]').textContent).toContain('Draft v2');
+    expect(q('[data-status-badge]').textContent).toContain('Draft v2');
     expect(q('[data-published-note]').textContent).toContain('published: v1');
     expect(el().querySelector('[data-add]')).not.toBeNull();
-    expect(button('Save Draft')!.disabled).toBe(true);
+    expect(disabled(button('Save Draft'))).toBe(true);
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
 
     q('[data-add="TEXT"]').click();
     await settle();
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
-    expect(button('Save Draft')!.disabled).toBe(false);
+    expect(disabled(button('Save Draft'))).toBe(false);
 
     await press('Save Draft');
     expect(q('[data-notice]').textContent).toContain('Draft v2 saved.');
@@ -119,10 +131,9 @@ describe('TaskTypeFormPage', () => {
     expect(dialog.textContent).toContain("Published versions can't be edited.");
 
     await press('Publish v2', document.body);
-    expect(q('[data-status]').textContent).toContain('Published v2');
+    expect(q('[data-status-badge]').textContent).toContain('Published v2');
     expect(q('[data-readonly-banner]')).not.toBeNull();
-    q('[data-versions]').click();
-    await settle();
+    await openVersions();
     const rows = Array.from(document.body.querySelectorAll('.ttf__table tbody tr')).map((r) =>
       r.textContent!.replace(/\s+/g, ' '),
     );
@@ -140,7 +151,7 @@ describe('TaskTypeFormPage', () => {
     }
     expect(q('[data-issue="EMPTY_OPTIONS"]').textContent).toContain('Add at least one option.');
     // The button is not disabled without a reason: it explains and moves to the list of errors.
-    expect(button('Publish...')!.disabled).toBe(false);
+    expect(disabled(button('Publish...'))).toBe(false);
     await press('Publish...');
     expect(document.body.querySelector('[data-dialog="publish"]')).toBeNull();
     expect(q('[role=alert]').textContent).toMatch(/Fix \d+ errors? before publishing/);
@@ -149,26 +160,43 @@ describe('TaskTypeFormPage', () => {
   });
 
   it('puts the version in the title as a badge with an icon, and the published version as muted text', async () => {
-    const badge = q('mf-badge[data-status]');
+    const badge = q('mf-badge[data-status-badge]');
     expect(badge.textContent).toContain('Published v1');
     expect(badge.querySelector('i.pi')).not.toBeNull();
     expect(q('h1').contains(badge)).toBe(true);
     expect(el().querySelector('[data-published-note]')).toBeNull();
     await press('Create New Draft');
-    expect(q('mf-badge[data-status]').textContent).toContain('Draft v2');
+    expect(q('mf-badge[data-status-badge]').textContent).toContain('Draft v2');
     expect(q('[data-published-note]').textContent).toContain('(published: v1)');
   });
 
-  it('is a fixed-height page with a sticky action bar and Versions in a dialog', async () => {
+  it('is a fixed-height record page: one header with the version chip and the actions, Versions (n) in the "..." menu opening the drawer (D-44n)', async () => {
     expect(el().querySelector('mf-fixed-page')).not.toBeNull();
-    expect(q('mf-form-designer-bar [data-action-bar]').getAttribute('aria-label')).toBe(
-      'Form actions',
-    );
-    expect(q('[data-versions]').textContent).toContain('Versions (1)');
+    expect(el().querySelector('mf-form-designer-bar')).toBeNull();
+    expect(q('h1').textContent).toContain('Data Processing Form');
+    expect(el().querySelectorAll('h1')).toHaveLength(1);
+    expect(
+      all('[data-page-actions] button[data-action]').map((b) => b.textContent!.trim()),
+    ).toEqual(['Retire Version', 'Create New Draft']);
+    expect(q('[data-action="new-draft"]').classList).toContain('mf-btn--primary');
+    q('[data-page-actions] button[data-overflow]').click();
+    await settle();
+    const entries = all('[role=menuitem]').map((i) => i.textContent!.trim());
+    expect(entries[0]).toContain('Versions (1)');
     expect(el().querySelector('.ttf__table')).toBeNull();
-    q('[data-versions]').click();
+    q('[role=menuitem][data-action="versions"]').click();
     await settle();
     expect(document.body.querySelector('[data-dialog="versions"] .ttf__table')).not.toBeNull();
+    expect(document.body.querySelector('mf-slide-panel')).not.toBeNull();
+  });
+
+  it('the read-only banner is the information banner, and the designer has the one tab strip', () => {
+    const banner = q('[data-readonly-banner]');
+    expect(banner.classList).toContain('pg-banner');
+    expect(banner.classList).toContain('pg-banner--info');
+    expect(banner.querySelector('i.pi')).not.toBeNull();
+    expect(banner.textContent).toContain('Use Create New Draft to make changes.');
+    expect(el().querySelectorAll('[role=tablist]')).toHaveLength(1);
   });
 
   it('shows Unsaved changes in the bar while the draft is dirty', async () => {
@@ -182,10 +210,10 @@ describe('TaskTypeFormPage', () => {
   it('a read-only version offers Open draft when a draft exists', async () => {
     await press('Create New Draft');
     await chooseVersion('v1');
-    expect(q('mf-badge[data-status]').textContent).toContain('Published v1');
+    expect(q('mf-badge[data-status-badge]').textContent).toContain('Published v1');
     expect(button('Create New Draft')).toBeUndefined();
     await press('Open Draft v2');
-    expect(q('mf-badge[data-status]').textContent).toContain('Draft v2');
+    expect(q('mf-badge[data-status-badge]').textContent).toContain('Draft v2');
   });
 
   it('asks before discarding unsaved changes when switching versions', async () => {
@@ -195,11 +223,11 @@ describe('TaskTypeFormPage', () => {
     await chooseVersion('v1');
     expect(q('[data-dialog="discard"]', document.body)).not.toBeNull();
     await press('Keep Editing', document.body);
-    expect(q('[data-status]').textContent).toContain('Draft v2');
+    expect(q('[data-status-badge]').textContent).toContain('Draft v2');
 
     await chooseVersion('v1');
     await press('Discard Changes', document.body);
-    expect(q('[data-status]').textContent).toContain('Published v1');
+    expect(q('[data-status-badge]').textContent).toContain('Published v1');
   });
 
   it('shows the server publish validation errors inline and keeps the draft editable', async () => {
@@ -224,7 +252,7 @@ describe('TaskTypeFormPage', () => {
     const issues = el().querySelector('.fd__issue-list')!.textContent!;
     expect(issues).toContain('The server rejects this key.');
     expect(issues).toContain('The server found a form-level problem.');
-    expect(q('[data-status]').textContent).toContain('Draft v2');
+    expect(q('[data-status-badge]').textContent).toContain('Draft v2');
     expect(button('Save Draft')).toBeDefined();
 
     // Editing clears the server's issues until the next publish attempt.
@@ -277,7 +305,7 @@ describe('TaskTypeFormPage', () => {
     // The dialog opens on its primary action and uses the shared wording (#362).
     expect(document.activeElement?.textContent?.trim()).toBe('Retire v1');
     await press('Retire v1', document.body);
-    expect(q('[data-status]').textContent).toContain('Retired v1');
+    expect(q('[data-status-badge]').textContent).toContain('Retired v1');
   });
 });
 

@@ -95,6 +95,21 @@ describe('mf-record-header', () => {
     expect(ids).toEqual(['edit', 'activity', 'create']);
   });
 
+  it("puts a `button` action (the form designer's Retire Version, Save Draft) before the primary one and keeps the other entries in the overflow (D-44n)", async () => {
+    await create((h) =>
+      h.actions.set([
+        action('create', 'primary'),
+        action('retire', 'button'),
+        action('versions', 'secondary'),
+      ]),
+    );
+    const ids = Array.from(el().querySelectorAll('[data-page-actions] > button')).map((b) =>
+      b.getAttribute('data-action'),
+    );
+    expect(ids).toEqual(['retire', 'create']);
+    expect(q('[data-page-actions] [data-overflow]')).not.toBeNull();
+  });
+
   it('puts extra state badges in their own wrapping line under the title (mfBadges)', async () => {
     await create();
     const line = q('[data-record-badges]');

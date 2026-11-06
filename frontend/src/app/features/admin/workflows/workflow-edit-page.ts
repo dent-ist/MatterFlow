@@ -3,7 +3,6 @@ import {
   Component,
   DestroyRef,
   HostListener,
-  afterNextRender,
   computed,
   effect,
   inject,
@@ -62,7 +61,7 @@ const NAMES_SHOWN = 8;
 
 /**
  * Admin: create or edit a workflow (UX S16). Creating is the small form (name, description, Ordered or Unordered). An existing workflow is a
- * record page (WP-TY5, #387 to #392): `mf-record-header` with the state badges, Edit, Activity, the one primary action (Open draft vN, else
+ * record page (WP-TY5, #387 to #392): `mf-record-header` with the state badges, Activity, the one primary action (Open draft vN, else
  * Create new draft) and an overflow with Deactivate; a summary strip; and the tabs Overview (name, description, status and mode) | Versions (n)
  * | Task types (n). Each tab saves on its own; leaving a tab with edits asks first. The steps are edited in a draft version. Needs
  * `Workflow.Manage` (route guard).
@@ -485,9 +484,7 @@ export class WorkflowEditPage implements HasUnsavedChanges {
     const d = this.detail();
     if (!d || !this.isEdit()) return [];
     const w = d.workflow;
-    const list: RecordAction[] = [
-      { id: 'edit', role: 'edit', label: 'Edit', run: () => void this.editHere() },
-    ];
+    const list: RecordAction[] = [];
     if (this.canSeeActivity()) {
       list.push({
         id: 'activity',
@@ -622,14 +619,6 @@ export class WorkflowEditPage implements HasUnsavedChanges {
       replaceUrl: true,
     });
     return true;
-  }
-
-  /** Edit in the header: the fields are always editable, so it takes the person to the name. */
-  protected async editHere(): Promise<void> {
-    if (this.current() !== 'overview' && !(await this.select('overview'))) return;
-    afterNextRender(() => document.getElementById('wf-name')?.focus(), {
-      injector: this.injector,
-    });
   }
 
   protected async openDraft(): Promise<void> {

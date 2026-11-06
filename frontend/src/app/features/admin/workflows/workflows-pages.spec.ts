@@ -193,10 +193,8 @@ describe('WorkflowsListPage', () => {
     const el: HTMLElement = fixture.nativeElement;
 
     const rows = Array.from(el.querySelectorAll('tbody tr'));
-    expect(rows.map((r) => r.getAttribute('data-record-id'))).toEqual([
-      'Standard Processing',
-      'Production',
-    ]);
+    // The row key is the workflow id, never the name (D-44m).
+    expect(rows.map((r) => r.getAttribute('data-record-id'))).toEqual(['1', '2']);
     expect(rows[0].querySelector('a')?.getAttribute('href')).toBe('/admin/workflows/1');
     // One Versions cell of badges (text and icon): the published version, or a neutral Not published, and the draft (#376, #377).
     expect(rows[0].querySelector('[data-versions]')!.textContent).toContain('Published v2');
@@ -254,7 +252,7 @@ describe('WorkflowsListPage', () => {
     const fixture = TestBed.createComponent(WorkflowsListPage);
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
-    const first = el.querySelector('[data-record-id="Standard Processing"]')!;
+    const first = el.querySelector('[data-record-id="1"]')!;
     const link = first.querySelector<HTMLAnchorElement>('[data-task-types-link]')!;
     expect(link.textContent!.trim()).toBe('4');
     expect(link.getAttribute('href')).toBe('/admin/task-types?workflow=1');
@@ -262,7 +260,7 @@ describe('WorkflowsListPage', () => {
     expect(first.querySelector('[data-last-published]')!.textContent).toContain('10/01');
     // No chips: the task types of a workflow are on its page.
     expect(first.querySelector('[data-assoc-chip]')).toBeNull();
-    const second = el.querySelector('[data-record-id="Production"]')!;
+    const second = el.querySelector('[data-record-id="2"]')!;
     expect(second.querySelector('[data-task-types]')!.textContent!.trim()).toBe('0');
     expect(second.querySelector('[data-task-types-link]')).toBeNull();
     expect(second.querySelector('[data-last-published]')!.textContent!.trim()).toBe('–');
@@ -515,13 +513,13 @@ describe('WorkflowsListPage name cell (#356)', () => {
     const fixture = TestBed.createComponent(WorkflowsListPage);
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
-    const withText = el.querySelector(`tr[data-record-id="${long}"] td.ad-name`)!;
+    const withText = el.querySelector(`tr[data-record-id="1"] td.ad-name`)!;
     const link = withText.querySelector('a.pg-name')!;
     expect(link.getAttribute('title')).toBe(long);
     expect(link.classList.contains('pg-name--one')).toBe(true);
     const description = withText.querySelector('.pg-clip')!;
     expect(description.getAttribute('title')).toBe('D'.repeat(240));
-    const plain = el.querySelector('tr[data-record-id="Plain"] td.ad-name')!;
+    const plain = el.querySelector('tr[data-record-id="2"] td.ad-name')!;
     expect(plain.querySelector('a.pg-name')!.classList.contains('pg-name--one')).toBe(false);
     expect(plain.querySelector('.pg-clip')).toBeNull();
   });
@@ -627,20 +625,16 @@ describe('WorkflowsListPage Versions cell (#377)', () => {
     const fixture = TestBed.createComponent(WorkflowsListPage);
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
-    const link = el.querySelector<HTMLAnchorElement>(
-      '[data-record-id="Standard Processing"] [data-draft-link]',
-    )!;
+    const link = el.querySelector<HTMLAnchorElement>('[data-record-id="1"] [data-draft-link]')!;
     expect(link.getAttribute('href')).toBe('/admin/workflows/1/versions/12');
     expect(link.getAttribute('aria-label')).toBe('Open draft v3');
     expect(link.textContent!.trim()).toBe('Draft v3');
     // Without a draft there is no link; a workflow without a published version has the neutral badge.
-    expect(el.querySelector('[data-record-id="Production"] [data-draft-link]')).toBeNull();
-    const notPublished = el.querySelector('[data-record-id="Production"] [data-not-published]')!;
+    expect(el.querySelector('[data-record-id="2"] [data-draft-link]')).toBeNull();
+    const notPublished = el.querySelector('[data-record-id="2"] [data-not-published]')!;
     expect(notPublished.querySelector('[data-tone="neutral"]')).not.toBeNull();
     expect(notPublished.getAttribute('title')).toContain('No version is published');
-    expect(
-      el.querySelector('[data-record-id="Standard Processing"] [data-not-published]'),
-    ).toBeNull();
+    expect(el.querySelector('[data-record-id="1"] [data-not-published]')).toBeNull();
   });
 });
 
@@ -740,9 +734,10 @@ describe('WorkflowsListPage row menu', () => {
   });
   const openMenu = async (fixture: { nativeElement: HTMLElement }, name: string) => {
     const el: HTMLElement = fixture.nativeElement;
-    el.querySelector<HTMLButtonElement>(
-      `tr[data-record-id="${name}"] button[data-overflow]`,
-    )!.click();
+    Array.from(el.querySelectorAll('tr[data-record-id]'))
+      .find((r) => r.querySelector('a.pg-name')?.getAttribute('title') === name)!
+      .querySelector<HTMLButtonElement>('button[data-overflow]')!
+      .click();
     await new Promise((r) => setTimeout(r));
     return () =>
       Array.from(el.querySelectorAll('[role=menuitem]')).map((i) => i.getAttribute('data-action'));
@@ -766,16 +761,12 @@ describe('WorkflowsListPage row menu', () => {
 
     expect(el.querySelectorAll('tbody button[data-overflow]')).toHaveLength(2);
     expect(
-      el
-        .querySelector('tr[data-record-id="Production"] button[data-overflow]')!
-        .getAttribute('aria-label'),
+      el.querySelector('tr[data-record-id="2"] button[data-overflow]')!.getAttribute('aria-label'),
     ).toBe('Actions for Production');
     let entries = await openMenu(fixture, 'Standard Processing');
     await settle(fixture);
     expect(entries()).toEqual(['deactivate']);
-    el.querySelector<HTMLButtonElement>(
-      'tr[data-record-id="Standard Processing"] button[data-overflow]',
-    )!.click();
+    el.querySelector<HTMLButtonElement>('tr[data-record-id="1"] button[data-overflow]')!.click();
     await settle(fixture);
 
     entries = await openMenu(fixture, 'Production');
