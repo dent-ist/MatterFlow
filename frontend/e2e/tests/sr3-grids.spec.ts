@@ -40,7 +40,7 @@ test.describe('Search results grids and cards (WP-SR3, WP-SR4)', () => {
     await expect(tab(page, /^Assets, 58 results/)).toBeVisible();
 
     const seeAll = page.locator('[data-section=asset] [data-see-all]');
-    await expect(seeAll).toContainText('See all 58');
+    await expect(seeAll).toContainText('See All 58 Assets');
     await seeAll.click();
     await expect(page).toHaveURL(/type=asset/);
     await expect(page.locator('[data-hit-row]')).toHaveCount(25);

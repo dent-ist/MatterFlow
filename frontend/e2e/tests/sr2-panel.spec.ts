@@ -60,7 +60,7 @@ test.describe('Suggestion panel counts and phone sheet (WP-SR2)', () => {
       await expect(panel.locator('[data-group=task] [data-hit]')).toHaveCount(3);
       await expect(panel.locator('[data-group=asset] [data-hit]')).toHaveCount(3);
       await expect(panel.locator('[data-group=project] [data-see-all]')).toHaveCount(0);
-      await expect(panel.locator('[data-group=task] [data-see-all]')).toContainText('See all 5');
+      await expect(panel.locator('[data-group=task] [data-see-all]')).toContainText('See All 5');
       await expect(panel.locator('[data-view-all-text]')).toHaveText('See All Results');
       await expect(panel.locator('[data-view-all-total]')).toHaveText(
         `12 results for "${s.token}"`,

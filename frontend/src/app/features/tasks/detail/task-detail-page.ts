@@ -92,7 +92,10 @@ const isTab = (v: unknown): v is TaskPageTab => TABS.includes(v as string);
           <mf-task-status-note />
 
           @for (w of warnings(); track w) {
-            <div class="pg-banner" role="status" data-warning>{{ w }}</div>
+            <div class="pg-banner" role="status" data-warning>
+              <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+              <span>{{ w }}</span>
+            </div>
           }
 
           <mf-detail-layout

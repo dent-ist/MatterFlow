@@ -363,7 +363,7 @@ export class RecordState {
    * The record's parent when it loaded, shown in the breadcrumb before the record (a workflow version's workflow). Administration kinds only.
    */
   readonly parent = input<Crumb | null>(null);
-  /** Moves focus to the heading once, when the state appears (the page it replaces had no heading to keep focus on). */
+  /** Moves focus to the heading once, when the state appears (the page it replaces had no heading to keep focus on). A 404 and a 403 always do; this is for the failed-load state, which keeps focus on Retry unless asked. */
   readonly focusHeading = input(false);
   readonly retried = output<void>();
 
@@ -372,7 +372,8 @@ export class RecordState {
 
   constructor() {
     afterNextRender(() => {
-      if (!this.focusHeading()) return;
+      // A missing record or no access has no Retry to keep focus on: its title takes focus on arrival (D-53), like the system pages.
+      if (!this.focusHeading() && this.failure() === 'error') return;
       const heading = this.host.nativeElement.querySelector<HTMLElement>('[data-page-title]');
       heading?.setAttribute('tabindex', '-1');
       heading?.focus();

@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { BrandingService } from '../../../core/branding/branding.service';
-import { ErrorRequest } from '../../../core/auth/guards';
+import { ErrorRequest, landingLink } from '../../../core/auth/guards';
 import { Connectivity } from '../../../core/http/connectivity';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { StatePage } from '../../../shared/ui/state-page';
@@ -9,7 +9,7 @@ import { StatePage } from '../../../shared/ui/state-page';
 /**
  * Shown outside the shell when /me cannot be loaded at all: the same state-page card as the 403 and the 404 (S10, #607), with the Reference
  * and Copy of the failed call (S11, #608; kept in memory, the toast is gone after 8 seconds). Retry reads /me again and, when it works, reloads
- * the page the person was on (not the home page); "Go to home" appears only once Retry has failed too.
+ * the page the person was on (not the home page); a text button named like the 404 button ("Go to My Work", "Go to Dashboard"; never "Go to Home", D-53b) appears only once Retry has failed too.
  */
 @Component({
   selector: 'mf-error-page',
@@ -40,7 +40,7 @@ import { StatePage } from '../../../shared/ui/state-page';
           <i class="pi pi-refresh" aria-hidden="true"></i>Retry
         </button>
         @if (failedAgain()) {
-          <a mfPrimary class="mf-btn mf-btn--text" href="/" data-go-home>Go to Home</a>
+          <a mfPrimary class="mf-btn mf-btn--text" href="/" data-go-home>Go to {{ startPage() }}</a>
         }
       </mf-state-page>
     </main>
@@ -70,6 +70,8 @@ export class ErrorPage {
       ? "We couldn't verify your sign-in. Reload the page to try again."
       : `${this.brand.appName()} could not load your account.`,
   );
+  /** The name of the person's start page, as the 404 button names it; My Work while the account is unknown (the root address opens the right page once it loads). */
+  protected readonly startPage = computed(() => landingLink(this.auth)?.name ?? 'My Work');
   protected readonly retrying = signal(false);
   /** Retry was pressed and the account still could not be loaded. */
   protected readonly failedAgain = signal(false);

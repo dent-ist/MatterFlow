@@ -5,12 +5,13 @@
 .rh__note,
 .mh__note {
   display: flex;
-  align-items: center;
+  /* The icon stays on the first line when the sentence wraps (two lines in a dialog); the padding centres one line in the 36 px bar. */
+  align-items: flex-start;
   gap: var(--mf-s2);
   box-sizing: border-box;
   min-height: var(--mf-ctl-h);
   margin: 0 0 var(--mf-s2);
-  padding: var(--mf-s1) var(--mf-s3);
+  padding: calc((var(--mf-ctl-h) - 2px - var(--mf-fs-md) * 1.3) / 2) var(--mf-s3);
   border: 1px solid var(--mf-sem-risk-line);
   border-radius: var(--mf-radius);
   background: var(--mf-sem-risk-bg);
@@ -28,11 +29,12 @@
 .rh__note > .pi,
 .mh__note > .pi {
   flex: none;
-  font-size: var(--mf-icon-sm);
+  font-size: var(--mf-icon-md);
 }
 
 /* With its 32 px action the bar is exactly 36 px: no vertical padding. */
 .pg-banner:has(> .mf-btn) {
+  align-items: center;
   padding-block: 0;
 }
 

@@ -519,6 +519,7 @@
               </p>
               @if (pastDue()) {
                 <p class="pg-banner" role="status" data-past-due>
+                  <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
                   This date has already passed. The task will be overdue immediately.
                 </p>
               }
@@ -555,6 +556,7 @@
                 />
                 @if (userNotInPod()) {
                   <p class="pg-banner" role="status" data-not-in-pod>
+                    <i class="pi pi-info-circle" aria-hidden="true"></i>
                     {{ assignee()?.label }} isn't a member of {{ podName() }}. You can still assign
                     them.
                   </p>

@@ -175,8 +175,7 @@ interface Section {
                       [queryParams]="seeAllParams(section.info.type)"
                       queryParamsHandling="merge"
                       (click)="seeAll($event)"
-                      >{{ seeAllText(count(section.group)) }}
-                      <span class="mf-sr-only">{{ section.info.label.toLowerCase() }}</span></a
+                      >{{ seeAllText(count(section.group)) }} {{ section.info.label }}</a
                     >
                   </p>
                 }

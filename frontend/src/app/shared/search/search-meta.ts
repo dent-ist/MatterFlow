@@ -79,10 +79,10 @@ export function searchedInLine(
   return `Searched in: ${joinWords(labels)}`;
 }
 
-/** The copy deck of the search area's links: "See all" is the only verb for more results (never "Show More"). */
+/** The copy deck of the search area's links: "See All" is the only verb for more results (never "Show More"). */
 export const SEARCH_COPY = {
-  /** The link of a group or section that holds more hits than are shown: `See all 24`. */
-  seeAll: (count: string) => `See all ${count}`,
+  /** The link of a group or section that holds more hits than are shown: `See All 24` (Title Case, D-20; the Search page adds the type: `See All 24 Matters`). */
+  seeAll: (count: string) => `See All ${count}`,
   /** The panel footer button (a text button, Title Case, #1194). */
   viewAllLabel: 'See All Results',
   /** The muted line beside the footer button: `140 results for "review"`. */
