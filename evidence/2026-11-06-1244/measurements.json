@@ -1,0 +1,6 @@
+{
+  "note": "Ref cell of an On Hold row at 1366, the text replaced by TSK-1234 for the measurement (the demo data has no four-digit number; the longest real ref is TSK-172).",
+  "before": { "cell": 100, "padding_left": 8, "padding_right": 8, "content": 87, "available": 84, "scrollWidth": 103, "clientWidth": 100 },
+  "after":  { "cell": 100, "padding_left": 8, "padding_right": 0, "content": 87, "available": 92, "scrollWidth": 100, "clientWidth": 100 },
+  "count_chip_while_loading": { "matters": "Total: not available -", "clients": "Total: not available -", "projects": "Total: not available -", "assets": "Total: not available -" }
+}

@@ -1,0 +1,18 @@
+{
+  "note": "Real demo stack, KE\\testuser02. Heading widths in px of main thead tr:first-child th. before = origin/ui-update-2 tip f2b6906 on port 4200, after = branch ui-update-2 with #1245 on port 4307.",
+  "matters_after_resize_and_reload_1366": { "before": [158,183,152,125,125,105,161,72], "after": [158,183,152,125,125,105,161,48] },
+  "matters_after_resize_and_reload_1920": { "before": [158,487,325,125,125,105,238,72], "after": [158,487,325,125,125,105,238,48] },
+  "clients_1366": {
+    "before": { "loading": [154,488,85,125,105,140], "rows": [154,488,85,125,105,140], "empty": [353,252,85,125,105,177], "error": [154,488,85,125,105,140] },
+    "after":  { "loading": [154,477,96,125,105,140], "rows": [154,477,96,125,105,140], "empty": [154,477,96,125,105,140], "error": [154,477,96,125,105,140] }
+  },
+  "clients_1920": {
+    "before": { "loading": [154,1042,85,125,105,140], "rows": [154,1042,85,125,105,140], "empty": [603,431,85,125,105,302], "error": [154,1042,85,125,105,140] },
+    "after":  { "loading": [154,1031,96,125,105,140], "rows": [154,1031,96,125,105,140], "empty": [154,1031,96,125,105,140], "error": [154,1031,96,125,105,140] }
+  },
+  "tab_stops_in_clients_header_1366": {
+    "before": "every heading has its handle as an extra Tab stop (handle tabIndex 0)",
+    "after": ["clientNumber:BUTTON","name:BUTTON","matters:TH","openTasks:BUTTON","overdue:BUTTON","status:TH"]
+  },
+  "shift_arrow_resize_status_heading_1366": { "widths_px": [140,172,108], "keys": "Shift+Right x2, then Ctrl+Shift+Left" }
+}
