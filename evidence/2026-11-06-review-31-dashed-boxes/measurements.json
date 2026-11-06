@@ -1,0 +1,8 @@
+{"date":"2026-11-06","tip":"25e2f99",
+"holidays":{"noMatch":"No holidays match \"zzzzqq\". | Clear Search","afterClear":"10 rows"},
+"dashUsers":{"noMatch":"No people match these filters. | Clear Filters","afterClear":"list back"},
+"swimlane":{"lanes":"muted one line: No New tasks match the filters.","dashedOutlines":4,"cause":".count--caveat on the lane count chips"},
+"coverage":{"axe":"heading-order x1: h3#cv-h under h1"},
+"axe":"0 violations on Holidays no-match, Audit Logs, Users no-match, Swimlane no-match, Profile at 1366 and 1920",
+"permissionWording":["project-tasks-panel.ts:74","task-asset-links.ts:72","step-inputs-tab.ts:68"],
+"matterNoAssets":"full state block, Details card starts about 170 px lower"}
