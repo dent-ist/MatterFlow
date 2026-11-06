@@ -812,7 +812,7 @@ erDiagram
 - Tables in the database: 71. Tables in [Table Reference](Table-Reference.md): 71. Tables in the diagrams above: 71.
 - Foreign keys in the database: 183. Foreign keys drawn above: 183 (106 as normal lines, 77 as the combined `Created, Modified` lines from `AppUser`).
 - The script `wiki/tools/check-db-docs.mjs` re-checks this from `db/scripts` and the wiki pages. Run it with `node wiki/tools/check-db-docs.mjs` from the repository root after you change the schema.
-- The diagrams are written to the Mermaid syntax Azure DevOps supports but were not machine-validated (see [Documentation Map](../Reference/Documentation-Map.md)).
+- The diagrams were syntax-checked with Mermaid 9.4.3 and 10.9.1 (see [Documentation Map](../Reference/Documentation-Map.md)); their layout in Azure DevOps was not viewed.
 
 ## Related pages
 

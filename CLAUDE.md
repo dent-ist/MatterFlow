@@ -31,6 +31,7 @@ Internal law-firm eDiscovery Matter and Task tracker. ASP.NET Core (.NET 10) mod
 - **Auth**: `Dev` provider is for Development/Test only; production uses Windows auth. Never weaken that guard.
 - CI treats warnings as errors and checks formatting (`.editorconfig`, Prettier); run the checks before committing.
 - Main integration branch is `dev`.
+- **Wiki**: `wiki/` (published to the Azure DevOps wiki) documents the architecture, database and how-tos. Keep it in step: when you change the schema, a module, a route, a permission or a setting, update the matching wiki page in the same change (see `wiki/Reference/How-to-Keep-the-Wiki-Up-to-Date.md`).
 
 ## UI standard (mandatory for every screen, dialog, drawer, menu, button, chip, link, icon, grid, form, message, date, number or label you create or touch)
 
