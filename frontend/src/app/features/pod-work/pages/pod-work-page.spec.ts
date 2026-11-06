@@ -158,6 +158,19 @@ describe('PodWorkPage', () => {
     expect(tab(el, 'Unassigned').getAttribute('aria-selected')).toBe('true');
   });
 
+  it('puts the summary chips in the list toolbar where the quick views of the Task Queue are, under the tabs (#1167)', async () => {
+    const el = await open('/pods/work?x=1');
+    const toolbar = el.querySelector('[data-list-toolbar]')!;
+    expect(toolbar.querySelector('[data-strip]')).not.toBeNull();
+    expect(
+      el.querySelector('[data-tab-row]')!.compareDocumentPosition(toolbar) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(toolbar.querySelector('.lt__sorted')!.previousElementSibling).toBe(
+      toolbar.querySelector('mf-pod-work-strip'),
+    );
+  });
+
   it('shows the strip (Overdue, Due today, ASAP, On hold) and three tabs with counts (W5, W6, #561, #562)', async () => {
     const el = await open('/pods/work?x=1');
     const strip = el.querySelector('[data-strip]')!.textContent!.replace(/\s+/g, ' ');

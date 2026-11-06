@@ -124,9 +124,11 @@ let nextId = 0;
       gap: var(--mf-s2);
       margin: 0 0 var(--mf-s2);
     }
+    /* Search is 18 rem when there is room and gives the room back down to 11 rem before the toolbar wraps (Pod Work: Search, Filters, Other Filters, four chips, Sorted by and Columns in one row at 1366, #1167). */
     .lt__search {
-      flex: 0 1 18rem;
+      flex: 1 1 11rem;
       min-width: 11rem;
+      max-width: 18rem;
     }
     /* Columns, the "..." menu and the primary button of a tab: the right end of row 2 (it wraps as one piece, right aligned). */
     .lt__tail {

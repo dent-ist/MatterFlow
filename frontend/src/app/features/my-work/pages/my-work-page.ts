@@ -179,15 +179,6 @@ const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
         />
       }
 
-      <mf-work-strip
-        label="Needs attention"
-        hint="All your open tasks, not affected by the filters below"
-        [items]="stripItems()"
-        [interactive]="true"
-        [active]="activeStrip()"
-        (pick)="pickStrip($event)"
-      />
-
       <div class="wp-tabrow" data-tab-row>
         <mf-work-tabs
           label="My Work views"
@@ -197,6 +188,15 @@ const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
           (selectedChange)="selectTab($event)"
         />
       </div>
+
+      <mf-work-strip
+        label="Needs attention"
+        hint="All your open tasks, not affected by the filters below"
+        [items]="stripItems()"
+        [interactive]="true"
+        [active]="activeStrip()"
+        (pick)="pickStrip($event)"
+      />
 
       <div class="mf-fill" role="tabpanel" id="mw-panel" [attr.aria-labelledby]="'mw-tab-' + tab()">
         <mf-list-toolbar

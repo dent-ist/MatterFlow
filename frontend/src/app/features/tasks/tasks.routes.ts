@@ -9,6 +9,8 @@ export const TASKS_ROUTES: Routes = [
   {
     path: '',
     title: 'Task Queue',
+    // The page header has its own "New Task", so the shell hides the global one (#1167).
+    data: { hidesGlobalCreateTask: true },
     loadComponent: () => import('../task-queue/pages/task-queue-page').then((m) => m.TaskQueuePage),
   },
   {

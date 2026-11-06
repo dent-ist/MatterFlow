@@ -12,6 +12,9 @@ import { SkipTarget } from './skip-target';
 import { MATTERS_ROUTES } from '../../features/matters/matters.routes';
 import { PROJECTS_ROUTES } from '../../features/projects/projects.routes';
 import { CLIENTS_ROUTES } from '../../features/clients/clients.routes';
+import { TASKS_ROUTES } from '../../features/tasks/tasks.routes';
+import { MY_WORK_ROUTES } from '../../features/my-work/my-work.routes';
+import { POD_WORK_ROUTES } from '../../features/pod-work/pod-work.routes';
 
 describe('AppShell header search', () => {
   beforeEach(() => localStorage.clear());
@@ -80,6 +83,13 @@ describe('AppShell header search', () => {
       ] as const) {
         for (const p of paths) expect(flagOf(routes, p), p).toBeUndefined();
       }
+    });
+
+    it('is flagged off on the three work lists: their page header has its own New Task (#1167)', () => {
+      expect(flagOf(TASKS_ROUTES, '')).toBe(true);
+      expect(flagOf(MY_WORK_ROUTES, '')).toBe(true);
+      expect(flagOf(POD_WORK_ROUTES, '')).toBe(true);
+      expect(flagOf(TASKS_ROUTES, ':id')).toBeUndefined();
     });
 
     it('is hidden by the route flag, on /tasks/new, and shown elsewhere; never without Task.Create', async () => {
