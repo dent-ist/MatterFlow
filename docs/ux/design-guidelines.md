@@ -252,7 +252,7 @@ Dates and times D-60; numbers D-61; names D-62; time zone shown only in the long
 - [ ] Copy: Title Case rule, label vocabulary, toast and state sentences, dates, numbers, names, glossary (section 4).
 - [ ] States: hover, focus ring, disabled, selected, error, empty, loading, error block, missing record.
 - [ ] Nothing cut or wrapped at 1366x768 (chips whole, toolbars on one row), nothing overflowing at 1920x1080.
-- [ ] Screenshots at 1366x768 and 1920x1080 of every changed screen, dialog, drawer and menu, with real or realistic data; axe 0 violations.
+- [ ] Screenshots at 1366x768 and 1920x1080 of every changed screen, dialog, drawer and menu, with real or realistic data; axe 0 violations. Commit them to the `design-evidence` branch only (at most 15 per issue, about 150 KB each), never to dev, main or the feature branch, and link them from the issue comment.
 - [ ] No new or changed keyboard shortcut; initial bundle under 700 kB.
 - [ ] Guard specs green (section 6); `tsc` for app, spec and e2e; `npm run format:check`; real `ng build`.
 - [ ] If I added or changed a pattern, I updated this file, `docs/ux/theme-guide.md` and the guard in the same change.

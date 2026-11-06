@@ -70,6 +70,8 @@ See [Database Overview](../Database/Overview.md): singular PascalCase tables, `<
 
 Commit message formats: [Branching and Workflow](../Getting-Started/Branching-and-Workflow.md). Plain English in docs; short sentences; keep guideline, code and wiki in step.
 
+**Screenshots.** Do not commit screenshots to `dev`, `main` or a feature branch. Put evidence for UI work on the `design-evidence` branch (`evidence/<yyyy-mm-dd>-<issue-or-review>/`, at most 15 compressed images per issue, about 150 KB each) and link it from the issue comment. See [Branching and Workflow](../Getting-Started/Branching-and-Workflow.md).
+
 ## Related pages
 
 - [UI Standard](../Frontend/UI-Standard.md)
