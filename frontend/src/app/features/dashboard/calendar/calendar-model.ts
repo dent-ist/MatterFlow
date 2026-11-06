@@ -139,6 +139,20 @@ export const expectedText = (d: Pick<CalDay, 'available' | 'expected'>): string 
 export const expectedShort = (d: Pick<CalDay, 'available' | 'expected'>): string =>
   `${d.available}/${d.expected}`;
 
+/**
+ * The three count tiles of the day panel (#1234, owner change: no On Holiday tile). People who are off because of a holiday are counted in Off Hours, so the three numbers add up to the
+ * people in view; the holiday itself stays in the panel header and in the calendar cell. The sum is the day endpoint's `offHours` plus `onHoliday` (no backend change).
+ */
+export const offHoursCount = (c: { offHours: number; onHoliday: number }): number =>
+  c.offHours + c.onHoliday;
+
+/** The one-sentence explanation of each tile: its tooltip and the same text as its accessible description. */
+export const DAY_COUNT_TIPS = {
+  available: 'People who are working and can take work on this day.',
+  out: 'People with an Out of Office entry that covers this day.',
+  off: 'People who are not working on this day: outside their work hours (for example a weekend), or off for a holiday. A holiday takes priority over Out of Office.',
+} as const;
+
 /** "2 out" (the count out of office). */
 export const outText = (d: Pick<CalDay, 'outOfOffice'>): string => `${d.outOfOffice} out`;
 

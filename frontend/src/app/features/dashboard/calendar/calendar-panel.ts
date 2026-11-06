@@ -20,7 +20,8 @@ import { STATE_META, CapacityState } from '../../../shared/availability/capacity
 import { CALENDAR_API } from './calendar-api';
 import { CalQuery, CoverageLevel, DayPanel, DayPerson, RoleGroup } from './calendar-contract';
 import { levelClass } from './calendar-month-grid';
-import { LEVELS, isWeekend, longDay } from './calendar-model';
+import { DAY_COUNT_TIPS, LEVELS, isWeekend, longDay, offHoursCount } from './calendar-model';
+import { Tip } from '../../../shared/ui/tip';
 import { IntPipe } from '../../../shared/ui/number-format';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -46,7 +47,7 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
   groups.reduce((n, g) => n + g.people.length, 0);
 
 /**
- * The day panel of the Dashboard Calendar (epic #1074, CAL-08), read-only: the date and its holidays by category, four counts (Available, Out of office, On holiday, Off hours),
+ * The day panel of the Dashboard Calendar (epic #1074, CAL-08), read-only: the date and its holidays by category, three count tiles (Available, Out of Office, Off Hours; a holiday person counts in Off Hours, #1234),
  * coverage by pod with the level as icon and word, then two searchable lists, AVAILABLE and UNAVAILABLE, each grouped by Role in the server's order and sorted by workload exactly as the
  * server returns them (Available: lightest load first, who can take work; Unavailable: heaviest first, whose work needs cover). A row has the name, the pod, the open-task count (a bare
  * number) and a state chip; an unavailable person also has the reason (Out of office, Holiday, Not working), the day they are back and, only when the server sent it (the viewer holds
@@ -54,7 +55,7 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
  */
 @Component({
   selector: 'mf-cal-panel',
-  imports: [IntPipe, NumericDatePipe, NgTemplateOutlet],
+  imports: [IntPipe, NumericDatePipe, NgTemplateOutlet, Tip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './calendar-coverage.scss',
   host: { '(keydown.escape)': 'closed.emit()' },
@@ -118,21 +119,26 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
                 </ul>
               }
               <dl class="counts" data-panel-counts>
-                <div class="ct" data-count="available">
-                  <dt><i class="pi pi-check-circle" aria-hidden="true"></i> Available</dt>
+                <div class="ct" data-count="available" [mfTip]="tips.available">
+                  <dt>
+                    <i class="pi pi-check-circle" aria-hidden="true"></i> Available
+                    <span class="sr-only">. {{ tips.available }}</span>
+                  </dt>
                   <dd>{{ p.counts.available }}</dd>
                 </div>
-                <div class="ct" data-count="out">
-                  <dt><i class="pi pi-user-minus" aria-hidden="true"></i> Out of Office</dt>
+                <div class="ct" data-count="out" [mfTip]="tips.out">
+                  <dt>
+                    <i class="pi pi-user-minus" aria-hidden="true"></i> Out of Office
+                    <span class="sr-only">. {{ tips.out }}</span>
+                  </dt>
                   <dd>{{ p.counts.outOfOffice }}</dd>
                 </div>
-                <div class="ct" data-count="holiday">
-                  <dt><i class="pi pi-flag" aria-hidden="true"></i> On Holiday</dt>
-                  <dd>{{ p.counts.onHoliday }}</dd>
-                </div>
-                <div class="ct" data-count="off">
-                  <dt><i class="pi pi-moon" aria-hidden="true"></i> Off Hours</dt>
-                  <dd>{{ p.counts.offHours }}</dd>
+                <div class="ct" data-count="off" [mfTip]="tips.off">
+                  <dt>
+                    <i class="pi pi-moon" aria-hidden="true"></i> Off Hours
+                    <span class="sr-only">. {{ tips.off }}</span>
+                  </dt>
+                  <dd>{{ offHours(p) }}</dd>
                 </div>
               </dl>
               <p class="lvl" [class]="'lvl ' + cls(p.level)" data-panel-level>
@@ -388,14 +394,17 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
       height: 22px;
       font-size: var(--mf-fs-sm);
     }
-    /* The four counts on one compact row (CAL-11). */
+    /* The three count tiles on one compact row (CAL-11, #1234): one height, the label at the top (it may wrap to two lines) and the number pinned to the bottom, so the numbers share a baseline. */
     .counts {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: var(--mf-s1);
       margin: 0;
     }
     .ct {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
       padding: var(--mf-s1) var(--mf-s2);
       border: 1px solid var(--mf-border-soft);
       border-radius: var(--mf-radius-lg);
@@ -745,6 +754,10 @@ export class CalPanel {
   }
 
   protected cls = (level: CoverageLevel): string => levelClass(level);
+  /** The tiles' tooltips and descriptions (#1234). */
+  protected readonly tips = DAY_COUNT_TIPS;
+  /** Off Hours with the holiday people added, so the three tiles add up to the people in view. */
+  protected offHours = (p: DayPanel): number => offHoursCount(p.counts);
   protected pct = (p: DayPanel): number =>
     p.counts.expected > 0 ? Math.round((p.counts.available / p.counts.expected) * 100) : 0;
   protected levelText(p: DayPanel): string {

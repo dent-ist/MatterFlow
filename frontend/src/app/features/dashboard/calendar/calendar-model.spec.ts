@@ -1,5 +1,6 @@
 import { CalDay } from './calendar-contract';
 import {
+  DAY_COUNT_TIPS,
   addDays,
   cellTooltip,
   dayAriaLabel,
@@ -7,6 +8,7 @@ import {
   expectedText,
   longDay,
   monthGrid,
+  offHoursCount,
   parseCalAddress,
   shiftMonth,
   viewRange,
@@ -133,5 +135,23 @@ describe('week pods and address', () => {
       day: null,
       role: null,
     });
+  });
+});
+
+describe('the day panel count tiles (#1234)', () => {
+  it('Off Hours adds the holiday people, so Available, Out of Office and Off Hours add up to the people in view', () => {
+    const d = day({ total: 46, available: 43, outOfOffice: 1, onHoliday: 2, offHours: 0 });
+    expect(offHoursCount(d)).toBe(2);
+    expect(d.available + d.outOfOffice + offHoursCount(d)).toBe(d.total);
+    expect(offHoursCount(day({ onHoliday: 30, offHours: 4 }))).toBe(34);
+    expect(offHoursCount(day({ onHoliday: 0, offHours: 0 }))).toBe(0);
+  });
+
+  it('each tile has a one-sentence tooltip; the holiday wording is part of Off Hours', () => {
+    expect(DAY_COUNT_TIPS.available).toBe('People who are working and can take work on this day.');
+    expect(DAY_COUNT_TIPS.out).toBe('People with an Out of Office entry that covers this day.');
+    expect(DAY_COUNT_TIPS.off).toBe(
+      'People who are not working on this day: outside their work hours (for example a weekend), or off for a holiday. A holiday takes priority over Out of Office.',
+    );
   });
 });

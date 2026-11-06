@@ -15,6 +15,7 @@ import { aScopeChoices, scopesMock } from '../dash-scope-testing';
 import { CALENDAR_API, CalendarApi } from './calendar-api';
 import { FixtureCalendarApi } from './calendar-fixtures';
 import { DashCalendarTab } from './calendar-tab';
+import { DAY_COUNT_TIPS } from './calendar-model';
 import { filterGroups, loadState } from './calendar-panel';
 import { forecastWord, riskSentence, weekRangeText } from './calendar-insights';
 
@@ -225,7 +226,7 @@ describe('DashCalendarTab', () => {
     expect(url()).toContain('day=2026-11-25');
     const panel = q('[data-cal-panel]');
     expect(text(panel.querySelector('[data-panel-date]'))).toBe('Wednesday, November 25, 2026');
-    expect(qa('[data-count]').length).toBe(4);
+    expect(qa('[data-count]').length).toBe(3);
     // Coverage by pod is folded by default and opens with its toggle; the pod level is an icon (the word is for assistive tools).
     expect(q('[data-panel-pods]').hidden).toBe(true);
     expect(text(q('[data-panel-level]'))).toMatch(/expected people are available \(\d+%\)/);
@@ -242,6 +243,24 @@ describe('DashCalendarTab', () => {
     for (const l of loads('unavailable')) expect(l).toEqual([...l].sort((a, b) => b - a));
     expect(q('[data-list="unavailable"]').querySelector('[data-absence-type]')).not.toBeNull();
     expect(text(q('[data-list="unavailable"]'))).toContain('back ');
+  });
+
+  it('the day panel has three count tiles (Available, Out of Office, Off Hours), no On Holiday tile, each with its one-sentence tooltip and description (#1234)', async () => {
+    await open();
+    cell('2026-11-26').click(); // Thanksgiving: the holiday people are counted in Off Hours
+    await settle();
+    expect(qa('[data-count]').map((e) => e.getAttribute('data-count'))).toEqual([
+      'available',
+      'out',
+      'off',
+    ]);
+    expect(text(q('[data-panel-counts]'))).not.toContain('On Holiday');
+    for (const [key, sentence] of Object.entries(DAY_COUNT_TIPS)) {
+      expect(text(q(`[data-count="${key}"] dt .sr-only`))).toContain(sentence);
+    }
+    expect(text(q('[data-count="available"] dt'))).toContain('Available');
+    expect(text(q('[data-count="out"] dt'))).toContain('Out of Office');
+    expect(text(q('[data-count="off"] dt'))).toContain('Off Hours');
   });
 
   it('without the reasons permission no absence type exists in the DOM', async () => {
