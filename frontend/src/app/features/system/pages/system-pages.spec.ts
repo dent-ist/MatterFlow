@@ -67,15 +67,14 @@ describe('the 403 page keeps the address', () => {
     return { el: fixture.nativeElement as HTMLElement, replace };
   }
 
-  it('says what was asked for, offers Copy link and puts the address back in the address bar', async () => {
+  it('says what was asked for with a copy button and puts the address back in the address bar', async () => {
     const { el, replace } = await render('/admin/users?status=all');
     expect(el.querySelector('[data-asked-path]')!.textContent).toBe('/admin/users?status=all');
-    expect(el.querySelector('[data-state-secondary] button')!.getAttribute('aria-label')).toBe(
-      'Copy link',
+    expect(el.querySelector('[data-asked] button')!.getAttribute('aria-label')).toBe(
+      'Copy address',
     );
-    expect(el.querySelector('[data-state-secondary] button')!.textContent).toContain('Copy link');
     expect(replace).toHaveBeenCalledWith('/admin/users?status=all', '', null);
-    expect(el.querySelector('h1')!.textContent).toContain("You don't have permission");
+    expect(el.querySelector('h1')!.textContent).toBe("You don't have access.");
   });
 
   it('shows nothing about an address when /403 was opened directly', async () => {
@@ -124,18 +123,19 @@ describe('the state pages are one family', () => {
     }
   });
 
-  it('only the 404 offers search, with a placeholder short enough not to be cut', async () => {
+  it('each card has one H1, one button at most and no search box (D-53, #1193)', async () => {
     TestBed.configureTestingModule({
       providers: [provideRouter([]), provideFakeMe(new FakeMeApi(withPermissions('Task.View')))],
     });
     await TestBed.inject(AuthStore).ensureLoaded();
-    const nf = TestBed.createComponent(NotFoundPage);
-    await settle(nf);
-    const input = (nf.nativeElement as HTMLElement).querySelector('input[type=search]')!;
-    expect(input.getAttribute('placeholder')!.length).toBeLessThanOrEqual(20);
-    const fb = TestBed.createComponent(ForbiddenPage);
-    await settle(fb);
-    expect((fb.nativeElement as HTMLElement).querySelector('input')).toBeNull();
+    for (const page of [NotFoundPage, ForbiddenPage] as Type<unknown>[]) {
+      const f = TestBed.createComponent(page);
+      await settle(f);
+      const el = f.nativeElement as HTMLElement;
+      expect(el.querySelector('input')).toBeNull();
+      expect(el.querySelectorAll('[data-state-actions] .mf-btn')).toHaveLength(1);
+      expect(el.querySelector('.sp__tile')).not.toBeNull();
+    }
   });
 });
 

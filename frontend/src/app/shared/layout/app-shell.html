@@ -151,9 +151,9 @@
               <i [class]="item.icon" aria-hidden="true"></i>
               <span class="mf-nav-label">{{ item.label }}</span>
               @if (item.pendingBadge && pendingUsers.count() > 0) {
-                <span class="mf-badge" data-pending-badge aria-hidden="true">{{
+                <mf-count-chip data-pending-badge aria-hidden="true">{{
                   pendingUsers.count()
-                }}</span>
+                }}</mf-count-chip>
               }
             </a>
           </li>

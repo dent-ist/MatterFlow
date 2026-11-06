@@ -117,7 +117,7 @@ test.describe('Landing for oversight roles (#628)', () => {
     await noTaskPage.goto('/my-matters');
     await expect(
       noTaskPage.getByRole('heading', {
-        name: "You don't have permission to view this.",
+        name: "You don't have access.",
         level: 1,
       }),
     ).toBeVisible();

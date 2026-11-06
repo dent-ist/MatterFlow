@@ -142,10 +142,6 @@ test.describe('the administrator changes the name and the icon', () => {
 
     await page.goto('/this/page/does/not/exist');
     await expect(page.locator('[data-state-brand]')).toHaveText('Harbor Legal');
-    await expect(page.locator('[data-not-found-search]')).toHaveAttribute(
-      'placeholder',
-      'Search Harbor Legal',
-    );
 
     const error = await asUser((await personas.named('technician')).username);
     await failMe(error);
@@ -157,7 +153,7 @@ test.describe('the administrator changes the name and the icon', () => {
 
     const pending = await asUser((await personas.named('pending')).username);
     await pending.goto('/');
-    await expect(pending.locator('.mf-brand')).toHaveText('Harbor Legal');
+    await expect(pending.locator('[data-state-brand]')).toHaveText('Harbor Legal');
     await expect(pending.locator('main')).toContainText('before you can use Harbor Legal.');
   });
 

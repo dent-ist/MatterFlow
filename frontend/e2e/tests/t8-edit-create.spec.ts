@@ -621,9 +621,7 @@ test.describe('T8: Create task page (CT1 #322, #323)', () => {
     const viewer = await seed.user([noCreate.name], `t8c-${token}`);
     const denied = await asUser(viewer.username);
     await denied.goto('/tasks/new');
-    await expect(
-      denied.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(denied.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     await expect(denied.locator('mf-page-header')).toHaveCount(0);
 
     const role = await seed.role(['Task.View', 'Task.Create'], `E2E T8 creator ${token}`);

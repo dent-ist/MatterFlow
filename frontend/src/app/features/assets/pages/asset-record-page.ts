@@ -119,25 +119,33 @@ type Tab = 'details' | 'tasks' | 'history';
 
             @if (!a.isActive) {
               <div class="pg-banner" role="note" data-inactive-banner>
-                @if (a.dispositionCode === 'ACTIVE' || a.dispositionCode === 'INACTIVE') {
-                  This asset is inactive. It keeps its history and existing task links, and can't be
-                  edited until it is reactivated.
-                } @else {
-                  This asset is {{ disposition().label.toLowerCase() }}. It keeps its history and
-                  existing task links, can't be newly linked and can't be edited.
-                }
+                <i class="pi pi-info-circle" aria-hidden="true"></i>
+                <span>
+                  @if (a.dispositionCode === 'ACTIVE' || a.dispositionCode === 'INACTIVE') {
+                    This asset is inactive. It keeps its history and existing task links, and can't
+                    be edited until it is reactivated.
+                  } @else {
+                    This asset is {{ disposition().label.toLowerCase() }}. It keeps its history and
+                    existing task links, can't be newly linked and can't be edited.
+                  }
+                </span>
               </div>
             }
             @if (a.inactiveLinked) {
               <div class="pg-banner" role="note" data-inactive-linked-banner>
                 <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-                Not active, but still linked to {{ a.openLinkedTaskCount | mfInt }} open
-                {{ a.openLinkedTaskCount === 1 ? 'task' : 'tasks' }}.
+                <span
+                  >Not active, but still linked to {{ a.openLinkedTaskCount | mfInt }} open
+                  {{ a.openLinkedTaskCount === 1 ? 'task' : 'tasks' }}.</span
+                >
               </div>
             }
             @if (!a.assetTypeIsActive) {
               <div class="pg-banner" role="note" data-type-inactive-banner>
-                The asset type {{ a.assetTypeName }} is inactive. This asset keeps working.
+                <i class="pi pi-info-circle" aria-hidden="true"></i>
+                <span
+                  >The asset type {{ a.assetTypeName }} is inactive. This asset keeps working.</span
+                >
               </div>
             }
 

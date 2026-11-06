@@ -9,30 +9,36 @@ import {
 import { RouterLink } from '@angular/router';
 import { BrandingService } from '../../core/branding/branding.service';
 import { LandingLink } from '../../core/auth/guards';
-import { TitleIcon } from './page-header';
+import { CopyButton } from './copy-button';
 
 /**
- * The one card of the route-level state pages (403, 404 and the error page; S10, #607; mock `docs/ux/shell-review/mocks/mock-nav-and-system.png`):
- * a centred card with the icon and the title (22px / 700, 18px below 640px, the page-header numbers), one sentence of reason, the address that
- * was asked for in monospace (project it as the default content), the primary action ("Go to ..." from the landing rule, or a button in the
- * `mfPrimary` slot) and one secondary action in the `mfSecondary` slot (Search on a 404, Copy link on a 403, Try again on the error page).
- * The brand line sits under the card, outside it. The card has no illustration and never touches the page edges. The title is the page's
- * one H1 and takes focus once on arrival (S12, #610: a link, a guard denial and a reload all land on it, so a screen reader reads it; nothing else
- * moves, and Back restores the rules of the page it returns to).
+ * The one card of every system and not-found state (403, 404, the error page, Access Pending and a missing record; D-53, D-47, #1193):
+ * a centred card 480 px wide (radius 12) with a 48 px icon tile, the title (the page's one H1, 22px / 700, one line), ONE sentence of
+ * reason, an optional reference line (the address that was asked for, or the error reference: muted mono with a copy button) and ONE
+ * button (the "Go to ..." link from the landing rule, or a button in the `mfPrimary` slot). The brand line sits under the card, outside it.
+ * The title takes focus once on arrival (a link, a guard denial and a reload all land on it, so a screen reader reads it) and shows no
+ * focus box (D-05).
  *
- *   <mf-state-page icon="pi pi-ban" heading="..." reason="..." [primary]="link"> <p>You asked for ...</p> <button mfSecondary>...</button> </mf-state-page>
+ *   <mf-state-page icon="pi pi-ban" heading="..." reason="..." [primary]="link" address="/admin/users"> <button mfPrimary>...</button> </mf-state-page>
  */
 @Component({
   selector: 'mf-state-page',
-  imports: [RouterLink, TitleIcon],
+  imports: [RouterLink, CopyButton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="sp" data-state-page>
-      <h1 class="sp__title" data-page-title tabindex="-1">
-        <mf-title-icon [icon]="icon()" />{{ heading() }}
-      </h1>
+      <span class="sp__tile" [class.sp__tile--error]="tone() === 'error'" aria-hidden="true">
+        <i [class]="icon()"></i>
+      </span>
+      <h1 class="sp__title" data-page-title tabindex="-1">{{ heading() }}</h1>
       @if (reason()) {
         <p class="sp__reason" data-state-reason>{{ reason() }}</p>
+      }
+      @if (address()) {
+        <p class="sp__ref" data-asked>
+          <span>Asked for</span> <code data-asked-path>{{ address() }}</code>
+          <mf-copy-button [text]="addressCopy() || address()" label="address" />
+        </p>
       }
       <div class="sp__detail"><ng-content /></div>
       <div class="sp__actions" data-state-actions>
@@ -42,7 +48,6 @@ import { TitleIcon } from './page-header';
           >
         }
         <ng-content select="[mfPrimary]" />
-        <div class="sp__secondary" data-state-secondary><ng-content select="[mfSecondary]" /></div>
       </div>
     </section>
     @if (showBrand()) {
@@ -56,14 +61,36 @@ import { TitleIcon } from './page-header';
     }
     .sp {
       box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       width: 100%;
-      max-width: 32rem;
+      max-width: 480px;
       margin: 0 auto;
-      padding: var(--mf-s5) var(--mf-s5);
-      border: 1px solid var(--mf-border);
+      padding: var(--mf-s5);
+      border: 1px solid var(--mf-border-soft);
       border-radius: var(--mf-radius-xl);
       background: var(--mf-surface);
       box-shadow: var(--mf-shadow-card);
+      text-align: center;
+    }
+    .sp__tile {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: var(--mf-s7);
+      height: var(--mf-s7);
+      margin-bottom: var(--mf-s3);
+      border-radius: var(--mf-radius-lg);
+      background: var(--mf-primary);
+      color: var(--mf-primary-contrast);
+      font-size: var(--mf-icon-xl);
+    }
+    .sp__tile i {
+      font-size: inherit;
+    }
+    .sp__tile--error {
+      background: var(--mf-sem-overdue-solid);
     }
     .sp__title {
       margin: 0 0 var(--mf-s2);
@@ -72,44 +99,45 @@ import { TitleIcon } from './page-header';
       line-height: 1.3;
       overflow-wrap: anywhere;
     }
-    @media (max-width: 639.98px) {
-      .sp__title {
-        font-size: var(--mf-fs-h3);
-      }
-      .sp {
-        padding: var(--mf-s4);
-      }
-      :host {
-        padding-top: var(--mf-s3);
-      }
+    /* Focus arrives here from code (once, on arrival): a screen reader reads the title, no box is drawn (D-05). */
+    .sp__title:focus,
+    .sp__title:focus-visible {
+      outline: none;
     }
     .sp__reason {
       margin: 0 0 var(--mf-s3);
       overflow-wrap: anywhere;
       color: var(--mf-text-muted);
     }
+    .sp__ref {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: var(--mf-s1);
+      margin: 0 0 var(--mf-s3);
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+    }
+    .sp__ref code {
+      font-family: var(--mf-font-mono);
+      overflow-wrap: anywhere;
+    }
     .sp__detail:empty {
       display: none;
     }
     .sp__detail {
       margin-bottom: var(--mf-s3);
+      color: var(--mf-text-muted);
+      overflow-wrap: anywhere;
     }
     .sp__actions {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: var(--mf-s3);
-      margin-top: var(--mf-s4);
-    }
-    .sp__secondary {
-      display: flex;
-      flex: 1 1 auto;
-      align-items: center;
+      justify-content: center;
       gap: var(--mf-s2);
-      min-width: 0;
-    }
-    .sp__secondary:empty {
-      display: none;
+      margin-top: var(--mf-s2);
     }
     .sp__brand {
       margin: var(--mf-s4) 0 0;
@@ -117,7 +145,6 @@ import { TitleIcon } from './page-header';
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
       font-weight: 600;
-      letter-spacing: 0.02em;
       text-align: center;
     }
   `,
@@ -136,6 +163,12 @@ export class StatePage {
   readonly icon = input.required<string>();
   readonly heading = input.required<string>();
   readonly reason = input('');
+  /** The tile colour: `error` for a failure (the error page), the primary colour for an answer (403, 404, pending). */
+  readonly tone = input<'default' | 'error'>('default');
+  /** The address that was asked for: muted mono with a copy button under the sentence (403, 404). */
+  readonly address = input('');
+  /** What the copy button puts on the clipboard when it differs from the shown address (the full URL). */
+  readonly addressCopy = input('');
   /** The application name under the card (the route-level pages); a record's missing state inside the shell has none (D-47). */
   readonly showBrand = input(true);
   /** The title takes focus once on arrival; false where the owner of the page moves focus itself (`mf-record-state`). */

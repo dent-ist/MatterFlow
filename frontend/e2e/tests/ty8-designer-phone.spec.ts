@@ -219,8 +219,6 @@ test.describe('FD4 permissions', () => {
     const viewerRole = await seed.role(['Task.View'], 'Viewer');
     const viewer = await asUser((await seed.user([viewerRole.name], 'tt-viewer')).username);
     await viewer.goto(type.url);
-    await expect(
-      viewer.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(viewer.getByRole('heading', { name: "You don't have access." })).toBeVisible();
   });
 });

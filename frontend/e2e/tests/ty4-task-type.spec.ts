@@ -972,9 +972,7 @@ test.describe('Task Type record page', () => {
       await wfPage.goto(typeUrl(w));
       // The 403 renders in place and keeps the address that was asked for (#598).
       await expect(wfPage).toHaveURL(new RegExp(`${typeUrl(w).replace(/\//g, '\\/')}$`));
-      await expect(
-        wfPage.getByRole('heading', { name: "You don't have permission to view this." }),
-      ).toBeVisible();
+      await expect(wfPage.getByRole('heading', { name: "You don't have access." })).toBeVisible();
       await expect(wfPage.locator('[data-task-type-page]')).toHaveCount(0);
 
       const taskRole = await seed.role(['Task.View'], 'TY4 viewer');
@@ -982,7 +980,7 @@ test.describe('Task Type record page', () => {
       const viewerPage = await asUser(viewer.username);
       await viewerPage.goto(typeUrl(w));
       await expect(
-        viewerPage.getByRole('heading', { name: "You don't have permission to view this." }),
+        viewerPage.getByRole('heading', { name: "You don't have access." }),
       ).toBeVisible();
       await expect(viewerPage.locator('[data-task-type-page]')).toHaveCount(0);
     });

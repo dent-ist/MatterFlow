@@ -497,9 +497,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
       );
       const p4 = await asUser(ttOnly.username);
       await p4.goto(url(s));
-      await expect(
-        p4.getByRole('heading', { name: "You don't have permission to view this." }),
-      ).toBeVisible();
+      await expect(p4.getByRole('heading', { name: "You don't have access." })).toBeVisible();
       await expect(p4.locator('[data-record-header]')).toHaveCount(0);
 
       const viewer = await seed.user(
@@ -508,9 +506,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
       );
       const p5 = await asUser(viewer.username);
       await p5.goto(url(s));
-      await expect(
-        p5.getByRole('heading', { name: "You don't have permission to view this." }),
-      ).toBeVisible();
+      await expect(p5.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     });
   });
 });

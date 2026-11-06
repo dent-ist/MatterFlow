@@ -33,6 +33,7 @@ import { ADMIN_NAV_ITEMS, NAV_ITEMS, NavItem, mainNav } from './nav-items';
 import { originNav, parseOrigin } from '../work-queue/drill';
 import { ShortcutHelpState } from './shortcut-help-state';
 import { KeyboardShortcuts } from './keyboard-shortcuts';
+import { CountChip } from '../ui/count-chip';
 import { CreateTaskContext } from './create-task-context';
 import { SkipTarget, skipId } from './skip-target';
 import { isShortcut } from './shortcut-registry';
@@ -69,6 +70,7 @@ const PHONE_QUERY = '(max-width: 639px)';
     NotificationBell,
     RouteAnnouncer,
     NavTip,
+    CountChip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {

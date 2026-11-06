@@ -9,7 +9,7 @@ import { labelledDropdown } from '../support/dropdown';
  * WP-SR3 #466: the results page is a fixed-height page with counted tabs; the type, the page and the page size are in the address.
  * Screenshots go to E2E_SCREENSHOTS (docs/ux/search-review/fixes/sr3-results).
  */
-const FORBIDDEN = "You don't have permission to view this.";
+const FORBIDDEN = "You don't have access.";
 
 /** A token no other test uses, a matter whose tasks, project and assets carry it, and how many of each. */
 async function seedResults(seed: Seeder, tasks = 30) {

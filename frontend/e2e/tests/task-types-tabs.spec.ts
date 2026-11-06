@@ -200,9 +200,7 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
     const nobody = await seed.user(['Data Technician'], 'tech');
     const techPage = await asUser(nobody.username);
     await techPage.goto('/admin/workflows');
-    await expect(
-      techPage.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(techPage.getByRole('heading', { name: "You don't have access." })).toBeVisible();
   });
 });
 

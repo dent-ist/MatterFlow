@@ -278,26 +278,20 @@ test.describe("FD1 permissions: the designer follows its owner's permission", ()
     await expect(typePage.getByRole('tab', { name: 'Properties' })).toBeVisible();
     await expect(typePage.getByRole('button', { name: 'Publish...' })).toBeVisible();
     await typePage.goto(step.url);
-    await expect(
-      typePage.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(typePage.getByRole('heading', { name: "You don't have access." })).toBeVisible();
 
     const wfRole = await seed.role(['Workflow.Manage', 'Task.View'], 'Workflow only');
     const wfPage = await asUser((await seed.user([wfRole.name], 'tt-wfonly')).username);
     await wfPage.goto(step.url);
     await expect(wfPage.getByRole('tab', { name: 'Validation' })).toBeVisible();
     await wfPage.goto(type.url);
-    await expect(
-      wfPage.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(wfPage.getByRole('heading', { name: "You don't have access." })).toBeVisible();
 
     const viewerRole = await seed.role(['Task.View'], 'Viewer');
     const viewer = await asUser((await seed.user([viewerRole.name], 'tt-viewer')).username);
     for (const url of [type.url, step.url]) {
       await viewer.goto(url);
-      await expect(
-        viewer.getByRole('heading', { name: "You don't have permission to view this." }),
-      ).toBeVisible();
+      await expect(viewer.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     }
   });
 });

@@ -9,7 +9,7 @@ import { expect, test } from '../support/fixtures';
  * hit opens (no 403 page, no 403 from the API on the way) and the page offers no link to a type the person may not view.
  */
 const IN_PLACE = /linked assets aren't shown here|permission to view tasks/;
-const FORBIDDEN = "You don't have permission to view this.";
+const FORBIDDEN = "You don't have access.";
 
 type Kind = 'client' | 'matter' | 'project' | 'task' | 'asset';
 

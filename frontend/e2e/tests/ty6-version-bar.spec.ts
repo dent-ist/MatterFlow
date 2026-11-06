@@ -255,18 +255,14 @@ test.describe('Workflow version page: sticky action bar (VP1, #357)', () => {
     const ttUser = await seed.user([ttRole.name], 'tt-only');
     const ttPage = await asUser(ttUser.username);
     await ttPage.goto(url);
-    await expect(
-      ttPage.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(ttPage.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     await expect(ttPage.locator('mf-workflow-version-bar')).toHaveCount(0);
 
     const viewRole = await seed.role(['Task.View'], 'Viewer');
     const viewer = await seed.user([viewRole.name], 'viewer');
     const viewerPage = await asUser(viewer.username);
     await viewerPage.goto(url);
-    await expect(
-      viewerPage.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(viewerPage.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     await expect(viewerPage.getByRole('button', { name: 'Publish...' })).toHaveCount(0);
   });
 

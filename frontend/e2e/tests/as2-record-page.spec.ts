@@ -162,7 +162,7 @@ test.describe('Asset record page (WP-AS2)', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       "We couldn't find that asset.",
     );
-    await expect(page.getByRole('link', { name: 'Go to assets' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Go to Assets' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Retry' })).toHaveCount(0);
     await expect(page).toHaveTitle(/^Asset not found/);
     await shot(page, 'as2-record-404');

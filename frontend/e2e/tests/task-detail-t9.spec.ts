@@ -387,9 +387,7 @@ test.describe('T9 #324 and #325: where a task was opened from', () => {
     const nobody = await seed.user([none.name], 'notask');
     const n = await asUser(nobody.username);
     await n.goto(`/tasks/${task.taskId}?from=search`);
-    await expect(
-      n.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(n.getByRole('heading', { name: "You don't have access." })).toBeVisible();
   });
 });
 

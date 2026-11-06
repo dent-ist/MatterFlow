@@ -313,9 +313,7 @@ test.describe('Review round 5: profile availability, Swimlane and Users', () => 
       await asRo.dispose();
     }
     await page.goto('/admin/users');
-    await expect(
-      page.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: "You don't have access." })).toBeVisible();
   });
 });
 

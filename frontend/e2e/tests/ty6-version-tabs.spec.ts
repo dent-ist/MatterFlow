@@ -335,15 +335,11 @@ test.describe('Permission variants of the version page', () => {
     );
     const p1 = await asUser(ttOnly.username);
     await p1.goto(vurl(s, ids.v2));
-    await expect(
-      p1.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(p1.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     const viewer = await seed.user([(await seed.role(['Task.View'], 'TY6 viewer')).name], 'ty6-v');
     const p2 = await asUser(viewer.username);
     await p2.goto(vurl(s, ids.v2));
-    await expect(
-      p2.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(p2.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     const both = await seed.user(
       [(await seed.role(['Workflow.Manage', 'Task.View', 'TaskType.Manage'], 'TY6 both')).name],
       'ty6-b',

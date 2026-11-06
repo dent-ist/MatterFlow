@@ -340,8 +340,6 @@ test.describe('Audit Logs browser (smoke)', () => {
     const tech = await seed.user(['Data Technician'], 'nolog');
     const techPage = await asUser(tech.username);
     await techPage.goto('/admin/audit');
-    await expect(
-      techPage.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(techPage.getByRole('heading', { name: "You don't have access." })).toBeVisible();
   });
 });

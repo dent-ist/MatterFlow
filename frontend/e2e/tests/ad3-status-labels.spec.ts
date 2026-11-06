@@ -159,9 +159,7 @@ test.describe('the Status Labels list (#622)', () => {
       (await personas.create({ permissions: ['Task.View'], label: 'ad3-sv' })).username,
     );
     await viewer.goto('/admin/status-labels');
-    await expect(
-      viewer.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(viewer.getByRole('heading', { name: "You don't have access." })).toBeVisible();
   });
 
   for (const size of SIZES) {

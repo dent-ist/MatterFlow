@@ -267,9 +267,7 @@ test.describe('New priority and Edit priority (#609)', () => {
       (await personas.create({ permissions: ['Task.View'], label: 'ad3-v' })).username,
     );
     await viewer.goto('/admin/priorities?edit=new');
-    await expect(
-      viewer.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(viewer.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     const manager = await asUser(
       (await personas.create({ permissions: ['Priority.Manage'], label: 'ad3-m' })).username,
     );

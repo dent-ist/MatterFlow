@@ -3,11 +3,11 @@ import { Persona } from '../support/personas';
 import { atEverySize } from '../support/screens';
 
 /**
- * S9 (#598): a guard denial renders the 403 page at the address that was asked for. "You asked for /path." in monospace, Copy link beside
+ * S9 (#598): a guard denial renders the 403 page at the address that was asked for. "Asked for /path" in muted monospace with a copy button beside
  * "Go to <a page you can open>"; Reload retries the address (after a role grant it opens), Back goes where the person came from; `/403`
  * still works as a direct address; the document title stays "No access - MatterFlow".
  */
-const FORBIDDEN = "You don't have permission to view this.";
+const FORBIDDEN = "You don't have access.";
 
 test.describe('The 403 page keeps the address (#598)', () => {
   test('a technician typing /admin/users sees the 403 at that address; Back returns; Reload after a role grant opens the page', async ({
@@ -26,9 +26,7 @@ test.describe('The 403 page keeps the address (#598)', () => {
     await expect(page.getByRole('heading', { name: FORBIDDEN, level: 1 })).toBeVisible();
     await expect(page).toHaveURL(/\/admin\/users\?status=all$/);
     await expect(page.locator('[data-asked-path]')).toHaveText('/admin/users?status=all');
-    await expect(page.locator('[data-asked]')).toContainText(
-      'You asked for /admin/users?status=all.',
-    );
+    await expect(page.locator('[data-asked]')).toContainText('Asked for /admin/users?status=all');
     await expect(page).toHaveTitle('No Access - MatterFlow');
     // A technician with no pod and no assigned task holds Dashboard.ViewUnassigned: the landing rule (#628) leads to the Dashboard.
     await expect(page.locator('[data-back-link]')).toHaveAttribute('href', '/dashboard');
@@ -71,7 +69,7 @@ test.describe('The 403 page keeps the address (#598)', () => {
     await expect(page.getByRole('heading', { name: 'Clients', level: 1 })).toBeVisible();
   });
 
-  test('Copy link puts the full address on the clipboard, says so, and works from the keyboard', async ({
+  test('Copy address puts the full address on the clipboard, says so, and works from the keyboard', async ({
     personas,
     asUser,
     baseURL,
@@ -82,10 +80,9 @@ test.describe('The 403 page keeps the address (#598)', () => {
     await page.goto('/admin/audit?from=2026-01-01');
     await expect(page.getByRole('heading', { name: FORBIDDEN, level: 1 })).toBeVisible();
 
-    const copy = page.getByRole('button', { name: 'Copy Link' });
+    const copy = page.getByRole('button', { name: 'Copy address' });
     await expect(copy).toBeVisible();
-    await expect(copy).toContainText('Copy Link');
-    // Keyboard only: Tab from the page heading reaches the primary "Go to ..." link, then Copy link (#607: primary first, secondary second).
+    // Keyboard only: Tab from the page heading reaches the primary "Go to ..." link, then Copy address.
     await page.locator('h1').evaluate((h) => {
       h.setAttribute('tabindex', '-1');
       (h as HTMLElement).focus();
@@ -95,7 +92,7 @@ test.describe('The 403 page keeps the address (#598)', () => {
     await page.keyboard.press('Tab');
     await expect(copy).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('status').filter({ hasText: 'Link copied' })).toBeAttached();
+    await expect(page.getByRole('status').filter({ hasText: 'Copied' })).toBeAttached();
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
       `${baseURL}/admin/audit?from=2026-01-01`,
     );

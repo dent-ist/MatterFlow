@@ -81,19 +81,6 @@ import { SENSITIVE_LEAD, SENSITIVE_TEXT } from '../../../shared/ui/record-header
       align-items: center;
       gap: var(--mf-s2);
     }
-    /* The sensitive information bar: one compact amber bar under the title (access information stays on every tab). */
-    .mh__note {
-      display: flex;
-      align-items: baseline;
-      gap: var(--mf-s2);
-      margin: var(--mf-s2) 0 0;
-      padding: var(--mf-s1) var(--mf-s3);
-      border: 1px solid var(--mf-sem-risk-line);
-      border-radius: var(--mf-radius-lg);
-      background: var(--mf-sem-risk-bg);
-      color: var(--mf-sem-risk-fg);
-      font-size: var(--mf-fs-sm);
-    }
     .mh__crumb-name {
       display: inline-block;
       max-width: min(40ch, 60vw);

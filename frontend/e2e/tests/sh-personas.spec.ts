@@ -65,7 +65,7 @@ test.describe('E2E personas and failure helpers (#596)', () => {
       if (['/clients', '/pods/work', '/admin/task-types'].includes(route.path)) {
         await nobody.goto(url);
         await expect(nobody.getByRole('heading', { level: 1 }), `403 for ${url}`).toHaveText(
-          "You don't have permission to view this.",
+          "You don't have access.",
           { timeout: 30_000 },
         );
       }

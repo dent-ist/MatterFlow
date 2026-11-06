@@ -52,6 +52,8 @@ Each rule: **Do** exactly this; **Don't** the listed things; **Ref** the page or
 
 **D-10 Card.** `--mf-surface`, 1 px `--mf-border-soft`, radius 12, `--mf-shadow-card`, padding 16; title 16/600 (12 below); clickable card hover `--mf-row-hover`; no coloured edge, no nested cards. Figure card: figure 24/700, label 13 muted.
 
+**D-10a Banner (#1196).** One bar for every notice: `.pg-banner` (`styles/_banners.scss`; the sensitive bars of the record headers use it too), one line, 36 px (taller only when the text must wrap), radius 4, 1 px `-line` border and no thick edge, leading icon 16, text 14, one secondary 32 px action at the right ("Retry", "Reload Page"). Amber (`--mf-sem-risk-*`) warns, blue (`--mf-sem-info-*`, `pg-banner--info`) informs; `--danger` and `--success` exist for a failed sign-in and "Back online". The global ones (offline, sign-in, Dev auth) add `pg-banner--full`: full width at the top of the main area, no radius, a bottom line only.
+
 **D-11 Section heading** inside a page or card: 16/600, 24 above, 8 below, optional count chip.
 
 **D-11a Sub-heading inside a card (decided after review 15, #1172).** A group inside a card (Task page Details: Description, Task Information) is 14/700, 16 px above, 4 px below, no count chip; the card's own title stays D-11 (16/600).
@@ -148,7 +150,7 @@ Each rule: **Do** exactly this; **Don't** the listed things; **Ref** the page or
 
 **D-52 Toasts** (`core/notify/notification.service.ts`: `success|info|warn|error(summary, detail?, options?)`). Summary sentence case "<Thing> <past participle>", no full stop ("Role saved", "Production deleted", "Link copied"); optional detail (a sentence with a full stop, or the name). Errors "Couldn't save the role." + reason. Timing: success 4 s, info 6 s, warning 8 s, error until closed; at most three visible; `key` replaces a repeat. Undo toast "Pods of Ann Lee restored." with Undo; "Not undone: ..." when it cannot.
 
-**D-53 System pages.** Access Pending, 403, 404, Error, not-found: one `mf-state-page` card (480 px, radius 12, tile, H1 22/700 on one line, one sentence, one button, error reference with a copy button).
+**D-53 System pages.** Access Pending, 403, 404, Error, not-found: one `mf-state-page` card (480 px, radius 12, tile, H1 22/700 on one line, one sentence, one button, error reference with a copy button). The tile is 48 px (`--mf-s7`, radius 8, icon `--mf-icon-xl`), the card is centred text, the H1 takes focus on arrival and shows no ring, the 403 title is "You don't have access.", the address that was asked for (403, 404) and the error reference are one muted mono line with a copy button, and Access Pending (pending and disabled) is the same card with "Check Again" as its one button (#1193).
 
 **D-60 Dates [OWNER, owner approved the numeric form].** Data: `MM/DD` this year, `MM/DD/YYYY` otherwise; instants `MM/DD hh:mm AM/PM` (12-hour, leading zero, the person's time zone decides). Helpers: `shared/ui/numeric-date.ts` (`numericDate`, `numericDateAndTime`, `numericInstant`, pipe `mfNum`). Long form with the FULL month for tooltips, accessible names, calendar headings and sentences: "October 12, 2026, 10:23 PM EDT" (`readableDate`, `readableInstant`, pipe `mfDateLong` in `title`/`aria-label` only). Relative words ("Today", "3 h ago", "Due in 2 d") only where they exist. Don't: "Oct 12, 2026" in a cell, ISO text, a zone in a cell.
 
@@ -347,4 +349,3 @@ A guard that fails is fixed by changing the code, not the guard. A legitimate ex
 | Calendar weekday row is normal case 13/600, red on weekends | date grid, not a data grid (D-42a) |
 | Chart axes use the same `MM/DD` as cells | consistency; month names only in tooltips |
 | Profile account field and Audit Logs show `KE\account` | raw account is the data there |
-| Brief known gaps: the 403 page is not yet the `mf-state-page` card; Task Queue, My Work and Pod Work still show the top-bar "New Task" beside the page's own | tracked in epics #1117 and #1110, remove when done |

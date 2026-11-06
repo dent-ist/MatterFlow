@@ -204,9 +204,7 @@ test.describe('list loading, error and empty states follow the grid-body pattern
     const viewer = await asUser((await seed.user([role.name], 'ty2-viewer2')).username);
     for (const kind of KINDS) {
       await viewer.goto(LISTS[kind].list);
-      await expect(
-        viewer.getByRole('heading', { name: "You don't have permission to view this." }),
-      ).toBeVisible();
+      await expect(viewer.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     }
   });
 });

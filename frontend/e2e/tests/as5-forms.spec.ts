@@ -204,13 +204,9 @@ test.describe('Asset forms (WP-AS5)', () => {
     const viewer = await personas.create({ label: 'assetview', permissions: ['Asset.View'] });
     const v = await asUser(viewer.username);
     await v.goto('/assets/new');
-    await expect(
-      v.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(v.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     await v.goto(`/assets/${asset.assetId}/edit`);
-    await expect(
-      v.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(v.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     await v.goto('/assets');
     await expect(v.getByRole('button', { name: 'New asset' })).toHaveCount(0);
 

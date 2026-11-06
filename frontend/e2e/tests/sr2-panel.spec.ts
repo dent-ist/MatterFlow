@@ -61,8 +61,9 @@ test.describe('Suggestion panel counts and phone sheet (WP-SR2)', () => {
       await expect(panel.locator('[data-group=asset] [data-hit]')).toHaveCount(3);
       await expect(panel.locator('[data-group=project] [data-see-all]')).toHaveCount(0);
       await expect(panel.locator('[data-group=task] [data-see-all]')).toContainText('See all 5');
-      await expect(panel.locator('[data-view-all-text]')).toContainText(
-        `View all 12 results for "${s.token}"`,
+      await expect(panel.locator('[data-view-all-text]')).toHaveText('See All Results');
+      await expect(panel.locator('[data-view-all-total]')).toHaveText(
+        `12 results for "${s.token}"`,
       );
 
       // Footer in view, panel inside the page, no sideways scroll, axe clean with the panel open.

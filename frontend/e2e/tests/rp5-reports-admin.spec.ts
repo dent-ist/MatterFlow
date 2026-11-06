@@ -104,7 +104,7 @@ test.describe('who can open Reports administration (#712)', () => {
       });
       await page.goto('/admin/reports');
       await expect(
-        page.getByRole('heading', { level: 1, name: "You don't have permission to view this." }),
+        page.getByRole('heading', { level: 1, name: "You don't have access." }),
         key,
       ).toBeVisible();
       expect(reportCalls, `${key} made no request to the reports API`).toEqual([]);

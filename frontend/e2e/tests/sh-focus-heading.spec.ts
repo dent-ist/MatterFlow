@@ -7,7 +7,7 @@ import { atEverySize } from '../support/screens';
  * S12 / S12a (#610): on arrival the 403 and the 404 put focus on their one H1 (a link, a guard denial and a reload all end there), and the
  * disabled-account page says "Your account is disabled" once, as the heading, then what to do.
  */
-const FORBIDDEN = "You don't have permission to view this.";
+const FORBIDDEN = "You don't have access.";
 const NOT_FOUND = "We couldn't find that.";
 
 const focusedHeading = (page: Page) => page.locator('h1:focus');

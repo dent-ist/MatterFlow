@@ -137,13 +137,17 @@ type Tab = MatterTabKey;
 
             @if (!m.isActive) {
               <div class="pg-banner" role="note" data-inactive-banner>
-                This matter is inactive. New tasks can't be created and completed or cancelled tasks
-                can't be reopened.
+                <i class="pi pi-info-circle" aria-hidden="true"></i>
+                <span
+                  >This matter is inactive. New tasks can't be created and completed or cancelled
+                  tasks can't be reopened.</span
+                >
               </div>
             }
             @if (!m.clientIsActive) {
               <div class="pg-banner" role="note" data-client-inactive-banner>
-                The client {{ m.clientNumber }} is inactive.
+                <i class="pi pi-info-circle" aria-hidden="true"></i>
+                <span>The client {{ m.clientNumber }} is inactive.</span>
               </div>
             }
 

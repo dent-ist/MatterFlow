@@ -20,19 +20,17 @@
     border-radius: var(--mf-nav-item-radius) !important;
   }
 
-  .mf-nav a > .mf-badge {
+  .mf-nav li a > mf-count-chip {
     position: absolute;
     top: 3px;
     right: 1px;
     box-sizing: border-box;
-    min-width: 0;
     width: 8px;
     height: 8px;
     margin: 0;
-    padding: 0;
     overflow: hidden;
-    font-size: 0;
-    line-height: 0;
+    border-radius: var(--mf-radius-pill);
+    --mf-cc-bg: var(--mf-danger);
   }
 }
 
@@ -72,9 +70,9 @@
   }
 }
 
-/* Dark navy panel (MM-58, #950): the pending count keeps its red, with a white ring so it stands out on the navy. */
-.mf-nav .mf-badge {
-  box-shadow: 0 0 0 1.5px var(--mf-white);
+/* Dark navy panel (#1195): the pending count is the shared count chip (22 px, pill), light grey on the navy (and on the white selected pill) and pushed to the right end of the row. */
+.mf-nav a > mf-count-chip {
+  margin-left: auto;
 }
 
 /* Projects and Assets sit indented under Matters (MM-59, #951): normal links, one more step of left padding (in app-shell.scss), same row height and icon size. In

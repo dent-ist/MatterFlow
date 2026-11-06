@@ -490,9 +490,7 @@ test.describe('Task Detail final verification (#331): permission matrix in short
     for (const size of FOUR) {
       await who.setViewportSize(size);
       await who.goto(`/tasks/${fx.task.taskId}`);
-      await expect(
-        who.getByRole('heading', { name: "You don't have permission to view this." }),
-      ).toBeVisible();
+      await expect(who.getByRole('heading', { name: "You don't have access." })).toBeVisible();
       await expect(who.getByRole('link', { name: 'Go to Clients' })).toHaveAttribute(
         'href',
         '/clients',

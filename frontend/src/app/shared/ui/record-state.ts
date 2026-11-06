@@ -178,7 +178,7 @@ const KINDS: Record<
  */
 export function recordBackLink(kind: RecordKind, auth: AuthStore): LandingLink | null {
   const info = KINDS[kind];
-  if (auth.has(info.view)) return { path: info.path, name: info.list };
+  if (auth.has(info.view)) return { path: info.path, name: info.label };
   return landingLink(auth);
 }
 

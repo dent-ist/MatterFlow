@@ -259,9 +259,7 @@ test.describe('Task Types administration: not found, no access, failure (#353)',
     const viewer = await asUser((await seed.user([viewerRole.name], 'tt-viewer')).username);
     for (const r of ROUTES) {
       await viewer.goto(r.url);
-      await expect(
-        viewer.getByRole('heading', { name: "You don't have permission to view this." }),
-      ).toBeVisible();
+      await expect(viewer.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     }
 
     const typeRole = await seed.role(['TaskType.Manage', 'Task.View'], 'Type only');
@@ -272,9 +270,7 @@ test.describe('Task Types administration: not found, no access, failure (#353)',
     await typePage.goto('/admin/task-types/99999999/form');
     await expect(heading(typePage)).toHaveText("We couldn't find that task type.");
     await typePage.goto('/admin/workflows/99999999');
-    await expect(
-      typePage.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(typePage.getByRole('heading', { name: "You don't have access." })).toBeVisible();
 
     const wfRole = await seed.role(['Workflow.Manage'], 'Workflow only');
     const wfPage = await asUser((await seed.user([wfRole.name], 'tt-wfonly')).username);
@@ -286,8 +282,6 @@ test.describe('Task Types administration: not found, no access, failure (#353)',
       await expect(wfPage.getByRole('link', { name: `Go to ${r.list}` })).toBeVisible();
     }
     await wfPage.goto('/admin/task-types/99999999');
-    await expect(
-      wfPage.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(wfPage.getByRole('heading', { name: "You don't have access." })).toBeVisible();
   });
 });

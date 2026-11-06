@@ -13,22 +13,20 @@ import { Connectivity } from '../../core/http/connectivity';
   template: `
     <div class="cb" role="status" aria-live="polite" data-connection-status>
       @if (connectivity.signInFailed()) {
-        <div class="cb__bar cb__bar--signin" data-signin-banner>
+        <div class="pg-banner pg-banner--full pg-banner--danger" data-signin-banner>
           <i class="pi pi-lock" aria-hidden="true"></i>
-          <span class="cb__text">We couldn't verify your sign-in.</span>
-          <button type="button" class="mf-btn cb__retry" data-signin-reload (click)="reload()">
+          <span>We couldn't verify your sign-in.</span>
+          <button type="button" class="mf-btn" data-signin-reload (click)="reload()">
             Reload Page
           </button>
         </div>
       } @else if (connectivity.offline()) {
-        <div class="cb__bar cb__bar--offline" data-offline-banner>
+        <div class="pg-banner pg-banner--full" data-offline-banner>
           <i class="pi pi-wifi" aria-hidden="true"></i>
-          <span class="cb__text"
-            >You're offline. Pages you have open still work; changes can't be saved.</span
-          >
+          <span>You're offline. Pages you have open still work; changes can't be saved.</span>
           <button
             type="button"
-            class="mf-btn cb__retry"
+            class="mf-btn"
             data-offline-retry
             [attr.aria-busy]="connectivity.checking() ? 'true' : null"
             (click)="retry()"
@@ -37,9 +35,9 @@ import { Connectivity } from '../../core/http/connectivity';
           </button>
         </div>
       } @else if (connectivity.backOnline()) {
-        <div class="cb__bar cb__bar--back" data-back-online>
+        <div class="pg-banner pg-banner--full pg-banner--success" data-back-online>
           <i class="pi pi-check-circle" aria-hidden="true"></i>
-          <span class="cb__text">Back online.</span>
+          <span>Back online.</span>
         </div>
       }
     </div>
@@ -47,41 +45,6 @@ import { Connectivity } from '../../core/http/connectivity';
   styles: `
     :host {
       display: block;
-    }
-    .cb__bar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--mf-s2) var(--mf-s3);
-      box-sizing: border-box;
-      max-width: 100%;
-      padding: var(--mf-s2) var(--mf-s5);
-      border-bottom: 1px solid var(--mf-border);
-      font-size: var(--mf-fs-sm);
-    }
-    .cb__bar--offline {
-      background: var(--mf-warning-bg);
-      color: var(--mf-warning);
-    }
-    .cb__bar--signin {
-      background: var(--mf-danger-bg);
-      color: var(--mf-danger);
-    }
-    .cb__bar--back {
-      background: var(--mf-success-bg);
-      color: var(--mf-success);
-    }
-    .cb__text {
-      flex: 1 1 14rem;
-      min-width: 0;
-    }
-    .cb__retry {
-      flex: none;
-    }
-    @media (max-width: 639.98px) {
-      .cb__bar {
-        padding-inline: var(--mf-s3);
-      }
     }
   `,
 })

@@ -198,9 +198,7 @@ test.describe('the shell on the Task Types administration (#544, #545)', () => {
     const viewerRole = await seed.role(['Task.View'], 'Viewer');
     const viewer = await asUser((await seed.user([viewerRole.name], 'ad2-viewer')).username);
     await viewer.goto('/admin/task-types');
-    await expect(
-      viewer.getByRole('heading', { name: "You don't have permission to view this." }),
-    ).toBeVisible();
+    await expect(viewer.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     await expect(viewer.getByRole('tablist')).toHaveCount(0);
     await expect(viewer.locator('.p-toast-message, [role="alert"]:has-text("denied")')).toHaveCount(
       0,

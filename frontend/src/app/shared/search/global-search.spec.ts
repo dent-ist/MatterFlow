@@ -112,7 +112,8 @@ describe('mf-global-search (header typeahead)', () => {
     expect(text[1]).toContain('00343');
     expect(text[1]).toContain('Acme Corp');
     expect(text[2]).toContain('TSK-1042');
-    expect(text.at(-1)).toBe('View all 3 results for "343"');
+    expect(text.at(-1)).toContain('See All Results');
+    expect(text.at(-1)).toContain('3 results for "343"');
   });
 
   it('requires two characters (or one digit) before it searches', async () => {
@@ -191,7 +192,7 @@ describe('mf-global-search (header typeahead)', () => {
       expect(more).toEqual(['See all 12 matters', 'See all 1,000+ tasks']);
     });
 
-    it('the group headings are plain 13 / 600 text (no capitals) and "See all N" and "View all N results" are text buttons (#1218)', async () => {
+    it('the group headings are plain 13 / 600 text (no capitals) and "See all N" and "See All Results" are text buttons (#1218)', async () => {
       await create(ALL, manyTasks());
       await type('review');
       const source = readFileSync(
@@ -213,8 +214,8 @@ describe('mf-global-search (header typeahead)', () => {
     it('sums the group totals in the footer, with `n+` when any group is capped', async () => {
       await create(ALL, manyTasks());
       await type('review');
-      expect(el().querySelector('[data-view-all-text]')!.textContent).toBe(
-        'View all 1,013+ results for "review"',
+      expect(el().querySelector('[data-view-all-total]')!.textContent).toBe(
+        '1,013+ results for "review"',
       );
     });
 
@@ -564,7 +565,8 @@ describe('mf-global-search (header typeahead)', () => {
       key('ArrowUp');
       expect(box().getAttribute('aria-activedescendant')).toBe(all.id);
       expect(all.getAttribute('aria-selected')).toBe('true');
-      expect(all.textContent!.trim()).toBe('View all 3 results for "343"');
+      expect(all.querySelector('[data-view-all-text]')!.textContent).toBe('See All Results');
+      expect(all.querySelector('[data-view-all-total]')!.textContent).toBe('3 results for "343"');
     });
 
     it('opens the full results page with Enter on the footer', async () => {

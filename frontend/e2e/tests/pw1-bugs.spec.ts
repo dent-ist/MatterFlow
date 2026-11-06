@@ -184,9 +184,7 @@ test.describe('Pod Work first release', () => {
       await page.setViewportSize({ width: 1366, height: 768 });
       await page.goto('/pods/work?podId=1');
       // The 403 page puts the address that was turned away back in the address bar, so the page is recognised by what it says.
-      await expect(
-        page.getByRole('heading', { name: "You don't have permission to view this." }),
-      ).toBeVisible();
+      await expect(page.getByRole('heading', { name: "You don't have access." })).toBeVisible();
       await expect(page.locator('[data-asked-path]')).toHaveText('/pods/work?podId=1');
       await page.waitForTimeout(500);
       expect(requests, 'Pod Work asks the server for nothing').toEqual([]);
@@ -218,9 +216,7 @@ test.describe('Pod Work first release', () => {
       const person = await personas.create({ label: 'pw-notview', permissions: ['Task.View'] });
       const page = await asUser(person.username);
       await page.goto('/pods/work');
-      await expect(
-        page.getByRole('heading', { name: "You don't have permission to view this." }),
-      ).toBeVisible();
+      await expect(page.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     });
   });
 
