@@ -22,11 +22,14 @@
       [actions]="headerActions()"
     >
       @if (!isNew()) {
-        <mf-task-type-icon
+        <mf-task-type-chip
           mfIcon
-          class="tt__icon"
-          size="md"
-          [iconKey]="taskType()?.iconKey ?? ''"
+          class="tt__tile"
+          [iconKey]="taskType()?.iconKey"
+          [colourKey]="taskType()?.colourKey"
+          [typeId]="taskType()?.id"
+          [name]="headerName()"
+          [decorative]="true"
           data-title-icon
         />
       }

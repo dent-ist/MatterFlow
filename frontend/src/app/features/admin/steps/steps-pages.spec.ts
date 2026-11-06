@@ -133,7 +133,8 @@ describe('StepsListPage', () => {
     const el: HTMLElement = fixture.nativeElement;
 
     const rows = Array.from(el.querySelectorAll('tbody tr'));
-    expect(rows.map((r) => r.getAttribute('data-record-id'))).toEqual(['Deduplicate', 'OCR']);
+    // The row key is the step id, never the title (a title is unique among active steps only, D-44m).
+    expect(rows.map((r) => r.getAttribute('data-record-id'))).toEqual(['4', '5']);
     expect(rows[0].querySelector('a')?.getAttribute('href')).toBe('/admin/steps/4');
     // "Used in n workflows" opens the Workflows tab filtered to the step; 0 says "Not Used" (muted, no link).
     const used = rows[0].querySelector<HTMLAnchorElement>('[data-used-in-link]')!;
@@ -313,7 +314,7 @@ describe('StepsListPage narrow window (#356)', () => {
     expect(Array.from(el.querySelectorAll('thead th')).map((th) => th.textContent!.trim())).toEqual(
       ['Title', 'Description', 'Tags', 'Used in', 'Inputs', 'Status', 'Actions'],
     );
-    const row = el.querySelector('tbody tr[data-record-id="Deduplicate"]')!;
+    const row = el.querySelector('tbody tr[data-record-id="4"]')!;
     expect(row.querySelectorAll('td')).toHaveLength(7);
     expect(row.querySelector('a.pg-name')!.getAttribute('title')).toBe('Deduplicate');
     const used = row.querySelector('[data-used-in-link]')!;
@@ -435,13 +436,13 @@ describe('StepsListPage Inputs column (#378)', () => {
     const fixture = TestBed.createComponent(StepsListPage);
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
-    const cell = (title: string) => el.querySelector(`[data-record-id="${title}"] [data-inputs]`)!;
-    const badge = cell('Drafted').querySelector('[data-inputs-draft]')!;
+    const cell = (id: number) => el.querySelector(`[data-record-id="${id}"] [data-inputs]`)!;
+    const badge = cell(1).querySelector('[data-inputs-draft]')!;
     expect(badge.textContent!.trim()).toBe('Draft');
     expect(badge.querySelector('[data-tone="neutral"]')).not.toBeNull();
     expect(badge.getAttribute('title')).toContain('3 fields');
-    expect(cell('Published inputs').textContent!.trim()).toBe('Published');
-    expect(cell('Bare').textContent!.trim()).toBe('None');
+    expect(cell(2).textContent!.trim()).toBe('Published');
+    expect(cell(3).textContent!.trim()).toBe('None');
     fixture.destroy();
 
     viewport(900);
@@ -529,21 +530,17 @@ describe('StepsListPage row menu', () => {
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelectorAll('tbody button[data-overflow]')).toHaveLength(2);
     expect(
-      el
-        .querySelector('tr[data-record-id="OCR"] button[data-overflow]')!
-        .getAttribute('aria-label'),
+      el.querySelector('tr[data-record-id="5"] button[data-overflow]')!.getAttribute('aria-label'),
     ).toBe('Actions for OCR');
 
-    el.querySelector<HTMLButtonElement>('tr[data-record-id="OCR"] button[data-overflow]')!.click();
+    el.querySelector<HTMLButtonElement>('tr[data-record-id="5"] button[data-overflow]')!.click();
     await settle(fixture);
     expect(entries(el)).toEqual(['edit-inputs', 'activate']);
     el.querySelector<HTMLButtonElement>('[data-action=activate]')!.click();
     await settle(fixture);
     expect(api.activateStepDefinition).toHaveBeenCalledWith(5, { rowVersion: 'AAAA' });
 
-    el.querySelector<HTMLButtonElement>(
-      'tr[data-record-id="Deduplicate"] button[data-overflow]',
-    )!.click();
+    el.querySelector<HTMLButtonElement>('tr[data-record-id="4"] button[data-overflow]')!.click();
     await settle(fixture);
     expect(entries(el)).toEqual(['edit-inputs', 'deactivate']);
     const go = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
@@ -552,9 +549,7 @@ describe('StepsListPage row menu', () => {
       state: { returnTo: expect.any(String) },
     });
 
-    el.querySelector<HTMLButtonElement>(
-      'tr[data-record-id="Deduplicate"] button[data-overflow]',
-    )!.click();
+    el.querySelector<HTMLButtonElement>('tr[data-record-id="4"] button[data-overflow]')!.click();
     await settle(fixture);
     el.querySelector<HTMLButtonElement>('[data-action=deactivate]')!.click();
     await settle(fixture);
@@ -772,12 +767,12 @@ describe('StepsListPage tags', () => {
     expect(Array.from(el.querySelectorAll('thead th')).map((th) => th.textContent!.trim())).toEqual(
       ['Title', 'Description', 'Tags', 'Used in', 'Inputs', 'Status', 'Actions'],
     );
-    const first = el.querySelector('tbody tr[data-record-id="Deduplicate"]')!;
+    const first = el.querySelector('tbody tr[data-record-id="4"]')!;
     expect(
       Array.from(first.querySelectorAll('[data-tag]')).map((c) => c.textContent!.trim()),
     ).toEqual(['Relativity', 'Processing']);
     expect(first.querySelector('[data-tags-more]')!.textContent).toContain('+3 more');
-    expect(el.querySelector('tbody tr[data-record-id="OCR"] [data-tags]')).toBeNull();
+    expect(el.querySelector('tbody tr[data-record-id="5"] [data-tags]')).toBeNull();
     expect(api.listStepTags).toHaveBeenCalledWith(undefined, true, 200);
 
     el.querySelector<HTMLButtonElement>('button[data-filter="tags"]')!.click();

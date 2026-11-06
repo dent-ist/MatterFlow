@@ -356,12 +356,14 @@ test.describe('Workflow record page (WP-TY5)', () => {
       await expect(page.getByRole('heading', { level: 1 })).toContainText('edited');
     });
 
-    test('the header Edit button takes focus to the name', async ({ page, seed, admin }) => {
+    test('the header has no Edit button: the Overview is the form (D-44n)', async ({
+      page,
+      seed,
+      admin,
+    }) => {
       const s = await build(seed, admin);
       await page.goto(url(s, 'versions'));
-      await header(page).getByRole('button', { name: 'Edit' }).click();
-      await expect(tab(page, 'Overview')).toHaveAttribute('aria-selected', 'true');
-      await expect(page.locator('#wf-name')).toBeFocused();
+      await expect(header(page).getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0);
     });
 
     test('creating a workflow is unchanged: mode chosen on the form, then the first draft opens', async ({

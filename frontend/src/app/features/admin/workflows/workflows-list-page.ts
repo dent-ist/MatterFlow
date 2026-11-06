@@ -440,8 +440,8 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   ]);
   protected readonly grid = new RecordGridState('admin-workflows', this.gridDefs);
   protected readonly bones = BONES;
-  /** The row key is the name (unique): every row carries `data-record-id`. */
-  protected readonly workflowKey = (w: WorkflowSummary): string => w.name;
+  /** The row key is the workflow id, never the name (names change): every row carries `data-record-id` (D-44m). */
+  protected readonly workflowKey = (w: WorkflowSummary): number => w.workflowDefinitionId;
   /** The columns of the table in order, the row action last: what the filter row builds its cells from. */
   protected readonly columns = computed<readonly string[]>(() => [...this.grid.shown(), 'actions']);
   /** The phone's Sort by select: the sortable columns (the headers' keys). */

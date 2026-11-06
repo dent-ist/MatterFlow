@@ -7,40 +7,18 @@
   color: var(--mf-text-muted);
 }
 
-.ttf-title {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--mf-s1) var(--mf-s2);
-  min-width: 0;
+.ttf__tile {
+  margin-right: var(--mf-s2);
 }
 
-/* A long name wraps inside the title and is cut at three lines (the whole name is the tooltip and the breadcrumb). */
-.ttf-title__name {
-  display: -webkit-box;
-  min-width: 0;
-  overflow: hidden;
+.ttf__notice {
+  color: var(--mf-success-text);
+  font-size: var(--mf-fs-sm);
   overflow-wrap: anywhere;
-  line-clamp: 3;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-}
 
-.ttf-title__note {
-  color: var(--mf-text-muted);
-  font-size: var(--mf-fs-md, 1rem);
-  font-weight: 400;
-}
-
-.ttf__vers {
-  max-height: max(8rem, calc(90dvh - 14rem));
-  overflow: auto;
-}
-
-.ttf__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  &:empty {
+    display: none;
+  }
 }
 
 .ttf__dialog {
@@ -73,15 +51,6 @@
   font-weight: 600;
 }
 
-.ttf__banner {
-  margin: 0 0 var(--mf-s3);
-  padding: var(--mf-s2) var(--mf-s3);
-  border: 1px solid var(--mf-sem-info-line);
-  border-radius: var(--mf-radius-lg);
-  background: var(--mf-sem-info-bg);
-  color: var(--mf-sem-info-fg);
-}
-
 .ttf__table {
   width: 100%;
   border-collapse: collapse;
@@ -95,21 +64,6 @@
 
   .is-current {
     background: var(--mf-selected-bg);
-  }
-}
-
-.ttf__link {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--mf-link);
-  font: inherit;
-  text-decoration: underline;
-  cursor: pointer;
-
-  &:focus-visible {
-    outline: 2px solid var(--mf-focus);
-    outline-offset: 2px;
   }
 }
 

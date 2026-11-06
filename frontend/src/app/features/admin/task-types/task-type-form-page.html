@@ -8,43 +8,63 @@
       (retried)="retry()"
     />
   } @else {
-    <mf-page-header [crumbs]="formCrumbs()">
-      <span mfTitle class="ttf-title">
-        <span class="ttf-title__name" [attr.title]="owner() ? headline() : null">{{
-          owner() ? headline() : heading()
-        }}</span>
-        @if (owner() && current(); as c) {
-          <mf-badge [tone]="statusTone(c)" [icon]="statusIcon(c)" data-status>{{
-            title(c)
-          }}</mf-badge>
-          @if (published() && c.status === 'DRAFT') {
-            <span class="ttf-title__note" data-published-note
-              >(published: v{{ published()!.versionNo }})</span
-            >
+    <mf-record-header
+      [kind]="headerKind()"
+      [parents]="headerParents()"
+      [current]="headerCurrent()"
+      [name]="headline()"
+      [showStatus]="false"
+      [statusBadge]="statusBadge()"
+      [actions]="headerActions()"
+      [skeleton]="state() === 'loading'"
+    >
+      @if (owner() && ownerLabel() === 'Task Type') {
+        <mf-task-type-chip
+          mfIcon
+          class="ttf__tile"
+          [iconKey]="owner()!.iconKey"
+          [colourKey]="owner()!.colourKey"
+          [typeId]="ownerNumber()"
+          [name]="owner()!.name"
+          [decorative]="true"
+          data-title-icon
+        />
+      }
+      <ng-container mfBadges>
+        @if (state() === 'ready' && current()) {
+          @if (!readOnly() && dirty()) {
+            <mf-badge tone="warning" icon="pi-pencil" data-dirty>Unsaved Changes</mf-badge>
           }
+          <span class="ttf__notice" role="status" aria-live="polite" data-notice>{{
+            notice()
+          }}</span>
         }
-      </span>
-    </mf-page-header>
+      </ng-container>
+      @if (state() === 'ready' && published() && current()?.status === 'DRAFT') {
+        <span mfContext data-published-note>(published: v{{ published()!.versionNo }})</span>
+      }
+    </mf-record-header>
 
-    @if (state() === 'ready' && current()) {
-      <mf-form-designer-bar
-        [readOnly]="readOnly()"
-        [published]="current()!.status === 'PUBLISHED'"
-        [dirty]="dirty()"
-        [busy]="busy()"
-        [versionCount]="versions().length"
-        [draftNo]="draftNo()"
-        [notice]="notice()"
-        (save)="saveDraft()"
-        (publish)="tryPublish()"
-        (retire)="openRetire()"
-        (newDraft)="createDraft()"
-        (openDraft)="openDraft()"
-        (versions)="openVersions($event)"
-      />
-    }
     @if (failure() || blockNote()) {
-      <p class="ttf__error" role="alert" data-form-alert>{{ failure() || blockNote() }}</p>
+      <p class="pg-banner pg-banner--danger" role="alert" data-form-alert>
+        <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+        <span>{{ failure() || blockNote() }}</span>
+      </p>
+    }
+    @if (state() === 'ready' && current() && readOnly()) {
+      <p class="pg-banner pg-banner--info" role="status" data-readonly-banner>
+        <i class="pi pi-info-circle" aria-hidden="true"></i>
+        <span
+          >Version {{ current()!.versionNo }} is
+          {{ current()!.status === 'PUBLISHED' ? 'published' : 'retired' }}
+          and can't be edited.
+          @if (hasDraft()) {
+            Open the draft to keep editing.
+          } @else {
+            Use Create New Draft to make changes.
+          }
+        </span>
+      </p>
     }
 
     @switch (state()) {
@@ -60,19 +80,6 @@
           <p class="ttf__muted">This {{ ownerLabel().toLowerCase() }} has no form yet.</p>
           <p-button label="Create New Draft" (onClick)="createDraft()" />
         } @else {
-          @if (readOnly()) {
-            <p class="ttf__banner" data-readonly-banner>
-              Version {{ current()!.versionNo }} is
-              {{ current()!.status === 'PUBLISHED' ? 'published' : 'retired' }}
-              and can't be edited.
-              @if (hasDraft()) {
-                Open the draft to keep editing.
-              } @else {
-                Use Create new draft to make changes.
-              }
-            </p>
-          }
-
           <mf-form-designer
             class="mf-fill"
             [definition]="working()"
@@ -85,60 +92,59 @@
       }
     }
 
-    <mf-form-dialog
+    <mf-slide-panel
       title="Form Versions"
-      secondaryLabel="Close"
-      [showPrimary]="false"
-      [visible]="dialog() === 'versions'"
-      (visibleChange)="onVisibleChange($event)"
+      closeLabel="Close form versions"
+      scrollLabel="Form versions"
+      initialFocus="close"
+      [showFooter]="false"
+      [(visible)]="versionsOpen"
     >
-      @if (dialog() === 'versions') {
+      @if (versionsOpen()) {
         <div class="ttf__dialog" data-dialog="versions">
-          <div class="ttf__vers" mfScrollRegion="Form versions">
-            <table class="ttf__table">
-              <caption class="ttf__sr">
-                Form versions
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">Version</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Last Updated</th>
-                  <th scope="col">Note</th>
+          <table class="ttf__table">
+            <caption class="ttf__sr">
+              Form versions
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Version</th>
+                <th scope="col">Status</th>
+                <th scope="col">Last Updated</th>
+                <th scope="col">Note</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (v of versions(); track v.id) {
+                <tr [class.is-current]="v.id === current()?.id">
+                  <th scope="row">
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--text"
+                      [attr.aria-current]="v.id === current()?.id ? 'true' : null"
+                      (click)="pickVersion(v.id)"
+                    >
+                      v{{ v.versionNo }}
+                    </button>
+                  </th>
+                  <td>
+                    {{
+                      v.status === 'DRAFT'
+                        ? 'Draft'
+                        : v.status === 'PUBLISHED'
+                          ? 'Published'
+                          : 'Retired'
+                    }}
+                  </td>
+                  <td>{{ v.updatedAtUtc | mfNum }}</td>
+                  <td>{{ v.note ?? '' }}</td>
                 </tr>
-              </thead>
-              <tbody>
-                @for (v of versions(); track v.id) {
-                  <tr [class.is-current]="v.id === current()?.id">
-                    <th scope="row">
-                      <button
-                        type="button"
-                        class="ttf__link"
-                        [attr.aria-current]="v.id === current()?.id ? 'true' : null"
-                        (click)="pickVersion(v.id)"
-                      >
-                        v{{ v.versionNo }}
-                      </button>
-                    </th>
-                    <td>
-                      {{
-                        v.status === 'DRAFT'
-                          ? 'Draft'
-                          : v.status === 'PUBLISHED'
-                            ? 'Published'
-                            : 'Retired'
-                      }}
-                    </td>
-                    <td>{{ v.updatedAtUtc | mfNum }}</td>
-                    <td>{{ v.note ?? '' }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
+              }
+            </tbody>
+          </table>
         </div>
       }
-    </mf-form-dialog>
+    </mf-slide-panel>
 
     <mf-form-dialog
       [title]="dialogTitle()"
@@ -149,7 +155,7 @@
       busyLabel="Publishing..."
       [focusPrimary]="dialog() === 'publish' || dialog() === 'retire'"
       [ownSecondary]="dialog() === 'conflict'"
-      [visible]="dialogOpen() && dialog() !== 'versions'"
+      [visible]="dialogOpen()"
       (visibleChange)="onVisibleChange($event)"
       (secondaryClick)="resolveConflict(false)"
       (submitted)="submitDialog()"

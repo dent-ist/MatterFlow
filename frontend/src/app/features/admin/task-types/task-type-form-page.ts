@@ -20,7 +20,6 @@ import { focusStatusAfterAction } from '../after-action';
 import { ScrollRegion } from '../../../shared/ui/scroll-region';
 import { FixedPage } from '../../../shared/ui/fixed-page';
 import { Badge, BadgeTone, workflowStatusTone } from '../../../shared/ui/badge';
-import { FormDesignerBar } from './task-type-form-bar';
 import {
   DefinitionDiff,
   DesignerDefinition,
@@ -47,16 +46,23 @@ import {
   RecordState,
   recordStateTitle,
 } from '../../../shared/ui/record-state';
-import { Crumb, PageHeader } from '../../../shared/ui/page-header';
+import { Crumb } from '../../../shared/ui/page-header';
+import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
+import { SlidePanel } from '../../../shared/ui/slide-panel';
+import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
 import { ADMIN_LIST, ListReturn } from '../list-return';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
-type DialogKind = 'publish' | 'retire' | 'discard' | 'conflict' | 'versions' | null;
+type DialogKind = 'publish' | 'retire' | 'discard' | 'conflict' | null;
 
 /**
  * Admin: Task Type > Form (UX S14). Hosts `<mf-form-designer>` against `FormDesignerApi` and owns
  * the version lifecycle: save draft, publish (with diff), retire, and "Create new draft" from a
  * published version. Published and retired versions open read-only.
+ *
+ * The page is a record page (D-44n, #1256): `mf-record-header` with the tile (the type's own icon and colour for a Task Type), the H1 "<Name> Form",
+ * the version status chip, `[Retire Version] [Create New Draft]` (a draft: `[Save Draft] [Publish...]`, the primary last) and "Versions (n)" as the first
+ * entry of the "..." menu, which opens the versions in the shared drawer. Then the information banner of a read-only version, then the two panes.
  */
 @Component({
   selector: 'mf-task-type-form-page',
@@ -64,9 +70,10 @@ type DialogKind = 'publish' | 'retire' | 'discard' | 'conflict' | 'versions' | n
   imports: [
     NumericDatePipe,
     FixedPage,
-    FormDesignerBar,
     Badge,
-    PageHeader,
+    RecordHeader,
+    SlidePanel,
+    TaskTypeChip,
     ErrorReference,
     RecordState,
     FormDesigner,
@@ -128,13 +135,97 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
     ];
   });
   /**
-   * The H1: "Form: Data Processing Extended" for a Task Type, a Step or an Asset Type; the Custom Fields object is named by what it is,
-   * "Matter Custom Fields" (#645, #1208).
+   * The H1: "Data Processing Extended Form" for a Task Type or a Step, "Relativity Workspace Fields" for an Asset Type; the Custom Fields object is
+   * named by what it is, "Matter Custom Fields" (#645, #1208, D-44n).
    */
   protected readonly headline = computed(() => {
     const name = this.owner()?.name ?? '';
-    return this.ownerLabel() === 'Object' ? name : `Form: ${name}`;
+    switch (this.ownerLabel()) {
+      case 'Object':
+        return name;
+      case 'Asset Type':
+        return `${name} Fields`;
+      default:
+        return `${name} Form`;
+    }
   });
+  /** The owner's id as a number (the stable default colour of the tile when the type has none); 0 for an owner whose id is not a number. */
+  protected readonly ownerNumber = computed(() => Number(this.owner()?.id) || 0);
+  /** The kind of record the header belongs to (its list in the back link, its icon tile); the owners without a record kind read as a Task Type. */
+  protected readonly headerKind = computed<RecordKind>(() => this.recordKind() ?? 'taskType');
+  /** The steps before the current page (links) and the current page's own name: the last crumb of the trail (`Form`, `Fields`, or the object). */
+  protected readonly headerParents = computed(() => this.formCrumbs().slice(0, -1));
+  protected readonly headerCurrent = computed(() => this.formCrumbs().at(-1)?.label ?? '');
+  /** The version chip beside the title: `Published v1`, `Draft v2`, `Retired v1`. */
+  protected readonly statusBadge = computed(() => {
+    const c = this.current();
+    return c ? { label: this.title(c), tone: this.statusTone(c), icon: this.statusIcon(c) } : null;
+  });
+  /** The versions drawer of the "..." menu. */
+  protected readonly versionsOpen = signal(false);
+  /**
+   * The header actions (D-44n): a draft has `[Save Draft] [Publish...]`, a published version `[Retire Version]` and `[Open Draft vN]` or `[Create New Draft]`
+   * (the primary last), a retired one only the primary; "Versions (n)" is the first entry of the "..." menu.
+   */
+  protected readonly headerActions = computed<RecordAction[]>(() => {
+    const c = this.current();
+    if (this.state() !== 'ready' || !c) return [];
+    const busy = this.busy();
+    const list: RecordAction[] = [];
+    if (!this.readOnly()) {
+      list.push({
+        id: 'save-draft',
+        role: 'button',
+        label: 'Save Draft',
+        disabled: !this.dirty() || busy,
+        run: () => void this.saveDraft(),
+      });
+      list.push({
+        id: 'publish',
+        role: 'primary',
+        label: 'Publish...',
+        disabled: busy,
+        run: () => void this.tryPublish(),
+      });
+    } else {
+      if (c.status === 'PUBLISHED') {
+        list.push({
+          id: 'retire',
+          role: 'button',
+          label: 'Retire Version',
+          disabled: busy,
+          run: () => this.openRetire(),
+        });
+      }
+      const draft = this.draftNo();
+      list.push(
+        draft
+          ? {
+              id: 'open-draft',
+              role: 'primary',
+              label: `Open Draft v${draft}`,
+              disabled: busy,
+              run: () => this.openDraft(),
+            }
+          : {
+              id: 'new-draft',
+              role: 'primary',
+              label: 'Create New Draft',
+              disabled: busy,
+              run: () => void this.createDraft(),
+            },
+      );
+    }
+    list.push({
+      id: 'versions',
+      role: 'secondary',
+      label: `Versions (${this.versions().length})`,
+      icon: 'pi-list',
+      run: () => this.openVersions(),
+    });
+    return list;
+  });
+
   /** What the form's records are called in copy: tasks for Task Types, assets for Asset Types, records for custom fields. */
   protected readonly recordNoun = computed(() => {
     switch (this.ownerLabel()) {
@@ -264,8 +355,8 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
       else if (name && this.ownerLabel() === 'Asset Type')
         this.pageTitle.set(shortTitleText(`${name}: Fields`));
       else if (name && this.ownerLabel() === 'Object') this.pageTitle.set(shortTitleText(name));
-      // "Form: Data Processing Extended" for a Task Type or a Step.
-      else if (kind && name) this.pageTitle.set(shortTitleText(`Form: ${name}`));
+      // "Data Processing Extended Form" for a Task Type or a Step.
+      else if (kind && name) this.pageTitle.set(shortTitleText(`${name} Form`));
     });
     effect(() => {
       const id = this.ownerId();
@@ -489,26 +580,26 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
     this.show('publish', invoker);
   }
 
-  protected openVersions(invoker: HTMLElement): void {
-    this.show('versions', invoker);
+  /** "Versions (n)" in the "..." menu: the versions in the shared drawer (reading and detail, D-33). */
+  protected openVersions(): void {
+    this.versionsOpen.set(true);
   }
 
-  /** A version chosen in the Versions dialog: the dialog closes, a dirty draft asks before it is left, and focus returns to Versions. */
+  /** A version chosen in the drawer: the drawer closes and a dirty draft asks before it is left. */
   protected pickVersion(versionId: string): void {
-    const back = this.invoker;
-    this.dialog.set(null);
-    this.invoker = null;
-    if (versionId === this.current()?.id) {
-      queueMicrotask(() => back?.focus());
-      return;
-    }
-    this.open(versionId, back ?? undefined);
+    this.versionsOpen.set(false);
+    if (versionId === this.current()?.id) return;
+    this.open(versionId, this.menuButton());
+  }
+
+  /** The "..." button of the header: where focus goes back to after a version was opened from the menu. */
+  private menuButton(): HTMLElement | undefined {
+    return document.querySelector<HTMLElement>('[data-page-actions] [data-overflow]') ?? undefined;
   }
 
   protected openDraft(): void {
     const draft = this.versions().find((v) => v.status === 'DRAFT');
-    if (draft)
-      this.open(draft.id, document.querySelector<HTMLElement>('[data-versions]') ?? undefined);
+    if (draft) this.open(draft.id, this.menuButton());
   }
 
   protected openRetire(invoker?: HTMLElement): void {

@@ -39,9 +39,9 @@ import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { tabIcon } from '../../../shared/ui/tab-icons';
 import { WorkStrip } from '../../../shared/work-queue/work-strip';
-import { DEFAULT_TASK_TYPE_ICON, TaskTypeIcon } from '../../../shared/icons/task-type-icon';
-import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
+import { DEFAULT_TASK_TYPE_ICON } from '../../../shared/icons/task-type-icon';
 import { TaskTypeIconPicker } from '../../../shared/icons/task-type-icon-picker';
+import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
 import {
   TASK_TYPE_COLOURS,
   TASK_TYPE_COLOUR_DEFAULT_LABEL,
@@ -118,7 +118,7 @@ const workflowsKey = (m: Model): string =>
 
 /**
  * Admin: the Task Type record page (UX S14, TE1 to TE9, #380 to #386). Option A of the review: inline editing under a record header
- * (`mf-record-header`: icon and name, Active / Inactive / Not usable, Edit, Activity, the primary Edit form and an overflow with Deactivate or
+ * (`mf-record-header`: icon and name, Active / Inactive / Not usable, Activity, the primary Edit form and an overflow with Deactivate or
  * Activate), a summary strip, one neutral status note naming why a type is not usable, and tabs Overview | Workflows (n) | Request form
  * (`?tab=`, replaced not added). Each tab saves on its own (the footer shows only for a tab with edits); switching tabs or leaving with
  * edits asks first and offers Save and Leave. A new type is saved first (name, icon, description and the workflows together) and then
@@ -138,7 +138,6 @@ const workflowsKey = (m: Model): string =>
     RecordSkeleton,
     RecordState,
     Tabs,
-    TaskTypeIcon,
     TaskTypeIconPicker,
     TaskTypeChip,
     TaskTypeStatusNote,
@@ -260,13 +259,11 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
     ];
   });
 
-  /** The actions of the header (C3): Edit, Activity, the primary Edit form and, in the overflow, Deactivate or Activate. None on a new type. */
+  /** The actions of the header (C3, D-44n): Activity, the primary Edit form and, in the overflow, Deactivate or Activate. None on a new type. */
   protected readonly headerActions = computed<RecordAction[]>(() => {
     const t = this.taskType();
     if (!t) return [];
-    const list: RecordAction[] = [
-      { id: 'edit', role: 'edit', label: 'Edit', run: () => void this.editHere() },
-    ];
+    const list: RecordAction[] = [];
     if (this.canSeeActivity()) {
       list.push({
         id: 'activity',
@@ -524,12 +521,6 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
     else {
       void this.select('workflows', true);
     }
-  }
-
-  /** Edit in the header: the fields are always editable, so it takes the person to the name. */
-  protected async editHere(): Promise<void> {
-    if (this.current() !== 'overview' && !(await this.select('overview'))) return;
-    afterNextRender(() => document.getElementById('tt-name')?.focus(), { injector: this.injector });
   }
 
   /** Edit form (header and Request form tab): the form designer of the type; a dirty page asks first (the route's leave guard). */

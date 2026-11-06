@@ -105,7 +105,7 @@ test.describe('FD1: the form designer is three fixed panes', () => {
       await page.setViewportSize({ width: size.w, height: size.h });
       await page.goto(world.url);
       await expect(page.getByRole('heading', { level: 1 })).toContainText('Project custom fields');
-      await expect(page.getByRole('group', { name: 'Form actions' })).toBeVisible();
+      await expect(page.locator('[data-page-actions]')).toBeVisible();
       await noPageScroll(page);
       await noSideScroll(page);
       await expectNoViolations(page, 'custom fields designer');
@@ -158,9 +158,9 @@ test.describe('FD1: the form designer is three fixed panes', () => {
     const world = await typeWorld(seed, admin, { fields: LONG, published: true, draft: true });
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(world.url);
-    await page.getByRole('button', { name: 'Versions (2)' }).focus();
-    await page.keyboard.press('Tab'); // Save draft is disabled: next stop is Publish
-    await expect(page.getByRole('button', { name: 'Publish...' })).toBeFocused();
+    await page.getByRole('button', { name: 'Publish...' }).focus();
+    await page.keyboard.press('Tab'); // the "..." menu button of the header
+    await expect(page.locator('[data-page-actions] button[data-overflow]')).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.getByRole('region', { name: 'Field types, scrollable' })).toBeFocused();
     await expect(page.getByRole('button', { name: 'Add Section heading' })).toBeVisible();

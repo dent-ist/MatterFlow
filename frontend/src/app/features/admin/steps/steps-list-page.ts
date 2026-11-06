@@ -338,8 +338,8 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
   ]);
   protected readonly grid = new RecordGridState('admin-steps', this.gridDefs);
   protected readonly bones = BONES;
-  /** The row key is the title (unique): every row carries `data-record-id`. */
-  protected readonly stepKey = (s: StepDefinitionSummary): string => s['title'];
+  /** The row key is the step id, never the title (a title is unique among active steps only): every row carries `data-record-id` (D-44m). */
+  protected readonly stepKey = (s: StepDefinitionSummary): number => s.stepDefinitionId;
   /** The columns of the table in order, the row action last: what the filter row builds its cells from. */
   protected readonly columns = computed<readonly string[]>(() => [...this.grid.shown(), 'actions']);
   /** The tags to choose from, with how many steps of the chosen status carry each. */

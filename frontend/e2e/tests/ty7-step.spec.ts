@@ -159,7 +159,7 @@ test.describe('Step record page', () => {
       });
     }
 
-    test('the header has Edit, Activity and the primary Edit inputs; Edit focuses the title and Edit inputs opens the designer', async ({
+    test('the header has Activity and the primary Edit inputs and no Edit (Details is the form, D-44n); Edit inputs opens the designer', async ({
       page,
       seed,
       admin,
@@ -168,19 +168,16 @@ test.describe('Step record page', () => {
       await page.setViewportSize({ width: 1366, height: 768 });
       await openStep(page, step.id, 'used-by');
       await expect(page.locator('[data-page-actions] button[data-action]')).toHaveText([
-        'Edit',
         'Activity',
         'Edit Inputs',
       ]);
+      await expect(page.locator('[data-action=edit]')).toHaveCount(0);
       await expect(page.locator('[data-action=edit-inputs]')).toHaveClass(/mf-btn--primary/);
-      await page.locator('[data-action=edit]').click();
-      await expect(page).toHaveURL(new RegExp(`/admin/steps/${step.id}$`));
-      await expect(page.locator('#step-title')).toBeFocused();
       await page.locator('[data-action=edit-inputs]').click();
       await expect(page).toHaveURL(new RegExp(`/admin/steps/${step.id}/form$`));
     });
 
-    test('a phone keeps only the primary action in the header; Edit and Activity are in the overflow', async ({
+    test('a phone keeps only the primary action in the header; Activity is in the overflow', async ({
       page,
       seed,
       admin,
@@ -192,7 +189,7 @@ test.describe('Step record page', () => {
         'Edit Inputs',
       ]);
       await overflowButton(page).click();
-      await expect(page.getByRole('menuitem')).toHaveText(['Edit', 'Activity', 'Deactivate']);
+      await expect(page.getByRole('menuitem')).toHaveText(['Activity', 'Deactivate']);
     });
 
     test('Activity opens the audit drawer at every width, axe clean, and focus returns to the button', async ({

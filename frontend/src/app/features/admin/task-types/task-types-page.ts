@@ -150,24 +150,25 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
   protected readonly phone = phoneCards();
   protected readonly canViewTasks = computed(() => this.auth.has('Task.View'));
   /**
-   * The columns (the shared record grid, #1241; #1201): Name is the spring; the others have fixed widths so the headings never move. Open Tasks is not
-   * there without Task.View (the API sends null).
+   * The columns (the shared record grid, #1241; #1201, #1256): Name is the spring; the others have fixed widths so the headings never move. Each is as wide as
+   * its heading needs on one line (Default Workflow 179, Target 122, Request Form 143, Workflows 128, Open Tasks 125; Status 140, actions 48), so the table is
+   * 1096 px at 1366 (Name gets 211) and has no sideways scroll. Open Tasks is not there without Task.View (the API sends null).
    */
   protected readonly gridDefs = computed((): RecordGridColumn[] => [
-    { key: 'name', label: 'Name', locked: true, sort: 'name', minWidth: '240px' },
+    { key: 'name', label: 'Name', locked: true, sort: 'name', minWidth: '200px' },
     {
       key: 'defaultWorkflow',
       label: 'Default Workflow',
       sort: 'defaultWorkflow',
-      width: '11rem',
-      minWidth: '11rem',
+      width: '179px',
+      minWidth: '179px',
     },
     {
       key: 'target',
       label: 'Target (Days)',
       num: true,
-      width: 'var(--mf-col-count-w)',
-      minWidth: 'var(--mf-col-count-w)',
+      width: '122px',
+      minWidth: '122px',
     },
     { key: 'form', label: 'Request Form', sort: 'form', width: '8rem', minWidth: '8rem' },
     {
@@ -196,8 +197,8 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
       key: 'status',
       label: 'Status',
       sort: 'status',
-      width: '11rem',
-      minWidth: '11rem',
+      width: 'var(--mf-col-status-w)',
+      minWidth: 'var(--mf-col-status-w)',
     },
   ]);
   protected readonly grid = new RecordGridState('admin-task-types', this.gridDefs);

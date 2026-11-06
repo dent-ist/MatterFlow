@@ -71,22 +71,40 @@
   min-width: 0;
   gap: var(--mf-s1, 0.25rem);
   overflow-x: auto;
+  overflow-y: hidden;
   box-shadow: inset 0 -1px 0 var(--mf-border);
 }
 
+/* The look of the shared tab strip (`mf-tabs`, D-15, #1128), which the form-engine library cannot import: 40 px tabs (--mf-tab-h), muted label, the
+   selected tab in the primary colour with a 2 px underline. It is the only tab strip of the designer page (D-44n). */
 .fd__tab {
-  min-height: 2.25rem;
-  padding: 0.25rem 0.75rem;
+  flex: none;
+  box-sizing: border-box;
+  height: var(--mf-tab-h, 40px);
+  padding: 0 var(--mf-s4, 1rem);
   border: 0;
-  border-bottom: 3px solid transparent;
+  border-bottom: 2px solid transparent;
   background: transparent;
-  color: var(--mf-text);
+  color: var(--mf-text-muted);
   font: inherit;
+  font-size: var(--mf-fs-md, 0.875rem);
+  font-weight: 400;
   white-space: nowrap;
   cursor: pointer;
 
+  &:hover {
+    background: var(--mf-surface-alt);
+    color: var(--mf-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mf-focus);
+    outline-offset: -2px;
+  }
+
   &[aria-selected='true'] {
     border-bottom-color: var(--mf-primary);
+    color: var(--mf-primary);
     font-weight: 600;
   }
 }

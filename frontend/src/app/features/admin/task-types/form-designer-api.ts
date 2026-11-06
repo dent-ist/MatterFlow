@@ -27,6 +27,9 @@ export interface FormOwner {
   name: string;
   /** The last breadcrumb step when it is shorter than the name: "Matter" for "Matter custom fields" (#645). */
   crumb?: string;
+  /** A Task Type's own icon and colour (the tile of the page header); other owners have none. */
+  iconKey?: string;
+  colourKey?: string;
 }
 
 /**

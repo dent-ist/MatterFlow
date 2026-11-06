@@ -6,6 +6,7 @@ import {
   manyFields,
   noPageScroll,
   noSideScroll,
+  openVersionsDrawer,
   shoot,
   typeWorld,
 } from '../support/designer';
@@ -15,7 +16,8 @@ import {
  * side by side, and the title carries the version as a badge ("Published v3", "Draft v4") with the published version as muted text
  * while a draft exists. Screenshots go to E2E_SCREENSHOTS when it is set.
  */
-const badge = (page: Page) => page.getByRole('heading', { level: 1 }).locator('[data-status]');
+const badge = (page: Page) =>
+  page.getByRole('heading', { level: 1 }).locator('[data-status-badge]');
 
 for (const size of SIZES) {
   test.describe(`FD2 and FD3 at ${size.w}x${size.h}`, () => {
@@ -94,8 +96,7 @@ for (const size of SIZES) {
       await expectNoViolations(page, 'draft title');
 
       // Open the published version from the Versions dialog: read-only, with a link back to the draft instead of a second draft.
-      await page.getByRole('button', { name: 'Versions (2)' }).click();
-      const dialog = page.getByRole('dialog', { name: 'Form Versions' });
+      const dialog = await openVersionsDrawer(page);
       await dialog.getByRole('button', { name: 'v1' }).click();
       await expect(badge(page)).toHaveText('Published v1');
       await expect(page.getByRole('button', { name: 'Create New Draft' })).toHaveCount(0);
@@ -131,19 +132,15 @@ test.describe('FD2 and FD3: Versions dialog, long names and permissions', () => 
     await page.setViewportSize({ width: 1366, height: 768 });
     const world = await typeWorld(seed, admin, { published: true, draft: true });
     await page.goto(world.url);
-    const versions = page.getByRole('button', { name: 'Versions (2)' });
-    await versions.focus();
-    await page.keyboard.press('Enter');
-    const dialog = page.getByRole('dialog', { name: 'Form Versions' });
+    const dialog = await openVersionsDrawer(page);
     await expect(dialog.getByRole('row')).toHaveCount(3);
-    await expectNoViolations(page, 'versions dialog');
+    await expectNoViolations(page, 'versions drawer');
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
-    await expect(versions).toBeFocused();
 
     // A dirty draft is not left silently.
     await page.getByRole('button', { name: 'Add Text' }).click();
-    await versions.click();
+    await openVersionsDrawer(page);
     await dialog.getByRole('button', { name: 'v1' }).click();
     await expect(page.getByRole('dialog', { name: /Discard/ })).toBeVisible();
     await page.getByRole('button', { name: 'Keep Editing' }).click();

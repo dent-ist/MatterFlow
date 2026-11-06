@@ -141,7 +141,7 @@ test.describe('Task Type record page', () => {
         await clean(page, 'overview');
         await shot(page, 'overview', size.w);
 
-        // Edit stays on the page, and Activate / Deactivate is only in the overflow.
+        // Activate / Deactivate is only in the overflow.
         await expect(page.locator('[data-page-actions] [data-action=deactivate]')).toHaveCount(0);
         await page.locator('[data-page-actions] button[data-overflow]').click();
         await expect(page.getByRole('menuitem', { name: 'Deactivate' })).toBeVisible();
@@ -152,7 +152,7 @@ test.describe('Task Type record page', () => {
       });
     }
 
-    test('the header has Edit, Activity and the primary Edit form; Edit focuses the name and Edit form opens the designer', async ({
+    test('the header has Activity and the primary Edit form and no Edit (the Overview is the form, D-44n); Edit form opens the designer', async ({
       page,
       seed,
       admin,
@@ -161,12 +161,9 @@ test.describe('Task Type record page', () => {
       await page.setViewportSize({ width: 1366, height: 768 });
       await openType(page, w, 'workflows');
       const actions = page.locator('[data-page-actions] button[data-action]');
-      await expect(actions).toHaveText(['Edit', 'Activity', 'Edit Form']);
+      await expect(actions).toHaveText(['Activity', 'Edit Form']);
+      await expect(page.locator('[data-action=edit]')).toHaveCount(0);
       await expect(page.locator('[data-action=edit-form]')).toHaveClass(/mf-btn--primary/);
-      // Edit leaves the page where it is, shows the Overview and puts focus on the name.
-      await page.locator('[data-action=edit]').click();
-      await expect(page).toHaveURL(new RegExp(`/admin/task-types/${w.type.id}$`));
-      await expect(page.locator('#tt-name')).toBeFocused();
       await page.locator('[data-action=edit-form]').click();
       await expect(page).toHaveURL(new RegExp(`/admin/task-types/${w.type.id}/form$`));
     });
@@ -923,7 +920,6 @@ test.describe('Task Type record page', () => {
       await ttPage.goto(typeUrl(w));
       await expect(ttPage.locator('[data-task-type-page]')).toBeVisible();
       await expect(ttPage.locator('[data-page-actions] button[data-action]')).toHaveText([
-        'Edit',
         'Edit Form',
       ]);
       // Task.View gives the Open tasks number as a link; the default workflow is named (TY-P: TaskType.Manage reads the workflow list) but is not a link.
@@ -950,7 +946,6 @@ test.describe('Task Type record page', () => {
       const auditPage = await asUser(auditUser.username);
       await auditPage.goto(typeUrl(w, 'workflows'));
       await expect(auditPage.locator('[data-page-actions] button[data-action]')).toHaveText([
-        'Edit',
         'Activity',
         'Edit Form',
       ]);

@@ -59,7 +59,7 @@ test.describe('Document titles and crumb targets (#359, #360)', () => {
       ['/admin/steps', 'Task Types: Workflow Steps - MatterFlow'],
       ['/admin/task-types/new', 'New Task Type - MatterFlow'],
       [`/admin/task-types/${tt.id}`, `${tt.name} - MatterFlow`],
-      [`/admin/task-types/${tt.id}/form`, `Form: ${tt.name} - MatterFlow`],
+      [`/admin/task-types/${tt.id}/form`, `${tt.name} Form - MatterFlow`],
       ['/admin/workflows/new', 'Task Types: New Workflow - MatterFlow'],
       [`/admin/workflows/${wf.workflowDefinitionId}`, `${wf.name}: Overview - MatterFlow`],
       [
@@ -68,7 +68,7 @@ test.describe('Document titles and crumb targets (#359, #360)', () => {
       ],
       ['/admin/steps/new', 'New Step - MatterFlow'],
       [`/admin/steps/${step.id}`, `${step.title} - MatterFlow`],
-      [`/admin/steps/${step.id}/form`, `Form: ${step.title} - MatterFlow`],
+      [`/admin/steps/${step.id}/form`, `${step.title} Form - MatterFlow`],
     ];
     for (const [url, title] of cases) {
       await page.goto(url);
@@ -119,7 +119,7 @@ test.describe('Document titles and crumb targets (#359, #360)', () => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Crumb flow');
     await atEverySize(page, 'version-crumb');
     await page.goto(`/admin/task-types/${tt.id}/form`);
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Form:');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(' Form');
     await atEverySize(page, 'form-crumb');
     await page.setViewportSize({ width: 375, height: 812 });
     for (const link of await page.locator('nav[aria-label="Breadcrumb"] a').all()) {
@@ -138,7 +138,7 @@ test.describe('Document titles and crumb targets (#359, #360)', () => {
     const typeRole = await seed.role(['TaskType.Manage', 'Task.View'], 'Type only');
     const typePage = await asUser((await seed.user([typeRole.name], 'tt-ttonly')).username);
     await typePage.goto(`/admin/task-types/${tt.id}/form`);
-    await expect(typePage).toHaveTitle(`Form: ${tt.name} - MatterFlow`);
+    await expect(typePage).toHaveTitle(`${tt.name} Form - MatterFlow`);
     const wfRole = await seed.role(['Workflow.Manage'], 'Workflow only');
     const wfPage = await asUser((await seed.user([wfRole.name], 'tt-wfonly')).username);
     await wfPage.goto(`/admin/workflows/${wf.workflowDefinitionId}`);
