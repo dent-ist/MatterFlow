@@ -487,3 +487,18 @@ Evidence: `design-evidence`, `evidence/2026-11-06-review-31-dashed-boxes/`. Axe:
 | axe heading-order, Coverage | real, older than #1279 | `h3#cv-h` under the page `h1`: #1280. |
 
 Rulings (D-44x): the lane count is a plain chip while searching, no dashed marker; "You don't have access to <things>" for the three read-permission places (project tasks panel, task asset links, step inputs), "permission" stays for actions; the Matter Summary no-assets block is a 52 px row.
+
+## review-32 final leftovers (2026-11-06, tip 09dc26e, 1366 and 1920)
+
+Evidence: `design-evidence`, `evidence/2026-11-06-review-32-final-leftovers/` (3 JPEG, `measurements.json`).
+
+| Item of #1280 | Verdict | Notes |
+|---|---|---|
+| Coverage heading | PASS | `h2#cv-h` 16/700 under the page `h1`; axe 0 on the Coverage view at both sizes. |
+| Swimlane count | PASS | Without search text each count is a link ("7 New tasks in the Task Queue"); with search text it is a `span` with "2 In Progress tasks match the search", no href; 0 dashed elements; axe 0. `.count--caveat` and its allow-list entry are gone. |
+| Three permission texts | PASS | "You don't have access to tasks." (project tasks panel), "You don't have access to assets, so linked assets aren't shown here." (task asset links), "You don't have access to the inputs of this step." (step inputs). No "permission to view" left. |
+| Matter Summary, no assets | PASS (mocked) | The demo matters all have assets, so the asset counts response was emptied in the browser: a 52 px card row, "No assets yet." at the left, `New Asset` text button at the right, no icon, no dashed border; Details card top 241 px against 243 px with tiles. The button condition (Asset.Create, active matter) was not tested. |
+
+#1280: PASS.
+
+Final statement: see the handback of this review.
