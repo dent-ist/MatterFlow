@@ -1,6 +1,7 @@
 import { Page } from '@playwright/test';
 import { axeAvailable, axeBestPractice } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { asDropdown } from '../support/dropdown';
 
 /**
  * PM v2 lane A and F (epic #851): the task type colour and expected turnaround (#852, #853), the shared task type badge in the Task Queue (#854) and
@@ -33,7 +34,7 @@ test.describe('Task type colour, target and the badge', () => {
     await page.goto(`/admin/task-types/${world.taskType.id}`);
     await expect(page.getByRole('heading', { name: world.taskType.name, level: 1 })).toBeVisible();
 
-    await page.locator('[data-colour-select]').selectOption('teal');
+    await asDropdown(page.locator('[data-colour-select] button')).selectOption('teal');
     await expect(page.locator('[data-preview]')).toHaveAttribute('data-colour', 'teal');
     await page.locator('[data-target-input]').fill('400');
     await page.locator('[data-save]').click();
@@ -65,7 +66,7 @@ test.describe('Task type colour, target and the badge', () => {
 
     // Clearing both goes back to the neutral default.
     await page.goto(`/admin/task-types/${world.taskType.id}`);
-    await page.locator('[data-colour-select]').selectOption('');
+    await asDropdown(page.locator('[data-colour-select] button')).selectOption('');
     await page.locator('[data-target-input]').fill('');
     await page.locator('[data-save]').click();
     await expect(page.getByText('Task type saved').first()).toBeVisible();

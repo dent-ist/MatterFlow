@@ -25,6 +25,7 @@ import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { AssetPicker } from '../../../shared/ui/asset-picker';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { Badge } from '../../../shared/ui/badge';
 import { PanelScroll } from '../../../shared/ui/panel-scroll';
 
@@ -45,7 +46,7 @@ export const ASSETS_CLOSED_NOTE =
  */
 @Component({
   selector: 'mf-task-asset-links',
-  imports: [Badge, AssetPicker, ConfirmDialog, PanelScroll, RouterLink],
+  imports: [Badge, AssetPicker, ConfirmDialog, Dropdown, PanelScroll, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="tl" aria-label="Assets">
@@ -87,18 +88,15 @@ export const ASSETS_CLOSED_NOTE =
             </div>
             <div class="tl__field">
               <label for="tl-role">Relationship</label>
-              <select
-                class="mf-control"
-                id="tl-role"
+              <mf-dropdown
+                [neutralValue]="null"
+                buttonId="tl-role"
+                label="Relationship"
                 data-link-role
-                [value]="pickedRoleId() ?? ''"
-                (change)="pickRole($event)"
-              >
-                <option value="">None</option>
-                @for (r of activeRoles(); track r.id) {
-                  <option [value]="r.id">{{ r.name }}</option>
-                }
-              </select>
+                [items]="roleItems()"
+                [value]="pickedRoleId() === null ? '' : '' + pickedRoleId()"
+                (valueChange)="pickRole($event)"
+              />
             </div>
             <div class="tl__buttons">
               <button
@@ -166,27 +164,16 @@ export const ASSETS_CLOSED_NOTE =
                         }
                         <div class="tl__row">
                           @if (editable()) {
-                            <select
-                              class="mf-control mf-control--compact"
+                            <mf-dropdown
+                              [neutralValue]="null"
+                              size="sm"
                               data-role-select
-                              [attr.aria-label]="'Relationship of ' + a.displayName"
+                              [label]="'Relationship of ' + a.displayName"
                               [disabled]="busy()"
-                              (change)="changeRole(a, $event)"
-                            >
-                              <option
-                                value=""
-                                [selected]="
-                                  a.assetLinkRoleId === undefined || a.assetLinkRoleId === null
-                                "
-                              >
-                                None
-                              </option>
-                              @for (r of rolesFor(a); track r.id) {
-                                <option [value]="r.id" [selected]="r.id === a.assetLinkRoleId">
-                                  {{ r.name }}
-                                </option>
-                              }
-                            </select>
+                              [items]="rowRoleItems().get(a.assetId) ?? []"
+                              [value]="roleValue(a)"
+                              (valueChange)="changeRole(a, $event)"
+                            />
                             <button
                               type="button"
                               class="mf-btn"
@@ -353,6 +340,24 @@ export class TaskAssetLinks {
   private readonly serverCanEdit = signal(false);
   private readonly roles = signal<AssetLinkRoleView[]>([]);
   protected readonly activeRoles = computed(() => this.roles().filter((r) => r.isActive));
+  protected readonly roleItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'None' },
+    ...this.activeRoles().map((r) => ({ value: String(r.id), label: r.name })),
+  ]);
+  /** The role dropdown items of each linked asset: the active roles plus the link's own role when it has since been deactivated. */
+  protected readonly rowRoleItems = computed(
+    () =>
+      new Map(
+        this.items().map((a) => [
+          a.assetId,
+          [
+            { value: '', label: 'None' },
+            ...this.rolesFor(a).map((r) => ({ value: String(r.id), label: r.name })),
+          ] as DropdownItem[],
+        ]),
+      ),
+  );
+  private readonly chosenRole = signal<Record<number, string>>({});
 
   private readonly auth = inject(AuthStore);
   /** Linked assets are Asset.View data; without it a note replaces the list (the API would only return placeholder names). */
@@ -421,8 +426,7 @@ export class TaskAssetLinks {
     this.formError.set('');
   }
 
-  protected pickRole(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
+  protected pickRole(value: string): void {
     this.pickedRoleId.set(value === '' ? null : Number(value));
   }
 
@@ -450,9 +454,19 @@ export class TaskAssetLinks {
     }
   }
 
-  protected async changeRole(link: TaskAssetLinkResponse, event: Event): Promise<void> {
-    const select = event.target as HTMLSelectElement;
-    const roleId = select.value === '' ? undefined : Number(select.value);
+  /** The role a row shows: the one just chosen while it is being saved, else the saved one. */
+  protected roleValue(link: TaskAssetLinkResponse): string {
+    return (
+      this.chosenRole()[link.assetId] ??
+      (link.assetLinkRoleId === undefined || link.assetLinkRoleId === null
+        ? ''
+        : String(link.assetLinkRoleId))
+    );
+  }
+
+  protected async changeRole(link: TaskAssetLinkResponse, value: string): Promise<void> {
+    const roleId = value === '' ? undefined : Number(value);
+    this.chosenRole.update((m) => ({ ...m, [link.assetId]: value }));
     this.busy.set(true);
     this.rowError.set('');
     try {
@@ -466,9 +480,13 @@ export class TaskAssetLinks {
       this.changed.emit();
     } catch (error) {
       this.rowError.set(messageOf(error));
-      select.value = link.assetLinkRoleId === undefined ? '' : String(link.assetLinkRoleId);
       await this.load();
     } finally {
+      this.chosenRole.update((m) => {
+        const rest = { ...m };
+        delete rest[link.assetId];
+        return rest;
+      });
       this.busy.set(false);
     }
   }

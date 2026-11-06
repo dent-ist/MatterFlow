@@ -48,6 +48,7 @@ import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { toFormDefinition } from '../../../shared/forms/form-schema';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { GridNav } from '../../../shared/ui/grid-nav';
@@ -114,6 +115,7 @@ const matterOption = (m: MatterResponse): PickerOption => ({
 @Component({
   selector: 'mf-create-task-page',
   imports: [
+    Dropdown,
     IntPipe,
     NumericDatePipe,
     ErrorReference,
@@ -308,6 +310,20 @@ export class CreateTaskPage implements HasUnsavedChanges {
   });
   private readonly matterRecords = new Map<number, MatterResponse>();
   protected readonly projects = signal<ProjectResponse[]>([]);
+  protected readonly projectItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'No Project' },
+    ...this.projects().map((p) => ({ value: String(p.projectId), label: p.name })),
+  ]);
+  protected readonly priorityItems = computed<DropdownItem[]>(() =>
+    this.activePriorities().map((p) => ({
+      value: String(p.id),
+      label: `${p.label}${p.isDefault ? ' (default)' : ''}`,
+    })),
+  );
+  protected readonly podItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'No Pod' },
+    ...this.pods().map((p) => ({ value: String(p.podId), label: p.name })),
+  ]);
   protected readonly projectId$ = signal<number | null>(null);
   protected readonly projectCleared = signal(false);
   protected readonly title = signal('');
@@ -769,8 +785,7 @@ export class CreateTaskPage implements HasUnsavedChanges {
     this.seed.set({ ...rest });
   }
 
-  protected onProjectChange(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
+  protected onProjectChange(value: string): void {
     this.projectId$.set(value ? Number(value) : null);
     this.projectCleared.set(false);
   }
@@ -860,8 +875,7 @@ export class CreateTaskPage implements HasUnsavedChanges {
 
   // --- other inputs --------------------------------------------------------------------------------------
 
-  protected onPriorityChange(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
+  protected onPriorityChange(value: string): void {
     this.priorityId.set(value ? Number(value) : null);
   }
 
@@ -874,8 +888,7 @@ export class CreateTaskPage implements HasUnsavedChanges {
     this.dueTime.set('');
   }
 
-  protected onPodChange(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
+  protected onPodChange(value: string): void {
     const id = value ? Number(value) : null;
     this.podId.set(id);
     this.podMembers.set(null);

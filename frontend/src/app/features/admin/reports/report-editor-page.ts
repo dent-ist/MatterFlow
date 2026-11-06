@@ -31,6 +31,7 @@ import { PageTitle, shortTitleText } from '../../../core/title/page-title';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { Crumb, PageHeader } from '../../../shared/ui/page-header';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { tabIcon } from '../../../shared/ui/tab-icons';
@@ -118,6 +119,7 @@ const intOrNull = (text: string): number | null => {
   imports: [
     ActiveBadge,
     ConfirmDialog,
+    Dropdown,
     PageHeader,
     ParametersEditor,
     PreviewPanel,
@@ -150,6 +152,15 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
   protected readonly state = signal<'loading' | 'ready' | 'notFound' | 'error'>('loading');
   protected readonly report = signal<ReportDetailResponse | null>(null);
   protected readonly categories = signal<ReportCategoryResponse[]>([]);
+  /** The active categories, plus the one the report already has when it was made inactive since. */
+  protected readonly categoryItems = computed<DropdownItem[]>(() =>
+    this.categories()
+      .filter((c) => c.isActive || c.categoryId === this.details().categoryId)
+      .map((c) => ({
+        value: String(c.categoryId),
+        label: `${c.name}${c.isActive ? '' : ' (inactive)'}`,
+      })),
+  );
 
   protected readonly details = signal<Details>({ ...EMPTY_DETAILS });
   protected readonly sql = signal(STARTER_SQL);

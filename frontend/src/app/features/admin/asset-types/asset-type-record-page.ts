@@ -28,6 +28,7 @@ import {
   LeaveConfirmService,
 } from '../../../shared/guards/unsaved-changes.guard';
 import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { Crumb } from '../../../shared/ui/page-header';
 import { RecordHeader, RecordAction } from '../../../shared/ui/record-header';
@@ -111,6 +112,7 @@ const modelKey = (m: Model): string =>
   selector: 'mf-asset-type-record-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    Dropdown,
     IntPipe,
     NumericDatePipe,
     ActivityDrawer,
@@ -163,6 +165,10 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
   protected readonly activityOpen = signal(false);
   protected readonly deactivateOpen = signal(false);
   protected readonly colours = TASK_TYPE_COLOURS;
+  protected readonly colourItems: DropdownItem[] = [
+    { value: '', label: TASK_TYPE_COLOUR_DEFAULT_LABEL },
+    ...TASK_TYPE_COLOURS.map((c) => ({ value: c.key, label: c.label })),
+  ];
   protected readonly defaultColourLabel = TASK_TYPE_COLOUR_DEFAULT_LABEL;
 
   /** Size (epic #851): the NUMBER fields of the published form, the chosen default size field and unit, and the state of the two actions. */
@@ -172,6 +178,14 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
   protected readonly sizeBusy = signal(false);
   protected readonly sizeError = signal('');
   protected readonly sizeUnits = SIZE_UNITS;
+  protected readonly sizeUnitItems: DropdownItem[] = [
+    { value: '', label: 'Choose a unit' },
+    ...SIZE_UNITS.map((u) => ({ value: u, label: u })),
+  ];
+  protected readonly sizeFieldItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'None' },
+    ...this.numberFields().map((f) => ({ value: f.key, label: f.label })),
+  ]);
   protected readonly sizeDirty = computed(() => {
     const t = this.assetType();
     return (

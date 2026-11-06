@@ -1122,11 +1122,11 @@ describe('MatterDetailPage', () => {
       await settle(fixture);
 
       const dialog = document.body.querySelector('[data-managers-dialog]')!;
-      const primary = dialog.querySelector<HTMLSelectElement>('[data-manager-select=primary]')!;
-      const secondary = dialog.querySelector<HTMLSelectElement>('[data-manager-select=secondary]')!;
+      const primary = ddSelect(dialog, 'Primary PM');
+      const secondary = ddSelect(dialog, 'Secondary PM');
       expect(primary.value).toBe('11');
       expect(secondary.value).toBe('');
-      expect(Array.from(secondary.options).map((o) => o.textContent?.trim())).toEqual([
+      expect(secondary.options.map((o) => o.textContent.trim())).toEqual([
         'None',
         'Ann Lee',
         expect.stringContaining('Bob Roe (out of office until'),

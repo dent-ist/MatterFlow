@@ -33,6 +33,7 @@ import {
 } from '../../../shared/ui/custom-fields';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { normalizeNumber } from '../../../shared/pipes/matter-ref.pipe';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
 import { MatterRef } from '../../../shared/ui/matter-ref';
@@ -51,6 +52,7 @@ function clientOption(c: ClientResponse): PickerOption {
 @Component({
   selector: 'mf-matter-form-page',
   imports: [
+    Dropdown,
     PageHeader,
     ErrorReference,
     RouterLink,
@@ -188,16 +190,15 @@ function clientOption(c: ClientResponse): PickerOption {
 
         <div class="mf-field">
           <label class="mf-field__label" for="matter-ai">AI Allowed</label>
-          <select
-            id="matter-ai"
-            class="mf-field__input"
+          <mf-dropdown
+            [neutralValue]="null"
+            buttonId="matter-ai"
+            label="AI Allowed"
             data-ai-allowed
-            (change)="aiAllowed.set($any($event.target).value)"
-          >
-            @for (o of aiOptions; track o.value) {
-              <option [value]="o.value" [selected]="aiAllowed() === o.value">{{ o.label }}</option>
-            }
-          </select>
+            [items]="aiItems"
+            [value]="aiAllowed()"
+            (valueChange)="aiAllowed.set($any($event))"
+          />
           <span class="mf-field__help"
             >Which AI tools may be used on this matter's content. Notes check this setting before AI
             is offered.</span
@@ -279,7 +280,10 @@ export class MatterFormPage implements HasUnsavedChanges {
   protected readonly name = signal('');
   protected readonly isSensitive = signal(false);
   protected readonly aiAllowed = signal<MatterAiAllowed>(MatterAiAllowed.No);
-  protected readonly aiOptions = AI_OPTIONS;
+  protected readonly aiItems: DropdownItem[] = AI_OPTIONS.map((o) => ({
+    value: o.value,
+    label: o.label,
+  }));
   protected readonly busy = signal(false);
   private readonly customEditor = viewChild(CustomFieldsEditor);
   protected readonly customVersionId = signal<number | null>(null);

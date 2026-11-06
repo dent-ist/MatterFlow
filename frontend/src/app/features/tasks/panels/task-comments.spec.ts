@@ -1,3 +1,4 @@
+import { ddButton, ddChoose, ddOptionTexts } from '../../../testing/dropdown-testing.spec-util';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TaskCommentsClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -31,9 +32,7 @@ describe('TaskComments', () => {
   const q = <T extends HTMLElement>(selector: string): T => el().querySelector<T>(selector)!;
   /** Picks an option of the single "Sort comments" dropdown. */
   const setOrder = (order: 'oldest' | 'newest'): void => {
-    const select = q<HTMLSelectElement>('[data-order-select]');
-    select.value = order;
-    select.dispatchEvent(new Event('change'));
+    ddChoose(el(), 'Sort Comments', order);
   };
 
   /** Uses the "Show All" / "Show latest 3" link under the thread head. */
@@ -156,12 +155,10 @@ describe('TaskComments', () => {
 
   it('has one sort dropdown (oldest/newest first) instead of two buttons', async () => {
     await create([aComment()]);
-    const select = q<HTMLSelectElement>('[data-order-select]');
-    expect(select.getAttribute('aria-label')).toBe('Sort comments');
-    expect(Array.from(select.options).map((o) => o.textContent!.trim())).toEqual([
-      'Oldest First',
-      'Newest First',
-    ]);
+    expect(ddButton(el(), 'Sort Comments').getAttribute('aria-label')).toBe(
+      'Sort Comments: Oldest First',
+    );
+    expect(ddOptionTexts(el(), 'Sort Comments')).toEqual(['Oldest First', 'Newest First']);
     expect(el().querySelector('button[data-order]')).toBeNull();
   });
 

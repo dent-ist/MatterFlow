@@ -11,6 +11,7 @@ import { firstValueFrom } from 'rxjs';
 import { OnHoldReasonView, OnHoldReasonsClient } from '../../../api/generated/api-client';
 import { ApiError } from '../../../core/http/api-error';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { FormDialog } from '../../../shared/ui/form-dialog';
 import { TaskDetailStore } from './task-detail.store';
 
@@ -21,7 +22,7 @@ import { TaskDetailStore } from './task-detail.store';
  */
 @Component({
   selector: 'mf-task-action-dialogs',
-  imports: [ConfirmDialog, FormDialog],
+  imports: [ConfirmDialog, Dropdown, FormDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let d = store.dialog();
@@ -53,20 +54,16 @@ import { TaskDetailStore } from './task-detail.store';
               <span class="req">(required)</span>
             }
           </label>
-          <select
-            id="task-hold-reason"
-            class="mf-control"
+          <mf-dropdown
+            [neutralValue]="null"
+            buttonId="task-hold-reason"
+            label="Hold Reason"
+            [items]="reasonItems()"
             [value]="holdReasonId()"
-            [attr.aria-required]="reasonRequired() ? 'true' : null"
-            [attr.aria-invalid]="holdReasonError() ? 'true' : null"
-            [attr.aria-describedby]="holdReasonError() ? 'task-hold-reason-error' : null"
-            (change)="onHoldReason($event)"
-          >
-            <option value="">Choose a reason</option>
-            @for (r of reasons(); track r.id) {
-              <option [value]="r.id">{{ r.name }}</option>
-            }
-          </select>
+            [invalid]="!!holdReasonError()"
+            [describedBy]="holdReasonError() ? 'task-hold-reason-error' : null"
+            (valueChange)="holdReasonId.set($event)"
+          />
           @if (holdReasonError(); as e) {
             <p class="error" id="task-hold-reason-error" role="alert" data-hold-reason-error>
               {{ e }}
@@ -190,6 +187,10 @@ export class TaskActionDialogs {
   /** The active on-hold reasons (PM v2, #877), read the first time a hold dialog opens. The choice is optional until the server says it is required. */
   protected readonly reasons = signal<readonly OnHoldReasonView[]>([]);
   protected readonly holdReasonId = signal('');
+  protected readonly reasonItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'Choose a reason' },
+    ...this.reasons().map((r) => ({ value: String(r.id), label: r.name })),
+  ]);
   protected readonly holdReasonError = signal<string | null>(null);
   /** `Tasks:OnHoldReasonRequired` is server configuration: learnt from the first ON_HOLD_REASON_REQUIRED answer, then the label says so. */
   protected readonly reasonRequired = signal(false);

@@ -25,6 +25,7 @@ import { LookupStore } from '../../core/lookups/lookup-store';
 import { ApiError } from '../../core/http/api-error';
 import { QuietRequests } from '../../core/http/interceptors';
 import { USER_TIME_ZONE } from '../../core/time/clock';
+import { Dropdown, DropdownItem } from '../ui/dropdown';
 import { EntityPicker, PickerOption } from '../ui/entity-picker';
 import { FormDialog } from '../ui/form-dialog';
 
@@ -74,7 +75,7 @@ export function bulkWarning(code: string): string {
  */
 @Component({
   selector: 'mf-bulk-tasks-dialog',
-  imports: [FormDialog, EntityPicker],
+  imports: [Dropdown, FormDialog, EntityPicker],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .bd {
@@ -134,19 +135,14 @@ export function bulkWarning(code: string): string {
             @if (pods().length > 0) {
               <div class="bd__field">
                 <label class="bd__label" for="bulk-pod">Pod</label>
-                <select
-                  id="bulk-pod"
-                  class="mf-control"
+                <mf-dropdown
+                  buttonId="bulk-pod"
+                  label="Pod"
                   data-bulk-pod
-                  (change)="pod.set($any($event.target).value)"
-                >
-                  <option value="" [selected]="pod() === ''">Keep Each Task’s Pod</option>
-                  @for (p of pods(); track p.podId) {
-                    <option [value]="p.podId" [selected]="pod() === '' + p.podId">
-                      {{ p.name }}
-                    </option>
-                  }
-                </select>
+                  [items]="podItems()"
+                  [value]="pod()"
+                  (valueChange)="pod.set($event)"
+                />
               </div>
             }
             <p class="bd__help">
@@ -157,19 +153,14 @@ export function bulkWarning(code: string): string {
           } @else {
             <div class="bd__field">
               <label class="bd__label" for="bulk-priority">Priority</label>
-              <select
-                id="bulk-priority"
-                class="mf-control"
+              <mf-dropdown
+                buttonId="bulk-priority"
+                label="Priority"
                 data-bulk-priority
-                (change)="priority.set($any($event.target).value)"
-              >
-                <option value="" [selected]="priority() === ''">Choose a priority</option>
-                @for (p of priorities(); track p.id) {
-                  <option [value]="p.id" [selected]="priority() === '' + p.id">
-                    {{ p.label }}
-                  </option>
-                }
-              </select>
+                [items]="priorityItems()"
+                [value]="priority()"
+                (valueChange)="priority.set($event)"
+              />
             </div>
           }
           <p class="bd__note" data-bulk-undo>
@@ -229,6 +220,14 @@ export class BulkTasksDialog {
   protected readonly result = signal<BulkTasksResponse | null>(null);
 
   protected readonly priorities = computed(() => this.lookups.activePriorities());
+  protected readonly podItems = computed<DropdownItem[]>(() => [
+    { value: KEEP_POD, label: 'Keep Each Task’s Pod' },
+    ...this.pods().map((p) => ({ value: String(p.podId), label: p.name })),
+  ]);
+  protected readonly priorityItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'Choose a priority' },
+    ...this.priorities().map((p) => ({ value: String(p.id), label: p.label })),
+  ]);
   protected readonly title = computed(() =>
     this.phase() === 'result'
       ? 'Result'

@@ -26,6 +26,7 @@ import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { metaNumber, serverFormErrors } from '../../../shared/forms/api-errors';
 import { normalizeNumber } from '../../../shared/pipes/matter-ref.pipe';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import {
   CustomFieldsEditor,
@@ -57,6 +58,7 @@ function clientOption(c: ClientResponse): PickerOption {
 @Component({
   selector: 'mf-matter-form-dialog',
   imports: [
+    Dropdown,
     FormDialog,
     ConfirmDialog,
     EntityPicker,
@@ -250,16 +252,15 @@ function clientOption(c: ClientResponse): PickerOption {
 
         <div class="mf-field">
           <label class="mf-field__label" for="matter-ai">AI Allowed</label>
-          <select
-            id="matter-ai"
-            class="mf-field__input"
+          <mf-dropdown
+            [neutralValue]="null"
+            buttonId="matter-ai"
+            label="AI Allowed"
             data-ai-allowed
-            (change)="aiAllowed.set($any($event.target).value)"
-          >
-            @for (o of aiOptions; track o.value) {
-              <option [value]="o.value" [selected]="aiAllowed() === o.value">{{ o.label }}</option>
-            }
-          </select>
+            [items]="aiItems"
+            [value]="aiAllowed()"
+            (valueChange)="aiAllowed.set($any($event))"
+          />
           <span class="mf-field__help"
             >Which AI tools may be used on this matter's content. Notes check this setting before AI
             is offered.</span
@@ -316,7 +317,10 @@ export class MatterFormDialog {
   private readonly auth = inject(AuthStore);
   private readonly customEditor = viewChild(CustomFieldsEditor);
 
-  protected readonly aiOptions = AI_OPTIONS;
+  protected readonly aiItems: DropdownItem[] = AI_OPTIONS.map((o) => ({
+    value: o.value,
+    label: o.label,
+  }));
   protected readonly isEdit = computed(() => this.matter() !== null);
   protected readonly client = signal<PickerOption | null>(null);
   protected readonly number = signal('');

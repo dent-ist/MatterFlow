@@ -1,3 +1,4 @@
+import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { PrioritiesClient, StatusLabelsClient } from '../../../api/generated/api-client';
@@ -322,7 +323,7 @@ describe('PrioritiesPage (#605, #609, #614, #618)', () => {
       );
       expect(field().value).toBe('High');
       expect(document.body.querySelector('#priority-label-count')!.textContent).toContain('4 / 50');
-      expect(document.body.querySelector<HTMLSelectElement>('#priority-color')!.value).toBe('high');
+      expect(ddSelect(document.body, 'Color').value).toBe('high');
       await type(field(), 'Elevated');
       expect(dialog().querySelector('[data-preview] mf-priority-badge')!.textContent).toContain(
         'Elevated',
@@ -335,7 +336,7 @@ describe('PrioritiesPage (#605, #609, #614, #618)', () => {
       const navigate = vi.spyOn(TestBed.inject(Router), 'navigate');
       await setEdit('2');
       await type(field(), 'Elevated');
-      const select = document.body.querySelector<HTMLSelectElement>('#priority-color')!;
+      const select = ddSelect(document.body, 'Color');
       select.value = 'critical';
       select.dispatchEvent(new Event('change'));
       await settle();
@@ -358,7 +359,7 @@ describe('PrioritiesPage (#605, #609, #614, #618)', () => {
 
     it('does not save a color on its own: changing the select calls nothing', async () => {
       await setEdit('2');
-      const select = document.body.querySelector<HTMLSelectElement>('#priority-color')!;
+      const select = ddSelect(document.body, 'Color');
       select.value = 'critical';
       select.dispatchEvent(new Event('change'));
       await settle();
@@ -379,7 +380,7 @@ describe('PrioritiesPage (#605, #609, #614, #618)', () => {
     it('rejects an unreadable custom color (a mid gray: neither white nor dark text reaches 4.5:1) with the 4.5:1 message', async () => {
       await setEdit('new');
       await type(field(), 'Pastel');
-      const select = document.body.querySelector<HTMLSelectElement>('#priority-color')!;
+      const select = ddSelect(document.body, 'Color');
       select.value = 'custom';
       select.dispatchEvent(new Event('change'));
       await settle();

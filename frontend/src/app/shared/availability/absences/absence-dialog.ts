@@ -15,6 +15,7 @@ import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { calendarDayInZone } from '../../../core/time/time';
+import { Dropdown, DropdownItem } from '../../ui/dropdown';
 import { FormDialog } from '../../ui/form-dialog';
 import { numericDate } from '../../ui/numeric-date';
 import { ABSENCE_API } from './absence-api';
@@ -51,7 +52,7 @@ export function overlapOf(err: ApiError): AbsenceOverlap | null {
  */
 @Component({
   selector: 'mf-absence-dialog',
-  imports: [FormDialog],
+  imports: [Dropdown, FormDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-form-dialog
@@ -70,34 +71,26 @@ export function overlapOf(err: ApiError): AbsenceOverlap | null {
         @if (people().length > 0 && !entry()) {
           <div class="ad__field">
             <label class="ad__label" for="ad-person">Person</label>
-            <select
-              id="ad-person"
-              class="mf-control mf-control--fill"
+            <mf-dropdown
+              buttonId="ad-person"
+              label="Person"
               data-ad-person
-              [value]="personId()"
-              (change)="personId.set(+$any($event.target).value)"
-            >
-              @for (p of people(); track p.userId) {
-                <option [value]="p.userId" [selected]="p.userId === personId()">
-                  {{ p.name }}
-                </option>
-              }
-            </select>
+              [items]="personItems()"
+              [value]="'' + personId()"
+              (valueChange)="personId.set(+$event)"
+            />
           </div>
         }
         <div class="ad__field">
           <label class="ad__label" for="ad-type">Type</label>
-          <select
-            id="ad-type"
-            class="mf-control mf-control--fill"
+          <mf-dropdown
+            buttonId="ad-type"
+            label="Type"
             data-ad-type
+            [items]="typeItems"
             [value]="type()"
-            (change)="setType($any($event.target).value)"
-          >
-            @for (t of types; track t) {
-              <option [value]="t" [selected]="t === type()">{{ labels[t] }}</option>
-            }
-          </select>
+            (valueChange)="setType($event)"
+          />
         </div>
         <div class="ad__dates">
           <div class="ad__field">
@@ -268,11 +261,16 @@ export class AbsenceDialog {
   private readonly clock = inject(Clock);
   private readonly zone = inject(USER_TIME_ZONE);
 
-  protected readonly types = ABSENCE_TYPES;
-  protected readonly labels = ABSENCE_TYPE_LABELS;
+  protected readonly typeItems: readonly DropdownItem[] = ABSENCE_TYPES.map((t) => ({
+    value: t,
+    label: ABSENCE_TYPE_LABELS[t],
+  }));
   protected readonly noteMax = NOTE_MAX;
 
   protected readonly personId = signal(0);
+  protected readonly personItems = computed<DropdownItem[]>(() =>
+    this.people().map((p) => ({ value: String(p.userId), label: p.name })),
+  );
   protected readonly type = signal<AbsenceType>('VACATION');
   protected readonly start = signal<string | null>(null);
   protected readonly end = signal<string | null>(null);

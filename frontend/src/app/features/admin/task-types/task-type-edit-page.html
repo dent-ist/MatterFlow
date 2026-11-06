@@ -145,21 +145,17 @@
               <div class="field">
                 <label for="tt-colour">Colour</label>
                 <div class="tt__colour">
-                  <select
-                    id="tt-colour"
-                    class="text"
-                    name="colourKey"
-                    [ngModel]="model().colourKey"
-                    (ngModelChange)="patch({ colourKey: $event })"
-                    [attr.aria-invalid]="fieldErrors()['colourKey'] ? 'true' : null"
-                    aria-describedby="tt-colour-help"
+                  <mf-dropdown
+                    [neutralValue]="null"
+                    buttonId="tt-colour"
+                    label="Colour"
                     data-colour-select
-                  >
-                    <option value="">{{ defaultColourLabel }}</option>
-                    @for (c of colours; track c.key) {
-                      <option [value]="c.key">{{ c.label }}</option>
-                    }
-                  </select>
+                    describedBy="tt-colour-help"
+                    [items]="colourItems"
+                    [value]="model().colourKey"
+                    [invalid]="!!fieldErrors()['colourKey']"
+                    (valueChange)="patch({ colourKey: $event })"
+                  />
                   <mf-task-type-chip
                     class="tt__preview"
                     [iconKey]="model().iconKey"

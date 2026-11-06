@@ -152,9 +152,10 @@
 /* The Task Type tile: the chip and the name, and "Change Type" at the end of the same line (the one place the type is shown, D-44j). */
 .ct__tile-type {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--mf-s2);
+  gap: 0 var(--mf-s2);
   min-width: 0;
 }
 
@@ -163,6 +164,11 @@
   align-items: center;
   gap: var(--mf-s2);
   min-width: 0;
+}
+
+/* The name stays on one line; when the tile is too narrow for it and the button, the button goes under it. */
+.ct__tile-id .ct__tile-value {
+  white-space: nowrap;
 }
 
 .ct__strip-note {

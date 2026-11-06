@@ -1,3 +1,4 @@
+import { ddOptionTexts, ddText } from '../../../testing/dropdown-testing.spec-util';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
@@ -168,13 +169,9 @@ describe('ReportEditorPage (#713, #714)', () => {
       expect(q('[data-status]').textContent).toBe('Inactive');
       expect(q('[data-state-line]').textContent).toContain('Version 3');
       expect(q<HTMLInputElement>('#rep-name').value).toBe('Overdue tasks');
-      expect(q<HTMLSelectElement>('#rep-category').selectedOptions[0].textContent).toContain(
-        'Task follow-up',
-      );
+      expect(ddText(el(), 'Category')).toContain('Task follow-up');
       // An inactive category is not offered for a different report.
-      expect(
-        [...el().querySelectorAll('#rep-category option')].map((o) => o.textContent!.trim()),
-      ).toEqual(['Task follow-up', 'Finance']);
+      expect(ddOptionTexts(el(), 'Category')).toEqual(['Task follow-up', 'Finance']);
       expect(
         [...el().querySelectorAll('[role=tab]')].map((t) =>
           t.textContent!.replace(/\s+/g, ' ').trim(),

@@ -1,3 +1,4 @@
+import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { AssetTypesClient, FormsClient } from '../../../api/generated/api-client';
@@ -174,7 +175,7 @@ describe('AssetTypeRecordPage', () => {
     });
 
     it('has a colour choice with a live solid chip preview and saves the colour (UI-22)', async () => {
-      const select = q<HTMLSelectElement>('[data-colour-select]');
+      const select = ddSelect(el(), 'Colour');
       expect(select.options).toHaveLength(11);
       expect(q('[data-preview]').getAttribute('data-colour')).toBeTruthy();
       select.value = 'rose';
@@ -318,9 +319,9 @@ describe('AssetTypeRecordPage', () => {
   });
 
   describe('the Size card (epic #851, issue #867)', () => {
-    const sizeField = (): HTMLSelectElement => q<HTMLSelectElement>('[data-size-field]');
-    const sizeUnit = (): HTMLSelectElement => q<HTMLSelectElement>('[data-size-unit]');
-    const pick = async (select: HTMLSelectElement, value: string): Promise<void> => {
+    const sizeField = () => ddSelect(el(), 'Size Field');
+    const sizeUnit = () => ddSelect(el(), 'Unit');
+    const pick = async (select: ReturnType<typeof ddSelect>, value: string): Promise<void> => {
       select.value = value;
       select.dispatchEvent(new Event('change'));
       await settle(fixture);

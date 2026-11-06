@@ -2,6 +2,7 @@ import { Page } from '@playwright/test';
 import { Api, Json } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { asDropdown } from '../support/dropdown';
 import { SIZES, noHorizontalScroll, shot } from '../support/screens';
 import { uid } from '../support/seed';
 
@@ -203,7 +204,7 @@ test.describe('the editor (#713 to #715)', () => {
     const role = await personas.create({ label: 'rp-runner', permissions: ['Report.Run'] });
     await page.goto('/admin/reports/new');
     await page.locator('#rep-name').fill(reportName('Created'));
-    await page.locator('#rep-category').selectOption({ label: s.category.name });
+    await asDropdown(page.locator('#rep-category')).selectOption({ label: s.category.name });
 
     // A query that is not one SELECT is blocked, with the line and column of the problem.
     await typeQuery(page, 'SELECT 1;\nDROP TABLE dbo.Pod');
@@ -219,7 +220,7 @@ test.describe('the editor (#713 to #715)', () => {
     await awaitAnalysis(page);
     await tab(page, /^Parameters/).click();
     await expect(page.locator('[data-parameter="MAX"]')).toBeVisible();
-    await page.locator('#param-0-type').selectOption('number');
+    await asDropdown(page.locator('#param-0-type')).selectOption('number');
     await page.locator('#param-0-label').fill('Largest value');
     await page.getByRole('button', { name: 'Create report' }).click();
     await expect(page).toHaveURL(/\/admin\/reports\/\d+$/);

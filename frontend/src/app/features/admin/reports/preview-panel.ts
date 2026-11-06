@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { PreviewResponse } from '../../../api/generated/api-client';
 import { ParamDef } from './report-model';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { IntPipe } from '../../../shared/ui/number-format';
 
 /** What the author typed for each parameter of the preview (text; the parts of a range have their own keys). */
@@ -58,7 +59,7 @@ export function sampleValuesOf(
  */
 @Component({
   selector: 'mf-preview-panel',
-  imports: [IntPipe],
+  imports: [Dropdown, IntPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="pp" aria-labelledby="pp-title" data-preview-panel>
@@ -94,15 +95,14 @@ export function sampleValuesOf(
             } @else if (d.type === 'yesNo') {
               <div class="pp__field">
                 <label class="mf-label mf-label--sm" [for]="'pp-' + d.name">{{ d.label }}</label>
-                <select
-                  class="mf-control mf-control--fill"
-                  [id]="'pp-' + d.name"
-                  (change)="set(d.name, $any($event.target).value)"
-                >
-                  <option value="" [selected]="!texts()[d.name]">Default</option>
-                  <option value="true" [selected]="texts()[d.name] === 'true'">Yes</option>
-                  <option value="false" [selected]="texts()[d.name] === 'false'">No</option>
-                </select>
+                <mf-dropdown
+                  [neutralValue]="null"
+                  [buttonId]="'pp-' + d.name"
+                  [label]="d.label"
+                  [items]="yesNoItems"
+                  [value]="texts()[d.name] ?? ''"
+                  (valueChange)="set(d.name, $event)"
+                />
               </div>
             } @else {
               <div class="pp__field">
@@ -299,6 +299,11 @@ export class PreviewPanel {
   readonly blocked = input('');
   readonly run = output<Record<string, unknown>>();
 
+  protected readonly yesNoItems: DropdownItem[] = [
+    { value: '', label: 'Default' },
+    { value: 'true', label: 'Yes' },
+    { value: 'false', label: 'No' },
+  ];
   protected readonly texts = signal<SampleTexts>({});
   protected readonly values = computed(() => sampleValuesOf(this.defs(), this.texts()));
 

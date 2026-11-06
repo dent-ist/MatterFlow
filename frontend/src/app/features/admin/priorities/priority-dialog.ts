@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { PriorityView } from '../../../api/generated/api-client';
 import { hasReadableText, isHexColor } from '../../../shared/ui/color-contrast';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { LookupDialog } from '../../../shared/ui/lookup-dialog';
 import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { TextField } from '../../../shared/ui/text-field';
@@ -49,7 +50,7 @@ const DEFAULT_CUSTOM_COLOUR = '#336699'; // theme-colour-ok: starting value of a
  */
 @Component({
   selector: 'mf-priority-dialog',
-  imports: [LookupDialog, TextField, PriorityBadge],
+  imports: [Dropdown, LookupDialog, TextField, PriorityBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .pd-color {
@@ -94,18 +95,15 @@ const DEFAULT_CUSTOM_COLOUR = '#336699'; // theme-colour-ok: starting value of a
       <div class="pd-color">
         <label class="mf-label" for="priority-color">Color</label>
         <div class="pd-color-row">
-          <select
-            id="priority-color"
-            class="mf-control"
+          <mf-dropdown
+            [neutralValue]="null"
+            buttonId="priority-color"
+            label="Color"
             data-color
+            [items]="colorItems"
             [value]="choice()"
-            (change)="pick($any($event.target).value)"
-          >
-            @for (c of tokens; track c.value) {
-              <option [value]="c.value" [selected]="choice() === c.value">{{ c.label }}</option>
-            }
-            <option value="custom" [selected]="choice() === 'custom'">Custom Color</option>
-          </select>
+            (valueChange)="pick($event)"
+          />
           @if (choice() === 'custom') {
             <input
               id="priority-custom"
@@ -154,6 +152,10 @@ export class PriorityDialog {
   protected readonly tokens = PRIORITY_COLOR_TOKENS;
 
   protected readonly label = signal('');
+  protected readonly colorItems: DropdownItem[] = [
+    ...PRIORITY_COLOR_TOKENS.map((c) => ({ value: c.value, label: c.label })),
+    { value: 'custom', label: 'Custom Color' },
+  ];
   protected readonly choice = signal<string>('normal');
   /** The starting value of the custom colour field: a user-picked data colour, not a theme colour. */
   protected readonly custom = signal(DEFAULT_CUSTOM_COLOUR);

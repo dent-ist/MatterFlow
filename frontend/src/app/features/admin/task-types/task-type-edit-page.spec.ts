@@ -1,3 +1,4 @@
+import { ddOptionTexts, ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
@@ -489,7 +490,7 @@ describe('TaskTypeEditPage', () => {
 
   describe('colour and expected turnaround (#853)', () => {
     async function pickColour(value: string): Promise<void> {
-      const select = q<HTMLSelectElement>('[data-colour-select]');
+      const select = ddSelect(el(), 'Colour');
       select.value = value;
       select.dispatchEvent(new Event('change'));
       await settle(fixture);
@@ -504,7 +505,7 @@ describe('TaskTypeEditPage', () => {
     beforeEach(() => open('1'));
 
     it('offers the neutral default and the ten named colours, with a live preview of the badge', async () => {
-      const options = all('[data-colour-select] option').map((o) => o.textContent!.trim());
+      const options = ddOptionTexts(el(), 'Colour');
       expect(options).toHaveLength(11);
       expect(options[0]).toBe('Neutral (default)');
       expect(options).toContain('Teal');

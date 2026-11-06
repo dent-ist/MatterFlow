@@ -1,3 +1,4 @@
+import { ddChoose, ddValue } from '../../../testing/dropdown-testing.spec-util';
 import { TASK_TYPE_COLOURS } from '../../../shared/task-type/task-type-colours';
 import { aLookupItem } from '../../../shared/assignees/assignee-testing';
 import { EMAIL_PANEL_STORAGE_KEY } from '../../../shared/ui/email-intake';
@@ -240,10 +241,14 @@ async function pickType(h: Harness, name = 'Data Processing'): Promise<void> {
   await settle(h.fixture);
 }
 
+const DD_LABELS: Record<string, string> = {
+  '#ct-priority': 'Priority',
+  '#ct-pod': 'Pod',
+  '#ct-project': 'Project',
+};
+
 async function choose(h: Harness, selector: string, value: string): Promise<void> {
-  const select = field<HTMLSelectElement>(h, selector);
-  select.value = value;
-  select.dispatchEvent(new Event('change'));
+  ddChoose(h.el, DD_LABELS[selector], value);
   await settle(h.fixture);
 }
 
@@ -822,8 +827,8 @@ describe('CreateTaskPage', () => {
     expect(h.router.navigateByUrl).not.toHaveBeenCalled();
     expect(field<HTMLInputElement>(h, '#ct-title').value).toBe('');
     expect(field(h, '[data-type-name]').textContent).toBe('Data Processing');
-    expect(field<HTMLSelectElement>(h, '#ct-pod').value).toBe('4');
-    expect(field<HTMLSelectElement>(h, '#ct-project').value).toBe('3');
+    expect(ddValue(h.el, 'Pod')).toBe('4');
+    expect(ddValue(h.el, 'Project')).toBe('3');
     expect(field(h, '[data-chosen]').textContent).toContain('00343-00012');
   });
 

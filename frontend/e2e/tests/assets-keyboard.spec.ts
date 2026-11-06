@@ -1,4 +1,5 @@
 import { Page, TestInfo } from '@playwright/test';
+import { dropdownById } from '../support/dropdown';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { SIZES, noHorizontalScroll } from '../support/screens';
@@ -238,7 +239,7 @@ test.describe('Assets keyboard audit (WP-AS6)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/assets/new?matterId=${world.matter.matterId}`);
     await expect(page.locator('#asset-type')).toBeVisible();
-    await page.locator('#asset-type').selectOption(String(typeId));
+    await dropdownById(page, 'asset-type').selectOption(String(typeId));
     await page.locator('#asset-name').focus();
     await page.keyboard.type(`Typed ${uid()}`);
     const url = page.url();

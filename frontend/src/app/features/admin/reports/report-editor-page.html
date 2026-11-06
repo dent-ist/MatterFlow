@@ -155,26 +155,16 @@
                 <label class="mf-label" for="rep-category"
                   >Category <span class="mf-req">(required)</span></label
                 >
-                <select
-                  id="rep-category"
-                  class="mf-control mf-control--fill"
-                  (change)="patchDetails({ categoryId: +$any($event.target).value || null })"
-                  [attr.aria-invalid]="fieldErrors()['categoryId'] ? 'true' : null"
-                >
-                  @if (details().categoryId === null) {
-                    <option value="" selected>Choose a category</option>
-                  }
-                  @for (c of categories(); track c.categoryId) {
-                    @if (c.isActive || c.categoryId === details().categoryId) {
-                      <option
-                        [value]="c.categoryId"
-                        [selected]="c.categoryId === details().categoryId"
-                      >
-                        {{ c.name }}{{ c.isActive ? '' : ' (inactive)' }}
-                      </option>
-                    }
-                  }
-                </select>
+                <mf-dropdown
+                  [neutralValue]="null"
+                  buttonId="rep-category"
+                  label="Category"
+                  placeholder="Choose a category"
+                  [items]="categoryItems()"
+                  [value]="details().categoryId === null ? '' : '' + details().categoryId"
+                  [invalid]="!!fieldErrors()['categoryId']"
+                  (valueChange)="patchDetails({ categoryId: +$event || null })"
+                />
                 @if (categories().length === 0) {
                   <p class="rep__hint">
                     There is no category yet. Add one on the Categories tab of the Reports list.

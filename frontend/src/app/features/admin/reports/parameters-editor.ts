@@ -15,6 +15,7 @@ import {
   placeholderNames,
   withType,
 } from './report-model';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { IntPipe } from '../../../shared/ui/number-format';
 
 /** The default as typed: a number for a number, a boolean for yes/no, text otherwise (a keyword such as `today` stays text). */
@@ -75,16 +76,14 @@ export function parseDefault(def: ParamDef, text: string): unknown {
         <div class="pe__grid">
           <div class="pe__field">
             <label class="mf-label mf-label--sm" [for]="id(i, 'type')">Type</label>
-            <select
-              class="mf-control mf-control--fill"
-              [id]="id(i, 'type')"
+            <mf-dropdown
+              [neutralValue]="null"
+              [buttonId]="id(i, 'type')"
+              label="Type"
+              [items]="typeItems"
               [value]="d.type"
-              (change)="setType(i, $any($event.target).value)"
-            >
-              @for (t of types; track t.value) {
-                <option [value]="t.value" [selected]="t.value === d.type">{{ t.label }}</option>
-              }
-            </select>
+              (valueChange)="setType(i, $event)"
+            />
           </div>
           <div class="pe__field">
             <label class="mf-label mf-label--sm" [for]="id(i, 'label')">Label</label>
@@ -192,17 +191,14 @@ export function parseDefault(def: ParamDef, text: string): unknown {
             <div class="pe__grid" data-lookup-settings>
               <div class="pe__field">
                 <label class="mf-label mf-label--sm" [for]="id(i, 'kind')">Searches</label>
-                <select
-                  class="mf-control mf-control--fill"
-                  [id]="id(i, 'kind')"
-                  (change)="patch(i, { lookupKind: $any($event.target).value })"
-                >
-                  @for (k of kinds; track k.value) {
-                    <option [value]="k.value" [selected]="k.value === d.lookupKind">
-                      {{ k.label }}
-                    </option>
-                  }
-                </select>
+                <mf-dropdown
+                  [neutralValue]="null"
+                  [buttonId]="id(i, 'kind')"
+                  label="Searches"
+                  [items]="kindItems"
+                  [value]="d.lookupKind ?? ''"
+                  (valueChange)="patch(i, { lookupKind: $any($event) })"
+                />
               </div>
               <label class="pe__check">
                 <input
@@ -228,25 +224,25 @@ export function parseDefault(def: ParamDef, text: string): unknown {
       <div class="pe__grid" data-choice-settings>
         <div class="pe__field">
           <label class="mf-label mf-label--sm" [for]="id(i, 'source')">Choices Come From</label>
-          <select
-            class="mf-control mf-control--fill"
-            [id]="id(i, 'source')"
-            (change)="patch(i, { optionsKind: $any($event.target).value })"
-          >
-            <option value="fixed" [selected]="d.optionsKind === 'fixed'">A Fixed List</option>
-            <option value="query" [selected]="d.optionsKind === 'query'">A SELECT</option>
-          </select>
+          <mf-dropdown
+            [neutralValue]="null"
+            [buttonId]="id(i, 'source')"
+            label="Choices Come From"
+            [items]="sourceItems"
+            [value]="d.optionsKind ?? 'fixed'"
+            (valueChange)="patch(i, { optionsKind: $any($event) })"
+          />
         </div>
         <div class="pe__field">
           <label class="mf-label mf-label--sm" [for]="id(i, 'vtype')">Value Is</label>
-          <select
-            class="mf-control mf-control--fill"
-            [id]="id(i, 'vtype')"
-            (change)="patch(i, { valueType: $any($event.target).value })"
-          >
-            <option value="text" [selected]="(d.valueType ?? 'text') === 'text'">Text</option>
-            <option value="int" [selected]="d.valueType === 'int'">Whole Number</option>
-          </select>
+          <mf-dropdown
+            [neutralValue]="null"
+            [buttonId]="id(i, 'vtype')"
+            label="Value Is"
+            [items]="valueTypeItems"
+            [value]="d.valueType ?? 'text'"
+            (valueChange)="patch(i, { valueType: $any($event) })"
+          />
         </div>
       </div>
       @if (d.optionsKind === 'fixed') {
@@ -334,7 +330,7 @@ export function parseDefault(def: ParamDef, text: string): unknown {
       }
     </ng-template>
   `,
-  imports: [Badge, IntPipe, NgTemplateOutlet],
+  imports: [Badge, Dropdown, IntPipe, NgTemplateOutlet],
   styles: `
     :host {
       display: grid;
@@ -450,8 +446,22 @@ export class ParametersEditor {
   readonly reportId = input<number | null>(null);
   readonly defsChange = output<ParamDef[]>();
 
-  protected readonly types = PARAM_TYPES;
-  protected readonly kinds = LOOKUP_KINDS;
+  protected readonly typeItems: DropdownItem[] = PARAM_TYPES.map((t) => ({
+    value: t.value,
+    label: t.label,
+  }));
+  protected readonly kindItems: DropdownItem[] = LOOKUP_KINDS.map((k) => ({
+    value: k.value,
+    label: k.label,
+  }));
+  protected readonly sourceItems: DropdownItem[] = [
+    { value: 'fixed', label: 'A Fixed List' },
+    { value: 'query', label: 'A SELECT' },
+  ];
+  protected readonly valueTypeItems: DropdownItem[] = [
+    { value: 'text', label: 'Text' },
+    { value: 'int', label: 'Whole Number' },
+  ];
   protected readonly testing = signal('');
   protected readonly tested = signal<Record<string, ChoiceTestResponse>>({});
   protected readonly typeLabel = TYPE_LABEL;

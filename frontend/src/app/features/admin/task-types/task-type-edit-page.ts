@@ -26,6 +26,7 @@ import {
 import { TaskTypeView, TaskTypesApi } from './task-types-api';
 import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
 import { CharCounter } from '../../../shared/ui/char-counter';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { DIALOG_COPY, impactLine } from '../shared/dialog-copy';
 import { PageTitle, shortTitleText } from '../../../core/title/page-title';
@@ -127,6 +128,7 @@ const workflowsKey = (m: Model): string =>
   selector: 'mf-task-type-edit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    Dropdown,
     NumericDatePipe,
     ActivityDrawer,
     CharCounter,
@@ -235,6 +237,10 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
     return !!f && (f.published !== null || f.draftVersionNo !== null || f.retired);
   });
   protected readonly colours = TASK_TYPE_COLOURS;
+  protected readonly colourItems: DropdownItem[] = [
+    { value: '', label: TASK_TYPE_COLOUR_DEFAULT_LABEL },
+    ...TASK_TYPE_COLOURS.map((c) => ({ value: c.key, label: c.label })),
+  ];
   protected readonly defaultColourLabel = TASK_TYPE_COLOUR_DEFAULT_LABEL;
   protected readonly targetMin = TASK_TYPE_TARGET_DAYS_MIN;
   protected readonly targetMax = TASK_TYPE_TARGET_DAYS_MAX;

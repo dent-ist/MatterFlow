@@ -4,6 +4,7 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { provideCalendarFixtures } from '../../../shared/testing/calendar-testing';
 import { settle } from '../../../shared/testing/org-testing';
+import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { HolidaysAdmin } from './holidays-admin';
 import { CalendarThresholdsForm, validateThresholds } from './thresholds-form';
 
@@ -105,13 +106,13 @@ describe('HolidaysAdmin (Settings > Holidays)', () => {
     const f = await create();
     const save = q<HTMLButtonElement>(f, '[data-save-defaults]');
     expect(save.disabled).toBe(true);
-    const pod = q<HTMLSelectElement>(f, '[data-pod-default="1"]');
+    const pod = ddSelect(f.nativeElement, 'Review');
     pod.value = '2';
     pod.dispatchEvent(new Event('change'));
     await settle(f);
     expect(save.disabled).toBe(false);
     // An "applies to everyone" calendar is not a choice for a person or a pod.
-    expect(Array.from(pod.options).map((o) => o.textContent?.trim())).toEqual([
+    expect(pod.options.map((o) => o.textContent.trim())).toEqual([
       'Firm Default',
       'US Holiday',
       'UK Holiday',

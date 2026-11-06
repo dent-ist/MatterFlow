@@ -1,4 +1,5 @@
 import { Locator, Page } from '@playwright/test';
+import { labelledDropdown } from '../support/dropdown';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 
@@ -42,7 +43,7 @@ async function addEntry(
   await page.getByRole('button', { name: 'Add Out of Office' }).first().click();
   const dialog = page.getByRole('dialog', { name: 'Add Out of Office' });
   await expect(dialog).toBeVisible();
-  if (opts.type) await dialog.getByLabel('Type').selectOption({ label: opts.type });
+  if (opts.type) await labelledDropdown(dialog, 'Type').selectOption({ label: opts.type });
   await fillDate(dialog.locator('#ad-start'), opts.start);
   if (opts.end) await fillDate(dialog.locator('#ad-end'), opts.end);
   if (opts.note) await dialog.getByLabel('Note').fill(opts.note);

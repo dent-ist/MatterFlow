@@ -1,3 +1,4 @@
+import { ddButton } from '../../../testing/dropdown-testing.spec-util';
 import { TestBed } from '@angular/core/testing';
 
 vi.setConfig({ testTimeout: 60000 });
@@ -329,15 +330,18 @@ describe('TaskDetailPage header', () => {
     await click(fixture, q(el, '[data-option=HOLD]'));
     await fixture.whenStable();
     fixture.detectChanges();
-    const select = body().querySelector<HTMLSelectElement>('#task-hold-reason')!;
-    expect(Array.from(select.options).map((o) => o.textContent?.trim())).toEqual([
+    // Open the list, read it and choose from it in one go (closing it with Escape would reach the dialog in jsdom).
+    ddButton(body(), 'Hold Reason').click();
+    const options = Array.from(
+      document.body.querySelectorAll<HTMLElement>('.dd-panel [role="option"]'),
+    );
+    expect(options.map((o) => o.textContent?.trim())).toEqual([
       'Choose a reason',
       'Waiting for client data',
     ]);
     // An optional field carries no mark (D-35, #1156).
     expect(body().querySelector('[data-hold-reason-field] label')!.textContent).not.toContain('(');
-    select.value = '3';
-    select.dispatchEvent(new Event('change'));
+    options.find((o) => o.getAttribute('data-value') === '3')!.click();
     const area = body().querySelector<HTMLTextAreaElement>('#task-reason')!;
     area.value = 'Waiting for the vendor';
     area.dispatchEvent(new Event('input'));
