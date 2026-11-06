@@ -141,7 +141,7 @@ button.p-button:disabled {
 /* A text button that wraps a chip or pill (a priority pill that opens its dialog): no padding, no fill, the pill's own radius; hover draws a 1 px outline
    in the link colour around the pill. The focus ring is the global one. Add it to `mf-btn mf-btn--text` and give the button an aria-label. */
 .mf-btn--text.mf-btn--chip {
-  min-height: 0;
+  min-height: var(--mf-chip-h);
   padding: 0;
   border-radius: var(--mf-radius-pill);
 }
