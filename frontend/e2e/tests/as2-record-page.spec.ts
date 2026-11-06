@@ -204,7 +204,7 @@ test.describe('Asset record page (WP-AS2)', () => {
     await expect(page).toHaveURL(/\/tasks\/\d+/);
   });
 
-  test('Details: the Asset and "<Type> fields (n)" sections; no schema request that must fail without Task.View; the matter link follows Matter.View', async ({
+  test('Details: the Asset and "<Type> Fields" card with a count chip; no schema request that must fail without Task.View; the matter link follows Matter.View', async ({
     page,
     seed,
     admin,
@@ -237,9 +237,10 @@ test.describe('Asset record page (WP-AS2)', () => {
     // Admin: both sections, the values, the matter link; axe and no sideways scroll at four sizes.
     await page.goto(`/assets/${asset.assetId}`);
     await expect(page.locator('[data-section="asset"]')).toContainText('First batch');
-    await expect(page.locator('[data-type-fields-title]')).toContainText(
-      `Fields ${token} fields (2)`,
+    await expect(page.locator('[data-type-fields-title] [data-details-title]')).toHaveText(
+      `Fields ${token} Fields`,
     );
+    await expect(page.locator('[data-type-fields-title] [data-details-count]')).toHaveText('2');
     await expect(page.locator('[data-type-fields]')).toContainText('WS-8841');
     await expect(page.locator('[data-details] [data-matter] a')).toHaveAttribute(
       'href',
@@ -249,11 +250,11 @@ test.describe('Asset record page (WP-AS2)', () => {
       await expect(page.locator('[data-type-fields]')).toContainText('WS-8841');
     });
 
-    // At 1366 the two sections sit side by side; at 768 they are one column.
+    // The two cards are stacked (D-44f): the type's fields card sits under the Details card at every size.
     await page.setViewportSize({ width: 1366, height: 768 });
     const a = (await page.locator('[data-section="asset"]').boundingBox())!;
     const f = (await page.locator('[data-section="fields"]').boundingBox())!;
-    expect(f.x).toBeGreaterThan(a.x + a.width - 2);
+    expect(f.y).toBeGreaterThan(a.y + a.height - 2);
     await page.setViewportSize({ width: 768, height: 1024 });
     const a2 = (await page.locator('[data-section="asset"]').boundingBox())!;
     const f2 = (await page.locator('[data-section="fields"]').boundingBox())!;

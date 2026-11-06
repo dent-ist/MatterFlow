@@ -125,7 +125,7 @@ const BONES: Record<string, string> = {
     }
     /* The type cell never grows its column: the name is cut with an ellipsis (the full name is the tooltip). */
     td.as-type {
-      max-width: 10rem;
+      max-width: var(--mf-col-type-w);
     }
     .as-tycell {
       display: flex;
@@ -168,6 +168,9 @@ const BONES: Record<string, string> = {
     .as-check {
       padding-inline: var(--mf-s1);
       text-align: center;
+    }
+    .as-check input {
+      margin: 0;
     }
     .as-size {
       white-space: nowrap;
@@ -562,12 +565,13 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
       key: 'type',
       label: 'Type',
       sort: 'assetType',
-      width: '10rem',
-      minWidth: '10rem',
+      // The chip and the type name (D-43a): 128 px, so the default columns fit the 1366 frame (#1249).
+      width: 'var(--mf-col-type-w)',
+      minWidth: 'var(--mf-col-type-w)',
     },
     // The spring: no width, so it takes the free room in every state.
     { key: 'name', label: 'Name', locked: true, sort: 'displayName', minWidth: '200px' },
-    { key: 'matter', label: 'CM Number', sort: 'matter', width: '9rem', minWidth: '9rem' },
+    { key: 'matter', label: 'CM Number', sort: 'matter', width: '8.8rem', minWidth: '8.8rem' },
     {
       key: 'size',
       label: 'Size',
@@ -590,7 +594,8 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
           },
         ]
       : []),
-    { key: 'externalReference', label: 'External Reference', width: '10rem', minWidth: '10rem' },
+    // 168 px: the heading "External Reference" is 143 px of text plus 24 px of padding, so it stays on one line (#1249; the 150 px of the issue wrapped).
+    { key: 'externalReference', label: 'External Reference', width: '168px', minWidth: '168px' },
     // The chip is shown whole: "Pending Disposition" is 154 px, so the column is wider than the 140 px Status of the other lists (D-43 deviation, to be ruled).
     {
       key: 'status',

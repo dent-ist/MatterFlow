@@ -37,14 +37,17 @@ describe('AssetDetailsTab', () => {
     await settle(fixture);
   }
 
-  it('has an Asset section and a "<Type> fields (n)" section with the stored values and the version', async () => {
+  it('has a Details card and a "<Type> Fields" card with a count chip with the stored values and the version', async () => {
     await create(['Asset.View', 'Matter.View', 'Client.View', 'Task.View']);
 
     expect(forms.getFormVersionSchema).toHaveBeenCalledWith(21);
-    expect(el().querySelector('[data-section="asset"] h3')?.textContent).toContain('Asset');
+    expect(el().querySelector('[data-section="asset"] h2')?.textContent).toBe('Details');
     const fieldCount = aFormVersion().fields.length;
-    expect(el().querySelector('[data-type-fields-title]')?.textContent?.replace(/\s+/g, ' ')).toBe(
-      ` Document Set Fields (${fieldCount}) `,
+    expect(el().querySelector('[data-type-fields-title] h2')?.textContent).toBe(
+      'Document Set Fields',
+    );
+    expect(el().querySelector('[data-type-fields-title] mf-count-chip')?.textContent?.trim()).toBe(
+      String(fieldCount),
     );
     expect(el().querySelector('[data-type-fields]')?.textContent).toContain('WS-8841');
     expect(el().querySelector('[data-matter] a.mf-ref')?.getAttribute('href')).toBe('/matters/7');

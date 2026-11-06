@@ -19,6 +19,7 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { FORM_SCHEMA_READ_PERMISSIONS, toFormDefinition } from '../../../shared/forms/form-schema';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
 import { CopyButton } from '../../../shared/ui/copy-button';
+import { DetailField, DetailsCard } from '../../../shared/ui/details-card';
 import { StatusChip } from '../../../shared/ui/status-chip';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { AssetDispositionHistory } from '../disposition/asset-disposition-history';
@@ -28,9 +29,9 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
 /**
  * The Details tab of the asset record page (UX S08): the matter, type, external reference (a link when it is a URL, with a copy button),
- * description and dates, then the type-specific values read-only with the form version they were captured under (section "<Type> fields (n)").
+ * description and dates in the shared Details card (D-44f), then the type-specific values read-only with the form version they were captured under in a second card titled "<Type> Fields" with a count chip.
  * The matter reference is a link only for a person with `Matter.View` and the schema is requested only when the endpoint would answer it
- * (`FORM_SCHEMA_READ_PERMISSIONS`); otherwise one muted sentence stands in for the fields (decision V). One column up to 1100 px, two above.
+ * (`FORM_SCHEMA_READ_PERMISSIONS`); otherwise one muted sentence stands in for the fields (decision V).
  */
 @Component({
   selector: 'mf-asset-details-tab',
@@ -41,136 +42,112 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
     DynamicForm,
     StatusChip,
     AssetDispositionHistory,
+    DetailsCard,
+    DetailField,
   ],
   providers: [AssetPickerContext],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    <h2 class="pg-sr">Details</h2>
     <div class="ad__cols">
-      <section class="ad__sec" aria-labelledby="ad-asset-h" data-section="asset">
-        <h3 id="ad-asset-h" class="ad__subtitle">Asset</h3>
-        <dl class="ad__dl" data-details>
-          <div class="ad__f" data-matter>
-            <dt>Matter</dt>
-            <dd>
-              <mf-matter-ref [value]="asset().matterRef" [link]="matterLink()" />
-              {{ asset().matterName }}
-            </dd>
-          </div>
-          <div class="ad__f" data-type>
-            <dt>Type</dt>
-            <dd>{{ asset().assetTypeName }}</dd>
-          </div>
-          <div class="ad__f" data-disposition>
-            <dt>Disposition</dt>
-            <dd>
-              <mf-status-chip kind="disposition" [code]="disposition().code" />
-              @if (asset().dispositionChangedAtUtc) {
-                <span class="ad__muted"> since {{ asset().dispositionChangedAtUtc | mfNum }}</span>
-              }
-              @if (asset().dispositionNote) {
-                <span class="ad__muted" data-disposition-note>
-                  &ldquo;{{ asset().dispositionNote }}&rdquo;</span
-                >
-              }
-            </dd>
-          </div>
-          @if (asset().sizeValue !== undefined && asset().sizeValue !== null) {
-            <div class="ad__f" data-size>
-              <dt>Size</dt>
-              <dd>{{ asset().sizeValue }} {{ asset().sizeUnit }}</dd>
-            </div>
+      <mf-details-card title="Details" data-section="asset" data-details>
+        <div mfDetailField label="Matter" data-matter>
+          <mf-matter-ref [value]="asset().matterRef" [link]="matterLink()" />
+          <span>{{ asset().matterName }}</span>
+        </div>
+        <div mfDetailField label="Type" data-type>{{ asset().assetTypeName }}</div>
+        <div mfDetailField label="Disposition" data-disposition>
+          <mf-status-chip kind="disposition" [code]="disposition().code" />
+          @if (asset().dispositionChangedAtUtc) {
+            <span class="ad__muted"> since {{ asset().dispositionChangedAtUtc | mfNum }}</span>
           }
-          <div class="ad__f" data-external-reference>
-            <dt>External Reference</dt>
-            <dd>
-              @if (!asset().externalReference) {
-                Not provided
-              } @else {
-                <!-- One line with an ellipsis (the whole value is the tooltip and the copy button copies all of it). -->
-                <span class="ad__ref">
-                  @if (isUrl(asset().externalReference!)) {
-                    <a
-                      class="mf-link ad__ref-text"
-                      [href]="asset().externalReference"
-                      [attr.title]="asset().externalReference"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      >{{ asset().externalReference }}</a
-                    >
-                  } @else {
-                    <span class="pg-mono ad__ref-text" [attr.title]="asset().externalReference">{{
-                      asset().externalReference
-                    }}</span>
-                  }
-                  <mf-copy-button [text]="asset().externalReference!" label="external reference" />
-                </span>
-              }
-            </dd>
-          </div>
-          <div class="ad__f">
-            <dt>Description</dt>
-            <dd>
-              @if (asset().description) {
-                <!-- Six lines, then "Show More" (only when the text is longer than that). -->
-                <div
-                  #description
-                  id="ad-description"
-                  class="ad__desc"
-                  [class.ad__desc--clamped]="!expanded()"
-                  data-description
-                >
-                  {{ asset().description }}
-                </div>
-                @if (overflows() || expanded()) {
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--text ad__more"
-                    aria-controls="ad-description"
-                    [attr.aria-expanded]="expanded()"
-                    data-description-toggle
-                    (click)="expanded.set(!expanded())"
-                  >
-                    {{ expanded() ? 'Show Less' : 'Show More' }}
-                  </button>
-                }
-              } @else {
-                Not provided
-              }
-            </dd>
-          </div>
-          <div class="ad__f" data-disposition-history-row>
-            <dt>Disposition History</dt>
-            <dd>
-              <mf-asset-disposition-history
-                [assetId]="asset().assetId"
-                [version]="asset().rowVersion"
-              />
-            </dd>
-          </div>
-          <div class="ad__f">
-            <dt>Created</dt>
-            <dd>{{ asset().createdAtUtc | mfNum }}</dd>
-          </div>
-          @if (asset().modifiedAtUtc) {
-            <div class="ad__f">
-              <dt>Last Updated</dt>
-              <dd>{{ asset().modifiedAtUtc | mfNum }}</dd>
-            </div>
+          @if (asset().dispositionNote) {
+            <span class="ad__muted" data-disposition-note>
+              &ldquo;{{ asset().dispositionNote }}&rdquo;</span
+            >
           }
-        </dl>
-      </section>
-      <section class="ad__sec" aria-labelledby="ad-values-h" data-section="fields">
-        @if (schema(); as definition) {
-          <h3 id="ad-values-h" class="ad__subtitle" data-type-fields-title>
-            {{ asset().assetTypeName }} Fields ({{ definition.fields.length }})
-          </h3>
+        </div>
+        @if (asset().sizeValue !== undefined && asset().sizeValue !== null) {
+          <div mfDetailField label="Size" data-size>
+            {{ asset().sizeValue }} {{ asset().sizeUnit }}
+          </div>
+        }
+        <div mfDetailField label="External Reference" data-external-reference>
+          @if (!asset().externalReference) {
+            Not provided
+          } @else {
+            <!-- One line with an ellipsis (the whole value is the tooltip and the copy button copies all of it). -->
+            <span class="ad__ref">
+              @if (isUrl(asset().externalReference!)) {
+                <a
+                  class="mf-link ad__ref-text"
+                  [href]="asset().externalReference"
+                  [attr.title]="asset().externalReference"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >{{ asset().externalReference }}</a
+                >
+              } @else {
+                <span class="pg-mono ad__ref-text" [attr.title]="asset().externalReference">{{
+                  asset().externalReference
+                }}</span>
+              }
+              <mf-copy-button [text]="asset().externalReference!" label="external reference" />
+            </span>
+          }
+        </div>
+        <div mfDetailField label="Created">{{ asset().createdAtUtc | mfNum }}</div>
+        @if (asset().modifiedAtUtc) {
+          <div mfDetailField label="Last Updated">{{ asset().modifiedAtUtc | mfNum }}</div>
+        }
+        <div mfDetailField label="Description" wide>
+          @if (asset().description) {
+            <!-- Six lines, then "Show More" (only when the text is longer than that). -->
+            <div
+              #description
+              id="ad-description"
+              class="ad__desc"
+              [class.ad__desc--clamped]="!expanded()"
+              data-description
+            >
+              {{ asset().description }}
+            </div>
+            @if (overflows() || expanded()) {
+              <button
+                type="button"
+                class="mf-btn mf-btn--text ad__more"
+                aria-controls="ad-description"
+                [attr.aria-expanded]="expanded()"
+                data-description-toggle
+                (click)="expanded.set(!expanded())"
+              >
+                {{ expanded() ? 'Show Less' : 'Show More' }}
+              </button>
+            }
+          } @else {
+            Not provided
+          }
+        </div>
+        <div mfDetailField label="Disposition History" wide data-disposition-history-row>
+          <mf-asset-disposition-history
+            [assetId]="asset().assetId"
+            [version]="asset().rowVersion"
+          />
+        </div>
+      </mf-details-card>
+      @if (schema(); as definition) {
+        <mf-details-card
+          [title]="asset().assetTypeName + ' Fields'"
+          [count]="definition.fields.length"
+          data-section="fields"
+          data-type-fields-title
+        >
           <div data-type-fields>
             <mf-dynamic-form [definition]="definition" [values]="values()" [readOnly]="true" />
           </div>
-        } @else {
-          <h3 id="ad-values-h" class="ad__subtitle">{{ asset().assetTypeName }} fields</h3>
+        </mf-details-card>
+      } @else {
+        <mf-details-card [title]="asset().assetTypeName + ' Fields'" data-section="fields">
           @if (hasForm() && !canReadSchema()) {
             <p class="pg-muted" data-fields-unavailable>
               Type fields are not available with your access.
@@ -178,8 +155,8 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
           } @else {
             <p class="pg-muted" data-no-fields>This asset has no type-specific values.</p>
           }
-        }
-      </section>
+        </mf-details-card>
+      }
     </div>
   `,
   styles: `
@@ -191,38 +168,14 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
-    .ad__dl {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
-      gap: var(--mf-s2) var(--mf-s4);
-      margin: 0;
-    }
-    .ad__f {
-      min-width: 0;
-    }
-    .ad__f dt {
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-      font-weight: 600;
-    }
-    .ad__f dd {
-      margin: 0;
-      overflow-wrap: anywhere;
-    }
-    /* One column up to 1100 px, two columns above: the Asset section and the type's fields side by side. */
+    /* The Details card, then the type's fields in a second card (D-44f): stacked, full width. */
     .ad__cols {
-      display: grid;
-      gap: var(--mf-s4);
-    }
-    @media (min-width: 1100px) {
-      .ad__cols {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      }
-    }
-    .ad__sec {
-      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--mf-s3);
     }
     .ad__ref {
+      flex: 1 1 0;
       display: flex;
       align-items: center;
       gap: var(--mf-s1);
@@ -243,10 +196,6 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 6;
       line-clamp: 6;
-    }
-    .ad__subtitle {
-      margin: 0 0 var(--mf-s2);
-      font-size: var(--mf-fs-md);
     }
   `,
 })

@@ -90,6 +90,30 @@
   overflow-wrap: anywhere;
 }
 
+/* A read-only form is a field card of a record page (D-44f): two columns, a 13 px muted label above a 14 px value, 16 px row gap, 24 px column gap, like the Details card. */
+.mf-form--readonly {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mf-s4, 1rem) var(--mf-s5, 1.5rem);
+  max-width: none;
+
+  .mf-form__heading,
+  .mf-form__help,
+  .mf-form__helptext {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+
+  .mf-field__label {
+    color: var(--mf-text-muted);
+    font-weight: 400;
+  }
+
+  .mf-field__value {
+    font-size: var(--mf-fs-md, 0.875rem);
+  }
+}
+
 .mf-field input[aria-invalid='true'],
 .mf-field textarea[aria-invalid='true'] {
   border-color: var(--mf-danger);
