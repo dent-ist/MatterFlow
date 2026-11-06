@@ -48,23 +48,25 @@ const ORDER = [
     }
   `,
   styles: `
+    /* The context line of the page header (D-21, #1163): the mix sits under the title, left aligned. */
     :host {
       display: block;
-      margin-left: auto;
       min-width: 0;
     }
     .mix {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: var(--mf-s3);
-      padding: var(--mf-s1) var(--mf-s2);
+      margin-left: calc(-1 * var(--mf-s1));
+      padding: var(--mf-s1);
       border-radius: var(--mf-radius-lg);
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
+    /* The context line clips its overflow, so the ring is drawn inside the box. */
     .mix:focus-visible {
       outline: 2px solid var(--mf-focus);
-      outline-offset: 2px;
+      outline-offset: -2px;
     }
     .l {
       font-weight: 600;
@@ -104,8 +106,10 @@ const ORDER = [
     }
     @media (max-width: 767.98px) {
       :host {
-        margin-left: 0;
         width: 100%;
+      }
+      .mix {
+        display: flex;
       }
       .bar {
         flex: 1;

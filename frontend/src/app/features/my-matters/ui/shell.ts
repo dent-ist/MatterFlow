@@ -167,10 +167,10 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
   `,
   template: `
     <mf-fixed-page>
-      <!-- The one page header (D-21, #1135): the tile, the H1, the chosen client or matter as a chip beside it; the workflow mix, Scope, Options and New at the right. -->
+      <!-- The one page header (D-21, #1135): the tile, the H1, the chosen client or matter as a chip beside it; Scope, Options and New at the right; the workflow mix on the context line under the title (#1163). -->
       <mf-page-header heading="My Matters">
         <mf-mm-scope-chip mfTitleExtra [label]="scopeChipLabel()" (clear)="clear()" />
-        <mf-mm-workflow-bar mfActions [filters]="scope.filters()" [scopeName]="scopeName()" />
+        <mf-mm-workflow-bar mfDescription [filters]="scope.filters()" [scopeName]="scopeName()" />
         <mf-mm-scope-bar
           mfActions
           [tree]="tree.data()"
