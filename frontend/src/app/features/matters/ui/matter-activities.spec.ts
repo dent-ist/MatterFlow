@@ -60,7 +60,7 @@ describe('MatterActivities (MD-07, #1008)', () => {
     return f;
   }
   const rows = (f: { nativeElement: HTMLElement }) =>
-    Array.from(f.nativeElement.querySelectorAll('[data-activity-row]'));
+    Array.from(f.nativeElement.querySelectorAll('tbody tr[data-record-id]'));
 
   it('asks for the events of the matter and lists them newest first with the object as a link when it has a page', async () => {
     const f = await start(['Audit.View', 'Task.View', 'Production.View', 'MatterNote.View']);
@@ -96,6 +96,18 @@ describe('MatterActivities (MD-07, #1008)', () => {
     const f = await start(['Audit.View'], '2');
     expect(f.nativeElement.querySelector('[data-new-banner]')!.textContent).toContain('2 new');
     expect(localStorage.getItem('mf.matter-activity-seen.7')).toBe('4');
+  });
+
+  it('is the shared record grid: When, What and Who, resize handles and Columns', async () => {
+    const f = await start(['Audit.View']);
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('mf-record-columns')).not.toBeNull();
+    expect(Array.from(el.querySelectorAll('thead th')).map((h) => h.textContent!.trim())).toEqual([
+      'When',
+      'What',
+      'Who',
+    ]);
+    expect(el.querySelectorAll('thead .mf-resize').length).toBeGreaterThan(0);
   });
 
   it('shows no banner on the first visit', async () => {

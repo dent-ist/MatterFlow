@@ -121,11 +121,26 @@
   max-width: 12rem;
 }
 
+/* A cell that holds one whole chip (a disposition, a status): 4 px each side so the widest chip fits its column; the chip is never cut. */
+.pg-table td.pg-chipcell {
+  padding-inline: var(--mf-s1);
+  white-space: nowrap;
+}
+
 .pg-clip {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.pg-clip-fit {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* The text never sizes its column: the heading's width does (a record grid with fixed widths, D-44h). */
+  contain: inline-size;
 }
 
 .pg-namecell {
@@ -137,6 +152,11 @@
 
 .pg-namecell > .pg-name {
   min-width: 0;
+}
+
+/* The Sensitive chip after a name keeps its size; the name gives way with an ellipsis. */
+.pg-namecell > mf-sensitive-badge {
+  flex: none;
 }
 
 .pg-nowrap {

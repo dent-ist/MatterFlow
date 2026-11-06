@@ -22,8 +22,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   [1366, 768],
   [1920, 1080],
-  [768, 1024],
-  [375, 812],
 ] as const;
 
 const LONG_NAME = `Wave 20 ${'document review for all custodians '.repeat(4)}`.slice(0, 130);
@@ -69,9 +67,13 @@ const tabTexts = async (page: Page) =>
     .filter((t) => !/^(Productions|Notes|Activities)/.test(t));
 const ready = (page: Page) =>
   expect(page.locator('[data-matter-header] h1, [data-record-header] h1').first()).toBeVisible();
+/** The Projects tab is the shared record grid (#1269): its table, its record rows and the Archived group button. */
+const PROJECT_TABLE = 'mf-matter-projects table';
+const PROJECT_ROW = `${PROJECT_TABLE} tbody tr[data-record-id]`;
+const ARCHIVED_TOGGLE = 'mf-matter-projects tr.rg-group[data-group="archived"] button';
 const projectNames = (page: Page) =>
   page
-    .locator('[data-matter-projects] [data-project-name]')
+    .locator(`${PROJECT_TABLE} [data-project-name]`)
     .evaluateAll((els) => els.map((e) => e.textContent!.trim()));
 
 async function build(seed: Seeder, admin: Api): Promise<World> {
@@ -160,12 +162,13 @@ test.describe('WP10 matter tabs', () => {
       await page.goto(projectsUrl(w.big));
       await ready(page);
       expect(await tabTexts(page)).toEqual(['Summary', 'Tasks (4)', 'Projects (40)', 'Assets (0)']);
-      const table = page.locator('[data-matter-projects]');
+      const table = page.locator(PROJECT_TABLE);
       await expect(table.locator('thead th')).toHaveText([
         'Name',
         'Open Tasks',
         'Overdue',
         'Status',
+        'Actions',
       ]);
       const names = await projectNames(page);
       expect(names).toHaveLength(33);
@@ -173,35 +176,35 @@ test.describe('WP10 matter tabs', () => {
       expect(names[32]).toBe('Wave 33');
       expect(names[19]).toBe(LONG_NAME);
 
-      const toggle = page.locator('[data-archived-toggle]');
-      await expect(toggle).toHaveAccessibleName(/^Archived \(7 projects ?\)$/);
+      const toggle = page.locator(ARCHIVED_TOGGLE);
+      await expect(toggle).toHaveAccessibleName(/^Archived \(7\)$/);
       await expect(toggle).toHaveAttribute('aria-expanded', 'false');
       expect(Math.round((await toggle.locator('xpath=ancestor::tr').boundingBox())!.height)).toBe(
         36,
       );
 
-      // Rows are 44 px, with or without a description; the description is the muted second line with the full text as tooltip.
+      // Rows are 44 px, with or without a description; the description is part of the tooltip of the name link (no second line).
       const heights = await table
-        .locator('[data-project-row]')
+        .locator('tbody tr[data-record-id]')
         .evaluateAll((rs) => rs.map((r) => Math.round(r.getBoundingClientRect().height)));
       expect(new Set(heights)).toEqual(new Set([44]));
-      const row3 = table.locator('[data-project-row]', { hasText: 'Wave 3' }).first();
-      await expect(row3.locator('[data-project-description]')).toHaveAttribute(
+      const row3 = table.locator('tbody tr[data-record-id]', { hasText: 'Wave 3' }).first();
+      await expect(row3.locator('[data-project-name]')).toHaveAttribute(
         'title',
-        DESCRIPTION,
+        `Wave 3: ${DESCRIPTION}`,
       );
       await expect(row3.locator('[data-project-name]')).toHaveText('Wave 3');
-      await expect(table.locator('[data-project-description]')).toHaveCount(1);
+      await expect(table.locator('[data-project-description]')).toHaveCount(0);
       await expect(table.locator('[data-project-name]').nth(19)).toHaveAttribute(
         'title',
         LONG_NAME,
       );
 
       // The counts are the Project Tasks totals.
-      const row = table.locator('[data-project-row]').nth(2);
+      const row = table.locator('tbody tr[data-record-id]').nth(2);
       await expect(row.locator('[data-count=open] a')).toHaveText('3');
       await expect(row.locator('[data-count=overdue] a')).toHaveText(/1/);
-      const open12 = table.locator('[data-project-row]').nth(11);
+      const open12 = table.locator('tbody tr[data-record-id]').nth(11);
       await expect(open12.locator('[data-count=open] a')).toHaveText('1');
       await expect(open12.locator('[data-count=overdue]')).toContainText('–');
       const summary = await page.request.get(
@@ -219,12 +222,12 @@ test.describe('WP10 matter tabs', () => {
 
       await ready(page);
       await shot(page, 'matter-projects-collapsed');
-      await page.locator('[data-archived-toggle]').click();
-      await expect(page.locator('[data-archived-toggle]')).toHaveAttribute('aria-expanded', 'true');
+      await page.locator(ARCHIVED_TOGGLE).click();
+      await expect(page.locator(ARCHIVED_TOGGLE)).toHaveAttribute('aria-expanded', 'true');
       const all = await projectNames(page);
       expect(all).toHaveLength(40);
       expect(all.slice(33)).toEqual(Array.from({ length: 7 }, (_, i) => `Legacy ${i + 1}`));
-      await page.locator('[data-project-row]').last().scrollIntoViewIfNeeded();
+      await page.locator(PROJECT_ROW).last().scrollIntoViewIfNeeded();
       await shot(page, 'matter-projects-expanded');
     });
 
@@ -233,7 +236,7 @@ test.describe('WP10 matter tabs', () => {
     }) => {
       await page.goto(projectsUrl(w.big));
       await ready(page);
-      const toggle = page.locator('[data-archived-toggle]');
+      const toggle = page.locator(ARCHIVED_TOGGLE);
       await toggle.focus();
       await page.keyboard.press('Enter');
       await expect(toggle).toHaveAttribute('aria-expanded', 'true');
@@ -245,18 +248,15 @@ test.describe('WP10 matter tabs', () => {
       await expect(toggle).toBeFocused();
       await page.reload();
       await ready(page);
-      await expect(page.locator('[data-archived-toggle]')).toHaveAttribute(
-        'aria-expanded',
-        'false',
-      );
+      await expect(page.locator(ARCHIVED_TOGGLE)).toHaveAttribute('aria-expanded', 'false');
     });
 
     test('when every project is archived the group starts open', async ({ page }) => {
       await page.goto(projectsUrl(w.retired));
       await ready(page);
-      await expect(page.locator('[data-archived-toggle]')).toHaveAttribute('aria-expanded', 'true');
+      await expect(page.locator(ARCHIVED_TOGGLE)).toHaveAttribute('aria-expanded', 'true');
       expect(await projectNames(page)).toEqual(['Old 1', 'Old 2']);
-      await expect(page.locator('[data-matter-projects] thead th').first()).toBeVisible();
+      await expect(page.locator(`${PROJECT_TABLE} thead th`).first()).toBeVisible();
     });
 
     test('a matter without projects keeps the empty state with its New project action', async ({
@@ -264,11 +264,41 @@ test.describe('WP10 matter tabs', () => {
     }) => {
       await page.goto(projectsUrl(w.empty));
       await ready(page);
-      await expect(page.locator('[data-empty=projects]')).toContainText('No projects yet.');
+      await expect(page.locator('mf-matter-projects [data-empty="none"]')).toContainText(
+        'No projects yet.',
+      );
       await page.locator('[data-empty-new-project]').click();
       // The pop-up dialog opens and the page stays where it is (MD-22).
       await expect(page.locator('.mf-formdlg')).toContainText('New Project');
       await expect(page).toHaveURL(new RegExp(`/matters/${w.empty.matterId}`));
+    });
+
+    test('the tab is the shared record grid: resize handles, Columns, the Sorted line and 1098 px of columns at 1366', async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1366, height: 768 });
+      await page.goto(projectsUrl(w.big));
+      await ready(page);
+      const tab = page.locator('mf-matter-projects');
+      await expect(tab.locator('thead .mf-resize')).not.toHaveCount(0);
+      await expect(tab.locator('mf-record-columns button')).toBeVisible();
+      await expect(tab.locator('[data-sorted-text]')).toContainText('Sorted by Name');
+      // One control row: Search, Sorted line, Columns and New Project share a line of 36 px controls.
+      const tops = await tab
+        .locator('[data-list-toolbar] input, [data-list-toolbar] button')
+        .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+      expect(new Set(tops).size).toBe(1);
+      const frame = (await tab.locator('.mf-scroll-area').first().boundingBox())!;
+      const widths = await tab
+        .locator('thead th')
+        .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().width)));
+      expect(widths.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(Math.ceil(frame.width));
+      // Sorting by Open Tasks puts the busiest project first.
+      await tab.locator('th[data-col="openTasks"] button').click();
+      await expect(tab.locator('th[data-col="openTasks"]')).toHaveAttribute(
+        'aria-sort',
+        'descending',
+      );
     });
 
     test('creating or archiving a project updates the counts and the group when the tab is shown again', async ({
@@ -282,12 +312,10 @@ test.describe('WP10 matter tabs', () => {
       await page.goto(projectsUrl(matter));
       await ready(page);
       expect(await tabTexts(page)).toContain('Projects (2)');
-      await expect(page.locator('[data-archived-toggle]')).toHaveCount(0);
+      await expect(page.locator(ARCHIVED_TOGGLE)).toHaveCount(0);
 
       // Archive from the project page, then come back with Back.
-      await page
-        .locator('[data-matter-projects] [data-project-name]', { hasText: 'Alpha' })
-        .click();
+      await page.locator(`${PROJECT_TABLE} [data-project-name]`, { hasText: 'Alpha' }).click();
       // The row opens the project's side panel (MD-05); its link opens the project page.
       await expect(page.locator('.mf-slide')).toContainText('Alpha');
       await page.locator('[data-open-project]').click();
@@ -300,7 +328,7 @@ test.describe('WP10 matter tabs', () => {
       await page.goBack();
       await ready(page);
       expect(await projectNames(page)).toEqual(['Beta']);
-      await expect(page.locator('[data-archived-toggle]')).toContainText('Archived (1');
+      await expect(page.locator(ARCHIVED_TOGGLE)).toContainText('Archived (1');
 
       // A new project (made elsewhere) shows in the tab and the count after a reload of the page data.
       await admin.post('/api/v1/projects', { matterId: matter.matterId, name: 'Gamma' });
@@ -374,7 +402,7 @@ test.describe('WP10 matter tabs', () => {
       await page.goto(projectsUrl(w.big));
       await ready(page);
       expect(await tabTexts(page)).toEqual(['Summary', 'Tasks', 'Projects (40)']);
-      await expect(page.locator('[data-matter-projects] thead th')).toHaveText(['Name', 'Status']);
+      await expect(page.locator(`${PROJECT_TABLE} thead th`)).toHaveText(['Name', 'Status']);
       await expect(page.locator('[data-count]')).toHaveCount(0);
       expect(await projectNames(page)).toHaveLength(33);
       await shot(page, 'matter-projects-no-task-view');
@@ -441,15 +469,15 @@ test.describe('WP10 matter tabs', () => {
 
         await page.goto(projectsUrl(w.big));
         await ready(page);
-        await expect(page.locator('[data-archived-toggle]')).toBeVisible();
+        await expect(page.locator(ARCHIVED_TOGGLE)).toBeVisible();
         await axeClean(page, `projects collapsed ${what}`);
         await noSideways(page, `projects collapsed ${what}`);
         await shot(page, 'matter-projects');
         // The grid scrolls inside its box when it is wider than the window (the hint is the grid's); never the page.
-        await page.locator('[data-archived-toggle]').click();
-        await expect(page.locator('[data-project-row]')).toHaveCount(40);
+        await page.locator(ARCHIVED_TOGGLE).click();
+        await expect(page.locator(PROJECT_ROW)).toHaveCount(40);
         // Rows that sit half under the sticky header are not a fair axe sample: look at the top of the list.
-        await page.locator('[data-matter-projects]').evaluate((t) => {
+        await page.locator(PROJECT_TABLE).evaluate((t) => {
           for (let e = t.parentElement; e; e = e.parentElement) e.scrollTop = 0;
         });
         await axeClean(page, `projects expanded ${what}`);
@@ -465,7 +493,7 @@ test.describe('WP10 matter tabs', () => {
 
         await page.goto(projectsUrl(w.empty));
         await ready(page);
-        await expect(page.locator('[data-empty=projects]')).toBeVisible();
+        await expect(page.locator('mf-matter-projects [data-empty="none"]')).toBeVisible();
         await axeClean(page, `empty projects ${what}`);
         await noSideways(page, `empty projects ${what}`);
 

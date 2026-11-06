@@ -22,7 +22,7 @@ import {
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
-import { AssetTypeChip } from '../../../shared/ui/asset-type-chip';
+import { AssetTypeCell } from '../../../shared/ui/asset-type-chip';
 import { StatusChip } from '../../../shared/ui/status-chip';
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { FilterDef, FilterOption } from '../../../shared/filters/filter-def';
@@ -93,7 +93,7 @@ const BONES: Record<string, string> = {
     PageHeader,
     ScopeSwitch,
     StatusChip,
-    AssetTypeChip,
+    AssetTypeCell,
     Button,
     CopyButton,
     RouterLink,
@@ -121,22 +121,6 @@ const BONES: Record<string, string> = {
       max-width: 0;
     }
     .as-matter {
-      white-space: nowrap;
-    }
-    /* The type cell never grows its column: the name is cut with an ellipsis (the full name is the tooltip). */
-    td.as-type {
-      max-width: var(--mf-col-type-w);
-    }
-    .as-tycell {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      min-width: 0;
-    }
-    .as-tyname {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
       white-space: nowrap;
     }
     /* The reference is ONE line: the text is cut with an ellipsis (the full value is the tooltip), the copy button keeps its place. */
@@ -173,10 +157,6 @@ const BONES: Record<string, string> = {
       margin: 0;
     }
     .as-size {
-      white-space: nowrap;
-    }
-    .as-disposition {
-      padding-inline: var(--mf-s1);
       white-space: nowrap;
     }
     /* The warning is the icon beside the chip (its words are the tooltip and the accessible text), so a row stays 44 px (D-42, #1152). */
@@ -393,17 +373,13 @@ const BONES: Record<string, string> = {
               </td>
             </ng-template>
             <ng-template mfCell="type" let-a>
-              <td class="as-type" [attr.title]="a.assetTypeName">
-                <span class="as-tycell"
-                  ><mf-asset-type-chip
-                    size="sm"
-                    [decorative]="true"
-                    [iconKey]="a.assetTypeIconKey"
-                    [colourKey]="a.assetTypeColourKey"
-                    [typeId]="a.assetTypeId"
-                    [name]="a.assetTypeName"
-                  /><span class="as-tyname">{{ a.assetTypeName }}</span></span
-                >
+              <td>
+                <mf-asset-type-cell
+                  [iconKey]="a.assetTypeIconKey"
+                  [colourKey]="a.assetTypeColourKey"
+                  [typeId]="a.assetTypeId"
+                  [name]="a.assetTypeName"
+                />
               </td>
             </ng-template>
             <ng-template mfCell="name" let-a>
@@ -478,7 +454,7 @@ const BONES: Record<string, string> = {
               </td>
             </ng-template>
             <ng-template mfCell="status" let-a>
-              <td class="as-disposition" data-status>
+              <td class="pg-chipcell" data-status>
                 <mf-status-chip
                   kind="disposition"
                   [code]="a.dispositionCode"

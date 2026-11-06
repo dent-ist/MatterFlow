@@ -5,8 +5,7 @@ import { join, relative } from 'node:path';
  * Guard for the shared record grid (#1241, docs/ux/design-guidelines.md section 2.2, D-42): a list of records is drawn by `mf-record-grid` (resize, reorder, Columns,
  * stored widths, one anatomy), not by a hand-built `<table class="pg-table">` or `<table class="mf-grid">`. A new page that draws one fails here.
  *
- * ALLOWED lists the tables that are still hand-built, each with the reason; remove the entry when the page is migrated (the Administration lists and the Assets and
- * Projects grids are follow-up issues of #1241). A new entry needs the UI designer.
+ * ALLOWED lists the tables that are still hand-built, each with the reason; remove the entry when the page is migrated (the Administration lists are a follow-up issue of #1241; the Matter tabs moved in #1269). A new entry needs the UI designer.
  */
 const APP = join(process.cwd(), 'src', 'app');
 
@@ -20,16 +19,8 @@ const ALLOWED: Readonly<Record<string, string>> = {
     'Administration list, adopts the shared grid in its Administration issue',
   'features/clients/pages/client-matters.ts':
     'Client > Matters tab, adopts the shared grid with the Clients record issues',
-  'features/matters/pages/matter-projects.ts':
-    'Matter > Projects tab, adopts the shared grid with the Matter tab issues',
-  'features/matters/ui/matter-activities.ts':
-    'Matter > Activities feed, adopts the shared grid with the Matter tab issues',
-  'features/productions/productions-tab.ts':
-    'Matter > Productions tab, adopts the shared grid with the Matter tab issues',
   'features/search/search-grid.ts': 'Search results, adopts the shared grid in the Search issue',
   'shared/ui/admin-list-shell.ts': 'the shell of the Administration lists',
-  'shared/ui/matter-assets.ts':
-    'Matter > Assets tab, adopts the shared grid with the Matter tab issues',
 };
 
 function sources(dir: string): string[] {
@@ -71,12 +62,16 @@ describe('record grid guard (#1241)', () => {
     expect(stale, 'remove the migrated pages from ALLOWED').toEqual([]);
   });
 
-  it('the Matters, Clients, Projects and Assets lists are drawn by the shared grid', () => {
+  it('the Matters, Clients, Projects and Assets lists and the Matter tabs are drawn by the shared grid', () => {
     for (const file of [
       'features/matters/pages/matters-list-page.ts',
       'features/clients/pages/clients-list-page.ts',
       'features/projects/pages/projects-list-page.ts',
       'features/assets/pages/assets-list-page.ts',
+      'features/matters/pages/matter-projects.ts',
+      'shared/ui/matter-assets.ts',
+      'features/productions/productions-tab.ts',
+      'features/matters/ui/matter-activities.ts',
     ]) {
       const text = files.find((f) => f.file === file)!.text;
       expect(text, file).toContain('<mf-record-grid');

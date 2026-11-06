@@ -81,7 +81,7 @@ describe('the grids #1152 missed (#1214)', () => {
 
   it('Matter Activities uses the record grid (pg-table, 44 px rows, 40 px header) and stops the What cell at two lines', () => {
     const ts = source('app/features/matters/ui/matter-activities.ts');
-    expect(ts).toContain('class="pg-table tt"');
+    expect(ts).toContain('<mf-record-grid'); // the shared grid draws the pg-table (44 px rows, 40 px header; #1269)
     expect(ts).toContain("styleUrl: '../../../shared/ui/page.scss'");
     expect(ts).toContain('class="pg-name"');
   });

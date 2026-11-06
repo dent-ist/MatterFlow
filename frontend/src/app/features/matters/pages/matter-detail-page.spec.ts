@@ -959,7 +959,7 @@ describe('MatterDetailPage', () => {
     const names = (): string[] =>
       Array.from(el().querySelectorAll('[data-project-name]')).map((c) => c.textContent!.trim());
     const toggle = (): HTMLButtonElement =>
-      el().querySelector<HTMLButtonElement>('[data-archived-toggle]')!;
+      el().querySelector<HTMLButtonElement>('tr.rg-group[data-group="archived"] button')!;
 
     it('has Name, Open tasks, Overdue and Status columns and no Description column', async () => {
       await create(['Matter.View', 'Project.View', 'Task.View']);
@@ -968,7 +968,7 @@ describe('MatterDetailPage', () => {
       await openTab('projects');
       expect(
         Array.from(el().querySelectorAll('thead th')).map((h) => h.textContent!.trim()),
-      ).toEqual(['Name', 'Open Tasks', 'Overdue', 'Status']);
+      ).toEqual(['Name', 'Open Tasks', 'Overdue', 'Status', 'Actions']); // the last heading is the row menu column (Task.View)
       const cells = el().querySelectorAll('tbody tr')[0].querySelectorAll('td');
       expect(cells[1].querySelector('a')?.getAttribute('aria-label')).toBe('4 open tasks in Alpha');
       expect(cells[2].querySelector('a')?.getAttribute('aria-label')).toBe(
@@ -987,7 +987,7 @@ describe('MatterDetailPage', () => {
       expect(el().querySelector('mf-task-count')).toBeNull();
     });
 
-    it('shows the description as a muted second line only when there is one', async () => {
+    it('has no second line: the description is the tooltip of the name link, and only when there is one', async () => {
       await create(['Matter.View', 'Project.View']);
       many(
         { name: 'With', description: 'Intake of custodian data' },
@@ -995,11 +995,45 @@ describe('MatterDetailPage', () => {
       );
       await fixture.componentInstance.load();
       await openTab('projects');
-      const rows = el().querySelectorAll('tbody tr');
-      const d = rows[0].querySelector('[data-project-description]')!;
-      expect(d.textContent!.trim()).toBe('Intake of custodian data');
-      expect(d.getAttribute('title')).toBe('Intake of custodian data');
-      expect(rows[1].querySelector('[data-project-description]')).toBeNull();
+      const links = Array.from(el().querySelectorAll('[data-project-name]'));
+      expect(links[0].getAttribute('title')).toBe('With: Intake of custodian data');
+      expect(links[1].getAttribute('title')).toBe('Without');
+      expect(el().querySelector('[data-project-description]')).toBeNull();
+    });
+
+    it('is the shared record grid: Columns, the Sorted line and a row menu (New Task, Open Task List)', async () => {
+      await create(['Matter.View', 'Project.View', 'Task.View', 'Task.Create']);
+      many(
+        { name: 'Alpha', openTaskCount: 1, overdueTaskCount: 0 },
+        { name: 'Beta', openTaskCount: 5 },
+      );
+      await fixture.componentInstance.load();
+      await openTab('projects');
+      const tab = el().querySelector('mf-matter-projects')!;
+      expect(tab.querySelector('mf-record-grid')).not.toBeNull();
+      expect(tab.querySelector('mf-record-columns')).not.toBeNull();
+      expect(tab.querySelector('[data-sorted-text]')!.textContent).toContain('Name');
+      expect(tab.querySelectorAll('tbody tr[data-record-id]')).toHaveLength(2);
+      expect(
+        tab.querySelectorAll('tbody tr[data-record-id] [data-row-actions] button'),
+      ).toHaveLength(2);
+    });
+
+    it('sorts by a count when the heading is chosen, busiest first, and Reset Sort returns to the name order', async () => {
+      await create(['Matter.View', 'Project.View', 'Task.View']);
+      many(
+        { name: 'Alpha', openTaskCount: 1 },
+        { name: 'Beta', openTaskCount: 5 },
+        { name: 'Gamma', openTaskCount: 3 },
+      );
+      await fixture.componentInstance.load();
+      await openTab('projects');
+      el().querySelector<HTMLButtonElement>('th[data-col="openTasks"] button')!.click();
+      await settle(fixture);
+      expect(names()).toEqual(['Beta', 'Gamma', 'Alpha']);
+      el().querySelector<HTMLButtonElement>('[data-reset-sort]')!.click();
+      await settle(fixture);
+      expect(names()).toEqual(['Alpha', 'Beta', 'Gamma']);
     });
 
     it('lists Active projects first and keeps Archived in a collapsed group that opens with Enter or Space', async () => {
@@ -1014,7 +1048,7 @@ describe('MatterDetailPage', () => {
       await openTab('projects');
       expect(names()).toEqual(['Wave 7', 'Wave 15']);
       expect(toggle().getAttribute('aria-expanded')).toBe('false');
-      expect(toggle().textContent!.replace(/\s+/g, ' ').trim()).toBe('Archived (2 projects)');
+      expect(toggle().textContent!.replace(/\s+/g, ' ').trim()).toBe('Archived (2)');
       toggle().click();
       await settle(fixture);
       expect(toggle().getAttribute('aria-expanded')).toBe('true');
@@ -1035,7 +1069,7 @@ describe('MatterDetailPage', () => {
       many({ name: 'Live' });
       await fixture.componentInstance.load();
       await settle(fixture);
-      expect(el().querySelector('[data-archived-toggle]')).toBeNull();
+      expect(el().querySelector('tr.rg-group')).toBeNull();
     });
   });
 

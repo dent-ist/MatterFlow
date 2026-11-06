@@ -27,7 +27,16 @@ import { ApiError } from '../../core/http/api-error';
 import { NotificationService } from '../../core/notify/notification.service';
 import { ConfirmDialog } from '../../shared/ui/confirm-dialog';
 import { DropdownItem, Dropdown } from '../../shared/ui/dropdown';
-import { GridFrame } from '../../shared/ui/grid-frame';
+import { ActionMenu } from '../../shared/ui/action-menu';
+import {
+  RecordCell,
+  RecordColumns,
+  RecordGrid,
+  RecordGridColumn,
+  RecordGridState,
+} from '../../shared/ui/record-grid';
+import { RowActionSpec, rowActions } from '../../shared/ui/row-actions';
+import { LoadState } from '../../shared/ui/data-table';
 import { Pager } from '../../shared/ui/pager';
 import { SearchBox } from '../../shared/ui/search-box';
 import { Segmented } from '../../shared/ui/segmented';
@@ -45,7 +54,6 @@ import {
   parseCount,
   partyLabel,
 } from './production-ui';
-import { StateBlock } from '../../shared/ui/state-block';
 import { NumericDatePipe } from '../../shared/ui/numeric-date';
 import { IntPipe } from '../../shared/ui/number-format';
 
@@ -135,10 +143,12 @@ const emptySpec = (): SpecDraft => ({
     Badge,
     IntPipe,
     NumericDatePipe,
-    StateBlock,
     Button,
     ConfirmDialog,
-    GridFrame,
+    ActionMenu,
+    RecordCell,
+    RecordColumns,
+    RecordGrid,
     Dropdown,
     Pager,
     SearchBox,
@@ -171,14 +181,21 @@ const emptySpec = (): SpecDraft => ({
       flex: 0 1 18rem;
       min-width: 11rem;
     }
+    /* The count keeps the button's own text color: muted text on the filled pressed button fails contrast. */
     .pt__count {
       margin-inline-start: var(--mf-s1);
-      color: var(--mf-text-muted);
     }
+    /* The first column is the spring: one clipped line for the name button and for the small line under it (D-45). */
+    td.pt__name {
+      width: 100%;
+      max-width: 0;
+    }
+    /* The small line under a cell's text: tight, so a two-line cell still fits the 44 px row (D-42). */
     .pt__sub {
       display: block;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
+      line-height: 1.2;
     }
     .pt__muted {
       color: var(--mf-text-muted);
@@ -315,6 +332,7 @@ const emptySpec = (): SpecDraft => ({
           />
         }
         <span class="pt__spacer"></span>
+        <mf-record-columns [grid]="view() === 'productions' ? grid : specGrid" />
         @if (view() === 'productions' && canEdit()) {
           <p-button
             label="New Production"
@@ -328,156 +346,201 @@ const emptySpec = (): SpecDraft => ({
         }
       </div>
 
-      @if (error()) {
-        <p class="pg-reason" role="alert" data-productions-error>
-          {{ error() }}
-          <button type="button" class="mf-btn mf-btn--text" (click)="reload()">Retry</button>
-        </p>
-      } @else if (view() === 'productions') {
-        @if (loaded() && productions().length === 0) {
-          <mf-state-block data-productions-empty>
-            {{
-              query() || direction() ? 'No productions match these filters.' : 'No productions yet.'
-            }}
-          </mf-state-block>
-        } @else {
-          <mf-grid-frame scrollLabel="Productions" [resetKey]="page()">
-            <table class="pg-table" data-productions-table>
-              <caption class="pg-sr">
-                Productions of this matter
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">Production</th>
-                  <th scope="col">Direction and Party</th>
-                  <th scope="col">Bates Range</th>
-                  <th scope="col" class="pg-num">Documents</th>
-                  <th scope="col">Spec</th>
-                  <th scope="col">Delivered or Due</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (p of productions(); track p.productionId) {
-                  <tr data-production-row>
-                    <td>
-                      <button
-                        type="button"
-                        class="mf-btn mf-btn--text"
-                        data-production-open
-                        (click)="openProduction(p)"
-                      >
-                        {{ p.name }}
-                      </button>
-                      @if (p.volumeNo) {
-                        <span class="pt__sub">{{ p.volumeNo }}</span>
-                      }
-                    </td>
-                    <td>
-                      {{ directionLabel(p.direction) }}
-                      @if (p.partyName) {
-                        <span class="pt__sub">{{ p.partyName }}</span>
-                      }
-                    </td>
-                    <td>{{ bates(p) }}</td>
-                    <td class="pg-num">{{ count(p.docCount) }}</td>
-                    <td>
-                      @if (p.productionSpecName) {
-                        {{ p.productionSpecName }}
-                        @if (p.productionSpecStatus === 'Retired') {
-                          <mf-badge tone="warning">Retired</mf-badge>
-                        }
-                      } @else {
-                        <span class="pt__muted">None</span>
-                      }
-                    </td>
-                    <td>
-                      @if (p.deliveredOrDueOn) {
-                        {{ p.deliveredOrDueOn | mfNum: 'date' }}
-                      } @else {
-                        <span class="pt__muted">Not set</span>
-                      }
-                    </td>
-                  </tr>
+      @if (view() === 'productions') {
+        <mf-record-grid
+          label="Productions"
+          caption="Productions of this matter"
+          noun="productions"
+          [grid]="grid"
+          [rows]="productions()"
+          [rowKey]="productionKey"
+          [loadState]="listState()"
+          [empty]="productions().length === 0"
+          [filtered]="!!query() || !!direction()"
+          [bones]="productionBones"
+          [actions]="true"
+          (retry)="reload()"
+          (clear)="clearFilters()"
+        >
+          @if (canEdit()) {
+            <p-button
+              mfEmptyAction
+              label="New Production"
+              icon="pi pi-plus"
+              severity="secondary"
+              data-empty-new-production
+              (onClick)="newProduction()"
+            />
+          }
+          <ng-template mfCell="name" let-p>
+            <td class="pt__name">
+              <button
+                type="button"
+                class="mf-btn mf-btn--text mf-btn--name"
+                data-production-open
+                [attr.title]="p.name"
+                (click)="openProduction(p)"
+              >
+                {{ p.name }}
+              </button>
+              @if (p.volumeNo) {
+                <span class="pt__sub pg-clip-fit">{{ p.volumeNo }}</span>
+              }
+            </td>
+          </ng-template>
+          <ng-template mfCell="direction" let-p>
+            <td>
+              {{ directionLabel(p.direction) }}
+              @if (p.partyName) {
+                <span class="pt__sub pg-clip-fit" [attr.title]="p.partyName">{{
+                  p.partyName
+                }}</span>
+              }
+            </td>
+          </ng-template>
+          <ng-template mfCell="bates" let-p>
+            <td>
+              <span class="pg-clip-fit" [attr.title]="bates(p)">{{ bates(p) }}</span>
+            </td>
+          </ng-template>
+          <ng-template mfCell="documents" let-p>
+            <td class="pg-num">{{ count(p.docCount) }}</td>
+          </ng-template>
+          <ng-template mfCell="spec" let-p>
+            <td>
+              @if (p.productionSpecName) {
+                <span class="pg-clip-fit" [attr.title]="p.productionSpecName">{{
+                  p.productionSpecName
+                }}</span>
+                @if (p.productionSpecStatus === 'Retired') {
+                  <span class="pt__sub" data-spec-retired>Retired</span>
                 }
-              </tbody>
-            </table>
-          </mf-grid-frame>
-        }
-        <mf-pager
-          [page]="page()"
-          [pageSize]="pageSize"
-          [total]="productionCount()"
-          (pageChange)="goTo($event)"
-        />
-      } @else {
-        @if (loaded() && specs().length === 0) {
-          <mf-state-block data-specs-empty>
-            {{ query() || specStatus() ? 'No specs match these filters.' : 'No specs yet.' }}
-            @if (!query() && !specStatus()) {
-              <span mfStateReason>A spec is the agreed format of the productions.</span>
+              } @else {
+                <span class="pt__muted">None</span>
+              }
+            </td>
+          </ng-template>
+          <ng-template mfCell="due" let-p>
+            <td>
+              @if (p.deliveredOrDueOn) {
+                {{ p.deliveredOrDueOn | mfNum: 'date' }}
+              } @else {
+                <span class="pt__muted">Not set</span>
+              }
+            </td>
+          </ng-template>
+          <ng-template mfCell="actions" let-p>
+            <td class="mf-col-actions" data-row-actions>
+              <mf-action-menu
+                [floating]="true"
+                [label]="productionMenus().get(p.productionId)!.label"
+                [items]="productionMenus().get(p.productionId)!.items"
+              />
+            </td>
+          </ng-template>
+          <div mfGridFoot>
+            @if (productionCount() > 0) {
+              <mf-pager
+                [page]="page()"
+                [pageSize]="pageSize"
+                [total]="productionCount()"
+                (pageChange)="goTo($event)"
+              />
             }
-          </mf-state-block>
-        } @else {
-          <mf-grid-frame scrollLabel="Production specs" [resetKey]="page()">
-            <table class="pg-table" data-specs-table>
-              <caption class="pg-sr">
-                Production specs of this matter
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">Spec</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Images and Text</th>
-                  <th scope="col">Load File</th>
-                  <th scope="col" class="pg-num">Used by</th>
-                  <th scope="col">Last Updated</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (s of specs(); track s.productionSpecId) {
-                  <tr data-spec-row>
-                    <td>
-                      <button
-                        type="button"
-                        class="mf-btn mf-btn--text"
-                        data-spec-open
-                        (click)="openSpec(s)"
-                      >
-                        {{ s.name }}
-                      </button>
-                      @if (s.sourceOfAgreement) {
-                        <span class="pt__sub">Source: {{ s.sourceOfAgreement }}</span>
-                      }
-                    </td>
-                    <td>
-                      <mf-badge [tone]="s.status === 'Retired' ? 'warning' : 'success'">{{
-                        s.status
-                      }}</mf-badge>
-                    </td>
-                    <td>
-                      {{ s.imageFormat }}
-                      @if (s.textMode) {
-                        <span class="pt__sub">{{ s.textMode }}</span>
-                      }
-                    </td>
-                    <td>
-                      {{ s.loadFile }}
-                      <span class="pt__sub">{{ s.metadataFields.length }} metadata fields</span>
-                    </td>
-                    <td class="pg-num">{{ s.usedByCount | mfInt }}</td>
-                    <td>{{ s.modifiedAtUtc ?? s.createdAtUtc | mfNum: 'date' }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </mf-grid-frame>
-        }
-        <mf-pager
-          [page]="page()"
-          [pageSize]="pageSize"
-          [total]="specCount()"
-          (pageChange)="goTo($event)"
-        />
+          </div>
+        </mf-record-grid>
+      } @else {
+        <mf-record-grid
+          label="Production specs"
+          caption="Production specs of this matter"
+          noun="specs"
+          emptyText="No specs yet. A spec is the agreed format of the productions."
+          [grid]="specGrid"
+          [rows]="specs()"
+          [rowKey]="specKey"
+          [loadState]="listState()"
+          [empty]="specs().length === 0"
+          [filtered]="!!query() || !!specStatus()"
+          [bones]="specBones"
+          [actions]="true"
+          (retry)="reload()"
+          (clear)="clearFilters()"
+        >
+          @if (canEditSpecs()) {
+            <p-button
+              mfEmptyAction
+              label="New Spec"
+              icon="pi pi-plus"
+              severity="secondary"
+              data-empty-new-spec
+              (onClick)="newSpec()"
+            />
+          }
+          <ng-template mfCell="name" let-s>
+            <td class="pt__name">
+              <button
+                type="button"
+                class="mf-btn mf-btn--text mf-btn--name"
+                data-spec-open
+                [attr.title]="s.name"
+                (click)="openSpec(s)"
+              >
+                {{ s.name }}
+              </button>
+              @if (s.sourceOfAgreement) {
+                <span class="pt__sub pg-clip-fit" [attr.title]="s.sourceOfAgreement"
+                  >Source: {{ s.sourceOfAgreement }}</span
+                >
+              }
+            </td>
+          </ng-template>
+          <ng-template mfCell="status" let-s>
+            <td>
+              <mf-badge [tone]="s.status === 'Retired' ? 'warning' : 'success'">{{
+                s.status
+              }}</mf-badge>
+            </td>
+          </ng-template>
+          <ng-template mfCell="images" let-s>
+            <td>
+              {{ s.imageFormat }}
+              @if (s.textMode) {
+                <span class="pt__sub pg-clip-fit" [attr.title]="s.textMode">{{ s.textMode }}</span>
+              }
+            </td>
+          </ng-template>
+          <ng-template mfCell="loadFile" let-s>
+            <td>
+              {{ s.loadFile }}
+              <span class="pt__sub">{{ s.metadataFields.length }} metadata fields</span>
+            </td>
+          </ng-template>
+          <ng-template mfCell="usedBy" let-s>
+            <td class="pg-num">{{ s.usedByCount | mfInt }}</td>
+          </ng-template>
+          <ng-template mfCell="updated" let-s>
+            <td>{{ s.modifiedAtUtc ?? s.createdAtUtc | mfNum: 'date' }}</td>
+          </ng-template>
+          <ng-template mfCell="actions" let-s>
+            <td class="mf-col-actions" data-row-actions>
+              <mf-action-menu
+                [floating]="true"
+                [label]="specMenus().get(s.productionSpecId)!.label"
+                [items]="specMenus().get(s.productionSpecId)!.items"
+              />
+            </td>
+          </ng-template>
+          <div mfGridFoot>
+            @if (specCount() > 0) {
+              <mf-pager
+                [page]="page()"
+                [pageSize]="pageSize"
+                [total]="specCount()"
+                (pageChange)="goTo($event)"
+              />
+            }
+          </div>
+        </mf-record-grid>
       }
     </section>
 
@@ -1027,6 +1090,66 @@ export class ProductionsTab {
   readonly changed = output<void>();
 
   protected readonly pageSize = PAGE_SIZE;
+
+  /** The list's state for the grid body: failed (Retry), still loading the first page, or ready. */
+  protected readonly listState = computed((): LoadState =>
+    this.error() ? 'error' : this.loaded() ? 'ready' : 'loading',
+  );
+  protected readonly productionBones = {
+    name: '12rem',
+    direction: '8rem',
+    bates: '9rem',
+    documents: '3rem',
+    spec: '8rem',
+    due: '6rem',
+  };
+  protected readonly specBones = {
+    name: '12rem',
+    status: '5rem',
+    images: '6rem',
+    loadFile: '7rem',
+    usedBy: '3rem',
+    updated: '6rem',
+  };
+  /** The columns of the Productions grid (shared record grid, #1269; the id stores the widths per person). The first column is the spring. */
+  protected readonly productionDefs = signal<RecordGridColumn[]>([
+    { key: 'name', label: 'Production', locked: true, minWidth: '200px' },
+    { key: 'direction', label: 'Direction and Party', width: '168px', minWidth: '168px' },
+    { key: 'bates', label: 'Bates Range', width: '246px', minWidth: '246px' },
+    {
+      key: 'documents',
+      label: 'Documents',
+      num: true,
+      // 106 px: the heading "Documents" with its padding (the count token is 96).
+      width: '106px',
+      minWidth: '106px',
+    },
+    { key: 'spec', label: 'Spec', width: '160px', minWidth: '160px' },
+    { key: 'due', label: 'Delivered or Due', width: '152px', minWidth: '152px' },
+  ]);
+  protected readonly specDefs = signal<RecordGridColumn[]>([
+    { key: 'name', label: 'Spec', locked: true, minWidth: '200px' },
+    {
+      key: 'status',
+      label: 'Status',
+      width: 'var(--mf-col-status-w)',
+      minWidth: 'var(--mf-col-status-w)',
+    },
+    { key: 'images', label: 'Images and Text', width: '160px', minWidth: '160px' },
+    { key: 'loadFile', label: 'Load File', width: '176px', minWidth: '176px' },
+    {
+      key: 'usedBy',
+      label: 'Used by',
+      num: true,
+      width: 'var(--mf-col-count-w)',
+      minWidth: 'var(--mf-col-count-w)',
+    },
+    { key: 'updated', label: 'Last Updated', width: '152px', minWidth: '152px' },
+  ]);
+  protected readonly grid = new RecordGridState('matter-productions', this.productionDefs);
+  protected readonly specGrid = new RecordGridState('matter-production-specs', this.specDefs);
+  protected readonly productionKey = (p: ProductionResponse): number => p.productionId;
+  protected readonly specKey = (s: ProductionSpecResponse): number => s.productionSpecId;
   protected readonly directionLabel = directionLabel;
   protected readonly partyLabel = partyLabel;
   protected readonly minimumFields = MINIMUM_METADATA_FIELDS;
@@ -1161,6 +1284,66 @@ export class ProductionsTab {
 
   protected goTo(page: number): void {
     this.page.set(page);
+  }
+
+  /** The row menus (D-44g: quick actions, not Edit): Open and, for people who may change them, Delete or Duplicate. */
+  protected readonly productionMenus = computed(
+    () => new Map(this.productions().map((p) => [p.productionId, this.productionMenu(p)] as const)),
+  );
+  protected readonly specMenus = computed(
+    () => new Map(this.specs().map((s) => [s.productionSpecId, this.specMenu(s)] as const)),
+  );
+
+  private productionMenu(p: ProductionResponse) {
+    const specs: RowActionSpec[] = [
+      {
+        id: 'open-production',
+        label: 'Open Production',
+        icon: 'pi-external-link',
+        run: () => void this.openProduction(p),
+      },
+      {
+        id: 'delete-production',
+        label: 'Delete Production',
+        icon: 'pi-trash',
+        danger: true,
+        permission: 'Production.Edit',
+        run: () => {
+          this.current.set(p);
+          this.confirmDelete.set(true);
+        },
+      },
+    ];
+    const menu = rowActions(p.name, specs, { can: (perm) => this.auth.has(perm) });
+    return { ...menu, label: `More actions for ${p.name}` };
+  }
+
+  private specMenu(s: ProductionSpecResponse) {
+    const specs: RowActionSpec[] = [
+      {
+        id: 'open-spec',
+        label: 'Open Spec',
+        icon: 'pi-external-link',
+        run: () => void this.openSpec(s),
+      },
+      {
+        id: 'duplicate-spec',
+        label: 'Duplicate Spec',
+        icon: 'pi-copy',
+        permission: 'ProductionSpec.Edit',
+        run: () => this.duplicateSpec(s),
+      },
+    ];
+    const menu = rowActions(s.name, specs, { can: (perm) => this.auth.has(perm) });
+    return { ...menu, label: `More actions for ${s.name}` };
+  }
+
+  /** Clear Filters in an empty list: the search and the Direction or Status choice go. */
+  protected clearFilters(): void {
+    this.page.set(1);
+    this.query.set('');
+    this.direction.set('');
+    this.specStatus.set('');
   }
 
   protected reload(): void {

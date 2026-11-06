@@ -215,7 +215,7 @@ test.describe('LC-07: Matter Projects tab', () => {
     const other = await asUser(viewer.username);
     await other.setViewportSize(DESKTOP);
     await other.goto(`/matters/${world.matter.matterId}?tab=projects`);
-    await expect(other.locator('[data-matter-projects]')).toBeVisible();
+    await expect(other.locator('mf-matter-projects table')).toBeVisible();
     await expect(other.getByRole('button', { name: 'New Project' })).toHaveCount(0);
   });
 });

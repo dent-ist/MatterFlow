@@ -14,11 +14,18 @@ import { AuditSearchClient, AuditSearchItem } from '../../../api/generated/api-c
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
-import { GridFrame } from '../../../shared/ui/grid-frame';
+import { ListFilters } from '../../../shared/filters/list-filters';
+import { ListToolbar } from '../../../shared/filters/list-toolbar';
+import {
+  RecordCell,
+  RecordColumns,
+  RecordGrid,
+  RecordGridColumn,
+  RecordGridState,
+} from '../../../shared/ui/record-grid';
 import { friendlyText } from '../../../shared/ui/audit-format';
 import { auditObjectLink, auditObjectText } from '../../admin/audit/audit-links';
 import { numericInstant, readableInstant } from '../../../shared/ui/numeric-date';
-import { StateBlock } from '../../../shared/ui/state-block';
 import { IntPipe } from '../../../shared/ui/number-format';
 import { shortAccountName } from '../../../shared/ui/person-name';
 
@@ -52,21 +59,13 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
  */
 @Component({
   selector: 'mf-matter-activities',
-  imports: [IntPipe, StateBlock, GridFrame, Dropdown, RouterLink],
+  imports: [IntPipe, ListToolbar, RecordGrid, RecordCell, RecordColumns, Dropdown, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   styleUrl: '../../../shared/ui/page.scss',
   styles: `
-    /* The tab's control row above the frame, like every Matter tab (LC-08, theme guide 11.2): the only control is the Kind dropdown. */
-    .ma__bar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--mf-s2);
-      margin: 0 0 var(--mf-s2);
-    }
     .ma__banner {
-      margin: 0 var(--mf-s3) var(--mf-s2);
+      margin: 0 0 var(--mf-s2);
       padding: var(--mf-s2) var(--mf-s3);
       border-radius: var(--mf-radius-lg);
       background: var(--mf-sem-info-bg);
@@ -75,6 +74,11 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
     td.ma__when {
       white-space: nowrap;
       color: var(--mf-text-muted);
+    }
+    /* What is the spring: the text stops at two lines (the full text is the tooltip). */
+    td.ma__what {
+      width: 100%;
+      max-width: 0;
     }
     .ma__obj {
       margin-left: var(--mf-s1);
@@ -87,17 +91,13 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
       color: var(--mf-sem-info-fg);
       font-size: var(--mf-fs-xs);
     }
-    /* The columns are the shared record grid (pg-table, 44 px rows, 40 px header; #1214): the What cell stops at two lines. */
-    .ma__muted {
-      margin: 0;
-      padding: var(--mf-s3);
-      color: var(--mf-text-muted);
-    }
   `,
   template: `
-    <div class="ma__bar">
-      <h2 class="mf-sr-only">Activities</h2>
+    <!-- The tab's control row, like every Matter tab (LC-08, theme guide 11.2): the Kind dropdown, then Columns. -->
+    <h2 class="mf-sr-only">Activities</h2>
+    <mf-list-toolbar [filters]="filters">
       <mf-dropdown
+        mfView
         buttonId="ma-kind"
         label="Kind"
         prefix="Kind:"
@@ -106,83 +106,69 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
         (valueChange)="setKind($event)"
         neutralValue=""
       />
-    </div>
-    <mf-grid-frame scrollLabel="Matter activities">
-      <div frameStatus>
-        @if (newCount() > 0) {
-          <p class="ma__banner" role="status" data-new-banner>
-            {{ newCount() | mfInt }} new since your last visit
-          </p>
-        }
-      </div>
-      @switch (state()) {
-        @case ('loading') {
-          <p class="ma__muted" role="status" aria-busy="true">Loading activities</p>
-        }
-        @case ('error') {
-          <mf-state-block kind="error" data-error>
-            Couldn't load activities.
-            <button mfStateAction type="button" class="mf-btn" (click)="fetch(true)">Retry</button>
-          </mf-state-block>
-        }
-        @default {
-          @if (items().length === 0) {
-            <mf-state-block data-empty>No activity yet.</mf-state-block>
-          } @else {
-            <table class="pg-table tt" data-activities>
-              <caption class="mf-sr-only">
-                Activities of this matter, newest first
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">When</th>
-                  <th scope="col">What</th>
-                  <th scope="col">Who</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (e of items(); track e.auditEventId) {
-                  <tr data-activity-row [attr.data-object-type]="e.object.type">
-                    <td class="ma__when">
-                      <time [attr.datetime]="e.occurredAtUtc" [attr.title]="stampLong(e)">{{
-                        stamp(e)
-                      }}</time>
-                    </td>
-                    <td>
-                      <div class="pg-name" [attr.title]="what(e) + ' ' + objectText(e)">
-                        {{ what(e) }}
-                        @if (link(e); as l) {
-                          <a
-                            class="mf-link ma__obj"
-                            data-object-link
-                            [routerLink]="l.commands"
-                            [queryParams]="l.queryParams"
-                            >{{ objectText(e) }}</a
-                          >
-                        } @else {
-                          <span class="ma__obj" data-object-text>{{ objectText(e) }}</span>
-                        }
-                        @if (isNew(e)) {
-                          <span class="ma__new" data-new>New</span>
-                        }
-                      </div>
-                    </td>
-                    <td>{{ who(e.actor.displayName) }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          }
-        }
-      }
-      <div frameFoot>
+      <mf-record-columns mfColumns [grid]="grid" />
+    </mf-list-toolbar>
+    @if (newCount() > 0) {
+      <p class="ma__banner" role="status" data-new-banner>
+        {{ newCount() | mfInt }} new since your last visit
+      </p>
+    }
+    <mf-record-grid
+      label="Matter activities"
+      caption="Activities of this matter, newest first"
+      noun="activities"
+      emptyText="No activity yet."
+      [grid]="grid"
+      [rows]="items()"
+      [rowKey]="eventKey"
+      [loadState]="state()"
+      [empty]="items().length === 0"
+      [filtered]="kind() !== ''"
+      [bones]="bones"
+      (retry)="fetch(true)"
+      (clear)="setKind('')"
+    >
+      <ng-template mfCell="when" let-e>
+        <td class="ma__when">
+          <time [attr.datetime]="e.occurredAtUtc" [attr.title]="stampLong(e)">{{ stamp(e) }}</time>
+        </td>
+      </ng-template>
+      <ng-template mfCell="what" let-e>
+        <td class="ma__what" [attr.data-object-type]="e.object.type">
+          <div class="pg-name" [attr.title]="what(e) + ' ' + objectText(e)">
+            {{ what(e) }}
+            @if (link(e); as l) {
+              <a
+                class="mf-link ma__obj"
+                data-object-link
+                [routerLink]="l.commands"
+                [queryParams]="l.queryParams"
+                >{{ objectText(e) }}</a
+              >
+            } @else {
+              <span class="ma__obj" data-object-text>{{ objectText(e) }}</span>
+            }
+            @if (isNew(e)) {
+              <span class="ma__new" data-new>New</span>
+            }
+          </div>
+        </td>
+      </ng-template>
+      <ng-template mfCell="who" let-e>
+        <td>
+          <span class="pg-clip-fit" [attr.title]="who(e.actor.displayName)">{{
+            who(e.actor.displayName)
+          }}</span>
+        </td>
+      </ng-template>
+      <div mfGridFoot>
         @if (nextCursor() !== null) {
           <button type="button" class="mf-btn" data-show-more (click)="fetch(false)">
             Show More
           </button>
         }
       </div>
-    </mf-grid-frame>
+    </mf-record-grid>
   `,
 })
 export class MatterActivities {
@@ -192,6 +178,22 @@ export class MatterActivities {
   }
 
   readonly matterId = input.required<number>();
+
+  /** The tab has no search or column filters, so the toolbar only carries the Kind dropdown and Columns. */
+  protected readonly filters = new ListFilters({
+    screen: 'matter-activities',
+    noun: 'activities',
+    defs: [],
+  });
+  /** The columns (shared record grid, #1269; grid id `matter-activities`): When 124, What the spring, Who 96. */
+  protected readonly gridDefs = signal<RecordGridColumn[]>([
+    { key: 'when', label: 'When', width: '124px', minWidth: '124px' },
+    { key: 'what', label: 'What', locked: true, minWidth: '200px' },
+    { key: 'who', label: 'Who', width: '96px', minWidth: '96px' },
+  ]);
+  protected readonly grid = new RecordGridState('matter-activities', this.gridDefs);
+  protected readonly bones = { when: '5rem', what: '18rem', who: '4rem' };
+  protected readonly eventKey = (e: AuditSearchItem): number => e.auditEventId;
 
   private readonly api = inject(AuditSearchClient);
   private readonly auth = inject(AuthStore);

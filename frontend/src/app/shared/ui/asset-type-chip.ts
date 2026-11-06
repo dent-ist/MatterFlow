@@ -64,3 +64,54 @@ export class AssetTypeChip {
     () => this.iconKey() || defaultAssetTypeIcon(this.name(), this.typeId()),
   );
 }
+
+/**
+ * The Type cell of every asset grid (`mf-asset-type-cell`, #1269): the asset type chip (24 px tile) and the type's NAME beside it, one line, cut with an ellipsis when the column is narrow; the full
+ * name is the tooltip. It never widens its column (the column keeps the width of its heading), so the Assets list and the Matter > Assets tab share one look.
+ *
+ *   <mf-asset-type-cell [name]="a.assetTypeName" [iconKey]="a.assetTypeIconKey" [colourKey]="a.assetTypeColourKey" [typeId]="a.assetTypeId" />
+ */
+@Component({
+  selector: 'mf-asset-type-cell',
+  imports: [AssetTypeChip],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <span class="atc" [attr.title]="name() || null">
+      <mf-asset-type-chip
+        size="sm"
+        [decorative]="true"
+        [iconKey]="iconKey()"
+        [colourKey]="colourKey()"
+        [typeId]="typeId()"
+        [name]="name()"
+      />
+      <span class="atc__name" data-type-name>{{ name() }}</span>
+    </span>
+  `,
+  styles: `
+    /* contain: inline-size - the content never sizes the column; the heading's width does. */
+    :host {
+      display: block;
+      min-width: 0;
+      contain: inline-size;
+    }
+    .atc {
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s2);
+      min-width: 0;
+    }
+    .atc__name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  `,
+})
+export class AssetTypeCell {
+  readonly name = input('');
+  readonly iconKey = input<string | null | undefined>(undefined);
+  readonly colourKey = input<string | null | undefined>(undefined);
+  readonly typeId = input<number | null | undefined>(undefined);
+}
