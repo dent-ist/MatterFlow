@@ -63,6 +63,13 @@
   justify-content: flex-start;
 }
 
+/* A read-only Due (a closed task: "Was due 10/25") is centred in the 36 px value row like every other value. */
+.mf-facts .mf-facts__value > mf-due-cell {
+  display: flex;
+  align-items: center;
+  min-height: var(--mf-ctl-h);
+}
+
 @media (max-width: 1099.98px) {
   .mf-facts {
     grid-template-columns: repeat(3, minmax(0, 1fr));
