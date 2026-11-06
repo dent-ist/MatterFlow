@@ -341,6 +341,7 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
                       type="button"
                       class="mf-btn mf-btn--text who__b"
                       data-add-for
+                      [mfTip]="'Add out of office for ' + person.displayName"
                       (click)="addFor.emit({ userId: person.userId, name: person.displayName })"
                     >
                       {{ person.displayName }}
@@ -753,8 +754,6 @@ export const countPeople = (groups: readonly RoleGroup[]): number =>
       min-height: 0;
       padding: 0;
       font-size: var(--mf-fs-md);
-      text-decoration: underline;
-      text-underline-offset: 2px;
     }
     .who__p {
       overflow: hidden;

@@ -94,7 +94,7 @@ let nextId = 0;
           </p>
         } @else {
           @if (!single()) {
-            <button type="button" class="skip" data-skip-lane (click)="skipLane.emit(m.code)">
+            <button type="button" class="skip mf-sr-only" data-skip-lane (click)="skipLane.emit(m.code)">
               Skip {{ m.label }} lane
             </button>
           }
@@ -481,19 +481,16 @@ let nextId = 0;
       gap: var(--mf-s2);
       margin-top: var(--mf-s2);
     }
+    /* The shared visually-hidden pattern (mf-sr-only) hides it; a bare button also has its own padding and border. */
     .skip {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip-path: inset(50%);
-      white-space: nowrap;
+      padding: 0;
+      border: 0;
     }
     .skip:focus {
       position: static;
       width: auto;
       height: auto;
-      margin-bottom: var(--mf-s2);
+      margin: 0 0 var(--mf-s2);
       overflow: visible;
       clip-path: none;
       padding: var(--mf-s1) var(--mf-s2);
