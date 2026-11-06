@@ -271,7 +271,7 @@ describe('TaskTypeEditPage', () => {
       q<HTMLElement>('[data-tab="workflows"]').click();
       await settle(fixture);
       expect(asked).toHaveBeenCalledTimes(1);
-      expect(asked.mock.calls[0][0]).toMatchObject({ label: 'Save and leave' });
+      expect(asked.mock.calls[0][0]).toMatchObject({ label: 'Save and Leave' });
       expect(navigate).not.toHaveBeenCalled();
       expect(q<HTMLInputElement>('#tt-name').value).toBe('Something else');
 
@@ -281,13 +281,13 @@ describe('TaskTypeEditPage', () => {
       expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
     });
 
-    it('Save and leave of the question saves the tab', async () => {
+    it('Save and Leave of the question saves the tab', async () => {
       await type('#tt-name', 'Renamed');
       expect(await fixture.componentInstance.saveForLeave()).toBe(true);
       expect((await saved(1)).name).toBe('Renamed');
     });
 
-    it('Save and leave stays when the save fails', async () => {
+    it('Save and Leave stays when the save fails', async () => {
       await type('#tt-name', '   ');
       expect(await fixture.componentInstance.saveForLeave()).toBe(false);
     });

@@ -335,7 +335,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
   });
 
   test.describe('Overview and the dirty guard', () => {
-    test('editing then switching tab asks; Stay keeps the edit, Save and leave saves and switches', async ({
+    test('editing then switching tab asks; Stay keeps the edit, Save and Leave saves and switches', async ({
       page,
       seed,
       admin,
@@ -351,7 +351,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
       await expect(tab(page, 'Overview')).toHaveAttribute('aria-selected', 'true');
       await expect(name).toHaveValue(`${s.workflow.name} edited`);
       await tab(page, 'Versions').click();
-      await page.getByRole('dialog').getByRole('button', { name: 'Save and leave' }).click();
+      await page.getByRole('dialog').getByRole('button', { name: 'Save and Leave' }).click();
       await expect(tab(page, 'Versions')).toHaveAttribute('aria-selected', 'true');
       await expect(page.getByRole('heading', { level: 1 })).toContainText('edited');
     });

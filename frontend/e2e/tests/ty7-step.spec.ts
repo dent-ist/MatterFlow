@@ -331,7 +331,7 @@ test.describe('Step record page', () => {
       expect(saved.title).toBe(`${step.title} renamed`);
     });
 
-    test('switching tabs with unsaved edits asks first: Stay keeps them, Save and leave saves, Leave drops them', async ({
+    test('switching tabs with unsaved edits asks first: Stay keeps them, Save and Leave saves, Leave drops them', async ({
       page,
       seed,
       admin,
@@ -349,7 +349,7 @@ test.describe('Step record page', () => {
       await expect(page.locator('#step-description')).toHaveValue('Edited description');
 
       await tab(page, 'inputs').click();
-      await dialog.getByRole('button', { name: 'Save and leave' }).click();
+      await dialog.getByRole('button', { name: 'Save and Leave' }).click();
       await expect(page).toHaveURL(/tab=inputs/);
       const saved = (await admin.get(`/api/v1/step-definitions/${step.id}`)) as {
         description: string;
@@ -365,7 +365,7 @@ test.describe('Step record page', () => {
       await expect(page.locator('#step-description')).toHaveValue('Edited description');
     });
 
-    test('Edit inputs with unsaved edits asks first, and Save and leave saves then opens the designer', async ({
+    test('Edit inputs with unsaved edits asks first, and Save and Leave saves then opens the designer', async ({
       page,
       seed,
       admin,
@@ -377,7 +377,7 @@ test.describe('Step record page', () => {
       await page.locator('[data-action=edit-inputs]').click();
       const dialog = page.getByRole('dialog');
       await expect(dialog).toBeVisible();
-      await dialog.getByRole('button', { name: 'Save and leave' }).click();
+      await dialog.getByRole('button', { name: 'Save and Leave' }).click();
       await expect(page).toHaveURL(new RegExp(`/admin/steps/${step.id}/form$`));
       const saved = (await admin.get(`/api/v1/step-definitions/${step.id}`)) as {
         instructions: string;

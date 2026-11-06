@@ -169,7 +169,9 @@ const OWNED_BY_CARD: Record<CardKey, readonly string[]> = {
               [defs]="gridDefs()"
               [prefs]="prefs()"
               (prefsChange)="setPrefs($event)"
+              [widthReset]="true"
               (resetColumns)="resetPrefs()"
+              (resetWidths)="resetWidths()"
             />
           }
           <mf-phone-sort
@@ -307,9 +309,15 @@ export class DashGrid {
     this.prefs.set(next);
     saveGridPrefs(this.prefsKey(), next);
   }
+  /** "Reset to Default" also drops a stored Title width (as on Task Queue): the Title is the spring and returns to filling the free room. */
   protected resetPrefs(): void {
     this.prefs.set(DEFAULT_GRID_PREFS);
     clearGridPrefs(this.prefsKey());
+    this.widthStore.reset('dashboardSummary', this.auth.profile()?.userId ?? null, 'title');
+  }
+  /** "Reset Width" of the Columns panel: every stored width of this grid goes (the Title and the others). */
+  protected resetWidths(): void {
+    this.widthStore.resetAll('dashboardSummary', this.auth.profile()?.userId ?? null);
   }
   protected onColumnMoved(move: ColumnMove): void {
     this.setPrefs({

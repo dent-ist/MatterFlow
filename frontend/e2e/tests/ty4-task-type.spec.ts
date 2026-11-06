@@ -297,7 +297,7 @@ test.describe('Task Type record page', () => {
       );
     });
 
-    test('switching tabs with unsaved edits asks first: Stay keeps them, Save and leave saves, Leave drops them', async ({
+    test('switching tabs with unsaved edits asks first: Stay keeps them, Save and Leave saves, Leave drops them', async ({
       page,
       seed,
       admin,
@@ -316,7 +316,7 @@ test.describe('Task Type record page', () => {
       await expect(page.locator('#tt-description')).toHaveValue('Edited description');
 
       await tab(page, 'workflows').click();
-      await dialog.getByRole('button', { name: 'Save and leave' }).click();
+      await dialog.getByRole('button', { name: 'Save and Leave' }).click();
       await expect(page).toHaveURL(/tab=workflows/);
       await expect(page.locator('[data-footer]')).toHaveCount(0);
       const saved = (await admin.get(`/api/v1/task-types/${w.type.id}`)) as { description: string };
@@ -863,7 +863,7 @@ test.describe('Task Type record page', () => {
   });
 
   test.describe('leaving with edits', () => {
-    test('the crumb back to the list asks, offers Save and leave and keeps the list view', async ({
+    test('the crumb back to the list asks, offers Save and Leave and keeps the list view', async ({
       page,
       seed,
       admin,
@@ -879,9 +879,9 @@ test.describe('Task Type record page', () => {
         .getByRole('link', { name: 'Task Types' })
         .click();
       const dialog = page.getByRole('dialog');
-      await expect(dialog.getByRole('button', { name: 'Save and leave' })).toBeVisible();
+      await expect(dialog.getByRole('button', { name: 'Save and Leave' })).toBeVisible();
       await shot(page, 'leave-page-dialog', 1366);
-      await dialog.getByRole('button', { name: 'Save and leave' }).click();
+      await dialog.getByRole('button', { name: 'Save and Leave' }).click();
       await expect(page).toHaveURL(new RegExp(`/admin/task-types\\?name=${w.token}`));
       const saved = (await admin.get(`/api/v1/task-types/${w.type.id}`)) as { description: string };
       expect(saved.description).toBe('Saved on the way out');

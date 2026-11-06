@@ -533,7 +533,7 @@ export class WorkflowEditPage implements HasUnsavedChanges {
     return this.fieldError('name');
   });
 
-  readonly saveForLeaveLabel = 'Save and leave';
+  readonly saveForLeaveLabel = 'Save and Leave';
 
   constructor() {
     // After Publish or Discard draft on the version page this page puts focus on the Published badge (#414).
@@ -605,7 +605,7 @@ export class WorkflowEditPage implements HasUnsavedChanges {
   }
 
   /**
-   * Opens a tab. A tab with edits asks first (Stay, Leave, or Save and leave) because each tab saves on its own; leaving drops its edits.
+   * Opens a tab. A tab with edits asks first (Stay, Leave, or Save and Leave) because each tab saves on its own; leaving drops its edits.
    * Resolves true when the tab was opened. The address is replaced, not added, so Back leaves the page.
    */
   protected async select(key: string): Promise<boolean> {

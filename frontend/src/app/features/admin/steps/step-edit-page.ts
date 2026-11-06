@@ -83,7 +83,7 @@ function sameTags(a: readonly string[], b: readonly string[]): boolean {
  * Admin: the Step record page (UX S15, SE1 to SE5, #403 to #406). Option A of the review: inline editing under a record header
  * (`mf-record-header`: the step title as the H1 with Active / Inactive, Edit, Activity, the primary Edit inputs and an overflow with Deactivate
  * or Activate), a summary strip (Status, Used in n workflows, Inputs, Tags) and tabs Details | Inputs | Used by (n) (`?tab=`, replaced not
- * added). Details is the only tab with edits and saves on its own; switching tabs or leaving with edits asks first and offers Save and leave.
+ * added). Details is the only tab with edits and saves on its own; switching tabs or leaving with edits asks first and offers Save and Leave.
  * Inputs lists the step's form read-only (the designer is `/admin/steps/:id/form`); Used by links to every workflow version that contains the
  * step. A new step opens on Inputs after it is saved; until then those two tabs are disabled. Needs `Workflow.Manage` (route guard); the
  * list of inputs needs only `Workflow.Manage`; if the server refuses the read anyway the tab says so.
@@ -334,9 +334,9 @@ export class StepEditPage implements HasUnsavedChanges {
     return this.dirty();
   }
 
-  readonly saveForLeaveLabel = 'Save and leave';
+  readonly saveForLeaveLabel = 'Save and Leave';
 
-  /** "Save and leave" of the leave question: saves the Details edits; false (the person stays) when it did not save. */
+  /** "Save and Leave" of the leave question: saves the Details edits; false (the person stays) when it did not save. */
   async saveForLeave(): Promise<boolean> {
     return this.save();
   }
@@ -515,7 +515,7 @@ export class StepEditPage implements HasUnsavedChanges {
   }
 
   /**
-   * Opens a tab. Details with edits asks first (Stay, Leave, or Save and leave); leaving drops its edits. Resolves true when the tab was
+   * Opens a tab. Details with edits asks first (Stay, Leave, or Save and Leave); leaving drops its edits. Resolves true when the tab was
    * opened. The address is replaced, not added, so Back leaves the page.
    */
   protected async select(key: string): Promise<boolean> {

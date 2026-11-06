@@ -79,6 +79,10 @@ import { ScrollArea } from './fixed-page';
       z-index: 1;
       background: var(--mf-surface);
     }
+    /* The filter row has one background across all cells, the sticky first one included (D-44d). */
+    :host ::ng-deep .tt thead .mf-filter-row td:first-child {
+      background: var(--mf-surface-alt);
+    }
     :host ::ng-deep .tt tbody tr:hover > td:first-child {
       background: var(--mf-row-hover);
     }

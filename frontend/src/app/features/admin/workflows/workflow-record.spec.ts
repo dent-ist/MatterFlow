@@ -375,7 +375,7 @@ describe('WorkflowEditPage record page (WP-TY5)', () => {
     const { LeaveConfirmService } = await import('../../../shared/guards/unsaved-changes.guard');
     const leave = TestBed.inject(LeaveConfirmService);
     expect(leave.open()).toBe(true);
-    expect(leave.saveOffer()?.label).toBe('Save and leave');
+    expect(leave.saveOffer()?.label).toBe('Save and Leave');
     leave.answer(true);
     await settle(fixture);
     expect(navigate).toHaveBeenCalledWith(

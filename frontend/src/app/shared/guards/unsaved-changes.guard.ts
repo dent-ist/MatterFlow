@@ -46,7 +46,7 @@ export class LeaveConfirmService {
     resolve?.(leave);
   }
 
-  /** "Save and leave": saves, then leaves; if saving fails the person stays (the page shows what went wrong). */
+  /** "Save and Leave": saves, then leaves; if saving fails the person stays (the page shows what went wrong). */
   async saveAndLeave(): Promise<void> {
     const offer = this.saveOffer();
     if (!offer || this.saving()) return;
@@ -69,7 +69,7 @@ export const unsavedChangesGuard: CanDeactivateFn<HasUnsavedChanges> = (componen
     ? inject(LeaveConfirmService).ask(
         component.saveForLeave
           ? {
-              label: component.saveForLeaveLabel ?? 'Save and leave',
+              label: component.saveForLeaveLabel ?? 'Save and Leave',
               run: () => component.saveForLeave!(),
             }
           : null,

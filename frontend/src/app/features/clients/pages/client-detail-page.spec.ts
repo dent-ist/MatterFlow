@@ -205,6 +205,9 @@ describe('ClientDetailPage', () => {
       el().querySelector<T>(`[aria-label^="Filter by ${name}"]`)!;
     expect(control('Matter')).not.toBeNull();
     expect(control('Name')).not.toBeNull();
+    // D-44d: the input says the short heading word, not "Matter" for a CM Number.
+    expect(control('Matter').getAttribute('placeholder')).toBe('Number');
+    expect(control('Name').getAttribute('placeholder')).toBe('Name');
     expect(ddSelect(document.body, 'Filter by Status').value).toBe('active');
     expect(ddSelect(document.body, 'Filter by Sensitive').value).toBe('');
     expect(el().querySelector('[data-more-filters]')).toBeNull();

@@ -120,7 +120,7 @@ const workflowsKey = (m: Model): string =>
  * (`mf-record-header`: icon and name, Active / Inactive / Not usable, Edit, Activity, the primary Edit form and an overflow with Deactivate or
  * Activate), a summary strip, one neutral status note naming why a type is not usable, and tabs Overview | Workflows (n) | Request form
  * (`?tab=`, replaced not added). Each tab saves on its own (the footer shows only for a tab with edits); switching tabs or leaving with
- * edits asks first and offers Save and leave. A new type is saved first (name, icon, description and the workflows together) and then
+ * edits asks first and offers Save and Leave. A new type is saved first (name, icon, description and the workflows together) and then
  * opens on its Workflows tab; its Request form tab is disabled until then. Needs `TaskType.Manage`.
  */
 @Component({
@@ -310,9 +310,9 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
     return this.dirty();
   }
 
-  readonly saveForLeaveLabel = 'Save and leave';
+  readonly saveForLeaveLabel = 'Save and Leave';
 
-  /** "Save and leave" of the leave question: saves what has edits; false (the person stays) when it did not save. */
+  /** "Save and Leave" of the leave question: saves what has edits; false (the person stays) when it did not save. */
   async saveForLeave(): Promise<boolean> {
     return this.save();
   }
@@ -533,7 +533,7 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
   }
 
   /**
-   * Opens a tab. A tab with edits asks first (Stay, Leave, or Save and leave) because each tab saves on its own; leaving drops its edits.
+   * Opens a tab. A tab with edits asks first (Stay, Leave, or Save and Leave) because each tab saves on its own; leaving drops its edits.
    * Resolves true when the tab was opened. The address is replaced, not added, so Back leaves the page.
    */
   protected async select(key: string, focusAdd = false): Promise<boolean> {

@@ -160,7 +160,7 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
     await name(page).fill('Half typed');
     await page.getByRole('tab', { name: /^Fields/ }).click();
     await expect(ask(page)).toBeVisible();
-    await expect(ask(page).getByRole('button', { name: 'Save and leave' })).toBeVisible();
+    await expect(ask(page).getByRole('button', { name: 'Save and Leave' })).toBeVisible();
     await ask(page).getByRole('button', { name: 'Keep Editing' }).click();
     await expect(name(page)).toHaveValue('Half typed');
     // Navigating away asks too.

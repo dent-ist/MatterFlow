@@ -294,9 +294,9 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
     return this.dirty();
   }
 
-  readonly saveForLeaveLabel = 'Save and leave';
+  readonly saveForLeaveLabel = 'Save and Leave';
 
-  /** "Save and leave" of the leave question: saves; false (the person stays) when it did not save. */
+  /** "Save and Leave" of the leave question: saves; false (the person stays) when it did not save. */
   async saveForLeave(): Promise<boolean> {
     return this.save();
   }
@@ -471,7 +471,7 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
       await this.router.navigate(['/admin/asset-types', t.assetTypeId, 'form'], this.back.extras);
   }
 
-  /** Opens a tab. Edits ask first (Stay, Leave, or Save and leave). The address is replaced, not added, so Back leaves the page. */
+  /** Opens a tab. Edits ask first (Stay, Leave, or Save and Leave). The address is replaced, not added, so Back leaves the page. */
   protected async select(key: string): Promise<boolean> {
     const to = assetTypeTabOf(key, this.isNew(), this.canSeeAssets());
     if (to === this.current()) return true;

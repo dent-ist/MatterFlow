@@ -377,7 +377,12 @@ export class ClientMatters extends ServerListPage<MatterResponse> {
   protected readonly INACTIVE_REASON = INACTIVE_REASON;
 
   /** One definition per filter (the Matters list's, without the Client column). */
-  private readonly defs = computed((): FilterDef[] => matterColumnDefs('Matter'));
+  private readonly defs = computed((): FilterDef[] =>
+    // The input says the short heading word (D-44d): the column is CM Number, so "Number", not "Matter".
+    matterColumnDefs('Matter').map((d) =>
+      d.key === 'matterRef' ? { ...d, placeholder: 'Number' } : d,
+    ),
+  );
 
   protected readonly filters: ListFilters = new ListFilters({
     screen: 'client-matters',
