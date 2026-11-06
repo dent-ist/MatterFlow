@@ -133,6 +133,15 @@ describe('MattersListPage', () => {
     return fixture;
   }
 
+  it('gives the Status column 160 px, the same as Client > Matters, with Active and Sensitive as one pair (#1276)', async () => {
+    const fixture = await create();
+    const status = fixture.nativeElement.querySelector(
+      'thead tr:first-child th[data-col="status"]',
+    )!;
+    expect(status.getAttribute('data-rg-width')).toBe('160px');
+    expect(fixture.nativeElement.querySelectorAll('.cfr-pair mf-filter-control')).toHaveLength(2);
+  });
+
   it('shows the combined reference in monospace with a copy button, the client and the status', async () => {
     const fixture = await create();
     const rows = fixture.nativeElement.querySelectorAll('tbody tr');

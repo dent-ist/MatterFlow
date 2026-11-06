@@ -512,21 +512,24 @@ test.describe('WP8 list chrome', () => {
       await expect(page.getByRole('button', { name: 'Other Filters' })).toHaveCount(0);
       const sensitive = select(page, 'Sensitive');
       await expect(sensitive).toHaveAttribute('data-value', '');
-      // Up to 1499 px the two stack in the Status cell (PM v2, #881: side by side they took the room of Name and Client): under Status, same column.
-      const [stackedStatus, stackedSensitive] = [
-        await select(page, 'Status').boundingBox(),
-        await sensitive.boundingBox(),
-      ];
-      expect(stackedSensitive!.y).toBeGreaterThan(stackedStatus!.y);
-      expect(Math.abs(stackedSensitive!.x - stackedStatus!.x)).toBeLessThan(4);
-      // From 1500 px: after Status, in the same row.
-      await page.setViewportSize({ width: 1600, height: 900 });
-      const [statusBox, sensitiveBox] = [
-        await select(page, 'Status').boundingBox(),
-        await sensitive.boundingBox(),
-      ];
-      expect(sensitiveBox!.x).toBeGreaterThan(statusBox!.x);
-      expect(Math.abs(sensitiveBox!.y - statusBox!.y)).toBeLessThan(4);
+      // Active and Sensitive are stacked in the Status cell at every width (#1276; PM v2, #881): Sensitive under Status, same column, and
+      // the Status column is 160 px at 1366 and at 1920, like Client > Matters.
+      for (const [width, height] of [
+        [1366, 768],
+        [1920, 1080],
+      ] as const) {
+        await page.setViewportSize({ width, height });
+        const [statusBox, sensitiveBox] = [
+          await select(page, 'Status').boundingBox(),
+          await sensitive.boundingBox(),
+        ];
+        expect(sensitiveBox!.y).toBeGreaterThan(statusBox!.y);
+        expect(Math.abs(sensitiveBox!.x - statusBox!.x)).toBeLessThan(4);
+        const th = await grid(page, 'Matters list')
+          .locator('thead th[data-col="status"]')
+          .boundingBox();
+        expect(Math.abs(th!.width - 160)).toBeLessThanOrEqual(2);
+      }
       await shot(page, 'matters-sensitive-filter');
 
       await sensitive.selectOption('true');

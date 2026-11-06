@@ -229,8 +229,8 @@ describe('ClientDetailPage', () => {
       ['name', null],
       ['status', '160px'],
     ]);
-    // The Status cell keeps Active and Sensitive stacked at every width (#1272).
-    expect(tab.querySelector('.cfr-pair')!.classList.contains('cfr-pair--stacked')).toBe(true);
+    // The Status cell holds Active and Sensitive as one stacked pair at every width (#1272, #1276); the layout itself is checked in the e2e spec.
+    expect(tab.querySelectorAll('.cfr-pair mf-filter-control')).toHaveLength(2);
   });
 
   it('filters, sorts and pages the matters through the address', async () => {

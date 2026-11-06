@@ -38,7 +38,7 @@ interface Cell {
     @for (cell of cells(); track cell.column) {
       <td [attr.colspan]="cell.span > 1 ? cell.span : null">
         @if (cell.beside) {
-          <div class="cfr-pair" [class.cfr-pair--stacked]="stacked()">
+          <div class="cfr-pair">
             @for (d of cell.defs; track d.key) {
               <mf-filter-control [def]="d" [filters]="filters()" />
             }
@@ -60,8 +60,8 @@ interface Cell {
     td > mf-filter-control + mf-filter-control {
       margin-top: var(--mf-s1);
     }
-    /* Two filters of one column (Sensitive beside Status): stacked on a window up to 1499 px, side by side with a floor of their own on a wide
-       one, so the cell never depends on what the rows hold. Side by side they took 16rem from Name and Client at 1366 px (PM v2, #881). */
+    /* Two filters of one column (Sensitive under Status) are stacked at every width, so the Status column is the same 160 px on the Matters list and on
+       Client > Matters and the cell never depends on what the rows hold (#881, #1272, #1276). */
     .cfr-pair {
       display: grid;
       gap: var(--mf-s1);
@@ -71,20 +71,12 @@ interface Cell {
     .cfr-pair > mf-filter-control {
       min-width: 0;
     }
-    @media (min-width: 1500px) {
-      .cfr-pair:not(.cfr-pair--stacked) {
-        grid-template-columns: 5.5rem minmax(9.5rem, 1fr);
-        min-width: 15rem;
-      }
-    }
   `,
 })
 export class ColumnFilterRow {
   readonly filters = input.required<ListFilters>();
   /** Keys of the columns on screen, in order. */
   readonly columns = input.required<readonly string[]>();
-  /** Keep two filters of one column stacked at every width (a grid whose Status column is as narrow as the chip, the Client > Matters tab; #1272). */
-  readonly stacked = input(false);
 
   protected readonly cells = computed<Cell[]>(() => {
     const defs = this.filters().defs();

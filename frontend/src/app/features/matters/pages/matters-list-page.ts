@@ -749,7 +749,8 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
         num: true,
         extra: true,
       })),
-      { key: 'status', label: 'Status' },
+      // 160 px at every width, like Client > Matters: the filter row's Status cell stacks Active above Sensitive (#1276).
+      { key: 'status', label: 'Status', width: '160px', minWidth: '160px' },
     ];
   });
   /** The grid state (shared record grid, #1241): order, visibility and stored widths per person under the id "matters". */

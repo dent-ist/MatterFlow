@@ -233,7 +233,6 @@ const BONES: Record<string, string> = {
               id="client-matter-filter-row"
               [filters]="filters"
               [columns]="columns()"
-              [stacked]="true"
             ></tr>
           }
           <span mfEmptyAction *mfHasPermission="'Matter.Create'">
