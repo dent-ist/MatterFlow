@@ -52,7 +52,7 @@ export function riskSentence(risk: CalSummary['risk']): string {
             @if (s.risk.firstRiskDate) {
               <button
                 type="button"
-                class="mf-btn risk__b"
+                class="mf-btn mf-btn--text risk__b"
                 data-show-risk
                 (click)="showRisk.emit(s.risk.firstRiskDate!)"
               >
@@ -133,20 +133,16 @@ export function riskSentence(risk: CalSummary['risk']): string {
     }
     .risk {
       display: flex;
-      flex: 0 1 auto;
+      flex: 1 1 100%;
       align-self: center;
       align-items: center;
       gap: var(--mf-s2);
       min-width: 0;
       padding: 2px var(--mf-s3);
       border: 1px solid var(--cs);
-      border-radius: var(--mf-radius-pill);
+      border-radius: var(--mf-radius-lg);
       background: var(--cb);
       color: var(--cf);
-    }
-    .risk__b {
-      min-height: 28px;
-      padding-block: 0;
     }
     .risk__t {
       flex: 1 1 auto;
