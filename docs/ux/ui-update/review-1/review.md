@@ -305,3 +305,20 @@ Axe: 0 violations on Search (results and none), Notifications (two users) and Pr
 | #1192 Out of Office dialog | PASS with leftovers | 576 px, "Save Changes" on Edit, `mm/dd/yyyy` dates with `lang="en-US"`, overlap answer shown as a tinted danger banner with icon (own style, radius 8, 50 px): use `.pg-banner` (#1255). The Type field is still a native select (#1251). |
 
 Rulings: Conference stays neutral (no seventh tone, D-54); "See All N" is a link-as-text-button (D-13a) and the casing change is done together for the menu and the page in #1254; the overlap and advice banners move to `.pg-banner` (#1255); relative times today and yesterday, numeric from two days ago confirmed (D-54).
+
+## review-19 Administration Users and Task Types lists (2026-11-06, tip e23e129, 1366 and 1920, as KE\kekim)
+
+Evidence: `design-evidence`, `evidence/2026-11-06-review-19-admin-users-task-types/` (15 JPEG, `measurements.json`, `axe.json`). Axe: 0 violations on Users, Task Types, Task Type, Workflow and Step at both sizes; the form designer has one `heading-order` (fix in #1256).
+
+| Issue | Result | Notes |
+|---|---|---|
+| #1197 Users list | PASS | Record grid, 44 px rows, columns 303/126/210/140/113/155/48 (1096 px), no "Other Filters" button (extra columns in Columns), Grant Access in the Roles cell, 520 px drawer. Private `.us-open` name class: #1257. |
+| #1198 | PASS | Already done (drawer 520 px, footer Cancel and Save Changes). |
+| #1199 Roles | PASS with a point | "Built-in, Locked" chip, 36 px permission rows; master-detail accepted. "System Admin" wraps at 1366: #1257. |
+| #1200 Pods | PASS | Record grid with Name, Members, Status. |
+| #1201 Task Types list | FAIL (small) | Table 1139 px in a 1096 px frame at 1366 (43 px sideways scroll). Fix in #1256. |
+| #1202 Task Type record | NOT DONE | Header shows "Edit" and "Edit Form" while Overview is already a form; icon is a bare glyph; designer has its own H1, versions bar and 32 px inner tabs. Specs in #1256. |
+| #1203 Workflows | PASS with a point | Record grid. Row key is the name: use the id (#1256). |
+| #1204 Steps | PASS with a point | Record grid. Row key is the title, unique only among active steps: use the id (#1256). |
+
+Rulings: D-44l, D-44m, D-44n. Pods popover stays Apply and Cancel; Grant Access stays in the Roles cell; role checklist stays; Roles master-detail accepted; Pods Lead and Open Tasks not built; user name = `mf-btn--name`; "Built-in, Locked" confirmed.
