@@ -438,3 +438,15 @@ Guideline text updated in this sweep: D-80 (rail below 1100 px removed), D-46 (u
 | Wiki | OK | Catalogue and UI Standard match section 3 (`mf-btn--name`, `--chip`, details card, record grid, Copy Reference, `field` on the dropdown, banners). One sentence in the Banner section mentions the old D-10a conflict: #1271. |
 
 Rulings (D-82 exceptions): 200 percent zoom (683 px), 1098 and 1023 px frame checks stay; 400 percent (342 px), tablet rail tips, narrow column-drop tests and tab-strip scroll cues are deleted correctly; non-layout tests moved to 1366x768 are right; phone code and phone unit specs stay.
+
+## review-28 Matter tabs and Client Matters tab on the shared grid (2026-11-06, tip c4cce1a, 1366 and 1920)
+
+Evidence: `design-evidence`, `evidence/2026-11-06-review-28-matter-client-tabs-grid/`. I created one production through the dialog on the real stack, looked at it, and deleted it again (demo data is clean).
+
+| Issue | Verdict | Notes |
+|---|---|---|
+| #1269 Matter tabs | PASS | Projects (679/125/105/140/48), Assets (128/485/105/168/162/48), Productions (216/168/246/106/160/152/48), Activities (124/876/96): table 1096 px at 1366, no sideways scroll, rows 44 px, no clipped cell, resize handles and Columns on each, axe 0 at both sizes. Productions row menu "Open Production", "Delete Production" (confirm "Delete Production"); Specs empty state shown. Activities: band stays while rows move (#1259). |
+| #1270 Client > Matters | PASS with a point | Same grid, 5 handles, Columns, filters kept. Status is 238 px but the filters are stacked as on the Matters list (Status 160): #1272. |
+| #1176 | closed by decision | Select and View are not needed on the Projects and Assets tabs; point 3 (Project cell as a link) is #1273. |
+
+Rulings: no Search box on Client > Matters accepted; Productions menu Open/Delete and Specs menu Open/Duplicate accepted (D-44g); more than 100 projects sorting only the loaded ones accepted; the Project cell becomes a link with "Move to Project..." in the row menu (#1273); the `button-rule.spec` failure is a CSS fault, the chip button takes `min-height: var(--mf-chip-h)` (#1274).
