@@ -100,7 +100,11 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
   styleUrl: '../../../shared/work-queue/work-page.scss',
   template: `
     <mf-fixed-page>
-      <mf-page-header heading="Task Queue" [count]="loadState() === 'ready' ? total() : null">
+      <mf-page-header
+        heading="Task Queue"
+        [count]="loadState() === 'ready' ? total() : null"
+        [countPending]="loadState() !== 'ready'"
+      >
         <mf-scope-switch
           mfActions
           [scope]="scope.value()"

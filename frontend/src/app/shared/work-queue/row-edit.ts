@@ -24,6 +24,7 @@ import { NotificationService } from '../../core/notify/notification.service';
 import { UndoService } from '../../core/notify/undo.service';
 import { ACTION_LABELS } from '../../features/tasks/detail/task-detail.store';
 import { PriorityFlag } from '../ui/priority-flag';
+import { STATUS_CHIPS } from '../ui/status-chip';
 import { StatusBadge } from '../ui/status-badge';
 import { Tip } from '../ui/tip';
 import {
@@ -299,6 +300,7 @@ export class RowEdit {
               .filter((o) => o.permitted || o.blockedReason !== 'PERMISSION_DENIED')
               .map((o) => ({
                 id: o.action,
+                icon: STATUS_CHIPS[o.targetStatus]?.icon,
                 label: ACTION_LABELS[o.action] ?? o.action,
                 tip: this.lookups.statusLabel(o.targetStatus),
                 disabled: !o.permitted,
@@ -316,6 +318,7 @@ export class RowEdit {
         return cancelLast(
           statusChoices(r, (p) => this.auth.has(p)).map((c) => ({
             id: c.action,
+            icon: STATUS_CHIPS[c.target]?.icon,
             label:
               c.action === 'COMPLETE' && completion.state === 'blocked'
                 ? 'Complete... (needs step inputs)'

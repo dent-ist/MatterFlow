@@ -133,7 +133,7 @@ describe('MyWorkPage', () => {
     const item = (el: HTMLElement, key: string) =>
       el.querySelector<HTMLButtonElement>(`[data-strip-item="${key}"]`)!;
 
-    it('shows the four counts above the tabs, a zero muted but present', async () => {
+    it('shows the four counts under the tabs and above the toolbar, a zero muted but present (#1167)', async () => {
       const el = await open('/my-work');
       const strip = el.querySelector('[data-strip]')!;
       expect(strip.textContent!.replace(/\s+/g, ' ').trim()).toBe(
@@ -143,8 +143,13 @@ describe('MyWorkPage', () => {
         'All your open tasks, not affected by the filters below',
       );
       expect(item(el, 'onHold').classList).toContain('zero');
+      // The order of the page: header, view strip (tabs), summary chips, toolbar.
       expect(
-        strip.compareDocumentPosition(el.querySelector('[data-tab-row]')!) &
+        el.querySelector('[data-tab-row]')!.compareDocumentPosition(strip) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(
+        strip.compareDocumentPosition(el.querySelector('[data-list-toolbar]')!) &
           Node.DOCUMENT_POSITION_FOLLOWING,
       ).toBeTruthy();
     });

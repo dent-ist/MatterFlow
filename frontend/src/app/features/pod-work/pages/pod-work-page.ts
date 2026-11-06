@@ -169,6 +169,7 @@ type TabKey = 'queue' | 'members' | 'all';
         heading="Pod Work"
         [description]="contextLine()"
         [count]="loadState() === 'ready' && data()?.pod && !emptyMembers() ? total() : null"
+        [countPending]="loadState() !== 'ready'"
       >
         <span mfTitle class="pw-title">Pod Work</span>
         @if (pods().length > 0) {
@@ -229,12 +230,6 @@ type TabKey = 'queue' | 'members' | 'all';
           <mf-pod-picker-list [pods]="pods()" (chosen)="chooseFromList($event)" />
         }
       } @else {
-        <mf-pod-work-strip
-          [summary]="data()?.summary ?? null"
-          [active]="activeStrip()"
-          (pick)="pickStrip($event)"
-        />
-
         <div class="wp-tabrow" data-tab-row>
           <mf-work-tabs
             label="Pod Work views"
@@ -287,6 +282,12 @@ type TabKey = 'queue' | 'members' | 'all';
               searchLabel="Search tasks"
               (showColumn)="showColumn($event)"
             >
+              <mf-pod-work-strip
+                mfView
+                [summary]="data()?.summary ?? null"
+                [active]="activeStrip()"
+                (pick)="pickStrip($event)"
+              />
               <mf-work-view-controls
                 mfColumns
                 [sort]="state().sort"

@@ -94,6 +94,12 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
               <mf-count-chip data-list-count
                 ><span class="mf-sr-only">Total: </span>{{ countText() }}</mf-count-chip
               >
+            } @else if (countPending()) {
+              <!-- A list that has no number yet (loading) or cannot get one (error): a dash, never a stale or a zero count (#1170). -->
+              <mf-count-chip data-list-count data-count-pending
+                ><span class="mf-sr-only">Total: not available</span
+                ><span aria-hidden="true">-</span></mf-count-chip
+              >
             }
             <ng-content select="[mfTitleExtra]" />
           </div>
@@ -326,6 +332,8 @@ export class PageHeader {
   readonly icon = input<string | null>(null);
   /** A list page: the total after the filters as a small chip after the title (null while loading, so the chip is left out). */
   readonly count = input<number | null>(null);
+  /** With no `count`: show a "-" in the chip (the work lists while they load and after an error, #1170) instead of leaving the chip out. */
+  readonly countPending = input(false);
   /** An id for the H1 when something points at it (`aria-labelledby`, the Dashboard's panel). */
   readonly titleId = input<string | null>(null);
   protected readonly countText = computed(() => (this.count() ?? 0).toLocaleString('en-US'));

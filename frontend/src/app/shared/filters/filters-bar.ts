@@ -48,7 +48,7 @@ let nextId = 0;
                 <li>
                   <button
                     type="button"
-                    class="mfm__item"
+                    class="mfm__item mf-menu__item"
                     [attr.data-more-filter]="d.key"
                     (click)="picked.set(d)"
                   >
@@ -75,22 +75,9 @@ let nextId = 0;
       padding: 0;
       list-style: none;
     }
+    /* The entry is the shared menu item (mf-menu__item: 36 px, 14 px, row hover, #1169); only the "(set)" at the right is here. */
     .mfm__item {
-      display: flex;
       justify-content: space-between;
-      width: 100%;
-      min-height: 32px;
-      padding: 0 var(--mf-s2);
-      border: 0;
-      border-radius: var(--mf-radius);
-      background: transparent;
-      color: inherit;
-      font: inherit;
-      text-align: left;
-      cursor: pointer;
-    }
-    .mfm__item:hover {
-      background: var(--mf-surface-alt);
     }
     .mfm__set {
       color: var(--mf-text-muted);

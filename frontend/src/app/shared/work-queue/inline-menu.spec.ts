@@ -50,6 +50,29 @@ describe('InlineMenu focus (UXR2-05)', () => {
   });
 });
 
+describe('InlineMenu is the shared menu (D-36, #1169)', () => {
+  it('draws the surface as mf-menu and every entry as a 36 px mf-menu__item, with the registry icon of an entry', () => {
+    const fixture = TestBed.createComponent(Host);
+    fixture.componentInstance.options.push({
+      id: 'c',
+      label: 'Put on hold',
+      icon: 'pi-pause-circle',
+    });
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    document.body.appendChild(root);
+    root.querySelector<HTMLButtonElement>('[data-inline-trigger]')!.click();
+    fixture.detectChanges();
+    const pop = root.querySelector('.im-pop')!;
+    expect(pop.classList).toContain('mf-menu');
+    const items = Array.from(pop.querySelectorAll('.im-item'));
+    expect(items).toHaveLength(3);
+    for (const item of items) expect(item.classList).toContain('mf-menu__item');
+    expect(pop.querySelector('[data-option="c"] .pi-pause-circle')).not.toBeNull();
+    root.remove();
+  });
+});
+
 describe('InlineMenu Escape on the trigger', () => {
   it('lets Escape reach a dialog around a closed menu, and keeps other keys from the row', () => {
     const fixture = TestBed.createComponent(Host);
@@ -117,7 +140,7 @@ describe('InlineMenu placement (DASH-11)', () => {
   it('shrinks and scrolls inside the free space when neither side has room', async () => {
     const { root, pop } = await open(300, 600);
     expect(pop.style.maxHeight).not.toBe('');
-    expect(parseInt(pop.style.maxHeight, 10)).toBeLessThanOrEqual(256);
+    expect(parseInt(pop.style.maxHeight, 10)).toBeLessThanOrEqual(320);
     root.remove();
   });
 });

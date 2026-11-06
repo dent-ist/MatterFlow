@@ -131,6 +131,18 @@ describe('AssetLinkedTasks', () => {
     );
   });
 
+  it('the link role is the tooltip of the Title link and part of the row name, not a column (#1240)', async () => {
+    await create(['Asset.View', 'Task.View']);
+    const title = (n: string) =>
+      el().querySelector<HTMLElement>(`tr[data-task="${n}"] a[data-title-link]`)!;
+    title('TSK-1').dispatchEvent(new Event('mouseenter'));
+    expect(document.querySelector('[role="tooltip"]')?.textContent).toBe('Linked as Source');
+    title('TSK-1').dispatchEvent(new Event('mouseleave'));
+    expect(el().querySelector('tr[data-task="TSK-1"]')?.textContent).toContain('linked as Source');
+    // A link without a role has nothing to add to the row name.
+    expect(el().querySelector('tr[data-task="TSK-3"]')?.textContent).not.toContain('linked as');
+  });
+
   it('is sorted by due date, no due date last, and sorts by Due and Status', async () => {
     await create(['Asset.View', 'Task.View']);
     // The API order is kept as given for equal keys; the due sort puts the earliest first and ASAP last.

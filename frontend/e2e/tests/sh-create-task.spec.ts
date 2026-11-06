@@ -5,7 +5,8 @@ import { noHorizontalScroll, shot, SIZES } from '../support/screens';
 
 /**
  * S1 (#625): the global "Create task" button is hidden on Matter and Project records, whose record header has its own (route data
- * `hidesGlobalCreateTask`); Client records and lists keep it; without Task.Create there is none.
+ * `hidesGlobalCreateTask`); Client records and lists keep it; without Task.Create there is none. The Task Queue, My Work and Pod Work have their own
+ * "New Task" in the page header, so the global one is hidden there too (#1167).
  */
 const nav = (page: Page) => page.getByRole('navigation', { name: 'Main' });
 
@@ -29,10 +30,17 @@ test.describe('Global Create task (#625)', () => {
         await expect(create(page)).toHaveCount(1);
         await expect(create(page)).toBeVisible();
       }
-      for (const url of [`/clients/${client.clientId}`, '/clients', '/matters', '/tasks']) {
+      for (const url of [`/clients/${client.clientId}`, '/clients', '/matters']) {
         await page.goto(url);
         await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
         await expect(global(page)).toHaveCount(1);
+      }
+      // The work lists have their own "New Task" in the page header: one button, not two (#1167).
+      for (const url of ['/tasks', '/my-work', '/pods/work']) {
+        await page.goto(url);
+        await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+        await expect(global(page)).toHaveCount(0);
+        await expect(create(page)).toHaveCount(1);
       }
       await page.goto(`/matters/${matter.matterId}`);
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
@@ -53,7 +61,7 @@ test.describe('Global Create task (#625)', () => {
     await expect(global(page)).toHaveCount(0);
     await page.goto(`/matters/${matter.matterId}`);
     await expect(global(page)).toHaveCount(0);
-    await nav(page).getByRole('link', { name: 'Task Queue' }).click();
+    await nav(page).getByRole('link', { name: 'Clients' }).click();
     await expect(global(page)).toHaveCount(1);
   });
 

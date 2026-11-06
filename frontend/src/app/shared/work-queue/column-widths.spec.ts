@@ -21,7 +21,7 @@ describe('column widths (#200)', () => {
 
   it('uses the defaults of the issue in rem', () => {
     expect(columnWidthRem(def('due'))).toBe(152 / 14);
-    expect(columnWidthRem(def('ref'))).toBe(112 / 14);
+    expect(columnWidthRem(def('ref'))).toBe(100 / 14);
     expect(columnWidthRem(def('matter'))).toBe(142 / 14);
     expect(columnWidthRem(def('matterName'))).toBe(160 / 14);
     expect(def('due').minWidth).toBe(120);
@@ -45,14 +45,14 @@ describe('column widths (#200)', () => {
     expect(widthVars([def('title')], { title: 20 })).toEqual({ '--w-title': '20rem' });
     const vars = widthVars([def('ref'), def('title'), def('due')], { due: 9 });
     expect(vars).toEqual({
-      '--w-ref': `${112 / 14}rem`,
+      '--w-ref': `${100 / 14}rem`,
       '--w-due': '9rem',
     });
   });
 
   it('the table minimum is the fixed columns plus the Title minimum', () => {
     expect(tableMinRem([def('ref'), def('title'), def('due')], undefined)).toBeCloseTo(
-      (112 + 120 + 152) / 14,
+      (100 + 120 + 152) / 14,
       9,
     );
   });

@@ -19,6 +19,7 @@ import { WORK_COLUMNS } from '../../../shared/work-queue/column-prefs';
 import { columnWidthRem } from '../../../shared/work-queue/column-widths';
 import { PriorityFlag } from '../../../shared/ui/priority-flag';
 import { TaskTypeCell } from '../../../shared/ui/task-type-cell';
+import { Tip } from '../../../shared/ui/tip';
 import { SortHeader } from '../../../shared/ui/data-table';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import {
@@ -53,7 +54,7 @@ function dueKey(t: AssetTaskLink): number | null {
 
 /**
  * The Linked tasks tab of an Asset (UX S08, #505; columns #1235): every task the asset is linked to as a 44 px table on the shared cells in the standard task column order
- * (Ref, Type chip and name, Title as the one link, Priority, Assignee, Due, Status; the widths of `WORK_COLUMNS`, 940 px plus a Title of at least 120 px, so it fits the 1098 px
+ * (Ref, Type chip and name, Title as the one link, Priority, Assignee, Due, Status; the widths of `WORK_COLUMNS`, 928 px plus a Title of at least 120 px, so it fits the 1098 px
  * of 1366), sorted by due date (earliest first, no due date last) and
  * sortable by Due and Status. One line above it counts them: "19 linked - 4 open - 1 overdue". Below 640 px each task is a card. Needs
  * `Task.View`; without it the tab says so and loads nothing. Rendered only while its tab is open.
@@ -69,6 +70,7 @@ function dueKey(t: AssetTaskLink): number | null {
     DueCell,
     PriorityFlag,
     TaskTypeCell,
+    Tip,
     SortHeader,
     RecordCardList,
     RecordCardDef,
@@ -227,9 +229,13 @@ function dueKey(t: AssetTaskLink): number | null {
                         <a
                           class="mf-name"
                           [routerLink]="['/tasks', t.taskId]"
-                          [attr.title]="t.title"
+                          [mfTip]="linkTip(t)"
+                          data-title-link
                           >{{ t.title }}</a
                         >
+                        @if (t.assetLinkRoleName) {
+                          <span class="mf-sr-only">, linked as {{ t.assetLinkRoleName }}</span>
+                        }
                       </td>
                       <td data-priority>
                         @if (t.priorityLabel) {
@@ -283,6 +289,10 @@ export class AssetLinkedTasks {
     status: widthRem('status'),
   };
   protected readonly fixedRem = `${Object.values(this.w).reduce((a, b) => a + b, 0)}rem`;
+  /** The tooltip of the Title link: the role the asset is linked as (#1240); a link without a role keeps the full title. */
+  protected linkTip(t: AssetTaskLink): string {
+    return t.assetLinkRoleName ? `Linked as ${t.assetLinkRoleName}` : t.title;
+  }
   protected readonly canView = computed(() => this.auth.has('Task.View'));
   protected readonly state = signal<LoadState>('loading');
   protected readonly links = signal<AssetTaskLink[]>([]);

@@ -67,6 +67,13 @@ export function activePodStripKey(f: QueueFilters, today: string): PodStripKey |
   imports: [WorkStrip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
+    /* The strip sits in the toolbar's view slot (#1167), where the quick views of the Task Queue are: no space under it, the chips 4 px apart like the quick views. */
+    mf-work-strip {
+      margin: 0;
+    }
+    mf-work-strip ::ng-deep .strip {
+      column-gap: var(--mf-s1);
+    }
     /* A phone's first screen is short (#570): the chip row sits closer to the tabs under it. */
     @media (max-width: 639.98px) {
       mf-work-strip {

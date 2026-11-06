@@ -23,6 +23,8 @@ export interface MenuOption {
   hint?: string;
   /** PrimeIcons class drawn before the hint (the capacity state of a person in the Dashboard's assign picker); the hint's words say the same. */
   hintIcon?: string;
+  /** A registry icon shown at the start of the item (a task status: `pi-pause-circle`); a selected item shows the check there instead. */
+  icon?: string;
   /** Tooltip of the item (for a status action: the status it leads to; statuses are tenant-renamable, so it is not repeated as visible text). */
   tip?: string;
   /** Dangerous choice (Cancel task): the danger colour. */
@@ -84,7 +86,7 @@ let nextId = 0;
     @if (open()) {
       <div
         #pop
-        class="im-pop"
+        class="im-pop mf-menu"
         role="group"
         [mfDismissable]="trigger"
         (dismissed)="close(false)"
@@ -100,7 +102,7 @@ let nextId = 0;
           <!-- A first choice above the search box (Assign to me): not one of the people, so it stays when the search narrows the list. -->
           <button
             type="button"
-            class="im-item im-lead"
+            class="im-item mf-menu__item im-lead"
             data-lead
             [attr.aria-label]="action.ariaLabel"
             (click)="pickLead()"
@@ -154,7 +156,7 @@ let nextId = 0;
           <button
             type="button"
             role="menuitemradio"
-            class="im-item"
+            class="im-item mf-menu__item"
             [class.im-danger]="o.danger"
             [class.im-sep]="o.separated"
             [attr.title]="o.tip ?? null"
@@ -164,7 +166,7 @@ let nextId = 0;
             [attr.aria-describedby]="o.reason ? uid + '-r-' + o.id : null"
             (click)="pick(o)"
           >
-            <i class="pi" [class.pi-check]="o.selected" aria-hidden="true" style="width: 1rem"></i>
+            <i class="pi" [class]="o.selected ? 'pi-check' : (o.icon ?? '')" aria-hidden="true"></i>
             <span class="im-text">
               <span>{{ o.label }}</span>
               @if (o.flag) {
@@ -261,23 +263,18 @@ let nextId = 0;
       color: var(--mf-text-muted);
       font-size: var(--mf-icon-sm);
     }
+    /* The surface and the entries are the shared menu (mf-menu, mf-menu__item: radius 8, 36 px items, D-36, #1169); only where it opens is here. */
     .im-pop {
       position: fixed;
       z-index: 1100;
       min-width: 14rem;
       max-width: 22rem;
-      max-height: 16rem;
-      overflow-y: auto;
-      padding: var(--mf-s1);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-1);
+      max-height: 20rem;
     }
     .im-search {
       box-sizing: border-box;
       width: 100%;
-      min-height: 2rem;
+      min-height: var(--mf-ctl-h);
       margin-bottom: var(--mf-s1);
       padding: 0 var(--mf-s2);
       border: 1px solid var(--mf-border-strong);
@@ -286,29 +283,11 @@ let nextId = 0;
       color: var(--mf-text);
       font: inherit;
     }
-    .im-item {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      width: 100%;
-      min-height: var(--mf-target-min, 2rem);
-      padding: 0 var(--mf-s2);
-      border: 0;
-      background: transparent;
-      color: var(--mf-text);
-      font: inherit;
-      text-align: left;
-      cursor: pointer;
-    }
     .im-lead {
       margin-bottom: var(--mf-s1);
-      border-bottom: 1px solid var(--mf-border);
+      border-bottom: 1px solid var(--mf-border-soft);
       border-radius: var(--mf-radius) var(--mf-radius) 0 0;
       font-weight: 600;
-    }
-    .im-lead .pi {
-      width: 1rem;
-      color: var(--mf-text-muted);
     }
     .im-sep {
       margin-top: var(--mf-s1);
@@ -316,10 +295,6 @@ let nextId = 0;
     }
     .im-danger {
       color: var(--mf-danger);
-    }
-    .im-item:hover:not([aria-disabled='true']),
-    .im-item:focus-visible {
-      background: var(--mf-surface-alt);
     }
     .im-item[aria-disabled='true'] {
       color: var(--mf-text-muted);
@@ -336,6 +311,10 @@ let nextId = 0;
       color: var(--mf-warning);
       font-size: var(--mf-fs-xs);
       font-weight: 400;
+    }
+    .im-item .im-hint .pi {
+      width: auto;
+      font-size: var(--mf-icon-sm);
     }
     .im-hint,
     .im-note,
@@ -374,7 +353,7 @@ let nextId = 0;
     }
     .im-reason {
       display: block;
-      padding: 0 var(--mf-s2) var(--mf-s2) 1.75rem;
+      padding: 0 var(--mf-s2) var(--mf-s2) calc(var(--mf-s3) + var(--mf-icon-md) + var(--mf-s2));
     }
   `,
 })
@@ -482,11 +461,13 @@ export class InlineMenu implements OnDestroy {
     if (!pop) return;
     const rect = this.trigger().nativeElement.getBoundingClientRect();
     const margin = 8;
-    const height = pop.getBoundingClientRect().height;
+    const box = pop.getBoundingClientRect();
+    const height = box.height;
     const roomBelow = window.innerHeight - rect.bottom - 4 - margin;
     const roomAbove = rect.top - 4 - margin;
-    const left = this.pos().left;
-    const cap = 256;
+    // The real width is known now: a menu wider than the first guess (a long entry) still ends inside the window.
+    const left = Math.max(4, Math.min(this.pos().left, window.innerWidth - box.width - margin));
+    const cap = 320;
     if (height <= roomBelow) {
       this.pos.set({ top: rect.bottom + 4, left, maxHeight: null });
     } else if (height <= roomAbove) {

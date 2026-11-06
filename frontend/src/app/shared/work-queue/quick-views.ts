@@ -229,14 +229,18 @@ const STRIP_GAP = 4;
       flex-wrap: nowrap;
       gap: 4px;
     }
+    /* The quick views are chip kind 3 (filter chip, D-12, #1167), the same 26 px chip as the summary chips of My Work and Pod Work: 0 8 padding, 12 / 600, pill. */
     .qv-view {
-      min-height: var(--mf-row-h-compact);
-      padding: 0 5px;
-      border: 1px solid var(--mf-border-strong);
-      border-radius: 999px;
+      height: var(--mf-chip-h);
+      padding: 0 var(--mf-s2);
+      border: 1px solid var(--mf-border-mid);
+      border-radius: var(--mf-radius-pill);
       background: var(--mf-surface);
       color: var(--mf-text);
       font: inherit;
+      font-size: var(--mf-fs-chip);
+      font-weight: var(--mf-fw-semibold);
+      line-height: 1;
       white-space: nowrap;
       cursor: pointer;
     }
@@ -246,7 +250,7 @@ const STRIP_GAP = 4;
       min-width: 2em;
       margin-left: 2px;
       color: var(--mf-text);
-      font-size: var(--mf-fs-sm);
+      font-size: inherit;
       font-variant-numeric: tabular-nums;
       font-weight: 600;
     }

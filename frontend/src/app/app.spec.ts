@@ -118,7 +118,8 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
   });
 
   it('hides the header Create task button on the Create task page itself (UXR-23)', async () => {
-    const { router } = await open('technician', '/tasks');
+    // /profile has no "New Task" of its own; the Task Queue, My Work and Pod Work hide the header one (#1167).
+    const { router } = await open('technician', '/profile');
     const headerButton = () => document.querySelector('.mf-header p-button');
     expect(headerButton()).not.toBeNull();
 
