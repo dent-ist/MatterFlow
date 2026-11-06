@@ -248,3 +248,33 @@ Evidence: `design-evidence` branch, `evidence/2026-11-06-review-14-projects-asse
 | #1188 Asset reports | NOT DONE, rulings below | No native select (verified). Saved list still has two text buttons per row. Build in #1249. |
 
 Rulings: (1) Disposition 162 px accepted, paid for by Type 128 px (D-43a); (2) Assets row menu stays Change Disposition only, no Edit Asset (D-44g); (3) dialog primary stays "Change Disposition", it does not follow the option (D-44g); (4) saved reports stay a side card, 44 px rows with name button and one "..." menu (Rename, Delete), not a table (D-44g, #1249); (5) Details tabs use the Matter Summary card (D-44f): Project in #1250, Asset in #1249.
+
+## review-15 My Matters, Task page and Create Task (2026-11-06, tip 44f1417, 1366 and 1920)
+
+Evidence: `design-evidence`, `evidence/2026-11-06-review-15-my-matters-task-page/` (JPEG, `measurements.json`, `axe.json`; the same folder holds the review-16 images). Axe: 0 violations on 10 pages at both sizes (Assets, Matters, Projects, Project, Asset, Asset Reports, My Matters as the Project Manager, Task, Create Task, Summary).
+
+| Issue | Result | Notes |
+|---|---|---|
+| #1163 My Matters header | PASS | Options is the 36 px secondary button, weight 600 like the others. |
+| #1164 Overview table | PASS with a point | 44 px rows, Due 152, Status 176, Priority 112 whole at both sizes; at 1366 with the side panel open the Ref is cut ("TSK-10...") and the Title is cramped (Task 304 px, Assignee hidden). Collapsed: Task 446 px, Assignee 150. Fix in #1252. |
+| #1165 side panels | PASS | Standard cards, 36 px header buttons. |
+| #1166 last native select | PASS (code only) | Unit is `mf-dropdown`, shown only with more than one unit (not reachable in demo data). Native selects remain elsewhere: #1251. |
+| #1171 Task page header and facts strip | PASS | 36 px buttons and menu triggers; status menu "Put on Hold", "Complete", "Cancel Task". |
+| #1172 Request Details, comments | PASS | Text buttons; Comment Edit and Delete are 24 px text buttons, Delete in the danger colour. |
+| #1173 Create Task | PASS with a point | Crumb "Task Queue", type cards, fields 480 px including Title. The task type is shown twice (strip and "Change Type" card): #1252. |
+
+Real defects found outside the issues: Options > Focus on task types shows no type names (container query on the type cell, #1252); native selects remain in the New Production, Out of Office, bulk update, holiday and absence dialogs (#1251).
+
+Rulings: (1) side panel starts collapsed under 1500 px, Type tile only and Assignee hidden only while it is open (D-44i); (2) Due 152 confirmed; (3) Status 176 with step bar, 140 chip only (D-44i); (4) crumb "Task Queue" (D-44j, #1252); (5) 480 px fields including Title confirmed; (6) Options weight 600 confirmed; (7) New menu descriptions allowed in that menu only (D-36a); (8) card sub-headings 14/700 (D-11a); (9) "Request Details (General / Ad Hoc Request, Form 1)" confirmed.
+
+## review-16 Projects and Assets leftovers (2026-11-06, tip ca11f21, 1366 and 1920)
+
+| Issue | Result | Notes |
+|---|---|---|
+| #1250 Projects | PASS | Filter row covers the Actions column; headings 301/210/168/125/105/140/48 identical in loading, empty, error and rows; Project Details is the shared `mf-details-card`. |
+| #1249 Assets | PASS | Columns 24/128/201/123/105/137/168/162/48 = 1096 px, no sideways scroll at 1366; headings identical in all four states; header checkbox at x249 over the row checkboxes; Asset Details with "Relativity Workspace Fields (8)". |
+| #1188 saved reports | PASS | One 44 px row: name button (38 px) and one "..." (36 px) with Rename and Delete; tested by saving and deleting a report. |
+| #1182, #1183 | PASS | Covered by #1250. |
+| Matters list regression check | PASS | Headings 158/223/152/125/125/105/161/48, no overflow. |
+
+Rulings: External Reference 168 and CM Number 123 accepted; the select column 24 px accepted; the saved report date goes in the tooltip; "<Type Name> Fields" is the card name; Matter Summary moves to the shared card in a follow-up (#1253). Recorded as D-44k.
