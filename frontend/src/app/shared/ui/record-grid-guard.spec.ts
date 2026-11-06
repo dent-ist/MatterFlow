@@ -30,8 +30,6 @@ const ALLOWED: Readonly<Record<string, string>> = {
     'Administration list, adopts the shared grid in its Administration issue',
   'features/admin/workflows/workflow-versions-tab.ts':
     'Administration list, adopts the shared grid in its Administration issue',
-  'features/admin/workflows/workflows-list-page.ts':
-    'Administration list, adopts the shared grid in its Administration issue',
   'features/clients/pages/client-matters.ts':
     'Client > Matters tab, adopts the shared grid with the Clients record issues',
   'features/matters/pages/matter-projects.ts':

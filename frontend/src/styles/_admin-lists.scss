@@ -426,3 +426,30 @@ html .mf-table-wrap.mf-scroll-area:not(.mf-list .mf-table-wrap) + mf-pager {
     min-width: 11rem;
   }
 }
+
+/*
+ * The same cell rules for the Administration lists on the shared record grid (`mf-record-grid`, #1203, #1204): the name cell is the spring (it never widens
+ * the table, its text is clamped), the description is one clipped line, tags and fixed words stay on one line.
+ */
+.pg-table td.ad-name,
+.pg-table td.ad-spring {
+  max-width: 0;
+}
+
+.pg-table td.ad-desc {
+  max-width: 14rem;
+}
+
+.pg-table a.pg-name.pg-name--one {
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
+.pg-table td.ad-tags,
+.pg-table td.ad-nowrap {
+  white-space: nowrap;
+}
+
+.pg-table td.ad-tags ul.tc {
+  flex-wrap: nowrap;
+}
