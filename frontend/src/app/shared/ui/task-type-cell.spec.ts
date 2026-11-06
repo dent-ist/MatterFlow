@@ -5,7 +5,12 @@ import { TaskTypeCell } from './task-type-cell';
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [TaskTypeCell],
-  template: `<mf-task-type-cell name="Data Processing" iconKey="cpu-2" colourKey="violet" [typeId]="3" />`,
+  template: `<mf-task-type-cell
+    name="Data Processing"
+    iconKey="cpu-2"
+    colourKey="violet"
+    [typeId]="3"
+  />`,
 })
 class Host {}
 
