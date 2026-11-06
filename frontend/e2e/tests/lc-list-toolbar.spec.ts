@@ -176,7 +176,7 @@ test.describe('LC-07: Admin Users, Pods chip', () => {
     for (const width of [1366, 1280]) {
       await page.setViewportSize({ width, height: 768 });
       await page.goto(`/admin/users?status=all&account=${encodeURIComponent(tag)}`);
-      const row = page.locator(`tr[data-user="${person.userId}"]`);
+      const row = page.locator(`tr[data-record-id="${person.userId}"]`);
       await expect(row.locator('[data-pod-chip]').first()).toBeVisible();
       const chip = (await row.locator('[data-pod-chip]').first().boundingBox())!;
       const cell = (await row.locator('td[data-pods-cell]').boundingBox())!;

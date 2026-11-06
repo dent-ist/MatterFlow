@@ -153,7 +153,7 @@ test.describe('#451 the pod editor is a record page', () => {
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(list());
-    const link = page.locator(`tr[data-pod="${podId}"] a`);
+    const link = page.locator(`tr[data-record-id="${podId}"] a`);
     await link.click();
     const header = page.locator('[data-record-header]');
     await expect(header).toBeVisible();
@@ -176,7 +176,7 @@ test.describe('#451 the pod editor is a record page', () => {
 
     // The crumb returns to the list as it was: the Name filter and the status are still there, and focus is on the row.
     await crumbs.getByRole('link', { name: 'Pods' }).click();
-    await expect(page.locator(`tr[data-pod="${podId}"]`)).toBeVisible();
+    await expect(page.locator(`tr[data-record-id="${podId}"]`)).toBeVisible();
     await expect(page).toHaveURL(/name=us6e/);
     await expect(page).toHaveURL(/status=all/);
     await expect(link).toBeFocused();

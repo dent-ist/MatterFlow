@@ -135,9 +135,9 @@ test.describe('#454 the six keyboard flows', () => {
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/admin/users?status=pending&account=e2e-${TAG}pend`);
-    await expect(page.locator('tr[data-user]')).toHaveCount(1);
+    await expect(page.locator('tr[data-record-id]')).toHaveCount(1);
     await viaSkipLink(page);
-    const grant = rowOf(page, pending.userId, pending.username).locator('[data-grant] button');
+    const grant = rowOf(page, pending.userId, pending.username).locator('[data-grant]');
     const nameBtn = userName(rowOf(page, pending.userId, pending.username));
     await expect(nameBtn).toBeFocused();
     const stops = await tabTo(page, grant);
@@ -158,7 +158,7 @@ test.describe('#454 the six keyboard flows', () => {
     await expect(undo).toBeVisible();
     await undo.focus();
     await page.keyboard.press('Enter');
-    await expect(page.locator('tr[data-user]')).toHaveCount(1);
+    await expect(page.locator('tr[data-record-id]')).toHaveCount(1);
   });
 
   test('2. deactivate: Deactivate, the question (focus on Cancel), Deactivate; focus stays inside the drawer', async ({
@@ -168,7 +168,7 @@ test.describe('#454 the six keyboard flows', () => {
     const victim = await personas.create({ label: `${TAG}victim`, roles: ['Data Technician'] });
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/admin/users?status=all&account=${victim.username}`);
-    await expect(page.locator('tr[data-user]')).toHaveCount(1);
+    await expect(page.locator('tr[data-record-id]')).toHaveCount(1);
     await viaSkipLink(page);
     await page.keyboard.press('Enter'); // the name of the first row
     await expect(page.locator('[data-panel-heading]')).toBeFocused();
@@ -194,7 +194,7 @@ test.describe('#454 the six keyboard flows', () => {
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/admin/users?status=all&account=${worker.username}`);
-    await expect(page.locator('tr[data-user]')).toHaveCount(1);
+    await expect(page.locator('tr[data-record-id]')).toHaveCount(1);
     await userName(rowOf(page, worker.userId, worker.username)).focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-panel-heading]')).toBeFocused();
@@ -217,7 +217,7 @@ test.describe('#454 the six keyboard flows', () => {
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/admin/users?status=all&account=${worker.username}`);
-    await expect(page.locator('tr[data-user]')).toHaveCount(1);
+    await expect(page.locator('tr[data-record-id]')).toHaveCount(1);
     await userName(rowOf(page, worker.userId, worker.username)).focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-panel-heading]')).toBeFocused();
@@ -270,9 +270,9 @@ test.describe('#454 the six keyboard flows', () => {
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/admin/pods?status=all&name=${encodeURIComponent(TAG)}`);
-    await expect(page.locator(`tr[data-pod="${podId}"]`)).toBeVisible();
+    await expect(page.locator(`tr[data-record-id="${podId}"]`)).toBeVisible();
     await viaSkipLink(page);
-    const link = page.locator(`tr[data-pod="${podId}"] a`);
+    const link = page.locator(`tr[data-record-id="${podId}"] a`);
     await expect(link).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-record-header]')).toBeVisible();
@@ -288,7 +288,7 @@ test.describe('#454 the six keyboard flows', () => {
     });
     await shiftTabTo(page, crumb, 80);
     await page.keyboard.press('Enter');
-    await expect(page.locator(`tr[data-pod="${podId}"] a`)).toBeFocused();
+    await expect(page.locator(`tr[data-record-id="${podId}"] a`)).toBeFocused();
     await expect(page).toHaveURL(/status=all/);
   });
 });
@@ -300,7 +300,7 @@ test.describe('#454 axe with every overlay open, and no nested scroller', () => 
     }) => {
       await page.setViewportSize({ width, height });
       await page.goto(`/admin/users?status=all&account=${worker.username}`);
-      await expect(page.locator(width < 640 ? 'li.rc' : 'tr[data-user]')).toHaveCount(1);
+      await expect(page.locator(width < 640 ? 'li.rc' : 'tr[data-record-id]')).toHaveCount(1);
       await userName(rowOf(page, worker.userId, worker.username)).click();
       await expect(page.locator('[data-panel-heading]')).toBeFocused();
       expect(await axeClean(page)).toEqual([]);
@@ -362,7 +362,7 @@ test.describe('evidence', () => {
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     for (const [key, url, selector] of [
-      ['users', listUrl, 'tr[data-user] button[data-open]'],
+      ['users', listUrl, 'tr[data-record-id] button[data-open]'],
       ['roles', '/admin/roles', '[data-role]'],
       ['pods', `/admin/pods?status=all&name=${encodeURIComponent(TAG)}`, 'tr[data-pod] a'],
     ] as const) {

@@ -47,10 +47,10 @@ test.describe('users-pods screenshots', () => {
     for (const size of SIZES) {
       await page.setViewportSize({ width: size.w, height: size.h });
       await grid(page);
-      await expect(page.locator(`tr[data-user="${jamal.userId}"]`)).toBeVisible();
+      await expect(page.locator(`tr[data-record-id="${jamal.userId}"]`)).toBeVisible();
       await shot(page, 'users-grid-pods-column', size);
 
-      const row = page.locator(`tr[data-user="${jamal.userId}"]`);
+      const row = page.locator(`tr[data-record-id="${jamal.userId}"]`);
       await row.locator('[data-pods-trigger]').click();
       await page.getByRole('textbox', { name: 'Search pods' }).fill(tag);
       await expect(page.locator('[data-pod-option]')).toHaveCount(3);
@@ -82,7 +82,7 @@ test.describe('users-pods screenshots', () => {
       const ro = await asUser(auditor.username);
       await ro.setViewportSize({ width: size.w, height: size.h });
       await grid(ro);
-      await expect(ro.locator(`tr[data-user="${jamal.userId}"]`)).toBeVisible();
+      await expect(ro.locator(`tr[data-record-id="${jamal.userId}"]`)).toBeVisible();
       await shot(ro, 'read-only-chips', size);
       await ro.context().close();
     }

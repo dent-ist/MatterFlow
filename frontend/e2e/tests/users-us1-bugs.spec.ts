@@ -49,14 +49,14 @@ async function openList(page: Page, width = 1366, height = 768, extra = ''): Pro
   await page.setViewportSize({ width, height });
   await page.goto(listUrl(extra));
   // The table from 640 px, cards below (#445).
-  await expect(page.locator(width < 640 ? 'li.rc' : 'tr[data-user]')).toHaveCount(3);
+  await expect(page.locator(width < 640 ? 'li.rc' : 'tr[data-record-id]')).toHaveCount(3);
 }
 
 /** The name of the person: the one control of the Name cell (#432); it opens the panel. */
 const rowOf = (page: Page, userId: number) => userRow(page, userId, ACCOUNT.get(userId)!);
 const rowButton = (page: Page, userId: number) => userName(rowOf(page, userId));
 const grantButton = (page: Page, userId: number) =>
-  rowOf(page, userId).locator('[data-grant] button, [data-card-primary] button');
+  rowOf(page, userId).locator('[data-grant], [data-card-primary] button');
 
 /**
  * axe violations, without the one artifact of a scrolled page: a 24 px check box that sits half under the fixed header or the sticky Save bar
@@ -82,7 +82,7 @@ test.describe('BUG-1 / BUG-5: status badges and the scroll hint', () => {
   for (const { width, height } of SIZES) {
     test(`no badge is cut and there is no scroll hint at ${width}`, async ({ page }) => {
       await openList(page, width, height);
-      const badges = page.locator('tr[data-user] [data-status] mf-badge, li.rc mf-badge');
+      const badges = page.locator('tr[data-record-id] [data-status] mf-badge, li.rc mf-badge');
       // A badge only when the person is not simply Active (#432): Pending access and Inactive here, none for the active person.
       expect(await badges.allTextContents()).toEqual(
         expect.arrayContaining([
@@ -94,7 +94,9 @@ test.describe('BUG-1 / BUG-5: status badges and the scroll hint', () => {
         rowOf(page, active.userId).locator('[data-status] mf-badge, .rc-badges mf-badge'),
       ).toHaveCount(0);
       const cut = await page.evaluate(() =>
-        Array.from(document.querySelectorAll<HTMLElement>('tr[data-user] [data-status], li.rc'))
+        Array.from(
+          document.querySelectorAll<HTMLElement>('tr[data-record-id] [data-status], li.rc'),
+        )
           .filter((cell) => !!cell.querySelector('mf-badge'))
           .map((cell) => {
             const badge = cell.querySelector<HTMLElement>('mf-badge')!;
@@ -190,7 +192,7 @@ test.describe('BUG-2: focus and Esc', () => {
     const viewer = await personas.create({ label: `us1x-view`, permissions: ['User.View'] });
     const page = await asUser(viewer.username);
     await page.goto(listUrl());
-    await expect(page.locator('tr[data-user]')).toHaveCount(3);
+    await expect(page.locator('tr[data-record-id]')).toHaveCount(3);
     const button = rowButton(page, active.userId);
     await expect(button).toHaveAttribute('aria-label', /^Open /);
     await button.focus();
@@ -207,7 +209,7 @@ test.describe('BUG-2: focus and Esc', () => {
     const page = await asUser(p.username);
     await page.goto(listUrl());
     await expect(page.locator('[data-panel]')).toHaveCount(0);
-    await expect(page.locator('tr[data-user]')).toHaveCount(0);
+    await expect(page.locator('tr[data-record-id]')).toHaveCount(0);
   });
 });
 
@@ -248,7 +250,7 @@ test.describe('BUG-3: the deactivation question', () => {
       .getByRole('dialog', { name: /^Deactivate / })
       .getByRole('button', { name: 'Deactivate', exact: true })
       .click();
-    await expect(page.locator(`tr[data-user="${victim.userId}"] [data-status]`)).toContainText(
+    await expect(page.locator(`tr[data-record-id="${victim.userId}"] [data-status]`)).toContainText(
       'Inactive',
     );
     await expect(page.locator('[data-activate]')).toBeVisible();

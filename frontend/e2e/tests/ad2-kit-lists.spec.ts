@@ -69,7 +69,10 @@ test.describe('grid-body states on the real columns (#575)', () => {
         .click();
       await expect(page).toHaveURL(/status=all/);
       await expect(
-        page.locator('tbody tr[data-row]').or(page.locator('li[data-record-card]')).first(),
+        page
+          .locator('tbody tr[data-row], tbody tr[data-record-id]')
+          .or(page.locator('li[data-record-card]'))
+          .first(),
       ).toBeVisible();
     });
   }
@@ -95,7 +98,9 @@ test.describe('grid-body states on the real columns (#575)', () => {
     await axeClean(page, 'skeleton at 1366');
     await shot(page, 'states-types-skeleton');
     release();
-    await expect(page.locator('tbody tr[data-row]').first()).toBeVisible();
+    await expect(
+      page.locator('tbody tr[data-row], tbody tr[data-record-id]').first(),
+    ).toBeVisible();
   });
 });
 
@@ -126,7 +131,11 @@ test.describe('phone cards of AdminCardSpec (#579), on Workflow Steps', () => {
     await page.keyboard.press('Escape');
     await page.setViewportSize({ width: 1366, height: 768 });
     await expect(page.locator('li[data-record-card]')).toHaveCount(0);
-    await page.locator('tbody tr[data-row]').first().locator('button[data-overflow]').click();
+    await page
+      .locator('tbody tr[data-row], tbody tr[data-record-id]')
+      .first()
+      .locator('button[data-overflow]')
+      .click();
     const rowEntries = await page.getByRole('menuitem').allInnerTexts();
     await page.keyboard.press('Escape');
     expect(cardEntries.map((t) => t.trim())).toEqual(rowEntries.map((t) => t.trim()));
