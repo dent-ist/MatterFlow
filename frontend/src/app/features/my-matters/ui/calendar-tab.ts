@@ -165,7 +165,9 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
         @if (events.state() === 'error' || tasks.state() === 'error') {
           <p class="msg" role="alert">
             Couldn't load the calendar.
-            <button type="button" class="lnk" (click)="events.load(); tasks.load()">Retry</button>
+            <button type="button" class="mf-btn mf-btn--text" (click)="events.load(); tasks.load()">
+              Retry
+            </button>
           </p>
         }
         <div class="dow" aria-hidden="true">
@@ -205,7 +207,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
                     }
                     <span class="chips" aria-hidden="true">
                       @for (e of c.events.slice(0, 3); track e.eventId) {
-                        <span class="chip ev"
+                        <span class="evline ev"
                           ><mf-event-icon [type]="e.typeCode" />{{ e.time | mfNum: 'time' }}
                           {{ e.title }}</span
                         >
@@ -214,7 +216,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
                         t of c.tasks.slice(0, 3 - Math.min(3, c.events.length));
                         track t.taskId
                       ) {
-                        <span class="chip tk" [class.od]="isOver(t)">
+                        <span class="evline tk" [class.od]="isOver(t)">
                           @if (isOver(t)) {
                             <i class="pi pi-exclamation-circle"></i>
                           } @else {
@@ -286,7 +288,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
                   @if (e.canEdit) {
                     <button
                       type="button"
-                      class="lnk"
+                      class="mf-btn mf-btn--text"
                       [attr.data-edit]="e.eventId"
                       (click)="edit(e)"
                     >
@@ -312,7 +314,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
                     <i class="pi pi-exclamation-circle od" aria-label="Overdue" role="img"></i>
                   }
                   <span class="dt">
-                    <a class="lnk" [routerLink]="['/tasks', t.taskId]"
+                    <a class="mf-link" [routerLink]="['/tasks', t.taskId]"
                       >{{ t.taskNumber }} {{ t.title }}</a
                     >
                     <span class="m">{{ t.priorityName }} · {{ t.matterName }}</span>
@@ -516,7 +518,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
       gap: 2px;
       min-width: 0;
     }
-    .chip {
+    .evline {
       display: flex;
       align-items: center;
       gap: 3px;
@@ -526,13 +528,13 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
       white-space: nowrap;
       font-size: var(--mf-fs-xs);
     }
-    .chip mf-event-icon {
+    .evline mf-event-icon {
       flex: none;
     }
-    .chip.tk {
+    .evline.tk {
       color: var(--mf-text-muted);
     }
-    .chip.od {
+    .evline.od {
       color: var(--mf-sem-overdue-fg);
       font-weight: 700;
     }
@@ -606,18 +608,6 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
     }
     .od {
       color: var(--mf-sem-overdue-fg);
-    }
-    .lnk {
-      color: var(--mf-link);
-      background: none;
-      border: 0;
-      padding: 0;
-      font: inherit;
-      cursor: pointer;
-      text-decoration: none;
-    }
-    .lnk:hover {
-      text-decoration: underline;
     }
     .msg {
       margin: var(--mf-s3) var(--mf-s4);

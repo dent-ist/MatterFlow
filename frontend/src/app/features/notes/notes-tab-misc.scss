@@ -345,23 +345,6 @@
   opacity: 0.55;
 }
 
-.nt__x {
-  display: inline-grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: none;
-  color: inherit;
-  cursor: pointer;
-
-  .pi {
-    font-size: var(--mf-icon-xs);
-  }
-}
-
 // the view switch in the list pane: words only, so the switch and View options fit one line
 .nt__lc2 .nt__seg .pi {
   display: none;

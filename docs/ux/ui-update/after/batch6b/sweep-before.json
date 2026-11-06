@@ -1,0 +1,386 @@
+[
+ {
+  "page": "sweep-clients",
+  "size": "1366x768",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": [
+   "Client Number:374",
+   "Name:272",
+   "Matters:85",
+   "Open Tasks:125",
+   "Overdue:105",
+   "Status:136"
+  ]
+ },
+ {
+  "page": "sweep-matters",
+  "size": "1366x768",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": [
+   "CM Number:157",
+   "Name:168",
+   "Client:126",
+   "Primary PM:125",
+   "Secondary PM:146",
+   "Open Tasks:125",
+   "Overdue:105",
+   "Status:153",
+   "Actions:60"
+  ]
+ },
+ {
+  "page": "sweep-client-detail",
+  "size": "1366x768",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": [
+   "Matter:116",
+   "Name:233",
+   "Open:59",
+   "Overdue:109",
+   "Status:100"
+  ]
+ },
+ {
+  "page": "sweep-task-queue-filtered",
+  "size": "1366x768",
+  "scrolls": true,
+  "sw": 1470,
+  "cw": 1096,
+  "ths": [
+   "Ref:112",
+   "Type:112",
+   "Title:160",
+   "CM Number:142",
+   "Matter Name:160",
+   "Project:140",
+   "Priority:112",
+   "Assignee:136",
+   "Due:136",
+   "Status:140",
+   "Progress:120"
+  ]
+ },
+ {
+  "page": "sweep-admin-roles",
+  "size": "1366x768",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": []
+ },
+ {
+  "page": "sweep-admin-users",
+  "size": "1366x768",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": [
+   "Name:353",
+   "Roles:112",
+   "Pods:136",
+   "Availability:111",
+   "Last Seen:113",
+   "Status:155",
+   "Actions:115"
+  ]
+ },
+ {
+  "page": "sweep-admin-pods",
+  "size": "1366x768",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": [
+   "Name:890",
+   "Members:108",
+   "Status:99"
+  ]
+ },
+ {
+  "page": "sweep-dashboard-summary",
+  "size": "1366x768",
+  "scrolls": true,
+  "sw": 1534,
+  "cw": 718,
+  "ths": [
+   "Ref:112",
+   "Type:112",
+   "Title:160",
+   "CM Number:142",
+   "Matter Name:160",
+   "Project:140",
+   "Priority:112",
+   "Assignee:200",
+   "Due:136",
+   "Status:140",
+   "Progress:120"
+  ]
+ },
+ {
+  "page": "sweep-dashboard-users",
+  "size": "1366x768",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": []
+ },
+ {
+  "page": "sweep-dashboard-swimlane",
+  "size": "1366x768",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": []
+ },
+ {
+  "page": "sweep-my-matters",
+  "size": "1366x768",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": [
+   "Task:398",
+   "Status:176",
+   "Priority:116",
+   "Assignee:0",
+   "Due:150"
+  ]
+ },
+ {
+  "page": "sweep-task-page",
+  "size": "1366x768",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": []
+ },
+ {
+  "page": "sweep-profile",
+  "size": "1366x768",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": []
+ },
+ {
+  "page": "sweep-admin-reports",
+  "size": "1366x768",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": [
+   "Name:729",
+   "Category:93",
+   "Roles:65",
+   "Last Run:87",
+   "Status:74",
+   "Actions:48"
+  ]
+ },
+ {
+  "page": "sweep-matter-detail",
+  "size": "1366x768",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": []
+ },
+ {
+  "page": "sweep-clients",
+  "size": "1920x1080",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": [
+   "Client Number:639",
+   "Name:465",
+   "Matters:85",
+   "Open Tasks:125",
+   "Overdue:105",
+   "Status:232"
+  ]
+ },
+ {
+  "page": "sweep-matters",
+  "size": "1920x1080",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": [
+   "CM Number:157",
+   "Name:431",
+   "Client:272",
+   "Primary PM:125",
+   "Secondary PM:146",
+   "Open Tasks:125",
+   "Overdue:105",
+   "Status:230",
+   "Actions:60"
+  ]
+ },
+ {
+  "page": "sweep-client-detail",
+  "size": "1920x1080",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": [
+   "Matter:116",
+   "Name:233",
+   "Open:59",
+   "Overdue:109",
+   "Status:100"
+  ]
+ },
+ {
+  "page": "sweep-task-queue-filtered",
+  "size": "1920x1080",
+  "scrolls": false,
+  "sw": 1650,
+  "cw": 1650,
+  "ths": [
+   "Ref:112",
+   "Type:112",
+   "Title:340",
+   "CM Number:142",
+   "Matter Name:160",
+   "Project:140",
+   "Priority:112",
+   "Assignee:136",
+   "Due:136",
+   "Status:140",
+   "Progress:120"
+  ]
+ },
+ {
+  "page": "sweep-admin-roles",
+  "size": "1920x1080",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": []
+ },
+ {
+  "page": "sweep-admin-users",
+  "size": "1920x1080",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": [
+   "Name:907",
+   "Roles:112",
+   "Pods:136",
+   "Availability:111",
+   "Last Seen:113",
+   "Status:155",
+   "Actions:115"
+  ]
+ },
+ {
+  "page": "sweep-admin-pods",
+  "size": "1920x1080",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": [
+   "Name:1444",
+   "Members:108",
+   "Status:99"
+  ]
+ },
+ {
+  "page": "sweep-dashboard-summary",
+  "size": "1920x1080",
+  "scrolls": true,
+  "sw": 1534,
+  "cw": 1272,
+  "ths": [
+   "Ref:112",
+   "Type:112",
+   "Title:160",
+   "CM Number:142",
+   "Matter Name:160",
+   "Project:140",
+   "Priority:112",
+   "Assignee:200",
+   "Due:136",
+   "Status:140",
+   "Progress:120"
+  ]
+ },
+ {
+  "page": "sweep-dashboard-users",
+  "size": "1920x1080",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": []
+ },
+ {
+  "page": "sweep-dashboard-swimlane",
+  "size": "1920x1080",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": []
+ },
+ {
+  "page": "sweep-my-matters",
+  "size": "1920x1080",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": [
+   "Task:706",
+   "Status:176",
+   "Priority:116",
+   "Assignee:150",
+   "Due:150"
+  ]
+ },
+ {
+  "page": "sweep-task-page",
+  "size": "1920x1080",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": []
+ },
+ {
+  "page": "sweep-profile",
+  "size": "1920x1080",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": []
+ },
+ {
+  "page": "sweep-admin-reports",
+  "size": "1920x1080",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": [
+   "Name:1283",
+   "Category:93",
+   "Roles:65",
+   "Last Run:87",
+   "Status:74",
+   "Actions:48"
+  ]
+ },
+ {
+  "page": "sweep-matter-detail",
+  "size": "1920x1080",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": []
+ }
+]

@@ -1,3 +1,5 @@
+import { ActiveBadge } from '../../../shared/ui/badge';
+import { TagChip } from '../../../shared/ui/tag-chip';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -114,6 +116,7 @@ const intOrNull = (text: string): number | null => {
 @Component({
   selector: 'mf-report-editor-page',
   imports: [
+    ActiveBadge,
     ConfirmDialog,
     PageHeader,
     ParametersEditor,
@@ -122,6 +125,7 @@ const intOrNull = (text: string): number | null => {
     SchemaBrowserPanel,
     SqlEditor,
     Tabs,
+    TagChip,
     VersionsPanel,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

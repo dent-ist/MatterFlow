@@ -1,3 +1,4 @@
+import { Badge } from '../../../shared/ui/badge';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ReportAdminClient, ReportsStatusResponse } from '../../../api/generated/api-client';
@@ -11,7 +12,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
  */
 @Component({
   selector: 'mf-reports-health-tab',
-  imports: [NumericDatePipe],
+  imports: [Badge, NumericDatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -23,9 +24,9 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
       }
       @if (status(); as s) {
         <p class="rh__state" data-state>
-          <span class="rh__chip" [class.rh__chip--ok]="s.enabled" data-chip>{{
+          <mf-badge [tone]="s.enabled ? 'success' : 'warning'" data-chip>{{
             s.enabled ? 'Ready' : 'Not ready'
-          }}</span>
+          }}</mf-badge>
           {{ s.message }}
         </p>
         @if (s.login; as l) {
@@ -62,18 +63,6 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
     .rh__bad {
       color: var(--mf-danger);
-    }
-
-    .rh__chip {
-      padding: 0 var(--mf-s2);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-warning-bg);
-      font-weight: 600;
-    }
-
-    .rh__chip--ok {
-      background: var(--mf-success-bg);
     }
 
     .rh__facts {

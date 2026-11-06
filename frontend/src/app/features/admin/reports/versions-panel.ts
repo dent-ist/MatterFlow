@@ -1,3 +1,4 @@
+import { Badge } from '../../../shared/ui/badge';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -25,7 +26,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
  */
 @Component({
   selector: 'mf-versions-panel',
-  imports: [NumericDatePipe, ConfirmDialog],
+  imports: [Badge, NumericDatePipe, ConfirmDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="vp" aria-labelledby="vp-title" data-versions-panel>
@@ -42,7 +43,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
             <div class="vp__head">
               <strong>Version {{ v.versionNo }}</strong>
               @if (v.isCurrent) {
-                <span class="vp__chip" data-current>Current</span>
+                <mf-badge tone="success" data-current>Current</mf-badge>
               }
               <span class="vp__meta"
                 >{{ v.createdByName || 'Unknown' }}, {{ v.createdAtUtc | mfNum }}</span
@@ -168,13 +169,6 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
       flex-wrap: wrap;
       gap: var(--mf-s3);
       align-items: baseline;
-    }
-
-    .vp__chip {
-      padding: 0 var(--mf-s2);
-      border-radius: var(--mf-radius);
-      background: var(--mf-info-bg);
-      font-size: var(--mf-fs-sm);
     }
 
     .vp__meta,

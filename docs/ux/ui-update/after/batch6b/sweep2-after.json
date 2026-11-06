@@ -1,0 +1,124 @@
+[
+ {
+  "page": "sweep2-users-table",
+  "size": "1366x768",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": [
+   "Person:331",
+   "Workload:289",
+   "Highest priority:145",
+   "Overdue:86",
+   "Next Due:198",
+   "Assign Work:48"
+  ]
+ },
+ {
+  "page": "sweep2-users-legend",
+  "size": "1366x768",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": []
+ },
+ {
+  "page": "sweep2-users-coverage",
+  "size": "1366x768",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": [
+   "Show People:36",
+   "Task Type:369",
+   "Handled by:357",
+   "Completed:137",
+   "Status:197"
+  ]
+ },
+ {
+  "page": "sweep2-task-workflow",
+  "size": "1366x768",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": []
+ },
+ {
+  "page": "sweep2-task-activity",
+  "size": "1366x768",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": []
+ },
+ {
+  "page": "sweep2-icon-picker",
+  "size": "1366x768",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": []
+ },
+ {
+  "page": "sweep2-users-table",
+  "size": "1920x1080",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": [
+   "Person:523",
+   "Workload:457",
+   "Highest priority:229",
+   "Overdue:131",
+   "Next Due:263",
+   "Assign Work:48"
+  ]
+ },
+ {
+  "page": "sweep2-users-legend",
+  "size": "1920x1080",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": []
+ },
+ {
+  "page": "sweep2-users-coverage",
+  "size": "1920x1080",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": [
+   "Show People:36",
+   "Task Type:562",
+   "Handled by:544",
+   "Completed:208",
+   "Status:299"
+  ]
+ },
+ {
+  "page": "sweep2-task-workflow",
+  "size": "1920x1080",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": []
+ },
+ {
+  "page": "sweep2-task-activity",
+  "size": "1920x1080",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": []
+ },
+ {
+  "page": "sweep2-icon-picker",
+  "size": "1920x1080",
+  "scrolls": null,
+  "sw": null,
+  "cw": null,
+  "ths": []
+ }
+]

@@ -1,3 +1,4 @@
+import { TagChip } from '../ui/tag-chip';
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { FilterChip } from './filter-def';
 import { ListFilters } from './list-filters';
@@ -11,43 +12,40 @@ import { restoreSummary } from './restore-summary';
  */
 @Component({
   selector: 'mf-filter-chips',
+  imports: [TagChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (shown().length > 0) {
       <ul class="fch" aria-label="Active filters" data-filter-chips>
         @for (c of visible(); track c.id) {
-          <li class="fch__chip" [attr.data-chip]="c.defKey" [attr.data-chip-id]="c.id">
-            <span class="fch__text">
+          <li [attr.data-chip]="c.defKey" [attr.data-chip-id]="c.id">
+            <mf-tag-chip
+              [removable]="true"
+              [removeLabel]="'Remove filter ' + c.label"
+              (remove)="remove(c)"
+            >
               {{ c.label }}
               @if (c.hiddenColumn) {
                 <span class="fch__hidden">(hidden column)</span>
               }
-            </span>
+            </mf-tag-chip>
             @if (c.hiddenColumn && c.column) {
               <button
                 type="button"
-                class="fch__act"
+                class="mf-btn mf-btn--text fch__act"
                 [attr.aria-label]="'Show column for ' + c.label"
                 (click)="showColumn.emit(c.column)"
               >
                 Show Column
               </button>
             }
-            <button
-              type="button"
-              class="fch__x"
-              [attr.aria-label]="'Remove filter ' + c.label"
-              (click)="remove(c)"
-            >
-              <i class="pi pi-times" aria-hidden="true"></i>
-            </button>
           </li>
         }
         @if (hiddenCount() > 0) {
           <li>
             <button
               type="button"
-              class="fch__more"
+              class="mf-btn mf-btn--text fch__more"
               [attr.aria-expanded]="expanded()"
               (click)="expanded.set(!expanded())"
             >
@@ -72,58 +70,13 @@ import { restoreSummary } from './restore-summary';
       padding: 0;
       list-style: none;
     }
-    .fch__chip {
+    .fch > li {
       display: inline-flex;
       align-items: center;
       gap: var(--mf-s1);
-      max-width: 100%;
-      min-height: 24px;
-      padding: 0 var(--mf-s1) 0 var(--mf-s2);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: 999px;
-      background: var(--mf-surface);
-      font-size: var(--mf-fs-sm);
-    }
-    .fch__text {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
     }
     .fch__hidden {
       color: var(--mf-text-muted);
-    }
-    .fch__x,
-    .fch__act,
-    .fch__more {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 24px;
-      min-height: 24px;
-      padding: 0;
-      border: 0;
-      border-radius: var(--mf-radius);
-      background: transparent;
-      color: var(--mf-link);
-      font: inherit;
-      font-size: var(--mf-fs-sm);
-      cursor: pointer;
-    }
-    .fch__x {
-      color: var(--mf-text-muted);
-    }
-    .fch__x:hover {
-      background: var(--mf-surface-alt);
-      color: var(--mf-text);
-    }
-    .fch__x .pi {
-      font-size: var(--mf-icon-xs);
-    }
-    .fch__act,
-    .fch__more {
-      padding: 0 var(--mf-s1);
-      text-decoration: underline;
     }
     @media print {
       :host {

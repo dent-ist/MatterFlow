@@ -12,6 +12,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { Badge } from '../../../shared/ui/badge';
 import { RouterLink } from '@angular/router';
 import { SwimlaneCard } from '../../../api/generated/api-client';
 import { priorityColors } from '../../../shared/ui/priority-badge';
@@ -41,7 +42,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-swimlane-lane',
-  imports: [IntPipe, DashSkeleton, SwimlaneCardView, RouterLink],
+  imports: [Badge, IntPipe, DashSkeleton, SwimlaneCardView, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(keydown)': 'onKey($event)',
@@ -59,7 +60,7 @@ let nextId = 0;
       <header class="head">
         <h3 class="name" aria-level="2" [id]="hid">{{ m.label }}</h3>
         <a
-          class="count count--link"
+          class="count mf-link"
           data-lane-count
           [class.count--caveat]="searching()"
           [routerLink]="['/tasks']"
@@ -198,9 +199,7 @@ let nextId = 0;
                         }}</span>
                         <span class="grp-title">{{ row.node.label }}</span>
                         @if (row.node.assignee?.availability?.state === 'OUT_OF_OFFICE') {
-                          <span class="chip chip--ooo">
-                            <i class="pi pi-calendar-minus" aria-hidden="true"></i>Out of Office
-                          </span>
+                          <mf-badge tone="warning" icon="pi-calendar-minus">Out of Office</mf-badge>
                         }
                       }
                       <span class="count count--node"
@@ -299,24 +298,6 @@ let nextId = 0;
       font-variant-numeric: tabular-nums;
     }
     /* The lane count is a link to the Task Queue (W2): a 24 px target, underlined, with the focus ring of links. */
-    .count--link {
-      font-variant-numeric: tabular-nums;
-      min-height: 24px;
-      line-height: 22px;
-      box-sizing: border-box;
-      color: var(--mf-link);
-      text-decoration: underline;
-      text-underline-offset: 2px;
-    }
-    .count--link:hover {
-      font-variant-numeric: tabular-nums;
-      border-color: var(--mf-link);
-    }
-    .count--link:focus-visible {
-      font-variant-numeric: tabular-nums;
-      outline: 2px solid var(--mf-focus);
-      outline-offset: 2px;
-    }
     /* With search text the target may show other tasks: the link is not drawn as an exact match. */
     .count--caveat {
       font-variant-numeric: tabular-nums;
@@ -469,21 +450,6 @@ let nextId = 0;
       color: var(--mf-primary);
       font-size: var(--mf-fs-xs);
       font-weight: 700;
-    }
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
-      flex: none;
-      padding: 0 var(--mf-s2);
-      border: 1px solid currentColor;
-      border-radius: var(--mf-radius);
-      font-size: var(--mf-fs-xs);
-      line-height: 1.5;
-    }
-    .chip--ooo {
-      color: var(--mf-warning);
-      background: var(--mf-warning-bg);
     }
     .empty {
       display: flex;

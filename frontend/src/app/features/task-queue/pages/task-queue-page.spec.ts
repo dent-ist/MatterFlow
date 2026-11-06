@@ -122,7 +122,7 @@ describe('TaskQueuePage', () => {
   const lastArgs = () => getTaskQueue.mock.calls[getTaskQueue.mock.calls.length - 1];
   const chips = (el: HTMLElement) =>
     Array.from(el.querySelectorAll('[data-filter-chips] [data-chip]')).map((c) =>
-      c.querySelector('.fch__text')!.textContent!.replace(/\s+/g, ' ').trim(),
+      c.querySelector('.tg__text')!.textContent!.replace(/\s+/g, ' ').trim(),
     );
   /** A text filter of the row; `q` (Title or Ref) is the toolbar's Search box since LC-01. */
   const filterInput = (el: HTMLElement, key: string) =>
@@ -334,7 +334,7 @@ describe('TaskQueuePage', () => {
       'Creator: Pat Partner (hidden column)',
     ]);
 
-    el.querySelector<HTMLButtonElement>('[data-chip="clientText"] .fch__x')!.click();
+    el.querySelector<HTMLButtonElement>('[data-chip="clientText"] .tg__x')!.click();
     await settle();
     expect(query()['clientText']).toBeUndefined();
     expect(query()['creator']).toBe('2');
@@ -349,7 +349,7 @@ describe('TaskQueuePage', () => {
     expect(lastArgs()[ARG.role]).toBe('secondary');
     expect(lastArgs()[ARG.status]).toEqual(['NEW', 'ON_HOLD']);
 
-    el.querySelector<HTMLButtonElement>('[data-chip="managedByMe"] .fch__x')!.click();
+    el.querySelector<HTMLButtonElement>('[data-chip="managedByMe"] .tg__x')!.click();
     await settle();
     expect(query()['managedByMe']).toBeUndefined();
     expect(lastArgs()[ARG.managedByMe]).toBeUndefined();
@@ -387,7 +387,7 @@ describe('TaskQueuePage', () => {
 
   it('removing a chip and Clear filters update the address and reload; clearing returns to the plain link', async () => {
     const el = await open('/tasks?status=NEW&priority=1&overdue=true&clientText=Acme');
-    el.querySelector<HTMLButtonElement>('[data-chip="clientText"] .fch__x')!.click();
+    el.querySelector<HTMLButtonElement>('[data-chip="clientText"] .tg__x')!.click();
     await settle();
     expect(query()['clientText']).toBeUndefined();
     expect(query()['priority']).toBe('1');

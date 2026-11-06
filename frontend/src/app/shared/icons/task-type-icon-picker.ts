@@ -1,3 +1,4 @@
+import { FilterChip, FilterChips } from '../ui/filter-chips';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -84,7 +85,7 @@ export function rankIcons(icons: readonly TaskTypeIconDef[], query: string): Tas
  */
 @Component({
   selector: 'mf-task-type-icon-picker',
-  imports: [IntPipe, FormDialog, GridNav, TaskTypeIcon],
+  imports: [FilterChips, FormDialog, GridNav, IntPipe, TaskTypeIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './task-type-icon-picker.html',
   styleUrl: './task-type-icon-picker.scss',
@@ -127,6 +128,11 @@ export class TaskTypeIconPicker {
       count: matching.filter((i) => i.category === name).length,
     }));
   });
+  /** The same buttons as the shared toggle chips: All first, then each category with its count. */
+  protected readonly categoryChips = computed<FilterChip[]>(() => [
+    { key: '', label: 'All', count: this.totalCount() },
+    ...this.categoryButtons().map((c) => ({ key: c.name, label: c.name, count: c.count })),
+  ]);
   protected readonly groups = computed<IconGroup[]>(() => {
     const only = this.category();
     const matching = this.matching().filter((i) => !only || i.category === only);

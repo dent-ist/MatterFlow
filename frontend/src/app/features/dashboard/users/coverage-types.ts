@@ -1,3 +1,4 @@
+import { Badge } from '../../../shared/ui/badge';
 import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -27,7 +28,7 @@ export type TypePick = Pick<CoverageTarget, 'user' | 'type' | 'count'>;
  */
 @Component({
   selector: 'mf-coverage-types',
-  imports: [IntPipe, TaskTypeIcon, NgTemplateOutlet],
+  imports: [Badge, IntPipe, TaskTypeIcon, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-template #statusChip let-status>
@@ -50,7 +51,7 @@ export type TypePick = Pick<CoverageTarget, 'user' | 'type' | 'count'>;
               <li data-person>
                 <span>{{ p.displayName }}</span>
                 @if (!p.isActive) {
-                  <span class="tag" data-inactive>Inactive</span>
+                  <mf-badge data-inactive>Inactive</mf-badge>
                 }
                 <button
                   type="button"
@@ -160,7 +161,7 @@ export type TypePick = Pick<CoverageTarget, 'user' | 'type' | 'count'>;
                     <mf-task-type-icon [iconKey]="r.type.iconKey" size="sm" />
                     <span>{{ r.type.name }}</span>
                     @if (!r.type.isActive) {
-                      <span class="tag" data-type-inactive>Inactive</span>
+                      <mf-badge data-type-inactive>Inactive</mf-badge>
                     }
                   </span>
                 </th>
@@ -207,7 +208,7 @@ export type TypePick = Pick<CoverageTarget, 'user' | 'type' | 'count'>;
                   <mf-task-type-icon [iconKey]="r.type.iconKey" size="sm" />
                   <strong>{{ r.type.name }}</strong>
                   @if (!r.type.isActive) {
-                    <span class="tag">Inactive</span>
+                    <mf-badge>Inactive</mf-badge>
                   }
                 </span>
                 <ng-container
@@ -335,16 +336,6 @@ export type TypePick = Pick<CoverageTarget, 'user' | 'type' | 'count'>;
       align-items: center;
       flex-wrap: wrap;
       gap: var(--mf-s2);
-    }
-    .tag {
-      display: inline-flex;
-      padding: 0 var(--mf-s1);
-      color: var(--mf-text-muted);
-      background: var(--mf-surface);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      font-size: var(--mf-fs-xs);
-      font-weight: 400;
     }
     .st {
       display: inline-flex;

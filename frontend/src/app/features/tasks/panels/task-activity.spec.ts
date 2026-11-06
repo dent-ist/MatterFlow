@@ -89,20 +89,20 @@ describe('TaskActivity', () => {
 
   it('filters by type', async () => {
     await create();
-    q<HTMLButtonElement>('[data-filter=COMMENTS]').click();
+    q<HTMLButtonElement>('[data-key=COMMENTS]').click();
     await settle(fixture);
     expect(
       Array.from(el().querySelectorAll('[data-event-id]')).map((i) =>
         i.getAttribute('data-event-id'),
       ),
     ).toEqual(['9']);
-    expect(q('[data-filter=COMMENTS]').getAttribute('aria-pressed')).toBe('true');
+    expect(q('[data-key=COMMENTS]').getAttribute('aria-pressed')).toBe('true');
 
-    q<HTMLButtonElement>('[data-filter=ASSETS]').click();
+    q<HTMLButtonElement>('[data-key=ASSETS]').click();
     await settle(fixture);
     expect(q('[data-empty]').textContent).toContain('No activity of this type');
 
-    q<HTMLButtonElement>('[data-filter=ALL]').click();
+    q<HTMLButtonElement>('[data-key=ALL]').click();
     await settle(fixture);
     expect(el().querySelectorAll('[data-event-id]').length).toBe(3);
   });
@@ -132,7 +132,7 @@ describe('TaskActivity', () => {
   it('shows an error with retry', async () => {
     await create();
     api.getTaskActivity.mockReturnValue(apiError(500, { status: 500, title: 'x' }));
-    q<HTMLButtonElement>('[data-filter=ALL]').click();
+    q<HTMLButtonElement>('[data-key=ALL]').click();
     fixture.componentRef.setInput('refresh', 2);
     await settle(fixture);
     expect(q('[data-load-error]').textContent).toContain("Couldn't load activity.");

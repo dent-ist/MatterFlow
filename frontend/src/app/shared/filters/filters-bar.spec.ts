@@ -103,7 +103,9 @@ describe('filters bar', { timeout: 20_000 }, () => {
       m.filters.open.set(false);
       await m.settle();
       expect(chips()).toEqual(['name', 'priority:1', 'priority:2']);
-      const remove = m.el.querySelector<HTMLButtonElement>('[data-chip-id="priority:1"] .fch__x')!;
+      const remove = m.el.querySelector<HTMLButtonElement>(
+        '[data-chip-id="priority:1"] button.tg__x',
+      )!;
       expect(remove.getAttribute('aria-label')).toBe('Remove filter Priority: Critical');
       remove.click();
       await m.settle();

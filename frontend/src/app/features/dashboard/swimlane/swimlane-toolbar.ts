@@ -1,3 +1,4 @@
+import { TagChip } from '../../../shared/ui/tag-chip';
 import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -45,7 +46,7 @@ export interface Option {
  */
 @Component({
   selector: 'mf-swimlane-toolbar',
-  imports: [IntPipe, Dropdown, SearchBox, NgTemplateOutlet],
+  imports: [IntPipe, Dropdown, SearchBox, TagChip, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:click)': 'onDocumentClick($event)' },
   template: `
@@ -83,7 +84,9 @@ export interface Option {
       @if (settings().length > 0) {
         <ul class="chips" data-active-settings aria-label="Board settings in effect">
           @for (t of settings(); track t) {
-            <li class="chip">{{ t }}</li>
+            <li>
+              <mf-tag-chip>{{ t }}</mf-tag-chip>
+            </li>
           }
         </ul>
       }
@@ -323,16 +326,6 @@ export interface Option {
       margin: 0;
       padding: 0;
       list-style: none;
-    }
-    .chip {
-      padding: 0 var(--mf-s2);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: 999px;
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font-size: var(--mf-fs-xs);
-      line-height: 1.5rem;
-      white-space: nowrap;
     }
     .more {
       position: relative;

@@ -83,43 +83,6 @@
   gap: var(--mf-s1) var(--mf-s2);
 }
 
-.tip__chip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--mf-s1);
-  min-height: 2rem;
-  padding: 0 var(--mf-s3);
-  color: var(--mf-text);
-  font: inherit;
-  font-size: var(--mf-fs-sm);
-  background: var(--mf-surface);
-  border: 1px solid var(--mf-border-strong);
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-.tip__chip:hover {
-  background: var(--mf-surface-alt);
-}
-
-.tip__chip[aria-pressed='true'] {
-  color: var(--mf-primary);
-  font-weight: 600;
-  background: var(--mf-selected-bg);
-  border-color: var(--mf-primary);
-}
-
-.tip__chip:focus-visible {
-  outline: 2px solid var(--mf-focus);
-  outline-offset: 2px;
-}
-
-.tip__n {
-  color: var(--mf-text-muted);
-  font-size: var(--mf-fs-xs);
-  font-weight: 400;
-}
-
 .tip__category {
   margin: 0 0 var(--mf-s2);
   font-size: var(--mf-fs-sm);

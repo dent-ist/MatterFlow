@@ -22,18 +22,6 @@
   margin: 0;
 }
 
-.rep__chip {
-  padding: 0 var(--mf-s2);
-  border: 1px solid var(--mf-border-strong);
-  border-radius: var(--mf-radius);
-  background: var(--mf-surface-alt);
-  font-weight: 600;
-}
-
-.rep__chip--on {
-  background: var(--mf-success-bg);
-}
-
 .rep__error {
   margin: 0;
   color: var(--mf-danger);
@@ -140,20 +128,6 @@
 
 .rep__detected {
   margin: 0;
-}
-
-.rep__tag {
-  padding: 0 var(--mf-s1);
-  border-radius: var(--mf-radius);
-  background: color-mix(in srgb, var(--mf-primary) 18%, transparent);
-}
-
-.rep__tag--builtin {
-  background: color-mix(in srgb, var(--mf-info) 18%, transparent);
-}
-
-.rep__tag--missing {
-  background: var(--mf-warning-bg);
 }
 
 .rep__schema {

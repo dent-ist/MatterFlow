@@ -35,7 +35,10 @@ const TONE_ICONS: Readonly<Record<BadgeTone, string>> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <span class="badge" [attr.data-tone]="tone()" [attr.aria-describedby]="describedBy()">
-      <i class="pi" [class]="shownIcon()" aria-hidden="true"></i>
+      @if (!ownIcon()) {
+        <i class="pi" [class]="shownIcon()" aria-hidden="true"></i>
+      }
+      <ng-content select="[mfBadgeIcon]" />
       <ng-content />
     </span>
   `,
@@ -98,6 +101,8 @@ export class Badge {
   readonly icon = input<string | null>(null);
   /** The id of an element that describes this badge (read out once with it). */
   readonly describedBy = input<string | null>(null);
+  /** The page draws the icon itself (an element with the attribute `mfBadgeIcon`, for example an SVG state icon): the tone icon is left out. */
+  readonly ownIcon = input(false);
 
   protected readonly shownIcon = computed(() => this.icon() || TONE_ICONS[this.tone()]);
 }

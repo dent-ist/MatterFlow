@@ -52,19 +52,6 @@
   list-style: none;
 }
 
-.ac__pill {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--mf-s1);
-  max-width: 100%;
-  padding: 1px var(--mf-s2);
-  border: 1px solid var(--mf-border-strong);
-  border-radius: var(--mf-radius);
-  background: var(--mf-surface);
-  font-size: var(--mf-fs-sm);
-  line-height: 1.4;
-}
-
 .ac__pill-name {
   min-width: 0;
   overflow-wrap: anywhere;

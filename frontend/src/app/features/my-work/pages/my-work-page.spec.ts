@@ -312,7 +312,7 @@ describe('MyWorkPage', () => {
 
   const chips = (el: HTMLElement) =>
     Array.from(el.querySelectorAll('[data-filter-chips] [data-chip]')).map((c) =>
-      c.querySelector('.fch__text')!.textContent!.replace(/\s+/g, ' ').trim(),
+      c.querySelector('.tg__text')!.textContent!.replace(/\s+/g, ' ').trim(),
     );
   /** A filter control of the row; `q` (Title or Ref) is the toolbar's Search box since LC-01. */
   const control = (el: HTMLElement, key: string) =>
@@ -328,7 +328,7 @@ describe('MyWorkPage', () => {
     expect(chips(el)).toEqual(['Status: On Hold', 'Pod: Pod A (hidden column)']);
     expect(control(el, 'status').textContent).toContain('On Hold');
 
-    el.querySelector<HTMLButtonElement>('[data-chip="pod"] .fch__x')!.click();
+    el.querySelector<HTMLButtonElement>('[data-chip="pod"] .tg__x')!.click();
     await settle();
     expect(query()['pod']).toBeUndefined();
     expect(query()['status']).toBe('ON_HOLD');

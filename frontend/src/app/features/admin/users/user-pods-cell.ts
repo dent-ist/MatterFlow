@@ -1,3 +1,4 @@
+import { TagChip } from '../../../shared/ui/tag-chip';
 import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -52,7 +53,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-user-pods-cell',
-  imports: [NgTemplateOutlet],
+  imports: [NgTemplateOutlet, TagChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-template #chipList>
@@ -61,11 +62,10 @@ let nextId = 0;
       } @else {
         <span class="upc-chips">
           @for (p of shown(); track p.podId) {
-            <span
-              class="upc-chip"
+            <mf-tag-chip
               data-pod-chip
-              [class.upc-chip--primary]="p.isPrimary"
-              [class.upc-chip--inactive]="!p.isActive"
+              [muted]="!p.isActive"
+              [attr.data-inactive]="!p.isActive ? '' : null"
               [attr.data-primary]="p.isPrimary ? '' : null"
             >
               @if (p.isPrimary) {
@@ -78,11 +78,11 @@ let nextId = 0;
               @if (!p.isActive) {
                 &ngsp;<span class="upc-tag">inactive</span>
               }
-            </span>
+            </mf-tag-chip>
           }
           @if (hidden() > 0) {
-            <span class="upc-chip upc-chip--more" data-pod-more [attr.title]="hiddenNames()"
-              >+{{ hidden() }}</span
+            <mf-tag-chip [muted]="true" data-pod-more [attr.title]="hiddenNames()"
+              >+{{ hidden() }}</mf-tag-chip
             >
           }
         </span>
@@ -248,14 +248,6 @@ let nextId = 0;
       min-width: 0;
       max-width: 100%;
     }
-    :host(.upc--one) .upc-chip {
-      flex: 0 1 auto;
-      min-width: 0;
-      max-width: 100%;
-      overflow: hidden;
-    }
-    :host(.upc--one) .upc-chip--more,
-    :host(.upc--one) .upc-chip .pi,
     :host(.upc--one) .upc-tag {
       flex: none;
     }
@@ -282,38 +274,11 @@ let nextId = 0;
       flex-wrap: wrap;
       gap: var(--mf-s1);
     }
-    .upc-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
-      padding: 1px var(--mf-s2);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font-size: var(--mf-fs-sm);
-      line-height: 1.4;
-      white-space: nowrap;
-    }
-    .upc-chip--primary {
-      border-color: var(--mf-info);
-      background: var(--mf-info-bg);
-      color: var(--mf-info);
-      font-weight: 600;
-    }
-    .upc-chip--inactive {
-      border-style: dashed;
-      background: transparent;
-      color: var(--mf-text-muted);
-    }
-    .upc-chip .pi {
-      font-size: var(--mf-icon-xs);
-    }
     .upc-tag {
       font-size: var(--mf-fs-xs);
       font-weight: 600;
     }
-    .upc-chip--inactive .upc-tag,
+    [data-inactive] .upc-tag,
     .upc-row--muted .upc-tag {
       font-weight: 400;
       font-style: italic;

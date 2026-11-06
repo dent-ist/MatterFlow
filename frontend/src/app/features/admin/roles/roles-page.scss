@@ -193,14 +193,6 @@
   font-size: var(--mf-fs-sm);
 }
 
-.mf-chip {
-  padding: 0 var(--mf-s2);
-  font-size: var(--mf-fs-xs);
-  background: var(--mf-info-bg);
-  color: var(--mf-info);
-  border-radius: var(--mf-radius-pill);
-}
-
 .mf-editor {
   --mf-card-pad: var(--mf-s4);
   flex: 1;

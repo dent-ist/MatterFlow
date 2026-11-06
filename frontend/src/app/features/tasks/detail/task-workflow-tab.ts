@@ -1,3 +1,4 @@
+import { FilterChip, FilterChips } from '../../../shared/ui/filter-chips';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { TaskStep } from './task-step';
 import { TaskDetailStore } from './task-detail.store';
@@ -11,7 +12,7 @@ export const FILTER_MIN_STEPS = 6;
  */
 @Component({
   selector: 'mf-task-workflow-tab',
-  imports: [TaskStep],
+  imports: [FilterChips, TaskStep],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
@@ -31,24 +32,12 @@ export const FILTER_MIN_STEPS = 6;
           @if (showFilter()) {
             <div class="wf__filter" role="group" aria-label="Show steps" data-filter-group>
               <span class="pg-label">Show:</span>
-              <button
-                type="button"
-                class="chip"
-                data-filter="all"
-                [attr.aria-pressed]="filter() === 'all'"
-                (click)="filter.set('all')"
-              >
-                All
-              </button>
-              <button
-                type="button"
-                class="chip"
-                data-filter="unresolved"
-                [attr.aria-pressed]="filter() === 'unresolved'"
-                (click)="filter.set('unresolved')"
-              >
-                Unresolved
-              </button>
+              <mf-filter-chips
+                label="Show steps"
+                [chips]="filterChips"
+                [value]="filter()"
+                (valueChange)="filter.set($any($event))"
+              />
             </div>
           }
         </div>
@@ -103,20 +92,6 @@ export const FILTER_MIN_STEPS = 6;
       gap: var(--mf-s2);
       margin-left: auto;
     }
-    .chip {
-      min-height: var(--mf-target-min);
-      padding: 0 var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-      cursor: pointer;
-    }
-    .chip[aria-pressed='true'] {
-      background: var(--mf-surface-alt);
-      font-weight: 600;
-    }
     .wf__steps {
       display: grid;
       gap: var(--mf-s2);
@@ -129,6 +104,10 @@ export const FILTER_MIN_STEPS = 6;
 export class TaskWorkflowTab {
   protected readonly store = inject(TaskDetailStore);
   protected readonly filter = signal<'all' | 'unresolved'>('all');
+  protected readonly filterChips: readonly FilterChip[] = [
+    { key: 'all', label: 'All' },
+    { key: 'unresolved', label: 'Unresolved' },
+  ];
 
   protected readonly wf = computed(() => this.store.task()?.workflow ?? null);
 

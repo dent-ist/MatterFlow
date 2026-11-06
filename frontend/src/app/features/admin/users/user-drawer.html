@@ -188,8 +188,8 @@
                   } @else {
                     <ul class="ud-chips">
                       @for (g of permissionGroups(); track g.group) {
-                        <li class="ud-chip" data-permission-group [attr.title]="g.codes.join(', ')">
-                          {{ g.group }} ({{ g.count | mfInt }})
+                        <li data-permission-group [attr.title]="g.codes.join(', ')">
+                          <mf-tag-chip>{{ g.group }} ({{ g.count | mfInt }})</mf-tag-chip>
                         </li>
                       }
                     </ul>

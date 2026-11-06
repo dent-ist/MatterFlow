@@ -1,3 +1,4 @@
+import { TagChip } from './tag-chip';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -29,6 +30,7 @@ function reasonOf(error: unknown): string {
  */
 @Component({
   selector: 'mf-views-menu',
+  imports: [TagChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(keydown.escape)': 'close()' },
   styles: `
@@ -89,12 +91,6 @@ function reasonOf(error: unknown): string {
       font: inherit;
       text-align: left;
       cursor: pointer;
-    }
-    .vm__tag {
-      padding: 0 var(--mf-s2);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      font-size: var(--mf-fs-xs);
     }
     .vm__icon {
       min-width: 32px;
@@ -213,7 +209,7 @@ function reasonOf(error: unknown): string {
                       {{ v.name }}
                     </button>
                     @if (v.isDefault && defaults()) {
-                      <span class="vm__tag" data-view-default>Default</span>
+                      <mf-tag-chip data-view-default>Default</mf-tag-chip>
                     }
                     @if (defaults()) {
                       <button

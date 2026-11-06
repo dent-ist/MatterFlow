@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { IntPipe } from '../../shared/ui/number-format';
+import { TagChip } from '../../shared/ui/tag-chip';
 
 /** One associated record: a workflow on a task type row, a task type on a workflow row. */
 export interface AssocItem {
@@ -22,7 +23,7 @@ export interface AssocItem {
  */
 @Component({
   selector: 'mf-assoc-chips',
-  imports: [IntPipe, RouterLink],
+  imports: [IntPipe, RouterLink, TagChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (items().length === 0) {
@@ -35,28 +36,32 @@ export interface AssocItem {
     } @else {
       <ul class="ac" [attr.aria-label]="label()" data-assoc>
         @for (i of shown(); track i.id) {
-          <li class="ac__chip" [class.ac__chip--off]="i.inactive" [attr.data-assoc-chip]="i.label">
-            @if (i.isDefault) {
-              <i class="pi pi-star-fill ac__star" aria-hidden="true"></i>
-            }
-            @if (i.link) {
-              <a class="ac__link" [routerLink]="i.link" [attr.title]="i.label">{{ i.label }}</a>
-            } @else {
-              <span class="ac__text" [attr.title]="i.label">{{ i.label }}</span>
-            }
-            @if (i.isDefault) {
-              <span class="ac__tag" data-assoc-default>default</span>
-            }
-            @if (i.inactive) {
-              <span class="ac__tag">(inactive)</span>
-            }
+          <li [attr.data-assoc-chip]="i.label">
+            <mf-tag-chip [class.ac--off]="i.inactive">
+              @if (i.isDefault) {
+                <i class="pi pi-star-fill ac__star" aria-hidden="true"></i>
+              }
+              @if (i.link) {
+                <a class="mf-link ac__link" [routerLink]="i.link" [attr.title]="i.label">{{
+                  i.label
+                }}</a>
+              } @else {
+                <span class="ac__text" [attr.title]="i.label">{{ i.label }}</span>
+              }
+              @if (i.isDefault) {
+                <span class="ac__tag" data-assoc-default>default</span>
+              }
+              @if (i.inactive) {
+                <span class="ac__tag">(inactive)</span>
+              }
+            </mf-tag-chip>
           </li>
         }
         @if (hiddenCount() > 0) {
           <li class="ac__more">
             @if (moreLink(); as link) {
               <a
-                class="ac__link"
+                class="mf-link ac__link"
                 data-assoc-more
                 [routerLink]="link"
                 [queryParams]="moreQuery()"
@@ -66,15 +71,21 @@ export interface AssocItem {
                 >+{{ hiddenCount() | mfInt }} more</a
               >
             } @else {
-              <span class="ac__tag" data-assoc-more>+{{ hiddenCount() | mfInt }} more</span>
+              <mf-tag-chip [muted]="true" data-assoc-more
+                >+{{ hiddenCount() | mfInt }} more</mf-tag-chip
+              >
             }
           </li>
         }
       </ul>
       @if (allLabel() && moreLink()) {
-        <a class="ac__all" data-assoc-all [routerLink]="moreLink()" [queryParams]="moreQuery()">{{
-          allText()
-        }}</a>
+        <a
+          class="mf-link ac__all"
+          data-assoc-all
+          [routerLink]="moreLink()"
+          [queryParams]="moreQuery()"
+          >{{ allText() }}</a
+        >
       }
     }
   `,
@@ -91,22 +102,7 @@ export interface AssocItem {
       padding: 0;
       list-style: none;
     }
-    .ac__chip {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
-      box-sizing: border-box;
-      max-width: 20rem;
-      min-height: 24px;
-      padding: 0 var(--mf-s2);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: 999px;
-      background: var(--mf-surface-alt);
-      color: var(--mf-text);
-      font-size: var(--mf-fs-xs);
-      line-height: 1.5;
-    }
-    .ac__chip--off {
+    .ac--off .ac__text {
       color: var(--mf-text-muted);
     }
     .ac__link,
@@ -118,10 +114,6 @@ export interface AssocItem {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-    }
-    .ac__link,
-    .ac__all {
-      color: var(--mf-link);
     }
     .ac__star {
       color: var(--mf-text);

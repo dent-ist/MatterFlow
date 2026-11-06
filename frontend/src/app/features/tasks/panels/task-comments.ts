@@ -1,3 +1,4 @@
+import { TagChip } from '../../../shared/ui/tag-chip';
 import { NgTemplateOutlet } from '@angular/common';
 import {
   afterNextRender,
@@ -103,6 +104,7 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
     ConfirmDialog,
     SearchBox,
     PanelScroll,
+    TagChip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -176,7 +178,12 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
               @if (!query() && limited()) {
                 <p class="tc__muted" data-limit-note role="status">
                   Showing latest {{ visibleItems().length }} of {{ total() | mfInt }}.
-                  <button type="button" class="tc__link" data-show-all (click)="setLimit('all')">
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--text"
+                    data-show-all
+                    (click)="setLimit('all')"
+                  >
                     Show All
                   </button>
                 </p>
@@ -185,7 +192,7 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
                   Showing all {{ total() | mfInt }}.
                   <button
                     type="button"
-                    class="tc__link"
+                    class="mf-btn mf-btn--text"
                     data-show-latest
                     (click)="setLimit(latestCount)"
                   >
@@ -210,7 +217,7 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
                           >{{ c.createdAtUtc | mfNum }}</time
                         >
                         @if (c.purposeLabel) {
-                          <span class="tc__tag" data-purpose>{{ c.purposeLabel }}</span>
+                          <mf-tag-chip data-purpose>{{ c.purposeLabel }}</mf-tag-chip>
                         }
                         @if (
                           editingId() !== c.commentId && !readOnly() && (c.canEdit || c.canDelete)
@@ -293,7 +300,7 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
                             >
                             <button
                               type="button"
-                              class="tc__link"
+                              class="mf-btn mf-btn--text"
                               data-history-toggle
                               [attr.aria-expanded]="historyId() === c.commentId"
                               (click)="toggleHistory(c)"
@@ -503,13 +510,6 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
     .tc__author {
       color: var(--mf-text);
     }
-    .tc__tag {
-      padding: 0 var(--mf-s2);
-      border-radius: var(--mf-radius);
-      background: var(--mf-sem-neutral-bg);
-      color: var(--mf-sem-neutral-fg);
-      font-size: var(--mf-fs-xs);
-    }
     .tc__body {
       min-width: 0;
       overflow-wrap: anywhere;
@@ -593,14 +593,6 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
     .tc__alert {
       margin: 0;
       color: var(--mf-danger-text, var(--mf-danger));
-    }
-    .tc__link {
-      border: 0;
-      background: transparent;
-      color: var(--mf-link);
-      font: inherit;
-      text-decoration: underline;
-      cursor: pointer;
     }
   `,
 })

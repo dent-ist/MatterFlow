@@ -1,3 +1,4 @@
+import { FilterChips } from '../../../shared/ui/filter-chips';
 import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -47,22 +48,17 @@ const PAGE_SIZE = 25;
  */
 @Component({
   selector: 'mf-task-activity',
-  imports: [NumericDatePipe, StateBlock, NgTemplateOutlet],
+  imports: [FilterChips, NumericDatePipe, StateBlock, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="ta" [class.ta--compact]="compact()" aria-label="Activity">
-      <div class="ta__filters" role="group" aria-label="Filter by type">
-        @for (f of filters; track f.key) {
-          <button
-            type="button"
-            class="ta__chip"
-            [attr.data-filter]="f.key"
-            [attr.aria-pressed]="filter() === f.key"
-            (click)="filter.set(f.key)"
-          >
-            {{ f.label }}
-          </button>
-        }
+      <div class="ta__filters">
+        <mf-filter-chips
+          label="Filter by type"
+          [chips]="filters"
+          [value]="filter()"
+          (valueChange)="filter.set($any($event))"
+        />
       </div>
 
       @switch (state()) {
@@ -98,7 +94,7 @@ const PAGE_SIZE = 25;
                       >
                       <button
                         type="button"
-                        class="ta__link"
+                        class="mf-btn mf-btn--text"
                         data-group-toggle
                         [attr.aria-expanded]="isGroupOpen(row)"
                         [attr.aria-controls]="'ta-group-' + row.key"
@@ -152,7 +148,7 @@ const PAGE_SIZE = 25;
                       @if (hasChanges(e)) {
                         <button
                           type="button"
-                          class="ta__link"
+                          class="mf-btn mf-btn--text"
                           data-changes-toggle
                           [attr.aria-expanded]="isOpen(e)"
                           (click)="toggle(e)"
@@ -223,7 +219,6 @@ const PAGE_SIZE = 25;
       flex-wrap: wrap;
       gap: var(--mf-s2);
     }
-    .ta__chip,
     .ta__more {
       min-height: var(--mf-target-min, 2rem);
       padding: 0 var(--mf-s3);
@@ -233,10 +228,6 @@ const PAGE_SIZE = 25;
       color: var(--mf-text);
       font: inherit;
       cursor: pointer;
-    }
-    .ta__chip[aria-pressed='true'] {
-      background: var(--mf-selected-bg);
-      font-weight: 600;
     }
     .ta__more {
       justify-self: start;
@@ -317,15 +308,6 @@ const PAGE_SIZE = 25;
     .ta__alert {
       margin: 0;
       color: var(--mf-danger-text, var(--mf-danger));
-    }
-    .ta__link {
-      margin-left: var(--mf-s2);
-      border: 0;
-      background: transparent;
-      color: var(--mf-link);
-      font: inherit;
-      text-decoration: underline;
-      cursor: pointer;
     }
     .sr-only {
       position: absolute;

@@ -163,16 +163,6 @@ fieldset {
   list-style: none;
 }
 
-.ud-chip {
-  padding: 1px var(--mf-s2);
-  border: 1px solid var(--mf-sem-neutral-line);
-  border-radius: var(--mf-radius-pill);
-  background: var(--mf-sem-neutral-bg);
-  color: var(--mf-sem-neutral-fg);
-  font-size: var(--mf-fs-sm);
-  white-space: nowrap;
-}
-
 .mf-fld {
   display: grid;
   gap: var(--mf-s1);

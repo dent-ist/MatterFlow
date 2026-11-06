@@ -1,3 +1,5 @@
+import { CountChip } from './count-chip';
+import { TagChip } from './tag-chip';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -29,7 +31,7 @@ export type TagMatch = 'all' | 'any';
  */
 @Component({
   selector: 'mf-tag-filter',
-  imports: [IntPipe],
+  imports: [CountChip, IntPipe, TagChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.tf--pinned]': 'pinned' },
   template: `
@@ -47,7 +49,7 @@ export type TagMatch = 'all' | 'any';
           <i class="pi pi-tag" aria-hidden="true"></i>
           {{ label() }}
           @if (selected().length > 0) {
-            <span class="tf__badge" data-tag-filter-count>{{ selected().length }}</span>
+            <mf-count-chip data-tag-filter-count>{{ selected().length }}</mf-count-chip>
             <span class="tf__sr">selected</span>
           }
           <i
@@ -81,17 +83,14 @@ export type TagMatch = 'all' | 'any';
           </label>
         </fieldset>
         @for (tag of selected(); track tag) {
-          <span class="tf__chip" [attr.data-selected-tag]="tag">
-            <span class="tf__chip-text" [attr.title]="tag">{{ tag }}</span>
-            <button
-              type="button"
-              class="tf__chip-remove"
-              [attr.aria-label]="'Remove tag filter ' + tag"
-              (click)="uncheck(tag)"
-            >
-              <i class="pi pi-times" aria-hidden="true"></i>
-            </button>
-          </span>
+          <mf-tag-chip
+            [attr.data-selected-tag]="tag"
+            [attr.title]="tag"
+            [removable]="true"
+            [removeLabel]="'Remove tag filter ' + tag"
+            (remove)="uncheck(tag)"
+            >{{ tag }}</mf-tag-chip
+          >
         }
       </div>
       @if (open()) {
@@ -165,16 +164,6 @@ export type TagMatch = 'all' | 'any';
       gap: var(--mf-s2);
       min-height: var(--mf-row-h);
     }
-    .tf__badge {
-      min-width: 1.25rem;
-      padding: 0 var(--mf-s1);
-      border-radius: 999px;
-      background: var(--mf-primary);
-      color: var(--mf-primary-contrast);
-      font-size: var(--mf-fs-xs);
-      font-weight: 600;
-      text-align: center;
-    }
     .tf__match {
       display: inline-flex;
       gap: var(--mf-s3);
@@ -189,46 +178,6 @@ export type TagMatch = 'all' | 'any';
       gap: var(--mf-s1);
       white-space: nowrap;
       cursor: pointer;
-    }
-    .tf__chip {
-      display: inline-flex;
-      align-items: center;
-      max-width: 14rem;
-      border: 1px solid var(--mf-border-strong);
-      border-radius: 999px;
-      background: var(--mf-surface-alt);
-      font-size: var(--mf-fs-sm);
-    }
-    .tf__chip-text {
-      padding: 0 var(--mf-s1) 0 var(--mf-s3);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .tf__chip-remove {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 24px;
-      height: 24px;
-      margin-right: 2px;
-      padding: 0;
-      border: 0;
-      border-radius: 50%;
-      background: transparent;
-      color: var(--mf-text-muted);
-      cursor: pointer;
-    }
-    .tf__chip-remove:hover {
-      background: var(--mf-border);
-      color: var(--mf-text);
-    }
-    .tf__chip-remove:focus-visible {
-      outline: 2px solid var(--mf-focus);
-      outline-offset: 1px;
-    }
-    .tf__chip-remove .pi {
-      font-size: var(--mf-icon-xs);
     }
     .tf__panel {
       position: absolute;

@@ -242,7 +242,7 @@
   font-size: var(--mf-fs-sm);
 }
 
-.ct__chip {
+.ct__selected {
   display: flex;
   align-items: center;
   gap: var(--mf-s3);
@@ -252,13 +252,13 @@
   border-radius: var(--mf-radius-xl);
 }
 
-.ct__chip-text {
+.ct__selected-text {
   display: grid;
   flex: 1;
   min-width: 0;
 }
 
-.ct__chip-label {
+.ct__selected-label {
   color: var(--mf-text-muted);
   font-size: var(--mf-fs-xs);
 }

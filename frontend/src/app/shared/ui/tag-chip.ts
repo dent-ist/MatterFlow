@@ -19,6 +19,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
           class="tg__x"
           [attr.aria-label]="removeName()"
           [attr.title]="removeName()"
+          [attr.data-remove]="removeKey()"
           (click)="remove.emit(); $event.stopPropagation()"
         >
           <i class="pi pi-times" aria-hidden="true"></i>
@@ -92,6 +93,8 @@ export class TagChip {
   readonly removable = input(false);
   /** Replaces "Remove <name>" as the remove button's accessible name. */
   readonly removeLabel = input<string | null>(null);
+  /** Names this chip for tests and focus return: the remove button carries it as `data-remove`. */
+  readonly removeKey = input<string | number | null>(null);
   /** The quiet look (no fill, muted text) for "+3 more". */
   readonly muted = input(false);
   readonly remove = output<void>();

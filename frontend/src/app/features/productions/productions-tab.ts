@@ -1,3 +1,4 @@
+import { Badge } from '../../shared/ui/badge';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -131,6 +132,7 @@ const emptySpec = (): SpecDraft => ({
 @Component({
   selector: 'mf-productions-tab',
   imports: [
+    Badge,
     IntPipe,
     NumericDatePipe,
     StateBlock,
@@ -249,19 +251,6 @@ const emptySpec = (): SpecDraft => ({
       display: flex;
       align-items: center;
       gap: var(--mf-s1);
-    }
-    .pt__chip {
-      display: inline-block;
-      padding: 0 var(--mf-s2);
-      border-radius: var(--mf-radius-pill);
-      background: var(--mf-sem-neutral-bg);
-      color: var(--mf-sem-neutral-fg);
-      font-size: var(--mf-fs-sm);
-      font-weight: 600;
-    }
-    .pt__chip--retired {
-      background: var(--mf-sem-risk-bg);
-      color: var(--mf-sem-risk-fg);
     }
     .pt__comment-form {
       display: flex;
@@ -395,7 +384,7 @@ const emptySpec = (): SpecDraft => ({
                       @if (p.productionSpecName) {
                         {{ p.productionSpecName }}
                         @if (p.productionSpecStatus === 'Retired') {
-                          <span class="pt__chip pt__chip--retired">Retired</span>
+                          <mf-badge tone="warning">Retired</mf-badge>
                         }
                       } @else {
                         <span class="pt__muted">None</span>
@@ -461,9 +450,9 @@ const emptySpec = (): SpecDraft => ({
                       }
                     </td>
                     <td>
-                      <span class="pt__chip" [class.pt__chip--retired]="s.status === 'Retired'">{{
+                      <mf-badge [tone]="s.status === 'Retired' ? 'warning' : 'success'">{{
                         s.status
-                      }}</span>
+                      }}</mf-badge>
                     </td>
                     <td>
                       {{ s.imageFormat }}

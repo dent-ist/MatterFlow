@@ -82,7 +82,7 @@ export function sizeGroups(types: readonly AssetDataTypeRow[]): SizeGroup[] {
       height: 16px;
       margin: 0;
     }
-    .sp__tag {
+    .sp__note {
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-xs);
     }
@@ -120,7 +120,7 @@ export function sizeGroups(types: readonly AssetDataTypeRow[]): SizeGroup[] {
                 />
                 <span>{{ f.label }}</span>
                 @if (f.isDefault) {
-                  <span class="sp__tag">default, {{ f.unit }}</span>
+                  <span class="sp__note">default, {{ f.unit }}</span>
                 }
               </label>
               @if (isOn(g, f.key) && !f.isDefault) {

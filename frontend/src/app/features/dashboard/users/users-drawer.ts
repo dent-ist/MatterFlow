@@ -12,6 +12,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { Badge } from '../../../shared/ui/badge';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -87,6 +88,7 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
 @Component({
   selector: 'mf-users-drawer',
   imports: [
+    Badge,
     IntPipe,
     SlidePanel,
     RouterLink,
@@ -150,9 +152,9 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
           <div class="facts">
             <span class="avatar" aria-hidden="true">{{ u.initials }}</span>
             <div class="who">
-              <span class="chip" [class]="'chip chip--' + avail().tone" data-drawer-avail>
-                <i class="pi" [class]="avail().icon" aria-hidden="true"></i>{{ avail().label }}
-              </span>
+              <mf-badge [tone]="avail().tone" [icon]="avail().icon" data-drawer-avail>{{
+                avail().label
+              }}</mf-badge>
               @if (back(); as b) {
                 <strong data-drawer-back>{{ b }}</strong>
               }
@@ -403,28 +405,6 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
       align-items: center;
       gap: var(--mf-s1) var(--mf-s2);
       min-width: 0;
-    }
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
-      padding: 0 var(--mf-s2);
-      border: 1px solid currentColor;
-      border-radius: 999px;
-      font-size: var(--mf-fs-xs);
-      font-weight: 600;
-    }
-    .chip--success {
-      color: var(--mf-success);
-      background: var(--mf-success-bg);
-    }
-    .chip--warning {
-      color: var(--mf-warning);
-      background: var(--mf-warning-bg);
-    }
-    .chip--neutral {
-      color: var(--mf-text-muted);
-      background: var(--mf-surface-alt);
     }
     .note {
       font-style: italic;

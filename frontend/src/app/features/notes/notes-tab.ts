@@ -1,3 +1,5 @@
+import { Badge } from '../../shared/ui/badge';
+import { TagChip } from '../../shared/ui/tag-chip';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -113,6 +115,7 @@ interface RefChip {
 @Component({
   selector: 'mf-notes-tab',
   imports: [
+    Badge,
     IntPipe,
     AiButton,
     AiComingSoon,
@@ -127,6 +130,7 @@ interface RefChip {
     SearchBox,
     SlidePanel,
     StateBlock,
+    TagChip,
     TextField,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -294,11 +298,12 @@ interface RefChip {
               @if (activeFilters().length || !canEdit()) {
                 <div class="nt__lc3">
                   @if (!canEdit()) {
-                    <span
-                      class="nt__pill nt__pill--info"
+                    <mf-badge
+                      tone="info"
+                      icon="pi-eye"
                       title="You can read notes on this matter. Adding and editing needs the Matter Note Edit permission."
                       data-notes-readonly
-                      ><i class="pi pi-eye" aria-hidden="true"></i>Read only</span
+                      >Read only</mf-badge
                     >
                   }
                   @for (f of activeFilters(); track f.value) {
@@ -311,17 +316,13 @@ interface RefChip {
                         (removed)="toggleFilter(f.value)"
                       />
                     } @else {
-                      <span class="nt__pill" data-filter-chip
-                        >{{ f.label }}
-                        <button
-                          type="button"
-                          class="nt__x"
-                          [attr.aria-label]="'Remove filter ' + f.label"
-                          (click)="toggleFilter(f.value)"
-                        >
-                          <i class="pi pi-times" aria-hidden="true"></i>
-                        </button>
-                      </span>
+                      <mf-tag-chip
+                        data-filter-chip
+                        [removable]="true"
+                        [removeLabel]="'Remove filter ' + f.label"
+                        (remove)="toggleFilter(f.value)"
+                        >{{ f.label }}</mf-tag-chip
+                      >
                     }
                   }
                 </div>
@@ -379,14 +380,12 @@ interface RefChip {
                                 <span class="nt__plain">{{ preview(t.bodyHtml) }}</span></span
                               >
                               <span class="nt__tags">
-                                <span
-                                  class="nt__pill"
-                                  [class.nt__pill--info]="t.scope === 'SYSTEM'"
+                                <mf-badge
+                                  [tone]="t.scope === 'SYSTEM' ? 'info' : 'neutral'"
+                                  [icon]="levelIcon(t.scope)"
                                   data-template-level
+                                  >{{ levelLabel(t.scope) }}</mf-badge
                                 >
-                                  <i class="pi" [class]="levelIcon(t.scope)" aria-hidden="true"></i>
-                                  {{ levelLabel(t.scope) }}
-                                </span>
                                 @for (g of t.tags; track g.noteTagId) {
                                   <mf-note-tag [name]="g.name" [colourKey]="g.colourKey" />
                                 }
@@ -455,9 +454,7 @@ interface RefChip {
                             <span class="nt__inactive">inactive</span>
                           }
                         } @else {
-                          <span class="nt__pill"
-                            ><i class="pi pi-minus" aria-hidden="true"></i>Untagged</span
-                          >
+                          <mf-badge icon="pi-minus">Untagged</mf-badge>
                         }
                         <span class="nt__grow"></span>
                         <span class="nt__cnt" [attr.aria-label]="g.notes.length + ' notes'">{{
@@ -519,8 +516,8 @@ interface RefChip {
                   <span class="nt__crumb"
                     >Templates / <b>{{ tplName() || 'New template' }}</b></span
                   >
-                  <span class="nt__pill nt__pill--info" data-template-badge>Template</span>
-                  <span class="nt__pill" data-editing-label>Editing</span>
+                  <mf-badge tone="info" data-template-badge>Template</mf-badge>
+                  <mf-badge data-editing-label>Editing</mf-badge>
                   <span class="nt__state" [class.is-dirty]="tplDirty()" data-note-state>
                     <i aria-hidden="true"></i
                     ><span>{{ tplDirty() ? 'Unsaved changes' : 'No changes' }}</span>
@@ -668,7 +665,7 @@ interface RefChip {
                   <span class="nt__crumb"
                     >Templates / <b>{{ t.name }}</b></span
                   >
-                  <span class="nt__pill nt__pill--info" data-template-badge>Template</span>
+                  <mf-badge tone="info" data-template-badge>Template</mf-badge>
                   <button
                     type="button"
                     class="mf-btn"
@@ -703,14 +700,12 @@ interface RefChip {
                         {{ t.updatedAtUtc | mfNum }}
                       </p>
                       <div class="nt__tags">
-                        <span
-                          class="nt__pill"
-                          [class.nt__pill--info]="t.scope === 'SYSTEM'"
+                        <mf-badge
+                          [tone]="t.scope === 'SYSTEM' ? 'info' : 'neutral'"
+                          [icon]="levelIcon(t.scope)"
                           data-template-level
+                          >{{ levelLabel(t.scope) }}</mf-badge
                         >
-                          <i class="pi" [class]="levelIcon(t.scope)" aria-hidden="true"></i>
-                          {{ levelLabel(t.scope) }}
-                        </span>
                         @if (t.targetName) {
                           <span class="nt__plain">{{ t.targetName }}</span>
                         }
@@ -749,7 +744,7 @@ interface RefChip {
                   <span class="nt__crumb"
                     >Notes / <b>{{ note()?.title || 'New note' }}</b></span
                   >
-                  <span class="nt__pill" data-editing-label>Editing</span>
+                  <mf-badge data-editing-label>Editing</mf-badge>
                   <span class="nt__state" [class.is-dirty]="dirty()" id="nt-state" data-note-state>
                     <i aria-hidden="true"></i
                     ><span>{{ dirty() ? 'Unsaved changes' : 'No changes' }}</span>
@@ -1044,13 +1039,13 @@ interface RefChip {
                           <span class="nt__byline">No tags</span>
                         }
                         @if (n.isLocked) {
-                          <span class="nt__pill nt__pill--lock" data-note-lock-badge>
-                            <i class="pi pi-lock" aria-hidden="true"></i>Locked by
+                          <mf-badge tone="warning" icon="pi-lock" data-note-lock-badge
+                            >Locked by
                             {{ n.lockedByName ?? 'someone' }}
                             @if (n.lockedAtUtc) {
                               &middot; {{ n.lockedAtUtc | mfNum }}
                             }
-                          </span>
+                          </mf-badge>
                         }
                       </div>
                       @if (!canEdit()) {

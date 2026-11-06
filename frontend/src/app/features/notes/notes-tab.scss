@@ -35,34 +35,6 @@
   line-height: 1;
 }
 
-.nt__pill {
-  display: inline-flex;
-  gap: 5px;
-  align-items: center;
-  padding: 2px 10px 2px 8px;
-  border-radius: var(--mf-radius-pill);
-  background: var(--mf-sem-neutral-bg);
-  color: var(--mf-sem-neutral-fg);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 18px;
-  white-space: nowrap;
-
-  .pi {
-    font-size: var(--mf-icon-xs);
-  }
-}
-
-.nt__pill--info {
-  background: var(--mf-sem-info-bg);
-  color: var(--mf-sem-info-fg);
-}
-
-.nt__pill--lock {
-  background: var(--mf-sem-risk-bg);
-  color: var(--mf-sem-risk-fg);
-}
-
 .nt__seg {
   display: inline-flex;
   overflow: hidden;

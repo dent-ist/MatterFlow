@@ -467,10 +467,10 @@ describe('Workflow tab: unordered', () => {
     expect(q(el, '[data-filter-group]')).not.toBeNull();
     const rows = () => el.querySelectorAll('ol.wf__steps > li').length;
     expect(rows()).toBe(6);
-    await click(fixture, q(el, '[data-filter=unresolved]'));
+    await click(fixture, q(el, '[data-key=unresolved]'));
     expect(rows()).toBe(4);
-    expect(q(el, '[data-filter=unresolved]')!.getAttribute('aria-pressed')).toBe('true');
-    await click(fixture, q(el, '[data-filter=all]'));
+    expect(q(el, '[data-key=unresolved]')!.getAttribute('aria-pressed')).toBe('true');
+    await click(fixture, q(el, '[data-key=all]'));
     expect(rows()).toBe(6);
   });
 

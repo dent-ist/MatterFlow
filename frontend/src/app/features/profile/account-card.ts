@@ -1,3 +1,4 @@
+import { TagChip } from '../../shared/ui/tag-chip';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { AuthStore } from '../../core/auth/auth.store';
 import { CopyButton } from '../../shared/ui/copy-button';
@@ -9,7 +10,7 @@ import { CopyButton } from '../../shared/ui/copy-button';
  */
 @Component({
   selector: 'mf-account-card',
-  imports: [CopyButton],
+  imports: [CopyButton, TagChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './account-card.scss',
   template: `
@@ -49,7 +50,9 @@ import { CopyButton } from '../../shared/ui/copy-button';
             } @else {
               <ul class="ac__pills" aria-label="Your roles">
                 @for (r of roles(); track r) {
-                  <li class="ac__pill" data-ac-role>{{ r }}</li>
+                  <li data-ac-role>
+                    <mf-tag-chip>{{ r }}</mf-tag-chip>
+                  </li>
                 }
               </ul>
             }
@@ -63,14 +66,16 @@ import { CopyButton } from '../../shared/ui/copy-button';
             } @else {
               <ul class="ac__pills" aria-label="Your pods">
                 @for (p of pods(); track p.podId) {
-                  <li class="ac__pill" data-ac-pod [attr.data-primary]="p.isPrimary ? '' : null">
-                    @if (p.isPrimary) {
-                      <i class="pi pi-star-fill" aria-hidden="true"></i>
-                    }
-                    <span class="ac__pill-name">{{ p.name }}</span>
-                    @if (p.isPrimary) {
-                      &ngsp;<span class="ac__tag">Primary</span>
-                    }
+                  <li data-ac-pod [attr.data-primary]="p.isPrimary ? '' : null">
+                    <mf-tag-chip>
+                      @if (p.isPrimary) {
+                        <i class="pi pi-star-fill" aria-hidden="true"></i>
+                      }
+                      <span class="ac__pill-name">{{ p.name }}</span>
+                      @if (p.isPrimary) {
+                        &ngsp;<span class="ac__tag">Primary</span>
+                      }
+                    </mf-tag-chip>
                   </li>
                 }
               </ul>

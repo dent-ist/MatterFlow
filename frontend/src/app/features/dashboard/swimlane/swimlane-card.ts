@@ -48,7 +48,7 @@ export function initials(name: string): string {
     @let r = row();
     <ng-template #dueChip>
       @if (closed()) {
-        <span class="due-chip due-chip--closed">
+        <span class="due-text due-text--closed">
           <i class="pi pi-check" aria-hidden="true"></i>
           {{ c.status === 'CANCELLED' ? 'Cancelled' : 'Done' }}
           {{
@@ -442,7 +442,7 @@ export function initials(name: string): string {
       justify-content: space-between;
       flex-wrap: wrap;
     }
-    .due-chip {
+    .due-text {
       display: inline-flex;
       align-items: center;
       gap: var(--mf-s1);
@@ -450,7 +450,7 @@ export function initials(name: string): string {
       color: var(--mf-text);
       white-space: nowrap;
     }
-    .due-chip--closed {
+    .due-text--closed {
       color: var(--mf-text-muted);
     }
     .progress {
@@ -564,7 +564,7 @@ export function initials(name: string): string {
       color: var(--mf-warning);
       font-size: 7px;
     }
-    .line .due-chip {
+    .line .due-text {
       font-size: var(--mf-fs-xs);
     }
     /* The inline Due cell ("10/17 +24d"): the relative text stays whole, the date gives way to the title (ellipsis; tooltip has it). */
@@ -577,7 +577,7 @@ export function initials(name: string): string {
       .line {
         gap: var(--mf-s1);
       }
-      .line .due-chip i {
+      .line .due-text i {
         display: none;
       }
     }

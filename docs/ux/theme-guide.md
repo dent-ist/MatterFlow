@@ -620,7 +620,7 @@ Loading shows a skeleton of the grid; an error shows `mf-dash-state` with Retry;
 | 4 Tag / scope | `mf-tag-chip` (read-only lists use `mf-tag-chips`) | 26 px, pill, `--mf-surface`, `--mf-border-mid`, 13 px text; removable = a 16 px button with `pi-times` at `--mf-icon-xs`, name "Remove <name>" | a tag or a scope the user chose |
 
 - A chip never wraps (`white-space: nowrap`) and a chip is never a plain label: a fact such as "Size 159 GB" or a count with no filter behind it is plain label and value text (`.fact` in `mf-work-strip`; `[plain]="true"` makes a whole strip facts, as on the Asset record).
-- `mf-badge` without an `icon` draws its tone's icon (neutral minus-circle, info info-circle, success check-circle, warning exclamation-triangle, danger exclamation-circle), so every status chip has an icon and the word.
+- `mf-badge` without an `icon` draws its tone's icon (neutral minus-circle, info info-circle, success check-circle, warning exclamation-triangle, danger exclamation-circle), so every status chip has an icon and the word. A page that needs an icon that is not a PrimeIcon (the person-state SVG of the Users legend) sets `[ownIcon]="true"` and projects it with the attribute `mfBadgeIcon`. `mf-tag-chip` takes `[removeKey]` (the remove button carries it as `data-remove`). No component draws its own chip or link (#1130, #1132): `shared/ui/private-classes.spec.ts` fails on a new one; the few chips that stay private are listed there with the reason.
 - Private chip classes in feature styles are migrated by the later sweep (#1130); do not add new ones.
 
 ### 13.2 Links and text buttons (D-13, #1131)

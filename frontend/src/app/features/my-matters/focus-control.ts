@@ -1,3 +1,4 @@
+import { TagChip } from '../../shared/ui/tag-chip';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -202,6 +203,7 @@ export class FocusControl {
 /** The chip under the filters: "Focus: Intake, Production" with a button that clears the Focus for every section. */
 @Component({
   selector: 'mf-mm-focus-chip',
+  imports: [TagChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -211,45 +213,16 @@ export class FocusControl {
     :host(:empty) {
       display: none;
     }
-    .fc__chip {
-      display: inline-flex;
-      gap: var(--mf-s1);
-      align-items: center;
-      padding: 0 var(--mf-s1) 0 var(--mf-s3);
-      border: 1px solid var(--mf-border);
-      border-radius: 999px;
-      background: var(--mf-surface-alt);
-      font-size: var(--mf-fs-sm);
-    }
-    .fc__x {
-      min-width: 24px;
-      min-height: 24px;
-      border: 0;
-      background: transparent;
-      color: inherit;
-      cursor: pointer;
-    }
-    @media (max-width: 639.98px) {
-      .fc__x {
-        min-width: 44px;
-        min-height: 44px;
-      }
-    }
   `,
   template: `
     @if (focus.types().length > 0) {
-      <span class="fc__chip" data-focus-chip>
-        <span>{{ label() }}</span>
-        <button
-          type="button"
-          class="fc__x"
-          data-focus-remove
-          aria-label="Clear the Focus in every section"
-          (click)="focus.clear()"
-        >
-          <i class="pi pi-times" aria-hidden="true"></i>
-        </button>
-      </span>
+      <mf-tag-chip
+        data-focus-chip
+        [removable]="true"
+        removeLabel="Clear the Focus in every section"
+        (remove)="focus.clear()"
+        >{{ label() }}</mf-tag-chip
+      >
     }
   `,
 })
@@ -267,6 +240,7 @@ export class FocusChip {
 /** The chip beside the Focus chip while the page shows All matters (issue #900: the scope switch is inside Options, so what is in force must stay in sight). */
 @Component({
   selector: 'mf-mm-scope-chip',
+  imports: [TagChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -276,45 +250,16 @@ export class FocusChip {
     :host(:empty) {
       display: none;
     }
-    .fc__chip {
-      display: inline-flex;
-      gap: var(--mf-s1);
-      align-items: center;
-      padding: 0 var(--mf-s1) 0 var(--mf-s3);
-      border: 1px solid var(--mf-border);
-      border-radius: 999px;
-      background: var(--mf-surface-alt);
-      font-size: var(--mf-fs-sm);
-    }
-    .fc__x {
-      min-width: 24px;
-      min-height: 24px;
-      border: 0;
-      background: transparent;
-      color: inherit;
-      cursor: pointer;
-    }
-    @media (max-width: 639.98px) {
-      .fc__x {
-        min-width: 44px;
-        min-height: 44px;
-      }
-    }
   `,
   template: `
     @if (scope() === 'all') {
-      <span class="fc__chip" data-scope-chip>
-        <span>Showing all matters</span>
-        <button
-          type="button"
-          class="fc__x"
-          data-scope-back
-          aria-label="Show only the matters I manage"
-          (click)="back.emit()"
-        >
-          <i class="pi pi-times" aria-hidden="true"></i>
-        </button>
-      </span>
+      <mf-tag-chip
+        data-scope-chip
+        [removable]="true"
+        removeLabel="Show only the matters I manage"
+        (remove)="back.emit()"
+        >Showing all matters</mf-tag-chip
+      >
     }
   `,
 })

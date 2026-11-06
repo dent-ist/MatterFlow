@@ -14,6 +14,8 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { Badge } from '../../../shared/ui/badge';
+import { CountChip } from '../../../shared/ui/count-chip';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
@@ -89,6 +91,8 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
 @Component({
   selector: 'mf-coverage-view',
   imports: [
+    Badge,
+    CountChip,
     IntPipe,
     PeriodControl,
     SearchBox,
@@ -239,15 +243,15 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
         @if (orientation() === 'type') {
           @if (board(); as b) {
             <ul class="strip" aria-label="Coverage summary" data-coverage-summary>
-              <li class="chip" data-summary="types">
-                <strong>{{ typeRows().length }}</strong> task
+              <li class="sum" data-summary="types">
+                <mf-count-chip>{{ typeRows().length }}</mf-count-chip> task
                 {{ typeRows().length === 1 ? 'type' : 'types' }}
               </li>
-              <li class="chip" data-summary="completed">
-                <strong>{{ typeCompleted() }}</strong> completed
+              <li class="sum" data-summary="completed">
+                <mf-count-chip>{{ typeCompleted() }}</mf-count-chip> completed
               </li>
-              <li class="chip" data-summary="people">
-                <strong>{{ typePeople() }}</strong>
+              <li class="sum" data-summary="people">
+                <mf-count-chip>{{ typePeople() }}</mf-count-chip>
                 {{ typePeople() === 1 ? 'person' : 'people' }} handled them
               </li>
             </ul>
@@ -272,19 +276,20 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
           }
         } @else if (matrix(); as m) {
           <ul class="strip" aria-label="Coverage summary" data-coverage-summary>
-            <li class="chip" data-summary="people">
-              <strong>{{ m.cols.length }}</strong> {{ m.cols.length === 1 ? 'person' : 'people' }}
+            <li class="sum" data-summary="people">
+              <mf-count-chip>{{ m.cols.length }}</mf-count-chip>
+              {{ m.cols.length === 1 ? 'person' : 'people' }}
             </li>
-            <li class="chip" data-summary="types">
-              <strong>{{ m.rows.length }}</strong> task
+            <li class="sum" data-summary="types">
+              <mf-count-chip>{{ m.rows.length }}</mf-count-chip> task
               {{ m.rows.length === 1 ? 'type' : 'types' }}
             </li>
-            <li class="chip" data-summary="completed">
-              <strong>{{ m.grand }}</strong> completed
+            <li class="sum" data-summary="completed">
+              <mf-count-chip>{{ m.grand }}</mf-count-chip> completed
             </li>
             @if (showGaps()) {
-              <li class="chip" data-summary="gaps">
-                <strong>{{ m.gapCount | mfInt }}</strong> possible training
+              <li class="sum" data-summary="gaps">
+                <mf-count-chip>{{ m.gapCount | mfInt }}</mf-count-chip> possible training
                 {{ m.gapCount === 1 ? 'gap' : 'gaps' }}
                 <span class="sub">(0 for someone active)</span>
               </li>
@@ -362,12 +367,12 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
                         <span class="avatar" aria-hidden="true">{{ u.initials }}</span>
                         <span class="pname">{{ u.displayName }}</span>
                         @if (!u.isActive) {
-                          <span class="tag" data-inactive>Inactive</span>
+                          <mf-badge data-inactive>Inactive</mf-badge>
                         }
                         @if (u.availability.state === 'OUT_OF_OFFICE') {
-                          <span class="tag tag--ooo" data-ooo-marker>
-                            <i class="pi pi-calendar-minus" aria-hidden="true"></i>Out of Office
-                          </span>
+                          <mf-badge tone="warning" icon="pi-calendar-minus" data-ooo-marker
+                            >Out of Office</mf-badge
+                          >
                         }
                       </th>
                     }
@@ -383,7 +388,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
                           <mf-task-type-icon [iconKey]="r.type.iconKey" size="sm" />
                           <span>{{ r.type.name }}</span>
                           @if (!r.type.isActive) {
-                            <span class="tag">Inactive</span>
+                            <mf-badge>Inactive</mf-badge>
                           }
                         </span>
                       </th>
@@ -578,14 +583,10 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
       padding: 0;
       list-style: none;
     }
-    .chip {
+    .sum {
       display: inline-flex;
       align-items: center;
-      gap: var(--mf-s1);
-      padding: 2px var(--mf-s3);
-      background: var(--mf-surface);
-      border: 1px solid var(--mf-border);
-      border-radius: 999px;
+      gap: var(--mf-s2);
       font-size: var(--mf-fs-sm);
     }
     .more {
@@ -703,21 +704,6 @@ type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
     .pname {
       display: block;
       overflow-wrap: anywhere;
-    }
-    .tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 2px;
-      padding: 0 var(--mf-s1);
-      color: var(--mf-text-muted);
-      background: var(--mf-surface);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      font-size: var(--mf-fs-xs);
-      font-weight: 400;
-    }
-    .tag--ooo {
-      color: var(--mf-warning);
     }
     .cell {
       min-width: 5.5rem;

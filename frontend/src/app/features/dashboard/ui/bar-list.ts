@@ -228,7 +228,7 @@ let nextId = 0;
                   <span class="pct">{{ share(item.count) }}</span>
                   @if ((item.overdue ?? 0) > 0) {
                     @if (overdueLink(item); as od) {
-                      <a class="od-text chip" routerLink="/tasks" [queryParams]="od"
+                      <a class="od-text mf-link" routerLink="/tasks" [queryParams]="od"
                         >{{ odText(item) }}<span class="sr-only"> in {{ item.label }}</span></a
                       >
                     } @else {
@@ -452,32 +452,17 @@ let nextId = 0;
       }
       /* The links that open the Task Queue: the shared link style with a focus ring, not the old underlined blue text. */
       .tlink,
-      .chip {
-        border-radius: var(--mf-radius);
-        color: var(--mf-link);
-        text-decoration: none;
-        font-weight: 600;
-      }
       .tlink {
         display: inline-block;
         min-height: 24px;
         line-height: 24px;
       }
-      .tlink:hover,
-      .chip:hover {
+      .tlink:hover {
         text-decoration: underline;
       }
-      .tlink:focus-visible,
-      .chip:focus-visible {
+      .tlink:focus-visible {
         outline: 2px solid var(--mf-focus);
         outline-offset: 2px;
-      }
-      .chip {
-        padding: 0 var(--mf-s2);
-        background: var(--mf-surface-alt);
-        border: 1px solid var(--mf-border-soft);
-        border-radius: 999px;
-        font-size: var(--mf-fs-sm);
       }
       .sr-only {
         position: absolute;

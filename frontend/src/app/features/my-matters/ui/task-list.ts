@@ -1,3 +1,4 @@
+import { TagChip } from '../../../shared/ui/tag-chip';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -123,6 +124,7 @@ export function statusCodes(status: StatusFilter): string[] {
     PriorityPill,
     RouterLink,
     StatusChip,
+    TagChip,
     TaskTypeChip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -185,20 +187,21 @@ export function statusCodes(status: StatusFilter): string[] {
           @if (activeChips().length > 0) {
             <div class="achips" data-active-filters>
               @for (c of activeChips(); track c.key) {
-                <span class="achip" [attr.title]="c.title ?? null"
-                  >{{ c.label }}
-                  <button
-                    type="button"
-                    class="ax"
-                    [attr.data-remove]="c.key"
-                    [attr.aria-label]="'Remove filter: ' + c.label"
-                    (click)="paramsChange.emit(c.clear)"
-                  >
-                    <i class="pi pi-times" aria-hidden="true"></i>
-                  </button>
-                </span>
+                <mf-tag-chip
+                  [attr.title]="c.title ?? null"
+                  [removable]="true"
+                  [removeKey]="c.key"
+                  [removeLabel]="'Remove filter: ' + c.label"
+                  (remove)="paramsChange.emit(c.clear)"
+                  >{{ c.label }}</mf-tag-chip
+                >
               }
-              <button type="button" class="lnk" data-clear-filters (click)="clearFilters()">
+              <button
+                type="button"
+                class="mf-btn mf-btn--text"
+                data-clear-filters
+                (click)="clearFilters()"
+              >
                 Clear Filters
               </button>
             </div>
@@ -298,7 +301,7 @@ export function statusCodes(status: StatusFilter): string[] {
       @if (loader.state() === 'error') {
         <p class="msg" role="alert">
           Couldn't load tasks.
-          <button type="button" class="lnk" (click)="loader.load()">Retry</button>
+          <button type="button" class="mf-btn mf-btn--text" (click)="loader.load()">Retry</button>
         </p>
       } @else if (loader.state() === 'loading' && rows().length === 0) {
         <p class="msg" role="status">Loading tasks</p>
@@ -345,7 +348,7 @@ export function statusCodes(status: StatusFilter): string[] {
                       [name]="t.taskTypeName"
                     />
                     <span class="tcell">
-                      <a class="lnk" [routerLink]="['/tasks', t.taskId]" data-task-link>
+                      <a class="mf-link" [routerLink]="['/tasks', t.taskId]" data-task-link>
                         <span class="ref">{{ t.taskNumber }}</span> {{ t.title }}
                       </a>
                       @if (showMatter()) {
@@ -463,8 +466,7 @@ export function statusCodes(status: StatusFilter): string[] {
       margin-left: auto;
       flex-wrap: wrap;
     }
-    .urg,
-    .lnk-btn {
+    .urg {
       display: inline-flex;
       align-items: center;
       gap: var(--mf-s1);
@@ -513,30 +515,6 @@ export function statusCodes(status: StatusFilter): string[] {
       align-items: center;
       gap: var(--mf-s2);
     }
-    .achip {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
-      padding: 0 var(--mf-s1) 0 var(--mf-s3);
-      border: 1px solid var(--mf-sem-info-line);
-      border-radius: 999px;
-      background: var(--mf-sem-info-bg);
-      color: var(--mf-sem-info-fg);
-      font-size: var(--mf-fs-sm);
-      font-weight: 600;
-      line-height: 24px;
-    }
-    .ax {
-      width: 24px;
-      height: 24px;
-      padding: 0;
-      border: 0;
-      border-radius: 50%;
-      background: none;
-      color: inherit;
-      font-size: var(--mf-fs-xs);
-      cursor: pointer;
-    }
     .fr {
       display: flex;
       flex-wrap: wrap;
@@ -580,18 +558,6 @@ export function statusCodes(status: StatusFilter): string[] {
       margin: var(--mf-s5) var(--mf-s4);
       color: var(--mf-text-muted);
     }
-    .lnk {
-      color: var(--mf-link);
-      text-decoration: none;
-      background: none;
-      border: 0;
-      font: inherit;
-      padding: 0;
-      cursor: pointer;
-    }
-    .lnk:hover {
-      text-decoration: underline;
-    }
     .tt {
       table-layout: fixed;
     }
@@ -604,9 +570,6 @@ export function statusCodes(status: StatusFilter): string[] {
     .td-t {
       min-width: 0;
       line-height: 1.3;
-    }
-    .td-t .lnk {
-      font-weight: 600;
     }
     .cell {
       display: flex;
@@ -761,18 +724,8 @@ export function statusCodes(status: StatusFilter): string[] {
       .ppl {
         display: none;
       }
-      .lnk {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4em;
-        min-height: 44px;
-      }
       .fbtn {
         height: 44px;
-      }
-      .ax {
-        width: 32px;
-        height: 32px;
       }
     }
   `,

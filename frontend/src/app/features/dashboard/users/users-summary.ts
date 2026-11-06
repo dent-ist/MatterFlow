@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { Badge, BadgeTone } from '../../../shared/ui/badge';
 import { Dismissable } from '../../../shared/ui/dismissable';
 import {
   WorkloadSummary,
@@ -20,7 +21,7 @@ export const WHO_IS_COUNTED =
  */
 @Component({
   selector: 'mf-users-summary',
-  imports: [Dismissable, UserStateIcon, UsersState],
+  imports: [Badge, Dismissable, UserStateIcon, UsersState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="row">
@@ -58,8 +59,8 @@ export const WHO_IS_COUNTED =
                 <ul class="states" data-legend-states>
                   @for (st of states(); track st.key) {
                     <li [attr.data-state]="st.key">
-                      <span class="chipk" [class]="'chipk chipk--' + st.key"
-                        ><mf-user-state-icon [state]="st.key" />{{ st.word }}</span
+                      <mf-badge [tone]="stateTone(st.key)" [ownIcon]="true"
+                        ><mf-user-state-icon mfBadgeIcon [state]="st.key" />{{ st.word }}</mf-badge
                       >&ngsp;<span class="line">{{ st.line }}</span>
                     </li>
                   }
@@ -171,47 +172,6 @@ export const WHO_IS_COUNTED =
       align-items: center;
       gap: var(--mf-s2);
     }
-    .chipk {
-      flex: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      box-sizing: border-box;
-      min-width: 8rem;
-      min-height: 28px;
-      padding: 0 var(--mf-s2);
-      color: var(--mf-text);
-      background: var(--mf-surface);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      font-size: var(--mf-fs-sm);
-      white-space: nowrap;
-    }
-    .chipk .pi {
-      font-size: var(--mf-icon-md);
-    }
-    .chipk--idle {
-      background: color-mix(in srgb, var(--mf-success-bg) 45%, var(--mf-surface));
-      border-color: var(--mf-success);
-    }
-    .chipk--light {
-      background: var(--mf-info-bg);
-    }
-    .chipk--normal {
-      background: color-mix(in srgb, var(--mf-info-bg) 55%, var(--mf-surface-alt));
-    }
-    .chipk--heavy {
-      background: var(--mf-danger-bg);
-      border-color: var(--mf-danger);
-    }
-    .chipk--heavy .pi {
-      color: var(--mf-danger);
-    }
-    .chipk--out {
-      color: var(--mf-warning);
-      background: var(--mf-warning-bg);
-    }
     .line {
       color: var(--mf-text);
       font-size: var(--mf-fs-sm);
@@ -225,6 +185,22 @@ export const WHO_IS_COUNTED =
   `,
 })
 export class UsersSummary {
+  /** The badge tone of a workload state in the legend: Idle healthy, Light info, Normal neutral, Heavy danger, Out of Office and Off Hours as the availability badge says. */
+  protected stateTone(key: UserStateKey): BadgeTone {
+    switch (key) {
+      case 'idle':
+        return 'success';
+      case 'light':
+        return 'info';
+      case 'heavy':
+        return 'danger';
+      case 'out':
+        return 'warning';
+      default:
+        return 'neutral';
+    }
+  }
+
   readonly summary = input<WorkloadSummary | null>(null);
   readonly users = input<readonly WorkloadUser[]>([]);
   readonly filters = input.required<UsersFilters>();

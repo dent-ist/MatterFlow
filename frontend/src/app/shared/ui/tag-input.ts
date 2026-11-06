@@ -1,3 +1,4 @@
+import { TagChip } from './tag-chip';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -46,6 +47,7 @@ export function hasControlCharacters(text: string): boolean {
  */
 @Component({
   selector: 'mf-tag-input',
+  imports: [TagChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="ti">
@@ -53,17 +55,14 @@ export function hasControlCharacters(text: string): boolean {
       <div class="ti__anchor">
         <div class="ti__box" [class.ti__box--invalid]="!!problem() || !!error()">
           @for (tag of value(); track tag; let i = $index) {
-            <span class="ti__chip" [attr.data-tag]="tag">
-              <span class="ti__text" [attr.title]="tag">{{ tag }}</span>
-              <button
-                type="button"
-                class="ti__remove"
-                [attr.aria-label]="'Remove tag ' + tag"
-                (click)="remove(i); $event.stopPropagation()"
-              >
-                <i class="pi pi-times" aria-hidden="true"></i>
-              </button>
-            </span>
+            <mf-tag-chip
+              [attr.data-tag]="tag"
+              [attr.title]="tag"
+              [removable]="true"
+              [removeLabel]="'Remove tag ' + tag"
+              (remove)="remove(i)"
+              >{{ tag }}</mf-tag-chip
+            >
           }
           <input
             #field
@@ -153,49 +152,6 @@ export function hasControlCharacters(text: string): boolean {
     }
     .ti__box--invalid {
       border-color: var(--mf-danger);
-    }
-    .ti__chip {
-      display: inline-flex;
-      align-items: center;
-      max-width: 100%;
-      border: 1px solid var(--mf-border-strong);
-      border-radius: 999px;
-      background: var(--mf-surface-alt);
-      color: var(--mf-text);
-      font-size: var(--mf-fs-sm);
-      line-height: 1.5;
-    }
-    .ti__text {
-      min-width: 0;
-      padding: 0 var(--mf-s1) 0 var(--mf-s3);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .ti__remove {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 24px;
-      height: 24px;
-      margin-right: 2px;
-      padding: 0;
-      border: 0;
-      border-radius: 50%;
-      background: transparent;
-      color: var(--mf-text-muted);
-      cursor: pointer;
-    }
-    .ti__remove:hover {
-      background: var(--mf-border);
-      color: var(--mf-text);
-    }
-    .ti__remove:focus-visible {
-      outline: 2px solid var(--mf-focus);
-      outline-offset: 1px;
-    }
-    .ti__remove .pi {
-      font-size: var(--mf-icon-xs);
     }
     .ti__input {
       flex: 1 1 8rem;

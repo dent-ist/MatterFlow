@@ -1,3 +1,4 @@
+import { TagChip } from '../../../shared/ui/tag-chip';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -81,6 +82,7 @@ export function readOnlyReason(canManage: boolean, canEditPods: boolean): string
     Button,
     RouterLink,
     Badge,
+    TagChip,
     AvailabilityChip,
     UserPodsCell,
     ConfirmDialog,

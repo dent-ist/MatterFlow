@@ -74,9 +74,7 @@
     <div class="rep" data-report-editor>
       @if (!isNew()) {
         <p class="rep__status" data-state-line>
-          <span class="rep__chip" [class.rep__chip--on]="isActive()" data-status>{{
-            isActive() ? 'Active' : 'Inactive'
-          }}</span>
+          <mf-active-badge [active]="isActive()" data-status />
           Version {{ report()?.versionNo }}.
           @if (activateReason(); as why) {
             <span data-activate-reason>{{ why }}</span>
@@ -348,17 +346,17 @@
                   <p class="rep__detected" data-detected>
                     Detected:
                     @for (p of detected(); track p.name) {
-                      <code
-                        class="rep__tag"
-                        [class.rep__tag--missing]="missingDefinitions().includes(p.name)"
-                        >:{{ p.displayName }}</code
+                      <mf-tag-chip
+                        ><code>:{{ p.displayName }}</code></mf-tag-chip
                       >
                       @if (missingDefinitions().includes(p.name)) {
                         (needs a definition)
                       }
                     }
                     @for (p of builtIns(); track p.name) {
-                      <code class="rep__tag rep__tag--builtin">:{{ p.displayName }}</code>
+                      <mf-tag-chip
+                        ><code>:{{ p.displayName }}</code></mf-tag-chip
+                      >
                       (built-in)
                     }
                     @if (detected().length + builtIns().length === 0) {

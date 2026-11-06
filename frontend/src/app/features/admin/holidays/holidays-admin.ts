@@ -1,3 +1,4 @@
+import { Badge } from '../../../shared/ui/badge';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -30,7 +31,15 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
  */
 @Component({
   selector: 'mf-holidays-admin',
-  imports: [IntPipe, CalendarDialog, ConfirmDialog, HolidayDialog, ImportDialog, NumericDatePipe],
+  imports: [
+    Badge,
+    IntPipe,
+    CalendarDialog,
+    ConfirmDialog,
+    HolidayDialog,
+    ImportDialog,
+    NumericDatePipe,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../dashboard/calendar/calendar-coverage.scss',
   template: `
@@ -322,9 +331,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                               </div>
                             </td>
                             <td>
-                              <span class="ha__chip"
-                                ><i class="pi pi-moon" aria-hidden="true"></i> Non-Working Day</span
-                              >
+                              <mf-badge icon="pi-moon">Non-Working Day</mf-badge>
                             </td>
                             <td class="ha__acts">
                               <button
@@ -691,19 +698,6 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-xs);
       line-height: var(--mf-grid-line-h);
-    }
-    .ha__chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      height: 20px;
-      padding: 0 var(--mf-s2);
-      border-radius: var(--mf-radius-pill);
-      background: var(--mf-sem-neutral-bg);
-      color: var(--mf-sem-neutral-fg);
-      font-size: var(--mf-fs-xs);
-      font-weight: 600;
-      white-space: nowrap;
     }
     .ha__acts {
       white-space: nowrap;

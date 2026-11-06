@@ -679,8 +679,8 @@ describe('DashUsersTab', () => {
       expect(text(row)).toContain('Out of Office until Oct 20');
       expect(text(q('[data-user-row="3"]'))).not.toMatch(/No open tasks|Not available/);
       // Highest priority only for a person with open tasks: nobody (Cy Tan) has no pill at all.
-      expect(q('[data-user-row="3"] .state')).toBeNull();
-      expect(q('[data-user-row="1"] .state')).not.toBeNull();
+      expect(q('[data-user-row="3"] mf-priority-badge')).toBeNull();
+      expect(q('[data-user-row="1"] mf-priority-badge')).not.toBeNull();
       // The row action is a quiet icon button with a name and a tooltip.
       expect(text(q('[data-assign-work]'))).toBe('');
       expect(q('[data-assign-work]').getAttribute('aria-label')).toMatch(/^Assign work to /);

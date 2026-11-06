@@ -195,15 +195,15 @@
             </p>
           </section>
 
-          <div class="ct__chip" data-type-chip>
+          <div class="ct__selected" data-type-chip>
             <mf-task-type-chip
               [iconKey]="selectedChoice()?.type?.iconKey"
               [colourKey]="selectedChoice()?.type?.colourKey"
               [typeId]="selectedChoice()?.type?.id"
               [decorative]="true"
             />
-            <span class="ct__chip-text">
-              <span class="ct__chip-label">Task Type</span>
+            <span class="ct__selected-text">
+              <span class="ct__selected-label">Task Type</span>
               <strong data-type-name>{{ selectedChoice()?.type?.name }}</strong>
             </span>
             <button type="button" class="mf-btn" data-change-type (click)="changeType()">

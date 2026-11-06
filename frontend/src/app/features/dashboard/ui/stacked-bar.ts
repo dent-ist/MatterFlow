@@ -165,7 +165,7 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
                 <span class="count">{{ s.count | mfInt }}</span>
                 <span class="pct">{{ share(s.count) }}</span>
                 @if ((s.overdue ?? 0) > 0) {
-                  <a class="od-text chip" routerLink="/tasks" [queryParams]="od(s)"
+                  <a class="od-text mf-link" routerLink="/tasks" [queryParams]="od(s)"
                     >{{ odText(s) }}<span class="sr-only"> in {{ s.label }}</span></a
                   >
                 }
@@ -347,23 +347,6 @@ export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
         text-decoration: underline;
       }
       .tlink:focus-visible {
-        outline: 2px solid var(--mf-focus);
-        outline-offset: 2px;
-      }
-      .chip {
-        padding: 0 var(--mf-s2);
-        background: var(--mf-surface-alt);
-        border: 1px solid var(--mf-border-soft);
-        border-radius: 999px;
-        color: var(--mf-link);
-        font-size: var(--mf-fs-sm);
-        font-weight: 600;
-        text-decoration: none;
-      }
-      .chip:hover {
-        text-decoration: underline;
-      }
-      .chip:focus-visible {
         outline: 2px solid var(--mf-focus);
         outline-offset: 2px;
       }

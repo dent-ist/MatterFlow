@@ -8,7 +8,8 @@ import {
 import { availabilityDisplay } from '../../../core/availability/availability';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { dueCellText, describeDueCell } from '../../../core/time/time';
-import { priorityColors } from '../../../shared/ui/priority-badge';
+import { PriorityBadge, priorityColors } from '../../../shared/ui/priority-badge';
+import { Badge } from '../../../shared/ui/badge';
 import { backOnText } from './users-card';
 import {
   LOAD_ICONS,
@@ -32,7 +33,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
  */
 @Component({
   selector: 'mf-users-table',
-  imports: [IntPipe, RouterLink],
+  imports: [Badge, IntPipe, PriorityBadge, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="wrap" tabindex="-1">
@@ -82,7 +83,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
                 <span class="pwrap">
                   <button
                     type="button"
-                    class="link"
+                    class="mf-btn mf-btn--text pname"
                     data-user-open
                     [id]="'wl-open-' + u.userId"
                     [attr.aria-label]="u.displayName + '. ' + summaryOf(u) + '. Open tasks'"
@@ -93,16 +94,15 @@ import { IntPipe } from '../../../shared/ui/number-format';
                   <!-- Quiet rows: a small chip beside the name only when the person is away (Out of office, Off hours, Holiday). -->
                   @if (u.availability.state !== 'AVAILABLE') {
                     @let a = availOf(u);
-                    <span
-                      class="chip"
+                    <mf-badge
                       aria-hidden="true"
-                      [class]="'chip chip--' + a.tone"
+                      [tone]="a.tone"
+                      [icon]="a.icon"
                       [attr.title]="
                         u.availability.note ? a.label + ': ' + u.availability.note : a.label
                       "
+                      >{{ a.label }}</mf-badge
                     >
-                      <i class="pi" [class]="a.icon" aria-hidden="true"></i>{{ a.label }}
-                    </span>
                   }
                 </span>
               </th>
@@ -127,14 +127,12 @@ import { IntPipe } from '../../../shared/ui/number-format';
               </td>
               <td>
                 @if (u.openTotal > 0 && u.topPriority; as tp) {
-                  <span
-                    class="state"
-                    [style.background]="colors(tp.color).bg"
-                    [style.color]="colors(tp.color).fg"
+                  <mf-priority-badge
+                    [label]="tp.label"
+                    [color]="tp.color"
+                    [rank]="tp.rank"
                     [attr.title]="'Highest priority: ' + tp.label"
-                  >
-                    <i class="pi pi-flag-fill" aria-hidden="true"></i>{{ tp.label }}
-                  </span>
+                  />
                 }
               </td>
               <td class="num" [class.warn]="u.overdue > 0" [class.zero]="u.overdue === 0">
@@ -366,46 +364,10 @@ import { IntPipe } from '../../../shared/ui/number-format';
       align-items: center;
       gap: var(--mf-s2);
     }
-    .link {
+    .pname {
       max-width: 16rem;
       overflow: hidden;
       text-overflow: ellipsis;
-      padding: 0;
-      border: 0;
-      background: none;
-      color: var(--mf-link);
-      font: inherit;
-      font-weight: 600;
-      text-decoration: underline;
-      text-underline-offset: 2px;
-      cursor: pointer;
-    }
-    .chip,
-    .state {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
-      padding: 0 var(--mf-s2);
-      border: 1px solid currentColor;
-      border-radius: 999px;
-      font-size: var(--mf-fs-xs);
-      font-weight: 600;
-      white-space: nowrap;
-    }
-    .state {
-      border-radius: var(--mf-radius);
-    }
-    .chip--success {
-      color: var(--mf-success);
-      background: var(--mf-success-bg);
-    }
-    .chip--warning {
-      color: var(--mf-warning);
-      background: var(--mf-warning-bg);
-    }
-    .chip--neutral {
-      color: var(--mf-text-muted);
-      background: var(--mf-surface-alt);
     }
     .load {
       display: inline-flex;

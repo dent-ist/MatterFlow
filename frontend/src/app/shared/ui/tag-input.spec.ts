@@ -47,9 +47,7 @@ async function setup(initial: string[] = [], suggestions: string[] = []) {
     return event;
   };
   const chips = () =>
-    Array.from(el.querySelectorAll('.ti__chip')).map((c) =>
-      c.querySelector('.ti__text')!.textContent!.trim(),
-    );
+    Array.from(el.querySelectorAll('mf-tag-chip')).map((c) => c.textContent!.trim());
   return { fixture, host: fixture.componentInstance, el, input, type, key, chips, flush };
 }
 
@@ -89,7 +87,7 @@ describe('mf-tag-input', () => {
   it('gives every chip a text label and a "Remove tag X" button that removes it', async () => {
     const { host, el, chips, fixture } = await setup(['Relativity', 'QC']);
     expect(chips()).toEqual(['Relativity', 'QC']);
-    const buttons = Array.from(el.querySelectorAll<HTMLButtonElement>('.ti__remove'));
+    const buttons = Array.from(el.querySelectorAll<HTMLButtonElement>('mf-tag-chip button'));
     expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual([
       'Remove tag Relativity',
       'Remove tag QC',
@@ -108,7 +106,7 @@ describe('mf-tag-input', () => {
     await key('Enter');
     await flush();
     expect(live.textContent).toContain('Added tag Relativity. 1 tag.');
-    el.querySelector<HTMLButtonElement>('.ti__remove')!.click();
+    el.querySelector<HTMLButtonElement>('mf-tag-chip button')!.click();
     await flush();
     expect(live.textContent).toContain('Removed tag Relativity. No tags.');
   });

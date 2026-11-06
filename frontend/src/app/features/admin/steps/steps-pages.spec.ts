@@ -936,7 +936,7 @@ describe('StepEditPage tags', () => {
 
     expect(el.querySelector('label[for="step-tags"]')?.textContent).toContain('Tags');
     expect(
-      Array.from(el.querySelectorAll('.ti__chip .ti__text')).map((c) => c.textContent),
+      Array.from(el.querySelectorAll('mf-tag-input mf-tag-chip')).map((c) => c.textContent),
     ).toEqual(['Relativity', 'Processing']);
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
 

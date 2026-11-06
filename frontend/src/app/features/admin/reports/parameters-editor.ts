@@ -1,3 +1,4 @@
+import { Badge } from '../../../shared/ui/badge';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
@@ -59,8 +60,8 @@ export function parseDefault(def: ParamDef, text: string): unknown {
         <legend class="pe__legend">
           <code>{{ placeholders(d) }}</code>
           @if (unused().has(d.name)) {
-            <span class="pe__chip" data-unused
-              >Not used in the query. It is dropped when you save.</span
+            <mf-badge tone="warning" data-unused
+              >Not used in the query. It is dropped when you save.</mf-badge
             >
           }
         </legend>
@@ -333,7 +334,7 @@ export function parseDefault(def: ParamDef, text: string): unknown {
       }
     </ng-template>
   `,
-  imports: [IntPipe, NgTemplateOutlet],
+  imports: [Badge, IntPipe, NgTemplateOutlet],
   styles: `
     :host {
       display: grid;
@@ -368,15 +369,6 @@ export function parseDefault(def: ParamDef, text: string): unknown {
       align-items: center;
       padding: 0 var(--mf-s2);
       font-weight: 600;
-    }
-
-    .pe__chip {
-      padding: 0 var(--mf-s2);
-      border-radius: var(--mf-radius);
-      background: var(--mf-warning-bg);
-      color: var(--mf-text);
-      font-size: var(--mf-fs-sm);
-      font-weight: 400;
     }
 
     .pe__errors {

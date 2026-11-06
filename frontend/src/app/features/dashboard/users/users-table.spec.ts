@@ -57,7 +57,7 @@ describe('UsersTable', () => {
   it('is quiet: no Availability chip for an available person, a muted dash for zeros, red when overdue', () => {
     const f = render('load');
     const el = root(f);
-    expect(el.querySelector('tbody .chip')).toBeNull();
+    expect(el.querySelector('tbody mf-badge')).toBeNull();
     const cells = [...el.querySelectorAll('tbody tr td')].map((c) => c.textContent?.trim());
     expect(cells).toContain('-');
     f.componentRef.setInput('users', [
@@ -67,9 +67,9 @@ describe('UsersTable', () => {
       }),
     ]);
     f.detectChanges();
-    expect(el.querySelector('tbody .chip')!.textContent).toContain('Out of Office');
+    expect(el.querySelector('tbody mf-badge')!.textContent).toContain('Out of Office');
     // The chip sits beside the name, in the Person cell.
-    expect(el.querySelector('tbody th.person .chip')).not.toBeNull();
+    expect(el.querySelector('tbody th.person mf-badge')).not.toBeNull();
     expect(el.querySelector('tbody td.warn')!.textContent!.trim()).toBe('2');
     expect(el.querySelector('[data-assign-work]')!.textContent!.trim()).toBe('');
     expect(el.querySelector('[data-assign-work]')!.getAttribute('aria-label')).toBe(

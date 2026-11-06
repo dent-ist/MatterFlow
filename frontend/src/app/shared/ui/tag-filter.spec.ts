@@ -65,7 +65,7 @@ describe('mf-tag-filter', () => {
     el.querySelector<HTMLInputElement>('[data-tag-option="QC"]')!.click();
     await flush();
     expect(host.selected()).toEqual(['Relativity', 'QC']);
-    const remove = Array.from(el.querySelectorAll<HTMLButtonElement>('.tf__chip-remove'));
+    const remove = Array.from(el.querySelectorAll<HTMLButtonElement>('[data-selected-tag] button'));
     expect(remove.map((b) => b.getAttribute('aria-label'))).toEqual([
       'Remove tag filter Relativity',
       'Remove tag filter QC',

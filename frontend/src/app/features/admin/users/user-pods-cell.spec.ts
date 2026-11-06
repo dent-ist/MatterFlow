@@ -131,7 +131,7 @@ describe('UserPodsCell', () => {
         { canEdit: false },
       );
       expect(all('[data-pod-chip]').length).toBe(3);
-      expect(all('.upc-chip--inactive').length).toBe(1);
+      expect(all('[data-pod-chip][data-inactive]').length).toBe(1);
       expect(q('[data-pod-more]').textContent).toContain('+2');
       expect(q('[data-pod-more]').getAttribute('title')).toBe('D, E');
     });

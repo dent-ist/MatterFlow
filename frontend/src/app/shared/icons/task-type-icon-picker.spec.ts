@@ -104,11 +104,13 @@ describe('mf-task-type-icon-picker', () => {
   it('has category buttons that filter the grid, with counts that follow the search (UXR4-07)', async () => {
     await open();
     const buttons = () =>
-      Array.from(document.querySelectorAll<HTMLButtonElement>('[data-icon-categories] button'));
+      Array.from(
+        document.querySelectorAll<HTMLButtonElement>('[data-icon-categories] button[data-key]'),
+      );
     expect(buttons().length).toBe(13);
     expect(buttons()[0].textContent).toContain('All');
     expect(buttons()[0].getAttribute('aria-pressed')).toBe('true');
-    const production = buttons().find((b) => b.dataset['category'] === 'Production')!;
+    const production = buttons().find((b) => b.dataset['key'] === 'Production')!;
     production.click();
     await settle();
     expect(production.getAttribute('aria-pressed')).toBe('true');

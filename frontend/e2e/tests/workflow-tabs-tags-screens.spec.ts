@@ -110,7 +110,7 @@ test.describe('workflow tabs and tags screenshots', () => {
       await page.keyboard.press('Escape');
 
       await page.goto(`/admin/steps/${tagged.id}`);
-      await expect(page.locator('.ti__chip').first()).toBeVisible();
+      await expect(page.locator('mf-tag-input mf-tag-chip').first()).toBeVisible();
       await page.getByRole('combobox', { name: 'Tags' }).fill('co');
       await expect(page.getByRole('option').first()).toBeVisible();
       await shoot('step-edit-tag-input');
