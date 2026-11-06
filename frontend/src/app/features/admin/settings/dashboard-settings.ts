@@ -20,7 +20,6 @@ import {
   WEEKDAYS,
   fromServer,
   WEEKDAY_LABELS,
-  Weekday,
   sameSettings,
   validateGaugeSettings,
 } from './dashboard-settings-model';
