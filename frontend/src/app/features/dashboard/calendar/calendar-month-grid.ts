@@ -129,7 +129,7 @@ export const cellClass = (level: CalDay['level']): string =>
       min-height: 0;
       flex: 1 1 0;
     }
-    /* The weekday header is the shared grid heading (D-42): --mf-surface-alt, 40 px, 12 / 600, a hairline under it, no capitals (#1225). */
+    /* The weekday header is the shared grid heading (D-42): --mf-surface-alt, 40 px, 13 / 600 normal case, red on Sunday and Saturday: the calendar weekday row exception of D-42a (#1225). */
     .dow {
       display: grid;
       grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -138,7 +138,7 @@ export const cellClass = (level: CalDay['level']): string =>
       height: var(--mf-grid-head-h);
       background: var(--mf-surface-alt);
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
+      font-size: var(--mf-fs-sm);
       font-weight: var(--mf-fw-semibold);
       border-top: 1px solid var(--mf-border);
       border-bottom: 1px solid var(--mf-border-soft);

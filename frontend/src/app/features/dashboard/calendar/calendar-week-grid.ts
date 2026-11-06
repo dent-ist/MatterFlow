@@ -155,7 +155,7 @@ interface Row {
       vertical-align: top;
       text-align: left;
     }
-    /* The heading row is the shared grid heading (D-42): --mf-surface-alt, 12 / 600, no capitals, at least 40 px; a weekend or holiday column does not change it (#1225). */
+    /* The heading row is a date-grid heading (D-42a): --mf-surface-alt, exactly 40 px with its line (a holiday chip makes a column taller), 13 / 600 normal case, red on a weekend or holiday; a weekend or holiday column does not change it (#1225). */
     thead th {
       position: sticky;
       top: 0;
@@ -193,7 +193,10 @@ interface Row {
       font-weight: 400;
     }
     .dh {
-      padding: 0 0 var(--mf-s1);
+      padding: 0;
+    }
+    thead .dh {
+      font-size: var(--mf-fs-sm);
     }
     /* Saturday, Sunday and holiday headings are red (#1225). */
     .dh.off {
@@ -208,7 +211,7 @@ interface Row {
       align-items: baseline;
       gap: var(--mf-s2);
       width: 100%;
-      min-height: var(--mf-grid-head-h);
+      min-height: calc(var(--mf-grid-head-h) - 1px);
       align-items: center;
       padding: var(--mf-s1) var(--mf-s3);
       border: 0;

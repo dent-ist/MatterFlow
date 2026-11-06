@@ -234,22 +234,29 @@ const ALL_ROLES = '';
           }
 
           <ul class="legend" aria-label="Legend" data-cal-legend>
-            <li class="legend__h">Coverage</li>
-            @for (l of legend; track l) {
-              <li [class]="'lg ' + cls(l)" [attr.title]="LEVELS[l].hint">
-                <i class="pi" [class]="LEVELS[l].icon" aria-hidden="true"></i>{{ LEVELS[l].word }}
-              </li>
-            }
-            <li class="legend__h">Days</li>
-            <li class="lg" data-cal-legend-red>
-              <b class="lg__red">12</b><span>Red numbers = weekend or holiday</span>
+            <!-- Each group (label and its samples) wraps as one piece, so a label is never left alone at the end of a line (#1225). -->
+            <li class="lgrp">
+              <span class="legend__h">Coverage</span>
+              @for (l of legend; track l) {
+                <span [class]="'lg ' + cls(l)" [attr.title]="LEVELS[l].hint">
+                  <i class="pi" [class]="LEVELS[l].icon" aria-hidden="true"></i>{{ LEVELS[l].word }}
+                </span>
+              }
             </li>
-            <li class="legend__h">Holidays</li>
-            <li class="lg">
-              <span class="hchip"
-                ><i class="pi pi-flag" aria-hidden="true"></i
-                ><span>Chip colour = category</span></span
-              >
+            <li class="lgrp">
+              <span class="legend__h">Days</span>
+              <span class="lg" data-cal-legend-red>
+                <b class="lg__red">12</b><span>Red numbers = weekend or holiday</span>
+              </span>
+            </li>
+            <li class="lgrp">
+              <span class="legend__h">Holidays</span>
+              <span class="lg">
+                <span class="hchip"
+                  ><i class="pi pi-flag" aria-hidden="true"></i
+                  ><span>Chip colour = category</span></span
+                >
+              </span>
             </li>
           </ul>
         </div>
@@ -391,8 +398,16 @@ const ALL_ROLES = '';
       list-style: none;
       font-size: var(--mf-fs-xs);
     }
+    .lgrp {
+      display: inline-flex;
+      flex: none;
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: var(--mf-s1) var(--mf-s3);
+    }
     .legend__h {
       font-weight: 700;
+      white-space: nowrap;
     }
     .lg__red {
       color: var(--mf-danger);
@@ -403,6 +418,7 @@ const ALL_ROLES = '';
       flex: none;
       align-items: center;
       gap: var(--mf-s1);
+      white-space: nowrap;
     }
     /* The legend never clips its sample chip (CAL-11): the words stay whole, the row wraps instead. */
     .legend .hchip {
