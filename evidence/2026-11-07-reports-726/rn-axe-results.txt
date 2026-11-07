@@ -1,0 +1,58 @@
+PASS list 1366x768 violations=0 sideways=0
+PASS list 1920x1080 violations=0 sideways=0
+PASS list-search-empty 1366x768 violations=0 sideways=0
+PASS list-search-empty 1920x1080 violations=0 sideways=0
+PASS run-form 1366x768 violations=0 sideways=0
+PASS run-form 1920x1080 violations=0 sideways=0
+PASS run-errors 1366x768 violations=0 sideways=0
+PASS run-errors 1920x1080 violations=0 sideways=0
+PASS run-help 1366x768 violations=0 sideways=0
+PASS run-help 1920x1080 violations=0 sideways=0
+PASS run-running 1366x768 violations=0 sideways=0
+PASS run-running 1920x1080 violations=0 sideways=0
+PASS run-result 1366x768 violations=0 sideways=0
+PASS run-result 1920x1080 violations=0 sideways=0
+PASS run-views-menu 1366x768 violations=0 sideways=0
+PASS run-views-menu 1920x1080 violations=0 sideways=0
+PASS run-dialog-save-view 1366x768 violations=0 sideways=0
+PASS run-dialog-save-view 1920x1080 violations=0 sideways=0
+PASS run-dialog-rename 1366x768 violations=0 sideways=0
+PASS run-dialog-rename 1920x1080 violations=0 sideways=0
+PASS run-dialog-delete-view 1366x768 violations=0 sideways=0
+PASS run-dialog-delete-view 1920x1080 violations=0 sideways=0
+PASS run-columns-chooser 1366x768 violations=0 sideways=0
+PASS run-columns-chooser 1920x1080 violations=0 sideways=0
+PASS run-filter-row 1366x768 violations=0 sideways=0
+PASS run-filter-row 1920x1080 violations=0 sideways=0
+PASS run-export-in-progress 1366x768 violations=0 sideways=0
+PASS run-export-in-progress 1920x1080 violations=0 sideways=0
+PASS admin-list 1366x768 violations=0 sideways=0
+PASS admin-list 1920x1080 violations=0 sideways=0
+PASS admin-categories 1366x768 violations=0 sideways=0
+PASS admin-categories 1920x1080 violations=0 sideways=0
+PASS admin-runs 1366x768 violations=0 sideways=0
+PASS admin-runs 1920x1080 violations=0 sideways=0
+PASS admin-assignments 1366x768 violations=0 sideways=0
+PASS admin-assignments 1920x1080 violations=0 sideways=0
+PASS admin-health 1366x768 violations=0 sideways=0
+PASS admin-health 1920x1080 violations=0 sideways=0
+PASS admin-editor-details 1366x768 violations=0 sideways=0
+PASS admin-editor-details 1920x1080 violations=0 sideways=0
+PASS admin-editor-query 1366x768 violations=0 sideways=0
+PASS admin-editor-query 1920x1080 violations=0 sideways=0
+PASS admin-editor-parameters 1366x768 violations=0 sideways=0
+PASS admin-editor-parameters 1920x1080 violations=0 sideways=0
+PASS admin-editor-roles 1366x768 violations=0 sideways=0
+PASS admin-editor-roles 1920x1080 violations=0 sideways=0
+PASS admin-editor-history 1366x768 violations=0 sideways=0
+PASS admin-editor-history 1920x1080 violations=0 sideways=0
+PASS admin-editor-new 1366x768 violations=0 sideways=0
+PASS admin-editor-new 1920x1080 violations=0 sideways=0
+unmatched API calls: GET /branding | GET /users/counts | GET /me/availability | GET /me/notifications/poll | GET /audit/events | POST /report-admin/analyze
+console/page errors: 0 []
+
+--- Users > Roles > Reports tab
+PASS admin-role-reports-tab 1366x768 violations=0 sideways=0
+PASS admin-role-reports-tab 1920x1080 violations=0 sideways=0
+unmatched API calls: GET /branding | GET /pods | GET /me/availability | GET /users/counts | GET /permissions | GET /me/notifications/poll
+console/page errors: 0 []
