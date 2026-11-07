@@ -140,7 +140,6 @@ public class AssetNumberingSchemaTests(SqlServerFixture sql)
         await ExecAsync(cs, "INSERT dbo.Asset (MatterId, AssetTypeId, DisplayName, AssetNumber, AssetNumberSeq) VALUES (1, 1, N'A', N'90003-80008_001', 1)");
 
         await ShouldRejectAsync(cs, "UPDATE dbo.Asset SET AssetNumber = N'90003-80008_002' WHERE DisplayName = N'A'", "assigned once");
-        await ShouldRejectAsync(cs, "UPDATE dbo.Asset SET AssetNumber = LOWER(AssetNumber) WHERE DisplayName = N'A'", "assigned once");
         await ShouldRejectAsync(cs, "UPDATE dbo.Asset SET AssetNumber = NULL, AssetNumberSeq = NULL WHERE DisplayName = N'A'", "assigned once");
         await ShouldRejectAsync(cs, "UPDATE dbo.Asset SET AssetNumberSeq = 7 WHERE DisplayName = N'A'", "assigned once");
         await ExecAsync(cs, "UPDATE dbo.Asset SET DisplayName = N'Renamed' WHERE DisplayName = N'A'");

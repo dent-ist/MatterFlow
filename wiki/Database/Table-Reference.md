@@ -6,7 +6,7 @@
 
 **How this page was made.** The facts come from the demo SQL Server database `MatterFlow` (all 59 numbered scripts applied, plus the runner table `SchemaMigration`), read with read-only queries on `sys.tables`, `sys.columns`, `sys.foreign_keys`, `sys.indexes`, `sys.check_constraints` and `sys.triggers`, and were cross-checked against the scripts in `db/scripts`. Purposes and module ownership are written by hand from the scripts and the code. The "scripts" line is derived by pattern matching (`CREATE TABLE`, `ALTER TABLE`, `CREATE INDEX`, `CREATE TRIGGER`), so a change made through dynamic SQL would not be listed; [Schema Script History](Schema-Script-History.md) is the authoritative list.
 
-Totals: 71 tables, 183 foreign keys, 234 indexes (including primary keys), 139 check constraints, 20 triggers on tables, 711 columns.
+Totals: 72 tables, 184 foreign keys, 236 indexes (including primary keys), 144 check constraints, 20 triggers on tables, 728 columns (script 63 added the counter table and 5 columns; the totals were last counted from the live database at script 60).
 
 ## Index of tables
 
@@ -14,10 +14,11 @@ Totals: 71 tables, 183 foreign keys, 234 indexes (including primary keys), 139 c
 |---|---|---|---|---|
 | [AppSetting](#appsetting) | Audit, Notifications, Settings and platform | Configuration | 8 | 1 |
 | [AppUser](#appuser) | Identity and access | Identity | 12 | 3 |
-| [Asset](#asset) | Assets | Assets | 16 | 5 |
+| [Asset](#asset) | Assets | Assets | 18 | 6 |
 | [AssetLinkRole](#assetlinkrole) | Tasks and task configuration | Configuration | 9 | 2 |
+| [AssetNumberCounter](#assetnumbercounter) | Assets | Assets | 4 | 1 |
 | [AssetReport](#assetreport) | Assets | Assets | 9 | 3 |
-| [AssetType](#assettype) | Assets | Assets | 14 | 2 |
+| [AssetType](#assettype) | Assets | Assets | 17 | 2 |
 | [AuditEvent](#auditevent) | Audit, Notifications, Settings and platform | Audit | 14 | 0 |
 | [AuditEventGuard](#auditeventguard) | Audit, Notifications, Settings and platform | Audit (created by script 13) | 1 | 1 |
 | [Client](#client) | Clients, Matters and Projects | Organization | 10 | 2 |
@@ -689,37 +690,51 @@ Typed copies of custom field values (text, number, date, date and time, bool) so
 
 ### AssetType
 
-Admin-defined kind of asset, with a custom field form (through `FormDefinition`), an icon, a colour and an optional size field and unit.
+Admin-defined kind of asset, with a custom field form (through `FormDefinition`), an icon, a colour, an optional size field and unit and the optional automatic numbering of its assets (issue #1297: on or off, the pattern after the matter's CM Number, the scope).
 
 - **Module:** Assets. **Area:** Assets.
-- **Scripts:** created by script 10; changed by scripts 44, 50.
+- **Scripts:** created by script 10; changed by scripts 44, 50, 63.
 - **Report login (`mf_report_reader`):** allow.
 - **Primary key:** `PK_AssetType` (AssetTypeId), int identity.
-- **Columns (14; `?` = nullable):** `AssetTypeId int`, `Name nvarchar(100)`, `Description nvarchar(500)?`, `SortOrder int`, `IsActive bit`, `SizeFieldKey varchar(64)?`, `SizeUnit varchar(10)?`, `IconKey varchar(50)?`, `ColourKey varchar(20)?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Columns (17; `?` = nullable):** `AssetTypeId int`, `Name nvarchar(100)`, `Description nvarchar(500)?`, `SortOrder int`, `IsActive bit`, `SizeFieldKey varchar(64)?`, `SizeUnit varchar(10)?`, `IconKey varchar(50)?`, `ColourKey varchar(20)?`, `NumberingEnabled bit` (default 0), `NumberingPattern nvarchar(150)` (the tail after the CM Number, default `_{###}`), `NumberingScope int` (1 = per matter). Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (2):**
   - `FK_AssetType_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
   - `FK_AssetType_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
 - **Indexes and unique constraints (2):** `IX_AssetType_Sort` (SortOrder,Name); `UQ_AssetType_Name` (Name) - unique.
-- **Check constraints (5):** `CK_AssetType_ColourKey`, `CK_AssetType_IconKey`, `CK_AssetType_Name`, `CK_AssetType_SizeField_Unit`, `CK_AssetType_SizeUnit`.
+- **Check constraints (7):** `CK_AssetType_ColourKey`, `CK_AssetType_IconKey`, `CK_AssetType_Name`, `CK_AssetType_NumberingPattern` (length 1 to 50), `CK_AssetType_NumberingScope` (1), `CK_AssetType_SizeField_Unit`, `CK_AssetType_SizeUnit`.
 
 ### Asset
 
 A data source or deliverable that belongs to one matter (for example a workspace, vault, media or data set). Has an asset type, a disposition (Active, Inactive, Pending disposition, Disposed) and custom field values in `FormValueSet`.
 
 - **Module:** Assets. **Area:** Assets.
-- **Scripts:** created by script 10; changed by script 43.
+- **Scripts:** created by script 10; changed by scripts 43, 63.
 - **Report login (`mf_report_reader`):** allow.
 - **Primary key:** `PK_Asset` (AssetId), int identity.
-- **Columns (16; `?` = nullable):** `AssetId int`, `MatterId int`, `AssetTypeId int`, `DisplayName nvarchar(300)`, `ExternalReference nvarchar(1000)?`, `Description nvarchar(2000)?`, `IsActive bit`, `DispositionCode varchar(20)`, `DispositionChangedAt datetime2(7)?`, `DispositionChangedByUserId int?`, `DispositionNote nvarchar(500)?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Columns (18; `?` = nullable):** `AssetId int`, `AssetNumber nvarchar(100)?` (the generated Asset Number, a snapshot, never changed; null for assets of types without numbering and for every asset that existed before script 63), `AssetNumberSeq int?` (the counter value it was built from), `MatterId int`, `AssetTypeId int`, `DisplayName nvarchar(300)`, `ExternalReference nvarchar(1000)?`, `Description nvarchar(2000)?`, `IsActive bit`, `DispositionCode varchar(20)`, `DispositionChangedAt datetime2(7)?`, `DispositionChangedByUserId int?`, `DispositionNote nvarchar(500)?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (5):**
   - `FK_Asset_AssetType`: `AssetTypeId` to `AssetType(AssetTypeId)`
   - `FK_Asset_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
   - `FK_Asset_DispositionChangedBy`: `DispositionChangedByUserId` to `AppUser(UserId)`
   - `FK_Asset_Matter`: `MatterId` to `Matter(MatterId)`
   - `FK_Asset_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
-- **Indexes and unique constraints (5):** `IX_Asset_Matter` (MatterId,AssetTypeId) - includes DisplayName,IsActive; `IX_Asset_Matter_Disposition` (MatterId,AssetTypeId,DispositionCode); `IX_Asset_Name` (DisplayName); `IX_Asset_Type` (AssetTypeId); `UQ_Asset_IdMatter` (AssetId,MatterId) - unique.
-- **Check constraints (3):** `CK_Asset_DisplayName`, `CK_Asset_DispositionCode`, `CK_Asset_IsActive_Disposition`.
-- **Triggers:** `TR_Asset_Guard`.
+- **Indexes and unique constraints (6):** `IX_Asset_Matter` (MatterId,AssetTypeId) - includes DisplayName,IsActive; `IX_Asset_Matter_Disposition` (MatterId,AssetTypeId,DispositionCode); `IX_Asset_Name` (DisplayName); `IX_Asset_Type` (AssetTypeId); `UQ_Asset_AssetNumber` (AssetTypeId,MatterId,AssetNumber) - unique; filter [AssetNumber] IS NOT NULL; `UQ_Asset_IdMatter` (AssetId,MatterId) - unique.
+- **Check constraints (4):** `CK_Asset_AssetNumber` (number and sequence are both null or both set), `CK_Asset_DisplayName`, `CK_Asset_DispositionCode`, `CK_Asset_IsActive_Disposition`.
+- **Triggers:** `TR_Asset_Guard` (no delete, no move to another matter, an assigned Asset Number can never change or be removed; re-created by script 63).
+
+### AssetNumberCounter
+
+The atomic counter of the automatic asset numbering (issue #1297): one row per asset type and scope key (the matter id while the scope is per matter). `NextNumber` is the counter value the next asset gets. It is read and advanced by one `UPDATE ... OUTPUT` under an update lock inside the transaction that inserts the asset, so concurrent creates never share a number; it only goes up (an administrator may raise it with the "set next number" control; the application never lowers it below the highest assigned number), and deleting or deactivating an asset never touches it.
+
+- **Module:** Assets. **Area:** Assets.
+- **Scripts:** created by script 63.
+- **Report login (`mf_report_reader`):** deny.
+- **Primary key:** `PK_AssetNumberCounter` (AssetTypeId,ScopeKey).
+- **Columns (4; `?` = nullable):** `AssetTypeId int`, `ScopeKey int`, `NextNumber int` (default 1), `ModifiedAt datetime2(7)`.
+- **Foreign keys (1):**
+  - `FK_AssetNumberCounter_AssetType`: `AssetTypeId` to `AssetType(AssetTypeId)`
+- **Indexes and unique constraints (1):** the primary key only.
+- **Check constraints (1):** `CK_AssetNumberCounter_Next` (NextNumber at least 1).
 
 ### AssetReport
 

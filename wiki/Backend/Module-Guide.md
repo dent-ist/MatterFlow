@@ -59,11 +59,12 @@ Conventions common to all modules:
 ## Assets
 
 - **Purpose:** asset types, assets of matters, disposition, saved asset reports.
-- **Tables:** `AssetType`, `Asset`, `AssetReport`.
-- **Controllers:** `/asset-types`, `/assets`, `/asset-reports` (`AssetControllers.cs`; running reports is in WorkViews).
-- **Key services:** `AssetService`, `AssetTypeService`, `AssetReportService`, `AssetAccess` (visible assets), `AssetReferenceValidator`, `AssetDirectory`.
+- **Tables:** `AssetType`, `Asset`, `AssetReport`, `AssetNumberCounter`.
+- **Controllers:** `/asset-types` (also the numbering counters: `GET/PUT /asset-types/{id}/numbering/counters[/{matterId}]`), `/assets`, `/asset-reports` (`AssetControllers.cs`; running reports is in WorkViews).
+- **Key services:** `AssetService`, `AssetTypeService`, `AssetReportService`, `AssetNumberGenerator` (takes the next Asset Number with one atomic `UPDATE ... OUTPUT` in the transaction of the asset insert), `AssetNumberingService` (the next-number admin control), `AssetNumbering` (pure pattern rules in `Domain/`), `AssetAccess` (visible assets), `AssetReferenceValidator`, `AssetDirectory`.
 - **Permissions:** `Asset.View`, `Asset.Create`, `Asset.Edit`, `Asset.Link`, `Asset.Dispose`, `AssetType.Manage`.
 - **Frontend:** `features/assets`, `features/admin/asset-types`, `matter-assets` and Assets tab in `features/matters`.
+- **Automatic numbering (issue #1297), how to use it from other code:** an asset type with `NumberingEnabled` gives every NEW asset `AssetNumber` = the matter's CM Number + the type's pattern tail with the counter filled in (default tail `_{###}`: `90003-80008_001`; the counter restarts for each matter and widens past its width). Assets are created only through `AssetService.CreateAsync`; any new creation path must call `AssetNumberGenerator.TakeNextAsync` inside the transaction that inserts the asset. The number is a snapshot, read-only (the database trigger and the update endpoint refuse changes), never reused. Rules and shared vectors: `AssetNumbering`, `contracts/asset-numbering/pattern-vectors.json`.
 - **Tests:** `IntegrationTests/Assets`, `UnitTests/Assets`.
 
 ## WorkflowEngine

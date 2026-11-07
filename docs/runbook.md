@@ -235,6 +235,15 @@ host, run seeds or the audit guard, and it ignores `Migrations:Enabled=false`. I
    Keep `appsettings.Production.json`: it is not in the package.
 5. Verify `/health/ready` is `ready`, sign in, open the dashboard and one task. Keep the previous folder and the backup for at least a week.
 
+### 7.2a Upgrade note: automatic asset numbering (script 63, issue #1297)
+
+Script 63 adds the automatic numbering of assets. It changes nothing for existing data: numbering is OFF for every asset type, no existing asset gets a number, no row is rewritten. To use it:
+
+1. **Switch it on per asset type** (Administration, Asset Types; API `numbering.enabled` on `PUT /api/v1/asset-types/{id}`, permission `AssetType.Manage`) and choose the pattern after the matter's CM Number (default `_{###}`: `90003-80008_001`). New assets of that type get the number; old ones stay without. The counter restarts at 001 for every matter and widens past 999 (`_1000`).
+2. **Continue after folders that already exist on the share.** Where a matter's Media folders `90003-80008_001` to `_037` already exist, set that matter's next number to 38 BEFORE the first new asset is created: Administration, Asset Types, the type, Numbering, search the CM Number, "Next number" (API `PUT /api/v1/asset-types/{id}/numbering/counters/{matterId}` with `{"nextNumber":38}`). The control never accepts a number below the highest one already assigned plus one, so a number is never handed out twice; every change is audited (who, matter, old, new). Nothing is backfilled and nothing creates the folder: the app only shows the exact name to create.
+3. Numbers are never reused: deactivating or disposing an asset keeps its number, and the counter only goes up. A later change of the matter's CM Number or of the pattern does not change numbers already assigned (the number is a snapshot).
+4. Rollback: the script is additive; the older application ignores the new columns. Dropping the counter table or the columns after use would lose the assigned numbers: take them from `dbo.Asset.AssetNumber` first.
+
 ### 7.3 Rollback
 
 - **No schema change in the release** (`SELECT MAX(Prefix) FROM dbo.SchemaMigration` is the same as before): swap back to `matterflow-previous`.

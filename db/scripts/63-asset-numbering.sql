@@ -23,7 +23,7 @@ IF COL_LENGTH('dbo.AssetType', 'NumberingEnabled') IS NULL
   ALTER TABLE dbo.AssetType ADD
     NumberingEnabled BIT           NOT NULL CONSTRAINT DF_AssetType_NumberingEnabled DEFAULT 0,
     NumberingPattern NVARCHAR(150) NOT NULL CONSTRAINT DF_AssetType_NumberingPattern DEFAULT N'_{###}',
-    NumberingScope   TINYINT       NOT NULL CONSTRAINT DF_AssetType_NumberingScope DEFAULT 1;
+    NumberingScope   INT           NOT NULL CONSTRAINT DF_AssetType_NumberingScope DEFAULT 1;
 GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_AssetType_NumberingPattern' AND parent_object_id = OBJECT_ID('dbo.AssetType'))

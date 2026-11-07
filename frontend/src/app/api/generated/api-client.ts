@@ -125,6 +125,22 @@ export interface IAssetTypesClient {
      */
     setAssetTypeSizeField(assetTypeId: number, body: SetAssetTypeSizeFieldRequest): Observable<AssetTypeResponse>;
     /**
+     * @param q (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param sort (optional) 
+     * @return OK
+     */
+    listAssetNumberCounters(assetTypeId: number, q?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetNumberCounterItem>;
+    /**
+     * @return OK
+     */
+    getAssetNumberCounter(assetTypeId: number, matterId: number): Observable<AssetNumberCounterItem>;
+    /**
+     * @return OK
+     */
+    setAssetNextNumber(assetTypeId: number, matterId: number, body: SetAssetNextNumberRequest): Observable<AssetNumberCounterItem>;
+    /**
      * @return OK
      */
     reindexAssetType(assetTypeId: number): Observable<AssetTypeReindexResponse>;
@@ -445,6 +461,195 @@ export class AssetTypesClient implements IAssetTypesClient {
     }
 
     /**
+     * @param q (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param sort (optional) 
+     * @return OK
+     */
+    listAssetNumberCounters(assetTypeId: number, q?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetNumberCounterItem> {
+        let url_ = this.baseUrl + "/api/v1/asset-types/{assetTypeId}/numbering/counters?";
+        if (assetTypeId === undefined || assetTypeId === null)
+            throw new globalThis.Error("The parameter 'assetTypeId' must be defined.");
+        url_ = url_.replace("{assetTypeId}", encodeURIComponent("" + assetTypeId));
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "Q=" + encodeURIComponent("" + q) + "&";
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "Page=" + encodeURIComponent("" + page) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "PageSize=" + encodeURIComponent("" + pageSize) + "&";
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "Sort=" + encodeURIComponent("" + sort) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListAssetNumberCounters(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListAssetNumberCounters(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PagedResultOfAssetNumberCounterItem>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PagedResultOfAssetNumberCounterItem>;
+        }));
+    }
+
+    protected processListAssetNumberCounters(response: HttpResponseBase): Observable<PagedResultOfAssetNumberCounterItem> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PagedResultOfAssetNumberCounterItem;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getAssetNumberCounter(assetTypeId: number, matterId: number): Observable<AssetNumberCounterItem> {
+        let url_ = this.baseUrl + "/api/v1/asset-types/{assetTypeId}/numbering/counters/{matterId}";
+        if (assetTypeId === undefined || assetTypeId === null)
+            throw new globalThis.Error("The parameter 'assetTypeId' must be defined.");
+        url_ = url_.replace("{assetTypeId}", encodeURIComponent("" + assetTypeId));
+        if (matterId === undefined || matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' must be defined.");
+        url_ = url_.replace("{matterId}", encodeURIComponent("" + matterId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetAssetNumberCounter(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetAssetNumberCounter(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AssetNumberCounterItem>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AssetNumberCounterItem>;
+        }));
+    }
+
+    protected processGetAssetNumberCounter(response: HttpResponseBase): Observable<AssetNumberCounterItem> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetNumberCounterItem;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    setAssetNextNumber(assetTypeId: number, matterId: number, body: SetAssetNextNumberRequest): Observable<AssetNumberCounterItem> {
+        let url_ = this.baseUrl + "/api/v1/asset-types/{assetTypeId}/numbering/counters/{matterId}";
+        if (assetTypeId === undefined || assetTypeId === null)
+            throw new globalThis.Error("The parameter 'assetTypeId' must be defined.");
+        url_ = url_.replace("{assetTypeId}", encodeURIComponent("" + assetTypeId));
+        if (matterId === undefined || matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' must be defined.");
+        url_ = url_.replace("{matterId}", encodeURIComponent("" + matterId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSetAssetNextNumber(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSetAssetNextNumber(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AssetNumberCounterItem>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AssetNumberCounterItem>;
+        }));
+    }
+
+    protected processSetAssetNextNumber(response: HttpResponseBase): Observable<AssetNumberCounterItem> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetNumberCounterItem;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
      * @return OK
      */
     reindexAssetType(assetTypeId: number): Observable<AssetTypeReindexResponse> {
@@ -510,6 +715,7 @@ export interface IAssetsClient {
      * @param q (optional) 
      * @param name (optional) 
      * @param externalReference (optional) 
+     * @param assetNumber (optional) 
      * @param matter (optional) 
      * @param matterManagedByMe (optional) 
      * @param role (optional) 
@@ -520,7 +726,7 @@ export interface IAssetsClient {
      * @param sort (optional) 
      * @return OK
      */
-    listAssets(matterId?: number | undefined, assetTypeId?: number[] | undefined, isActive?: boolean | undefined, q?: string | undefined, name?: string | undefined, externalReference?: string | undefined, matter?: string | undefined, matterManagedByMe?: boolean | undefined, role?: string | undefined, disposition?: string[] | undefined, inactiveLinked?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetListItem>;
+    listAssets(matterId?: number | undefined, assetTypeId?: number[] | undefined, isActive?: boolean | undefined, q?: string | undefined, name?: string | undefined, externalReference?: string | undefined, assetNumber?: string | undefined, matter?: string | undefined, matterManagedByMe?: boolean | undefined, role?: string | undefined, disposition?: string[] | undefined, inactiveLinked?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetListItem>;
     /**
      * @return Created
      */
@@ -637,6 +843,7 @@ export class AssetsClient implements IAssetsClient {
      * @param q (optional) 
      * @param name (optional) 
      * @param externalReference (optional) 
+     * @param assetNumber (optional) 
      * @param matter (optional) 
      * @param matterManagedByMe (optional) 
      * @param role (optional) 
@@ -647,7 +854,7 @@ export class AssetsClient implements IAssetsClient {
      * @param sort (optional) 
      * @return OK
      */
-    listAssets(matterId?: number | undefined, assetTypeId?: number[] | undefined, isActive?: boolean | undefined, q?: string | undefined, name?: string | undefined, externalReference?: string | undefined, matter?: string | undefined, matterManagedByMe?: boolean | undefined, role?: string | undefined, disposition?: string[] | undefined, inactiveLinked?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetListItem> {
+    listAssets(matterId?: number | undefined, assetTypeId?: number[] | undefined, isActive?: boolean | undefined, q?: string | undefined, name?: string | undefined, externalReference?: string | undefined, assetNumber?: string | undefined, matter?: string | undefined, matterManagedByMe?: boolean | undefined, role?: string | undefined, disposition?: string[] | undefined, inactiveLinked?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetListItem> {
         let url_ = this.baseUrl + "/api/v1/assets?";
         if (matterId === null)
             throw new globalThis.Error("The parameter 'matterId' cannot be null.");
@@ -673,6 +880,10 @@ export class AssetsClient implements IAssetsClient {
             throw new globalThis.Error("The parameter 'externalReference' cannot be null.");
         else if (externalReference !== undefined)
             url_ += "ExternalReference=" + encodeURIComponent("" + externalReference) + "&";
+        if (assetNumber === null)
+            throw new globalThis.Error("The parameter 'assetNumber' cannot be null.");
+        else if (assetNumber !== undefined)
+            url_ += "AssetNumber=" + encodeURIComponent("" + assetNumber) + "&";
         if (matter === null)
             throw new globalThis.Error("The parameter 'matter' cannot be null.");
         else if (matter !== undefined)
@@ -19864,6 +20075,7 @@ export interface IMyMattersClient {
     /**
      * @param q (optional) 
      * @param name (optional) 
+     * @param assetNumber (optional) 
      * @param assetTypeId (optional) 
      * @param status (optional) 
      * @param createdFrom (optional) 
@@ -19884,7 +20096,7 @@ export interface IMyMattersClient {
      * @param matterId (optional) 
      * @return OK
      */
-    getMyMattersAssets(q?: string | undefined, name?: string | undefined, assetTypeId?: number[] | undefined, status?: string[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<PagedResultOfMyMattersAssetRow>;
+    getMyMattersAssets(q?: string | undefined, name?: string | undefined, assetNumber?: string | undefined, assetTypeId?: number[] | undefined, status?: string[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<PagedResultOfMyMattersAssetRow>;
     /**
      * @param scope (optional) 
      * @param role (optional) 
@@ -21417,6 +21629,7 @@ export class MyMattersClient implements IMyMattersClient {
     /**
      * @param q (optional) 
      * @param name (optional) 
+     * @param assetNumber (optional) 
      * @param assetTypeId (optional) 
      * @param status (optional) 
      * @param createdFrom (optional) 
@@ -21437,7 +21650,7 @@ export class MyMattersClient implements IMyMattersClient {
      * @param matterId (optional) 
      * @return OK
      */
-    getMyMattersAssets(q?: string | undefined, name?: string | undefined, assetTypeId?: number[] | undefined, status?: string[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<PagedResultOfMyMattersAssetRow> {
+    getMyMattersAssets(q?: string | undefined, name?: string | undefined, assetNumber?: string | undefined, assetTypeId?: number[] | undefined, status?: string[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<PagedResultOfMyMattersAssetRow> {
         let url_ = this.baseUrl + "/api/v1/my-matters/assets?";
         if (q === null)
             throw new globalThis.Error("The parameter 'q' cannot be null.");
@@ -21447,6 +21660,10 @@ export class MyMattersClient implements IMyMattersClient {
             throw new globalThis.Error("The parameter 'name' cannot be null.");
         else if (name !== undefined)
             url_ += "name=" + encodeURIComponent("" + name) + "&";
+        if (assetNumber === null)
+            throw new globalThis.Error("The parameter 'assetNumber' cannot be null.");
+        else if (assetNumber !== undefined)
+            url_ += "assetNumber=" + encodeURIComponent("" + assetNumber) + "&";
         if (assetTypeId === null)
             throw new globalThis.Error("The parameter 'assetTypeId' cannot be null.");
         else if (assetTypeId !== undefined)
@@ -24640,6 +24857,7 @@ export interface AssetListItem {
     inactiveLinked?: boolean | undefined;
     assetTypeIconKey?: string | undefined;
     assetTypeColourKey?: string | undefined;
+    assetNumber?: string | undefined;
 
     [key: string]: any;
 }
@@ -24651,6 +24869,30 @@ export interface AssetLookupItem {
     displayName: string;
     externalReference: string | undefined;
     isActive: boolean;
+    assetNumber?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface AssetNumberCounterItem {
+    assetTypeId: number;
+    matterId: number;
+    matterRef: string;
+    matterName: string;
+    highestAssigned: number;
+    nextNumber: number;
+    nextAssetNumber: string;
+    hasCounter: boolean;
+    modifiedAtUtc: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface AssetNumberExample {
+    cmNumber: string;
+    nextCounter: number;
+    isSample: boolean;
+    text: string;
 
     [key: string]: any;
 }
@@ -24773,6 +25015,7 @@ export interface AssetResponse {
     inactiveLinked?: boolean | undefined;
     assetTypeIconKey?: string | undefined;
     assetTypeColourKey?: string | undefined;
+    assetNumber?: string | undefined;
 
     [key: string]: any;
 }
@@ -24813,6 +25056,23 @@ export interface AssetTypeCount {
     [key: string]: any;
 }
 
+export interface AssetTypeNumbering {
+    enabled: boolean;
+    pattern: string;
+    scope: string;
+    example: AssetNumberExample;
+
+    [key: string]: any;
+}
+
+export interface AssetTypeNumberingRequest {
+    enabled?: boolean | undefined;
+    pattern?: string | undefined;
+    scope?: string | undefined;
+
+    [key: string]: any;
+}
+
 export interface AssetTypeReindexResponse {
     assetsProcessed: number;
 
@@ -24838,6 +25098,7 @@ export interface AssetTypeResponse {
     sizeUnit?: string | undefined;
     iconKey?: string | undefined;
     colourKey?: string | undefined;
+    numbering?: AssetTypeNumbering | undefined;
 
     [key: string]: any;
 }
@@ -25617,6 +25878,7 @@ export interface CreateAssetTypeRequest {
     sortOrder?: number | undefined;
     iconKey?: string | undefined;
     colourKey?: string | undefined;
+    numbering?: AssetTypeNumberingRequest | undefined;
 
     [key: string]: any;
 }
@@ -26538,6 +26800,7 @@ export interface MatterOverviewAsset {
     displayName: string;
     assetTypeName: string;
     externalReference: string | undefined;
+    assetNumber?: string | undefined;
 
     [key: string]: any;
 }
@@ -26789,6 +27052,7 @@ export interface MyMattersAssetDetail {
     linkedTasks: MyMattersLinkedTask[];
     assetTypeIconKey?: string | undefined;
     assetTypeColourKey?: string | undefined;
+    assetNumber?: string | undefined;
 
     [key: string]: any;
 }
@@ -26810,6 +27074,7 @@ export interface MyMattersAssetRow {
     openLinkedTaskCount: number;
     assetTypeIconKey?: string | undefined;
     assetTypeColourKey?: string | undefined;
+    assetNumber?: string | undefined;
 
     [key: string]: any;
 }
@@ -27448,6 +27713,15 @@ export interface OnHoldReasonView {
 
 export interface PagedResultOfAssetListItem {
     items: AssetListItem[];
+    total: number;
+    page: number;
+    pageSize: number;
+
+    [key: string]: any;
+}
+
+export interface PagedResultOfAssetNumberCounterItem {
+    items: AssetNumberCounterItem[];
     total: number;
     page: number;
     pageSize: number;
@@ -28378,6 +28652,7 @@ export interface SearchHit {
     disposition?: string | undefined;
     sizeValue?: number | undefined;
     sizeUnit?: string | undefined;
+    assetNumber?: string | undefined;
 
     [key: string]: any;
 }
@@ -28401,6 +28676,12 @@ export interface SetActiveRequest {
 export interface SetAssetActiveRequest {
     isActive?: boolean;
     rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface SetAssetNextNumberRequest {
+    nextNumber?: number;
 
     [key: string]: any;
 }
@@ -28842,6 +29123,7 @@ export interface TaskAssetLinkResponse {
     linkedAtUtc: string;
     linkedBy: TaskUserRef | undefined;
     rowVersion: string;
+    assetNumber?: string | undefined;
 
     [key: string]: any;
 }
@@ -29292,6 +29574,7 @@ export interface UpdateAssetReportRequest {
 export interface UpdateAssetRequest {
     matterId?: number | undefined;
     assetTypeId?: number | undefined;
+    assetNumber?: string | undefined;
     displayName: string;
     externalReference?: string | undefined;
     description?: string | undefined;
@@ -29308,6 +29591,7 @@ export interface UpdateAssetTypeRequest {
     isActive?: boolean;
     iconKey?: string | undefined;
     colourKey?: string | undefined;
+    numbering?: AssetTypeNumberingRequest | undefined;
     rowVersion: string;
 
     [key: string]: any;
