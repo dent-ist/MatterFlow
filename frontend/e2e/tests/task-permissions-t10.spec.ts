@@ -483,10 +483,17 @@ test.describe('#329: Task page permission matrix, no dead links', () => {
         await expect(dialog.getByRole('button', { name: 'Save Changes' })).toBeVisible();
         // Pod and assignee only with Task.Assign; the project select only with Project.View.
         if (known(role)) {
-          expect(
-            (await dialog.getByLabel('Pod', { exact: true }).count()) > 0,
-            'Pod field in Edit',
-          ).toBe(has(role, 'Task.Assign'));
+          // The assignment fields sit in the collapsed "Priority, due date and assignment" section: open it first.
+          const toggle = dialog.locator('[data-when-toggle]');
+          if (
+            (await toggle.count()) > 0 &&
+            (await toggle.getAttribute('aria-expanded')) !== 'true'
+          ) {
+            await toggle.click();
+          }
+          const podField = dialog.getByRole('button', { name: /^Pod(:|$)/ });
+          if (has(role, 'Task.Assign')) await expect(podField, 'Pod field in Edit').toBeVisible();
+          else await expect(podField, 'Pod field in Edit').toHaveCount(0);
         }
         await noErrors(page, 'edit dialog');
         await dialog.getByRole('button', { name: 'Cancel' }).click();

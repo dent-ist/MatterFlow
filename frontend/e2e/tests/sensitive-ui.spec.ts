@@ -190,7 +190,7 @@ test.describe('Sensitive matters: the screens', () => {
     await axeAtEverySize(p4, 'sensitive matter overview');
     // Found by its own name: on a database that has already run the suite the first page of the list holds other matters.
     await p4.goto(`/matters?scope=all&name=${encodeURIComponent(u.s1.name)}`);
-    await expect(p4.getByText(u.s1.name).first()).toBeVisible();
+    await expect(p4.getByRole('link', { name: u.s1.name }).first()).toBeVisible();
     await axeAtEverySize(p4, 'matters list with the sensitive marker');
   });
 
