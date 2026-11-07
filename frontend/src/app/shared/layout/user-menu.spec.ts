@@ -40,9 +40,10 @@ const expectedOutLabel = (): string => {
   const last = new Date(Date.now() + OUT_DAYS * 86_400_000 - 60_000);
   const part = (d: Date, o: Intl.DateTimeFormatOptions) =>
     new Intl.DateTimeFormat('en-US', { timeZone: zone, ...o }).format(d);
-  const text = part(last, { month: 'short', day: 'numeric' });
+  // D-60: numeric, MM/DD this year and MM/DD/YYYY otherwise.
+  const text = part(last, { month: '2-digit', day: '2-digit' });
   const sameYear = part(last, { year: 'numeric' }) === part(new Date(), { year: 'numeric' });
-  return `Out of Office until ${sameYear ? text : `${text}, ${part(last, { year: 'numeric' })}`}`;
+  return `Out of Office until ${sameYear ? text : `${text}/${part(last, { year: 'numeric' })}`}`;
 };
 
 describe('UserMenu (header user area)', () => {

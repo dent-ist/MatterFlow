@@ -96,7 +96,7 @@ test.describe('Pod Work workload table', () => {
       await fold(page).click();
       const row = page.locator(`[data-member-row][data-user="${away!.userId}"]`);
       const chip = (await row.locator('[data-availability-chip]').innerText()).trim();
-      expect(chip).toMatch(/^Out of Office( until \d{2}\/\d{2})?$/);
+      expect(chip).toMatch(/^Out of Office( until \d{2}\/\d{2}(\/\d{4})?)?$/);
 
       // The text is the shared one (`outOfOfficeText`, as the assignee picker's flag and the profile chip): the unit tests pin it. The picker
       // marks only the first 50 people of its lookup, so a large test database may not flag this member there; the table always does.

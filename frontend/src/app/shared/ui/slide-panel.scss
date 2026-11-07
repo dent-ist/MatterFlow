@@ -76,6 +76,7 @@
 /* A long record name (a 200-character task title) takes at most 2 lines; the whole text is in the tooltip and is the panel's name. */
 .sp__title {
   display: -webkit-box;
+  margin: 0;
   min-width: 0;
   overflow: hidden;
   overflow-wrap: anywhere;

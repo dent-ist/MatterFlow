@@ -150,7 +150,7 @@ test.describe('Users tab: workload', () => {
     await expect(away.locator('[data-back-on]')).toContainText('Back ');
     await expect(away.locator('[data-user-open]')).toHaveAttribute(
       'aria-label',
-      /, 2 open tasks, .*, Out of Office until [A-Z][a-z]{2} \d{1,2}/,
+      /, 2 open tasks, .*, Out of [Oo]ffice until \d{2}\/\d{2}(\/\d{4})?/,
     );
     // No diagonal stripes anywhere.
     expect(await away.evaluate((el) => getComputedStyle(el).backgroundImage)).toBe('none');

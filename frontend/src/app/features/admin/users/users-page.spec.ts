@@ -450,6 +450,22 @@ describe('UsersPage', () => {
     await settle();
   };
 
+  it('gives the person drawer a heading outline with no skipped level: h2 title, then h3 sections (#1294)', async () => {
+    await create('User.View', 'User.Manage');
+
+    await grant();
+    const levels = Array.from(
+      document.querySelectorAll<HTMLElement>('.mf-user-drawer h1, h2, h3, h4, h5, h6'),
+    ).map((h) => Number(h.tagName.slice(1)));
+    expect(levels[0]).toBe(2);
+    expect(levels).toContain(3);
+    levels.reduce((prev, level) => {
+      expect(level - prev).toBeLessThanOrEqual(1);
+      return level;
+    });
+    expect(q('#ud-access').tagName).toBe('H3');
+  });
+
   it('grants a role to a pending user: the drawer saves, closes, offers Undo, and the queue shrinks', async () => {
     await create('User.View', 'User.Manage');
 
@@ -809,7 +825,7 @@ describe('UsersPage', () => {
       await chooseStatus('active');
       await openRow(2);
       expect(q('[data-availability-sentence]').textContent).toContain(
-        'Out of Office until Mar 20, 2027. Conference',
+        'Out of Office until 03/20/2027. Conference',
       );
       expect(q('[data-availability-sentence]').textContent).toContain('Conference');
       q('[data-edit-availability]').click();
@@ -988,7 +1004,7 @@ describe('UsersPage', () => {
         'User.Manage',
       );
       await chooseStatus('active');
-      expect(chips()).toEqual(['Out of Office until Mar 20, 2027', 'Off Hours']);
+      expect(chips()).toEqual(['Out of Office until 03/20/2027', 'Off Hours']);
       // Pending and Inactive people take no work: their cell is empty, even when the server reports Off hours.
       await chooseStatus('pending');
       expect(chips().every((c) => c === '')).toBe(true);

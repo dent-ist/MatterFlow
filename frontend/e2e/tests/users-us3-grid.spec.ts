@@ -270,7 +270,7 @@ test.describe('#432 the grid', () => {
       page.locator(`tr[data-record-id="${id}"] [data-availability-cell]`);
     // Out of office keeps its chip with the end date; an ordinary active person says a plain, muted "Available" (no badge).
     await expect(cell(away.userId).locator('[data-availability-chip]')).toContainText(
-      /Out of office until/,
+      'Out of Office until 10/25/2027',
     );
     // An ordinary person says "Available" in plain muted text; outside their work hours the server reports Off hours, which is a chip.
     await expect(cell(busy.userId)).toHaveText(/^\s*(Available|Off hours)\s*$/);
