@@ -130,7 +130,11 @@ test.describe('Matter detail tabs: Summary, Projects, Assets, Productions, butto
     const world = await seed.world();
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/matters/${world.matter.matterId}?tab=projects`);
-    await page.getByRole('button', { name: /New Project/ }).click();
+    await page
+      .getByRole('button', { name: /New Project/ })
+      .first()
+      .first()
+      .click();
     await expect(page.locator('.mf-formdlg')).toContainText('New Project');
     await page.keyboard.press('Escape');
 
@@ -151,7 +155,7 @@ test.describe('Matter detail tabs: Summary, Projects, Assets, Productions, butto
     const world = await seed.world();
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/matters/${world.matter.matterId}?tab=productions`);
-    const create = page.getByRole('button', { name: /New Production/ });
+    const create = page.getByRole('button', { name: /New Production/ }).first();
     await expect(create).toBeVisible();
     const look = (l: typeof create) =>
       l.evaluate((el) => {
@@ -165,7 +169,7 @@ test.describe('Matter detail tabs: Summary, Projects, Assets, Productions, butto
       });
     const production = await look(create);
     await page.goto(`/matters/${world.matter.matterId}?tab=projects`);
-    const project = await look(page.getByRole('button', { name: /New Project/ }));
+    const project = await look(page.getByRole('button', { name: /New Project/ }).first());
     expect(production.height).toBe(32);
     expect(production.font).toBe(project.font);
     expect(production.radius).toBe(project.radius);

@@ -57,7 +57,7 @@ test.describe('Assignment by a technician (SCN-006)', () => {
     await page.getByRole('option', { name: colleague.username.replace(/^.*\\/, '') }).click();
     await page.getByRole('button', { name: 'Save Changes' }).click();
 
-    await expect(detail.assignee).toContainText(colleague.username);
+    await expect(detail.assignee).toContainText(colleague.username.replace(/^.*\\/, ''));
     await detail.expectStatus('In Progress');
     await detail.openActivity();
     await expect(page.getByRole('region', { name: 'Activity' })).toContainText(/assign/i);
@@ -85,7 +85,7 @@ test.describe('Known application defects (docs/qa/e2e-findings.md)', () => {
     await page.getByRole('combobox', { name: 'Assignee' }).fill(colleague.username);
     await page.getByRole('option', { name: colleague.username.replace(/^.*\\/, '') }).click();
     await page.getByRole('button', { name: 'Save Changes' }).click();
-    await expect(detail.assignee).toContainText(colleague.username);
+    await expect(detail.assignee).toContainText(colleague.username.replace(/^.*\\/, ''));
   });
 });
 

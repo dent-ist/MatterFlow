@@ -63,9 +63,9 @@ test.beforeAll(async ({ seed }) => {
 const LIST_PAGES: { name: string; url: () => string; skip: RegExp }[] = [
   { name: 'My Work', url: () => '/my-work', skip: /Skip to task list/ },
   { name: 'Task Queue', url: () => '/tasks', skip: /Skip to task list/ },
-  { name: 'Clients', url: () => '/clients', skip: /Skip to table/ },
-  { name: 'Matters', url: () => '/matters', skip: /Skip to table/ },
-  { name: 'Projects', url: () => '/projects', skip: /Skip to table/ },
+  { name: 'Clients', url: () => '/clients', skip: /Skip to Table/ },
+  { name: 'Matters', url: () => '/matters', skip: /Skip to Table/ },
+  { name: 'Projects', url: () => '/projects', skip: /Skip to Table/ },
   {
     name: 'Project record',
     url: () => `/projects/${projectId}`,

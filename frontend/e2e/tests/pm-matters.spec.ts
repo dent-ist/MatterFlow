@@ -1,3 +1,4 @@
+import { dropdownByAttr } from '../support/dropdown';
 import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
@@ -97,9 +98,9 @@ test.describe('Matters list: project managers', () => {
     await page.getByRole('button', { name: 'Set PMs' }).click();
     const dialog = page.locator('[data-managers-dialog]');
     await expect(dialog.locator('[data-managers-bulk-note]')).toContainText('2 matters selected');
-    await dialog
-      .locator('[data-manager-select=primary]')
-      .selectOption({ label: `PM Bravo ${fx.token}` });
+    await dropdownByAttr(dialog, 'data-manager-select=primary').selectOption({
+      label: `PM Bravo ${fx.token}`,
+    });
     await page.locator('[data-panel-primary] button').click();
     await expect(toasts(page).first()).toContainText('PMs set');
     await expect(rowOf(page, 'No manager two').locator('[data-primary-manager]')).toContainText(
@@ -183,9 +184,9 @@ test.describe('Matter page: project managers', () => {
     await expect(change).toBeFocused();
 
     await change.click();
-    await page
-      .locator('[data-manager-select=secondary]')
-      .selectOption({ label: `PM Bravo ${fx.token}` });
+    await dropdownByAttr(page, 'data-manager-select=secondary').selectOption({
+      label: `PM Bravo ${fx.token}`,
+    });
     await page.locator('[data-panel-primary] button').click();
     await expect(page.locator('[data-secondary-manager]')).toContainText('PM Bravo');
 

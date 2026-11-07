@@ -193,7 +193,7 @@ test.describe('trends screenshots', () => {
       await page.locator('[data-limit-msg]').scrollIntoViewIfNeeded();
       await shot(`06-limit-message-${w}`, true);
 
-      await page.getByRole('button', { name: /View as table/ }).click();
+      await page.getByRole('button', { name: /View as Table/ }).click();
       await expect(page.locator('tbody tr').first()).toBeVisible();
       await shot(`07-table-8-types-${w}`);
       await page.getByRole('button', { name: /View as chart/ }).click();
@@ -230,7 +230,7 @@ test.describe('trends screenshots', () => {
       await page.keyboard.press('ArrowLeft');
       await page.keyboard.press('ArrowLeft');
       await shot(`13-weekly-tooltip-${w}`);
-      await page.getByRole('button', { name: /View as table/ }).click();
+      await page.getByRole('button', { name: /View as Table/ }).click();
       await expect(page.locator('tbody tr').first()).toBeVisible();
       await shot(`14-weekly-table-${w}`);
       if (w < 500) {

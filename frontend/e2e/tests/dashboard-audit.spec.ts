@@ -266,7 +266,7 @@ test.describe('Dashboard actions and click-through', () => {
     await page.goto('/dashboard?tab=trends');
     const trend = page.getByRole('region', { name: 'Tasks Over Time', exact: true });
     await expect(trend.getByRole('group', { name: /created and completed/i })).toBeVisible();
-    await trend.getByRole('button', { name: /View as table/ }).click();
+    await trend.getByRole('button', { name: /View as Table/ }).click();
     await expect(trend.getByRole('table')).toBeVisible();
     await expect(trend.getByRole('table').getByRole('link').first()).toBeVisible();
   });

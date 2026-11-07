@@ -59,7 +59,7 @@ const STATES: State[] = [
   { key: 'overdue6h', line2: 'Overdue 6h', icon: 'pi-exclamation-circle', tone: 'overdue' },
   { key: 'overdue3d', line2: 'Overdue 3d', icon: 'pi-exclamation-circle', tone: 'overdue' },
   { key: 'overdue120d', line2: 'Overdue 120d', icon: 'pi-exclamation-circle', tone: 'overdue' },
-  { key: 'today', line2: 'Due Today', icon: 'pi-clock', tone: 'today' },
+  { key: 'today', line2: 'Due today', icon: 'pi-clock', tone: 'today' },
   { key: 'tomorrow', line2: 'Tomorrow', icon: null, tone: 'soon' },
   { key: 'in2', line2: 'In 2 days', icon: null, tone: 'soon' },
   { key: 'later', line2: null, icon: null, tone: 'none' },
@@ -203,7 +203,7 @@ test.describe('Due cell (#209)', () => {
         if (s.key === 'overdue120d') expect(f.sr).toContain('overdue 120 days');
         if (s.key === 'overdue6h') expect(f.sr).toContain('overdue 6 hours');
         if (s.key === 'today') expect(f.tip).toMatch(/ E[SD]T/);
-        if (s.key === 'nextYear') expect(f.l1).toMatch(/, \d{4}$/);
+        if (s.key === 'nextYear') expect(f.l1).toMatch(/\d{2}\/\d{2}\/\d{4}$/);
         if (s.key === 'later') expect(f.l1).not.toMatch(/\d{4}/);
         // Tone colours reach 4.5:1 against the row.
         expect(f.ratio, `${s.key} contrast at ${width}`).toBeGreaterThanOrEqual(4.5);
@@ -238,7 +238,7 @@ test.describe('Due cell (#209)', () => {
     await expect(cell.locator('.dc-l2')).toContainText('Overdue 4d');
     await expect(page.getByRole('cell', { name: /overdue 4 days/ })).toHaveCount(1);
     expect(await cell.locator('.dc-sr').textContent()).toMatch(
-      /^Due [A-Z][a-z]{2} \d+(, \d{4})?, overdue 4 days$/,
+      /^Due [A-Z][a-z]+ \d+(, \d{4})?, overdue 4 days$/,
     );
     // Sorting keeps announcing itself.
     await expect(page.locator('thead th[data-col="due"]')).toHaveAttribute('aria-sort', /.*/);

@@ -100,11 +100,11 @@ test.describe('T7: Comments thread (C1, #315)', () => {
     await expect(detail.tab('Comments')).toHaveText(/^\s*Comments\s*\(48\)\s*$/);
     await expect(detail.commentItems).toHaveCount(3);
     await expect(panel.locator('[data-limit-note]')).toHaveText(
-      /^\s*Showing latest 3 of 48\.\s*Show all\s*$/,
+      /^\s*Showing latest 3 of 48\.\s*Show All\s*$/,
     );
     // No second select next to the sort select.
-    await expect(panel.locator('select')).toHaveCount(1);
-    await expect(panel.getByLabel('Sort comments')).toBeVisible();
+    await expect(panel.locator('[data-order-select]')).toHaveCount(1);
+    await expect(panel.getByRole('button', { name: /^Sort Comments/ })).toBeVisible();
 
     // The composer (the one-line input) is above the first comment, and reachable without scrolling past the thread.
     const quick = panel.locator('[data-composer-quick]');
@@ -126,7 +126,7 @@ test.describe('T7: Comments thread (C1, #315)', () => {
     await expect(detail.commentItems).toHaveCount(3);
 
     // Keyboard order: the sort select, then straight to the composer, then into the thread.
-    await panel.getByLabel('Sort comments').focus();
+    await panel.getByRole('button', { name: /^Sort Comments/ }).focus();
     await page.keyboard.press('Tab');
     // Focusing the one-line input opens the editor.
     await expect(panel.locator('[data-composer] [role=textbox]')).toBeFocused();
