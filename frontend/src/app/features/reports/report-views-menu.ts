@@ -2,10 +2,12 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  ElementRef,
   inject,
   input,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import { ReportViewLayout, ReportViewResponse } from '../../api/generated/api-client';
 import { NotificationService } from '../../core/notify/notification.service';
@@ -269,61 +271,60 @@ let nextId = 0;
       status()
     }}</span>
 
-    @if (dialog() === 'save' || dialog() === 'rename') {
-      <mf-form-dialog
-        size="small"
-        [title]="dialog() === 'save' ? 'Save View' : 'Rename View'"
-        [primaryLabel]="dialog() === 'save' ? 'Save View' : 'Rename'"
-        [busy]="busy()"
-        [error]="formError()"
-        [visible]="true"
-        (visibleChange)="!$event && closeDialog()"
-        (submitted)="submitDialog()"
-      >
-        <form novalidate (submit)="$event.preventDefault(); submitDialog()">
-          <mf-text-field
-            label="View name"
-            inputId="rv-view-name"
-            [required]="true"
-            [error]="nameError()"
-            [value]="name()"
-            (valueChange)="name.set($event); nameError.set(null)"
-          />
-          @if (dialog() === 'save') {
-            <label class="rv__check">
-              <input
-                type="checkbox"
-                data-view-make-default
-                [checked]="makeDefault()"
-                (change)="makeDefault.set($any($event.target).checked)"
-              />
-              Use as my default view
-            </label>
-          }
-        </form>
-      </mf-form-dialog>
-    }
-    @if (dialog() === 'delete') {
-      <mf-confirm-dialog
-        title="Delete View"
-        confirmLabel="Delete View"
-        [danger]="true"
-        [busy]="busy()"
-        [error]="formError()"
-        [visible]="true"
-        (visibleChange)="!$event && closeDialog()"
-        (confirmed)="confirmDelete()"
-      >
-        <p class="rv__confirm" data-view-delete-text>
-          Delete "{{ target()?.name }}"? This can't be undone.
-        </p>
-      </mf-confirm-dialog>
-    }
+    <mf-form-dialog
+      size="small"
+      [title]="dialog() === 'save' ? 'Save View' : 'Rename View'"
+      [primaryLabel]="dialog() === 'save' ? 'Save View' : 'Rename'"
+      [busy]="busy()"
+      [error]="formError()"
+      [visible]="dialog() === 'save' || dialog() === 'rename'"
+      (visibleChange)="!$event && closeDialog()"
+      (submitted)="submitDialog()"
+    >
+      <form novalidate (submit)="$event.preventDefault(); submitDialog()">
+        <mf-text-field
+          label="View name"
+          inputId="rv-view-name"
+          [required]="true"
+          [error]="nameError()"
+          [value]="name()"
+          (valueChange)="name.set($event); nameError.set(null)"
+        />
+        @if (dialog() === 'save') {
+          <label class="rv__check">
+            <input
+              type="checkbox"
+              data-view-make-default
+              [checked]="makeDefault()"
+              (change)="makeDefault.set($any($event.target).checked)"
+            />
+            Use as my default view
+          </label>
+        }
+      </form>
+    </mf-form-dialog>
+    <mf-confirm-dialog
+      title="Delete View"
+      confirmLabel="Delete View"
+      [danger]="true"
+      [busy]="busy()"
+      [error]="formError()"
+      [visible]="dialog() === 'delete'"
+      (visibleChange)="!$event && closeDialog()"
+      (confirmed)="confirmDelete()"
+    >
+      <p class="rv__confirm" data-view-delete-text>
+        Delete "{{ target()?.name }}"? This can't be undone.
+      </p>
+    </mf-confirm-dialog>
   `,
 })
 export class ReportViewsMenu {
   protected readonly store = inject(ReportViewsStore);
   private readonly notify = inject(NotificationService);
+
+  /** The Saved Views button: focus goes back to it whenever the menu closes on an action, because the item that had focus is gone then. */
+  private readonly trigger = viewChild<ElementRef<HTMLButtonElement>>('btn');
 
   readonly reportId = input.required<number>();
   readonly reportName = input.required<string>();
@@ -367,8 +368,17 @@ export class ReportViewsMenu {
     void this.store.load(this.reportId());
   }
 
-  protected choose(view: ReportViewResponse | null): void {
+  /**
+   * The menu closes on every action and its items are removed, so the focus they held would fall to the page (and a dialog would remember nothing
+   * to return to). Focus the button first: Esc from a dialog, Cancel and a finished action then land on it (keyboard walk, #726).
+   */
+  private closeMenu(): void {
+    this.trigger()?.nativeElement.focus({ preventScroll: true });
     this.open.set(false);
+  }
+
+  protected choose(view: ReportViewResponse | null): void {
+    this.closeMenu();
     this.pick.emit(view);
     this.status.set(view ? `Showing the view ${view.name}.` : 'Showing the default view.');
   }
@@ -378,7 +388,7 @@ export class ReportViewsMenu {
   protected async saveApplied(): Promise<void> {
     const view = this.appliedView();
     if (!view) return;
-    this.open.set(false);
+    this.closeMenu();
     try {
       const changed = await this.store.update(this.reportId(), view.viewId, {
         layout: this.current(),
@@ -393,20 +403,20 @@ export class ReportViewsMenu {
   // ---- Save as New View and Rename (shared form dialog)
 
   protected openSave(): void {
-    this.open.set(false);
+    this.closeMenu();
     this.name.set(suggestedViewName(this.reportName(), this.otherNames(null)));
     this.makeDefault.set(false);
     this.begin('save', null);
   }
 
   protected openRename(view: ReportViewResponse): void {
-    this.open.set(false);
+    this.closeMenu();
     this.name.set(view.name);
     this.begin('rename', view);
   }
 
   protected openDelete(view: ReportViewResponse): void {
-    this.open.set(false);
+    this.closeMenu();
     this.begin('delete', view);
   }
 
@@ -492,7 +502,7 @@ export class ReportViewsMenu {
   // ---- The default view
 
   protected async setDefault(view: ReportViewResponse): Promise<void> {
-    this.open.set(false);
+    this.closeMenu();
     try {
       await this.store.setDefault(this.reportId(), view.viewId);
       this.notify.success('Default view set.');
@@ -502,7 +512,7 @@ export class ReportViewsMenu {
   }
 
   protected async clearDefault(view: ReportViewResponse): Promise<void> {
-    this.open.set(false);
+    this.closeMenu();
     try {
       await this.store.clearDefault(this.reportId(), view.viewId);
       this.notify.success('Default view removed.');

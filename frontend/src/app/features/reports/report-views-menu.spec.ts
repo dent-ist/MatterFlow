@@ -89,6 +89,40 @@ describe('ReportViewsMenu (#722)', () => {
     document.body.querySelectorAll('.p-dialog-mask').forEach((n) => n.remove());
   });
 
+  describe('keyboard focus (#726)', () => {
+    const trigger = (): HTMLElement => q('[data-views-trigger]');
+
+    it('puts focus back on the Saved Views button when an item closes the menu, because the item is gone', async () => {
+      await create([aView({ viewId: 1, name: 'Mine' })]);
+      await openMenu();
+      q('[data-view-apply]').focus();
+      await press('[data-view-apply]');
+      expect(el().querySelector('[data-views-panel]')).toBeNull();
+      expect(document.activeElement).toBe(trigger());
+    });
+
+    it('returns focus to the Saved Views button when a dialog opened from the menu is cancelled (Save as New View, Rename, Delete)', async () => {
+      await create([aView({ viewId: 1, name: 'Mine' })]);
+      for (const [sel, dialogSel] of [
+        ['[data-view-save-new]', '#rv-view-name'],
+        ['[data-view-rename]', '#rv-view-name'],
+        ['[data-view-delete]', '[data-view-delete-text]'],
+      ] as const) {
+        await openMenu();
+        q(sel).focus();
+        await press(sel);
+        expect(dialog(dialogSel), sel).not.toBeNull();
+        Array.from(document.body.querySelectorAll<HTMLElement>('.p-dialog button'))
+          .find((b) => b.textContent!.trim() === 'Cancel')!
+          .click();
+        await settle(fixture);
+        await new Promise((r) => setTimeout(r, 400));
+        await settle(fixture);
+        expect(document.activeElement, sel).toBe(trigger());
+      }
+    });
+  });
+
   describe('the button', () => {
     it('says Saved Views when no view is applied, the name of the applied view, and "(modified)" after a change', async () => {
       await create([aView({ viewId: 1, name: 'Mine' })]);
