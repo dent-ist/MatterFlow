@@ -57,9 +57,9 @@ The pager, the Columns button and the column filter row go in the content slots 
 |---|---|---|
 | Create and edit dialog | `mf-form-dialog` (`size` small, default, large) | `shared/ui/form-dialog.ts` |
 | Confirm dialog | `mf-confirm-dialog` | `shared/ui/confirm-dialog.ts` |
-| Picker dialogs | `lookup-dialog`, `entity-picker`, `asset-picker` | `shared/ui/` |
+| Picker dialogs | `lookup-dialog`, `entity-picker`, `asset-picker`. `mf-entity-picker` and `mf-search-select` take **`failed`** (default false): while true no suggestion panel is rendered (no "Searching...", no "No matches."), because the caller shows the failure itself, for example a field's own error line with Retry (#1282) | `shared/ui/` |
 | Text field, number input | `mf-text-field`, `number-input` | `shared/ui/text-field.ts`, `number-input.ts` |
-| Dropdown, multi-select | `mf-dropdown` (`multi`, `search`, `size`). **Inside a form, dialog or record page add `field`**: the button is then a white field with or without a value. The blue fill means an active filter and belongs only in filter rows, popovers and toolbars (D-44r) | `shared/ui/dropdown.ts` |
+| Dropdown, multi-select | `mf-dropdown` (`multi`, `search`, `size`). **Inside a form, dialog or record page add `field`**: the button is then a white field with or without a value. The blue fill means an active filter and belongs only in filter rows, popovers and toolbars (D-44r). **`fill`** makes the control take the whole width of its column (`max-width: none`, host and button), for a parameter form where text fields fill the column (#1284); off by default | `shared/ui/dropdown.ts` |
 | Assignee picker | `mf-assignee-picker`, `AssigneeList` | `shared/assignees/` |
 | Dynamic (admin-defined) form | `mf-dynamic-form` from the `form-engine` library | `projects/form-engine` |
 | Rich text | Tiptap based note editor; comment editor | `features/notes/note-editor.ts` |

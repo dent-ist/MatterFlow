@@ -291,3 +291,31 @@ describe('Dropdown height by place (D-02, #1215)', () => {
     }
   });
 });
+
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [Dropdown],
+  template: `
+    <mf-dropdown id="plain" label="Plain" [items]="items" />
+    <mf-dropdown id="filled" label="Filled" fill [items]="items" />
+    <mf-dropdown id="bound" label="Bound" [fill]="on()" [items]="items" />
+  `,
+})
+class FillHost {
+  readonly items: DropdownItem[] = [{ value: 'a', label: 'A' }];
+  readonly on = signal(true);
+}
+
+describe('mf-dropdown fill (issue #1284)', () => {
+  it('sets the fill attribute on the host only when asked, so the column width is taken', () => {
+    const fixture = TestBed.createComponent(FillHost);
+    fixture.detectChanges();
+    const q = (id: string): Element => fixture.nativeElement.querySelector(`#${id}`);
+    expect(q('plain').hasAttribute('fill')).toBe(false);
+    expect(q('filled').hasAttribute('fill')).toBe(true);
+    expect(q('bound').hasAttribute('fill')).toBe(true);
+    fixture.componentInstance.on.set(false);
+    fixture.detectChanges();
+    expect(q('bound').hasAttribute('fill')).toBe(false);
+  });
+});

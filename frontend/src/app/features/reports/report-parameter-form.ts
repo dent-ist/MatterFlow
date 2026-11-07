@@ -281,6 +281,7 @@ const SEARCH_FROM = 8;
                       @case ('single') {
                         <mf-dropdown
                           field
+                          fill
                           [buttonId]="idOf(d)"
                           [label]="d.label"
                           placeholder="Select..."
@@ -297,6 +298,7 @@ const SEARCH_FROM = 8;
                       @case ('multi') {
                         <mf-dropdown
                           field
+                          fill
                           [multi]="true"
                           [buttonId]="idOf(d)"
                           [label]="d.label"

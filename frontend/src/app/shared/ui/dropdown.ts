@@ -61,6 +61,7 @@ let nextId = 0;
   selector: 'mf-dropdown',
   imports: [IntPipe, TaskTypeChip, UserStateIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[attr.fill]': "fill() ? '' : null" },
   template: `
     <button
       type="button"
@@ -230,6 +231,15 @@ let nextId = 0;
       display: inline-block;
       min-width: 0;
       max-width: 100%;
+    }
+    /* fill: the control takes its whole column (issue #1284), the button and the host both. */
+    :host([fill]) {
+      display: block;
+      width: 100%;
+    }
+    :host([fill]) .btn {
+      max-width: none;
+      width: 100%;
     }
     .btn {
       display: flex;
@@ -562,6 +572,8 @@ export class Dropdown {
   readonly size = input<'md' | 'sm'>('md');
   /** A form field (D-44r): inside a form, dialog or record page the value is an answer, not a filter, so the button is a white field with or without a value. The blue fill is for filter rows, popovers and toolbars only. */
   readonly field = input(false, { transform: booleanAttribute });
+  /** The control fills its column instead of stopping at its natural width (issue #1284). */
+  readonly fill = input(false, { transform: booleanAttribute });
   readonly disabled = input(false);
   /** The id of a note that describes the control (read after its name). */
   readonly describedBy = input<string | null>(null);

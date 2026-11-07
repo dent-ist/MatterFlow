@@ -126,6 +126,9 @@ describe('ReportParameterForm (#719)', () => {
     expect(field('R').querySelectorAll('mf-date-input')).toHaveLength(2);
     expect(field('S').querySelector('mf-dropdown')).not.toBeNull();
     expect(field('M').querySelector('mf-dropdown')).not.toBeNull();
+    // Issue #1284: every dropdown of the form fills its column.
+    expect(field('S').querySelector('mf-dropdown')!.hasAttribute('fill')).toBe(true);
+    expect(field('M').querySelector('mf-dropdown')!.hasAttribute('fill')).toBe(true);
     expect(field('Y').querySelector('[mfSegmented], .mf-seg, [data-yes-no]')).not.toBeNull();
     expect(field('P').querySelector('mf-report-lookup')).not.toBeNull();
     expect(el().querySelector('select, input[type=checkbox], input[type=radio]')).toBeNull();
