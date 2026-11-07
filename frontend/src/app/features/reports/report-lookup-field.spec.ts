@@ -15,6 +15,7 @@ type Mock = ReturnType<typeof vi.fn>;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReportLookupField],
   template: `<mf-report-lookup
+    [reportId]="42"
     [def]="def()"
     inputId="rpf-test"
     [error]="error()"
@@ -82,13 +83,13 @@ describe('ReportLookupField (#719)', () => {
     source.labels.mockResolvedValue([{ id: 9, label: '00017 Acme' }]);
     fixture.componentInstance.value.set([{ id: 9, label: '' }]);
     await settle(fixture);
-    expect(source.labels).toHaveBeenCalledWith('client', [9]);
+    expect(source.labels).toHaveBeenCalledWith({ reportId: 42, parameter: 'C' }, [9]);
     expect(fixture.componentInstance.value()).toEqual([{ id: 9, label: '00017 Acme' }]);
   });
 
   it('shows a short kind (a pod) as the plain dropdown, loaded whole once, with Any for an optional one', async () => {
     await create(aParam({ name: 'P', type: 'lookup', lookupKind: 'pod', label: 'Pod' }));
-    expect(source.list).toHaveBeenCalledWith('pod');
+    expect(source.list).toHaveBeenCalledWith({ reportId: 42, parameter: 'P' });
     expect(ddOptionTexts(el(), 'Pod')).toEqual(['Any', 'Pod A', 'Pod B']);
     ddChoose(el(), 'Pod', '2');
     await settle(fixture);
@@ -150,7 +151,7 @@ describe('ReportLookupField (#719)', () => {
     (line.querySelector('[data-lookup-retry]') as HTMLButtonElement).click();
     await settle(fixture);
     expect(el().querySelector('[data-lookup-failure]')).toBeNull();
-    expect(source.search).toHaveBeenLastCalledWith('matter', 'acme');
+    expect(source.search).toHaveBeenLastCalledWith({ reportId: 42, parameter: 'C' }, 'acme');
   });
 
   it('shows the error of the form under the field and names it for assistive technology', async () => {

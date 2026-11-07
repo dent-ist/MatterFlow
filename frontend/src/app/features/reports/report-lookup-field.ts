@@ -14,7 +14,7 @@ import { Dropdown, DropdownItem } from '../../shared/ui/dropdown';
 import { EntityPicker, PickerOption } from '../../shared/ui/entity-picker';
 import { SearchSelect } from '../../shared/ui/search-select';
 import { DEFAULT_MAX_SELECTED, LookupPick, ParamDef } from './report-params';
-import { LookupKind, LookupRecord, ReportLookupSource } from './report-lookup-source';
+import { LookupKind, LookupRecord, LookupTarget, ReportLookupSource } from './report-lookup-source';
 
 /** What each lookup kind is called in the words of the control ("Couldn't load clients."). */
 const THINGS: Record<string, string> = {
@@ -32,8 +32,8 @@ type Mode = 'picker' | 'select' | 'multi' | 'list';
  * The control of one lookup parameter (matter, client, user, pod, role, task type; issue #719, spec 3.2). Which shared control it draws depends on the
  * kind and on whether the parameter takes several: a matter or client is chosen with the typeahead picker (`mf-entity-picker`), a user with the
  * searchable select, several of a long kind with the multi dropdown that asks the server as the person types, and a short kind (pod, role, task type)
- * with the plain dropdown. Where the records come from is `ReportLookupSource` and nothing else. A read that fails shows this control's own line
- * under it, "Couldn't load clients." (or "You don't have access to clients." for a 403) with Retry; the rest of the form keeps working.
+ * with the plain dropdown. Where the records come from is `ReportLookupSource` (the reports-owned endpoint) and nothing else. A read that fails shows this control's own line
+ * under it, "Couldn't load clients." (or "You don't have access to clients." for a 403, which the reports-owned endpoint answers only when the report was withdrawn) with Retry; the rest of the form keeps working.
  */
 @Component({
   selector: 'mf-report-lookup',
@@ -154,6 +154,8 @@ type Mode = 'picker' | 'select' | 'multi' | 'list';
 export class ReportLookupField {
   private readonly source = inject(ReportLookupSource);
 
+  /** The report the parameter belongs to: the reports-owned lookup endpoint is asked per report and parameter. */
+  readonly reportId = input.required<number>();
   readonly def = input.required<ParamDef>();
   readonly inputId = input.required<string>();
   readonly error = input<string | null>(null);
@@ -161,6 +163,10 @@ export class ReportLookupField {
   /** The chosen records (at most one unless the parameter takes several). */
   readonly value = model<readonly LookupPick[]>([]);
 
+  private readonly target = computed<LookupTarget>(() => ({
+    reportId: this.reportId(),
+    parameter: this.def().name,
+  }));
   protected readonly kind = computed(() => (this.def().lookupKind ?? 'matter') as LookupKind);
   protected readonly things = computed(() => THINGS[this.kind()] ?? 'records');
   protected readonly singular = computed(() => {
@@ -211,14 +217,14 @@ export class ReportLookupField {
     const ids = new Set(chosen.map((c) => c.value));
     const more = this.records()
       .filter((r) => !ids.has(String(r.id)))
-      .map((r) => ({ value: String(r.id), label: r.label, sub: r.sub }));
+      .map((r) => ({ value: String(r.id), label: r.label }));
     return [...chosen, ...more];
   });
 
   /** The typeahead of the picker and the searchable select: a failed read becomes this control's line and an empty list. */
   protected readonly search = async (text: string): Promise<PickerOption[]> => {
     try {
-      const rows = await this.source.search(this.kind(), text);
+      const rows = await this.source.search(this.target(), text);
       this.remember(rows);
       this.failure.set(null);
       return rows.map((r) => ({ id: r.id, label: r.label, inactive: r.inactive }));
@@ -276,7 +282,7 @@ export class ReportLookupField {
   private async loadList(): Promise<void> {
     this.loading.set(true);
     try {
-      const rows = await this.source.list(this.kind());
+      const rows = await this.source.list(this.target());
       this.remember(rows);
       this.records.set(rows);
       this.failure.set(null);
@@ -289,7 +295,7 @@ export class ReportLookupField {
 
   private async runSearch(text: string): Promise<void> {
     try {
-      const rows = await this.source.search(this.kind(), text);
+      const rows = await this.source.search(this.target(), text);
       this.remember(rows);
       this.records.set(rows);
       this.failure.set(null);
@@ -300,7 +306,7 @@ export class ReportLookupField {
 
   private async fillLabels(ids: readonly number[]): Promise<void> {
     try {
-      const rows = await this.source.labels(this.kind(), ids);
+      const rows = await this.source.labels(this.target(), ids);
       this.remember(rows);
       const words = new Map(rows.map((r) => [r.id, r.label] as const));
       this.value.set(

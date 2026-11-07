@@ -21,6 +21,7 @@ interface Seeded {
   reportId: number;
   reportName: string;
   hiddenId: number;
+  clientReportId: number;
   roleName: string;
 }
 
@@ -90,12 +91,39 @@ test.beforeAll(async ({ admin, personas }) => {
     [],
     'Nobody has it',
   );
+  // A required client parameter: the people who run it hold Report.Run only, no Client.View (owner decision 13).
+  const clientReportId = await createReport(
+    admin,
+    `Client rows ${token}`,
+    category.id,
+    'SELECT n FROM (VALUES (1)) v(n) WHERE :CLIENT > 0',
+    [
+      {
+        name: 'CLIENT',
+        type: 'lookup',
+        label: 'Client',
+        isRequired: true,
+        lookupKind: 'client',
+      },
+    ],
+    'Needs a client',
+  );
   const runner = await personas.create({ label: 'rp7-role', permissions: ['Report.Run'] });
   const roleId = (await admin.get<Json[]>('/api/v1/roles')).find(
     (r) => r.name === runner.roleNames[0],
   )!.roleId as number;
   await admin.put(`/api/v1/report-admin/reports/${reportId}/roles`, { roleIds: [roleId] });
-  s = { token, category, other, reportId, reportName, hiddenId, roleName: runner.roleNames[0] };
+  await admin.put(`/api/v1/report-admin/reports/${clientReportId}/roles`, { roleIds: [roleId] });
+  s = {
+    token,
+    category,
+    other,
+    reportId,
+    reportName,
+    hiddenId,
+    clientReportId,
+    roleName: runner.roleNames[0],
+  };
 });
 
 const navItem = (page: Page, label: string) =>
@@ -267,6 +295,36 @@ test.describe('the run page (#719)', () => {
     await page.getByRole('button', { name: 'Run Report' }).click();
     await page.getByRole('button', { name: 'Change Parameters' }).click();
     await expect(page.locator('[data-param="MAX"] input')).toBeVisible();
+  });
+
+  test('a run-only person without Client.View fills a client parameter through the reports lookup, and the address restores the client by id', async ({
+    personas,
+    asUser,
+    seed,
+  }) => {
+    test.skip(!ready, 'Reports are not ready on this stack');
+    const client = await seed.client({ name: `Lookup Client ${s.token}` });
+    const p = await runnerOf(personas);
+    const page = await asUser(p.username);
+    const calls: string[] = [];
+    page.on('request', (r) => {
+      if (/\/api\/v1\/(clients|matters|users|pods|roles|task-types)(\/|\?|$)/.test(r.url()))
+        calls.push(r.url());
+    });
+    await page.goto(`/reports/${s.clientReportId}`);
+    const picker = page.locator('[data-param="CLIENT"] input[role="combobox"]');
+    await picker.fill(client.clientNumber as string);
+    await page.getByRole('option', { name: new RegExp(`Lookup Client ${s.token}`) }).click();
+    await expect(page.locator('[data-lookup-failure]')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Run Report' }).click();
+    await expect(page.locator('[data-summary-bar]')).toContainText(`Lookup Client ${s.token}`);
+    // The address carries the id only; a reload resolves its words through `ids=`.
+    await expect(page).toHaveURL(new RegExp(`CLIENT=${client.clientId}`));
+    await page.reload();
+    await expect(page.locator('[data-param="CLIENT"] [data-chosen]')).toContainText(
+      `Lookup Client ${s.token}`,
+    );
+    expect(calls, 'the page asked no lookup endpoint of another module').toEqual([]);
   });
 
   test('Cancel is the same button while the run is live, and a slow answer shows Running... and the skeleton', async ({

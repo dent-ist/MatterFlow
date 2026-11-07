@@ -184,6 +184,7 @@ const SEARCH_FROM = 8;
                 }
                 @case ('lookup') {
                   <mf-report-lookup
+                    [reportId]="reportId()"
                     [def]="d"
                     [inputId]="idOf(d)"
                     [error]="errorOf(d)"
