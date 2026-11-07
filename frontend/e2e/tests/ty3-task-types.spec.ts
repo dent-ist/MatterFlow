@@ -63,7 +63,7 @@ test.describe('Task Types rows and columns (#371)', () => {
     for (const size of [SIZES[0], SIZES[1]]) {
       await page.setViewportSize(size);
       await page.goto(`/admin/task-types?name=${token}`);
-      const rows = page.locator('tbody tr[data-row]');
+      const rows = page.locator('tbody tr:is([data-row], [data-record-id])');
       await expect(rows).toHaveCount(3);
       for (const row of await rows.all()) {
         const box = (await row.boundingBox())!;
@@ -76,19 +76,26 @@ test.describe('Task Types rows and columns (#371)', () => {
       // No red box, no chips: the reason is a neutral badge in Status with the text as its description.
       await expect(page.locator('tbody .chip')).toHaveCount(0);
       await expect(page.locator('[data-assoc-chip]')).toHaveCount(0);
-      const badge = page.locator(`[data-row="${token} Bare"] [data-not-usable]`);
+      const badge = page.locator(
+        `tbody tr:has([data-row="${token} Bare"], a:has-text("${token} Bare")) [data-not-usable]`,
+      );
       await expect(badge).toContainText('Not Usable');
       await expect(badge.locator('.pi')).toHaveCount(1);
       const describedBy = await badge.locator('.badge').getAttribute('aria-describedby');
       await expect(page.locator(`#${describedBy}`)).toContainText("users can't create tasks");
-      await expect(page.locator(`[data-row="${token} Bare"] [data-default-workflow]`)).toHaveText(
-        'No workflow',
-      );
+      await expect(
+        page.locator(
+          `tbody tr:has([data-row="${token} Bare"], a:has-text("${token} Bare")) [data-default-workflow]`,
+        ),
+      ).toHaveText('No workflow');
       await shot(page, 'p371-task-types');
       if (axeAvailable()) expect(await axeViolations(page), `rows at ${size.width}`).toEqual([]);
     }
     // The long name is clamped to two lines, the full text is the tooltip.
-    const long = page.locator('tbody tr[data-row]').first().locator('a.tt-link');
+    const long = page
+      .locator('tbody tr:is([data-row], [data-record-id])')
+      .first()
+      .locator('a.tt-link');
     await expect(long).toHaveAttribute('title', /.+/);
   });
 
@@ -123,7 +130,7 @@ test.describe('Task Types rows and columns (#371)', () => {
     for (const [width, names] of expected) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto('/admin/task-types');
-      await expect(page.locator('tbody tr[data-row]').first()).toBeVisible();
+      await expect(page.locator('tbody tr:is([data-row], [data-record-id])').first()).toBeVisible();
       expect(await heads(page), `at ${width}`).toEqual(names);
     }
   });
@@ -139,17 +146,23 @@ test.describe('Task Types rows and columns (#371)', () => {
     const type = await seed.taskType({ name: `${token} Many`, workflows: [w1, w2] });
     await page.setViewportSize(SIZES[0]);
     await page.goto(`/admin/task-types?name=${token}`);
-    const link = page.locator(`[data-row="${token} Many"] [data-workflows-link]`);
+    const link = page.locator(
+      `tbody tr:has([data-row="${token} Many"], a:has-text("${token} Many")) [data-workflows-link]`,
+    );
     await expect(link).toHaveText('2');
     await link.click();
     await expect(page).toHaveURL(new RegExp(`/admin/workflows\\?taskType=${type.id}$`));
-    await expect(page.locator('tbody tr[data-row]')).toHaveCount(2);
+    await expect(page.locator('tbody tr:is([data-row], [data-record-id])')).toHaveCount(2);
 
     const role = await seed.role(['TaskType.Manage', 'Task.View'], 'Type only');
     const tt = await asUser((await seed.user([role.name], 'ty3t-tt')).username);
     await tt.setViewportSize(SIZES[0]);
     await tt.goto(`/admin/task-types?name=${token}`);
-    await expect(tt.locator(`[data-row="${token} Many"] [data-workflows]`)).toHaveText('2');
+    await expect(
+      tt.locator(
+        `tbody tr:has([data-row="${token} Many"], a:has-text("${token} Many")) [data-workflows]`,
+      ),
+    ).toHaveText('2');
     await expect(tt.locator('[data-workflows-link]')).toHaveCount(0);
   });
 });
@@ -186,7 +199,10 @@ test.describe('Open tasks (#373)', () => {
 
     await page.setViewportSize(SIZES[0]);
     await page.goto(`/admin/task-types?name=${token}`);
-    const cell = (name: string) => page.locator(`[data-row="${token} ${name}"] [data-open-tasks]`);
+    const cell = (name: string) =>
+      page.locator(
+        `tbody tr:has([data-row="${token} ${name}"], a:has-text("${token} ${name}")) [data-open-tasks]`,
+      );
     await expect(cell('Busy')).toHaveText('3');
     await expect(cell('Quiet')).toHaveText('1');
     await shot(page, 'p373-open-tasks');
@@ -196,13 +212,13 @@ test.describe('Open tasks (#373)', () => {
     await header.getByRole('button').click();
     await expect(page).toHaveURL(/sort=-openTasks/);
     await expect(header).toHaveAttribute('aria-sort', 'descending');
-    await expect(page.locator('tbody tr[data-row]').first()).toHaveAttribute(
+    await expect(page.locator('tbody tr:is([data-row], [data-record-id])').first()).toHaveAttribute(
       'data-row',
       `${token} Busy`,
     );
     await header.getByRole('button').click();
     await expect(page).toHaveURL(/sort=openTasks/);
-    await expect(page.locator('tbody tr[data-row]').first()).toHaveAttribute(
+    await expect(page.locator('tbody tr:is([data-row], [data-record-id])').first()).toHaveAttribute(
       'data-row',
       `${token} Quiet`,
     );

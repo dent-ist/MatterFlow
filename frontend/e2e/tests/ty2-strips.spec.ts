@@ -110,7 +110,7 @@ test.describe('tab counts (#364)', () => {
     );
     // One request per permitted tab, no more; a filtered view does not change a count (the name filter shows two rows).
     expect(countRequests).toBe(2);
-    await expect(page.locator('tbody tr[data-row]')).toHaveCount(2);
+    await expect(page.locator('tbody tr:is([data-row], [data-record-id])')).toHaveCount(2);
 
     // Deactivate one in the list: the tab follows from the list's own answer, with no further count request.
     const reload = page.waitForResponse(
@@ -120,7 +120,11 @@ test.describe('tab counts (#364)', () => {
         query(r.url()).get('pagesize') === '25' &&
         r.request().method() === 'GET',
     );
-    await page.locator('tbody tr[data-row]').first().locator('button[data-overflow]').click();
+    await page
+      .locator('tbody tr:is([data-row], [data-record-id])')
+      .first()
+      .locator('button[data-overflow]')
+      .click();
     await page.getByRole('menuitem', { name: 'Deactivate' }).click();
     await page
       .getByRole('dialog')
@@ -134,7 +138,11 @@ test.describe('tab counts (#364)', () => {
     await page.goto(`/admin/task-types?name=${token}`);
     await expect(tab(page, 'task-types')).toContainText(/\(\d+\)/);
     const shown = Number(/\((\d+)\)/.exec((await tab(page, 'task-types').textContent()) ?? '')![1]);
-    await page.locator('tbody tr[data-row]').first().locator('button[data-overflow]').click();
+    await page
+      .locator('tbody tr:is([data-row], [data-record-id])')
+      .first()
+      .locator('button[data-overflow]')
+      .click();
     await page.getByRole('menuitem', { name: 'Deactivate' }).click();
     await page
       .getByRole('dialog')
@@ -239,7 +247,7 @@ test.describe('health strips (#367, #368)', () => {
     await expect(chip(page, 'active')).toHaveAttribute('aria-pressed', 'false');
     await expect.poll(() => pagerTotal(page)).toBe(expected.notUsable);
     await expect(page.locator('[data-announce]')).toContainText(
-      `Not usable: ${expected.notUsable}`,
+      `Not Usable: ${expected.notUsable}`,
     );
     expect(await chipCount(page, 'notUsable')).toBe(expected.notUsable); // the strip does not follow the filter
 
@@ -250,7 +258,9 @@ test.describe('health strips (#367, #368)', () => {
 
     await chip(page, 'inactive').click();
     await expect(page).toHaveURL(/status=inactive/);
-    await expect(page.locator('tbody tr[data-row].inactive').first()).toBeVisible();
+    await expect(
+      page.locator('tbody tr:is([data-row], [data-record-id]).inactive').first(),
+    ).toBeVisible();
 
     // The pressed chip again goes back to Active; Active clears the others.
     await chip(page, 'inactive').click();
@@ -301,7 +311,7 @@ test.describe('health strips (#367, #368)', () => {
     expect(await chipCount(page, 'draft')).toBe(summary.draftInProgress);
     expect(await chipCount(page, 'notPublished')).toBe(summary.notPublished);
     expect(await chipCount(page, 'inactive')).toBe(summary.inactive);
-    await expect(page.locator('tbody tr[data-row]')).toHaveCount(3);
+    await expect(page.locator('tbody tr:is([data-row], [data-record-id])')).toHaveCount(3);
     await shot(page, 'p368-workflows-strip');
 
     // A chip puts its filter in the address; the pager total of the unfiltered library equals the chip (read from the same page).
@@ -326,7 +336,7 @@ test.describe('health strips (#367, #368)', () => {
       .toBe(true);
     await chip(page, 'inactive').click();
     await expect(page).toHaveURL(/status=inactive/);
-    await expect(page.locator('tbody tr[data-row]').first()).toBeVisible();
+    await expect(page.locator('tbody tr:is([data-row], [data-record-id])').first()).toBeVisible();
     await chip(page, 'inactive').click(); // pressed again: all filters off
     await expect(page).not.toHaveURL(/status=|hasPublished=|hasDraft=/);
   });

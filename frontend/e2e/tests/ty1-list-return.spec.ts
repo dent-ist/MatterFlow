@@ -322,7 +322,7 @@ test.describe('Back and the breadcrumb keep the list view and the row focus (#35
       rowVersion: detail.rowVersion,
     });
     await crumb(page, 'Workflow Steps').click();
-    await expect(page.locator('tbody tr[data-row]').first()).toBeVisible();
+    await expect(page.locator('tbody tr:is([data-row], [data-record-id])').first()).toBeVisible();
     await expect(rowLink(page, steps.ids[2])).toHaveCount(0);
     await expect(page.locator('[data-page-title]')).toBeFocused();
 

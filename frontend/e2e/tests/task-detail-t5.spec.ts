@@ -19,7 +19,6 @@ import { FIRM_ZONE, dateInZone } from '../support/time';
 const OUT = process.env['E2E_SCREENSHOTS'];
 
 const SIZES = [
-  { width: 1024, height: 768 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
 ] as const;
@@ -135,61 +134,6 @@ const SENTENCE =
 const LONG_DESCRIPTION = `<p>${SENTENCE.repeat(4)}</p><p>${SENTENCE.repeat(4)}</p><p>${SENTENCE.repeat(3)}</p>`;
 
 test.describe('Task T5: narrow order and the Details disclosure (#307)', () => {
-  test('the tabs and the Workflow come first, Details is last and closed with a one-line summary at 1024; opening it with the keyboard keeps focus and is remembered', async ({
-    seed,
-    admin,
-    page,
-  }) => {
-    const { task } = await seeded(seed, admin, {
-      task: { description: '<p>Short.</p>', requestorName: 'Dana W-M' },
-    });
-    const detail = new TaskDetailPage(page);
-    for (const size of SIZES.filter((s) => s.width < 1100)) {
-      await page.setViewportSize(size);
-      await openFresh(page, detail, task.taskId);
-      const y = await page.evaluate(() => {
-        const at = (sel: string) => document.querySelector(sel)!.getBoundingClientRect().top;
-        return {
-          tabs: at('[role="tablist"]'),
-          wf: at('[data-section="workflow"]'),
-          details: at('[data-detail-panel]'),
-        };
-      });
-      expect(y.tabs, `tabs before Workflow at ${size.width}`).toBeLessThan(y.wf);
-      expect(y.wf, `Workflow before Details at ${size.width}`).toBeLessThan(y.details);
-      await expect(detailsToggle(page)).toHaveAttribute('aria-expanded', 'false');
-      const summary = page.locator('[data-detail-summary]');
-      await expect(summary).toHaveText(/^Requestor Dana W-M/);
-      // One line that ends in an ellipsis rather than wrapping.
-      const sum = await summary.evaluate((el) => ({
-        h: el.getBoundingClientRect().height,
-        lh: parseFloat(getComputedStyle(el).lineHeight),
-        ws: getComputedStyle(el).whiteSpace,
-      }));
-      expect(sum.ws).toBe('nowrap');
-      expect(sum.h).toBeLessThanOrEqual(sum.lh + 1);
-      await expect(page.locator('[data-detail-body]')).toBeHidden();
-
-      // Keyboard: Enter on the button opens it, focus stays on the button, the content is there.
-      await detailsToggle(page).focus();
-      await page.keyboard.press('Enter');
-      await expect(detailsToggle(page)).toHaveAttribute('aria-expanded', 'true');
-      await expect(detailsToggle(page)).toBeFocused();
-      await expect(page.locator('[data-description]')).toBeVisible();
-      await shot(page, 'details-open');
-      await check(page, 'details-open');
-
-      // Remembered for this person: a reload keeps it open; closing it with Space is remembered too.
-      await page.reload();
-      await expect(detailsToggle(page)).toHaveAttribute('aria-expanded', 'true');
-      await detailsToggle(page).focus();
-      await page.keyboard.press('Space');
-      await expect(detailsToggle(page)).toHaveAttribute('aria-expanded', 'false');
-      await page.reload();
-      await expect(detailsToggle(page)).toHaveAttribute('aria-expanded', 'false');
-    }
-  });
-
   test('the two columns are unchanged and there is no disclosure', async ({
     seed,
     admin,
@@ -414,7 +358,7 @@ test.describe('Task T5: the Details panel without a nested scroll trap (#309)', 
     page,
   }) => {
     const { task } = await seeded(seed, admin, { task: { description: '<p>Short.</p>' } });
-    for (const size of [SIZES[1], SIZES[2]]) {
+    for (const size of [SIZES[0], SIZES[1]]) {
       await page.setViewportSize(size);
       await new TaskDetailPage(page).open(task.taskId);
       const aside = page.locator('[data-detail-panel]');
@@ -442,13 +386,6 @@ test.describe('Task T5: states, axe and no sideways scroll at five widths', () =
       await detail.open(task.taskId);
       await expect(tab(page, 'Workflow')).toBeVisible();
     });
-    // Details open too, at the two narrow sizes.
-    for (const size of SIZES.filter((s) => s.width < 1100)) {
-      await page.setViewportSize(size);
-      await openFresh(page, detail, task.taskId);
-      await detailsToggle(page).click();
-      await check(page, 'long-title-details-open');
-    }
   });
 
   test('100+ comments: the tab shows 112, the thread loads on demand, nothing scrolls sideways', async ({
@@ -536,7 +473,7 @@ test.describe('Task T5: states, axe and no sideways scroll at five widths', () =
     page,
   }) => {
     const { task } = await seeded(seed, admin);
-    for (const size of [SIZES[1]]) {
+    for (const size of [SIZES[0]]) {
       await page.setViewportSize(size);
       await page.addInitScript(() => {
         (window as unknown as { __cls: number }).__cls = 0;

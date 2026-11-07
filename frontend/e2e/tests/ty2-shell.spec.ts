@@ -162,7 +162,7 @@ test.describe('the filter row is open and the Filters button sits in the header 
 });
 
 const KINDS: ListKind[] = ['types', 'workflows', 'steps'];
-const dataRows = (page: Page) => page.locator('tbody tr[data-row]');
+const dataRows = (page: Page) => page.locator('tbody tr:is([data-row], [data-record-id])');
 
 test.describe('the list says what the default Status hides and Status sorts (#369)', () => {
   for (const kind of KINDS) {

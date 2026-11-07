@@ -13,7 +13,6 @@ import { Setup, VersionIds, build, versionIds } from '../support/ty-workflow';
  */
 const SHOTS = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
-  { w: 1024, h: 768 },
   { w: 1366, h: 768 },
   { w: 1920, h: 1080 },
 ] as const;

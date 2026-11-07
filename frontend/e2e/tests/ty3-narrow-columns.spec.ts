@@ -37,7 +37,7 @@ async function noSideways(page: Page, what: string): Promise<void> {
   expect(widths.doc, `${what}: page scrolls sideways`).toBeLessThanOrEqual(widths.inner);
 }
 
-const tableRows = (page: Page) => page.locator('table tbody tr[data-row]');
+const tableRows = (page: Page) => page.locator('table tbody tr:is([data-row], [data-record-id])');
 
 test.describe('narrow-window columns: the grid never scrolls sideways and the row menu stays in view (#374, #375)', () => {
   for (const kind of KINDS) {
