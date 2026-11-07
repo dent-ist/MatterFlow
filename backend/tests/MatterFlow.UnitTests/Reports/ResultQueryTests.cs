@@ -134,7 +134,7 @@ public class ResultQueryTests
         var t = CommaNamed();
 
         ResultQuery.ParseSort("Id:desc", t).ShouldBe([new ResultSort("Id", true)]);
-        ResultQuery.ParseSort("#3", t).ShouldBe([new ResultSort("#1", false)]); // position 3 is the column that happens to be called "#1"
+        ResultQuery.ParseSort("#3", t).ShouldBe([new ResultSort("#3", false)]); // position 3 is the column that happens to be called "#1"; a name that looks like a position is never stored as a name
         Should.Throw<ResultQueryException>(() => ResultQuery.ParseSort("Total, USD:asc", t)); // the comma still splits the name form
     }
 
@@ -352,5 +352,86 @@ public class ResultQueryTests
 
         ReferenceEquals(a, b).ShouldBeTrue();
         ReferenceEquals(a, c).ShouldBeFalse();
+    }
+
+    // ---- columns with the same name (issue #1291) ----
+
+    private static ResultTable Duplicated()
+    {
+        var builder = new ResultTableBuilder(100, long.MaxValue);
+        builder.Begin([new("Name", ReportColumnType.Text), new("Name", ReportColumnType.Text), new("Qty", ReportColumnType.Integer), new("name", ReportColumnType.Text)]);
+        builder.TryAdd(["a1", "z", 1L, "k"]);
+        builder.TryAdd(["b1", "y", 2L, "j"]);
+        builder.TryAdd(["c1", "x", 3L, "i"]);
+        return builder.Build();
+    }
+
+    [Theory]
+    [InlineData("#0", 0)]
+    [InlineData("#1", 1)]
+    [InlineData("#3", 3)]
+    [InlineData("#4", -1)]
+    [InlineData("#99999999999999999999", -1)]
+    [InlineData("#", -1)]
+    [InlineData("#-1", -1)]
+    [InlineData("# 1", -1)]
+    [InlineData("#1a", -1)]
+    [InlineData("Name", 0)]
+    [InlineData("NAME", 0)]
+    [InlineData("qty", 2)]
+    [InlineData("Nope", -1)]
+    [InlineData("", -1)]
+    [InlineData(null, -1)]
+    public void Resolve_reads_a_position_or_a_name_and_a_name_means_the_first_column_with_it(string? reference, int expected) =>
+        Duplicated().Resolve(reference).ShouldBe(expected);
+
+    [Fact]
+    public void A_hash_with_digits_is_a_position_even_when_a_column_is_called_that()
+    {
+        var t = CommaNamed(); // the fourth column is called "#1"
+
+        t.Resolve("#1").ShouldBe(1);
+        t.Resolve("#3").ShouldBe(3);
+    }
+
+    [Fact]
+    public void Sorting_by_position_tells_two_columns_of_one_name_apart()
+    {
+        var t = Duplicated();
+
+        Names(t, Order(t, "#0:desc")).ShouldBe(["c1", "b1", "a1"]);
+        Names(t, Order(t, "#1:asc")).ShouldBe(["c1", "b1", "a1"]); // the second Name: x, y, z
+        Names(t, Order(t, "#1:desc")).ShouldBe(["a1", "b1", "c1"]);
+        Names(t, Order(t, "Name:desc")).ShouldBe(["c1", "b1", "a1"]); // the name form still means the first
+        ResultQuery.ParseSort("#1:desc", t).ShouldBe([new ResultSort("#1", true)]); // the name would find column 0, so the key keeps the position
+        ResultQuery.ParseSort("#0,Name,#1", t).Select(s => s.Column).ShouldBe(["Name", "#1"]); // #0 and Name are one column; the second Name is another
+        ResultQuery.ParseSort("#3", t).Single().Column.ShouldBe("#3"); // "name" in the last column also finds the first column
+    }
+
+    [Fact]
+    public void Filtering_by_position_filters_that_column_and_a_name_filters_the_first_one()
+    {
+        var t = Duplicated();
+
+        Names(t, Order(t, filter: F("#1", "equals", "y"))).ShouldBe(["b1"]);
+        Names(t, Order(t, filter: F("#0", "equals", "y"))).ShouldBeEmpty();
+        Names(t, Order(t, filter: F("Name", "equals", "a1"))).ShouldBe(["a1"]);
+        Names(t, Order(t, filter: F("Name", "equals", "y"))).ShouldBeEmpty(); // the name form hits the first Name only
+        Names(t, Order(t, filter: F("#3", "startsWith", "j"))).ShouldBe(["b1"]);
+        Should.Throw<ResultQueryException>(() => Order(t, filter: F("#4", "equals", "y")));
+        Should.Throw<ResultQueryException>(() => Order(t, filter: F("#99999999999", "equals", "y")));
+    }
+
+    [Fact]
+    public void The_cached_order_never_serves_one_column_the_order_of_another_with_the_same_name()
+    {
+        var t = Duplicated();
+
+        Names(t, Order(t, "#0:asc")).ShouldBe(["a1", "b1", "c1"]);
+        Names(t, Order(t, "#1:asc")).ShouldBe(["c1", "b1", "a1"]);
+        Names(t, Order(t, "#0:asc")).ShouldBe(["a1", "b1", "c1"]);
+        Names(t, Order(t, filter: F("#0", "equals", "a1"))).ShouldBe(["a1"]);
+        Names(t, Order(t, filter: F("#1", "equals", "z"))).ShouldBe(["a1"]);
+        Names(t, Order(t, filter: F("Name", "equals", "a1"))).ShouldBe(["a1"]); // the name and the position of the first column are one question
     }
 }

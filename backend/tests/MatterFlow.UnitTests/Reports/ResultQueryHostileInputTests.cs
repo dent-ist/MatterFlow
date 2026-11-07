@@ -70,7 +70,7 @@ public class ResultQueryHostileInputTests
 
         var sorts = ResultQuery.ParseSort(sort, t);
 
-        sorts.ShouldHaveSingleItem().Column.ShouldBe(t.Columns[index].Name);
+        t.Resolve(sorts.ShouldHaveSingleItem().Column).ShouldBe(index); // the key finds that very column (a name that looks like a position is stored as the position)
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public class ResultQueryHostileInputTests
         var t = Sample();
 
         ResultQuery.ParseSort("#2:asc", t).ShouldHaveSingleItem().Column.ShouldBe("Due"); // the third column, not the one named "#2"
-        ResultQuery.ParseSort("#3:asc", t).ShouldHaveSingleItem().Column.ShouldBe("#2");
+        ResultQuery.ParseSort("#3:asc", t).ShouldHaveSingleItem().Column.ShouldBe("#3"); // the column named "#2" is kept as a position, never as a name that would read as one
     }
 
     [Fact]
@@ -134,7 +134,7 @@ public class ResultQueryHostileInputTests
     [InlineData("[Name]")]
     [InlineData("Name\0")]
     [InlineData("")]
-    [InlineData("#0")] // a filter names columns by name only
+    [InlineData("#99")] // a position past the last column (a filter takes #n like a sort, issue #1291)
     public void A_filter_on_a_column_that_is_not_in_the_result_is_refused(string column)
     {
         var t = Sample();

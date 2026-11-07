@@ -232,6 +232,30 @@ public class ReportCsvWriterTests
         Should.Throw<ResultQueryException>(() => ReportExportService.ResolveColumns(table, ["A", "Nope"]));
     }
 
+    [Fact]
+    public void Two_columns_of_one_name_are_resolved_by_position_and_both_are_written_under_their_own_name()
+    {
+        var table = Table([new("Name", ReportColumnType.Text), new("Name", ReportColumnType.Text), new("Qty", ReportColumnType.Integer)], ["ann", "acme", 1L], ["bob", "beta", 2L]);
+
+        ReportExportService.ResolveColumns(table, ["#1", "#0"]).ShouldBe([1, 0]);
+        ReportExportService.ResolveColumns(table, ["#0", "#1", "#1"]).ShouldBe([0, 1]); // the same column twice is one column
+        ReportExportService.ResolveColumns(table, ["Name"]).ShouldBe([0]); // the name form means the first
+        ReportExportService.ResolveColumns(table, ["name", "#1"]).ShouldBe([0, 1]);
+        Should.Throw<ResultQueryException>(() => ReportExportService.ResolveColumns(table, ["#3"]));
+        ReportExportService.ResolveColumns(table, null).ShouldBe([0, 1, 2]);
+    }
+
+    [Fact]
+    public async Task The_header_repeats_a_repeated_name_and_each_column_has_its_own_values()
+    {
+        var table = Table([new("Name", ReportColumnType.Text), new("Name", ReportColumnType.Text), new("Qty", ReportColumnType.Integer)], ["ann", "acme", 1L], ["bob", "beta", 2L]);
+
+        var all = await WriteAsync(table, columns: ReportExportService.ResolveColumns(table, null));
+        all.ShouldBe("Name,Name,Qty\r\nann,acme,1\r\nbob,beta,2\r\n");
+        var second = await WriteAsync(table, columns: ReportExportService.ResolveColumns(table, ["#1", "#2"]));
+        second.ShouldBe("Name,Qty\r\nacme,1\r\nbeta,2\r\n");
+    }
+
     private sealed class CountingStream : Stream
     {
         public int Writes { get; private set; }

@@ -14,7 +14,7 @@ namespace MatterFlow.Reports.Api;
 public sealed record RunReportRequest(Dictionary<string, JsonElement>? Parameters);
 
 /// <summary>A column of a result.</summary>
-/// <param name="Name">Unique, non-empty name.</param>
+/// <param name="Name">Non-empty name as the SQL gave it. Two columns may have the same name: tell columns apart by their position (the order of this list), and send <c>#&lt;n&gt;</c> (zero-based) to sort, filter and export.</param>
 /// <param name="Type">text, integer, decimal, boolean, date or dateTime.</param>
 /// <param name="IsInstant">
 /// For <c>dateTime</c> columns: true when the value is a point in time (the SQL type is <c>datetimeoffset</c>): it is sent in UTC with a trailing <c>Z</c>
@@ -230,8 +230,8 @@ public class ReportsController(ReportRunService runs, ReportResultStore results,
     }
 
     /// <summary>
-    /// A page of a cached result, filtered and sorted on the server. <c>sort</c> is <c>col:asc,col2:desc</c> (at most 3); a column is written by name or by its zero-based position as <c>#n</c> (<c>#1:desc</c>), which a client uses when a column name contains a comma; <c>filter</c> a JSON array of
-    /// <c>{column, op, value, value2}</c>. Nulls sort last ascending, text case-insensitively. 404 for an unknown id, another person's result or a report the caller may no longer run, 410
+    /// A page of a cached result, filtered and sorted on the server. <c>sort</c> is <c>col:asc,col2:desc</c> (at most 3); a column is written by its zero-based position as <c>#n</c> (<c>#1:desc</c>, what a client sends: names may repeat or contain a comma) or, for API callers, by name (the first column with that name); <c>filter</c> a JSON array of
+    /// <c>{column, op, value, value2}</c> with <c>column</c> written the same way. Nulls sort last ascending, text case-insensitively. 404 for an unknown id, another person's result or a report the caller may no longer run, 410
     /// <c>RESULT_EXPIRED</c> once the cache dropped it (run the report again), 400 for an unreadable sort or filter.
     /// </summary>
     [HttpGet("runs/{runId:guid}/rows", Name = "GetReportRows")]
@@ -268,7 +268,7 @@ public class ReportsController(ReportRunService runs, ReportResultStore results,
 
     /// <summary>
     /// Downloads the caller's live result as CSV: the rows the grid shows for the same <c>sort</c> and <c>filter</c> (all of them, not one page), the
-    /// <c>columns</c> given (repeat the parameter, in file order; none means all), UTF-8 with a byte order mark, comma, CRLF, ISO dates, invariant numbers,
+    /// <c>columns</c> given (repeat the parameter, in file order, each as <c>#n</c> or a name; none means all; the header row writes every column under its own name, repeated names stay repeated), UTF-8 with a byte order mark, comma, CRLF, ISO dates, invariant numbers,
     /// formula-safe text cells. Streamed, never cached, no cookie link: the call carries the person's normal credentials. Writes a run-log row of kind
     /// Export and a <c>REPORT_EXPORT</c> audit event. 404 for an unknown id, another person's result or a report the caller may no longer run, 410
     /// <c>RESULT_EXPIRED</c> once the cache dropped the result, 400 for an unreadable sort, filter or column.

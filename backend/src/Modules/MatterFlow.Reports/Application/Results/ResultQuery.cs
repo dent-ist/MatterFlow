@@ -10,6 +10,7 @@ namespace MatterFlow.Reports.Application.Results;
 /// <param name="Value2">The upper bound of <c>between</c>; ignored by every other operator.</param>
 public sealed record ResultFilter(string Column, string Op, string? Value, string? Value2);
 
+/// <param name="Column">A column reference as <see cref="ResultTable.Resolve"/> reads it: the name when that name finds this very column, else <c>#&lt;n&gt;</c>.</param>
 public sealed record ResultSort(string Column, bool Descending);
 
 /// <summary>One page of a result after filtering and sorting.</summary>
@@ -50,9 +51,11 @@ public static class ResultQuery
             var index = ColumnIndex(table, name);
             if (direction is not ("asc" or "desc"))
                 throw new ResultQueryException("Sort direction must be asc or desc.");
-            var canonical = table.Columns[index].Name;
-            if (sorts.Any(s => string.Equals(s.Column, canonical, StringComparison.OrdinalIgnoreCase)))
+            // One column once, however it was written (#0 and its name are the same column). The key stores the name when that name finds this very column, else the position.
+            if (sorts.Any(s => table.Resolve(s.Column) == index))
                 continue;
+            var columnName = table.Columns[index].Name;
+            var canonical = !ResultTable.IsPosition(columnName) && table.IndexOf(columnName) == index ? columnName : "#" + index.ToString(CultureInfo.InvariantCulture);
             sorts.Add(new ResultSort(canonical, direction == "desc"));
         }
 
@@ -61,20 +64,13 @@ public static class ResultQuery
         return sorts;
     }
 
-    /// <summary>The index of a column given by name or as <c>#n</c> (zero-based position); a 400 for anything that is not a column of the result.</summary>
+    /// <summary>The index of a column given by name or as <c>#n</c> (<see cref="ResultTable.Resolve"/>); a 400 for anything that is not a column of the result.</summary>
     private static int ColumnIndex(ResultTable table, string reference)
     {
-        if (reference.Length > 1 && reference[0] == '#' && reference.Skip(1).All(char.IsAsciiDigit))
-        {
-            if (!int.TryParse(reference.AsSpan(1), NumberStyles.None, CultureInfo.InvariantCulture, out var position) || position >= table.Columns.Count)
-                throw new ResultQueryException($"There is no column at position '{Short(reference)}'.");
-            return position;
-        }
-
-        var index = table.IndexOf(reference);
-        if (index < 0)
-            throw new ResultQueryException($"Unknown column '{Short(reference)}'.");
-        return index;
+        var index = table.Resolve(reference);
+        if (index >= 0)
+            return index;
+        throw new ResultQueryException(ResultTable.IsPosition(reference) ? $"There is no column at position '{Short(reference)}'." : $"Unknown column '{Short(reference)}'.");
     }
 
     public static IReadOnlyList<ResultFilter> ParseFilters(string? json)
@@ -124,7 +120,7 @@ public static class ResultQuery
     /// <summary>The row indexes that pass the filters, in sort order. Also what the CSV export walks.</summary>
     public static int[] Order(ResultTable table, IReadOnlyList<ResultFilter> filters, IReadOnlyList<ResultSort> sorts)
     {
-        var key = CacheKey(filters, sorts);
+        var key = CacheKey(table, filters, sorts);
         if (table.TryGetCachedOrder(key, out var cached))
             return cached;
 
@@ -160,7 +156,7 @@ public static class ResultQuery
 
         if (sorts.Count > 0)
         {
-            var columns = sorts.Select(s => (Data: table.Data(table.IndexOf(s.Column)), s.Descending)).ToArray();
+            var columns = sorts.Select(s => (Data: table.Data(ColumnIndex(table, s.Column)), s.Descending)).ToArray();
             // Stable: ties keep their original order (the index is the last sort key).
             Array.Sort(indexes, (a, b) =>
             {
@@ -183,9 +179,16 @@ public static class ResultQuery
     /// The key of one filter and sort combination. Every text is written with its length in front, so a value that contains the separators (a colon, a bar)
     /// can never make two different questions produce the same key and be served each other's cached order.
     /// </summary>
-    private static string CacheKey(IReadOnlyList<ResultFilter> filters, IReadOnlyList<ResultSort> sorts) =>
-        string.Concat(sorts.Select(s => "S" + Part(s.Column.ToUpperInvariant()) + (s.Descending ? "-" : "+")))
-        + "#" + string.Concat(filters.Select(f => "F" + Part(f.Column.ToUpperInvariant()) + Part(f.Op) + Part(f.Value) + Part(f.Value2)));
+    private static string CacheKey(ResultTable table, IReadOnlyList<ResultFilter> filters, IReadOnlyList<ResultSort> sorts) =>
+        string.Concat(sorts.Select(s => "S" + ColumnPart(table, s.Column) + (s.Descending ? "-" : "+")))
+        + "#" + string.Concat(filters.Select(f => "F" + ColumnPart(table, f.Column) + Part(f.Op) + Part(f.Value) + Part(f.Value2)));
+
+    /// <summary>A column in a cache key is its resolved position, so <c>#1</c> and the name of column 1 share an entry and two columns of one name never do.</summary>
+    private static string ColumnPart(ResultTable table, string? reference)
+    {
+        var index = table.Resolve(reference);
+        return index >= 0 ? "i" + index.ToString(CultureInfo.InvariantCulture) : Part((reference ?? "").ToUpperInvariant());
+    }
 
     private static string Part(string? text) => text is null ? "~" : text.Length.ToString(CultureInfo.InvariantCulture) + ":" + text;
 
@@ -193,9 +196,7 @@ public static class ResultQuery
 
     private static Func<int, bool> Compile(ResultTable table, ResultFilter filter)
     {
-        var index = table.IndexOf(filter.Column ?? "");
-        if (index < 0)
-            throw new ResultQueryException($"Unknown column '{Short(filter.Column ?? "")}'.");
+        var index = ColumnIndex(table, filter.Column ?? "");
         var column = table.Columns[index];
         var data = table.Data(index);
         var op = (filter.Op ?? "").Trim();

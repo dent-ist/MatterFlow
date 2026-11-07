@@ -128,20 +128,19 @@ internal sealed class ReportExecutor(IReportsAvailability availability, IOptions
         return new(ReportRunStatus.TimedOut, columns, rows, false, (int)watch.ElapsedMilliseconds, "TIMEOUT", null, null);
     }
 
-    /// <summary>Column names must be unique and non-empty for the grid, sorting and filters; the SQL may give none (<c>SELECT 1</c>) or repeat one.</summary>
+    /// <summary>
+    /// The columns of the result as the SQL named them. A name may be empty (<c>SELECT 1</c>: it becomes <c>Column 1</c>) and may repeat (<c>SELECT a.Name, b.Name</c>): a repeated
+    /// name is kept as it is, with no suffix, because a result is a table and every sort, filter and export identifies a column by its position (<c>#n</c>, issue #1291).
+    /// </summary>
     internal static IReadOnlyList<ResultColumn> ReadColumns(SqlDataReader reader)
     {
         var columns = new List<ResultColumn>(reader.FieldCount);
-        var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         for (var i = 0; i < reader.FieldCount; i++)
         {
             var name = reader.GetName(i);
             if (string.IsNullOrWhiteSpace(name))
                 name = "Column " + (i + 1).ToString(CultureInfo.InvariantCulture);
-            var candidate = name;
-            for (var n = 2; !used.Add(candidate); n++)
-                candidate = $"{name} ({n.ToString(CultureInfo.InvariantCulture)})";
-            columns.Add(new ResultColumn(candidate, TypeOf(reader.GetFieldType(i), reader.GetDataTypeName(i)), reader.GetFieldType(i) == typeof(double) || reader.GetFieldType(i) == typeof(float), reader.GetFieldType(i) == typeof(DateTimeOffset)));
+            columns.Add(new ResultColumn(name, TypeOf(reader.GetFieldType(i), reader.GetDataTypeName(i)), reader.GetFieldType(i) == typeof(double) || reader.GetFieldType(i) == typeof(float), reader.GetFieldType(i) == typeof(DateTimeOffset)));
         }
 
         return columns;

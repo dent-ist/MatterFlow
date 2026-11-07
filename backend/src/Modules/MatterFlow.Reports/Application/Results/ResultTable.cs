@@ -50,6 +50,25 @@ public sealed class ResultTable
     /// <summary>The cell as a JSON-friendly value (number, string, bool, null; dates as ISO text).</summary>
     public object? Get(int row, int column) => _data[column].Get(row);
 
+    /// <summary>
+    /// The one way a column is identified by sort, filter and export (issue #1291). <c>#&lt;n&gt;</c> is the <b>zero-based position</b> (<c>#0</c> is the first column); anything else is a
+    /// column name, matched case-insensitively, and means the FIRST column with that name. Returns -1 when there is no such column (a position past the last column, a text that is
+    /// <c>#</c> and digits but too large to be a position, an unknown name). A text that is <c>#</c> and digits is always a position and never a name, even when a column is called
+    /// <c>#1</c>. A result is a table, not a dictionary: two columns may have one name, and only the position tells them apart.
+    /// </summary>
+    public int Resolve(string? reference)
+    {
+        if (string.IsNullOrEmpty(reference))
+            return -1;
+        if (IsPosition(reference))
+            return int.TryParse(reference.AsSpan(1), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var position) && position < Columns.Count ? position : -1;
+        return IndexOf(reference);
+    }
+
+    /// <summary>True for <c>#</c> followed by digits only (the position form of <see cref="Resolve"/>).</summary>
+    public static bool IsPosition(string reference) => reference.Length > 1 && reference[0] == '#' && reference.AsSpan(1).IndexOfAnyExceptInRange('0', '9') < 0;
+
+    /// <summary>The first column with this name (case-insensitive), or -1. Use <see cref="Resolve"/> when the text may be a position.</summary>
     public int IndexOf(string columnName)
     {
         for (var i = 0; i < Columns.Count; i++)

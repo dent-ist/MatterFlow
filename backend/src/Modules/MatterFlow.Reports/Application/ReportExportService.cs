@@ -79,7 +79,11 @@ public sealed class ReportExportService(ICurrentUser user, IReportCatalog catalo
         return written;
     }
 
-    /// <summary>The columns to write, in the order given; all columns when none are named. A name that is not a column is a 400, a repeated name is written once.</summary>
+    /// <summary>
+    /// The columns to write, in the order given; all columns when none are named. Each is a position <c>#n</c> (what a client sends) or a name (the first column with that name,
+    /// <see cref="ResultTable.Resolve"/>). A reference that is not a column is a 400; the same column named twice is written once, but two columns that happen to share a name
+    /// are two columns, each written under its own name.
+    /// </summary>
     internal static int[] ResolveColumns(ResultTable table, IReadOnlyList<string>? names)
     {
         var wanted = names?.Where(n => !string.IsNullOrEmpty(n)).ToList() ?? [];
@@ -88,7 +92,7 @@ public sealed class ReportExportService(ICurrentUser user, IReportCatalog catalo
         var indexes = new List<int>();
         foreach (var name in wanted)
         {
-            var index = table.IndexOf(name);
+            var index = table.Resolve(name);
             if (index < 0)
                 throw new ResultQueryException($"Unknown column '{(name.Length <= 40 ? name : name[..40] + "...")}'.");
             if (!indexes.Contains(index))
