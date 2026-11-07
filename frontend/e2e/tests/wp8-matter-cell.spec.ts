@@ -82,7 +82,7 @@ test.describe('Matter Number and Matter Name cells (#197, #348)', () => {
         await page.getByLabel('Matter Name', { exact: true }).check();
         await page.getByRole('button', { name: 'Columns', exact: true }).click();
         const nameCell = longRow.locator('td[data-col="matterName"]');
-        await expect(nameCell).toContainText('Matter Name');
+        await expect(nameCell).toContainText('Matter name');
         await expect(nameCell.locator('a')).toHaveCount(0);
         await expect(nameCell.locator('.mn')).toHaveAttribute('title', w.longName);
         const name = nameCell.locator('.mn');

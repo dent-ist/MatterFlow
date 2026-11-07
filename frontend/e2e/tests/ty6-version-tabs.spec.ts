@@ -194,7 +194,7 @@ test.describe('Read-only states and the retire dialog (#400)', () => {
     await page.getByRole('button', { name: 'More version actions' }).click();
     await page.getByRole('menuitem', { name: 'Retire Version' }).click();
     const d = page.getByRole('dialog');
-    await expect(d).toContainText('Retire v2?');
+    await expect(d).toContainText('Retire v2');
     await expect(d.locator('[data-retire-impact]')).toHaveText(
       `Billing type ${s.token} and 4 other task types have no other published workflow. 2 open tasks keep running on v2. New tasks cannot use it.`,
     );

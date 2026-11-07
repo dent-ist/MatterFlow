@@ -439,7 +439,11 @@ test.describe('WP9 list columns', () => {
           'Projects list',
           ['Project Name', 'Matter', 'Client', 'Status'],
         ],
-        [`/clients/${w.client.clientId}?tab=matters`, 'Matters list', ['Matter', 'Name', 'Status']],
+        [
+          `/clients/${w.client.clientId}?tab=matters`,
+          'Matters list',
+          ['CM Number', 'Matter Name', 'Status'],
+        ],
       ] as const;
       for (const [url, region, heads] of lists) {
         await page.goto(url);

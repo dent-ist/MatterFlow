@@ -80,7 +80,7 @@ test.describe('Workflows columns (#376, #377)', () => {
     await expect(row('Old flow').locator('[data-task-types]')).toHaveText('0');
     // The date of the last publication in the viewer's zone, Month day (with the year), the instant as its tooltip.
     await expect(row('Recent flow').locator('[data-last-published]')).toHaveText(
-      /^[A-Z][a-z]{2} \d{1,2}, \d{4}$/,
+      /^\d{2}\/\d{2}(\/\d{4})?$/,
     );
     await expect(row('Draft only').locator('[data-last-published]')).toHaveText('–');
     await expect(row('Draft only').locator('[data-steps]')).toHaveText('–');

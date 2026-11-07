@@ -319,7 +319,7 @@ test.describe('#414: record pages', () => {
     await pressMenu(page, 'More actions', 'Deactivate');
     const confirmButton = await confirm(page, /^Deactivate/);
     await expect(page.getByRole('dialog').locator('[data-confirm-error]')).toContainText(
-      'could not save the workflow',
+      "Couldn't save the workflow",
     );
     await expect(confirmButton).toBeFocused();
     await page.unroute(new RegExp(`/api/v1/workflows/${id}$`));

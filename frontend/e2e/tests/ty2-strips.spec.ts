@@ -101,9 +101,9 @@ test.describe('tab counts (#364)', () => {
       .summary.active;
     const steps = ((await (await stepsResponse).json()) as { summary: { active: number } }).summary
       .active;
-    await expect(tab(page, 'task-types')).toContainText(`(${types})`);
-    await expect(tab(page, 'workflows')).toContainText(`(${workflows})`);
-    await expect(tab(page, 'steps')).toContainText(`(${steps})`);
+    await expect(tab(page, 'task-types')).toContainText(`(${types.toLocaleString('en-US')})`);
+    await expect(tab(page, 'workflows')).toContainText(`(${workflows.toLocaleString('en-US')})`);
+    await expect(tab(page, 'steps')).toContainText(`(${steps.toLocaleString('en-US')})`);
     await expect(tab(page, 'workflows')).toHaveAttribute(
       'aria-label',
       `Workflows, ${workflows} active`,
@@ -131,12 +131,12 @@ test.describe('tab counts (#364)', () => {
       .getByRole('button', { name: /^Deactivate/ })
       .click();
     const after = ((await (await reload).json()) as { summary: { active: number } }).summary.active;
-    await expect(tab(page, 'workflows')).toContainText(`(${after})`);
+    await expect(tab(page, 'workflows')).toContainText(`(${after.toLocaleString('en-US')})`);
     expect(countRequests).toBe(2);
 
     // The Task Types tab reports its own number the same way: one less, from its own list.
     await page.goto(`/admin/task-types?name=${token}`);
-    await expect(tab(page, 'task-types')).toContainText(/\(\d+\)/);
+    await expect(tab(page, 'task-types')).toContainText(/\([\d,]+\)/);
     const shown = Number(/\((\d+)\)/.exec((await tab(page, 'task-types').textContent()) ?? '')![1]);
     await page
       .locator('tbody tr:is([data-row], [data-record-id])')
@@ -148,14 +148,14 @@ test.describe('tab counts (#364)', () => {
       .getByRole('dialog')
       .getByRole('button', { name: /^Deactivate/ })
       .click();
-    await expect(tab(page, 'task-types')).toContainText(`(${shown - 1})`);
+    await expect(tab(page, 'task-types')).toContainText(`(${(shown - 1).toLocaleString('en-US')})`);
   });
 
   test('four sizes: no sideways scroll and axe 0 with the counts', async ({ page }) => {
     for (const size of SIZES) {
       await page.setViewportSize(size);
       await page.goto('/admin/task-types');
-      await expect(tab(page, 'workflows')).toContainText(/\(\d+\)/);
+      await expect(tab(page, 'workflows')).toContainText(/\([\d,]+\)/);
       await noSideScroll(page, `tabs at ${size.width}`);
       if (axeAvailable()) expect(await axeViolations(page), `counts at ${size.width}`).toEqual([]);
       await shot(page, 'p364-tab-counts');
@@ -172,8 +172,8 @@ test.describe('tab counts (#364)', () => {
     wf.on('request', (r) => asked.push(new URL(r.url()).pathname));
     await wf.goto('/admin/workflows');
     await expect(wf.locator('[role="tab"]')).toHaveCount(2);
-    await expect(tab(wf, 'workflows')).toContainText(/\(\d+\)/);
-    await expect(tab(wf, 'steps')).toContainText(/\(\d+\)/);
+    await expect(tab(wf, 'workflows')).toContainText(/\([\d,]+\)/);
+    await expect(tab(wf, 'steps')).toContainText(/\([\d,]+\)/);
     expect(asked.filter((p) => p === '/api/v1/task-types')).toEqual([]);
 
     const typeRole = await seed.role(['TaskType.Manage', 'Task.View'], 'Type only');

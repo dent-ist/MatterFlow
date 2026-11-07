@@ -72,7 +72,7 @@ test.describe('Asset Type designer: the whole lifecycle in the shared layout', (
     await drawer.getByRole('button', { name: 'v1' }).click();
     await expect(badge(page)).toHaveText('Published v1');
     await page.getByRole('button', { name: 'Retire Version' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Retire v1' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Retire v1', exact: true }).click();
     await expect(badge(page)).toHaveText('Retired v1');
     await expect(page.getByRole('button', { name: 'Open draft v2' })).toBeVisible();
     await shoot(page, 'assettype-retired', { w: 1366, h: 768 });

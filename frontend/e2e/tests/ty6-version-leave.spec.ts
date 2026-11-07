@@ -103,7 +103,7 @@ test.describe('Version editor: leaving a dirty draft (VP8, #398)', () => {
     await ask(page).getByRole('button', { name: 'Save draft and leave' }).click();
     await expect(page).toHaveURL(/versions/);
     await expect(ask(page)).toHaveCount(0);
-    await expect(page.locator('[data-summary]')).toContainText('We could not save the draft');
+    await expect(page.locator('[data-summary]')).toContainText("Couldn't save the draft");
     await expect(page.locator('[data-dirty]')).toBeVisible();
     await page.unroute(
       `**/api/v1/workflows/${world.wf.workflowDefinitionId}/versions/${world.draftId}`,
