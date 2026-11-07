@@ -9,6 +9,7 @@ namespace MatterFlow.UnitTests.Reports;
 /// only possible outcomes are a page, or a <see cref="ResultQueryException"/> that becomes a 400. Nothing else may escape (no 500), and no text typed by the caller
 /// may influence which rows another filter returns.
 /// </summary>
+[Trait("Suite", "ReportsSecurity")]
 public class ResultQueryHostileInputTests
 {
     private static ResultTable Sample()

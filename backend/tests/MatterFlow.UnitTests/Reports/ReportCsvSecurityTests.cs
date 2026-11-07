@@ -9,6 +9,7 @@ namespace MatterFlow.UnitTests.Reports;
 /// CSV safety of the export (issue #725, spec 12.3 and 16.3 g) beyond the writer's own tests: the formula corpus as a data file, every prefix, whitespace in
 /// front of a formula, quoting and embedded line breaks read back with an RFC 4180 reader, and the export equal to the grid for the same filter and sort.
 /// </summary>
+[Trait("Suite", "ReportsSecurity")]
 public class ReportCsvSecurityTests
 {
     private static ResultTable Table(ResultColumn[] columns, params object?[][] rows)

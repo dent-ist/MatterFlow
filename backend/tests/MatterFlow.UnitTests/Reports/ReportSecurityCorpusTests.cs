@@ -10,6 +10,7 @@ namespace MatterFlow.UnitTests.Reports;
 /// The security corpora of issue #725 (spec 16.3 a and b) as data files: the validator corpus (bypass attempts and inert look-alikes) and the injection values,
 /// run through the binder for every parameter type. The same injection values run through the real report login in the integration suite.
 /// </summary>
+[Trait("Suite", "ReportsSecurity")]
 public class ReportSecurityCorpusTests
 {
     private static readonly BuiltInContext Ctx = new(7, "Ann Example", new DateOnly(2026, 10, 22), new DateTime(2026, 10, 22, 14, 30, 0, DateTimeKind.Utc), [3, 5], 3, -240);
