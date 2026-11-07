@@ -1,0 +1,1118 @@
+{
+ "description": "Validator corpus (issue #725, spec 16.3 b): bypass attempts the SQL validator must refuse, and inert look-alikes it must accept. 'codes' lists the acceptable stable error codes (any one of them); 'valid' true means no error. Add a line here for every new bypass idea; SqlValidatorTests keeps the older in-code corpus.",
+ "entries": [
+  {
+   "id": "V001",
+   "category": "chaining",
+   "sql": "select 1; drop table dbo.Pod",
+   "valid": false,
+   "codes": [
+    "MULTIPLE_STATEMENTS"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V002",
+   "category": "chaining",
+   "sql": "SeLeCt 1;DrOp TaBlE dbo.Pod",
+   "valid": false,
+   "codes": [
+    "MULTIPLE_STATEMENTS"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V003",
+   "category": "chaining",
+   "sql": "SELECT 1\t;\r\n\tDELETE\tFROM\tdbo.Pod",
+   "valid": false,
+   "codes": [
+    "MULTIPLE_STATEMENTS"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V004",
+   "category": "chaining",
+   "sql": "SELECT 1 /* c */ ; /* d */ DROP TABLE dbo.Pod",
+   "valid": false,
+   "codes": [
+    "MULTIPLE_STATEMENTS"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V005",
+   "category": "chaining",
+   "sql": "SELECT 1 -- c\n; DROP TABLE dbo.Pod",
+   "valid": false,
+   "codes": [
+    "MULTIPLE_STATEMENTS"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V006",
+   "category": "chaining",
+   "sql": "SELECT 'it''s'; DROP TABLE dbo.Pod; --",
+   "valid": false,
+   "codes": [
+    "MULTIPLE_STATEMENTS"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V007",
+   "category": "chaining",
+   "sql": "SELECT N'x'; EXEC('DROP TABLE dbo.Pod')",
+   "valid": false,
+   "codes": [
+    "MULTIPLE_STATEMENTS"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V008",
+   "category": "chaining",
+   "sql": "SELECT 1 FROM dbo.Pod WHERE Name = 'x'; DROP TABLE dbo.Pod; --'",
+   "valid": false,
+   "codes": [
+    "MULTIPLE_STATEMENTS"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V009",
+   "category": "chaining",
+   "sql": "SELECT 1;;DROP TABLE dbo.Pod",
+   "valid": false,
+   "codes": [
+    "MULTIPLE_STATEMENTS",
+    "SYNTAX_ERROR"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V010",
+   "category": "chaining",
+   "sql": "SELECT :X; DROP TABLE dbo.Pod",
+   "valid": false,
+   "codes": [
+    "MULTIPLE_STATEMENTS"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V011",
+   "category": "chaining",
+   "sql": "SELECT * FROM dbo.Pod WHERE PodId IN :L; DROP TABLE dbo.Pod",
+   "valid": false,
+   "codes": [
+    "MULTIPLE_STATEMENTS",
+    "SYNTAX_ERROR"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V012",
+   "category": "chaining",
+   "sql": "WITH c AS (SELECT 1 a) SELECT * FROM c; DROP TABLE dbo.Pod",
+   "valid": false,
+   "codes": [
+    "MULTIPLE_STATEMENTS"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V013",
+   "category": "chaining",
+   "sql": "SELECT 1 UNION SELECT 2; INSERT dbo.Pod (Name) VALUES (N'x')",
+   "valid": false,
+   "codes": [
+    "MULTIPLE_STATEMENTS"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V014",
+   "category": "chaining",
+   "sql": "SELECT 1\nGO\nDROP TABLE dbo.Pod",
+   "valid": false,
+   "codes": [
+    "MULTIPLE_BATCHES"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V015",
+   "category": "chaining",
+   "sql": "SELECT 1\ngo\nSELECT 2",
+   "valid": false,
+   "codes": [
+    "MULTIPLE_BATCHES"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V016",
+   "category": "chaining",
+   "sql": "SELECT 1\nGO 5",
+   "valid": false,
+   "codes": [
+    "MULTIPLE_BATCHES",
+    "SYNTAX_ERROR"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V017",
+   "category": "chaining",
+   "sql": "GO\nSELECT 1",
+   "valid": false,
+   "codes": [
+    "MULTIPLE_BATCHES",
+    "SYNTAX_ERROR",
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V018",
+   "category": "chaining",
+   "sql": "SELECT 1 SELECT 2 SELECT 3",
+   "valid": false,
+   "codes": [
+    "MULTIPLE_STATEMENTS"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V019",
+   "category": "chaining",
+   "sql": "SELECT 1 IF 1 = 1 DROP TABLE dbo.Pod",
+   "valid": false,
+   "codes": [
+    "MULTIPLE_STATEMENTS"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V020",
+   "category": "chaining",
+   "sql": "(SELECT 1) ; (SELECT 2)",
+   "valid": false,
+   "codes": [
+    "MULTIPLE_STATEMENTS"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V021",
+   "category": "not-a-query",
+   "sql": "EXECUTE sp_executesql N'SELECT 1'",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V022",
+   "category": "not-a-query",
+   "sql": "EXEC sp_configure 'xp_cmdshell', 1; RECONFIGURE",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V023",
+   "category": "not-a-query",
+   "sql": "RECONFIGURE",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V024",
+   "category": "not-a-query",
+   "sql": "EXECUTE AS LOGIN = 'sa'",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V025",
+   "category": "not-a-query",
+   "sql": "REVERT",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V026",
+   "category": "not-a-query",
+   "sql": "ALTER LOGIN sa WITH PASSWORD = 'x'",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V027",
+   "category": "not-a-query",
+   "sql": "CREATE LOGIN evil WITH PASSWORD = 'x'",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V028",
+   "category": "not-a-query",
+   "sql": "ALTER SERVER ROLE sysadmin ADD MEMBER evil",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V029",
+   "category": "not-a-query",
+   "sql": "ALTER ROLE db_owner ADD MEMBER evil",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V030",
+   "category": "not-a-query",
+   "sql": "CREATE USER evil FOR LOGIN evil",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V031",
+   "category": "not-a-query",
+   "sql": "CREATE PROCEDURE dbo.p AS SELECT 1",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V032",
+   "category": "not-a-query",
+   "sql": "CREATE FUNCTION dbo.f() RETURNS int AS BEGIN RETURN 1 END",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V033",
+   "category": "not-a-query",
+   "sql": "CREATE TRIGGER t ON dbo.Pod AFTER INSERT AS SELECT 1",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V034",
+   "category": "not-a-query",
+   "sql": "CREATE INDEX ix ON dbo.Pod (Name)",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V035",
+   "category": "not-a-query",
+   "sql": "DROP DATABASE MatterFlow",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V036",
+   "category": "not-a-query",
+   "sql": "IF 1 = 1 SELECT 1",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V037",
+   "category": "not-a-query",
+   "sql": "WHILE 1 = 1 SELECT 1",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V038",
+   "category": "not-a-query",
+   "sql": "BEGIN SELECT 1 END",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V039",
+   "category": "not-a-query",
+   "sql": "RAISERROR('x', 16, 1)",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V040",
+   "category": "not-a-query",
+   "sql": "INSERT dbo.Pod (Name) EXEC sp_who",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V041",
+   "category": "not-a-query",
+   "sql": "UPDATE STATISTICS dbo.Pod",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V042",
+   "category": "not-a-query",
+   "sql": "CHECKPOINT",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V043",
+   "category": "not-a-query",
+   "sql": "SET ROWCOUNT 1; SELECT 1",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V044",
+   "category": "not-a-query",
+   "sql": ";WITH c AS (SELECT 1 a) SELECT * FROM c",
+   "valid": false,
+   "codes": [
+    "MUST_START_WITH_SELECT"
+   ],
+   "note": "a leading semicolon is not a query start"
+  },
+  {
+   "id": "V045",
+   "category": "not-a-query",
+   "sql": "SELECT 1 WHERE 1 = (EXEC sp_who)",
+   "valid": false,
+   "codes": [
+    "SYNTAX_ERROR"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V046",
+   "category": "not-a-query",
+   "sql": "WITH c AS (SELECT 1 a) SELECT * INTO dbo.Copy FROM c",
+   "valid": false,
+   "codes": [
+    "SELECT_INTO"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V047",
+   "category": "not-a-query",
+   "sql": "SELECT 1 AS a INTO ##global",
+   "valid": false,
+   "codes": [
+    "SELECT_INTO"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V048",
+   "category": "not-a-query",
+   "sql": "SELECT TOP 1 * INTO [dbo].[Copy] FROM dbo.Pod",
+   "valid": false,
+   "codes": [
+    "SELECT_INTO"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V049",
+   "category": "lexical",
+   "sql": "SELECT 1 \u037e DROP TABLE dbo.Pod",
+   "valid": false,
+   "codes": [
+    "SYNTAX_ERROR",
+    "MULTIPLE_STATEMENTS"
+   ],
+   "note": "Greek question mark looks like a semicolon"
+  },
+  {
+   "id": "V050",
+   "category": "lexical",
+   "sql": "SELECT 1 \ufe54 DROP TABLE dbo.Pod",
+   "valid": false,
+   "codes": [
+    "SYNTAX_ERROR",
+    "MULTIPLE_STATEMENTS"
+   ],
+   "note": "small semicolon"
+  },
+  {
+   "id": "V051",
+   "category": "lexical",
+   "sql": "SELECT 1\u0000; DROP TABLE dbo.Pod",
+   "valid": false,
+   "codes": [
+    "SYNTAX_ERROR",
+    "MULTIPLE_STATEMENTS"
+   ],
+   "note": "NUL byte"
+  },
+  {
+   "id": "V052",
+   "category": "lexical",
+   "sql": "SELECT 1 /* a */ */ ; DROP TABLE dbo.Pod",
+   "valid": false,
+   "codes": [
+    "SYNTAX_ERROR",
+    "MULTIPLE_STATEMENTS"
+   ],
+   "note": "stray comment end"
+  },
+  {
+   "id": "V053",
+   "category": "lexical",
+   "sql": "SELECT 1 /* a /* nested */ ; DROP TABLE dbo.Pod",
+   "valid": false,
+   "codes": [
+    "UNTERMINATED_COMMENT"
+   ],
+   "note": "nesting: one level still open"
+  },
+  {
+   "id": "V054",
+   "category": "lexical",
+   "sql": "SELECT N'open ; DROP TABLE dbo.Pod",
+   "valid": false,
+   "codes": [
+    "UNTERMINATED_STRING"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V055",
+   "category": "lexical",
+   "sql": "SELECT [open ; DROP TABLE dbo.Pod",
+   "valid": false,
+   "codes": [
+    "UNTERMINATED_IDENTIFIER"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V056",
+   "category": "lexical",
+   "sql": "SELECT \"open ; DROP TABLE dbo.Pod",
+   "valid": false,
+   "codes": [
+    "UNTERMINATED_IDENTIFIER",
+    "UNTERMINATED_STRING"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V057",
+   "category": "lexical",
+   "sql": "SELECT 1 WHERE a = :bad name",
+   "valid": false,
+   "codes": [
+    "SYNTAX_ERROR",
+    "PLACEHOLDER_NAME_INVALID"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V058",
+   "category": "lexical",
+   "sql": "SELECT 1 WHERE a = :",
+   "valid": false,
+   "codes": [
+    "PLACEHOLDER_NAME_INVALID",
+    "SYNTAX_ERROR"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V059",
+   "category": "lexical",
+   "sql": "SELECT @@SPID",
+   "valid": false,
+   "codes": [
+    "AT_SIGN_NOT_ALLOWED",
+    "VARIABLE_NOT_ALLOWED"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V060",
+   "category": "lexical",
+   "sql": "SELECT 1 WHERE a = @p_X OR 1 = 1",
+   "valid": false,
+   "codes": [
+    "AT_SIGN_NOT_ALLOWED"
+   ],
+   "note": "an author cannot name the engine parameter directly"
+  },
+  {
+   "id": "V061",
+   "category": "lexical",
+   "sql": "SELECT 1 AS @a",
+   "valid": false,
+   "codes": [
+    "AT_SIGN_NOT_ALLOWED"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V062",
+   "category": "lexical",
+   "sql": "SELECT * FROM @t",
+   "valid": false,
+   "codes": [
+    "AT_SIGN_NOT_ALLOWED"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V063",
+   "category": "external",
+   "sql": "SELECT * FROM openrowset('SQLNCLI','Server=x;','SELECT 1')",
+   "valid": false,
+   "codes": [
+    "EXTERNAL_DATA_ACCESS"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V064",
+   "category": "external",
+   "sql": "SELECT * FROM OpenQuery ( srv , 'select 1' )",
+   "valid": false,
+   "codes": [
+    "EXTERNAL_DATA_ACCESS"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V065",
+   "category": "external",
+   "sql": "SELECT * FROM OPENROWSET(BULK N'C:\\x.txt', SINGLE_BLOB) t",
+   "valid": false,
+   "codes": [
+    "EXTERNAL_DATA_ACCESS"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V066",
+   "category": "external",
+   "sql": "SELECT * FROM dbo.Pod p CROSS APPLY OPENJSON(p.Name) j JOIN OPENROWSET('a','b','c') r ON 1 = 1",
+   "valid": false,
+   "codes": [
+    "EXTERNAL_DATA_ACCESS"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V067",
+   "category": "external",
+   "sql": "SELECT * FROM [master].[sys].[databases]",
+   "valid": false,
+   "codes": [
+    "OTHER_DATABASE"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V068",
+   "category": "external",
+   "sql": "SELECT * FROM \"msdb\".\"dbo\".\"sysjobs\"",
+   "valid": false,
+   "codes": [
+    "OTHER_DATABASE"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V069",
+   "category": "external",
+   "sql": "SELECT * FROM master..spt_values",
+   "valid": false,
+   "codes": [
+    "OTHER_DATABASE"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V070",
+   "category": "external",
+   "sql": "SELECT * FROM OtherDb.dbo.Pod AS p JOIN dbo.Task t ON t.PodId = p.PodId",
+   "valid": false,
+   "codes": [
+    "OTHER_DATABASE"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V071",
+   "category": "external",
+   "sql": "SELECT * FROM srv.db..t",
+   "valid": false,
+   "codes": [
+    "LINKED_SERVER"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V072",
+   "category": "external",
+   "sql": "SELECT * FROM srv...t",
+   "valid": false,
+   "codes": [
+    "LINKED_SERVER",
+    "SYNTAX_ERROR"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V073",
+   "category": "external",
+   "sql": "WITH c AS (SELECT * FROM master.sys.sql_logins) SELECT * FROM c",
+   "valid": false,
+   "codes": [
+    "OTHER_DATABASE"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V074",
+   "category": "external",
+   "sql": "SELECT * FROM dbo.Pod WHERE PodId IN (SELECT PodId FROM tempdb.dbo.x)",
+   "valid": false,
+   "codes": [
+    "OTHER_DATABASE"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V075",
+   "category": "external",
+   "sql": "SELECT * FROM [dbo].[sp_who]",
+   "valid": false,
+   "codes": [
+    "SYSTEM_PROCEDURE"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V076",
+   "category": "external",
+   "sql": "SELECT * FROM \"dbo\".\"xp_dirtree\"",
+   "valid": false,
+   "codes": [
+    "SYSTEM_PROCEDURE"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V077",
+   "category": "external",
+   "sql": "SELECT [dbo].[fn_dblog](1, 2)",
+   "valid": false,
+   "codes": [
+    "SYSTEM_FUNCTION"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V078",
+   "category": "external",
+   "sql": "SELECT * FROM ::fn_virtualfilestats(NULL, NULL)",
+   "valid": false,
+   "codes": [
+    "SYSTEM_FUNCTION",
+    "SYNTAX_ERROR"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V079",
+   "category": "external",
+   "sql": "SELECT SP_HELP(1)",
+   "valid": false,
+   "codes": [
+    "SYSTEM_PROCEDURE"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V080",
+   "category": "external",
+   "sql": "SELECT * FROM sys.fn_trace_gettable('c:\\x.trc', 1)",
+   "valid": false,
+   "codes": [
+    "SYSTEM_FUNCTION"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V081",
+   "category": "shape",
+   "sql": "SELECT 1 a UNION ALL SELECT 2 FOR XML PATH('')",
+   "valid": false,
+   "codes": [
+    "FOR_CLAUSE"
+   ],
+   "note": "FOR on a UNION"
+  },
+  {
+   "id": "V082",
+   "category": "shape",
+   "sql": "SELECT 1 a UNION SELECT 2 ORDER BY 1 FOR JSON AUTO",
+   "valid": false,
+   "codes": [
+    "FOR_CLAUSE"
+   ],
+   "note": "FOR on an ordered UNION"
+  },
+  {
+   "id": "V083",
+   "category": "shape",
+   "sql": "(SELECT 1 a) FOR XML RAW",
+   "valid": false,
+   "codes": [
+    "FOR_CLAUSE"
+   ],
+   "note": "FOR on a parenthesised query"
+  },
+  {
+   "id": "V084",
+   "category": "shape",
+   "sql": "WITH c AS (SELECT 1 a) SELECT * FROM c FOR JSON PATH",
+   "valid": false,
+   "codes": [
+    "FOR_CLAUSE"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V085",
+   "category": "shape",
+   "sql": "SELECT (SELECT Name FROM dbo.Pod FOR XML PATH('')) AS x",
+   "valid": false,
+   "codes": [
+    "FOR_CLAUSE"
+   ],
+   "note": "the string-concatenation idiom is refused on purpose"
+  },
+  {
+   "id": "V086",
+   "category": "shape",
+   "sql": "SELECT * FROM dbo.Pod OPTION (LABEL = 'x')",
+   "valid": false,
+   "codes": [
+    "QUERY_HINT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V087",
+   "category": "shape",
+   "sql": "SELECT * FROM dbo.Pod OPTION (MAXDOP 1, KEEPFIXED PLAN)",
+   "valid": false,
+   "codes": [
+    "QUERY_HINT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V088",
+   "category": "shape",
+   "sql": "SELECT * FROM dbo.Pod WITH (TABLOCK)",
+   "valid": false,
+   "codes": [
+    "TABLE_HINT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V089",
+   "category": "shape",
+   "sql": "SELECT * FROM dbo.Pod WITH (PAGLOCK)",
+   "valid": false,
+   "codes": [
+    "TABLE_HINT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V090",
+   "category": "shape",
+   "sql": "SELECT * FROM dbo.Pod WITH (READPAST, UPDLOCK)",
+   "valid": false,
+   "codes": [
+    "TABLE_HINT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V091",
+   "category": "shape",
+   "sql": "SELECT * FROM dbo.Pod WITH (SERIALIZABLE)",
+   "valid": false,
+   "codes": [
+    "TABLE_HINT"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V092",
+   "category": "shape",
+   "sql": "SELECT NEXT VALUE FOR dbo.S OVER (ORDER BY PodId) FROM dbo.Pod",
+   "valid": false,
+   "codes": [
+    "NEXT_VALUE_FOR"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V093",
+   "category": "shape",
+   "sql": "WITH c AS (SELECT NEXT VALUE FOR dbo.TaskNumberSeq AS n) SELECT n FROM c",
+   "valid": false,
+   "codes": [
+    "NEXT_VALUE_FOR"
+   ],
+   "note": ""
+  },
+  {
+   "id": "V094",
+   "category": "inert",
+   "sql": "SELECT 1 -- ; DROP TABLE dbo.Pod",
+   "valid": true,
+   "codes": [],
+   "note": "an attack in a line comment"
+  },
+  {
+   "id": "V095",
+   "category": "inert",
+   "sql": "SELECT 1 /* ; DROP TABLE dbo.Pod */",
+   "valid": true,
+   "codes": [],
+   "note": "an attack in a block comment"
+  },
+  {
+   "id": "V096",
+   "category": "inert",
+   "sql": "SELECT N'; DROP TABLE dbo.Pod; --' AS s",
+   "valid": true,
+   "codes": [],
+   "note": "an attack in a string"
+  },
+  {
+   "id": "V097",
+   "category": "inert",
+   "sql": "SELECT 1 AS [; DROP TABLE dbo.Pod]",
+   "valid": true,
+   "codes": [],
+   "note": "an attack in a bracket identifier"
+  },
+  {
+   "id": "V098",
+   "category": "inert",
+   "sql": "SELECT 1 AS \"x; DROP TABLE y\"",
+   "valid": true,
+   "codes": [],
+   "note": "an attack in a quoted identifier"
+  },
+  {
+   "id": "V099",
+   "category": "inert",
+   "sql": "SELECT 1 /*!50000 ; DROP TABLE x */",
+   "valid": true,
+   "codes": [],
+   "note": "a MySQL-style comment is only a comment in T-SQL"
+  },
+  {
+   "id": "V100",
+   "category": "inert",
+   "sql": "SELECT 1 /* outer /* inner */ ; DROP TABLE dbo.Pod */",
+   "valid": true,
+   "codes": [],
+   "note": "T-SQL comments nest: all of it is one comment"
+  },
+  {
+   "id": "V101",
+   "category": "inert",
+   "sql": "SELECT '/*' AS a, '*/' AS b",
+   "valid": true,
+   "codes": [],
+   "note": "comment marks inside strings"
+  },
+  {
+   "id": "V102",
+   "category": "inert",
+   "sql": "SELECT 1 AS [a]]b]",
+   "valid": true,
+   "codes": [],
+   "note": "an escaped closing bracket"
+  },
+  {
+   "id": "V103",
+   "category": "inert",
+   "sql": "SELECT N'it''s; DROP TABLE x' AS s",
+   "valid": true,
+   "codes": [],
+   "note": "a doubled quote stays inside the string"
+  },
+  {
+   "id": "V104",
+   "category": "inert",
+   "sql": "SELECT N'a\uff07; DROP TABLE x' AS s",
+   "valid": true,
+   "codes": [],
+   "note": "a fullwidth apostrophe is just a character"
+  },
+  {
+   "id": "V105",
+   "category": "inert",
+   "sql": "SELECT 1 WHERE 'a' = 'a\u2019 OR \u20191\u2019=\u20191'",
+   "valid": true,
+   "codes": [],
+   "note": "curly quotes inside a string"
+  },
+  {
+   "id": "V106",
+   "category": "inert",
+   "sql": "SELECT 'GO' AS g, 'EXEC xp_cmdshell' AS x, 'OPENROWSET' AS y",
+   "valid": true,
+   "codes": [],
+   "note": "keywords inside strings"
+  },
+  {
+   "id": "V107",
+   "category": "inert",
+   "sql": "SELECT [EXEC] FROM (SELECT 1 AS [EXEC]) t",
+   "valid": true,
+   "codes": [],
+   "note": "a keyword as a bracketed column name"
+  },
+  {
+   "id": "V108",
+   "category": "inert",
+   "sql": "SELECT 1 AS [GO]",
+   "valid": true,
+   "codes": [],
+   "note": "GO as a column name"
+  },
+  {
+   "id": "V109",
+   "category": "inert",
+   "sql": "SELECT '@@VERSION' AS v, '@x' AS x, [@y] FROM (SELECT 1 AS [@y]) t",
+   "valid": true,
+   "codes": [],
+   "note": "at signs in strings and brackets"
+  },
+  {
+   "id": "V110",
+   "category": "inert",
+   "sql": "SELECT 1 WHERE 'x' = ':X' AND '12:30' <> ':'",
+   "valid": true,
+   "codes": [],
+   "note": "colons in strings are not placeholders"
+  },
+  {
+   "id": "V111",
+   "category": "login-decides",
+   "sql": "SELECT name FROM sys.sql_logins",
+   "valid": true,
+   "codes": [],
+   "note": "the validator allows catalog views; the login's rights decide"
+  },
+  {
+   "id": "V112",
+   "category": "login-decides",
+   "sql": "SELECT * FROM sys.dm_exec_sessions",
+   "valid": true,
+   "codes": [],
+   "note": "server state: the login has no VIEW SERVER STATE"
+  },
+  {
+   "id": "V113",
+   "category": "login-decides",
+   "sql": "SELECT SUSER_SNAME() AS who, ORIGINAL_LOGIN() AS orig, DB_NAME() AS db",
+   "valid": true,
+   "codes": [],
+   "note": "identity functions"
+  },
+  {
+   "id": "V114",
+   "category": "login-decides",
+   "sql": "SELECT * FROM STRING_SPLIT(N'a,b', N',')",
+   "valid": true,
+   "codes": [],
+   "note": ""
+  }
+ ]
+}

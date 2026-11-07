@@ -94,6 +94,9 @@ public static class ResultQuery
         filters ??= [];
         if (filters.Count > MaxFilters)
             throw new ResultQueryException($"Use at most {MaxFilters} filters.");
+        // A null entry or a filter without a column cannot mean anything: refuse it here so it is a 400 and never an unhandled error further down.
+        if (filters.Any(f => f is null || string.IsNullOrWhiteSpace(f.Column)))
+            throw new ResultQueryException("Each filter needs a column and an operator.");
         return filters;
     }
 
@@ -176,9 +179,15 @@ public static class ResultQuery
         return indexes;
     }
 
+    /// <summary>
+    /// The key of one filter and sort combination. Every text is written with its length in front, so a value that contains the separators (a colon, a bar)
+    /// can never make two different questions produce the same key and be served each other's cached order.
+    /// </summary>
     private static string CacheKey(IReadOnlyList<ResultFilter> filters, IReadOnlyList<ResultSort> sorts) =>
-        string.Join("|", sorts.Select(s => s.Column.ToUpperInvariant() + (s.Descending ? "-" : "+")))
-        + "#" + string.Join("|", filters.Select(f => $"{f.Column.ToUpperInvariant()}:{f.Op}:{f.Value}:{f.Value2}"));
+        string.Concat(sorts.Select(s => "S" + Part(s.Column.ToUpperInvariant()) + (s.Descending ? "-" : "+")))
+        + "#" + string.Concat(filters.Select(f => "F" + Part(f.Column.ToUpperInvariant()) + Part(f.Op) + Part(f.Value) + Part(f.Value2)));
+
+    private static string Part(string? text) => text is null ? "~" : text.Length.ToString(CultureInfo.InvariantCulture) + ":" + text;
 
     // ---- filters ----
 

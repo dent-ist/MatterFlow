@@ -78,10 +78,31 @@ public static class ReportCsvWriter
         _ => value.ToString() ?? "",
     };
 
+    /// <summary>
+    /// True when a spreadsheet could take the text for a formula: it starts with a tab or carriage return, or its first character that is not white space is
+    /// <c>=</c>, <c>+</c>, <c>-</c> or <c>@</c> (spec 12.3), so leading spaces do not hide a formula.
+    /// </summary>
+    internal static bool StartsLikeAFormula(string text)
+    {
+        if (text.Length == 0)
+            return false;
+        if (text[0] is '\t' or '\r')
+            return true;
+        foreach (var ch in text)
+        {
+            if (Array.IndexOf(FormulaStarts, ch) >= 0 && !char.IsWhiteSpace(ch))
+                return true;
+            if (!char.IsWhiteSpace(ch))
+                return false;
+        }
+
+        return false;
+    }
+
     /// <summary>One cell as written: the formula guard (text only), then RFC 4180 quoting where the text has a comma, quote, CR or LF.</summary>
     public static string Cell(string text, bool formulaGuard)
     {
-        if (formulaGuard && text.Length > 0 && Array.IndexOf(FormulaStarts, text[0]) >= 0)
+        if (formulaGuard && StartsLikeAFormula(text))
             text = "'" + text;
         return text.IndexOfAny([',', '"', '\r', '\n']) >= 0 ? "\"" + text.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"" : text;
     }

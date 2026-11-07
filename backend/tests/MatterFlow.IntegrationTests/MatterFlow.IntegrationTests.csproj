@@ -13,6 +13,10 @@
     <PackageReference Include="Testcontainers.MsSql" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Security corpora of the Reports suite (issue #725), linked from the unit tests and never forked. -->
+    <None Include="..\MatterFlow.UnitTests\Reports\Corpus\*.json" Link="Reports\Corpus\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <!-- Email fixtures of the Outlook drag-and-drop spike, linked and never forked. -->
     <None Include="..\..\..\tools\spike-outlook-dnd\samples\*.eml" Link="Intake\samples\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

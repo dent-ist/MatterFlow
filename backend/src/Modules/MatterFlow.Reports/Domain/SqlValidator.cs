@@ -208,12 +208,33 @@ public static class SqlValidator
 
         private void Add(string code, string message, TSqlFragment at) => errors.Add(positions.Error(code, message, at.StartOffset));
 
+        private const string ForClauseMessage = "FOR XML, FOR JSON, FOR BROWSE and FOR UPDATE are not allowed: reports return a plain table.";
+
         public override void ExplicitVisit(QuerySpecification node)
         {
             if (node.ForClause is not null)
-                Add(SqlValidationCodes.ForClause, "FOR XML, FOR JSON, FOR BROWSE and FOR UPDATE are not allowed: reports return a plain table.", node.ForClause);
+                Add(SqlValidationCodes.ForClause, ForClauseMessage, node.ForClause);
             base.ExplicitVisit(node);
         }
+
+        // A FOR clause after a UNION / INTERSECT / EXCEPT or after a parenthesised query hangs on these nodes, not on a QuerySpecification.
+        public override void ExplicitVisit(BinaryQueryExpression node)
+        {
+            if (node.ForClause is not null)
+                Add(SqlValidationCodes.ForClause, ForClauseMessage, node.ForClause);
+            base.ExplicitVisit(node);
+        }
+
+        public override void ExplicitVisit(QueryParenthesisExpression node)
+        {
+            if (node.ForClause is not null)
+                Add(SqlValidationCodes.ForClause, ForClauseMessage, node.ForClause);
+            base.ExplicitVisit(node);
+        }
+
+        // The legacy "FROM ::fn_name(...)" form of a system table function names the function as a plain identifier (BuiltInFunctionTableReference), so the fn_ check on
+        // schema object names never sees it. Functions such as STRING_SPLIT are a different node (GlobalFunctionTableReference) and stay allowed.
+        public override void ExplicitVisit(BuiltInFunctionTableReference node) => Add(SqlValidationCodes.SystemFunction, "System table functions (::fn_name) are not allowed.", node);
 
         public override void ExplicitVisit(SelectSetVariable node)
         {

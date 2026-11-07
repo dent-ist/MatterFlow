@@ -38,6 +38,10 @@
     <None Include="..\..\..\contracts\form-rules.vectors.json" Link="Configuration\Forms\form-rules.vectors.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Security corpora of the Reports suite (issue #725): data files, also linked into the integration tests. -->
+    <None Include="Reports\Corpus\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <!-- Email fixtures of the Outlook drag-and-drop spike, linked and never forked. -->
     <None Include="..\..\..\tools\spike-outlook-dnd\samples\*.eml" Link="Intake\samples\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
