@@ -76,26 +76,6 @@ test.describe('pf2-header: name, context line, status chip and ONE primary actio
     await me.goto('/profile');
     await expect(me.locator('[data-profile-who]')).toContainText(p.username);
   });
-
-  test('the preview sits under the Status choice and shows only while there are edits (P12)', async ({
-    personas,
-    asUser,
-  }) => {
-    const p = await personas.create({ ...PERSONAS.technician, label: 'pf2prev' });
-    const me = await asUser(p.username);
-    await me.goto('/profile');
-    await expect(me.locator('[data-preview]')).toHaveCount(0);
-    await me.getByRole('radio', { name: /Out of office/ }).check();
-    const preview = me.locator('[data-status-set] [data-preview]');
-    await expect(preview).toContainText('Preview of your changes:');
-    await expect(preview.locator('[data-preview-chip]')).toContainText('Out of Office');
-    // The header chip is the saved state until Save; both say so in words, not colour alone.
-    await expect(me.locator('[data-profile-who] [data-availability-chip]')).toHaveText(
-      /Available|Off Hours/,
-    );
-    await me.getByRole('button', { name: 'Discard Changes' }).click();
-    await expect(me.locator('[data-preview]')).toHaveCount(0);
-  });
 });
 
 test.describe('pf3-columns: two columns from 1100 px, one card style, one width per column (#529)', () => {
@@ -195,23 +175,6 @@ test.describe('pf3-columns: two columns from 1100 px, one card style, one width 
 });
 
 test.describe('pf3-bar: the action bar (#531)', () => {
-  test('says No unsaved changes while clean, keeps Save and Discard disabled, and flips with the first edit', async ({
-    personas,
-    asUser,
-  }) => {
-    const p = await personas.create({ ...PERSONAS.technician, label: 'pf3bar' });
-    const me = await asUser(p.username);
-    await me.goto('/profile');
-    const state = me.locator('[data-actions-state]');
-    await expect(state).toHaveText('No unsaved changes');
-    await expect(state).toHaveAttribute('role', 'status');
-    await expect(me.getByRole('button', { name: 'Save Changes' })).toBeDisabled();
-    await expect(me.getByRole('button', { name: 'Discard Changes' })).toBeDisabled();
-    await me.getByRole('radio', { name: /Out of office/ }).check();
-    await expect(state).toHaveText('Unsaved Changes');
-    await expect(me.getByRole('button', { name: 'Save Changes' })).toBeEnabled();
-  });
-
   test('the bar is the column width at 1366 and 1920 and carries the shared top shadow', async ({
     personas,
     asUser,

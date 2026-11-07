@@ -298,7 +298,7 @@ test.describe('Keyboard: skip link, rows and sequences (#181)', () => {
     ]) {
       await expect(help).toContainText(text);
     }
-    const toggle = page.getByRole('switch', { name: /Keyboard shortcuts/ });
+    const toggle = page.getByRole('switch', { name: /Keyboard Shortcuts/ });
     await expect(toggle).toBeChecked();
     await shot(page, 'help-switch-on-1366');
     await toggle.uncheck();
@@ -331,7 +331,7 @@ test.describe('Keyboard: skip link, rows and sequences (#181)', () => {
     await page.getByTestId('user-menu').click();
     await page.getByRole('menuitem', { name: 'Keyboard shortcuts' }).click();
     await expect(help).toBeVisible();
-    await page.getByRole('switch', { name: /Keyboard shortcuts/ }).check();
+    await page.getByRole('switch', { name: /Keyboard Shortcuts/ }).check();
     await page.keyboard.press('Escape');
     await expect(help).toBeHidden();
     await titles(page).first().focus();

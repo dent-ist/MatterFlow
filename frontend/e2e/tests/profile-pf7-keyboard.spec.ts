@@ -170,7 +170,7 @@ test.describe('pf7-keyboard: keyboard-only flows on My profile (#582)', () => {
     await me.goto('/profile');
     await expect(me.locator('[data-card="work-hours"]')).toBeVisible();
     await press(me, 'Tab');
-    await expect(me.getByRole('link', { name: /Skip to main/ })).toBeFocused();
+    await expect(me.getByRole('link', { name: /Skip to Main/ })).toBeFocused();
     await press(me, 'Enter');
     const inMain = await me.evaluate(
       () => !!document.activeElement?.closest('main') || document.activeElement?.id === 'mf-main',
@@ -236,7 +236,7 @@ test.describe('pf7-keyboard: keyboard-only flows on My profile (#582)', () => {
     await me.goto('/profile');
     await me.getByRole('button', { name: /account menu/ }).click();
     await me.getByRole('menuitem', { name: 'Keyboard shortcuts' }).click();
-    const dialog = me.getByRole('dialog', { name: /Keyboard shortcuts/ });
+    const dialog = me.getByRole('dialog', { name: /Keyboard Shortcuts/ });
     await expect(dialog).toBeVisible();
     const rows = (
       await dialog.locator('[data-shortcut-help] h3, [data-shortcut-help] .sh__row').allInnerTexts()

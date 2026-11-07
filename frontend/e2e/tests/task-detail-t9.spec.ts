@@ -611,7 +611,7 @@ test.describe('T9 #327: shortcuts C, A and S behind the "Keyboard shortcuts" swi
     await expect(help).toContainText('On a task: open the Assignee menu');
     await expect(help).toContainText('On a task: open the Status menu');
     await shot(page, 'shortcut-help-switch-on');
-    const toggle = page.getByRole('switch', { name: /Keyboard shortcuts/ });
+    const toggle = page.getByRole('switch', { name: /Keyboard Shortcuts/ });
     await expect(toggle).toBeChecked();
     await toggle.uncheck();
     await shot(page, 'shortcut-help-switch-off');
@@ -640,7 +640,7 @@ test.describe('T9 #327: shortcuts C, A and S behind the "Keyboard shortcuts" swi
     await expect(page.locator('[data-option]')).toHaveCount(0);
     await page.getByTestId('user-menu').click();
     await page.getByRole('menuitem', { name: 'Keyboard shortcuts' }).click();
-    await page.getByRole('switch', { name: /Keyboard shortcuts/ }).check();
+    await page.getByRole('switch', { name: /Keyboard Shortcuts/ }).check();
     await page.keyboard.press('Escape');
     await expect(help).toBeHidden();
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());

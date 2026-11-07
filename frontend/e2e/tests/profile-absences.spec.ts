@@ -90,7 +90,7 @@ test.describe('My profile: several Out of office entries', () => {
     await expect(upcoming).toHaveCount(2);
     await expect(upcoming.first()).toContainText('Vacation');
     await expect(upcoming.first()).toContainText('Covering: Dana');
-    await expect(upcoming.first()).toContainText(/\d\d\/\d\d to \d\d\/\d\d/);
+    await expect(upcoming.first()).toContainText(/\d\d\/\d\d\s+to \d\d\/\d\d/);
 
     // Edit the second entry: the note.
     await upcoming.nth(1).locator('[data-absence-edit]').click();

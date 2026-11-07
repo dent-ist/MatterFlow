@@ -492,7 +492,7 @@ test.describe('Column header menu (#207)', () => {
     await expect(help).toContainText('Open the column menu');
     await expect(help).toContainText('Shift + F10');
     await shot(page, 'help-column-menu-1366x768');
-    await page.getByRole('switch', { name: /Keyboard shortcuts/ }).uncheck();
+    await page.getByRole('switch', { name: /Keyboard Shortcuts/ }).uncheck();
     await page.keyboard.press('Escape');
     await expect(help).toBeHidden();
     await sortButton(page, 'due').focus();
@@ -500,7 +500,7 @@ test.describe('Column header menu (#207)', () => {
     await expect(menu(page)).toBeVisible();
     await page.keyboard.press('Escape');
     await page
-      .getByRole('button', { name: /Keyboard shortcuts/ })
+      .getByRole('button', { name: /Keyboard Shortcuts/ })
       .first()
       .isVisible();
   });

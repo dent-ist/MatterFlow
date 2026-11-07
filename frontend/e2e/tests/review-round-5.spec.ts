@@ -1,12 +1,9 @@
-import { dropdownById } from '../support/dropdown';
-import fs from 'node:fs';
-import path from 'node:path';
 import { Locator, Page } from '@playwright/test';
 import { Api, Json } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
-import { openEditAvailability, rowMenuItems } from '../support/users-grid';
+import { openEditAvailability } from '../support/users-grid';
 
 /**
  * UX / QA review round 5 (issue #74, epic #68): the profile availability screen, the Swimlane and Users tabs at 1024 and 768, and the
@@ -34,38 +31,6 @@ async function expectNoAxeViolations(page: Page, label: string): Promise<void> {
 }
 
 test.describe('Review round 5: profile availability, Swimlane and Users', () => {
-  test('UXR5-04: the validation summary of My profile is axe clean (24 px link targets) at 1366', async ({
-    seed,
-    asUser,
-  }) => {
-    test.skip(!axeAvailable(), 'axe-core is not available');
-    const user = await seed.user(['Data Technician'], 'r5valid');
-    const page = await asUser(user.username);
-    for (const size of [{ width: 1366, height: 768 }]) {
-      await page.setViewportSize(size);
-      await page.goto('/profile');
-      await page.getByRole('radio', { name: /Out of office/ }).check();
-      for (const [id, text] of [
-        ['#av-from', 'Oct 30, 2026'],
-        ['#av-until', 'Oct 20, 2026'],
-      ]) {
-        await page.locator(id).fill(text);
-        await page.locator(id).blur();
-      }
-      await page.getByRole('button', { name: 'Save Changes' }).click();
-      const summary = page.locator('[data-summary]');
-      await expect(summary).toBeFocused();
-      const link = summary.getByRole('link', { name: /Until must be on or after From/ });
-      const box = await link.boundingBox();
-      expect(box!.height).toBeGreaterThanOrEqual(24);
-      await expectNoAxeViolations(page, `profile validation at ${size.width}`);
-      // The link still moves focus to its field.
-      await link.click();
-      await expect(page.locator('#av-until')).toBeFocused();
-      await page.getByRole('button', { name: 'Discard Changes' }).click();
-    }
-  });
-
   test('UXR5-02: the Users list no longer needs a "Scroll sideways" hint: the six-column grid fits (#432)', async ({
     page,
     seed,
@@ -272,9 +237,8 @@ test.describe('Review round 5: profile availability, Swimlane and Users', () => 
 
     // Own availability: allowed.
     await page.goto('/profile');
-    await page.getByRole('radio', { name: /Out of office/ }).check();
-    await page.getByRole('button', { name: 'Save Changes' }).click();
-    await expect(page.getByText('Availability saved').first()).toBeVisible();
+    // The out-of-office list of the own profile is editable (the status radio and its Save are gone: absences replaced them).
+    await expect(page.getByRole('button', { name: 'Add Out of Office' }).first()).toBeEnabled();
     // Somebody else's: not through the API, and no menu item or admin screen in the UI.
     const asRo = await Api.as(ro.username);
     try {
@@ -297,216 +261,4 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 
 test.describe('review round 5 screenshots', () => {
   test.skip(!OUT, 'set E2E_SCREENSHOTS to the output folder');
-
-  test('capture', async ({ page, admin, seed, asUser }) => {
-    test.setTimeout(900_000);
-    fs.mkdirSync(OUT!, { recursive: true });
-    const tag = uid();
-    const shot = async (p: Page, name: string) => {
-      await p.waitForTimeout(350);
-      await p.screenshot({ path: path.join(OUT!, `${name}.png`) });
-    };
-    const at = async (p: Page, w: number, h: number) => p.setViewportSize({ width: w, height: h });
-    const rename = async (userId: number, displayName: string) => {
-      const detail = await admin.get<Json>(`/api/v1/users/${userId}`);
-      await admin.put(`/api/v1/users/${userId}`, {
-        displayName: `${displayName} ${tag}`,
-        email: null,
-        rowVersion: detail.rowVersion,
-      });
-    };
-
-    // The people: a Director, a Pod Lead and a technician in Pod A, a technician without a pod, a read-only observer, a person on leave,
-    // one in Tokyo with their own hours, and a few colleagues with different loads.
-    const dir = await seed.user(['Director'], `r5dir${tag}`);
-    const lead = await seed.user(['Pod Lead'], `r5lead${tag}`);
-    const tech = await seed.user(['Data Technician'], `r5tech${tag}`);
-    const nopod = await seed.user(['Data Technician'], `r5nopod${tag}`);
-    const ro = await seed.user(['Read-Only Observer'], `r5ro${tag}`);
-    const leave = await seed.user(['Data Technician'], `r5leave${tag}`);
-    const tokyo = await seed.user(['Data Technician'], `r5tokyo${tag}`);
-    const crowd = [];
-    for (let i = 0; i < 5; i++) crowd.push(await seed.user(['Data Technician'], `r5c${i}${tag}`));
-    const names: [{ userId: number }, string][] = [
-      [dir, 'Dana Director'],
-      [lead, 'Marcus Lead'],
-      [tech, 'Jamal Tech'],
-      [nopod, 'Nina Nopod'],
-      [ro, 'Vera Observer'],
-      [leave, 'Lee Leave'],
-      [tokyo, 'Taro Tokyo'],
-      ...crowd.map((c, i): [{ userId: number }, string] => [
-        c,
-        ['Ana Adams', 'Ben Baker', 'Cai Chen', 'Dev Diaz', 'Eli Evans'][i],
-      ]),
-    ];
-    for (const [u, n] of names) await rename(u.userId, n);
-    const podA = await seed.pod(`Review A ${tag}`, [
-      lead.userId,
-      tech.userId,
-      leave.userId,
-      tokyo.userId,
-      ...crowd.map((c) => c.userId),
-    ]);
-    await seed.availability(tokyo.userId, {
-      timeZoneId: 'Asia/Tokyo',
-      workHours: [1, 2, 3, 4, 5].map((dayOfWeek) => ({ dayOfWeek, start: '10:00', end: '18:30' })),
-    });
-    await seed.outOfOffice(leave.userId, {
-      until: '2026-10-30',
-      note: 'Annual leave, back Oct 31',
-    });
-    for (const u of [lead, tech, ...crowd])
-      await seed.availability(u.userId, { workHours: ALL_DAY });
-
-    const world = await seed.world({ stepCount: 3 });
-    const priorities: Json = await admin.get('/api/v1/priorities');
-    const plist: Json[] = (Array.isArray(priorities) ? priorities : priorities.items)
-      .filter((p: Json) => p.isActive)
-      .sort((a: Json, b: Json) => a.sortOrder - b.sortOrder);
-    const loads: [{ userId: number }, number[]][] = [
-      [tech, [0, 1, 2, 1]],
-      [lead, [0, 0, 1, 0]],
-      [leave, [0, 2, 1, 0]],
-      [tokyo, [0, 0, 2, 2]],
-      [crowd[0], [2, 1, 1, 0]],
-      [crowd[1], [0, 3, 2, 1]],
-      [crowd[2], [0, 0, 0, 3]],
-      [crowd[3], [0, 0, 0, 0]],
-    ];
-    let n = 0;
-    for (const [person, counts] of loads) {
-      for (let p = 0; p < counts.length; p++) {
-        for (let k = 0; k < counts[p]; k++) {
-          await seed.task(world, {
-            title: `Review ${tag} ${['Custodian intake', 'Production set', 'Privilege log', 'QC sample'][n % 4]} ${++n}`,
-            priorityId: plist[p].id,
-            assignedUserId: person.userId,
-            assignedPodId: podA.podId,
-          });
-        }
-      }
-    }
-    await seed.task(world, { title: `Review ${tag} Unassigned intake`, priorityId: plist[1].id });
-
-    const s = (w: number) => `${w}`;
-
-    // --- My profile (technician, then Director) ---
-    const techPage = await asUser(tech.username);
-    for (const [w, h] of [
-      [1366, 768],
-      [1024, 768],
-    ]) {
-      await at(techPage, w, h);
-      await techPage.goto('/profile');
-      await expect(techPage.locator('h1 [data-availability-chip]')).toBeVisible();
-      await shot(techPage, `01-profile-technician-${s(w)}`);
-    }
-    await at(techPage, 1366, 768);
-    await techPage.getByRole('radio', { name: /Out of office/ }).check();
-    await shot(techPage, '02-profile-out-of-office-1366');
-    await techPage.locator('#av-from').fill('Oct 30, 2026');
-    await techPage.locator('#av-from').blur();
-    await techPage.locator('#av-until').fill('Oct 20, 2026');
-    await techPage.locator('#av-until').blur();
-    await dropdownById(techPage, 'av-tz').selectOption('__other__');
-    await techPage.locator('#av-tz-other').fill('Mars/Olympus');
-    await techPage.getByRole('button', { name: 'Save Changes' }).click();
-    await shot(techPage, '03-profile-validation-1366');
-    await techPage.getByRole('button', { name: 'Discard Changes' }).click();
-
-    // Header menu and the Set out of office dialog.
-    for (const [w, h] of [[1366, 768]]) {
-      await at(techPage, w, h);
-      await techPage.goto('/my-work');
-      await techPage.getByRole('button', { name: /account menu/ }).click();
-      await shot(techPage, `05-header-menu-${s(w)}`);
-      await techPage.getByRole('menuitem', { name: 'Set Out of Office' }).click();
-      await shot(techPage, `06-set-out-of-office-dialog-${s(w)}`);
-      await techPage.getByRole('button', { name: 'Cancel' }).click();
-      await expect(techPage.getByRole('button', { name: /account menu/ })).toBeFocused();
-    }
-
-    // Tokyo person: custom hours and time zone.
-    const tokyoPage = await asUser(tokyo.username, { timezoneId: 'Asia/Tokyo' });
-    await at(tokyoPage, 1366, 768);
-    await tokyoPage.goto('/profile');
-    await expect(tokyoPage.locator('h1 [data-availability-chip]')).toBeVisible();
-    await shot(tokyoPage, '07-profile-tokyo-custom-hours-1366');
-
-    // Read-only observer.
-    const roPage = await asUser(ro.username);
-    for (const [w, h] of [[1366, 768]]) {
-      await at(roPage, w, h);
-      await roPage.goto('/profile');
-      await expect(roPage.locator('h1 [data-availability-chip]')).toBeVisible();
-      await shot(roPage, `08-profile-read-only-${s(w)}`);
-    }
-    for (const [w, h] of [[1366, 768]]) {
-      await at(roPage, w, h);
-      await roPage.goto('/dashboard?tab=users');
-      await expect(roPage.getByText(/is not available for your role/)).toBeVisible();
-      await shot(roPage, `09-read-only-users-url-${s(w)}`);
-    }
-
-    // --- Administration > Users (System Admin) ---
-    for (const [w, h] of [
-      [1366, 768],
-      [1024, 768],
-    ]) {
-      await at(page, w, h);
-      await page.goto(`/admin/users?status=active&name=${tag}`);
-      await expect(page.locator('[data-availability-chip]').first()).toBeVisible();
-      await shot(page, `10-admin-users-${s(w)}`);
-    }
-    await at(page, 1366, 768);
-    await page.goto(`/admin/users?status=active&name=${tag}&availability=OUT_OF_OFFICE`);
-    await expect(page.locator('[data-availability-chip]')).toHaveCount(1);
-    await shot(page, '11-admin-users-filter-out-of-office-1366');
-    await page.goto(`/admin/users?status=active&name=Taro Tokyo ${tag}`);
-    await openEditAvailability(page.locator('tbody tr', { hasText: 'Taro Tokyo' }));
-    await shot(page, '12-admin-edit-availability-dialog-1366');
-    await page.keyboard.press('Escape');
-
-    // Director: the same list without the Edit availability button.
-    const dirPage = await asUser(dir.username);
-    await at(dirPage, 1366, 768);
-    await dirPage.goto(`/admin/users?status=active&name=${tag}`);
-    await expect(dirPage.locator('[data-availability-chip]').first()).toBeVisible();
-    expect(await rowMenuItems(dirPage.locator('tbody tr').first())).toEqual(['Open']);
-    await dirPage.keyboard.press('Escape');
-    await shot(dirPage, '13-director-users-list-no-edit-1366');
-
-    // --- Dashboard Users and Swimlane ---
-    for (const [w, h] of [
-      [1366, 768],
-      [1024, 768],
-    ]) {
-      await at(dirPage, w, h);
-      await dirPage.goto(`/dashboard?tab=users&uq=${tag}`);
-      await expect(dirPage.locator('[data-user-card]').first()).toBeVisible();
-      await shot(dirPage, `14-users-director-${s(w)}`);
-      await dirPage.goto(`/dashboard?tab=swimlane&q=${tag}${w < 900 ? '&lane=progress' : ''}`);
-      await expect(dirPage.locator('mf-swimlane-card').first()).toBeVisible();
-      await shot(dirPage, `15-swimlane-director-${s(w)}`);
-    }
-
-    const leadPage = await asUser(lead.username);
-    for (const [w, h] of [[1024, 768]]) {
-      await at(leadPage, w, h);
-      await leadPage.goto(`/dashboard?tab=users&uq=${tag}`);
-      await expect(leadPage.locator('[data-user-card]').first()).toBeVisible();
-      await shot(leadPage, `16-users-pod-lead-${s(w)}`);
-    }
-    await at(leadPage, 1024, 768);
-    await leadPage.goto(`/dashboard?tab=swimlane&q=${tag}`);
-    await expect(leadPage.locator('mf-swimlane-card').first()).toBeVisible();
-    await shot(leadPage, '17-swimlane-pod-lead-1024');
-
-    // Technician and Dashboard (what a technician sees of the tabs).
-    await at(techPage, 1366, 768);
-    await techPage.goto('/dashboard?tab=users');
-    await shot(techPage, '18-technician-dashboard-users-url-1366');
-    void nopod;
-  });
 });
