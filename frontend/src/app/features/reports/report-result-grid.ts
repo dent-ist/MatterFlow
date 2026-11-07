@@ -20,6 +20,7 @@ import {
 } from '../../api/generated/api-client';
 import { ApiError } from '../../core/http/api-error';
 import { QuietRequests } from '../../core/http/interceptors';
+import { USER_TIME_ZONE } from '../../core/time/clock';
 import { ColumnFilterRow } from '../../shared/filters/column-filter-row';
 import { ListFilters } from '../../shared/filters/list-filters';
 import { ListToolbar } from '../../shared/filters/list-toolbar';
@@ -210,6 +211,8 @@ export class ReportResultGrid implements OnInit {
   private readonly sample = signal<readonly (readonly unknown[])[] | null>(null);
   private readonly scales = computed(() => {
     const rows = this.sample() ?? [];
+  /** The person's time zone: a date-time with a zone is shown in it (#1287). */
+  private readonly zone = inject(USER_TIME_ZONE);
     return new Map(
       this.columns()
         .filter((c) => c.kind === 'decimal')
@@ -336,11 +339,11 @@ export class ReportResultGrid implements OnInit {
   }
 
   protected textOf(row: readonly unknown[], c: ResultColumn): string {
-    return cellText(row[c.index], c.kind, this.scales().get(c.index) ?? 0);
+    return cellText(row[c.index], c.kind, this.scales().get(c.index) ?? 0, this.zone);
   }
 
   protected titleOf(row: readonly unknown[], c: ResultColumn): string | null {
-    return cellTitle(row[c.index], c.kind);
+    return cellTitle(row[c.index], c.kind, this.zone);
   }
 
   /** The full text as the tooltip, only while the cell cuts it (a date-time always has its long form). */

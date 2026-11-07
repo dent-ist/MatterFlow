@@ -1,5 +1,4 @@
 import {
-  COLUMN_WIDTHS,
   cellText,
   cellTitle,
   decimalScale,
@@ -129,6 +128,28 @@ describe('report column definitions (#720)', () => {
       expect(formatDateTime('2026-03-31T14:05:09.1234567')).toBe('03/31/2026 02:05 PM');
       expect(formatDateTime('2026-03-31T00:00:00')).toBe('03/31/2026 12:00 AM');
       expect(formatDateTime('2026-03-31T12:30:00')).toBe('03/31/2026 12:30 PM');
+    });
+
+    it("shows a date-time with a zone in the person's zone and one without exactly as written (#1287)", () => {
+      const ny = 'America/New_York';
+      expect(formatDateTime('2026-11-05T14:05:00+00:00', ny)).toBe('11/05/2026 09:05 AM');
+      expect(formatDateTime('2026-11-05T14:05:00Z', ny)).toBe('11/05/2026 09:05 AM');
+      expect(formatDateTime('2026-11-05T14:05:00-05:00', ny)).toBe('11/05/2026 02:05 PM');
+      expect(formatDateTime('2026-11-05T14:05:00', ny)).toBe('11/05/2026 02:05 PM');
+      expect(formatDateTime('2026-11-05T14:05:00.1234567+00:00', ny)).toBe('11/05/2026 09:05 AM');
+      // the day moves with the zone, and summer time is the zone's own
+      expect(formatDateTime('2026-07-05T02:30:00+00:00', ny)).toBe('07/04/2026 10:30 PM');
+      expect(formatDateTime('2026-11-05T14:05:00+00:00', 'UTC')).toBe('11/05/2026 02:05 PM');
+      expect(cellText('2026-11-05T14:05:00+00:00', 'dateTime', 0, ny)).toBe('11/05/2026 09:05 AM');
+      expect(cellText('2026-11-05T14:05:00', 'dateTime', 0, ny)).toBe('11/05/2026 02:05 PM');
+    });
+
+    it('tells the zone in the tooltip of an instant and none in the tooltip of a wall-clock time (#1287)', () => {
+      const ny = 'America/New_York';
+      expect(cellTitle('2026-11-05T14:05:00+00:00', 'dateTime', ny)).toBe(
+        'November 5, 2026, 9:05 AM EST',
+      );
+      expect(cellTitle('2026-11-05T14:05:00', 'dateTime', ny)).toBe('November 5, 2026 2:05 PM');
     });
 
     it('gives a date-time its long form as the tooltip and no other type any', () => {

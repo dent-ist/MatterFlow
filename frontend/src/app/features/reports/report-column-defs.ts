@@ -1,6 +1,11 @@
 import type { ResultColumnResponse } from '../../api/generated/api-client';
-import { formatCalendarDayLong, parseDateOnly } from '../../core/time/time';
-import { numericDay, numericTime } from '../../shared/ui/numeric-date';
+import {
+  formatCalendarDayLong,
+  parseDateOnly,
+  partsInZone,
+  zoneAbbreviation,
+} from '../../core/time/time';
+import { numericDay, numericTime, readableInstant } from '../../shared/ui/numeric-date';
 import type { RecordGridColumn } from '../../shared/ui/record-grid';
 
 /** The column types the rows endpoint reports (`ResultColumnResponse.type`); anything else is read as text. */
@@ -133,16 +138,36 @@ export function formatDate(value: string): string {
   return d ? numericDay(d, 0) : value;
 }
 
-/** `MM/DD/YYYY hh:mm AM/PM` from `yyyy-MM-ddTHH:mm:ss`; the server sends no zone, so the clock is shown as it came. */
-export function formatDateTime(value: string): string {
+/** A date-time text that ends in `Z` or `+hh:mm` / `-hh:mm` is an instant (the server writes a `datetimeoffset` with its offset); one without is a wall-clock time. */
+const ZONE_SUFFIX = /(Z|[+-]\d{2}:\d{2})$/;
+
+/** The instant behind a text with a zone (more than 3 fraction digits are cut: the server writes 7), or null when it is not one. */
+function instantOf(value: string): Date | null {
+  if (!ZONE_SUFFIX.test(value)) return null;
+  const date = new Date(value.replace(/(\.\d{3})\d+/, '$1'));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/**
+ * `MM/DD/YYYY hh:mm AM/PM`. A text with a zone (`Z`, `+hh:mm`) is an instant and is shown in the person's zone (`zone`, D-60, no zone in the cell); a text without
+ * one is a wall-clock time the report author wrote and is shown exactly as it came, whatever the zone (#1287).
+ */
+export function formatDateTime(value: string, zone = 'UTC'): string {
+  const instant = instantOf(value);
+  if (instant) {
+    const p = partsInZone(instant, zone);
+    return `${numericDay(p, 0)} ${numericTime(p.hour, p.minute)}`;
+  }
   const m = DATE_TIME.exec(value);
   const d = m ? parseDateOnly(m[1]) : null;
   if (!m || !d) return value;
   return `${numericDay(d, 0)} ${numericTime(Number(m[2]), Number(m[3]))}`;
 }
 
-/** "March 31, 2026 2:05 PM", the long form of a date-time for the tooltip (D-60). */
-export function longDateTime(value: string): string {
+/** The long form of a date-time for the tooltip (D-60): "November 5, 2026, 9:05 AM EST" for an instant in the person's zone, "March 31, 2026 2:05 PM" (no zone) for a wall-clock time. */
+export function longDateTime(value: string, zone = 'UTC'): string {
+  const instant = instantOf(value);
+  if (instant) return `${readableInstant(instant, zone)} ${zoneAbbreviation(instant, zone)}`;
   const m = DATE_TIME.exec(value);
   const d = m ? parseDateOnly(m[1]) : null;
   if (!m || !d) return value;
@@ -152,7 +177,7 @@ export function longDateTime(value: string): string {
 }
 
 /** What a cell says: nothing for a null, "Yes" or "No", numbers with commas, dates as `MM/DD/YYYY`, text as it is with its white space collapsed. */
-export function cellText(value: unknown, kind: ColumnKind, scale = 0): string {
+export function cellText(value: unknown, kind: ColumnKind, scale = 0, zone = 'UTC'): string {
   if (value === null || value === undefined) return '';
   switch (kind) {
     case 'integer':
@@ -169,13 +194,13 @@ export function cellText(value: unknown, kind: ColumnKind, scale = 0): string {
     case 'date':
       return formatDate(String(value));
     case 'dateTime':
-      return formatDateTime(String(value));
+      return formatDateTime(String(value), zone);
     default:
       return String(value).replace(WHITESPACE, ' ').trim();
   }
 }
 
 /** The tooltip of a date-time cell (the long form); nothing for the other types, whose text is the cell itself. */
-export function cellTitle(value: unknown, kind: ColumnKind): string | null {
-  return kind === 'dateTime' && typeof value === 'string' ? longDateTime(value) : null;
+export function cellTitle(value: unknown, kind: ColumnKind, zone = 'UTC'): string | null {
+  return kind === 'dateTime' && typeof value === 'string' ? longDateTime(value, zone) : null;
 }

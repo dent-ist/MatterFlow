@@ -313,7 +313,9 @@
                     Write one SELECT. Put <code>:NAME</code> where a value belongs; it becomes a
                     parameter. Tab leaves the editor. For several values use
                     <code>IN (:PODS)</code>; to treat none as all use
-                    <code>NOT EXISTS (SELECT 1 FROM :PODS) OR x IN :PODS</code>.
+                    <code>NOT EXISTS (SELECT 1 FROM :PODS) OR x IN :PODS</code>. A date-time with a
+                    time zone (datetimeoffset) is shown in the viewer's time zone; one without is
+                    shown as written.
                   </p>
                   <div id="sql-problems" data-sql-problems>
                     @if (sqlProblems().length > 0) {
