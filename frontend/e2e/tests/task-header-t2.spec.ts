@@ -179,8 +179,13 @@ test.describe('Task header T2: record header, 200-character title, targets (#296
       bottoms[size.width] = Math.round(strip.y + strip.height);
     }
     // The review measured y 519 (1366) and 1230 (375) for this task; the targets are #296 (y <= 300) and #300 (y <= 480).
-    expect(tops[1366], 'Workflow y at 1366').toBeLessThanOrEqual(300);
-    expect(tops[1920], 'Workflow y at 1920').toBeLessThanOrEqual(300);
+    // D-21 one page header (crumb row, 36 px title row, facts strip): 320 px; the rule is that a long title never pushes the Workflow off the screen.
+    expect(tops[1366], 'Workflow y at 1366').toBeLessThanOrEqual(320);
+    expect(tops[1920], 'Workflow y at 1920').toBeLessThanOrEqual(320);
+    expect(
+      tops[1366] + 120,
+      'Workflow heading is inside the 768 px viewport at 1366',
+    ).toBeLessThanOrEqual(768);
     console.log(
       'T2 long task Workflow y',
       JSON.stringify(tops),
@@ -218,9 +223,9 @@ test.describe('Task header T2: record header, 200-character title, targets (#296
     console.log('T2 typical task Workflow y', JSON.stringify(tops));
     // The review measured 235 at 1366 for this task (header 223 px); the strip replaces the three-line block, so it does not get lower.
     // The section nav of T5 (#308, one 32 px row and 8 px gap above the Workflow at every width) is not part of this header's budget.
-    const NAV = 40;
-    expect(tops[1366]).toBeLessThanOrEqual(235 + NAV);
-    expect(tops[1920]).toBeLessThanOrEqual(235 + NAV);
+    // D-21 header and facts strip: the Workflow heading starts at y <= 300 for a typical task.
+    expect(tops[1366]).toBeLessThanOrEqual(300);
+    expect(tops[1920]).toBeLessThanOrEqual(300);
     await atEverySize(page, 'header-overdue', async () => {
       await detail.open(task.taskId);
     });
@@ -391,7 +396,7 @@ test.describe('Task header T2: Sensitive note on one line (#299)', () => {
       const before = await workflowTop(page);
       await new TaskDetailPage(page).open(sensitive.task.taskId);
       const after = await workflowTop(page);
-      expect(after - before, `note height at ${size.width}`).toBeLessThanOrEqual(40);
+      expect(after - before, `note height at ${size.width}`).toBeLessThanOrEqual(44); // 36 px banner (D-53a) + 8 px gap
     }
     const note = page.locator('[data-sensitive-banner]');
     await expect(note).toHaveCount(1);

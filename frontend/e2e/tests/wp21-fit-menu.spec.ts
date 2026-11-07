@@ -254,12 +254,12 @@ test.describe('Column header menu (#207)', () => {
     await page.keyboard.press('Shift+F10');
     await item(page, 'narrow').focus();
     await page.keyboard.press('Enter');
-    expect(Math.round(await width(page, 'due'))).toBe(152);
+    await expect.poll(async () => Math.round(await width(page, 'due'))).toBe(152);
     expect(await stored(page)).toEqual({}); // equal to the default: nothing stored
     await page.keyboard.press('Shift+F10');
     await item(page, 'narrow').focus();
     await page.keyboard.press('Space');
-    expect(Math.round(await width(page, 'due'))).toBe(144);
+    await expect.poll(async () => Math.round(await width(page, 'due'))).toBe(144);
     await expect(note(page)).toHaveText('Due column 144 pixels');
 
     // Reload keeps it.
@@ -492,7 +492,7 @@ test.describe('Column header menu (#207)', () => {
     await expect(help).toContainText('Open the column menu');
     await expect(help).toContainText('Shift + F10');
     await shot(page, 'help-column-menu-1366x768');
-    await page.getByRole('switch', { name: /Keyboard Shortcuts/ }).uncheck();
+    await page.getByRole('switch', { name: /Keyboard shortcuts/ }).uncheck();
     await page.keyboard.press('Escape');
     await expect(help).toBeHidden();
     await sortButton(page, 'due').focus();
