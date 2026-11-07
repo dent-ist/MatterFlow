@@ -196,7 +196,7 @@ test.describe('Saved Views (#722)', () => {
     await expect(dialog.getByLabel(/View name/)).toHaveValue(`${reportName} view`);
     await dialog.getByLabel(/View name/).fill('Newest first');
     await dialog.getByLabel('Use as my default view').check();
-    await dialog.getByRole('button', { name: 'Save View' }).click();
+    await dialog.getByRole('button', { name: 'Save View', exact: true }).click();
     await expect(toasts(page).last()).toContainText('View saved.');
     await expect(viewsButton(page)).toContainText('Newest first');
     await expect(viewsButton(page)).not.toContainText('(modified)');
@@ -222,7 +222,7 @@ test.describe('Saved Views (#722)', () => {
     await page.getByRole('button', { name: 'Rename Newest first' }).click();
     const rename = page.getByRole('dialog', { name: 'Rename View' });
     await rename.getByLabel(/View name/).fill('Sorted by label');
-    await rename.getByRole('button', { name: 'Rename' }).click();
+    await rename.getByRole('button', { name: 'Rename', exact: true }).click();
     await expect(toasts(page).last()).toContainText('View renamed.');
     await expect(viewsButton(page)).toContainText('Sorted by label');
 
@@ -233,7 +233,7 @@ test.describe('Saved Views (#722)', () => {
     await page.getByRole('button', { name: 'Delete Sorted by label' }).click();
     await page
       .getByRole('dialog', { name: 'Delete View' })
-      .getByRole('button', { name: 'Delete View' })
+      .getByRole('button', { name: 'Delete View', exact: true })
       .click();
     await expect(toasts(page).last()).toContainText('View deleted.');
     await expect(viewsButton(page)).toContainText('Saved Views');
@@ -249,10 +249,10 @@ test.describe('Saved Views (#722)', () => {
       await page.getByRole('button', { name: 'Save as New View...' }).click();
       const dialog = page.getByRole('dialog', { name: 'Save View' });
       await dialog.getByLabel(/View name/).fill(name);
-      await dialog.getByRole('button', { name: 'Save View' }).click();
+      await dialog.getByRole('button', { name: 'Save View', exact: true }).click();
       if (name === 'TWICE') {
         await expect(dialog).toContainText('You already have a view with this name.');
-        await dialog.getByRole('button', { name: 'Cancel' }).click();
+        await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
       }
     }
   });
