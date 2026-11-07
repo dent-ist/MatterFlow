@@ -26,6 +26,8 @@ export const ICONS: Readonly<Record<string, string>> = {
   'page-asset-types': 'pi-tags',
   'page-custom-fields': 'pi-sliders-h',
   'page-reports': 'pi-chart-bar',
+  // The Administration item of the same feature ("Report Setup"): a different glyph, so the two menu items differ in the icon rail too.
+  'page-report-setup': 'pi-wrench',
   'page-audit-logs': 'pi-history',
   'page-settings': 'pi-cog',
   // Pages that are not a navigation item

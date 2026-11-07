@@ -13,7 +13,7 @@ test.describe('Administration menu and tabbed admin pages', () => {
       'Labels',
       'Asset Types',
       'Custom Fields',
-      'Reports',
+      'Report Setup',
       'Audit Logs',
       'Settings',
     ]);

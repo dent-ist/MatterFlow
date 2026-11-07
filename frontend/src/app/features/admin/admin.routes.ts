@@ -251,18 +251,18 @@ export const ADMIN_ROUTES: Routes = [
   },
   {
     // The Reports page (#712): tabs in `?tab=`. Needs Report.Manage; the 403 page shows without a request for a person without it.
-    ...lazyGuarded('reports', 'Reports', 'Report.Manage', () =>
+    ...lazyGuarded('reports', 'Report Setup', 'Report.Manage', () =>
       import('./reports/reports-admin-page').then((m) => m.ReportsAdminPage),
     ),
     title: (route) => {
       const tab = route.queryParams['tab'];
       const names: Record<string, string> = {
-        categories: pageTab('Reports', 'Categories'),
-        runs: pageTab('Reports', 'Run Log'),
-        assignments: pageTab('Reports', 'Assignments'),
-        health: pageTab('Reports', 'Settings'),
+        categories: pageTab('Report Setup', 'Categories'),
+        runs: pageTab('Report Setup', 'Run Log'),
+        assignments: pageTab('Report Setup', 'Assignments'),
+        health: pageTab('Report Setup', 'Settings'),
       };
-      return names[tab] ?? 'Reports';
+      return names[tab] ?? 'Report Setup';
     },
     runGuardsAndResolvers: 'paramsOrQueryParamsChange',
   },

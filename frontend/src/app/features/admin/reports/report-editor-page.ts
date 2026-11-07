@@ -317,7 +317,7 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
 
   protected readonly crumbs = computed<Crumb[]>(() => [
     { label: 'Administration', plain: true },
-    { label: 'Reports', link: '/admin/reports' },
+    { label: 'Report Setup', link: '/admin/reports' },
     { label: this.isNew() ? 'New Report' : (this.report()?.name ?? 'Report') },
   ]);
 

@@ -24,7 +24,7 @@ export interface NavItem {
 
 /**
  * Left navigation (UX 2.1; MM-59 #951): ONE order for everybody, Dashboard, My Matters, My Work, Clients, Matters (with Projects and Assets
- * indented under it), Pod Work, Tasks (the Task Queue; UI update epic #953 moved Pod Work before it, superseding #952). Items are hidden, never disabled, without the matching View permission; each keeps its own rule, so a
+ * indented under it), Pod Work, Tasks (the Task Queue; UI update epic #953 moved Pod Work before it, superseding #952), Reports (#718). Items are hidden, never disabled, without the matching View permission; each keeps its own rule, so a
  * person who may open Projects but not Matters still sees Projects at its place.
  */
 export const NAV_ITEMS: NavItem[] = [
@@ -90,6 +90,14 @@ export const NAV_ITEMS: NavItem[] = [
     path: '/tasks',
     permissions: ['Task.View'],
   },
+  {
+    // The people-facing list of the reports a person may run (#718). Shown to everybody with Report.Run, also when nothing is assigned yet (the page
+    // then says why it is empty; owner decision 10 of the Reports review). No `hideWhenCompact`: the compact menu of the Project Manager lists it (#775).
+    label: 'Reports',
+    icon: pageIcon('reports'),
+    path: '/reports',
+    permissions: ['Report.Run'],
+  },
 ];
 
 /**
@@ -144,10 +152,10 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     permissions: ['CustomField.Manage'],
   },
   {
-    // The SQL reports page (#712): reports, categories, run log, assignments and the report login. The people-facing list of reports is a
-    // separate item that arrives with the user screens.
-    label: 'Reports',
-    icon: pageIcon('reports'),
+    // The SQL reports setup page (#712): reports, categories, run log, assignments and the report login. Named "Report Setup" so that it differs
+    // from the people-facing Reports item of the main menu (#718, owner decision 9 of the Reports review); the path and the permission are unchanged.
+    label: 'Report Setup',
+    icon: pageIcon('report-setup'),
     path: '/admin/reports',
     permissions: ['Report.Manage'],
   },

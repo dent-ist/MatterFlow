@@ -3,7 +3,7 @@ import { NAV_ITEMS, mainNav } from './nav-items';
 const labels = (items: readonly { label: string }[]): string[] => items.map((i) => i.label);
 
 describe('main menu order (MM-59, #951)', () => {
-  it('is one order for everybody: Dashboard, My Matters, My Work, Clients, Matters, Projects, Assets, Pod Work, Task Queue', () => {
+  it('is one order for everybody: Dashboard, My Matters, My Work, Clients, Matters, Projects, Assets, Pod Work, Task Queue, Reports', () => {
     expect(labels(mainNav(NAV_ITEMS, false))).toEqual([
       'Dashboard',
       'My Matters',
@@ -14,6 +14,7 @@ describe('main menu order (MM-59, #951)', () => {
       'Assets',
       'Pod Work',
       'Task Queue',
+      'Reports',
     ]);
   });
 
@@ -35,7 +36,16 @@ describe('main menu order (MM-59, #951)', () => {
       'Projects',
       'Assets',
       'Task Queue',
+      'Reports',
     ]);
+  });
+
+  it('lists Reports last for Report.Run holders, in the compact menu too (#718, #775): it is plain data, no compact flag', () => {
+    const reports = NAV_ITEMS.find((i) => i.label === 'Reports')!;
+    expect(reports.path).toBe('/reports');
+    expect(reports.permissions).toEqual(['Report.Run']);
+    expect(reports.hideWhenCompact).toBeUndefined();
+    expect(NAV_ITEMS.at(-1)).toBe(reports);
   });
 
   it('keeps every item reachable by path and gives each its own permission rule', () => {

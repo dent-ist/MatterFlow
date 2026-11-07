@@ -109,11 +109,11 @@ test.describe('who can open Reports administration (#712)', () => {
         key,
       ).toBeVisible();
       expect(reportCalls, `${key} made no request to the reports API`).toEqual([]);
-      await expect(navItem(page, 'Reports'), key).toHaveCount(0);
+      await expect(navItem(page, 'Report Setup'), key).toHaveCount(0);
     }
   });
 
-  test('a manager sees Reports in the menu and the tabs; Assignments only with Report.Assign', async ({
+  test('a manager sees Report Setup in the menu and the tabs; Assignments only with Report.Assign', async ({
     personas,
     asUser,
   }) => {
@@ -125,8 +125,8 @@ test.describe('who can open Reports administration (#712)', () => {
 
     const page = await asUser(manager.username);
     await page.goto('/admin/reports');
-    await expect(page.getByRole('heading', { level: 1, name: 'Reports' })).toBeVisible();
-    await expect(navItem(page, 'Reports')).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Report Setup' })).toBeVisible();
+    await expect(navItem(page, 'Report Setup')).toBeVisible();
     await expect(
       page.getByRole('tablist', { name: 'Reports sections' }).getByRole('tab'),
     ).toHaveText([/^\s*Reports/, /^\s*Categories/, /^\s*Run Log/, /^\s*Settings/]);
@@ -466,7 +466,7 @@ test.describe('accessibility at both desktop sizes (#712 to #717)', () => {
   test('the list, its tabs and an open row menu', async ({ page }) => {
     await page.goto(`/admin/reports?status=all`);
     await check(page, 'rp5-list', async () => {
-      await expect(page.getByRole('heading', { level: 1, name: 'Reports' })).toBeVisible();
+      await expect(page.getByRole('heading', { level: 1, name: 'Report Setup' })).toBeVisible();
     });
     for (const t of ['categories', 'runs', 'assignments', 'health']) {
       await page.goto(`/admin/reports?tab=${t}`);

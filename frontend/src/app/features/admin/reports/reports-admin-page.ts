@@ -25,7 +25,7 @@ import { ReportsHealthTab } from './reports-health-tab';
 import { ReportsListTab } from './reports-list-tab';
 
 /**
- * Administration: Reports (issue #712), reached from the "Reports" item of the Administration menu. One page on the admin list shell with the
+ * Administration: Report Setup (issue #712), reached from the "Report Setup" item of the Administration menu (renamed from "Reports", #718). One page on the admin list shell with the
  * tabs Reports (n), Categories (n), Run Log, Assignments (with Report.Assign) and Settings, kept in the address as `?tab=`. The header holds the
  * crumb, the one-line description, Filters (the Reports tab's) and the primary action, New report (or New category on the Categories tab).
  * Needs `Report.Manage`; every tab is a lazy part of this one chunk, and nothing of it is in the first page load.
@@ -45,8 +45,8 @@ import { ReportsListTab } from './reports-list-tab';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-admin-list-shell
-      heading="Reports"
-      icon="pi pi-chart-bar"
+      heading="Report Setup"
+      icon="pi pi-wrench"
       [description]="description()"
       [tabs]="tabs()"
       [tab]="current()"

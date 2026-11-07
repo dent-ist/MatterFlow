@@ -189,6 +189,18 @@ describe('AppShell header search', () => {
     expect(navLabels(await create(['Project.View', 'Asset.View']))).toEqual(['Projects', 'Assets']);
   });
 
+  it('shows Reports last to anybody with Report.Run, also with nothing else, and not Report Setup (#718)', async () => {
+    expect(navLabels(await create(['Report.Run']))).toEqual(['Reports']);
+    TestBed.resetTestingModule();
+    expect(navLabels(await create(['Task.View', 'Report.Run']))).toEqual([
+      'My Work',
+      'Task Queue',
+      'Reports',
+    ]);
+    TestBed.resetTestingModule();
+    expect(navLabels(await create(['Report.Manage']))).toEqual(['Report Setup']);
+  });
+
   it('marks an indented item current without also marking Matters', async () => {
     TestBed.configureTestingModule({
       providers: [
@@ -239,6 +251,19 @@ describe('AppShell header search', () => {
       expect(fixture.nativeElement.querySelector('[data-nav-more-toggle]')).toBeNull();
       // The state "More" used to remember is forgotten.
       expect(localStorage.getItem('mf.nav.more.1')).toBeNull();
+    });
+
+    it('lists Reports after the Task Queue for a Project Manager who may run reports (#775)', async () => {
+      expect(navLabels(await create([...PM, 'Report.Run']))).toEqual([
+        'My Matters',
+        'My Work',
+        'Clients',
+        'Matters',
+        'Projects',
+        'Assets',
+        'Task Queue',
+        'Reports',
+      ]);
     });
 
     it('leaves everybody else the full menu: no manager permission, no Task.View, and a System Admin who is not a Project Manager', async () => {

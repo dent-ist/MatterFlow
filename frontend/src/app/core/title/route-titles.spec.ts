@@ -12,6 +12,7 @@ import { NOTIFICATIONS_ROUTES } from '../../features/notifications/notifications
 import { POD_WORK_ROUTES } from '../../features/pod-work/pod-work.routes';
 import { PROFILE_ROUTES } from '../../features/profile/profile.routes';
 import { PROJECTS_ROUTES } from '../../features/projects/projects.routes';
+import { REPORTS_ROUTES } from '../../features/reports/reports.routes';
 import { SEARCH_ROUTES } from '../../features/search/search.routes';
 import { SYSTEM_ROUTES } from '../../features/system/system.routes';
 import { TASKS_ROUTES } from '../../features/tasks/tasks.routes';
@@ -99,6 +100,7 @@ const TABLE: Row[] = [
     title: 'Asset - MatterFlow',
   },
   { set: 'pod-work', routes: POD_WORK_ROUTES, key: '', title: 'Pod Work - MatterFlow' },
+  { set: 'reports', routes: REPORTS_ROUTES, key: '', title: 'Reports - MatterFlow' },
   { set: 'clients', routes: CLIENTS_ROUTES, key: '', title: 'Clients - MatterFlow' },
   { set: 'clients', routes: CLIENTS_ROUTES, key: 'new', title: 'New Client - MatterFlow' },
   {
@@ -156,11 +158,11 @@ const TABLE: Row[] = [
   ADMIN('labelsTabsMatcher', 'Labels: Status Labels - MatterFlow', {
     params: { tab: 'status-labels' },
   }),
-  ADMIN('reports', 'Reports - MatterFlow'),
-  ADMIN('reports', 'Reports: Categories - MatterFlow', { query: { tab: 'categories' } }),
-  ADMIN('reports', 'Reports: Run Log - MatterFlow', { query: { tab: 'runs' } }),
-  ADMIN('reports', 'Reports: Assignments - MatterFlow', { query: { tab: 'assignments' } }),
-  ADMIN('reports', 'Reports: Settings - MatterFlow', { query: { tab: 'health' } }),
+  ADMIN('reports', 'Report Setup - MatterFlow'),
+  ADMIN('reports', 'Report Setup: Categories - MatterFlow', { query: { tab: 'categories' } }),
+  ADMIN('reports', 'Report Setup: Run Log - MatterFlow', { query: { tab: 'runs' } }),
+  ADMIN('reports', 'Report Setup: Assignments - MatterFlow', { query: { tab: 'assignments' } }),
+  ADMIN('reports', 'Report Setup: Settings - MatterFlow', { query: { tab: 'health' } }),
   ADMIN('audit', 'Audit Logs - MatterFlow'),
   ADMIN('settings', 'Settings: Branding - MatterFlow'),
   {
