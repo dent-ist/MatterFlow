@@ -79,7 +79,7 @@ describe('AssigneePicker (Edit task, Create task)', () => {
     ]);
     expect(options()[1].querySelector('[data-option-hint]')!.textContent).toContain('2 open');
     expect(options()[1].querySelector('[data-option-flag]')!.textContent).toMatch(
-      /Out of Office until Mar 2[01], 2099/,
+      /Out of Office until 03\/2[01]\/2099/,
     );
     expect(el().querySelector('[data-search-all]')).toBeNull();
   });

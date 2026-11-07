@@ -23,7 +23,7 @@ describe('availability', () => {
         NY,
         new Date('2026-10-15T12:00:00Z'),
       );
-      expect(text).toBe('Out of Office until Oct 20');
+      expect(text).toBe('Out of Office until 10/20');
     });
 
     it('adds the year when it is not this year, and says plain "Out of Office" when open-ended', () => {
@@ -33,7 +33,7 @@ describe('availability', () => {
           NY,
           new Date('2026-10-15T12:00:00Z'),
         ),
-      ).toBe('Out of Office until Jan 2, 2027');
+      ).toBe('Out of Office until 01/02/2027');
       expect(outOfOfficeText({ state: 'OUT_OF_OFFICE' }, NY)).toBe('Out of Office');
       expect(outOfOfficeText({ state: 'AVAILABLE' }, NY)).toBeNull();
     });
@@ -139,7 +139,7 @@ describe('availability', () => {
       const now = new Date('2026-10-15T14:00:00Z');
       expect(
         previewDisplay({ ...base, status: 'OUT_OF_OFFICE', until: '2026-10-20' }, now)?.label,
-      ).toBe('Out of Office until Oct 20');
+      ).toBe('Out of Office until 10/20');
       expect(
         previewDisplay(
           { ...base, status: 'OUT_OF_OFFICE', from: '2026-10-16', until: '2026-10-20' },

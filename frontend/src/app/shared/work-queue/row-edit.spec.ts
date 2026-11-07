@@ -420,7 +420,7 @@ describe('RowEdit', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     const flag = option('4')!.querySelector('[data-option-flag]');
-    expect(flag?.textContent).toMatch(/Out of Office until Mar 2[01], 2099/);
+    expect(flag?.textContent).toMatch(/Out of Office until 03\/2[01]\/2099/);
     await pick('4');
     expect(tasks['assignTask']).toHaveBeenCalled();
   });

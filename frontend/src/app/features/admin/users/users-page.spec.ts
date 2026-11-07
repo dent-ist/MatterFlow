@@ -809,7 +809,7 @@ describe('UsersPage', () => {
       await chooseStatus('active');
       await openRow(2);
       expect(q('[data-availability-sentence]').textContent).toContain(
-        'Out of Office until Mar 20, 2027. Conference',
+        'Out of Office until 03/20/2027. Conference',
       );
       expect(q('[data-availability-sentence]').textContent).toContain('Conference');
       q('[data-edit-availability]').click();
@@ -988,7 +988,7 @@ describe('UsersPage', () => {
         'User.Manage',
       );
       await chooseStatus('active');
-      expect(chips()).toEqual(['Out of Office until Mar 20, 2027', 'Off Hours']);
+      expect(chips()).toEqual(['Out of Office until 03/20/2027', 'Off Hours']);
       // Pending and Inactive people take no work: their cell is empty, even when the server reports Off hours.
       await chooseStatus('pending');
       expect(chips().every((c) => c === '')).toBe(true);

@@ -13,7 +13,7 @@ import { SIZES, noHorizontalScroll, shot } from '../support/screens';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /** A calendar day in the firm zone (the suite runs in America/New_York): today plus `plus` days. */
-function inDays(plus: number): { text: string; iso: string; short: string } {
+function inDays(plus: number): { text: string; iso: string; short: string; numeric: string } {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/New_York',
     year: 'numeric',
@@ -24,7 +24,15 @@ function inDays(plus: number): { text: string; iso: string; short: string } {
   const d = new Date(Date.UTC(get('year'), get('month') - 1, get('day') + plus));
   const [y, m, day] = [d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()];
   const iso = `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  return { text: `${MONTHS[m]} ${day}, ${y}`, iso, short: `${MONTHS[m]} ${day}` };
+  // `numeric` is the chip form (D-60): MM/DD this year, MM/DD/YYYY otherwise.
+  const thisYear = get('year');
+  const mmdd = `${String(m + 1).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
+  return {
+    text: `${MONTHS[m]} ${day}, ${y}`,
+    iso,
+    short: `${MONTHS[m]} ${day}`,
+    numeric: y === thisYear ? mmdd : `${mmdd}/${y}`,
+  };
 }
 
 /** Days from today to the next Monday after today (a Monday means the following one). */
@@ -103,7 +111,7 @@ test.describe('pf5-dialog-presets: quick choices fill Until (#538)', () => {
     await dialog.getByRole('button', { name: 'Set out of office' }).focus();
     await me.keyboard.press('Enter');
     await expect(me.locator('[data-ooo-label]')).toContainText(
-      `Out of office until ${inDays(7).short}`,
+      `Out of Office until ${inDays(7).numeric}`,
     );
     await expect(me.getByRole('button', { name: /account menu/ })).toBeFocused();
   });

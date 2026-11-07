@@ -318,9 +318,9 @@ describe('users model', () => {
 
     it('says when someone is back: the day of the last absence plus one, in the viewer zone', () => {
       const now = new Date('2026-10-15T12:00:00Z');
-      expect(backOnText('2026-10-21T00:00:00Z', 'UTC', now)).toBe('Back on Oct 21');
+      expect(backOnText('2026-10-21T00:00:00Z', 'UTC', now)).toBe('Back on 10/21');
       expect(backOnText(undefined, 'UTC', now)).toBeNull();
-      expect(backOnText('2027-01-02T00:00:00Z', 'UTC', now)).toBe('Back on Jan 2, 2027');
+      expect(backOnText('2027-01-02T00:00:00Z', 'UTC', now)).toBe('Back on 01/02/2027');
     });
 
     it('links to the Task Queue filtered by person and by unassigned', () => {
@@ -349,7 +349,7 @@ describe('users model', () => {
     it('hints when the person is out of office or heavy, and not otherwise', () => {
       const now = new Date('2026-10-15T12:00:00Z');
       expect(assignHint(dee, null, 'UTC', now)).toContain(
-        'not available (out of office until Oct 20)',
+        'not available (out of office until 10/20)',
       );
       expect(assignHint(dee, null, 'UTC', now)).toContain('You can still assign work.');
       const heavy = aUser(6, 'Hal Moe', [5, 5, 0, 0]);

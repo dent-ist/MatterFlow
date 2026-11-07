@@ -301,7 +301,7 @@ test.describe('#440 Pods, Availability and Profile', () => {
     await openList(page);
     await openDrawer(page, away.userId);
     await expect(page.locator('[data-availability-sentence]')).toContainText(
-      'Out of office until Oct 25',
+      'Out of Office until 10/25/2027',
     );
     const edit = page.locator('[data-edit-availability]');
     await edit.click();
