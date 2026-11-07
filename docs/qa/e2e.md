@@ -413,6 +413,20 @@ Counts are tests (`--list`) at `6bab2fc`. All run axe at 1366x768 and 1920x1080 
 
 Notes. The designer has no drag, no Alt+Arrow and no Undo on Remove (#411 not planned, #420); the Alt+Arrow of the version page is exercised in `ty6-version-editor`. `ty8-designer-owners` publishes and retires only on Asset Types; the three Custom Fields forms are singletons shared by every test, so their dialogs are opened and cancelled.
 
+## Reports (epic #671, WP-RP5 to WP-RP9 and #723)
+
+The people-facing Reports specs run on the real stack with the read-only report login (`e2e/run-local.sh` creates it); the tests that run a report skip themselves when Reports are not ready. Two desktop widths (1366x768, 1920x1080), axe 0, no page-level horizontal scroll.
+
+| Spec | Covers |
+|---|---|
+| `rp5-reports-admin` | Report Setup (Administration): categories, editor, preview, activation, versions, assignments, run log, health |
+| `rp7-reports-user` | The Reports nav item and list (#718, #775) and the run page with its parameter form (#719) |
+| `rp8-reports-grid` | The result grid (#720) |
+| `rp9-reports-export-views` | Export CSV (#721) and Saved Views (#722) |
+| `rp10-reports-favourites` (6 + 1) | #723: the star column (text-less toggle button named "Add <report> to favourites" / "Remove <report> from favourites", Enter and Space, stored per person and kept after a reload), the Favourites chip (`?favourites=true`, Clear Filters, the empty state sentence), the Recent line (newest first, links to the run page, hidden while a search or the chip is active, nobody else's), an assignment taken away and given back, a failed press (the star goes back and "Couldn't update favourites." shows), axe and no sideways scroll at both sizes with the stars, the chip and the Recent line; the API refuses an unassigned report (404) and a person with Report.Manage only (403) |
+
+Backend counterparts: `ReportFavouritesApiTests`, `ReportAccessMatrixTests` and `ReportListApiTests` (`isFavourite`) in `backend/tests/MatterFlow.IntegrationTests/Reports/`; unit: `ReportPersonalServiceTests`. Frontend unit specs: `reports-list-page.spec.ts`, `report-favourites.spec.ts`, `report-rows.spec.ts`, `record-grid.spec.ts` (the icon-only column).
+
 ## Notifications (epic #753)
 
 | Spec | Covers |
