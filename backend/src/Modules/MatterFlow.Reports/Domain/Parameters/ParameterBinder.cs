@@ -500,6 +500,7 @@ public static class ParameterBinder
             ? new(name, SqlDbType.Int, 0, 0, 0, pod, ListKind.None, $"{name}={pod}")
             : Null(name, SqlDbType.Int),
         BuiltInParameters.FirmTimeZoneOffsetMinutes => new(name, SqlDbType.Int, 0, 0, 0, c.FirmTimeZoneOffsetMinutes, ListKind.None, $"{name}={c.FirmTimeZoneOffsetMinutes}"),
+        BuiltInParameters.CurrentUserCanAssignManagers => new(name, SqlDbType.Bit, 0, 0, 0, c.CanAssignManagers, ListKind.None, $"{name}={(c.CanAssignManagers ? "yes" : "no")}"),
         _ => throw new ArgumentOutOfRangeException(nameof(name), name, "Not a provided built-in value."),
     };
 

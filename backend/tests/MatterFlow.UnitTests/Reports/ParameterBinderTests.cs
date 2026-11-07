@@ -461,6 +461,7 @@ public class ParameterBinderTests
     [InlineData("TODAY")]
     [InlineData("NOW_UTC")]
     [InlineData("CURRENT_POD_IDS")]
+    [InlineData("CURRENT_USER_CAN_ASSIGN_MANAGERS")]
     public void A_request_that_supplies_a_built_in_name_is_refused(string name)
     {
         var r = Bind(Def("X", ReportParameterType.Text), (name, "1"));
@@ -495,6 +496,29 @@ public class ParameterBinderTests
         by["CURRENT_POD_IDS"].ListKind.ShouldBe(ListKind.Int);
         by["CURRENT_PRIMARY_POD_ID"].Value.ShouldBe(3);
         by["FIRM_TIME_ZONE_OFFSET_MINUTES"].Value.ShouldBe(-240);
+    }
+
+    [Theory]
+    [InlineData(false, 0)]
+    [InlineData(true, 1)]
+    public void The_assign_managers_built_in_is_a_bit_that_the_caller_cannot_set(bool canAssign, int expected)
+    {
+        var used = new HashSet<string>(StringComparer.Ordinal) { "CURRENT_USER_CAN_ASSIGN_MANAGERS" };
+
+        var r = ParameterBinder.Bind([], new Dictionary<string, JsonElement>(), Ctx with { CanAssignManagers = canAssign }, used);
+
+        r.Errors.ShouldBeEmpty();
+        var p = r.Parameters.ShouldHaveSingleItem();
+        p.DbType.ShouldBe(SqlDbType.Bit);
+        ((bool)p.Value!).ShouldBe(expected == 1);
+        p.IsNull.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void The_assign_managers_built_in_is_reserved_so_an_author_cannot_define_a_parameter_with_its_name()
+    {
+        MatterFlow.Reports.Domain.BuiltInParameters.IsBuiltIn("CURRENT_USER_CAN_ASSIGN_MANAGERS").ShouldBeTrue();
+        MatterFlow.Reports.Domain.BuiltInParameters.Unavailable.ShouldNotContain("CURRENT_USER_CAN_ASSIGN_MANAGERS");
     }
 
     [Fact]

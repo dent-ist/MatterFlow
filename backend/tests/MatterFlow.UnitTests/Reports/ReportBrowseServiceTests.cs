@@ -39,6 +39,13 @@ public class ReportBrowseServiceTests
         public Task<IReadOnlyList<int>> GetMemberUserIdsAsync(int podId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<int>>([]);
     }
 
+    private sealed class FakePermissions : IPermissionChecker
+    {
+        public bool Has(string permissionCode) => false;
+
+        public MatterFlow.SharedKernel.Results.Result Require(string permissionCode) => MatterFlow.SharedKernel.Results.Result.Success();
+    }
+
     private sealed class FixedTime(DateTimeOffset now) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => now;
@@ -55,7 +62,7 @@ public class ReportBrowseServiceTests
     private static ReportBrowseService Service(int? user, RunnableListItem[] items, RunnableDetail[] details)
     {
         var current = new FakeUser(user);
-        var builtIns = new BuiltInContextFactory(current, new FakePods(), new ConfigurationBuilder().Build(), new FixedTime(new DateTimeOffset(2026, 11, 7, 12, 0, 0, TimeSpan.Zero)));
+        var builtIns = new BuiltInContextFactory(current, new FakePods(), new ConfigurationBuilder().Build(), new FixedTime(new DateTimeOffset(2026, 11, 7, 12, 0, 0, TimeSpan.Zero)), new FakePermissions());
         return new ReportBrowseService(new FakeCatalog(items, details), current, builtIns, Options.Create(new ReportsOptions()));
     }
 

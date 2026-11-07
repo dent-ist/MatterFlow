@@ -66,8 +66,9 @@ public static class StarterRoles
                 Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewBreakdowns, Permissions.Dashboard.ViewTrends,
                 Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers, Permissions.Dashboard.ViewCoverage,
                 ..CalendarAccess]),
+        // Report.Run (owner decision 8, 2026-11-07; script 61 for existing databases): the only starter role that may run reports. It shows only the reports an administrator assigns to the role.
         new("Project Manager", "Manages clients, matters and projects, can be named as a matter's project manager; works from My Matters.",
-            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, Permissions.Matter.BeManager, ..AssignManagers, ..MatterContentManage, Permissions.Asset.Dispose]),
+            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, Permissions.Matter.BeManager, ..AssignManagers, ..MatterContentManage, Permissions.Asset.Dispose, Permissions.Report.Run]),
         new("Pod Lead", "Leads a pod: manages pod members; sees the Dashboard summary, swimlane and team workload.",
             [..Everyone, ..ClientMatterEdit, ..ProjectManage, ..MatterContentManage, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
                 Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers,

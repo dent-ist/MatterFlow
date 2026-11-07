@@ -96,19 +96,23 @@ public class PermissionCatalogTests
     }
 
     [Fact]
-    public void The_Reports_group_has_Manage_Assign_and_Run_and_no_starter_role_holds_any_of_them()
+    public void The_Reports_group_has_Manage_Assign_and_Run_and_only_the_Project_Manager_role_holds_Run()
     {
         var reports = Catalog().Where(c => c.Group == "Reports").ToList();
 
         reports.Select(c => c.Code).ShouldBe(["Report.Manage", "Report.Assign", "Report.Run"]);
         reports.ShouldAllBe(c => c.Description.Length > 20);
 
-        // The System Admin role holds every permission implicitly; the owner picks the trusted roles for Report.Run (spec section 3).
+        // The System Admin role holds every permission implicitly. Owner decision 8 (2026-11-07): the Project Manager starter role holds Report.Run and no other starter role does;
+        // nobody gets Manage or Assign (they show SQL and assign reports to roles). Run alone shows nothing: a report must also be assigned to the role.
         foreach (var role in StarterRoles.All)
         {
             role.Permissions.ShouldNotContain(Permissions.Report.Manage, role.Name);
             role.Permissions.ShouldNotContain(Permissions.Report.Assign, role.Name);
-            role.Permissions.ShouldNotContain(Permissions.Report.Run, role.Name);
+            if (role.Name == "Project Manager")
+                role.Permissions.ShouldContain(Permissions.Report.Run, role.Name);
+            else
+                role.Permissions.ShouldNotContain(Permissions.Report.Run, role.Name);
         }
 
         var groups = Catalog().Select(c => c.Group).Distinct().ToList();

@@ -67,6 +67,7 @@ There are 59 scripts, numbered 01 to 60. **Number 16 does not exist** (a gap is 
 | 58 | `58-user-absence.sql` | `UserAbsence`: many Out of office entries per person (replaces the single value of script 22). | `UserAbsence` | - |
 | 59 | `59-holiday-calendars.sql` | Holiday calendars and holidays; `AppUser.HolidayCalendarId`, `Pod.DefaultHolidayCalendarId`. | `Holiday`, `HolidayCalendar` | `AppUser`, `Pod` |
 | 60 | `60-calendar-permissions.sql` | Permissions `Dashboard.ViewCalendar`, `Dashboard.ViewAbsenceReasons`, `User.ManageAvailability` and grants. | - | - |
+| 61 | `61-project-manager-report-run.sql` | Permission row `Report.Run` (if missing) and its grant to the role named "Project Manager" while that role still has the starter description (owner decision 8); no other role, no report assignment. | - | - |
 
 ## Related pages
 

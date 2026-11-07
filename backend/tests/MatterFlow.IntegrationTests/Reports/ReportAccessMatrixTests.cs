@@ -105,6 +105,7 @@ public sealed partial class ReportAccessMatrixTests(SqlServerFixture sql)
         new("definition", (c, id, _) => c.GetAsync($"/api/v1/reports/{id}")),
         new("run", (c, id, _) => c.PostAsync(RunUrl(id), ReportTestHarness.Parameters(new { }))),
         new("choices", (c, id, _) => c.PostAsync($"/api/v1/reports/{id}/choices/KIND", null)),
+        new("lookup", (c, id, _) => c.GetAsync($"/api/v1/reports/{id}/lookups/MATTER")),
         new("views list", (c, id, _) => c.GetAsync($"/api/v1/reports/{id}/views")),
         new("views create", (c, id, _) => c.PostAsync($"/api/v1/reports/{id}/views", ReportTestHarness.Json(new { name = "x", layout = new { columns = Array.Empty<object>(), sort = Array.Empty<object>(), filters = Array.Empty<object>(), pageSize = 50 }, isDefault = false }))),
         new("views update", (c, id, _) => c.PutAsync($"/api/v1/reports/{id}/views/1", ReportTestHarness.Json(new { name = "y" }))),
@@ -182,6 +183,63 @@ public sealed partial class ReportAccessMatrixTests(SqlServerFixture sql)
             (await runner.GetAsync(Rows(run))).StatusCode.ShouldBe(HttpStatusCode.OK, $"{name}: the result comes back with the access");
         }
     }
+
+    [Fact]
+    public async Task A_report_given_to_the_Technician_role_only_is_not_available_to_the_Project_Manager_who_holds_Report_Run()
+    {
+        // Per-report access (#808): Report.Run says "may run reports", the assignment says "which". Both starter roles are the real ones from the seed.
+        await using var h = await ReportTestHarness.StartAsync(sql);
+        int RoleId(string name) => Convert.ToInt32(SqlServerFixture.ScalarAsync(h.AppConnection, $"SELECT RoleId FROM dbo.Role WHERE Name = N'{name}'").GetAwaiter().GetResult(), System.Globalization.CultureInfo.InvariantCulture);
+        var pmRole = RoleId("Project Manager");
+        var technicianRole = RoleId("Data Technician");
+        // The Technician starter role has no Report.Run; an administrator gives it in the role editor (simulated), the same permission the Project Manager holds.
+        await SqlServerFixture.ExecuteAsync(h.AppConnection, $"INSERT dbo.RolePermission (RoleId, PermissionId) SELECT {technicianRole}, PermissionId FROM dbo.Permission WHERE Code = 'Report.Run'");
+        var technician = await h.Tasks.UserWithAsync(@"KE\technician", "Task.View");
+        var manager = await h.Tasks.UserWithAsync(@"KE\manager", "Task.View");
+        await h.Factory.GrantRoleAsync(@"KE\technician", technicianRole);
+        await h.Factory.GrantRoleAsync(@"KE\manager", pmRole);
+        const string parameters = """[{"name":"KIND","type":"lookup","label":"Matter","lookupKind":"matter"}]""";
+        var abc = await h.AddReportAsync("SELECT :KIND AS k", parameters, roleIds: [pmRole, technicianRole]);
+        var other = await h.AddReportAsync("SELECT 2 AS two", roleIds: pmRole);
+
+        // Assigned to both: the manager runs it and has a result and a view.
+        var managerRun = await RunOkAsync(manager, abc);
+        (await manager.GetAsync($"/api/v1/reports/{abc}/lookups/KIND")).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await manager.GetAsync(Export(managerRun))).StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        // The administrator takes the Project Manager role off: "ABC for the Technician role only".
+        await SqlServerFixture.ExecuteAsync(h.AppConnection, $"DELETE dbo.RoleReport WHERE ReportId = {abc} AND RoleId = {pmRole}");
+        h.Factory.InvalidateAll();
+
+        // The Technician lists, opens and runs it, and uses its lookups, views and export.
+        Names(await ReadAsync(await technician.GetAsync("/api/v1/reports"))).ShouldBe(["Report 1"]);
+        (await technician.GetAsync($"/api/v1/reports/{abc}")).StatusCode.ShouldBe(HttpStatusCode.OK);
+        var technicianRun = await RunOkAsync(technician, abc);
+        (await technician.GetAsync(Rows(technicianRun))).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await technician.GetAsync(Export(technicianRun))).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await technician.GetAsync($"/api/v1/reports/{abc}/views")).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await technician.GetAsync($"/api/v1/reports/{abc}/lookups/KIND")).StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        // The Project Manager still holds Report.Run (the other report works) but ABC is gone for them on every endpoint, with the answer of an id that never existed.
+        (await manager.GetAsync($"/api/v1/reports/{other}")).StatusCode.ShouldBe(HttpStatusCode.OK);
+        Names(await ReadAsync(await manager.GetAsync("/api/v1/reports"))).ShouldBe(["Report 2"]);
+        var reference = new Dictionary<string, string>();
+        foreach (var probe in Probes)
+        {
+            reference[probe.Name] = await NormalizedAsync(await probe.Send(manager, 987_654, managerRun));
+            (await NormalizedAsync(await probe.Send(manager, abc, managerRun))).ShouldBe(reference[probe.Name], probe.Name);
+        }
+
+        // Their own earlier result of ABC is gone with the access; the Technician's result is not theirs in any case.
+        foreach (var probe in ResultProbes)
+        {
+            (await probe.Send(manager, abc, managerRun)).StatusCode.ShouldBe(HttpStatusCode.NotFound, probe.Name + " of their earlier result");
+            (await probe.Send(manager, abc, technicianRun)).StatusCode.ShouldBe(HttpStatusCode.NotFound, probe.Name + " of the Technician's result");
+        }
+    }
+
+    private static string[] Names(JsonElement list) =>
+        list.GetProperty("categories").EnumerateArray().SelectMany(c => c.GetProperty("reports").EnumerateArray()).Select(r => r.GetProperty("name").GetString()!).ToArray();
 
     [Fact]
     public async Task The_runner_always_gets_the_current_version_never_a_newer_unreviewed_one_nor_an_older_one()

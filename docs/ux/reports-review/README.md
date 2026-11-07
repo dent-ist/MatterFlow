@@ -88,7 +88,7 @@ Matrix (allowed = yes):
 | Activate / deactivate | no | no | no | no | yes (activate needs a successful preview) | yes |
 | View run log (all users) | no | no | no | no | yes (read-only tab) | yes |
 
-Every endpoint checks the permission server-side; the UI hides, never disables (project convention). Direct URL without permission gives the 403 page without requests or toasts (as Pod Work, decision AD.8). Nobody gets Reports by default except a seeded convention: system administrator role gets `Report.Manage` and `Report.Assign`; no role gets `Report.Run` automatically (the owner picks the trusted roles).
+Every endpoint checks the permission server-side; the UI hides, never disables (project convention). Direct URL without permission gives the 403 page without requests or toasts (as Pod Work, decision AD.8). Nobody gets Reports by default except a seeded convention: system administrator role gets `Report.Manage` and `Report.Assign`; only the Project Manager starter role gets `Report.Run` (owner decision 8, 2026-11-07; the owner picks any further trusted roles).
 
 ## 4. API (REST, OpenAPI in `contracts/openapi`, nswag client regenerated; CI drift check)
 
@@ -147,7 +147,7 @@ On save: new placeholders create a parameter row with defaults (type text, label
 
 ### 5.3 Built-in system values (no input shown)
 
-`:CURRENT_USER_ID` (int), `:CURRENT_USER_NAME` (nvarchar, display name), `:CURRENT_USER_EMAIL` (not provided in release one: personal data not needed), `:TODAY` (date in the firm time zone, `Firm:TimeZoneId`), `:NOW_UTC` (datetime2), `:CURRENT_POD_IDS` (multi: ids of the user's pods), `:CURRENT_PRIMARY_POD_ID` (int, null if none), `:FIRM_TIME_ZONE_OFFSET_MINUTES`. Built-in names are reserved; the admin cannot define a parameter with them. Evaluated once per run on the server; user-supplied values cannot override them (a request that includes a built-in name is rejected).
+`:CURRENT_USER_ID` (int), `:CURRENT_USER_NAME` (nvarchar, display name), `:CURRENT_USER_EMAIL` (not provided in release one: personal data not needed), `:TODAY` (date in the firm time zone, `Firm:TimeZoneId`), `:NOW_UTC` (datetime2), `:CURRENT_POD_IDS` (multi: ids of the user's pods), `:CURRENT_PRIMARY_POD_ID` (int, null if none), `:FIRM_TIME_ZONE_OFFSET_MINUTES`, `:CURRENT_USER_CAN_ASSIGN_MANAGERS` (bit, 1 when the person holds `Matter.AssignManagers`; added for the Project Manager starters, #784). Built-in names are reserved; the admin cannot define a parameter with them. Evaluated once per run on the server; user-supplied values cannot override them (a request that includes a built-in name is rejected).
 
 ### 5.4 Binding: always real parameters
 

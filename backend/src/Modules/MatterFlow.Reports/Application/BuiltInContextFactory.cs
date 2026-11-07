@@ -6,8 +6,8 @@ using Microsoft.Extensions.Configuration;
 
 namespace MatterFlow.Reports.Application;
 
-/// <summary>Collects the facts the server supplies as built-in values for the caller: who they are, "today" in the firm time zone, their pods and the zone offset.</summary>
-public sealed class BuiltInContextFactory(ICurrentUser user, IPodDirectory pods, IConfiguration configuration, TimeProvider time)
+/// <summary>Collects the facts the server supplies as built-in values for the caller: who they are, "today" in the firm time zone, their pods, the zone offset and whether they may assign matter managers.</summary>
+public sealed class BuiltInContextFactory(ICurrentUser user, IPodDirectory pods, IConfiguration configuration, TimeProvider time, IPermissionChecker permissions)
 {
     public async Task<BuiltInContext> CreateAsync(int userId, CancellationToken cancellationToken)
     {
@@ -22,6 +22,7 @@ public sealed class BuiltInContextFactory(ICurrentUser user, IPodDirectory pods,
             now,
             memberships.Select(p => p.Pod.PodId).Order().ToList(),
             primary?.PodId,
-            (int)zone.GetUtcOffset(now).TotalMinutes);
+            (int)zone.GetUtcOffset(now).TotalMinutes,
+            permissions.Has(Permissions.Matter.AssignManagers));
     }
 }

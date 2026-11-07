@@ -133,7 +133,7 @@ How to read it:
 |---|---|---|---|---|
 | `Report.Manage` | Create and edit reports, categories and parameters, preview and activate them, browse the report schema and read the run log | none (System Admin only) | `ReportAdminControllers` | `admin.routes`, `nav-items`, `report-tabs` and 1 more |
 | `Report.Assign` | Choose which roles can run which reports. Shows report names only, never the SQL | none (System Admin only) | `ReportAdminControllers` | `report-editor-page`, `report-tabs`, `reports-list-tab` and 1 more |
-| `Report.Run` | Run the reports assigned to your roles, keep personal views and download the result as CSV | none (System Admin only) | `ReportAdminControllers` | none |
+| `Report.Run` | Run the reports assigned to your roles, keep personal views and download the result as CSV | Project Manager (owner decision 8; script 61 for existing databases) | `ReportAdminControllers` | none |
 
 ## Administration
 

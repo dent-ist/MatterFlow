@@ -1,12 +1,48 @@
 {
-  "$comment": "The starter reports (issue #724, docs/ux/reports-review/README.md section 17). One embedded .sql file per report, named <key>.sql. The seeder (ReportStarterSeeder) creates each report once, guarded by a SeedMarker 'reports.starter.<key>', and never changes it afterwards. 'roles' are role names that receive the report; empty for every starter because no starter role holds Report.Run (owner decision 8 is pending). 'listsMatterNames' is true for a starter whose result shows matter names: those starters leave sensitive matters out unless the person says Include sensitive matters, and the rule that only trusted roles may be given reports (option A, #808) still applies. A unit test checks that every .sql file is in this list and the other way round; the integration test runs every starter through the real read-only login.",
+  "$comment": "The starter reports (issue #724, docs/ux/reports-review/README.md section 17). One embedded .sql file per report, named <key>.sql. The seeder (ReportStarterSeeder) creates each report once, guarded by a SeedMarker 'reports.starter.<key>', and never changes it afterwards. 'roles' are role names that receive the report: empty for the eight general starters, and only \"Project Manager\" (the one starter role that holds Report.Run, owner decision 8) for the two Project Manager starters (#784), which show only matters the person manages. 'listsMatterNames' is true for a starter whose result shows matter names: those starters leave sensitive matters out unless the person says Include sensitive matters, and the rule that only trusted roles may be given reports (option A, #808) still applies. A unit test checks that every .sql file is in this list and the other way round; the integration test runs every starter through the real read-only login.",
   "categories": [
+    { "name": "Matter management", "sortOrder": 5 },
     { "name": "Task follow-up", "sortOrder": 10 },
     { "name": "Intake", "sortOrder": 20 },
     { "name": "Housekeeping", "sortOrder": 30 },
     { "name": "Assets", "sortOrder": 40 }
   ],
   "reports": [
+    {
+      "key": "open-and-overdue-tasks-by-matter",
+      "name": "Open and overdue tasks by matter",
+      "category": "Matter management",
+      "sortOrder": 10,
+      "description": "For each matter you manage: open tasks, overdue tasks and the oldest overdue task in days, with the matter's manager.",
+      "helpText": "Open means New, In Progress or On Hold. Overdue means the due date is before today in the firm time zone. Scope My matters shows the matters where you are the primary or the secondary manager. All matters is for people who may assign matter managers; without that permission it shows your matters. A sensitive matter is listed only when you manage it. This report lists matter names.",
+      "listsMatterNames": true,
+      "roles": ["Project Manager"],
+      "columns": ["Client", "Matter number", "Matter", "Primary manager", "Open tasks", "Overdue tasks", "Oldest overdue (days)"],
+      "parameters": [
+        {
+          "name": "SCOPE", "type": "single", "label": "Scope", "isRequired": true, "default": "mine", "optionsKind": "fixed",
+          "options": [ { "value": "mine", "label": "My matters" }, { "value": "all", "label": "All matters" } ]
+        }
+      ]
+    },
+    {
+      "key": "tasks-completed-this-month",
+      "name": "Tasks completed this month",
+      "category": "Matter management",
+      "sortOrder": 20,
+      "description": "Completed tasks per matter and person for the matters you manage, this month unless you change the period.",
+      "helpText": "The period applies to the completion date and starts as this month. The person is the one the task is assigned to now. Scope My matters shows the matters where you are the primary or the secondary manager. All matters is for people who may assign matter managers; without that permission it shows your matters. A sensitive matter is listed only when you manage it. This report lists matter names.",
+      "listsMatterNames": true,
+      "roles": ["Project Manager"],
+      "columns": ["Matter number", "Matter", "Person", "Completed tasks"],
+      "parameters": [
+        { "name": "PERIOD", "type": "dateRange", "label": "Completed in period", "isRequired": true, "default": "thisMonth" },
+        {
+          "name": "SCOPE", "type": "single", "label": "Scope", "isRequired": true, "default": "mine", "optionsKind": "fixed",
+          "options": [ { "value": "mine", "label": "My matters" }, { "value": "all", "label": "All matters" } ]
+        }
+      ]
+    },
     {
       "key": "overdue-tasks-by-pod",
       "name": "Overdue tasks by pod",

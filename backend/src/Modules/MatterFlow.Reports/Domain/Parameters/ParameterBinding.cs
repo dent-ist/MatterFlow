@@ -53,4 +53,5 @@ public sealed record BuiltInContext(
     DateTime NowUtc,
     IReadOnlyList<int> PodIds,
     int? PrimaryPodId,
-    int FirmTimeZoneOffsetMinutes);
+    int FirmTimeZoneOffsetMinutes,
+    bool CanAssignManagers = false);

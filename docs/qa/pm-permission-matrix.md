@@ -23,3 +23,7 @@ Proved by `frontend/e2e/tests/px6-matrix.spec.ts` (and, per view, by `px3-*`, `p
 | `GET /api/v1/assets?matterManagedByMe=true`, `clients?...`, `projects?...` | 200 | 200 | not asserted | not asserted |
 
 Sensitive-matter rule (`Features:SensitiveMatterAccess`): the PM specs were run once with the switch off and once on (see `docs/ux/pm-experience/review/README.md`, section "Verification").
+
+## Reports (owner decision 8, 2026-11-07)
+
+The starter Project Manager role holds `Report.Run` (script 61 for existing databases) and, from the starter seed, the two reports *Open and overdue tasks by matter* and *Tasks completed this month*. Persona rows: a Project Manager sees exactly those two in Reports (`ReportStarterTests`, `ReportAccessMatrixTests`); with scope *My matters* only matters they manage as Primary or Secondary manager; with scope *All matters* only if they hold `Matter.AssignManagers` (a PM without it gets *My matters*); a sensitive matter never unless they manage it; a report assigned to another role only (for example the Technician role) answers the Project Manager 404 on every endpoint. Director, Pod Lead, Data Technician and Data Scientist hold no `Report.Run` and the Reports menu item is hidden for them.

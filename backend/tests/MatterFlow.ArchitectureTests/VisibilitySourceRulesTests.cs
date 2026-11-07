@@ -83,6 +83,7 @@ public class VisibilitySourceRulesTests
         ["TaskStalledJob.cs"] = "system candidate scan; each recipient is checked as themselves (RecipientVisibility)",
         ["MatterService.cs"] = "row lock of the matter for writes",
         ["ReportAudit.cs"] = "Reports are undecided (README section 15, issue #808)",
+        ["ReportLookupStore.cs"] = "report parameter lookup (owner decision 13): id and label of non-sensitive matters only (IsSensitive = 0 in the one fixed statement, for the search and for the resolve by id), for anybody who may run the report; the persona walk and ReportLookupApiTests prove no sensitive matter is ever returned",
         ["ReportAuditSql.cs"] = "Reports are undecided (README section 15, issue #808)",
         ["TaskTransactions.cs"] = "row locks; the task lock is gated by CanSeeTaskAsync",
         ["MyMattersActivityService.cs"] = "audit window read restricted to the scope's visible matters",

@@ -31,9 +31,9 @@ public class StarterReportManifestTests
     }
 
     [Fact]
-    public void There_are_eight_starters_with_unique_keys_and_names_in_the_declared_categories()
+    public void There_are_ten_starters_with_unique_keys_and_names_in_the_declared_categories()
     {
-        Manifest.Reports.Count.ShouldBe(8);
+        Manifest.Reports.Count.ShouldBe(10);
         Manifest.Reports.Select(r => r.Key).ShouldBeUnique();
         Manifest.Reports.Select(r => r.Name).ShouldBeUnique();
         Manifest.Categories.Select(c => c.Name).ShouldBeUnique();
@@ -102,6 +102,23 @@ public class StarterReportManifestTests
             if (!starter.ListsMatterNames)
                 continue;
 
+            if (sql.Contains(":CURRENT_USER_CAN_ASSIGN_MANAGERS", StringComparison.Ordinal))
+            {
+                // The Project Manager starters (#784): the scope is a fixed choice that starts as "mine", "all" needs the permission through the built-in value, and a sensitive
+                // matter is listed only for the person who manages it, in either scope.
+                var scope = ParameterDefinitionJson.Deserialize(starter.ParametersJson).SingleOrDefault(d => d.Name == "SCOPE");
+                scope.ShouldNotBeNull(starter.Key);
+                scope!.Type.ShouldBe(ReportParameterType.Single, starter.Key);
+                scope.Options.Select(o => o.Value).ShouldBe(["mine", "all"], starter.Key);
+                scope.Default!.Value.GetString().ShouldBe("mine", starter.Key);
+                sql.ShouldContain("(m.PrimaryManagerId = :CURRENT_USER_ID OR m.SecondaryManagerId = :CURRENT_USER_ID", Case.Sensitive, starter.Key);
+                sql.ShouldContain("(:SCOPE = 'all' AND :CURRENT_USER_CAN_ASSIGN_MANAGERS = 1)", Case.Sensitive, starter.Key);
+                sql.ShouldContain("(m.IsSensitive = 0 OR m.PrimaryManagerId = :CURRENT_USER_ID OR m.SecondaryManagerId = :CURRENT_USER_ID)", Case.Sensitive, starter.Key);
+                sql.ShouldNotContain(":INCLUDE_SENSITIVE", Case.Sensitive, starter.Key);
+                starter.HelpText!.ShouldContain("matter names", Case.Insensitive, starter.Key);
+                continue;
+            }
+
             var parameter = ParameterDefinitionJson.Deserialize(starter.ParametersJson).SingleOrDefault(d => d.Name == "INCLUDE_SENSITIVE");
             parameter.ShouldNotBeNull(starter.Key);
             parameter!.Type.ShouldBe(ReportParameterType.YesNo, starter.Key);
@@ -111,7 +128,7 @@ public class StarterReportManifestTests
             starter.HelpText!.ShouldContain("matter names", Case.Insensitive, starter.Key);
         }
 
-        Manifest.Reports.Where(r => r.ListsMatterNames).Select(r => r.Key).ShouldBe(["tasks-per-matter", "assets-linked-to-open-tasks"], ignoreOrder: true);
+        Manifest.Reports.Where(r => r.ListsMatterNames).Select(r => r.Key).ShouldBe(["tasks-per-matter", "assets-linked-to-open-tasks", "open-and-overdue-tasks-by-matter", "tasks-completed-this-month"], ignoreOrder: true);
     }
 
     [Fact]
@@ -122,17 +139,18 @@ public class StarterReportManifestTests
     }
 
     [Fact]
-    public void A_starter_is_given_only_to_a_starter_role_that_holds_Report_Run()
+    public void Only_the_two_Project_Manager_starters_name_a_role_and_it_is_the_one_starter_role_that_holds_Report_Run()
     {
-        // Owner decision 8 is pending: no starter role holds Report.Run, so no starter names a role. If a role is ever added to the manifest, it must exist and hold Run.
+        // Owner decision 8 (2026-11-07): the Project Manager role holds Report.Run, no other starter role does. A starter is given only to a starter role that holds Run.
         foreach (var starter in Manifest.Reports)
         {
             foreach (var role in starter.Roles)
                 StarterRoles.All.Single(r => r.Name == role).Permissions.ShouldContain(Permissions.Report.Run, starter.Key + " names " + role);
         }
 
-        StarterRoles.All.Where(r => r.Permissions.Contains(Permissions.Report.Run)).ShouldBeEmpty("a starter role now holds Report.Run: decide which starters it gets and fill 'roles' in the manifest");
-        Manifest.Reports.SelectMany(r => r.Roles).ShouldBeEmpty();
+        StarterRoles.All.Where(r => r.Permissions.Contains(Permissions.Report.Run)).Select(r => r.Name).ShouldBe(["Project Manager"]);
+        Manifest.Reports.Where(r => r.Roles.Count > 0).Select(r => r.Key).ShouldBe(["open-and-overdue-tasks-by-matter", "tasks-completed-this-month"], ignoreOrder: true);
+        Manifest.Reports.Where(r => r.Roles.Count > 0).ShouldAllBe(r => r.Roles.SequenceEqual(new[] { "Project Manager" }));
     }
 
     [Fact]

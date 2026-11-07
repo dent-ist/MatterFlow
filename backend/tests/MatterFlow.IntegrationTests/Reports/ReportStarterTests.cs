@@ -22,6 +22,8 @@ public sealed class ReportStarterTests(SqlServerFixture sql)
 {
     private static readonly StarterReportManifest Manifest = StarterReportManifest.LoadEmbedded();
 
+    private static readonly string[] PmStarters = [.. Manifest.Reports.Where(r => r.Roles.Contains("Project Manager")).Select(r => r.Key)];
+
     private static async Task<JsonElement> ReadAsync(HttpResponseMessage r) => await r.Content.ReadFromJsonAsync<JsonElement>();
 
     private static Task<int> CountAsync(ReportTestHarness h, string sqlText) => CountAsync(h.AppConnection, sqlText);
@@ -73,13 +75,15 @@ public sealed class ReportStarterTests(SqlServerFixture sql)
     {
         await using var h = await ReportTestHarness.StartAsync(sql, true, ("Seed:StarterReports:Enabled", "true"));
 
-        // Seeded at startup: one active, previewed report with a first version per starter, four categories, a marker each, and no role assignment at all.
+        // Seeded at startup: one active, previewed report with a first version per starter, the categories, a marker each, and no role assignment except the two
+        // Project Manager starters (#784), which go to the starter role "Project Manager" (the one starter role that holds Report.Run, owner decision 8).
         var ids = await ReportIdsAsync(h);
         ids.Keys.Order().ShouldBe(Manifest.Reports.Select(r => r.Name).Order());
-        (await CountAsync(h, "SELECT COUNT(*) FROM dbo.ReportDefinition d JOIN dbo.ReportVersion v ON v.ReportVersionId = d.CurrentVersionId WHERE d.IsActive = 1 AND d.LastPreviewOkVersionId = d.CurrentVersionId AND v.VersionNo = 1 AND v.ChangeNote = N'Starter report'")).ShouldBe(8);
+        (await CountAsync(h, "SELECT COUNT(*) FROM dbo.ReportDefinition d JOIN dbo.ReportVersion v ON v.ReportVersionId = d.CurrentVersionId WHERE d.IsActive = 1 AND d.LastPreviewOkVersionId = d.CurrentVersionId AND v.VersionNo = 1 AND v.ChangeNote = N'Starter report'")).ShouldBe(Manifest.Reports.Count);
         (await CountAsync(h, "SELECT COUNT(*) FROM dbo.ReportCategory WHERE IsActive = 1")).ShouldBe(Manifest.Categories.Count);
-        (await CountAsync(h, "SELECT COUNT(*) FROM dbo.SeedMarker WHERE Name LIKE 'reports.starter.%'")).ShouldBe(8);
-        (await CountAsync(h, "SELECT COUNT(*) FROM dbo.RoleReport")).ShouldBe(0);
+        (await CountAsync(h, "SELECT COUNT(*) FROM dbo.SeedMarker WHERE Name LIKE 'reports.starter.%'")).ShouldBe(Manifest.Reports.Count);
+        (await CountAsync(h, "SELECT COUNT(*) FROM dbo.RoleReport")).ShouldBe(PmStarters.Length);
+        (await CountAsync(h, "SELECT COUNT(*) FROM dbo.RoleReport rr JOIN dbo.Role r ON r.RoleId = rr.RoleId JOIN dbo.ReportDefinition d ON d.ReportId = rr.ReportId WHERE r.Name = N'Project Manager' AND d.Name IN (N'Open and overdue tasks by matter', N'Tasks completed this month')")).ShouldBe(2);
 
         // Data that every starter has something to say about.
         var w = await h.Tasks.CreateWorldAsync();
@@ -108,7 +112,7 @@ public sealed class ReportStarterTests(SqlServerFixture sql)
             INSERT dbo.TaskAsset (TaskId, AssetId, MatterId) SELECT {t3}, AssetId, MatterId FROM dbo.Asset WHERE DisplayName = N'Hidden laptop';
             """);
 
-        // A test role that holds Report.Run and every starter (no starter role holds it, so the seed assigns nothing).
+        // A test role that holds Report.Run and every starter.
         var (runner, role) = await h.PersonAsync(@"KE\runner", "Report.Run");
         await SqlServerFixture.ExecuteAsync(h.AppConnection, $"INSERT dbo.RoleReport (RoleId, ReportId) SELECT {role}, ReportId FROM dbo.ReportDefinition");
 
@@ -155,6 +159,107 @@ public sealed class ReportStarterTests(SqlServerFixture sql)
     }
 
     [Fact]
+    public async Task A_project_manager_runs_the_two_PM_starters_and_sees_only_the_matters_they_manage_never_a_sensitive_one_they_do_not()
+    {
+        await using var h = await ReportTestHarness.StartAsync(sql, true, ("Seed:StarterReports:Enabled", "true"));
+        var ids = await ReportIdsAsync(h);
+        var overdue = Manifest.Reports.Single(r => r.Key == "open-and-overdue-tasks-by-matter");
+        var completed = Manifest.Reports.Single(r => r.Key == "tasks-completed-this-month");
+
+        // The starter role "Project Manager" holds Report.Run (script 61 / StarterRoles) and gets exactly the two PM starters; Director and the others hold neither.
+        var pmRole = await CountAsync(h, "SELECT RoleId FROM dbo.Role WHERE Name = N'Project Manager'");
+        (await CountAsync(h, $"SELECT COUNT(*) FROM dbo.RolePermission rp JOIN dbo.Permission p ON p.PermissionId = rp.PermissionId WHERE rp.RoleId = {pmRole} AND p.Code = 'Report.Run'")).ShouldBe(1);
+        (await CountAsync(h, "SELECT COUNT(*) FROM dbo.RolePermission rp JOIN dbo.Permission p ON p.PermissionId = rp.PermissionId JOIN dbo.Role r ON r.RoleId = rp.RoleId WHERE p.Code = 'Report.Run' AND r.Name <> N'Project Manager'")).ShouldBe(0);
+
+        var pm = await h.Tasks.UserWithAsync(@"KE\pm", "Task.View");
+        var pmId = await h.Tasks.UserIdAsync(@"KE\pm");
+        await h.Factory.GrantRoleAsync(@"KE\pm", pmRole);
+        var other = await h.Tasks.UserWithAsync(@"KE\othermanager", "Task.View");
+        var otherId = await h.Tasks.UserIdAsync(@"KE\othermanager");
+        // A person who holds Report.Run and the reports but not Matter.AssignManagers (a custom role).
+        var (noAssign, noAssignRole) = await h.PersonAsync(@"KE\noassign", "Report.Run", "Task.View");
+        var noAssignId = await h.Tasks.UserIdAsync(@"KE\noassign");
+        await SqlServerFixture.ExecuteAsync(h.AppConnection, $"INSERT dbo.RoleReport (RoleId, ReportId) SELECT {noAssignRole}, ReportId FROM dbo.ReportDefinition WHERE Name IN (N'{overdue.Name}', N'{completed.Name}')");
+
+        // M1 managed as primary, M2 as secondary, M3 by nobody, M4 sensitive and managed by somebody else, M5 sensitive and managed by the manager.
+        var w = await h.Tasks.CreateWorldAsync();
+        var m1 = w.MatterId;
+        var m2 = await h.Tasks.CreateMatterAsync("343", "22");
+        var m3 = await h.Tasks.CreateMatterAsync("343", "23");
+        var m4 = await h.Tasks.CreateMatterAsync("343", "24");
+        var m5 = await h.Tasks.CreateMatterAsync("343", "25");
+        await SqlServerFixture.ExecuteAsync(h.AppConnection, $"""
+            UPDATE dbo.Matter SET PrimaryManagerId = {pmId}, SecondaryManagerId = {otherId} WHERE MatterId = {m1};
+            UPDATE dbo.Matter SET PrimaryManagerId = {otherId}, SecondaryManagerId = {pmId} WHERE MatterId = {m2};
+            UPDATE dbo.Matter SET IsSensitive = 1, Name = N'Hidden four', PrimaryManagerId = {otherId} WHERE MatterId = {m4};
+            UPDATE dbo.Matter SET IsSensitive = 1, Name = N'Own secret five', PrimaryManagerId = {pmId} WHERE MatterId = {m5};
+            """);
+
+        async Task<long> OverdueTaskAsync(int matter, int daysLate)
+        {
+            var id = TaskHarness.TaskId(await h.Tasks.CreateTaskAsync(w with { MatterId = matter }));
+            await SqlServerFixture.ExecuteAsync(h.AppConnection, $"UPDATE dbo.Task SET DueDate = CAST(DATEADD(day, -{daysLate}, SYSUTCDATETIME()) AS date), DueSortKey = DATEADD(day, -{daysLate}, SYSUTCDATETIME()) WHERE TaskId = {id}");
+            return id;
+        }
+
+        await OverdueTaskAsync(m1, 5);
+        _ = TaskHarness.TaskId(await h.Tasks.CreateTaskAsync(w with { MatterId = m1 })); // open, not overdue
+        await OverdueTaskAsync(m2, 2);
+        await OverdueTaskAsync(m3, 9);
+        await OverdueTaskAsync(m4, 7);
+        await OverdueTaskAsync(m5, 3);
+        foreach (var matter in new[] { m1, m4, m5 })
+        {
+            var done = await h.Tasks.ReachAsync(w with { MatterId = matter }, "COMPLETED");
+            await SqlServerFixture.ExecuteAsync(h.AppConnection, $"UPDATE dbo.Task SET AssignedUserId = {noAssignId} WHERE TaskId = {TaskHarness.TaskId(done)}");
+        }
+
+        await SqlServerFixture.ExecuteAsync(h.AppConnection, "UPDATE dbo.Task SET IsMatterSensitive = 1 WHERE MatterId IN (SELECT MatterId FROM dbo.Matter WHERE IsSensitive = 1)");
+
+        // The manager lists exactly the two PM starters, and no other.
+        var list = await ReadAsync(await pm.GetAsync("/api/v1/reports"));
+        list.GetProperty("categories").EnumerateArray().SelectMany(c => c.GetProperty("reports").EnumerateArray()).Select(r => r.GetProperty("name").GetString()).Order()
+            .ShouldBe(["Open and overdue tasks by matter", "Tasks completed this month"]);
+        var definition = await ReadAsync(await pm.GetAsync($"/api/v1/reports/{ids[overdue.Name]}"));
+        definition.GetProperty("parameters").EnumerateArray().Select(p => p.GetProperty("name").GetString()).ShouldBe(["SCOPE"]);
+        definition.GetProperty("parameters")[0].GetProperty("default").GetString().ShouldBe("mine");
+        (await RunAsync(pm, ids["Overdue tasks by pod"])).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+
+        string Matter(Dictionary<string, JsonElement> row) => S(row, "Matter number");
+        string Ref(int matter) => SqlServerFixture.ScalarAsync(h.AppConnection, $"SELECT MatterRef FROM dbo.Matter WHERE MatterId = {matter}").GetAwaiter().GetResult()!.ToString()!;
+
+        // My matters (the default): M1, M2 and the sensitive M5 they manage; never M3 (nobody) or M4 (sensitive, somebody else's).
+        var mine = await RunRowsAsync(pm, overdue, ids[overdue.Name]);
+        mine.Select(Matter).ShouldBe([Ref(m1), Ref(m2), Ref(m5)], ignoreOrder: true);
+        var first = mine.Single(r => Matter(r) == Ref(m1));
+        (N(first, "Open tasks"), N(first, "Overdue tasks"), N(first, "Oldest overdue (days)")).ShouldBe((2, 1, 5));
+        S(first, "Primary manager").ShouldNotBeNullOrEmpty();
+        JsonSerializer.Serialize(mine).ShouldNotContain("Hidden four");
+
+        // All matters: the manager may assign managers, so M3 appears too, but a sensitive matter they do not manage still never does.
+        var all = await RunRowsAsync(pm, overdue, ids[overdue.Name], new { SCOPE = "all" });
+        all.Select(Matter).ShouldBe([Ref(m1), Ref(m2), Ref(m3), Ref(m5)], ignoreOrder: true);
+        JsonSerializer.Serialize(all).ShouldNotContain("Hidden four");
+
+        // Without Matter.AssignManagers "All" shows what "My matters" shows (the built-in value is 0), and the other manager sees their own side only.
+        (await RunRowsAsync(noAssign, overdue, ids[overdue.Name], new { SCOPE = "all" })).ShouldBeEmpty();
+        var otherRole = await h.Factory.CreateRoleAsync("Other manager role", "Report.Run", "Matter.AssignManagers");
+        await h.Factory.GrantRoleAsync(@"KE\othermanager", otherRole);
+        await SqlServerFixture.ExecuteAsync(h.AppConnection, $"INSERT dbo.RoleReport (RoleId, ReportId) VALUES ({otherRole}, {ids[overdue.Name]})");
+        var theirs = await RunRowsAsync(other, overdue, ids[overdue.Name]);
+        theirs.Select(Matter).ShouldBe([Ref(m1), Ref(m2), Ref(m4)], ignoreOrder: true);
+        JsonSerializer.Serialize(theirs).ShouldNotContain("Own secret five");
+
+        // Tasks completed this month: counts per matter and person, same scope rules, a sensitive matter only for its own manager.
+        var finished = await RunRowsAsync(pm, completed, ids[completed.Name]);
+        finished.Select(Matter).ShouldBe([Ref(m1), Ref(m5)], ignoreOrder: true);
+        finished.ShouldAllBe(r => N(r, "Completed tasks") == 1);
+        var doneAll = await RunRowsAsync(pm, completed, ids[completed.Name], new { SCOPE = "all" });
+        doneAll.Select(Matter).ShouldBe([Ref(m1), Ref(m5)], ignoreOrder: true);
+        JsonSerializer.Serialize(doneAll).ShouldNotContain("Hidden four");
+    }
+
+    [Fact]
     public async Task The_seeder_is_idempotent_never_overwrites_edits_and_a_dry_run_writes_nothing()
     {
         await using var h = await ReportTestHarness.StartAsync(sql, true, ("Seed:StarterReports:Enabled", "false")); // seeding is off in the test host
@@ -178,19 +283,19 @@ public sealed class ReportStarterTests(SqlServerFixture sql)
 
         var first = await SeedAsync(false);
         first.HasFailures.ShouldBeFalse(string.Join("; ", first.Actions.Where(a => a.Outcome == StarterSeedOutcome.Failed).Select(a => a.Key + " " + a.Detail)));
-        first.Count(StarterSeedOutcome.Created).ShouldBe(7);
+        first.Count(StarterSeedOutcome.Created).ShouldBe(Manifest.Reports.Count - 1);
         first.Actions.Single(a => a.Outcome == StarterSeedOutcome.Existing).Key.ShouldBe("overdue-tasks-by-pod");
-        (await CountAsync(h, "SELECT COUNT(*) FROM dbo.ReportDefinition")).ShouldBe(8);
-        (await CountAsync(h, "SELECT COUNT(*) FROM dbo.SeedMarker WHERE Name LIKE 'reports.starter.%'")).ShouldBe(8);
+        (await CountAsync(h, "SELECT COUNT(*) FROM dbo.ReportDefinition")).ShouldBe(Manifest.Reports.Count);
+        (await CountAsync(h, "SELECT COUNT(*) FROM dbo.SeedMarker WHERE Name LIKE 'reports.starter.%'")).ShouldBe(Manifest.Reports.Count);
         (await CountAsync(h, $"SELECT COUNT(*) FROM dbo.ReportVersion WHERE ReportId = {own} AND SqlText = N'SELECT 1 AS mine'")).ShouldBe(1);
-        (await CountAsync(h, "SELECT COUNT(*) FROM dbo.RoleReport")).ShouldBe(0);
+        (await CountAsync(h, "SELECT COUNT(*) FROM dbo.RoleReport")).ShouldBe(PmStarters.Length);
         (await h.AuditAsync(objectType: "Report")).Count.ShouldBeGreaterThan(0);
 
         // Edits by an administrator survive: rename, new description, deactivation.
         await SqlServerFixture.ExecuteAsync(h.AppConnection, "UPDATE dbo.ReportDefinition SET Name = N'My pod report', Description = N'edited', IsActive = 0 WHERE Name = N'Aging of open tasks'");
         var second = await SeedAsync(false);
         second.Actions.ShouldAllBe(a => a.Outcome == StarterSeedOutcome.Existing);
-        (await CountAsync(h, "SELECT COUNT(*) FROM dbo.ReportDefinition")).ShouldBe(8);
+        (await CountAsync(h, "SELECT COUNT(*) FROM dbo.ReportDefinition")).ShouldBe(Manifest.Reports.Count);
         (await CountAsync(h, "SELECT COUNT(*) FROM dbo.ReportDefinition WHERE Name = N'My pod report' AND Description = N'edited' AND IsActive = 0")).ShouldBe(1);
         (await CountAsync(h, "SELECT COUNT(*) FROM dbo.ReportDefinition WHERE Name = N'Aging of open tasks'")).ShouldBe(0);
 

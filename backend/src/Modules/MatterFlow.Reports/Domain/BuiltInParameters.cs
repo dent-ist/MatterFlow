@@ -15,10 +15,16 @@ public static class BuiltInParameters
     public const string CurrentPrimaryPodId = "CURRENT_PRIMARY_POD_ID";
     public const string FirmTimeZoneOffsetMinutes = "FIRM_TIME_ZONE_OFFSET_MINUTES";
 
+    /// <summary>
+    /// 1 (bit) when the person holds <c>Matter.AssignManagers</c> (System Admin holds every permission), else 0. SQL cannot call the permission system, so a report
+    /// that offers "All matters" only to such people writes <c>(:SCOPE = 'mine' OR :CURRENT_USER_CAN_ASSIGN_MANAGERS = 1)</c> (the Project Manager starters, #784).
+    /// </summary>
+    public const string CurrentUserCanAssignManagers = "CURRENT_USER_CAN_ASSIGN_MANAGERS";
+
     /// <summary>All reserved names, upper case.</summary>
     public static IReadOnlySet<string> Names { get; } = new HashSet<string>(StringComparer.Ordinal)
     {
-        CurrentUserId, CurrentUserName, CurrentUserEmail, Today, NowUtc, CurrentPodIds, CurrentPrimaryPodId, FirmTimeZoneOffsetMinutes,
+        CurrentUserId, CurrentUserName, CurrentUserEmail, Today, NowUtc, CurrentPodIds, CurrentPrimaryPodId, FirmTimeZoneOffsetMinutes, CurrentUserCanAssignManagers,
     };
 
     /// <summary>Reserved but not provided in release one (personal data is not needed): a query that uses one is refused with a clear message.</summary>

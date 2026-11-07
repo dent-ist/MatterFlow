@@ -1108,8 +1108,8 @@ const STARTER_MANIFEST = fileURLToPath(
 
 /**
  * Leaves the Reports module usable on a fresh demo. The starter reports themselves are created by the API at startup (Development default,
- * Seed__StarterReports__Enabled), as active, previewed reports; this step does what the API does not do on purpose: no starter role holds
- * Report.Run (owner decision 8 is pending), so the demo gets its own role "Report Runner (demo)" with only Report.Run, gives it every starter
+ * Seed__StarterReports__Enabled), as active, previewed reports; this step does what the API does not do on purpose: only the Project Manager starter
+ * role holds Report.Run (owner decision 8; the seeder gives it the two Project Manager starters), so the demo also gets its own role "Report Runner (demo)" with only Report.Run, gives it every starter
  * and gives it to the Director persona (Test User 02, who may see sensitive matters). The System Admin role gets the starters too, so the
  * bootstrap admin of "npm start" can run them. Safe to repeat: assignments are merged, never replaced. The report login (mf_reports) is
  * provisioned by "npm start" (db:report-login), not here: this step only reads its state and says what is missing.

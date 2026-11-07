@@ -28,7 +28,7 @@ node tools/seed-demo/seed-demo.mjs --aged --seed 7 # moves dates back so At risk
 | Organization | 5 clients (numbers 90001 to 90005), 12 matters (80001 to 80012), 4 projects, 60 assets |
 | Sensitive matters | Two of the 12 matters are Sensitive: one has a Project Manager, one has none. The run ends by listing accounts that see all, what they manage, only their assigned tasks, or none. The rule works only with `Features__SensitiveMatterAccess=true` |
 | Project Manager personas | Test User 35 manages exactly one matter; Test User 19 manages three; their matters hold an overdue, an unassigned, an On hold and (with `--aged`) an At risk task |
-| Reports | The eight starter reports (created by the API itself, see below), the role `Report Runner (demo)` (only `Report.Run`) holding all of them, given to Test User 02 (Director); the System Admin role holds them too |
+| Reports | The ten starter reports (created by the API itself, see below; the two for Project Managers go to the Project Manager role), the role `Report Runner (demo)` (only `Report.Run`) holding all of them, given to Test User 02 (Director); the System Admin role holds them too |
 | Tasks | 200 by default, spread across task types, statuses (about 20 percent New, 37 percent In Progress, 10 percent On Hold, 23 percent Completed, 8 percent Cancelled), about 27 percent unassigned, overdue and due soon mixes, request forms and workflow steps filled, comments |
 
 ### Reports in the demo
@@ -38,8 +38,8 @@ Reports need three things, and no single command did all of them before issue #7
 | Need | Who provides it |
 |---|---|
 | The report login `mf_reports` (the reports run on their own read-only SQL login) | `npm start` (`db:up` and `db:report-login` run `tools/db/provision-report-login.sql`); `npm run db:report-login` repeats it. Without it Reports say "not configured" |
-| The eight starter reports, active and previewed | The API at startup: `Seed:StarterReports` is on in Development (off elsewhere), idempotent, never overwrites an administrator's edit, `DryRun` only logs. See [Add a Report](../How-To/Add-a-Report.md) and [Reports Module](../Architecture/Reports-Module.md) |
-| A role that holds `Report.Run` and the starters | `npm run seed:demo` (step "Reports: starter reports for the demo"): creates `Report Runner (demo)` with only `Report.Run`, assigns the starters to it and to the System Admin role (merged, never replaced), and adds the role to Test User 02. No starter role (Director, Project Manager, ...) holds `Report.Run`: that is owner decision 8, still open, so the seeder itself assigns nothing |
+| The ten starter reports, active and previewed | The API at startup: `Seed:StarterReports` is on in Development (off elsewhere), idempotent, never overwrites an administrator's edit, `DryRun` only logs. See [Add a Report](../How-To/Add-a-Report.md) and [Reports Module](../Architecture/Reports-Module.md) |
+| A role that holds `Report.Run` and the starters | `npm run seed:demo` (step "Reports: starter reports for the demo"): creates `Report Runner (demo)` with only `Report.Run`, assigns the starters to it and to the System Admin role (merged, never replaced), and adds the role to Test User 02. Only the Project Manager starter role holds `Report.Run` (owner decision 8) and the seeder gives it just the two Project Manager starters; Director and the others hold none, which is why this role exists for the demo |
 
 After `npm start` and `npm run seed:demo`: sign in as `KE\kekim` (System Admin) or `KE\testuser02` (Director) and open Reports. Everyone else sees no Reports until an administrator gives their role `Report.Run` and assigns reports (Administration > Report Setup).
 
