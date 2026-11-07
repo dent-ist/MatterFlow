@@ -9747,6 +9747,88 @@
         }
       }
     },
+    "/api/v1/reports/{id}/favourite": {
+      "put": {
+        "tags": [
+          "ReportFavourites"
+        ],
+        "operationId": "AddReportFavourite",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": { }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ReportFavourites"
+        ],
+        "operationId": "RemoveReportFavourite",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": { }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/recent": {
+      "get": {
+        "tags": [
+          "ReportFavourites"
+        ],
+        "operationId": "ListRecentReports",
+        "parameters": [
+          {
+            "name": "top",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecentReportsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/reports": {
       "get": {
         "tags": [
@@ -31171,6 +31253,45 @@
           }
         }
       },
+      "RecentReportResponse": {
+        "required": [
+          "reportId",
+          "name",
+          "categoryName",
+          "lastRunAtUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "reportId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "categoryName": {
+            "type": "string"
+          },
+          "lastRunAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RecentReportsResponse": {
+        "required": [
+          "reports"
+        ],
+        "type": "object",
+        "properties": {
+          "reports": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecentReportResponse"
+            }
+          }
+        }
+      },
       "ReopenStepRequest": {
         "required": [
           "rowVersion"
@@ -32392,6 +32513,10 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "isFavourite": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -39499,6 +39624,9 @@
     },
     {
       "name": "ReportDefinitions"
+    },
+    {
+      "name": "ReportFavourites"
     },
     {
       "name": "Reports"

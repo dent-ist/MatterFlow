@@ -37,6 +37,8 @@ public static class ReportsModule
         services.AddScoped<ReportExportService>();
         services.AddScoped<IReportViewStore, ReportViewStore>();
         services.AddScoped<ReportViewService>();
+        services.AddScoped<IReportPersonalStore, ReportPersonalStore>();
+        services.AddScoped<ReportPersonalService>();
         services.AddScoped<ReportAuthoringService>();
         services.AddMemoryCache();
         services.AddSingleton<ReportChoiceGate>();

@@ -22,7 +22,8 @@ public sealed record RunnableListItem(
     int VersionNo,
     string SqlText,
     string ParametersJson,
-    DateTime? LastRunAtUtc);
+    DateTime? LastRunAtUtc,
+    bool IsFavourite = false);
 
 /// <summary>
 /// One report a person may run, with everything the run page shows. <see cref="SqlText"/> is only here so the service can find the parameters the SQL really
@@ -91,6 +92,7 @@ public sealed record RunnableReportDefinition(
 /// <summary>A report in the list of a person who may run it. Carries no SQL.</summary>
 /// <param name="ParameterLabels">The labels of the parameters the person is asked for, in order.</param>
 /// <param name="LastRunAtUtc">When this person last ran the report successfully (previews and choice queries do not count); null when never.</param>
+/// <param name="IsFavourite">True when this person marked the report as a favourite.</param>
 public sealed record RunnableReportSummary(
     int ReportId,
     string Name,
@@ -98,7 +100,8 @@ public sealed record RunnableReportSummary(
     int SortOrder,
     int ParameterCount,
     IReadOnlyList<string> ParameterLabels,
-    DateTime? LastRunAtUtc);
+    DateTime? LastRunAtUtc,
+    bool IsFavourite = false);
 
 /// <summary>A category with the reports the person may run in it.</summary>
 public sealed record RunnableCategory(int CategoryId, string Name, int SortOrder, IReadOnlyList<RunnableReportSummary> Reports);
@@ -192,7 +195,7 @@ public sealed class ReportBrowseService(IReportCatalog catalog, ICurrentUser use
     private static RunnableReportSummary Summarise(RunnableListItem item)
     {
         var labels = AskedParameters(item.SqlText, item.ParametersJson).Select(d => d.Label.Length > 0 ? d.Label : d.Name).ToList();
-        return new RunnableReportSummary(item.ReportId, item.Name, item.Description, item.SortOrder, labels.Count, labels, item.LastRunAtUtc);
+        return new RunnableReportSummary(item.ReportId, item.Name, item.Description, item.SortOrder, labels.Count, labels, item.LastRunAtUtc, item.IsFavourite);
     }
 
     /// <summary>

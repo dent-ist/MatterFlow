@@ -51,6 +51,7 @@ public sealed record ReportRowsResponse(
 /// <param name="HasParameters">True when <paramref name="ParameterCount"/> is more than 0.</param>
 /// <param name="ParameterLabels">The labels of those parameters, in order.</param>
 /// <param name="LastRunAtUtc">When this person last ran the report successfully (UTC), null when never. Other people's runs never show.</param>
+/// <param name="IsFavourite">True when this person marked the report as a favourite (<c>PUT /reports/{id}/favourite</c>); other people's marks never show.</param>
 public sealed record RunnableReportListItemResponse(
     int ReportId,
     string Name,
@@ -59,7 +60,8 @@ public sealed record RunnableReportListItemResponse(
     int ParameterCount,
     bool HasParameters,
     IReadOnlyList<string> ParameterLabels,
-    DateTime? LastRunAtUtc);
+    DateTime? LastRunAtUtc,
+    bool IsFavourite = false);
 
 /// <summary>A category with the reports the person may run in it (categories with nothing to run are left out).</summary>
 public sealed record RunnableReportCategoryResponse(int CategoryId, string Name, int SortOrder, IReadOnlyList<RunnableReportListItemResponse> Reports);
@@ -151,7 +153,7 @@ public class ReportsController(ReportRunService runs, ReportResultStore results,
                 c.CategoryId,
                 c.Name,
                 c.SortOrder,
-                c.Reports.Select(r => new RunnableReportListItemResponse(r.ReportId, r.Name, r.Description, r.SortOrder, r.ParameterCount, r.ParameterCount > 0, r.ParameterLabels, r.LastRunAtUtc)).ToList()))
+                c.Reports.Select(r => new RunnableReportListItemResponse(r.ReportId, r.Name, r.Description, r.SortOrder, r.ParameterCount, r.ParameterCount > 0, r.ParameterLabels, r.LastRunAtUtc, r.IsFavourite)).ToList()))
             .ToList();
         return Ok(new RunnableReportListResponse(categories, categories.Sum(c => c.Reports.Count)));
     }

@@ -111,6 +111,8 @@ public sealed partial class ReportAccessMatrixTests(SqlServerFixture sql)
         new("views update", (c, id, _) => c.PutAsync($"/api/v1/reports/{id}/views/1", ReportTestHarness.Json(new { name = "y" }))),
         new("views delete", (c, id, _) => c.DeleteAsync($"/api/v1/reports/{id}/views/1")),
         new("views default", (c, id, _) => c.PostAsync($"/api/v1/reports/{id}/views/1/default", null)),
+        new("favourite add", (c, id, _) => c.PutAsync($"/api/v1/reports/{id}/favourite", null)),
+        new("favourite remove", (c, id, _) => c.DeleteAsync($"/api/v1/reports/{id}/favourite")),
     ];
 
     private static readonly Probe[] ResultProbes =

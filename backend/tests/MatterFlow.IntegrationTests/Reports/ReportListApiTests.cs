@@ -189,7 +189,7 @@ public sealed class ReportListApiTests(SqlServerFixture sql)
         body.ShouldNotContain("ReportsReadOnly", Case.Insensitive);
         // Exactly the documented members, nothing else.
         var report = JsonDocument.Parse(body).RootElement.GetProperty("categories")[0].GetProperty("reports")[0];
-        report.EnumerateObject().Select(p => p.Name).Order().ShouldBe(["description", "hasParameters", "lastRunAtUtc", "name", "parameterCount", "parameterLabels", "reportId", "sortOrder"]);
+        report.EnumerateObject().Select(p => p.Name).Order().ShouldBe(["description", "hasParameters", "isFavourite", "lastRunAtUtc", "name", "parameterCount", "parameterLabels", "reportId", "sortOrder"]);
     }
 
     [Fact]

@@ -23,6 +23,9 @@ public sealed class ReportsOptions
     /// <summary>Runs and previews one person may start per hour (429 <c>REPORT_RATE_LIMITED</c> above it).</summary>
     public int RunsPerUserPerHour { get; set; } = 30;
 
+    /// <summary>Most favourite reports one person can keep among the reports they may run (409 <c>FAVOURITE_LIMIT_REACHED</c> above it).</summary>
+    public int MaxFavouritesPerUser { get; set; } = 100;
+
     public int PreviewRows { get; set; } = 20;
 
     public int PreviewTimeoutSeconds { get; set; } = 15;

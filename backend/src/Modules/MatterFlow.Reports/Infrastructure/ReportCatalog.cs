@@ -13,7 +13,7 @@ internal sealed class ReportCatalog(ReportAppConnection app) : IReportCatalog
     /// The one rule for "may run": the report is active, its category is active and one of the person's active roles holds it. Every read of this class uses it
     /// (run, definition, choice lists, the list, the export and the saved views), so a report in a deactivated category is as hidden as an inactive one.
     /// </summary>
-    private const string MayRun =
+    internal const string MayRun =
         """
         d.IsActive = 1
           AND EXISTS (SELECT 1 FROM dbo.ReportCategory rc WHERE rc.ReportCategoryId = d.ReportCategoryId AND rc.IsActive = 1)
@@ -47,7 +47,8 @@ internal sealed class ReportCatalog(ReportAppConnection app) : IReportCatalog
         $"""
         SELECT d.ReportId, d.Name, d.Description, d.SortOrder, c.ReportCategoryId, c.Name, c.SortOrder, v.VersionNo, v.SqlText, v.ParametersJson,
                (SELECT MAX(r.StartedAt) FROM dbo.ReportRun r
-                WHERE r.ReportId = d.ReportId AND r.UserId = @userId AND r.Kind = 'Run' AND r.Status IN ('Succeeded', 'Truncated')) AS LastRunAt
+                WHERE r.ReportId = d.ReportId AND r.UserId = @userId AND r.Kind = 'Run' AND r.Status IN ('Succeeded', 'Truncated')) AS LastRunAt,
+               CASE WHEN EXISTS (SELECT 1 FROM dbo.ReportFavourite f WHERE f.ReportId = d.ReportId AND f.UserId = @userId) THEN 1 ELSE 0 END AS IsFavourite
         FROM dbo.ReportDefinition d
         JOIN dbo.ReportVersion v ON v.ReportVersionId = d.CurrentVersionId
         JOIN dbo.ReportCategory c ON c.ReportCategoryId = d.ReportCategoryId
@@ -124,7 +125,8 @@ internal sealed class ReportCatalog(ReportAppConnection app) : IReportCatalog
                 reader.GetInt32(7),
                 reader.GetString(8),
                 reader.GetString(9),
-                reader.IsDBNull(10) ? null : DateTime.SpecifyKind(reader.GetDateTime(10), DateTimeKind.Utc)));
+                reader.IsDBNull(10) ? null : DateTime.SpecifyKind(reader.GetDateTime(10), DateTimeKind.Utc),
+                reader.GetInt32(11) == 1));
         }
 
         return items;
