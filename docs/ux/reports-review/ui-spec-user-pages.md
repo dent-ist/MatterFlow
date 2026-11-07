@@ -134,7 +134,7 @@ All controls are shared fields. **No native `<select>` and no native checkbox or
 | Parameter type | Control | Details |
 |---|---|---|
 | number | `mf-text-field` numeric | right aligned text, accepts digits, sign, one decimal point; thousands commas shown after blur; min / max from the definition shown in the error message only; empty allowed unless required |
-| date | the app's styled date input (`input[type=date]` with the shared field class, as in the Absence dialog and the task due date; there is **no** shared `mf-date-field`, and none is added here) | browser calendar and typing; default keywords resolve to a real date when the form opens (today, startOfMonth, endOfMonth, startOfYear, endOfYear, startOfLastMonth, endOfLastMonth, today-N, today+N) |
+| date | the app's styled date input (**built as** `mf-date-input` from form-engine: MM/DD/YYYY typing plus a calendar button; accepted in review 1, replaces the native input this row first named) | browser calendar and typing; default keywords resolve to a real date when the form opens (today, startOfMonth, endOfMonth, startOfYear, endOfYear, startOfLastMonth, endOfLastMonth, today-N, today+N) |
 | date range | two date inputs of the same kind ("From", "To") + the shared **date-presets** menu button "Presets" (This Month, Last Month, This Year, Last 30 Days ...) after the fields | one label for the pair (the parameter label); "To" is not allowed before "From" (message below); either side may be empty only if not required |
 | text | `mf-text-field` | max length from the definition (default 400), no counter unless over 80% of it; the value is trimmed |
 | single (fixed list) | `mf-dropdown` field, search on when more than 8 options | placeholder "Select..." ; a clear (x) when not required |
@@ -170,7 +170,7 @@ Lookup permission note: the pickers call the app's normal lookup APIs, so a pers
 | Code | Banner wording |
 |---|---|
 | REPORT_ALREADY_RUNNING (409) | "Another report is already running for you. Wait for it to finish or cancel it." with a `Cancel Running Report` text button (calls `DELETE /reports/runs/current`) |
-| REPORT_RATE_LIMITED (429) | "You've reached the limit of 30 runs per hour. Try again later." |
+| REPORT_RATE_LIMITED (429) | "You've reached the hourly limit for report runs. Try again later." (no number: the limit is a setting; changed after review 1) |
 | REPORT_BUSY (429) | "The server is busy with other reports. Try again in a minute." |
 | REPORT_MEMORY (503) | "This report needs more memory than is available. Narrow the parameters and try again." |
 | REPORT_TIMEOUT (408) | "The report took longer than 60 seconds and was stopped. Narrow the parameters and try again." |
@@ -417,3 +417,51 @@ No new tokens, no new shared primitives.
 | O5 | Leaving the run page while a report runs cancels it silently? | Yes. |
 | O6 | Parameter lookups (matter, client, user) available to anyone who can run the report even without Client.View / Matter.View? | Yes, id and label only; otherwise such reports cannot be used by run-only roles. |
 | O7 | No saved result snapshots (a view is layout, not data) - old question Q1. | Confirm. |
+
+---
+
+## 13. Review 1: list, menu and run page (#718, #719), 2026-11-07
+
+Reviewed: RF commits 3873640 (#718) and 7854f2d (#719) on `origin/reports`, code read plus the 17 mocked-API JPEGs (`evidence/2026-11-07-reports-718`, `-719` on `design-evidence`) at 1366 and 1920. I did not run a stack (no report login on the demo stack; RF's mocks cover every state). Not checked in a browser by me: keyboard tab order and the live counter timing (read from code only).
+
+**Verdict: pass with three small fixes.** The list, nav, run page, validation, Run/Cancel, summary bar, banners and the neutral result block match the spec. Findings that are not deviations:
+
+- Nav: Reports appears for a person with only Report.Run, also with nothing assigned (evidence `rp7-list-empty-1366`, nav shows only Reports); Administration shows "Report Setup" with its own wrench icon; PM compact menu lists Reports. Pass. Revert of the rename stays one label in four files.
+- List: shared grid, category bands with counts, Report / Parameters / Last Run, search, Category filter, four states with the fixed sentences, `Report Setup` link for admins, count chip. Pass at 1366 and 1920. Star column, Favourites chip and Recent line are #723 and are correctly absent.
+- Run page: crumb, H1 with icon, category line, description with info button and "About This Report" panel, required marks, red messages under fields (`role="alert"`, `aria-invalid`, `aria-describedby`), live region for counter and results, Run Report becomes Cancel with "Running... N s", form collapses to "Parameters: ..." bar with Change Parameters, banners 409 (with Cancel Running Report), 429, 503, 408, 500, truncated info banner, neutral `data-result-slot` block. Pass. Not seen in evidence: 408, 429, 503 and 500 banners (covered by unit specs only).
+- Fixes (issues under epic #671): #1282 no "No matches." above a lookup access error (deviation 14, real defect); #1283 429 banner names no number (deviation 8); #1284 form dropdowns fill their column (new, not in RF's list: Status, Task Types, Pods stop at 308 px while every other control fills the column).
+
+### Rulings on RF's 14 deviations
+
+| # | Ruling |
+|---|---|
+| 1 | Accept `mf-date-input`. It is the better control (typing, MM/DD/YYYY, calendar) and exists in form-engine; my "no shared date field" was wrong. |
+| 2 | Accept "A +2" and no Select All / Clear: it is how every shared multi dropdown behaves; one pattern wins over my wording. |
+| 3 | Accept a server-search multi dropdown instead of chips. Revisit only if testers cannot see a long selection (then a shared change for all multi dropdowns). |
+| 4 | Accept. The spec named these components. |
+| 5 | Accept the five shared presets. Last Month and This Year would be added to the shared date presets for every filter popover in one design decision; not now. Authors can type dates. |
+| 6 | Accept: the choices endpoint takes no search text, so there is nothing to re-query. Wording "Showing the first N options." is right (my "Type to narrow" promised something that does not exist). |
+| 7 | Accept `<Report name>: Reports - MatterFlow`; it is the app's title rule (page-title helper, `recordTitle`). My spec text had the order wrong. |
+| 8 | Fix: #1283. The limit is a setting (`ReportsOptions.RunsPerUserPerHour`), so a constant can lie. Wording is now in section 3.5. |
+| 9 | Accept plain paragraphs. The admin editor does not offer markdown, so nothing shows as raw symbols. |
+| 10 | Accept one no-access page (my section 1.4 already asked for one wording). The inactive wording "This report is no longer available." stays out until the server can tell inactive from missing. |
+| 11 | Accept "<Label> must be a whole number." and "must be at least / at most <n>."; added to the wording table by reference. |
+| 12 | Accept. The state block replaces the grid body in first-use, no-match and search-empty cases; headers add nothing. |
+| 13 | Accept: a required Yes/No starting unanswered with "Select <label>." is more honest than a silent default. |
+| 14 | Fix: #1282. |
+
+### Leaving the page drops the finished result
+
+Right for the grid design, keep it. One live result per person exists on the server, so releasing it frees the memory and removes a result nobody can reach (the grid state is not restored, no snapshots, owner question O7). It must stay quiet and must only fire on leaving the page or opening another report, never on a grid action, the help panel, Change Parameters or a Run (a new run replaces the result on the server anyway). Not covered: closing the tab or a reload; the 15 minute expiry handles those. #720 must not call the drop on its own re-render or paging.
+
+### Owner questions: status after review 1
+
+| # | Status |
+|---|---|
+| O1 Report Setup | Built (commit cites owner decision 9); treat as decided yes. |
+| O2 Year in result dates | Open, concerns #720 only. |
+| O3 Nav item for everyone with Report.Run | Built as yes (list empty state shows it); confirm. |
+| O4 CSV comma and BOM only | Open, concerns #721. |
+| O5 Leaving cancels a running report | Built as yes; confirm. The finished result is also dropped (see above). |
+| O6 Lookups for run-only roles | Open and now visible: a person without Client.View gets "You don't have access to clients." and a required client parameter cannot be filled. Needs the reports-owned lookup endpoint of section 8 before release. |
+| O7 No result snapshots | Open, confirm. |
