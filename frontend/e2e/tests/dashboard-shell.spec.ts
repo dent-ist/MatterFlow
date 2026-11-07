@@ -89,7 +89,7 @@ test.describe('Dashboard shell: tabs are independent (P2) and errors stay in the
       await page.goto('/dashboard?tab=breakdowns');
       const error = page.locator('[data-tabpanel="breakdowns"] [data-dash-state="error"]');
       await expect(error).toBeVisible();
-      await expect(error).toContainText('The dashboard could not be loaded.');
+      await expect(error).toContainText("Couldn't load the dashboard.");
       await expect(error).toContainText('trace-wp1-0001');
       await expect(error.getByRole('button', { name: 'Retry' })).toBeVisible();
       await expect(page.getByRole('tablist', { name: 'Dashboard views' })).toBeVisible();
@@ -131,14 +131,14 @@ test.describe('Dashboard shell: tabs are independent (P2) and errors stay in the
       await page.setViewportSize(size);
       await page.goto('/dashboard?tab=swimlane');
       await expect(page.locator('[data-dash-state="error"]')).toContainText(
-        'The swimlane board could not be loaded.',
+        "Couldn't load the swimlane board.",
       );
       await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
       await shot(page, `02-error-swimlane-${size.name}`);
       await expectAxeClean(page);
       await page.goto('/dashboard?tab=users');
       await expect(page.locator('[data-dash-state="error"]')).toContainText(
-        'The team workload could not be loaded.',
+        "Couldn't load the team workload.",
       );
       await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
       await shot(page, `03-error-users-${size.name}`);

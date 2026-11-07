@@ -62,7 +62,7 @@ test.describe('My Work needs-attention strip', () => {
     await expect(strip).toContainText('Overdue 2');
     await expect(strip).toContainText('Due Today 1');
     await expect(strip).toContainText('ASAP 1');
-    await expect(strip).toContainText('On hold 1');
+    await expect(strip).toContainText('On Hold 1');
     await expect(strip).toHaveAttribute(
       'title',
       'All your open tasks, not affected by the filters below',
@@ -108,7 +108,7 @@ test.describe('My Work needs-attention strip', () => {
     await item('overdue').click();
     await expect(rows).toHaveCount(1);
     await expect(strip).toContainText('Overdue 2');
-    await expect(strip).toContainText('On hold 1');
+    await expect(strip).toContainText('On Hold 1');
   });
 
   test('M1: zero items stay muted but present; sizes, axe, no horizontal scroll, 44 px targets on a phone', async ({

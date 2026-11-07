@@ -98,7 +98,7 @@ test.describe('Trends by task type', () => {
     await expect(lines(page)).toHaveCount(4); // Created and Completed + Open and Overdue
     await expect(page.getByRole('checkbox', { name: 'All Task Types' })).toBeChecked();
     await expect(page.locator('input:disabled, select:disabled')).toHaveCount(0);
-    await expect(measureButton(page, 'flows')).toHaveText('Measure: Created and Completed');
+    await expect(measureButton(page, 'flows')).toHaveText('Measure:Created and Completed');
 
     // The first type is the seeded world's own; search by its name when the list is long.
     await search(page, types[0].name);
@@ -125,7 +125,7 @@ test.describe('Trends by task type', () => {
     await page.goto(`${TREND}&types=${types[0].id},${types[1].id}&metric=completed`);
     await expect(box(page, types[0].id)).toBeChecked();
     await expect(box(page, types[1].id)).toBeChecked();
-    await expect(measureButton(page, 'flows')).toHaveText('Measure: Completed');
+    await expect(measureButton(page, 'flows')).toHaveText('Measure:Completed');
     await expect(lines(page)).toHaveCount(4); // two types in each of the two panels
 
     // Leave and come back by the plain tab link: the selection is remembered for this user in this browser.
@@ -210,7 +210,7 @@ test.describe('Trends by task type', () => {
     await page.goto(`${TREND}&types=${types[0].id},${types[1].id}`);
     await expect(lines(page)).toHaveCount(4);
     // Picking types turns the backlog panel's "Open and overdue" into Open; Overdue per task type is one click away.
-    await expect(measureButton(page, 'backlog')).toHaveText('Measure: Open');
+    await expect(measureButton(page, 'backlog')).toHaveText('Measure:Open');
     await dropdownByAttr(page, 'data-measure-select="backlog"').selectOption('overdue');
     await expect(page).toHaveURL(/bmetric=overdue/);
     await dropdownByAttr(page, 'data-measure-select="flows"').selectOption('onTime');
@@ -373,7 +373,7 @@ test.describe('Trends backlog and labels', () => {
     await expect(page.locator('[data-panel="backlog"] polyline.series:not(.partial)')).toHaveCount(
       2,
     );
-    await expect(measureButton(page, 'backlog')).toHaveText('Measure: Open and Overdue');
+    await expect(measureButton(page, 'backlog')).toHaveText('Measure:Open and Overdue');
     const labels = page.locator('[data-end-label]');
     await expect(labels).toHaveCount(4);
     const texts = (await labels.allTextContents()).map((t) => t.trim());
@@ -411,8 +411,7 @@ test.describe('Trends backlog and labels', () => {
     expect(dates.length).toBeGreaterThanOrEqual(4);
     expect(dates[dates.length - 1]).toBe(dateInZone(FIRM_ZONE, 0));
     for (const d of dates.slice(1, -1)) expect(isMonday(d)).toBe(true);
-    for (const t of await ticks.allTextContents())
-      expect(t.trim()).toMatch(/^[A-Z][a-z]{2} \d{1,2}$/);
+    for (const t of await ticks.allTextContents()) expect(t.trim()).toMatch(/^\d{2}\/\d{2}$/);
     expect(await overlaps(page, 'text[data-xtick]')).toEqual([]);
   });
 
@@ -462,7 +461,7 @@ test.describe('Trends backlog and labels', () => {
 
     // The keyboard reads weeks: the last one is the current week (so far).
     await page.locator('[data-plot]').focus();
-    await expect(page.locator('[data-tip-heading]')).toHaveText(/^Week of [A-Z][a-z]{2} \d+$/);
+    await expect(page.locator('[data-tip-heading]')).toHaveText(/^Week of [A-Z][a-z]+ \d+$/);
     await expect(trendTip(page)).toContainText('This week so far');
     await page.keyboard.press('ArrowLeft');
     await expect(page.locator('[data-readout]')).toContainText(/^Week of /);

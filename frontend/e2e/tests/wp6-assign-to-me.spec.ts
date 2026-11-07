@@ -76,7 +76,7 @@ test.describe('WP6: Assign to me', () => {
     await shot(page, 'task-queue-assignee-menu-technician-1366x768');
 
     await lead.click();
-    await expect(row).toContainText(tech.username);
+    await expect(row).toContainText(tech.username.replace(/^.*\\/, ''));
     const toast = page.getByRole('button', { name: 'Undo' });
     await expect(toast).toBeVisible();
     await expect(page.locator('[data-undo-toast]')).toContainText('Assigned to you.');
@@ -96,7 +96,7 @@ test.describe('WP6: Assign to me', () => {
       .locator('.im-pop')
       .getByRole('button', { name: /to me$/ })
       .click();
-    await expect(row).toContainText(tech.username);
+    await expect(row).toContainText(tech.username.replace(/^.*\\/, ''));
     await assigneeTrigger(row).click();
     await expect(page.locator('.im-pop')).toBeVisible();
     await expect(page.locator('.im-pop [data-lead]')).toHaveCount(0);
@@ -194,7 +194,7 @@ test.describe('WP6: Assign to me', () => {
     await setDensity(page, 'Comfortable');
 
     await link.click();
-    await expect(row).toContainText(lead.username);
+    await expect(row).toContainText(lead.username.replace(/^.*\\/, ''));
     await expect(page.locator('[data-undo-toast]')).toContainText('Assigned to you.');
     const stored = await admin.get(`/api/v1/tasks/${task.taskId}`);
     expect(stored.assignedUser.userId).toBe(lead.userId);

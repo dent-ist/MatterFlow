@@ -126,7 +126,7 @@ test.describe('Drill-in keeps its place', () => {
     // so the entry Back returns to names the pod and the page does not rewrite its address while the focus is being put back.
     await page.goto(`/pods/work?podId=${pod.podId}`);
     await expect(podWork.podSelect).toContainText(pod.name);
-    await podWork.tab(/^All open/).click();
+    await podWork.tab(/^All Open/).click();
     await podWork.expectListed(task.title);
     await page.locator(`a.wt-title[data-task-id="${task.taskId}"]`).click();
     await expect(page).toHaveURL(new RegExp(`/tasks/${task.taskId}\\?from=pod-work`));

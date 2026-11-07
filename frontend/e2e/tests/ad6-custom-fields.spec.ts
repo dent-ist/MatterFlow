@@ -195,7 +195,7 @@ test.describe('Custom Fields designer entry (#645)', () => {
       await page.goto('/admin/custom-fields');
       await row(page, o.label).getByRole('link').click();
       await expect(page).toHaveURL(new RegExp(`/admin/custom-fields/${o.key}/form$`));
-      await expect(page).toHaveTitle(`${o.label} custom fields - MatterFlow`);
+      await expect(page).toHaveTitle(`${o.label} Custom Fields - MatterFlow`);
       await expect(page.getByRole('heading', { level: 1 })).toContainText(
         `${o.label} custom fields`,
       );

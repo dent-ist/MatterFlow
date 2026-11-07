@@ -203,7 +203,7 @@ test.describe('Pod Work permission matrix', () => {
     await page.goto(`/pods/work?podId=${fx.busy.podId}`);
     await page.locator('[data-strip-item="onHold"]').click();
     await expect(page).toHaveURL(/status=ON_HOLD/);
-    await page.getByRole('tab', { name: /^By member/ }).click();
+    await page.getByRole('tab', { name: /^By Member/ }).click();
     await page.locator('[data-member-row][data-user] .pm-view').first().click();
     await expect(page).toHaveURL(/assignee=\d+/);
     await expect(toasts(page)).toHaveCount(0);

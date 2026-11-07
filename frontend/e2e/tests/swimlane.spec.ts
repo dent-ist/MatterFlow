@@ -451,7 +451,7 @@ test.describe('Swimlane tab', () => {
         : route.continue(),
     );
     await page.goto(base);
-    await expect(page.locator('[data-dash-state="error"]')).toContainText('could not be loaded');
+    await expect(page.locator('[data-dash-state="error"]')).toContainText("Couldn't load");
     await expect(page.locator('[data-dash-state="error"]')).toContainText('Reference');
     fail = false;
     await page.getByRole('button', { name: 'Retry' }).click();

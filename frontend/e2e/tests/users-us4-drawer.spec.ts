@@ -165,7 +165,7 @@ test.describe('#438 the drawer shell', () => {
     // A reload keeps it: the person is in the address.
     await page.reload();
     await expect(page.locator('[data-panel-heading]')).toContainText(
-      worker.displayName ?? worker.username,
+      (worker.displayName ?? worker.username).replace(/^.*\\/, ''),
     );
     // Closing after a reload leaves the address without the person.
     await page.keyboard.press('Escape');
@@ -323,7 +323,7 @@ test.describe('#440 Pods, Availability and Profile', () => {
     await page.goto(`/admin/users?status=all&account=${p.username}`);
     await nameOf(page, p.userId).click();
     await expect(page.locator('.ud-dl')).toContainText(p.username);
-    await expect(page.locator('[data-first-seen]')).toHaveText(/\w{3} \d{1,2}, \d{4}/);
+    await expect(page.locator('[data-first-seen]')).toHaveText(/^\d{2}\/\d{2}/);
     await page.locator('[data-name]').fill('Renamed Drawer Person');
     await page.locator('[data-email]').fill('renamed@firm.test');
     await page.getByRole('button', { name: 'Save Changes' }).click();

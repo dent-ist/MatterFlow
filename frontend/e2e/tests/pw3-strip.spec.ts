@@ -124,33 +124,33 @@ test.describe('Pod Work strip and tabs', () => {
       await expect(page).toHaveURL(new RegExp(`podId=${pod.podId}`));
       await expect(page).toHaveURL(new RegExp(`dueFrom=${today}`));
       await expect(item(page, 'dueToday')).toHaveAttribute('aria-pressed', 'true');
-      await expect(pw.tab(/^All open/)).toHaveAttribute('aria-selected', 'true');
+      await expect(pw.tab(/^All Open/)).toHaveAttribute('aria-selected', 'true');
       await expect(rowsOf('S due today A')).toBeVisible();
       await expect(rowsOf('S due today B')).toBeVisible();
       await expect(rowsOf('S overdue')).toHaveCount(0);
       // The number on the item equals the number of rows the filter shows, and the tab says the same.
-      await expect(pw.tab(/^All open/)).toContainText('(2)');
+      await expect(pw.tab(/^All Open/)).toContainText('(2)');
 
       // One item at a time: the next replaces the first.
       await item(page, 'asap').click();
       await expect(item(page, 'asap')).toHaveAttribute('aria-pressed', 'true');
       await expect(item(page, 'dueToday')).toHaveAttribute('aria-pressed', 'false');
       await expect(rowsOf('S asap')).toBeVisible();
-      await expect(pw.tab(/^All open/)).toContainText('(1)');
+      await expect(pw.tab(/^All Open/)).toContainText('(1)');
 
       await item(page, 'onHold').click();
       await expect(rowsOf('S hold')).toBeVisible();
-      await expect(pw.tab(/^All open/)).toContainText('(1)');
+      await expect(pw.tab(/^All Open/)).toContainText('(1)');
 
       await item(page, 'overdue').click();
       await expect(rowsOf('S overdue')).toBeVisible();
-      await expect(pw.tab(/^All open/)).toContainText('(1)');
+      await expect(pw.tab(/^All Open/)).toContainText('(1)');
 
       // A second click switches it off: All open without a filter; the strip counts did not move meanwhile.
       await item(page, 'overdue').click();
       await expect(item(page, 'overdue')).toHaveAttribute('aria-pressed', 'false');
       await expect(page).not.toHaveURL(/overdue=true/);
-      await expect(pw.tab(/^All open/)).toContainText('(5)');
+      await expect(pw.tab(/^All Open/)).toContainText('(5)');
       expect(await stripNumbers(page)).toEqual({ overdue: 1, dueToday: 2, asap: 1, onHold: 1 });
 
       // Back returns to the pressed state.
@@ -199,8 +199,8 @@ test.describe('Pod Work strip and tabs', () => {
         await expect(tabs).toHaveCount(3);
         const api = await admin.get(`/api/v1/pod-work?podId=${fx.busy.podId}`);
         await expect(tabs.nth(0)).toHaveText(`Unassigned (${api.counts.queue})`);
-        await expect(tabs.nth(1)).toHaveText(`By member (${api.counts.membersWithWork})`);
-        await expect(tabs.nth(2)).toHaveText(`All open (${api.counts.all})`);
+        await expect(tabs.nth(1)).toHaveText(`By Member (${api.counts.membersWithWork})`);
+        await expect(tabs.nth(2)).toHaveText(`All Open (${api.counts.all})`);
         // The By member number is the people with open work, not their tasks.
         expect(api.counts.membersWithWork).toBeLessThan(api.counts.members);
         await expect(pw.tab(/Overdue and on hold/)).toHaveCount(0);
@@ -221,7 +221,7 @@ test.describe('Pod Work strip and tabs', () => {
       await page.goto(`/pods/work?podId=${fx.busy.podId}&view=attention`);
       await expect(page).toHaveURL(/view=all/);
       await expect(page).toHaveURL(/overdue=true/);
-      await expect(pw.tab(/^All open/)).toHaveAttribute('aria-selected', 'true');
+      await expect(pw.tab(/^All Open/)).toHaveAttribute('aria-selected', 'true');
       await expect(item(page, 'overdue')).toHaveAttribute('aria-pressed', 'true');
       await expect(page).toHaveTitle(
         new RegExp(`^Pod Work: ${fx.busy.name}: All open - MatterFlow$`),
@@ -229,7 +229,7 @@ test.describe('Pod Work strip and tabs', () => {
       await expect(page.getByRole('table').first().locator('caption')).toContainText('All Open');
       // The bookmark of the old tab with no filters at all: All open.
       await page.goto(`/pods/work?view=all&podId=${fx.busy.podId}`);
-      await expect(pw.tab(/^All open/)).toHaveAttribute('aria-selected', 'true');
+      await expect(pw.tab(/^All Open/)).toHaveAttribute('aria-selected', 'true');
     });
 
     test('BUG-7: the strip and the tabs never contradict each other (Overdue on the strip equals the rows its filter shows)', async ({
@@ -264,10 +264,10 @@ test.describe('Pod Work strip and tabs', () => {
       await page.goto(`/pods/work?podId=${fx.busy.podId}`);
       await pw.tab(/^Unassigned/).focus();
       await page.keyboard.press('ArrowRight');
-      await expect(pw.tab(/^By member/)).toHaveAttribute('aria-selected', 'true');
-      await expect(pw.tab(/^By member/)).toBeFocused();
+      await expect(pw.tab(/^By Member/)).toHaveAttribute('aria-selected', 'true');
+      await expect(pw.tab(/^By Member/)).toBeFocused();
       await page.keyboard.press('End');
-      await expect(pw.tab(/^All open/)).toHaveAttribute('aria-selected', 'true');
+      await expect(pw.tab(/^All Open/)).toHaveAttribute('aria-selected', 'true');
       await page.keyboard.press('Home');
       await expect(pw.tab(/^Unassigned/)).toHaveAttribute('aria-selected', 'true');
       // Only the selected tab is in the Tab order.

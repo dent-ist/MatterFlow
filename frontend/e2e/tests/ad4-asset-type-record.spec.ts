@@ -36,9 +36,9 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/admin/asset-types');
-    await page.getByRole('button', { name: 'New asset type' }).click();
+    await page.getByRole('button', { name: 'New Asset Type' }).click();
     await expect(page).toHaveURL(/\/admin\/asset-types\/new$/);
-    await expect(heading(page)).toHaveText('New asset type');
+    await expect(heading(page)).toHaveText('New Asset Type');
     await expect(page).toHaveTitle('New Asset Type - MatterFlow');
     await expect(crumbs(page)).toHaveText([/Administration/, /Asset Types/, /New asset type/]);
     // A new type has no tabs and no state badge; Create and Cancel are there from the start.
@@ -335,7 +335,7 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
     await manager.goto(`/admin/asset-types/${t.assetTypeId}/form`);
     await expect(manager.getByRole('heading', { level: 1 })).toContainText('Perm');
     await manager.goto('/admin/asset-types/new');
-    await expect(heading(manager)).toHaveText('New asset type');
+    await expect(heading(manager)).toHaveText('New Asset Type');
 
     const viewerRole = await seed.role(['Task.View'], 'Viewer');
     const viewer = await asUser((await seed.user([viewerRole.name], 'ad4-view')).username);

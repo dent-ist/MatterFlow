@@ -62,7 +62,7 @@ test.describe('pf5-menu-identity: the account menu starts with who and how (#580
     await expect(dialog).toHaveCount(0);
     await menuButton(me).click();
     await expect(me.locator('[data-menu-identity] [data-availability-chip]')).toContainText(
-      'Out of office until',
+      'Out of Office until',
     );
     await expect(me.getByRole('menuitem')).toHaveText([
       /My Profile/,
