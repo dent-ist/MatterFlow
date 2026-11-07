@@ -190,6 +190,11 @@ const emptySpec = (): SpecDraft => ({
       width: 100%;
       max-width: 0;
     }
+    /* Over the small line the name is one line (D-44m): two lines of name and the small line would not fit the 44 px row (D-42). */
+    td.pt__name:has(.pt__sub) .mf-btn--name {
+      -webkit-line-clamp: 1;
+      line-clamp: 1;
+    }
     /* The small line under a cell's text: tight, so a two-line cell still fits the 44 px row (D-42). */
     .pt__sub {
       display: block;

@@ -54,7 +54,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
     [data-summary-assets] {
       min-height: 3rem;
     }
-    /* No assets: one 52 px card row in the place of the tile strip (D-44x): muted sentence at the left, the text button at the right. */
+    /* No assets: one 52 px card row in the place of the tile strip (D-44x): muted sentence at the left, its text action at the right. */
     .ms__no-assets {
       display: flex;
       align-items: center;
