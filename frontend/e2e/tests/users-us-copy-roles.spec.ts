@@ -83,15 +83,15 @@ test.describe('#428 Access Pending copy', () => {
 });
 
 test.describe('#447 Roles: counts, clamp and group counts', () => {
-  const LONG = `${TAG} ${'Senior Document Review Coordinator '.repeat(3)}`.trim().slice(0, 90);
+  const LONG = `${TAG} ${'Senior Document Review Coordinator '.repeat(3)}`.slice(0, 90).trim();
   let longRoleId: number;
 
-  test.beforeAll(async ({ admin }) => {
-    const role = await admin.post('/api/v1/roles', {
-      name: LONG,
-      description: 'A role with a very long name for the clamp test',
-      permissionCodes: ['Task.View', 'Task.Create', 'Client.View'],
-    });
+  test.beforeAll(async ({ seed }) => {
+    const role = await seed.roleOnce(LONG, 'A role with a very long name for the clamp test', [
+      'Task.View',
+      'Task.Create',
+      'Client.View',
+    ]);
     longRoleId = role.roleId;
   });
 
