@@ -146,7 +146,11 @@ test.describe('Dashboard permissions', () => {
       await expect(
         page.locator('mf-dash-tabs').getByRole('button', { name: 'Refresh' }),
       ).toBeVisible();
-      await expect(page.locator('mf-page-header').getByRole('button')).toHaveCount(0);
+      // The title row holds Scope and the icon-only Refresh at its right (D-21, #1135); no other button.
+      await expect(
+        page.locator('mf-page-header').getByRole('button', { name: /^(Scope|Refresh)/ }),
+      ).toHaveCount(2);
+      await expect(page.locator('mf-page-header').getByRole('button')).toHaveCount(2);
       await expect(page.locator('[data-updated]')).toHaveCount(0);
       await expect(page.getByText(/refreshes every 5 minutes/)).toHaveCount(0);
     }
@@ -186,7 +190,7 @@ test.describe('Dashboard permissions', () => {
     const group = page.locator('[data-group="Dashboard"]');
     // The heading also says how many of the group are ticked ("Dashboard 0/8", #447).
     await expect(group.locator('legend')).toHaveText(/^\s*Dashboard\s+\d+\/10/);
-    await expect(group.locator('[data-perm]')).toHaveCount(8);
+    await expect(group.locator('[data-perm]')).toHaveCount(10);
     await expect(group.locator('[data-perm="Dashboard.ViewCoverage"]')).toBeAttached();
     await expect(group.locator('[data-perm="Dashboard.ViewUnassigned"]')).toBeAttached();
 

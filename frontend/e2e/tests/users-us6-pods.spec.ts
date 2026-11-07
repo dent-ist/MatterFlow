@@ -74,7 +74,7 @@ async function axeClean(page: Page) {
     .filter((v) => v.nodes.length > 0);
 }
 
-const podRow = (page: Page, id: number) => page.locator(`tr[data-pod="${id}"]`);
+const podRow = (page: Page, id: number) => page.locator(`tr[data-record-id="${id}"]`);
 
 test.describe('#450 Pods list on the kit', () => {
   for (const { width, height } of SIZES) {
@@ -94,17 +94,15 @@ test.describe('#450 Pods list on the kit', () => {
         await expect(row).toBeVisible();
         await expect(row.locator('a, button')).toHaveCount(1);
         await expect(row.locator('[data-edit]')).toHaveCount(0);
-        await expect(page.locator('table[data-pods] thead tr').first().locator('th')).toHaveText([
-          'Name',
-          'Members',
-          'Status',
-        ]);
+        await expect(
+          page.locator('table:has(a[data-row-list="admin-pods"]) thead tr').first().locator('th'),
+        ).toHaveText(['Name', 'Members', 'Status']);
         const h = await row.evaluate((el) => el.getBoundingClientRect().height);
         expect(h).toBeGreaterThanOrEqual(43);
         expect(h).toBeLessThanOrEqual(45);
       } else {
         await expect(page.locator('li.rc').first()).toBeVisible();
-        await expect(page.locator('table[data-pods]')).toHaveCount(0);
+        await expect(page.locator('table:has(a[data-row-list="admin-pods"])')).toHaveCount(0);
       }
       expect(await noSideScroll(page)).toBe(true);
       expect(await axeClean(page)).toEqual([]);
@@ -156,7 +154,7 @@ test.describe('#450 Pods list on the kit', () => {
     const skip = page.getByRole('link', { name: 'Skip to Table' });
     await expect(skip).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(page.locator('tbody tr[data-pod] a').first()).toBeFocused();
+    await expect(page.locator('tbody tr[data-record-id] a').first()).toBeFocused();
   });
 
   test('the name puts the pod in the address and opens the editor; Back returns to the list', async ({
@@ -196,6 +194,6 @@ test.describe('#450 Pods list on the kit', () => {
     const other = await personas.named('taskViewOnly');
     const denied = await asUser(other.username);
     await denied.goto('/admin/pods');
-    await expect(denied.locator('table[data-pods]')).toHaveCount(0);
+    await expect(denied.locator('table:has(a[data-row-list="admin-pods"])')).toHaveCount(0);
   });
 });

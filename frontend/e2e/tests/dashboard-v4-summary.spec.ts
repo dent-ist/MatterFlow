@@ -258,7 +258,10 @@ test.describe('Summary v4', () => {
     const page = await asUser(lead.username);
     await page.goto('/dashboard');
     await expect(page.locator('[data-dash-cards]')).toBeVisible();
-    await expect(page.locator('mf-dropdown[data-scope]')).toHaveAttribute('data-value', 'mine');
+    await expect(page.locator('mf-dropdown[data-scope] button')).toHaveAttribute(
+      'data-value',
+      'mine',
+    );
   });
 });
 

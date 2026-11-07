@@ -364,7 +364,7 @@ test.describe('evidence', () => {
     for (const [key, url, selector] of [
       ['users', listUrl, 'tr[data-record-id] button[data-open]'],
       ['roles', '/admin/roles', '[data-role]'],
-      ['pods', `/admin/pods?status=all&name=${encodeURIComponent(TAG)}`, 'tr[data-pod] a'],
+      ['pods', `/admin/pods?status=all&name=${encodeURIComponent(TAG)}`, 'tr[data-record-id] a'],
     ] as const) {
       await page.goto(url);
       await expect(page.locator(selector).first()).toBeVisible();

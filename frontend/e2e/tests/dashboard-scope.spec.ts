@@ -226,7 +226,7 @@ test.describe('Dashboard Scope', () => {
     const page = await asUser(s.lead.username);
     await page.goto(`/dashboard?tab=trends&pod=${s.podC.podId}`);
     await expect(page.locator('mf-dash-note')).toContainText(
-      'That pod is not available to you. Showing My pods.',
+      'That pod is not available to you. Showing My Pods.',
     );
     await expect(scopeSelect(page)).toHaveAttribute('data-value', 'mine');
     await expect(page).not.toHaveURL(/pod=/);

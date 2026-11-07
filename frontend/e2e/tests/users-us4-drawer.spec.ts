@@ -99,9 +99,9 @@ test.describe('#438 the drawer shell', () => {
     // The grid behind the mask is as wide as before: the drawer takes no room from it.
     const after = await page.locator('mf-grid-frame .scroll').boundingBox();
     expect(Math.round(after!.width)).toBe(Math.round(before!.width));
-    // The drawer is 480 px from 1024 up.
+    // The drawer is 520 px from 1024 up.
     const box = await drawer(page).boundingBox();
-    expect(Math.round(box!.width)).toBe(480);
+    expect(Math.round(box!.width)).toBe(520);
     // The first role is on screen without scrolling the drawer, and so are Save changes and Cancel.
     const role = page.locator('[data-panel] [data-role]').first();
     const roleBox = await role.boundingBox();
