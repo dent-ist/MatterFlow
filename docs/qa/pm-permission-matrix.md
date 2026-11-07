@@ -7,7 +7,7 @@ Proved by `frontend/e2e/tests/px6-matrix.spec.ts` (and, per view, by `px3-*`, `p
 | Project Manager role (`pmA`; holds `Matter.AssignManagers`) | My Matters | My Matters, Matters, Tasks, Assets; More: Clients, Projects, My Work | My matters / All | Overview, Deadlines, Trends, Activity | health, status, deadlines, people, assets, activity | + New task, Bulk re-assign, Add comment, Open the matter's tasks |
 | PM without `Matter.AssignManagers` (`pmNoAssign`) | My Matters | as above | - (held on My matters; `?scope=all` is ignored) | all five | all sections | as above |
 | PM without `Task.View` (`pmNoTask`; has `Matter.AssignManagers`) | not My Matters | full menu, no My Matters, no Tasks | - | - | no tasks or deadlines sections, no overview request for them | - (no menu without Task.View) |
-| Director (`Matter.AssignManagers`, cannot be a manager) | not My Matters | full menu, no My Matters | - | - | by permission | by permission |
+| Director (`Matter.BeManager` since issue #976, and `Matter.AssignManagers`; manages no matter in the fixture) | My Matters | full menu incl. My Matters | My matters / All | none while no matter is managed (the empty state "You do not manage any matter yet." with Go to Matters) | by permission | by permission |
 | Read-Only Observer, Data Technician | not My Matters | full menu without My Matters | - | - | by permission | by permission |
 | System Admin | previous landing (Dashboard / My Work) | full menu incl. Pod Work, no More group | - | My Matters opens from the menu | all | all |
 
