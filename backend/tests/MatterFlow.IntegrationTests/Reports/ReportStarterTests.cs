@@ -119,7 +119,7 @@ public sealed class ReportStarterTests(SqlServerFixture sql)
         // Every run was a real run through the report login that finished inside its limits.
         foreach (var starter in Manifest.Reports)
         {
-            var log = (await h.RunLogAsync(ids[starter.Name])).EnumerateArray().Single();
+            var log = (await h.RunLogAsync(ids[starter.Name])).EnumerateArray().Single(e => e.GetProperty("Kind").GetString() == "Run");
             log.GetProperty("Status").GetString().ShouldBe("Succeeded", starter.Key);
             log.GetProperty("Truncated").GetBoolean().ShouldBeFalse(starter.Key);
         }
@@ -157,7 +157,7 @@ public sealed class ReportStarterTests(SqlServerFixture sql)
     [Fact]
     public async Task The_seeder_is_idempotent_never_overwrites_edits_and_a_dry_run_writes_nothing()
     {
-        await using var h = await ReportTestHarness.StartAsync(sql); // seeding is switched off in the test host
+        await using var h = await ReportTestHarness.StartAsync(sql, true, ("Seed:StarterReports:Enabled", "false")); // seeding is off in the test host
         (await CountAsync(h, "SELECT COUNT(*) FROM dbo.ReportDefinition")).ShouldBe(0);
 
         async Task<StarterReportSeedReport> SeedAsync(bool dryRun)

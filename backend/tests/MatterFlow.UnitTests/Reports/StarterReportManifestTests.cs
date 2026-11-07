@@ -41,7 +41,7 @@ public class StarterReportManifestTests
         Manifest.Categories.ShouldAllBe(c => Manifest.Reports.Any(r => r.Category == c.Name));
         Manifest.Reports.ShouldAllBe(r => Regex.IsMatch(r.Key, "^[a-z0-9]+(-[a-z0-9]+)*$"));
         Manifest.Reports.ShouldAllBe(r => r.MarkerName.Length <= 100);
-        Manifest.Reports.ShouldAllBe(r => r.Name.Length <= ReportAdminService.MaxNameLength && r.Description.Length is > 0 and <= ReportAdminService.MaxDescriptionLength);
+        Manifest.Reports.ShouldAllBe(r => r.Name.Length <= ReportAdminService.MaxNameLength && r.Description.Length > 0 && r.Description.Length <= ReportAdminService.MaxDescriptionLength);
         Manifest.Reports.ShouldAllBe(r => r.HelpText != null && r.HelpText.Length <= ReportAdminService.MaxHelpTextLength);
         Manifest.Reports.ShouldAllBe(r => r.Columns.Count > 0);
     }
