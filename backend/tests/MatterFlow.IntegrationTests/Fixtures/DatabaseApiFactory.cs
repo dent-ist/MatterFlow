@@ -42,6 +42,8 @@ public sealed class DatabaseApiFactory(string connectionString, string? environm
         // container, so it is blanked unless the test brings its own.
         builder.UseSetting("ConnectionStrings:ReportsReadOnly", reportsConnectionString ?? "");
         builder.UseSetting("Auth:Provider", "Dev");
+        // The starter reports (issue #724) would be seeded into every test database in Development and change the report counts of other tests; ReportStarterTests switches them on.
+        builder.UseSetting("Seed:StarterReports:Enabled", "false");
         foreach (var (key, value) in ExtraSettings)
             builder.UseSetting(key, value);
         // The factory runs in Development, where the SME starter configuration would otherwise be seeded into every test database.
