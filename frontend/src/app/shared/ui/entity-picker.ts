@@ -82,7 +82,9 @@ export type PickerSearch = (query: string) => Promise<PickerOption[]>;
             (keydown)="onKey($event)"
             (blur)="close()"
           />
-          @if (open() && (loading() || options().length === 0)) {
+          @if (failed()) {
+            <!-- The caller shows the failure itself: no panel, so no false "No matches." -->
+          } @else if (open() && (loading() || options().length === 0)) {
             <!-- No option to list: the note is a status message, not a listbox without options (axe aria-required-children). -->
             <div
               class="mf-picker__list mf-picker__note"
@@ -197,6 +199,8 @@ export class EntityPicker implements OnDestroy {
   readonly required = input(false);
   /** A locked pick (for example the Client of an existing Matter) has no "Change" action. */
   readonly locked = input(false);
+  /** The search failed and the caller shows that itself: the suggestion panel is not rendered (no "Searching...", no "No matches."). Cleared by the caller. */
+  readonly failed = input(false);
   readonly error = input<string | null>(null);
   readonly debounceMs = input(250);
 

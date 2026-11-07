@@ -47,6 +47,7 @@ type Mode = 'picker' | 'select' | 'multi' | 'list';
         [required]="def().required"
         [help]="def().helpText ?? ''"
         [error]="error()"
+        [failed]="!!failure()"
         [locked]="disabled()"
         [placeholder]="'Search ' + things()"
         [search]="search"
@@ -69,6 +70,7 @@ type Mode = 'picker' | 'select' | 'multi' | 'list';
               [inputId]="inputId()"
               [allLabel]="def().required ? 'Select...' : 'Any ' + singular()"
               [search]="search"
+              [failed]="!!failure()"
               [selected]="single()"
               (selectedChange)="pick($event)"
             />
@@ -76,6 +78,7 @@ type Mode = 'picker' | 'select' | 'multi' | 'list';
           @case ('multi') {
             <mf-dropdown
               field
+              fill
               [multi]="true"
               [search]="true"
               [searchLabel]="'Search ' + things()"
@@ -94,6 +97,7 @@ type Mode = 'picker' | 'select' | 'multi' | 'list';
           @default {
             <mf-dropdown
               field
+              fill
               [multi]="!!def().multiple"
               [buttonId]="inputId()"
               [label]="def().label"

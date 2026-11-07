@@ -134,4 +134,20 @@ describe('mf-search-select (issue #928)', () => {
     expect(search).toHaveBeenCalledWith('beta');
     expect(labels()).toEqual([beta.label]);
   });
+
+  it('renders no list while the caller says the search failed (issue #1282)', async () => {
+    await make([acme, beta]);
+    input().dispatchEvent(new Event('focus'));
+    fixture.detectChanges();
+    expect(el().querySelector('[role=listbox]')).not.toBeNull();
+
+    fixture.componentRef.setInput('failed', true);
+    fixture.detectChanges();
+    expect(el().querySelector('[role=listbox]')).toBeNull();
+    expect(el().querySelector('[data-search-note]')).toBeNull();
+
+    fixture.componentRef.setInput('failed', false);
+    fixture.detectChanges();
+    expect(el().querySelector('[role=listbox]')).not.toBeNull();
+  });
 });

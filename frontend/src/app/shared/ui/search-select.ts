@@ -119,7 +119,9 @@ import { PickerOption, PickerSearch } from './entity-picker';
           (blur)="leave()"
         />
         <i class="ss__chev pi pi-chevron-down" aria-hidden="true" (mousedown)="toggle($event)"></i>
-        @if (open() && rows().length > 0) {
+        @if (failed()) {
+          <!-- The caller shows the failure itself: no panel, so no false "No matches." -->
+        } @else if (open() && rows().length > 0) {
           <ul
             class="ss__list"
             role="listbox"
@@ -164,6 +166,8 @@ export class SearchSelect implements OnDestroy {
   /** The list is asked for instead (used when `options` is null). */
   readonly search = input<PickerSearch | null>(null);
   readonly debounceMs = input(250);
+  /** The search failed and the caller shows that itself: the suggestion panel is not rendered. Cleared by the caller. */
+  readonly failed = input(false);
   readonly selected = model<PickerOption | null>(null);
 
   protected readonly open = signal(false);

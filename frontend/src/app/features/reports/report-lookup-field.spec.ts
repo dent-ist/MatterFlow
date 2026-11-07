@@ -162,4 +162,31 @@ describe('ReportLookupField (#719)', () => {
       el().querySelector('button[aria-describedby]')!.getAttribute('aria-describedby'),
     ).toContain('rpf-test-error');
   });
+
+  it('shows only the error line and Retry when a client search is refused, never "No matches." above it (issue #1282)', async () => {
+    await create(aParam({ name: 'C', type: 'lookup', lookupKind: 'client', label: 'Client' }));
+    source.search.mockImplementation(denied);
+    const input = el().querySelector('input')!;
+    input.value = 'acme';
+    input.dispatchEvent(new Event('input'));
+    await new Promise((r) => setTimeout(r, 300));
+    await settle(fixture);
+    const line = el().querySelector('[data-lookup-failure]')!;
+    expect(line.textContent).toContain("You don't have access to clients.");
+    expect(line.querySelector('[data-lookup-retry]')).not.toBeNull();
+    expect(el().querySelector('[data-picker-note]')).toBeNull();
+    expect(el().textContent).not.toContain('No matches.');
+  });
+
+  it('a normal empty search still says No matches.', async () => {
+    await create(aParam({ name: 'C', type: 'lookup', lookupKind: 'client', label: 'Client' }));
+    source.search.mockResolvedValue([]);
+    const input = el().querySelector('input')!;
+    input.value = 'zzz';
+    input.dispatchEvent(new Event('input'));
+    await new Promise((r) => setTimeout(r, 300));
+    await settle(fixture);
+    expect(el().querySelector('[data-picker-note]')!.textContent).toContain('No matches.');
+    expect(el().querySelector('[data-lookup-failure]')).toBeNull();
+  });
 });

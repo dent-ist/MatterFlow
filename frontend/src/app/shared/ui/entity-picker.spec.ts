@@ -137,4 +137,21 @@ describe('mf-entity-picker', () => {
       }
     });
   });
+
+  it('renders no suggestion panel while the caller says the search failed (issue #1282)', async () => {
+    search.mockResolvedValue([]);
+    await type('zzz');
+    expect(el().querySelector('[data-picker-note]')!.textContent).toContain('No matches.');
+
+    fixture.componentRef.setInput('failed', true);
+    fixture.detectChanges();
+    expect(el().querySelector('[data-picker-note]')).toBeNull();
+    expect(el().querySelector('[role=listbox]')).toBeNull();
+    expect(el().textContent).not.toContain('No matches.');
+    expect(el().textContent).not.toContain('Searching...');
+
+    fixture.componentRef.setInput('failed', false);
+    fixture.detectChanges();
+    expect(el().querySelector('[data-picker-note]')!.textContent).toContain('No matches.');
+  });
 });
