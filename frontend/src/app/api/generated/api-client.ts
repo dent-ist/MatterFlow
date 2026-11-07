@@ -15802,6 +15802,13 @@ export class ReportSchemaClient implements IReportSchemaClient {
 
 export interface IReportChoicesClient {
     /**
+     * @param q (optional) 
+     * @param take (optional) 
+     * @param ids (optional) 
+     * @return OK
+     */
+    getReportLookup(id: number, parameter: string, q?: string | undefined, take?: number | undefined, ids?: number[] | undefined): Observable<ReportLookupItemResponse[]>;
+    /**
      * @return OK
      */
     getReportChoices(id: number, parameter: string): Observable<ChoiceListResponse>;
@@ -15822,6 +15829,77 @@ export class ReportChoicesClient implements IReportChoicesClient {
     constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
         this.http = http;
         this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param q (optional) 
+     * @param take (optional) 
+     * @param ids (optional) 
+     * @return OK
+     */
+    getReportLookup(id: number, parameter: string, q?: string | undefined, take?: number | undefined, ids?: number[] | undefined): Observable<ReportLookupItemResponse[]> {
+        let url_ = this.baseUrl + "/api/v1/reports/{id}/lookups/{parameter}?";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        if (parameter === undefined || parameter === null)
+            throw new globalThis.Error("The parameter 'parameter' must be defined.");
+        url_ = url_.replace("{parameter}", encodeURIComponent("" + parameter));
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "q=" + encodeURIComponent("" + q) + "&";
+        if (take === null)
+            throw new globalThis.Error("The parameter 'take' cannot be null.");
+        else if (take !== undefined)
+            url_ += "take=" + encodeURIComponent("" + take) + "&";
+        if (ids === null)
+            throw new globalThis.Error("The parameter 'ids' cannot be null.");
+        else if (ids !== undefined)
+            ids && ids.forEach(item => { url_ += "ids=" + encodeURIComponent("" + item) + "&"; });
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetReportLookup(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetReportLookup(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ReportLookupItemResponse[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ReportLookupItemResponse[]>;
+        }));
+    }
+
+    protected processGetReportLookup(response: HttpResponseBase): Observable<ReportLookupItemResponse[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ReportLookupItemResponse[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
     }
 
     /**
@@ -28649,6 +28727,13 @@ export interface ReportLoginDetailsResponse {
     readableTables: number;
     compatibilityLevel: number;
     checkedAtUtc: string;
+
+    [key: string]: any;
+}
+
+export interface ReportLookupItemResponse {
+    id: number;
+    label: string;
 
     [key: string]: any;
 }

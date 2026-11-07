@@ -64,16 +64,41 @@ public sealed record ChoiceTestRequest(string? Sql, string? ValueType);
 /// <param name="Error">The reason in full (administrators only).</param>
 public sealed record ChoiceTestResponse(bool Success, IReadOnlyList<ChoiceOptionResponse> Options, int Total, bool Truncated, int DurationMs, string? ErrorCode, string? Error);
 
-/// <summary>Choice lists of report parameters.</summary>
+/// <summary>One record of a lookup parameter: the id the report takes and its words. There is no other member, by design.</summary>
+/// <param name="Id">The id the run request takes for this parameter.</param>
+/// <param name="Label">What the control shows: a matter "CM number name" (for example <c>00343-00001 Acme v. Beta</c>), a client "number name", a person's display name without a domain, a pod, role or task type name.</param>
+public sealed record ReportLookupItemResponse(int Id, string Label);
+
+/// <summary>Choice lists and lookups of report parameters.</summary>
 [ApiController]
 [Route("api/v1")]
 [Produces("application/json")]
-public class ReportChoicesController(ReportChoiceService choices) : ControllerBase
+public class ReportChoicesController(ReportChoiceService choices, ReportLookupService lookups) : ControllerBase
 {
     /// <summary>
+    /// The records a person may pick for a <c>lookup</c> parameter (matter, client, user, pod, role or task type) of a report the caller may run: id and label only, sorted by label.
+    /// Needs <c>Report.Run</c> and an assignment of the report, and nothing else: the picker permissions (<c>Client.View</c>, <c>Matter.View</c>...) are not needed (owner decision 13).
+    /// It is not a directory: 404 (one body) for a report the caller may not run, a parameter the report does not have, and a parameter that is not a lookup.
+    /// <c>q</c> is a contains match (at most 100 characters; 400 beyond) over the label; only active records are searched; <c>take</c> is 25 by default and at most 50.
+    /// With <c>ids</c> (repeat the parameter, at most 200; the text is ignored) the records with those ids are resolved to their labels, active or not, in label order; an unknown id is simply absent.
+    /// <b>Sensitive matters are never returned, to anybody</b> (not searched, not resolved by id, whatever <c>Matter.ViewSensitive</c> says); a client row says nothing about its matters.
+    /// A report author who needs a sensitive matter filters by typing its number into a text parameter.
+    /// </summary>
+    [HttpGet("reports/{id:int}/lookups/{parameter}", Name = "GetReportLookup")]
+    [Authorize(Policy = ReportPolicies.Run)]
+    [ProducesResponseType<IReadOnlyList<ReportLookupItemResponse>>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> Lookup(int id, string parameter, [FromQuery] string? q = null, [FromQuery] int? take = null, [FromQuery] int[]? ids = null, CancellationToken cancellationToken = default)
+    {
+        var result = await lookups.GetAsync(id, parameter, q, take, ids, cancellationToken);
+        if (result.Problem is { } p)
+            return ReportProblems.Create(this, new RunProblem(p.Status, p.Code, p.Message));
+        return Ok(result.Value!.Select(i => new ReportLookupItemResponse(i.Id, i.Label)).ToList());
+    }
+
+    /// <summary>
     /// The choices of a single or multi choice parameter of a report the caller may run: the fixed list, or the result of the report's choice SELECT
-    /// (Value and Label, at most 1,000 rows, 10 s, cached 5 minutes per person). A lookup parameter (matter, client, user, pod...) has no list: the
-    /// pickers of those pages and their own permissions serve it (400 <c>NO_CHOICE_LIST</c>). The value is checked against this list again on every run.
+    /// (Value and Label, at most 1,000 rows, 10 s, cached 5 minutes per person). A lookup parameter (matter, client, user, pod...) has no list here: it is served by
+    /// <c>GET /reports/{id}/lookups/{name}</c> (400 <c>NO_CHOICE_LIST</c>). The value is checked against this list again on every run.
     /// </summary>
     [HttpPost("reports/{id:int}/choices/{parameter}", Name = "GetReportChoices")]
     [Authorize(Policy = ReportPolicies.Run)]

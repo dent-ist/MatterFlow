@@ -38,7 +38,7 @@ There is no EF global query filter on purpose (decided against; architecture 6.8
 4. Caches (Dashboard, My Matters) carry a visibility stamp in their key.
 5. The API tells the screen what it may open (`canOpen: false`, `matterCanOpen: false`); the frontend never decides visibility itself and never stores matter data in `localStorage`.
 6. Marking a matter Sensitive can remove the caller's own access: `PUT /matters/{id}` answers 409 `SENSITIVE_CONFIRMATION_REQUIRED` and the screen repeats with `confirmLossOfAccess: true`. Creating a sensitive matter without a manager and without `Matter.ViewSensitive` is 400 `SENSITIVE_NEEDS_MANAGER`.
-7. Reports are not covered by the rule yet (they read as the report login, outside the port; addendum AI item 6, issue #808).
+7. Reports are not covered by the rule (option A: they read as the report login, outside the port, for trusted roles only; addendum AI item 6, issue #808). One exception goes the other way: the report parameter lookup `GET /reports/{id}/lookups/{parameter}` (owner decision 13) never lists or resolves a sensitive matter for anybody, so a person who may only run reports learns nothing about the existence of one. It is classified `List` and walked by the persona suite. A report author who needs a sensitive matter filters by typing its number in a text parameter.
 
 ## How to make a new endpoint compliant
 

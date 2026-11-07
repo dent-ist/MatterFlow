@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using MatterFlow.IntegrationTests.Fixtures;
+using Microsoft.EntityFrameworkCore;
 using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
 
 namespace MatterFlow.IntegrationTests.Security;
@@ -11,7 +12,7 @@ namespace MatterFlow.IntegrationTests.Security;
 public sealed record WalkPersona(string Name, HttpClient Client, HashSet<int> Matters, HashSet<long> Tasks, HashSet<int> Projects, HashSet<int> Assets, HashSet<int> HeaderOnlyMatters);
 
 /// <summary>The records of the universe the walk addresses: matters, tasks, projects and the assets the walk adds.</summary>
-public sealed record WalkIds(int[] Matters, long[] Tasks, int[] Projects, int[] Assets, int Client, int User, int AssetType, int TaskType, Dictionary<string, int> MatterRefs, int[]? Specs = null, int[]? Productions = null, int[]? Notes = null);
+public sealed record WalkIds(int[] Matters, long[] Tasks, int[] Projects, int[] Assets, int Client, int User, int AssetType, int TaskType, Dictionary<string, int> MatterRefs, int[]? Specs = null, int[]? Productions = null, int[]? Notes = null, int Report = 0);
 
 /// <summary>
 /// The systematic security suite of README 12.2: walks every classified GET endpoint as every persona against the access matrix, compares each hidden id with a missing id
@@ -76,7 +77,23 @@ public sealed class PersonaWalk
         // A pod of the assignee (who holds a task on a hidden matter) and the unrelated user, so the capacity endpoints of Dashboard v4 return people whose load includes a hidden task (decision AS item 12).
         await u.H.CreatePodAsync("Walk pod", u.Assignee, u.Unrelated);
 
-        return new WalkIds(u.AllMatters, [u.TN1, u.TS1, u.TS2, u.TS3], [u.World.ProjectId, u.PN1, u.PS1, u.PS2, u.PS3], [an, a1, a2, a3, a3b], clientId, u.Assignee, typeId, u.World.TaskTypeId, refs, [.. specs], [.. productions], [.. notes]);
+        // A report with a matter, a client and a user lookup, assigned to every role, so every persona that holds Report.Run (all but the one without permissions) can use its lookups (owner decision 13).
+        var cs = await u.H.Factory.WithDbAsync(db => Task.FromResult(db.Database.GetConnectionString()!));
+        const string walkSql = "SELECT :MATTER AS m, :CLIENT AS c, :WHO AS w";
+        const string walkParameters = """[{"name":"MATTER","type":"lookup","label":"Matter","lookupKind":"matter"},{"name":"CLIENT","type":"lookup","label":"Client","lookupKind":"client"},{"name":"WHO","type":"lookup","label":"Person","lookupKind":"user"}]""";
+        await SqlServerFixture.ExecuteAsync(
+            cs,
+            """
+            INSERT dbo.ReportCategory (Name) VALUES (N'Walk');
+            INSERT dbo.ReportDefinition (ReportCategoryId, Name, IsActive) VALUES (SCOPE_IDENTITY(), N'Walk report', 0);
+            DECLARE @r int = SCOPE_IDENTITY();
+            INSERT dbo.ReportVersion (ReportId, VersionNo, SqlText, SqlHash, ParametersJson) VALUES (@r, 1, N'WALKSQL', 0xHASH, N'WALKPARAMETERS');
+            UPDATE dbo.ReportDefinition SET CurrentVersionId = SCOPE_IDENTITY(), IsActive = 1 WHERE ReportId = @r;
+            INSERT dbo.RoleReport (RoleId, ReportId) SELECT RoleId, @r FROM dbo.Role;
+            """.Replace("WALKSQL", walkSql, StringComparison.Ordinal).Replace("WALKPARAMETERS", walkParameters, StringComparison.Ordinal).Replace("HASH", Convert.ToHexString(MatterFlow.Reports.Domain.SqlValidator.Hash(walkSql)), StringComparison.Ordinal));
+        var report = Convert.ToInt32(await SqlServerFixture.ScalarAsync(cs, "SELECT ReportId FROM dbo.ReportDefinition WHERE Name = N'Walk report'"), System.Globalization.CultureInfo.InvariantCulture);
+
+        return new WalkIds(u.AllMatters, [u.TN1, u.TS1, u.TS2, u.TS3], [u.World.ProjectId, u.PN1, u.PS1, u.PS2, u.PS3], [an, a1, a2, a3, a3b], clientId, u.Assignee, typeId, u.World.TaskTypeId, refs, [.. specs], [.. productions], [.. notes], report);
     }
 
     public static PersonaWalk Create(SensitiveUniverse u, WalkIds ids) => new(u, ids);
@@ -163,7 +180,7 @@ public sealed class PersonaWalk
 
     private IEnumerable<string> Expand(string template)
     {
-        string[] tokens = ["{matterref}", "{matter}", "{task}", "{project}", "{asset}", "{client}", "{user}", "{assettype}", "{tasktype}", "{spec}", "{production}", "{note}"];
+        string[] tokens = ["{matterref}", "{matter}", "{task}", "{project}", "{asset}", "{client}", "{user}", "{assettype}", "{tasktype}", "{spec}", "{production}", "{note}", "{report}"];
         var found = tokens.FirstOrDefault(template.Contains);
         if (found is null)
         {
@@ -194,6 +211,7 @@ public sealed class PersonaWalk
             "{spec}" => (_ids.Specs ?? []).Select(i => (long)i),
             "{production}" => (_ids.Productions ?? []).Select(i => (long)i),
             "{note}" => (_ids.Notes ?? []).Select(i => (long)i),
+            "{report}" => [_ids.Report],
             _ => [_ids.TaskType],
         };
         foreach (var value in values)

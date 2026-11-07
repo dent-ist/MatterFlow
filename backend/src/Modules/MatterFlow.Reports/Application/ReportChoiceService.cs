@@ -77,7 +77,7 @@ public sealed class ReportChoiceService
     /// <summary>
     /// The choices of one parameter for a person who may run the report (assignment checked like a run: unknown, inactive and not assigned all answer 404).
     /// A fixed list comes from the definition, a SELECT list from the cache or the query. A lookup (matter, client, user, pod...) has no list here: the
-    /// picker's own endpoint and its own permission serve it.
+    /// reports-owned lookup endpoint (<see cref="ReportLookupService"/>) serves it.
     /// </summary>
     public async Task<AdminResult<ChoiceList>> GetForUserAsync(int reportId, string parameter, CancellationToken cancellationToken)
     {
@@ -94,7 +94,7 @@ public sealed class ReportChoiceService
         if (definition is null)
             return AdminResult<ChoiceList>.Fail(404, ErrorCodes.NotFound, "This report has no such parameter.");
         if (definition.Type is not (ReportParameterType.Single or ReportParameterType.Multi))
-            return AdminResult<ChoiceList>.Fail(400, "NO_CHOICE_LIST", definition.Type == ReportParameterType.Lookup ? "This parameter is picked with the search of the matching page, not from a list." : "This parameter has no list of choices.");
+            return AdminResult<ChoiceList>.Fail(400, "NO_CHOICE_LIST", definition.Type == ReportParameterType.Lookup ? "This parameter is picked with the lookup of the report, not from a list." : "This parameter has no list of choices.");
         if (definition.OptionsKind == OptionsKind.Fixed)
             return AdminResult<ChoiceList>.Ok(new ChoiceList(definition.Options, false, null, null, 0));
 

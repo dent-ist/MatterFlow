@@ -41,6 +41,8 @@ public static class ReportsModule
         services.AddMemoryCache();
         services.AddSingleton<ReportChoiceGate>();
         services.AddScoped<ReportChoiceService>();
+        services.AddScoped<IReportLookupStore, ReportLookupStore>();
+        services.AddScoped<ReportLookupService>();
         services.AddScoped<IReportAdminStore, ReportAdminStore>();
         services.AddScoped<IReportStarterMarkers, ReportStarterMarkers>();
         services.AddScoped<ReportStarterSeeder>();
