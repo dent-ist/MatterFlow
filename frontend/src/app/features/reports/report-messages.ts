@@ -14,12 +14,6 @@ export interface RunBanner {
   readonly action?: 'cancelRunning';
 }
 
-/**
- * The runs-per-hour limit of the sentence in spec 3.5. The server counts it from `Reports:RunsPerUserPerHour` (default 30) and does not send it,
- * so this is the documented default; if an administrator changes the setting, the sentence keeps the default number.
- */
-export const RUNS_PER_HOUR = 30;
-
 export type RunOutcome =
   | { readonly kind: 'cancelled' }
   | { readonly kind: 'notAvailable' }
@@ -44,7 +38,7 @@ export function outcomeOf(error: unknown, limits: { timeoutSeconds: number }): R
     case 'REPORT_RATE_LIMITED':
       return banner({
         tone: 'warning',
-        text: `You've reached the limit of ${RUNS_PER_HOUR} runs per hour. Try again later.`,
+        text: "You've reached the hourly limit for report runs. Try again later.",
       });
     case 'REPORT_BUSY':
       return banner({

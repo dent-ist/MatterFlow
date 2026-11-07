@@ -26,7 +26,7 @@ describe('the words of a failed run (spec 3.5)', () => {
 
   it('429 has two sentences, one for the hourly limit and one for a busy server', () => {
     expect(bannerOf(problem(429, 'REPORT_RATE_LIMITED')).text).toBe(
-      "You've reached the limit of 30 runs per hour. Try again later.",
+      "You've reached the hourly limit for report runs. Try again later.",
     );
     expect(bannerOf(problem(429, 'REPORT_BUSY')).text).toBe(
       'The server is busy with other reports. Try again in a minute.',
