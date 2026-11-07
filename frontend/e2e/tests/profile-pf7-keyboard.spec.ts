@@ -67,10 +67,14 @@ test.describe('pf7-keyboard: keyboard-only flows on My profile (#582)', () => {
     await expect(dialog).toHaveCount(0);
     await expect(action).toHaveText("I'm Back");
     await expect(action).toBeFocused();
-    await expect(me.locator('[data-status-ooo]')).toBeChecked();
+    await expect(me.locator('[data-profile-who] [data-availability-chip]')).toContainText(
+      'Out of Office',
+    );
     await press(me, 'Enter');
     await expect(action).toHaveText('Set out of office...');
-    await expect(me.locator('[data-status-available]')).toBeChecked();
+    await expect(me.locator('[data-profile-who] [data-availability-chip]')).toHaveText(
+      /Available|Off Hours/,
+    );
   });
 
   test('the account menu: arrows, Enter on Set out of office, a preset, Escape; focus returns to the menu button', async ({
@@ -199,7 +203,7 @@ test.describe('pf7-keyboard: keyboard-only flows on My profile (#582)', () => {
     const me = await asUser(p.username);
     await me.setViewportSize({ width: 1366, height: 768 });
     await me.goto('/profile');
-    await expect(me.locator('[data-card="availability"]')).toBeVisible();
+    await expect(me.locator('[data-card="work-hours"]')).toBeVisible();
     await press(me, 'Tab');
     await expect(me.getByRole('link', { name: /Skip to main/ })).toBeFocused();
     await press(me, 'Enter');
@@ -210,7 +214,7 @@ test.describe('pf7-keyboard: keyboard-only flows on My profile (#582)', () => {
 
     // Sweep the form: from the first Status radio to the end of the right column.
     await me.getByRole('button', { name: 'Saturday', exact: true }).click(); // something to save, so Save is a stop
-    await me.locator('[data-status-available]').focus();
+    await me.locator('[data-card="work-hours"] input').first().focus();
     const stops: { label: string; ring: boolean; covered: boolean }[] = [];
     for (let n = 0; n < 80; n++) {
       const info = await me.evaluate(() => {
@@ -296,7 +300,7 @@ test.describe('pf7-axe: axe 0 and no sideways scroll at both desktop sizes for e
     for (const size of SIZES) {
       await me.setViewportSize(size);
       await me.goto('/profile');
-      await expect(me.locator('[data-card="availability"]')).toBeVisible();
+      await expect(me.locator('[data-card="work-hours"]')).toBeVisible();
       await check('available', size);
       if (size.width === 1366) await shot(me, 'pf7-available');
 

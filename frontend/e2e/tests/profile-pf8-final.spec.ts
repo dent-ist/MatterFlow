@@ -39,7 +39,7 @@ async function measure(page: Page, state: string, expectActions: number): Promis
     const left = rect('.pp__col--main');
     const bar = rect('[data-actions]');
     const account = rect('[data-account-card]');
-    const avail = rect('[data-card="availability"]');
+    const avail = rect('[data-card="work-hours"]');
     return {
       h1Size: parseFloat(getComputedStyle(h1).fontSize),
       h1Top: h1.getBoundingClientRect().top - main.top,
@@ -101,7 +101,7 @@ test.describe("pf8-final: the final contract over the review's persons at both d
     for (const size of SIZES) {
       await me.setViewportSize(size);
       await me.goto('/profile');
-      await expect(me.locator('[data-card="availability"]')).toBeVisible();
+      await expect(me.locator('[data-card="work-hours"]')).toBeVisible();
       const av = await measure(me, 'available', 1);
       expect(av.account).toBe(size.width >= 1100 ? 'right' : 'below');
       if (size.width >= 1100) expect(Math.abs(av.leftColumn! - av.bar!)).toBeLessThan(2);
@@ -146,7 +146,7 @@ test.describe("pf8-final: the final contract over the review's persons at both d
 
       await tall.setViewportSize(size);
       await tall.goto('/profile');
-      await expect(tall.locator('[data-card="availability"]')).toBeVisible();
+      await expect(tall.locator('[data-card="work-hours"]')).toBeVisible();
       await measure(tall, 'long name', 1);
       await expect(tall.locator('[data-name]')).toHaveAttribute('title', long.displayName!);
       await shot(tall, 'final-long-name');
@@ -197,7 +197,7 @@ test.describe("pf8-final: the final contract over the review's persons at both d
     await me.setViewportSize({ width: 1366, height: 768 });
     await me.goto('/profile');
     await me.getByRole('button', { name: 'Saturday', exact: true }).click();
-    await me.locator('[data-status-available]').focus();
+    await me.locator('[data-card="work-hours"] input').first().focus();
     let stops = -1;
     for (let n = 1; n <= 60; n++) {
       await me.keyboard.press('Tab');

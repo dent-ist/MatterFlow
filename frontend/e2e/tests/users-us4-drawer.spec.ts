@@ -93,11 +93,11 @@ test.describe('#438 the drawer shell', () => {
     page,
   }) => {
     await openList(page);
-    const before = await page.locator('.mf-table-wrap').boundingBox();
+    const before = await page.locator('mf-grid-frame .scroll').boundingBox();
     await openDrawer(page, worker.userId);
     await expect(page).toHaveURL(new RegExp(`user=${worker.userId}`));
     // The grid behind the mask is as wide as before: the drawer takes no room from it.
-    const after = await page.locator('.mf-table-wrap').boundingBox();
+    const after = await page.locator('mf-grid-frame .scroll').boundingBox();
     expect(Math.round(after!.width)).toBe(Math.round(before!.width));
     // The drawer is 480 px from 1024 up.
     const box = await drawer(page).boundingBox();
@@ -353,7 +353,7 @@ test.describe('#441 deactivation', () => {
 
     const inactiveBefore = await page.locator('[data-strip-item="inactive"]').textContent();
     await deactivate.click();
-    await dialog.getByRole('button', { name: 'Deactivate', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Deactivate User', exact: true }).click();
     await expect(dialog).toBeHidden();
     await expect(page.locator('[data-drawer-status]')).toContainText('Inactive');
     await expect(page.getByRole('button', { name: /^Activate / })).toBeVisible();
@@ -397,7 +397,7 @@ test.describe('#441 deactivation', () => {
     await page.getByRole('button', { name: /^Deactivate / }).click();
     await page
       .getByRole('dialog', { name: /^Deactivate / })
-      .getByRole('button', { name: 'Deactivate', exact: true })
+      .getByRole('button', { name: 'Deactivate User', exact: true })
       .click();
     await expect(page.locator('[data-panel-error]')).toHaveText(
       'At least one active System Admin is required.',

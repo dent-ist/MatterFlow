@@ -154,7 +154,7 @@ test.describe('custom ranges', () => {
   }) => {
     await openSummary(page, '/dashboard?period=7d');
     await period(page).selectOption({ label: 'Custom' });
-    await expect(page).toHaveURL(/period=custom&from=\d{4}-\d{2}-\d{2}&to=\d{4}-\d{2}-\d{2}/);
+    await expect(page).toHaveURL(/period=custom&(?:tab=trends&)?from=\d{4}-\d{2}-\d{2}&to=\d{4}-\d{2}-\d{2}/);
     const url = page.url();
     const from = page.getByLabel('From', { exact: true });
     await expect(from).toBeVisible();

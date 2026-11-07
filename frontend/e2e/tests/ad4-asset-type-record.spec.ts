@@ -125,7 +125,7 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
 
     // The row menu goes straight to the designer, and Back returns to the same row.
     await page.getByRole('button', { name: `Actions for Deep ${token}` }).click();
-    await page.getByRole('menuitem', { name: /Edit fields/ }).click();
+    await page.getByRole('menuitem', { name: /Edit Fields/ }).click();
     await expect(page).toHaveURL(new RegExp(`/admin/asset-types/${t.assetTypeId}/form$`));
     await crumbs(page).filter({ hasText: 'Asset Types' }).getByRole('link').click();
     await expect(page.getByRole('link', { name: `Deep ${token}` })).toBeFocused();

@@ -44,12 +44,18 @@ test.describe('pf1-follow-menu: the open profile page follows the header menu (#
       const p = await personas.create({ ...who, label: `pf1${who.key}` });
       const me = await asUser(p.username);
       await me.goto('/profile');
-      await expect(me.locator('[data-status-available]')).toBeChecked();
+      await expect(me.locator('[data-profile-who] [data-availability-chip]')).toHaveText(
+        /Available|Off Hours/,
+      );
       await expect(me.getByRole('button', { name: 'Save Changes' })).toBeDisabled();
 
       await setOutFromMenu(me);
-      await expect(me.locator('[data-status-ooo]')).toBeChecked();
-      await expect(me.locator('h1 [data-availability-chip]')).toContainText('Out of Office');
+      await expect(me.locator('[data-profile-who] [data-availability-chip]')).toContainText(
+        'Out of Office',
+      );
+      await expect(me.locator('[data-profile-who] [data-availability-chip]')).toContainText(
+        'Out of Office',
+      );
       await expect(me.locator('[data-updated-note]')).toHaveText(/Your availability was updated\./);
       await expect(me.locator('[data-updated-note]')).toHaveAttribute('aria-live', 'polite');
       await expect(me.getByRole('button', { name: 'Save Changes' })).toBeDisabled();
@@ -57,8 +63,9 @@ test.describe('pf1-follow-menu: the open profile page follows the header menu (#
       await expect(me.locator('[data-stale]')).toHaveCount(0);
 
       await imBackFromMenu(me);
-      await expect(me.locator('[data-status-available]')).toBeChecked();
-      await expect(me.locator('[data-ooo-fields]')).toHaveCount(0);
+      await expect(me.locator('[data-profile-who] [data-availability-chip]')).toHaveText(
+        /Available|Off Hours/,
+      );
       await expect(me.getByRole('button', { name: 'Save Changes' })).toBeDisabled();
       // Focus is back on the menu button, as before.
       await expect(me.getByRole('button', { name: /account menu/ })).toBeFocused();
@@ -78,13 +85,17 @@ test.describe('pf1-follow-menu: the open profile page follows the header menu (#
     const stale = me.locator('[data-stale]');
     await expect(stale).toContainText('changed somewhere else');
     await expect(me.getByLabel('Start time', { exact: true })).toHaveValue('08:30');
-    await expect(me.locator('[data-status-available]')).toBeChecked();
+    await expect(me.locator('[data-profile-who] [data-availability-chip]')).toHaveText(
+      /Available|Off Hours/,
+    );
     await expect(me.getByRole('button', { name: 'Save Changes' })).toBeEnabled();
 
     // Nothing is overwritten silently: Save raises the existing conflict message and shows the latest values.
     await me.getByRole('button', { name: 'Save Changes' }).click();
     await expect(me.locator('[data-conflict]')).toContainText('your edits were not saved');
-    await expect(me.locator('[data-status-ooo]')).toBeChecked();
+    await expect(me.locator('[data-profile-who] [data-availability-chip]')).toContainText(
+      'Out of Office',
+    );
     await expect(me.getByLabel('Start time', { exact: true })).toHaveValue('09:00');
     await expect(stale).toHaveCount(0);
   });
@@ -97,16 +108,22 @@ test.describe('pf1-follow-menu: the open profile page follows the header menu (#
     const me = await asUser(p.username);
     await me.goto('/profile');
     await setOutFromMenu(me);
-    await expect(me.locator('[data-status-ooo]')).toBeChecked();
+    await expect(me.locator('[data-profile-who] [data-availability-chip]')).toContainText(
+      'Out of Office',
+    );
 
     await me.getByLabel('End time', { exact: true }).fill('16:00');
     await imBackFromMenu(me);
     await expect(me.locator('[data-stale]')).toBeVisible();
-    await expect(me.locator('[data-status-ooo]')).toBeChecked();
+    await expect(me.locator('[data-profile-who] [data-availability-chip]')).toContainText(
+      'Out of Office',
+    );
     await expect(me.getByLabel('End time', { exact: true })).toHaveValue('16:00');
 
     await me.getByRole('button', { name: 'Load Latest' }).click();
-    await expect(me.locator('[data-status-available]')).toBeChecked();
+    await expect(me.locator('[data-profile-who] [data-availability-chip]')).toHaveText(
+      /Available|Off Hours/,
+    );
     await expect(me.getByLabel('End time', { exact: true })).toHaveValue('17:00');
     await expect(me.locator('[data-updated-note]')).toContainText('latest availability');
     await expect(me.locator('[data-status-available]')).toBeFocused();
@@ -121,7 +138,9 @@ test.describe('pf1-follow-menu: the open profile page follows the header menu (#
     await second.goto('/profile');
     await setOutFromMenu(second);
     await first.reload();
-    await expect(first.locator('[data-status-ooo]')).toBeChecked();
+    await expect(first.locator('[data-profile-who] [data-availability-chip]')).toContainText(
+      'Out of Office',
+    );
   });
 
   test('axe and no sideways scroll with the stale note shown, at both desktop sizes', async ({

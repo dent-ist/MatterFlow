@@ -19,7 +19,7 @@ const axeClean = async (page: Page, label: string): Promise<void> => {
 
 /** Tab stops from the first Status radio to Save (Save is reachable once something changed). */
 async function tabStopsToSave(page: Page): Promise<number> {
-  await page.locator('[data-status-available]').focus();
+  await page.locator('[data-card="work-hours"] input').first().focus();
   for (let n = 1; n <= 60; n++) {
     await page.keyboard.press('Tab');
     const onSave = await page.evaluate(() => !!document.activeElement?.closest('[data-save]'));

@@ -176,7 +176,9 @@ test.describe('#454 the six keyboard flows', () => {
     const dialog = page.getByRole('dialog', { name: /^Deactivate / });
     await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(dialog.getByRole('button', { name: 'Deactivate', exact: true })).toBeFocused();
+    await expect(
+      dialog.getByRole('button', { name: 'Deactivate User', exact: true }),
+    ).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(dialog).toBeHidden();
     await expect(page.locator('[data-drawer-status]')).toContainText('Inactive');

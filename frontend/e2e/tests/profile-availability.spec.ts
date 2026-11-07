@@ -199,7 +199,7 @@ test.describe('My profile: accessibility (axe wcag2a, wcag2aa, wcag21aa)', () =>
       await me.setViewportSize({ width: size.width, height: size.height });
 
       await me.goto('/profile');
-      await expect(me.locator('h1 [data-availability-chip]')).toBeVisible();
+      await expect(me.locator('[data-profile-who] [data-availability-chip]')).toBeVisible();
       expect(await axeViolations(me)).toEqual([]);
 
       // The Add dialog is clean too (epic #1074, CAL-05), and nothing scrolls sideways.

@@ -224,7 +224,9 @@ test.describe('BUG-3: the deactivation question', () => {
     const dialog = page.getByRole('dialog', { name: /^Deactivate / });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
-    await expect(dialog.getByRole('button', { name: 'Deactivate', exact: true })).toBeVisible();
+    await expect(
+      dialog.getByRole('button', { name: 'Deactivate User', exact: true }),
+    ).toBeVisible();
     // Fully inside the window.
     const inside = await dialog.evaluate((el) => {
       const r = el.getBoundingClientRect();
@@ -246,7 +248,7 @@ test.describe('BUG-3: the deactivation question', () => {
     await page.getByRole('button', { name: /^Deactivate / }).click();
     await page
       .getByRole('dialog', { name: /^Deactivate / })
-      .getByRole('button', { name: 'Deactivate', exact: true })
+      .getByRole('button', { name: 'Deactivate User', exact: true })
       .click();
     await expect(page.locator(`tr[data-record-id="${victim.userId}"] [data-status]`)).toContainText(
       'Inactive',
@@ -266,7 +268,9 @@ test.describe('BUG-3: the deactivation question', () => {
     const dialog = page.getByRole('dialog', { name: /^Deactivate / });
     await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(dialog.getByRole('button', { name: 'Deactivate', exact: true })).toBeFocused();
+    await expect(
+      dialog.getByRole('button', { name: 'Deactivate User', exact: true }),
+    ).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(dialog).toBeHidden();
     await expect(page.locator('[data-activate]')).toBeVisible();

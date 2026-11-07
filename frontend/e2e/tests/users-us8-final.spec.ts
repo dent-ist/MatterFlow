@@ -122,7 +122,7 @@ test.describe('Users final verification', () => {
 
     // U1: the grid fits its box and the rows are 44 px.
     const grid = await page
-      .locator('.mf-table-wrap')
+      .locator('mf-grid-frame .scroll')
       .first()
       .evaluate((w) => ({
         scroll: w.scrollWidth,

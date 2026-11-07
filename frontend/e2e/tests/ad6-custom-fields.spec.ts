@@ -94,7 +94,7 @@ test.describe('Custom Fields list (#644)', () => {
         await expect(r.locator('[data-published]')).toContainText(`v${s.publishedVersion}`);
         await expect(r.locator('[data-status]')).toContainText(`Published v${s.publishedVersion}`);
       } else {
-        await expect(r.locator('[data-fields]')).toContainText('No fields yet');
+        await expect(r.locator('[data-fields]')).toHaveAttribute('title', 'No fields yet');
         await expect(r.locator('[data-published]')).toContainText('Not Published');
         await expect(r.locator('[data-status]')).toContainText('No Published Fields');
       }
@@ -113,9 +113,9 @@ test.describe('Custom Fields list (#644)', () => {
     await admin.post('/api/v1/forms', { ownerKind: 'Matter' });
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/admin/custom-fields');
-    const button = page.getByRole('button', { name: 'Actions for Matter custom fields' });
+    const button = page.getByRole('button', { name: 'Actions for Matter Custom Fields' });
     await button.click();
-    await expect(page.getByRole('menuitem')).toHaveText([/Edit fields/, /History/]);
+    await expect(page.getByRole('menuitem')).toHaveText([/Edit Fields/, /History/]);
     await page.getByRole('menuitem', { name: /History/ }).click();
     const drawer = page.getByRole('dialog', { name: /Activity/ });
     await expect(drawer).toBeVisible();
@@ -134,8 +134,8 @@ test.describe('Custom Fields list (#644)', () => {
       await page.setViewportSize(size);
       if (axeAvailable()) expect(await axeViolations(page), `list at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
-      await page.getByRole('button', { name: 'Actions for Matter custom fields' }).click();
-      await expect(page.getByRole('menuitem', { name: /Edit fields/ })).toBeVisible();
+      await page.getByRole('button', { name: 'Actions for Matter Custom Fields' }).click();
+      await expect(page.getByRole('menuitem', { name: /Edit Fields/ })).toBeVisible();
       if (axeAvailable()) expect(await axeViolations(page), `menu at ${size.width}`).toEqual([]);
       await page.keyboard.press('Escape');
     }
@@ -173,8 +173,8 @@ test.describe('Custom Fields list (#644)', () => {
     const manager = await asUser((await seed.user([role.name], 'ad6-mgr')).username);
     await manager.goto('/admin/custom-fields');
     await expect(row(manager, 'Matter')).toBeVisible();
-    await manager.getByRole('button', { name: 'Actions for Matter custom fields' }).click();
-    await expect(manager.getByRole('menuitem')).toHaveText([/Edit fields/]);
+    await manager.getByRole('button', { name: 'Actions for Matter Custom Fields' }).click();
+    await expect(manager.getByRole('menuitem')).toHaveText([/Edit Fields/]);
     await manager.keyboard.press('Escape');
     await row(manager, 'Matter').getByRole('link').click();
     await expect(manager).toHaveURL(/\/admin\/custom-fields\/matter\/form$/);
@@ -197,7 +197,7 @@ test.describe('Custom Fields designer entry (#645)', () => {
       await expect(page).toHaveURL(new RegExp(`/admin/custom-fields/${o.key}/form$`));
       await expect(page).toHaveTitle(`${o.label} Custom Fields - MatterFlow`);
       await expect(page.getByRole('heading', { level: 1 })).toContainText(
-        `${o.label} custom fields`,
+        `${o.label} Custom Fields`,
       );
       await expect(page.getByRole('heading', { level: 1 })).not.toContainText('Form:');
       await expect(crumbs(page)).toHaveText([
@@ -218,8 +218,8 @@ test.describe('Custom Fields designer entry (#645)', () => {
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/admin/custom-fields');
-    await page.getByRole('button', { name: 'Actions for Project custom fields' }).click();
-    await page.getByRole('menuitem', { name: /Edit fields/ }).click();
+    await page.getByRole('button', { name: 'Actions for Project Custom Fields' }).click();
+    await page.getByRole('menuitem', { name: /Edit Fields/ }).click();
     await expect(page).toHaveURL(/\/admin\/custom-fields\/project\/form$/);
     await crumbs(page).filter({ hasText: 'Custom Fields' }).getByRole('link').click();
     await expect(row(page, 'Project').getByRole('link')).toBeFocused();
@@ -233,7 +233,7 @@ test.describe('Custom Fields designer entry (#645)', () => {
       if (r.method() === 'POST' && r.url().endsWith('/api/v1/forms')) posts.push(r.url());
     });
     await page.goto('/admin/custom-fields/client/form');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Client custom fields');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Client Custom Fields');
     expect(posts.length).toBeGreaterThan(0);
   });
 });
