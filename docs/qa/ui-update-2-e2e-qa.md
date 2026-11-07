@@ -20,7 +20,7 @@ Date: 2026-11-07. Subject: `origin/dev` at fd1428f (equal to the finished `ui-up
 | sensitive 2 | `npm run e2e -- sensitive-` again | 13 passed, 1 failed (stale locator, fixed afterwards) |
 | slices | Small re-runs of fixed families (create-task: 15/15 then 9/9 after the last fix; the Task Types / Workflows slice 55 of 87; several mixed slices) | used to prove each fix |
 
-Not run: the full suite a second time (a clean full run would take about 2.1 hours and 1.2 GB of disk; not possible with the 2.9 GB I had and the restarts), the run with `E2E_SCREENSHOTS`, and `npm run e2e` with retries. Run 3 was not complete (46 tests), and no failed test was re-run strictly alone twice: reruns were in groups of up to 633 tests on a kept stack that had also run earlier tests, so a test that fails in run 2 and run 3 is "failed twice in a re-run", not "failed twice alone". Flaky: none observed (0 flaky in run 1; failures repeated in run 2).
+Not run: the sensitive-ui fix and the last small fix commit (7770f24) after the second full run; the run with `E2E_SCREENSHOTS`, and `npm run e2e` with retries. Run 3 was not complete (46 tests), and no failed test was re-run strictly alone twice: reruns were in groups of up to 633 tests on a kept stack that had also run earlier tests, so a test that fails in run 2 and run 3 is "failed twice in a re-run", not "failed twice alone". Flaky: none observed (0 flaky in run 1; failures repeated in run 2).
 
 Stack: SQL Server 2022 container per run (`mf-e2e-sql-<pid>`), published API (Dev auth), axe from `node_modules/axe-core`, Chromium from `/opt/pw-browsers/chromium-1194` with `E2E_NO_SANDBOX=1`. Heavy commands went through `heavy.sh`.
 
