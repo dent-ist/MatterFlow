@@ -173,7 +173,7 @@ test.describe('#438 the drawer shell', () => {
     await expect(page).not.toHaveURL(/user=/);
     // A person that does not exist shows the error, not a blank drawer.
     await page.goto(listUrl('&user=99999999'));
-    await expect(page.locator('[data-panel-error]')).toContainText('We could not load this user');
+    await expect(page.locator('[data-panel-error]')).toContainText("Couldn't load this user");
     await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
   });
 
@@ -288,7 +288,9 @@ test.describe('#440 Pods, Availability and Profile', () => {
     const pop = page.locator('[data-pods-popover]');
     await expect(pop).toBeVisible();
     await pop.getByRole('checkbox', { name: new RegExp(otherPodName) }).check();
-    await pop.getByRole('button', { name: `Make ${otherPodName} the primary pod` }).click();
+    // The first pod of a person with no pods is the primary one already (no "Make Primary" button then).
+    const makePrimary = pop.getByRole('button', { name: `Make ${otherPodName} the primary pod` });
+    if ((await makePrimary.count()) > 0) await makePrimary.click();
     await pop.locator('[data-pods-apply]').click();
     await expect(pods).toContainText(otherPodName);
     await expect(page.getByRole('status').filter({ hasText: /Pods of/ })).toBeVisible();
@@ -421,7 +423,7 @@ test.describe('#442 a first grant of access', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/admin/users?status=pending&account=e2e-${XTAG}g`);
     await expect(page.locator('tr[data-record-id]')).toHaveCount(2);
-    const grant = rowOf(page, first.userId).locator('[data-grant] button');
+    const grant = rowOf(page, first.userId).locator('button[data-grant]');
     await grant.click();
     await expect(page.locator('[data-panel-heading]')).toBeFocused();
     await page.getByRole('checkbox', { name: /^Data Technician/ }).check();
@@ -482,7 +484,9 @@ test.describe('#443 read-only variants and #444 conflicts', () => {
     await expect(page.locator('[data-role]').first()).toBeDisabled();
     await drawer(page).locator('[data-pods-trigger]').click();
     await page.getByRole('checkbox', { name: new RegExp(otherPodName) }).check();
-    await page.getByRole('button', { name: `Make ${otherPodName} the primary pod` }).click();
+    // The first pod of a person with no pods is the primary one already (no "Make Primary" button then).
+    const makePrimary = page.getByRole('button', { name: `Make ${otherPodName} the primary pod` });
+    if ((await makePrimary.count()) > 0) await makePrimary.click();
     await page.locator('[data-pods-apply]').click();
     await expect(page.locator('[data-section="pods"]')).toContainText(otherPodName);
   });

@@ -16,7 +16,7 @@ import { userName, userRow } from '../support/users-grid';
  * docs/ux/users-review/fixes/us7-keyboard). axe is required here: a missing axe-core fails the file. No shortcut is involved (Phase 2, #420).
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
-const TAG = `us7k${Math.floor(Math.random() * 90000) + 10000}`;
+const TAG = `us7k${Math.floor(Math.random() * 90000) + 10000}${Date.now().toString(36).slice(-4)}`;
 const SIZES = [
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },

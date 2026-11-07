@@ -18,7 +18,7 @@ const SIZES = [
 ] as const;
 
 const OUT = process.env['E2E_SCREENSHOTS'];
-const TAG = `usc${Math.floor(Math.random() * 90000) + 10000}`;
+const TAG = `usc${Math.floor(Math.random() * 90000) + 10000}${Date.now().toString(36).slice(-4)}`;
 
 async function shot(page: Page, name: string, width: number, height: number): Promise<void> {
   if (!OUT) return;

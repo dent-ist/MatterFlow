@@ -101,9 +101,11 @@ async function axeClean(page: Page) {
 
 const headers = (page: Page) =>
   page.evaluate(() =>
-    Array.from(document.querySelectorAll<HTMLElement>('table.mf-grid thead tr:first-child th'))
+    Array.from(
+      document.querySelectorAll<HTMLElement>('mf-record-grid table thead tr:first-child th'),
+    )
       .filter((th) => getComputedStyle(th).display !== 'none')
-      .map((th) => th.textContent!.trim()),
+      .map((th) => th.textContent!.replace(/\s+/g, ' ').trim()),
   );
 
 const nameButton = (page: Page, id: number) =>
@@ -150,7 +152,7 @@ test.describe('#432 the grid', () => {
       return Math.round(el.getBoundingClientRect().height / line);
     });
     expect(lines).toBeLessThanOrEqual(2);
-    const role = page.locator(`tr[data-record-id="${busy.userId}"] td.mf-cell-muted`);
+    const role = page.locator(`tr[data-record-id="${busy.userId}"] td.us-roles`);
     await expect(role).toHaveAttribute('title', new RegExp(longRoleName.slice(0, 40)));
   });
 

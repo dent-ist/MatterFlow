@@ -47,7 +47,8 @@ async function openList(page: Page, width = 1366, height = 768, extra = ''): Pro
   await page.setViewportSize({ width, height });
   await page.goto(listUrl(extra));
   // The table from 640 px, cards below (#445).
-  await expect(page.locator(width < 640 ? 'li.rc' : 'tr[data-record-id]')).toHaveCount(3);
+  // Other tests of this file add people with the same prefix while they run in parallel, so wait for the three of this file, not for a total.
+  for (const userId of ACCOUNT.keys()) await expect(rowOf(page, userId)).toBeVisible();
 }
 
 /** The name of the person: the one control of the Name cell (#432); it opens the panel. */
