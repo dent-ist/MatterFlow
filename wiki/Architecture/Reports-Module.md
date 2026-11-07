@@ -14,7 +14,11 @@ Administrators author reports (a single `SELECT` with typed parameters), assign 
 | `Report.Assign` | Assign roles to reports, names only |
 | `Report.Run` | Run assigned reports, saved views, CSV export |
 
-No starter role holds any of these; the System Admin holds all implicitly.
+No starter role holds any of these; the System Admin holds all implicitly. A report is run only by a person whose role it is assigned to, so the System Admin role needs an assignment as well (the demo seed adds it).
+
+## Starter reports
+
+Eight starter reports ship as data (`Starters/manifest.json` plus one embedded `.sql` file each) and are created once at startup by `ReportStarterSeeder` (`Seed:StarterReports`, Development on, elsewhere off, `DryRun` only logs). The seeder writes category, definition, first version and a `SeedMarker` per starter with the application connection, marks the version previewed and active without running it, and never touches a starter again, so administrators edit them like any report. It assigns **no role**: no starter role holds `Report.Run` (owner decision 8, open). Two starters list matter names (*Tasks per matter*, *Assets linked to open tasks*) and so carry an `Include sensitive matters` guard that defaults to No; the other six return counts or user names. CI runs every starter through the real report login (`ReportStarterTests`). Details and how to add one: [Add a Report](../How-To/Add-a-Report.md); demo: [Demo Data and Personas](../Operations/Demo-Data-and-Personas.md).
 
 ## How it is safe
 

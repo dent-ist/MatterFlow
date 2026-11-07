@@ -17,4 +17,9 @@
     <!-- The access catalogue of the report login (script 30): the startup probe and the schema browser need the same allow/deny list as the database. -->
     <EmbeddedResource Include="..\..\..\..\db\report-access.json" LogicalName="db.report-access.json" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- The starter reports (issue #724): one SQL file per report plus a manifest, read by ReportStarterSeeder. -->
+    <EmbeddedResource Include="Starters\manifest.json" LogicalName="MatterFlow.Reports.Starters.manifest.json" />
+    <EmbeddedResource Include="Starters\*.sql" LogicalName="MatterFlow.Reports.Starters.%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>

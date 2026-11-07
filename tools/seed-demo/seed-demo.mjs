@@ -8,6 +8,8 @@
 // Everything goes through the public HTTP API (as the Dev default admin, and as the test users for their own work), exactly like the
 // screens do: nothing is written to the database directly. See wiki/Operations/Demo-Data-and-Personas.md.
 
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { Api, ApiError, Pacer, withRecheck } from './lib/http.mjs';
 import { createRng } from './lib/rng.mjs';
 import { FormFiller } from './lib/forms.mjs';
@@ -1095,6 +1097,85 @@ async function reportSensitive(admin, ctx) {
   );
 }
 
+
+// ---------------------------------------------------------------------------------------------------------------------------------
+// Reports (issue #724)
+
+const REPORT_ROLE = 'Report Runner (demo)';
+const STARTER_MANIFEST = fileURLToPath(
+  new URL('../../backend/src/Modules/MatterFlow.Reports/Starters/manifest.json', import.meta.url),
+);
+
+/**
+ * Leaves the Reports module usable on a fresh demo. The starter reports themselves are created by the API at startup (Development default,
+ * Seed__StarterReports__Enabled), as active, previewed reports; this step does what the API does not do on purpose: no starter role holds
+ * Report.Run (owner decision 8 is pending), so the demo gets its own role "Report Runner (demo)" with only Report.Run, gives it every starter
+ * and gives it to the Director persona (Test User 02, who may see sensitive matters). The System Admin role gets the starters too, so the
+ * bootstrap admin of "npm start" can run them. Safe to repeat: assignments are merged, never replaced. The report login (mf_reports) is
+ * provisioned by "npm start" (db:report-login), not here: this step only reads its state and says what is missing.
+ */
+async function ensureReports(admin, ctx, opts, summary) {
+  const starterNames = JSON.parse(readFileSync(STARTER_MANIFEST, 'utf8')).reports.map((r) => r.name);
+  const status = await admin.get('/api/v1/report-admin/status').catch(() => null);
+  if (status && status.enabled === false)
+    log(
+      `Reports are off on this API: ${status.message ?? 'the report login is not ready'}. "npm start" provisions the login (db:report-login); the starters are still assigned below.`,
+    );
+
+  const list = await admin.get('/api/v1/report-admin/reports').catch(() => null);
+  const byName = new Map((list?.items ?? []).map((r) => [r.name, r]));
+  const present = starterNames.map((n) => byName.get(n)).filter((r) => r && r.isActive);
+  if (present.length < starterNames.length) {
+    log(
+      `Reports: ${present.length} of ${starterNames.length} starter reports are present and active. Start the API in Development ` +
+        '(Seed__StarterReports__Enabled=true, the default there) so it creates them, then run this again. An administrator may have renamed or deactivated some.',
+    );
+  }
+  summary.reportsAssigned = present.length;
+  if (present.length === 0) return;
+  if (opts.dryRun) {
+    log(`Reports: would give ${present.length} starters to "${REPORT_ROLE}" and to the System Admin role.`);
+    return;
+  }
+
+  let role = ctx.roles.find((r) => r.name === REPORT_ROLE);
+  if (!role) {
+    role = await admin.post('/api/v1/roles', {
+      name: REPORT_ROLE,
+      description: 'Demo only: may run the reports it is given (Report.Run). Not a starter role.',
+      permissionCodes: ['Report.Run'],
+    });
+    ctx.roles.push(role);
+    log(`Reports: created the role "${REPORT_ROLE}" (Report.Run only).`);
+  }
+
+  const targets = [role, ...ctx.roles.filter((r) => r.isSystemAdmin)];
+  for (const target of targets) {
+    const held = await admin.get(`/api/v1/report-admin/roles/${target.roleId}/reports`);
+    const ids = new Set(held.filter((r) => r.assigned).map((r) => r.reportId));
+    const before = ids.size;
+    for (const r of present) ids.add(r.reportId);
+    if (ids.size !== before)
+      await admin.put(`/api/v1/report-admin/roles/${target.roleId}/reports`, {
+        reportIds: [...ids],
+      });
+  }
+  log(`Reports: ${present.length} starter reports assigned to "${REPORT_ROLE}" and the System Admin role.`);
+
+  const director = ctx.users.find((u) => u.roleName === 'Director' && u.userId !== null);
+  if (director) {
+    const detail = await admin.get(`/api/v1/users/${director.userId}`);
+    if (!detail.roleIds.includes(role.roleId)) {
+      await admin.put(`/api/v1/users/${director.userId}/roles`, {
+        roleIds: [...detail.roleIds, role.roleId],
+        rowVersion: detail.rowVersion,
+      });
+      log(`Reports: ${director.displayName} (${director.account}) now also holds "${REPORT_ROLE}".`);
+    }
+    summary.reportPersona = `${director.displayName} (${director.account})`;
+  }
+}
+
 // ---------------------------------------------------------------------------------------------------------------------------------
 // PM v2 (epic #851, issue #868): what the Breakdown, Data and report screens need to show something. Idempotent and polite: it only fills what is
 // still empty (a task type without colour and target, an asset type without a designated size field, assets that are all still Active) and never
@@ -1624,6 +1705,9 @@ async function main() {
     }
   }
 
+  step('Reports: starter reports for the demo');
+  await ensureReports(admin, ctx, opts, summary);
+
   step('Sensitive matters');
   if (opts.dryRun) log('Dry run: not read.');
   else await reportSensitive(admin, ctx);
@@ -1631,7 +1715,7 @@ async function main() {
   step('Done');
   log(
     `Users created ${summary.usersCreated ?? 0} (${summary.usersExisting ?? 0} existed, ${summary.usersFinished ?? 0} finished), pods created ${summary.podsCreated ?? 0}, clients ${summary.clientsCreated}, ` +
-      `matters ${summary.mattersCreated}, projects ${summary.projectsCreated}, assets ${summary.assetsCreated}, tasks ${created.length}.`,
+      `matters ${summary.mattersCreated}, projects ${summary.projectsCreated}, assets ${summary.assetsCreated}, tasks ${created.length}, starter reports assigned ${summary.reportsAssigned ?? 0}.`,
   );
   log(
     `${stats.calls} API calls, ${stats.retries429} rate limit retries, ${stats.retriesTransient} retries after a database conflict, ${Math.round((Date.now() - startedAt) / 1000)} s.`,

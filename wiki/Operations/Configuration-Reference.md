@@ -43,6 +43,8 @@ Shipped defaults: `backend/src/MatterFlow.Api/appsettings.json` has only logging
 | `Seeds:Enabled` | `true` | Module startup seeds when migrations are off |
 | `Seed:StarterConfiguration:Enabled` | on in Development, off elsewhere | Seed starter task types, workflows, forms, priorities |
 | `Seed:StarterConfiguration:DryRun` | `false` | Only log what would be created |
+| `Seed:StarterReports:Enabled` | on in Development, off elsewhere | Create the eight starter reports once (issue #724); never overwrites an edit; assigns no role |
+| `Seed:StarterReports:DryRun` | `false` | Only log what would be created |
 | `Security:AllowPrivilegedDatabaseIdentity` | `false` | Production refuses to start when the API identity can alter the audit table; `true` is a documented temporary exception |
 
 ## Behaviour

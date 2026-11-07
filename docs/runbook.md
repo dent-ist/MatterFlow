@@ -339,9 +339,15 @@ A CSV export (`GET /api/v1/reports/runs/{runId}/export.csv`) is one run-log row 
 
 **Retention: two years.** The run log is append-only (the application login has no UPDATE or DELETE on it, and a trigger refuses deleting a row younger than two years). A background job deletes runs older than two years once a day through `dbo.usp_ReportRunPurge`; nothing else removes rows. Audit events follow the audit trail's own retention (kept indefinitely). Parameter values can contain personal data only as ids (matters, clients, users) or as the text an administrator allows; text values are stored shortened to 200 characters.
 
+### 11.4a Starter reports and sensitive matters
+
+Eight starter reports can be created once at startup (`Seed:StarterReports:Enabled`, default on in Development, off in production; set `true` for one start if the owner wants them, then they are ordinary reports). They are created active and **assigned to no role**; the owner picks the trusted roles on Administration > Report Setup > Assignments. A report reads **all** matters, sensitive ones included (the visibility rule does not apply to the report login: decision 2 of issue #808, option A), so assign reports only to roles that may see every matter.
+
+Which starters show matter names, so an author can see it: **Tasks per matter** and **Assets linked to open tasks** (the manifest says `listsMatterNames: true`). Both leave sensitive matters out unless the person sets *Include sensitive matters* to Yes. The other six (*Overdue tasks by pod*, *Open tasks by assignee*, *Tasks completed per person*, *Aging of open tasks*, *Tasks created per week*, *Users with no pod or inactive assignees*) return counts or user names only; their counts include tasks of sensitive matters. A report an author writes later has no such guard unless it adds one.
+
 ### 11.5 Demo / development
 
-`npm start` provisions the demo login automatically: `tools/db/provision-report-login.sql` creates `mf_reports` (public dev password, loopback-bound database) and adds it to `mf_report_reader` once the API has applied the schema; `appsettings.Development.json` carries the matching `ConnectionStrings:ReportsReadOnly`. `npm run db:report-login` repeats the step on its own (it waits up to four minutes for the role). **Never run that script on a corporate server.**
+`npm start` provisions the demo login automatically: `tools/db/provision-report-login.sql` creates `mf_reports` (public dev password, loopback-bound database) and adds it to `mf_report_reader` once the API has applied the schema; `appsettings.Development.json` carries the matching `ConnectionStrings:ReportsReadOnly`. `npm run db:report-login` repeats the step on its own (it waits up to four minutes for the role). **Never run that script on a corporate server.** The API creates the starter reports at startup in Development; `npm run seed:demo` then creates the demo role `Report Runner (demo)` (only `Report.Run`), assigns the starters to it and to the System Admin role and gives the role to Test User 02 (Director).
 
 ## 12. Sensitive matters: switching on the access rule (epic #788)
 
