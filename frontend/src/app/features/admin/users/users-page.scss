@@ -36,6 +36,16 @@
   max-width: 0;
 }
 
+/* The name over the account line must fit the 44 px row (D-42, D-44m): no vertical padding, and the name is one line here because the account line is the second line. The full name stays in the title attribute. */
+td.us-name {
+  padding-block: 0;
+}
+
+.us-name .mf-btn--name {
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
 /* The account under the name: 13 px mono muted (#1197). */
 .us-account {
   color: var(--mf-text-muted);
