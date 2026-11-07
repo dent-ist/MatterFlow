@@ -14,6 +14,7 @@ import { ReportAssignmentClient, RoleAssignmentResponse } from '../../../api/gen
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { AssignmentChecklist, ChecklistItem, diffMessage } from './assignment-checklist';
+import { ReportAssignmentWarning } from './assignment-warning';
 
 /** The members line of a role: `3 people`. */
 export const peopleText = (n: number): string => (n === 1 ? '1 person' : `${n} people`);
@@ -25,7 +26,7 @@ export const peopleText = (n: number): string => (n === 1 ? '1 person' : `${n} p
  */
 @Component({
   selector: 'mf-report-roles-tab',
-  imports: [AssignmentChecklist],
+  imports: [AssignmentChecklist, ReportAssignmentWarning],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="rrt" aria-labelledby="rrt-title" data-roles-tab>
@@ -34,6 +35,7 @@ export const peopleText = (n: number): string => (n === 1 ? '1 person' : `${n} p
         A person runs the report when it is active, they hold the permission to run reports and one
         of their roles is checked here.
       </p>
+      <mf-report-assignment-warning />
       <div class="mf-sr-only" role="status" aria-live="polite" data-announce>
         {{ announcement() }}
       </div>

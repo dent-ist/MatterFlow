@@ -17,6 +17,7 @@ import {
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { AssignmentChecklist, ChecklistItem, diffMessage } from './assignment-checklist';
+import { ReportAssignmentWarning } from './assignment-warning';
 
 /**
  * The Reports tab of a role on the Users > Roles page (spec 9.4, issue #717; `Report.Assign`): which reports this role may run, grouped by
@@ -26,7 +27,7 @@ import { AssignmentChecklist, ChecklistItem, diffMessage } from './assignment-ch
  */
 @Component({
   selector: 'mf-role-reports-tab',
-  imports: [AssignmentChecklist],
+  imports: [AssignmentChecklist, ReportAssignmentWarning],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="rrt" aria-labelledby="rrt-title" data-role-reports-tab>
@@ -35,6 +36,7 @@ import { AssignmentChecklist, ChecklistItem, diffMessage } from './assignment-ch
         People in this role can run the checked reports when the report is active and they hold the
         permission to run reports.
       </p>
+      <mf-report-assignment-warning />
       <div class="mf-sr-only" role="status" aria-live="polite" data-announce>
         {{ announcement() }}
       </div>

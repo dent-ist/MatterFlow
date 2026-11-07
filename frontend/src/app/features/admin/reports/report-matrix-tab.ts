@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
+import { ReportAssignmentWarning } from './assignment-warning';
 import {
   AssignmentMatrixResponse,
   ReportAssignmentClient,
@@ -14,13 +15,14 @@ import {
 @Component({
   selector: 'mf-report-matrix-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ScrollArea],
+  imports: [ScrollArea, ReportAssignmentWarning],
   host: { class: 'mf-fill' },
   template: `
     <p class="rm__hint">
       Read-only overview of the active roles. To change it, open a role on Users &gt; Roles and use
       its Reports tab, or open a report and use its Roles tab.
     </p>
+    <mf-report-assignment-warning />
     @if (failure(); as f) {
       <p class="rm__error" role="alert" data-failure>{{ f }}</p>
     }
