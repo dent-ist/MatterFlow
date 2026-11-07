@@ -18,6 +18,7 @@ import {
   settle,
   withPermissions,
 } from '../../shared/testing/org-testing';
+import { ShellLayout } from '../../shared/ui/fixed-page';
 import { ddChoose } from '../../testing/dropdown-testing.spec-util';
 import { ReportLookupSource } from './report-lookup-source';
 import { ReportRunPage } from './report-run-page';
@@ -293,6 +294,33 @@ describe('ReportRunPage (#719, #720)', () => {
       await press('Change Parameters');
       expect(has('[data-summary-bar]')).toBe(false);
       expect(q('mf-report-parameter-form').parentElement!.classList).not.toContain('rp__hidden');
+    });
+
+    it('fills the window (a fixed page) while the summary bar is collapsed, and scrolls as a page while the form is open (#1286)', async () => {
+      await runIt();
+      const layout = TestBed.inject(ShellLayout);
+      expect(el().classList).toContain('rp--fill');
+      expect(layout.fixed()).toBe(true);
+      await press('Change Parameters');
+      expect(el().classList).not.toContain('rp--fill');
+      expect(layout.fixed()).toBe(false);
+    });
+
+    it('is not a fixed page before a run or when the run returns no rows', async () => {
+      await create(withParams(), { POD: '1' });
+      const layout = TestBed.inject(ShellLayout);
+      expect(layout.fixed()).toBe(false);
+      api.runReport.mockReturnValue(ok(result({ rowCount: 0 })));
+      await submit();
+      expect(layout.fixed()).toBe(false);
+    });
+
+    it('releases the fixed layout when the page is left', async () => {
+      await runIt();
+      const layout = TestBed.inject(ShellLayout);
+      expect(layout.fixed()).toBe(true);
+      fixture.destroy();
+      expect(layout.fixed()).toBe(false);
     });
 
     it('shows the rows of the run in the result grid, asked for with the run id', async () => {

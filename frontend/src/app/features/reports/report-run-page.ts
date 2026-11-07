@@ -20,6 +20,7 @@ import {
 import { ApiError } from '../../core/http/api-error';
 import { QuietRequests } from '../../core/http/interceptors';
 import { PageTitle, recordTitle } from '../../core/title/page-title';
+import { ShellLayout } from '../../shared/ui/fixed-page';
 import { ErrorReference } from '../../shared/ui/error-reference';
 import { IntPipe } from '../../shared/ui/number-format';
 import { Crumb, PageHeader } from '../../shared/ui/page-header';
@@ -74,9 +75,38 @@ const LONG_DESCRIPTION = 240;
     Tip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.rp--fill]': 'fills()' },
   styles: `
     :host {
       display: block;
+    }
+    /* While a result fills the window (the summary bar is collapsed, #1286) the page is a fixed page: header, banners and toolbar keep their height and the
+       result area takes the rest, so the pager is always in view and the grid body scrolls inside its frame. Same size gate as the fixed pages
+       (styles/_fixed-page.scss); below it, and with the form open, the page scrolls as a whole. */
+    @media (min-width: 768px) and (min-height: 561px) {
+      :host(.rp--fill) {
+        --rr-max: none;
+        --mf-frame-min: 18rem;
+        overflow-y: auto;
+      }
+      :host(.rp--fill) > * {
+        flex: none;
+      }
+      :host(.rp--fill) > .rp__result {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 0;
+        min-height: auto;
+      }
+      :host(.rp--fill) .rp__result > * {
+        flex: none;
+      }
+      :host(.rp--fill) .rp__result > section {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 0;
+        min-height: auto;
+      }
     }
     .rp__about {
       display: flex;
@@ -406,6 +436,14 @@ export class ReportRunPage {
     () =>
       this.status() === 'done' && !this.expanded() && (this.report()?.parameters.length ?? 0) > 0,
   );
+  /** A grid with rows is on screen and the form is closed: the page fills the window and does not scroll itself. */
+  protected readonly fills = computed(
+    () =>
+      this.status() === 'done' &&
+      (this.result()?.rowCount ?? 0) > 0 &&
+      !this.expanded() &&
+      this.state() === 'ready',
+  );
   protected readonly summaryText = computed(() => {
     const r = this.report();
     if (!r) return '';
@@ -418,6 +456,11 @@ export class ReportRunPage {
     effect(() => {
       const id = Number(this.paramMap().get('reportId'));
       untracked(() => void this.load(id));
+    });
+    // The shell stops scrolling its main area while the result fills the window (the same switch the fixed-header grid pages use).
+    const layout = inject(ShellLayout);
+    effect((onCleanup) => {
+      if (this.fills()) onCleanup(layout.register());
     });
     const destroy = inject(DestroyRef);
     destroy.onDestroy(() => {

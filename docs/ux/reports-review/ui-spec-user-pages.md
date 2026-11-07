@@ -196,7 +196,7 @@ Result toolbar (`mf-list-toolbar`), left to right: **Saved Views** menu (6.1), `
 - Page size 25, 50 (default), 100, 250 via `mf-pager`.
 - Sticky header and filter bands, the first column is **not** frozen (no frozen columns in the standard; very wide results scroll horizontally, 4.6).
 - Row height 40, no row click, no row menu, no selection (a report is read only).
-- Headers: sort by click; click cycles ascending, descending, none; Shift+click adds a secondary sort (max 3; this is a mouse modifier, not a keyboard shortcut); sort arrow and order number badge for the secondary sorts. Sort and filter state survives page changes and a Columns change.
+- Headers (final rule, review 2): **one sort column**. A click on the header cycles ascending, descending, ascending (the shared header, as in every grid); "Reset Sort" in the "Sorted by" line clears it. No Shift+click, no secondary sort, no sort badges (the server accepts three keys but the UI sends one). Sort and filter state survives page changes and a Columns change.
 - Column resize by the header edge handle, minimum 80, maximum 640; reorder by drag of the header and keyboard resize Shift+Left / Shift+Right on a focused heading (both existing grid behaviour, D-44b, not new); double-click on the edge fits to content is **not** offered.
 - **Columns** chooser (shared panel, D-36): checkbox list in the current order with drag handles, `Select All`, `Reset to Default`; at least one column stays checked (the last checkbox is disabled). Hidden columns are stored in the prefs, as are the widths (existing widths store).
 
@@ -465,3 +465,39 @@ Right for the grid design, keep it. One live result per person exists on the ser
 | O5 Leaving cancels a running report | Built as yes; confirm. The finished result is also dropped (see above). |
 | O6 Lookups for run-only roles | Open and now visible: a person without Client.View gets "You don't have access to clients." and a required client parameter cannot be filled. Needs the reports-owned lookup endpoint of section 8 before release. |
 | O7 No result snapshots | Open, confirm. |
+
+---
+
+## 14. Review 2: result grid and the three fixes (#720, #1282, #1283, #1284), 2026-11-07
+
+Reviewed: RG commits 5cd0b24, 3816946, 7e4a637, d7c8642, ba7e0bb on `origin/reports`; 12 mocked-API JPEGs (`evidence/2026-11-07-reports-720` and `-1284` on `design-evidence`) at 1366 and 1920, and the code. No stack was run (no report login). Not checked by me in a browser: keyboard order in the grid, screen-reader output of the sort header and the live announcement after a filter (the grid is the shared one; no new ARIA was added by RG).
+
+**Verdict: pass with five small fixes.** Passing: the result grid is the shared `mf-record-grid` with run-time columns and two small shared additions (accepted: `ListFilters memory` and `FilterDef.numberShape` are generic); rows are 44 px; sticky header and filter bands; no sideways page scroll (the grid scrolls inside its frame); the Columns chooser (up/down arrows, Reset Width, Reset to Default; the shared panel, accepted instead of drag handles); chips with Clear Filters; "Sorted by" with Reset Sort; "Showing 1-50 of 1,111 Filtered from 2,380 rows"; the truncated and the expired banners with the fixed wording; formats: integers and decimals right aligned with thousands commas and two or more decimals as stored, Yes/No centred, dates `MM/DD/YYYY` with the year, date-times `MM/DD/YYYY hh:mm AM/PM`, nulls empty. The three fixes pass: #1282 (only the error line and Retry, `failed` input on both pickers), #1283 (text "You've reached the hourly limit for report runs. Try again later.", the constant is gone), #1284 (the dropdown fills its column at 524 px at 1366 and 800 px at 1920).
+
+### Rulings on RG's six deviations
+
+| # | Ruling |
+|---|---|
+| 1 Sort | **One sort column, final.** Header click: ascending, descending, ascending; "Reset Sort" clears. Shift+click and secondary sorts are removed from the spec (section 4.2 rewritten); the status document must drop "Shift+click stays". No dev work. |
+| 2 Filters | **Accept** text "contains" only and no Blank / Not Blank for release one: the shared filter row offers it nowhere, and adding blank filters for one grid would make Reports the odd one out. Phase 2 item (needs a shared filter change, not a Reports one). The 20-filter message is a fix: #1290 (exact wording "Remove a filter to add another."). |
+| 3 Date-times | **Rule:** a value that carries a zone (`Z` or `+hh:mm`) is an instant and is shown in the person's time zone (D-60); a value without a zone is a wall-clock time and is shown exactly as sent, never converted. **No backend change**: `ResultColumnData.cs` already writes a `DateTimeOffset` with its offset. Fix: #1287 (frontend only). Authors who want conversion use `datetimeoffset` or `AT TIME ZONE`; the editor hint gets one sentence (in #1287). Known limit: date filter and sort on an offset column compare in UTC on the server. |
+| 4 Resize limits and sort words | **Accept 72 and 720 px** (shared; section 4.2 numbers 80 and 640 are withdrawn). **Not accepted: "A to Z" for every column** (a numeric or date column must not say it): #1289, words by column type (the shared function already takes a kind). |
+| 5 Page sizes | **25, 50, 100, 250 is right.** The server allows 250 and a result can have 50,000 rows; my earlier comment on #720 that called 250 obsolete was wrong for this grid. No change. |
+| 6 Frame, comma, note | **Frame: not accepted**, #1286: the fixed `100dvh - 24.5rem` cuts the pager at 1366x768 as soon as the truncated banner, a 3-line description or a chip row is present (evidence `rp8-truncated-1366`). **Comma in a column name: fix**, #1288 (sort by column position, small backend change). **"Filtered from N rows" in the pager: accept.** |
+
+### Other findings
+
+- Expired banner: shown with the open form above it, no extra Run button needed (the form's Run Report is directly above). Accept the deviation from section 3.5.
+- The shared "Filters" toggle button shows the filter row (D-44d); section 4.3 said "always visible". Accept. Number filter popover says Min / Max, accepted (shared wording).
+- The one-result rule: the grid does not drop the result; the run page does only on leaving or opening another report. Correct, as ruled in review 1.
+- Fix issues (all under epic #671): #1286 frame height, #1287 date-time zone, #1288 sort by position, #1289 sort words by type, #1290 20-filter message.
+
+### Owner questions after review 2
+
+| # | Status |
+|---|---|
+| O2 Year in result dates | Built as yes (MM/DD/YYYY); needs the owner's yes, still the only open point for #720. |
+| O4 CSV delimiter | Open, #721. |
+| O6 Lookups for run-only roles | Open, unchanged (needs the reports-owned lookup endpoint). |
+| O7 No result snapshots | Open, unchanged. |
+| O3, O5 | Built as yes; confirm. O1 decided. |

@@ -20,6 +20,11 @@ describe('sort sentences (issue #898)', () => {
     expect(directionWords('age', 'desc')).toBe('oldest first');
   });
 
+  it('says no first for a yes/no column (#1289)', () => {
+    expect(directionWords('active', 'asc', 'yesno')).toBe('no first');
+    expect(directionWords('active', 'desc', 'yesno')).toBe('yes first');
+  });
+
   it("reads a list's own count field as a count and an unknown field as text", () => {
     expect(directionWords('openTasks', 'desc', 'count')).toBe('most first');
     expect(directionWords('openTasks', 'asc', 'count')).toBe('fewest first');

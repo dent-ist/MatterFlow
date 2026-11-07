@@ -1,4 +1,5 @@
 import { FilterDef, FilterValue, FilterValues, isRange } from '../../shared/filters/filter-def';
+import type { SortKind } from '../../shared/work-queue/sort-sentences';
 import type { ResultColumn } from './report-column-defs';
 
 /** The pager's sizes (spec 4.2): the server clamps a page to 250 rows. */
@@ -82,6 +83,14 @@ export function serverFilter(
   return out.length > 0 ? JSON.stringify(out) : undefined;
 }
 
+/** The most filters the rows endpoint takes in one request (the server answers 400 for more). */
+export const MAX_FILTERS = 20;
+
+/** How many filters the server filter text holds (the filters the person set that the server understands). */
+export function filterCount(filter: string | undefined): number {
+  return filter ? (JSON.parse(filter) as unknown[]).length : 0;
+}
+
 /**
  * The `sort` argument of the rows endpoint (`Name:asc`) from the grid's sort (`c3` or `-c3`, the column id with a leading minus for descending), or
  * undefined for the report's own order. An id that is not a column of the result gives undefined.
@@ -99,4 +108,18 @@ export function serverSort(
 /** "Sorted by <Column>" words: the column id to its name (the sorted line asks for the label of a sort field). */
 export function sortLabels(columns: readonly ResultColumn[]): Record<string, string> {
   return Object.fromEntries(columns.map((c) => [c.id, c.name]));
+}
+
+const SORT_KIND: Readonly<Record<ResultColumn['kind'], SortKind>> = {
+  integer: 'number',
+  decimal: 'number',
+  date: 'date',
+  dateTime: 'date',
+  boolean: 'yesno',
+  text: 'text',
+};
+
+/** The words of a sort direction by column type (#1289): numbers "lowest first", dates "oldest first", yes/no "no first", text "A to Z". */
+export function sortKinds(columns: readonly ResultColumn[]): Record<string, SortKind> {
+  return Object.fromEntries(columns.map((c) => [c.id, SORT_KIND[c.kind]]));
 }

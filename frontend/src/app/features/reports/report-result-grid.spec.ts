@@ -184,6 +184,89 @@ describe('ReportResultGrid (#720)', () => {
     });
   });
 
+  describe('the words of the sort (#1289)', () => {
+    const tip = () => q('[data-sorted-text]').getAttribute('title');
+    const sortBy = async (column: string, times = 1): Promise<void> => {
+      for (let i = 0; i < times; i++) {
+        q(`th[data-col="${column}"] button`).click();
+        await settle(fixture);
+      }
+    };
+
+    it('says lowest and highest first for a number, newest and oldest first for a date, no and yes first for a yes/no and A to Z for text', async () => {
+      await create();
+      await sortBy('Open Tasks');
+      expect(tip()).toBe('Sorted by Open Tasks, lowest first');
+      await sortBy('Open Tasks');
+      expect(tip()).toBe('Sorted by Open Tasks, highest first');
+      await sortBy('Hours');
+      expect(tip()).toBe('Sorted by Hours, lowest first');
+      await sortBy('Updated', 2);
+      expect(tip()).toBe('Sorted by Updated, newest first');
+      await sortBy('Due');
+      expect(tip()).toBe('Sorted by Due, oldest first');
+      await sortBy('Active');
+      expect(tip()).toBe('Sorted by Active, no first');
+      await sortBy('Active');
+      expect(tip()).toBe('Sorted by Active, yes first');
+      await sortBy('Matter');
+      expect(tip()).toBe('Sorted by Matter, A to Z');
+      await sortBy('Matter');
+      expect(tip()).toBe('Sorted by Matter, Z to A');
+    });
+  });
+
+  describe('the limit of 20 filters (#1290)', () => {
+    const wide = () =>
+      run({
+        columns: Array.from({ length: 22 }, (_, i) => ({ name: `Col ${i}`, type: 'text' })),
+      });
+    const grid = () => fixture.componentInstance;
+    const limit = () => el().querySelector('[data-filter-limit]');
+
+    async function twenty(): Promise<void> {
+      await create(wide());
+      for (let i = 0; i < 20; i++) grid().filters.set(`c${i}`, 'v');
+      await settle(fixture);
+    }
+
+    it('sends no request for the 21st filter, puts it back, says "Remove a filter to add another." and keeps the rows', async () => {
+      await twenty();
+      const calls = api.getReportRows.mock.calls.length;
+      expect(JSON.parse(lastCall()[4] as string)).toHaveLength(20);
+      expect(limit()).toBeNull();
+      grid().filters.set('c20', 'x');
+      await settle(fixture);
+      expect(api.getReportRows.mock.calls.length).toBe(calls);
+      expect(grid().filters.value('c20')).toBe('');
+      expect(grid().filters.activeCount()).toBe(20);
+      expect(limit()!.textContent).toContain('Remove a filter to add another.');
+      expect(all('tbody tr[data-record-id]')).toHaveLength(2);
+      expect(el().textContent).not.toContain("Couldn't load rows.");
+    });
+
+    it('clears the message with Dismiss and when a filter is removed', async () => {
+      await twenty();
+      grid().filters.set('c20', 'x');
+      await settle(fixture);
+      expect(limit()).not.toBeNull();
+      q('[data-dismiss-limit]').click();
+      await settle(fixture);
+      expect(limit()).toBeNull();
+      grid().filters.set('c20', 'x');
+      await settle(fixture);
+      expect(limit()).not.toBeNull();
+      grid().filters.set('c0', '');
+      await settle(fixture);
+      expect(limit()).toBeNull();
+      // with a place free the filter is accepted
+      grid().filters.set('c20', 'x');
+      await settle(fixture);
+      expect(grid().filters.value('c20')).toBe('x');
+      expect(limit()).toBeNull();
+    });
+  });
+
   describe('paging', () => {
     it('offers 25, 50, 100 and 250 rows a page and shows the range of the filtered rows', async () => {
       await create();
