@@ -45,12 +45,15 @@ describe('report column definitions (#720)', () => {
         '176px',
         undefined,
       ]);
-      expect(defs.map((d) => d.minWidth)).toEqual(
-        c
-          .slice(0, 5)
-          .map((x) => `${COLUMN_WIDTHS[x.kind].min}px`)
-          .concat('200px'),
-      );
+      // A column never gets narrower than its width (the grid scrolls sideways instead); the spring keeps its default as the floor.
+      expect(defs.map((d) => d.minWidth)).toEqual([
+        '96px',
+        '112px',
+        '128px',
+        '128px',
+        '176px',
+        '200px',
+      ]);
     });
 
     it('lets the last text column take the room that is left and keeps the others at their width', () => {

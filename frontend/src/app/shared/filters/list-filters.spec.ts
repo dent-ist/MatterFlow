@@ -433,13 +433,11 @@ describe('ListFilters', { timeout: 20_000 }, () => {
       });
       vi.stubGlobal(
         'matchMedia',
-        vi
-          .fn()
-          .mockReturnValue({
-            matches: false,
-            addEventListener: vi.fn(),
-            removeEventListener: vi.fn(),
-          }),
+        vi.fn().mockReturnValue({
+          matches: false,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        }),
       );
       const h = await RouterTestingHarness.create();
       const f = (await h.navigateByUrl('/mem?keep=1', MemoryHost)).filters;

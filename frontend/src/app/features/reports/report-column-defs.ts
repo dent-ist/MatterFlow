@@ -110,7 +110,7 @@ export function gridColumnDefs(
       num: c.kind === 'integer' || c.kind === 'decimal',
       // The spring takes what the other columns leave, but never less than its own default; the others keep the minimum of their type.
       width: isSpring ? undefined : `${width}px`,
-      minWidth: `${isSpring ? width : base.min}px`,
+      minWidth: `${width}px`,
     };
   });
 }

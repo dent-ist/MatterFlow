@@ -81,7 +81,7 @@ import {
     .rr__frame {
       display: flex;
       flex-direction: column;
-      height: max(var(--mf-frame-min, 412px), calc(100dvh - 12rem));
+      height: max(var(--mf-frame-min, 412px), calc(100dvh - 24.5rem));
     }
     .rr__bar {
       display: block;

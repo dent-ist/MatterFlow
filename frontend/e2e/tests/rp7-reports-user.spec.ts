@@ -10,7 +10,7 @@ import { uid } from '../support/seed';
  * category on the record grid, search, Category filter, the states), the nav item for everybody with Report.Run, and the run page at
  * `/reports/:id` (a control per parameter type, validation, parameters in the address, Run Report and Cancel, the summary bar, the states).
  * The tests that run a report need the read-only report login (`e2e/run-local.sh` creates it) and skip themselves when Reports are not ready.
- * The result grid is issue #720 and has its own spec.
+ * The result grid is issue #720 and has its own spec (`rp8-reports-grid.spec.ts`).
  */
 const SQL = 'SELECT n FROM (VALUES (1),(2),(3)) v(n) WHERE n <= :MAX';
 
@@ -256,7 +256,7 @@ test.describe('the run page (#719)', () => {
     await page.locator('[data-param="MAX"] input').fill('2');
     await page.getByRole('button', { name: 'Run Report' }).click();
     await expect(page.locator('[data-summary-bar]')).toContainText('Highest Number 2');
-    await expect(page.locator('[data-result-placeholder]')).toContainText('finished with 2 rows');
+    await expect(page.locator('[data-result-slot] tbody tr[data-record-id]')).toHaveCount(2);
     await expect(page).toHaveURL(/MAX=2/);
     expect(runs).toBe(1);
     // The address fills the form and does not run.
