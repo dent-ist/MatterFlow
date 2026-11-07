@@ -10,14 +10,21 @@ import {
 import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
-import { ReportsClient } from '../../api/generated/api-client';
+import {
+  RecentReportResponse,
+  ReportFavouritesClient,
+  ReportsClient,
+} from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { ApiError } from '../../core/http/api-error';
+import { QuietRequests } from '../../core/http/interceptors';
+import { NotificationService } from '../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../shared/directives/has-permission.directive';
 import { FilterDef } from '../../shared/filters/filter-def';
 import { ListFilters } from '../../shared/filters/list-filters';
 import { ListToolbar } from '../../shared/filters/list-toolbar';
 import { Dropdown, DropdownItem } from '../../shared/ui/dropdown';
+import { FilterChip, FilterChips } from '../../shared/ui/filter-chips';
 import { FixedPage } from '../../shared/ui/fixed-page';
 import { NumericDatePipe } from '../../shared/ui/numeric-date';
 import { PageHeader } from '../../shared/ui/page-header';
@@ -33,10 +40,24 @@ import { RowLink, restoreRowFocus } from '../../shared/ui/row-nav';
 import { StateBlock } from '../../shared/ui/state-block';
 import { Tip } from '../../shared/ui/tip';
 import { LoadState } from '../../shared/ui/data-table';
+import {
+  FAVOURITES_FAILED,
+  RECENT_MAX,
+  starAnnouncement,
+  starLabel,
+  starTip,
+  withFavourite,
+} from './report-favourites';
+import { ReportRecentLine } from './report-recent-line';
 import { ReportRow, filterReports, flattenReports, parametersText } from './report-rows';
 
 /** The loading rows of the grid: one bone width per column. */
-const BONES: Record<string, string> = { name: '16rem', parameters: '5rem', lastRun: '6rem' };
+const BONES: Record<string, string> = {
+  star: '1rem',
+  name: '16rem',
+  parameters: '5rem',
+  lastRun: '6rem',
+};
 
 /** Where the closed categories are remembered (per person, this browser): a convenience only, so every access is guarded. */
 const collapsedKey = (userId: number | undefined): string => `mf.reports.collapsed.${userId ?? 0}`;
@@ -62,14 +83,18 @@ function writeCollapsed(key: string, keys: readonly string[]): void {
  * Reports (issue #718, spec section 2 of `docs/ux/reports-review/ui-spec-user-pages.md`): the reports the person may run, one row each on the shared
  * record grid, grouped by category (`groupBy`, D-44a) in the administrator's order. Columns: Report (the name opens the run page, the description is
  * a muted line under it), Parameters and Last Run (the person's own). Search (name, description, category) and a Category filter work on the loaded
- * list; there is no sort, no Columns chooser, no row menu and no Run button (the row opens the report). Favourites and recent reports are release two
- * (#723) and are not here. Needs `Report.Run`; the server lists only active reports assigned to one of the person's roles.
+ * list; there is no sort, no Columns chooser, no row menu and no Run button (the row opens the report). Favourites and recent reports (#723, spec section
+ * 7): the star is the first column (an icon button, optimistic with a rollback and the toast "Couldn't update favourites."), the Favourites chip in the
+ * toolbar filters the grid to the favourites (a filter of the address like the others, not a second group and not part of a saved view), and one line of
+ * up to five Recent chips sits above the grid while no search or filter is active. Needs `Report.Run`; the server lists only active reports assigned to
+ * one of the person's roles.
  */
 @Component({
   selector: 'mf-reports-list-page',
   imports: [
     Button,
     Dropdown,
+    FilterChips,
     FixedPage,
     HasPermissionDirective,
     ListToolbar,
@@ -77,6 +102,7 @@ function writeCollapsed(key: string, keys: readonly string[]): void {
     PageHeader,
     RecordCell,
     RecordGrid,
+    ReportRecentLine,
     RouterLink,
     RowLink,
     StateBlock,
@@ -94,6 +120,17 @@ function writeCollapsed(key: string, keys: readonly string[]): void {
       display: block;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
+    }
+    /* The star cell is the 44 px column; the button is 32 px in a cell (D-02). Outline star muted at rest, filled star in the amber solid. */
+    td.rl-star {
+      padding-inline: var(--mf-s1);
+      text-align: center;
+    }
+    .rl-star__btn {
+      color: var(--mf-text-muted);
+    }
+    .rl-star__btn[data-on] {
+      color: var(--mf-sem-risk-solid);
     }
   `,
   template: `
@@ -115,6 +152,13 @@ function writeCollapsed(key: string, keys: readonly string[]): void {
       </mf-page-header>
 
       <mf-list-toolbar [filters]="filters" searchLabel="Search reports..." [clearAlso]="['q']">
+        <mf-filter-chips
+          mfView
+          label="Favourites filter"
+          [chips]="favouriteChips()"
+          (valueChange)="toggleFavouritesOnly()"
+          data-favourites-filter
+        />
         <mf-dropdown
           mfView
           [multi]="true"
@@ -128,6 +172,10 @@ function writeCollapsed(key: string, keys: readonly string[]): void {
           (valuesChange)="filters.set('category', $event)"
         />
       </mf-list-toolbar>
+
+      @if (recentShown().length > 0) {
+        <mf-report-recent-line [items]="recentShown()" />
+      }
 
       <div class="mf-fill">
         @if (noneAssigned()) {
@@ -172,6 +220,26 @@ function writeCollapsed(key: string, keys: readonly string[]): void {
             (groupToggle)="onGroupToggle($event)"
             (retry)="load()"
           >
+            <ng-template mfCell="star" let-r>
+              <td class="rl-star">
+                <button
+                  type="button"
+                  class="mf-btn mf-btn--text mf-btn--icon mf-btn--cell rl-star__btn"
+                  [attr.aria-label]="starLabel(r.name, !!r.isFavourite)"
+                  [mfTip]="starTip(!!r.isFavourite)"
+                  [attr.data-on]="r.isFavourite ? '' : null"
+                  data-favourite
+                  (click)="toggleFavourite(r)"
+                >
+                  <i
+                    class="pi"
+                    [class.pi-star-fill]="r.isFavourite"
+                    [class.pi-star]="!r.isFavourite"
+                    aria-hidden="true"
+                  ></i>
+                </button>
+              </td>
+            </ng-template>
             <ng-template mfCell="name" let-r>
               <td class="rl-report" [attr.data-report]="r.name">
                 <a
@@ -213,12 +281,18 @@ function writeCollapsed(key: string, keys: readonly string[]): void {
           </mf-record-grid>
         }
       </div>
+      <p class="pg-sr" role="status" aria-live="polite" aria-atomic="true" data-favourite-live>
+        {{ announcement() }}
+      </p>
     </mf-fixed-page>
   `,
 })
 export class ReportsListPage {
   private readonly api = inject(ReportsClient);
+  private readonly favouritesApi = inject(ReportFavouritesClient);
   private readonly auth = inject(AuthStore);
+  private readonly quiet = inject(QuietRequests);
+  private readonly notify = inject(NotificationService);
 
   protected readonly state = signal<LoadState>('loading');
   private readonly all = signal<readonly ReportRow[]>([]);
@@ -226,10 +300,21 @@ export class ReportsListPage {
 
   protected readonly bones = BONES;
   protected readonly parametersOf = parametersText;
+  protected readonly starLabel = starLabel;
+  protected readonly starTip = starTip;
   protected readonly reportKey = (r: ReportRow): number => r.reportId;
 
-  /** The three columns of the spec (2.2): the Report column is the spring, the others have a floor that grows a little from 1366 to 1920. */
+  /** The four columns of the spec (2.2): the star (44 px, no heading drawn), the Report column is the spring, the others have a floor that grows a little from 1366 to 1920. */
   protected readonly gridDefs = signal<readonly RecordGridColumn[]>([
+    {
+      key: 'star',
+      label: 'Favourite',
+      locked: true,
+      pinned: true,
+      iconOnly: true,
+      width: '44px',
+      minWidth: '44px',
+    },
     { key: 'name', label: 'Report', locked: true, minWidth: '280px' },
     {
       key: 'parameters',
@@ -260,8 +345,22 @@ export class ReportsListPage {
         noControl: true,
         options: () => this.categories().map((c) => ({ value: c.value, label: c.label })),
       },
+      {
+        key: 'favourites',
+        label: 'Favourites',
+        type: 'select',
+        // The Favourites chip of the toolbar is the control; the filter shows its chip and counts for Clear Filters, in the address (`?favourites=true`).
+        noControl: true,
+        bareChip: true,
+        options: [{ value: 'true', label: 'Favourites' }],
+      },
     ]),
   });
+
+  protected readonly favouritesOnly = computed(() => this.filters.text('favourites') === 'true');
+  protected readonly favouriteChips = computed<readonly FilterChip[]>(() => [
+    { key: 'favourites', label: 'Favourites', icon: 'pi-star', pressed: this.favouritesOnly() },
+  ]);
 
   private readonly categories = computed(() => {
     const seen = new Map<string, string>();
@@ -271,7 +370,12 @@ export class ReportsListPage {
   protected readonly categoryItems = computed<DropdownItem[]>(() => this.categories());
 
   protected readonly shown = computed(() =>
-    filterReports(this.all(), this.filters.text('q'), this.filters.list('category')),
+    filterReports(
+      this.all(),
+      this.filters.text('q'),
+      this.filters.list('category'),
+      this.favouritesOnly(),
+    ),
   );
   protected readonly noneAssigned = computed(() => this.state() === 'ready' && this.total() === 0);
   protected readonly nothingShown = computed(
@@ -279,8 +383,23 @@ export class ReportsListPage {
   );
   /** The search text when it is the only filter, else ''. */
   protected readonly searchOnly = computed(() =>
-    this.filters.list('category').length === 0 ? this.filters.text('q').trim() : '',
+    this.filters.list('category').length === 0 && !this.favouritesOnly()
+      ? this.filters.text('q').trim()
+      : '',
   );
+
+  /** The person's recent reports (newest first, from the server); empty while loading, after a failure or when nothing was run. */
+  private readonly recent = signal<readonly RecentReportResponse[]>([]);
+  /** The line shows while the person has run something and no search or filter is active (spec 7.2); it never holds a report the list does not. */
+  protected readonly recentShown = computed(() => {
+    if (this.state() !== 'ready' || this.filters.activeCount() > 0) return [];
+    const known = new Set(this.all().map((r) => r.reportId));
+    return this.recent()
+      .filter((r) => known.has(r.reportId))
+      .slice(0, RECENT_MAX);
+  });
+  /** What the polite live region says after a star press. */
+  protected readonly announcement = signal('');
 
   protected readonly groupOf = (r: ReportRow): RecordGroup => ({
     key: String(r.categoryId),
@@ -305,8 +424,54 @@ export class ReportsListPage {
       this.state.set('ready');
     } catch (error) {
       this.state.set(error instanceof ApiError && error.status === 403 ? 'forbidden' : 'error');
+      return;
+    }
+    await this.loadRecent();
+  }
+
+  /** The Recent line is an extra: a failure leaves the line out and says nothing (the list is what the person came for). */
+  private async loadRecent(): Promise<void> {
+    try {
+      const res = await this.quiet.run(() =>
+        firstValueFrom(this.favouritesApi.listRecentReports(RECENT_MAX)),
+      );
+      this.recent.set(res.reports);
+    } catch {
+      this.recent.set([]);
     }
   }
+
+  protected toggleFavouritesOnly(): void {
+    this.filters.set('favourites', this.favouritesOnly() ? '' : 'true');
+  }
+
+  /**
+   * The star was pressed: the mark changes at once and the call follows; a failure puts the star back and shows the toast (spec 7.1). Nothing is said when
+   * it worked (the star is the feedback), except in the hidden live region. A press while the call of the same star is still running is ignored.
+   */
+  protected async toggleFavourite(row: ReportRow): Promise<void> {
+    if (this.pending.has(row.reportId)) return;
+    const on = !row.isFavourite;
+    this.pending.add(row.reportId);
+    this.all.update((rows) => withFavourite(rows, row.reportId, on));
+    try {
+      await this.quiet.run(() =>
+        firstValueFrom(
+          on
+            ? this.favouritesApi.addReportFavourite(row.reportId)
+            : this.favouritesApi.removeReportFavourite(row.reportId),
+        ),
+      );
+      this.announcement.set(starAnnouncement(row.name, on));
+    } catch {
+      this.all.update((rows) => withFavourite(rows, row.reportId, !on));
+      this.notify.error(FAVOURITES_FAILED);
+    } finally {
+      this.pending.delete(row.reportId);
+    }
+  }
+
+  private readonly pending = new Set<number>();
 
   protected onGroupToggle(toggle: RecordGroupToggle): void {
     const next = new Set(this.collapsed());

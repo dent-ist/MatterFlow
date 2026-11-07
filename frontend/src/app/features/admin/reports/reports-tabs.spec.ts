@@ -231,6 +231,7 @@ describe('ReportsHealthTab (#712)', () => {
       loginName: 'mf_reports',
       writesDenied: true,
       auditTablesDenied: true,
+      serverProceduresDenied: true,
       readableTables: 33,
       compatibilityLevel: 160,
       checkedAtUtc: '2026-10-22T10:00:00Z',
@@ -257,12 +258,43 @@ describe('ReportsHealthTab (#712)', () => {
     expect(el.querySelector('[data-login]')!.textContent).toContain('mf_reports');
     expect(el.querySelector('[data-login]')!.textContent).toContain('Denied');
     expect(el.querySelector('[data-login]')!.textContent).toContain('33');
+    expect(el.querySelector('[data-server-procedures]')!.textContent).toBe('Denied');
 
     el.querySelector<HTMLButtonElement>('[data-check]')!.click();
     await settle(fixture);
     expect(el.querySelector('[data-chip]')!.textContent).toBe('Not ready');
     expect(el.querySelector('[data-state]')!.textContent).toContain('could not connect');
     expect(el.querySelector('[data-login]')).toBeNull();
+  });
+});
+
+describe('ReportsHealthTab server procedures warning (#1292)', () => {
+  it('shows Not denied and a warning chip when the DENY in master is missing, with reports still ready', async () => {
+    const api = {
+      getReportsStatus: vi.fn().mockReturnValue(
+        of({
+          enabled: true,
+          state: 'Ready',
+          message: "Report login 'mf_reports': writes denied. Warning: the login can still run 7 extended procedure(s) in master.",
+          login: {
+            loginName: 'mf_reports',
+            writesDenied: true,
+            auditTablesDenied: true,
+            serverProceduresDenied: false,
+            readableTables: 33,
+            compatibilityLevel: 160,
+            checkedAtUtc: '2026-10-22T10:00:00Z',
+          },
+        }),
+      ),
+      checkReportsStatus: vi.fn(),
+    };
+    TestBed.configureTestingModule({ providers: [{ provide: ReportAdminClient, useValue: api }] });
+    const fixture = TestBed.createComponent(ReportsHealthTab);
+    await settle(fixture);
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-server-procedures]')!.textContent).toBe('Not denied');
+    expect(el.querySelector('[data-state]')!.textContent).toContain('Warning');
   });
 });
 

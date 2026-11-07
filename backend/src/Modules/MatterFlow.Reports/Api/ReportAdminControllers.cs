@@ -23,7 +23,8 @@ internal static class ReportPolicies
 /// <param name="ReadableTables">How many tables the login can read.</param>
 /// <param name="CompatibilityLevel">Database compatibility level (reports need 130 or higher).</param>
 /// <param name="CheckedAtUtc">When the probe last ran.</param>
-public sealed record ReportLoginDetailsResponse(string LoginName, bool WritesDenied, bool AuditTablesDenied, int ReadableTables, int CompatibilityLevel, DateTime CheckedAtUtc);
+/// <param name="ServerProceduresDenied">True when the login cannot execute the extended procedures in master that reach the file system, registry or host (xp_dirtree and the like); false means the one-time DENY step is missing (a warning, reports still run).</param>
+public sealed record ReportLoginDetailsResponse(string LoginName, bool WritesDenied, bool AuditTablesDenied, int ReadableTables, int CompatibilityLevel, DateTime CheckedAtUtc, bool ServerProceduresDenied);
 
 /// <summary>The Reports health as shown on the admin Reports page.</summary>
 /// <param name="Enabled">True when reports can run.</param>
@@ -326,5 +327,5 @@ public class ReportAdminController(IReportsAvailability availability, ReportAuth
     private const int MaxAnalyzeBytes = 256 * 1024;
 
     private static ReportsStatusResponse Map(ReportsStatus s) =>
-        new(s.Enabled, s.State, s.Message, s.Details is { } d ? new(d.LoginName, d.WritesDenied, d.AuditTablesDenied, d.ReadableTables, d.CompatibilityLevel, d.CheckedAtUtc) : null);
+        new(s.Enabled, s.State, s.Message, s.Details is { } d ? new(d.LoginName, d.WritesDenied, d.AuditTablesDenied, d.ReadableTables, d.CompatibilityLevel, d.CheckedAtUtc, d.ServerProceduresDenied) : null);
 }

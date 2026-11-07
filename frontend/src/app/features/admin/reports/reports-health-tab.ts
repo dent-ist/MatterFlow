@@ -8,7 +8,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 /**
  * Admin: the Settings tab of the Reports page (spec 8.3 step 6, issue #712): whether reports can run and why not (no report login, the login is the
  * application's own, the role is missing, too many rights, database compatibility level too low), and what the startup probe found: the login name,
- * "writes denied", "audit tables denied" and how many tables it can read. Check again probes the login once more, for after the DBA fixed it.
+ * "writes denied", "audit tables denied", whether the server file and registry procedures (xp_dirtree and the like) are denied (a warning when not, issue #1292) and how many tables it can read. Check again probes the login once more, for after the DBA fixed it.
  */
 @Component({
   selector: 'mf-reports-health-tab',
@@ -24,7 +24,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
       }
       @if (status(); as s) {
         <p class="rh__state" data-state>
-          <mf-badge [tone]="s.enabled ? 'success' : 'warning'" data-chip>{{
+          <mf-badge [tone]="s.enabled && s.login?.serverProceduresDenied !== false ? 'success' : 'warning'" data-chip>{{
             s.enabled ? 'Ready' : 'Not ready'
           }}</mf-badge>
           {{ s.message }}
@@ -37,6 +37,8 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
             <dd>{{ l.writesDenied ? 'Denied' : 'Not denied' }}</dd>
             <dt>Audit and Credential Tables</dt>
             <dd>{{ l.auditTablesDenied ? 'Denied' : 'Not denied' }}</dd>
+            <dt>Server File and Registry Procedures</dt>
+            <dd data-server-procedures>{{ l.serverProceduresDenied ? 'Denied' : 'Not denied' }}</dd>
             <dt>Tables It Can Read</dt>
             <dd>{{ l.readableTables }}</dd>
             <dt>Database Compatibility Level</dt>

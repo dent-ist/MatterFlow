@@ -43,7 +43,7 @@
 | `/assets/new` | | `AssetFormPage` | `Asset.Create` |
 | `/assets/:assetId/edit` | | `AssetFormPage` | `Asset.Edit` |
 | `/assets/:assetId` | | `AssetRecordPage` | `Asset.View` |
-| `/reports` | `features/reports` | `ReportsListPage` (`?q=` search, `?category=` filter) | `Report.Run` |
+| `/reports` | `features/reports` | `ReportsListPage` (`?q=` search, `?category=` filter, `?favourites=true` the Favourites chip) | `Report.Run` |
 | `/reports/:reportId` | | `ReportRunPage`; the parameter values travel as `?NAME=value` (a date range as `NAME.from` and `NAME.to`, a list repeats the name); opening such an address fills the form and never runs the report | `Report.Run` (the server decides whether the report is assigned; unknown, inactive and unassigned look the same) |
 | `/profile` | `features/profile` | `ProfilePage` | `Task.View` |
 | `/notifications` | `features/notifications` | `NotificationsPage` | `Task.View` |

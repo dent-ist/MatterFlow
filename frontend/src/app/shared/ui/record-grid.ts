@@ -63,6 +63,11 @@ export interface RecordGridColumn extends GridColumnDef {
   readonly width?: string;
   /** CSS minimum width of the heading cell, a floor that holds while the list loads, is empty or has rows (no column moves between states). */
   readonly minWidth?: string;
+  /**
+   * A column of icon buttons (the Reports star): the heading is read by a screen reader but not drawn, and the column is neither resized nor moved. Give it a
+   * `width`; it is also `locked` and `pinned` in the page's definitions so the Columns state keeps it first.
+   */
+  readonly iconOnly?: boolean;
 }
 
 /** A group of rows (`RecordGrid.groupBy`, #1245): its key (stable, for the collapsed state) and the words of its header row ("Archived"). */
@@ -343,12 +348,18 @@ export class RecordCell {
                     scope="col"
                     [attr.data-col]="d.key"
                     [attr.data-col-head]="d.extra ? d.key : null"
+                    [attr.data-no-resize]="d.iconOnly ? '' : null"
+                    [attr.data-no-reorder]="d.iconOnly ? '' : null"
                     [class.pg-num]="d.num"
                     [style.width]="d.width ?? null"
                     [attr.data-rg-width]="d.width ?? null"
                     [style.min-width]="d.minWidth ?? null"
                   >
-                    {{ d.label }}
+                    @if (d.iconOnly) {
+                      <span class="pg-sr">{{ d.label }}</span>
+                    } @else {
+                      {{ d.label }}
+                    }
                   </th>
                 }
               }

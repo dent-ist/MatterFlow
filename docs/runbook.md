@@ -277,7 +277,7 @@ Not exercised yet outside Linux. Tick each on the production-like server and rep
 - [ ] **Uploads:** an email upload near 12 MB succeeds; a larger one is refused cleanly.
 - [ ] **Rich text description (script 26, decision R):** after the upgrade, an old task still shows its description as it was (plain text with line breaks); paste a table from Outlook into a new task's Description, save, reload: the table is there; paste a table of more than 200 cells: it arrives as text with a notice; no CSP violation in the console. Support note: the database column `Task.DescriptionFormat` is `TEXT` for tasks created before the upgrade and `HTML` after; a description error `HTML_TOO_LARGE`, `TABLE_TOO_LARGE` or `TOO_COMPLEX` means the pasted content is over a limit (100,000 characters of HTML, 200 table cells, nesting 20), not a server fault.
 - [ ] **Upgrade drill:** do section 7.2 once on a copy of production data, including `--migrate-only` run by the DBA account, and the rollback restore of section 7.3.
-- [ ] **Report login (section 11):** with `ConnectionStrings__ReportsReadOnly` set, Administration > Reports shows "Ready" with writes and audit tables denied; temporarily adding the login to `db_datareader` turns it to `TooPrivileged` (then restore).
+- [ ] **Report login (section 11):** with `ConnectionStrings__ReportsReadOnly` set, Administration > Reports shows "Ready" with writes, audit tables and the server file and registry procedures (11.2 step 3) denied; temporarily adding the login to `db_datareader` turns it to `TooPrivileged` (then restore).
 - [ ] **Backups:** the nightly and log backups run, and one restore drill succeeded (section 8).
 
 ## 10. Troubleshooting
@@ -307,14 +307,39 @@ Script `30-reports.sql` (run by the app at startup like every script) created th
 1. Create the login on the SQL Server. SQL authentication with a long random password kept in the IIS/secret store, or a dedicated Windows/Entra account if policy prefers. **Not** the app-pool gMSA (the report identity must never be able to write):
    `CREATE LOGIN [mf_reports] WITH PASSWORD = N'<generated>', CHECK_POLICY = ON;`
 2. In the MatterFlow database: `CREATE USER [mf_reports] FOR LOGIN [mf_reports]; ALTER ROLE mf_report_reader ADD MEMBER [mf_reports];`
-3. Do **not** add the login to `sysadmin`, `db_owner`, `db_datareader`, `db_datawriter`, `db_ddladmin`, `mf_app` or `mf_migrator`, and grant no `IMPERSONATE`, no `EXECUTE`, no extra `SELECT`.
-4. Put the connection string in the secret store / environment as `ConnectionStrings__ReportsReadOnly`, for example
+3. **Close the extended procedures of `master` (one-time server step, issue #1292).** SQL Server grants a few extended stored procedures in `master` to `PUBLIC`, so every login can run them: `xp_dirtree` (lists directories and files of the server disk or of a UNC path), `xp_fileexist`, `xp_fixeddrives` (drives and free space), `xp_msver` (version and host facts), `xp_getnetname` (host name), `xp_regread` and `xp_instance_regread` (registry). The application cannot reach them (a report is one validated `SELECT`; `EXEC` and `xp_` names are refused), but the report login must not hold them either: someone who has its password could probe the server's file system, and on Windows `xp_dirtree` on a UNC path makes the SQL Server service account send its credentials to another machine. The database role cannot take away a right that `PUBLIC` holds in `master`, so the login needs a **user in `master` with a `DENY EXECUTE`**.
+   **Who:** the DBA, connected as a member of `sysadmin` (SQL Server ignores a `DENY` that a login gives to itself, so it cannot be done by the report login or by the application). **When:** once, after step 1, in any order with step 2; repeat it after a SQL Server upgrade (cheap, safe to run again). **Where:** the SQL Server instance, any database context (the block switches to `master` by itself). For a Windows or Entra login put its name in `@login` (`N'DOMAIN\account'`); a Windows group login works the same way.
+   ```sql
+   EXEC master.sys.sp_executesql N'
+   IF SUSER_ID(@login) IS NOT NULL
+   BEGIN
+       DECLARE @sql nvarchar(max);
+       IF DATABASE_PRINCIPAL_ID(@login) IS NULL
+       BEGIN
+           SET @sql = N''CREATE USER '' + QUOTENAME(@login) + N'' FOR LOGIN '' + QUOTENAME(@login) + N'';'';
+           EXEC (@sql);
+       END;
+       SET @sql = N'''';
+       SELECT @sql += N''DENY EXECUTE ON OBJECT::'' + QUOTENAME(SCHEMA_NAME(o.schema_id)) + N''.'' + QUOTENAME(o.name) + N'' TO '' + QUOTENAME(@login) + N'';''
+       FROM sys.all_objects AS o
+       WHERE o.type = ''X'' AND o.name LIKE N''xp[_]%''
+         AND o.name NOT IN (N''xp_sprintf'', N''xp_sscanf'', N''xp_qv'', N''xp_replposteor'')
+         AND EXISTS (SELECT 1 FROM sys.database_permissions AS p
+                     WHERE p.class = 1 AND p.major_id = o.object_id AND p.permission_name = N''EXECUTE'' AND p.state IN (''G'', ''W'')
+                       AND p.grantee_principal_id = DATABASE_PRINCIPAL_ID(N''public''));
+       IF @sql <> N'''' EXEC (@sql);
+   END;', N'@login sysname', @login = N'mf_reports';
+   ```
+   The block creates the user in `master` when it is missing (it gets no right except the denials below and the implicit `CONNECT`) and denies every `xp_` procedure that `PUBLIC` may execute, on Windows and on Linux, except four that only format strings or serve replication (`xp_sprintf`, `xp_sscanf`, `xp_qv`, `xp_replposteor`). It touches nothing in the MatterFlow database, and client libraries need none of the denied procedures. It is the same block as in `tools/db/provision-report-login.sql`, which the demo runs automatically.
+   **Verify** (as the DBA): `SELECT o.name FROM master.sys.database_permissions p JOIN master.sys.database_principals u ON u.principal_id = p.grantee_principal_id JOIN master.sys.all_objects o ON o.object_id = p.major_id WHERE u.name = N'mf_reports' AND p.state = 'D' ORDER BY o.name;` lists the denied procedures (on a standard SQL Server 2022: `xp_dirtree`, `xp_fileexist`, `xp_fixeddrives`, `xp_getnetname`, `xp_instance_regread`, `xp_msver`, `xp_regread`). Then press "Check again" (step 8): the panel must show **Server File and Registry Procedures: Denied** and no warning. If the step was missed, the panel keeps reports **running** but shows a warning ("the login can still run N extended procedure(s) in master") and the API log has the same warning once; fix it with this step and press "Check again".
+4. Do **not** add the login to `sysadmin`, `db_owner`, `db_datareader`, `db_datawriter`, `db_ddladmin`, `mf_app` or `mf_migrator`, and grant no `IMPERSONATE`, no `EXECUTE`, no extra `SELECT`.
+5. Put the connection string in the secret store / environment as `ConnectionStrings__ReportsReadOnly`, for example
    `Server=<sql>;Database=MatterFlow;User Id=mf_reports;Password=<secret>;Encrypt=True;TrustServerCertificate=False;Application Name=MatterFlow.Reports;ApplicationIntent=ReadOnly`.
    It must name a **different login** than the application's (`ConnectionStrings:MatterFlow`/`Default`/`Migrations`); the same login is refused. The app forces a small pool (8), a 10 s connect timeout and read intent.
-5. Database compatibility level must be **130 or higher** (reports use `OPENJSON`). `SELECT compatibility_level FROM sys.databases WHERE name = 'MatterFlow'`.
-6. Optional: a Resource Governor workload group for the login (`MAX_DOP 2`, `REQUEST_MAX_MEMORY_GRANT_PERCENT 10`).
-7. Restart the site (or press "Check again" on Administration > Reports > Settings). The health panel must show the login name, **writes denied**, **audit tables denied** and "can read N tables".
-8. Review the list of readable tables quarterly (schema browser) and rotate the password like any service account.
+6. Database compatibility level must be **130 or higher** (reports use `OPENJSON`). `SELECT compatibility_level FROM sys.databases WHERE name = 'MatterFlow'`.
+7. Optional: a Resource Governor workload group for the login (`MAX_DOP 2`, `REQUEST_MAX_MEMORY_GRANT_PERCENT 10`).
+8. Restart the site (or press "Check again" on Administration > Reports > Settings). The health panel must show the login name, **writes denied**, **audit tables denied**, **Server File and Registry Procedures: Denied** (step 3) and "can read N tables".
+9. Review the list of readable tables quarterly (schema browser) and rotate the password like any service account.
 
 ### 11.3 The startup check and its states
 
@@ -322,12 +347,13 @@ At startup (and on "Check again", `POST /api/v1/report-admin/status/check`) the 
 
 | State | Meaning | Fix |
 |---|---|---|
-| `NotConfigured` | `ConnectionStrings:ReportsReadOnly` is missing or invalid | Section 11.2 step 4 |
+| `NotConfigured` | `ConnectionStrings:ReportsReadOnly` is missing or invalid | Section 11.2 step 5 |
 | `SharedWithApplication` | the report string is the application's own login | Create the separate login |
 | `LoginFailed` | cannot connect (SQL error number is shown, never the server text) | Password, login, database user, network |
 | `RoleMissing` | connects, but is not in `mf_report_reader` | Step 2 |
-| `TooPrivileged` | sysadmin, db_owner, a broad role, can write/execute/create, or can read a denied table | Remove the extra rights (step 3) |
+| `TooPrivileged` | sysadmin, db_owner, a broad role, can write/execute/create, or can read a denied table | Remove the extra rights (step 4) |
 | `CompatibilityTooLow` | compatibility level below 130 | Raise it, or ask for the table-valued-parameter fallback |
+| `Ready` with a **warning** | the login can still run extended procedures of `master` (`xp_dirtree`, `xp_fileexist` and others, step 3); the page shows "Not denied" and a warning-coloured chip, the API log has one warning | Run the `master` step (11.2 step 3). Reports keep running meanwhile: no report text can reach these procedures, so this is a warning, not a stop |
 
 ### 11.4 Run log, audit and retention
 
@@ -355,7 +381,7 @@ Which starters show matter names, so an author can see it: **Tasks per matter** 
 
 ### 11.5 Demo / development
 
-`npm start` provisions the demo login automatically: `tools/db/provision-report-login.sql` creates `mf_reports` (public dev password, loopback-bound database) and adds it to `mf_report_reader` once the API has applied the schema; `appsettings.Development.json` carries the matching `ConnectionStrings:ReportsReadOnly`. `npm run db:report-login` repeats the step on its own (it waits up to four minutes for the role). **Never run that script on a corporate server.** The API creates the starter reports at startup in Development; `npm run seed:demo` then creates the demo role `Report Runner (demo)` (only `Report.Run`), assigns the starters to it and to the System Admin role and gives the role to Test User 02 (Director). The two Project Manager starters are already assigned to the Project Manager role by the starter seed.
+`npm start` provisions the demo login automatically: `tools/db/provision-report-login.sql` creates `mf_reports` (public dev password, loopback-bound database), gives it a user in `master` with the `DENY EXECUTE` of step 3 of section 11.2 (it runs as `sa`) and adds it to `mf_report_reader` once the API has applied the schema; `appsettings.Development.json` carries the matching `ConnectionStrings:ReportsReadOnly`. `npm run db:report-login` repeats the step on its own (it waits up to four minutes for the role). **Never run that script on a corporate server.** The API creates the starter reports at startup in Development; `npm run seed:demo` then creates the demo role `Report Runner (demo)` (only `Report.Run`), assigns the starters to it and to the System Admin role and gives the role to Test User 02 (Director). The two Project Manager starters are already assigned to the Project Manager role by the starter seed.
 
 ## 12. Sensitive matters: switching on the access rule (epic #788)
 

@@ -88,6 +88,8 @@ public sealed class ReportLoginProbeTests(SqlServerFixture sql)
         status.Login.LoginName.ShouldBe("mf_reports");
         status.Login.WritesDenied.ShouldBeTrue();
         status.Login.AuditTablesDenied.ShouldBeTrue();
+        status.Login.ServerProceduresDenied.ShouldBeTrue(); // the script's step in master worked
+        status.Message.ShouldNotContain("Warning");
         status.Login.ReadableTables.ShouldBeGreaterThan(30);
         status.Login.CompatibilityLevel.ShouldBeGreaterThanOrEqualTo(130);
         (await manager.GetFromJsonAsync<ReportsStatusResponse>(Status))!.State.ShouldBe("Ready");
@@ -130,6 +132,32 @@ public sealed class ReportLoginProbeTests(SqlServerFixture sql)
         status.Enabled.ShouldBeFalse();
         status.State.ShouldBe("TooPrivileged");
         status.Message.ShouldContain("too many rights");
+    }
+
+    [Fact]
+    public async Task A_login_without_the_deny_in_master_is_ready_with_a_warning_until_the_deny_is_done()
+    {
+        ReportLogin? login = null;
+        var (factory, manager, appCs) = await StartAsync(async cs => (login = await sql.CreateServerLoginAsync(cs, denyServerProcedures: false)).ConnectionString);
+        await using var _f = factory;
+        await SqlServerFixture.CreateDatabaseUserAsync(appCs, login!.Name, "mf_report_reader");
+
+        var warned = await PostCheckAsync(manager);
+
+        warned.Enabled.ShouldBeTrue(warned.Message); // a warning, not a stop: no report text can reach these procedures
+        warned.State.ShouldBe("Ready");
+        warned.Message.ShouldContain("Warning");
+        warned.Message.ShouldContain("xp_dirtree");
+        warned.Message.ShouldContain("docs/runbook.md section 11");
+        warned.Login!.ServerProceduresDenied.ShouldBeFalse();
+        warned.Login.WritesDenied.ShouldBeTrue();
+
+        await sql.DenyServerProceduresAsync(login.Name);
+        var clean = await PostCheckAsync(manager);
+
+        clean.State.ShouldBe("Ready");
+        clean.Message.ShouldNotContain("Warning");
+        clean.Login!.ServerProceduresDenied.ShouldBeTrue();
     }
 
     [Fact]

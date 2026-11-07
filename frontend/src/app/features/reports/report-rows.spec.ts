@@ -51,3 +51,31 @@ describe('report rows of the listing (#718)', () => {
     expect(parametersText({ parameterCount: 3 })).toBe('3 parameters');
   });
 });
+
+describe('favourites on the listing (#723)', () => {
+  const rows = flattenReports([
+    aCategory({
+      categoryId: 1,
+      name: 'Task follow-up',
+      reports: [
+        aListItem({ reportId: 5, name: 'Overdue tasks', isFavourite: true }),
+        aListItem({ reportId: 6, name: 'Tasks per matter', isFavourite: false }),
+      ],
+    }),
+    aCategory({
+      categoryId: 2,
+      name: 'Finance',
+      reports: [aListItem({ reportId: 7, name: 'Billing by client' })],
+    }),
+  ]);
+
+  it('keeps only the favourites with favouritesOnly and combines that with the search and the category (AND)', () => {
+    const ids = (text: string, cats: string[], only: boolean) =>
+      filterReports(rows, text, cats, only).map((r) => r.reportId);
+    expect(ids('', [], false)).toEqual([5, 6, 7]);
+    expect(ids('', [], true)).toEqual([5]);
+    expect(ids('tasks', [], true)).toEqual([5]);
+    expect(ids('matter', [], true)).toEqual([]);
+    expect(ids('', ['2'], true)).toEqual([]);
+  });
+});

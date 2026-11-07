@@ -239,13 +239,15 @@ public sealed class ReportLoginRightsTests(SqlServerFixture sql, ITestOutputHelp
         foreach (var function in new[] { "fnMatterVisible", "fnTaskVisible", "fnAssetVisible" })
             await RefusedAsync(reader, $"SELECT * FROM dbo.{function}(1, 1)");
 
-        // What the engine's own system procedures allow every login by default is not ours to change (the database role cannot take it away; master would need a
-        // DENY for the login). The application path cannot reach any of it: a report is one SELECT and the validator refuses EXEC, sp_ and xp_ names. The two file
-        // system procedures that SQL Server lets every login call are pinned here as a known residual (issue #1292); every other write, run or registry procedure below must stay refused. When the residual is closed, this expectation changes with it.
+        // SQL Server grants a few extended procedures of master to PUBLIC (directory listing, file test, drives, version, registry read, host name), and a
+        // database role cannot take that away. The provisioning therefore gives the login a user in master with a DENY EXECUTE (issue #1292, the harness does
+        // the same as tools/db/provision-report-login.sql). Not one of the procedures below may be callable, so the login cannot probe the server's disk, registry or
+        // network name even for someone who holds its password.
         var candidates = new (string Name, string Call)[]
         {
             ("xp_dirtree", "EXEC master.dbo.xp_dirtree N'/', 1, 1"), ("xp_fileexist", "EXEC master.dbo.xp_fileexist N'/etc/passwd'"), ("xp_subdirs", "EXEC master.dbo.xp_subdirs N'/'"),
             ("xp_getfiledetails", "EXEC master.dbo.xp_getfiledetails N'/etc/passwd'"), ("xp_fixeddrives", "EXEC master.dbo.xp_fixeddrives"), ("xp_msver", "EXEC master.dbo.xp_msver"),
+            ("xp_getnetname", "EXEC master.dbo.xp_getnetname"), ("xp_instance_regread", "EXEC master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE', N'SOFTWARE\\Microsoft'"),
             ("xp_enumerrorlogs", "EXEC master.dbo.xp_enumerrorlogs"), ("xp_readerrorlog", "EXEC master.dbo.xp_readerrorlog"), ("xp_create_subdir", "EXEC master.dbo.xp_create_subdir N'/tmp/sneaky'"),
             ("xp_delete_file", "EXEC master.dbo.xp_delete_file 0, N'/tmp/x', N'bak'"), ("xp_regread", "EXEC master.dbo.xp_regread N'HKEY_LOCAL_MACHINE', N'SOFTWARE'"), ("xp_cmdshell", "EXEC master.dbo.xp_cmdshell N'whoami'"),
             ("sp_OACreate", "DECLARE @o int; EXEC master.dbo.sp_OACreate N'WScript.Shell', @o OUT"), ("sp_execute_external_script", "EXEC sp_execute_external_script @language = N'Python', @script = N'print(1)'"),
@@ -266,11 +268,32 @@ public sealed class ReportLoginRightsTests(SqlServerFixture sql, ITestOutputHelp
         }
 
         output.WriteLine("callable system procedures: " + string.Join(", ", callable));
-        callable.Where(n => n is not ("xp_dirtree" or "xp_fileexist" or "xp_fixeddrives" or "xp_msver")).ShouldBeEmpty("no write, run or registry procedure may be callable");
-        callable.ShouldContain("xp_dirtree", "known residual: SQL Server lets every login list directories");
-        callable.ShouldContain("xp_fileexist", "known residual: SQL Server lets every login test for files");
+        callable.ShouldBeEmpty("no system procedure of master may be callable by the report login");
 
         (await FingerprintAsync(h.AppConnection)).ShouldBe(before, "nothing changed");
+    }
+
+    [Fact]
+    public async Task Without_the_one_time_deny_in_master_the_login_can_list_directories_and_with_it_it_cannot()
+    {
+        // The control for the test above: a login created without the DENY step really can run the procedures (so the DENY is what closes the gap, not a quirk of
+        // the container), the DENY is repeatable, and it removes only the intended rights (the login still works and keeps no other right in master).
+        var appCs = await sql.CreateMigratedDatabaseAsync();
+        var login = await sql.CreateServerLoginAsync(appCs, denyServerProcedures: false);
+        await SqlServerFixture.CreateDatabaseUserAsync(appCs, login.Name, "mf_report_reader");
+        string[] calls = ["EXEC master.dbo.xp_dirtree N'/', 1, 1", "EXEC master.dbo.xp_fileexist N'/etc/passwd'", "EXEC master.dbo.xp_fixeddrives", "EXEC master.dbo.xp_msver"];
+
+        foreach (var call in calls)
+            await SqlServerFixture.ExecuteAsync(login.ConnectionString, call); // allowed: this is the gap
+
+        await sql.DenyServerProceduresAsync(login.Name);
+        await sql.DenyServerProceduresAsync(login.Name); // again: harmless
+
+        foreach (var call in calls)
+            (await RefusedAsync(login.ConnectionString, call)).Message.ShouldContain("EXECUTE permission was denied");
+        await SqlServerFixture.ExecuteAsync(login.ConnectionString, "EXEC sp_executesql N'SELECT 1'"); // what a client library needs still works
+        (await SqlServerFixture.ScalarAsync(login.ConnectionString, "SELECT COUNT(*) FROM dbo.AppUser")).ShouldNotBeNull();
+        (await SqlServerFixture.ScalarAsync(sql.MasterConnectionString, $"SELECT COUNT(*) FROM sys.database_permissions p JOIN sys.database_principals u ON u.principal_id = p.grantee_principal_id WHERE u.name = N'{login.Name}' AND p.state <> 'D' AND p.permission_name <> N'CONNECT'")).ShouldBe(0);
     }
 
     [Fact]
