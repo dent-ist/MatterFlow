@@ -59,22 +59,32 @@ describe('CSV export of a report result (#721)', () => {
     });
     afterEach(() => vi.restoreAllMocks());
 
-    it('builds the address with the sort as %23<position>, the filter and one columns= per visible column in order', () => {
+    it('builds the address with the sort as %23<position>, the filter and one columns=%23<position> per visible column in order', () => {
       const url = service.url('run-9', {
         sort: '#2:desc',
-        filter: '[{"column":"A+B","op":"contains","value":"x y"}]',
-        columns: ['Total, USD', 'A+B', '#3'],
+        filter: '[{"column":"#1","op":"contains","value":"x y"}]',
+        columns: [0, 1, 3],
       });
       expect(url).toBe(
         '/api/v1/reports/runs/run-9/export.csv?sort=%232%3Adesc' +
-          '&filter=%5B%7B%22column%22%3A%22A%2BB%22%2C%22op%22%3A%22contains%22%2C%22value%22%3A%22x%20y%22%7D%5D' +
-          '&columns=Total%2C%20USD&columns=A%2BB&columns=%233',
+          '&filter=%5B%7B%22column%22%3A%22%231%22%2C%22op%22%3A%22contains%22%2C%22value%22%3A%22x%20y%22%7D%5D' +
+          '&columns=%230&columns=%231&columns=%233',
       );
       expect(service.url('r', { columns: [] })).toBe('/api/v1/reports/runs/r/export.csv');
     });
 
+    it('sends the second of two columns named Name as its own position, never the name (#1291)', () => {
+      // Columns: Name (0), Name (1), Id (2). The person hid the first Name and moved Id before the second.
+      expect(service.url('r', { columns: [2, 1] })).toBe(
+        '/api/v1/reports/runs/r/export.csv?columns=%232&columns=%231',
+      );
+      expect(service.url('r', { columns: [0, 1, 2] })).toBe(
+        '/api/v1/reports/runs/r/export.csv?columns=%230&columns=%231&columns=%232',
+      );
+    });
+
     it('asks as an authorised GET (the app HttpClient, a blob), saves the file under the name of Content-Disposition and reports the headers', async () => {
-      const done = service.download('run-9', { sort: '#0:asc', columns: ['Matter', 'Hours'] });
+      const done = service.download('run-9', { sort: '#0:asc', columns: [0, 1] });
       const req = http.expectOne((r) => r.url.startsWith('/api/v1/reports/runs/run-9/export.csv'));
       expect(req.request.method).toBe('GET');
       expect(req.request.responseType).toBe('blob');
@@ -97,7 +107,7 @@ describe('CSV export of a report result (#721)', () => {
     });
 
     it('says not truncated for X-Export-Truncated false and reads zero rows for a missing header', async () => {
-      const done = service.download('r', { columns: ['A'] });
+      const done = service.download('r', { columns: [0] });
       http
         .expectOne(() => true)
         .flush(new Blob(['A\r\n']), {
@@ -111,7 +121,7 @@ describe('CSV export of a report result (#721)', () => {
 
     it('turns off the toast of the interceptor while the request runs (the grid says what happened) and saves nothing for a refusal', async () => {
       const quiet = TestBed.inject(QuietRequests);
-      const done = service.download('r', { columns: ['A'] });
+      const done = service.download('r', { columns: [0] });
       http
         .expectOne(() => true)
         .flush(new Blob(['{"code":"RESULT_EXPIRED"}']), {

@@ -507,12 +507,12 @@ export class ReportResultGrid implements OnInit {
     this.exporting.set(true);
     this.exportStatus.set('Preparing the CSV.');
     const columns = this.columns();
-    const byKey = new Map(columns.map((c) => [c.key, c.name] as const));
+    const byKey = new Map(columns.map((c) => [c.key, c.index] as const));
     try {
       const done = await this.exporter.download(this.result().runId, {
         sort: serverSort(columns, this.sort()),
         filter: this.filterJson(),
-        columns: this.grid.shown().map((k) => byKey.get(k) ?? k),
+        columns: this.grid.shown().flatMap((k) => (byKey.has(k) ? [byKey.get(k)!] : [])),
       });
       const rows = done.rows > 0 ? done.rows : this.filtered();
       this.exportStatus.set(`Exported ${formatInt(rows)} ${rows === 1 ? 'row' : 'rows'}.`);

@@ -236,14 +236,62 @@ describe('ReportResultGrid: CSV export (#721) and saved views (#722)', () => {
       expect(req.request.url).toBe(
         '/api/v1/reports/runs/run-9/export.csv?sort=%231%3Adesc' +
           '&filter=' +
-          encodeURIComponent(
-            JSON.stringify([{ column: 'Matter', op: 'contains', value: 'acme' }]),
-          ) +
-          '&columns=Matter&columns=Active&columns=Open%20Tasks',
+          encodeURIComponent(JSON.stringify([{ column: '#0', op: 'contains', value: 'acme' }])) +
+          '&columns=%230&columns=%233&columns=%231',
       );
       req.flush(blob(), { headers: csvHeaders(143) });
       await settle(fixture);
       expect(downloads).toEqual(['overdue-tasks-20261107-1405.csv']);
+    });
+
+    it('two columns named Name: the sort, the filter and the export each hit the right one by position, and the header repeats the name (#1291)', async () => {
+      const twins = [
+        { name: 'Name', type: 'text' },
+        { name: 'Name', type: 'text' },
+        { name: 'Id', type: 'integer' },
+      ];
+      await create({
+        result: run({ columns: twins as RunReportResponse['columns'] }),
+        rows: (_id, p = 1, size = 50) =>
+          ok(
+            page({
+              columns: twins as ReportRowsResponse['columns'],
+              rows: [
+                ['Ann', 'Smith', 1],
+                ['Bob', 'Jones', 2],
+              ],
+              page: p,
+              pageSize: size,
+            }),
+          ),
+      });
+      expect(all('thead tr:first-child th').map((th) => th.textContent!.trim())).toEqual([
+        'Name',
+        'Name',
+        'Id',
+      ]);
+      // Sort by the second Name: position 1.
+      q('th[data-col="Name (2)"] button').click();
+      await settle(fixture);
+      expect(lastCall()[3]).toBe('#1:asc');
+      // Filter the second Name: position 1 again, never the first.
+      fixture.componentInstance.filters.set('c1', 'smith');
+      await settle(fixture);
+      expect(JSON.parse(lastCall()[4] as string)).toEqual([
+        { column: '#1', op: 'contains', value: 'smith' },
+      ]);
+      // Export: every visible column by its position, in order, so both Names go out under their own number.
+      exportButton().click();
+      await settle(fixture);
+      const [req] = exportRequests();
+      expect(req.request.url).toBe(
+        '/api/v1/reports/runs/run-9/export.csv?sort=%231%3Aasc' +
+          '&filter=' +
+          encodeURIComponent(JSON.stringify([{ column: '#1', op: 'contains', value: 'smith' }])) +
+          '&columns=%230&columns=%231&columns=%232',
+      );
+      req.flush(blob('\ufeffName,Name,Id\r\n'), { headers: csvHeaders(1) });
+      await settle(fixture);
     });
 
     it('shows a spinner and aria-busy on the button while the file is made, ignores a second press, and says so politely', async () => {
@@ -414,7 +462,7 @@ describe('ReportResultGrid: CSV export (#721) and saved views (#722)', () => {
         1,
         25,
         '#1:desc',
-        filterOf({ column: 'Matter', op: 'contains', value: 'acme' }),
+        filterOf({ column: '#0', op: 'contains', value: 'acme' }),
       ]);
       expect(q('[data-views-label]').textContent!.trim()).toBe('Weekly');
       expect(all('thead tr:first-child th').map((th) => th.textContent!.trim())).toEqual([
@@ -497,7 +545,7 @@ describe('ReportResultGrid: CSV export (#721) and saved views (#722)', () => {
         1,
         25,
         '#1:desc',
-        filterOf({ column: 'Matter', op: 'contains', value: 'acme' }),
+        filterOf({ column: '#0', op: 'contains', value: 'acme' }),
       ]);
       expect(q('[data-views-label]').textContent!.trim()).toBe('Weekly');
 

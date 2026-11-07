@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { QuietRequests } from '../../core/http/interceptors';
 import { formatInt } from '../../shared/ui/number-format';
+import { columnRef } from './report-result-query';
 
 /** What a finished export tells the page: the file name the server chose, how many data rows it holds and whether the result was cut at the row limit. */
 export interface ReportExport {
@@ -11,11 +12,15 @@ export interface ReportExport {
   readonly truncated: boolean;
 }
 
-/** The query of an export: the grid's sort (`#3:asc`), its filter text and the visible columns in their order, the same arguments the rows endpoint got. */
+/**
+ * The query of an export: the grid's sort (`#3:asc`), its filter text (columns as `#<index>`) and the visible columns in their order, the same arguments
+ * the rows endpoint got. `columns` are POSITIONS in the result's `columns` array (#1291): two columns of one name are two positions, and the file
+ * writes each under its own name.
+ */
 export interface ReportExportQuery {
   readonly sort?: string;
   readonly filter?: string;
-  readonly columns: readonly string[];
+  readonly columns: readonly number[];
 }
 
 /** The file name of a `Content-Disposition` header (`filename*=UTF-8''...` first, then `filename="..."`), or the fallback. */
@@ -73,12 +78,12 @@ export class ReportExportService {
   private readonly http = inject(HttpClient);
   private readonly quiet = inject(QuietRequests);
 
-  /** The address of the export of a run. Names are encoded one by one (a column called `A+B` or `Total, USD` stays itself); `#` becomes `%23`. */
+  /** The address of the export of a run. One `columns=#<position>` per exported column in file order, each encoded on its own (`#` becomes `%23`). */
   url(runId: string, query: ReportExportQuery): string {
     const parts: string[] = [];
     if (query.sort) parts.push(`sort=${encodeURIComponent(query.sort)}`);
     if (query.filter) parts.push(`filter=${encodeURIComponent(query.filter)}`);
-    for (const c of query.columns) parts.push(`columns=${encodeURIComponent(c)}`);
+    for (const c of query.columns) parts.push(`columns=${encodeURIComponent(columnRef(c))}`);
     const base = `/api/v1/reports/runs/${encodeURIComponent(runId)}/export.csv`;
     return parts.length > 0 ? `${base}?${parts.join('&')}` : base;
   }

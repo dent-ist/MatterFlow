@@ -341,7 +341,7 @@ describe('ReportResultGrid (#720)', () => {
       await settle(fixture);
       expect(lastCall()[1]).toBe(1);
       expect(JSON.parse(lastCall()[4] as string)).toEqual([
-        { column: 'Matter', op: 'contains', value: 'acme' },
+        { column: '#0', op: 'contains', value: 'acme' },
       ]);
     });
 
@@ -368,8 +368,8 @@ describe('ReportResultGrid (#720)', () => {
       fixture.componentInstance.filters.set('c3', 'true');
       await settle(fixture);
       expect(JSON.parse(lastCall()[4] as string)).toEqual([
-        { column: 'Open Tasks', op: 'gte', value: '3' },
-        { column: 'Active', op: 'eq', value: 'true' },
+        { column: '#1', op: 'gte', value: '3' },
+        { column: '#3', op: 'eq', value: 'true' },
       ]);
     });
 

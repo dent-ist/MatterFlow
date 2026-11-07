@@ -38,6 +38,15 @@ export function filterDefsOf(columns: readonly ResultColumn[]): FilterDef[] {
   });
 }
 
+/**
+ * How every request names a column: its zero-based POSITION in the result's `columns` array, `#3` (#1291, like the sort since #1288). Never the name:
+ * a report may return two columns of one name (`SELECT a.Name, b.Name`), and a name could look like a position (`#3`) or carry a comma. The `#` is
+ * URL-encoded to `%23` wherever the reference goes into a query string.
+ */
+export function columnRef(column: Pick<ResultColumn, 'index'> | number): string {
+  return `#${typeof column === 'number' ? column : column.index}`;
+}
+
 /** One filter of the `filter` JSON of the rows endpoint. */
 export interface ServerFilter {
   readonly column: string;
@@ -47,7 +56,8 @@ export interface ServerFilter {
 }
 
 /**
- * The `filter` argument of the rows endpoint for the values of the filter row: `[{column, op, value, value2}]`, or undefined when nothing is set. A range with
+ * The `filter` argument of the rows and export endpoints for the values of the filter row: `[{column, op, value, value2}]` with `column` the position
+ * `#<index>` of the column (#1291), or undefined when nothing is set. A range with
  * both ends is `between`, one end `gte` / `lte` (numbers) or `onOrAfter` / `onOrBefore` (dates); Yes and No are `eq`.
  */
 export function serverFilter(
@@ -58,7 +68,7 @@ export function serverFilter(
   for (const c of columns) {
     const v: FilterValue | undefined = values[c.id];
     if (v === undefined) continue;
-    const name = c.name;
+    const name = columnRef(c);
     switch (c.kind) {
       case 'integer':
       case 'decimal':
@@ -93,8 +103,7 @@ export function filterCount(filter: string | undefined): number {
 
 /**
  * The `sort` argument of the rows and export endpoints, from the grid's sort (`c3` or `-c3`, the column id with a leading minus for descending): the
- * column's POSITION in the result's `columns` array, `#3:asc` or `#3:desc` (#1288). Never the name: a report author picks any name (`Total, USD` has a
- * comma, `#3` looks like a position), and only a position is unambiguous. The `#` is URL-encoded to `%23` by the generated client. Undefined for the
+ * column's POSITION in the result's `columns` array, `#3:asc` or `#3:desc` (#1288; see {@link columnRef}). The `#` is URL-encoded to `%23` by the generated client. Undefined for the
  * report's own order; an id that is not a column of the result gives undefined. One column only (the one-sort rule of the grid).
  */
 export function serverSort(
@@ -104,7 +113,7 @@ export function serverSort(
   if (!sort) return undefined;
   const desc = sort.startsWith('-');
   const column = columns.find((c) => c.id === (desc ? sort.slice(1) : sort));
-  return column ? `#${column.index}:${desc ? 'desc' : 'asc'}` : undefined;
+  return column ? `${columnRef(column)}:${desc ? 'desc' : 'asc'}` : undefined;
 }
 
 /** "Sorted by <Column>" words: the column id to its name (the sorted line asks for the label of a sort field). */
