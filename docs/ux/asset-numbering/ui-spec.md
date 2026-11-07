@@ -49,14 +49,15 @@ The tail is checked in the order below; the first failing rule is shown, one mes
 | PATTERN_FORBIDDEN_CHAR | the tail contains `\ / : * ? " < > \|` or a control character | The tail can't contain \ / : * ? " < > \| or control characters. |
 | PATTERN_UNKNOWN_TOKEN | a `{...}` that is not a counter (also a lone `{` or `}`) | "<text>" isn't a token. The only token is the counter {###}. (the offending text, cut at 30 characters) |
 | PATTERN_EDGE_SPACE | the tail starts or ends with a space | The tail can't start or end with a space. |
+| PATTERN_TRAILING_DOT | the tail ends with a dot (so the name would end with a dot, which Windows trims on the share; also `{###}.`) | The name can't end with a dot. |
 | PATTERN_TOO_LONG | the tail has more than 50 characters, or the generated name would pass 100 characters | The tail must be 50 characters or fewer. / The whole name would be longer than 100 characters. Shorten the tail. |
 | PATTERN_NO_COUNTER | no counter token (an empty tail is this case) | Add a counter, for example {###}. |
 | PATTERN_TWO_COUNTERS | more than one counter token | Use only one counter. |
 | PATTERN_COUNTER_WIDTH | a counter with 0 or more than 9 `#` characters | The counter must have 1 to 9 # characters. |
 
-The 50-character rule is checked in the browser. The 100-character rule needs the longest CM Number: the browser checks it when the API sends `longestCmNumber`, otherwise only the server decides and its PATTERN_TOO_LONG shows the second message. The backend's trailing-dot rule is gone with the new design; the owner's list names spaces only.
+The 50-character rule is checked in the browser. The 100-character rule needs the longest CM Number: the browser checks it when the API sends `longestCmNumber`, otherwise only the server decides and its PATTERN_TOO_LONG shows the second message.
 
-The browser builds the Example and runs these rules from one pure function pair `renderTail(cmNumber, tail, counter)` / `validateTail(tail)` tested against `contracts/asset-numbering/pattern-vectors.json`; the vectors are the single source of truth (counter padded to its minimum width and never cut, `1000` stays `1000`).
+The browser builds the Example and runs these rules from one pure function pair `renderTail(cmNumber, tail, counter)` / `validateTail(tail)` tested against `contracts/asset-numbering/pattern-vectors.json`; the vectors are the single source of truth and `validateTail` must return exactly the vectors' codes (including `PATTERN_TRAILING_DOT`) in the order of the table above; a browser result that differs from the vectors is a test failure (counter padded to its minimum width and never cut, `1000` stays `1000`).
 
 ### 1.3 Turning off
 
@@ -175,7 +176,7 @@ Default visibility and fit (D-43a, D-44k): the column and its Columns chooser en
 | Format change help | Assets that already have a number keep it. A new tail applies to new assets only. |
 | Example captions | Sample matter 90003-80008. / Based on matter 90003-80008 (its next number). / Fix the tail to see an example. |
 | Insert button | Insert (label), Counter; tooltips "Insert {###}" and "The tail already has a counter." |
-| Tail errors | PATTERN_FORBIDDEN_CHAR The tail can't contain \ / : * ? " < > \| or control characters. / PATTERN_UNKNOWN_TOKEN "<text>" isn't a token. The only token is the counter {###}. / PATTERN_EDGE_SPACE The tail can't start or end with a space. / PATTERN_TOO_LONG The tail must be 50 characters or fewer. (and) The whole name would be longer than 100 characters. Shorten the tail. / PATTERN_NO_COUNTER Add a counter, for example {###}. / PATTERN_TWO_COUNTERS Use only one counter. / PATTERN_COUNTER_WIDTH The counter must have 1 to 9 # characters. |
+| Tail errors | PATTERN_FORBIDDEN_CHAR The tail can't contain \ / : * ? " < > \| or control characters. / PATTERN_UNKNOWN_TOKEN "<text>" isn't a token. The only token is the counter {###}. / PATTERN_EDGE_SPACE The tail can't start or end with a space. / PATTERN_TRAILING_DOT The name can't end with a dot. / PATTERN_TOO_LONG The tail must be 50 characters or fewer. (and) The whole name would be longer than 100 characters. Shorten the tail. / PATTERN_NO_COUNTER Add a counter, for example {###}. / PATTERN_TWO_COUNTERS Use only one counter. / PATTERN_COUNTER_WIDTH The counter must have 1 to 9 # characters. |
 | Old assets line | 12 existing assets of this type have no number. They stay without one until you open them and choose Assign Number. |
 | Buttons | Save Numbering, Turn Off Numbering, Set for a Matter, Set Next Number, Assign Number, Cancel, Retry, Clear Search |
 | Turn off | Turn Off Numbering / New assets of <Type Name> will no longer get a number. Numbers already assigned stay and are never used again, also if you turn numbering back on. |
@@ -241,4 +242,4 @@ OpenAPI contract and the generated client move in the same change (CI checks dri
 | N6 | **Decided by the owner:** the name always starts with the matter's CM Number (fixed); the administrator edits only a free-text tail with exactly one `{###}` counter and optional text before and after it (guardrails in 1.2a). Per client or global scope stays out for now. | 1.2, 1.2a. |
 | N7 | **Decided by the owner:** long numbers clip with a tooltip; the Asset Number column is 168 px (the default tail gives 17 characters and fits; 1095 of 1098 px for the default Assets columns). | 3.4. |
 
-**This specification is final for the frontend and backend to build.** Open points that are not owner decisions: the backend sends `longestCmNumber` only if it wants the browser to check the 100-character limit (otherwise the server's PATTERN_TOO_LONG answer decides); the trailing-dot rule of the first backend draft is not part of this design (spaces only).
+**This specification is final for the frontend and backend to build.** Open points that are not owner decisions: the backend sends `longestCmNumber` only if it wants the browser to check the 100-character limit (otherwise the server's PATTERN_TOO_LONG answer decides). Owner decision (later the same day): trailing dots are refused (PATTERN_TRAILING_DOT, section 1.2a).
