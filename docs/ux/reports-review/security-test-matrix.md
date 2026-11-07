@@ -29,7 +29,7 @@ Data files (checked in, read by unit and integration tests): `backend/tests/Matt
 | Keyboard-only flows, axe, bundle size | Frontend and e2e; no frontend was touched here | Not in scope |
 | Review comment: injection corpus as a data file through the real login for every parameter type | `ReportInjectionCorpusTests` (text, number, integer, date, single, multi, lookup, multi lookup, yes/no, date range) | Done |
 | Review comment: validator corpus with at least 60 entries | `validator-corpus.json`, 93 refused plus 21 inert look-alikes, asserted by `The_validator_corpus_is_a_data_file_with_at_least_sixty_refused_statements_and_unique_ids` | Done |
-| Review comment: direct-login lines for `xp_cmdshell`, other database and role membership | `ReportLoginRightsTests` (procedures, other database, `IS_SRVROLEMEMBER`, `IS_MEMBER`, `fn_my_permissions`) | Done, one finding (#1292) |
+| Review comment: direct-login lines for `xp_cmdshell`, other database and role membership | `ReportLoginRightsTests` (procedures, other database, `IS_SRVROLEMEMBER`, `IS_MEMBER`, `fn_my_permissions`) | Done; the one finding (#1292) is fixed: no system procedure is callable any more |
 | Review comment: CSV formula corpus (with #721) | `ReportCsvSecurityTests` (unit), `ReportCsvExportSecurityTests` (integration) | Done, one hardening fix |
 | Review comment: cross-user 404 for views (with #722) | `ReportViewsApiTests.Nobody_sees_edits_deletes_or_defaults_another_persons_view...`, `.Views_follow_the_report_rule...`; new `ReportAccessMatrixTests` walks the view endpoints for every reason a report stops being available | Done |
 | Review comment: one test over every Reports endpoint for 401 and 403 | New `ReportAccessMatrixTests.Every_reports_endpoint_is_401_without_a_login_403_without_its_permission_and_reachable_with_it` (reads the route table, 42 operations) | Done |
@@ -76,7 +76,7 @@ Data files (checked in, read by unit and integration tests): `backend/tests/Matt
 | SQL text (validator bypass) | `SqlValidatorTests`, `SqlScannerTests` | corpus file + test, 114 entries (unit) | none known |
 | Parameters, every type | `ParameterBinderTests`, `ReportListBindingTests` | 13 unit tests, 5 integration | none known |
 | Sort, filter, column names (rows, export, `#n`) | `ResultQueryTests`, `ReportRowsApiTests`, `ReportExportApiTests` | 54 unit cases, 2 integration | none known |
-| Login rights | `ReportsSchemaTests`, `ReportLoginProbeTests` | 5 integration | #1292 (open) |
+| Login rights | `ReportsSchemaTests`, `ReportLoginProbeTests` | 5 integration + 2 new for #1292 | none known (#1292 fixed: DENY in `master`, probe warning) |
 | Abuse limits | `ReportRunApiTests`, `ReportRunGateTests` | 9 integration | the 256 kB body limit is enforced by Kestrel and cannot be exercised in the in-process test server (the parameter limits behind it are tested) |
 | CSV | `ReportCsvWriterTests`, `ReportExportApiTests` | 14 unit + 4 integration | none known |
 | Access | per-controller theories, `ReportCategoryRuleApiTests` | 3 integration | none known |

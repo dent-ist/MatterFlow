@@ -5,6 +5,10 @@
 --
 -- Idempotent and cheap: safe to run on every start. Run it in the MatterFlow database (sqlcmd -d MatterFlow -i ...).
 --   * The login and the database user are created when missing.
+--   * In master (one-time server step, issue #1292): the login gets a user with no rights except DENY EXECUTE on the extended procedures
+--     (xp_dirtree, xp_fileexist, xp_fixeddrives, xp_msver, xp_regread, ...) that SQL Server grants to PUBLIC. It runs through
+--     EXEC master.sys.sp_executesql, so the script needs no USE and no GO. It must be run by an administrator (sysadmin): SQL Server ignores a
+--     DENY that a login gives to itself. The same block is in docs/runbook.md section 11 for the corporate server.
 --   * The role mf_report_reader comes from schema script 30-reports.sql, which the API applies at its first start. Until then the script only
 --     creates the login and the user; running it again after the API has started (npm run db:report-login) adds the membership.
 SET NOCOUNT ON;
@@ -14,6 +18,28 @@ IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = N'mf_reports')
 
 IF DATABASE_PRINCIPAL_ID(N'mf_reports') IS NULL
     CREATE USER [mf_reports] FOR LOGIN [mf_reports];
+
+-- Server step in master. @login is the only thing to change for another login (Windows: N'DOMAIN\account'). Cheap and repeatable: it creates the
+-- user when missing and denies every extended procedure that PUBLIC may execute, except four that only format strings or serve replication.
+EXEC master.sys.sp_executesql N'
+IF SUSER_ID(@login) IS NOT NULL
+BEGIN
+    DECLARE @sql nvarchar(max);
+    IF DATABASE_PRINCIPAL_ID(@login) IS NULL
+    BEGIN
+        SET @sql = N''CREATE USER '' + QUOTENAME(@login) + N'' FOR LOGIN '' + QUOTENAME(@login) + N'';'';
+        EXEC (@sql);
+    END;
+    SET @sql = N'''';
+    SELECT @sql += N''DENY EXECUTE ON OBJECT::'' + QUOTENAME(SCHEMA_NAME(o.schema_id)) + N''.'' + QUOTENAME(o.name) + N'' TO '' + QUOTENAME(@login) + N'';''
+    FROM sys.all_objects AS o
+    WHERE o.type = ''X'' AND o.name LIKE N''xp[_]%''
+      AND o.name NOT IN (N''xp_sprintf'', N''xp_sscanf'', N''xp_qv'', N''xp_replposteor'')
+      AND EXISTS (SELECT 1 FROM sys.database_permissions AS p
+                  WHERE p.class = 1 AND p.major_id = o.object_id AND p.permission_name = N''EXECUTE'' AND p.state IN (''G'', ''W'')
+                    AND p.grantee_principal_id = DATABASE_PRINCIPAL_ID(N''public''));
+    IF @sql <> N'''' EXEC (@sql);
+END;', N'@login sysname', @login = N'mf_reports';
 
 IF DATABASE_PRINCIPAL_ID(N'mf_report_reader') IS NOT NULL AND ISNULL(IS_ROLEMEMBER(N'mf_report_reader', N'mf_reports'), 0) = 0
     ALTER ROLE [mf_report_reader] ADD MEMBER [mf_reports];

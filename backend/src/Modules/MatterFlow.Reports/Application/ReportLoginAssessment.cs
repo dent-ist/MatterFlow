@@ -13,12 +13,20 @@ public sealed record ReportLoginFacts(
     bool CanExecute,
     bool CanCreate,
     int ReadableTables,
-    int CompatibilityLevel);
+    int CompatibilityLevel,
+    int CallableServerProcedures = 0);
 
 /// <summary>Turns the facts into a status. Pure, so every refusal reason is unit tested.</summary>
 public static class ReportLoginAssessment
 {
     public const int MinimumCompatibilityLevel = 130;
+
+    /// <summary>
+    /// The extended procedures in <c>master</c> that PUBLIC may execute and that the one-time DENY step leaves alone, because they only format strings or
+    /// serve replication (no file system, registry, host or command access). Every other <c>xp_</c> procedure the login can execute is a warning
+    /// (issue #1292). The same four names are in <c>tools/db/provision-report-login.sql</c> and docs/runbook.md section 11.
+    /// </summary>
+    public static readonly IReadOnlyList<string> HarmlessExtendedProcedures = ["xp_sprintf", "xp_sscanf", "xp_qv", "xp_replposteor"];
 
     public static ReportsStatus Evaluate(ReportLoginFacts f, DateTime nowUtc)
     {
@@ -28,7 +36,8 @@ public static class ReportLoginAssessment
             AuditTablesDenied: f.DeniedReadable == 0,
             f.ReadableTables,
             f.CompatibilityLevel,
-            nowUtc);
+            nowUtc,
+            ServerProceduresDenied: f.CallableServerProcedures == 0);
 
         var problems = new List<string>();
         if (f.IsSysAdmin)
@@ -56,6 +65,13 @@ public static class ReportLoginAssessment
         if (f.CompatibilityLevel < MinimumCompatibilityLevel)
             return new(false, ReportsStates.CompatibilityTooLow, $"The database compatibility level is {f.CompatibilityLevel}; reports need {MinimumCompatibilityLevel} or higher (OPENJSON).", details);
 
-        return new(true, ReportsStates.Ready, $"Report login '{f.LoginName}': writes denied, audit tables denied, can read {f.ReadableTables} tables.", details);
+        var ready = $"Report login '{f.LoginName}': writes denied, audit tables denied, can read {f.ReadableTables} tables.";
+
+        // A missing DENY in master is a warning, not a stop: no report text can reach these procedures (the validator refuses EXEC and xp_ names), so reports keep
+        // running while the DBA closes the gap. The other rights checks above stop reports because they open the data itself.
+        if (f.CallableServerProcedures > 0)
+            ready += $" Warning: the login can still run {f.CallableServerProcedures} extended procedure(s) in master that reach the server's file system, registry or host facts (xp_dirtree, xp_fileexist and others). An administrator must run the one-time DENY step in master (docs/runbook.md section 11).";
+
+        return new(true, ReportsStates.Ready, ready, details);
     }
 }

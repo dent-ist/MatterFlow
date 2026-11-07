@@ -34,7 +34,8 @@ public sealed record ReportLoginDetails(
     bool AuditTablesDenied,
     int ReadableTables,
     int CompatibilityLevel,
-    DateTime CheckedAtUtc);
+    DateTime CheckedAtUtc,
+    bool ServerProceduresDenied = true);
 
 /// <summary>The health of the Reports feature as the admin page and every run endpoint see it.</summary>
 public sealed record ReportsStatus(bool Enabled, string State, string Message, ReportLoginDetails? Details = null);

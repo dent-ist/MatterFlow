@@ -8,7 +8,8 @@ namespace MatterFlow.Reports.Infrastructure;
 /// <summary>
 /// Startup probe of the report login (spec 6.3 layer 4). It connects with the report connection and asks SQL Server what the login may do:
 /// <c>IS_MEMBER</c>, <c>IS_SRVROLEMEMBER</c> and <c>HAS_PERMS_BY_NAME</c> only, never a write and never a data read. The effective rights are compared
-/// with the access catalogue.
+/// with the access catalogue. It also counts the extended procedures in <c>master</c> (<c>xp_dirtree</c> and the like) that the login may still execute
+/// because the one-time DENY step was not run (issue #1292); that is a warning, not a stop.
 /// </summary>
 internal static class ReportLoginProbe
 {
@@ -36,7 +37,10 @@ internal static class ReportLoginProbe
           CAST(ISNULL(HAS_PERMS_BY_NAME(DB_NAME(), 'DATABASE', 'CREATE TABLE'), 0) AS int) AS CanCreate,
           (SELECT COUNT(*) FROM sys.tables t
             WHERE ISNULL(HAS_PERMS_BY_NAME(QUOTENAME(SCHEMA_NAME(t.schema_id)) + N'.' + QUOTENAME(t.name), 'OBJECT', 'SELECT'), 0) = 1) AS ReadableTables,
-          (SELECT compatibility_level FROM sys.databases WHERE database_id = DB_ID()) AS CompatibilityLevel
+          (SELECT compatibility_level FROM sys.databases WHERE database_id = DB_ID()) AS CompatibilityLevel,
+          (SELECT COUNT(*) FROM master.sys.all_objects o
+            WHERE o.type = 'X' AND o.name LIKE N'xp[_]%' AND o.name NOT IN (SELECT k.[value] FROM OPENJSON(@harmless) k)
+              AND ISNULL(HAS_PERMS_BY_NAME(N'master.sys.' + QUOTENAME(o.name), 'OBJECT', 'EXECUTE'), 0) = 1) AS CallableServerProcedures
         """;
 
     public static async Task<ReportsStatus> ProbeAsync(string connectionString, ReportAccessCatalogue catalogue, DateTime nowUtc, CancellationToken cancellationToken)
@@ -50,6 +54,7 @@ internal static class ReportLoginProbe
             command.CommandTimeout = 15;
             command.Parameters.Add(new SqlParameter("@denied", SqlDbType.NVarChar, -1) { Value = JsonSerializer.Serialize(catalogue.Denied) });
             command.Parameters.Add(new SqlParameter("@allowed", SqlDbType.NVarChar, -1) { Value = JsonSerializer.Serialize(catalogue.Allowed) });
+            command.Parameters.Add(new SqlParameter("@harmless", SqlDbType.NVarChar, -1) { Value = JsonSerializer.Serialize(ReportLoginAssessment.HarmlessExtendedProcedures) });
 
             await using var reader = await command.ExecuteReaderAsync(cancellationToken);
             if (!await reader.ReadAsync(cancellationToken))
@@ -67,7 +72,8 @@ internal static class ReportLoginProbe
                 CanExecute: reader.GetInt32(8) == 1,
                 CanCreate: reader.GetInt32(9) == 1,
                 ReadableTables: reader.GetInt32(10),
-                CompatibilityLevel: reader.IsDBNull(11) ? 0 : Convert.ToInt32(reader.GetValue(11), System.Globalization.CultureInfo.InvariantCulture));
+                CompatibilityLevel: reader.IsDBNull(11) ? 0 : Convert.ToInt32(reader.GetValue(11), System.Globalization.CultureInfo.InvariantCulture),
+                CallableServerProcedures: reader.GetInt32(12));
             return ReportLoginAssessment.Evaluate(facts, nowUtc);
         }
         catch (SqlException ex)

@@ -28929,6 +28929,7 @@ export interface ReportLoginDetailsResponse {
     readableTables: number;
     compatibilityLevel: number;
     checkedAtUtc: string;
+    serverProceduresDenied: boolean;
 
     [key: string]: any;
 }

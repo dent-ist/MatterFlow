@@ -10,6 +10,9 @@ public sealed class SqlServerFixture : IAsyncLifetime
 {
     private readonly MsSqlContainer _container = new MsSqlBuilder().WithImage("mcr.microsoft.com/mssql/server:2022-latest").Build();
 
+    /// <summary>Administrator connection to master (for server-level checks).</summary>
+    public string MasterConnectionString => _container.GetConnectionString();
+
     public async Task InitializeAsync() => await _container.StartAsync();
 
     public async Task DisposeAsync() => await _container.DisposeAsync();
@@ -35,14 +38,50 @@ public sealed class SqlServerFixture : IAsyncLifetime
         return cs;
     }
 
-    /// <summary>Server-level part of a SQL login for the reports tests: creates the login (unique name) and returns a connection string for the database.</summary>
-    public async Task<ReportLogin> CreateServerLoginAsync(string databaseConnectionString, string? serverRole = null)
+    /// <summary>
+    /// Server-level part of a SQL login for the reports tests: creates the login (unique name) and returns a connection string for the database.
+    /// Like the real provisioning (tools/db/provision-report-login.sql, docs/runbook.md section 11) it also gives the login a user in master with a DENY EXECUTE on
+    /// the extended procedures PUBLIC may run (issue #1292); <paramref name="denyServerProcedures"/> false leaves that out, for the tests of the probe's warning.
+    /// </summary>
+    public async Task<ReportLogin> CreateServerLoginAsync(string databaseConnectionString, string? serverRole = null, bool denyServerProcedures = true)
     {
         var name = "rl_" + Guid.NewGuid().ToString("N")[..12];
         const string password = "Rpt!Passw0rd#2026x";
         await ExecuteAsync(_container.GetConnectionString(), $"CREATE LOGIN [{name}] WITH PASSWORD = '{password}', CHECK_POLICY = OFF;" + (serverRole is null ? "" : $" ALTER SERVER ROLE {serverRole} ADD MEMBER [{name}];"));
+        if (denyServerProcedures)
+            await DenyServerProceduresAsync(name);
         var builder = new SqlConnectionStringBuilder(databaseConnectionString) { UserID = name, Password = password, IntegratedSecurity = false, ConnectTimeout = 10 };
         return new ReportLogin(name, builder.ConnectionString);
+    }
+
+    /// <summary>
+    /// The one-time step in master: a user for the login and DENY EXECUTE on every extended procedure that PUBLIC may execute, except the four harmless ones
+    /// (the same rule as the provisioning script; <c>ReportLoginAssessment.HarmlessExtendedProcedures</c>). Run with the administrator connection, because SQL Server
+    /// ignores a DENY that a login gives to itself.
+    /// </summary>
+    public async Task DenyServerProceduresAsync(string login)
+    {
+        const string script = """
+            IF DATABASE_PRINCIPAL_ID(@login) IS NULL
+            BEGIN
+                DECLARE @create nvarchar(max) = N'CREATE USER ' + QUOTENAME(@login) + N' FOR LOGIN ' + QUOTENAME(@login) + N';';
+                EXEC (@create);
+            END;
+            DECLARE @sql nvarchar(max) = N'';
+            SELECT @sql += N'DENY EXECUTE ON OBJECT::' + QUOTENAME(SCHEMA_NAME(o.schema_id)) + N'.' + QUOTENAME(o.name) + N' TO ' + QUOTENAME(@login) + N';'
+            FROM sys.all_objects AS o
+            WHERE o.type = 'X' AND o.name LIKE N'xp[_]%' AND o.name NOT IN (N'xp_sprintf', N'xp_sscanf', N'xp_qv', N'xp_replposteor')
+              AND EXISTS (SELECT 1 FROM sys.database_permissions AS p
+                          WHERE p.class = 1 AND p.major_id = o.object_id AND p.permission_name = N'EXECUTE' AND p.state IN ('G', 'W')
+                            AND p.grantee_principal_id = DATABASE_PRINCIPAL_ID(N'public'));
+            IF @sql <> N'' EXEC (@sql);
+            """;
+        await using var connection = new SqlConnection(_container.GetConnectionString());
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = script;
+        command.Parameters.AddWithValue("@login", login);
+        await command.ExecuteNonQueryAsync();
     }
 
     /// <summary>Database-level part: the user for the login, optionally in a database role (the database must be migrated for the role to exist).</summary>

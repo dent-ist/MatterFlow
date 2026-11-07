@@ -50,6 +50,8 @@ internal sealed class ReportsAvailability(IConfiguration configuration, ILogger<
     {
         if (_current.State != status.State)
             logger.LogInformation("Reports state: {State}. {Message}", status.State, status.Message);
+        if (status.Enabled && status.Details is { ServerProceduresDenied: false } && _current.Details?.ServerProceduresDenied != false)
+            logger.LogWarning("The report login can still run extended procedures in master (xp_dirtree and others). Run the one-time DENY step: docs/runbook.md section 11.");
         _current = status;
         return status;
     }

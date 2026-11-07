@@ -48,7 +48,7 @@ CI runs unit and architecture tests in the `backend` job and schema and integrat
 
 - **Persona walk (Sensitive matters)** in `IntegrationTests/Security`: `SensitiveAccessCatalog` classifies every endpoint; `PersonaWalk` calls every catalogued GET as six personas and compares hidden and missing ids byte for byte; mutation tests prove immediate revocation and that the walk is not vacuous. Details: [Sensitive Matter Visibility](../Architecture/Sensitive-Matter-Visibility.md).
 - **Architecture rules** in `ArchitectureTests`: see [Backend Modules](../Architecture/Backend-Modules.md).
-- **Report access catalogue**: a unit test fails for a table not classified in `db/report-access.json` and when the GRANT and DENY lines differ from the file; a schema test checks the effective permissions of `mf_report_reader`.
+- **Report access catalogue**: a unit test fails for a table not classified in `db/report-access.json` and when the GRANT and DENY lines differ from the file; a schema test checks the effective permissions of `mf_report_reader`. `SqlServerFixture.CreateServerLoginAsync` creates the report login the way the provisioning does, including the user in `master` with `DENY EXECUTE` on the `xp_` procedures `PUBLIC` may run (issue #1292); pass `denyServerProcedures: false` to test a login without it (`ReportLoginProbeTests` expects the warning, `ReportLoginRightsTests` proves the procedures are callable without the deny and refused with it).
 - **Permission catalog**: `UnitTests/Identity/PermissionCatalogTests` keeps JSON, C# constants and the Angular list equal.
 - **Contract vectors**: `contracts/form-rules.vectors.json` is run unchanged by the .NET and TypeScript suites.
 

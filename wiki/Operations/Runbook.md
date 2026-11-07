@@ -16,7 +16,7 @@
 | 8 Backup and restore | Proposed policy, restore drills | [Release Checklist](../How-To/Release-Checklist.md) |
 | 9 What the owner must verify on the real server | Open items before go-live | [Release Checklist](../How-To/Release-Checklist.md) |
 | 10 Troubleshooting | Site fails to start, 500.19, 400 invalid hostname, `/health/ready` 503, display names | [Troubleshooting](Troubleshooting.md) |
-| 11 Reports: the read-only report login | Login creation, startup check states | [Reports Module](../Architecture/Reports-Module.md) |
+| 11 Reports: the read-only report login | Login creation, the one-time `DENY EXECUTE` step in `master` for the `xp_` procedures (`xp_dirtree` and others, issue #1292), startup check states and the warning | [Reports Module](../Architecture/Reports-Module.md) |
 | 12 Sensitive matters: switching on the rule | Go-live steps for `Features:SensitiveMatterAccess` | [Sensitive Matter Visibility](../Architecture/Sensitive-Matter-Visibility.md) |
 | 13 Project Manager experience | What support should know (My Matters) | [Feature Map](../Features/Feature-Map.md) |
 | 14 and 15 PM v2 | Assets disposition and size, filter index, On hold reasons, At risk, export, saved views | [Feature Map](../Features/Feature-Map.md) |

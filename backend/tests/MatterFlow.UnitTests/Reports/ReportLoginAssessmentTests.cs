@@ -49,6 +49,44 @@ public class ReportLoginAssessmentTests
     }
 
     [Fact]
+    public void A_missing_deny_in_master_is_a_warning_and_reports_stay_on()
+    {
+        var s = ReportLoginAssessment.Evaluate(Good() with { CallableServerProcedures = 7 }, Now);
+
+        s.Enabled.ShouldBeTrue();
+        s.State.ShouldBe(ReportsStates.Ready);
+        s.Message.ShouldContain("Warning");
+        s.Message.ShouldContain("7 extended procedure(s)");
+        s.Message.ShouldContain("docs/runbook.md section 11");
+        s.Details!.ServerProceduresDenied.ShouldBeFalse();
+        s.Details.WritesDenied.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void A_clean_reader_has_no_warning()
+    {
+        var s = ReportLoginAssessment.Evaluate(Good(), Now);
+
+        s.Message.ShouldNotContain("Warning");
+        s.Details!.ServerProceduresDenied.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void A_missing_deny_does_not_hide_a_real_problem()
+    {
+        var s = ReportLoginAssessment.Evaluate(Good() with { CallableServerProcedures = 7, IsDbOwner = true }, Now);
+
+        s.Enabled.ShouldBeFalse();
+        s.State.ShouldBe(ReportsStates.TooPrivileged);
+    }
+
+    [Fact]
+    public void The_harmless_list_names_only_procedures_that_do_not_reach_the_host()
+    {
+        ReportLoginAssessment.HarmlessExtendedProcedures.ShouldBe(["xp_sprintf", "xp_sscanf", "xp_qv", "xp_replposteor"]);
+    }
+
+    [Fact]
     public void Excess_rights_win_over_a_missing_role()
     {
         ReportLoginAssessment.Evaluate(Good() with { IsDbOwner = true, InReaderRole = false }, Now).State.ShouldBe(ReportsStates.TooPrivileged);
