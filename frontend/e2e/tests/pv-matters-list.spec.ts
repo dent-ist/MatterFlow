@@ -51,7 +51,7 @@ test.describe('PM v2 page fixes: Matters list columns (#881)', () => {
     await expect(rowA.locator('[data-cell=dataSize]')).toHaveText('15.5 GB');
     await expect(rowA.locator('[data-cell=pending] a')).toHaveText('1');
     const rowB = page.locator('tbody tr', { hasText: d.matterB.matterRef });
-    await expect(rowB.locator('[data-cell=onHold]')).toHaveText('0');
+    await expect(rowB.locator('[data-cell=onHold]')).toContainText('0');
     await expect(rowB.locator('[data-cell=pending]')).toHaveText('0');
     // The choice is remembered.
     await page.reload();

@@ -63,7 +63,7 @@ test.describe('Asset forms (WP-AS5)', () => {
     const before = (await page.locator('[data-section="fields"]').boundingBox())!;
     await dropdownById(page, 'asset-type').selectOption(String(type.assetTypeId));
     await expect(page.locator('[data-fields-title]')).toContainText(
-      `Form type ${token} fields (2)`,
+      `Form type ${token} Fields (2)`,
     );
     const after = (await page.locator('[data-section="fields"]').boundingBox())!;
     expect(Math.abs(after.y - before.y)).toBeLessThan(2);

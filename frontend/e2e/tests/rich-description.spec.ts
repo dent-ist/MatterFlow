@@ -282,7 +282,10 @@ test.describe('Rich text description with tables (issue #80)', () => {
     const editor = page.locator('[data-edit-form] [data-description-editor] [role=textbox]');
     await expect(editor).toContainText('Old line 1');
     await page.locator('#td-title').fill('Only the title changed');
-    await page.locator('[data-save]').click();
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Save Changes', exact: true })
+      .click();
     await expect(page.locator('[data-edit-form]')).toHaveCount(0);
     let saved = await admin.get(`/api/v1/tasks/${task.taskId}`);
     expect(saved.descriptionFormat).toBe('TEXT');
@@ -293,7 +296,10 @@ test.describe('Rich text description with tables (issue #80)', () => {
     await page.locator('[data-edit-form] [data-description-editor] [role=textbox]').click();
     await page.keyboard.press('Control+End');
     await page.keyboard.type(' Added.');
-    await page.locator('[data-save]').click();
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Save Changes', exact: true })
+      .click();
     await expect(page.locator('[data-edit-form]')).toHaveCount(0);
     saved = await admin.get(`/api/v1/tasks/${task.taskId}`);
     expect(saved.descriptionFormat).toBe('HTML');
@@ -387,7 +393,10 @@ test.describe('Rich text description with tables (issue #80)', () => {
     await page.keyboard.press('Tab');
     await expect(page.locator('#td-project')).toBeFocused();
 
-    await page.locator('[data-save]').click();
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Save Changes', exact: true })
+      .click();
     await expect(page.locator('[data-edit-form]')).toHaveCount(0);
     const cells = page.locator('[data-description] table tr');
     await expect(cells).toHaveCount(3);

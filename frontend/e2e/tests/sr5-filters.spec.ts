@@ -48,7 +48,7 @@ test.describe('Search filters and the Advanced search redirect (WP-SR5)', () => 
     // The old filters keep working through the redirect.
     await page.goto(`/search/advanced?type=task&q=${s.token}&matter=${s.a.matter.matterId}`);
     await expect(rows(page)).toHaveCount(3);
-    await expect(page.locator('[data-filter-chip]')).toContainText('Matter:');
+    await expect(page.locator('[data-filter-chips] [data-key]')).toContainText('Matter:');
     // No type: the All tab.
     await page.goto(`/search/advanced?q=${s.token}`);
     await expect(page).not.toHaveURL(/type=/);
@@ -75,7 +75,7 @@ test.describe('Search filters and the Advanced search redirect (WP-SR5)', () => 
     await expect(rows(page)).toHaveCount(3);
     await expect(page).toHaveURL(new RegExp(`matter=${s.a.matter.matterId}`));
     await expect(button).toContainText('Filters (1)');
-    await expect(page.locator('[data-filter-chip]')).toHaveCount(1);
+    await expect(page.locator('[data-filter-chips] [data-key]')).toHaveCount(1);
 
     // Back restores the previous filters (none), Forward the matter.
     await page.goBack();
@@ -196,7 +196,7 @@ test.describe('Search filters and the Advanced search redirect (WP-SR5)', () => 
         await page.goto(
           `/search?q=${s.token}&type=task&filters=open&status=NEW&matter=${s.a.matter.matterId}`,
         );
-        await expect(page.locator('[data-filter-chip]').first()).toBeVisible();
+        await expect(page.locator('[data-filter-chips] [data-key]').first()).toBeVisible();
         await shot(page, 'sr5-filters-chips');
       }
     });

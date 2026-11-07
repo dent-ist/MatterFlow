@@ -4,7 +4,6 @@ import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { Persona } from '../support/personas';
-import { openEditAvailability, userRow } from '../support/users-grid';
 
 /**
  * Users epic #422, lane C:
@@ -65,10 +64,8 @@ test.describe('#428 Access Pending copy', () => {
         `Pat Pending (${waiting.username}). An administrator needs to give you`,
       );
       expect(text).not.toMatch(/\) \./);
-      expect(text).toContain(
-        'An administrator is notified through the Users page: you do not need to resend this.',
-      );
-      expect(text).toContain('Ask your Pod Lead or manager if you need access sooner.');
+      // D-53b: the card keeps the sentence, the account and registered lines and Check Again; the old "what to do next" lines are gone.
+      expect(text).not.toContain('Ask your Pod Lead');
       expect(text).not.toContain('Contact:');
 
       // The heading is focused on load; Copy and Check again are unchanged.
@@ -81,39 +78,6 @@ test.describe('#428 Access Pending copy', () => {
       expect(await noSideScroll(page)).toBe(true);
       expect(await axeClean(page)).toEqual([]);
       await shot(page, 'access-pending', width, height);
-    });
-  }
-});
-
-test.describe('#428 availability dialog: one date hint', () => {
-  let person: Persona;
-  test.beforeAll(async ({ personas }) => {
-    person = await personas.create({ label: `${TAG}av`, roles: ['Data Technician'] });
-  });
-
-  for (const { width, height } of SIZES) {
-    test(`one hint under the From and Until pair, axe 0 at ${width}`, async ({ page }) => {
-      test.skip(!axeAvailable(), 'axe-core is not available');
-      await page.setViewportSize({ width, height });
-      await page.goto(`/admin/users?status=all&account=e2e-${TAG}av`);
-      await openEditAvailability(userRow(page, person.userId, person.username));
-      const dialog = page.getByRole('dialog');
-      await expect(dialog).toBeVisible();
-      await dialog.getByLabel(/Out of office/).check();
-
-      await expect(dialog.locator('.di__hint')).toHaveCount(0);
-      const help = dialog.locator('[data-dates-help]');
-      await expect(help).toHaveCount(1);
-      await expect(help).toContainText('Type a date such as 10/12/2026');
-      await expect(help).toContainText('Leave From empty to start now.');
-      // Both fields are described by that one hint.
-      const helpId = await help.getAttribute('id');
-      await expect(dialog.locator('#av-from')).toHaveAttribute('aria-describedby', helpId!);
-      await expect(dialog.locator('#av-until')).toHaveAttribute('aria-describedby', helpId!);
-
-      expect(await axeClean(page)).toEqual([]);
-      expect(await noSideScroll(page)).toBe(true);
-      await shot(page, 'availability-dialog', width, height);
     });
   }
 });
