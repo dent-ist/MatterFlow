@@ -416,4 +416,47 @@ describe('ListFilters', { timeout: 20_000 }, () => {
       expect(f.sheetMode()).toBe(false);
     });
   });
+
+  describe('memory mode (Reports result grid)', () => {
+    @Component({ changeDetection: ChangeDetectionStrategy.OnPush, template: '' })
+    class MemoryHost {
+      readonly filters = new ListFilters({ screen: 'mem', defs, memory: true });
+    }
+
+    it('keeps every change out of the address and in the filter state', async () => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([{ path: 'mem', component: MemoryHost }]),
+          { provide: AuthStore, useValue: { profile: signal({ userId: 5 }) } },
+        ],
+      });
+      vi.stubGlobal(
+        'matchMedia',
+        vi
+          .fn()
+          .mockReturnValue({
+            matches: false,
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+          }),
+      );
+      const h = await RouterTestingHarness.create();
+      const f = (await h.navigateByUrl('/mem?keep=1', MemoryHost)).filters;
+
+      f.set('name', 'acme');
+      f.set('priority', ['1', '2']);
+      expect(f.text('name')).toBe('acme');
+      expect(f.list('priority')).toEqual(['1', '2']);
+      expect(f.activeCount()).toBe(2);
+      expect(TestBed.inject(Router).url).toBe('/mem?keep=1');
+      expect(f.queryParams()['name']).toBe('acme');
+
+      f.removeChip(f.chips().find((c) => c.defKey === 'name')!);
+      expect(f.text('name')).toBe('');
+      f.clear();
+      expect(f.list('priority')).toEqual([]);
+      expect(f.activeCount()).toBe(0);
+    });
+  });
 });

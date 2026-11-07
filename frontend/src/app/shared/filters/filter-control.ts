@@ -151,6 +151,7 @@ let nextUid = 0;
               [key]="d.key"
               [value]="range()"
               [emptyLabel]="d.emptyLabel ?? 'Any'"
+              [shape]="d.numberShape ?? 'whole'"
               [inline]="inline()"
               (valueChange)="filters().set(d.key, $event)"
             />

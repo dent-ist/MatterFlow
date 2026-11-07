@@ -29,6 +29,7 @@ import { StatePage } from '../../shared/ui/state-page';
 import { Tip } from '../../shared/ui/tip';
 import { Button } from 'primeng/button';
 import { ReportParameterForm } from './report-parameter-form';
+import { ReportResultGrid } from './report-result-grid';
 import { RunBanner, outcomeOf } from './report-messages';
 import {
   FormValues,
@@ -53,7 +54,9 @@ const LONG_DESCRIPTION = 240;
  * becomes Cancel while the report runs; after a run the form collapses to a summary bar with Change Parameters. Leaving the page while a report
  * runs cancels it without a word (owner decision 12). Limits and failures are one banner above the result (spec 3.5), never a toast.
  *
- * The result grid is the next task (#720): the area marked `data-result-slot` shows a neutral "finished with N rows" block until the grid replaces it.
+ * The result is the grid of `mf-report-result` (#720) inside the area marked `data-result-slot`. It never drops the person's result itself: the result goes
+ * when this page is left or another report is opened (`leave`), a new run replaces it on the server, and nothing else (paging, sorting, filters, Columns,
+ * the help panel and Change Parameters keep it).
  */
 @Component({
   selector: 'mf-report-run-page',
@@ -63,6 +66,7 @@ const LONG_DESCRIPTION = 240;
     IntPipe,
     PageHeader,
     ReportParameterForm,
+    ReportResultGrid,
     RouterLink,
     SlidePanel,
     StateBlock,
@@ -318,12 +322,12 @@ const LONG_DESCRIPTION = 240;
                           >
                         </div>
                       }
-                      <!-- RESULT GRID GOES HERE (issue #720). Until then this neutral block says only what is true: the run finished and how many rows it returned. -->
                       <section aria-label="Result" data-result-slot [attr.data-run-id]="res.runId">
-                        <mf-state-block icon="pi-check-circle" data-result-placeholder>
-                          The report finished with {{ res.rowCount | mfInt }}
-                          {{ res.rowCount === 1 ? 'row' : 'rows' }}.
-                        </mf-state-block>
+                        <mf-report-result
+                          [result]="res"
+                          [reportId]="r.reportId"
+                          (problem)="resultGone()"
+                        />
                       </section>
                     }
                   }
@@ -508,6 +512,18 @@ export class ReportRunPage {
         ? 'The report returned no rows.'
         : `The report finished with ${res.rowCount} ${res.rowCount === 1 ? 'row' : 'rows'}.`,
     );
+  }
+
+  /** The grid found its result gone (410, or 404): the page says so, the result is let go and the form opens again with the values the person had. */
+  protected resultGone(): void {
+    this.result.set(null);
+    this.status.set('idle');
+    this.expanded.set(true);
+    this.banner.set({
+      tone: 'warning',
+      text: 'This result has expired. Run the report again.',
+    });
+    this.announcement.set('This result has expired. Run the report again.');
   }
 
   private fail(error: unknown): void {

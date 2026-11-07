@@ -14,15 +14,13 @@ import {
   viewChild,
 } from '@angular/core';
 import { SEARCH_DEBOUNCE_MS } from '../ui/search-box';
-import { RangeValue } from './filter-def';
+import { NumberShape, RangeValue, numberPattern } from './filter-def';
 import { FILTER_TRIGGER_STYLES, FilterPopover } from './filter-popover';
 
 let nextId = 0;
 
-const WHOLE = /^-?\d{1,9}$/;
-
 /**
- * Number range column filter: a button ("Any" / "3 to 10") opening a panel with Min and Max (whole numbers; live 300 ms after the last
+ * Number range column filter: a button ("Any" / "3 to 10") opening a panel with Min and Max (whole numbers, or decimals with `shape`; live 300 ms after the last
  * key, at once on Enter). Min above Max shows an error and is not applied. In the sheet (`inline`) the two boxes show in place.
  */
 @Component({
@@ -64,7 +62,7 @@ const WHOLE = /^-?\d{1,9}$/;
           <input
             class="mf-control mf-control--compact"
             type="text"
-            inputmode="numeric"
+            [attr.inputmode]="shape() === 'decimal' ? 'decimal' : 'numeric'"
             autocomplete="off"
             [id]="uid + '-min'"
             [attr.aria-label]="label() + ' minimum'"
@@ -79,7 +77,7 @@ const WHOLE = /^-?\d{1,9}$/;
           <input
             class="mf-control mf-control--compact"
             type="text"
-            inputmode="numeric"
+            [attr.inputmode]="shape() === 'decimal' ? 'decimal' : 'numeric'"
             autocomplete="off"
             [id]="uid + '-max'"
             [attr.aria-label]="label() + ' maximum'"
@@ -90,7 +88,9 @@ const WHOLE = /^-?\d{1,9}$/;
           />
         </div>
         @if (badMin() || badMax()) {
-          <p class="ft-error" role="alert" data-number-error>Use whole numbers.</p>
+          <p class="ft-error" role="alert" data-number-error>
+            {{ shape() === 'decimal' ? 'Use numbers.' : 'Use whole numbers.' }}
+          </p>
         } @else if (reversed()) {
           <p class="ft-error" role="alert" data-range-error>
             Min is above Max. Change one of the numbers to apply the filter.
@@ -121,6 +121,8 @@ export class ColumnNumberRangeFilter {
   readonly emptyLabel = input('Any');
   readonly inline = input(false);
   readonly disabled = input(false);
+  /** What the boxes accept (`FilterDef.numberShape`); whole numbers of up to 9 digits unless told otherwise. */
+  readonly shape = input<NumberShape>('whole');
   readonly valueChange = output<RangeValue>();
 
   protected readonly uid = `mf-nr-${nextId++}`;
@@ -130,11 +132,17 @@ export class ColumnNumberRangeFilter {
   private timer: ReturnType<typeof setTimeout> | undefined;
 
   protected readonly hasValue = computed(() => !!this.draft().from || !!this.draft().to);
-  protected readonly badMin = computed(() => !!this.draft().from && !WHOLE.test(this.draft().from));
-  protected readonly badMax = computed(() => !!this.draft().to && !WHOLE.test(this.draft().to));
+  private readonly pattern = computed(() => numberPattern(this.shape()));
+  protected readonly badMin = computed(
+    () => !!this.draft().from && !this.pattern().test(this.draft().from),
+  );
+  protected readonly badMax = computed(
+    () => !!this.draft().to && !this.pattern().test(this.draft().to),
+  );
   protected readonly reversed = computed(() => {
     const { from, to } = this.draft();
-    return WHOLE.test(from) && WHOLE.test(to) && Number(from) > Number(to);
+    const p = this.pattern();
+    return p.test(from) && p.test(to) && Number(from) > Number(to);
   });
   protected readonly summary = computed(() => {
     const { from, to } = this.draft();

@@ -1,6 +1,6 @@
 import { DestroyRef, Signal, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, ParamMap, Router } from '@angular/router';
+import { ActivatedRoute, ParamMap, Params, Router, convertToParamMap } from '@angular/router';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { todayInZone } from './date-presets';
@@ -46,6 +46,11 @@ export interface ListFiltersOptions {
   readonly viewName?: () => string | null;
   /** The filters (by key) the pressed quick view owns: they are the view, so they are not counted in "Filters (n)" and show no chips. */
   readonly ownedKeys?: () => readonly string[];
+  /**
+   * The filters live in memory instead of the address (the Reports result grid: its address holds the report's parameters and a result cannot be
+   * reopened from a link, so a column filter has no business there). Everything else behaves the same; a reload starts without filters.
+   */
+  readonly memory?: boolean;
   /** An address with filters that still counts as a plain link for the defaults that apply to a plain link only (Task Queue: Created by me). */
   readonly plainLink?: PlainLink;
 }
@@ -82,6 +87,7 @@ export class ListFilters {
   readonly viewName: () => string | null;
   private readonly ownedKeys: () => readonly string[];
   private readonly plainLink: PlainLink | null;
+  private readonly inMemory: boolean;
 
   /** The query string (always current, also for the first render). */
   readonly params: Signal<ParamMap>;
@@ -128,12 +134,15 @@ export class ListFilters {
   readonly emptyClear = signal(false);
 
   private storageKey: string;
+  /** The query parameters of a `memory` list (empty and unused when the filters live in the address). */
+  private readonly held = signal<ParamMap>(convertToParamMap({}));
   private announced: string | null = null;
   private flip = false;
   private touched = false;
 
   constructor(options: ListFiltersOptions) {
     this.screen = options.screen;
+    this.inMemory = options.memory ?? false;
     this.openByDefault = options.openByDefault ?? false;
     this.sheetBelow = options.sheetBelow ?? 768;
     this.noun = options.noun ?? 'results';
@@ -146,9 +155,11 @@ export class ListFilters {
     this.defs = typeof defs === 'function' ? defs : signal(defs);
     this.storageKey = `mf.${this.screen}.filters.open`;
 
-    this.params = toSignal(this.route.queryParamMap, {
-      initialValue: this.route.snapshot.queryParamMap,
-    });
+    this.params = options.memory
+      ? this.held.asReadonly()
+      : toSignal(this.route.queryParamMap, {
+          initialValue: this.route.snapshot.queryParamMap,
+        });
     this.values = computed(() => parseFilters(this.defs(), this.params(), this.plainLink));
 
     const enabled = (def: FilterDef) => !def.disabledReason?.();
@@ -308,11 +319,30 @@ export class ListFilters {
   private write(params: QueryParams, replace?: boolean): void {
     // A change by the person ends the restored-view notice (#217); notices with their own text stay until dismissed.
     if (!replace && !this.noticeMessage()) this.restored.set(false);
+    const merged = { ...this.keepBareDefaults(params), page: null };
+    if (this.inMemory) {
+      this.writeHeld(merged);
+      return;
+    }
     void this.router.navigate([], {
-      queryParams: { ...this.keepBareDefaults(params), page: null },
+      queryParams: merged,
       queryParamsHandling: 'merge',
       ...(replace ? { replaceUrl: true } : {}),
     });
+  }
+
+  private writeHeld(params: QueryParams): void {
+    const current = this.held();
+    const next: Params = {};
+    for (const key of current.keys) {
+      const all = current.getAll(key);
+      next[key] = all.length > 1 ? all : all[0];
+    }
+    for (const [key, value] of Object.entries(params)) {
+      if (value === null || value === undefined) delete next[key];
+      else next[key] = value;
+    }
+    this.held.set(convertToParamMap(next));
   }
 
   /**

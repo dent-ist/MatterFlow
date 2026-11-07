@@ -95,4 +95,30 @@ describe('number range column filter', () => {
     expect(boxes()).toHaveLength(2);
     expect(boxes()[0].getAttribute('aria-label')).toBe('Age minimum');
   });
+
+  it('takes decimals and long numbers when the shape says so (Reports result grid)', () => {
+    create({ shape: 'decimal' });
+    button().click();
+    fixture.detectChanges();
+    expect(boxes()[0].getAttribute('inputmode')).toBe('decimal');
+    type(boxes()[0], '12.5');
+    type(boxes()[1], '1234567890123.25');
+    vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS);
+    expect(emitted).toEqual([{ from: '12.5', to: '1234567890123.25' }]);
+    type(boxes()[0], 'x');
+    expect(el().querySelector('[data-number-error]')?.textContent).toContain('Use numbers.');
+  });
+
+  it('keeps whole numbers of up to 9 digits by default and allows 18 with the long shape', () => {
+    create();
+    button().click();
+    fixture.detectChanges();
+    type(boxes()[0], '12.5');
+    expect(el().querySelector('[data-number-error]')?.textContent).toContain('whole numbers');
+    type(boxes()[0], '1234567890');
+    expect(el().querySelector('[data-number-error]')).not.toBeNull();
+    fixture.componentRef.setInput('shape', 'long');
+    fixture.detectChanges();
+    expect(el().querySelector('[data-number-error]')).toBeNull();
+  });
 });

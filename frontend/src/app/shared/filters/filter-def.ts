@@ -31,6 +31,22 @@ export interface RangeValue {
  * The value of one filter. text, select and triState hold a string (`''` = no filter, tri-state `'true'` / `'false'`), multiSelect and
  * user hold the chosen option values, the range types hold a `RangeValue`.
  */
+/**
+ * What a `numberRange` filter accepts: `whole` (default: whole numbers of up to 9 digits), `long` (whole numbers of up to 18 digits) or `decimal`
+ * (up to 18 digits and 6 decimals, a dot as the separator). The Reports result grid uses the last two for integer and decimal columns.
+ */
+export type NumberShape = 'whole' | 'long' | 'decimal';
+
+const NUMBER_PATTERNS: Readonly<Record<NumberShape, RegExp>> = {
+  whole: /^-?\d{1,9}$/,
+  long: /^-?\d{1,18}$/,
+  decimal: /^-?\d{1,18}(\.\d{1,6})?$/,
+};
+
+export function numberPattern(shape: NumberShape | undefined): RegExp {
+  return NUMBER_PATTERNS[shape ?? 'whole'];
+}
+
 export type FilterValue = string | readonly string[] | RangeValue;
 
 /** An option of a multi-select / user filter that travels as its own boolean URL flag (`unassigned=true`, `noPod=true`). */
@@ -117,6 +133,8 @@ export interface FilterDef {
   readonly presets?: readonly string[];
   /** Placeholder / empty wording of a trigger button ("Any date", "All"). */
   readonly emptyLabel?: string;
+  /** numberRange: what the boxes accept (default whole numbers of up to 9 digits); see `NumberShape`. */
+  readonly numberShape?: NumberShape;
   /** Longest text for a text filter. */
   readonly maxLength?: number;
   /** multiSelect: named sets of values; a choice equal to one reads "Open" in the button, one chip and the print line. */
@@ -208,7 +226,6 @@ export function sameValue(a: FilterValue, b: FilterValue): boolean {
 // ---- URL parsing and writing
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-const WHOLE_NUMBER = /^-?\d{1,9}$/;
 
 function splitAll(params: ParamMap, name: string): string[] {
   const out: string[] = [];
@@ -272,9 +289,10 @@ export function parseValue(def: FilterDef, params: ParamMap): FilterValue {
     case 'numberRange': {
       const from = params.get(fromParamOf(def))?.trim() ?? '';
       const to = params.get(toParamOf(def))?.trim() ?? '';
+      const pattern = numberPattern(def.numberShape);
       return {
-        from: WHOLE_NUMBER.test(from) ? from : '',
-        to: WHOLE_NUMBER.test(to) ? to : '',
+        from: pattern.test(from) ? from : '',
+        to: pattern.test(to) ? to : '',
       };
     }
   }

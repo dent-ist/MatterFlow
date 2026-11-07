@@ -4,6 +4,7 @@ import { Title } from '@angular/platform-browser';
 import { BehaviorSubject, NEVER, Subject } from 'rxjs';
 import {
   ReportChoicesClient,
+  ReportRowsResponse,
   ReportsClient,
   RunReportResponse,
 } from '../../api/generated/api-client';
@@ -35,8 +36,23 @@ const result = (over: Partial<RunReportResponse> = {}): RunReportResponse =>
     ...over,
   }) as RunReportResponse;
 
-describe('ReportRunPage (#719)', () => {
-  let api: Record<'getMyReport' | 'runReport' | 'cancelMyReportRun' | 'dropReportResult', Mock>;
+const rowsOf = (total: number, over: Partial<ReportRowsResponse> = {}): ReportRowsResponse =>
+  ({
+    columns: [{ name: 'Task', type: 'text' }],
+    rows: [['Draft the order'], ['File the motion']],
+    totalRows: total,
+    filteredRows: total,
+    page: 1,
+    pageSize: 50,
+    truncated: false,
+    ...over,
+  }) as ReportRowsResponse;
+
+describe('ReportRunPage (#719, #720)', () => {
+  let api: Record<
+    'getMyReport' | 'runReport' | 'cancelMyReportRun' | 'dropReportResult' | 'getReportRows',
+    Mock
+  >;
   let fixture: ComponentFixture<ReportRunPage>;
   let navigate: Mock;
   const el = (): HTMLElement => fixture.nativeElement;
@@ -69,6 +85,7 @@ describe('ReportRunPage (#719)', () => {
       runReport: vi.fn().mockReturnValue(ok(result())),
       cancelMyReportRun: vi.fn().mockReturnValue(ok(undefined)),
       dropReportResult: vi.fn().mockReturnValue(ok(undefined)),
+      getReportRows: vi.fn().mockReturnValue(ok(rowsOf(143))),
     };
     const params = new BehaviorSubject(convertToParamMap({ reportId }));
     TestBed.configureTestingModule({
@@ -278,13 +295,41 @@ describe('ReportRunPage (#719)', () => {
       expect(q('mf-report-parameter-form').parentElement!.classList).not.toContain('rp__hidden');
     });
 
-    it('says the run finished with the number of rows, in a neutral block for the result grid to replace', async () => {
+    it('shows the rows of the run in the result grid, asked for with the run id', async () => {
       await runIt();
-      expect(q('[data-result-placeholder]').textContent).toContain(
-        'The report finished with 143 rows.',
-      );
-      expect(el().textContent).not.toContain('comes next');
+      expect(has('[data-result-placeholder]')).toBe(false);
       expect(has('[data-before-run]')).toBe(false);
+      expect(api.getReportRows).toHaveBeenCalledWith('run-1', 1, 50, undefined, undefined);
+      expect(q('[data-result-slot] mf-report-result mf-record-grid')).not.toBeNull();
+      expect(q('[data-result-slot]').textContent).toContain('Draft the order');
+      expect(api.dropReportResult).not.toHaveBeenCalled();
+    });
+
+    it('keeps the result while the person pages, sorts, filters, opens the help panel and Change Parameters (one result, dropped only on leaving)', async () => {
+      await runIt();
+      const head = q<HTMLElement>('th[data-col="Task"] button');
+      head.click();
+      await settle(fixture);
+      expect(api.getReportRows).toHaveBeenLastCalledWith('run-1', 1, 50, 'Task:asc', undefined);
+      await press('Change Parameters');
+      expect(api.dropReportResult).not.toHaveBeenCalled();
+      expect(has('[data-result-slot] mf-record-grid')).toBe(true);
+    });
+
+    it('says the result expired (410) in the banner, lets it go and opens the form again', async () => {
+      await create(withParams(), { POD: '1' });
+      api.getReportRows.mockReturnValue(
+        apiError(410, { status: 410, code: 'RESULT_EXPIRED' } as never),
+      );
+      await submit();
+      expect(q('[data-run-banner]').textContent).toContain(
+        'This result has expired. Run the report again.',
+      );
+      expect(has('[data-result-slot]')).toBe(false);
+      expect(has('[data-summary-bar]')).toBe(false);
+      expect(q('mf-report-parameter-form').parentElement!.classList).not.toContain('rp__hidden');
+      fixture.destroy();
+      expect(api.dropReportResult).not.toHaveBeenCalled();
     });
 
     it('says No rows returned. for an empty result', async () => {
@@ -387,6 +432,6 @@ describe('ReportRunPage (#719)', () => {
     await submit();
     expect(api.runReport).toHaveBeenCalledWith(5, { parameters: {} });
     expect(has('[data-summary-bar]')).toBe(false);
-    expect(q('[data-result-placeholder]')).not.toBeNull();
+    expect(q('[data-result-slot] mf-report-result')).not.toBeNull();
   });
 });

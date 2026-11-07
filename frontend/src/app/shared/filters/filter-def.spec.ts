@@ -321,4 +321,26 @@ describe('filter definitions', () => {
       expect(printText(VERSIONS, 'notPublished')).toBe('Versions Not Published');
     });
   });
+
+  describe('number shapes (numberRange)', () => {
+    it('reads whole numbers of up to 9 digits by default and drops anything else', () => {
+      expect(parseValue(AGE, map({ ageFrom: '12', ageTo: '1234567890' }))).toEqual({
+        from: '12',
+        to: '',
+      });
+    });
+
+    it('reads long and decimal numbers when the def says so', () => {
+      const long: FilterDef = { ...AGE, numberShape: 'long' };
+      const decimal: FilterDef = { ...AGE, numberShape: 'decimal' };
+      expect(parseValue(long, map({ ageFrom: '1234567890', ageTo: '1.5' }))).toEqual({
+        from: '1234567890',
+        to: '',
+      });
+      expect(parseValue(decimal, map({ ageFrom: '-1234.5678', ageTo: '1.1234567' }))).toEqual({
+        from: '-1234.5678',
+        to: '',
+      });
+    });
+  });
 });
