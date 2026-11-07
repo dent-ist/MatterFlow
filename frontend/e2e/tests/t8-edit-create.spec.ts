@@ -109,7 +109,7 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
 
     const dialog = editDialog(page);
     const box = (await dialog.boundingBox())!;
-    expect(Math.round(box.width)).toBe(720);
+    expect(Math.round(box.width)).toBe(768);
 
     // The three sections (#350), Input collapsed (it holds ten fields) with its field count, the third collapsed with its summary.
     await expect(dialog.locator('[data-section="task"] h3')).toHaveText('Task');
@@ -217,8 +217,8 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
 
       const dialog = editDialog(page);
       const box = (await dialog.boundingBox())!;
-      expect(box.width).toBeLessThanOrEqual(Math.min(720, size.width) + 1);
-      if (size.width >= 720) expect(Math.round(box.width)).toBe(720);
+      expect(box.width).toBeLessThanOrEqual(Math.min(768, size.width) + 1);
+      if (size.width >= 768) expect(Math.round(box.width)).toBe(768);
       else expect(Math.round(box.width)).toBe(size.width);
 
       expect(await overflowX(dialogBody(page)), 'dialog body sideways').toBeLessThanOrEqual(0);

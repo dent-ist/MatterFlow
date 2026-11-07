@@ -195,7 +195,7 @@ export class TaskDetailPage {
       await this.header.locator('[data-overflow]').click();
       await this.page.getByRole('menuitem', { name: 'Edit' }).click();
     }
-    await expect(this.page.getByRole('dialog', { name: 'Edit task details' })).toBeVisible();
+    await expect(this.page.getByRole('dialog', { name: 'Edit Task' })).toBeVisible();
   }
 
   /**

@@ -387,7 +387,7 @@ test.describe('WP7: inline row actions', () => {
     await statusTrigger(readyRow).click();
     await expect(page.locator('[data-option="COMPLETE"]')).not.toContainText('needs step inputs');
     await page.locator('[data-option="COMPLETE"]').click();
-    await expect(page.getByRole('dialog')).toContainText('Complete all steps and finish');
+    await expect(page.getByRole('dialog')).toContainText('Complete Task');
   });
 });
 
