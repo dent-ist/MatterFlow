@@ -135,6 +135,78 @@ public class ResultQueryTests
         Order(t, filter: F("At", "on", "2026-10-03")).Length.ShouldBe(1);
     }
 
+    [Theory]
+    [InlineData("Qty", "gte", "3", 4)] // 5, 3, 3, 9 (the boundary is included, null never matches)
+    [InlineData("Qty", "lte", "3", 3)] // 3, 3, 1
+    [InlineData("Qty", "gte", "9", 1)]
+    [InlineData("Qty", "lte", "0", 0)]
+    [InlineData("Qty", "gte", "-100", 5)]
+    [InlineData("Price", "gte", "7.25", 3)] // 10.5, 7.25, 10.5
+    [InlineData("Price", "lte", "2", 2)] // 2 and 0
+    [InlineData("Price", "gte", "10.50", 2)]
+    [InlineData("QTY", "GTE", "3", 4)] // names and operators are not case sensitive
+    public void One_sided_number_ranges_include_the_boundary_and_skip_nulls(string column, string op, string value, int expected)
+    {
+        var t = Sample();
+
+        Order(t, filter: F(column, op, value)).Length.ShouldBe(expected);
+    }
+
+    [Fact]
+    public void A_second_value_is_ignored_by_one_sided_ranges_and_both_sides_together_equal_between()
+    {
+        var t = Sample();
+
+        Order(t, filter: F("Qty", "gte", "3", "1")).Length.ShouldBe(4);
+        Order(t, filter: F("Qty", "lte", "3", "100")).Length.ShouldBe(3);
+        var both = ResultQuery.ParseFilters("[{\"column\":\"Qty\",\"op\":\"gte\",\"value\":\"3\"},{\"column\":\"Qty\",\"op\":\"lte\",\"value\":\"5\"}]");
+        ResultQuery.Order(t, both, []).ShouldBe(Order(t, filter: F("Qty", "between", "3", "5")));
+    }
+
+    [Theory]
+    [InlineData("Due", "onOrAfter", "2026-10-02", 3)] // 10-02, 10-03, 10-02
+    [InlineData("Due", "onOrBefore", "2026-10-02", 4)] // 10-02, 10-01, 09-30, 10-02
+    [InlineData("Due", "onOrAfter", "2026-10-04", 0)]
+    [InlineData("Due", "onOrBefore", "2026-09-29", 0)]
+    [InlineData("Due", "onorafter", "2026-10-03", 1)]
+    [InlineData("At", "onOrBefore", "2026-10-01", 2)] // a date-time compares by its day: 10-01 23:59 and 09-30
+    [InlineData("At", "onOrAfter", "2026-10-03", 1)] // 10-03 00:00
+    public void One_sided_date_ranges_include_the_day_and_skip_nulls(string column, string op, string value, int expected)
+    {
+        var t = Sample();
+
+        Order(t, filter: F(column, op, value)).Length.ShouldBe(expected);
+    }
+
+    [Fact]
+    public void Date_ranges_from_one_side_and_from_both_sides_agree_with_between()
+    {
+        var t = Sample();
+        var both = ResultQuery.ParseFilters("[{\"column\":\"Due\",\"op\":\"onOrAfter\",\"value\":\"2026-10-01\"},{\"column\":\"Due\",\"op\":\"onOrBefore\",\"value\":\"2026-10-02\"}]");
+
+        ResultQuery.Order(t, both, []).ShouldBe(Order(t, filter: F("Due", "between", "2026-10-01", "2026-10-02")));
+    }
+
+    [Theory]
+    [InlineData("[{\"column\":\"Qty\",\"op\":\"gte\"}]")] // no value
+    [InlineData("[{\"column\":\"Qty\",\"op\":\"lte\",\"value\":\"\"}]")]
+    [InlineData("[{\"column\":\"Qty\",\"op\":\"gte\",\"value\":\"abc\"}]")]
+    [InlineData("[{\"column\":\"Price\",\"op\":\"lte\",\"value\":\"1,5\"}]")]
+    [InlineData("[{\"column\":\"Due\",\"op\":\"onOrAfter\"}]")]
+    [InlineData("[{\"column\":\"Due\",\"op\":\"onOrBefore\",\"value\":\"22/10/2026\"}]")]
+    [InlineData("[{\"column\":\"Due\",\"op\":\"onOrAfter\",\"value\":\"2026-13-40\"}]")]
+    [InlineData("[{\"column\":\"Name\",\"op\":\"gte\",\"value\":\"a\"}]")] // a number range on text
+    [InlineData("[{\"column\":\"Done\",\"op\":\"lte\",\"value\":\"1\"}]")] // a number range on yes/no
+    [InlineData("[{\"column\":\"Due\",\"op\":\"gte\",\"value\":\"2026-10-01\"}]")] // a number operator on a date
+    [InlineData("[{\"column\":\"Qty\",\"op\":\"onOrAfter\",\"value\":\"2026-10-01\"}]")] // a date operator on a number
+    [InlineData("[{\"column\":\"Name\",\"op\":\"onOrBefore\",\"value\":\"2026-10-01\"}]")]
+    public void Bad_range_filters_are_refused_not_ignored(string filter)
+    {
+        var t = Sample();
+
+        Should.Throw<ResultQueryException>(() => Order(t, filter: filter));
+    }
+
     [Fact]
     public void Yes_no_and_blank_filters()
     {

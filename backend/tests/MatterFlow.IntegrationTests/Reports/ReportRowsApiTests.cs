@@ -70,6 +70,34 @@ public sealed class ReportRowsApiTests(SqlServerFixture sql)
     }
 
     [Fact]
+    public async Task Range_filters_work_on_numbers_and_dates_from_one_side_or_both_and_a_bad_range_is_a_problem_response()
+    {
+        await using var h = await ReportTestHarness.StartAsync(sql);
+        var (runner, role) = await h.PersonAsync(@"KE\runner", "Report.Run");
+        var run = await RunAsync(runner, await h.AddReportAsync(People, roleIds: role));
+
+        static string F(string column, string op, string? value, string? value2 = null) =>
+            "?filter=" + Uri.EscapeDataString(JsonSerializer.Serialize(new[] { new { column, op, value, value2 } }));
+
+        async Task<int> Count(string query) => (await ReadAsync(await runner.GetAsync(Rows(run, query)))).GetProperty("filteredRows").GetInt32();
+
+        (await Count(F("price", "gte", "7.25"))).ShouldBe(3);
+        (await Count(F("price", "lte", "2"))).ShouldBe(1);
+        (await Count(F("price", "between", "2", "7.25"))).ShouldBe(2);
+        (await Count(F("due", "onOrAfter", "2026-10-02"))).ShouldBe(2);
+        (await Count(F("due", "onOrBefore", "2026-10-01"))).ShouldBe(2);
+
+        foreach (var bad in new[] { F("price", "gte", null), F("price", "lte", "abc"), F("due", "onOrAfter", "10/02/2026"), F("name", "gte", "a"), F("due", "gte", "2026-10-01"), F("price", "onOrBefore", "2026-10-01") })
+        {
+            var response = await runner.GetAsync(Rows(run, bad));
+            response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+            var problem = await ReadAsync(response);
+            problem.GetProperty("code").GetString().ShouldBe("RESULT_QUERY_INVALID");
+            problem.GetProperty("detail").GetString().ShouldNotBeNullOrWhiteSpace();
+        }
+    }
+
+    [Fact]
     public async Task Another_persons_result_is_404_exactly_like_an_unknown_id_and_an_own_expired_result_is_410()
     {
         await using var h = await ReportTestHarness.StartAsync(sql);

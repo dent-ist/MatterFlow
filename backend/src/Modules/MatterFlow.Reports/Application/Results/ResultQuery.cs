@@ -5,9 +5,9 @@ namespace MatterFlow.Reports.Application.Results;
 
 /// <summary>A filter on one column of the result, from the grid's header filters (spec 11).</summary>
 /// <param name="Column">Column name.</param>
-/// <param name="Op">text: contains, equals, startsWith; number: eq, gt, lt, between; date: on, before, after, between; yes/no: eq; any: blank, notBlank.</param>
-/// <param name="Value">The operand as text (a number, <c>yyyy-MM-dd</c>, true/false or a search text).</param>
-/// <param name="Value2">The upper bound of <c>between</c>.</param>
+/// <param name="Op">text: contains, equals, startsWith; number: eq, gt, lt, gte, lte, between; date: on, before, after, onOrAfter, onOrBefore, between; yes/no: eq; any: blank, notBlank.</param>
+/// <param name="Value">The operand as text (a number, <c>yyyy-MM-dd</c>, true/false or a search text). For <c>between</c> the lower bound.</param>
+/// <param name="Value2">The upper bound of <c>between</c>; ignored by every other operator.</param>
 public sealed record ResultFilter(string Column, string Op, string? Value, string? Value2);
 
 public sealed record ResultSort(string Column, bool Descending);
@@ -224,6 +224,12 @@ public static class ResultQuery
             case "lt":
                 var lt = Number(filter.Value, "The value");
                 return row => get(row) is { } v && v < lt;
+            case "gte":
+                var gte = Number(filter.Value, "The value");
+                return row => get(row) is { } v && v >= gte;
+            case "lte":
+                var lte = Number(filter.Value, "The value");
+                return row => get(row) is { } v && v <= lte;
             case "between":
                 var lo = Number(filter.Value, "The lower value");
                 var hi = Number(filter.Value2, "The upper value");
@@ -270,6 +276,12 @@ public static class ResultQuery
             case "after":
                 var after = Date(filter.Value, "The date").Ticks;
                 return row => !column.IsNull(row) && Day(row) > after;
+            case "onorafter":
+                var onOrAfter = Date(filter.Value, "The date").Ticks;
+                return row => !column.IsNull(row) && Day(row) >= onOrAfter;
+            case "onorbefore":
+                var onOrBefore = Date(filter.Value, "The date").Ticks;
+                return row => !column.IsNull(row) && Day(row) <= onOrBefore;
             case "between":
                 var from = Date(filter.Value, "The first date").Ticks;
                 var to = Date(filter.Value2, "The second date").Ticks;
