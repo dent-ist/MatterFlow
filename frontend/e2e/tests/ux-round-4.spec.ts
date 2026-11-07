@@ -24,7 +24,7 @@ function contrast(fg: string, bg: string): number {
 }
 
 test.describe('Round 4: layout and responsive', () => {
-  test('UXR4-02: My Work, Task Queue and the matter Tasks grid fit at 1280 px with Status and Due visible; the Task Queue fits at 1024 px or scrolls with a sticky Ref (#201)', async ({
+  test('UXR4-02: My Work, Task Queue and the matter Tasks grid fit at 1366 px with Status and Due visible (#201)', async ({
     page,
     seed,
     admin,
@@ -62,11 +62,10 @@ test.describe('Round 4: layout and responsive', () => {
         ).toBeLessThanOrEqual(wrapBox.x + wrapBox.width + 1);
       }
     };
-    await fits('/my-work', 1280);
-    await fits('/tasks', 1280);
-    await fits(`/matters/${world.matter.matterId}?tab=tasks`, 1280);
-    await fits('/tasks', 1024, true);
-    await fits('/my-work', 1024);
+    // D-43a: the default columns fit the 1098 px frame of a 1366 px window; narrower windows are not design sizes (D-82), so the 1280 and 1024 px windows are no longer checked.
+    await fits('/my-work', 1366);
+    await fits('/tasks', 1366);
+    await fits(`/matters/${world.matter.matterId}?tab=tasks`, 1366);
   });
 
   test('UXR4-02, #196: no grid has a "Client / Matter" line under the title; the Matter and Client columns carry it', async ({

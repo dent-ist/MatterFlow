@@ -116,7 +116,8 @@ test.describe('My Work per-tab columns', () => {
     const progressHeight = await progress
       .locator('.wt-progress')
       .evaluate((n) => n.getBoundingClientRect().height);
-    expect(progressHeight, 'progress is one line').toBeLessThan(24);
+    // One line of the 24 px progress control (the guideline gives no smaller bar): at most 24 px, not two lines.
+    expect(progressHeight, 'progress is one line').toBeLessThanOrEqual(24);
 
     // Titles of average length stay on one line, and 9 rows fit at 1366x768.
     const titleHeight = await row

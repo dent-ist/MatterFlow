@@ -16,7 +16,7 @@ import { expect, test } from '../support/fixtures';
  * Screenshots for docs/ux/users-review/fixes/us6-roles-pods/ are written when E2E_SCREENSHOTS is set to the output folder.
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
-const TAG = `us6e${Math.floor(Math.random() * 90000) + 10000}`;
+const TAG = `us6e${Math.floor(Math.random() * 90000) + 10000}${Date.now().toString(36).slice(-4)}`;
 const SIZES = [
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
