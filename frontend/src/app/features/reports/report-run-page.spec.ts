@@ -338,7 +338,7 @@ describe('ReportRunPage (#719, #720)', () => {
       const head = q<HTMLElement>('th[data-col="Task"] button');
       head.click();
       await settle(fixture);
-      expect(api.getReportRows).toHaveBeenLastCalledWith('run-1', 1, 50, 'Task:asc', undefined);
+      expect(api.getReportRows).toHaveBeenLastCalledWith('run-1', 1, 50, '#0:asc', undefined);
       await press('Change Parameters');
       expect(api.dropReportResult).not.toHaveBeenCalled();
       expect(has('[data-result-slot] mf-record-grid')).toBe(true);

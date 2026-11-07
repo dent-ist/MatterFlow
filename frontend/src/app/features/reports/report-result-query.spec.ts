@@ -71,13 +71,34 @@ describe('report result query (#720)', () => {
     ]);
   });
 
-  it('turns the sort of the grid into Name:asc or Name:desc, by id so odd names are safe, and nothing for the report order', () => {
-    expect(serverSort(columns, 'c2')).toBe('Open Tasks:asc');
-    expect(serverSort(columns, '-c1')).toBe('Hours:desc');
+  it('turns the sort of the grid into #<position>:asc or :desc and nothing for the report order (#1288)', () => {
+    expect(serverSort(columns, 'c2')).toBe('#2:asc');
+    expect(serverSort(columns, '-c1')).toBe('#1:desc');
+    expect(serverSort(columns, 'c0')).toBe('#0:asc');
     expect(serverSort(columns, null)).toBeUndefined();
+    expect(serverSort(columns, undefined)).toBeUndefined();
     expect(serverSort(columns, 'c99')).toBeUndefined();
-    const odd = resultColumns([{ name: '-x, y:z', type: 'text' }]);
-    expect(serverSort(odd, '-c0')).toBe('-x, y:z:desc');
+    expect(serverSort(columns, '-c99')).toBeUndefined();
+  });
+
+  it('never puts a column name in the sort, so a comma, a colon, a leading minus or a name like #3 cannot break it (#1288)', () => {
+    const odd = resultColumns([
+      { name: 'a,b', type: 'text' },
+      { name: '#0', type: 'integer' },
+      { name: '-x:y', type: 'text' },
+      { name: 'a,b', type: 'text' },
+    ]);
+    expect(serverSort(odd, 'c0')).toBe('#0:asc');
+    expect(serverSort(odd, '-c0')).toBe('#0:desc');
+    // The column named "#0" is the one at position 1: the position of the column wins, whatever its name looks like.
+    expect(serverSort(odd, 'c1')).toBe('#1:asc');
+    expect(serverSort(odd, '-c2')).toBe('#2:desc');
+    // Two columns of one name are told apart by position.
+    expect(serverSort(odd, 'c3')).toBe('#3:asc');
+  });
+
+  it('keeps the one-column rule: the sort is one key', () => {
+    expect(serverSort(columns, 'c1')!.includes(',')).toBe(false);
   });
 
   it('names a sort column by its header for the Sorted by line', () => {
