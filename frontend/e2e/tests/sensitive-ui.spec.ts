@@ -86,9 +86,9 @@ test.describe('Sensitive matters: the screens', () => {
     await expect(page.locator('form')).toContainText('Everyone else does not see it at all');
     await page.getByRole('button', { name: 'Save Changes' }).click();
 
-    const dialog = page.getByRole('dialog', { name: 'You will no longer see this matter' });
+    const dialog = page.getByRole('dialog', { name: 'Mark Matter Sensitive' });
     await expect(dialog).toBeVisible();
-    await expect(dialog).toContainText('You are none of these');
+    await expect(dialog).toContainText('you will no longer see this matter');
     await expect(toasts(page)).toHaveCount(0); // asked in the dialog, not announced as an error
     await axeAtEverySize(page, 'confirm dialog', async () => {
       await expect(dialog).toBeVisible();
@@ -103,8 +103,8 @@ test.describe('Sensitive matters: the screens', () => {
     // Confirm: saved, the list opens (the matter page would be "not found" now), and the editor no longer sees the matter.
     await page.getByRole('button', { name: 'Save Changes' }).click();
     await page
-      .getByRole('dialog', { name: 'You will no longer see this matter' })
-      .getByRole('button', { name: 'Mark Matter Sensitive' })
+      .getByRole('dialog', { name: 'Mark Matter Sensitive' })
+      .getByRole('button', { name: 'Mark Matter Sensitive', exact: true })
       .click();
     await expect(page).toHaveURL(/\/matters(\?scope=mine)?$/); // the list opens on the person's own matters (epic #758)
     await expect(toasts(page).first()).toContainText('you no longer see it');

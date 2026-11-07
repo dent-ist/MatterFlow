@@ -184,7 +184,7 @@ test.describe('WP9 list columns', () => {
         expect([await countOf(two, 'open'), await countOf(two, 'overdue')]).toEqual([1, 0]);
         // Zero work is not an error: no link, not red, an en dash that is spoken as "0 overdue tasks".
         await expect(two.locator('[data-count=overdue] a')).toHaveCount(0);
-        await expect(two.locator('[data-count=overdue]')).toContainText('–');
+        await expect(two.locator('[data-count=overdue]')).toContainText('-');
         await expect(two.locator('[data-count=overdue]')).toContainText('0 overdue tasks');
       }
       await page.goto(`/matters?name=${w.token}`);
