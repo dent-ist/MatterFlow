@@ -19,6 +19,7 @@ export const aListItem = (
     hasParameters: false,
     parameterLabels: [],
     lastRunAtUtc: undefined,
+    isFavourite: false,
     ...over,
   }) as RunnableReportListItemResponse;
 

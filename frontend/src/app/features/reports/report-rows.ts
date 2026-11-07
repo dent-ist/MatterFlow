@@ -17,16 +17,19 @@ export function flattenReports(categories: readonly RunnableReportCategoryRespon
 }
 
 /**
- * The rows that match the search text (name, description or category, case-insensitive; every word must match) and, when any category is chosen,
- * sit in one of the chosen categories. Both combine (AND). The order is kept, so the rows of one category stay next to each other.
+ * The rows that match the search text (name, description or category, case-insensitive; every word must match), when any category is chosen sit in
+ * one of the chosen categories and, with `favouritesOnly`, are the person's favourites. All combine (AND). The order is kept, so the rows of one
+ * category stay next to each other.
  */
 export function filterReports(
   rows: readonly ReportRow[],
   text: string,
   categoryIds: readonly string[],
+  favouritesOnly = false,
 ): ReportRow[] {
   const words = text.toLowerCase().split(/\s+/).filter(Boolean);
   return rows.filter((r) => {
+    if (favouritesOnly && !r.isFavourite) return false;
     if (categoryIds.length > 0 && !categoryIds.includes(String(r.categoryId))) return false;
     if (words.length === 0) return true;
     const hay = `${r.name} ${r.description ?? ''} ${r.categoryName}`.toLowerCase();
