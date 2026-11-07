@@ -83,6 +83,14 @@ export function serverFilter(
   return out.length > 0 ? JSON.stringify(out) : undefined;
 }
 
+/** The most filters the rows endpoint takes in one request (the server answers 400 for more). */
+export const MAX_FILTERS = 20;
+
+/** How many filters the server filter text holds (the filters the person set that the server understands). */
+export function filterCount(filter: string | undefined): number {
+  return filter ? (JSON.parse(filter) as unknown[]).length : 0;
+}
+
 /**
  * The `sort` argument of the rows endpoint (`Name:asc`) from the grid's sort (`c3` or `-c3`, the column id with a leading minus for descending), or
  * undefined for the report's own order. An id that is not a column of the result gives undefined.

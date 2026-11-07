@@ -22,6 +22,7 @@ import { ApiError } from '../../core/http/api-error';
 import { QuietRequests } from '../../core/http/interceptors';
 import { USER_TIME_ZONE } from '../../core/time/clock';
 import { ColumnFilterRow } from '../../shared/filters/column-filter-row';
+import { FilterValues, emptyValue, sameValue } from '../../shared/filters/filter-def';
 import { ListFilters } from '../../shared/filters/list-filters';
 import { ListToolbar } from '../../shared/filters/list-toolbar';
 import { LoadState } from '../../shared/ui/data-table';
@@ -45,13 +46,13 @@ import {
 import {
   DEFAULT_RESULT_PAGE_SIZE,
   RESULT_PAGE_SIZES,
-  filterDefsOf,
   MAX_FILTERS,
   filterCount,
+  filterDefsOf,
   serverFilter,
   serverSort,
-  sortLabels,
   sortKinds,
+  sortLabels,
 } from './report-result-query';
 
 /**
@@ -78,18 +79,20 @@ import {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
+    /* A flex column that takes what its parent leaves (the run page fills the window, #1286); in a plain block parent it is as tall as its content. */
     :host {
-      display: block;
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 0;
+      min-height: auto;
     }
     :host > * {
-    /* A flex column that takes what its parent leaves (the run page fills the window, #1286); in a plain block parent it is as tall as its content. */
       flex: none;
     }
     /* The grid frame takes the rest of the column and scrolls inside it (sticky heading and filter bands, sideways scroll for wide results), never fewer than
        about seven rows. The run page sets --rr-max to none while it fills the window; when the page scrolls instead (form open, a short window) the frame
        is at most most of a window tall and the page scrolls around it. */
     .rr__frame {
-    /* A flex column that takes what its parent leaves (the run page fills the window, #1286); in a plain block parent it is as tall as its content. */
       display: flex;
       flex-direction: column;
       flex: 1 1 0;
@@ -97,10 +100,7 @@ import {
       max-height: var(--rr-max, 70dvh);
     }
     .rr__bar {
-      display: flex;
-      flex-direction: column;
-      flex: 1 1 0;
-      min-height: auto;
+      display: block;
       height: 14px;
       border-radius: var(--mf-radius);
       background: var(--mf-border);
@@ -126,6 +126,7 @@ import {
             [sort]="sort()"
             defaultSort=""
             [labels]="labels()"
+            [kinds]="kinds()"
             (resetSort)="setSort(null)"
           />
         }
@@ -140,6 +141,10 @@ import {
           </button>
         </div>
       }
+      <div class="rr__frame">
+        <mf-record-grid
+          label="Report result"
+          caption="Report result"
           noun="rows"
           tableId="report-result-table"
           [grid]="grid"
@@ -206,6 +211,8 @@ export class ReportResultGrid implements OnInit {
   private readonly api = inject(ReportsClient);
   private readonly quiet = inject(QuietRequests);
   private readonly injector = inject(Injector);
+  /** The person's time zone: a date-time with a zone is shown in it (#1287). */
+  private readonly zone = inject(USER_TIME_ZONE);
 
   /** The run this grid shows (the id of `POST /reports/{id}/runs`); a new run is a new grid. */
   readonly result = input.required<RunReportResponse>();
@@ -238,17 +245,9 @@ export class ReportResultGrid implements OnInit {
   protected readonly sort = signal<string | null>(null);
   protected readonly pageSize = signal(DEFAULT_RESULT_PAGE_SIZE);
   protected readonly labels = computed(() => sortLabels(this.columns()));
+  protected readonly kinds = computed(() => sortKinds(this.columns()));
   private readonly started = signal(false);
 
-  private readonly filterJson = computed(() => {
-    if (!this.started()) return undefined;
-    if (this.overLimit()) return this.okJson;
-    this.okValues = this.filters.values();
-    return (this.okJson = serverFilter(this.columns(), this.okValues));
-  });
-  protected readonly kinds = computed(() => sortKinds(this.columns()));
-  /**
-   * What a page number belongs to: a change of the filters, the sort or the page size is a new list, so its page is 1 again without anyone resetting it
   /** The filters (values and server text) of the last request that was allowed: a 21st filter is turned back to these, and no request is made for it (#1290). */
   private okValues: FilterValues = {};
   private okJson: string | undefined;
@@ -259,6 +258,14 @@ export class ReportResultGrid implements OnInit {
   );
   /** "Remove a filter to add another." is shown (until it is dismissed or a filter is removed). */
   protected readonly limitReached = signal(false);
+  private readonly filterJson = computed(() => {
+    if (!this.started()) return undefined;
+    if (this.overLimit()) return this.okJson;
+    this.okValues = this.filters.values();
+    return (this.okJson = serverFilter(this.columns(), this.okValues));
+  });
+  /**
+   * What a page number belongs to: a change of the filters, the sort or the page size is a new list, so its page is 1 again without anyone resetting it
    * (and without a second request for the reset).
    */
   private readonly listKey = computed(() =>
@@ -280,6 +287,14 @@ export class ReportResultGrid implements OnInit {
       this.sort();
       this.filterJson();
       untracked(() => void this.load());
+    });
+    // The rows endpoint takes 20 filters: the one filter too many is put back and says why, instead of a request the server refuses.
+    effect(() => {
+      if (this.overLimit()) {
+        untracked(() => this.turnBackLastFilter());
+      } else if (this.started() && filterCount(this.filterJson()) < MAX_FILTERS) {
+        untracked(() => this.limitReached.set(false));
+      }
     });
     // The empty body of a filtered grid has its own Clear Filters: the toolbar then shows none, so there is never a second one.
     effect(() => {
@@ -305,6 +320,18 @@ export class ReportResultGrid implements OnInit {
       });
     });
     this.started.set(true);
+  }
+
+  /** Puts every filter that differs from the last allowed state back to it (the one the person has just set), and shows the message. */
+  private turnBackLastFilter(): void {
+    const now = this.filters.values();
+    const back: Record<string, FilterValues[string]> = {};
+    for (const def of this.filters.defs()) {
+      const before = this.okValues[def.key] ?? emptyValue(def);
+      if (!sameValue(now[def.key] ?? emptyValue(def), before)) back[def.key] = before;
+    }
+    this.filters.setMany(back, { replace: true });
+    this.limitReached.set(true);
   }
 
   protected setSort(sort: string | null): void {
