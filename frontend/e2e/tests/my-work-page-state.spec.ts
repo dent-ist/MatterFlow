@@ -151,7 +151,7 @@ test.describe('My Work page state', () => {
     await page.getByRole('link', { name: 'My Work', exact: true }).first().click();
     const notice = page.locator('[data-restored-notice]');
     await expect(notice).toBeVisible();
-    await expect(notice).toContainText('Restored your last view: Due soon and overdue, Priority');
+    await expect(notice).toContainText('Restored your last view: Due Soon and Overdue, Priority');
     await expect(page).toHaveURL(/view=dueSoon/);
     await shot(page, 'm6-restored-notice-1366x768');
     if (axeAvailable()) expect(await axeViolations(page), 'notice').toEqual([]);

@@ -106,7 +106,7 @@ test.describe('pf7-permissions: who gets My profile, the menu entries and the di
     await expect(pb.locator('[data-ac-name]')).toHaveText('Bob Ownerson');
     await expect(pa.locator('[data-account-card]')).not.toContainText('Bob');
     await expect(pb.locator('[data-account-card]')).not.toContainText('Alice');
-    await expect(pa.locator('main h1')).toContainText('Alice Ownerson');
+    await expect(pa.locator('[data-profile-who]')).toContainText('Alice Ownerson');
   });
 
   test('a person in 5 pods: the context line names the primary one, the card lists all five', async ({

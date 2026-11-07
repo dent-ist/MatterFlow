@@ -173,6 +173,7 @@ test.describe('Dashboard actions and click-through', () => {
       'Trends',
       'Swimlane',
       'Users',
+      'Calendar',
     ]);
     await expect(tabs.getByRole('tab', { name: 'Summary' })).toHaveAttribute(
       'aria-selected',

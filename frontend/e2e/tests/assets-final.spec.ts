@@ -184,8 +184,8 @@ test.describe('Assets final verification (#517)', () => {
         );
         expect(nested).toBeLessThanOrEqual(1);
       }
-      await page.getByRole('tab', { name: /^Linked tasks/ }).click();
-      await expect(page.getByRole('tab', { name: /^Linked tasks/ })).toContainText('(19)');
+      await page.getByRole('tab', { name: /^Linked Tasks/ }).click();
+      await expect(page.getByRole('tab', { name: /^Linked Tasks/ })).toContainText('(19)');
       if (size.width >= 640)
         await expect(page.locator('[data-tasks-tab] tbody tr')).toHaveCount(19);
       else await expect(page.locator('[data-tasks-tab] li.rc')).toHaveCount(19);

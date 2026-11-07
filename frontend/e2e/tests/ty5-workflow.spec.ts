@@ -66,7 +66,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
 
     await expect(tab(page, 'Overview')).toHaveAttribute('aria-selected', 'true');
     await expect(tab(page, 'Versions')).toHaveAccessibleName(/Versions.*3/);
-    await expect(tab(page, 'Task Types')).toHaveAccessibleName(/Task types.*3/);
+    await expect(tab(page, 'Task Types')).toHaveAccessibleName(/Task Types.*3/);
     // The status checkbox is gone on an existing workflow; the mode is read-only.
     await expect(page.locator('#wf-active')).toHaveCount(0);
     await expect(page.locator('[data-mode-read]')).toContainText('Ordered');
@@ -150,7 +150,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
       const rows = page.locator('[data-task-type]');
       await expect(rows).toHaveCount(22);
       await expect(page.locator('[data-default]')).toHaveCount(22);
-      await expect(tab(page, 'Task Types')).toHaveAccessibleName(/Task types.*22/);
+      await expect(tab(page, 'Task Types')).toHaveAccessibleName(/Task Types.*22/);
       await expect(rows.first().getByRole('link')).toHaveAttribute(
         'href',
         /\/admin\/task-types\/\d+/,
@@ -173,7 +173,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
       await expect(page.locator('[data-no-task-types]')).toHaveText(
         'No task type uses this workflow.',
       );
-      await expect(tab(page, 'Task Types')).toHaveAccessibleName(/Task types.*0/);
+      await expect(tab(page, 'Task Types')).toHaveAccessibleName(/Task Types.*0/);
 
       const a = await seed.taskType({ name: `Active ${uid()}`, workflows: [wf] });
       const b = await seed.taskType({ name: `Inactive ${uid()}`, workflows: [wf] });
@@ -184,7 +184,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
       await expect(rows).toHaveCount(2);
       await expect(rows.nth(0)).toContainText(a.name);
       await expect(rows.nth(1)).toContainText('Inactive');
-      await expect(tab(page, 'Task Types')).toHaveAccessibleName(/Task types.*1/);
+      await expect(tab(page, 'Task Types')).toHaveAccessibleName(/Task Types.*1/);
     });
   });
 

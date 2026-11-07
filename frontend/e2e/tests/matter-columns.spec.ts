@@ -31,7 +31,14 @@ const SIZES = [
   [1920, 1080],
 ] as const;
 
-const RIGHTS = ['Task.View', 'Task.Create', 'Task.Assign', 'Matter.View', 'Pod.View'];
+const RIGHTS = [
+  'Task.View',
+  'Task.Create',
+  'Task.Assign',
+  'Matter.View',
+  'Pod.View',
+  'Workflow.Execute',
+];
 
 const headers = (page: Page): Promise<string[]> =>
   page

@@ -24,7 +24,13 @@ async function axeClean(page: Page, what: string): Promise<void> {
   if (axeAvailable()) expect(await axeViolations(page), what).toEqual([]);
 }
 
-const PERMS = ['Task.View', 'Task.ChangeStatus', 'Task.SetPriority', 'Matter.View'];
+const PERMS = [
+  'Task.View',
+  'Task.ChangeStatus',
+  'Task.SetPriority',
+  'Matter.View',
+  'Workflow.Execute',
+];
 
 /** A user with `count` assigned tasks titled "<tag> 01" ... (so the order of the rows is known by title). */
 async function worker(seed: Seeder, count: number, permissions = PERMS, extraPod = false) {

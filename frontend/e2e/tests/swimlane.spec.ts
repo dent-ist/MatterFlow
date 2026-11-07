@@ -51,7 +51,14 @@ test.describe('Swimlane tab', () => {
   }) => {
     await page.goto('/dashboard');
     const tabs = page.getByRole('tab');
-    await expect(tabs).toHaveText(['Summary', 'Breakdowns', 'Trends', 'Swimlane', 'Users']);
+    await expect(tabs).toHaveText([
+      'Summary',
+      'Breakdowns',
+      'Trends',
+      'Swimlane',
+      'Users',
+      'Calendar',
+    ]);
     await page.getByRole('tab', { name: 'Swimlane' }).click();
     await expect(page).toHaveURL(/tab=swimlane/);
     await expect(page.getByRole('region', { name: 'Swimlane board' })).toBeVisible();

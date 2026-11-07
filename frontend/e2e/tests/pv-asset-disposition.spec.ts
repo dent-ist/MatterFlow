@@ -89,7 +89,7 @@ test.describe('Asset disposition (PM v2)', () => {
     await page.getByRole('menuitem', { name: 'Change Disposition' }).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByRole('radio', { name: /^Disposed/ }).check();
-    await dialog.getByRole('button', { name: 'Change Disposition' }).click();
+    await dialog.getByRole('button', { name: 'Change Disposition', exact: true }).click();
     await expect(dialog.locator('[data-panel-error]')).toContainText('note is required');
     await dialog.getByLabel(/^Note/).fill('Destroyed');
     await dialog.getByRole('button', { name: 'Change Disposition' }).click();

@@ -44,9 +44,10 @@ test.describe('pf2-header: name, context line, status chip and ONE primary actio
     const me = await asUser(p.username);
     await me.goto('/profile');
 
-    const h1 = me.locator('main h1');
-    await expect(h1).toContainText(p.username);
-    await expect(h1.locator('[data-availability-chip]')).toHaveText(/Available|Off hours/);
+    await expect(me.locator('main h1')).toHaveText('My Profile');
+    const who = me.locator('[data-profile-who]');
+    await expect(who).toContainText(p.username);
+    await expect(who.locator('[data-availability-chip]')).toHaveText(/Available|Off Hours/);
     await expect(me.locator('[data-page-description]')).toHaveText(`Data Technician · ${pod.name}`);
     const actions = me.locator('[data-page-actions] button');
     await expect(actions).toHaveCount(1);
@@ -57,16 +58,16 @@ test.describe('pf2-header: name, context line, status chip and ONE primary actio
     const dialog = me.getByRole('dialog', { name: 'Set out of office' });
     await expect(dialog).toBeVisible();
     await dialog.getByRole('button', { name: 'Rest of Today' }).click();
-    await dialog.getByRole('button', { name: 'Set out of office' }).click();
+    await dialog.getByRole('button', { name: 'Set Out of Office', exact: true }).click();
     await expect(dialog).toHaveCount(0);
     // Same store as the menu: chip, label and the page follow; the focus is back on the action.
-    await expect(h1.locator('[data-availability-chip]')).toContainText('Out of Office');
+    await expect(who.locator('[data-availability-chip]')).toContainText('Out of Office');
     await expect(actions).toHaveText("I'm Back");
     await expect(actions).toBeFocused();
     await expect(me.locator('[data-preview]')).toHaveCount(0);
 
     await actions.click();
-    await expect(h1.locator('[data-availability-chip]')).toHaveText(/Available|Off hours/);
+    await expect(who.locator('[data-availability-chip]')).toHaveText(/Available|Off Hours/);
     await expect(actions).toHaveText('Set out of office...');
     await expect(me.getByText('Welcome back').first()).toBeVisible();
   });
@@ -89,7 +90,8 @@ test.describe('pf2-header: name, context line, status chip and ONE primary actio
         );
       await me.goto('/profile');
       const h1 = me.locator('main h1');
-      await expect(h1).toContainText(p.displayName!.slice(0, 20));
+      await expect(h1).toHaveText('My Profile');
+      await expect(me.locator('[data-profile-who]')).toContainText(p.displayName!.slice(0, 20));
       const fontSize = await h1.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
       expect(fontSize).toBe(size.width < 640 ? 18 : 22);
       const top = await h1.evaluate(
@@ -112,7 +114,7 @@ test.describe('pf2-header: name, context line, status chip and ONE primary actio
     const p = await personas.create({ ...PERSONAS.technician, label: 'pf2noname' });
     const me = await asUser(p.username);
     await me.goto('/profile');
-    await expect(me.locator('main h1')).toContainText(p.username);
+    await expect(me.locator('[data-profile-who]')).toContainText(p.username);
   });
 
   test('the preview sits under the Status choice and shows only while there are edits (P12)', async ({
@@ -128,7 +130,7 @@ test.describe('pf2-header: name, context line, status chip and ONE primary actio
     await expect(preview).toContainText('Preview of your changes:');
     await expect(preview.locator('[data-preview-chip]')).toContainText('Out of Office');
     // The header chip is the saved state until Save; both say so in words, not colour alone.
-    await expect(me.locator('h1 [data-availability-chip]')).toHaveText(/Available|Off hours/);
+    await expect(me.locator('h1 [data-availability-chip]')).toHaveText(/Available|Off Hours/);
     await me.getByRole('button', { name: 'Discard Changes' }).click();
     await expect(me.locator('[data-preview]')).toHaveCount(0);
   });

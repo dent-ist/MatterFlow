@@ -47,7 +47,7 @@ let s: Scenario;
 async function build(seed: Seeder): Promise<Scenario> {
   const tag = uid();
   const world = await seed.world();
-  const people = await seed.role(['Task.View'], 'E2E scope member');
+  const people = await seed.role(['Task.View', 'Workflow.Execute'], 'E2E scope member');
   const peer = await seed.user([people.name], 'scopepeer');
   const techB = await seed.user([people.name], 'scopetechb');
   const techC = await seed.user([people.name], 'scopetechc');

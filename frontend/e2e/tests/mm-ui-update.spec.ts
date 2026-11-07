@@ -483,12 +483,12 @@ test.describe('My Matters: calendar events, assets and activity (need the UI-03 
     const dialog = page.getByRole('dialog', { name: 'Add Event' });
     await expect(dialog).toBeVisible();
     // An empty form says what is missing, under the fields.
-    await dialog.getByRole('button', { name: 'Add Event' }).click();
+    await dialog.getByRole('button', { name: 'Add Event', exact: true }).click();
     await expect(dialog.getByRole('alert').first()).toBeVisible();
     await dialog.getByLabel('Court hearing').check({ force: true });
     await dialog.getByLabel('Title').fill('Motion hearing');
     await dialog.getByLabel('Date').fill(inDays(2));
-    await dialog.getByRole('button', { name: 'Add Event' }).click();
+    await dialog.getByRole('button', { name: 'Add Event', exact: true }).click();
     await expect(dialog).toBeHidden();
     await expect(page.locator(`[data-day="${inDays(2)}"]`)).toHaveAttribute(
       'aria-label',

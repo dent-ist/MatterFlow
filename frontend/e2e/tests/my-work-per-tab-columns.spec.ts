@@ -27,7 +27,7 @@ const SIZES = [
   [1920, 1080],
 ] as const;
 
-const MAKER_RIGHTS = ['Task.View', 'Task.Create', 'Task.Assign', 'Matter.View'];
+const MAKER_RIGHTS = ['Task.View', 'Task.Create', 'Task.Assign', 'Matter.View', 'Workflow.Execute'];
 
 async function maker(seed: Seeder, label: string, codes: string[] = MAKER_RIGHTS) {
   const role = await seed.role(codes, `E2E ${label} ${uid()}`);

@@ -142,7 +142,7 @@ test.describe('Review round 5: profile availability, Swimlane and Users', () => 
     await page.getByRole('button', { name: 'Cancel' }).click();
     await expect(trigger).toBeFocused();
     await openDialog();
-    await page.getByRole('button', { name: 'Set out of office' }).last().click();
+    await page.getByRole('button', { name: 'Set Out of Office', exact: true }).last().click();
     await expect(page.locator('[data-ooo-label]')).toBeVisible();
     await expect(trigger).toBeFocused();
   });

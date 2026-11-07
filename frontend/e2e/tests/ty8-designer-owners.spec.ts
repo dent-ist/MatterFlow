@@ -52,7 +52,7 @@ test.describe('Asset Type designer: the whole lifecycle in the shared layout', (
     await page.getByRole('button', { name: 'Publish...' }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toContainText('Serial number');
-    await dialog.getByRole('button', { name: 'Publish v1' }).click();
+    await dialog.getByRole('button', { name: 'Publish v1', exact: true }).click();
     await expect(badge(page)).toHaveText('Published v1');
     await expect(page.locator('[data-notice]')).toContainText('Version 1 published.');
 

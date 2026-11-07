@@ -137,7 +137,7 @@ test.describe('Assets keyboard audit (WP-AS6)', () => {
     // Tab arrows, Home and End on the tab list.
     await page.getByRole('tab', { name: 'Details' }).focus();
     await page.keyboard.press('ArrowRight');
-    await expect(page.getByRole('tab', { name: /^Linked tasks/ })).toHaveAttribute(
+    await expect(page.getByRole('tab', { name: /^Linked Tasks/ })).toHaveAttribute(
       'aria-selected',
       'true',
     );

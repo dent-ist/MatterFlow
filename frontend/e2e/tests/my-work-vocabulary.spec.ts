@@ -192,7 +192,7 @@ test.describe('My Work vocabulary and tab rules', () => {
     await myWork.expectListed(`Recent ${tag}`, `Old ${tag}`);
     const chip = page.locator('[data-filter-chips] [data-chip]');
     await expect(chip).toHaveCount(1);
-    await expect(chip).toContainText('Closed: all time');
+    await expect(chip).toContainText('Closed: All Time');
     await expect(page.getByRole('button', { name: 'Show Older' })).toHaveCount(0);
     await page.getByRole('button', { name: 'About this tab' }).click();
     await expect(page.locator('[data-tab-help-text]')).toContainText('all time');

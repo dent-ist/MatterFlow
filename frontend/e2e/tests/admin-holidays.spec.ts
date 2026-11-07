@@ -31,7 +31,7 @@ test.describe('Settings > Holidays', () => {
     await labelledDropdown(holiday, 'Which').selectOption({ label: '4th' });
     await labelledDropdown(holiday, 'Weekday').selectOption({ label: 'Thursday' });
     await asDropdown(holiday.locator('#hd-nmonth')).selectOption({ label: 'November' });
-    await holiday.getByRole('button', { name: 'Add Holiday' }).click();
+    await holiday.getByRole('button', { name: 'Add Holiday', exact: true }).click();
     await expect(holiday).toBeHidden();
     const row = page.locator('[data-holiday]', { hasText: 'Thanksgiving' });
     await expect(row).toContainText('Every year, 4th Thursday of November');
@@ -64,7 +64,7 @@ test.describe('Settings > Holidays', () => {
     await holiday.locator('#hd-day').fill('24');
     await asDropdown(holiday.locator('#hd-emonth')).selectOption({ label: 'December' });
     await holiday.locator('#hd-eday').fill('26');
-    await holiday.getByRole('button', { name: 'Add Holiday' }).click();
+    await holiday.getByRole('button', { name: 'Add Holiday', exact: true }).click();
     await expect(holiday).toBeHidden();
     await expect(page.locator('[data-holiday]', { hasText: 'Year-end' })).toContainText('12/24 to');
   });

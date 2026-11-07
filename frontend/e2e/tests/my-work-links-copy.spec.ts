@@ -27,7 +27,7 @@ const SIZES = [
 ] as const;
 
 async function viewer(seed: Seeder, codes: string[], label: string) {
-  const role = await seed.role(codes, `E2E ${label}`);
+  const role = await seed.role([...codes, 'Workflow.Execute'], `E2E ${label}`);
   const user = await seed.user([role.name], label);
   return user;
 }

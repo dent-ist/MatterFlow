@@ -62,7 +62,7 @@ test.describe('pf7-keyboard: keyboard-only flows on My profile (#582)', () => {
       'aria-pressed',
       'true',
     );
-    await dialog.getByRole('button', { name: 'Set out of office' }).focus();
+    await dialog.getByRole('button', { name: 'Set Out of Office', exact: true }).focus();
     await press(me, 'Enter');
     await expect(dialog).toHaveCount(0);
     await expect(action).toHaveText("I'm Back");

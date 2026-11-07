@@ -92,7 +92,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await open(page, w.matter.matterId);
     await page.locator('[data-note-item]').first().click();
     await expect(page.locator('[data-note-title]')).toContainText(title);
-    await expect(page.locator('[data-note-byline]')).toContainText('Last updated by');
+    await expect(page.locator('[data-note-byline]')).toContainText('Last Updated by');
     await expect(page.locator('[data-editor-toolbar]')).toHaveCount(0);
     await page.locator('[data-note-edit]').click();
     await expect(page.locator('[data-editor-toolbar]')).toBeVisible();

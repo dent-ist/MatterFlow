@@ -70,6 +70,7 @@ test.describe('Users tab: workload', () => {
       'Trends',
       'Swimlane',
       'Users',
+      'Calendar',
     ]);
     await page.getByRole('tab', { name: 'Users' }).click();
     await expect(page).toHaveURL(/tab=users/);
@@ -139,7 +140,9 @@ test.describe('Users tab: workload', () => {
     );
     await expect(idle.locator('[data-user-open]')).toHaveAttribute(
       'aria-label',
-      new RegExp(`^${person('idle').displayName}, 0 open tasks, Idle, `),
+      new RegExp(
+        `^${person('idle').displayName.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')}, 0 open tasks, Idle, `,
+      ),
     );
 
     const away = card(page, 'ooo');
@@ -260,7 +263,7 @@ test.describe('Users tab: workload', () => {
     await expect(table.locator('tbody tr')).toHaveCount(PLAN.length);
     await expect(
       table.locator(`[data-user-row][data-user="${css(person('ooo').displayName)}"]`),
-    ).toContainText('Out of office until');
+    ).toContainText('Out of Office until');
     await page.reload();
     await expect(page.locator('[data-users-table]')).toBeVisible();
     await page.getByRole('button', { name: 'Cards' }).click();

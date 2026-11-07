@@ -75,7 +75,7 @@ test.describe('SH-B: the one toast host', () => {
         : route.continue(),
     );
     const dialog = await openOutOfOfficeDialog(me);
-    await dialog.getByRole('button', { name: 'Set out of office' }).click();
+    await dialog.getByRole('button', { name: 'Set Out of Office', exact: true }).click();
     const error = me.locator('[data-toast][data-severity="error"]');
     await expect(error).toHaveCount(1);
     await expect(error).toHaveAttribute('role', 'alert');
@@ -89,7 +89,7 @@ test.describe('SH-B: the one toast host', () => {
 
     // Then it works: success, in the polite status region.
     fail = false;
-    await dialog.getByRole('button', { name: 'Set out of office' }).click();
+    await dialog.getByRole('button', { name: 'Set Out of Office', exact: true }).click();
     const ok = me.locator('[role="status"] [data-toast][data-severity="success"]');
     await expect(ok).toHaveCount(1);
     await expect(ok).toContainText('Out of office set');
@@ -120,7 +120,7 @@ test.describe('SH-B: the one toast host', () => {
           }),
     );
     const dialog = await openOutOfOfficeDialog(me);
-    const save = dialog.getByRole('button', { name: 'Set out of office' });
+    const save = dialog.getByRole('button', { name: 'Set Out of Office', exact: true });
     for (let i = 0; i < 5; i++) await save.click();
     const same = me.locator('[data-toast][data-severity="error"]');
     await expect(same).toHaveCount(1);
@@ -141,7 +141,7 @@ test.describe('SH-B: the one toast host', () => {
     const me = await asUser(username);
     await me.goto('/my-work');
     const dialog = await openOutOfOfficeDialog(me);
-    await dialog.getByRole('button', { name: 'Set out of office' }).click();
+    await dialog.getByRole('button', { name: 'Set Out of Office', exact: true }).click();
     const toast = toasts(me).first();
     await expect(toast).toBeVisible();
     // The account menu button got focus back from the dialog; the toast did not take it.
@@ -164,7 +164,7 @@ test.describe('SH-B: the one toast host', () => {
     await me.emulateMedia({ reducedMotion: 'reduce' });
     await me.goto('/my-work');
     const dialog = await openOutOfOfficeDialog(me);
-    await dialog.getByRole('button', { name: 'Set out of office' }).click();
+    await dialog.getByRole('button', { name: 'Set Out of Office', exact: true }).click();
     const toast = toasts(me).first();
     await expect(toast).toBeVisible();
     expect(await toast.evaluate((el) => getComputedStyle(el).animationName)).toBe('none');
@@ -189,10 +189,10 @@ test.describe('SH-B: the one toast host', () => {
             }),
       );
       const dialog = await openOutOfOfficeDialog(me);
-      await dialog.getByRole('button', { name: 'Set out of office' }).click();
+      await dialog.getByRole('button', { name: 'Set Out of Office', exact: true }).click();
       await expect(me.locator('[data-toast][data-severity="error"]')).toHaveCount(1);
       await me.unroute(AVAILABILITY);
-      await dialog.getByRole('button', { name: 'Set out of office' }).click();
+      await dialog.getByRole('button', { name: 'Set Out of Office', exact: true }).click();
       await expect(me.locator('[data-toast][data-severity="success"]')).toHaveCount(1);
       await noSideScroll(me);
       if (axeAvailable()) expect(await axeViolations(me), 'axe with toasts open').toEqual([]);

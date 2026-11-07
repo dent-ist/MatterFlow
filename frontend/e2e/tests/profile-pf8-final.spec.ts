@@ -119,7 +119,7 @@ test.describe("pf8-final: the final contract over the review's persons at both d
       await me.locator('[data-primary-action] button').click();
       const dialog = me.getByRole('dialog', { name: 'Set out of office' });
       await dialog.getByRole('button', { name: 'Until Monday' }).click();
-      await dialog.getByRole('button', { name: 'Set out of office' }).click();
+      await dialog.getByRole('button', { name: 'Set Out of Office', exact: true }).click();
       await expect(dialog).toHaveCount(0);
       await expect(me.locator('[data-primary-action] button')).toHaveText("I'm Back");
       await measure(me, 'out of office', 1);
@@ -153,7 +153,7 @@ test.describe("pf8-final: the final contract over the review's persons at both d
 
       await noName.setViewportSize(size);
       await noName.goto('/profile');
-      await expect(noName.locator('main h1')).toContainText(plain.username);
+      await expect(noName.locator('[data-profile-who]')).toContainText(plain.username);
       await measure(noName, 'no display name', 1);
       await shot(noName, 'final-no-display-name');
     }

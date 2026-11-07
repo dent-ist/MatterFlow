@@ -449,9 +449,9 @@ test.describe('Step record page', () => {
       const step = await makeStep(admin, seed);
       await page.setViewportSize({ width: 1366, height: 768 });
       await openStep(page, step.id, 'used-by');
-      await expect(page.locator('[data-not-used]')).toContainText('Not Used');
+      await expect(page.locator('[data-not-used]')).toContainText('Not used');
       await expect(page.locator('[data-used-note]')).toHaveCount(0);
-      await expect(page.locator('[data-strip-item=used]')).toContainText('Not Used');
+      await expect(page.locator('[data-strip-item=used]')).toContainText('Not used');
       await expect(tab(page, 'used-by')).toContainText('(0)');
       for (const size of SIZES) {
         await page.setViewportSize({ width: size.w, height: size.h });

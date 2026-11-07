@@ -67,7 +67,7 @@ test.describe('Ordered workflow rules (SCN-010, SCN-011, SCN-012, SCN-013)', () 
     await step.expand();
     await step.skipButton.click();
     const dialog = detail.dialog;
-    await dialog.getByRole('button', { name: 'Skip Step' }).click();
+    await dialog.getByRole('button', { name: 'Skip Step', exact: true }).click();
     await expect(dialog.locator('[data-skip-error]')).toHaveText(
       'Add a comment to skip this step.',
     );
