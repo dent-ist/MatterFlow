@@ -41,8 +41,10 @@ public sealed class ReportCategoryRuleApiTests(SqlServerFixture sql)
         open.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         var reference = await outsider.GetAsync($"/api/v1/reports/{report}");
         reference.StatusCode.ShouldBe(HttpStatusCode.NotFound);
-        (await ReadAsync(open)).GetProperty("detail").GetString().ShouldBe((await ReadAsync(reference)).GetProperty("detail").GetString());
-        (await ReadAsync(open)).GetProperty("code").GetString().ShouldBe((await ReadAsync(reference)).GetProperty("code").GetString());
+        var openBody = await ReadAsync(open);
+        var referenceBody = await ReadAsync(reference);
+        openBody.GetProperty("detail").GetString().ShouldBe(referenceBody.GetProperty("detail").GetString());
+        openBody.GetProperty("code").GetString().ShouldBe(referenceBody.GetProperty("code").GetString());
         (await runner.PostAsync($"/api/v1/reports/{report}/runs", ReportTestHarness.Parameters(new { }))).StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await runner.PostAsync($"/api/v1/reports/{report}/choices/ANY", ReportTestHarness.Json(new { }))).StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await runner.GetAsync($"/api/v1/reports/{report}/views")).StatusCode.ShouldBe(HttpStatusCode.NotFound);

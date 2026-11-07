@@ -148,6 +148,30 @@ public sealed class ReportRowsApiTests(SqlServerFixture sql)
     }
 
     [Fact]
+    public async Task A_result_whose_report_the_person_may_no_longer_run_is_refused_with_the_same_404_and_comes_back_when_access_does()
+    {
+        await using var h = await ReportTestHarness.StartAsync(sql);
+        var (ann, role) = await h.PersonAsync(@"KE\ann", "Report.Run");
+        var report = await h.AddReportAsync(People, roleIds: role);
+        var run = await RunAsync(ann, report);
+        (await ann.GetAsync(Rows(run))).StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        await SqlServerFixture.ExecuteAsync(h.AppConnection, $"DELETE dbo.RoleReport WHERE ReportId = {report}");
+        var unassigned = await ann.GetAsync(Rows(run));
+        unassigned.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await ReadAsync(unassigned)).GetProperty("detail").GetString().ShouldBe("This report does not exist or is not available to you.");
+
+        await SqlServerFixture.ExecuteAsync(h.AppConnection, $"INSERT dbo.RoleReport (RoleId, ReportId) VALUES ({role}, {report})");
+        (await ann.GetAsync(Rows(run))).StatusCode.ShouldBe(HttpStatusCode.OK);
+        await SqlServerFixture.ExecuteAsync(h.AppConnection, $"UPDATE dbo.ReportDefinition SET IsActive = 0 WHERE ReportId = {report}");
+        (await ann.GetAsync(Rows(run))).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        await SqlServerFixture.ExecuteAsync(h.AppConnection, $"UPDATE dbo.ReportDefinition SET IsActive = 1 WHERE ReportId = {report}; UPDATE dbo.ReportCategory SET IsActive = 0 WHERE Name = N'Test'");
+        (await ann.GetAsync(Rows(run))).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        await SqlServerFixture.ExecuteAsync(h.AppConnection, "UPDATE dbo.ReportCategory SET IsActive = 1 WHERE Name = N'Test'");
+        (await ann.GetAsync(Rows(run))).StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
     public async Task Without_Report_Run_the_rows_endpoint_is_forbidden()
     {
         await using var h = await ReportTestHarness.StartAsync(sql);

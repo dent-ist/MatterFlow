@@ -44,6 +44,10 @@ flowchart LR
 - The response types contain no member that could carry SQL, option SQL or a hash; the integration test `ReportListApiTests` also searches the body for a marker in the SQL and in a choice query.
 - Under the interim sensitive-matter decision (option A) the endpoint is classified `Open` in `SensitiveAccessCatalog` like every Reports operation.
 
+## Result access
+
+The rows endpoint and the export both re-check `MayRun` for the result's report on every call: a result the person may no longer see (role removed, report or category deactivated since the run) is refused with the usual 404 (`NOT_FOUND`, "This report does not exist or is not available to you."); it works again when access returns. An unknown id or another person's result is still the plain 404 and an expired result the 410, both decided before this check.
+
 ## Sorting the result rows
 
 `GET /api/v1/reports/runs/{runId}/rows?sort=` takes up to three keys separated by commas, each `<column>:asc|desc`. A column is written by name or by its **zero-based position** as `#<n>` (`#1:desc`). The author chooses the column names, and a name can contain a comma (`Total, USD`), which the name form cannot carry; the grid therefore sends `#<n>` for every sort. `#` followed by digits is always a position; an out-of-range position or an unknown name is a 400 `RESULT_QUERY_INVALID`. The export takes the same `sort`.

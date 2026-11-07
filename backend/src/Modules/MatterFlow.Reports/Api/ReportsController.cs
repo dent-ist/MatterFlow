@@ -131,7 +131,7 @@ public sealed record RunnableReportResponse(
 [ApiController]
 [Route("api/v1/reports")]
 [Produces("application/json")]
-public class ReportsController(ReportRunService runs, ReportResultStore results, ICurrentUser currentUser, ReportBrowseService browse, ReportExportService export) : ControllerBase
+public class ReportsController(ReportRunService runs, ReportResultStore results, ICurrentUser currentUser, ReportBrowseService browse, ReportExportService export, IReportCatalog catalog) : ControllerBase
 {
     /// <summary>
     /// The reports the caller may run: active reports with a current version that are assigned to one of the caller's roles (needs <c>Report.Run</c>), grouped
@@ -231,17 +231,21 @@ public class ReportsController(ReportRunService runs, ReportResultStore results,
 
     /// <summary>
     /// A page of a cached result, filtered and sorted on the server. <c>sort</c> is <c>col:asc,col2:desc</c> (at most 3); a column is written by name or by its zero-based position as <c>#n</c> (<c>#1:desc</c>), which a client uses when a column name contains a comma; <c>filter</c> a JSON array of
-    /// <c>{column, op, value, value2}</c>. Nulls sort last ascending, text case-insensitively. 404 for an unknown id or another person's result, 410
+    /// <c>{column, op, value, value2}</c>. Nulls sort last ascending, text case-insensitively. 404 for an unknown id, another person's result or a report the caller may no longer run, 410
     /// <c>RESULT_EXPIRED</c> once the cache dropped it (run the report again), 400 for an unreadable sort or filter.
     /// </summary>
     [HttpGet("runs/{runId:guid}/rows", Name = "GetReportRows")]
     [Authorize(Policy = ReportPolicies.Run)]
     [ProducesResponseType<ReportRowsResponse>(StatusCodes.Status200OK, "application/json")]
-    public IActionResult Rows(Guid runId, [FromQuery] int page = 1, [FromQuery] int pageSize = 50, [FromQuery] string? sort = null, [FromQuery] string? filter = null)
+    public async Task<IActionResult> Rows(Guid runId, [FromQuery] int page = 1, [FromQuery] int pageSize = 50, [FromQuery] string? sort = null, [FromQuery] string? filter = null, CancellationToken cancellationToken = default)
     {
         var lookup = Lookup(runId, out var stored);
         if (lookup is not null)
             return lookup;
+
+        // A result the person may no longer see (role removed, report or category deactivated since the run) is refused like an unknown report.
+        if (currentUser.UserId is not { } userId || await catalog.FindRunnableAsync(stored!.ReportId, userId, cancellationToken) is null)
+            return ReportProblems.Create(this, new RunProblem(404, "NOT_FOUND", ReportRunService.NotAvailableMessage));
 
         try
         {
