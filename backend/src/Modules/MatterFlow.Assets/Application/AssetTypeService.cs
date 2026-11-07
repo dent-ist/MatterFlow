@@ -2,9 +2,11 @@ using MatterFlow.Assets.Domain;
 using MatterFlow.Configuration.Contracts;
 using MatterFlow.Configuration.Contracts.Forms;
 using MatterFlow.Identity.Contracts;
+using MatterFlow.Organization.Contracts;
 using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
+using MatterFlow.SharedKernel.Visibility;
 using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Assets.Application;
@@ -16,7 +18,9 @@ public sealed class AssetTypeService(
     IPermissionChecker permissions,
     AssetAccess access,
     IFormFieldCatalog fields,
-    IFormIndexMaintenance indexMaintenance)
+    IFormIndexMaintenance indexMaintenance,
+    IMatterVisibility visibility,
+    IMatterDirectory matters)
 {
     public static readonly string[] SortFields = ["sortOrder", "name", "createdAt"];
 
@@ -53,9 +57,9 @@ public sealed class AssetTypeService(
         var counts = await AssetCountsAsync(ids, ct);
         var summaries = (await forms.GetOwnerSummariesAsync(FormOwnerKind.AssetType, ids, ct)).ToDictionary(x => x.OwnerId!.Value);
 
-        var responses = items
-            .Select(type => ToResponse(type, counts?.GetValueOrDefault(type.Id), summaries.GetValueOrDefault(type.Id)))
-            .ToList();
+        var responses = new List<AssetTypeResponse>(items.Count);
+        foreach (var type in items)
+            responses.Add(ToResponse(type, counts?.GetValueOrDefault(type.Id), summaries.GetValueOrDefault(type.Id), await ExampleAsync(type, ct)));
 
         return AssetSupport.Page(responses, total, page);
     }
@@ -68,7 +72,7 @@ public sealed class AssetTypeService(
 
         var counts = await AssetCountsAsync([id], ct);
         var summary = (await forms.GetOwnerSummariesAsync(FormOwnerKind.AssetType, [id], ct)).FirstOrDefault();
-        return ToResponse(type, counts?.GetValueOrDefault(id), summary);
+        return ToResponse(type, counts?.GetValueOrDefault(id), summary, await ExampleAsync(type, ct));
     }
 
     public async Task<Result<AssetTypeResponse>> CreateAsync(CreateAssetTypeRequest request, CancellationToken ct)
@@ -85,9 +89,14 @@ public sealed class AssetTypeService(
         if (look.IsFailure)
             return look.Error!;
 
+        var numbering = CheckNumbering(request.Numbering, current: null);
+        if (numbering.IsFailure)
+            return numbering.Error!;
+
         var sortOrder = request.SortOrder
             ?? (await db.Set<AssetType>().MaxAsync(t => (int?)t.SortOrder, ct) ?? 0) + 10;
         var type = new AssetType { Name = name, Description = AssetSupport.Clean(request.Description), SortOrder = sortOrder, IconKey = Blank(request.IconKey), ColourKey = Blank(request.ColourKey) };
+        ApplyNumbering(type, numbering.Value);
         db.Set<AssetType>().Add(type);
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
@@ -134,12 +143,17 @@ public sealed class AssetTypeService(
         if (look.IsFailure)
             return look.Error!;
 
+        var numbering = CheckNumbering(request.Numbering, current: type);
+        if (numbering.IsFailure)
+            return numbering.Error!;
+
         type.Name = name;
         type.IconKey = Blank(request.IconKey);
         type.ColourKey = Blank(request.ColourKey);
         type.Description = AssetSupport.Clean(request.Description);
         type.SortOrder = request.SortOrder;
         type.IsActive = request.IsActive;
+        ApplyNumbering(type, numbering.Value);
         AssetSupport.TrackOriginalRowVersion(db, type, request.RowVersion);
         try
         {
@@ -229,7 +243,7 @@ public sealed class AssetTypeService(
             .ToDictionaryAsync(x => x.Key, x => x.Count, ct);
     }
 
-    private static AssetTypeResponse ToResponse(AssetType type, int? assetCount, FormOwnerSummary? form) =>
+    private static AssetTypeResponse ToResponse(AssetType type, int? assetCount, FormOwnerSummary? form, AssetNumberExample example) =>
         new(
             type.Id,
             type.Name,
@@ -248,7 +262,74 @@ public sealed class AssetTypeService(
             type.SizeFieldKey,
             type.SizeUnit,
             type.IconKey,
-            type.ColourKey);
+            type.ColourKey,
+            ToNumbering(type, example));
+
+    private static AssetTypeNumbering ToNumbering(AssetType type, AssetNumberExample? example) =>
+        new(type.NumberingEnabled, type.NumberingPattern, AssetNumbering.ScopeName(type.NumberingScope) ?? AssetNumbering.ScopeMatterName, example ?? SampleExample(type));
+
+    private static AssetNumberExample SampleExample(AssetType type) => MakeExample(type, AssetNumbering.SampleCmNumber, 1, isSample: true);
+
+    private static AssetNumberExample MakeExample(AssetType type, string cmNumber, int counter, bool isSample)
+    {
+        string text;
+        try
+        {
+            text = AssetNumbering.Parse(type.NumberingPattern).Pattern?.Render(cmNumber, counter) ?? string.Empty;
+        }
+        catch (ArgumentException)
+        {
+            text = string.Empty;
+        }
+
+        return new AssetNumberExample(cmNumber, counter, isSample, text);
+    }
+
+    /// <summary>
+    /// The example of a numbered type: the matter most recently numbered for it (the latest counter change) among the matters the caller may see (a hidden matter's CM Number is never shown) and its real next
+    /// counter; the sample when numbering is off or nothing visible was numbered yet.
+    /// </summary>
+    private async Task<AssetNumberExample> ExampleAsync(AssetType type, CancellationToken ct)
+    {
+        if (!type.NumberingEnabled)
+            return SampleExample(type);
+
+        var latest = await visibility.WhereMatterVisible(db.Set<AssetNumberCounter>().AsNoTracking().Where(c => c.AssetTypeId == type.Id), c => c.ScopeKey)
+            .OrderByDescending(c => c.ModifiedAtUtc)
+            .ThenByDescending(c => c.ScopeKey)
+            .Select(c => new { c.ScopeKey, c.NextNumber })
+            .FirstOrDefaultAsync(ct);
+        if (latest is null || await matters.FindAsync(latest.ScopeKey, ct) is not { } matter)
+            return SampleExample(type);
+
+        return MakeExample(type, matter.MatterRef, latest.NextNumber, isSample: false);
+    }
+
+    private sealed record NumberingSettings(bool Enabled, string Pattern);
+
+    /// <summary>The numbering settings after the request: an omitted value keeps the current one (the defaults for a new type), so a client that does not know the settings never changes them.</summary>
+    private static Result<NumberingSettings> CheckNumbering(AssetTypeNumberingRequest? request, AssetType? current)
+    {
+        if (request?.Scope is { } scope && !AssetNumbering.IsMatterScopeName(scope))
+            return Error.Validation("numbering.scope", "INVALID", "The numbering scope must be MATTER.");
+        if (request?.Pattern is { } pattern)
+        {
+            var parsed = AssetNumbering.Parse(pattern);
+            if (!parsed.IsValid)
+                return Error.Validation("numbering.pattern", parsed.Code!, parsed.Message!);
+        }
+
+        return new NumberingSettings(
+            request?.Enabled ?? current?.NumberingEnabled ?? false,
+            request?.Pattern ?? current?.NumberingPattern ?? AssetNumbering.DefaultPattern);
+    }
+
+    private static void ApplyNumbering(AssetType type, NumberingSettings settings)
+    {
+        type.NumberingEnabled = settings.Enabled;
+        type.NumberingPattern = settings.Pattern;
+        type.NumberingScope = AssetNumbering.ScopeMatter;
+    }
 
     private static string? Blank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 

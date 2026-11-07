@@ -36,10 +36,11 @@ public sealed class AssetService(
     IFormIndexReader formIndex,
     IUserDirectory users,
     IAuditCorrelation correlation,
-    IAuditReader auditReader)
+    IAuditReader auditReader,
+    AssetNumberGenerator numbers)
 {
     /// <summary>Sort fields: <c>matter</c> is the Matter reference (then the name), <c>linkedTaskCount</c> the number of linked Tasks (constant without <c>Task.View</c>).</summary>
-    public static readonly string[] SortFields = ["displayName", "assetType", "createdAt", "matter", "linkedTaskCount", "disposition", "size"];
+    public static readonly string[] SortFields = ["displayName", "assetType", "createdAt", "matter", "linkedTaskCount", "disposition", "size", "assetNumber"];
 
     /// <summary>Most Matters the Matter column filter expands to (they become an <c>IN</c> list).</summary>
     private const int MatterFilterLimit = 1000;
@@ -51,6 +52,8 @@ public sealed class AssetService(
         ["displayName"] = AssetSupport.By<AssetRow, string>(r => r.Asset.DisplayName),
         ["assetType"] = AssetSupport.By<AssetRow, string>(r => r.AssetTypeName),
         ["createdAt"] = AssetSupport.By<AssetRow, DateTime>(r => r.Asset.CreatedAtUtc),
+        // The generated Asset Number as text (assets without one come first when ascending, last when descending).
+        ["assetNumber"] = AssetSupport.By<AssetRow, string?>(r => r.Asset.AssetNumber),
         ["matter"] = AssetSupport.By<AssetRow, string>(r => r.MatterRef),
         ["linkedTaskCount"] = AssetSupport.By<AssetRow, int>(r => r.Linked),
         // Active, Inactive, Pending disposition, Disposed: the order of a record's life, not the alphabet of the codes.
@@ -118,6 +121,8 @@ public sealed class AssetService(
             rows = rows.Where(r => r.Asset.DisplayName.Contains(name));
         if (query.ExternalReference?.Trim() is { Length: > 0 } reference)
             rows = rows.Where(r => r.Asset.ExternalReference != null && r.Asset.ExternalReference.Contains(reference));
+        if (query.AssetNumber?.Trim() is { Length: > 0 } assetNumber)
+            rows = rows.Where(r => r.Asset.AssetNumber != null && r.Asset.AssetNumber.Contains(assetNumber));
         if (query.Matter?.Trim() is { Length: > 0 } matterText)
         {
             int[] matterIds = [.. await matters.FindIdsMatchingAsync(matterText, MatterFilterLimit, ct)];
@@ -216,7 +221,8 @@ public sealed class AssetService(
                 row.Asset.DispositionChangedAtUtc is { } changed ? AssetSupport.Utc(changed) : null,
                 counts is null ? null : row.Asset.DispositionCode != AssetDisposition.Active && (counts.GetValueOrDefault(row.Asset.Id)?.Open ?? 0) > 0,
                 row.AssetTypeIconKey,
-                row.AssetTypeColourKey));
+                row.AssetTypeColourKey,
+                row.Asset.AssetNumber));
         }
 
         return AssetSupport.Page(list, total, page);
@@ -235,7 +241,7 @@ public sealed class AssetService(
             .OrderBy(r => r.Asset.DisplayName)
             .ThenBy(r => r.Asset.Id)
             .Take(query.Limit)
-            .Select(r => new AssetLookupItem(r.Asset.Id, r.Asset.MatterId, r.AssetTypeName, r.Asset.DisplayName, r.Asset.ExternalReference, r.Asset.IsActive))
+            .Select(r => new AssetLookupItem(r.Asset.Id, r.Asset.MatterId, r.AssetTypeName, r.Asset.DisplayName, r.Asset.ExternalReference, r.Asset.IsActive, r.Asset.AssetNumber))
             .ToListAsync(ct);
         return Result<IReadOnlyList<AssetLookupItem>>.Success(items);
     }
@@ -314,7 +320,25 @@ public sealed class AssetService(
         IReadOnlyList<string> dropped = [];
         await using (var transaction = await db.Database.BeginTransactionAsync(ct))
         {
-            await db.SaveChangesAsync(ct);
+            // Automatic numbering (issue #1297): the next number of (type, matter) is taken in THIS transaction, so it commits or rolls back with the asset and a failed create leaves no gap.
+            if (type.NumberingEnabled)
+            {
+                var assigned = await numbers.TakeNextAsync(type, matter.MatterId, matter.MatterRef, ct);
+                asset.AssetNumber = assigned.Number;
+                asset.AssetNumberSeq = assigned.Sequence;
+            }
+
+            try
+            {
+                await db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException ex) when (AssetSupport.IsUniqueViolation(ex, AssetSupport.AssetNumberUnique))
+            {
+                // Only possible if the counter was lowered behind the application's back; nothing was saved.
+                db.ChangeTracker.Clear();
+                return Error.Conflict(ErrorCodes.ConcurrencyConflict, "The next asset number is already used by another asset of this matter. Ask an administrator to set the next number of this asset type for the matter above the highest number in use.");
+            }
+
             if (plan.Value is { } formPlan)
             {
                 var saved = await SaveValuesAsync(asset, formPlan, values, previous: NoValues, ct);
@@ -347,6 +371,8 @@ public sealed class AssetService(
             return Error.Conflict(ErrorCodes.ImmutableField, "An asset belongs to one matter and cannot move to another. Create a new asset in the other matter instead.");
         if (request.AssetTypeId is { } typeId && typeId != asset.AssetTypeId)
             return Error.Conflict(ErrorCodes.ImmutableField, "The asset type cannot be changed after the asset is created.");
+        if (request.AssetNumber?.Trim() is { Length: > 0 } sentNumber && !string.Equals(sentNumber, asset.AssetNumber, StringComparison.Ordinal))
+            return Error.Conflict(ErrorCodes.ImmutableField, "The asset number is generated when the asset is created and cannot be changed.");
 
         var version = AssetSupport.CheckRowVersion(asset.RowVersion, request.RowVersion);
         if (version.IsFailure)
@@ -705,7 +731,8 @@ public sealed class AssetService(
             row.Asset.DispositionNote,
             CanCountTasks ? row.Asset.DispositionCode != AssetDisposition.Active && (counts?.Open ?? 0) > 0 : null,
             row.AssetTypeIconKey,
-            row.AssetTypeColourKey);
+            row.AssetTypeColourKey,
+            row.Asset.AssetNumber);
     }
 
     /// <summary>The size of an asset: the value of its type's designated size field, its unit and the bytes for the size family.</summary>
@@ -882,6 +909,7 @@ public sealed class AssetService(
         return string.IsNullOrEmpty(q)
             ? rows
             : rows.Where(r => r.Asset.DisplayName.Contains(q)
+                || (r.Asset.AssetNumber != null && r.Asset.AssetNumber.Contains(q))
                 || r.AssetTypeName.Contains(q)
                 || (r.Asset.ExternalReference != null && r.Asset.ExternalReference.Contains(q)));
     }

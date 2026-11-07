@@ -212,7 +212,7 @@ public sealed class MatterOverviewService(
             return null;
 
         var snapshot = await assets.SnapshotForMatterAsync(matterId, AssetCount, ct);
-        return new MatterOverviewAssets(snapshot.Total, [.. snapshot.First.Select(a => new MatterOverviewAsset(a.AssetId, a.DisplayName, a.AssetTypeName, a.ExternalReference))]);
+        return new MatterOverviewAssets(snapshot.Total, [.. snapshot.First.Select(a => new MatterOverviewAsset(a.AssetId, a.DisplayName, a.AssetTypeName, a.ExternalReference, a.AssetNumber))]);
     }
 
     /// <summary>The last events of the matter, newest first, with the same sensitive-history rule as My Matters; nothing is unread here and the marker is neither created nor moved.</summary>

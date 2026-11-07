@@ -41,7 +41,7 @@ internal static class ListFilters
 /// </summary>
 [ApiController]
 [Route("api/v1/asset-types")]
-public class AssetTypesController(AssetTypeService types) : ControllerBase
+public class AssetTypesController(AssetTypeService types, AssetNumberingService numbering) : ControllerBase
 {
     /// <summary>Lists Asset Types. <c>name</c> is the column filter (fragment of the name). Sort: sortOrder (default), name, createdAt.</summary>
     [HttpGet(Name = "ListAssetTypes")]
@@ -86,6 +86,38 @@ public class AssetTypesController(AssetTypeService types) : ControllerBase
     [ProducesResponseType<AssetTypeResponse>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> SetSizeField(int assetTypeId, [FromBody] SetAssetTypeSizeFieldRequest request, CancellationToken cancellationToken) =>
         this.ToActionResult(await types.SetSizeFieldAsync(assetTypeId, request, cancellationToken));
+
+    /// <summary>
+    /// The automatic-numbering counters of an asset type, one row per matter that has one: the matter's CM Number and name, the highest number assigned, the next number and the name the next asset gets.
+    /// <c>q</c> searches the CM Number or the matter name. Sort: matter (default, the CM Number), nextNumber, modifiedAt. Only matters the caller may see are listed (sensitive-matter rule).
+    /// </summary>
+    [HttpGet("{assetTypeId:int}/numbering/counters", Name = "ListAssetNumberCounters")]
+    [Authorize(Policy = AssetPolicies.AssetTypeManage)]
+    [ProducesResponseType<PagedResult<AssetNumberCounterItem>>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> ListNumberCounters(int assetTypeId, [FromQuery] AssetNumberCounterListQuery query, CancellationToken cancellationToken)
+    {
+        if (ListFilters.UnknownFilter(Request, AssetNumberCounterListQuery.Keys) is { } unknown)
+            return this.Problem(unknown);
+
+        return this.ToActionResult(await numbering.ListAsync(assetTypeId, query, cancellationToken));
+    }
+
+    /// <summary>The counter of the asset type in one matter; a matter that was never numbered answers the defaults (<c>hasCounter</c> false). A matter the caller may not see is a 404.</summary>
+    [HttpGet("{assetTypeId:int}/numbering/counters/{matterId:int}", Name = "GetAssetNumberCounter")]
+    [Authorize(Policy = AssetPolicies.AssetTypeManage)]
+    [ProducesResponseType<AssetNumberCounterItem>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> GetNumberCounter(int assetTypeId, int matterId, CancellationToken cancellationToken) =>
+        this.ToActionResult(await numbering.GetAsync(assetTypeId, matterId, cancellationToken));
+
+    /// <summary>
+    /// Sets the next number of the asset type in one matter, for example to continue after folders that already exist on the share; the counter is created when missing. Never lower than the highest assigned
+    /// number plus one (400 <c>NEXT_NUMBER_TOO_LOW</c>). Audited (who, matter, old, new). A matter the caller may not see is a 404.
+    /// </summary>
+    [HttpPut("{assetTypeId:int}/numbering/counters/{matterId:int}", Name = "SetAssetNextNumber")]
+    [Authorize(Policy = AssetPolicies.AssetTypeManage)]
+    [ProducesResponseType<AssetNumberCounterItem>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> SetNextNumber(int assetTypeId, int matterId, [FromBody] SetAssetNextNumberRequest request, CancellationToken cancellationToken) =>
+        this.ToActionResult(await numbering.SetNextAsync(assetTypeId, matterId, request, cancellationToken));
 
     /// <summary>Rebuilds the filter index of all assets of the type from their stored values (idempotent). Needed after the indexing rule changes; the API also fills missing rows at startup.</summary>
     [HttpPost("{assetTypeId:int}/reindex", Name = "ReindexAssetType")]

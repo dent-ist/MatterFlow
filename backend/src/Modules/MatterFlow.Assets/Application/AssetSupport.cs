@@ -9,6 +9,7 @@ namespace MatterFlow.Assets.Application;
 internal static class AssetSupport
 {
     public const string AssetTypeNameUnique = "UQ_AssetType_Name";
+    public const string AssetNumberUnique = "UQ_Asset_AssetNumber";
 
     public static Error NotFound(string what) => Error.NotFound($"{what} not found.");
 

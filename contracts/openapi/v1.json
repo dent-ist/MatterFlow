@@ -291,6 +291,173 @@
         }
       }
     },
+    "/api/v1/asset-types/{assetTypeId}/numbering/counters": {
+      "get": {
+        "tags": [
+          "AssetTypes"
+        ],
+        "operationId": "ListAssetNumberCounters",
+        "parameters": [
+          {
+            "name": "assetTypeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Q",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Sort",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfAssetNumberCounterItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/asset-types/{assetTypeId}/numbering/counters/{matterId}": {
+      "get": {
+        "tags": [
+          "AssetTypes"
+        ],
+        "operationId": "GetAssetNumberCounter",
+        "parameters": [
+          {
+            "name": "assetTypeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "matterId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetNumberCounterItem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "AssetTypes"
+        ],
+        "operationId": "SetAssetNextNumber",
+        "parameters": [
+          {
+            "name": "assetTypeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "matterId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAssetNextNumberRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAssetNextNumberRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAssetNextNumberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetNumberCounterItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/asset-types/{assetTypeId}/reindex": {
       "post": {
         "tags": [
@@ -406,6 +573,15 @@
           },
           {
             "name": "ExternalReference",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "AssetNumber",
             "in": "query",
             "schema": {
               "maxLength": 200,
@@ -14521,6 +14697,15 @@
             }
           },
           {
+            "name": "assetNumber",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
             "name": "assetTypeId",
             "in": "query",
             "schema": {
@@ -18367,6 +18552,12 @@
               "null",
               "string"
             ]
+          },
+          "assetNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -18403,6 +18594,87 @@
           },
           "isActive": {
             "type": "boolean"
+          },
+          "assetNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "AssetNumberCounterItem": {
+        "required": [
+          "assetTypeId",
+          "matterId",
+          "matterRef",
+          "matterName",
+          "highestAssigned",
+          "nextNumber",
+          "nextAssetNumber",
+          "hasCounter",
+          "modifiedAtUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "assetTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "matterId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "matterRef": {
+            "type": "string"
+          },
+          "matterName": {
+            "type": "string"
+          },
+          "highestAssigned": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nextNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nextAssetNumber": {
+            "type": "string"
+          },
+          "hasCounter": {
+            "type": "boolean"
+          },
+          "modifiedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "AssetNumberExample": {
+        "required": [
+          "cmNumber",
+          "nextCounter",
+          "isSample",
+          "text"
+        ],
+        "type": "object",
+        "properties": {
+          "cmNumber": {
+            "type": "string"
+          },
+          "nextCounter": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isSample": {
+            "type": "boolean"
+          },
+          "text": {
+            "type": "string"
           }
         }
       },
@@ -18911,6 +19183,12 @@
               "null",
               "string"
             ]
+          },
+          "assetNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -19068,6 +19346,56 @@
           }
         }
       },
+      "AssetTypeNumbering": {
+        "required": [
+          "enabled",
+          "pattern",
+          "scope",
+          "example"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "pattern": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "example": {
+            "$ref": "#/components/schemas/AssetNumberExample"
+          }
+        }
+      },
+      "AssetTypeNumberingRequest": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "pattern": {
+            "maxLength": 150,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "scope": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "AssetTypeReindexResponse": {
         "required": [
           "assetsProcessed"
@@ -19194,6 +19522,16 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "numbering": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AssetTypeNumbering"
+              }
             ]
           }
         }
@@ -21860,6 +22198,16 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "numbering": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AssetTypeNumberingRequest"
+              }
             ]
           }
         }
@@ -25264,6 +25612,12 @@
               "null",
               "string"
             ]
+          },
+          "assetNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -26262,6 +26616,12 @@
               "null",
               "string"
             ]
+          },
+          "assetNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -26344,6 +26704,12 @@
             ]
           },
           "assetTypeColourKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "assetNumber": {
             "type": [
               "null",
               "string"
@@ -28747,6 +29113,35 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AssetListItem"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PagedResultOfAssetNumberCounterItem": {
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssetNumberCounterItem"
             }
           },
           "total": {
@@ -32139,6 +32534,12 @@
               "null",
               "string"
             ]
+          },
+          "assetNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -32199,6 +32600,17 @@
           },
           "rowVersion": {
             "type": "string"
+          }
+        }
+      },
+      "SetAssetNextNumberRequest": {
+        "type": "object",
+        "properties": {
+          "nextNumber": {
+            "maximum": 999999999,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -33704,6 +34116,12 @@
           },
           "rowVersion": {
             "type": "string"
+          },
+          "assetNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -35497,6 +35915,14 @@
             ],
             "format": "int32"
           },
+          "assetNumber": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "displayName": {
             "maxLength": 300,
             "minLength": 1,
@@ -35570,6 +35996,16 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "numbering": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AssetTypeNumberingRequest"
+              }
             ]
           },
           "rowVersion": {

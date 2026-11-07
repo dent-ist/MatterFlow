@@ -1,0 +1,363 @@
+{
+  "$comment": "Shared conformance vectors of the Asset Number pattern (issue #1297). The Asset Number is the matter's CM Number followed by the TAIL (the pattern). Rules and error codes: docs in backend AssetNumbering.cs; the backend unit tests (AssetNumberingTests) and the frontend must both reproduce every vector. A case has either 'expected' (the rendered number) or 'expectedError' (the stable code of the FIRST rule that fails). Rules in order: tail at most 50 characters (PATTERN_TOO_LONG); no space at the start or end (PATTERN_EDGE_SPACE), then no dot at the end (PATTERN_TRAILING_DOT); then left to right: a brace group must be 1 to 9 # (otherwise PATTERN_UNKNOWN_TOKEN, a 10th # is PATTERN_COUNTER_WIDTH), the counter only once (PATTERN_TWO_COUNTERS), literal text without \\ / : * ? \" < > | and control characters (PATTERN_FORBIDDEN_CHAR); finally one counter must exist (PATTERN_NO_COUNTER). The counter is zero-padded to the number of # and widens past it.",
+  "version": 1,
+  "vectors": [
+    {
+      "name": "default tail first number",
+      "tail": "_{###}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expected": "90003-80008_001"
+    },
+    {
+      "name": "default tail second number",
+      "tail": "_{###}",
+      "cmNumber": "90003-80008",
+      "counter": 2,
+      "expected": "90003-80008_002"
+    },
+    {
+      "name": "six digit client number",
+      "tail": "_{###}",
+      "cmNumber": "123456-123444",
+      "counter": 1,
+      "expected": "123456-123444_001"
+    },
+    {
+      "name": "hyphen M hyphen prefix",
+      "tail": "-M-{###}",
+      "cmNumber": "123456-123444",
+      "counter": 1,
+      "expected": "123456-123444-M-001"
+    },
+    {
+      "name": "literal after the counter",
+      "tail": "_{###}-A",
+      "cmNumber": "123456-123444",
+      "counter": 1,
+      "expected": "123456-123444_001-A"
+    },
+    {
+      "name": "text before and after",
+      "tail": "_Media_{####}_final",
+      "cmNumber": "00343-00012",
+      "counter": 7,
+      "expected": "00343-00012_Media_0007_final"
+    },
+    {
+      "name": "width one",
+      "tail": "_{#}",
+      "cmNumber": "00343-00012",
+      "counter": 5,
+      "expected": "00343-00012_5"
+    },
+    {
+      "name": "width one widens",
+      "tail": "_{#}",
+      "cmNumber": "00343-00012",
+      "counter": 12,
+      "expected": "00343-00012_12"
+    },
+    {
+      "name": "width nine",
+      "tail": "_{#########}",
+      "cmNumber": "00343-00012",
+      "counter": 42,
+      "expected": "00343-00012_000000042"
+    },
+    {
+      "name": "width three at 999",
+      "tail": "_{###}",
+      "cmNumber": "90003-80008",
+      "counter": 999,
+      "expected": "90003-80008_999"
+    },
+    {
+      "name": "width three widens at 1000",
+      "tail": "_{###}",
+      "cmNumber": "90003-80008",
+      "counter": 1000,
+      "expected": "90003-80008_1000"
+    },
+    {
+      "name": "width three widens at 12345",
+      "tail": "_{###}",
+      "cmNumber": "90003-80008",
+      "counter": 12345,
+      "expected": "90003-80008_12345"
+    },
+    {
+      "name": "counter only",
+      "tail": "{###}",
+      "cmNumber": "90003-80008",
+      "counter": 3,
+      "expected": "90003-80008003"
+    },
+    {
+      "name": "counter first then text",
+      "tail": "{###}_x",
+      "cmNumber": "90003-80008",
+      "counter": 3,
+      "expected": "90003-80008003_x"
+    },
+    {
+      "name": "space inside is allowed",
+      "tail": "_A {###}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expected": "90003-80008_A 001"
+    },
+    {
+      "name": "hash outside braces is literal",
+      "tail": "#{###}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expected": "90003-80008#001"
+    },
+    {
+      "name": "dot inside is allowed",
+      "tail": "_v1.{###}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expected": "90003-80008_v1.001"
+    },
+    {
+      "name": "tail of exactly 50 characters",
+      "tail": "_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx{###}y",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expected": "90003-80008_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx001y"
+    },
+    {
+      "name": "empty tail",
+      "tail": "",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_NO_COUNTER"
+    },
+    {
+      "name": "literal only",
+      "tail": "_media",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_NO_COUNTER"
+    },
+    {
+      "name": "two counters",
+      "tail": "_{###}_{###}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_TWO_COUNTERS"
+    },
+    {
+      "name": "two counters of different width",
+      "tail": "{#}-{##}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_TWO_COUNTERS"
+    },
+    {
+      "name": "unknown token",
+      "tail": "_{client number}_{###}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_UNKNOWN_TOKEN"
+    },
+    {
+      "name": "empty braces",
+      "tail": "_{}_{###}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_UNKNOWN_TOKEN"
+    },
+    {
+      "name": "mixed braces content",
+      "tail": "_{#a#}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_UNKNOWN_TOKEN"
+    },
+    {
+      "name": "unclosed brace",
+      "tail": "_{###",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_UNKNOWN_TOKEN"
+    },
+    {
+      "name": "stray closing brace",
+      "tail": "_###}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_UNKNOWN_TOKEN"
+    },
+    {
+      "name": "nested opening brace",
+      "tail": "_{{###}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_UNKNOWN_TOKEN"
+    },
+    {
+      "name": "counter width ten",
+      "tail": "_{##########}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_COUNTER_WIDTH"
+    },
+    {
+      "name": "forbidden backslash",
+      "tail": "_a\\b_{###}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_FORBIDDEN_CHAR"
+    },
+    {
+      "name": "forbidden slash",
+      "tail": "_a/b_{###}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_FORBIDDEN_CHAR"
+    },
+    {
+      "name": "forbidden colon",
+      "tail": "_a:b_{###}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_FORBIDDEN_CHAR"
+    },
+    {
+      "name": "forbidden asterisk",
+      "tail": "_a*b_{###}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_FORBIDDEN_CHAR"
+    },
+    {
+      "name": "forbidden question mark",
+      "tail": "_a?b_{###}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_FORBIDDEN_CHAR"
+    },
+    {
+      "name": "forbidden double quote",
+      "tail": "_a\"b_{###}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_FORBIDDEN_CHAR"
+    },
+    {
+      "name": "forbidden less than",
+      "tail": "_a<b_{###}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_FORBIDDEN_CHAR"
+    },
+    {
+      "name": "forbidden greater than",
+      "tail": "_a>b_{###}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_FORBIDDEN_CHAR"
+    },
+    {
+      "name": "forbidden pipe",
+      "tail": "_a|b_{###}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_FORBIDDEN_CHAR"
+    },
+    {
+      "name": "control character",
+      "tail": "_a\tb_{###}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_FORBIDDEN_CHAR"
+    },
+    {
+      "name": "leading space",
+      "tail": " _{###}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_EDGE_SPACE"
+    },
+    {
+      "name": "trailing space",
+      "tail": "_{###} ",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_EDGE_SPACE"
+    },
+    {
+      "name": "trailing dot",
+      "tail": "_{###}.",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_TRAILING_DOT"
+    },
+    {
+      "name": "too long by one",
+      "tail": "_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx{###}y",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_TOO_LONG"
+    },
+    {
+      "name": "too long and otherwise invalid",
+      "tail": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_TOO_LONG"
+    },
+    {
+      "name": "edge space before token problems",
+      "tail": " {}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_EDGE_SPACE"
+    },
+    {
+      "name": "trailing dot after literal text",
+      "tail": "_{###}-A.",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_TRAILING_DOT"
+    },
+    {
+      "name": "two trailing dots",
+      "tail": "_{###}..",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_TRAILING_DOT"
+    },
+    {
+      "name": "a dot alone",
+      "tail": ".",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_TRAILING_DOT"
+    },
+    {
+      "name": "trailing dot wins over a missing counter",
+      "tail": "_media.",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_TRAILING_DOT"
+    },
+    {
+      "name": "dot then space reports the space",
+      "tail": "_{###}. ",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expectedError": "PATTERN_EDGE_SPACE"
+    },
+    {
+      "name": "dot before the counter is fine",
+      "tail": ".{###}",
+      "cmNumber": "90003-80008",
+      "counter": 1,
+      "expected": "90003-80008.001"
+    }
+  ]
+}

@@ -569,7 +569,8 @@ public sealed record MyMattersAssetRow(
     [property: Required] int LinkedTaskCount,
     [property: Required] int OpenLinkedTaskCount,
     string? AssetTypeIconKey = null,
-    string? AssetTypeColourKey = null);
+    string? AssetTypeColourKey = null,
+    string? AssetNumber = null);
 
 /// <summary>The latest ordinary comment of a task: author, time and a plain-text excerpt (never a hold or cancel reason comment).</summary>
 public sealed record MyMattersLatestComment(
@@ -609,4 +610,5 @@ public sealed record MyMattersAssetDetail(
     [property: Required] string StatusCode,
     [property: Required] IReadOnlyList<MyMattersLinkedTask> LinkedTasks,
     string? AssetTypeIconKey = null,
-    string? AssetTypeColourKey = null);
+    string? AssetTypeColourKey = null,
+    string? AssetNumber = null);

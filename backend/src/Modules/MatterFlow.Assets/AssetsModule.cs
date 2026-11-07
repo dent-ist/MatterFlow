@@ -17,6 +17,8 @@ public static class AssetsModule
 
         services.AddScoped<AssetAccess>();
         services.AddScoped<AssetTypeService>();
+        services.AddScoped<AssetNumberGenerator>();
+        services.AddScoped<AssetNumberingService>();
         services.AddScoped<AssetService>();
         services.AddScoped<AssetReportService>();
         services.AddScoped<IAssetDirectory, AssetDirectory>();
