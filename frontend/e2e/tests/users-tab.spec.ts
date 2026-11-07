@@ -158,7 +158,7 @@ test.describe('Users tab: workload', () => {
     await expect(away.locator('[data-open-total]')).toHaveText('2');
     await expect(card(page, 'oooIdle').locator('[data-user-open]')).toHaveAttribute(
       'aria-label',
-      /, 0 open tasks, Idle, Out of Office until/,
+      /, 0 open tasks, Idle, Out of Office$/,
     );
 
     const off = card(page, 'offHours');

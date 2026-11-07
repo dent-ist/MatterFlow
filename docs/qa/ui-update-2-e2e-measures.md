@@ -56,3 +56,11 @@ Confirmed: the page is right. D-43a (owner-adjusted in #1232) sets the Title min
 - D-43a: add after "the Title keeps at least 160 px on every global task grid": "(only for the default columns; a person who adds columns can take it down to its 120 px minimum and the frame scrolls, LC-09)".
 
 Tell UF: change the spec number (row 4) and close #1295 as "spec stale".
+
+
+## Added in stage 5 (needs a designer decision)
+
+| # | Spec and test | Assertion | Expected | Actual | Rule or source of the number | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 17 | `users-tab` "a tile is a fraction of the old card" | Height of a person card on Dashboard > Users at 1366 | <= 64 px (width <= 200) | 77 px high, 265 px wide | Review number of issue #73 ("a fraction of the old card"); no line in the design guideline | Is the card meant to be 64 px? If 77 is the design, the spec number changes to 77 and the width limit to 265 |
+| 18 | `wp8-list-chrome` "the default Status is neither counted nor chipped" | Filters counter with a name typed and Status = All | (2) | (1) | D-44d filter counter | The Name filter of Clients is the list's search box (`search: true`), not a cell of the filter row, and is not counted: should the counter count it, and should a chip show when the row is closed? Also the "Filters" toggle sits in the list toolbar, not in the page header (`[data-page-actions]` holds the scope switch and New Client): confirm which is intended |
