@@ -54,6 +54,10 @@ These unit specs enforce the design guidelines. A failing guard is fixed by chan
 - **CI:** `.github/workflows/e2e.yml` runs weekly, manually, and on pull requests labelled `e2e`; it also runs the `sensitive-` specs with the switch on.
 - In the cloud container use the preinstalled Chromium (`/opt/pw-browsers/chromium-1194/chrome-linux/chrome`, `E2E_CHROMIUM_PATH`, `E2E_NO_SANDBOX=1`) and do not run `playwright install`.
 
+## Reports checks in a browser without a stack
+
+`tools/reports-checks` (README there) serves the production build and answers every `/api/**` call from a mock, so axe at both desktop sizes, a keyboard walk (Tab order, grid headings, Saved Views menu and dialogs) and a 50,000-row timing run need no API, SQL Server or data and write nothing. `node tools/reports-checks/axe.mjs frontend/dist/frontend/browser 4660`. The unit spec `features/reports/report-xss-inert.spec.ts` proves that markup in report data (cell, column name, view name, report name) renders as text.
+
 ## Visual checks
 
 Before and after screenshots at 1366x768 and 1920x1080 are required for UI changes (`CLAUDE.md`); there are no phone or tablet screenshots. Crawl and probe scripts: `docs/ux/ui-update/crawl/` with the stack guide `docs/ux/ui-update/stack-howto.md`.
