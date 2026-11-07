@@ -186,7 +186,9 @@ test.describe('WP8 list chrome', () => {
           const longName = list.long(w);
           const cell = region
             .locator(
-              phone ? `a[data-card-name][title="${longName}"]` : `.pg-name[title="${longName}"]`,
+              phone
+                ? `a[data-card-name][title="${longName}"]`
+                : `a[data-row-key][title="${longName}"]`,
             )
             .first();
           await expect(cell, `${list.name} long name`).toBeVisible();

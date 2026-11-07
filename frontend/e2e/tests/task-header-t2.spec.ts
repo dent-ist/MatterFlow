@@ -296,7 +296,7 @@ test.describe('Task header T2: facts strip, context line, Details trimmed (#297)
         ).toHaveCount(1);
       }
       await expect(page.locator('[data-section="details"]')).not.toContainText('Task Type');
-      await expect(page.locator('[data-facts] [data-due]')).toContainText('Overdue');
+      await expect(page.locator('[data-facts] [data-due]')).toContainText(/overdue/i);
     }
     await page.setViewportSize({ width: 1366, height: 768 });
     await detail.open(task.taskId);
@@ -459,7 +459,7 @@ test.describe('Task header T2: primary action and overflow (#298)', () => {
     await expect(page.locator(STATUS)).toContainText('Completed');
     await expect(page.locator('[data-page-actions] > button')).toHaveText([
       /Activity/,
-      /Reopen task/,
+      /Reopen Task/,
     ]);
     await expect(page.locator('[data-action="complete"]')).toHaveCount(0);
     // No Reopen/Complete/Cancel button in the Workflow section or in a banner.

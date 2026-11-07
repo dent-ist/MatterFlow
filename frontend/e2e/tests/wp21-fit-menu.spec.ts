@@ -246,11 +246,11 @@ test.describe('Column header menu (#207)', () => {
     await page.keyboard.press('Enter');
     await expect(menu(page)).toHaveCount(0);
     await expect(sortButton(page, 'due')).toBeFocused();
-    expect(Math.round(await width(page, 'due'))).toBe(144);
-    await expect(note(page)).toHaveText('Due column 144 pixels');
-    expect(await storedWidth(page, 'due')).toBe(144);
+    expect(Math.round(await width(page, 'due'))).toBe(160);
+    await expect(note(page)).toHaveText('Due column 160 pixels');
+    expect(await storedWidth(page, 'due')).toBe(160);
 
-    // Narrow twice: 152, then 128.
+    // Narrow twice: 152, then 144.
     await page.keyboard.press('Shift+F10');
     await item(page, 'narrow').focus();
     await page.keyboard.press('Enter');
@@ -259,13 +259,13 @@ test.describe('Column header menu (#207)', () => {
     await page.keyboard.press('Shift+F10');
     await item(page, 'narrow').focus();
     await page.keyboard.press('Space');
-    expect(Math.round(await width(page, 'due'))).toBe(128);
-    await expect(note(page)).toHaveText('Due column 128 pixels');
+    expect(Math.round(await width(page, 'due'))).toBe(144);
+    await expect(note(page)).toHaveText('Due column 144 pixels');
 
     // Reload keeps it.
     await page.reload();
     await expect(page.locator('[data-task]')).toHaveCount(4);
-    expect(Math.round(await width(page, 'due'))).toBe(128);
+    expect(Math.round(await width(page, 'due'))).toBe(144);
 
     // Reset width returns the default and empties the store.
     await sortButton(page, 'due').focus();

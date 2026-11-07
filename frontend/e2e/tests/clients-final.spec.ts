@@ -576,16 +576,7 @@ test.describe('Clients final verification (#287)', () => {
       await clientStrip.locator('[data-strip-item="overdue"]').click();
       await expect(who.locator('[data-range]')).toContainText(`of ${queue.overdue}`);
 
-      // The matter's one count strip (under its header, #816) and the toggle strip over the Tasks grid.
-      await who.goto(`/matters/${c.matter.matterId}`);
-      const matterStrip = who.locator('mf-matter-health-strip [data-strip]');
-      await expect(matterStrip).toBeVisible();
-      expect(await strip(matterStrip)).toMatchObject({
-        open: matterQueue.open,
-        overdue: matterQueue.overdue,
-        asap: matterQueue.asap,
-        onHold: matterQueue.onHold,
-      });
+      // The matter overview's own count strip (mf-matter-health-strip, #816) was removed with the Summary rebuild (D-44f); the toggle strip over the Tasks grid remains.
       await who.goto(`/matters/${c.matter.matterId}?tab=tasks`);
       const tasksStrip = who.locator('mf-scoped-tasks [data-strip]');
       await expect(tasksStrip).toBeVisible();

@@ -308,7 +308,7 @@ test.describe('More views (WP16)', () => {
     await page.waitForLoadState('networkidle');
     await page.goto('/tasks');
     await expect(page.locator('[data-restored-text]')).toHaveText(
-      'Restored your last view: Due soon.',
+      'Restored your last view: Due Soon.',
     );
     expect(await isPressed(page, 'dueSoon')).toBe(true);
     await expect(page.locator('[data-filters-toggle]')).not.toContainText('(');

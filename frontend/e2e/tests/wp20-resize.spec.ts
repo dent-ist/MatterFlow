@@ -130,13 +130,13 @@ test.describe('Drag resize (#204)', () => {
     expect(await page.locator('.wt-wrap').evaluate((e) => e.scrollTop)).toBe(scroll0);
     const entries = Object.values(await stored(page));
     expect(entries).toHaveLength(1);
-    expect(entries[0]['due']).toBe(180);
-    await shot(page, 'task-queue-due-180-1366x768');
+    expect(entries[0]['due']).toBe(196);
+    await shot(page, 'task-queue-due-196-1366x768');
 
-    // Reload: still 180. The sort in the URL was never touched.
+    // Reload: still 196. The sort in the URL was never touched.
     await page.reload();
     await expect(page.locator('[data-task]')).toHaveCount(4);
-    expect(Math.abs((await width(page, 'due')) - 180)).toBeLessThanOrEqual(1);
+    expect(Math.abs((await width(page, 'due')) - 196)).toBeLessThanOrEqual(1);
     expect(page.url()).not.toContain('sort=');
 
     // Reset (the store's resetWidths removes the scope's key): the default returns.

@@ -544,7 +544,7 @@ const RECORDS: RecordPage[] = [
   {
     kind: 'matter',
     url: () => `/matters/${data.m28.matterId}`,
-    tabs: ['details', 'tasks', 'projects', 'assets'],
+    tabs: ['summary', 'tasks', 'projects', 'assets', 'productions', 'notes', 'activities'],
     state: /Set Inactive/,
   },
   {

@@ -225,9 +225,6 @@ test.describe('#285: permission matrix, no dead links', () => {
 
         const m = data.m1;
         await visit(`/matters/${m.matterId}`, 'matter overview');
-        expect((await links(page, '[data-strip]')) > 0, 'matter strip').toBe(
-          has(role, 'Task.View'),
-        );
         expect((await links(page, 'a[href^="/clients/"]')) > 0, 'client link on the matter').toBe(
           has(role, 'Client.View'),
         );

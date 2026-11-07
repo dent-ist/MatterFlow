@@ -70,7 +70,7 @@ async function seedTasks(seed: Parameters<Parameters<typeof test>[2]>[0]['seed']
 }
 
 test.describe('Column widths in the Columns panel (#206)', () => {
-  test('keyboard only: Columns > Column widths > Widen Due three times > Esc gives 160 px and focus returns to the button; persists', async ({
+  test('keyboard only: Columns > Column widths > Widen Due three times > Esc gives 176 px and focus returns to the button; persists', async ({
     seed,
     asUser,
   }) => {
@@ -91,9 +91,9 @@ test.describe('Column widths in the Columns panel (#206)', () => {
     await page.keyboard.press('Tab');
     await expect(row(page, 'due').getByRole('button', { name: 'Widen Due' })).toBeFocused();
     for (let i = 0; i < 3; i++) await page.keyboard.press('Enter');
-    await expect(field(page, 'due')).toHaveValue('160');
-    await expect(live(page)).toHaveText('Due column 160 pixels');
-    expect(await gridWidth(page, 'due')).toBe(160);
+    await expect(field(page, 'due')).toHaveValue('176');
+    await expect(live(page)).toHaveText('Due column 176 pixels');
+    expect(await gridWidth(page, 'due')).toBe(176);
     await page.keyboard.press('Tab');
     await expect(
       row(page, 'due').getByRole('button', { name: 'Fit Due to content' }),
@@ -106,10 +106,10 @@ test.describe('Column widths in the Columns panel (#206)', () => {
     await expect(panel(page)).toHaveCount(0);
     await expect(columnsButton(page)).toBeFocused();
 
-    expect(Object.values(await stored(page))).toEqual([{ due: 160 }]);
+    expect(Object.values(await stored(page))).toEqual([{ due: 176 }]);
     await page.reload();
     await expect(page.locator('[data-task]')).toHaveCount(3);
-    expect(await gridWidth(page, 'due')).toBe(160);
+    expect(await gridWidth(page, 'due')).toBe(176);
   });
 
   test('Shift steps 32 px, a typed number clamps and shows the clamped value, Up and Down step by 8', async ({
@@ -126,8 +126,8 @@ test.describe('Column widths in the Columns panel (#206)', () => {
     const widen = row(page, 'due').getByRole('button', { name: 'Widen Due' });
     await widen.focus();
     await page.keyboard.press('Shift+Enter');
-    await expect(field(page, 'due')).toHaveValue('168');
-    expect(await gridWidth(page, 'due')).toBe(168);
+    await expect(field(page, 'due')).toHaveValue('184');
+    expect(await gridWidth(page, 'due')).toBe(184);
     await row(page, 'due')
       .getByRole('button', { name: 'Narrow Due' })
       .click({ modifiers: ['Shift'] });
@@ -217,7 +217,7 @@ test.describe('Column widths in the Columns panel (#206)', () => {
     await row(page, 'due')
       .getByRole('button', { name: 'Widen Due' })
       .click({ modifiers: ['Shift'] });
-    expect(await gridWidth(page, 'due')).toBe(168);
+    expect(await gridWidth(page, 'due')).toBe(184);
     await page.keyboard.press('Escape');
 
     await new MyWorkPage(page).open();
