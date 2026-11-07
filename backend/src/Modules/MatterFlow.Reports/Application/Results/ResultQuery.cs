@@ -32,6 +32,11 @@ public static class ResultQuery
     public const int MaxFilters = 20;
     public const int MaxPageSize = 250;
 
+    /// <summary>
+    /// <c>sort</c> is up to three keys separated by commas, each <c>&lt;column&gt;:asc</c> or <c>&lt;column&gt;:desc</c> (the direction defaults to asc). A column is
+    /// written by name, or by its <b>zero-based position</b> as <c>#&lt;n&gt;</c> (<c>#0:desc</c>): a column name may itself contain a comma, which the name form cannot
+    /// carry, so a client that does not control the names sends positions. A text that is <c>#</c> and digits is always a position, never a name.
+    /// </summary>
     public static IReadOnlyList<ResultSort> ParseSort(string? text, ResultTable table)
     {
         if (string.IsNullOrWhiteSpace(text))
@@ -42,18 +47,34 @@ public static class ResultQuery
             var colon = part.LastIndexOf(':');
             var name = colon < 0 ? part : part[..colon];
             var direction = colon < 0 ? "asc" : part[(colon + 1)..].ToLowerInvariant();
-            if (table.IndexOf(name) < 0)
-                throw new ResultQueryException($"Unknown column '{Short(name)}'.");
+            var index = ColumnIndex(table, name);
             if (direction is not ("asc" or "desc"))
                 throw new ResultQueryException("Sort direction must be asc or desc.");
-            if (sorts.Any(s => string.Equals(s.Column, name, StringComparison.OrdinalIgnoreCase)))
+            var canonical = table.Columns[index].Name;
+            if (sorts.Any(s => string.Equals(s.Column, canonical, StringComparison.OrdinalIgnoreCase)))
                 continue;
-            sorts.Add(new ResultSort(table.Columns[table.IndexOf(name)].Name, direction == "desc"));
+            sorts.Add(new ResultSort(canonical, direction == "desc"));
         }
 
         if (sorts.Count > MaxSortColumns)
             throw new ResultQueryException($"Sort by at most {MaxSortColumns} columns.");
         return sorts;
+    }
+
+    /// <summary>The index of a column given by name or as <c>#n</c> (zero-based position); a 400 for anything that is not a column of the result.</summary>
+    private static int ColumnIndex(ResultTable table, string reference)
+    {
+        if (reference.Length > 1 && reference[0] == '#' && reference.Skip(1).All(char.IsAsciiDigit))
+        {
+            if (!int.TryParse(reference.AsSpan(1), NumberStyles.None, CultureInfo.InvariantCulture, out var position) || position >= table.Columns.Count)
+                throw new ResultQueryException($"There is no column at position '{Short(reference)}'.");
+            return position;
+        }
+
+        var index = table.IndexOf(reference);
+        if (index < 0)
+            throw new ResultQueryException($"Unknown column '{Short(reference)}'.");
+        return index;
     }
 
     public static IReadOnlyList<ResultFilter> ParseFilters(string? json)

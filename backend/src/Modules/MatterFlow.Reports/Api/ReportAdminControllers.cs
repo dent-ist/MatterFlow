@@ -271,7 +271,7 @@ public class ReportAdminController(IReportsAvailability availability, ReportAuth
     internal static PreviewResponse MapPreview(PreviewResult result) => new(
         result.Success,
         result.Status,
-        result.Columns.Select(c => new ResultColumnResponse(c.Name, ReportsController.ColumnTypeName(c.Type))).ToList(),
+        result.Columns.Select(c => new ResultColumnResponse(c.Name, ReportsController.ColumnTypeName(c.Type), c.Instant)).ToList(),
         result.Rows,
         result.RowCount,
         result.ExceedsCap,

@@ -15228,6 +15228,13 @@ export interface IReportsClient {
      */
     getReportRows(runId: string, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined, filter?: string | undefined): Observable<ReportRowsResponse>;
     /**
+     * @param sort (optional) 
+     * @param filter (optional) 
+     * @param columns (optional) 
+     * @return OK
+     */
+    exportReportRows(runId: string, sort?: string | undefined, filter?: string | undefined, columns?: string[] | undefined): Observable<string>;
+    /**
      * @return No Content
      */
     dropReportResult(runId: string): Observable<void>;
@@ -15517,6 +15524,74 @@ export class ReportsClient implements IReportsClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ReportRowsResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param sort (optional) 
+     * @param filter (optional) 
+     * @param columns (optional) 
+     * @return OK
+     */
+    exportReportRows(runId: string, sort?: string | undefined, filter?: string | undefined, columns?: string[] | undefined): Observable<string> {
+        let url_ = this.baseUrl + "/api/v1/reports/runs/{runId}/export.csv?";
+        if (runId === undefined || runId === null)
+            throw new globalThis.Error("The parameter 'runId' must be defined.");
+        url_ = url_.replace("{runId}", encodeURIComponent("" + runId));
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "sort=" + encodeURIComponent("" + sort) + "&";
+        if (filter === null)
+            throw new globalThis.Error("The parameter 'filter' cannot be null.");
+        else if (filter !== undefined)
+            url_ += "filter=" + encodeURIComponent("" + filter) + "&";
+        if (columns === null)
+            throw new globalThis.Error("The parameter 'columns' cannot be null.");
+        else if (columns !== undefined)
+            columns && columns.forEach(item => { url_ += "columns=" + encodeURIComponent("" + item) + "&"; });
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processExportReportRows(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processExportReportRows(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<string>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<string>;
+        }));
+    }
+
+    protected processExportReportRows(response: HttpResponseBase): Observable<string> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as string;
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -16159,6 +16234,383 @@ export class ReportAssignmentClient implements IReportAssignmentClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssignmentMatrixResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface IReportViewsClient {
+    /**
+     * @return OK
+     */
+    listReportViews(reportId: number): Observable<ReportViewListResponse>;
+    /**
+     * @return Created
+     */
+    createReportView(reportId: number, body: CreateReportViewRequest): Observable<ReportViewResponse>;
+    /**
+     * @return OK
+     */
+    updateReportView(reportId: number, viewId: number, body: UpdateReportViewRequest): Observable<ReportViewResponse>;
+    /**
+     * @return No Content
+     */
+    deleteReportView(reportId: number, viewId: number): Observable<void>;
+    /**
+     * @return OK
+     */
+    setDefaultReportView(reportId: number, viewId: number): Observable<ReportViewResponse>;
+    /**
+     * @return OK
+     */
+    clearDefaultReportView(reportId: number, viewId: number): Observable<ReportViewResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class ReportViewsClient implements IReportViewsClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    listReportViews(reportId: number): Observable<ReportViewListResponse> {
+        let url_ = this.baseUrl + "/api/v1/reports/{reportId}/views";
+        if (reportId === undefined || reportId === null)
+            throw new globalThis.Error("The parameter 'reportId' must be defined.");
+        url_ = url_.replace("{reportId}", encodeURIComponent("" + reportId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListReportViews(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListReportViews(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ReportViewListResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ReportViewListResponse>;
+        }));
+    }
+
+    protected processListReportViews(response: HttpResponseBase): Observable<ReportViewListResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ReportViewListResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createReportView(reportId: number, body: CreateReportViewRequest): Observable<ReportViewResponse> {
+        let url_ = this.baseUrl + "/api/v1/reports/{reportId}/views";
+        if (reportId === undefined || reportId === null)
+            throw new globalThis.Error("The parameter 'reportId' must be defined.");
+        url_ = url_.replace("{reportId}", encodeURIComponent("" + reportId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateReportView(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateReportView(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ReportViewResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ReportViewResponse>;
+        }));
+    }
+
+    protected processCreateReportView(response: HttpResponseBase): Observable<ReportViewResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ReportViewResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateReportView(reportId: number, viewId: number, body: UpdateReportViewRequest): Observable<ReportViewResponse> {
+        let url_ = this.baseUrl + "/api/v1/reports/{reportId}/views/{viewId}";
+        if (reportId === undefined || reportId === null)
+            throw new globalThis.Error("The parameter 'reportId' must be defined.");
+        url_ = url_.replace("{reportId}", encodeURIComponent("" + reportId));
+        if (viewId === undefined || viewId === null)
+            throw new globalThis.Error("The parameter 'viewId' must be defined.");
+        url_ = url_.replace("{viewId}", encodeURIComponent("" + viewId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateReportView(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateReportView(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ReportViewResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ReportViewResponse>;
+        }));
+    }
+
+    protected processUpdateReportView(response: HttpResponseBase): Observable<ReportViewResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ReportViewResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return No Content
+     */
+    deleteReportView(reportId: number, viewId: number): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/reports/{reportId}/views/{viewId}";
+        if (reportId === undefined || reportId === null)
+            throw new globalThis.Error("The parameter 'reportId' must be defined.");
+        url_ = url_.replace("{reportId}", encodeURIComponent("" + reportId));
+        if (viewId === undefined || viewId === null)
+            throw new globalThis.Error("The parameter 'viewId' must be defined.");
+        url_ = url_.replace("{viewId}", encodeURIComponent("" + viewId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeleteReportView(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeleteReportView(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDeleteReportView(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    setDefaultReportView(reportId: number, viewId: number): Observable<ReportViewResponse> {
+        let url_ = this.baseUrl + "/api/v1/reports/{reportId}/views/{viewId}/default";
+        if (reportId === undefined || reportId === null)
+            throw new globalThis.Error("The parameter 'reportId' must be defined.");
+        url_ = url_.replace("{reportId}", encodeURIComponent("" + reportId));
+        if (viewId === undefined || viewId === null)
+            throw new globalThis.Error("The parameter 'viewId' must be defined.");
+        url_ = url_.replace("{viewId}", encodeURIComponent("" + viewId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSetDefaultReportView(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSetDefaultReportView(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ReportViewResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ReportViewResponse>;
+        }));
+    }
+
+    protected processSetDefaultReportView(response: HttpResponseBase): Observable<ReportViewResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ReportViewResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    clearDefaultReportView(reportId: number, viewId: number): Observable<ReportViewResponse> {
+        let url_ = this.baseUrl + "/api/v1/reports/{reportId}/views/{viewId}/default";
+        if (reportId === undefined || reportId === null)
+            throw new globalThis.Error("The parameter 'reportId' must be defined.");
+        url_ = url_.replace("{reportId}", encodeURIComponent("" + reportId));
+        if (viewId === undefined || viewId === null)
+            throw new globalThis.Error("The parameter 'viewId' must be defined.");
+        url_ = url_.replace("{viewId}", encodeURIComponent("" + viewId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processClearDefaultReportView(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processClearDefaultReportView(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ReportViewResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ReportViewResponse>;
+        }));
+    }
+
+    protected processClearDefaultReportView(response: HttpResponseBase): Observable<ReportViewResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ReportViewResponse;
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -25918,6 +26370,14 @@ export interface CreateReportRequest {
     [key: string]: any;
 }
 
+export interface CreateReportViewRequest {
+    name: string | undefined;
+    layout: ReportViewLayout | undefined;
+    isDefault: boolean;
+
+    [key: string]: any;
+}
+
 export interface CreateRoleRequest {
     name: string;
     description: string | undefined;
@@ -28282,6 +28742,34 @@ export interface ReportVersionResponse {
     [key: string]: any;
 }
 
+export interface ReportViewLayout {
+    columns: ViewColumnLayout[] | undefined;
+    sort: ViewSortLayout[] | undefined;
+    filters: ViewFilterLayout[] | undefined;
+    pageSize: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface ReportViewListResponse {
+    views: ReportViewResponse[];
+    limit: number;
+
+    [key: string]: any;
+}
+
+export interface ReportViewResponse {
+    viewId: number;
+    name: string;
+    isDefault: boolean;
+    layout: ReportViewLayout;
+    createdAtUtc: string;
+    modifiedAtUtc: string | undefined;
+    ignoredColumns: string[];
+
+    [key: string]: any;
+}
+
 export interface ResolveNoteReferencesRequest {
     matterId: number;
     references: NoteReferenceQuery[];
@@ -28298,6 +28786,7 @@ export interface ResolveNoteReferencesResponse {
 export interface ResultColumnResponse {
     name: string;
     type: string;
+    isInstant?: boolean;
 
     [key: string]: any;
 }
@@ -29698,6 +30187,13 @@ export interface UpdateReportRequest {
     [key: string]: any;
 }
 
+export interface UpdateReportViewRequest {
+    name: string | undefined;
+    layout: ReportViewLayout | undefined;
+
+    [key: string]: any;
+}
+
 export interface UpdateRoleRequest {
     name: string;
     description: string | undefined;
@@ -29969,6 +30465,30 @@ export interface ValidateFormValuesResponse {
     errors: FormValueErrorModel[];
     normalizedValues: any;
     droppedFields: string[];
+
+    [key: string]: any;
+}
+
+export interface ViewColumnLayout {
+    name: string;
+    hidden: boolean;
+    width: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface ViewFilterLayout {
+    column: string;
+    op: string;
+    value: string | undefined;
+    value2: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface ViewSortLayout {
+    column: string;
+    descending: boolean;
 
     [key: string]: any;
 }

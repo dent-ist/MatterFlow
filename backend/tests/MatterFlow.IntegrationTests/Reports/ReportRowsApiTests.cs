@@ -55,6 +55,27 @@ public sealed class ReportRowsApiTests(SqlServerFixture sql)
     }
 
     [Fact]
+    public async Task A_column_with_a_comma_in_its_name_sorts_by_position_and_the_name_form_still_works()
+    {
+        await using var h = await ReportTestHarness.StartAsync(sql);
+        var (runner, role) = await h.PersonAsync(@"KE\runner", "Report.Run");
+        var run = await RunAsync(runner, await h.AddReportAsync("SELECT * FROM (VALUES (1, 30.0), (2, 10.0), (3, 20.0)) v(id, [Total, USD])", roleIds: role));
+
+        async Task<int[]> Ids(string query) => (await ReadAsync(await runner.GetAsync(Rows(run, query)))).GetProperty("rows").EnumerateArray().Select(r => r[0].GetInt32()).ToArray();
+
+        (await Ids("?sort=%231:asc")).ShouldBe([2, 3, 1]);
+        (await Ids("?sort=%231:desc")).ShouldBe([1, 3, 2]);
+        (await Ids("?sort=%230:desc,%231:asc")).ShouldBe([3, 2, 1]);
+        (await Ids("?sort=id:desc")).ShouldBe([3, 2, 1]);
+        foreach (var bad in new[] { "?sort=%232:asc", "?sort=%23x:asc", "?sort=" + Uri.EscapeDataString("Total, USD:asc") })
+        {
+            var response = await runner.GetAsync(Rows(run, bad));
+            response.StatusCode.ShouldBe(HttpStatusCode.BadRequest, bad);
+            (await ReadAsync(response)).GetProperty("code").GetString().ShouldBe("RESULT_QUERY_INVALID");
+        }
+    }
+
+    [Fact]
     public async Task A_bad_sort_or_filter_is_400_and_names_the_problem()
     {
         await using var h = await ReportTestHarness.StartAsync(sql);

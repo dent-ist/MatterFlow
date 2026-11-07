@@ -86,6 +86,19 @@ internal sealed class ReportRunLog(ReportAppConnection app) : IReportRunLog
                 cancellationToken);
         }
 
+        // An export writes its audit event when it finished, or when it was cut off after rows had already been sent (the event then states the rows really sent).
+        if (start.Kind == ReportRunKind.Export && start.Export is { } export
+            && (completion.Status is ReportRunStatus.Succeeded or ReportRunStatus.Truncated || completion.ExportedRowCount is > 0))
+        {
+            await ReportAuditSql.WriteAsync(
+                connection,
+                transaction,
+                start.UserId,
+                start.CorrelationId,
+                ReportAuditEntry.Exported(start.ReportId, start.ReportName, start.VersionNo, completion.ExportedRowCount ?? 0, export.FilterSummary, export.Columns),
+                cancellationToken);
+        }
+
         await transaction.CommitAsync(cancellationToken);
     }
 

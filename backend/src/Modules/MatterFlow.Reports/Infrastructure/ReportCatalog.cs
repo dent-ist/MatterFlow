@@ -9,10 +9,14 @@ namespace MatterFlow.Reports.Infrastructure;
 /// </summary>
 internal sealed class ReportCatalog(ReportAppConnection app) : IReportCatalog
 {
-    /// <summary>The one rule for "may run": the report is active and one of the person's active roles holds it. Every read of this class uses it.</summary>
+    /// <summary>
+    /// The one rule for "may run": the report is active, its category is active and one of the person's active roles holds it. Every read of this class uses it
+    /// (run, definition, choice lists, the list, the export and the saved views), so a report in a deactivated category is as hidden as an inactive one.
+    /// </summary>
     private const string MayRun =
         """
         d.IsActive = 1
+          AND EXISTS (SELECT 1 FROM dbo.ReportCategory rc WHERE rc.ReportCategoryId = d.ReportCategoryId AND rc.IsActive = 1)
           AND EXISTS (SELECT 1
                       FROM dbo.RoleReport rr
                       JOIN dbo.UserRole ur ON ur.RoleId = rr.RoleId

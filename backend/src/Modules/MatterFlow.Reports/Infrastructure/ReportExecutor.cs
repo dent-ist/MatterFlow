@@ -141,7 +141,7 @@ internal sealed class ReportExecutor(IReportsAvailability availability, IOptions
             var candidate = name;
             for (var n = 2; !used.Add(candidate); n++)
                 candidate = $"{name} ({n.ToString(CultureInfo.InvariantCulture)})";
-            columns.Add(new ResultColumn(candidate, TypeOf(reader.GetFieldType(i), reader.GetDataTypeName(i)), reader.GetFieldType(i) == typeof(double) || reader.GetFieldType(i) == typeof(float)));
+            columns.Add(new ResultColumn(candidate, TypeOf(reader.GetFieldType(i), reader.GetDataTypeName(i)), reader.GetFieldType(i) == typeof(double) || reader.GetFieldType(i) == typeof(float), reader.GetFieldType(i) == typeof(DateTimeOffset)));
         }
 
         return columns;

@@ -3,8 +3,11 @@ using Microsoft.Extensions.Options;
 
 namespace MatterFlow.Reports.Application.Results;
 
+/// <summary>Which report version produced a stored result (for the export's run-log row and audit event, so they name the version that ran, not the current one).</summary>
+public sealed record ResultOrigin(int VersionId, int VersionNo, string ReportName);
+
 /// <summary>A cached result and who owns it.</summary>
-public sealed record StoredResult(Guid RunId, int OwnerUserId, int ReportId, ResultTable Table, bool Truncated, DateTime CreatedUtc);
+public sealed record StoredResult(Guid RunId, int OwnerUserId, int ReportId, ResultTable Table, bool Truncated, DateTime CreatedUtc, ResultOrigin? Origin = null);
 
 /// <summary>What a lookup of a cached result found.</summary>
 public enum ResultLookup
@@ -70,16 +73,16 @@ public sealed class ReportResultStore : IReportResultSink
 
     public IRowSink CreateSink(int maxRows) => new ResultTableBuilder(maxRows, BudgetBytes);
 
-    public Guid? Complete(IRowSink sink, int ownerUserId, int reportId, bool truncated)
+    public Guid? Complete(IRowSink sink, int ownerUserId, int reportId, bool truncated, ResultOrigin? origin = null)
     {
         var builder = (ResultTableBuilder)sink;
         if (builder.OverBudget)
             return null;
-        return Put(ownerUserId, reportId, builder.Build(), truncated);
+        return Put(ownerUserId, reportId, builder.Build(), truncated, origin);
     }
 
     /// <summary>Stores a result for its owner, replacing the owner's previous one and dropping the oldest results of others if the budget needs room. Null when it cannot fit at all.</summary>
-    public Guid? Put(int ownerUserId, int reportId, ResultTable table, bool truncated)
+    public Guid? Put(int ownerUserId, int reportId, ResultTable table, bool truncated, ResultOrigin? origin = null)
     {
         var now = _time.GetUtcNow().UtcDateTime;
         lock (_gate)
@@ -98,7 +101,7 @@ public sealed class ReportResultStore : IReportResultSink
                 Tombstone(oldest.Result, now);
             }
 
-            var stored = new StoredResult(Guid.NewGuid(), ownerUserId, reportId, table, truncated, now);
+            var stored = new StoredResult(Guid.NewGuid(), ownerUserId, reportId, table, truncated, now, origin);
             _byUser[ownerUserId] = new Entry(stored, now);
             return stored.RunId;
         }
@@ -119,6 +122,13 @@ public sealed class ReportResultStore : IReportResultSink
         }
 
         return _tombstones.TryGetValue(runId, out var t) && t.Owner == userId ? (ResultLookup.Expired, null) : (ResultLookup.NotFound, null);
+    }
+
+    /// <summary>The column shape of the person's live result when it belongs to <paramref name="reportId"/>, without touching its lifetime; null otherwise. Used to check a saved view against what the report really returns.</summary>
+    public ResultTable? PeekTable(int userId, int reportId)
+    {
+        lock (_gate)
+            return _byUser.TryGetValue(userId, out var entry) && entry.Result.ReportId == reportId ? entry.Result.Table : null;
     }
 
     /// <summary>Drops the caller's result. True when it existed.</summary>

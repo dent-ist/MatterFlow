@@ -66,31 +66,52 @@ public sealed record ReportAuditEntry(string EventType, int ReportId, string Sum
     public static ReportAuditEntry RolesAssigned(int reportId, string name, IReadOnlyCollection<string> added, IReadOnlyCollection<string> removed) =>
         new(ReportAuditEvents.RolesAssigned, reportId, Limit($"Report '{name}': roles +{added.Count} -{removed.Count}"), "roles", Limit(string.Join(", ", removed), ValueLimit), Limit(string.Join(", ", added), ValueLimit));
 
-    public static ReportAuditEntry RunCompleted(int reportId, string name, int versionNo, string status, int? rowCount, bool truncated, int? durationMs, string? errorCode, string? parametersJson) =>
-        new(
+    /// <summary>
+    /// The compact run event. It carries <b>no parameter values</b> (issue #808, owner decision 2): only the parameter names and how many there were,
+    /// because a value can be a matter, a client or a person's name and every holder of <c>Audit.View</c> can read this event while it has no matter scope.
+    /// The values as bound stay in <c>dbo.ReportRun</c> for the people who hold <c>Report.Manage</c>.
+    /// </summary>
+    public static ReportAuditEntry RunCompleted(int reportId, string name, int versionNo, string status, int? rowCount, bool truncated, int? durationMs, string? errorCode, string? parametersJson)
+    {
+        var names = ParameterNames(parametersJson);
+        return new(
             ReportAuditEvents.Run,
             reportId,
             Limit($"Ran report '{name}' (version {versionNo}): {status}{(rowCount is null ? "" : $", {rowCount} rows")}{(truncated ? " (cut off)" : "")}"),
             "run",
             null,
-            Limit(JsonSerializer.Serialize(new { status, rows = rowCount, truncated, ms = durationMs, error = errorCode, version = versionNo, parameters = ParseOrNull(parametersJson) }), ValueLimit));
+            Limit(JsonSerializer.Serialize(new { status, rows = rowCount, truncated, ms = durationMs, error = errorCode, version = versionNo, parameterNames = names, parameterCount = names.Count }), ValueLimit));
+    }
 
-    public static ReportAuditEntry Exported(int reportId, string name, int versionNo, int exportedRows, string filterSummary) =>
-        new(ReportAuditEvents.Export, reportId, Limit($"Exported {exportedRows} rows of report '{name}' (version {versionNo}) as CSV"), "export", null, Limit(JsonSerializer.Serialize(new { rows = exportedRows, filter = filterSummary, version = versionNo }), ValueLimit));
-
-    private static JsonElement? ParseOrNull(string? json)
+    /// <summary>The names in the run log's <c>["NAME=value", ...]</c> text; nothing after the first <c>=</c> is ever read into the result. Anything that does not look like that gives no names.</summary>
+    internal static IReadOnlyList<string> ParameterNames(string? parametersJson)
     {
-        if (string.IsNullOrWhiteSpace(json))
-            return null;
+        if (string.IsNullOrWhiteSpace(parametersJson))
+            return [];
         try
         {
-            return JsonDocument.Parse(json).RootElement.Clone();
+            using var document = JsonDocument.Parse(parametersJson);
+            if (document.RootElement.ValueKind != JsonValueKind.Array)
+                return [];
+            var names = new List<string>();
+            foreach (var item in document.RootElement.EnumerateArray())
+            {
+                var text = item.ValueKind == JsonValueKind.String ? item.GetString() : null;
+                var equals = text?.IndexOf('=', StringComparison.Ordinal) ?? -1;
+                if (equals is > 0 and <= 64 && text![..equals].All(c => c is (>= 'A' and <= 'Z') or (>= '0' and <= '9') or '_'))
+                    names.Add(text[..equals]);
+            }
+
+            return names;
         }
         catch (JsonException)
         {
-            return null;
+            return [];
         }
     }
+
+    public static ReportAuditEntry Exported(int reportId, string name, int versionNo, int exportedRows, string filterSummary, IReadOnlyList<string>? columns = null) =>
+        new(ReportAuditEvents.Export, reportId, Limit($"Exported {exportedRows} rows of report '{name}' (version {versionNo}) as CSV"), "export", null, Limit(JsonSerializer.Serialize(new { rows = exportedRows, filter = filterSummary, version = versionNo, columns }), ValueLimit));
 
     private static string Limit(string text, int max = SummaryLimit) => text.Length <= max ? text : text[..(max - 3)] + "...";
 }

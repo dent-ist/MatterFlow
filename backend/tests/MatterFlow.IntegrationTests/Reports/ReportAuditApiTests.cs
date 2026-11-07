@@ -35,7 +35,7 @@ public sealed class ReportAuditApiTests(SqlServerFixture sql)
     private static string?[] Types(IEnumerable<JsonElement> events) => events.Select(e => e.GetProperty("EventType").GetString()).ToArray();
 
     [Fact]
-    public async Task A_run_writes_one_compact_audit_event_with_the_parameters_and_never_the_sql()
+    public async Task A_run_writes_one_compact_audit_event_with_the_parameter_names_but_no_values_and_never_the_sql()
     {
         await using var h = await ReportTestHarness.StartAsync(sql);
         var (runner, role) = await h.PersonAsync(@"KE\runner", "Report.Run");
@@ -52,7 +52,10 @@ public sealed class ReportAuditApiTests(SqlServerFixture sql)
         run.GetProperty("Summary").GetString().ShouldBe("Ran report 'Report 1' (version 1): Succeeded, 2 rows");
         var details = JsonDocument.Parse(run.GetProperty("NewValue").GetString()!).RootElement;
         details.GetProperty("rows").GetInt32().ShouldBe(2);
-        details.GetProperty("parameters")[0].GetString().ShouldBe("MAX=2");
+        details.GetProperty("parameterNames").EnumerateArray().Select(p => p.GetString()).ShouldBe(["MAX"]);
+        details.GetProperty("parameterCount").GetInt32().ShouldBe(1);
+        details.TryGetProperty("parameters", out _).ShouldBeFalse();
+        run.GetProperty("NewValue").GetString()!.ShouldNotContain("MAX=2");
         var everything = string.Join(" ", events.Select(e => e.ToString()));
         everything.ShouldNotContain("very_secret_marker");
         everything.ShouldNotContain("SELECT");

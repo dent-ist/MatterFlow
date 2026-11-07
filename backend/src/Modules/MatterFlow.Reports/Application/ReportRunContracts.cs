@@ -33,7 +33,8 @@ public enum ReportColumnType
 }
 
 /// <param name="Floating">For decimal columns: the source is a floating point type (float, real), kept as double instead of decimal.</param>
-public sealed record ResultColumn(string Name, ReportColumnType Type, bool Floating = false);
+/// <param name="Instant">For date-time columns: the SQL type carries an offset (<c>datetimeoffset</c>), so every value is a point in time and is sent in UTC with a <c>Z</c>. False for <c>datetime</c>, <c>datetime2</c> and <c>smalldatetime</c>: a wall-clock value with no zone, sent as it is.</param>
+public sealed record ResultColumn(string Name, ReportColumnType Type, bool Floating = false, bool Instant = false);
 
 /// <summary>The current version of an active report that the caller's role may run, as the engine needs it.</summary>
 public sealed record RunnableReport(
@@ -95,7 +96,11 @@ public interface IReportExecutor
 
 /// <param name="ReportName">Name of the report, for the audit summary.</param>
 /// <param name="VersionNo">Number of the version that runs, for the audit summary.</param>
-public sealed record RunStart(int ReportId, int VersionId, int UserId, ReportRunKind Kind, string? ParametersJson, Guid CorrelationId, string ReportName = "", int VersionNo = 0);
+/// <param name="Export">For an export: the filter summary and columns for the <c>REPORT_EXPORT</c> audit event.</param>
+public sealed record RunStart(int ReportId, int VersionId, int UserId, ReportRunKind Kind, string? ParametersJson, Guid CorrelationId, string ReportName = "", int VersionNo = 0, ExportAuditInfo? Export = null);
+
+/// <summary>What the export audit event says besides the row count: which filters and sort applied (columns and operators, never values) and which columns went out.</summary>
+public sealed record ExportAuditInfo(string FilterSummary, IReadOnlyList<string> Columns);
 
 public sealed record RunCompletion(ReportRunStatus Status, int? RowCount, bool Truncated, int? DurationMs, string? ErrorCode, int? ExportedRowCount);
 

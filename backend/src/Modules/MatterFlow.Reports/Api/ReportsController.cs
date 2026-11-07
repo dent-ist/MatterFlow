@@ -16,7 +16,12 @@ public sealed record RunReportRequest(Dictionary<string, JsonElement>? Parameter
 /// <summary>A column of a result.</summary>
 /// <param name="Name">Unique, non-empty name.</param>
 /// <param name="Type">text, integer, decimal, boolean, date or dateTime.</param>
-public sealed record ResultColumnResponse(string Name, string Type);
+/// <param name="IsInstant">
+/// For <c>dateTime</c> columns: true when the value is a point in time (the SQL type is <c>datetimeoffset</c>): it is sent in UTC with a trailing <c>Z</c>
+/// (<c>2026-03-31T18:05:00Z</c>) and the client shows it in the person's time zone. False when the value is a wall-clock time with no zone
+/// (<c>datetime</c>, <c>datetime2</c>, <c>smalldatetime</c>): it is sent as it is stored (<c>2026-03-31T14:05:00</c>) and shown unchanged. Always false for other types.
+/// </param>
+public sealed record ResultColumnResponse(string Name, string Type, bool IsInstant = false);
 
 /// <summary>The result of a run: its id and shape. The rows are fetched page by page with that id.</summary>
 public sealed record RunReportResponse(Guid RunId, IReadOnlyList<ResultColumnResponse> Columns, int RowCount, bool Truncated, int DurationMs, int MaxRows);
@@ -126,7 +131,7 @@ public sealed record RunnableReportResponse(
 [ApiController]
 [Route("api/v1/reports")]
 [Produces("application/json")]
-public class ReportsController(ReportRunService runs, ReportResultStore results, ICurrentUser currentUser, ReportBrowseService browse) : ControllerBase
+public class ReportsController(ReportRunService runs, ReportResultStore results, ICurrentUser currentUser, ReportBrowseService browse, ReportExportService export) : ControllerBase
 {
     /// <summary>
     /// The reports the caller may run: active reports with a current version that are assigned to one of the caller's roles (needs <c>Report.Run</c>), grouped
@@ -211,7 +216,7 @@ public class ReportsController(ReportRunService runs, ReportResultStore results,
             return ReportProblems.Create(this, problem);
 
         var r = result.Response!;
-        return Ok(new RunReportResponse(r.RunId, r.Columns.Select(c => new ResultColumnResponse(c.Name, ColumnTypeName(c.Type))).ToList(), r.RowCount, r.Truncated, r.DurationMs, r.MaxRows));
+        return Ok(new RunReportResponse(r.RunId, r.Columns.Select(c => new ResultColumnResponse(c.Name, ColumnTypeName(c.Type), c.Instant)).ToList(), r.RowCount, r.Truncated, r.DurationMs, r.MaxRows));
     }
 
     /// <summary>Cancels the report the caller is running right now, if any. 204 either way.</summary>
@@ -225,7 +230,7 @@ public class ReportsController(ReportRunService runs, ReportResultStore results,
     }
 
     /// <summary>
-    /// A page of a cached result, filtered and sorted on the server. <c>sort</c> is <c>col:asc,col2:desc</c> (at most 3), <c>filter</c> a JSON array of
+    /// A page of a cached result, filtered and sorted on the server. <c>sort</c> is <c>col:asc,col2:desc</c> (at most 3); a column is written by name or by its zero-based position as <c>#n</c> (<c>#1:desc</c>), which a client uses when a column name contains a comma; <c>filter</c> a JSON array of
     /// <c>{column, op, value, value2}</c>. Nulls sort last ascending, text case-insensitively. 404 for an unknown id or another person's result, 410
     /// <c>RESULT_EXPIRED</c> once the cache dropped it (run the report again), 400 for an unreadable sort or filter.
     /// </summary>
@@ -243,7 +248,7 @@ public class ReportsController(ReportRunService runs, ReportResultStore results,
             var table = stored!.Table;
             var result = ResultQuery.Page(table, ResultQuery.ParseFilters(filter), ResultQuery.ParseSort(sort, table), page, pageSize);
             return Ok(new ReportRowsResponse(
-                table.Columns.Select(c => new ResultColumnResponse(c.Name, ColumnTypeName(c.Type))).ToList(),
+                table.Columns.Select(c => new ResultColumnResponse(c.Name, ColumnTypeName(c.Type), c.Instant)).ToList(),
                 result.Rows,
                 result.TotalRows,
                 result.FilteredRows,
@@ -255,6 +260,38 @@ public class ReportsController(ReportRunService runs, ReportResultStore results,
         {
             return ReportProblems.Create(this, new RunProblem(400, "RESULT_QUERY_INVALID", ex.Message));
         }
+    }
+
+    /// <summary>
+    /// Downloads the caller's live result as CSV: the rows the grid shows for the same <c>sort</c> and <c>filter</c> (all of them, not one page), the
+    /// <c>columns</c> given (repeat the parameter, in file order; none means all), UTF-8 with a byte order mark, comma, CRLF, ISO dates, invariant numbers,
+    /// formula-safe text cells. Streamed, never cached, no cookie link: the call carries the person's normal credentials. Writes a run-log row of kind
+    /// Export and a <c>REPORT_EXPORT</c> audit event. 404 for an unknown id, another person's result or a report the caller may no longer run, 410
+    /// <c>RESULT_EXPIRED</c> once the cache dropped the result, 400 for an unreadable sort, filter or column.
+    /// </summary>
+    [HttpGet("runs/{runId:guid}/export.csv", Name = "ExportReportRows")]
+    [Authorize(Policy = ReportPolicies.Run)]
+    [ProducesResponseType<string>(StatusCodes.Status200OK, "text/csv")]
+    public async Task<IActionResult> ExportCsv(Guid runId, [FromQuery] string? sort = null, [FromQuery] string? filter = null, [FromQuery] string[]? columns = null, CancellationToken cancellationToken = default)
+    {
+        var lookup = Lookup(runId, out var stored);
+        if (lookup is not null)
+            return lookup;
+
+        var prepared = await export.PrepareAsync(stored!, sort, filter, columns, cancellationToken);
+        if (prepared.Problem is { } problem)
+            return ReportProblems.Create(this, problem);
+
+        var plan = prepared.Plan!;
+        Response.ContentType = ReportCsvWriter.ContentType;
+        Response.Headers.CacheControl = "no-store";
+        Response.Headers.Pragma = "no-cache";
+        Response.Headers["X-Content-Type-Options"] = "nosniff";
+        Response.Headers.ContentDisposition = new System.Net.Mime.ContentDisposition { DispositionType = "attachment", FileName = plan.FileName }.ToString();
+        Response.Headers["X-Export-Rows"] = plan.RowCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        Response.Headers["X-Export-Truncated"] = plan.Stored.Truncated ? "true" : "false";
+        await export.StreamAsync(plan, Response.Body, cancellationToken);
+        return new EmptyResult();
     }
 
     /// <summary>Drops the caller's cached result. 204 whether or not it still existed.</summary>

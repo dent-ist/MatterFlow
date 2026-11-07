@@ -9928,6 +9928,62 @@
         }
       }
     },
+    "/api/v1/reports/runs/{runId}/export.csv": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "operationId": "ExportReportRows",
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "columns",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/json": { }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/reports/runs/{runId}": {
       "delete": {
         "tags": [
@@ -10301,6 +10357,258 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AssignmentMatrixResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/{reportId}/views": {
+      "get": {
+        "tags": [
+          "ReportViews"
+        ],
+        "operationId": "ListReportViews",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportViewListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ReportViews"
+        ],
+        "operationId": "CreateReportView",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReportViewRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReportViewRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReportViewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportViewResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/{reportId}/views/{viewId}": {
+      "put": {
+        "tags": [
+          "ReportViews"
+        ],
+        "operationId": "UpdateReportView",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "viewId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateReportViewRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateReportViewRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateReportViewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportViewResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ReportViews"
+        ],
+        "operationId": "DeleteReportView",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "viewId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": { }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/{reportId}/views/{viewId}/default": {
+      "post": {
+        "tags": [
+          "ReportViews"
+        ],
+        "operationId": "SetDefaultReportView",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "viewId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportViewResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ReportViews"
+        ],
+        "operationId": "ClearDefaultReportView",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "viewId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportViewResponse"
                 }
               }
             }
@@ -22711,6 +23019,35 @@
           }
         }
       },
+      "CreateReportViewRequest": {
+        "required": [
+          "name",
+          "layout",
+          "isDefault"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "layout": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportViewLayout"
+              }
+            ]
+          },
+          "isDefault": {
+            "type": "boolean"
+          }
+        }
+      },
       "CreateRoleRequest": {
         "required": [
           "name",
@@ -31490,6 +31827,114 @@
           }
         }
       },
+      "ReportViewLayout": {
+        "required": [
+          "columns",
+          "sort",
+          "filters",
+          "pageSize"
+        ],
+        "type": "object",
+        "properties": {
+          "columns": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ViewColumnLayout"
+            }
+          },
+          "sort": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ViewSortLayout"
+            }
+          },
+          "filters": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ViewFilterLayout"
+            }
+          },
+          "pageSize": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ReportViewListResponse": {
+        "required": [
+          "views",
+          "limit"
+        ],
+        "type": "object",
+        "properties": {
+          "views": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportViewResponse"
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ReportViewResponse": {
+        "required": [
+          "viewId",
+          "name",
+          "isDefault",
+          "layout",
+          "createdAtUtc",
+          "modifiedAtUtc",
+          "ignoredColumns"
+        ],
+        "type": "object",
+        "properties": {
+          "viewId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "layout": {
+            "$ref": "#/components/schemas/ReportViewLayout"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "modifiedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "ignoredColumns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "ResolveNoteReferencesRequest": {
         "required": [
           "matterId",
@@ -31535,6 +31980,10 @@
           },
           "type": {
             "type": "string"
+          },
+          "isInstant": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -36797,6 +37246,31 @@
           }
         }
       },
+      "UpdateReportViewRequest": {
+        "required": [
+          "name",
+          "layout"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "layout": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportViewLayout"
+              }
+            ]
+          }
+        }
+      },
       "UpdateRoleRequest": {
         "required": [
           "name",
@@ -37837,6 +38311,73 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "ViewColumnLayout": {
+        "required": [
+          "name",
+          "hidden",
+          "width"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "hidden": {
+            "type": "boolean"
+          },
+          "width": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ViewFilterLayout": {
+        "required": [
+          "column",
+          "op",
+          "value",
+          "value2"
+        ],
+        "type": "object",
+        "properties": {
+          "column": {
+            "type": "string"
+          },
+          "op": {
+            "type": "string"
+          },
+          "value": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "value2": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ViewSortLayout": {
+        "required": [
+          "column",
+          "descending"
+        ],
+        "type": "object",
+        "properties": {
+          "column": {
+            "type": "string"
+          },
+          "descending": {
+            "type": "boolean"
           }
         }
       },
@@ -38886,6 +39427,9 @@
     },
     {
       "name": "ReportAssignment"
+    },
+    {
+      "name": "ReportViews"
     },
     {
       "name": "Search"

@@ -76,6 +76,13 @@ public class ResultQueryTests
     [InlineData("Nope:asc")]
     [InlineData("Name:sideways")]
     [InlineData("Name:asc,Qty:asc,Price:asc,Due:asc")]
+    [InlineData("#6:asc")]
+    [InlineData("#99999999999:asc")]
+    [InlineData("#0:sideways")]
+    [InlineData("#-1:asc")]
+    [InlineData("#x:asc")]
+    [InlineData("#:asc")]
+    [InlineData("#0:asc,#1:asc,#2:asc,#3:desc")]
     public void A_bad_sort_is_refused(string sort)
     {
         Should.Throw<ResultQueryException>(() => ResultQuery.ParseSort(sort, Sample()));
@@ -88,6 +95,47 @@ public class ResultQueryTests
 
         ResultQuery.ParseSort("name:desc,NAME:asc", t).ShouldHaveSingleItem().Descending.ShouldBeTrue();
         ResultQuery.ParseSort("Name", t).ShouldHaveSingleItem().Descending.ShouldBeFalse();
+    }
+
+    private static ResultTable CommaNamed()
+    {
+        var builder = new ResultTableBuilder(100, long.MaxValue);
+        builder.Begin([new("Id", ReportColumnType.Integer), new("Total, USD", ReportColumnType.Decimal), new("A,B", ReportColumnType.Text), new("#1", ReportColumnType.Text)]);
+        builder.TryAdd([1L, 30m, "z", "q"]);
+        builder.TryAdd([2L, 10m, "x", "r"]);
+        builder.TryAdd([3L, 20m, "y", "p"]);
+        return builder.Build();
+    }
+
+    [Fact]
+    public void A_column_whose_name_has_a_comma_sorts_by_its_zero_based_position_both_ways()
+    {
+        var t = CommaNamed();
+
+        Order(t, "#1:asc").Select(r => t.Get(r, 0)).ShouldBe([2L, 3L, 1L]);
+        Order(t, "#1:desc").Select(r => t.Get(r, 0)).ShouldBe([1L, 3L, 2L]);
+        Order(t, "#2").Select(r => t.Get(r, 0)).ShouldBe([2L, 3L, 1L]);
+        ResultQuery.ParseSort("#1:desc", t).ShouldBe([new ResultSort("Total, USD", true)]);
+    }
+
+    [Fact]
+    public void Positions_take_up_to_three_keys_mix_with_names_and_a_repeated_column_counts_once()
+    {
+        var t = CommaNamed();
+
+        ResultQuery.ParseSort("#2:asc,#1:desc,Id", t).Select(s => s.Column).ShouldBe(["A,B", "Total, USD", "Id"]);
+        ResultQuery.ParseSort("#0:desc,id:asc", t).ShouldHaveSingleItem().Descending.ShouldBeTrue();
+        Should.Throw<ResultQueryException>(() => ResultQuery.ParseSort("#3,#2,#1,#0", t)); // four distinct columns are one too many
+    }
+
+    [Fact]
+    public void The_name_form_still_works_and_a_hash_with_digits_is_always_a_position()
+    {
+        var t = CommaNamed();
+
+        ResultQuery.ParseSort("Id:desc", t).ShouldBe([new ResultSort("Id", true)]);
+        ResultQuery.ParseSort("#3", t).ShouldBe([new ResultSort("#1", false)]); // position 3 is the column that happens to be called "#1"
+        Should.Throw<ResultQueryException>(() => ResultQuery.ParseSort("Total, USD:asc", t)); // the comma still splits the name form
     }
 
     // ---- filters ----

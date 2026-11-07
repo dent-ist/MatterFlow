@@ -68,7 +68,7 @@ internal abstract class ResultColumnData
         ReportColumnType.Decimal => column.Floating ? new DoubleColumn() : new DecimalColumn(),
         ReportColumnType.Boolean => new BoolColumn(),
         ReportColumnType.Date => new TicksColumn(dateOnly: true),
-        ReportColumnType.DateTime => new TicksColumn(dateOnly: false),
+        ReportColumnType.DateTime => new TicksColumn(dateOnly: false, instant: column.Instant),
         _ => new TextColumn(),
     };
 }
@@ -213,8 +213,11 @@ internal sealed class BoolColumn : ResultColumnData
     public override long EstimatedBytes => (long)_values.Length + (Nulls?.Length ?? 0);
 }
 
-/// <summary>Dates and date-times as ticks (DateTimeOffset values are taken in UTC).</summary>
-internal sealed class TicksColumn(bool dateOnly) : ResultColumnData
+/// <summary>
+/// Dates and date-times as ticks. A <c>datetimeoffset</c> value is an instant: it is stored in UTC and sent with a trailing <c>Z</c> (<paramref name="instant"/>);
+/// any other date-time is a wall-clock value and is sent as it came, with no zone.
+/// </summary>
+internal sealed class TicksColumn(bool dateOnly, bool instant = false) : ResultColumnData
 {
     private long[] _values = [];
 
@@ -251,7 +254,9 @@ internal sealed class TicksColumn(bool dateOnly) : ResultColumnData
         if (NullAt(row))
             return null;
         var dt = new DateTime(_values[row], DateTimeKind.Unspecified);
-        return dateOnly ? dt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : dt.ToString("yyyy-MM-dd'T'HH:mm:ss.FFFFFFF", CultureInfo.InvariantCulture);
+        return dateOnly
+            ? dt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+            : dt.ToString(instant ? "yyyy-MM-dd'T'HH:mm:ss.FFFFFFF'Z'" : "yyyy-MM-dd'T'HH:mm:ss.FFFFFFF", CultureInfo.InvariantCulture);
     }
 
     public override int Compare(int a, int b)

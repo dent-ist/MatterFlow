@@ -69,7 +69,7 @@ public class ReportAuditEntryTests
     }
 
     [Fact]
-    public void A_run_event_carries_status_rows_timing_and_the_parameters_as_bound()
+    public void A_run_event_carries_status_rows_timing_and_only_the_parameter_names_never_their_values()
     {
         var e = ReportAuditEntry.RunCompleted(5, "Overdue tasks", 3, "Truncated", 50000, true, 2300, null, "[\"PODS=[1,2]\",\"FROM=2026-10-01\"]");
 
@@ -80,7 +80,29 @@ public class ReportAuditEntryTests
         json.GetProperty("truncated").GetBoolean().ShouldBeTrue();
         json.GetProperty("ms").GetInt32().ShouldBe(2300);
         json.GetProperty("version").GetInt32().ShouldBe(3);
-        json.GetProperty("parameters").EnumerateArray().Select(p => p.GetString()).ShouldBe(["PODS=[1,2]", "FROM=2026-10-01"]);
+        json.GetProperty("parameterNames").EnumerateArray().Select(p => p.GetString()).ShouldBe(["PODS", "FROM"]);
+        json.GetProperty("parameterCount").GetInt32().ShouldBe(2);
+        json.TryGetProperty("parameters", out _).ShouldBeFalse();
+        (e.NewValue + e.Summary + e.OldValue).ShouldNotContain("2026-10-01");
+        (e.NewValue + e.Summary + e.OldValue).ShouldNotContain("[1,2]");
+    }
+
+    [Theory]
+    [InlineData("[\"MATTER=Smith v. Jones, confidential\"]", "MATTER")]
+    [InlineData("[\"A=1\",\"B_2=x=y\",\"c=lower\",\"=nameless\",\"NOEQUALS\",\"(3 parameters, too long to log)\"]", "A,B_2")]
+    [InlineData("{\"A\":\"1\"}", "")]
+    [InlineData("[]", "")]
+    [InlineData("", "")]
+    [InlineData(null, "")]
+    public void The_parameter_names_are_read_from_the_run_log_text_and_values_are_never_kept(string? json, string names)
+    {
+        var e = ReportAuditEntry.RunCompleted(5, "R", 1, "Succeeded", 1, false, 1, null, json);
+
+        string.Join(",", ReportAuditEntry.ParameterNames(json)).ShouldBe(names);
+        e.NewValue!.ShouldNotContain("Smith");
+        e.NewValue!.ShouldNotContain("confidential");
+        e.NewValue!.ShouldNotContain("nameless");
+        e.NewValue!.ShouldNotContain("lower");
     }
 
     [Fact]
@@ -90,7 +112,8 @@ public class ReportAuditEntryTests
 
         var json = JsonDocument.Parse(e.NewValue!).RootElement;
         json.GetProperty("error").GetString().ShouldBe("SQL_8134");
-        json.GetProperty("parameters").ValueKind.ShouldBe(JsonValueKind.Null);
+        json.GetProperty("parameterCount").GetInt32().ShouldBe(0);
+        json.GetProperty("parameterNames").GetArrayLength().ShouldBe(0);
         e.Summary.ShouldBe("Ran report 'R' (version 1): Failed");
     }
 

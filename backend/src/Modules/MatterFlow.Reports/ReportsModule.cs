@@ -33,6 +33,9 @@ public static class ReportsModule
         services.AddHostedService<ReportRunRetentionService>();
         services.AddScoped<ReportRunService>();
         services.AddScoped<ReportBrowseService>();
+        services.AddScoped<ReportExportService>();
+        services.AddScoped<IReportViewStore, ReportViewStore>();
+        services.AddScoped<ReportViewService>();
         services.AddScoped<ReportAuthoringService>();
         services.AddMemoryCache();
         services.AddSingleton<ReportChoiceGate>();

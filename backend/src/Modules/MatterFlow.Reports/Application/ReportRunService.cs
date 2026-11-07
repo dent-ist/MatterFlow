@@ -1,4 +1,5 @@
 using System.Text.Json;
+using MatterFlow.Reports.Application.Results;
 using MatterFlow.Reports.Domain;
 using MatterFlow.Reports.Domain.Parameters;
 using MatterFlow.SharedKernel.Identity;
@@ -147,7 +148,7 @@ public sealed class ReportRunService
             switch (outcome.Status)
             {
                 case ReportRunStatus.Succeeded or ReportRunStatus.Truncated:
-                    var stored = _results.Complete(sink, userId, report.ReportId, outcome.Truncated);
+                    var stored = _results.Complete(sink, userId, report.ReportId, outcome.Truncated, new ResultOrigin(report.VersionId, report.VersionNo, report.Name));
                     if (stored is null)
                         return RunResult.Fail(503, "REPORT_MEMORY", "There is not enough memory for this result right now. Narrow the parameters or try again in a moment.");
                     return RunResult.Ok(new RunResponse(stored.Value, outcome.Columns, outcome.RowCount, outcome.Truncated, outcome.DurationMs, maxRows));
@@ -187,5 +188,5 @@ public interface IReportResultSink
     IRowSink CreateSink(int maxRows);
 
     /// <summary>Stores the collected result for <paramref name="ownerUserId"/> and returns its id; null when the memory budget cannot take it.</summary>
-    Guid? Complete(IRowSink sink, int ownerUserId, int reportId, bool truncated);
+    Guid? Complete(IRowSink sink, int ownerUserId, int reportId, bool truncated, ResultOrigin? origin = null);
 }
