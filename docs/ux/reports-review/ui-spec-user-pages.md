@@ -294,7 +294,7 @@ With a default view set, the run page applies it automatically to every new resu
 |---|---|---|---|
 | Save as New View | "Save View" | one field "View name (required)", max 80, prefilled "<Report name> view"; checkbox-style checkbox "Use as my default view" (the shared checkbox of the Columns chooser, unchecked) | `[Cancel] ... [Save View]` |
 | Rename | "Rename View" | one field "View name (required)" prefilled | `[Cancel] ... [Rename]` |
-| Delete (confirm) | "Delete View" | "Delete "<name>"? This can't be undone." | `[Cancel] ... [Delete]` (danger) |
+| Delete (confirm) | "Delete View" | "Delete "<name>"? This can't be undone." | `[Cancel] ... [Delete View]` (danger, D-34: verb and thing) |
 
 Validation: empty "Enter a view name."; duplicate (case-insensitive, per report and user) "You already have a view with this name."; over 80 "View name must be 80 characters or fewer."
 
