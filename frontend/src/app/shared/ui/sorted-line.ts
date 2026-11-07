@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
-import { directionWords } from '../work-queue/sort-sentences';
+import { SortKind, directionWords } from '../work-queue/sort-sentences';
 import { Dismissable } from './dismissable';
 import { parseSortExpression } from './record-sort';
 
@@ -10,13 +10,17 @@ export function sortLabelsOf(
   return Object.fromEntries(options.map((o) => [o.value, o.label]));
 }
 
-/** "Sorted by Name, A to Z": the sentence of one sort (the words of the field come from the page's own column names). */
+/**
+ * "Sorted by Name, A to Z": the sentence of one sort (the words of the field come from the page's own column names). A list whose columns are not the
+ * known work-list fields (a report's columns) says what kind each one is in `kinds`, so a number reads "lowest first", not "A to Z" (#1289).
+ */
 export function sortSentence(
   field: string,
   dir: 'asc' | 'desc',
   labels: Readonly<Record<string, string>>,
+  kinds?: Readonly<Record<string, SortKind>>,
 ): string {
-  return `Sorted by ${labels[field] ?? field}, ${directionWords(field, dir)}`;
+  return `Sorted by ${labels[field] ?? field}, ${directionWords(field, dir, kinds?.[field])}`;
 }
 
 /**
@@ -167,6 +171,8 @@ export class SortedLine {
   readonly dir = input<'asc' | 'desc' | null>(null);
   /** Field to the words of the column ("number": "Ref"). */
   readonly labels = input<Readonly<Record<string, string>>>({});
+  /** Field to the kind of its values (the words of the direction); a field that is not here is read by its name as in the work lists. */
+  readonly kinds = input<Readonly<Record<string, SortKind>>>({});
   /** A default order that is not one column (the Task Queue's urgency order): its whole sentence, "Priority, most urgent first". */
   readonly defaultText = input('');
   /** The full rule of such a default order, behind an info button. */
@@ -193,8 +199,8 @@ export class SortedLine {
   });
   protected readonly sentence = computed(() => {
     const own = this.chosen();
-    if (own) return sortSentence(own.field, own.dir, this.labels());
+    if (own) return sortSentence(own.field, own.dir, this.labels(), this.kinds());
     if (this.defaultText()) return `Sorted by ${this.defaultText()} (default order)`;
-    return sortSentence(this.defaultSort(), this.defaultDir(), this.labels());
+    return sortSentence(this.defaultSort(), this.defaultDir(), this.labels(), this.kinds());
   });
 }

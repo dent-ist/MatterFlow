@@ -184,6 +184,38 @@ describe('ReportResultGrid (#720)', () => {
     });
   });
 
+  describe('the words of the sort (#1289)', () => {
+    const tip = () => q('[data-sorted-text]').getAttribute('title');
+    const sortBy = async (column: string, times = 1): Promise<void> => {
+      for (let i = 0; i < times; i++) {
+        q(`th[data-col="${column}"] button`).click();
+        await settle(fixture);
+      }
+    };
+
+    it('says lowest and highest first for a number, newest and oldest first for a date, no and yes first for a yes/no and A to Z for text', async () => {
+      await create();
+      await sortBy('Open Tasks');
+      expect(tip()).toBe('Sorted by Open Tasks, lowest first');
+      await sortBy('Open Tasks');
+      expect(tip()).toBe('Sorted by Open Tasks, highest first');
+      await sortBy('Hours');
+      expect(tip()).toBe('Sorted by Hours, lowest first');
+      await sortBy('Updated', 2);
+      expect(tip()).toBe('Sorted by Updated, newest first');
+      await sortBy('Due');
+      expect(tip()).toBe('Sorted by Due, oldest first');
+      await sortBy('Active');
+      expect(tip()).toBe('Sorted by Active, no first');
+      await sortBy('Active');
+      expect(tip()).toBe('Sorted by Active, yes first');
+      await sortBy('Matter');
+      expect(tip()).toBe('Sorted by Matter, A to Z');
+      await sortBy('Matter');
+      expect(tip()).toBe('Sorted by Matter, Z to A');
+    });
+  });
+
   describe('paging', () => {
     it('offers 25, 50, 100 and 250 rows a page and shows the range of the filtered rows', async () => {
       await create();

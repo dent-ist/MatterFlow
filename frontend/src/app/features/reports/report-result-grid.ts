@@ -79,6 +79,7 @@ import {
       display: block;
     }
     :host > * {
+    /* A flex column that takes what its parent leaves (the run page fills the window, #1286); in a plain block parent it is as tall as its content. */
       flex: none;
     }
     /* The grid frame takes the rest of the column and scrolls inside it (sticky heading and filter bands, sideways scroll for wide results), never fewer than
@@ -131,6 +132,15 @@ import {
         <mf-record-grid
           label="Report result"
           caption="Report result"
+      @if (limitReached()) {
+        <div class="pg-banner pg-banner--info" role="status" data-filter-limit>
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+          <span>Remove a filter to add another.</span>
+          <button type="button" class="mf-btn" data-dismiss-limit (click)="limitReached.set(false)">
+            Dismiss
+          </button>
+        </div>
+      }
           noun="rows"
           tableId="report-result-table"
           [grid]="grid"
@@ -235,6 +245,7 @@ export class ReportResultGrid implements OnInit {
 
   private readonly filterJson = computed(() => {
     if (!this.started()) return undefined;
+  protected readonly kinds = computed(() => sortKinds(this.columns()));
     return serverFilter(this.columns(), this.filters.values());
   });
   /**

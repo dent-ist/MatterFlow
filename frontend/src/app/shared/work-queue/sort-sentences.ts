@@ -4,7 +4,8 @@ import { SortDirection } from './queue-filters';
  * Plain words for the direction of a sort (epic #893, issue #898): a sort says what comes first instead of "ascending" or an arrow, so the label carries the
  * direction. One table for every place that names a sort (the note under a list, the phone's Sort sheet, the print line).
  */
-export type SortKind = 'urgency' | 'due' | 'date' | 'age' | 'wait' | 'text' | 'number' | 'count';
+export type SortKind =
+  'urgency' | 'due' | 'date' | 'age' | 'wait' | 'text' | 'number' | 'count' | 'yesno';
 
 /** What kind of values a sort field orders, which decides the words of its two directions. */
 const KINDS: Readonly<Record<string, SortKind>> = {
@@ -46,6 +47,8 @@ const WORDS: Readonly<Record<SortKind, { asc: string; desc: string }>> = {
   text: { asc: 'A to Z', desc: 'Z to A' },
   number: { asc: 'lowest first', desc: 'highest first' },
   count: { asc: 'fewest first', desc: 'most first' },
+  // A yes/no column (a report's boolean): false sorts before true.
+  yesno: { asc: 'no first', desc: 'yes first' },
 };
 
 /** The kind of a sort field; a field the table does not know is read as text. */

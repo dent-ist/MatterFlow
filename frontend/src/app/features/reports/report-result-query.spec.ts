@@ -1,7 +1,13 @@
 import { convertToParamMap } from '@angular/router';
 import { parseFilters } from '../../shared/filters/filter-def';
 import { resultColumns } from './report-column-defs';
-import { filterDefsOf, serverFilter, serverSort, sortLabels } from './report-result-query';
+import {
+  filterDefsOf,
+  serverFilter,
+  serverSort,
+  sortKinds,
+  sortLabels,
+} from './report-result-query';
 
 const columns = resultColumns([
   { name: 'Matter', type: 'text' },
@@ -76,5 +82,16 @@ describe('report result query (#720)', () => {
 
   it('names a sort column by its header for the Sorted by line', () => {
     expect(sortLabels(columns)['c2']).toBe('Open Tasks');
+  });
+
+  it('words the direction of a sort by the type of the column (#1289)', () => {
+    expect(sortKinds(columns)).toEqual({
+      c0: 'text',
+      c1: 'number',
+      c2: 'number',
+      c3: 'date',
+      c4: 'date',
+      c5: 'yesno',
+    });
   });
 });

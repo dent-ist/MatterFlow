@@ -1,4 +1,5 @@
 import { FilterDef, FilterValue, FilterValues, isRange } from '../../shared/filters/filter-def';
+import type { SortKind } from '../../shared/work-queue/sort-sentences';
 import type { ResultColumn } from './report-column-defs';
 
 /** The pager's sizes (spec 4.2): the server clamps a page to 250 rows. */
@@ -99,4 +100,18 @@ export function serverSort(
 /** "Sorted by <Column>" words: the column id to its name (the sorted line asks for the label of a sort field). */
 export function sortLabels(columns: readonly ResultColumn[]): Record<string, string> {
   return Object.fromEntries(columns.map((c) => [c.id, c.name]));
+}
+
+const SORT_KIND: Readonly<Record<ResultColumn['kind'], SortKind>> = {
+  integer: 'number',
+  decimal: 'number',
+  date: 'date',
+  dateTime: 'date',
+  boolean: 'yesno',
+  text: 'text',
+};
+
+/** The words of a sort direction by column type (#1289): numbers "lowest first", dates "oldest first", yes/no "no first", text "A to Z". */
+export function sortKinds(columns: readonly ResultColumn[]): Record<string, SortKind> {
+  return Object.fromEntries(columns.map((c) => [c.id, SORT_KIND[c.kind]]));
 }
