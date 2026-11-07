@@ -43,6 +43,8 @@
 | `/assets/new` | | `AssetFormPage` | `Asset.Create` |
 | `/assets/:assetId/edit` | | `AssetFormPage` | `Asset.Edit` |
 | `/assets/:assetId` | | `AssetRecordPage` | `Asset.View` |
+| `/reports` | `features/reports` | `ReportsListPage` (`?q=` search, `?category=` filter) | `Report.Run` |
+| `/reports/:reportId` | | `ReportRunPage`; the parameter values travel as `?NAME=value` (a date range as `NAME.from` and `NAME.to`, a list repeats the name); opening such an address fills the form and never runs the report | `Report.Run` (the server decides whether the report is assigned; unknown, inactive and unassigned look the same) |
 | `/profile` | `features/profile` | `ProfilePage` | `Task.View` |
 | `/notifications` | `features/notifications` | `NotificationsPage` | `Task.View` |
 | `/search` | `features/search` | `SearchResultsPage` | any one of `Matter.View`, `Client.View`, `Task.View`, `Project.View`, `Asset.View` |
@@ -64,7 +66,7 @@ The `/admin` route is open to anyone who may open any admin menu item (`ADMIN_NA
 | `/admin/asset-types/new`, `/:id`, `/:ownerId/form` | `asset-types` | `AssetTypeRecordPage`, form designer | `AssetType.Manage` |
 | `/admin/custom-fields`, `/:ownerId/form` | `custom-fields` | `CustomFieldsPage`, designer | `CustomField.Manage` |
 | `/admin/priorities`, `/status-labels`, `/on-hold-reasons`, `/note-tags` (tabs of Labels) | `priorities`, `status-labels`, `on-hold-reasons`, `note-tags` | `LabelsAdminPage` | per tab (`labels-tabs.ts`): Priorities `Priority.Manage`, Status Labels `StatusLabel.Manage`, On-Hold Reasons `OnHoldReason.Manage`, Note Tags `StatusLabel.Manage` (there is no separate note tag permission) |
-| `/admin/reports` (`?tab=` is `categories`, `runs`, `assignments` or `health`) | `reports` | `ReportsAdminPage` | `Report.Manage` |
+| `/admin/reports` (`?tab=` is `categories`, `runs`, `assignments` or `health`; the page and menu item are called Report Setup) | `reports` | `ReportsAdminPage` | `Report.Manage` |
 | `/admin/reports/new`, `/admin/reports/:id` | `reports` | `ReportEditorPage` | `Report.Manage` |
 | `/admin/settings` (tabs Branding, Dashboard, Holidays) | `settings`, `holidays` | `SettingsPage` | `Settings.Manage` |
 | `/admin/audit` | `audit` | `AuditPage` | `Audit.View` |
@@ -84,8 +86,9 @@ Items are hidden, never disabled, without the permission. A person who lands on 
 | Assets | `/assets` | `Asset.View` |
 | Pod Work | `/pods/work` | `Pod.View` and `Task.View` |
 | Task Queue | `/tasks` | `Task.View` |
+| Reports | `/reports` | `Report.Run` (shown also when nothing is assigned; the page explains it; it is not hidden in the compact menu of the Project Manager) |
 
-Administration menu (`ADMIN_NAV_ITEMS`): Users, Task Types, Labels, Asset Types, Custom Fields, Reports, Audit Logs, Settings (each with the permissions listed above).
+Administration menu (`ADMIN_NAV_ITEMS`): Users, Task Types, Labels, Asset Types, Custom Fields, Report Setup, Audit Logs, Settings (each with the permissions listed above).
 
 Keyboard shortcuts are defined in `shared/layout/shortcut-registry.ts`; no new or changed shortcuts are allowed in the current phase (issue #420).
 

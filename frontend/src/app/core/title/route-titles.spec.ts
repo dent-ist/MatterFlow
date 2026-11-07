@@ -101,6 +101,7 @@ const TABLE: Row[] = [
   },
   { set: 'pod-work', routes: POD_WORK_ROUTES, key: '', title: 'Pod Work - MatterFlow' },
   { set: 'reports', routes: REPORTS_ROUTES, key: '', title: 'Reports - MatterFlow' },
+  { set: 'reports', routes: REPORTS_ROUTES, key: ':reportId', title: 'Report - MatterFlow' },
   { set: 'clients', routes: CLIENTS_ROUTES, key: '', title: 'Clients - MatterFlow' },
   { set: 'clients', routes: CLIENTS_ROUTES, key: 'new', title: 'New Client - MatterFlow' },
   {

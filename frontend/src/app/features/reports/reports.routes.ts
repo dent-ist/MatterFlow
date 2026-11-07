@@ -12,4 +12,10 @@ export const REPORTS_ROUTES: Routes = [
     title: 'Reports',
     loadComponent: () => import('./reports-list-page').then((m) => m.ReportsListPage),
   },
+  {
+    path: ':reportId',
+    // The page names itself once the report has loaded (`recordTitle(name, 'Reports')`); this is what shows until then.
+    title: 'Report',
+    loadComponent: () => import('./report-run-page').then((m) => m.ReportRunPage),
+  },
 ];
