@@ -46,9 +46,12 @@ import {
   DEFAULT_RESULT_PAGE_SIZE,
   RESULT_PAGE_SIZES,
   filterDefsOf,
+  MAX_FILTERS,
+  filterCount,
   serverFilter,
   serverSort,
   sortLabels,
+  sortKinds,
 } from './report-result-query';
 
 /**
@@ -128,10 +131,6 @@ import {
         }
         <mf-record-columns mfColumns [grid]="grid" />
       </mf-list-toolbar>
-      <div class="rr__frame">
-        <mf-record-grid
-          label="Report result"
-          caption="Report result"
       @if (limitReached()) {
         <div class="pg-banner pg-banner--info" role="status" data-filter-limit>
           <i class="pi pi-info-circle" aria-hidden="true"></i>
@@ -221,8 +220,6 @@ export class ReportResultGrid implements OnInit {
   private readonly sample = signal<readonly (readonly unknown[])[] | null>(null);
   private readonly scales = computed(() => {
     const rows = this.sample() ?? [];
-  /** The person's time zone: a date-time with a zone is shown in it (#1287). */
-  private readonly zone = inject(USER_TIME_ZONE);
     return new Map(
       this.columns()
         .filter((c) => c.kind === 'decimal')
@@ -245,11 +242,23 @@ export class ReportResultGrid implements OnInit {
 
   private readonly filterJson = computed(() => {
     if (!this.started()) return undefined;
-  protected readonly kinds = computed(() => sortKinds(this.columns()));
-    return serverFilter(this.columns(), this.filters.values());
+    if (this.overLimit()) return this.okJson;
+    this.okValues = this.filters.values();
+    return (this.okJson = serverFilter(this.columns(), this.okValues));
   });
+  protected readonly kinds = computed(() => sortKinds(this.columns()));
   /**
    * What a page number belongs to: a change of the filters, the sort or the page size is a new list, so its page is 1 again without anyone resetting it
+  /** The filters (values and server text) of the last request that was allowed: a 21st filter is turned back to these, and no request is made for it (#1290). */
+  private okValues: FilterValues = {};
+  private okJson: string | undefined;
+  private readonly overLimit = computed(
+    () =>
+      this.started() &&
+      filterCount(serverFilter(this.columns(), this.filters.values())) > MAX_FILTERS,
+  );
+  /** "Remove a filter to add another." is shown (until it is dismissed or a filter is removed). */
+  protected readonly limitReached = signal(false);
    * (and without a second request for the reset).
    */
   private readonly listKey = computed(() =>
