@@ -90,6 +90,9 @@ async function collectApi(who: Api, fx: PmFixtures): Promise<Record<string, numb
 }
 
 const PM_MENU = ['My Matters', 'My Work', 'Clients', 'Matters', 'Projects', 'Assets', 'Task Queue'];
+// The Project Manager role holds Report.Run (owner decision 8, #784), so its menu ends with Reports; the fixture people who are built from a list
+// of permissions without Report.Run (`pmNoAssign`, `pmNoTask`) keep PM_MENU.
+const PM_ROLE_MENU = [...PM_MENU, 'Reports'];
 const FOUR_TABS = ['Overview', 'Calendar', 'Assets', 'Metrics', 'Activity']; // the five tabs of the UI update (epic #953); Metrics holds Breakdown and Data
 
 test.describe('Permission matrix of the Project Manager views', () => {
@@ -102,7 +105,7 @@ test.describe('Permission matrix of the Project Manager views', () => {
     const page = await asUser(fx.pmA.username);
     const ui = await collectUi(page, fx);
     expect(ui.landing).toBe('/my-matters');
-    expect(ui.menu).toEqual(PM_MENU);
+    expect(ui.menu).toEqual(PM_ROLE_MENU);
     expect(ui.switchOnMatters && ui.switchOnAssets).toBe(true);
     expect(ui.tabs).toEqual(FOUR_TABS);
     expect(ui.overviewSections).toEqual(
@@ -370,16 +373,8 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
     await page.waitForLoadState('networkidle');
     const desk = await tabStops(page, 'nav[aria-label="Main"]', 'nav[aria-label="Main"]');
     evidence('main-menu', '1366', desk);
-    expectGoodStops('menu 1366', desk, 7);
-    expect(desk.stops.map((s) => s.name)).toEqual([
-      'My Matters',
-      'My Work',
-      'Clients',
-      'Matters',
-      'Projects',
-      'Assets',
-      'Task Queue',
-    ]);
+    expectGoodStops('menu 1366', desk, 8);
+    expect(desk.stops.map((s) => s.name)).toEqual(PM_ROLE_MENU);
   });
 
   test('My Matters tabs: the tab strip is one stop, the arrow keys move between tabs, Home and End jump, Back restores the tab', async ({

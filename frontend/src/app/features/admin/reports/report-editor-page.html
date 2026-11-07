@@ -300,7 +300,7 @@
                 </span>
               </div>
               <div class="rep__split" [class.rep__split--schema]="schemaOpen()">
-                <div class="rep__editor" [attr.inert]="schemaOpen() && isPhone() ? '' : null">
+                <div class="rep__editor">
                   <mf-sql-editor
                     [(value)]="sql"
                     [marks]="marks()"
@@ -361,19 +361,10 @@
                     id="schema-panel"
                     class="rep__schema"
                     role="dialog"
-                    [attr.aria-modal]="isPhone() ? 'true' : null"
                     aria-label="Schema browser"
                     (keydown.escape)="closeSchema()"
                     data-schema-panel
                   >
-                    <button
-                      type="button"
-                      class="mf-btn rep__schema-close"
-                      (click)="closeSchema()"
-                      data-schema-close
-                    >
-                      <i class="pi pi-times" aria-hidden="true"></i> Close
-                    </button>
                     <mf-schema-browser (insert)="insert($event)" />
                   </div>
                 }

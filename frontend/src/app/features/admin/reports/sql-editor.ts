@@ -49,7 +49,7 @@ export function lineCount(text: string): number {
 /**
  * The query editor (spec 9.2, 14): a plain textarea with line numbers and the `:NAME` placeholders and problem spots highlighted by a layer
  * behind the text. It is not a code editor and traps nothing: Tab moves focus out of it (no tab character is offered). The editor scrolls
- * inside its own box in both directions, so a long line never widens the page (phone). The layer behind the text is hidden from assistive
+ * inside its own box in both directions, so a long line never widens the page. The layer behind the text is hidden from assistive
  * technology; the problems are listed as text next to the editor by the page.
  */
 @Component({

@@ -374,8 +374,6 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
       .map((p) => p.name);
   });
 
-  protected readonly isPhone = (): boolean => window.matchMedia('(max-width: 639.98px)').matches;
-
   protected readonly previewBlocked = computed(() =>
     this.isNew() ? 'Save the report first, then preview it.' : '',
   );
@@ -537,7 +535,6 @@ export class ReportEditorPage implements HasUnsavedChanges, OnDestroy {
 
   protected insert(text: string): void {
     this.editor()?.insertAtCursor(text);
-    if (this.schemaOpen() && window.matchMedia('(max-width: 639.98px)').matches) this.closeSchema();
   }
 
   protected openSchema(): void {

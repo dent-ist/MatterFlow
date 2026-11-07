@@ -137,28 +137,3 @@
   align-content: start;
   min-width: 0;
 }
-
-.rep__schema-close {
-  display: none;
-}
-
-/* A phone: the schema browser is a full-screen sheet over the page; the editor behind it is inert. */
-@media (max-width: 639.98px) {
-  .rep__split--schema {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .rep__schema {
-    position: fixed;
-    inset: 0;
-    z-index: 1100;
-    padding: var(--mf-s4);
-    overflow: auto;
-    background: var(--mf-surface);
-  }
-
-  .rep__schema-close {
-    display: inline-flex;
-    justify-self: end;
-  }
-}

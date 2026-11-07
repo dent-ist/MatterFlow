@@ -28,7 +28,6 @@ import { FilterDef } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { ActionMenu } from '../../../shared/ui/action-menu';
-import { AdminCardList, AdminCardSpec, activeCardBadge } from '../../../shared/ui/admin-card-spec';
 import { adminListState } from '../../../shared/ui/admin-list-state';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
@@ -40,7 +39,6 @@ import {
 } from '../../../shared/ui/record-grid';
 import { LocalListPage } from '../../../shared/ui/list-query';
 import { Pager } from '../../../shared/ui/pager';
-import { phoneCards } from '../../../shared/ui/record-card-list';
 import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { rowActions } from '../../../shared/ui/row-actions';
 import { COLUMN_ROOM } from '../../../shared/ui/viewport';
@@ -62,8 +60,7 @@ const BONES: Record<string, string> = {
 
 /**
  * Admin: the Reports tab of the Reports page (issue #712): every report, inactive ones included, in category and report order, on the admin list
- * kit (search by name through the Name filter, a Category filter, Status with Active as the default, the hidden-count line, the pager, phone
- * cards below 640 px). A row shows the name (the link to the editor), the category, how many roles may run it, when a person last ran it and the
+ * kit (search by name through the Name filter, a Category filter, Status with Active as the default, the hidden-count line, the pager). A row shows the name (the link to the editor), the category, how many roles may run it, when a person last ran it and the
  * status as a text chip. ONE overflow menu per row: Edit, Roles (with Report.Assign), History, Activate (only after a successful preview of the
  * current version) or Deactivate. There is no delete: a report is only deactivated. Needs `Report.Manage`.
  */
@@ -75,7 +72,6 @@ const BONES: Record<string, string> = {
     NumericDatePipe,
     ActionMenu,
     ActiveBadge,
-    AdminCardList,
     ColumnFilterRow,
     ConfirmDialog,
     FiltersBar,
@@ -101,111 +97,87 @@ const BONES: Record<string, string> = {
 
     <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']" />
 
-    @if (phone()) {
-      <mf-admin-card-list
+    <div class="mf-fill">
+      <mf-record-grid
+        #scroll
+        data-reports
+        tableId="reports-table"
+        label="Reports list"
+        caption="Reports, in category and report order"
         noun="reports"
-        label="Reports"
-        [items]="rows()"
-        [spec]="cardOf"
-        emptyText="No reports yet."
-        [filters]="filters"
-        [listId]="listId"
-        [state]="ls.state()"
+        [grid]="grid"
+        [rows]="rows()"
+        [rowKey]="reportKey"
+        [loadState]="ls.state()"
         [empty]="ls.empty()"
         [filtered]="ls.filtered()"
+        [filters]="filters"
+        emptyText="No reports yet."
         [hidden]="ls.hidden()"
         hiddenLabel="inactive"
+        [actions]="true"
+        [rowClass]="rowClass"
+        [bones]="bones"
         (retry)="load()"
         (clear)="clear()"
         (showAll)="showAll()"
-      />
-    } @else {
-      <div class="mf-fill">
-        <mf-record-grid
-          #scroll
-          data-reports
-          tableId="reports-table"
-          label="Reports list"
-          caption="Reports, in category and report order"
-          noun="reports"
-          [grid]="grid"
-          [rows]="rows()"
-          [rowKey]="reportKey"
-          [loadState]="ls.state()"
-          [empty]="ls.empty()"
-          [filtered]="ls.filtered()"
-          [filters]="filters"
-          emptyText="No reports yet."
-          [hidden]="ls.hidden()"
-          hiddenLabel="inactive"
-          [actions]="true"
-          [rowClass]="rowClass"
-          [bones]="bones"
-          (retry)="load()"
-          (clear)="clear()"
-          (showAll)="showAll()"
-        >
-          @if (filters.rowVisible()) {
-            <tr
-              mfGridFilterRow
-              mfColumnFilterRow
-              id="report-filter-row"
-              [filters]="filters"
-              [columns]="columns()"
-            ></tr>
-          }
-          <p-button mfEmptyAction label="New Report" icon="pi pi-plus" (onClick)="newReport()" />
-          <ng-template mfCell="name" let-r>
-            <td class="rl-namecell" [attr.data-row]="r.name">
-              <a
-                class="mf-link pg-clip"
-                [routerLink]="['/admin/reports', r.reportId]"
-                [mfRowLink]="listId"
-                [rowKey]="r.reportId"
-                [state]="leave.state()"
-                [attr.title]="r.name"
-                data-open
-                >{{ r.name }}</a
-              >
-            </td>
-          </ng-template>
-          <ng-template mfCell="category" let-r>
-            <td class="pg-clip" data-category [attr.title]="r.categoryName">
-              {{ r.categoryName }}
-            </td>
-          </ng-template>
-          <ng-template mfCell="roles" let-r>
-            <td class="pg-num" data-roles>{{ r.roleCount | mfInt }}</td>
-          </ng-template>
-          <ng-template mfCell="lastRun" let-r>
-            <td class="pg-nowrap" data-last-run>
-              @if (r.lastRunAtUtc) {
-                {{ r.lastRunAtUtc | mfNum: 'date' }}
-              } @else {
-                <span class="mf-sr-only">Never</span><span aria-hidden="true">-</span>
-              }
-            </td>
-          </ng-template>
-          <ng-template mfCell="status" let-r>
-            <td><mf-active-badge [active]="r.isActive" /></td>
-          </ng-template>
-          <ng-template mfCell="actions" let-r>
-            <td class="mf-col-actions" [attr.data-actions-of]="r.reportId">
-              @if (menus().get(r.reportId); as menu) {
-                <mf-action-menu [floating]="true" [label]="menu.label" [items]="menu.items" />
-              }
-            </td>
-          </ng-template>
-          <div mfGridFoot>
-            <ng-container *ngTemplateOutlet="pager" />
-          </div>
-        </mf-record-grid>
-      </div>
-    }
-
-    @if (phone()) {
-      <ng-container *ngTemplateOutlet="pager" />
-    }
+      >
+        @if (filters.rowVisible()) {
+          <tr
+            mfGridFilterRow
+            mfColumnFilterRow
+            id="report-filter-row"
+            [filters]="filters"
+            [columns]="columns()"
+          ></tr>
+        }
+        <p-button mfEmptyAction label="New Report" icon="pi pi-plus" (onClick)="newReport()" />
+        <ng-template mfCell="name" let-r>
+          <td class="rl-namecell" [attr.data-row]="r.name">
+            <a
+              class="mf-link pg-clip"
+              [routerLink]="['/admin/reports', r.reportId]"
+              [mfRowLink]="listId"
+              [rowKey]="r.reportId"
+              [state]="leave.state()"
+              [attr.title]="r.name"
+              data-open
+              >{{ r.name }}</a
+            >
+          </td>
+        </ng-template>
+        <ng-template mfCell="category" let-r>
+          <td class="pg-clip" data-category [attr.title]="r.categoryName">
+            {{ r.categoryName }}
+          </td>
+        </ng-template>
+        <ng-template mfCell="roles" let-r>
+          <td class="pg-num" data-roles>{{ r.roleCount | mfInt }}</td>
+        </ng-template>
+        <ng-template mfCell="lastRun" let-r>
+          <td class="pg-nowrap" data-last-run>
+            @if (r.lastRunAtUtc) {
+              {{ r.lastRunAtUtc | mfNum: 'date' }}
+            } @else {
+              <span class="mf-sr-only">Never</span><span aria-hidden="true">-</span>
+            }
+          </td>
+        </ng-template>
+        <ng-template mfCell="status" let-r>
+          <td><mf-active-badge [active]="r.isActive" /></td>
+        </ng-template>
+        <ng-template mfCell="actions" let-r>
+          <td class="mf-col-actions" [attr.data-actions-of]="r.reportId">
+            @if (menus().get(r.reportId); as menu) {
+              <mf-action-menu [floating]="true" [label]="menu.label" [items]="menu.items" />
+            }
+          </td>
+        </ng-template>
+        <div mfGridFoot>
+          <ng-container *ngTemplateOutlet="pager" />
+        </div>
+      </mf-record-grid>
+    </div>
     <ng-template #pager>
       @if (state() === 'ready' && total() > 0) {
         <mf-pager
@@ -253,7 +225,6 @@ export class ReportsListTab extends LocalListPage<ReportListItemResponse> {
 
   protected readonly listId = ADMIN_LIST.reports.id;
   protected readonly leave = inject(AdminListLeave);
-  protected readonly phone = phoneCards();
   protected readonly roomy = COLUMN_ROOM;
   protected readonly defaultSort = 'category';
 
@@ -297,8 +268,7 @@ export class ReportsListTab extends LocalListPage<ReportListItemResponse> {
   protected readonly filters: ListFilters = new ListFilters({
     screen: 'reports',
     noun: 'reports',
-    sheetBelow: 640,
-    visibleColumns: computed(() => (this.phone() ? null : this.columns())),
+    visibleColumns: this.columns,
     defs: computed((): FilterDef[] => [
       { key: 'name', label: 'Name', column: 'name', type: 'text' },
       {
@@ -379,7 +349,7 @@ export class ReportsListTab extends LocalListPage<ReportListItemResponse> {
     }
   }
 
-  // ---- the row menu and the phone cards
+  // ---- the row menu
 
   protected readonly menus = computed(() => {
     const map = new Map<number, ReturnType<typeof rowActions>>();
@@ -432,16 +402,6 @@ export class ReportsListTab extends LocalListPage<ReportListItemResponse> {
       );
     }
     return map;
-  });
-
-  protected readonly cardOf = (r: ReportListItemResponse): AdminCardSpec => ({
-    title: r.name,
-    link: ['/admin/reports', r.reportId],
-    rowKey: r.reportId,
-    state: this.leave.state(),
-    badges: [activeCardBadge(r.isActive)],
-    meta: [r.categoryName, r.roleCount === 1 ? '1 role' : `${r.roleCount} roles`],
-    actions: this.menus().get(r.reportId) ?? null,
   });
 
   /** The empty list's own New button (the same action as the page header's, spec 15.3). */
