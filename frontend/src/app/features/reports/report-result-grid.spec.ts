@@ -172,15 +172,55 @@ describe('ReportResultGrid (#720)', () => {
       expect(el().querySelector('mf-sorted-line')).toBeNull();
       q('th[data-col="Open Tasks"] button').click();
       await settle(fixture);
-      expect(lastCall()).toEqual(['run-9', 1, 50, 'Open Tasks:asc', undefined]);
+      expect(lastCall()).toEqual(['run-9', 1, 50, '#1:asc', undefined]);
       expect(q('mf-sorted-line').textContent).toContain('Sorted by Open Tasks');
       expect(q('th[data-col="Open Tasks"]').getAttribute('aria-sort')).toBe('ascending');
       q('th[data-col="Open Tasks"] button').click();
       await settle(fixture);
-      expect(lastCall()[3]).toBe('Open Tasks:desc');
+      expect(lastCall()[3]).toBe('#1:desc');
       await press('Reset Sort');
       expect(lastCall()[3]).toBeUndefined();
       expect(el().querySelector('mf-sorted-line')).toBeNull();
+    });
+  });
+
+  describe('sorting by position (#1288)', () => {
+    const odd = run({
+      columns: [
+        { name: 'Total, USD', type: 'decimal' },
+        { name: 'a,b', type: 'text' },
+        { name: '#0', type: 'integer' },
+      ],
+    });
+    const oddPage = (_id: string, p = 1, size = 50) =>
+      ok(page({ columns: odd.columns, rows: [[1.5, 'x', 3]], page: p, pageSize: size }));
+
+    it('sends #<position>:asc and :desc for a column named a,b, says its name in the Sorted by line and Reset Sort clears it', async () => {
+      await create(odd);
+      api.getReportRows.mockImplementation(oddPage);
+      q('th[data-col="a,b"] button').click();
+      await settle(fixture);
+      expect(lastCall()).toEqual(['run-9', 1, 50, '#1:asc', undefined]);
+      expect(q('mf-sorted-line').textContent).toContain('Sorted by a,b');
+      q('th[data-col="a,b"] button').click();
+      await settle(fixture);
+      expect(lastCall()[3]).toBe('#1:desc');
+      expect(q('mf-sorted-line').textContent).toContain('Sorted by a,b');
+      await press('Reset Sort');
+      expect(lastCall()[3]).toBeUndefined();
+      expect(el().querySelector('mf-sorted-line')).toBeNull();
+    });
+
+    it('sorts a column named like a position by its own position, and keeps one sort column at a time', async () => {
+      await create(odd);
+      api.getReportRows.mockImplementation(oddPage);
+      q('th[data-col="#0"] button').click();
+      await settle(fixture);
+      expect(lastCall()[3]).toBe('#2:asc');
+      q('th[data-col="Total, USD"] button').click();
+      await settle(fixture);
+      expect(lastCall()[3]).toBe('#0:asc');
+      expect(all('mf-sorted-line [data-sorted-text]')).toHaveLength(1);
     });
   });
 
@@ -282,7 +322,7 @@ describe('ReportResultGrid (#720)', () => {
       expect(lastCall().slice(1, 3)).toEqual([2, 50]);
       q('th[data-col="Matter"] button').click();
       await settle(fixture);
-      expect(lastCall().slice(1, 4)).toEqual([1, 50, 'Matter:asc']);
+      expect(lastCall().slice(1, 4)).toEqual([1, 50, '#0:asc']);
       await press('Next');
       expect(lastCall()[1]).toBe(2);
       fixture.componentInstance.filters.set('c0', 'acme');

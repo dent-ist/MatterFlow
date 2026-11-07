@@ -92,8 +92,10 @@ export function filterCount(filter: string | undefined): number {
 }
 
 /**
- * The `sort` argument of the rows endpoint (`Name:asc`) from the grid's sort (`c3` or `-c3`, the column id with a leading minus for descending), or
- * undefined for the report's own order. An id that is not a column of the result gives undefined.
+ * The `sort` argument of the rows and export endpoints, from the grid's sort (`c3` or `-c3`, the column id with a leading minus for descending): the
+ * column's POSITION in the result's `columns` array, `#3:asc` or `#3:desc` (#1288). Never the name: a report author picks any name (`Total, USD` has a
+ * comma, `#3` looks like a position), and only a position is unambiguous. The `#` is URL-encoded to `%23` by the generated client. Undefined for the
+ * report's own order; an id that is not a column of the result gives undefined. One column only (the one-sort rule of the grid).
  */
 export function serverSort(
   columns: readonly ResultColumn[],
@@ -102,7 +104,7 @@ export function serverSort(
   if (!sort) return undefined;
   const desc = sort.startsWith('-');
   const column = columns.find((c) => c.id === (desc ? sort.slice(1) : sort));
-  return column ? `${column.name}:${desc ? 'desc' : 'asc'}` : undefined;
+  return column ? `#${column.index}:${desc ? 'desc' : 'asc'}` : undefined;
 }
 
 /** "Sorted by <Column>" words: the column id to its name (the sorted line asks for the label of a sort field). */
