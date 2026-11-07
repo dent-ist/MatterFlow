@@ -167,7 +167,8 @@ public class PermissionCatalogTests
         P("Project Manager").ShouldContain(Permissions.Matter.BeManager);
         P("Project Manager").ShouldContain(Permissions.Matter.AssignManagers);
         P("Director").ShouldContain(Permissions.Matter.AssignManagers);
-        P("Director").ShouldNotContain(Permissions.Matter.BeManager);
+        // Owner decision (issue #976): the Director opens My Matters through Matter.BeManager and may be named as a project manager.
+        P("Director").ShouldContain(Permissions.Matter.BeManager);
         // Sensitive matters (#788): only the Director sees every sensitive matter by default; the permission is not implied by anything else.
         P("Director").ShouldContain(Permissions.Matter.ViewSensitive);
         foreach (var role in StarterRoles.All.Where(r => r.Name != "Director"))

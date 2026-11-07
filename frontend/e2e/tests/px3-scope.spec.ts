@@ -10,7 +10,7 @@ import { SIZES, noHorizontalScroll } from '../support/screens';
  * People holding Matter.BeManager open Matters, Task Queue, Assets, Clients and Projects on the matters they manage (Primary or Secondary),
  * with a remembered switch; All only with Matter.AssignManagers; a link that carries filters means what it says; search stays global and
  * labels results outside the person's matters. Permission variants: Project Manager, PM without Matter.AssignManagers, PM with no matter,
- * Director, technician, System Admin.
+ * Director (holds Matter.BeManager since issue #976), technician, System Admin.
  */
 const scopeLine = (page: Page) => page.locator('[data-scope-line]');
 const pressed = (page: Page, scope: 'mine' | 'all') =>
@@ -163,8 +163,23 @@ test.describe('My matters / All: lists', () => {
     await expect(page).toHaveURL(/scope=mine/);
   });
 
+  test('Director (Matter.BeManager since #976, and Matter.AssignManagers): the switch is offered, a plain link opens on My matters (none yet), All shows the rest', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const fx = await pmFixtures(seed, personas);
+    const page = await asUser(fx.director.username);
+    await page.goto('/matters?size=100');
+    await expect(page.locator('[data-scope-switch]')).toBeVisible();
+    await expect(page).toHaveURL(/scope=mine/);
+    await expect(page.locator('[data-empty]')).toContainText('You do not manage any matter yet.');
+    await page.locator('[data-scope="all"]').click();
+    await expect(page).toHaveURL(/scope=all/);
+    await expect(page.locator('tbody tr').first()).toBeVisible();
+  });
+
   for (const [label, key] of [
-    ['Director (Matter.AssignManagers, cannot be a manager)', 'director'],
     ['technician', 'technician'],
     ['Read-Only Observer', 'observer'],
   ] as const) {

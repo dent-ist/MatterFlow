@@ -4,7 +4,7 @@
 
 **What this page is for.** One line per numbered SQL script in `db/scripts/`, in order: what it did, which tables it created and which it changed. Use it to find which script introduced a column or table, and to see how the schema grew. Rules for writing a new script: [How to Change the Schema](How-to-Change-the-Schema.md).
 
-There are 59 scripts, numbered 01 to 60. **Number 16 does not exist** (a gap is allowed by the runner). Scripts are immutable once merged, so where one later fixed another (for example 32 after 31) the fix is a new script. "Created" and "changed" are derived by pattern matching on `CREATE TABLE`, `ALTER TABLE`, `CREATE INDEX` and `CREATE TRIGGER` in the script text; permission and data scripts are described in plain words.
+There are 61 scripts, numbered 01 to 62. **Number 16 does not exist** (a gap is allowed by the runner). Scripts are immutable once merged, so where one later fixed another (for example 32 after 31) the fix is a new script. "Created" and "changed" are derived by pattern matching on `CREATE TABLE`, `ALTER TABLE`, `CREATE INDEX` and `CREATE TRIGGER` in the script text; permission and data scripts are described in plain words.
 
 | # | File | What it did | Tables created | Tables or indexes changed |
 |---|---|---|---|---|
@@ -68,6 +68,7 @@ There are 59 scripts, numbered 01 to 60. **Number 16 does not exist** (a gap is 
 | 59 | `59-holiday-calendars.sql` | Holiday calendars and holidays; `AppUser.HolidayCalendarId`, `Pod.DefaultHolidayCalendarId`. | `Holiday`, `HolidayCalendar` | `AppUser`, `Pod` |
 | 60 | `60-calendar-permissions.sql` | Permissions `Dashboard.ViewCalendar`, `Dashboard.ViewAbsenceReasons`, `User.ManageAvailability` and grants. | - | - |
 | 61 | `61-project-manager-report-run.sql` | Permission row `Report.Run` (if missing) and its grant to the role named "Project Manager" while that role still has the starter description (owner decision 8); no other role, no report assignment. | - | - |
+| 62 | `62-director-be-manager.sql` | Grants `Matter.BeManager` (exists since 28) to the role named "Director" while that role still has the starter description (issue #976, owner decision; not a Reports change); no other role, no new permission. | - | - |
 
 ## Related pages
 

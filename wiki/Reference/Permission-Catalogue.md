@@ -25,7 +25,7 @@ How to read it:
 | `Matter.Edit` | Edit matter details | Director, Project Manager, Pod Lead | `MatterEventService`, `OrganizationControllers` | `calendar-tab`, `matter-detail-page`, `matters.routes` and 1 more |
 | `Matter.EditNumber` | Change a matter number | Director, Project Manager | `OrganizationControllers` | `matter-form-dialog`, `matter-form-page`, `matters.routes` |
 | `Matter.SetActive` | Activate or deactivate matters | Director, Project Manager | `OrganizationControllers` | `matter-detail-page` |
-| `Matter.BeManager` | Can be named as a matter's project manager (Primary or Secondary). A marker: it opens no screen by itself | Project Manager | `ClientService`, `MatterManagerEligibility`, `MyMattersController`, `SearchService` | `app.routes`, `calendar-tab`, `clients-list-page` and 8 more |
+| `Matter.BeManager` | Can be named as a matter's project manager (Primary or Secondary). A marker: it opens no screen by itself | Director, Project Manager | `ClientService`, `MatterManagerEligibility`, `MyMattersController`, `SearchService` | `app.routes`, `calendar-tab`, `clients-list-page` and 8 more |
 | `Matter.AssignManagers` | Set or clear the Primary and Secondary project manager of matters, and search all matters on My Matters | Director, Project Manager | `ManagedMatterScope`, `MatterService`, `MyMattersController`, `OrganizationControllers` | `matter-detail-page`, `matters-list-page`, `metrics-tab` and 2 more |
 | `Matter.ViewSensitive` | See all sensitive matters (every sensitive matter, with all its tasks and assets, regardless of manager or assignment). Grants access to every sensitive matter | Director | `MatterVisibility` | `roles-page` |
 
@@ -149,7 +149,7 @@ How to read it:
 
 ## Notes on special permissions
 
-- `Matter.BeManager` is a marker: it lets a person be named Primary or Secondary project manager of a matter (and shows My Matters together with `Matter.View` and `Task.View`). `Matter.AssignManagers` lets a person change a matter's managers and use the All scope and manager picker in My Matters.
+- `Matter.BeManager` is a marker: it lets a person be named Primary or Secondary project manager of a matter (and shows My Matters together with `Matter.View` and `Task.View`). The Director holds it since issue #976 (script 62 for existing databases), so a Director opens My Matters, lands there, and can be named as a project manager; on My Matters a Director who manages no matter sees "You do not manage any matter yet.". `Matter.AssignManagers` lets a person change a matter's managers and use the All scope and manager picker in My Matters.
 - `Matter.ViewSensitive` lets a person see all Sensitive matters (effective only when `Features:SensitiveMatterAccess` is on).
 - `Dashboard.View` opens the Dashboard; every tab needs its own `Dashboard.View<Tab>` permission as well (a Dashboard with no tab permission is hidden). `Dashboard.ViewAbsenceReasons` only shows the absence type in the Calendar.
 - `Settings.Manage` and the three Reports permissions are granted to no starter role; only the System Admin holds them until an administrator grants them.

@@ -12,7 +12,6 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { PageTitle } from '../../../core/title/page-title';
 import { CreateTaskContext } from '../../../shared/layout/create-task-context';
@@ -30,6 +29,7 @@ import { MmLayout } from './mm-layout';
 import { GRID_KEYS, MM_TABS, MmScopeStore, MmTab, TAB_LABELS } from './mm-scope';
 import { MmMetricsTab } from './metrics-tab';
 import { MmNewMenu } from './new-menu';
+import { MmNoMatters } from './no-matters';
 import { MmOverview } from './overview';
 import { MmWorkflowBar } from './workflow-bar';
 import { OptionsMenu } from '../../../shared/ui/options-menu';
@@ -56,6 +56,7 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
     MmCalendarTab,
     MmMetricsTab,
     MmNewMenu,
+    MmNoMatters,
     MmOverview,
     MmScopeBar,
     MmScopeChip,
@@ -67,7 +68,6 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
     ScopeSwitch,
     MmTreePanel,
     MmTreeRail,
-    RouterLink,
     Tabs,
   ],
   providers: [
@@ -95,15 +95,6 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
     .panel {
       margin-top: var(--mf-s3);
       min-width: 0;
-    }
-    .empty {
-      display: flex;
-      gap: var(--mf-s3);
-      align-items: flex-start;
-      padding: var(--mf-s5);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-xl);
-      background: var(--mf-surface);
     }
     .banner {
       margin-top: var(--mf-s3);
@@ -227,14 +218,7 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
       }
 
       @if (noMatters()) {
-        <div class="empty work" data-no-matters>
-          <i class="pi pi-info-circle" aria-hidden="true"></i>
-          <span
-            ><b>No matters yet.</b> You are not the project manager of any matter yet. When a Pod
-            Lead assigns you one, it will appear here.
-            <a routerLink="/my-work" class="mf-link">Go to My Work</a></span
-          >
-        </div>
+        <mf-mm-no-matters />
       } @else {
         <div class="work" #work [class.hold]="false">
           @if (layout.docked()) {

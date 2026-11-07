@@ -188,7 +188,8 @@ test.describe('Landing and menus of the personas (#632)', () => {
       {
         who: 'director',
         username: (await personas.named('director')).username,
-        lands: /\/dashboard$/,
+        // The Director holds Matter.BeManager since issue #976: the landing rule leads to My Matters.
+        lands: /\/my-matters$/,
       },
       {
         who: 'observer',
