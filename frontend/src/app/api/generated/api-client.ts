@@ -15206,6 +15206,10 @@ export interface IReportsClient {
     /**
      * @return OK
      */
+    listMyReports(): Observable<RunnableReportListResponse>;
+    /**
+     * @return OK
+     */
     runReport(id: number, body: RunReportRequest): Observable<RunReportResponse>;
     /**
      * @return No Content
@@ -15236,6 +15240,56 @@ export class ReportsClient implements IReportsClient {
     constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
         this.http = http;
         this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    listMyReports(): Observable<RunnableReportListResponse> {
+        let url_ = this.baseUrl + "/api/v1/reports";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListMyReports(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListMyReports(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<RunnableReportListResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<RunnableReportListResponse>;
+        }));
+    }
+
+    protected processListMyReports(response: HttpResponseBase): Observable<RunnableReportListResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RunnableReportListResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
     }
 
     /**
@@ -28222,6 +28276,35 @@ export interface RoleSummaryDto {
     isSystemAdmin: boolean;
     memberCount: number;
     permissionCount: number;
+
+    [key: string]: any;
+}
+
+export interface RunnableReportCategoryResponse {
+    categoryId: number;
+    name: string;
+    sortOrder: number;
+    reports: RunnableReportListItemResponse[];
+
+    [key: string]: any;
+}
+
+export interface RunnableReportListItemResponse {
+    reportId: number;
+    name: string;
+    description: string | undefined;
+    sortOrder: number;
+    parameterCount: number;
+    hasParameters: boolean;
+    parameterLabels: string[];
+    lastRunAtUtc: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface RunnableReportListResponse {
+    categories: RunnableReportCategoryResponse[];
+    totalReports: number;
 
     [key: string]: any;
 }

@@ -38,12 +38,60 @@ public sealed record ReportRowsResponse(
     int PageSize,
     bool Truncated);
 
+/// <summary>A report in the list of the person who may run it.</summary>
+/// <param name="ReportId">Id to run (<c>POST /reports/{id}/runs</c>) and to read the definition.</param>
+/// <param name="Description">The administrator's one-line description, or null.</param>
+/// <param name="SortOrder">The administrator's order inside the category (the list is already in this order).</param>
+/// <param name="ParameterCount">How many parameters the person is asked for (0 for a report that runs without a form).</param>
+/// <param name="HasParameters">True when <paramref name="ParameterCount"/> is more than 0.</param>
+/// <param name="ParameterLabels">The labels of those parameters, in order.</param>
+/// <param name="LastRunAtUtc">When this person last ran the report successfully (UTC), null when never. Other people's runs never show.</param>
+public sealed record RunnableReportListItemResponse(
+    int ReportId,
+    string Name,
+    string? Description,
+    int SortOrder,
+    int ParameterCount,
+    bool HasParameters,
+    IReadOnlyList<string> ParameterLabels,
+    DateTime? LastRunAtUtc);
+
+/// <summary>A category with the reports the person may run in it (categories with nothing to run are left out).</summary>
+public sealed record RunnableReportCategoryResponse(int CategoryId, string Name, int SortOrder, IReadOnlyList<RunnableReportListItemResponse> Reports);
+
+/// <summary>The reports the person may run, grouped by category in the administrator's order. Never contains SQL.</summary>
+/// <param name="TotalReports">Reports in all categories together.</param>
+public sealed record RunnableReportListResponse(IReadOnlyList<RunnableReportCategoryResponse> Categories, int TotalReports);
+
 /// <summary>Running reports (<c>Report.Run</c> plus an assignment of the report to one of the caller's roles).</summary>
 [ApiController]
 [Route("api/v1/reports")]
 [Produces("application/json")]
-public class ReportsController(ReportRunService runs, ReportResultStore results, ICurrentUser currentUser) : ControllerBase
+public class ReportsController(ReportRunService runs, ReportResultStore results, ICurrentUser currentUser, ReportBrowseService browse) : ControllerBase
 {
+    /// <summary>
+    /// The reports the caller may run: active reports with a current version that are assigned to one of the caller's roles (needs <c>Report.Run</c>), grouped
+    /// by category in the administrator's order. One call, no paging. Nothing about reports the caller may not run is revealed, and the body never contains SQL.
+    /// </summary>
+    [HttpGet(Name = "ListMyReports")]
+    [Authorize(Policy = ReportPolicies.Run)]
+    [ProducesResponseType<RunnableReportListResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> List(CancellationToken cancellationToken)
+    {
+        var result = await browse.ListAsync(cancellationToken);
+        if (result.Problem is { } problem)
+            return ReportProblems.Create(this, new RunProblem(problem.Status, problem.Code, problem.Message));
+
+        var categories = result.Value!
+            .Select(c => new RunnableReportCategoryResponse(
+                c.CategoryId,
+                c.Name,
+                c.SortOrder,
+                c.Reports.Select(r => new RunnableReportListItemResponse(r.ReportId, r.Name, r.Description, r.SortOrder, r.ParameterCount, r.ParameterCount > 0, r.ParameterLabels, r.LastRunAtUtc)).ToList()))
+            .ToList();
+        return Ok(new RunnableReportListResponse(categories, categories.Sum(c => c.Reports.Count)));
+    }
+
     /// <summary>
     /// Runs a report the caller's role is assigned to, on the read-only report login, with real SQL parameters. 200 with the result's id and
     /// columns; 404 when the report is unknown, inactive or not assigned; 408 on the time limit; 409 <c>REPORT_ALREADY_RUNNING</c> (one report per

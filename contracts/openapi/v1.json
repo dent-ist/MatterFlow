@@ -9747,6 +9747,26 @@
         }
       }
     },
+    "/api/v1/reports": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "operationId": "ListMyReports",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunnableReportListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/reports/{id}/runs": {
       "post": {
         "tags": [
@@ -31602,6 +31622,105 @@
             "format": "int32"
           },
           "permissionCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "RunnableReportCategoryResponse": {
+        "required": [
+          "categoryId",
+          "name",
+          "sortOrder",
+          "reports"
+        ],
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reports": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunnableReportListItemResponse"
+            }
+          }
+        }
+      },
+      "RunnableReportListItemResponse": {
+        "required": [
+          "reportId",
+          "name",
+          "description",
+          "sortOrder",
+          "parameterCount",
+          "hasParameters",
+          "parameterLabels",
+          "lastRunAtUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "reportId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "parameterCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasParameters": {
+            "type": "boolean"
+          },
+          "parameterLabels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "lastRunAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "RunnableReportListResponse": {
+        "required": [
+          "categories",
+          "totalReports"
+        ],
+        "type": "object",
+        "properties": {
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunnableReportCategoryResponse"
+            }
+          },
+          "totalReports": {
             "type": "integer",
             "format": "int32"
           }

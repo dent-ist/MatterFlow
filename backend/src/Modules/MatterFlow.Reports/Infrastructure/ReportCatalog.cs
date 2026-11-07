@@ -9,18 +9,36 @@ namespace MatterFlow.Reports.Infrastructure;
 /// </summary>
 internal sealed class ReportCatalog(ReportAppConnection app) : IReportCatalog
 {
-    internal const string RunnableSql =
+    /// <summary>The one rule for "may run": the report is active and one of the person's active roles holds it. Every read of this class uses it.</summary>
+    private const string MayRun =
         """
-        SELECT d.ReportId, d.Name, v.ReportVersionId, v.VersionNo, v.SqlText, v.SqlHash, v.ParametersJson, d.TimeoutSeconds, d.MaxRows
-        FROM dbo.ReportDefinition d
-        JOIN dbo.ReportVersion v ON v.ReportVersionId = d.CurrentVersionId
-        WHERE d.ReportId = @reportId
-          AND d.IsActive = 1
+        d.IsActive = 1
           AND EXISTS (SELECT 1
                       FROM dbo.RoleReport rr
                       JOIN dbo.UserRole ur ON ur.RoleId = rr.RoleId
                       JOIN dbo.Role ro ON ro.RoleId = ur.RoleId AND ro.IsActive = 1
                       WHERE rr.ReportId = d.ReportId AND ur.UserId = @userId)
+        """;
+
+    internal const string RunnableSql =
+        $"""
+        SELECT d.ReportId, d.Name, v.ReportVersionId, v.VersionNo, v.SqlText, v.SqlHash, v.ParametersJson, d.TimeoutSeconds, d.MaxRows
+        FROM dbo.ReportDefinition d
+        JOIN dbo.ReportVersion v ON v.ReportVersionId = d.CurrentVersionId
+        WHERE d.ReportId = @reportId
+          AND {MayRun}
+        """;
+
+    internal const string ListSql =
+        $"""
+        SELECT d.ReportId, d.Name, d.Description, d.SortOrder, c.ReportCategoryId, c.Name, c.SortOrder, v.VersionNo, v.SqlText, v.ParametersJson,
+               (SELECT MAX(r.StartedAt) FROM dbo.ReportRun r
+                WHERE r.ReportId = d.ReportId AND r.UserId = @userId AND r.Kind = 'Run' AND r.Status IN ('Succeeded', 'Truncated')) AS LastRunAt
+        FROM dbo.ReportDefinition d
+        JOIN dbo.ReportVersion v ON v.ReportVersionId = d.CurrentVersionId
+        JOIN dbo.ReportCategory c ON c.ReportCategoryId = d.ReportCategoryId
+        WHERE {MayRun}
+        ORDER BY c.SortOrder, c.Name, d.SortOrder, d.Name
         """;
 
     public async Task<RunnableReport?> FindRunnableAsync(int reportId, int userId, CancellationToken cancellationToken)
@@ -44,5 +62,32 @@ internal sealed class ReportCatalog(ReportAppConnection app) : IReportCatalog
             reader.GetString(6),
             reader.IsDBNull(7) ? null : reader.GetInt32(7),
             reader.IsDBNull(8) ? null : reader.GetInt32(8));
+    }
+
+    public async Task<IReadOnlyList<RunnableListItem>> ListRunnableAsync(int userId, CancellationToken cancellationToken)
+    {
+        await using var connection = await app.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = ListSql;
+        command.Parameters.Add(new SqlParameter("@userId", System.Data.SqlDbType.Int) { Value = userId });
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        var items = new List<RunnableListItem>();
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            items.Add(new RunnableListItem(
+                reader.GetInt32(0),
+                reader.GetString(1),
+                reader.IsDBNull(2) ? null : reader.GetString(2),
+                reader.GetInt32(3),
+                reader.GetInt32(4),
+                reader.GetString(5),
+                reader.GetInt32(6),
+                reader.GetInt32(7),
+                reader.GetString(8),
+                reader.GetString(9),
+                reader.IsDBNull(10) ? null : DateTime.SpecifyKind(reader.GetDateTime(10), DateTimeKind.Utc)));
+        }
+
+        return items;
     }
 }

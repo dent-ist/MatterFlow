@@ -51,6 +51,9 @@ public sealed record RunnableReport(
 public interface IReportCatalog
 {
     Task<RunnableReport?> FindRunnableAsync(int reportId, int userId, CancellationToken cancellationToken);
+
+    /// <summary>Every report the person may run (same rule as <see cref="FindRunnableAsync"/>), with the person's own last successful run. Category and report order are the administrator's.</summary>
+    Task<IReadOnlyList<RunnableListItem>> ListRunnableAsync(int userId, CancellationToken cancellationToken);
 }
 
 /// <summary>Receives the rows of a result while the reader streams. Returns false to stop reading (the cap is reached).</summary>
