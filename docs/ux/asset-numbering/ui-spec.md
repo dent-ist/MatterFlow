@@ -1,8 +1,8 @@
 # Asset numbering: screen specification
 
-Status: proposal for owner sign-off, 2026-11-08 (revised the same day twice for the owner's decisions: the name always starts with the CM Number and the administrator edits only a free-text tail with one counter), base `origin/asset-numbering` (5557792). Author: UI designer. Issue: #1297 (owner approved the direction: Media folder `{CM Number}_{###}`, the counter restarts per matter). Standard: `docs/ux/design-guidelines.md` (D-numbers below), tokens `docs/ux/tokens.css`. Desktop only, 1366x768 and 1920x1080 (D-82). **No new or changed keyboard shortcuts (#420).**
+Status: **final**, all owner questions decided 2026-11-07, 2026-11-08 (revised the same day twice for the owner's decisions: the name always starts with the CM Number and the administrator edits only a free-text tail with one counter), base `origin/asset-numbering` (5557792). Author: UI designer. Issue: #1297 (owner approved the direction: Media folder `{CM Number}_{###}`, the counter restarts per matter). Standard: `docs/ux/design-guidelines.md` (D-numbers below), tokens `docs/ux/tokens.css`. Desktop only, 1366x768 and 1920x1080 (D-82). **No new or changed keyboard shortcuts (#420).**
 
-Contents: 0 Decisions, 1 Asset Type editor (Numbering tab), 2 Next numbers per matter, 3 The number on assets (form, record page, lists, other places), 4 States and widening, 5 Wording table, 6 Components, 7 What the backend must supply, 8 Acceptance, 9 Owner decisions.
+Contents: 0 Decisions, 1 Asset Type editor (Numbering tab), 2 Next numbers per matter, 3 The number on assets (form, record page, lists, other places), 4 States and widening, 5 Wording table, 6 Components, 7 What the backend must supply, 8 Acceptance, 9 Owner decisions (all decided).
 
 ---
 
@@ -229,14 +229,16 @@ OpenAPI contract and the generated client move in the same change (CI checks dri
 
 ---
 
-## 9. Owner decisions needed
+## 9. Owner decisions (all decided, 2026-11-07)
 
-| # | Question | Recommendation |
+| # | Decision | Where it applies |
 |---|---|---|
-| N1 | **Decided (2026-11-07): Asset Number.** | Done; the help text says it is the folder name. |
-| N2 | An old asset of a numbered type gets its number only by the explicit **Assign Number** button (not silently when edited). | Yes. |
-| N3 | The next number can only be raised, never lowered (the minimum is the current next number). | Yes. |
-| N4 | In the Assets list the Asset Number column is default only when a numbered type exists, and External Reference then moves to "off by default". | Yes (the default set must fit 1366, D-43a). |
-| N5 | Search finds assets by their number. | Yes (the number is what people paste from the share). |
-| N6 | **Decided by the owner (2026-11-07):** the name starts with the CM Number; the administrator edits only a free-text tail with one `{###}` counter (guardrails in section 1.2a). Per client or global scope stays out for now. | Done. |
-| N7 | The Asset Number column is 168 px: the default tail gives 17 characters and fits, a longer tail clips with a tooltip (a person widens the column once). 168 px is also the most that keeps the default Assets columns inside 1366 (1095 of 1098 px). | Yes. |
+| N1 | **Decided by the owner:** the field is called **Asset Number**. | Everywhere (section 0, 3, 5). |
+| N2 | **Decided by the owner:** an old asset of a numbered type gets its number only through the explicit **Assign Number** button, never silently when edited. | 1.2 (old assets line), 3.2, 3.3. |
+| N3 | **Decided by the owner:** the next number can only be raised, never lowered (the minimum is the current next number). | 2.2. |
+| N4 | **Decided by the owner:** the Asset Number column is a default column only when a numbered asset type exists, and External Reference is then off by default. | 3.4. |
+| N5 | **Decided by the owner:** search finds assets by their number (the backend indexes it). | 3.5, 7. |
+| N6 | **Decided by the owner:** the name always starts with the matter's CM Number (fixed); the administrator edits only a free-text tail with exactly one `{###}` counter and optional text before and after it (guardrails in 1.2a). Per client or global scope stays out for now. | 1.2, 1.2a. |
+| N7 | **Decided by the owner:** long numbers clip with a tooltip; the Asset Number column is 168 px (the default tail gives 17 characters and fits; 1095 of 1098 px for the default Assets columns). | 3.4. |
+
+**This specification is final for the frontend and backend to build.** Open points that are not owner decisions: the backend sends `longestCmNumber` only if it wants the browser to check the 100-character limit (otherwise the server's PATTERN_TOO_LONG answer decides); the trailing-dot rule of the first backend draft is not part of this design (spaces only).
