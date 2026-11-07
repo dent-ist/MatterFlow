@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../testing/org-testing';
 import { RecordCell, RecordGrid, RecordGridColumn, RecordGridState } from './record-grid';
+import { columnWidthsKey, loadColumnWidths } from './resizable-columns';
 
 interface Row {
   id: number;
@@ -103,6 +104,23 @@ describe('record grid extension points (#1245)', () => {
     fixture.detectChanges();
     expect(el.querySelectorAll('tbody tr').length).toBe(3);
     expect(el.querySelector('tr.rg-group button')?.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('keeps the widths of the grid current: setWidths stores them and the signal says them, an empty map and Reset Width forget them (#722)', () => {
+    const { host } = mount();
+    const key = columnWidthsKey('spec-grid', undefined);
+    expect(host.grid.widths()).toEqual({});
+    host.grid.setWidths({ name: 240 });
+    expect(host.grid.widths()).toEqual({ name: 240 });
+    expect(loadColumnWidths(key)).toEqual({ name: 240 });
+    expect(host.grid.widthsVersion()).toBe(1);
+    host.grid.setWidths({});
+    expect(host.grid.widths()).toEqual({});
+    expect(localStorage.getItem(key)).toBeNull();
+    host.grid.setWidths({ name: 300 });
+    host.grid.resetWidths();
+    expect(host.grid.widths()).toEqual({});
+    expect(localStorage.getItem(key)).toBeNull();
   });
 
   it('gives a row the class names of rowClass', () => {

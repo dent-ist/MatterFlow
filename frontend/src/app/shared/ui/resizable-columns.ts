@@ -5,6 +5,7 @@ import {
   afterNextRender,
   inject,
   input,
+  output,
   untracked,
 } from '@angular/core';
 import { AuthStore } from '../../core/auth/auth.store';
@@ -93,6 +94,8 @@ export class ResizableColumns {
   /** The grid's name in storage. */
   readonly mfResizable = input.required<string>();
   readonly mfResizeMin = input(RESIZE_MIN_PX);
+  /** The person changed a width (drag, keys, fit): the widths of every column now, by key, as they were stored. A page keeps what it shows of them (saved views). */
+  readonly widthsChange = output<ColumnWidths>();
 
   private widths: Record<string, number> = {};
   private loaded = false;
@@ -125,6 +128,19 @@ export class ResizableColumns {
     }
     this.table.style.removeProperty('width');
     this.table.classList.remove('mf-rz--fixed');
+  }
+
+  /**
+   * The stored widths changed behind the table's back (a saved view was applied, #722): forgets what it holds, reads the storage again and lays the columns
+   * out with it; empty storage is the same as `reset()`.
+   */
+  reload(): void {
+    // Before the first layout there is nothing to forget: the first `decorate` reads the storage itself.
+    if (!this.loaded) return;
+    this.reset();
+    this.widths = { ...loadColumnWidths(this.storageKey) };
+    this.loaded = true;
+    this.decorate();
   }
 
   private headCells(): HTMLTableCellElement[] {
@@ -236,6 +252,7 @@ export class ResizableColumns {
       this.widths[columnKeyOf(c)] = Math.round(parseFloat(c.style.width) || FALLBACK_PX);
     }
     saveColumnWidths(this.storageKey, this.widths);
+    this.widthsChange.emit({ ...this.widths });
   }
 
   private onPointerDown(e: PointerEvent, th: HTMLTableCellElement, handle: HTMLElement): void {

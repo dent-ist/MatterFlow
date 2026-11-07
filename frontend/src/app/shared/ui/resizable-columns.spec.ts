@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../testing/org-testing';
 import {
   RESIZE_MAX_PX,
@@ -139,6 +140,45 @@ describe('resizable columns (MD-21, #1025)', () => {
       expect(parseFloat(th.style.width)).toBe(RESIZE_MIN_PX);
       const stored = loadColumnWidths(columnWidthsKey('test-grid', undefined));
       expect(stored['name']).toBe(RESIZE_MIN_PX);
+    });
+
+    it('tells the page the widths after a resize, and lays the table out with the stored widths again on reload (#722)', async () => {
+      TestBed.configureTestingModule({
+        providers: [provideFakeMe(new FakeMeApi(withPermissions('Matter.View')))],
+      });
+      const fixture = TestBed.createComponent(Host);
+      await fixture.whenStable();
+      fixture.detectChanges();
+      await new Promise((r) => setTimeout(r));
+      const el = fixture.nativeElement as HTMLElement;
+      const rz = fixture.debugElement
+        .query(By.directive(ResizableColumns))
+        .injector.get(ResizableColumns);
+      const seen: Record<string, number>[] = [];
+      rz.widthsChange.subscribe((w) => seen.push({ ...w }));
+      el.querySelectorAll('thead th').forEach((c) => {
+        (c as HTMLElement).getBoundingClientRect = () =>
+          ({ width: parseFloat((c as HTMLElement).style.width) || 200 }) as DOMRect;
+      });
+      const [name, client] = handles(el);
+      name.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+      expect(seen).toHaveLength(1);
+      expect(seen[0]['name']).toBe(RESIZE_MIN_PX);
+      expect(Object.keys(seen[0]).sort()).toEqual(['client', 'name']);
+
+      const key = columnWidthsKey('test-grid', undefined);
+      saveColumnWidths(key, { name: 321, client: 150 });
+      rz.reload();
+      const table = el.querySelector('table')!;
+      expect((name.parentElement as HTMLElement).style.width).toBe('321px');
+      expect((client.parentElement as HTMLElement).style.width).toBe('150px');
+      expect(table.classList.contains('mf-rz--fixed')).toBe(true);
+      expect(seen).toHaveLength(1);
+
+      localStorage.removeItem(key);
+      rz.reload();
+      expect((name.parentElement as HTMLElement).style.width).toBe('');
+      expect(table.classList.contains('mf-rz--fixed')).toBe(false);
     });
 
     it('has one Tab stop per header cell: the heading itself, never the handle (#1245)', async () => {

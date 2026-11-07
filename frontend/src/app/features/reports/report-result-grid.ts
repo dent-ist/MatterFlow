@@ -15,19 +15,24 @@ import {
 import { firstValueFrom } from 'rxjs';
 import {
   ReportRowsResponse,
+  ReportViewLayout,
+  ReportViewResponse,
   ReportsClient,
   RunReportResponse,
 } from '../../api/generated/api-client';
 import { ApiError } from '../../core/http/api-error';
 import { QuietRequests } from '../../core/http/interceptors';
+import { NotificationService } from '../../core/notify/notification.service';
 import { USER_TIME_ZONE } from '../../core/time/clock';
 import { ColumnFilterRow } from '../../shared/filters/column-filter-row';
 import { FilterValues, emptyValue, sameValue } from '../../shared/filters/filter-def';
 import { ListFilters } from '../../shared/filters/list-filters';
 import { ListToolbar } from '../../shared/filters/list-toolbar';
 import { LoadState } from '../../shared/ui/data-table';
-import { IntPipe } from '../../shared/ui/number-format';
+import { orderedKeys } from '../../shared/ui/grid-prefs';
+import { IntPipe, formatInt } from '../../shared/ui/number-format';
 import { Pager } from '../../shared/ui/pager';
+import { DEFAULT_GRID_PREFS } from '../../shared/ui/grid-prefs';
 import {
   RecordCell,
   RecordColumns,
@@ -35,6 +40,7 @@ import {
   RecordGridState,
 } from '../../shared/ui/record-grid';
 import { SortedLine } from '../../shared/ui/sorted-line';
+import { Tip } from '../../shared/ui/tip';
 import {
   ResultColumn,
   cellText,
@@ -54,6 +60,10 @@ import {
   sortKinds,
   sortLabels,
 } from './report-result-query';
+import { ReportExportService, exportedText } from './report-export';
+import { ReportViewsMenu } from './report-views-menu';
+import { ReportViewsStore } from './report-views-store';
+import { ResolvedLayout, captureLayout, layoutKey, resolveLayout } from './report-view-layout';
 
 /**
  * The result grid of the run page (issue #720, spec section 4 of `docs/ux/reports-review/ui-spec-user-pages.md`): the shared `mf-record-grid` with the
@@ -75,8 +85,11 @@ import {
     RecordCell,
     RecordColumns,
     RecordGrid,
+    ReportViewsMenu,
     SortedLine,
+    Tip,
   ],
+  providers: [ReportViewsStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     /* A flex column that takes what its parent leaves (the run page fills the window, #1286); in a plain block parent it is as tall as its content. */
@@ -120,6 +133,17 @@ import {
       </div>
     } @else {
       <mf-list-toolbar [filters]="filters" controls="report-filter-row" searchLabel="Search rows">
+        <mf-report-views
+          mfView
+          [reportId]="reportId()"
+          [reportName]="reportName()"
+          [current]="layout()"
+          [appliedId]="appliedId()"
+          [modified]="modified()"
+          (pick)="applyView($event)"
+          (saved)="markApplied($event)"
+          (removed)="viewRemoved($event)"
+        />
         @if (sort()) {
           <mf-sorted-line
             mfBarEnd
@@ -131,7 +155,36 @@ import {
           />
         }
         <mf-record-columns mfColumns [grid]="grid" />
+        <button
+          mfMore
+          type="button"
+          class="mf-btn"
+          data-export-csv
+          [attr.aria-disabled]="exportOff() ? 'true' : null"
+          [attr.aria-busy]="exporting() ? 'true' : null"
+          [mfTip]="exportTip()"
+          (click)="exportCsv()"
+        >
+          <i
+            class="pi"
+            [class]="exporting() ? 'pi-spin pi-spinner' : 'pi-download'"
+            aria-hidden="true"
+          ></i>
+          Export CSV
+        </button>
       </mf-list-toolbar>
+      <span class="mf-sr-only" role="status" aria-live="polite" data-export-status>{{
+        exportStatus()
+      }}</span>
+      @if (viewNote()) {
+        <div class="pg-banner pg-banner--info" role="status" data-view-skipped>
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+          <span>This view uses columns the report no longer returns. They were skipped.</span>
+          <button type="button" class="mf-btn" data-dismiss-view-note (click)="viewNote.set(false)">
+            Dismiss
+          </button>
+        </div>
+      }
       @if (limitReached()) {
         <div class="pg-banner pg-banner--info" role="status" data-filter-limit>
           <i class="pi pi-info-circle" aria-hidden="true"></i>
@@ -211,13 +264,18 @@ export class ReportResultGrid implements OnInit {
   private readonly api = inject(ReportsClient);
   private readonly quiet = inject(QuietRequests);
   private readonly injector = inject(Injector);
+  private readonly exporter = inject(ReportExportService);
+  private readonly notify = inject(NotificationService);
+  private readonly views = inject(ReportViewsStore);
   /** The person's time zone: a date-time with a zone is shown in it (#1287). */
   private readonly zone = inject(USER_TIME_ZONE);
 
   /** The run this grid shows (the id of `POST /reports/{id}/runs`); a new run is a new grid. */
   readonly result = input.required<RunReportResponse>();
-  /** The report, for the stored column choices of this grid (`report-result-<reportId>`). */
+  /** The report, for the stored column choices of this grid (`report-result-<reportId>`) and its saved views. */
   readonly reportId = input.required<number>();
+  /** The name of the report (the Save View dialog starts with "<name> view"). */
+  readonly reportName = input('Report');
   /** The result is gone (410) or was never the person's (404): the page says so and opens the form again. */
   readonly problem = output<ApiError>();
 
@@ -304,7 +362,7 @@ export class ReportResultGrid implements OnInit {
     });
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     // The grid id holds the report, which is an input: the state is made here, in an injection context, once the inputs are known.
     runInInjectionContext(this.injector, () => {
       this.grid = new RecordGridState(
@@ -319,7 +377,13 @@ export class ReportResultGrid implements OnInit {
         memory: true,
       });
     });
+    // The person's default view is applied before the first rows are asked for, so the result opens the way they saved it and no page is read twice. A list
+    // that cannot be read is no reason to hold the result back: the menu says it could not load and offers Retry.
+    await this.views.load(this.reportId());
+    const first = this.views.defaultView();
+    if (first) this.applyView(first);
     this.started.set(true);
+    if (first) this.rebase();
   }
 
   /** Puts every filter that differs from the last allowed state back to it (the one the person has just set), and shows the message. */
@@ -332,6 +396,146 @@ export class ReportResultGrid implements OnInit {
     }
     this.filters.setMany(back, { replace: true });
     this.limitReached.set(true);
+  }
+
+  // ---- saved views (#722)
+
+  /** The view the grid shows (null: the report's own Default) and what the grid looked like right after it was applied or saved. */
+  protected readonly appliedId = signal<number | null>(null);
+  private readonly baseline = signal<string | null>(null);
+  /** The applied view names columns this result lacks: the banner says it was skipped, until Dismiss. */
+  protected readonly viewNote = signal(false);
+
+  /** The grid as a view would store it, built from the grid's own state (order, shown columns, widths, sort, the filters the request sends, page size). */
+  protected readonly layout = computed<ReportViewLayout>(() =>
+    captureLayout({
+      columns: this.columns(),
+      order: orderedKeys(this.grid.defs(), this.grid.prefs()),
+      shown: this.grid.shown(),
+      widths: this.grid.widths(),
+      sort: this.sort(),
+      filterJson: this.filterJson(),
+      pageSize: this.pageSize(),
+    }),
+  );
+  /** A view is applied and the grid differs from it now: the button says "(modified)" and Save View is on. */
+  protected readonly modified = computed(
+    () => this.appliedId() !== null && this.baseline() !== layoutKey(this.layout()),
+  );
+
+  /** A view was picked (null: the Default row). Columns, widths, sort, filters and page size replace what is on the grid; the page is 1 again by itself. */
+  protected applyView(view: ReportViewResponse | null): void {
+    const resolved: ResolvedLayout = view
+      ? resolveLayout(view.layout, this.columns())
+      : {
+          prefs: DEFAULT_GRID_PREFS,
+          widths: {},
+          sort: null,
+          filters: {},
+          pageSize: DEFAULT_RESULT_PAGE_SIZE,
+          skipped: false,
+        };
+    this.grid.set(resolved.prefs);
+    this.grid.setWidths(resolved.widths);
+    this.sort.set(resolved.sort);
+    this.pageSize.set(resolved.pageSize);
+    const values: Record<string, FilterValues[string]> = {};
+    for (const def of this.filters.defs())
+      values[def.key] = resolved.filters[def.key] ?? emptyValue(def);
+    this.filters.setMany(values, { replace: true });
+    this.appliedId.set(view?.viewId ?? null);
+    this.viewNote.set(!!view && (resolved.skipped || view.ignoredColumns.length > 0));
+    if (this.started()) this.rebase();
+  }
+
+  /** A view now holds exactly what the grid shows (it was just saved or created): it is the applied one and the grid is unchanged from it. */
+  protected markApplied(view: ReportViewResponse): void {
+    this.appliedId.set(view.viewId);
+    this.viewNote.set(false);
+    this.rebase();
+  }
+
+  protected viewRemoved(viewId: number): void {
+    if (this.appliedId() === viewId) {
+      this.appliedId.set(null);
+      this.baseline.set(null);
+    }
+  }
+
+  private rebase(): void {
+    this.baseline.set(layoutKey(untracked(() => this.layout())));
+  }
+
+  // ---- CSV export (#721)
+
+  protected readonly exporting = signal(false);
+  /** A page, sort or filter request is in flight: the rows on screen are about to change, so the export waits for them. */
+  private readonly pending = signal(false);
+  /** The server said the result is gone: the page opens the form again, and until then there is nothing to export. */
+  private readonly gone = signal(false);
+  protected readonly exportStatus = signal('');
+  protected readonly exportOff = computed(
+    () =>
+      !this.ready() ||
+      this.state() !== 'ready' ||
+      this.pending() ||
+      this.filtered() === 0 ||
+      this.exporting() ||
+      this.gone(),
+  );
+  /** What the button will export (spec 5.1): the filtered rows of the total, all rows, or the first rows of a truncated result; nothing to export when there are no rows. */
+  protected readonly exportTip = computed(() => {
+    if (this.exporting()) return 'Preparing the CSV.';
+    if (this.ready() && this.state() === 'ready' && this.filtered() === 0) {
+      return 'There are no rows to export.';
+    }
+    const total = formatInt(this.total());
+    if (this.filtered() !== this.total()) {
+      return `Exports the ${formatInt(this.filtered())} filtered ${this.filtered() === 1 ? 'row' : 'rows'} (of ${total}).`;
+    }
+    return this.result().truncated
+      ? `Exports the first ${total} rows.`
+      : `Exports all ${total} rows.`;
+  });
+
+  /**
+   * Export CSV: the filtered and sorted rows (all of them, not the page) in the visible columns and their order, as one authorised request whose answer is
+   * saved as a file. It never drops the result. A 410 or 404 is the result being gone (the page says so); any other failure is a toast with Retry.
+   */
+  protected async exportCsv(): Promise<void> {
+    if (this.exportOff()) return;
+    this.exporting.set(true);
+    this.exportStatus.set('Preparing the CSV.');
+    const columns = this.columns();
+    const byKey = new Map(columns.map((c) => [c.key, c.name] as const));
+    try {
+      const done = await this.exporter.download(this.result().runId, {
+        sort: serverSort(columns, this.sort()),
+        filter: this.filterJson(),
+        columns: this.grid.shown().map((k) => byKey.get(k) ?? k),
+      });
+      const rows = done.rows > 0 ? done.rows : this.filtered();
+      this.exportStatus.set(`Exported ${formatInt(rows)} ${rows === 1 ? 'row' : 'rows'}.`);
+      this.notify.success(
+        exportedText(rows, done.truncated),
+        done.truncated
+          ? `The result was truncated at ${formatInt(rows)} rows. Narrow the parameters to export the rest.`
+          : undefined,
+      );
+    } catch (error) {
+      this.exportStatus.set('');
+      if (error instanceof ApiError && (error.status === 410 || error.status === 404)) {
+        this.gone.set(true);
+        this.problem.emit(error);
+        return;
+      }
+      this.notify.error("Couldn't export the report.", undefined, {
+        copy: error instanceof ApiError ? error.traceId : undefined,
+        action: { label: 'Retry', run: () => void this.exportCsv() },
+      });
+    } finally {
+      this.exporting.set(false);
+    }
   }
 
   protected setSort(sort: string | null): void {
@@ -349,6 +553,7 @@ export class ReportResultGrid implements OnInit {
   /** (Also the Retry of the error row.) Reads the page that is chosen now; an answer to an older request is dropped. */
   protected async load(): Promise<void> {
     const id = ++this.requestId;
+    this.pending.set(true);
     // The rows of the page before stay on screen while the next page loads; only the very first load and a Retry show the skeleton rows.
     if (!this.ready() || this.state() === 'error') this.state.set('loading');
     const columns = this.columns();
@@ -365,6 +570,7 @@ export class ReportResultGrid implements OnInit {
         ),
       );
       if (id !== this.requestId) return;
+      this.pending.set(false);
       if (!this.ready()) this.sample.set(res.rows.slice(0, 50));
       this.rows.set(res.rows);
       this.total.set(res.totalRows);
@@ -376,6 +582,7 @@ export class ReportResultGrid implements OnInit {
       this.filters.reportResults(res.filteredRows);
     } catch (error) {
       if (id !== this.requestId) return;
+      this.pending.set(false);
       if (error instanceof ApiError && (error.status === 410 || error.status === 404)) {
         this.problem.emit(error);
         return;

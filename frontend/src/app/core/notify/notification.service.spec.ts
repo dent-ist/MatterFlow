@@ -18,6 +18,17 @@ describe('NotificationService (BUG-4 de-duplication, #616 list)', () => {
     expect(notify.toasts()[0].count).toBe(3);
   });
 
+  it('keeps the action of a toast, also when an identical toast folds into it', () => {
+    const run = vi.fn();
+    notify.error('Failed', undefined, { action: { label: 'Retry', run } });
+    notify.error('Failed', undefined, { action: { label: 'Retry', run } });
+    expect(notify.toasts().length).toBe(1);
+    expect(notify.toasts()[0].count).toBe(2);
+    expect(notify.toasts()[0].action?.label).toBe('Retry');
+    notify.error('Other');
+    expect(notify.toasts()[1].action).toBeUndefined();
+  });
+
   it('still stacks different messages', () => {
     notify.error('One');
     notify.error('Two');

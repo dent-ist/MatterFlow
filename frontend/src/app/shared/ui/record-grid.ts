@@ -38,7 +38,13 @@ import {
 } from './grid-prefs';
 import { ColumnMove, ReorderColumns } from './reorder-columns';
 import { rowOfBareClick } from './row-nav';
-import { ResizableColumns, columnWidthsKey } from './resizable-columns';
+import {
+  ColumnWidths,
+  ResizableColumns,
+  columnWidthsKey,
+  loadColumnWidths,
+  saveColumnWidths,
+} from './resizable-columns';
 
 /**
  * One column of a record grid (the shared model, #1241): the key, label and visibility rules of `GridColumnDef` plus how the header and the cell look.
@@ -113,6 +119,11 @@ export class RecordGridState {
   readonly prefs: WritableSignal<GridPrefs>;
   /** Counts the "Reset Width" presses; the table clears its stored widths when it changes. */
   readonly widthsVersion = signal(0);
+  /**
+   * The widths the person set, by column key (what the table stored: `mf.col-widths.v1.<grid>.<userId>`), kept current when a column is resized, "Reset Width"
+   * runs or `setWidths` is called. A page that saves the layout (the Reports saved views) reads it.
+   */
+  readonly widths: WritableSignal<ColumnWidths>;
   /** The keys of the columns drawn, in the person's order. */
   readonly shown: Signal<string[]>;
 
@@ -123,6 +134,7 @@ export class RecordGridState {
     exclude: () => ReadonlySet<string> | readonly string[] = () => [],
   ) {
     this.prefs = signal(loadGridPrefs(gridPrefsKey(grid, this.auth.profile()?.userId)));
+    this.widths = signal(loadColumnWidths(columnWidthsKey(grid, this.auth.profile()?.userId)));
     this.shown = computed(() => {
       const out = new Set(exclude());
       return shownKeys(this.defs(), this.prefs()).filter((k) => !out.has(k));
@@ -150,12 +162,18 @@ export class RecordGridState {
 
   /** Forgets the stored widths: the columns go back to the grid's own layout (the spring column fills the free room again). */
   resetWidths(): void {
-    clearGridPrefs(
-      columnWidthsKey(
-        this.grid,
-        untracked(() => this.auth.profile()?.userId),
-      ),
+    this.setWidths({});
+  }
+
+  /** Stores these widths (an empty map forgets them) and has the table lay itself out with them. */
+  setWidths(widths: ColumnWidths): void {
+    const key = columnWidthsKey(
+      this.grid,
+      untracked(() => this.auth.profile()?.userId),
     );
+    if (Object.keys(widths).length === 0) clearGridPrefs(key);
+    else saveColumnWidths(key, widths);
+    this.widths.set({ ...widths });
     this.widthsVersion.update((n) => n + 1);
   }
 }
@@ -281,6 +299,7 @@ export class RecordCell {
           class="pg-table tt"
           [attr.id]="tableId()"
           [mfResizable]="grid().grid"
+          (widthsChange)="grid().widths.set($event)"
           mfReorder
           (columnMove)="grid().move($event)"
         >
@@ -541,10 +560,10 @@ export class RecordGrid<T = any> {
       const initial = this.collapsedGroups();
       untracked(() => this.closed.set(new Set(initial)));
     });
-    // "Reset Width": the stored widths are gone, the table goes back to its own layout.
+    // "Reset Width" or a layout that sets the widths: the table reads the stored widths again (none stored: its own layout).
     effect(() => {
       const version = this.grid().widthsVersion();
-      if (version > 0) untracked(() => this.resizer()?.reset());
+      if (version > 0) untracked(() => this.resizer()?.reload());
     });
   }
 

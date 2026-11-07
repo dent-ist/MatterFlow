@@ -1,4 +1,5 @@
 import type {
+  ReportViewResponse,
   RunnableParameterResponse,
   RunnableReportCategoryResponse,
   RunnableReportListItemResponse,
@@ -68,3 +69,16 @@ export const aRunnable = (over: Partial<RunnableReportResponse> = {}): RunnableR
     parameters: [],
     ...over,
   }) as RunnableReportResponse;
+
+/** One saved view of the Saved Views API (#722) with the fields a test cares about overridden. */
+export const aView = (over: Partial<ReportViewResponse> = {}): ReportViewResponse =>
+  ({
+    viewId: 1,
+    name: 'My view',
+    isDefault: false,
+    layout: { columns: [], sort: [], filters: [], pageSize: 50 },
+    createdAtUtc: '2026-11-07T10:00:00Z',
+    modifiedAtUtc: undefined,
+    ignoredColumns: [],
+    ...over,
+  }) as ReportViewResponse;

@@ -356,6 +356,7 @@ const LONG_DESCRIPTION = 240;
                         <mf-report-result
                           [result]="res"
                           [reportId]="r.reportId"
+                          [reportName]="r.name"
                           (problem)="resultGone()"
                         />
                       </section>

@@ -5,11 +5,19 @@ export const TOAST_DEDUPE_MS = 5000;
 
 export type ToastSeverity = 'success' | 'info' | 'warn' | 'error';
 
+/** A button in the toast ("Retry" of a failed export): it closes the toast and runs. */
+export interface ToastAction {
+  readonly label: string;
+  readonly run: () => void;
+}
+
 export interface ToastOptions {
   /** A toast with the same key replaces the one before it (for example out of office, then "I'm back"). */
   readonly key?: string;
   /** Text the person can copy from the toast (the support reference of an error); shown as a "Copy Reference" button under the detail line. */
   readonly copy?: string;
+  /** One text button in the toast, after the message (the way to try a failed action again). */
+  readonly action?: ToastAction;
 }
 
 export interface Toast {
@@ -20,6 +28,8 @@ export interface Toast {
   readonly key: string | undefined;
   /** The reference of an error, with its "Copy Reference" button (D-52). */
   readonly copy: string | undefined;
+  /** The button of the toast, if it has one. */
+  readonly action: ToastAction | undefined;
   /** How many identical messages this toast stands for ("x3"). */
   readonly count: number;
   /** Milliseconds it stays after the last identical message (success 4 s, info 6 s, warning 8 s); 0 = until it is closed (errors, D-52). */
@@ -91,7 +101,7 @@ export class NotificationService {
     const sig = JSON.stringify([severity, summary, detail ?? '']);
     const same = this.toasts().find((t) => this.signature(t) === sig);
     if (same) {
-      const next = { ...same, count: same.count + 1 };
+      const next = { ...same, count: same.count + 1, action: options?.action ?? same.action };
       this.toasts.update((list) => list.map((t) => (t === same ? next : t)));
       this.lastShown.set(sig, now);
       this.start(next);
@@ -112,6 +122,7 @@ export class NotificationService {
       detail,
       key,
       copy: options?.copy,
+      action: options?.action,
       count: 1,
       life: LIFE_MS[severity],
     };

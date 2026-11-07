@@ -57,6 +57,21 @@ describe('ToastHost (#616)', () => {
     expect(buttons[0].textContent).toContain('Copy Reference');
   });
 
+  it('shows a text button in a toast that has an action (the Retry of a failed export): it closes the toast and runs the action once', async () => {
+    const { fixture, el } = setup();
+    const run = vi.fn();
+    notify.error("Couldn't export the report.", undefined, { action: { label: 'Retry', run } });
+    notify.error('Plain failure');
+    await flush(fixture);
+    const buttons = el.querySelectorAll<HTMLButtonElement>('[data-toast-action]');
+    expect(buttons.length).toBe(1);
+    expect(buttons[0].textContent!.trim()).toBe('Retry');
+    buttons[0].click();
+    await flush(fixture);
+    expect(run).toHaveBeenCalledTimes(1);
+    expect(notify.toasts().map((t) => t.summary)).toEqual(['Plain failure']);
+  });
+
   it('leaves no --mf-toast-h on the page while no toast is shown or after the host is destroyed (#754)', async () => {
     const root = document.documentElement;
     root.style.setProperty('--mf-toast-h', '99px');

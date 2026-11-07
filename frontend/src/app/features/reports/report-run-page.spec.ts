@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { Title } from '@angular/platform-browser';
@@ -5,6 +7,7 @@ import { BehaviorSubject, NEVER, Subject } from 'rxjs';
 import {
   ReportChoicesClient,
   ReportRowsResponse,
+  ReportViewsClient,
   ReportsClient,
   RunReportResponse,
 } from '../../api/generated/api-client';
@@ -94,6 +97,12 @@ describe('ReportRunPage (#719, #720)', () => {
         provideRouter([]),
         provideFakeMe(new FakeMeApi(withPermissions('Report.Run'))),
         { provide: ReportsClient, useValue: api },
+        {
+          provide: ReportViewsClient,
+          useValue: { listReportViews: vi.fn().mockReturnValue(ok({ views: [], limit: 25 })) },
+        },
+        provideHttpClient(),
+        provideHttpClientTesting(),
         {
           provide: ReportChoicesClient,
           useValue: {

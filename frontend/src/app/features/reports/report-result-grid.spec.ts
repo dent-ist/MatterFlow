@@ -1,8 +1,11 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { Observable } from 'rxjs';
 import {
   ReportRowsResponse,
+  ReportViewsClient,
   ReportsClient,
   RunReportResponse,
 } from '../../api/generated/api-client';
@@ -20,6 +23,9 @@ import {
 import { ReportResultGrid } from './report-result-grid';
 
 type Mock = ReturnType<typeof vi.fn>;
+
+/** A saved views API with no views (the grid reads the list before it asks for rows). */
+const noViews = () => ({ listReportViews: vi.fn().mockReturnValue(ok({ views: [], limit: 25 })) });
 
 const run = (over: Partial<RunReportResponse> = {}): RunReportResponse =>
   ({
@@ -83,6 +89,9 @@ describe('ReportResultGrid (#720)', () => {
         provideRouter([]),
         provideFakeMe(new FakeMeApi(withPermissions('Report.Run'))),
         { provide: ReportsClient, useValue: api },
+        { provide: ReportViewsClient, useValue: noViews() },
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: USER_TIME_ZONE, useValue: 'UTC' },
       ],
     });
@@ -150,6 +159,9 @@ describe('ReportResultGrid (#720)', () => {
         provideRouter([]),
         provideFakeMe(new FakeMeApi(withPermissions('Report.Run'))),
         { provide: ReportsClient, useValue: api },
+        { provide: ReportViewsClient, useValue: noViews() },
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: USER_TIME_ZONE, useValue: 'UTC' },
       ],
     });

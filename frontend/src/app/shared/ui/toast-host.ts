@@ -11,7 +11,11 @@ import {
   inject,
   viewChild,
 } from '@angular/core';
-import { NotificationService, ToastSeverity } from '../../core/notify/notification.service';
+import {
+  NotificationService,
+  ToastAction,
+  ToastSeverity,
+} from '../../core/notify/notification.service';
 import { UndoService } from '../../core/notify/undo.service';
 import { CopyButton } from './copy-button';
 import { IntPipe } from './number-format';
@@ -26,6 +30,8 @@ interface Item {
   readonly detail?: string;
   /** The reference of an error: text for the "Copy Reference" button. */
   readonly copy?: string;
+  /** The text button of the toast ("Retry"). */
+  readonly action?: ToastAction;
   /** The long explanation of an Undo offer: the Undo button's tooltip. */
   readonly hint?: string;
   readonly count: number;
@@ -102,6 +108,16 @@ const ICONS: Record<ToastSeverity, string> = {
             />
           }
         </div>
+        @if (item.action; as action) {
+          <button
+            type="button"
+            class="mf-btn mf-btn--text th__action"
+            data-toast-action
+            (click)="act(item, action)"
+          >
+            {{ action.label }}
+          </button>
+        }
         @if (item.undo) {
           <button
             type="button"
@@ -291,6 +307,12 @@ export class ToastHost {
 
   protected icon(severity: ToastSeverity): string {
     return ICONS[severity];
+  }
+
+  /** The button of a toast ("Retry"): the toast goes, then the action runs. */
+  protected act(item: Item, action: ToastAction): void {
+    this.notify.dismiss(item.id);
+    action.run();
   }
 
   protected close(item: Item): void {
