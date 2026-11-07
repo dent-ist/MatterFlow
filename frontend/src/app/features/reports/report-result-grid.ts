@@ -77,14 +77,25 @@ import {
     :host {
       display: block;
     }
-    /* The grid frame fills this box and scrolls inside it (sticky heading and filter bands, sideways scroll for wide results); the page scrolls around it. */
+    :host > * {
+      flex: none;
+    }
+    /* The grid frame takes the rest of the column and scrolls inside it (sticky heading and filter bands, sideways scroll for wide results), never fewer than
+       about seven rows. The run page sets --rr-max to none while it fills the window; when the page scrolls instead (form open, a short window) the frame
+       is at most most of a window tall and the page scrolls around it. */
     .rr__frame {
+    /* A flex column that takes what its parent leaves (the run page fills the window, #1286); in a plain block parent it is as tall as its content. */
       display: flex;
       flex-direction: column;
-      height: max(var(--mf-frame-min, 412px), calc(100dvh - 24.5rem));
+      flex: 1 1 0;
+      min-height: var(--mf-frame-min, 412px);
+      max-height: var(--rr-max, 70dvh);
     }
     .rr__bar {
-      display: block;
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 0;
+      min-height: auto;
       height: 14px;
       border-radius: var(--mf-radius);
       background: var(--mf-border);
