@@ -51,7 +51,7 @@ Later decisions sit in section 2 of the guidelines. These are the ones that chan
 | D-44m Record names | A name that opens a drawer or dialog is `mf-btn mf-btn--text mf-btn--name`; a grid row key is the record id, never a name |
 | D-44r Form dropdowns | A dropdown inside a form, dialog or record page is `mf-dropdown` with `field` (white). The blue fill is for filter rows and toolbars |
 | D-44v Chip buttons and toasts | A pill that opens a dialog is `mf-btn mf-btn--text mf-btn--chip` with the aria-label "Edit <name>". A failed action shows one error toast; give it the `copy` option for a "Copy Reference" button |
-| D-42 and D-43 Grid anatomy | A list is `mf-record-grid`; group headers, row classes, clickable rows, the empty sentence and the filters are its options, not a hand-built table (a guard spec fails on a hand-built `pg-table`) |
+| D-42 and D-43 Grid anatomy | The Title is the one spring: min 200 px on the record lists, min 120 px on the task grids (160 px guaranteed on their default columns only, D-43a). A list is `mf-record-grid`; group headers, row classes, clickable rows, the empty sentence and the filters are its options, not a hand-built table (a guard spec fails on a hand-built `pg-table`) |
 
 ## Checks before you push UI work (from `CLAUDE.md`)
 

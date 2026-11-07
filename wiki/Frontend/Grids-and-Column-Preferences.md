@@ -78,7 +78,7 @@ Every column definition gives a `width` or `minWidth` (the tokens `--mf-col-*-w`
 2. Declare column definitions with widths. Put the identifier first and the row action last.
 3. Create the `RecordGridState` with a stable grid id and add `mf-record-columns` to the toolbar.
 4. Add the filter definitions in `shared/filters` if the list is filterable; the server must accept the same filter parameters (unknown parameters are a 400).
-5. Check at 1366 px width that the Title column keeps at least 160 px and nothing scrolls sideways (guideline D-43a, specs `grid-anatomy.spec.ts`, the default-columns spec).
+5. Check at 1366 px width that, with the default columns, the Title column keeps at least 160 px and nothing scrolls sideways (guideline D-43a, specs `grid-anatomy.spec.ts`, the default-columns spec). The 160 px is guaranteed for the default columns only: the task-grid Title minimum is 120 px (`column-prefs.ts`), so a person who adds columns can take it down to 120 and the frame then scrolls sideways inside itself (LC-09); the record lists keep a 200 px minimum (D-43).
 6. Update the design guidelines column table if you add a shared column.
 
 ## Related pages
