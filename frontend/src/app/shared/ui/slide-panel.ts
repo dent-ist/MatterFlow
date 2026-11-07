@@ -26,6 +26,8 @@ let nextPanel = 0;
  *   body     scrolls inside (named and focusable while it overflows when `scrollLabel` is set)
  *   footer   only for a drawer that edits (`showFooter`): `[Cancel] ... [Primary]`; `customFooter` projects the host's own buttons (`[mfDrawerFooter]`)
  *
+ * The title is the drawer's top heading (`h2`, under the page `h1`); the sections inside a drawer are `h3` and below, one level at a time (axe heading-order, #1294).
+ *
  * It is an accessible modal dialog (PrimeNG `p-dialog`, docked right): Esc and a click on the scrim close it, Tab stays inside, focus moves to the first field
  * (or the close button, `initialFocus`) when it opens and returns to the control that opened it when it closes; the page stays visible behind the scrim.
  * While `dirty` is set, Esc, the scrim, the X and Cancel do not close it at once: a "Discard changes?" bar asks first (Keep Editing / Discard Changes).
@@ -66,7 +68,7 @@ let nextPanel = 0;
     >
       <ng-template #header let-labelId="ariaLabelledBy">
         <span class="sp__head">
-          <span
+          <h2
             class="sp__title"
             data-panel-title
             data-drawer-title
@@ -74,8 +76,8 @@ let nextPanel = 0;
             tabindex="-1"
             [id]="labelId"
             [attr.title]="title()"
-            >{{ title() }}</span
-          >
+            [textContent]="title()"
+          ></h2>
           @if (subtitle()) {
             <span class="sp__sub">{{ subtitle() }}</span>
           }

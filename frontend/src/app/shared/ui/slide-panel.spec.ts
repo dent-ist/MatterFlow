@@ -45,6 +45,14 @@ describe('SlidePanel (MD-01, #1002)', () => {
     expect(names).toEqual(['Cancel', 'Create Project']);
   });
 
+  it('titles the drawer with an h2, so the section headings (h3) inside it never skip a level (#1294)', async () => {
+    await start();
+    const title = q('[data-panel-title]')!;
+    expect(title.tagName).toBe('H2');
+    expect(title.textContent).toContain('New Project');
+    expect(title.id).toBe(q('[role="dialog"]')!.getAttribute('aria-labelledby'));
+  });
+
   it('submits from the primary button and ignores it while busy', async () => {
     const f = await start();
     q('[data-panel-primary] button')!.click();
