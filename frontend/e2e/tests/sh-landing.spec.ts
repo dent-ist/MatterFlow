@@ -16,7 +16,8 @@ test.describe('Landing for oversight roles (#628)', () => {
     seed,
   }) => {
     const cases = [
-      { who: 'director' as const, url: /\/dashboard/, name: 'Dashboard' },
+      // The Director holds Matter.BeManager, Matter.View and Task.View (issue #976): My Matters, like a Project Manager.
+      { who: 'director' as const, url: /\/my-matters/, name: 'My Matters' },
       { who: 'readOnlyObserver' as const, url: /\/dashboard/, name: 'Dashboard' },
       { who: 'complianceAuditor' as const, url: /\/dashboard/, name: 'Dashboard' },
       // The Intake Coordinator holds Dashboard.ViewUnassigned: that is a Dashboard tab.
@@ -124,20 +125,17 @@ test.describe('Landing for oversight roles (#628)', () => {
     await expect(noTaskPage).toHaveURL(/\/my-matters$/);
     expect(calls).toEqual([]);
 
-    // A Director who is also a manager lands on My Matters; the plain Director and the technician are unchanged.
-    const both = await personas.create({
-      label: 'land-dirpm',
-      roles: ['Director'],
-      permissions: ['Matter.BeManager'],
-    });
-    const bothPage = await asUser(both.username);
-    await bothPage.goto('/');
-    await expect(bothPage).toHaveURL(/\/my-matters/);
+    // The Director holds Matter.BeManager (issue #976): it lands on My Matters and the menu offers it; the Dashboard stays one click away.
     const director = await personas.named('director');
     const directorPage = await asUser(director.username);
     await directorPage.goto('/');
-    await expect(directorPage).toHaveURL(/\/dashboard/);
-    await expect(directorPage.getByRole('link', { name: 'My Matters' })).toHaveCount(0);
+    await expect(directorPage).toHaveURL(/\/my-matters/);
+    await expect(
+      directorPage.getByRole('navigation').first().getByRole('link', { name: 'My Matters' }),
+    ).toHaveCount(1);
+    await expect(
+      directorPage.getByRole('navigation').first().getByRole('link', { name: 'Dashboard' }),
+    ).toHaveCount(1);
     const tech = await personas.named('technician');
     await seed.pod(undefined, [tech.userId]);
     const techPage = await asUser(tech.username);
@@ -189,10 +187,10 @@ test.describe('Landing for oversight roles (#628)', () => {
     ).toBeVisible();
     await seed.grantRoles(pending.userId, ['Director']);
     await page.getByRole('button', { name: 'Check Again' }).click();
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/my-matters/);
   });
 
-  test('axe is clean on the Dashboard a director lands on, at both desktop sizes', async ({
+  test('axe is clean on the Dashboard a director opens, at both desktop sizes', async ({
     personas,
     asUser,
   }) => {
@@ -200,7 +198,8 @@ test.describe('Landing for oversight roles (#628)', () => {
     const director = await personas.named('director');
     const page = await asUser(director.username);
     await atEverySize(page, 'landing-director-dashboard', async () => {
-      await page.goto('/');
+      // The Director lands on My Matters since issue #976, so the Dashboard is opened by its address.
+      await page.goto('/dashboard');
       await expect(page).toHaveURL(/\/dashboard/);
       await expect(page.getByRole('heading', { name: 'Dashboard', level: 1 })).toBeVisible();
     });

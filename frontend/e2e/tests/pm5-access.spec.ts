@@ -229,7 +229,7 @@ test.describe('My Matters and the manager fields: who sees what', () => {
     await shot(page, 'pm5-project-manager');
   });
 
-  test('a manager without Task.View, the Director, the Observer and a technician: no My Matters item, the 403 page at the address, no request and no toast', async ({
+  test('a manager without Task.View, the Observer and a technician: no My Matters item, the 403 page at the address, no request and no toast', async ({
     seed,
     personas,
     asUser,
@@ -239,7 +239,6 @@ test.describe('My Matters and the manager fields: who sees what', () => {
     await seed.pod(undefined, [tech.userId]);
     const people = [
       { who: fx.pmNoTask, landing: /\/matters|\/clients/ },
-      { who: fx.director, landing: /\/dashboard/ },
       { who: fx.observer, landing: /\/dashboard/ },
       { who: tech, landing: /\/my-work/ },
     ];

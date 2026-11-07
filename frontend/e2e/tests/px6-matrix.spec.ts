@@ -173,7 +173,7 @@ test.describe('Permission matrix of the Project Manager views', () => {
     expect(status['matters/{id}/overview']).toBe(200);
   });
 
-  test('Director (holds Matter.AssignManagers, cannot be a manager): no My Matters item or tabs, no switch, the lists as they were', async ({
+  test('Director (Matter.BeManager since issue #976, and Matter.AssignManagers): lands on My Matters, the menu offers it, the switch is on the lists; the API answers like for a Project Manager', async ({
     seed,
     personas,
     asUser,
@@ -181,10 +181,15 @@ test.describe('Permission matrix of the Project Manager views', () => {
     const fx = await pmFixtures(seed, personas);
     const page = await asUser(fx.director.username);
     const ui = await collectUi(page, fx);
-    expect(ui.landing).not.toBe('/my-matters');
-    expect(ui.menu).not.toContain('My Matters');
-    expect(ui.switchOnMatters || ui.switchOnAssets).toBe(false);
-    expect(ui.tabs).toEqual([]);
+    expect(ui.landing).toBe('/my-matters');
+    expect(ui.menu).toContain('My Matters');
+    expect(ui.switchOnMatters && ui.switchOnAssets).toBe(true);
+    // The Director manages no matter here, so My Matters shows the empty state and no tabs (the tabs are covered by the Project Manager tests).
+    const api = await Api.as(fx.director.username);
+    const status = await collectApi(api, fx);
+    await api.dispose();
+    expect(status['my-matters/summary']).toBe(200);
+    expect(status['my-matters/summary?scope=all']).toBe(200);
   });
 
   test('Read-Only Observer and technician: no My Matters, no switch, no tabs; the matter Overview shows only what they may read', async ({

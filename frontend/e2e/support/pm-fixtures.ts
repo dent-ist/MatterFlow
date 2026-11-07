@@ -15,7 +15,7 @@ import { Seeder, World, uid } from './seed';
  * People (the table in docs/ux/pm-review/fixtures.md lists the same):
  * - `pmA`: Project Manager role, manages seven matters (primary, secondary and both); `pmB`: Project Manager role, secondary on one of them and
  *   primary of `solo`; `pmNone`: Project Manager role, manages nothing; `pmNoTask`: the Project Manager's matter permissions without Task.View.
- * - `director`: the Director role (holds Matter.AssignManagers, cannot be named); `observer`: Read-Only Observer; `editor`: Matter.Edit
+ * - `director`: the Director role (holds Matter.BeManager since issue #976, so it can be named, and Matter.AssignManagers; it manages no matter); `observer`: Read-Only Observer; `editor`: Matter.Edit
  *   without Matter.AssignManagers; `away`: a Data Technician who is out of office.
  * Matters (one client, numbers 00002 to 00012; names carry the token):
  * - `m.primary`, `m.secondary` (Secondary only for pmA, pmB is Primary), `m.both`, `m.overdue` (an overdue task), `m.unassigned` (two unassigned

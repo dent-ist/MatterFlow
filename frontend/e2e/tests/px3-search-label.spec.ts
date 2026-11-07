@@ -27,14 +27,21 @@ test.describe('Search stays global and labels results outside my matters', () =>
     await expect(mine).toBeVisible();
     await expect(mine.locator('[data-other-matter]')).toHaveCount(0);
 
-    // The Director cannot be a manager: the flag is absent and so is the label.
+    // The Director can be a manager since issue #976 (Matter.BeManager) and manages none of these matters: the label shows, like for any manager.
     const director = await asUser(fx.director.username);
     await director.goto('/matters?name=' + fx.token);
     await director.getByRole('combobox', { name: /Search/ }).fill(`Bravo solo ${fx.token}`);
+    const directorOption = director.getByRole('option').filter({ hasText: 'Bravo solo' }).first();
+    await expect(directorOption).toBeVisible();
+    await expect(directorOption.locator('[data-other-matter]')).toHaveText(/Other matter/);
+    // A person who cannot be a manager (a technician) sees no label at all.
+    const technician = await asUser(fx.technician.username);
+    await technician.goto('/tasks');
+    await technician.getByRole('combobox', { name: /Search/ }).fill(`Bravo solo ${fx.token}`);
     await expect(
-      director.getByRole('option').filter({ hasText: 'Bravo solo' }).first(),
+      technician.getByRole('option').filter({ hasText: 'Bravo solo' }).first(),
     ).toBeVisible();
-    await expect(director.locator('[data-other-matter]')).toHaveCount(0);
+    await expect(technician.locator('[data-other-matter]')).toHaveCount(0);
   });
 
   test('the results page carries the label too, and axe is clean at both desktop sizes', async ({
