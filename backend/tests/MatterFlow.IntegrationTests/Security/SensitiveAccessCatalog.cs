@@ -231,6 +231,7 @@ public static class SensitiveAccessCatalog
         ["GET api/v1/report-admin/schema/{table}"] = new(AccessKind.Open, IdKind.None, "Reports are undecided (README section 15, issue #808): they read tables as the report login, not through the application rule", []),
         ["GET api/v1/report-admin/status"] = new(AccessKind.Open, IdKind.None, "Reports are undecided (README section 15, issue #808): they read tables as the report login, not through the application rule", []),
         ["GET api/v1/reports"] = new(AccessKind.Open, IdKind.None, "Reports are undecided (README section 15, issue #808): they read tables as the report login, not through the application rule", []),
+        ["GET api/v1/reports/{id:int}"] = new(AccessKind.Open, IdKind.None, "Reports are undecided (README section 15, issue #808): they read tables as the report login, not through the application rule", []),
         ["GET api/v1/reports/runs/{runId:guid}/rows"] = new(AccessKind.Open, IdKind.None, "Reports are undecided (README section 15, issue #808): they read tables as the report login, not through the application rule", []),
         ["GET api/v1/roles"] = new(AccessKind.Neutral, IdKind.None, "configuration or role definitions: no matter data", ["api/v1/roles"]),
         ["GET api/v1/roles/{roleId:int}"] = new(AccessKind.Neutral, IdKind.None, "configuration or role definitions: no matter data", []),

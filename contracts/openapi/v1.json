@@ -9767,6 +9767,37 @@
         }
       }
     },
+    "/api/v1/reports/{id}": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "operationId": "GetMyReport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunnableReportResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/reports/{id}/runs": {
       "post": {
         "tags": [
@@ -31627,6 +31658,130 @@
           }
         }
       },
+      "RunnableOptionResponse": {
+        "required": [
+          "value",
+          "label"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "RunnableParameterResponse": {
+        "required": [
+          "name",
+          "type",
+          "label",
+          "helpText",
+          "required",
+          "default",
+          "multiple",
+          "lookupKind",
+          "valueType",
+          "choicesSource",
+          "options",
+          "min",
+          "max",
+          "integerOnly",
+          "maxLength",
+          "maxSelected"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "helpText": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "default": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
+          },
+          "multiple": {
+            "type": "boolean"
+          },
+          "lookupKind": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "valueType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "choicesSource": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunnableOptionResponse"
+            }
+          },
+          "min": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "max": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "integerOnly": {
+            "type": "boolean"
+          },
+          "maxLength": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "maxSelected": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "RunnableReportCategoryResponse": {
         "required": [
           "categoryId",
@@ -31723,6 +31878,67 @@
           "totalReports": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "RunnableReportResponse": {
+        "required": [
+          "reportId",
+          "name",
+          "description",
+          "helpText",
+          "categoryId",
+          "categoryName",
+          "versionNo",
+          "timeoutSeconds",
+          "maxRows",
+          "parameters"
+        ],
+        "type": "object",
+        "properties": {
+          "reportId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "helpText": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "categoryName": {
+            "type": "string"
+          },
+          "versionNo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "timeoutSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxRows": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunnableParameterResponse"
+            }
           }
         }
       },

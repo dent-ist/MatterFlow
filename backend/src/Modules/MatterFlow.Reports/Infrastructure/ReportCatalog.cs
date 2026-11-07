@@ -29,6 +29,16 @@ internal sealed class ReportCatalog(ReportAppConnection app) : IReportCatalog
           AND {MayRun}
         """;
 
+    internal const string DetailSql =
+        $"""
+        SELECT d.ReportId, d.Name, d.Description, d.HelpText, c.ReportCategoryId, c.Name, v.VersionNo, v.SqlText, v.ParametersJson, d.TimeoutSeconds, d.MaxRows
+        FROM dbo.ReportDefinition d
+        JOIN dbo.ReportVersion v ON v.ReportVersionId = d.CurrentVersionId
+        JOIN dbo.ReportCategory c ON c.ReportCategoryId = d.ReportCategoryId
+        WHERE d.ReportId = @reportId
+          AND {MayRun}
+        """;
+
     internal const string ListSql =
         $"""
         SELECT d.ReportId, d.Name, d.Description, d.SortOrder, c.ReportCategoryId, c.Name, c.SortOrder, v.VersionNo, v.SqlText, v.ParametersJson,
@@ -62,6 +72,31 @@ internal sealed class ReportCatalog(ReportAppConnection app) : IReportCatalog
             reader.GetString(6),
             reader.IsDBNull(7) ? null : reader.GetInt32(7),
             reader.IsDBNull(8) ? null : reader.GetInt32(8));
+    }
+
+    public async Task<RunnableDetail?> FindRunnableDetailAsync(int reportId, int userId, CancellationToken cancellationToken)
+    {
+        await using var connection = await app.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = DetailSql;
+        command.Parameters.Add(new SqlParameter("@reportId", System.Data.SqlDbType.Int) { Value = reportId });
+        command.Parameters.Add(new SqlParameter("@userId", System.Data.SqlDbType.Int) { Value = userId });
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken))
+            return null;
+
+        return new RunnableDetail(
+            reader.GetInt32(0),
+            reader.GetString(1),
+            reader.IsDBNull(2) ? null : reader.GetString(2),
+            reader.IsDBNull(3) ? null : reader.GetString(3),
+            reader.GetInt32(4),
+            reader.GetString(5),
+            reader.GetInt32(6),
+            reader.GetString(7),
+            reader.GetString(8),
+            reader.IsDBNull(9) ? null : reader.GetInt32(9),
+            reader.IsDBNull(10) ? null : reader.GetInt32(10));
     }
 
     public async Task<IReadOnlyList<RunnableListItem>> ListRunnableAsync(int userId, CancellationToken cancellationToken)

@@ -15210,6 +15210,10 @@ export interface IReportsClient {
     /**
      * @return OK
      */
+    getMyReport(id: number): Observable<RunnableReportResponse>;
+    /**
+     * @return OK
+     */
     runReport(id: number, body: RunReportRequest): Observable<RunReportResponse>;
     /**
      * @return No Content
@@ -15282,6 +15286,59 @@ export class ReportsClient implements IReportsClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RunnableReportListResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getMyReport(id: number): Observable<RunnableReportResponse> {
+        let url_ = this.baseUrl + "/api/v1/reports/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetMyReport(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetMyReport(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<RunnableReportResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<RunnableReportResponse>;
+        }));
+    }
+
+    protected processGetMyReport(response: HttpResponseBase): Observable<RunnableReportResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RunnableReportResponse;
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -28280,6 +28337,34 @@ export interface RoleSummaryDto {
     [key: string]: any;
 }
 
+export interface RunnableOptionResponse {
+    value: string;
+    label: string;
+
+    [key: string]: any;
+}
+
+export interface RunnableParameterResponse {
+    name: string;
+    type: string;
+    label: string;
+    helpText: string | undefined;
+    required: boolean;
+    default: JsonElement | undefined;
+    multiple: boolean;
+    lookupKind: string | undefined;
+    valueType: string | undefined;
+    choicesSource: string | undefined;
+    options: RunnableOptionResponse[];
+    min: number | undefined;
+    max: number | undefined;
+    integerOnly: boolean;
+    maxLength: number | undefined;
+    maxSelected: number | undefined;
+
+    [key: string]: any;
+}
+
 export interface RunnableReportCategoryResponse {
     categoryId: number;
     name: string;
@@ -28305,6 +28390,21 @@ export interface RunnableReportListItemResponse {
 export interface RunnableReportListResponse {
     categories: RunnableReportCategoryResponse[];
     totalReports: number;
+
+    [key: string]: any;
+}
+
+export interface RunnableReportResponse {
+    reportId: number;
+    name: string;
+    description: string | undefined;
+    helpText: string | undefined;
+    categoryId: number;
+    categoryName: string;
+    versionNo: number;
+    timeoutSeconds: number;
+    maxRows: number;
+    parameters: RunnableParameterResponse[];
 
     [key: string]: any;
 }

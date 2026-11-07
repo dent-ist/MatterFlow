@@ -52,6 +52,9 @@ public interface IReportCatalog
 {
     Task<RunnableReport?> FindRunnableAsync(int reportId, int userId, CancellationToken cancellationToken);
 
+    /// <summary>The report with what the run page shows, under the same rule as <see cref="FindRunnableAsync"/>; null for unknown, inactive and not assigned alike.</summary>
+    Task<RunnableDetail?> FindRunnableDetailAsync(int reportId, int userId, CancellationToken cancellationToken);
+
     /// <summary>Every report the person may run (same rule as <see cref="FindRunnableAsync"/>), with the person's own last successful run. Category and report order are the administrator's.</summary>
     Task<IReadOnlyList<RunnableListItem>> ListRunnableAsync(int userId, CancellationToken cancellationToken);
 }

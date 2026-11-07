@@ -63,6 +63,65 @@ public sealed record RunnableReportCategoryResponse(int CategoryId, string Name,
 /// <param name="TotalReports">Reports in all categories together.</param>
 public sealed record RunnableReportListResponse(IReadOnlyList<RunnableReportCategoryResponse> Categories, int TotalReports);
 
+/// <summary>A fixed choice of a single or multi choice parameter.</summary>
+public sealed record RunnableOptionResponse(string Value, string Label);
+
+/// <summary>
+/// One input of the parameter form. Which members apply depends on <c>type</c>; the others are null, false or empty. There is no member for SQL or for a
+/// choice query.
+/// </summary>
+/// <param name="Name">Upper-case key of the value in the run request (for <c>dateRange</c> the base name; the value is <c>{from,to}</c>).</param>
+/// <param name="Type">number, date, text, single, multi, dateRange, yesNo or lookup.</param>
+/// <param name="Label">What the form shows (the name when the administrator gave no label).</param>
+/// <param name="HelpText">A muted line under the field, or null.</param>
+/// <param name="Required">True when a run needs a value.</param>
+/// <param name="Default">The default already resolved for this person and day (a date for <c>today</c>, the person's pod ids for <c>myPods</c>), in the form the run request takes; null when there is none.</param>
+/// <param name="Multiple">True when the value is a list (multi choice, or a lookup that takes several).</param>
+/// <param name="LookupKind">For lookup: matter, client, user, pod, role or taskType.</param>
+/// <param name="ValueType">For single and multi: <c>text</c> or <c>int</c> (what the option values are).</param>
+/// <param name="ChoicesSource">For single and multi: <c>fixed</c> (the options are in <c>options</c>) or <c>query</c> (ask <c>POST /reports/{id}/choices/{name}</c>).</param>
+/// <param name="Options">The options of a fixed list; empty otherwise.</param>
+/// <param name="Min">For number: lowest value, or null.</param>
+/// <param name="Max">For number: highest value, or null.</param>
+/// <param name="IntegerOnly">For number: a fraction is refused.</param>
+/// <param name="MaxLength">For text: the longest accepted value.</param>
+/// <param name="MaxSelected">For lists: the most selections the run accepts.</param>
+public sealed record RunnableParameterResponse(
+    string Name,
+    string Type,
+    string Label,
+    string? HelpText,
+    bool Required,
+    JsonElement? Default,
+    bool Multiple,
+    string? LookupKind,
+    string? ValueType,
+    string? ChoicesSource,
+    IReadOnlyList<RunnableOptionResponse> Options,
+    decimal? Min,
+    decimal? Max,
+    bool IntegerOnly,
+    int? MaxLength,
+    int? MaxSelected);
+
+/// <summary>The definition of a report for the person who may run it: everything the run page shows, and no SQL.</summary>
+/// <param name="HelpText">The administrator's longer help text (markdown-lite), or null.</param>
+/// <param name="VersionNo">The version a run would use.</param>
+/// <param name="TimeoutSeconds">The time limit that applies to a run of this report.</param>
+/// <param name="MaxRows">The row limit that applies to a run of this report.</param>
+/// <param name="Parameters">The inputs of the form, in order; empty when the report runs without a form.</param>
+public sealed record RunnableReportResponse(
+    int ReportId,
+    string Name,
+    string? Description,
+    string? HelpText,
+    int CategoryId,
+    string CategoryName,
+    int VersionNo,
+    int TimeoutSeconds,
+    int MaxRows,
+    IReadOnlyList<RunnableParameterResponse> Parameters);
+
 /// <summary>Running reports (<c>Report.Run</c> plus an assignment of the report to one of the caller's roles).</summary>
 [ApiController]
 [Route("api/v1/reports")]
@@ -90,6 +149,50 @@ public class ReportsController(ReportRunService runs, ReportResultStore results,
                 c.Reports.Select(r => new RunnableReportListItemResponse(r.ReportId, r.Name, r.Description, r.SortOrder, r.ParameterCount, r.ParameterCount > 0, r.ParameterLabels, r.LastRunAtUtc)).ToList()))
             .ToList();
         return Ok(new RunnableReportListResponse(categories, categories.Sum(c => c.Reports.Count)));
+    }
+
+    /// <summary>
+    /// The definition of a report the caller may run, for the run page: name, description, help text, category, version number, the limits and the
+    /// parameters (type, label, required, resolved default, fixed options or where to ask for them, the lookup kind) in the shape the form needs. Never
+    /// SQL, a choice query or a hash. 404 for an unknown, inactive or unassigned report, with the same body for all three.
+    /// </summary>
+    [HttpGet("{id:int}", Name = "GetMyReport")]
+    [Authorize(Policy = ReportPolicies.Run)]
+    [ProducesResponseType<RunnableReportResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> Get(int id, CancellationToken cancellationToken)
+    {
+        var result = await browse.GetAsync(id, cancellationToken);
+        if (result.Problem is { } problem)
+            return ReportProblems.Create(this, new RunProblem(problem.Status, problem.Code, problem.Message));
+
+        var r = result.Value!;
+        return Ok(new RunnableReportResponse(
+            r.ReportId,
+            r.Name,
+            r.Description,
+            r.HelpText,
+            r.CategoryId,
+            r.CategoryName,
+            r.VersionNo,
+            r.TimeoutSeconds,
+            r.MaxRows,
+            r.Parameters.Select(p => new RunnableParameterResponse(
+                p.Name,
+                p.Type,
+                p.Label,
+                p.HelpText,
+                p.Required,
+                p.Default,
+                p.Multiple,
+                p.LookupKind,
+                p.ValueType,
+                p.ChoicesSource,
+                p.Options.Select(o => new RunnableOptionResponse(o.Value, o.Label)).ToList(),
+                p.Min,
+                p.Max,
+                p.IntegerOnly,
+                p.MaxLength,
+                p.MaxSelected)).ToList()));
     }
 
     /// <summary>

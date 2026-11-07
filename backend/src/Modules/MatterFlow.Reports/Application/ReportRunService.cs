@@ -69,6 +69,9 @@ public sealed class ReportRunService
         _choices = choices;
     }
 
+    /// <summary>The 404 text for a report that does not exist, is inactive or is not assigned: the same for all three.</summary>
+    public const string NotAvailableMessage = "This report does not exist or is not available to you.";
+
     public const string UnavailableMessage = "Reports are not available right now. Ask an administrator.";
 
     public async Task<RunResult> RunAsync(int reportId, IReadOnlyDictionary<string, JsonElement> parameters, CancellationToken requestAborted)
@@ -81,7 +84,7 @@ public sealed class ReportRunService
 
         var report = await _catalog.FindRunnableAsync(reportId, userId, requestAborted);
         if (report is null)
-            return RunResult.Fail(404, ErrorCodes.NotFound, "This report does not exist or is not available to you.");
+            return RunResult.Fail(404, ErrorCodes.NotFound, NotAvailableMessage);
 
         var correlation = Guid.NewGuid();
         var start = new RunStart(report.ReportId, report.VersionId, userId, ReportRunKind.Run, null, correlation, report.Name, report.VersionNo);
