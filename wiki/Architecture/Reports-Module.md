@@ -33,7 +33,7 @@ flowchart LR
 - A parameter value never reaches the SQL text. Multi-choice parameters are one JSON array read by `OPENJSON`.
 - Only the Reports module reads the report connection string (architecture test `SourceHygieneRulesTests`).
 - `ReportVersion` and `ReportRun` are append-only for the application identity (triggers `TR_ReportVersion_AppendOnly`, `TR_ReportRun_Guard`); a run is completed through `usp_ReportRunComplete` and purged after two years (`usp_ReportRunPurge`).
-- The Sensitive matter rule does not cover reports yet (issue #808, addendum AI item 6).
+- The Sensitive matter rule does not cover reports (addendum AI item 6, option A, interim until the owner decides on issue #808): a report can read sensitive matters, so assign reports only to trusted roles. The run audit event also carries the run parameters and has no matter scope (planned change, see `docs/ux/reports-review/status-2026-11.md`).
 
 ## The table access catalogue rule
 
@@ -46,7 +46,7 @@ flowchart LR
 | Domain, services, controllers | `backend/src/Modules/MatterFlow.Reports` (`Api/ReportsController.cs`, `ReportAdminControllers.cs`, `ReportDefinitionsController.cs`, `ReportSupportControllers.cs`) |
 | Tables | `ReportCategory`, `ReportDefinition`, `ReportVersion`, `ReportParameter`, `RoleReport`, `SavedReportView`, `ReportFavourite`, `ReportRecent`, `ReportRun` (all in [ER Diagrams](../Database/ER-Diagrams.md)) |
 | Admin screens | `frontend/src/app/features/admin/reports` (Reports admin page, report editor); route `/admin/reports` and `/admin/reports/:id` |
-| Run screens | No people-facing page that runs reports exists in the frontend at this commit: `Report.Run` appears only in the backend, and `nav-items.ts` says the people-facing list "arrives with the user screens". The run endpoints (`POST /api/v1/reports/{id}/runs`, `GET /api/v1/reports/runs/{runId}/rows`) exist |
+| Run screens and the rest of the user side | **Not built at this commit** (status and plan: `docs/ux/reports-review/status-2026-11.md`). Missing: the people-facing pages (list `/reports`, run page, result grid), the endpoints `GET /api/v1/reports` and `GET /api/v1/reports/{id}` (a person who may only run has no list or parameter metadata), CSV export, saved views (table `SavedReportView` has no code), favourites and recent (tables have no code) and the starter reports. These exist: `POST /api/v1/reports/{id}/runs`, `DELETE /api/v1/reports/runs/current`, `GET /api/v1/reports/runs/{runId}/rows`, `DELETE /api/v1/reports/runs/{runId}`, `POST /api/v1/reports/{id}/choices/{parameter}`; `Report.Run` is in the backend and in `permissions.ts` but no screen or menu item uses it. `nav-items.ts` has only the Administration item |
 | Local demo login | `npm run db:report-login` (`tools/db/provision-report-login.sql`) |
 | Config | `ConnectionStrings:ReportsReadOnly` (must name a different login than the application) |
 
@@ -56,4 +56,4 @@ flowchart LR
 - [Permission Catalogue](../Reference/Permission-Catalogue.md)
 - [Add a Report](../How-To/Add-a-Report.md)
 
-Last verified against commit f45fc1d.
+Last verified against commit fd1428f.

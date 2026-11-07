@@ -98,4 +98,6 @@ Scope per issue is in its body. Rules: no EF migrations; SQL scripts take the ne
 
 ## 7. Status
 
+**Superseded 2026-11-07:** 21 of 32 issues are built; the current status, the corrected plan (user screens on the shared grid, desktop only, no phone work) and the remaining effort are in `status-2026-11.md`. The text below is kept for history.
+
 2026-10-22: planned, nothing started. Issues blocked on an owner decision: none (the open questions in README section 18 have safe defaults: views not snapshots, comma CSV with BOM, in-memory results).

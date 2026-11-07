@@ -15,7 +15,7 @@
 2. Write one `SELECT` statement. Use `:NAME` tokens for parameters (uppercase letters, digits, underscore; not starting with a digit). The engine turns them into real SQL parameters (`@p_NAME`); never build SQL text from a value.
 3. Define each parameter: type (text, number, date, date range, yes or no, single, multi, lookup), label, default, required, options (fixed list or a query), and a lookup kind (user, pod, client, task type, role, ...).
 4. Use the schema browser to see the tables and columns the report login may read. Preview the report, check the row cap (`MaxRows`, up to 200,000) and timeout (`TimeoutSeconds`, up to 300).
-5. Activate the report (a report cannot be active without a current version) and assign it to roles on the Assignments tab.
+5. Activate the report. Activation needs a successful preview of the **current version** (otherwise the API answers 409 `PREVIEW_REQUIRED`); saving a new version after that needs a new preview. Then assign the report to roles on the Assignments tab.
 6. Every save creates a new append-only version (`ReportVersion`); the Run Log tab lists runs.
 
 ## When a report needs a table that is denied
@@ -31,7 +31,7 @@ The report login can read only tables classified `allow` in `db/report-access.js
 - Code: `backend/src/Modules/MatterFlow.Reports`; validator in `Domain/SqlValidator.cs` (defence in depth only), executor in `Infrastructure/ReportExecutor.cs`.
 - Keep the rules: one `SELECT`, parameters bound with explicit types, report connection never goes through the EF context, only this module reads `ConnectionStrings:ReportsReadOnly`.
 - Tests: `IntegrationTests/Reports`, `UnitTests/Reports`, `SchemaTests/ReportsSchemaTests`.
-- A people-facing "run a report" page does not exist in the frontend yet ([Reports Module](../Architecture/Reports-Module.md)); building it is a frontend task using `POST /api/v1/reports/{id}/runs` and `GET /api/v1/reports/runs/{runId}/rows`.
+- A people-facing "run a report" page, the list and metadata endpoints for people who only run reports, CSV export and the starter reports do not exist yet ([Reports Module](../Architecture/Reports-Module.md); plan in `docs/ux/reports-review/status-2026-11.md`). Until they are built, an administrator can only preview a report; the run endpoints can be called through the API.
 
 ## Related pages
 
@@ -39,4 +39,4 @@ The report login can read only tables classified `allow` in `db/report-access.js
 - [How to Change the Schema](../Database/How-to-Change-the-Schema.md)
 - [Configuration Reference](../Operations/Configuration-Reference.md)
 
-Last verified against commit 5336251.
+Last verified against commit fd1428f.
