@@ -1,0 +1,130 @@
+{
+  "$comment": "The starter reports (issue #724, docs/ux/reports-review/README.md section 17). One embedded .sql file per report, named <key>.sql. The seeder (ReportStarterSeeder) creates each report once, guarded by a SeedMarker 'reports.starter.<key>', and never changes it afterwards. 'roles' are role names that receive the report; empty for every starter because no starter role holds Report.Run (owner decision 8 is pending). 'listsMatterNames' is true for a starter whose result shows matter names: those starters leave sensitive matters out unless the person says Include sensitive matters, and the rule that only trusted roles may be given reports (option A, #808) still applies. A unit test checks that every .sql file is in this list and the other way round; the integration test runs every starter through the real read-only login.",
+  "categories": [
+    { "name": "Task follow-up", "sortOrder": 10 },
+    { "name": "Intake", "sortOrder": 20 },
+    { "name": "Housekeeping", "sortOrder": 30 },
+    { "name": "Assets", "sortOrder": 40 }
+  ],
+  "reports": [
+    {
+      "key": "overdue-tasks-by-pod",
+      "name": "Overdue tasks by pod",
+      "category": "Task follow-up",
+      "sortOrder": 10,
+      "description": "Open tasks that are past their due date, counted per pod and priority.",
+      "helpText": "Open means New, In Progress or On Hold. Overdue means the due date is before today in the firm time zone. Pods defaults to your own pods; clear it to see every pod and the tasks that have no pod. Counts only: no task titles and no matter names.",
+      "listsMatterNames": false,
+      "roles": [],
+      "columns": ["Pod", "Priority", "Overdue tasks", "Oldest due date", "Most days overdue"],
+      "parameters": [
+        { "name": "PODS", "type": "lookup", "label": "Pods", "lookupKind": "pod", "lookupMulti": true, "default": "myPods", "helpText": "Leave empty for every pod." }
+      ]
+    },
+    {
+      "key": "tasks-per-matter",
+      "name": "Tasks per matter",
+      "category": "Task follow-up",
+      "sortOrder": 20,
+      "description": "How many tasks each matter has, open, completed and cancelled, for tasks created in a period.",
+      "helpText": "The period applies to the date the task was created. Choose a client to see only its matters. This report lists matter names, so sensitive matters are left out unless you choose Include sensitive matters; give this report only to roles that may see them.",
+      "listsMatterNames": true,
+      "roles": [],
+      "columns": ["Client", "Matter number", "Matter", "Open tasks", "Completed tasks", "Cancelled tasks", "All tasks"],
+      "parameters": [
+        { "name": "PERIOD", "type": "dateRange", "label": "Created in period", "isRequired": true, "default": "thisYear" },
+        { "name": "CLIENT", "type": "lookup", "label": "Client", "lookupKind": "client", "helpText": "Leave empty for every client." },
+        { "name": "INCLUDE_SENSITIVE", "type": "yesNo", "label": "Include sensitive matters", "default": false }
+      ]
+    },
+    {
+      "key": "open-tasks-by-assignee",
+      "name": "Open tasks by assignee",
+      "category": "Task follow-up",
+      "sortOrder": 30,
+      "description": "Workload: open tasks per person, split by status, with the overdue count.",
+      "helpText": "Pod filters on the pod a task is assigned to. Include unassigned adds one row for open tasks nobody has picked up. Counts only: no task titles and no matter names.",
+      "listsMatterNames": false,
+      "roles": [],
+      "columns": ["Assignee", "New", "In progress", "On hold", "Open tasks", "Overdue", "Earliest due date"],
+      "parameters": [
+        { "name": "POD", "type": "lookup", "label": "Pod", "lookupKind": "pod", "helpText": "Leave empty for every pod." },
+        { "name": "INCLUDE_UNASSIGNED", "type": "yesNo", "label": "Include unassigned", "default": true }
+      ]
+    },
+    {
+      "key": "tasks-completed-per-person",
+      "name": "Tasks completed per person",
+      "category": "Task follow-up",
+      "sortOrder": 40,
+      "description": "Completed tasks per person and task type in a period, with the average days from creation to completion.",
+      "helpText": "The period applies to the completion date. The person is the one the task is assigned to now. Leave Task types empty for every type. Counts only: no task titles and no matter names.",
+      "listsMatterNames": false,
+      "roles": [],
+      "columns": ["Person", "Task type", "Completed tasks", "Average days to complete"],
+      "parameters": [
+        { "name": "PERIOD", "type": "dateRange", "label": "Completed in period", "isRequired": true, "default": "thisMonth" },
+        { "name": "TASK_TYPES", "type": "lookup", "label": "Task types", "lookupKind": "taskType", "lookupMulti": true, "helpText": "Leave empty for every task type." }
+      ]
+    },
+    {
+      "key": "aging-of-open-tasks",
+      "name": "Aging of open tasks",
+      "category": "Task follow-up",
+      "sortOrder": 50,
+      "description": "Open tasks by how long ago they were created (0 to 7, 8 to 30, 31 to 90 and over 90 days), per pod.",
+      "helpText": "Age is counted in days from the day the task was created to today in the firm time zone. Pods defaults to your own pods; clear it to see every pod and the tasks that have no pod. Counts only: no task titles and no matter names.",
+      "listsMatterNames": false,
+      "roles": [],
+      "columns": ["Pod", "0 to 7 days", "8 to 30 days", "31 to 90 days", "Over 90 days", "Open tasks"],
+      "parameters": [
+        { "name": "PODS", "type": "lookup", "label": "Pods", "lookupKind": "pod", "lookupMulti": true, "default": "myPods", "helpText": "Leave empty for every pod." }
+      ]
+    },
+    {
+      "key": "tasks-created-per-week",
+      "name": "Tasks created per week",
+      "category": "Intake",
+      "sortOrder": 10,
+      "description": "How many tasks were created each week, by task type.",
+      "helpText": "Weeks start on Monday. The period applies to the date the task was created. Counts only: no task titles and no matter names.",
+      "listsMatterNames": false,
+      "roles": [],
+      "columns": ["Week starting", "Task type", "Tasks created"],
+      "parameters": [
+        { "name": "PERIOD", "type": "dateRange", "label": "Created in period", "isRequired": true, "default": "last30Days" }
+      ]
+    },
+    {
+      "key": "users-with-no-pod-or-inactive-assignees",
+      "name": "Users with no pod or inactive assignees",
+      "category": "Housekeeping",
+      "sortOrder": 10,
+      "description": "Data-quality list: active people who belong to no pod, and inactive people who still have open tasks.",
+      "helpText": "Active users with no pod are people who hold a role but are in no pod. Inactive users with open tasks still have tasks assigned that nobody works. Names and counts only.",
+      "listsMatterNames": false,
+      "roles": [],
+      "columns": ["Issue", "User", "Open tasks assigned"],
+      "parameters": []
+    },
+    {
+      "key": "assets-linked-to-open-tasks",
+      "name": "Assets linked to open tasks",
+      "category": "Assets",
+      "sortOrder": 10,
+      "description": "Each asset that is linked to an open task, with its disposition, the task number and the matter.",
+      "helpText": "Shows the disposition of the asset (Active, Inactive, Pending disposition or Disposed), so assets that are about to be disposed of while work is still open stand out. This report lists matter names, so sensitive matters are left out unless you choose Include sensitive matters; give this report only to roles that may see them. Leave Asset types empty for every type.",
+      "listsMatterNames": true,
+      "roles": [],
+      "columns": ["Asset", "Asset type", "Disposition", "Task number", "Task status", "Matter number", "Matter"],
+      "parameters": [
+        {
+          "name": "ASSET_TYPES", "type": "multi", "label": "Asset types", "valueType": "int", "optionsKind": "query",
+          "optionsSql": "SELECT AssetTypeId AS [Value], Name AS [Label] FROM dbo.AssetType WHERE IsActive = 1 ORDER BY SortOrder, Name",
+          "helpText": "Leave empty for every asset type."
+        },
+        { "name": "INCLUDE_SENSITIVE", "type": "yesNo", "label": "Include sensitive matters", "default": false }
+      ]
+    }
+  ]
+}

@@ -18,6 +18,27 @@
 5. Activate the report. Activation needs a successful preview of the **current version** (otherwise the API answers 409 `PREVIEW_REQUIRED`); saving a new version after that needs a new preview. Then assign the report to roles on the Assignments tab.
 6. Every save creates a new append-only version (`ReportVersion`); the Run Log tab lists runs.
 
+## Starter reports (code, not the app)
+
+The eight starter reports ship with the application as data: `backend/src/Modules/MatterFlow.Reports/Starters/` holds `manifest.json` (name, description, category, help text, the parameter definitions in the same JSON shape as a saved version, the columns the SQL returns, `listsMatterNames`, `roles`) and one `<key>.sql` per report, all embedded in the assembly. `ReportStarterSeeder` creates each one once at startup (`Seed:StarterReports:Enabled`, on in Development, off elsewhere; `DryRun` only logs): category, definition, a first version with its parameter snapshot, marked previewed and active, and a `SeedMarker` named `reports.starter.<key>`. It never changes a starter afterwards, so an administrator may rename, edit, deactivate or reassign it like any report; a report with the same name that already exists is left alone. Nothing runs at startup: the SQL runs only when a person clicks Run.
+
+| Starter | Category | Parameters | Lists matter names |
+|---|---|---|---|
+| Overdue tasks by pod | Task follow-up | Pods (lookup, multi, default my pods; empty = all) | no |
+| Tasks per matter | Task follow-up | Created in period (date range), Client (lookup), Include sensitive matters (yes/no, default no) | **yes** |
+| Open tasks by assignee | Task follow-up | Pod (lookup), Include unassigned (yes/no, default yes) | no |
+| Tasks completed per person | Task follow-up | Completed in period (date range), Task types (lookup, multi) | no |
+| Aging of open tasks | Task follow-up | Pods (lookup, multi, default my pods) | no |
+| Tasks created per week | Intake | Created in period (date range) | no |
+| Users with no pod or inactive assignees | Housekeeping | none | no |
+| Assets linked to open tasks | Assets | Asset types (multi, choice list from a SELECT), Include sensitive matters (yes/no, default no) | **yes** |
+
+**No role gets a starter from the seeder.** No starter role holds `Report.Run` (owner decision 8 is open), so `roles` is empty in the manifest. In the demo, `npm run seed:demo` creates the role `Report Runner (demo)`; see [Demo Data and Personas](../Operations/Demo-Data-and-Personas.md).
+
+To add a starter: write `<key>.sql` (one `SELECT`, parameters as `:NAME`, only tables classified `allow` in `db/report-access.json`, no task titles or personal data, `ORDER BY` allowed), add its entry to `manifest.json` (list the exact result column names), and run the tests. The unit test `StarterReportManifestTests` checks that every embedded file is in the manifest and the reverse, that the validator accepts each starter, that every placeholder has a definition, that only allowed tables are read and that a starter reading `dbo.Matter` says `listsMatterNames` and carries the `INCLUDE_SENSITIVE` guard. The integration test `ReportStarterTests` runs **every** starter through the real report login with its default values, so a schema change that breaks a starter fails the build. A starter already seeded into a database is not updated by a new SQL file: fix it there as an administrator (new version), or ship a new key.
+
+**Sensitive matters.** Reports read all matters, including sensitive ones, because the report login cannot call the visibility functions (option A, issue #808). A starter that lists matter names must therefore leave sensitive matters out unless the person asks, and the report must be given only to trusted roles. Starters that return counts or user names do not carry the guard.
+
 ## When a report needs a table that is denied
 
 The report login can read only tables classified `allow` in `db/report-access.json`. Audit, identity, notification, authorization, settings and all Reports tables are denied on purpose.
@@ -31,7 +52,7 @@ The report login can read only tables classified `allow` in `db/report-access.js
 - Code: `backend/src/Modules/MatterFlow.Reports`; validator in `Domain/SqlValidator.cs` (defence in depth only), executor in `Infrastructure/ReportExecutor.cs`.
 - Keep the rules: one `SELECT`, parameters bound with explicit types, report connection never goes through the EF context, only this module reads `ConnectionStrings:ReportsReadOnly`.
 - Tests: `IntegrationTests/Reports`, `UnitTests/Reports`, `SchemaTests/ReportsSchemaTests`.
-- A people-facing "run a report" page, the list and metadata endpoints for people who only run reports, CSV export and the starter reports do not exist yet ([Reports Module](../Architecture/Reports-Module.md); plan in `docs/ux/reports-review/status-2026-11.md`). Until they are built, an administrator can only preview a report; the run endpoints can be called through the API.
+- The people-facing screens (list, run page, grid, saved views) are being built by the frontend lane; the endpoints for people who only run reports, the CSV export and the starter reports exist ([Reports Module](../Architecture/Reports-Module.md); plan in `docs/ux/reports-review/status-2026-11.md`).
 
 ## Related pages
 

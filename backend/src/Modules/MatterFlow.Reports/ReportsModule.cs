@@ -1,5 +1,6 @@
 using MatterFlow.Reports.Application;
 using MatterFlow.Reports.Application.Results;
+using MatterFlow.Reports.Application.Starters;
 using MatterFlow.Reports.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,6 +42,8 @@ public static class ReportsModule
         services.AddSingleton<ReportChoiceGate>();
         services.AddScoped<ReportChoiceService>();
         services.AddScoped<IReportAdminStore, ReportAdminStore>();
+        services.AddScoped<IReportStarterMarkers, ReportStarterMarkers>();
+        services.AddScoped<ReportStarterSeeder>();
         services.AddScoped<ReportAdminService>();
         services.AddSingleton<IReportSchemaReader, ReportSchemaReader>();
         services.AddScoped<ReportSchemaService>();
