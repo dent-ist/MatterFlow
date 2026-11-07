@@ -134,7 +134,7 @@ public sealed class ReportExportApiTests(SqlServerFixture sql)
         all[0].ShouldBe(["id", "name", "price", "due", "done"]);
         all[3].ShouldBe(["3", "", "", "", ""]);
         all[5][1].ShouldBe("'=Gamma, Inc");
-        all[1].ShouldBe(["1", "beta", "10.5", "2026-10-02", "1"]);
+        all[1].ShouldBe(["1", "beta", "10.50", "2026-10-02", "1"]); // the decimal keeps its own scale
     }
 
     private static string Guard(string row) => row.Replace("|=Gamma, Inc", "|'=Gamma, Inc", StringComparison.Ordinal).Replace("=Gamma, Inc|", "'=Gamma, Inc|", StringComparison.Ordinal);
@@ -224,7 +224,7 @@ public sealed class ReportExportApiTests(SqlServerFixture sql)
         var log = (await h.RunLogAsync(report)).EnumerateArray().Where(r => r.GetProperty("Kind").GetString() == "Export").ShouldHaveSingleItem();
         log.GetProperty("Status").GetString().ShouldBe("Succeeded");
         log.GetProperty("UserId").GetInt32().ShouldBe(userId);
-        log.GetProperty("ParametersJson").ValueKind.ShouldBe(JsonValueKind.Null);
+        log.TryGetProperty("ParametersJson", out var parameters).ShouldBeFalse(parameters.ToString()); // FOR JSON leaves out a null column
         (await SqlServerFixture.ScalarAsync(h.AppConnection, "SELECT ExportedRowCount FROM dbo.ReportRun WHERE Kind = 'Export'")).ShouldBe(0);
 
         var events = (await h.AuditAsync(report)).Where(e => e.GetProperty("EventType").GetString() == "REPORT_EXPORT").ToList();
