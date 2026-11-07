@@ -60,8 +60,9 @@ public static class StarterRoles
 
     public static IReadOnlyList<StarterRole> All { get; } =
     [
+        // Matter.BeManager (owner decision, issue #976, 2026-11-07; script 62 for existing databases): the Director opens My Matters (the page needs BeManager) and can be named as a matter's project manager.
         new("Director", "Department head: full operational access plus oversight.",
-            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, ..AssignManagers, ..MatterContentManage, Permissions.Matter.ViewSensitive, Permissions.Asset.Dispose, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
+            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, Permissions.Matter.BeManager, ..AssignManagers, ..MatterContentManage, Permissions.Matter.ViewSensitive, Permissions.Asset.Dispose, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
                 Permissions.User.View, Permissions.Audit.View,
                 Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewBreakdowns, Permissions.Dashboard.ViewTrends,
                 Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers, Permissions.Dashboard.ViewCoverage,
