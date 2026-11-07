@@ -193,7 +193,14 @@ test.describe('Keyboard: skip link, rows and sequences (#181)', () => {
 
     // Without Task.SetPriority the P key does nothing (and the cell is plain text).
     const viewer = await seed.user(
-      [(await seed.role(['Task.View', 'Task.ChangeStatus', 'Matter.View'], 'E2E nopri')).name],
+      [
+        (
+          await seed.role(
+            ['Task.View', 'Task.ChangeStatus', 'Matter.View', 'Workflow.Execute'],
+            'E2E nopri',
+          )
+        ).name,
+      ],
       'keys-nopri',
     );
     const world = await seed.world();
@@ -250,7 +257,7 @@ test.describe('Keyboard: skip link, rows and sequences (#181)', () => {
 
     // Without Pod.View: g p stays put, and the help does not list it.
     const plain = await seed.user(
-      [(await seed.role(['Task.View', 'Matter.View'], 'E2E nopod')).name],
+      [(await seed.role(['Task.View', 'Matter.View', 'Workflow.Execute'], 'E2E nopod')).name],
       'keys-nopod',
     );
     const other = await asUser(plain.username);

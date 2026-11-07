@@ -87,7 +87,7 @@ test.describe('Default landing', () => {
   }) => {
     const world = await seed.world();
     const dashRole = await seed.role(
-      ['Dashboard.View', 'Dashboard.ViewSummary', 'Matter.View'],
+      ['Dashboard.View', 'Dashboard.ViewSummary', 'Matter.View', 'Workflow.Execute'],
       'E2E landing dash',
     );
     const dash = await seed.user([dashRole.name], 'landdash');

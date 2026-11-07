@@ -190,7 +190,7 @@ test.describe('My Work per-tab columns', () => {
   }) => {
     test.skip(!Seeder.canWriteLegacyText(), 'needs the SQL container of run-local.sh');
     const boss = await maker(seed, 'tab-created');
-    const worker = await maker(seed, 'tab-worker', ['Task.View']);
+    const worker = await maker(seed, 'tab-worker', ['Task.View', 'Workflow.Execute']);
     const idle = await seed.user(['Data Technician'], 'tab-idle');
     const world = await seed.world();
     const tag = uid();
