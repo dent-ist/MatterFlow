@@ -367,5 +367,4 @@ test.describe('Dashboard shell: roles (R1, R2)', () => {
     await expect(page.locator('[data-dash-note]')).toHaveCount(0);
   });
   // The Swimlane tab has a second tablist (the lane switcher below 900 px): these tests mean the Dashboard's own.
-  const dashTabs = (page: Page) => page.getByRole('tablist', { name: 'Dashboard views' });
 });
