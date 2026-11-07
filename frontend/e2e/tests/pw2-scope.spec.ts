@@ -100,7 +100,7 @@ test.describe('Pod Work pod scope', () => {
       await page.goto(`/pods/work?podId=${first.podId}`);
       await expect(page).toHaveTitle(`Pod Work: ${first.name}: Unassigned - MatterFlow`);
       await pw.tab('By Member').click();
-      await expect(page).toHaveTitle(`Pod Work: ${first.name}: By member - MatterFlow`);
+      await expect(page).toHaveTitle(`Pod Work: ${first.name}: By Member - MatterFlow`);
 
       const second = fx.multi.pods[1];
       // The select has the focus (the person is on it) when the pod changes; the change never moves it.

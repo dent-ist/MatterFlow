@@ -70,9 +70,7 @@ test.describe('Summary v4', () => {
     await page.goto('/dashboard');
     await card(page, 'unassigned').click();
     await expect(page.locator('mf-dash-grid th[data-col="unassignedFor"]')).toBeVisible();
-    await expect(page.locator('[data-sorted-text]')).toContainText(
-      'Sorted by Unassigned for',
-    );
+    await expect(page.locator('[data-sorted-text]')).toContainText('Sorted by Unassigned for');
     await expect(page.locator('mf-dash-grid td[data-col="unassignedFor"]').first()).toBeVisible();
     await card(page, 'unassigned').click();
     await expect(page.locator('mf-dash-grid th[data-col="unassignedFor"]')).toHaveCount(0);
@@ -197,9 +195,7 @@ test.describe('Summary v4', () => {
     const gauge = page.locator('[data-compact-gauge]');
     await expect(gauge).toBeVisible();
     await expect(gauge.locator('[data-gauge-badge]')).toContainText(/Level \d|Normal|All clear/);
-    await gauge
-      .getByRole('button', { name: /Show them, longest waiting first/ })
-      .click();
+    await gauge.getByRole('button', { name: /Show them, longest waiting first/ }).click();
     await expect(card(page, 'unassigned')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('[data-sorted-text]')).toContainText('Sorted by Unassigned for');
   });

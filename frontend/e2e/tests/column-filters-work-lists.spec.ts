@@ -337,12 +337,12 @@ test.describe('Column filters on the work lists', () => {
       await expect(rowControl(mine, 'creator')).toBeEnabled();
 
       // Created by me: the other way round.
-      await myWork.tab(/^Created by me/).click();
+      await myWork.tab(/^Created by Me/).click();
       await expect(rowControl(mine, 'creator')).toHaveText(/Me/);
       await expect(rowControl(mine, 'assignee')).toBeEnabled();
 
       // Due soon owns the Due column.
-      await myWork.tab(/^Due soon/).click();
+      await myWork.tab(/^Due Soon/).click();
       await expect(rowControl(mine, 'due')).toHaveText(/Next 2 days and overdue/);
 
       // Filters stay across tabs except where the new tab owns the column.
@@ -378,8 +378,8 @@ test.describe('Column filters on the work lists', () => {
       await myWork.tab(/^Closed/).click();
       await expect(page.locator('[data-help]')).toHaveCount(0); // the help is behind an info button now
       expect(await counts()).toEqual(onActive);
-      await myWork.tab(/^Created by me/).click();
-      await expect(page.getByRole('tab', { name: /^Created by me/ })).toHaveAttribute(
+      await myWork.tab(/^Created by Me/).click();
+      await expect(page.getByRole('tab', { name: /^Created by Me/ })).toHaveAttribute(
         'aria-selected',
         'true',
       );

@@ -58,7 +58,7 @@ async function cancelInline(page: Page, row: Locator, expectClosed = true): Prom
   await statusTrigger(row).click();
   await page.locator('[data-option="CANCEL"]').click();
   const dialog = page.getByRole('dialog').filter({ has: page.locator('[data-reason-body]') });
-  await dialog.getByLabel(/Reason/).fill('No longer needed');
+  await dialog.getByRole('textbox', { name: /Reason/ }).fill('No longer needed');
   await dialog.getByRole('button', { name: 'Cancel Task' }).click();
   if (expectClosed) await expect(dialog).toHaveCount(0);
 }
@@ -142,7 +142,7 @@ test.describe('WP7: inline row actions', () => {
     const page = await asUser(me.username);
     const myWork = new MyWorkPage(page);
     await myWork.open('?view=dueSoon');
-    await expect(myWork.tab(/^Due soon/)).toContainText('(2)');
+    await expect(myWork.tab(/^Due Soon/)).toContainText('(2)');
 
     // A failing save puts the row back and shows the error; nothing leaves.
     let fail = true;
@@ -155,11 +155,11 @@ test.describe('WP7: inline row actions', () => {
     await expect(myWork.row(keep)).not.toHaveAttribute('data-leaving', 'true');
     await page.waitForTimeout(4500);
     await expect(myWork.row(keep)).toHaveCount(1);
-    await expect(myWork.tab(/^Due soon/)).toContainText('(2)');
+    await expect(myWork.tab(/^Due Soon/)).toContainText('(2)');
 
     fail = false;
     await cancelInline(page, myWork.row(soon));
-    await expect(myWork.tab(/^Due soon/)).toContainText('(1)');
+    await expect(myWork.tab(/^Due Soon/)).toContainText('(1)');
     await expect(myWork.tab(/^Active/)).toContainText('(1)');
     await expect(myWork.row(soon)).toHaveCount(0, { timeout: 8000 });
     await expect(page.locator('[data-range]')).toContainText('of 1');
@@ -250,7 +250,7 @@ test.describe('WP7: inline row actions', () => {
       await statusTrigger(row).click();
       await page.locator('[data-option="HOLD"]').click();
       const dialog = page.getByRole('dialog').filter({ has: page.locator('[data-reason-body]') });
-      await dialog.getByLabel(/Reason/).fill('Waiting');
+      await dialog.getByRole('textbox', { name: /Reason/ }).fill('Waiting');
       await dialog.getByRole('button', { name: 'Put Task on Hold' }).click();
       const toast = page.locator('[data-toast]').first();
       await expect(toast).toBeVisible();

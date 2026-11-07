@@ -176,10 +176,10 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
     await expect(page.locator('[data-task]').first()).toBeVisible();
     expect(await headers(page)).toEqual(active);
     await shot(page, 'my-work-active-1920x1080');
-    await mw.tab(/^Due soon and overdue/).click();
+    await mw.tab(/^Due Soon and Overdue/).click();
     await expect(page.locator('[data-task]').first()).toBeVisible();
     expect(await headers(page)).toEqual(active);
-    await mw.tab(/^Created by me/).click();
+    await mw.tab(/^Created by Me/).click();
     await expect(page.locator('[data-task]').first()).toBeVisible();
     expect(await headers(page)).toEqual([
       'Ref',

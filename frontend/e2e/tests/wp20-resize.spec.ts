@@ -108,7 +108,7 @@ test.describe('Drag resize (#204)', () => {
     const due0 = await width(page, 'due');
     const title0 = await width(page, 'title');
     const scroll0 = await page.locator('.wt-wrap').evaluate((e) => e.scrollTop);
-    expect(Math.round(due0)).toBe(136);
+    expect(Math.round(due0)).toBe(152);
     await shot(page, 'task-queue-handles-1366x768');
 
     // Live: the width follows while the button is still down.
@@ -146,7 +146,7 @@ test.describe('Drag resize (#204)', () => {
     }, WIDTHS_KEY.source);
     await page.reload();
     await expect(page.locator('[data-task]')).toHaveCount(4);
-    expect(Math.round(await width(page, 'due'))).toBe(136);
+    expect(Math.round(await width(page, 'due'))).toBe(152);
   });
 
   test('clamps at the column minimum and maximum; the Title keeps the width it had; Ref grows from its right edge', async ({
@@ -254,7 +254,7 @@ test.describe('Drag resize (#204)', () => {
     await podWork.choosePod(pod.name);
     await podWork.search(`Pod ${tag}`);
     await expect(page.locator('[data-task]')).toHaveCount(1);
-    expect(Math.round(await width(page, 'due'))).toBe(136); // Pod Work has its own scope
+    expect(Math.round(await width(page, 'due'))).toBe(152); // Pod Work has its own scope
     const assignee0 = await width(page, 'assignee');
     await dragGrow(page, 'assignee', -24);
     expect(Math.abs((await width(page, 'assignee')) - (assignee0 - 24))).toBeLessThanOrEqual(1);
@@ -270,7 +270,7 @@ test.describe('Drag resize (#204)', () => {
     // The Task Queue is a third scope: untouched.
     await new TaskQueuePage(page).open(`?q=${encodeURIComponent(tag)}`);
     await expect(page.locator('[data-task]').first()).toBeVisible();
-    expect(Math.round(await width(page, 'due'))).toBe(136);
+    expect(Math.round(await width(page, 'due'))).toBe(152);
   });
 
   test('a long page (cloned to 200 rows) uses the guide line and applies the width on release; frame times are recorded', async ({

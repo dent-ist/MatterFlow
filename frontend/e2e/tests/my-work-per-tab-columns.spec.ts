@@ -83,7 +83,7 @@ test.describe('My Work per-tab columns', () => {
       'Status',
     ]);
     // Same set on Due soon and overdue.
-    await myWork.tab(/^Due soon and overdue/).click();
+    await myWork.tab(/^Due Soon and Overdue/).click();
     expect(await headers(page)).toEqual([
       'Ref',
       'Type',
@@ -164,7 +164,7 @@ test.describe('My Work per-tab columns', () => {
     await myWork.open();
     expect(await headers(page)).toEqual(['Ref', 'Title', 'CM Number', 'Client', 'Status']);
     await expect(page.locator('[data-columns-notice]')).toBeVisible();
-    await myWork.tab(/^Created by me/).click();
+    await myWork.tab(/^Created by Me/).click();
     expect(await headers(page)).toEqual([
       'Ref',
       'Type',
@@ -234,7 +234,7 @@ test.describe('My Work per-tab columns', () => {
     await myWork.expectNotListed(`Finished ${tag}`);
     await expect(page.locator('tr[data-filter-row] [data-filter="status"]')).toContainText('Open');
     await expect(page.getByRole('button', { name: /^Filters/ })).toBeVisible();
-    await expect(myWork.tab(/^Created by me/)).toContainText('(');
+    await expect(myWork.tab(/^Created by Me/)).toContainText('(');
     const assignedRow = myWork.row(`Assigned ${tag}`);
     await expect(assignedRow.locator('td[data-col="assignee"]')).toContainText(/\w/);
     await expect(assignedRow.locator('td[data-col="age"]')).toHaveText('12 d');
@@ -326,12 +326,12 @@ test.describe('My Work per-tab columns', () => {
     await myWork.open('?view=createdByMe');
     const none = page.locator('tbody [data-empty="none"]');
     await expect(none).toContainText('You have no open tasks you created.');
-    await expect(myWork.tab(/^Created by me/)).toContainText('(0)');
+    await expect(myWork.tab(/^Created by Me/)).toContainText('(0)');
     await shot(page, 'b2-created-by-me-no-open-1366x768');
     await none.getByRole('button', { name: 'Show Closed Tasks' }).click();
     await expect(page).toHaveURL(/status=(&|$)/);
     await expect(myWork.row(`Old ${tag}`)).toHaveCount(1);
-    await expect(myWork.tab(/^Created by me/)).toContainText('(1)');
+    await expect(myWork.tab(/^Created by Me/)).toContainText('(1)');
   });
 
   test('C2: Closed shows Ref, Title, Matter, Closed and Status; priority is muted and Due plain when added', async ({
@@ -413,6 +413,6 @@ test.describe('My Work per-tab columns', () => {
 });
 
 async function tabCountOf(page: Page): Promise<number> {
-  const text = (await new MyWorkPage(page).tab(/^Created by me/).textContent()) ?? '';
+  const text = (await new MyWorkPage(page).tab(/^Created by Me/).textContent()) ?? '';
   return Number(/\((\d+)\)/.exec(text)?.[1]);
 }

@@ -79,7 +79,7 @@ test.describe('Column widths in the Columns panel (#206)', () => {
     const page = await asUser('ke\\kekim');
     await page.setViewportSize({ width: 1366, height: 768 });
     await openQueue(page, tag, 3);
-    expect(await gridWidth(page, 'due')).toBe(136);
+    expect(await gridWidth(page, 'due')).toBe(152);
 
     await openPanel(page);
     await expect(page.locator('[data-widths-set] legend')).toHaveText('Column Widths');
@@ -131,8 +131,8 @@ test.describe('Column widths in the Columns panel (#206)', () => {
     await row(page, 'due')
       .getByRole('button', { name: 'Narrow Due' })
       .click({ modifiers: ['Shift'] });
-    await expect(field(page, 'due')).toHaveValue('136');
-    await expect(live(page)).toHaveText('Due column 136 pixels');
+    await expect(field(page, 'due')).toHaveValue('152');
+    await expect(live(page)).toHaveText('Due column 152 pixels');
 
     await field(page, 'due').fill('999');
     await page.keyboard.press('Enter');
@@ -183,8 +183,8 @@ test.describe('Column widths in the Columns panel (#206)', () => {
     await row(page, 'due').getByRole('button', { name: 'Widen Due' }).click();
     await expect(resetDue).not.toHaveAttribute('aria-disabled', 'true');
     await resetDue.click();
-    await expect(field(page, 'due')).toHaveValue('136');
-    await expect(live(page)).toHaveText('Due column 136 pixels');
+    await expect(field(page, 'due')).toHaveValue('152');
+    await expect(live(page)).toHaveText('Due column 152 pixels');
     expect(Object.values(await stored(page))[0]).toEqual({ matterName: fitted });
 
     // Hiding and showing a column keeps its width; Reset columns does not touch widths.
@@ -222,9 +222,9 @@ test.describe('Column widths in the Columns panel (#206)', () => {
 
     await new MyWorkPage(page).open();
     await page.locator('table').first().waitFor();
-    expect(await gridWidth(page, 'due')).toBe(136);
+    expect(await gridWidth(page, 'due')).toBe(152);
     await openPanel(page);
-    await expect(field(page, 'due')).toHaveValue('136');
+    await expect(field(page, 'due')).toHaveValue('152');
     await expect(page.locator('[data-widths-reset]')).toHaveAttribute('aria-disabled', 'true');
     expect(Object.keys(await stored(page))).toHaveLength(1);
   });

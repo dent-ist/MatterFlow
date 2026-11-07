@@ -71,7 +71,7 @@ test.describe('Pod Work workload table', () => {
       await expect(rows(page)).toHaveCount(1 + working.length + idle.length);
       await expect(
         page.locator('[data-availability-chip][data-state="OUT_OF_OFFICE"]'),
-      ).toContainText(/Out of office/);
+      ).toContainText(/Out of Office/);
       await shot(page, 'members-unfolded-1366x768');
       await page.keyboard.press('Space');
       await expect(fold(page)).toHaveAttribute('aria-expanded', 'false');

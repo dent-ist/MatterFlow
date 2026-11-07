@@ -122,7 +122,7 @@ test.describe('My Work sorts, Closed column and column sets', () => {
     await expect(page.locator('[data-sort-note]')).toContainText('Sorted by Closed date');
     await expect.poll(() => order(page, tag)).toEqual(['Newest', 'Mid', 'Oldest']);
     const dates = await page.locator('tbody td[data-col="closed"]').allTextContents();
-    for (const d of dates) expect(d.trim()).toMatch(/^[A-Z][a-z]{2} \d{1,2}, \d{4}$/);
+    for (const d of dates) expect(d.trim()).toMatch(/^\d{2}\/\d{2}(\/\d{4})?$/);
     // The tooltip carries the time and the zone.
     await expect(page.locator('tbody td[data-col="closed"] [title]').first()).toHaveAttribute(
       'title',

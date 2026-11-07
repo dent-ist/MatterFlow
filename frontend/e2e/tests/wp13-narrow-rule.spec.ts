@@ -364,7 +364,7 @@ test.describe('Stored widths (#203)', () => {
     await page.evaluate((k) => localStorage.removeItem(k), key('taskQueue'));
     await page.reload();
     await expect(page.locator('[data-task]').first()).toBeVisible();
-    expect(Math.abs((await widthOf(page, 'due')) - 136)).toBeLessThanOrEqual(1);
+    expect(Math.abs((await widthOf(page, 'due')) - 152)).toBeLessThanOrEqual(1);
     expect(
       await page.evaluate((k) => localStorage.getItem(k), key('myWork.active')),
     ).not.toBeNull();
@@ -386,7 +386,7 @@ test.describe('Stored widths (#203)', () => {
     const queue = new TaskQueuePage(page);
     await queue.open(`?q=${encodeURIComponent(tag)}`);
     await expect(page.locator('[data-task]').first()).toBeVisible();
-    expect(Math.abs((await widthOf(page, 'due')) - 136)).toBeLessThanOrEqual(1);
+    expect(Math.abs((await widthOf(page, 'due')) - 152)).toBeLessThanOrEqual(1);
 
     // Storage that throws for the width keys only.
     await page.addInitScript(() => {
@@ -398,7 +398,7 @@ test.describe('Stored widths (#203)', () => {
     });
     await queue.open(`?q=${encodeURIComponent(tag)}`);
     await expect(page.locator('[data-task]').first()).toBeVisible();
-    expect(Math.abs((await widthOf(page, 'due')) - 136)).toBeLessThanOrEqual(1);
+    expect(Math.abs((await widthOf(page, 'due')) - 152)).toBeLessThanOrEqual(1);
     expect(errors).toEqual([]);
   });
 });

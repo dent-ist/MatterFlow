@@ -116,7 +116,7 @@ test.describe('Matter header (MD-01)', () => {
     await more.focus();
     await page.keyboard.press('ArrowDown');
     await expect(more).toHaveAttribute('aria-expanded', 'true');
-    const toggle = page.getByRole('menuitem', { name: /Set inactive/ });
+    const toggle = page.getByRole('menuitem', { name: /Set Inactive/ });
     await expect(toggle).toHaveAttribute('aria-disabled', 'true');
     await expect(toggle).toContainText("aren't Completed or Cancelled");
     await page.keyboard.press('Escape');

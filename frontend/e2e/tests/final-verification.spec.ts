@@ -343,7 +343,7 @@ test.describe('Final verification (#240)', () => {
       // Task Queue is another scope: its Due column keeps the default width.
       await new TaskQueuePage(page).open(`?q=${s.tag}`);
       await expect(page.locator('[data-task]')).toHaveCount(3);
-      expect(Math.round(await widthOf('due')), 'Task Queue keeps its own width').toBe(136);
+      expect(Math.round(await widthOf('due')), 'Task Queue keeps its own width').toBe(152);
       await page.evaluate(() => {
         for (const k of Object.keys(localStorage))
           if (k.startsWith('mf.work-widths.v1.')) localStorage.removeItem(k);

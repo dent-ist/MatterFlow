@@ -71,7 +71,7 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     // The actions are in the header (WP3): Edit, and Set inactive in the overflow, disabled with its reason.
     await expect(page.locator('[data-edit-matter]')).toBeVisible();
     await page.locator('[data-overflow][aria-label^="More actions"]').click();
-    const blocked = page.getByRole('menuitem', { name: /Set inactive/ });
+    const blocked = page.getByRole('menuitem', { name: /Set Inactive/ });
     await expect(blocked).toHaveAttribute('aria-disabled', 'true');
     await expect(blocked).toContainText("aren't Completed or Cancelled");
     await page.keyboard.press('Escape');

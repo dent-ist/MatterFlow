@@ -539,13 +539,13 @@ const RECORDS: RecordPage[] = [
     kind: 'client',
     url: () => `/clients/${data.big.clientId}`,
     tabs: ['details', 'matters'],
-    state: /Set inactive/,
+    state: /Set Inactive/,
   },
   {
     kind: 'matter',
     url: () => `/matters/${data.m28.matterId}`,
     tabs: ['details', 'tasks', 'projects', 'assets'],
-    state: /Set inactive/,
+    state: /Set Inactive/,
   },
   {
     kind: 'project',

@@ -133,14 +133,14 @@ test.describe('column filters work lists screenshots', () => {
     await mine.goto('/my-work');
     await expect(mine.locator('[data-task]').first()).toBeVisible();
     await shot(mine, 'my-work-active');
-    await mine.getByRole('tab', { name: /^Created by me/ }).click();
-    await expect(mine.getByRole('tab', { name: /^Created by me/ })).toHaveAttribute(
+    await mine.getByRole('tab', { name: /^Created by Me/ }).click();
+    await expect(mine.getByRole('tab', { name: /^Created by Me/ })).toHaveAttribute(
       'aria-selected',
       'true',
     );
     await shot(mine, 'my-work-created-by-me');
-    await mine.getByRole('tab', { name: /^Due soon/ }).click();
-    await expect(mine.getByRole('tab', { name: /^Due soon/ })).toHaveAttribute(
+    await mine.getByRole('tab', { name: /^Due Soon/ }).click();
+    await expect(mine.getByRole('tab', { name: /^Due Soon/ })).toHaveAttribute(
       'aria-selected',
       'true',
     );

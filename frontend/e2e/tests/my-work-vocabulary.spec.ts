@@ -67,7 +67,7 @@ test.describe('My Work vocabulary and tab rules', () => {
       'Created by me (0)',
     ]);
     await expect(myWork.tab(/^Active/)).toHaveAttribute('title', 'Open tasks assigned to you');
-    await expect(myWork.tab(/^Due soon and overdue/)).toHaveAttribute(
+    await expect(myWork.tab(/^Due Soon and Overdue/)).toHaveAttribute(
       'title',
       'Overdue plus due in the next 2 days. ASAP tasks have no due date and are listed under Active',
     );
@@ -75,7 +75,7 @@ test.describe('My Work vocabulary and tab rules', () => {
       'title',
       'Completed or cancelled in the last 90 days (use Show older for more)',
     );
-    await expect(myWork.tab(/^Created by me/)).toHaveAttribute(
+    await expect(myWork.tab(/^Created by Me/)).toHaveAttribute(
       'title',
       'Tasks you created, any status or assignee',
     );
@@ -85,7 +85,7 @@ test.describe('My Work vocabulary and tab rules', () => {
     await expect(page.locator('table caption')).toHaveText('My Work: Active');
     await expect(page.locator('.wl-sr')).toHaveText(/^Active: 7 tasks, showing 1 to 7$/);
 
-    await myWork.tab(/^Due soon and overdue/).click();
+    await myWork.tab(/^Due Soon and Overdue/).click();
     await expect(page).toHaveURL(/view=dueSoon/);
     await expect(page).toHaveTitle('My Work: Due soon and overdue - MatterFlow');
     await expect(page.locator('table caption')).toHaveText('My Work: Due soon and overdue');

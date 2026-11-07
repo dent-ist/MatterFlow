@@ -146,11 +146,11 @@ test.describe('Fixed layout (#200)', () => {
           `no sideways scroll of the page at ${width} for ${url}`,
         ).toBeLessThanOrEqual(0);
       }
-      // The two most-quoted numbers of the review: Due is 136 px (not 403 at 1920) and the Title takes the rest.
+      // The two most-quoted numbers of the review: Due is 152 px (not 403 at 1920) and the Title takes the rest.
       await page.goto(urls[0]);
       await expect(page.locator('[data-task]').first()).toBeVisible();
       const m = await measure(page);
-      expect(Math.round(m.widths['due'])).toBe(136);
+      expect(Math.round(m.widths['due'])).toBe(152);
       expect(Math.round(m.widths['ref'])).toBe(112);
       expect(Math.round(m.widths['matter'])).toBe(142);
       // Matter Name is off by default (D-43a, #1230): it has no column here.

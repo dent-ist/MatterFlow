@@ -227,7 +227,7 @@ test.describe('Column header menu (#207)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await openQueue(page, tag, 4);
     const due0 = Math.round(await width(page, 'due'));
-    expect(due0).toBe(136);
+    expect(due0).toBe(152);
 
     await sortButton(page, 'due').focus();
     await page.keyboard.press('Shift+F10');
@@ -250,11 +250,11 @@ test.describe('Column header menu (#207)', () => {
     await expect(note(page)).toHaveText('Due column 144 pixels');
     expect(await storedWidth(page, 'due')).toBe(144);
 
-    // Narrow twice: 136, then 128.
+    // Narrow twice: 152, then 128.
     await page.keyboard.press('Shift+F10');
     await item(page, 'narrow').focus();
     await page.keyboard.press('Enter');
-    expect(Math.round(await width(page, 'due'))).toBe(136);
+    expect(Math.round(await width(page, 'due'))).toBe(152);
     expect(await stored(page)).toEqual({}); // equal to the default: nothing stored
     await page.keyboard.press('Shift+F10');
     await item(page, 'narrow').focus();
@@ -274,8 +274,8 @@ test.describe('Column header menu (#207)', () => {
     await expect(item(page, 'reset')).not.toHaveAttribute('aria-disabled', 'true');
     await item(page, 'reset').focus();
     await page.keyboard.press('Enter');
-    await expect.poll(async () => Math.round(await width(page, 'due'))).toBe(136);
-    await expect(note(page)).toHaveText('Due column 136 pixels');
+    await expect.poll(async () => Math.round(await width(page, 'due'))).toBe(152);
+    await expect(note(page)).toHaveText('Due column 152 pixels');
     expect(await stored(page)).toEqual({});
     await expect(sortButton(page, 'due')).toBeFocused();
 
@@ -344,7 +344,7 @@ test.describe('Column header menu (#207)', () => {
     await expect(item(page, 'widen')).toBeVisible();
     await page.keyboard.press('Escape');
 
-    // Widen until the maximum (Due 200 px: 8 steps of 8 px from 136 reach 200), then Widen is off.
+    // Widen until the maximum (Due 200 px: 8 steps of 8 px from 152 reach 200), then Widen is off.
     for (let i = 0; i < 8; i++) {
       await sortButton(page, 'due').focus();
       await page.keyboard.press('Shift+F10');

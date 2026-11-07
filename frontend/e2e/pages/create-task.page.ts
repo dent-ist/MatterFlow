@@ -57,7 +57,7 @@ export class CreateTaskPage {
     this.requestDetails = page.locator('[data-request-details]');
     this.sensitiveBanner = page.locator('[data-sensitive-banner]');
     this.pasteBox = page.getByRole('textbox', { name: 'Paste Email Text' });
-    this.fillFromPasted = page.getByRole('button', { name: /Fill from pasted text/ });
+    this.fillFromPasted = page.getByRole('button', { name: /Fill from Pasted Text/ });
   }
 
   async open(query = ''): Promise<void> {

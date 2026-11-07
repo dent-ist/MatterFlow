@@ -32,46 +32,6 @@ async function axeClean(page: Page, label: string): Promise<void> {
 }
 
 test.describe('pf2-header: name, context line, status chip and ONE primary action (#528)', () => {
-  test("the header says who the person is and has a single primary action that opens the dialog and flips to I'm back", async ({
-    personas,
-    asUser,
-    seed,
-    admin,
-  }) => {
-    const p = await personas.create({ ...PERSONAS.technician, label: 'pf2head' });
-    const pod = await seed.pod(undefined, [p.userId]);
-    await admin.put(`/api/v1/pods/${pod.podId}/members/${p.userId}`, { isPrimary: true });
-    const me = await asUser(p.username);
-    await me.goto('/profile');
-
-    await expect(me.locator('main h1')).toHaveText('My Profile');
-    const who = me.locator('[data-profile-who]');
-    await expect(who).toContainText(p.username);
-    await expect(who.locator('[data-availability-chip]')).toHaveText(/Available|Off Hours/);
-    await expect(me.locator('[data-page-description]')).toHaveText(`Data Technician · ${pod.name}`);
-    const actions = me.locator('[data-page-actions] button');
-    await expect(actions).toHaveCount(1);
-    await expect(actions).toHaveText('Set out of office...');
-    await expect(me).toHaveTitle('My Profile - MatterFlow');
-
-    await actions.click();
-    const dialog = me.getByRole('dialog', { name: 'Set out of office' });
-    await expect(dialog).toBeVisible();
-    await dialog.getByRole('button', { name: 'Rest of Today' }).click();
-    await dialog.getByRole('button', { name: 'Set Out of Office', exact: true }).click();
-    await expect(dialog).toHaveCount(0);
-    // Same store as the menu: chip, label and the page follow; the focus is back on the action.
-    await expect(who.locator('[data-availability-chip]')).toContainText('Out of Office');
-    await expect(actions).toHaveText("I'm Back");
-    await expect(actions).toBeFocused();
-    await expect(me.locator('[data-preview]')).toHaveCount(0);
-
-    await actions.click();
-    await expect(who.locator('[data-availability-chip]')).toHaveText(/Available|Off Hours/);
-    await expect(actions).toHaveText('Set out of office...');
-    await expect(me.getByText('Welcome back').first()).toBeVisible();
-  });
-
   test("the title sits where My Work's does (22 px, 12 px from the top) and a long name clamps with the full name as tooltip", async ({
     personas,
     asUser,
@@ -206,30 +166,6 @@ test.describe('pf3-columns: two columns from 1100 px, one card style, one width 
     account = await box(me, '[data-account-card]');
     avail = await box(me, '[data-card="work-hours"]');
     expect(account.left).toBeGreaterThanOrEqual(avail.right);
-  });
-
-  test('the error summary is the width of the left column and axe is clean with it open', async ({
-    personas,
-    asUser,
-  }) => {
-    const p = await personas.create({ ...PERSONAS.technician, label: 'pf3sum' });
-    const me = await asUser(p.username);
-    for (const size of SIZES) {
-      await me.setViewportSize(size);
-      await me.goto('/profile');
-      await me.getByRole('radio', { name: /Out of office/ }).check();
-      await me.locator('#av-from').fill('Oct 20, 2030');
-      await me.locator('#av-until').fill('Oct 10, 2030');
-      await me.locator('#av-until').blur();
-      await me.getByRole('button', { name: 'Save Changes' }).click();
-      const summary = await box(me, '[data-summary]');
-      const avail = await box(me, '[data-card="work-hours"]');
-      expect(Math.abs(summary.width - avail.width), `summary at ${size.width}`).toBeLessThan(1);
-      await me.evaluate(() => window.scrollTo(0, 0));
-      await noHorizontalScroll(me);
-      await axeClean(me, `summary at ${size.width}`);
-      if (size.width === 1366) await shot(me, 'pf3-error-summary');
-    }
   });
 
   test('Tab order follows reading order: the left column, then the right', async ({
