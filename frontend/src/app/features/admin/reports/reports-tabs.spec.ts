@@ -275,7 +275,8 @@ describe('ReportsHealthTab server procedures warning (#1292)', () => {
         of({
           enabled: true,
           state: 'Ready',
-          message: "Report login 'mf_reports': writes denied. Warning: the login can still run 7 extended procedure(s) in master.",
+          message:
+            "Report login 'mf_reports': writes denied. Warning: the login can still run 7 extended procedure(s) in master.",
           login: {
             loginName: 'mf_reports',
             writesDenied: true,

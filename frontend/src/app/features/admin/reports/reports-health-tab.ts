@@ -24,9 +24,11 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
       }
       @if (status(); as s) {
         <p class="rh__state" data-state>
-          <mf-badge [tone]="s.enabled && s.login?.serverProceduresDenied !== false ? 'success' : 'warning'" data-chip>{{
-            s.enabled ? 'Ready' : 'Not ready'
-          }}</mf-badge>
+          <mf-badge
+            [tone]="s.enabled && s.login?.serverProceduresDenied !== false ? 'success' : 'warning'"
+            data-chip
+            >{{ s.enabled ? 'Ready' : 'Not ready' }}</mf-badge
+          >
           {{ s.message }}
         </p>
         @if (s.login; as l) {
