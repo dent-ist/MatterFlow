@@ -501,3 +501,58 @@ Reviewed: RG commits 5cd0b24, 3816946, 7e4a637, d7c8642, ba7e0bb on `origin/repo
 | O6 Lookups for run-only roles | Open, unchanged (needs the reports-owned lookup endpoint). |
 | O7 No result snapshots | Open, unchanged. |
 | O3, O5 | Built as yes; confirm. O1 decided. |
+
+---
+
+## 15. Review 3: export, saved views, sort by position, grid fixes, 2026-11-07
+
+Reviewed: RJ 8e50bfe (#1288), 3bfac85 and 3e54831 (#721, #722), RI 594c52c to 1a3d79e (#1286, #1287, #1289, #1290) on `origin/reports`; 30 mocked-API JPEGs (`evidence/2026-11-07-reports-721`, `-722`, `-1288`, `-1286`, `-1287`, `-1290`) at 1366 and 1920, plus the code. No stack run (no report login). Not checked by me in a browser: keyboard use of the Saved Views menu and dialogs, screen-reader output, the file download itself and the CSV bytes (RJ's unit and e2e specs cover them).
+
+**Verdict: pass with one small fix** (#1291, columns with the same name). Passing:
+- **Export CSV** (#721): right end of the toolbar after Columns, download icon, tooltips "Exports all 2,380 rows." / "Exports the first 50,000 rows." (filtered and empty variants as in section 5.1), disabled with no rows, retry toast on failure, success toast "Exported 2,380 rows to CSV.", truncated toast "Exported 50,000 rows (truncated)."; the result is never dropped; expired result shows the section 3.5 banner.
+- **Saved Views** (#722): menu with Default, views (check on the applied one, Rename and Delete icons on hover or focus), Save View, Save as New View..., Set as Default / Remove Default; "(modified)" after the name; Save View dialog with "View name (required)" and "Use as my default view"; duplicate message "You already have a view with this name."; Delete confirm "Delete "Weekly review"? This can't be undone."; the skipped-columns banner with Dismiss; a default view applies to a new result without running anything; views stored per report and person; 25-view limit text in code.
+- **#1288**: a column named `Total, USD` sorts from its header; "Sorted by Total, USD" and Reset Sort are right; one sort column.
+- **RI's fixes**: #1286 pager visible at 1366x768 with the 50,000-row banner, a 3-line description, a chip row and even with the dev banner (frame minimum 18rem); with the parameter form open the page scrolls, as intended. #1287 `Updated` (instant, 09:05 AM) and `Written` (no zone, 02:05 PM) differ as ruled; the explanatory sentence under the Query hint in the editor is right (Help text is read by the viewers). #1289 words by kind are in the shared sorted line (`kinds`, `yesno`). #1290 banner "Remove a filter to add another." with Dismiss, chips show (20).
+
+### Rulings on RJ's deviations
+
+| # | Ruling |
+|---|---|
+| 1 Saved Views button position | **Accept** in the shared toolbar's view slot after Filters (left group); the spec's "first control" was written before the shared toolbar order was checked. Export and Columns stay at the right. |
+| 2 Delete button | **Accept "Delete View"**; D-34 says `[Cancel] ... [<Verb> <Thing>]`. My table row said "Delete" and is corrected above. |
+| 3 Failed Save or Rename | **Accept**: a failed action inside a dialog keeps the dialog open with "Couldn't save the view." in the footer; the toast with Retry is for actions that have no dialog. |
+| 4 Truncated-export toast detail line | **Accept** ("The result was truncated at 50,000 rows. Narrow the parameters to export the rest."); the banner above the grid says the same thing earlier, but the toast is what the person sees at download time. |
+| 5 No Save View item without an applied view | **Accept**: with nothing applied there is nothing to overwrite; "Save as New View..." is the only item. Save View appears (greyed with "No changes to save." when unchanged) once a view is applied. |
+| 6 Toast `action` | **Accept**; a small generic addition to the shared toast, same look as the other toasts. |
+| 7 Two columns with the same name | **Fix: #1291** (backend and frontend). Rule: export, filter and sort identify a column by position `#<n>`; the CSV header repeats the names as they are, no suffix. |
+| 8 View with widths for only some columns | **Accept**: the shared grid does not stretch columns to the frame (normal shared resize behaviour); a view saved by the UI keeps the widths of what the person set. |
+
+### Rulings on RI's deviations
+
+| # | Ruling |
+|---|---|
+| 9 Frame minimum 18rem in fill mode | **Accept**; the pager stays reachable on a 768 px screen even with a tall header, and the grid body still scrolls inside its frame. |
+| 10 21st filter text stays in its box | **Accept** (the shared text filter keeps its own draft); the banner and the "Filters (20)" count say the filter was not applied. Revisit only if testers are confused. |
+| 11 Mixed commits | **Accept**; 1a3d79e is the tested state and history is not rewritten. |
+
+### Notes, no issue
+
+- A report with no parameters shows "Run Report" on its own row above the toolbar (about 48 px of height at 1366). Section 3.2 wanted it in the toolbar row. Accept for now; move it into the toolbar row at the left if a later pass needs the room.
+- The "Other Filters" button next to Filters is the shared button for filters on columns that a view has hidden; correct.
+
+### Readiness to close (my view; owner questions noted)
+
+| Issue | State |
+|---|---|
+| #718 listing | Ready to close (favourites and Recent belong to #723). |
+| #719 run page | **Not yet**: lookups for matter, client and user still use the app's own lookup APIs, so a run-only person cannot fill a required client parameter (owner question O6). Close after O6 is answered and, if yes, the reports-owned lookup endpoint exists; or close and open a new issue for it. |
+| #720 result grid | Ready to close. |
+| #721 CSV export | Ready to close; #1291 is an edge case. O4 (comma and BOM only) is built as proposed. |
+| #722 saved views | Ready to close. |
+| #1282, #1283, #1284 | Ready to close. |
+| #1286, #1287, #1289, #1290 | Ready to close. |
+| #1288 | Ready to close; the duplicate-name follow-up is #1291. |
+| #1285 (Users rows, not Reports) | Not part of this review. |
+| #723 favourites and recent | Not built yet. |
+
+Owner questions still open: O2 (year in dates, built as yes), O4 (built as yes), O6, O7; O3 and O5 built as yes, confirm.
