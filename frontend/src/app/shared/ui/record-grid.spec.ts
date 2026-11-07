@@ -154,3 +154,56 @@ describe('record grid extension points (#1245)', () => {
     expect(host.clicked).toEqual([]);
   });
 });
+
+@Component({
+  imports: [RecordGrid, RecordCell],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <mf-record-grid
+      label="Icon list"
+      noun="things"
+      [grid]="grid"
+      [rows]="rows"
+      [rowKey]="key"
+      loadState="ready"
+      [empty]="false"
+    >
+      <ng-template mfCell="star" let-r
+        ><td data-star>{{ r.name }}</td></ng-template
+      >
+      <ng-template mfCell="name" let-r
+        ><td>{{ r.name }}</td></ng-template
+      >
+    </mf-record-grid>
+  `,
+})
+class IconHost {
+  protected readonly defs = signal<readonly RecordGridColumn[]>([
+    { key: 'star', label: 'Favourite', locked: true, pinned: true, iconOnly: true, width: '44px' },
+    { key: 'name', label: 'Name', locked: true, width: '100%' },
+  ]);
+  readonly grid = new RecordGridState('spec-icon-grid', this.defs);
+  readonly rows = ROWS.slice(0, 2);
+  readonly key = (r: Row): number => r.id;
+}
+
+describe('record grid icon-only column (#723)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({
+      providers: [provideFakeMe(new FakeMeApi(withPermissions()))],
+    });
+  });
+
+  it('reads the heading to a screen reader without drawing it, and opts the column out of resize and reorder', () => {
+    const fixture = TestBed.createComponent(IconHost);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const head = el.querySelector<HTMLElement>('th[data-col="star"]');
+    expect(head?.querySelector('.pg-sr')?.textContent?.trim()).toBe('Favourite');
+    expect(head?.hasAttribute('data-no-resize')).toBe(true);
+    expect(head?.hasAttribute('data-no-reorder')).toBe(true);
+    expect(el.querySelector('th[data-col="name"]')?.hasAttribute('data-no-resize')).toBe(false);
+    expect(el.querySelectorAll('td[data-star]').length).toBe(2);
+  });
+});

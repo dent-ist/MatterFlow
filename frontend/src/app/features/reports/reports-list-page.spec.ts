@@ -1,8 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { ReportsClient } from '../../api/generated/api-client';
+import { ReportFavouritesClient, ReportsClient } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Permission } from '../../core/auth/permissions';
+import { NotificationService } from '../../core/notify/notification.service';
 import { ddChoose } from '../../testing/dropdown-testing.spec-util';
 import {
   FakeMeApi,
@@ -18,8 +19,9 @@ import { aCategory, aListItem } from './reports-testing';
 
 type Mock = ReturnType<typeof vi.fn>;
 
-describe('ReportsListPage (#718)', () => {
+describe('ReportsListPage (#718, #723)', () => {
   let api: Record<'listMyReports', Mock>;
+  let fav: Record<'addReportFavourite' | 'removeReportFavourite' | 'listRecentReports', Mock>;
   let fixture: ComponentFixture<ReportsListPage>;
   let query: ReturnType<typeof fakeQuery>;
   const el = (): HTMLElement => fixture.nativeElement;
@@ -65,6 +67,7 @@ describe('ReportsListPage (#718)', () => {
     permissions: Permission[] = ['Report.Run'],
     response: unknown = twoCategories(),
     params: Record<string, string> = {},
+    recent: unknown = { reports: [] },
   ): Promise<void> {
     localStorage.clear();
     query = fakeQuery();
@@ -73,12 +76,20 @@ describe('ReportsListPage (#718)', () => {
         .fn()
         .mockReturnValue(response instanceof Error ? apiError(500, {}) : ok(response)),
     };
+    fav = {
+      addReportFavourite: vi.fn().mockReturnValue(ok(undefined)),
+      removeReportFavourite: vi.fn().mockReturnValue(ok(undefined)),
+      listRecentReports: vi
+        .fn()
+        .mockReturnValue(recent instanceof Error ? apiError(500, {}) : ok(recent)),
+    };
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
         query.provider,
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: ReportsClient, useValue: api },
+        { provide: ReportFavouritesClient, useValue: fav },
       ],
     });
     vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
@@ -102,18 +113,20 @@ describe('ReportsListPage (#718)', () => {
       expect(names()).toEqual(['Overdue tasks', 'Tasks per matter', 'Billing by client']);
     });
 
-    it('shows the heading, the number of reports in the count chip, and the four columns of the spec without a star, a Run button or a menu', () => {
+    it('shows the heading, the number of reports in the count chip, and the columns of the spec (the star heading is only read) without a Run button or a menu', () => {
       expect(q('h1').textContent).toContain('Reports');
       expect(q('[data-list-count]').textContent).toContain('3');
       expect(all('th[data-col]').map((h) => h.textContent!.trim())).toEqual([
+        'Favourite',
         'Report',
         'Parameters',
         'Last Run',
       ]);
+      expect(q('th[data-col="star"] .pg-sr').textContent).toContain('Favourite');
       expect(el().querySelector('[data-overflow]')).toBeNull();
       expect(
         Array.from(el().querySelectorAll('button')).some((b) =>
-          /run report|favourite/i.test(b.textContent ?? b.getAttribute('aria-label') ?? ''),
+          /run report/i.test(b.textContent ?? b.getAttribute('aria-label') ?? ''),
         ),
       ).toBe(false);
     });
@@ -223,5 +236,212 @@ describe('ReportsListPage (#718)', () => {
     await settle(fixture);
     expect(names()).toHaveLength(3);
     expect(api.listMyReports).toHaveBeenCalledTimes(2);
+  });
+  describe('favourites (#723)', () => {
+    const withFavourite = () => {
+      const list = twoCategories();
+      list.categories[0].reports[1] = aListItem({
+        reportId: 6,
+        name: 'Tasks per matter',
+        description: undefined,
+        sortOrder: 2,
+        isFavourite: true,
+      });
+      return list;
+    };
+    const star = (name: string): HTMLButtonElement =>
+      q(`td[data-report="${name}"]`)
+        .closest('tr')!
+        .querySelector<HTMLButtonElement>('[data-favourite]')!;
+
+    it('draws a text-less star button in the first column of every row, named by the action and the report, with the state in the icon and the tooltip', async () => {
+      await create(['Report.Run'], withFavourite());
+      expect(all('[data-favourite]')).toHaveLength(3);
+      expect(star('Overdue tasks').getAttribute('aria-label')).toBe(
+        'Add Overdue tasks to favourites',
+      );
+      expect(star('Overdue tasks').textContent!.trim()).toBe('');
+      expect(star('Overdue tasks').querySelector('.pi-star')).not.toBeNull();
+      expect(star('Tasks per matter').getAttribute('aria-label')).toBe(
+        'Remove Tasks per matter from favourites',
+      );
+      expect(star('Tasks per matter').querySelector('.pi-star-fill')).not.toBeNull();
+      expect(star('Tasks per matter').hasAttribute('data-on')).toBe(true);
+      const row = q('td[data-report="Overdue tasks"]').closest('tr')!;
+      expect(row.firstElementChild!.classList).toContain('rl-star');
+    });
+
+    it('adds a favourite at once, calls PUT, announces it politely and says nothing in a toast', async () => {
+      await create();
+      const error = vi.spyOn(TestBed.inject(NotificationService), 'error');
+      star('Overdue tasks').click();
+      await settle(fixture);
+      expect(fav.addReportFavourite).toHaveBeenCalledWith(5);
+      expect(star('Overdue tasks').getAttribute('aria-label')).toBe(
+        'Remove Overdue tasks from favourites',
+      );
+      expect(q('[data-favourite-live]').textContent).toContain(
+        'Overdue tasks added to favourites.',
+      );
+      expect(error).not.toHaveBeenCalled();
+      // The grid does not reorder.
+      expect(names()).toEqual(['Overdue tasks', 'Tasks per matter', 'Billing by client']);
+    });
+
+    it('removes a favourite with DELETE', async () => {
+      await create(['Report.Run'], withFavourite());
+      star('Tasks per matter').click();
+      await settle(fixture);
+      expect(fav.removeReportFavourite).toHaveBeenCalledWith(6);
+      expect(star('Tasks per matter').getAttribute('aria-label')).toBe(
+        'Add Tasks per matter to favourites',
+      );
+      expect(q('[data-favourite-live]').textContent).toContain(
+        'Tasks per matter removed from favourites.',
+      );
+    });
+
+    it("puts the star back and shows the toast Couldn't update favourites. when the call fails", async () => {
+      await create();
+      const error = vi.spyOn(TestBed.inject(NotificationService), 'error');
+      fav.addReportFavourite.mockReturnValue(apiError(500, {}));
+      star('Overdue tasks').click();
+      await settle(fixture);
+      expect(star('Overdue tasks').getAttribute('aria-label')).toBe(
+        'Add Overdue tasks to favourites',
+      );
+      expect(error).toHaveBeenCalledWith("Couldn't update favourites.");
+    });
+
+    it('filters to the favourites with the toolbar chip (aria-pressed), drops the empty bands and does not duplicate a row', async () => {
+      await create(['Report.Run'], withFavourite());
+      const chip = (): HTMLButtonElement =>
+        q('[data-favourites-filter] button[data-key="favourites"]');
+      expect(chip().getAttribute('aria-pressed')).toBe('false');
+      expect(chip().textContent).toContain('Favourites');
+      chip().click();
+      await settle(fixture);
+      const navigate = TestBed.inject(Router).navigate as unknown as Mock;
+      expect(JSON.stringify(navigate.mock.calls.at(-1))).toContain('"favourites":"true"');
+      query.set({ favourites: 'true' });
+      await settle(fixture);
+      expect(chip().getAttribute('aria-pressed')).toBe('true');
+      expect(names()).toEqual(['Tasks per matter']);
+      expect(groups()).toEqual(['Task follow-up (1)']);
+    });
+
+    it('says No reports match these filters. with Clear Filters when the person has no favourite and the chip is on', async () => {
+      await create(['Report.Run'], twoCategories(), { favourites: 'true' });
+      expect(q('[data-filter-empty]').textContent).toContain('No reports match these filters.');
+      expect(el().querySelector('[data-search-empty]')).toBeNull();
+    });
+
+    it('counts the chip as an active filter: Clear Filters shows and the search-only empty state does not take over', async () => {
+      await create(['Report.Run'], withFavourite(), { favourites: 'true', q: 'zzz' });
+      expect(el().querySelector('[data-search-empty]')).toBeNull();
+      expect(q('[data-filter-empty]')).not.toBeNull();
+      expect(el().querySelector('[data-clear-filters]')).not.toBeNull();
+    });
+  });
+
+  describe('recent reports (#723)', () => {
+    const recent = (n = 3) => ({
+      reports: [
+        {
+          reportId: 7,
+          name: 'Billing by client',
+          categoryName: 'Finance',
+          lastRunAtUtc: '2026-11-07T10:00:00Z',
+        },
+        {
+          reportId: 5,
+          name: 'Overdue tasks',
+          categoryName: 'Task follow-up',
+          lastRunAtUtc: '2026-11-06T10:00:00Z',
+        },
+        {
+          reportId: 6,
+          name: 'Tasks per matter',
+          categoryName: 'Task follow-up',
+          lastRunAtUtc: '2026-11-05T10:00:00Z',
+        },
+      ].slice(0, n),
+    });
+    const chips = (): string[] => all('[data-recent]').map((c) => c.textContent!.trim());
+
+    it('asks for five, then shows the chips newest first as links to the run page above the grid', async () => {
+      await create(['Report.Run'], twoCategories(), {}, recent());
+      expect(fav.listRecentReports).toHaveBeenCalledWith(5);
+      expect(q('[data-recent-line]').textContent).toContain('Recent');
+      expect(chips()).toEqual(['Billing by client', 'Overdue tasks', 'Tasks per matter']);
+      expect(all('[data-recent]').map((c) => c.getAttribute('href'))).toEqual([
+        '/reports/7',
+        '/reports/5',
+        '/reports/6',
+      ]);
+      const line = q('mf-report-recent-line');
+      const grid = q('mf-record-grid');
+      expect(line.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('is not rendered at all when the person has run nothing', async () => {
+      await create(['Report.Run'], twoCategories(), {}, { reports: [] });
+      expect(el().querySelector('mf-report-recent-line')).toBeNull();
+    });
+
+    it('is left out while a search or a filter is active, and while nothing is assigned', async () => {
+      await create(['Report.Run'], twoCategories(), {}, recent());
+      expect(chips()).toHaveLength(3);
+      query.set({ q: 'overdue' });
+      await settle(fixture);
+      expect(el().querySelector('mf-report-recent-line')).toBeNull();
+      query.set({ q: '', favourites: 'true' });
+      await settle(fixture);
+      expect(el().querySelector('mf-report-recent-line')).toBeNull();
+      query.set({ favourites: '' });
+      await settle(fixture);
+      expect(chips()).toHaveLength(3);
+      fixture.destroy();
+      TestBed.resetTestingModule();
+      await create(['Report.Run'], { categories: [], totalReports: 0 }, {}, recent());
+      expect(el().querySelector('mf-report-recent-line')).toBeNull();
+    });
+
+    it('never shows more than five chips and skips a report the list does not hold', async () => {
+      const many = {
+        reports: [1, 2, 3, 4, 5, 6, 7].map((id) => ({
+          reportId: id === 4 ? 99 : id,
+          name: `R${id}`,
+          categoryName: 'C',
+          lastRunAtUtc: '2026-11-07T10:00:00Z',
+        })),
+      };
+      const list = {
+        totalReports: 6,
+        categories: [
+          aCategory({
+            reports: [1, 2, 3, 5, 6, 7].map((id) => aListItem({ reportId: id, name: `R${id}` })),
+          }),
+        ],
+      };
+      await create(['Report.Run'], list, {}, many);
+      expect(chips()).toEqual(['R1', 'R2', 'R3', 'R5', 'R6']);
+    });
+
+    it('leaves the line out and says nothing when the recent call fails', async () => {
+      await create(['Report.Run'], twoCategories(), {}, new Error('x'));
+      expect(el().querySelector('mf-report-recent-line')).toBeNull();
+      expect(names()).toHaveLength(3);
+    });
+
+    it('puts the category and the last run into the tooltip text of a chip', async () => {
+      await create(['Report.Run'], twoCategories(), {}, recent(1));
+      const chip = q('[data-recent="7"]');
+      chip.dispatchEvent(new Event('mouseenter'));
+      const tip = document.querySelector('[role="tooltip"]');
+      expect(tip?.textContent).toContain('Finance');
+      expect(tip?.textContent).toContain('Last run 11/07 ');
+      chip.dispatchEvent(new Event('mouseleave'));
+    });
   });
 });
