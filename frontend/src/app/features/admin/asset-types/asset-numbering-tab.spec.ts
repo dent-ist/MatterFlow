@@ -205,7 +205,7 @@ describe('AssetNumberingTab (#1297)', () => {
       expect(document.body.textContent).toContain(
         'Numbers already assigned stay and are never used again',
       );
-      document.querySelector<HTMLButtonElement>('[data-confirm-primary]')!.click();
+      document.querySelector<HTMLButtonElement>('[data-confirm-primary] button')!.click();
       await settle(fixture);
       expect(api.updateAssetType.mock.calls[0][1].numbering).toEqual({ enabled: false });
     });

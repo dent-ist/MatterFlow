@@ -155,7 +155,7 @@ test.describe('Asset numbering (#1297)', () => {
       await expect(page.locator('[data-next-number-confirm]')).toContainText(
         `${matter.matterRef}_120`,
       );
-      await page.locator('[data-confirm-primary]').click();
+      await page.locator('[data-confirm-primary] button').click();
       await expect(page.locator(`[data-next-of="${matter.matterId}"]`)).toHaveText(
         `${matter.matterRef}_120`,
       );

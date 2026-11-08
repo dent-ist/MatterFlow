@@ -11,6 +11,7 @@ import {
 } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
 import {
+  AssetListItem,
   AssetResponse,
   AssetTypeResponse,
   AssetTypesClient,
@@ -129,7 +130,10 @@ describe('Assets pages', { timeout: 20_000 }, () => {
   let firstType: Partial<AssetTypeResponse> = {};
   /** Overrides of the asset the mock returns (an asset with a number, #1297). */
   let assetOver: Partial<AssetResponse> = {};
+  /** The rows the list mock returns instead of the two defaults. */
+  let listItems: AssetListItem[] | null = null;
   beforeEach(() => {
+    listItems = null;
     firstType = {};
     assetOver = {};
   });
@@ -149,13 +153,15 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       listAssets: vi.fn().mockReturnValue(
         ok(
           pageOfAssets(
-            anAssetListItem(),
-            anAssetListItem({
-              assetId: 10,
-              displayName: 'Old room',
-              isActive: false,
-              dispositionCode: 'INACTIVE',
-            }),
+            ...(listItems ?? [
+              anAssetListItem(),
+              anAssetListItem({
+                assetId: 10,
+                displayName: 'Old room',
+                isActive: false,
+                dispositionCode: 'INACTIVE',
+              }),
+            ]),
           ),
         ),
       ),
@@ -349,7 +355,6 @@ describe('Assets pages', { timeout: 20_000 }, () => {
 
       it('is a default column after Name, with External Reference off by default, only while an active numbered type exists', async () => {
         firstType = { numbering: NUMBERING };
-        assets.listAssets.mockReturnValue(ok(pageOfAssets()));
         await create(['Asset.View', 'Matter.View']);
         expect(headers()).toEqual([
           'Type',
@@ -370,24 +375,19 @@ describe('Assets pages', { timeout: 20_000 }, () => {
 
       it('shows the number in mono type with the whole number as tooltip, Not assigned for an old asset of a numbered type, and nothing for another type', async () => {
         firstType = { numbering: NUMBERING };
-        assets.listAssets.mockReturnValue(
-          ok(
-            pageOfAssets(
-              anAssetListItem({ assetNumber: '00343-00012-M-001' }),
-              anAssetListItem({ assetId: 11, displayName: 'Old one' }),
-              anAssetListItem({ assetId: 12, displayName: 'Other', assetTypeId: 5 }),
-            ),
-          ),
-        );
+        listItems = [
+          anAssetListItem({ assetNumber: '00343-00012-M-001' }),
+          anAssetListItem({ assetId: 11, displayName: 'Old one' }),
+          anAssetListItem({ assetId: 12, displayName: 'Other', assetTypeId: 5 }),
+        ];
         await create(['Asset.View', 'Matter.View']);
-        const cells = Array.from(el().querySelectorAll('tbody tr')).map((r) =>
-          r.querySelector('td[data-asset-number]'),
-        );
-        const text = cells[0]!.querySelector<HTMLElement>('[data-asset-number-text]')!;
+        const cell = (id: number) =>
+          el().querySelector(`tbody tr[data-record-id="${id}"] td[data-asset-number]`)!;
+        const text = cell(9).querySelector<HTMLElement>('[data-asset-number-text]')!;
         expect(text.textContent).toBe('00343-00012-M-001');
         expect(text.getAttribute('title')).toBe('00343-00012-M-001');
-        expect(cells[1]!.textContent!.trim()).toBe('Not assigned');
-        expect(cells[2]!.textContent!.trim()).toBe('');
+        expect(cell(11).textContent!.trim()).toBe('Not assigned');
+        expect(cell(12).textContent!.trim()).toBe('');
       });
     });
 
@@ -1177,6 +1177,12 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         );
         await chooseType('4');
         type('#asset-name', 'Folder');
+        const workspace = el().querySelector<HTMLInputElement>(
+          '[data-type-fields] input[type=text]',
+        )!;
+        workspace.value = 'WS-8841';
+        workspace.dispatchEvent(new Event('input'));
+        await settle(fixture);
         await submit();
         const toast = TestBed.inject(NotificationService);
         expect(toast.toasts().some((t) => t.detail === 'Asset Number 00343-00012-M-001')).toBe(
