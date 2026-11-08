@@ -28,7 +28,7 @@ test.describe('Matter fields: dialog, list and Matter Lists (#1301)', () => {
     await page.goto(`/matters/${matter.matterId}`);
     await page.getByRole('button', { name: 'Edit' }).first().click();
     const dialog = page.locator('.mf-formdlg');
-    await expect(dialog.locator('[data-panel-title]')).toHaveText('Edit Matter');
+    await expect(dialog.locator('[data-panel-title]')).toContainText('Edit Matter'); // the title carries the CM Number as its subtitle
     await expect(dialog.locator('#matter-type')).toContainText('Not Set');
 
     await dialog.locator('#matter-dms-path').fill('C:\\Matters\\1234');
@@ -63,7 +63,7 @@ test.describe('Matter fields: dialog, list and Matter Lists (#1301)', () => {
     expect(saved.dfsPath).toBe('https://dfs.example.com/m/1234');
   });
 
-  test('Matters list: the two columns are off by default, can be turned on, and Not Set filters', async ({
+  test('Matters list: the two columns are on by default (Primary PM, Open Tasks, Overdue off), and Not Set filters', async ({
     page,
     seed,
   }) => {
@@ -86,12 +86,19 @@ test.describe('Matter fields: dialog, list and Matter Lists (#1301)', () => {
     await page.setViewportSize(SIZES[1]);
     await page.goto(`/matters?name=${token}`);
     const heads = page.locator('thead th');
-    await expect(heads.filter({ hasText: 'Matter Type' })).toHaveCount(0);
-    await expect(heads.filter({ hasText: 'Current State' })).toHaveCount(0);
+    // Owner decision 2026-11-08 (spec 6.1): Matter Type and Current State on by default; the PM and count columns off.
+    await expect(heads.filter({ hasText: 'Matter Type' })).toHaveCount(1);
+    await expect(heads.filter({ hasText: 'Current State' })).toHaveCount(1);
+    await expect(heads.filter({ hasText: 'Primary PM' })).toHaveCount(0);
+    await expect(heads.filter({ hasText: 'Open Tasks' })).toHaveCount(0);
+    await expect(heads.filter({ hasText: 'Overdue' })).toHaveCount(0);
 
     await page.goto(`/matters?name=${token}&matterTypeNone=true`);
     await expect(page.locator('tbody tr', { hasText: `Untyped ${token}` })).toHaveCount(1);
-    await expect(page.locator('tbody tr', { hasText: `Typed ${token}` })).toHaveCount(0);
+    // Case-sensitive: "Untyped" contains "typed" (hasText with a string ignores case).
+    await expect(
+      page.locator('tbody tr', { hasText: new RegExp(`\\bTyped ${token}`) }),
+    ).toHaveCount(0);
     await page.goto(`/matters?name=${encodeURIComponent(`Type ${token}`)}`);
     await expect(page.locator('tbody tr', { hasText: `Typed ${token}` })).toHaveCount(1);
   });
@@ -105,9 +112,9 @@ test.describe('Matter fields: dialog, list and Matter Lists (#1301)', () => {
     await page.goto('/admin/matter-types');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Matter Lists');
     await expect(page.getByRole('tab')).toHaveText([
-      /^Matter Types/,
-      /^Current States/,
-      /^Team Titles/,
+      /Matter Types \(\d+\)/,
+      /Current States \(\d+\)/,
+      /Team Titles \(\d+\)/,
     ]);
     await page.getByRole('button', { name: 'New Matter Type' }).click();
     await page.locator('#matter-list-name').fill(`Antitrust ${token}`);
@@ -120,6 +127,7 @@ test.describe('Matter fields: dialog, list and Matter Lists (#1301)', () => {
     await page.getByRole('menuitem', { name: 'Deactivate' }).click();
     await page.getByRole('button', { name: 'Deactivate Matter Type' }).click();
     await expect(page.getByText('Matter type deactivated')).toBeVisible();
+    await expect(row).toContainText('Inactive'); // the list has reloaded; a menu opened earlier is closed by the re-render
     await row.locator('[data-overflow]').click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'Delete Matter Type' }).click();

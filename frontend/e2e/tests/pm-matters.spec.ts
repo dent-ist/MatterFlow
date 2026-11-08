@@ -63,6 +63,7 @@ test.describe('Matters list: project managers', () => {
     const fx = await pmFixtures(seed, personas);
     const page = await asUser(fx.pmA.username);
     await page.goto(`/matters?name=${fx.token}`);
+    await showSecondaryPm(page); // Primary PM is off by default (epic #1298); the last assertion reads that column
 
     await page.locator('[data-scope="mine"]').click();
     await expect(page).toHaveURL(/scope=mine/);
@@ -89,6 +90,7 @@ test.describe('Matters list: project managers', () => {
     const fx = await pmFixtures(seed, personas);
     const page = await asUser(fx.director.username);
     await page.goto(`/matters?name=${fx.token}`);
+    await showSecondaryPm(page); // Primary PM is off by default (epic #1298); the last assertion reads that column
 
     await page.locator('[data-select-mode]').click();
     await rowOf(page, 'No manager one').locator('[data-select-row]').check();

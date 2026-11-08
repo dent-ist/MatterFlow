@@ -30,7 +30,7 @@ test.describe('Matter page: Team tab and Details fields (#1301)', () => {
       .first()
       .click();
     const dialog = page.locator('.mf-formdlg');
-    await expect(dialog.locator('[data-panel-title]')).toHaveText('Add Team Member');
+    await expect(dialog.locator('[data-panel-title]')).toContainText('Add Team Member'); // the title carries the CM Number as its subtitle
     await dialog.getByRole('button', { name: 'Add Member' }).click();
     await expect(dialog).toContainText('Enter a name.');
     await expect(dialog).toContainText('Enter an email address.');
@@ -57,10 +57,13 @@ test.describe('Matter page: Team tab and Details fields (#1301)', () => {
       'This email is already on the team.',
     );
     await dialog.getByRole('button', { name: 'Cancel' }).click();
+    // The dialog is dirty: Cancel asks "You have unsaved changes. Discard them?" (spec 4.3) before it closes.
+    await dialog.getByRole('button', { name: 'Discard Changes' }).click();
+    await expect(dialog).toHaveCount(0);
 
     // Edit through the name button.
     await page.locator('button[data-member-name]').click();
-    await expect(dialog.locator('[data-panel-title]')).toHaveText('Edit Team Member');
+    await expect(dialog.locator('[data-panel-title]')).toContainText('Edit Team Member');
     await dialog.locator('#member-name').fill('Ann B. Lee');
     await dialog.getByRole('button', { name: 'Save Changes' }).click();
     await expect(page.getByText('Team member updated')).toBeVisible();
