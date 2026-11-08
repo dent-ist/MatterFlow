@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using MatterFlow.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -6,16 +5,10 @@ using Shouldly;
 
 namespace MatterFlow.SchemaTests;
 
-/// <summary>43-asset-disposition.sql (epic #851, issue #864): the disposition columns, the backfill from IsActive and the IsActive/disposition agreement.</summary>
+/// <summary>Asset disposition (epic #851, issue #864; baseline, formerly script 43): the disposition columns, the index, the guard trigger and the IsActive/disposition agreement.</summary>
 [Collection(SqlServerCollection.Name)]
 public class AssetDispositionSchemaTests(SqlServerFixture sql)
 {
-    private sealed class ScriptsBefore(int number) : IMigrationScriptSource
-    {
-        public IReadOnlyList<(string Name, string Content)> ReadAll() =>
-            [.. new EmbeddedMigrationScriptSource().ReadAll().Where(s => int.Parse(Regex.Match(s.Name, @"^\d+").Value) < number)];
-    }
-
     private static Task RunAsync(string cs, IMigrationScriptSource source) =>
         new SchemaMigrationRunner(cs, source, new MigrationsOptions { LockTimeoutSeconds = 60 }, NullLogger<SchemaMigrationRunner>.Instance).RunAsync();
 
@@ -40,21 +33,6 @@ public class AssetDispositionSchemaTests(SqlServerFixture sql)
         INSERT dbo.AssetType (Name) VALUES (N'Document Set');
         INSERT dbo.Asset (MatterId, AssetTypeId, DisplayName, IsActive) VALUES (1, 1, N'Live', 1), (1, 1, N'Retired', 0);
         """;
-
-    [Fact]
-    public async Task Existing_assets_migrate_and_inactive_ones_become_INACTIVE()
-    {
-        var cs = await sql.CreateDatabaseAsync();
-        await RunAsync(cs, new ScriptsBefore(43));
-        await ExecAsync(cs, Seed);
-
-        await RunAsync(cs, new EmbeddedMigrationScriptSource());
-
-        (await ExecAsync(cs, "SELECT COUNT(*) FROM dbo.Asset WHERE DisplayName = N'Live' AND DispositionCode = 'ACTIVE' AND IsActive = 1")).ShouldBe(1);
-        (await ExecAsync(cs, "SELECT COUNT(*) FROM dbo.Asset WHERE DisplayName = N'Retired' AND DispositionCode = 'INACTIVE' AND IsActive = 0")).ShouldBe(1);
-        (await ExecAsync(cs, "SELECT COUNT(*) FROM sys.indexes WHERE name = 'IX_Asset_Matter_Disposition' AND object_id = OBJECT_ID('dbo.Asset')")).ShouldBe(1);
-        (await ExecAsync(cs, "SELECT COUNT(*) FROM sys.triggers WHERE name = 'TR_Asset_Guard' AND is_disabled = 0")).ShouldBe(1);
-    }
 
     [Fact]
     public async Task IsActive_and_the_disposition_must_agree_and_only_the_four_codes_exist()

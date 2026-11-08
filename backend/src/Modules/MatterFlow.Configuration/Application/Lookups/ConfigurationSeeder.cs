@@ -123,7 +123,7 @@ public sealed class ConfigurationSeeder(DbContext db, ILogger<ConfigurationSeede
     {
         var present = await db.Set<TaskStatusLabel>().Select(s => s.StatusCode).ToListAsync(ct);
         foreach (var missing in TaskStatusCodes.All.Except(present, StringComparer.Ordinal))
-            logger.LogError("Status label row {Code} is missing; restore it from 07-configuration-basics.sql.", missing);
+            logger.LogError("Status label row {Code} is missing; restore it from 00-baseline.sql (the TaskStatusLabel seed).", missing);
     }
 }
 

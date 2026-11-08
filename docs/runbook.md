@@ -54,11 +54,11 @@ password in any setting.
 
 ## 3. Database and migrations
 
-- The scripts `db/scripts/NN-*.sql` are embedded in the API. The runner takes an application lock, applies pending scripts in order (each in one
+- The scripts `db/scripts/*.sql` (the baseline `00-baseline.sql` and the numbered scripts from 67) are embedded in the API; the old chain 01 to 66 in `db/scripts/archive/` is not. The runner takes an application lock, applies pending scripts in order (each in one
   transaction), verifies the checksums of applied scripts and records them in `dbo.SchemaMigration`. It runs **either** at startup before the host
   listens (`Migrations:Enabled=true`, any failure aborts the start) **or** as the separate `--migrate-only` command (section 7). Details: architecture 4.3.
 - The database itself must exist and be empty or already managed by this runner: `CREATE DATABASE MatterFlow;`.
-- Script `13-security-hardening.sql` creates the database roles `mf_app` (DML + EXECUTE, no DDL, `DENY UPDATE, DELETE, ALTER` on `dbo.AuditEvent`)
+- The baseline (formerly script `13-security-hardening.sql`) creates the database roles `mf_app` (DML + EXECUTE, no DDL, `DENY UPDATE, DELETE, ALTER` on `dbo.AuditEvent`)
   and `mf_migrator` (DDL + DML, audit rows still append-only). Because the roles only exist after the first migration, a fresh install is
   ordered: create database, **migrate-only**, map logins to roles (section 5, steps 2 to 4).
 - Audit protection in layers: the DENYs above; an INSTEAD OF trigger against UPDATE/DELETE; a permanently empty `dbo.AuditEventGuard` table whose
@@ -67,17 +67,31 @@ password in any setting.
 - Recommended, once, as a DBA (cannot run inside a migration transaction): `ALTER DATABASE MatterFlow SET READ_COMMITTED_SNAPSHOT ON WITH ROLLBACK IMMEDIATE;`
   (SEC-17; fewer reader/writer deadlocks).
 - Sizing for 300 users (memory, cores, `max server memory`, MAXDOP, file sizes) and what to watch: `docs/qa/performance-round-1.md`, section "Recommendations".
-- Applied scripts are immutable (checksum guard); fix forward with a new script. A `Success=0` row in `dbo.SchemaMigration` blocks startup and
+- Applied scripts, the baseline included after the first deployment, are immutable (checksum guard); fix forward with a new script (67 and up). A `Success=0` row in `dbo.SchemaMigration` blocks startup and
   `--migrate-only` until an operator repairs the database and removes the row.
-- Script `22-user-availability.sql` (epic #68) adds `dbo.UserAvailability` and `dbo.UserWorkHour` (own availability, out-of-office dates, weekly work hours). It only
-  creates tables, so it is safe to apply with the normal upgrade (no data backfill; existing users simply have no row and are treated as available during Mon-Fri
-  09:00-17:00 in the firm zone `Firm:TimeZoneId`). Rollback: the tables can stay; the previous application version ignores them.
+- `dbo.UserAvailability` and `dbo.UserWorkHour` (epic #68; own availability, out-of-office dates, weekly work hours) hold no seed data: users without a row are treated as available during Mon-Fri
+  09:00-17:00 in the firm zone `Firm:TimeZoneId`.
   Availability (Available, Off hours, Out of office) is never stored: it is computed when read, in each person's own IANA time zone, so the host needs its time zone
   data (Linux: the `tzdata` package; a container image without it rejects every saved time zone with `TIMEZONE_UNKNOWN` and evaluates in UTC). Nothing needs to run at midnight or
   at the end of work hours; a Dashboard tab that is open picks up a change at its next 5-minute refresh. Support check for "she shows as out of office but is back":
   Administration > Users > Availability shows what the server evaluates now, and the audit log (`USER_AVAILABILITY_CHANGED`) says who changed it and when.
 - After migrations the app syncs the permission catalog and starter roles idempotently (architecture 4.6) at every start where it has a database,
   also when `Migrations:Enabled=false`.
+
+
+### 3.1 Rebuilding a database from the baseline (issue #1307)
+
+The 63 old scripts (01 to 66) were squashed into `db/scripts/00-baseline.sql` before the first deployment. A database whose `dbo.SchemaMigration`
+lists the old scripts (for example `01-init.sql`) but not `00-baseline.sql` is **not migrated**: the API (and `--migrate-only`) stop at start with
+"This database was created by the old schema script chain ... Rebuild the database". All data in such a database is demo or test data.
+
+- **Local Docker database (`matterflow-sql`):** `npm run db:reset` (deletes the volume, creates an empty `MatterFlow`, the API applies the baseline at
+  its next start, the report login is provisioned again). Then `npm run seed:demo` to refill it.
+- **Any other test or demo database:** drop it and create it empty (`DROP DATABASE x; CREATE DATABASE x;`, after closing connections), then start the
+  API or run `--migrate-only`. If a report login `mf_reports` exists at server level, run `tools/db/provision-report-login.sql` again afterwards.
+- **A new corporate database** is simply empty before the first start: the baseline is the first (and until script 67 exists, the only) script. Nothing
+  here changes the install steps of section 5.
+- After the first real deployment the baseline is immutable like every applied script; schema changes are numbered scripts from 67.
 
 ## 4. First login behavior
 
@@ -205,7 +219,7 @@ clean-up of old notifications are made by a background timer inside the web appl
   notifications for the first few minutes after the first deploy.
 - **Health:** `/health/live` lists the check `notification-scheduler`. It is `Healthy` while a run completed in the last 30 minutes and `Degraded` (HTTP 200, text `Degraded`) when none did; it is never `Unhealthy`,
   because people can still work. `/health/ready` is not affected. Alert on `Degraded` for more than an hour: look in the application log for `Notification scheduler` lines, check that the pool is running
-  (`startMode`), and that the database account has DELETE on `dbo.Notification` (script 29).
+  (`startMode`), and that the database account has DELETE on `dbo.Notification` (baseline, formerly script 29).
 - **Settings** (all optional): `Notifications:Scheduler:Enabled` (default `true`; `false` switches the timer off, for example on a second web server that must not run it), `IntervalMinutes` (5),
   `InitialDelaySeconds` (30), `DegradedAfterMinutes` (30), `RetentionBatchPauseMilliseconds` (100).
 
@@ -235,15 +249,15 @@ host, run seeds or the audit guard, and it ignores `Migrations:Enabled=false`. I
    Keep `appsettings.Production.json`: it is not in the package.
 5. Verify `/health/ready` is `ready`, sign in, open the dashboard and one task. Keep the previous folder and the backup for at least a week.
 
-### 7.2a Upgrade note: automatic asset numbering (script 63, issue #1297)
+### 7.2a Note: automatic asset numbering (issue #1297, in the baseline)
 
-Script 63 adds the automatic numbering of assets. It changes nothing for existing data: numbering is OFF for every asset type, no existing asset gets a number, no row is rewritten. To use it:
+The baseline contains the automatic numbering of assets (formerly script 63). It changes nothing for existing data: numbering is OFF for every asset type, no existing asset gets a number, no row is rewritten. To use it:
 
 1. **Switch it on per asset type** (Administration, Asset Types; API `numbering.enabled` on `PUT /api/v1/asset-types/{id}`, permission `AssetType.Manage`) and choose the pattern after the matter's CM Number (default `_{###}`: `90003-80008_001`). New assets of that type get the number; old ones stay without. The counter restarts at 001 for every matter and widens past 999 (`_1000`).
 2. **Continue after folders that already exist on the share.** Where a matter's Media folders `90003-80008_001` to `_037` already exist, set that matter's next number to 38 BEFORE the first new asset is created: Administration, Asset Types, the type, Numbering, search the CM Number, "Next number" (API `PUT /api/v1/asset-types/{id}/numbering/counters/{matterId}` with `{"nextNumber":38}`). The next number can only be RAISED, never lowered (a request below the current next number is refused with `NEXT_NUMBER_TOO_LOW`; the same number changes nothing), so a number is never handed out twice; check the highest folder number on the share before you set it; every change is audited (who, matter, old, new). Nothing is backfilled and nothing creates the folder: the app only shows the exact name to create.
 2a. **Numbering assets that already exist.** Turning numbering on numbers nothing. An existing asset gets its number only through the explicit action "Assign number" on the asset (API `POST /api/v1/assets/{id}/assign-number`, permission `Asset.Edit`): it takes the next counter value of the asset's type in its matter, so set the matter's next number first if folders already exist. The asset type shows how many existing assets have no number. Audited as `ASSET_NUMBER_ASSIGNED`; an asset that has a number is refused (409 `ASSET_ALREADY_NUMBERED`).
 3. Numbers are never reused: deactivating or disposing an asset keeps its number, and the counter only goes up. A later change of the matter's CM Number or of the pattern does not change numbers already assigned (the number is a snapshot).
-4. Rollback: the script is additive; the older application ignores the new columns. Dropping the counter table or the columns after use would lose the assigned numbers: take them from `dbo.Asset.AssetNumber` first.
+4. Rollback: the numbering objects are additive; an older application ignores the new columns. Dropping the counter table or the columns after use would lose the assigned numbers: take them from `dbo.Asset.AssetNumber` first.
 
 ### 7.3 Rollback
 
@@ -285,7 +299,7 @@ Not exercised yet outside Linux. Tick each on the production-like server and rep
 - [ ] **Deep links and refresh:** pasting `https://<host>/tasks/new` (and refreshing any inner page) opens the app, not a 404; an unknown `/api/...` URL shows a JSON problem body.
 - [ ] **Caching and compression:** after an upgrade, a normal reload shows the new version (index.html is `no-cache`); `main-*.js` transfers compressed (`content-encoding: br` or `gzip`) once.
 - [ ] **Uploads:** an email upload near 12 MB succeeds; a larger one is refused cleanly.
-- [ ] **Rich text description (script 26, decision R):** after the upgrade, an old task still shows its description as it was (plain text with line breaks); paste a table from Outlook into a new task's Description, save, reload: the table is there; paste a table of more than 200 cells: it arrives as text with a notice; no CSP violation in the console. Support note: the database column `Task.DescriptionFormat` is `TEXT` for tasks created before the upgrade and `HTML` after; a description error `HTML_TOO_LARGE`, `TABLE_TOO_LARGE` or `TOO_COMPLEX` means the pasted content is over a limit (100,000 characters of HTML, 200 table cells, nesting 20), not a server fault.
+- [ ] **Rich text description (decision R):** after the upgrade, an old task still shows its description as it was (plain text with line breaks); paste a table from Outlook into a new task's Description, save, reload: the table is there; paste a table of more than 200 cells: it arrives as text with a notice; no CSP violation in the console. Support note: the database column `Task.DescriptionFormat` is `TEXT` for tasks created before the upgrade and `HTML` after; a description error `HTML_TOO_LARGE`, `TABLE_TOO_LARGE` or `TOO_COMPLEX` means the pasted content is over a limit (100,000 characters of HTML, 200 table cells, nesting 20), not a server fault.
 - [ ] **Upgrade drill:** do section 7.2 once on a copy of production data, including `--migrate-only` run by the DBA account, and the rollback restore of section 7.3.
 - [ ] **Report login (section 11):** with `ConnectionStrings__ReportsReadOnly` set, Administration > Reports shows "Ready" with writes, audit tables and the server file and registry procedures (11.2 step 3) denied; temporarily adding the login to `db_datareader` turns it to `TooPrivileged` (then restore).
 - [ ] **Backups:** the nightly and log backups run, and one restore drill succeeded (section 8).
@@ -308,9 +322,9 @@ Not exercised yet outside Linux. Tick each on the production-like server and rep
 
 Every report runs on its **own SQL login** that can read business data and nothing else (epic #671, ADR 029, `docs/ux/reports-review/README.md` sections 7 and 8). Reports are **off** until this login exists and passes the startup check; there is no fallback to the application login.
 
-### 11.1 What the schema script already did
+### 11.1 What the baseline already did
 
-Script `30-reports.sql` (run by the app at startup like every script) created the database role **`mf_report_reader`**: `SELECT` on the tables listed as `allow` in `db/report-access.json`, an explicit `DENY` on audit, sign-in identities, seed/migration bookkeeping, notifications, permissions and the Reports tables, and a `DENY` on every write, `EXECUTE` and `ALTER` right in `dbo`. The role is **not** a member of `db_datareader`. A test in the build fails when a table is added without a decision in `db/report-access.json`, so the list cannot drift silently.
+The baseline (`00-baseline.sql`, run by the app at startup like every script; formerly script `30-reports.sql`) created the database role **`mf_report_reader`**: `SELECT` on the tables listed as `allow` in `db/report-access.json`, an explicit `DENY` on audit, sign-in identities, seed/migration bookkeeping, notifications, permissions and the Reports tables, and a `DENY` on every write, `EXECUTE` and `ALTER` right in `dbo`. The role is **not** a member of `db_datareader`. A test in the build fails when a table is added without a decision in `db/report-access.json`, so the list cannot drift silently.
 
 ### 11.2 What the DBA does once (production)
 
@@ -383,9 +397,9 @@ Which starters show matter names, so an author can see it: **Tasks per matter** 
 
 **Warning for the people who assign reports (issue #808).** *Reports show all matters, including sensitive ones. Assign a report only to roles you trust with every matter.* The same sentence belongs on the assignment screens (Report Setup > Assignments); until the screens say it, this line is the rule. The run audit event carries the parameter names, never the values.
 
-**Report.Run for Project Managers (owner decision 8).** The starter role Project Manager holds `Report.Run`; Director, Pod Lead and the technician roles do not (grant it in the role editor if the owner wants it). `Report.Run` alone shows nothing: a person sees only the reports assigned to one of their roles, so "report ABC for the Technician role only" means the Project Manager gets a 404 on ABC. **Upgrade of an existing database:** schema script `65-project-manager-report-run.sql` adds `Report.Run` to the role named "Project Manager" only while the role still has the starter description (a customised, renamed or hand-made role is left alone and the migration log says so: grant the permission in the role editor). It assigns no report; the two Project Manager starters are created by the starter seed, or by an administrator.
+**Report.Run for Project Managers (owner decision 8).** The starter role Project Manager holds `Report.Run`; Director, Pod Lead and the technician roles do not (grant it in the role editor if the owner wants it). `Report.Run` alone shows nothing: a person sees only the reports assigned to one of their roles, so "report ABC for the Technician role only" means the Project Manager gets a 404 on ABC. **Existing databases:** the schema script that added `Report.Run` to the role named "Project Manager" (old script 65, archived) is not part of the baseline, because no database existed before the squash; a fresh database gets the permission from the starter seed. A renamed or hand-made role is granted the permission in the role editor. It assigns no report; the two Project Manager starters are created by the starter seed, or by an administrator.
 
-**My Matters for the Director (issue #976, owner decision 2026-11-07).** The starter role Director holds `Matter.BeManager`, the permission My Matters needs together with `Matter.View` and `Task.View`. **Upgrade of an existing database:** schema script `66-director-be-manager.sql` grants it to the role named "Director" only while the role still has the starter description "Department head: full operational access plus oversight." (a customised, renamed or hand-made role is left alone and the migration log says so: grant `Matter.BeManager` in the role editor). Effects people notice: a Director now lands on My Matters (the Dashboard stays in the menu), the Matters, Task Queue, Assets, Clients and Projects lists open on "My matters" with the My matters / All switch (a Director holds `Matter.AssignManagers`, so All is offered and remembered), and a Director can be named Primary or Secondary project manager of a matter. Who sees sensitive matters is unchanged.
+**My Matters for the Director (issue #976, owner decision 2026-11-07).** The starter role Director holds `Matter.BeManager`, the permission My Matters needs together with `Matter.View` and `Task.View`. **Existing databases:** the old script 66 that granted it to the role named "Director" is archived, not part of the baseline (no database existed before the squash); a fresh database gets the permission from the starter seed. A renamed or hand-made role is granted `Matter.BeManager` in the role editor. Effects people notice: a Director now lands on My Matters (the Dashboard stays in the menu), the Matters, Task Queue, Assets, Clients and Projects lists open on "My matters" with the My matters / All switch (a Director holds `Matter.AssignManagers`, so All is offered and remembered), and a Director can be named Primary or Secondary project manager of a matter. Who sees sensitive matters is unchanged.
 
 **Lookups.** A person who may run a report may use that report's matter, client, user, pod, role and task type pickers without `Client.View`, `Matter.View` or the like (owner decision 13): `GET /api/v1/reports/{id}/lookups/{parameter}` answers an id and a label only, never a sensitive matter. A report author who needs a sensitive matter in a filter gives the report a text parameter and the person types the number.
 
@@ -443,15 +457,15 @@ Measured at 20,000 tasks (`docs/qa/sensitive-matters-performance.md`, `tools/per
 ## 13. Project Manager experience: what support should know (epic #758)
 
 - **"My lists are nearly empty."** People who hold `Matter.BeManager` open Matters, Task Queue, Assets, Clients and Projects on the matters they manage (Primary or Secondary). The count line under the title says so ("Matters you manage (7 of 212)"). The **All** button shows the rest, but only for holders of `Matter.AssignManagers` (the starter Project Manager role has it). Without that permission a manager has no switch by design; give the role the permission or change who manages the matter (Matters list, Change on the matter header). The choice is stored in the browser (`localStorage`, per person and page); clearing site data returns to My matters. A matter nobody manages is normal and shows in All only.
-- **"Where is the Dashboard / Pod Work?"** The upgrade script 38 removed the three Dashboard permissions from the starter role "Project Manager" only if the role still equalled the old starter definition; a customised role is left alone. The shorter menu (My Matters, My Work, Clients, Matters with Projects and Assets indented, Tasks; no Dashboard and no Pod Work; there is no "More" group since the UI update, epic #953) applies to everybody who lands on My Matters (`Matter.BeManager`, `Matter.View`, `Task.View`); Pod Work stays reachable by address. An administrator can grant `Dashboard.*` back on the role; the menu then shows Dashboard again without any change.
+- **"Where is the Dashboard / Pod Work?"** The starter role "Project Manager" has no Dashboard permissions (a customised role is whatever the administrator made of it). The shorter menu (My Matters, My Work, Clients, Matters with Projects and Assets indented, Tasks; no Dashboard and no Pod Work; there is no "More" group since the UI update, epic #953) applies to everybody who lands on My Matters (`Matter.BeManager`, `Matter.View`, `Task.View`); Pod Work stays reachable by address. An administrator can grant `Dashboard.*` back on the role; the menu then shows Dashboard again without any change.
 - **"The numbers on Trends are not exact."** They are derived from existing columns (created, due, completed, status events) and the tab says "approximate"; there is no snapshot table.
 - **Switch-on checks.** After an upgrade open `/my-matters` as a Project Manager account: five tabs, the strip equals the lists it opens; the matter Overview loads from `GET /api/v1/matters/{id}/overview`. No new configuration key, no new table.
-- The Reports menu item shows for everybody who holds `Report.Run`, which the starter Project Manager role does (script 65 in existing databases); the two starter reports for Project Managers are described in section 11.4a.
+- The Reports menu item shows for everybody who holds `Report.Run`, which the starter Project Manager role does (from the starter seed); the two starter reports for Project Managers are described in section 11.4a.
 
 ## 14. PM v2 assets: disposition, size and the filter index (epic #851)
 
-- **Disposition.** Every asset is Active, Inactive, Pending disposition or Disposed (script 43; `IsActive` is kept equal to "Active" by a check constraint, so older reports and links keep working). Moving an asset to Pending disposition or Disposed needs the permission `Asset.Dispose`, which script 46 gives to the roles named "Director" and "Project Manager"; a renamed or hand-made role gets it in the role administration. Open linked tasks do not block a disposal: the dialog states them and asks for a note. Every change is in the audit trail as `ASSET_DISPOSITION_CHANGED` and in the asset's disposition history.
-- **Size.** On the Asset Types page (Fields tab) an administrator picks the number field that means size and its unit (script 44). Changing it rewrites no value. Sizes in B, KB, MB, GB and TB are added up after conversion and shown in GB; Items (files, pages) are never added to bytes, and a result that mixes them says so.
+- **Disposition.** Every asset is Active, Inactive, Pending disposition or Disposed (baseline; `IsActive` is kept equal to "Active" by a check constraint, so older reports and links keep working). Moving an asset to Pending disposition or Disposed needs the permission `Asset.Dispose`, which the starter seed gives to the roles named "Director" and "Project Manager"; a renamed or hand-made role gets it in the role administration. Open linked tasks do not block a disposal: the dialog states them and asks for a note. Every change is in the audit trail as `ASSET_DISPOSITION_CHANGED` and in the asset's disposition history.
+- **Size.** On the Asset Types page (Fields tab) an administrator picks the number field that means size and its unit. Changing it rewrites no value. Sizes in B, KB, MB, GB and TB are added up after conversion and shown in GB; Items (files, pages) are never added to bytes, and a result that mixes them says so.
 - **The filter index.** NUMBER and SELECT fields of asset forms are always copied to `dbo.CustomFieldIndex`, whether or not the field is filterable, so the Data tab and the asset reports are SQL aggregates and never read the stored JSON. At startup the API fills the index for asset values that have no index row at all (assets saved before the rule). If sizes look wrong after an import or a restore, press "Rebuild the index" on the asset type (or call `POST /api/v1/asset-types/{id}/reindex`); it only re-reads saved values and is safe to repeat.
 - **Saved asset reports** are personal (`dbo.AssetReport`, denied for the report login, 50 per person, 4 KB each); deleting a person's report deletes only the definition. A report is re-run with the viewer's current access, so two people with the same definition can see different numbers when the sensitive-matter rule is on.
 
@@ -459,7 +473,7 @@ Measured at 20,000 tasks (`docs/qa/sensitive-matters-performance.md`, `tools/per
 
 What changed for a Project Manager and where it lives. Design `docs/ux/pm-v2-review/README.md`, decisions `docs/requirements/decisions-addendum.md` section AN, final verification `docs/qa/pm-v2-final-verification.md`. Disposition, size, the filter index and saved asset reports are in section 14.
 
-**Upgrade.** Schema scripts 40 to 46 are applied by the normal migration step (section 7): 40 task type colour and target days, 41 `dbo.UserView`, 42 `dbo.OnHoldReason` and `dbo.Task.OnHoldReasonId`, 43 asset disposition, 44 asset type size field, 45 `dbo.AssetReport`, 46 the permission `Asset.Dispose`. All are additive; none rewrites existing business rows except script 43 (an inactive asset becomes disposition Inactive). No new configuration key is required; `Tasks:OnHoldReasonRequired` (section 2) is optional. After the upgrade the roles named "Director" and "Project Manager" hold `Asset.Dispose`; a renamed or hand-made role needs it granted in the role administration, and `OnHoldReason.Manage` (Labels, On-hold reasons) goes to whoever maintains the list of reasons (the System Admin holds both implicitly).
+**Schema.** The baseline contains task type colour and target days, `dbo.UserView`, `dbo.OnHoldReason` and `dbo.Task.OnHoldReasonId`, asset disposition, the asset type size field, `dbo.AssetReport` and the permission `Asset.Dispose` (formerly scripts 40 to 46). No new configuration key is required; `Tasks:OnHoldReasonRequired` (section 2) is optional. The roles named "Director" and "Project Manager" hold `Asset.Dispose`; a renamed or hand-made role needs it granted in the role administration, and `OnHoldReason.Manage` (Labels, On-hold reasons) goes to whoever maintains the list of reasons (the System Admin holds both implicitly).
 
 **Switch-on checks** (five minutes, as a Project Manager account with a few matters, then as an administrator):
 1. `/my-matters`: six tabs (Overview, Deadlines, Breakdown, Data, Activity, Trends; Data needs `Asset.View`); every task row shows a coloured type badge; the section toolbar filters and sorts by type; Focus remembers the chosen types after a reload.
@@ -505,7 +519,7 @@ What the person who runs the system should know. Design `docs/ux/app-settings/RE
 
 **Reset in SQL** (for example if a wrong name locked someone's view, or before restoring a backup elsewhere): `DELETE dbo.AppSetting WHERE SettingKey LIKE 'Branding.%';` The defaults return at once on this node and within 30 seconds on others. The table has no seed row: an empty table is the normal state of a new installation. The report login cannot read the table.
 
-**Upgrade.** Script 48 (`48-app-settings.sql`) adds the permission and the table; it changes no existing row. Deploy order: scripts, API, web. Until an administrator saves, nothing looks different. Rollback: reset on the page or by the SQL above.
+**Schema.** The permission and the table are in the baseline (formerly script 48). Deploy order: scripts, API, web. Until an administrator saves, nothing looks different. Rollback: reset on the page or by the SQL above.
 
 
 ## 17. Matter detail: Productions, Notes and the AI switch (epic #1001)

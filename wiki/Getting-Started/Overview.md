@@ -15,7 +15,7 @@ Status (from `CLAUDE.md`, owner, 2026-10-24): MatterFlow has not been deployed a
 | Layer | Technology | Where |
 |---|---|---|
 | Backend | ASP.NET Core on .NET 10, modular monolith, EF Core for data access (no EF migrations), FluentValidation | `backend/` |
-| Database | SQL Server 2022, schema changed only by numbered SQL scripts | `db/scripts/` |
+| Database | SQL Server 2022, schema = one baseline script plus numbered SQL scripts | `db/scripts/` |
 | Frontend | Angular 21 (standalone components, signals), PrimeNG with the Aura preset, Tiptap rich text editor | `frontend/` |
 | Contracts | OpenAPI document (generated, committed), permission catalog, form-rule schema and vectors | `contracts/` |
 | Tests | xUnit (unit, architecture, schema, integration with Testcontainers), Vitest (frontend), Playwright (end to end, with axe accessibility checks) | `backend/tests/`, `frontend/`, `frontend/e2e/` |
@@ -39,7 +39,7 @@ flowchart TB
 
 - **Modules** own their tables, services and controllers. They talk to each other only through `.Contracts` projects. See [Backend Modules](../Architecture/Backend-Modules.md).
 - **The host** (`MatterFlow.Api`) wires everything: middleware, authentication, error format, OpenAPI, startup migration and seeds. See [Request Lifecycle](../Architecture/Request-Lifecycle.md).
-- **The schema** is built from numbered SQL scripts at startup. See [Database Overview](../Database/Overview.md).
+- **The schema** is built at startup from `db/scripts/00-baseline.sql` and the numbered scripts after it. See [Database Overview](../Database/Overview.md).
 - **The frontend** is lazy-loaded feature folders on top of shared UI components and a generated API client. See [Frontend Architecture](../Architecture/Frontend-Architecture.md).
 
 ## Where the design decisions are

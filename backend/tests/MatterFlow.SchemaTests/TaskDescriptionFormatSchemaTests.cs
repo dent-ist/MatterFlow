@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using MatterFlow.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -6,16 +5,10 @@ using Shouldly;
 
 namespace MatterFlow.SchemaTests;
 
-/// <summary>26-task-description-format.sql (decision R): existing descriptions stay TEXT, the format is TEXT or HTML, and a missing value defaults to TEXT.</summary>
+/// <summary>Baseline (archived 26-task-description-format.sql) (decision R): existing descriptions stay TEXT, the format is TEXT or HTML, and a missing value defaults to TEXT.</summary>
 [Collection(SqlServerCollection.Name)]
 public class TaskDescriptionFormatSchemaTests(SqlServerFixture sql)
 {
-    private sealed class ScriptsBefore(int number) : IMigrationScriptSource
-    {
-        public IReadOnlyList<(string Name, string Content)> ReadAll() =>
-            [.. new EmbeddedMigrationScriptSource().ReadAll().Where(s => int.Parse(Regex.Match(s.Name, @"^\d+").Value) < number)];
-    }
-
     private static Task RunAsync(string cs, IMigrationScriptSource source) =>
         new SchemaMigrationRunner(cs, source, new MigrationsOptions { LockTimeoutSeconds = 60 }, NullLogger<SchemaMigrationRunner>.Instance).RunAsync();
 
@@ -42,14 +35,12 @@ public class TaskDescriptionFormatSchemaTests(SqlServerFixture sql)
     private const string InsertTask = "INSERT dbo.Task (MatterId, TaskTypeId, WorkflowInstanceId, Title, PriorityId, RequestorName{0}) VALUES (1, 1, {1}, N'T', 1, N'R'{2});";
 
     [Fact]
-    public async Task Descriptions_written_before_the_script_stay_text_and_new_rows_default_to_text()
+    public async Task A_description_without_a_format_stays_text_and_new_rows_default_to_text()
     {
         var cs = await sql.CreateDatabaseAsync();
-        await RunAsync(cs, new ScriptsBefore(26));
+        await RunAsync(cs, new EmbeddedMigrationScriptSource());
         await ScalarAsync(cs, Fixtures);
         await ScalarAsync(cs, "INSERT dbo.Task (MatterId, TaskTypeId, WorkflowInstanceId, Title, Description, PriorityId, RequestorName) VALUES (1, 1, 1, N'Old', N'Plain <b>text</b>', 1, N'R');");
-
-        await RunAsync(cs, new EmbeddedMigrationScriptSource());
 
         (await ScalarAsync(cs, "SELECT DescriptionFormat FROM dbo.Task WHERE Title = N'Old'")).ShouldBe("TEXT");
         (await ScalarAsync(cs, "SELECT Description FROM dbo.Task WHERE Title = N'Old'")).ShouldBe("Plain <b>text</b>");

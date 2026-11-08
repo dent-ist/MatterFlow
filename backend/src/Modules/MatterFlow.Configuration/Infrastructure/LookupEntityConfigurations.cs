@@ -71,7 +71,7 @@ internal sealed class CurrentStateConfiguration() : MatterListConfiguration<Curr
 
 internal sealed class TeamTitleConfiguration() : MatterListConfiguration<TeamTitle>("TeamTitle", "UQ_TeamTitle_Name");
 
-/// <summary>Names of the unique indexes in <c>07-configuration-basics.sql</c>, used to map duplicate-key errors to friendly conflicts.</summary>
+/// <summary>Names of the unique indexes in <c>00-baseline.sql</c>, used to map duplicate-key errors to friendly conflicts.</summary>
 internal static class LookupConstraints
 {
     public const string PriorityLabel = "UQ_Priority_Label";

@@ -5,7 +5,7 @@ using Shouldly;
 
 namespace MatterFlow.SchemaTests;
 
-/// <summary>Constraints of 08-task-types.sql (docs/erd.md "TaskType").</summary>
+/// <summary>Constraints of the baseline (archived 08-task-types.sql) (docs/erd.md "TaskType").</summary>
 [Collection(SqlServerCollection.Name)]
 public class TaskTypesSchemaTests(SqlServerFixture sql)
 {

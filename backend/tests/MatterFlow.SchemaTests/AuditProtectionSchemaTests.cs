@@ -6,7 +6,7 @@ using Shouldly;
 namespace MatterFlow.SchemaTests;
 
 /// <summary>
-/// 13-security-hardening.sql (security review SEC-04): the audit table is append-only for the application identity (mf_app) and
+/// Baseline (archived 13-security-hardening.sql) (security review SEC-04): the audit table is append-only for the application identity (mf_app) and
 /// cannot be truncated, dropped or stripped of its trigger by accident or from application code, even by a privileged login.
 /// </summary>
 [Collection(SqlServerCollection.Name)]

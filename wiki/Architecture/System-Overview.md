@@ -77,7 +77,7 @@ The host has one background job: `NotificationSchedulerService` in `MatterFlow.N
 | Decision | Where |
 |---|---|
 | Modular monolith, one deployable | `docs/architecture.md` section 5 |
-| Schema by numbered SQL scripts, EF for data access only | section 4, `db/scripts/README.md` |
+| Schema by a baseline script plus numbered SQL scripts, EF for data access only | section 4, `db/scripts/README.md` |
 | Optimistic concurrency with `rowVersion` | section 10 |
 | Hybrid transactional audit | section 9 |
 | Permission-based authorization, never role names | section 6 |

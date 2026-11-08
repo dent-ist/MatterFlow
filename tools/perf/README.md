@@ -27,7 +27,7 @@ process are removed again unless `PERF_KEEP=1`. The full list of variables is at
 
 1. Start SQL Server and create an empty database `MatterFlow` (`RECOVERY SIMPLE`, `READ_COMMITTED_SNAPSHOT ON`, files pre-sized to avoid growth pauses).
 2. Start the API once against it with `Seed__StarterConfiguration__Enabled=true` and a `Dev:Users` entry for `perf.admin` with the System Admin role. That
-   applies the schema scripts and creates the starter roles, task types, workflows and forms the seeder builds on. Stop it again.
+   applies the schema baseline (and any later scripts) and creates the starter roles, task types, workflows and forms the seeder builds on. Stop it again.
 3. `sqlcmd -I -b -d MatterFlow -v Scale=1 -i seed-perf-data.sql` (`-I` is required: the schema has filtered indexes). The script refuses a database
    that already holds Tasks or Clients, and a second run (`dbo.SeedMarker`). Take a backup now and restore it before every run, so that runs start
    from the same data.

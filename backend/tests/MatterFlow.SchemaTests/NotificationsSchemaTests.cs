@@ -5,7 +5,7 @@ using Shouldly;
 
 namespace MatterFlow.SchemaTests;
 
-/// <summary>Constraints, indexes and grants of 29-notifications.sql (epic #753, issue #729).</summary>
+/// <summary>Constraints, indexes and grants of the baseline (archived 29-notifications.sql) (epic #753, issue #729).</summary>
 [Collection(SqlServerCollection.Name)]
 public class NotificationsSchemaTests(SqlServerFixture sql)
 {

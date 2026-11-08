@@ -5,7 +5,7 @@ namespace MatterFlow.Audit.Domain;
 
 /// <summary>
 /// One immutable audit row. Intentionally not <see cref="AuditedAttribute">[Audited]</see> and not an audit-stamped entity.
-/// Rows are only ever inserted: there is no update/delete code path, and the database rejects both (03-audit.sql).
+/// Rows are only ever inserted: there is no update/delete code path, and the database rejects both (00-baseline.sql).
 /// </summary>
 public sealed class AuditEvent : Entity<long>
 {
@@ -41,7 +41,7 @@ public sealed class AuditEvent : Entity<long>
     /// </summary>
     public bool IsSensitiveScope { get; set; }
 
-    /// <summary>Column widths of <c>dbo.AuditEvent</c> (03-audit.sql); text longer than these would fail the save with SQL error 2628.</summary>
+    /// <summary>Column widths of <c>dbo.AuditEvent</c> (00-baseline.sql); text longer than these would fail the save with SQL error 2628.</summary>
     public const int MaxEventTypeLength = 64;
 
     public const int MaxObjectTypeLength = 40;

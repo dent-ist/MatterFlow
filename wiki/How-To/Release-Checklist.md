@@ -9,7 +9,7 @@
 - [ ] Branch rules respected: the round's integration branch is merged to `dev` only when the owner says so; `main` is untouched until the owner decides.
 - [ ] CI green on the pull request: build with warnings as errors, OpenAPI drift check, format, unit and architecture tests, integration and schema tests, frontend lint, format, unit tests, client drift check, production build ([Continuous Integration](../Getting-Started/Continuous-Integration.md)).
 - [ ] Weekly or on-demand workflows green: e2e (label the pull request `e2e` to run it), nightly full backend suite and dependency audits, CodeQL.
-- [ ] No duplicate or edited SQL scripts; the next script number is free ([How to Change the Schema](../Database/How-to-Change-the-Schema.md)).
+- [ ] No duplicate or edited SQL scripts (the baseline `00-baseline.sql` included); the next script number is free (67 or higher) ([How to Change the Schema](../Database/How-to-Change-the-Schema.md)).
 - [ ] `contracts/openapi/v1.json` and `frontend/src/app/api/generated` are regenerated and committed.
 - [ ] Initial bundle under 700 kB; axe clean on changed pages; screenshots at 1366x768 and 1920x1080 exist for UI changes.
 - [ ] Docs updated: architecture decisions, runbook (new configuration keys, logins, operations), design guidelines, and the wiki ([How to Keep the Wiki Up to Date](../Reference/How-to-Keep-the-Wiki-Up-to-Date.md)).

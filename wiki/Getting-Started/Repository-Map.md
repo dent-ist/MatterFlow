@@ -38,7 +38,7 @@
 | `backend/src/Modules/MatterFlow.<Module>.Contracts/` | The module's public surface: interfaces and DTOs other modules may use |
 | `backend/tests/MatterFlow.UnitTests/` | Fast tests, no Docker |
 | `backend/tests/MatterFlow.ArchitectureTests/` | Module rules, authorization rules, audit scope, rowVersion rules, source hygiene |
-| `backend/tests/MatterFlow.SchemaTests/` | Schema script checks against a real SQL Server (Docker) |
+| `backend/tests/MatterFlow.SchemaTests/` | Schema checks against a real SQL Server (Docker), including the proof that the baseline equals the archived chain |
 | `backend/tests/MatterFlow.IntegrationTests/` | HTTP-level tests with Testcontainers (Docker) |
 
 See [Backend Modules](../Architecture/Backend-Modules.md) and [Module Guide](../Backend/Module-Guide.md).
@@ -75,7 +75,7 @@ See [API Contracts](../Architecture/API-Contracts.md).
 
 | Path | Contents |
 |---|---|
-| `db/scripts/` | 59 numbered SQL scripts (`01` to `60`, number 16 unused) and a README with the rules |
+| `db/scripts/` | `00-baseline.sql` (the whole schema), numbered scripts after it (from 67), `archive/` (the old chain 01 to 66, history only) and a README with the rules |
 | `db/report-access.json` | Classifies every table as readable or denied for the read-only report login |
 | `deploy/publish.ps1`, `publish.sh`, `configure-iis.ps1`, `web.config`, `appsettings.Production.template.json` | Production packaging and IIS setup |
 | `tools/seed-demo/` | Demo data seeder (`npm run seed:demo`) |

@@ -9,7 +9,7 @@
 --     (xp_dirtree, xp_fileexist, xp_fixeddrives, xp_msver, xp_regread, ...) that SQL Server grants to PUBLIC. It runs through
 --     EXEC master.sys.sp_executesql, so the script needs no USE and no GO. It must be run by an administrator (sysadmin): SQL Server ignores a
 --     DENY that a login gives to itself. The same block is in docs/runbook.md section 11 for the corporate server.
---   * The role mf_report_reader comes from schema script 30-reports.sql, which the API applies at its first start. Until then the script only
+--   * The role mf_report_reader comes from the schema baseline (db/scripts/00-baseline.sql), which the API applies at its first start. Until then the script only
 --     creates the login and the user; running it again after the API has started (npm run db:report-login) adds the membership.
 SET NOCOUNT ON;
 

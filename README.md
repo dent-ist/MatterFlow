@@ -17,7 +17,7 @@ All Phase 1 features are built and verified end to end (identity and access, cli
 | `backend/` | .NET solution `MatterFlow.sln`: `src/MatterFlow.Api` (host), `SharedKernel`, `Data`, `src/Modules/*`, `tests/*` |
 | `frontend/` | Angular workspace (`src/` app, `projects/form-engine` library, `e2e/` Playwright) |
 | `contracts/` | Cross-stack contracts (OpenAPI, form-rule schema, permission catalog) |
-| `db/scripts/` | Numbered, immutable SQL schema scripts |
+| `db/scripts/` | `00-baseline.sql` (the whole schema) and the numbered SQL scripts after it; `archive/` holds the old chain 01 to 66 |
 | `deploy/` | IIS publish scripts and settings template |
 | `tools/` | Demo data seeder, performance tools, icons |
 | `docs/` | Requirements, architecture, UX design, QA reports, runbook |
@@ -36,6 +36,8 @@ npm run setup      # frontend dependencies and the form-engine library (first ti
 npm start          # SQL Server (Docker), the API on :5080 and the web app on :4200; Ctrl+C stops both
 npm run seed:demo  # optional, from a second terminal: fills the app with demo users, matters and tasks
 ```
+
+**Existing local database from before the schema baseline (issue #1307)?** The API refuses it at startup with a message; run `npm run db:reset` once (it deletes the local SQL Server volume and rebuilds the database from `db/scripts/00-baseline.sql`; run `npm run seed:demo` again afterwards).
 
 Open http://localhost:4200. You are signed in as the System Admin `KE\kekim` (Dev authentication, which only works in Development and Test). Swagger is at http://localhost:5080/swagger. In a cloud container, start Docker first (`nohup dockerd >/tmp/dockerd.log 2>&1 &`).
 
@@ -91,7 +93,7 @@ More: [Testing the Backend](wiki/Backend/Testing-the-Backend.md), [Testing the F
 
 - **Branches:** the main integration branch is `dev`; see [Branching and Workflow](wiki/Getting-Started/Branching-and-Workflow.md). CI runs on pull requests and pushes to `dev` (`ci.yml`, `e2e.yml`, `nightly.yml`, `codeql.yml`, `publish.yml`): [Continuous Integration](wiki/Getting-Started/Continuous-Integration.md).
 - **Backend modules** may reference only `SharedKernel` and other modules' `.Contracts` projects (enforced by `MatterFlow.ArchitectureTests`): [Backend Modules](wiki/Architecture/Backend-Modules.md), [How to Add a Module](wiki/Backend/How-to-Add-a-Module.md).
-- **Database:** schema changes are numbered SQL scripts in `db/scripts/`, immutable once merged (fix forward with a new script). The API applies them at startup. No EF migrations: [How to Change the Schema](wiki/Database/How-to-Change-the-Schema.md).
+- **Database:** the schema is `db/scripts/00-baseline.sql` (one script with every table, index, constraint and trigger) and schema changes after it are numbered SQL scripts from 67, immutable once merged (fix forward with a new script). The API applies them at startup. A database built before the baseline (issue #1307) is refused at startup: rebuild it with `npm run db:reset` (all local data is demo data). No EF migrations: [How to Change the Schema](wiki/Database/How-to-Change-the-Schema.md).
 - **API changes** keep `contracts/openapi/v1.json` and the generated frontend client in sync: [API Contracts](wiki/Architecture/API-Contracts.md), [API Client and Generated Code](wiki/Frontend/API-Client-and-Generated-Code.md).
 - **Permissions** come from `contracts/permissions.json`: [How to Add a Permission](wiki/Backend/How-to-Add-a-Permission.md), [Permission Catalogue](wiki/Reference/Permission-Catalogue.md).
 - **UI** follows one standard, [`docs/ux/design-guidelines.md`](docs/ux/design-guidelines.md) (summary: [UI Standard](wiki/Frontend/UI-Standard.md)). Desktop only (1366x768 and 1920x1080). Add pages and components with [How to Add a Page](wiki/Frontend/How-to-Add-a-Page.md) and the [Shared Components Catalogue](wiki/Frontend/Shared-Components-Catalogue.md).

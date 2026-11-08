@@ -1,5 +1,5 @@
 {
-  "$comment": "Access catalogue of the report login (role mf_report_reader). Every table is classified here: allow = SELECT granted, deny = explicit DENY SELECT and VIEW DEFINITION. A unit test fails for an unclassified table (CREATE TABLE in db/scripts) and when the GRANT/DENY lines in the scripts differ from this file; a schema test checks the effective permissions. A new table needs an entry here and a GRANT or DENY line in the script that creates it. Docs: docs/ux/reports-review/README.md section 8.1.",
+  "$comment": "Access catalogue of the report login (role mf_report_reader). Every table is classified here: allow = SELECT granted, deny = explicit DENY SELECT and VIEW DEFINITION. A unit test fails for an unclassified table (CREATE TABLE in db/scripts/*.sql: the baseline and the scripts after it, not db/scripts/archive) and when the GRANT/DENY lines in the scripts differ from this file; a schema test checks the effective permissions. A new table needs an entry here and a GRANT or DENY line in the script that creates it (00-baseline.sql for the tables that exist today). Docs: docs/ux/reports-review/README.md section 8.1.",
   "runnerTables": [
     "SchemaMigration"
   ],

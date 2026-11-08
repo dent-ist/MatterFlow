@@ -5,7 +5,7 @@ using Shouldly;
 
 namespace MatterFlow.SchemaTests;
 
-/// <summary>48-app-settings.sql (epic #850, BR-01): the permission row, dbo.AppSetting with its checks, and the grants.</summary>
+/// <summary>Baseline (archived 48-app-settings.sql) (epic #850, BR-01): the permission row, dbo.AppSetting with its checks, and the grants.</summary>
 [Collection(SqlServerCollection.Name)]
 public class AppSettingSchemaTests(SqlServerFixture sql)
 {
