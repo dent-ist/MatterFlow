@@ -13,6 +13,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
 import { Subscription, firstValueFrom } from 'rxjs';
 import {
+  ReportFavouritesClient,
   ReportsClient,
   RunReportResponse,
   RunnableReportResponse,
@@ -29,7 +30,10 @@ import { StateBlock } from '../../shared/ui/state-block';
 import { StatePage } from '../../shared/ui/state-page';
 import { Tip } from '../../shared/ui/tip';
 import { Button } from 'primeng/button';
+import { NotificationService } from '../../core/notify/notification.service';
+import { FAVOURITES_FAILED, starAnnouncement } from './report-favourites';
 import { ReportParameterForm } from './report-parameter-form';
+import { ReportStarButton } from './report-star-button';
 import { ReportResultGrid } from './report-result-grid';
 import { RunBanner, outcomeOf } from './report-messages';
 import {
@@ -68,6 +72,7 @@ const LONG_DESCRIPTION = 240;
     PageHeader,
     ReportParameterForm,
     ReportResultGrid,
+    ReportStarButton,
     RouterLink,
     SlidePanel,
     StateBlock,
@@ -206,7 +211,17 @@ const LONG_DESCRIPTION = 240;
         [crumbs]="crumbs()"
         [heading]="report()?.name ?? (state() === 'error' ? 'Report' : '')"
         [description]="report()?.categoryName ?? ''"
-      />
+      >
+        @if (report(); as r) {
+          <!-- The favourite star beside the heading (#1326): same button as the list's star column. -->
+          <mf-report-star
+            mfTitleExtra
+            [name]="r.name"
+            [on]="!!r.isFavourite"
+            (toggled)="toggleFavourite()"
+          />
+        }
+      </mf-page-header>
 
       @switch (state()) {
         @case ('loading') {
@@ -393,6 +408,8 @@ const LONG_DESCRIPTION = 240;
 export class ReportRunPage {
   private readonly api = inject(ReportsClient);
   private readonly quiet = inject(QuietRequests);
+  private readonly favouritesApi = inject(ReportFavouritesClient);
+  private readonly notify = inject(NotificationService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly title = inject(PageTitle);
@@ -492,6 +509,36 @@ export class ReportRunPage {
           ? 'noAccess'
           : 'error',
       );
+    }
+  }
+
+  private favouritePending = false;
+
+  /** The star beside the heading was pressed: the mark changes at once, the call follows, a failure puts it back with the toast (as in the list, spec 7.1). */
+  protected async toggleFavourite(): Promise<void> {
+    const r = this.report();
+    if (!r || this.favouritePending) return;
+    const on = !r.isFavourite;
+    this.favouritePending = true;
+    this.report.set({ ...r, isFavourite: on });
+    const back = (): void =>
+      this.report.update((cur) =>
+        cur && cur.reportId === r.reportId ? { ...cur, isFavourite: !on } : cur,
+      );
+    try {
+      await this.quiet.run(() =>
+        firstValueFrom(
+          on
+            ? this.favouritesApi.addReportFavourite(r.reportId)
+            : this.favouritesApi.removeReportFavourite(r.reportId),
+        ),
+      );
+      this.announcement.set(starAnnouncement(r.name, on));
+    } catch {
+      back();
+      this.notify.error(FAVOURITES_FAILED);
+    } finally {
+      this.favouritePending = false;
     }
   }
 

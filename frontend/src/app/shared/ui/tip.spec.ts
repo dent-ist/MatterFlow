@@ -62,4 +62,16 @@ describe('Tip', () => {
     owner.dispatchEvent(new Event('mouseenter'));
     expect(tip()).toBeNull();
   });
+
+  it('a tip that is showing follows a change of its text (the favourite star flips under the pointer)', () => {
+    const { fixture, owner } = setup();
+    owner.dispatchEvent(new Event('mouseenter'));
+    expect(tip()!.textContent).toBe('Collapse to rail');
+    fixture.componentInstance.text.set('Expand rail');
+    fixture.detectChanges();
+    expect(tip()!.textContent).toBe('Expand rail');
+    fixture.componentInstance.text.set(null);
+    fixture.detectChanges();
+    expect(tip()).toBeNull();
+  });
 });

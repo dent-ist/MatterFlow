@@ -39,13 +39,12 @@ import {
 import { RowLink, restoreRowFocus } from '../../shared/ui/row-nav';
 import { StateBlock } from '../../shared/ui/state-block';
 import { Tip } from '../../shared/ui/tip';
+import { ReportStarButton } from './report-star-button';
 import { LoadState } from '../../shared/ui/data-table';
 import {
   FAVOURITES_FAILED,
   RECENT_MAX,
   starAnnouncement,
-  starLabel,
-  starTip,
   withFavourite,
 } from './report-favourites';
 import { ReportRecentLine } from './report-recent-line';
@@ -107,6 +106,7 @@ function writeCollapsed(key: string, keys: readonly string[]): void {
     RowLink,
     StateBlock,
     Tip,
+    ReportStarButton,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../shared/ui/page.scss',
@@ -125,12 +125,6 @@ function writeCollapsed(key: string, keys: readonly string[]): void {
     td.rl-star {
       padding-inline: var(--mf-s1);
       text-align: center;
-    }
-    .rl-star__btn {
-      color: var(--mf-text-muted);
-    }
-    .rl-star__btn[data-on] {
-      color: var(--mf-sem-risk-solid);
     }
   `,
   template: `
@@ -222,22 +216,12 @@ function writeCollapsed(key: string, keys: readonly string[]): void {
           >
             <ng-template mfCell="star" let-r>
               <td class="rl-star">
-                <button
-                  type="button"
-                  class="mf-btn mf-btn--text mf-btn--icon mf-btn--cell rl-star__btn"
-                  [attr.aria-label]="starLabel(r.name, !!r.isFavourite)"
-                  [mfTip]="starTip(!!r.isFavourite)"
-                  [attr.data-on]="r.isFavourite ? '' : null"
-                  data-favourite
-                  (click)="toggleFavourite(r)"
-                >
-                  <i
-                    class="pi"
-                    [class.pi-star-fill]="r.isFavourite"
-                    [class.pi-star]="!r.isFavourite"
-                    aria-hidden="true"
-                  ></i>
-                </button>
+                <mf-report-star
+                  [name]="r.name"
+                  [on]="!!r.isFavourite"
+                  [compact]="true"
+                  (toggled)="toggleFavourite(r)"
+                />
               </td>
             </ng-template>
             <ng-template mfCell="name" let-r>
@@ -300,8 +284,6 @@ export class ReportsListPage {
 
   protected readonly bones = BONES;
   protected readonly parametersOf = parametersText;
-  protected readonly starLabel = starLabel;
-  protected readonly starTip = starTip;
   protected readonly reportKey = (r: ReportRow): number => r.reportId;
 
   /** The four columns of the spec (2.2): the star (44 px, no heading drawn), the Report column is the spring, the others have a floor that grows a little from 1366 to 1920. */

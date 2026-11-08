@@ -1,5 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import { DestroyRef, Directive, ElementRef, inject, input } from '@angular/core';
+import { DestroyRef, Directive, ElementRef, effect, inject, input } from '@angular/core';
 
 let nextTipId = 0;
 
@@ -26,6 +26,13 @@ export class Tip {
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.hide());
+    // A tip that is showing follows its text: the favourite star says "Add to Favourites" and, after the press, "Remove from Favourites" under the pointer.
+    effect(() => {
+      const text = this.text();
+      if (!this.el) return;
+      if (text) this.el.textContent = text;
+      else this.hide();
+    });
   }
 
   show(): void {

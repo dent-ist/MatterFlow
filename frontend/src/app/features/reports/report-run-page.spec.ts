@@ -6,12 +6,14 @@ import { Title } from '@angular/platform-browser';
 import { BehaviorSubject, NEVER, Subject } from 'rxjs';
 import {
   ReportChoicesClient,
+  ReportFavouritesClient,
   ReportRowsResponse,
   ReportViewsClient,
   ReportsClient,
   RunReportResponse,
 } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
+import { NotificationService } from '../../core/notify/notification.service';
 import { USER_TIME_ZONE } from '../../core/time/clock';
 import {
   FakeMeApi,
@@ -57,6 +59,7 @@ describe('ReportRunPage (#719, #720)', () => {
     'getMyReport' | 'runReport' | 'cancelMyReportRun' | 'dropReportResult' | 'getReportRows',
     Mock
   >;
+  let fav: Record<'addReportFavourite' | 'removeReportFavourite', Mock>;
   let fixture: ComponentFixture<ReportRunPage>;
   let navigate: Mock;
   const el = (): HTMLElement => fixture.nativeElement;
@@ -91,9 +94,14 @@ describe('ReportRunPage (#719, #720)', () => {
       dropReportResult: vi.fn().mockReturnValue(ok(undefined)),
       getReportRows: vi.fn().mockReturnValue(ok(rowsOf(143))),
     };
+    fav = {
+      addReportFavourite: vi.fn().mockReturnValue(ok(undefined)),
+      removeReportFavourite: vi.fn().mockReturnValue(ok(undefined)),
+    };
     const params = new BehaviorSubject(convertToParamMap({ reportId }));
     TestBed.configureTestingModule({
       providers: [
+        { provide: ReportFavouritesClient, useValue: fav },
         provideRouter([]),
         provideFakeMe(new FakeMeApi(withPermissions('Report.Run'))),
         { provide: ReportsClient, useValue: api },
@@ -470,5 +478,67 @@ describe('ReportRunPage (#719, #720)', () => {
     expect(api.runReport).toHaveBeenCalledWith(5, { parameters: {} });
     expect(has('[data-summary-bar]')).toBe(false);
     expect(q('[data-result-slot] mf-report-result')).not.toBeNull();
+  });
+
+  describe('favourite star beside the heading (#1326)', () => {
+    const star = (): HTMLButtonElement => q('mf-page-header mf-report-star [data-favourite]');
+    /** The page loads the report asynchronously: wait (under load too) until the star is drawn. */
+    const ready = async (report = aRunnable()): Promise<void> => {
+      await create(report);
+      for (let i = 0; i < 50 && !has('mf-report-star'); i++) await settle(fixture);
+    };
+
+    it('shows an outline star named for the action when the report is not a favourite', async () => {
+      await ready(aRunnable({ isFavourite: false }));
+      expect(star().getAttribute('aria-label')).toBe('Add Overdue tasks to favourites');
+      expect(star().querySelector('.pi-star')).not.toBeNull();
+      expect(star().hasAttribute('data-on')).toBe(false);
+    });
+
+    it('shows the filled star when the report is a favourite', async () => {
+      await ready(aRunnable({ isFavourite: true }));
+      expect(star().getAttribute('aria-label')).toBe('Remove Overdue tasks from favourites');
+      expect(star().querySelector('.pi-star-fill')).not.toBeNull();
+      expect(star().hasAttribute('data-on')).toBe(true);
+    });
+
+    it('is a real button, so Enter and Space press it (no shortcut is added)', async () => {
+      await ready();
+      expect(star().tagName).toBe('BUTTON');
+      expect(star().type).toBe('button');
+    });
+
+    it('toggles at once, calls PUT then DELETE and announces it politely', async () => {
+      await ready(aRunnable({ isFavourite: false }));
+      star().click();
+      await settle(fixture);
+      expect(fav.addReportFavourite).toHaveBeenCalledWith(5);
+      expect(star().getAttribute('aria-label')).toBe('Remove Overdue tasks from favourites');
+      expect(q('[data-announce]').textContent).toContain('Overdue tasks added to favourites.');
+      star().click();
+      await settle(fixture);
+      expect(fav.removeReportFavourite).toHaveBeenCalledWith(5);
+      expect(star().getAttribute('aria-label')).toBe('Add Overdue tasks to favourites');
+      expect(q('[data-announce]').textContent).toContain('Overdue tasks removed from favourites.');
+    });
+
+    it("puts the star back and shows the toast Couldn't update favourites. when the call fails", async () => {
+      await ready(aRunnable({ isFavourite: false }));
+      const error = vi.spyOn(TestBed.inject(NotificationService), 'error');
+      fav.addReportFavourite.mockReturnValue(apiError(500, {}));
+      star().click();
+      await settle(fixture);
+      expect(star().getAttribute('aria-label')).toBe('Add Overdue tasks to favourites');
+      expect(error).toHaveBeenCalledWith("Couldn't update favourites.");
+    });
+
+    it('has no star when the report cannot be opened', async () => {
+      await create();
+      api.getMyReport.mockReturnValue(apiError(404, { status: 404 }));
+      fixture.destroy();
+      fixture = TestBed.createComponent(ReportRunPage);
+      await settle(fixture);
+      expect(has('mf-report-star')).toBe(false);
+    });
   });
 });
