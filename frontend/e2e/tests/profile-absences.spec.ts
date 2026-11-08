@@ -75,7 +75,7 @@ test.describe('My profile: several Out of office entries', () => {
         .filter(Boolean)
         .slice(-2),
     ).toEqual(['Cancel', 'Add Out of Office']);
-    await dialog.getByRole('button', { name: 'Add Out of Office' }).click();
+    await dialog.getByRole('button', { name: 'Add Out of Office', exact: true }).click();
     await expect(dialog).toBeHidden();
 
     const second = await addEntry(me, {
@@ -83,14 +83,14 @@ test.describe('My profile: several Out of office entries', () => {
       end: inDays(20).text,
       type: 'Training',
     });
-    await second.getByRole('button', { name: 'Add Out of Office' }).click();
+    await second.getByRole('button', { name: 'Add Out of Office', exact: true }).click();
     await expect(second).toBeHidden();
 
     const upcoming = me.locator('[data-group="upcoming"] [data-absence]');
     await expect(upcoming).toHaveCount(2);
     await expect(upcoming.first()).toContainText('Vacation');
     await expect(upcoming.first()).toContainText('Covering: Dana');
-    await expect(upcoming.first()).toContainText(/\d\d\/\d\d to \d\d\/\d\d/);
+    await expect(upcoming.first()).toContainText(/\d\d\/\d\d\s+to \d\d\/\d\d/);
 
     // Edit the second entry: the note.
     await upcoming.nth(1).locator('[data-absence-edit]').click();
@@ -120,7 +120,7 @@ test.describe('My profile: several Out of office entries', () => {
       end: inDays(34).text,
       type: 'Vacation',
     });
-    await base.getByRole('button', { name: 'Add Out of Office' }).click();
+    await base.getByRole('button', { name: 'Add Out of Office', exact: true }).click();
     await expect(base).toBeHidden();
 
     const overlap = await addEntry(me, {
@@ -128,7 +128,7 @@ test.describe('My profile: several Out of office entries', () => {
       end: inDays(33).text,
       type: 'Sick',
     });
-    await overlap.getByRole('button', { name: 'Add Out of Office' }).click();
+    await overlap.getByRole('button', { name: 'Add Out of Office', exact: true }).click();
     await expect(overlap.locator('[data-ad-overlap]')).toContainText(
       'overlap another entry: Vacation',
     );
@@ -136,7 +136,7 @@ test.describe('My profile: several Out of office entries', () => {
     await overlap.getByRole('button', { name: 'Cancel' }).click();
 
     const past = await addEntry(me, { start: inDays(-40).text, type: 'Vacation' });
-    await past.getByRole('button', { name: 'Add Out of Office' }).click();
+    await past.getByRole('button', { name: 'Add Out of Office', exact: true }).click();
     await expect(past.locator('[data-ad-start-error]')).toBeVisible();
     await past.getByRole('button', { name: 'Cancel' }).click();
   });

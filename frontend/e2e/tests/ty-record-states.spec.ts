@@ -55,7 +55,7 @@ const ROUTES: Route[] = [
     url: '/admin/task-types/99999999',
     api: '**/api/v1/task-types/99999999',
     list: 'Task Types',
-    crumbs: ['Administration', 'Task Types', 'Task Type'],
+    crumbs: ['Administration', 'Task Types', 'Task type'],
   },
   {
     key: 'task-type-form',
@@ -64,7 +64,7 @@ const ROUTES: Route[] = [
     url: '/admin/task-types/99999999/form',
     api: '**/api/v1/task-types/99999999',
     list: 'Task Types',
-    crumbs: ['Administration', 'Task Types', 'Task Type'],
+    crumbs: ['Administration', 'Task Types', 'Task type'],
   },
   {
     key: 'workflow',
@@ -121,7 +121,9 @@ test.describe('Task Types administration: not found, no access, failure (#353)',
       await expect(page.getByRole('button', { name: /Retry|Try again/ })).toHaveCount(0);
       const crumbs = page.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('listitem');
       await expect(crumbs).toHaveText(r.crumbs);
-      await expect(page).toHaveTitle(`${r.title} not found - MatterFlow`);
+      await expect(page).toHaveTitle(
+        `${r.title.replace(/ [A-Z]/g, (m) => m.toLowerCase())} not found - MatterFlow`,
+      );
       await expect(heading(page)).toBeFocused();
       await noToast(page);
       const back = page.getByRole('link', { name: `Go to ${r.list}` });
@@ -159,7 +161,9 @@ test.describe('Task Types administration: not found, no access, failure (#353)',
       status = 500;
       await page.goto(r.url);
       await expect(heading(page)).toHaveText(`Couldn't load this ${r.noun}.`);
-      await expect(page).toHaveTitle(`${r.title} could not be loaded - MatterFlow`);
+      await expect(page).toHaveTitle(
+        `${r.title.replace(/ [A-Z]/g, (m) => m.toLowerCase())} could not be loaded - MatterFlow`,
+      );
       await expect(page.locator('[data-error-reference]')).toContainText(reference);
       await expect(page.locator('[data-toast]')).toHaveCount(0);
       await atEverySize(page, `${r.key}-load-failed`);

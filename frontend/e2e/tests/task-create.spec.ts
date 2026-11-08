@@ -29,7 +29,7 @@ test.describe('Create task: project, workflow and form rules (SCN-004, SCN-005, 
       taskType: world.taskType.name,
       title,
     });
-    await expect(create.project).toHaveValue('');
+    await expect(create.project).toHaveAttribute('data-value', '');
     const taskId = await create.create();
 
     const detail = new TaskDetailPage(page);
@@ -79,15 +79,15 @@ test.describe('Create task: project, workflow and form rules (SCN-004, SCN-005, 
     await create.chooseTaskType(world.taskType.name);
     await create.pickMatter(world.matter.matterRef, world.matter.matterRef);
 
-    await expect(create.project.getByRole('option', { name: mine.name })).toBeAttached();
-    await expect(create.project.getByRole('option', { name: foreign.name })).toHaveCount(0);
+    await expect.poll(() => create.project.optionTexts()).toContain(mine.name);
+    expect(await create.project.optionTexts()).not.toContain(foreign.name);
 
     await create.project.selectOption({ label: mine.name });
     await page.locator('[data-chosen]').first().getByRole('button', { name: 'Change' }).click();
     await create.pickMatter(other.matterRef, other.matterRef);
-    await expect(create.project).toHaveValue('');
-    await expect(create.project.getByRole('option', { name: mine.name })).toHaveCount(0);
-    await expect(create.project.getByRole('option', { name: foreign.name })).toBeAttached();
+    await expect(create.project).toHaveAttribute('data-value', '');
+    expect(await create.project.optionTexts()).not.toContain(mine.name);
+    expect(await create.project.optionTexts()).toContain(foreign.name);
   });
 
   test('SCN-005: the API rejects a project from another matter and creates no task', async ({

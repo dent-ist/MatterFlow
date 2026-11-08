@@ -70,9 +70,7 @@ test.describe('Summary v4', () => {
     await page.goto('/dashboard');
     await card(page, 'unassigned').click();
     await expect(page.locator('mf-dash-grid th[data-col="unassignedFor"]')).toBeVisible();
-    await expect(page.locator('[data-sorted-text]')).toContainText(
-      'Unassigned for, longest waiting first',
-    );
+    await expect(page.locator('[data-sorted-text]')).toContainText('Sorted by Unassigned for');
     await expect(page.locator('mf-dash-grid td[data-col="unassignedFor"]').first()).toBeVisible();
     await card(page, 'unassigned').click();
     await expect(page.locator('mf-dash-grid th[data-col="unassignedFor"]')).toHaveCount(0);
@@ -194,14 +192,12 @@ test.describe('Summary v4', () => {
     const world = await seed.world();
     await seed.task(world, { title: `Gauge ${uid()}` });
     await page.goto('/dashboard');
-    const gauge = page.locator('[data-gauge]');
+    const gauge = page.locator('[data-compact-gauge]');
     await expect(gauge).toBeVisible();
     await expect(gauge.locator('[data-gauge-badge]')).toContainText(/Level \d|Normal|All clear/);
-    await gauge
-      .getByRole('button', { name: 'Show them, longest waiting first', exact: true })
-      .click();
+    await gauge.getByRole('button', { name: /Show them, longest waiting first/ }).click();
     await expect(card(page, 'unassigned')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('[data-sorted-text]')).toContainText('longest waiting first');
+    await expect(page.locator('[data-sorted-text]')).toContainText('Sorted by Unassigned for');
   });
 
   test('Hide Panel gives the grid the full width and puts a compact battery and gauge on the cards row; the choice is remembered (#1233)', async ({
@@ -262,7 +258,10 @@ test.describe('Summary v4', () => {
     const page = await asUser(lead.username);
     await page.goto('/dashboard');
     await expect(page.locator('[data-dash-cards]')).toBeVisible();
-    await expect(page.locator('mf-dropdown[data-scope]')).toHaveAttribute('data-value', 'mine');
+    await expect(page.locator('mf-dropdown[data-scope] button')).toHaveAttribute(
+      'data-value',
+      'mine',
+    );
   });
 });
 

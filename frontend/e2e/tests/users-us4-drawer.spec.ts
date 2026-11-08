@@ -93,15 +93,15 @@ test.describe('#438 the drawer shell', () => {
     page,
   }) => {
     await openList(page);
-    const before = await page.locator('.mf-table-wrap').boundingBox();
+    const before = await page.locator('mf-grid-frame .scroll').boundingBox();
     await openDrawer(page, worker.userId);
     await expect(page).toHaveURL(new RegExp(`user=${worker.userId}`));
     // The grid behind the mask is as wide as before: the drawer takes no room from it.
-    const after = await page.locator('.mf-table-wrap').boundingBox();
+    const after = await page.locator('mf-grid-frame .scroll').boundingBox();
     expect(Math.round(after!.width)).toBe(Math.round(before!.width));
-    // The drawer is 480 px from 1024 up.
+    // The drawer is 520 px from 1024 up.
     const box = await drawer(page).boundingBox();
-    expect(Math.round(box!.width)).toBe(480);
+    expect(Math.round(box!.width)).toBe(520);
     // The first role is on screen without scrolling the drawer, and so are Save changes and Cancel.
     const role = page.locator('[data-panel] [data-role]').first();
     const roleBox = await role.boundingBox();
@@ -165,7 +165,7 @@ test.describe('#438 the drawer shell', () => {
     // A reload keeps it: the person is in the address.
     await page.reload();
     await expect(page.locator('[data-panel-heading]')).toContainText(
-      worker.displayName ?? worker.username,
+      (worker.displayName ?? worker.username).replace(/^.*\\/, ''),
     );
     // Closing after a reload leaves the address without the person.
     await page.keyboard.press('Escape');
@@ -173,7 +173,7 @@ test.describe('#438 the drawer shell', () => {
     await expect(page).not.toHaveURL(/user=/);
     // A person that does not exist shows the error, not a blank drawer.
     await page.goto(listUrl('&user=99999999'));
-    await expect(page.locator('[data-panel-error]')).toContainText('We could not load this user');
+    await expect(page.locator('[data-panel-error]')).toContainText("Couldn't load this user");
     await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
   });
 
@@ -288,7 +288,9 @@ test.describe('#440 Pods, Availability and Profile', () => {
     const pop = page.locator('[data-pods-popover]');
     await expect(pop).toBeVisible();
     await pop.getByRole('checkbox', { name: new RegExp(otherPodName) }).check();
-    await pop.getByRole('button', { name: `Make ${otherPodName} the primary pod` }).click();
+    // The first pod of a person with no pods is the primary one already (no "Make Primary" button then).
+    const makePrimary = pop.getByRole('button', { name: `Make ${otherPodName} the primary pod` });
+    if ((await makePrimary.count()) > 0) await makePrimary.click();
     await pop.locator('[data-pods-apply]').click();
     await expect(pods).toContainText(otherPodName);
     await expect(page.getByRole('status').filter({ hasText: /Pods of/ })).toBeVisible();
@@ -301,7 +303,7 @@ test.describe('#440 Pods, Availability and Profile', () => {
     await openList(page);
     await openDrawer(page, away.userId);
     await expect(page.locator('[data-availability-sentence]')).toContainText(
-      'Out of office until Oct 25',
+      'Out of Office until 10/25/2027',
     );
     const edit = page.locator('[data-edit-availability]');
     await edit.click();
@@ -323,7 +325,7 @@ test.describe('#440 Pods, Availability and Profile', () => {
     await page.goto(`/admin/users?status=all&account=${p.username}`);
     await nameOf(page, p.userId).click();
     await expect(page.locator('.ud-dl')).toContainText(p.username);
-    await expect(page.locator('[data-first-seen]')).toHaveText(/\w{3} \d{1,2}, \d{4}/);
+    await expect(page.locator('[data-first-seen]')).toHaveText(/^\d{2}\/\d{2}/);
     await page.locator('[data-name]').fill('Renamed Drawer Person');
     await page.locator('[data-email]').fill('renamed@firm.test');
     await page.getByRole('button', { name: 'Save Changes' }).click();
@@ -353,7 +355,7 @@ test.describe('#441 deactivation', () => {
 
     const inactiveBefore = await page.locator('[data-strip-item="inactive"]').textContent();
     await deactivate.click();
-    await dialog.getByRole('button', { name: 'Deactivate', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Deactivate User', exact: true }).click();
     await expect(dialog).toBeHidden();
     await expect(page.locator('[data-drawer-status]')).toContainText('Inactive');
     await expect(page.getByRole('button', { name: /^Activate / })).toBeVisible();
@@ -397,7 +399,7 @@ test.describe('#441 deactivation', () => {
     await page.getByRole('button', { name: /^Deactivate / }).click();
     await page
       .getByRole('dialog', { name: /^Deactivate / })
-      .getByRole('button', { name: 'Deactivate', exact: true })
+      .getByRole('button', { name: 'Deactivate User', exact: true })
       .click();
     await expect(page.locator('[data-panel-error]')).toHaveText(
       'At least one active System Admin is required.',
@@ -421,7 +423,7 @@ test.describe('#442 a first grant of access', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/admin/users?status=pending&account=e2e-${XTAG}g`);
     await expect(page.locator('tr[data-record-id]')).toHaveCount(2);
-    const grant = rowOf(page, first.userId).locator('[data-grant] button');
+    const grant = rowOf(page, first.userId).locator('button[data-grant]');
     await grant.click();
     await expect(page.locator('[data-panel-heading]')).toBeFocused();
     await page.getByRole('checkbox', { name: /^Data Technician/ }).check();
@@ -482,7 +484,9 @@ test.describe('#443 read-only variants and #444 conflicts', () => {
     await expect(page.locator('[data-role]').first()).toBeDisabled();
     await drawer(page).locator('[data-pods-trigger]').click();
     await page.getByRole('checkbox', { name: new RegExp(otherPodName) }).check();
-    await page.getByRole('button', { name: `Make ${otherPodName} the primary pod` }).click();
+    // The first pod of a person with no pods is the primary one already (no "Make Primary" button then).
+    const makePrimary = page.getByRole('button', { name: `Make ${otherPodName} the primary pod` });
+    if ((await makePrimary.count()) > 0) await makePrimary.click();
     await page.locator('[data-pods-apply]').click();
     await expect(page.locator('[data-section="pods"]')).toContainText(otherPodName);
   });

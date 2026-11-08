@@ -60,9 +60,9 @@ test.describe('My Work needs-attention strip', () => {
     const item = (key: string) => page.locator(`[data-strip-item="${key}"]`);
     const rows = page.locator('[data-task]');
     await expect(strip).toContainText('Overdue 2');
-    await expect(strip).toContainText('Due today 1');
+    await expect(strip).toContainText('Due Today 1');
     await expect(strip).toContainText('ASAP 1');
-    await expect(strip).toContainText('On hold 1');
+    await expect(strip).toContainText('On Hold 1');
     await expect(strip).toHaveAttribute(
       'title',
       'All your open tasks, not affected by the filters below',
@@ -108,7 +108,7 @@ test.describe('My Work needs-attention strip', () => {
     await item('overdue').click();
     await expect(rows).toHaveCount(1);
     await expect(strip).toContainText('Overdue 2');
-    await expect(strip).toContainText('On hold 1');
+    await expect(strip).toContainText('On Hold 1');
   });
 
   test('M1: zero items stay muted but present; sizes, axe, no horizontal scroll, 44 px targets on a phone', async ({
@@ -130,7 +130,7 @@ test.describe('My Work needs-attention strip', () => {
       await myWork.open();
       const strip = page.locator('[data-strip]');
       await expect(strip).toContainText('Overdue 1');
-      await expect(page.locator('[data-strip-item="onHold"]')).toContainText('On hold 0');
+      await expect(page.locator('[data-strip-item="onHold"]')).toContainText('On Hold 0');
       await expect(page.locator('[data-loading]')).toHaveCount(0);
       expect(await axeViolations(page), `axe at ${w}`).toEqual([]);
       expect(
@@ -169,9 +169,9 @@ test.describe('My Work needs-attention strip', () => {
     const strip = page.locator('[data-strip]');
     // Pod Work (#561): the strip has My Work's four items, each a toggle; the queue task has no due date, so it counts as ASAP.
     await expect(strip).toContainText('Overdue 1');
-    await expect(strip).toContainText('Due today 0');
+    await expect(strip).toContainText('Due Today 0');
     await expect(strip).toContainText('ASAP 1');
-    await expect(strip).toContainText('On hold 0');
+    await expect(strip).toContainText('On Hold 0');
     await expect(strip).not.toContainText('Assigned');
     await expect(strip.locator('button')).toHaveCount(4);
     await shot(page, 'pod-work-strip-1366x768');

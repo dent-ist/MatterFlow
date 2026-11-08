@@ -55,7 +55,7 @@ export async function addPriorities(
 export const priorityRow = (page: Page, name: string) =>
   page
     .locator('tbody tr[data-row], li.rc')
-    .filter({ has: page.getByRole('link', { name, exact: true }) });
+    .filter({ has: page.getByRole('button', { name, exact: true }) });
 
 /**
  * Opens the row menu of `trigger` (the "Actions for ..." button). A row far down the list is scrolled into view first and the page is given

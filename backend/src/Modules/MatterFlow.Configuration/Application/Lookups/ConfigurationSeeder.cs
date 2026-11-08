@@ -27,11 +27,20 @@ public sealed class ConfigurationSeeder(DbContext db, ILogger<ConfigurationSeede
 
     private static readonly string[] DefaultOnHoldReasons = ["Waiting for client data", "Waiting for approval", "Waiting for vendor", "Waiting for a decision"];
 
+    private static readonly string[] DefaultMatterTypes = ["Litigation", "Investigation", "Regulatory", "Arbitration", "Other"];
+
+    private static readonly string[] DefaultCurrentStates = ["Startup", "Start of Discovery", "Review", "Production", "Closed-out"];
+
+    private static readonly string[] DefaultTeamTitles = ["Attorney", "Paralegal", "Project Manager", "Litigation Support", "Client Contact"];
+
     public async Task SeedAsync(CancellationToken ct = default)
     {
         await SeedPrioritiesAsync(ct);
         await SeedAssetLinkRolesAsync(ct);
         await SeedOnHoldReasonsAsync(ct);
+        await SeedMatterListAsync<MatterType>(DefaultMatterTypes, ct);
+        await SeedMatterListAsync<CurrentState>(DefaultCurrentStates, ct);
+        await SeedMatterListAsync<TeamTitle>(DefaultTeamTitles, ct);
         await VerifyStatusLabelsAsync(ct);
     }
 
@@ -81,6 +90,20 @@ public sealed class ConfigurationSeeder(DbContext db, ILogger<ConfigurationSeede
 
         await db.SaveChangesAsync(ct);
         logger.LogInformation("Seeded {Count} default on-hold reasons.", DefaultOnHoldReasons.Length);
+    }
+
+    /// <summary>Seeds one matter pick list (epic #1298) on first install only, so admin edits are never overwritten.</summary>
+    private async Task SeedMatterListAsync<T>(string[] names, CancellationToken ct)
+        where T : MatterListEntity, new()
+    {
+        if (await db.Set<T>().AnyAsync(ct))
+            return;
+
+        for (var i = 0; i < names.Length; i++)
+            db.Set<T>().Add(new T { Name = names[i], SortOrder = i + 1, IsActive = true });
+
+        await db.SaveChangesAsync(ct);
+        logger.LogInformation("Seeded {Count} default {List} items.", names.Length, typeof(T).Name);
     }
 
     public async Task SeedAssetLinkRolesAsync(CancellationToken ct)

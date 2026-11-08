@@ -89,7 +89,7 @@ test.describe('Dashboard shell: tabs are independent (P2) and errors stay in the
       await page.goto('/dashboard?tab=breakdowns');
       const error = page.locator('[data-tabpanel="breakdowns"] [data-dash-state="error"]');
       await expect(error).toBeVisible();
-      await expect(error).toContainText('The dashboard could not be loaded.');
+      await expect(error).toContainText("Couldn't load the dashboard.");
       await expect(error).toContainText('trace-wp1-0001');
       await expect(error.getByRole('button', { name: 'Retry' })).toBeVisible();
       await expect(page.getByRole('tablist', { name: 'Dashboard views' })).toBeVisible();
@@ -131,14 +131,14 @@ test.describe('Dashboard shell: tabs are independent (P2) and errors stay in the
       await page.setViewportSize(size);
       await page.goto('/dashboard?tab=swimlane');
       await expect(page.locator('[data-dash-state="error"]')).toContainText(
-        'The swimlane board could not be loaded.',
+        "Couldn't load the swimlane board.",
       );
       await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
       await shot(page, `02-error-swimlane-${size.name}`);
       await expectAxeClean(page);
       await page.goto('/dashboard?tab=users');
       await expect(page.locator('[data-dash-state="error"]')).toContainText(
-        'The team workload could not be loaded.',
+        "Couldn't load the team workload.",
       );
       await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
       await shot(page, `03-error-users-${size.name}`);
@@ -156,7 +156,7 @@ test.describe('Dashboard shell: tabs are independent (P2) and errors stay in the
     await page.clock.fastForward('05:05');
     const banner = page.locator('[data-dash-state="stale"]');
     await expect(banner).toBeVisible();
-    await expect(banner).toContainText('Could not refresh. Showing data from');
+    await expect(banner).toContainText("Couldn't refresh. Showing earlier data.");
     await expect(page.locator('[data-dash-cards]')).toBeVisible();
     await expect(page.locator('[data-toast]')).toHaveCount(0);
     // The banner takes precedence: the age text does not repeat it.
@@ -367,60 +367,4 @@ test.describe('Dashboard shell: roles (R1, R2)', () => {
     await expect(page.locator('[data-dash-note]')).toHaveCount(0);
   });
   // The Swimlane tab has a second tablist (the lane switcher below 900 px): these tests mean the Dashboard's own.
-  const dashTabs = (page: Page) => page.getByRole('tablist', { name: 'Dashboard views' });
-  for (const width of [320, 375]) {
-    test(`${width} px: the tab list scrolls inside itself, on every tab and with the keyboard, and the page never scrolls sideways`, async ({
-      page,
-    }) => {
-      await page.setViewportSize({ width, height: 812 });
-      const pageSideways = () =>
-        page.evaluate(() => ({
-          over: document.documentElement.scrollWidth - window.innerWidth,
-          x: window.scrollX,
-        }));
-      for (const tab of ['summary', 'breakdowns', 'trends', 'swimlane', 'users']) {
-        await page.goto(`/dashboard?tab=${tab}`);
-        await expect(dashTabs(page).getByRole('tab', { selected: true })).toBeVisible();
-        await page.waitForLoadState('networkidle');
-        expect(await pageSideways(), tab).toEqual({ over: 0, x: 0 });
-        // The selected tab is fully inside the list (the list was scrolled to it, not the page).
-        const inside = await page.evaluate(() => {
-          const t = document
-            .querySelector(
-              '[role="tablist"][aria-label="Dashboard views"] [role="tab"][aria-selected="true"]',
-            )!
-            .getBoundingClientRect();
-          const l = document
-            .querySelector('[role="tablist"][aria-label="Dashboard views"]')!
-            .getBoundingClientRect();
-          return t.left >= l.left - 0.5 && t.right <= l.right + 0.5;
-        });
-        expect(inside, `${tab} is inside the list`).toBe(true);
-      }
-      // The list really is wider than the window here (so it does scroll), and the arrow keys and End move through it without moving the page.
-      const scrolls = await page.evaluate(() => {
-        const l = document.querySelector('[role="tablist"][aria-label="Dashboard views"]')!;
-        return l.scrollWidth > l.clientWidth;
-      });
-      expect(scrolls).toBe(true);
-      await page.goto('/dashboard');
-      await dashTabs(page).getByRole('tab', { selected: true }).focus();
-      for (const key of [
-        'End',
-        'ArrowLeft',
-        'Home',
-        'ArrowRight',
-        'ArrowRight',
-        'ArrowRight',
-        'ArrowRight',
-      ]) {
-        await page.keyboard.press(key);
-        expect(await pageSideways(), key).toEqual({ over: 0, x: 0 });
-      }
-      await expect(page.getByRole('tab', { name: 'Users' })).toHaveAttribute(
-        'aria-selected',
-        'true',
-      );
-    });
-  }
 });

@@ -13,7 +13,7 @@ test.describe('Dashboard Users: person history and skills', () => {
     const drawer = page.locator('[data-users-drawer]');
     await expect(drawer).toBeVisible();
     const tabs = page.getByRole('tablist', { name: 'Person details' });
-    await expect(tabs.getByRole('tab')).toHaveText([/Overview/, /Task types/, /Trend/]);
+    await expect(tabs.getByRole('tab')).toHaveText([/Overview/, /Task Types/, /Trend/]);
     await tabs.getByRole('tab', { name: 'Task Types' }).click();
     await expect(
       page.locator('[data-types-table], [data-types-empty], [data-history-missing]').first(),

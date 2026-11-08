@@ -211,11 +211,9 @@ test.describe('T4: Complete readiness (M2, #304)', () => {
 
     await button.click();
     const dialog = detail.dialog;
-    await expect(dialog).toContainText('Steps need information first');
+    await expect(dialog).toContainText('Steps Need Information First');
     await expect(dialog.locator('[data-blocked-steps] li')).toHaveCount(2);
-    await expect(dialog.getByRole('button', { name: 'Complete all steps and finish' })).toHaveCount(
-      0,
-    );
+    await expect(dialog.getByRole('button', { name: 'Complete Task', exact: true })).toHaveCount(0);
     await shot(page, 'complete-blocked-dialog-1366x768');
     await dialog.getByRole('button', { name: 'Go to first step' }).click();
 
@@ -273,7 +271,7 @@ test.describe('T4: Complete readiness (M2, #304)', () => {
     await detail.chooseAction('COMPLETE');
     await expect(detail.dialog.locator('[data-bulk-body]')).toBeVisible();
     await shot(page, 'complete-ready-dialog-1366x768');
-    await detail.dialog.getByRole('button', { name: 'Complete all steps and finish' }).click();
+    await detail.dialog.getByRole('button', { name: 'Complete Task', exact: true }).click();
     await expect(detail.dialog).toBeHidden();
     await detail.expectStatus('Completed');
   });
@@ -303,7 +301,7 @@ test.describe('T4: Complete readiness (M2, #304)', () => {
       await detail.open(task.taskId);
       await detail.statusMenu.click();
       await page.locator('[data-option="COMPLETE"]').click();
-      await expect(detail.dialog).toContainText('Steps need information first');
+      await expect(detail.dialog).toContainText('Steps Need Information First');
       await shot(page, `complete-blocked-dialog-${size.name}`);
       await checkPage(page, `blocked Complete dialog ${size.name}`);
     });
@@ -404,7 +402,7 @@ test.describe('T4: dialog wording (M3, #305)', () => {
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
     await detail.chooseAction('REOPEN');
-    await expect(detail.dialog.locator('[data-reopen-body]')).toContainText('No reason is needed');
+    await expect(detail.dialog.locator('[data-reopen-body]')).toContainText('no reason is needed');
     await expect(detail.dialog.getByRole('button', { name: 'Keep' })).toBeVisible();
     await detail.dialog.getByRole('button', { name: 'Reopen' }).click();
     await detail.expectStatus('In Progress');
@@ -428,7 +426,7 @@ test.describe('T4: dialog wording (M3, #305)', () => {
       await detail.dialog.getByRole('button', { name: 'Put Task on Hold' }).click();
       await shot(page, `dialog-hold-${size.name}`);
       await checkPage(page, `hold dialog ${size.name}`);
-      await detail.dialog.getByRole('button', { name: 'Close', exact: true }).click();
+      await detail.dialog.getByRole('button', { name: /^Close/ }).click();
       await expect(detail.dialog).toBeHidden();
 
       await detail.chooseAction('CANCEL');

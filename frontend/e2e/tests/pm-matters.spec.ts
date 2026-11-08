@@ -1,6 +1,8 @@
+import { dropdownByAttr } from '../support/dropdown';
 import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { showMatterColumns } from '../support/matter-columns';
 import { pmFixtures } from '../support/pm-fixtures';
 import { toasts } from '../support/toasts';
 
@@ -16,12 +18,9 @@ const SIZES: [number, number][] = [
 
 const rowOf = (page: Page, name: string) => page.locator('tbody tr', { hasText: name });
 
-/** Secondary PM is off by default so the default columns fit the 1366 frame (D-43a); the Columns menu turns it on (the choice is remembered). */
+/** Primary PM and Secondary PM are off by default so the default columns fit the 1366 frame (D-43a, epic #1298); the Columns menu turns them on (the choice is remembered). */
 async function showSecondaryPm(page: Page) {
-  const columns = page.getByRole('button', { name: 'Columns', exact: true });
-  await columns.click();
-  await page.getByLabel('Secondary PM', { exact: true }).check();
-  await columns.click();
+  await showMatterColumns(page, 'Primary PM', 'Secondary PM');
 }
 
 async function noSideScroll(page: Page) {
@@ -64,6 +63,7 @@ test.describe('Matters list: project managers', () => {
     const fx = await pmFixtures(seed, personas);
     const page = await asUser(fx.pmA.username);
     await page.goto(`/matters?name=${fx.token}`);
+    await showSecondaryPm(page); // Primary PM is off by default (epic #1298); the last assertion reads that column
 
     await page.locator('[data-scope="mine"]').click();
     await expect(page).toHaveURL(/scope=mine/);
@@ -90,6 +90,7 @@ test.describe('Matters list: project managers', () => {
     const fx = await pmFixtures(seed, personas);
     const page = await asUser(fx.director.username);
     await page.goto(`/matters?name=${fx.token}`);
+    await showSecondaryPm(page); // Primary PM is off by default (epic #1298); the last assertion reads that column
 
     await page.locator('[data-select-mode]').click();
     await rowOf(page, 'No manager one').locator('[data-select-row]').check();
@@ -97,9 +98,9 @@ test.describe('Matters list: project managers', () => {
     await page.getByRole('button', { name: 'Set PMs' }).click();
     const dialog = page.locator('[data-managers-dialog]');
     await expect(dialog.locator('[data-managers-bulk-note]')).toContainText('2 matters selected');
-    await dialog
-      .locator('[data-manager-select=primary]')
-      .selectOption({ label: `PM Bravo ${fx.token}` });
+    await dropdownByAttr(dialog, 'data-manager-select=primary').selectOption({
+      label: `PM Bravo ${fx.token}`,
+    });
     await page.locator('[data-panel-primary] button').click();
     await expect(toasts(page).first()).toContainText('PMs set');
     await expect(rowOf(page, 'No manager two').locator('[data-primary-manager]')).toContainText(
@@ -183,9 +184,9 @@ test.describe('Matter page: project managers', () => {
     await expect(change).toBeFocused();
 
     await change.click();
-    await page
-      .locator('[data-manager-select=secondary]')
-      .selectOption({ label: `PM Bravo ${fx.token}` });
+    await dropdownByAttr(page, 'data-manager-select=secondary').selectOption({
+      label: `PM Bravo ${fx.token}`,
+    });
     await page.locator('[data-panel-primary] button').click();
     await expect(page.locator('[data-secondary-manager]')).toContainText('PM Bravo');
 

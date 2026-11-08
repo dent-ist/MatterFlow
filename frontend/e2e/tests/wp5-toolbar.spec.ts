@@ -235,7 +235,7 @@ test.describe('Task Queue toolbar (WP5)', () => {
     await page.goto('/pods/work');
     await page.getByRole('link', { name: 'My Work', exact: true }).first().click();
     const notice = page.locator('[data-toolbar-row2] [data-restored-notice]');
-    await expect(notice).toContainText('Restored your last view: Due soon and overdue');
+    await expect(notice).toContainText('Restored your last view: Due Soon and Overdue');
     await shot(page, 'my-work-restored-notice-1366x768');
     // Switching tab is an action: the notice goes.
     await myWork.tab(/Active/).click();

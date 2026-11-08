@@ -6,6 +6,7 @@ import { unsavedChangesGuard } from '../../shared/guards/unsaved-changes.guard';
 import { AssetTypeFormDesignerApi } from './asset-types/asset-type-form-designer-api';
 import { CustomFieldFormDesignerApi } from './custom-fields/custom-field-form-designer-api';
 import { labelsTabGuard } from './labels-tabs';
+import { matterListsTabGuard } from './matter-lists/matter-lists-tabs';
 import { FormDesignerApi } from './task-types/form-designer-api';
 import { TASK_TYPE_TAB_PROVIDERS } from './task-types/task-types-providers';
 import { StepFormDesignerApi } from './steps/step-form-designer-api';
@@ -144,6 +145,14 @@ function labelsTabsMatcher(segments: UrlSegment[]): UrlMatchResult | null {
     : null;
 }
 
+/** `matter-types`, `current-states` and `team-titles` are the three tabs of the Matter Lists page; `:tab` is the segment. */
+function matterListsTabsMatcher(segments: UrlSegment[]): UrlMatchResult | null {
+  return segments.length === 1 &&
+    ['matter-types', 'current-states', 'team-titles'].includes(segments[0].path)
+    ? { consumed: segments, posParams: { tab: segments[0] } }
+    : null;
+}
+
 /** `task-types`, `workflows` and `steps` are the three tabs of one page (the Task Types menu item); `:tab` is the segment. */
 function taskTypesTabsMatcher(segments: UrlSegment[]): UrlMatchResult | null {
   return segments.length === 1 && ['task-types', 'workflows', 'steps'].includes(segments[0].path)
@@ -233,6 +242,20 @@ export const ADMIN_ROUTES: Routes = [
     import('./custom-fields/custom-fields-page').then((m) => m.CustomFieldsPage),
   ),
   customFieldForm('custom-fields/:ownerId/form'),
+  {
+    // Administration > Matter Lists (epic #1298): the three pick lists of the Matter in one page; `MatterList.Manage` opens all of them.
+    matcher: matterListsTabsMatcher,
+    title: (route) =>
+      route.params['tab'] === 'current-states'
+        ? pageTab('Matter Lists', 'Current States')
+        : route.params['tab'] === 'team-titles'
+          ? pageTab('Matter Lists', 'Team Titles')
+          : pageTab('Matter Lists', 'Matter Types'),
+    canActivate: [matterListsTabGuard()],
+    canDeactivate: [unsavedChangesGuard],
+    loadComponent: () =>
+      import('./matter-lists/matter-lists-admin-page').then((m) => m.MatterListsAdminPage),
+  },
   {
     // /admin/priorities and /admin/status-labels are the two tabs of one page (Labels, #593); the component stays alive when the tab
     // changes. Each tab needs its own permission: the other tab's address falls back to the allowed one (labelsTabGuard).

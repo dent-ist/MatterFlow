@@ -201,7 +201,7 @@ test.describe('#413: skip link and Tab stops on the three lists', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await freshTop(page, urlOf('workflows'));
     // The first row is "Base" (30 task types use it); the others have a draft v1 only.
-    const row = page.locator('tr[data-row]').first();
+    const row = page.locator('tr:is([data-row], [data-record-id])').first();
     await row.locator(NAME_LINK).focus();
     await page.keyboard.press('ArrowRight');
     expect(await active(page)).toMatch(/^a:(Draft|Open draft|30 task types)/);
@@ -319,7 +319,7 @@ test.describe('#414: record pages', () => {
     await pressMenu(page, 'More actions', 'Deactivate');
     const confirmButton = await confirm(page, /^Deactivate/);
     await expect(page.getByRole('dialog').locator('[data-confirm-error]')).toContainText(
-      'could not save the workflow',
+      "Couldn't save the workflow",
     );
     await expect(confirmButton).toBeFocused();
     await page.unroute(new RegExp(`/api/v1/workflows/${id}$`));
@@ -554,7 +554,7 @@ test.describe('#414: a failed deactivate stays in the dialog (screenshots)', () 
       await failNext(page, /\/api\/v1\/task-types\/\d+$/, 'PUT');
       const first = page
         .locator(
-          'tr[data-row] button[aria-label^="Actions for"], li[data-record-card] button[aria-label^="Actions for"]',
+          'tr:is([data-row], [data-record-id]) button[aria-label^="Actions for"], li[data-record-card] button[aria-label^="Actions for"]',
         )
         .first();
       await first.click();

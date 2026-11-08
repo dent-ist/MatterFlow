@@ -1,4 +1,5 @@
 import { expect, Locator, Page } from '@playwright/test';
+import { Dropdown, dropdownById } from '../support/dropdown';
 
 /**
  * Create task (UX S09): type first. The page opens on the grid of Task Type cards (`chooser`); choosing a card reveals the form with
@@ -6,7 +7,7 @@ import { expect, Locator, Page } from '@playwright/test';
  */
 export class CreateTaskPage {
   readonly matter: Locator;
-  readonly project: Locator;
+  readonly project: Dropdown;
   readonly title: Locator;
   /** The description's rich text editor (a contenteditable textbox named Description). */
   readonly description: Locator;
@@ -16,13 +17,13 @@ export class CreateTaskPage {
   readonly typeSearch: Locator;
   readonly requestorName: Locator;
   readonly requestorEmail: Locator;
-  readonly priority: Locator;
+  readonly priority: Dropdown;
   readonly dueDate: Locator;
   readonly dueTime: Locator;
   /** The header button of the collapsed "Priority, due date and assignment" section (#349). */
   readonly whenToggle: Locator;
   readonly whenSummary: Locator;
-  readonly pod: Locator;
+  readonly pod: Dropdown;
   readonly assignee: Locator;
   readonly submit: Locator;
   readonly summary: Locator;
@@ -34,7 +35,7 @@ export class CreateTaskPage {
 
   constructor(readonly page: Page) {
     this.matter = page.getByRole('combobox', { name: 'Matter (required)' });
-    this.project = page.getByLabel('Project', { exact: true });
+    this.project = dropdownById(page, 'ct-project');
     this.title = page.getByRole('textbox', { name: 'Title (required)' });
     this.description = page.locator('[data-description-field] [role=textbox]');
     this.chooser = page.locator('[data-type-chooser]');
@@ -43,12 +44,12 @@ export class CreateTaskPage {
     this.typeSearch = page.getByRole('searchbox', { name: 'Search Task Types' });
     this.requestorName = page.getByRole('textbox', { name: 'Requestor name (required)' });
     this.requestorEmail = page.getByRole('textbox', { name: 'Requestor Email', exact: true });
-    this.priority = page.getByLabel('Priority (required)');
+    this.priority = dropdownById(page, 'ct-priority');
     this.dueDate = page.getByLabel('Due Date', { exact: true });
     this.dueTime = page.getByLabel(/^Time \(/);
     this.whenToggle = page.locator('[data-when-toggle]');
     this.whenSummary = page.locator('[data-when-summary]');
-    this.pod = page.getByLabel('Pod', { exact: true });
+    this.pod = dropdownById(page, 'ct-pod');
     this.assignee = page.getByRole('combobox', { name: 'Assignee', exact: true });
     this.submit = page.getByRole('button', { name: 'Create Task', exact: true });
     this.summary = page.locator('[data-summary]');
@@ -56,7 +57,7 @@ export class CreateTaskPage {
     this.requestDetails = page.locator('[data-request-details]');
     this.sensitiveBanner = page.locator('[data-sensitive-banner]');
     this.pasteBox = page.getByRole('textbox', { name: 'Paste Email Text' });
-    this.fillFromPasted = page.getByRole('button', { name: /Fill from pasted text/ });
+    this.fillFromPasted = page.getByRole('button', { name: /Fill from Pasted Text/ });
   }
 
   async open(query = ''): Promise<void> {

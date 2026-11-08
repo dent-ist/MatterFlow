@@ -125,6 +125,22 @@ export interface IAssetTypesClient {
      */
     setAssetTypeSizeField(assetTypeId: number, body: SetAssetTypeSizeFieldRequest): Observable<AssetTypeResponse>;
     /**
+     * @param q (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param sort (optional) 
+     * @return OK
+     */
+    listAssetNumberCounters(assetTypeId: number, q?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetNumberCounterItem>;
+    /**
+     * @return OK
+     */
+    getAssetNumberCounter(assetTypeId: number, matterId: number): Observable<AssetNumberCounterItem>;
+    /**
+     * @return OK
+     */
+    setAssetNextNumber(assetTypeId: number, matterId: number, body: AssetNextNumberChange): Observable<AssetNumberCounterItem>;
+    /**
      * @return OK
      */
     reindexAssetType(assetTypeId: number): Observable<AssetTypeReindexResponse>;
@@ -445,6 +461,195 @@ export class AssetTypesClient implements IAssetTypesClient {
     }
 
     /**
+     * @param q (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param sort (optional) 
+     * @return OK
+     */
+    listAssetNumberCounters(assetTypeId: number, q?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetNumberCounterItem> {
+        let url_ = this.baseUrl + "/api/v1/asset-types/{assetTypeId}/numbering/counters?";
+        if (assetTypeId === undefined || assetTypeId === null)
+            throw new globalThis.Error("The parameter 'assetTypeId' must be defined.");
+        url_ = url_.replace("{assetTypeId}", encodeURIComponent("" + assetTypeId));
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "Q=" + encodeURIComponent("" + q) + "&";
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "Page=" + encodeURIComponent("" + page) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "PageSize=" + encodeURIComponent("" + pageSize) + "&";
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "Sort=" + encodeURIComponent("" + sort) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListAssetNumberCounters(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListAssetNumberCounters(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PagedResultOfAssetNumberCounterItem>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PagedResultOfAssetNumberCounterItem>;
+        }));
+    }
+
+    protected processListAssetNumberCounters(response: HttpResponseBase): Observable<PagedResultOfAssetNumberCounterItem> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PagedResultOfAssetNumberCounterItem;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getAssetNumberCounter(assetTypeId: number, matterId: number): Observable<AssetNumberCounterItem> {
+        let url_ = this.baseUrl + "/api/v1/asset-types/{assetTypeId}/numbering/counters/{matterId}";
+        if (assetTypeId === undefined || assetTypeId === null)
+            throw new globalThis.Error("The parameter 'assetTypeId' must be defined.");
+        url_ = url_.replace("{assetTypeId}", encodeURIComponent("" + assetTypeId));
+        if (matterId === undefined || matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' must be defined.");
+        url_ = url_.replace("{matterId}", encodeURIComponent("" + matterId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetAssetNumberCounter(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetAssetNumberCounter(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AssetNumberCounterItem>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AssetNumberCounterItem>;
+        }));
+    }
+
+    protected processGetAssetNumberCounter(response: HttpResponseBase): Observable<AssetNumberCounterItem> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetNumberCounterItem;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    setAssetNextNumber(assetTypeId: number, matterId: number, body: AssetNextNumberChange): Observable<AssetNumberCounterItem> {
+        let url_ = this.baseUrl + "/api/v1/asset-types/{assetTypeId}/numbering/counters/{matterId}";
+        if (assetTypeId === undefined || assetTypeId === null)
+            throw new globalThis.Error("The parameter 'assetTypeId' must be defined.");
+        url_ = url_.replace("{assetTypeId}", encodeURIComponent("" + assetTypeId));
+        if (matterId === undefined || matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' must be defined.");
+        url_ = url_.replace("{matterId}", encodeURIComponent("" + matterId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSetAssetNextNumber(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSetAssetNextNumber(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AssetNumberCounterItem>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AssetNumberCounterItem>;
+        }));
+    }
+
+    protected processSetAssetNextNumber(response: HttpResponseBase): Observable<AssetNumberCounterItem> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetNumberCounterItem;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
      * @return OK
      */
     reindexAssetType(assetTypeId: number): Observable<AssetTypeReindexResponse> {
@@ -510,6 +715,7 @@ export interface IAssetsClient {
      * @param q (optional) 
      * @param name (optional) 
      * @param externalReference (optional) 
+     * @param assetNumber (optional) 
      * @param matter (optional) 
      * @param matterManagedByMe (optional) 
      * @param role (optional) 
@@ -520,7 +726,7 @@ export interface IAssetsClient {
      * @param sort (optional) 
      * @return OK
      */
-    listAssets(matterId?: number | undefined, assetTypeId?: number[] | undefined, isActive?: boolean | undefined, q?: string | undefined, name?: string | undefined, externalReference?: string | undefined, matter?: string | undefined, matterManagedByMe?: boolean | undefined, role?: string | undefined, disposition?: string[] | undefined, inactiveLinked?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetListItem>;
+    listAssets(matterId?: number | undefined, assetTypeId?: number[] | undefined, isActive?: boolean | undefined, q?: string | undefined, name?: string | undefined, externalReference?: string | undefined, assetNumber?: string | undefined, matter?: string | undefined, matterManagedByMe?: boolean | undefined, role?: string | undefined, disposition?: string[] | undefined, inactiveLinked?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetListItem>;
     /**
      * @return Created
      */
@@ -550,6 +756,10 @@ export interface IAssetsClient {
      * @return OK
      */
     changeAssetDisposition(assetId: number, body: ChangeAssetDispositionRequest): Observable<AssetResponse>;
+    /**
+     * @return OK
+     */
+    assignAssetNumber(assetId: number, body: AssignAssetNumberRequest): Observable<AssetResponse>;
     /**
      * @return OK
      */
@@ -637,6 +847,7 @@ export class AssetsClient implements IAssetsClient {
      * @param q (optional) 
      * @param name (optional) 
      * @param externalReference (optional) 
+     * @param assetNumber (optional) 
      * @param matter (optional) 
      * @param matterManagedByMe (optional) 
      * @param role (optional) 
@@ -647,7 +858,7 @@ export class AssetsClient implements IAssetsClient {
      * @param sort (optional) 
      * @return OK
      */
-    listAssets(matterId?: number | undefined, assetTypeId?: number[] | undefined, isActive?: boolean | undefined, q?: string | undefined, name?: string | undefined, externalReference?: string | undefined, matter?: string | undefined, matterManagedByMe?: boolean | undefined, role?: string | undefined, disposition?: string[] | undefined, inactiveLinked?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetListItem> {
+    listAssets(matterId?: number | undefined, assetTypeId?: number[] | undefined, isActive?: boolean | undefined, q?: string | undefined, name?: string | undefined, externalReference?: string | undefined, assetNumber?: string | undefined, matter?: string | undefined, matterManagedByMe?: boolean | undefined, role?: string | undefined, disposition?: string[] | undefined, inactiveLinked?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfAssetListItem> {
         let url_ = this.baseUrl + "/api/v1/assets?";
         if (matterId === null)
             throw new globalThis.Error("The parameter 'matterId' cannot be null.");
@@ -673,6 +884,10 @@ export class AssetsClient implements IAssetsClient {
             throw new globalThis.Error("The parameter 'externalReference' cannot be null.");
         else if (externalReference !== undefined)
             url_ += "ExternalReference=" + encodeURIComponent("" + externalReference) + "&";
+        if (assetNumber === null)
+            throw new globalThis.Error("The parameter 'assetNumber' cannot be null.");
+        else if (assetNumber !== undefined)
+            url_ += "AssetNumber=" + encodeURIComponent("" + assetNumber) + "&";
         if (matter === null)
             throw new globalThis.Error("The parameter 'matter' cannot be null.");
         else if (matter !== undefined)
@@ -1076,6 +1291,63 @@ export class AssetsClient implements IAssetsClient {
     }
 
     protected processChangeAssetDisposition(response: HttpResponseBase): Observable<AssetResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    assignAssetNumber(assetId: number, body: AssignAssetNumberRequest): Observable<AssetResponse> {
+        let url_ = this.baseUrl + "/api/v1/assets/{assetId}/assign-number";
+        if (assetId === undefined || assetId === null)
+            throw new globalThis.Error("The parameter 'assetId' must be defined.");
+        url_ = url_.replace("{assetId}", encodeURIComponent("" + assetId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAssignAssetNumber(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processAssignAssetNumber(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AssetResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AssetResponse>;
+        }));
+    }
+
+    protected processAssignAssetNumber(response: HttpResponseBase): Observable<AssetResponse> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -4119,6 +4391,915 @@ export class FormsClient implements IFormsClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ValidateFormValuesResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface IMatterTypesClient {
+    /**
+     * @return OK
+     */
+    listMatterTypes(): Observable<MatterListItemView[]>;
+    /**
+     * @return Created
+     */
+    createMatterType(body: CreateMatterListItemRequest): Observable<MatterListItemView>;
+    /**
+     * @return OK
+     */
+    updateMatterType(id: number, body: UpdateMatterListItemRequest): Observable<MatterListItemView>;
+    /**
+     * @return No Content
+     */
+    deleteMatterType(id: number): Observable<void>;
+    /**
+     * @return OK
+     */
+    reorderMatterTypes(body: ReorderRequest): Observable<MatterListItemView[]>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class MatterTypesClient implements IMatterTypesClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    listMatterTypes(): Observable<MatterListItemView[]> {
+        let url_ = this.baseUrl + "/api/v1/matter-types";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListMatterTypes(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListMatterTypes(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MatterListItemView[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MatterListItemView[]>;
+        }));
+    }
+
+    protected processListMatterTypes(response: HttpResponseBase): Observable<MatterListItemView[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MatterListItemView[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createMatterType(body: CreateMatterListItemRequest): Observable<MatterListItemView> {
+        let url_ = this.baseUrl + "/api/v1/matter-types";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateMatterType(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateMatterType(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MatterListItemView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MatterListItemView>;
+        }));
+    }
+
+    protected processCreateMatterType(response: HttpResponseBase): Observable<MatterListItemView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MatterListItemView;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateMatterType(id: number, body: UpdateMatterListItemRequest): Observable<MatterListItemView> {
+        let url_ = this.baseUrl + "/api/v1/matter-types/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateMatterType(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateMatterType(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MatterListItemView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MatterListItemView>;
+        }));
+    }
+
+    protected processUpdateMatterType(response: HttpResponseBase): Observable<MatterListItemView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MatterListItemView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return No Content
+     */
+    deleteMatterType(id: number): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/matter-types/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeleteMatterType(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeleteMatterType(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDeleteMatterType(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    reorderMatterTypes(body: ReorderRequest): Observable<MatterListItemView[]> {
+        let url_ = this.baseUrl + "/api/v1/matter-types/order";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processReorderMatterTypes(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processReorderMatterTypes(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MatterListItemView[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MatterListItemView[]>;
+        }));
+    }
+
+    protected processReorderMatterTypes(response: HttpResponseBase): Observable<MatterListItemView[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MatterListItemView[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface ICurrentStatesClient {
+    /**
+     * @return OK
+     */
+    listCurrentStates(): Observable<MatterListItemView[]>;
+    /**
+     * @return Created
+     */
+    createCurrentState(body: CreateMatterListItemRequest): Observable<MatterListItemView>;
+    /**
+     * @return OK
+     */
+    updateCurrentState(id: number, body: UpdateMatterListItemRequest): Observable<MatterListItemView>;
+    /**
+     * @return No Content
+     */
+    deleteCurrentState(id: number): Observable<void>;
+    /**
+     * @return OK
+     */
+    reorderCurrentStates(body: ReorderRequest): Observable<MatterListItemView[]>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class CurrentStatesClient implements ICurrentStatesClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    listCurrentStates(): Observable<MatterListItemView[]> {
+        let url_ = this.baseUrl + "/api/v1/current-states";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListCurrentStates(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListCurrentStates(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MatterListItemView[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MatterListItemView[]>;
+        }));
+    }
+
+    protected processListCurrentStates(response: HttpResponseBase): Observable<MatterListItemView[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MatterListItemView[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createCurrentState(body: CreateMatterListItemRequest): Observable<MatterListItemView> {
+        let url_ = this.baseUrl + "/api/v1/current-states";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateCurrentState(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateCurrentState(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MatterListItemView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MatterListItemView>;
+        }));
+    }
+
+    protected processCreateCurrentState(response: HttpResponseBase): Observable<MatterListItemView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MatterListItemView;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateCurrentState(id: number, body: UpdateMatterListItemRequest): Observable<MatterListItemView> {
+        let url_ = this.baseUrl + "/api/v1/current-states/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateCurrentState(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateCurrentState(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MatterListItemView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MatterListItemView>;
+        }));
+    }
+
+    protected processUpdateCurrentState(response: HttpResponseBase): Observable<MatterListItemView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MatterListItemView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return No Content
+     */
+    deleteCurrentState(id: number): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/current-states/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeleteCurrentState(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeleteCurrentState(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDeleteCurrentState(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    reorderCurrentStates(body: ReorderRequest): Observable<MatterListItemView[]> {
+        let url_ = this.baseUrl + "/api/v1/current-states/order";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processReorderCurrentStates(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processReorderCurrentStates(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MatterListItemView[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MatterListItemView[]>;
+        }));
+    }
+
+    protected processReorderCurrentStates(response: HttpResponseBase): Observable<MatterListItemView[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MatterListItemView[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface ITeamTitlesClient {
+    /**
+     * @return OK
+     */
+    listTeamTitles(): Observable<MatterListItemView[]>;
+    /**
+     * @return Created
+     */
+    createTeamTitle(body: CreateMatterListItemRequest): Observable<MatterListItemView>;
+    /**
+     * @return OK
+     */
+    updateTeamTitle(id: number, body: UpdateMatterListItemRequest): Observable<MatterListItemView>;
+    /**
+     * @return No Content
+     */
+    deleteTeamTitle(id: number): Observable<void>;
+    /**
+     * @return OK
+     */
+    reorderTeamTitles(body: ReorderRequest): Observable<MatterListItemView[]>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class TeamTitlesClient implements ITeamTitlesClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    listTeamTitles(): Observable<MatterListItemView[]> {
+        let url_ = this.baseUrl + "/api/v1/team-titles";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListTeamTitles(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListTeamTitles(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MatterListItemView[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MatterListItemView[]>;
+        }));
+    }
+
+    protected processListTeamTitles(response: HttpResponseBase): Observable<MatterListItemView[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MatterListItemView[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createTeamTitle(body: CreateMatterListItemRequest): Observable<MatterListItemView> {
+        let url_ = this.baseUrl + "/api/v1/team-titles";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateTeamTitle(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateTeamTitle(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MatterListItemView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MatterListItemView>;
+        }));
+    }
+
+    protected processCreateTeamTitle(response: HttpResponseBase): Observable<MatterListItemView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MatterListItemView;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateTeamTitle(id: number, body: UpdateMatterListItemRequest): Observable<MatterListItemView> {
+        let url_ = this.baseUrl + "/api/v1/team-titles/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateTeamTitle(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateTeamTitle(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MatterListItemView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MatterListItemView>;
+        }));
+    }
+
+    protected processUpdateTeamTitle(response: HttpResponseBase): Observable<MatterListItemView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MatterListItemView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return No Content
+     */
+    deleteTeamTitle(id: number): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/team-titles/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeleteTeamTitle(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeleteTeamTitle(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDeleteTeamTitle(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    reorderTeamTitles(body: ReorderRequest): Observable<MatterListItemView[]> {
+        let url_ = this.baseUrl + "/api/v1/team-titles/order";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processReorderTeamTitles(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processReorderTeamTitles(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MatterListItemView[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MatterListItemView[]>;
+        }));
+    }
+
+    protected processReorderTeamTitles(response: HttpResponseBase): Observable<MatterListItemView[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MatterListItemView[];
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -11482,6 +12663,10 @@ export interface IMattersClient {
      * @param managerId (optional) 
      * @param managedByMe (optional) 
      * @param hasNoManager (optional) 
+     * @param matterTypeId (optional) 
+     * @param matterTypeNone (optional) 
+     * @param currentStateId (optional) 
+     * @param currentStateNone (optional) 
      * @param hasPrimaryManager (optional) 
      * @param hasSecondaryManager (optional) 
      * @param page (optional) 
@@ -11489,7 +12674,7 @@ export interface IMattersClient {
      * @param sort (optional) 
      * @return OK
      */
-    listMatters(q?: string | undefined, clientId?: number | undefined, isActive?: boolean | undefined, isSensitive?: boolean | undefined, matterRef?: string | undefined, name?: string | undefined, client?: string | undefined, primaryManagerId?: number | undefined, secondaryManagerId?: number | undefined, managerId?: number | undefined, managedByMe?: boolean | undefined, hasNoManager?: boolean | undefined, hasPrimaryManager?: boolean | undefined, hasSecondaryManager?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfMatterResponse>;
+    listMatters(q?: string | undefined, clientId?: number | undefined, isActive?: boolean | undefined, isSensitive?: boolean | undefined, matterRef?: string | undefined, name?: string | undefined, client?: string | undefined, primaryManagerId?: number | undefined, secondaryManagerId?: number | undefined, managerId?: number | undefined, managedByMe?: boolean | undefined, hasNoManager?: boolean | undefined, matterTypeId?: number[] | undefined, matterTypeNone?: boolean | undefined, currentStateId?: number[] | undefined, currentStateNone?: boolean | undefined, hasPrimaryManager?: boolean | undefined, hasSecondaryManager?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfMatterResponse>;
     /**
      * @return Created
      */
@@ -11555,6 +12740,10 @@ export class MattersClient implements IMattersClient {
      * @param managerId (optional) 
      * @param managedByMe (optional) 
      * @param hasNoManager (optional) 
+     * @param matterTypeId (optional) 
+     * @param matterTypeNone (optional) 
+     * @param currentStateId (optional) 
+     * @param currentStateNone (optional) 
      * @param hasPrimaryManager (optional) 
      * @param hasSecondaryManager (optional) 
      * @param page (optional) 
@@ -11562,7 +12751,7 @@ export class MattersClient implements IMattersClient {
      * @param sort (optional) 
      * @return OK
      */
-    listMatters(q?: string | undefined, clientId?: number | undefined, isActive?: boolean | undefined, isSensitive?: boolean | undefined, matterRef?: string | undefined, name?: string | undefined, client?: string | undefined, primaryManagerId?: number | undefined, secondaryManagerId?: number | undefined, managerId?: number | undefined, managedByMe?: boolean | undefined, hasNoManager?: boolean | undefined, hasPrimaryManager?: boolean | undefined, hasSecondaryManager?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfMatterResponse> {
+    listMatters(q?: string | undefined, clientId?: number | undefined, isActive?: boolean | undefined, isSensitive?: boolean | undefined, matterRef?: string | undefined, name?: string | undefined, client?: string | undefined, primaryManagerId?: number | undefined, secondaryManagerId?: number | undefined, managerId?: number | undefined, managedByMe?: boolean | undefined, hasNoManager?: boolean | undefined, matterTypeId?: number[] | undefined, matterTypeNone?: boolean | undefined, currentStateId?: number[] | undefined, currentStateNone?: boolean | undefined, hasPrimaryManager?: boolean | undefined, hasSecondaryManager?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfMatterResponse> {
         let url_ = this.baseUrl + "/api/v1/matters?";
         if (q === null)
             throw new globalThis.Error("The parameter 'q' cannot be null.");
@@ -11612,6 +12801,22 @@ export class MattersClient implements IMattersClient {
             throw new globalThis.Error("The parameter 'hasNoManager' cannot be null.");
         else if (hasNoManager !== undefined)
             url_ += "HasNoManager=" + encodeURIComponent("" + hasNoManager) + "&";
+        if (matterTypeId === null)
+            throw new globalThis.Error("The parameter 'matterTypeId' cannot be null.");
+        else if (matterTypeId !== undefined)
+            matterTypeId && matterTypeId.forEach(item => { url_ += "MatterTypeId=" + encodeURIComponent("" + item) + "&"; });
+        if (matterTypeNone === null)
+            throw new globalThis.Error("The parameter 'matterTypeNone' cannot be null.");
+        else if (matterTypeNone !== undefined)
+            url_ += "MatterTypeNone=" + encodeURIComponent("" + matterTypeNone) + "&";
+        if (currentStateId === null)
+            throw new globalThis.Error("The parameter 'currentStateId' cannot be null.");
+        else if (currentStateId !== undefined)
+            currentStateId && currentStateId.forEach(item => { url_ += "CurrentStateId=" + encodeURIComponent("" + item) + "&"; });
+        if (currentStateNone === null)
+            throw new globalThis.Error("The parameter 'currentStateNone' cannot be null.");
+        else if (currentStateNone !== undefined)
+            url_ += "CurrentStateNone=" + encodeURIComponent("" + currentStateNone) + "&";
         if (hasPrimaryManager === null)
             throw new globalThis.Error("The parameter 'hasPrimaryManager' cannot be null.");
         else if (hasPrimaryManager !== undefined)
@@ -12161,6 +13366,281 @@ export class MattersClient implements IMattersClient {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MatterResponse;
             return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface IMatterTeamClient {
+    /**
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param sort (optional) 
+     * @return OK
+     */
+    listMatterTeam(matterId: number, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfMatterTeamMemberResponse>;
+    /**
+     * @return Created
+     */
+    addMatterTeamMember(matterId: number, body: AddTeamMemberRequest): Observable<MatterTeamMemberResponse>;
+    /**
+     * @return OK
+     */
+    updateMatterTeamMember(matterId: number, memberId: number, body: UpdateTeamMemberRequest): Observable<MatterTeamMemberResponse>;
+    /**
+     * @return No Content
+     */
+    removeMatterTeamMember(matterId: number, memberId: number): Observable<void>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class MatterTeamClient implements IMatterTeamClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param sort (optional) 
+     * @return OK
+     */
+    listMatterTeam(matterId: number, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfMatterTeamMemberResponse> {
+        let url_ = this.baseUrl + "/api/v1/matters/{matterId}/team?";
+        if (matterId === undefined || matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' must be defined.");
+        url_ = url_.replace("{matterId}", encodeURIComponent("" + matterId));
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "Page=" + encodeURIComponent("" + page) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "PageSize=" + encodeURIComponent("" + pageSize) + "&";
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "Sort=" + encodeURIComponent("" + sort) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListMatterTeam(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListMatterTeam(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PagedResultOfMatterTeamMemberResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PagedResultOfMatterTeamMemberResponse>;
+        }));
+    }
+
+    protected processListMatterTeam(response: HttpResponseBase): Observable<PagedResultOfMatterTeamMemberResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PagedResultOfMatterTeamMemberResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    addMatterTeamMember(matterId: number, body: AddTeamMemberRequest): Observable<MatterTeamMemberResponse> {
+        let url_ = this.baseUrl + "/api/v1/matters/{matterId}/team";
+        if (matterId === undefined || matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' must be defined.");
+        url_ = url_.replace("{matterId}", encodeURIComponent("" + matterId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAddMatterTeamMember(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processAddMatterTeamMember(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MatterTeamMemberResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MatterTeamMemberResponse>;
+        }));
+    }
+
+    protected processAddMatterTeamMember(response: HttpResponseBase): Observable<MatterTeamMemberResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MatterTeamMemberResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateMatterTeamMember(matterId: number, memberId: number, body: UpdateTeamMemberRequest): Observable<MatterTeamMemberResponse> {
+        let url_ = this.baseUrl + "/api/v1/matters/{matterId}/team/{memberId}";
+        if (matterId === undefined || matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' must be defined.");
+        url_ = url_.replace("{matterId}", encodeURIComponent("" + matterId));
+        if (memberId === undefined || memberId === null)
+            throw new globalThis.Error("The parameter 'memberId' must be defined.");
+        url_ = url_.replace("{memberId}", encodeURIComponent("" + memberId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateMatterTeamMember(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateMatterTeamMember(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MatterTeamMemberResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MatterTeamMemberResponse>;
+        }));
+    }
+
+    protected processUpdateMatterTeamMember(response: HttpResponseBase): Observable<MatterTeamMemberResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MatterTeamMemberResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return No Content
+     */
+    removeMatterTeamMember(matterId: number, memberId: number): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/matters/{matterId}/team/{memberId}";
+        if (matterId === undefined || matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' must be defined.");
+        url_ = url_.replace("{matterId}", encodeURIComponent("" + matterId));
+        if (memberId === undefined || memberId === null)
+            throw new globalThis.Error("The parameter 'memberId' must be defined.");
+        url_ = url_.replace("{memberId}", encodeURIComponent("" + memberId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processRemoveMatterTeamMember(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processRemoveMatterTeamMember(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processRemoveMatterTeamMember(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -20692,6 +22172,7 @@ export interface IMyMattersClient {
     /**
      * @param q (optional) 
      * @param name (optional) 
+     * @param assetNumber (optional) 
      * @param assetTypeId (optional) 
      * @param status (optional) 
      * @param createdFrom (optional) 
@@ -20712,7 +22193,7 @@ export interface IMyMattersClient {
      * @param matterId (optional) 
      * @return OK
      */
-    getMyMattersAssets(q?: string | undefined, name?: string | undefined, assetTypeId?: number[] | undefined, status?: string[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<PagedResultOfMyMattersAssetRow>;
+    getMyMattersAssets(q?: string | undefined, name?: string | undefined, assetNumber?: string | undefined, assetTypeId?: number[] | undefined, status?: string[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<PagedResultOfMyMattersAssetRow>;
     /**
      * @param scope (optional) 
      * @param role (optional) 
@@ -22245,6 +23726,7 @@ export class MyMattersClient implements IMyMattersClient {
     /**
      * @param q (optional) 
      * @param name (optional) 
+     * @param assetNumber (optional) 
      * @param assetTypeId (optional) 
      * @param status (optional) 
      * @param createdFrom (optional) 
@@ -22265,7 +23747,7 @@ export class MyMattersClient implements IMyMattersClient {
      * @param matterId (optional) 
      * @return OK
      */
-    getMyMattersAssets(q?: string | undefined, name?: string | undefined, assetTypeId?: number[] | undefined, status?: string[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<PagedResultOfMyMattersAssetRow> {
+    getMyMattersAssets(q?: string | undefined, name?: string | undefined, assetNumber?: string | undefined, assetTypeId?: number[] | undefined, status?: string[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<PagedResultOfMyMattersAssetRow> {
         let url_ = this.baseUrl + "/api/v1/my-matters/assets?";
         if (q === null)
             throw new globalThis.Error("The parameter 'q' cannot be null.");
@@ -22275,6 +23757,10 @@ export class MyMattersClient implements IMyMattersClient {
             throw new globalThis.Error("The parameter 'name' cannot be null.");
         else if (name !== undefined)
             url_ += "name=" + encodeURIComponent("" + name) + "&";
+        if (assetNumber === null)
+            throw new globalThis.Error("The parameter 'assetNumber' cannot be null.");
+        else if (assetNumber !== undefined)
+            url_ += "assetNumber=" + encodeURIComponent("" + assetNumber) + "&";
         if (assetTypeId === null)
             throw new globalThis.Error("The parameter 'assetTypeId' cannot be null.");
         else if (assetTypeId !== undefined)
@@ -25260,6 +26746,14 @@ export interface AddTaskCommentRequest {
     [key: string]: any;
 }
 
+export interface AddTeamMemberRequest {
+    name: string;
+    email: string;
+    teamTitleId?: number;
+
+    [key: string]: any;
+}
+
 export interface AdvancedSearchPage {
     type: string;
     items: SearchHit[];
@@ -25468,6 +26962,8 @@ export interface AssetListItem {
     inactiveLinked?: boolean | undefined;
     assetTypeIconKey?: string | undefined;
     assetTypeColourKey?: string | undefined;
+    assetNumber?: string | undefined;
+    assetTypeNumberingEnabled: boolean;
 
     [key: string]: any;
 }
@@ -25479,6 +26975,38 @@ export interface AssetLookupItem {
     displayName: string;
     externalReference: string | undefined;
     isActive: boolean;
+    assetNumber?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface AssetNextNumberChange {
+    nextNumber?: number;
+
+    [key: string]: any;
+}
+
+export interface AssetNumberCounterItem {
+    assetTypeId: number;
+    matterId: number;
+    matterRef: string;
+    matterName: string;
+    highestAssigned: number;
+    nextNumber: number;
+    nextAssetNumber: string;
+    hasCounter: boolean;
+    modifiedAtUtc: string | undefined;
+    numberedAssetCount: number;
+
+    [key: string]: any;
+}
+
+export interface AssetNumberExample {
+    cmNumber: string;
+    nextCounter: number;
+    isSample: boolean;
+    text: string;
+    longestCmNumber?: string | undefined;
 
     [key: string]: any;
 }
@@ -25601,6 +27129,8 @@ export interface AssetResponse {
     inactiveLinked?: boolean | undefined;
     assetTypeIconKey?: string | undefined;
     assetTypeColourKey?: string | undefined;
+    assetNumber?: string | undefined;
+    assetTypeNumberingEnabled: boolean;
 
     [key: string]: any;
 }
@@ -25641,6 +27171,25 @@ export interface AssetTypeCount {
     [key: string]: any;
 }
 
+export interface AssetTypeNumbering {
+    enabled: boolean;
+    pattern: string;
+    scope: string;
+    example: AssetNumberExample;
+    numberedAssetCount?: number | undefined;
+    unnumberedAssetCount?: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface AssetTypeNumberingRequest {
+    enabled?: boolean | undefined;
+    pattern?: string | undefined;
+    scope?: string | undefined;
+
+    [key: string]: any;
+}
+
 export interface AssetTypeReindexResponse {
     assetsProcessed: number;
 
@@ -25666,6 +27215,7 @@ export interface AssetTypeResponse {
     sizeUnit?: string | undefined;
     iconKey?: string | undefined;
     colourKey?: string | undefined;
+    numbering?: AssetTypeNumbering | undefined;
 
     [key: string]: any;
 }
@@ -25694,6 +27244,12 @@ export interface AssetVolumeResponse {
     units: string[];
     unitsWarning: string | undefined;
     limitation: string;
+
+    [key: string]: any;
+}
+
+export interface AssignAssetNumberRequest {
+    rowVersion: string;
 
     [key: string]: any;
 }
@@ -26445,6 +28001,7 @@ export interface CreateAssetTypeRequest {
     sortOrder?: number | undefined;
     iconKey?: string | undefined;
     colourKey?: string | undefined;
+    numbering?: AssetTypeNumberingRequest | undefined;
 
     [key: string]: any;
 }
@@ -26503,6 +28060,13 @@ export interface CreateHolidayRequest {
     [key: string]: any;
 }
 
+export interface CreateMatterListItemRequest {
+    name: string;
+    isActive?: boolean;
+
+    [key: string]: any;
+}
+
 export interface CreateMatterRequest {
     clientId?: number;
     matterNumber: string;
@@ -26511,6 +28075,10 @@ export interface CreateMatterRequest {
     aiAllowed?: MatterAiAllowed;
     primaryManagerId?: number | undefined;
     secondaryManagerId?: number | undefined;
+    matterTypeId?: number | undefined;
+    currentStateId?: number | undefined;
+    dmsPath?: string | undefined;
+    dfsPath?: string | undefined;
     formValues?: any | undefined;
 
     [key: string]: any;
@@ -27337,6 +28905,25 @@ export interface MatterEventTypeInfo {
     [key: string]: any;
 }
 
+export interface MatterListItemView {
+    id: number;
+    name: string;
+    sortOrder: number;
+    isActive: boolean;
+    rowVersion: string;
+    inUseCount: number;
+
+    [key: string]: any;
+}
+
+export interface MatterListRef {
+    id: number;
+    name: string;
+    isActive: boolean;
+
+    [key: string]: any;
+}
+
 export interface MatterManagerItem {
     userId: number;
     displayName: string;
@@ -27374,6 +28961,7 @@ export interface MatterOverviewAsset {
     displayName: string;
     assetTypeName: string;
     externalReference: string | undefined;
+    assetNumber?: string | undefined;
 
     [key: string]: any;
 }
@@ -27528,6 +29116,10 @@ export interface MatterResponse {
     onHoldTaskCount?: number | undefined;
     atRiskTaskCount?: number | undefined;
     aiAllowed: MatterAiAllowed;
+    matterType?: MatterListRef | undefined;
+    currentState?: MatterListRef | undefined;
+    dmsPath?: string | undefined;
+    dfsPath?: string | undefined;
 
     [key: string]: any;
 }
@@ -27542,6 +29134,19 @@ export interface MatterSummaryResponse {
     unassigned: number | undefined;
     projectCount: number;
     assetCount: number;
+    teamMemberCount: number;
+
+    [key: string]: any;
+}
+
+export interface MatterTeamMemberResponse {
+    id: number;
+    matterId: number;
+    name: string;
+    email: string;
+    title: MatterListRef;
+    sortOrder: number;
+    rowVersion: string;
 
     [key: string]: any;
 }
@@ -27625,6 +29230,7 @@ export interface MyMattersAssetDetail {
     linkedTasks: MyMattersLinkedTask[];
     assetTypeIconKey?: string | undefined;
     assetTypeColourKey?: string | undefined;
+    assetNumber?: string | undefined;
 
     [key: string]: any;
 }
@@ -27646,6 +29252,7 @@ export interface MyMattersAssetRow {
     openLinkedTaskCount: number;
     assetTypeIconKey?: string | undefined;
     assetTypeColourKey?: string | undefined;
+    assetNumber?: string | undefined;
 
     [key: string]: any;
 }
@@ -28291,6 +29898,15 @@ export interface PagedResultOfAssetListItem {
     [key: string]: any;
 }
 
+export interface PagedResultOfAssetNumberCounterItem {
+    items: AssetNumberCounterItem[];
+    total: number;
+    page: number;
+    pageSize: number;
+
+    [key: string]: any;
+}
+
 export interface PagedResultOfAssetTypeResponse {
     items: AssetTypeResponse[];
     total: number;
@@ -28311,6 +29927,15 @@ export interface PagedResultOfClientResponse {
 
 export interface PagedResultOfMatterResponse {
     items: MatterResponse[];
+    total: number;
+    page: number;
+    pageSize: number;
+
+    [key: string]: any;
+}
+
+export interface PagedResultOfMatterTeamMemberResponse {
+    items: MatterTeamMemberResponse[];
     total: number;
     page: number;
     pageSize: number;
@@ -29339,6 +30964,7 @@ export interface SearchHit {
     disposition?: string | undefined;
     sizeValue?: number | undefined;
     sizeUnit?: string | undefined;
+    assetNumber?: string | undefined;
 
     [key: string]: any;
 }
@@ -29803,6 +31429,7 @@ export interface TaskAssetLinkResponse {
     linkedAtUtc: string;
     linkedBy: TaskUserRef | undefined;
     rowVersion: string;
+    assetNumber?: string | undefined;
 
     [key: string]: any;
 }
@@ -30253,6 +31880,7 @@ export interface UpdateAssetReportRequest {
 export interface UpdateAssetRequest {
     matterId?: number | undefined;
     assetTypeId?: number | undefined;
+    assetNumber?: string | undefined;
     displayName: string;
     externalReference?: string | undefined;
     description?: string | undefined;
@@ -30269,6 +31897,7 @@ export interface UpdateAssetTypeRequest {
     isActive?: boolean;
     iconKey?: string | undefined;
     colourKey?: string | undefined;
+    numbering?: AssetTypeNumberingRequest | undefined;
     rowVersion: string;
 
     [key: string]: any;
@@ -30326,12 +31955,24 @@ export interface UpdateMatterEventRequest {
     [key: string]: any;
 }
 
+export interface UpdateMatterListItemRequest {
+    name: string;
+    isActive: boolean;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export interface UpdateMatterRequest {
     name: string;
     isSensitive?: boolean;
     aiAllowed?: MatterAiAllowed | undefined;
     confirmLossOfAccess?: boolean;
     rowVersion: string;
+    matterTypeId?: number | undefined;
+    currentStateId?: number | undefined;
+    dmsPath?: string | undefined;
+    dfsPath?: string | undefined;
     formValues?: any | undefined;
     primaryManagerId?: number | undefined;
     secondaryManagerId?: number | undefined;
@@ -30540,6 +32181,15 @@ export interface UpdateTaskTypeRequest {
     iconKey: string;
     colourKey?: string | undefined;
     targetDays?: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface UpdateTeamMemberRequest {
+    name: string;
+    email: string;
+    teamTitleId?: number;
+    rowVersion: string;
 
     [key: string]: any;
 }
@@ -31055,6 +32705,9 @@ export enum ApiProblemDetailsCode {
     MANAGER_NOT_ELIGIBLE = "MANAGER_NOT_ELIGIBLE",
     SENSITIVE_CONFIRMATION_REQUIRED = "SENSITIVE_CONFIRMATION_REQUIRED",
     MANAGER_DUPLICATE = "MANAGER_DUPLICATE",
+    INVALID_PATH = "INVALID_PATH",
+    INVALID_EMAIL = "INVALID_EMAIL",
+    DUPLICATE_TEAM_EMAIL = "DUPLICATE_TEAM_EMAIL",
     CLIENT_INACTIVE = "CLIENT_INACTIVE",
     PROJECT_INACTIVE = "PROJECT_INACTIVE",
     POD_INACTIVE = "POD_INACTIVE",

@@ -27,7 +27,7 @@ const SIZES = [
 ] as const;
 
 async function viewer(seed: Seeder, codes: string[], label: string) {
-  const role = await seed.role(codes, `E2E ${label}`);
+  const role = await seed.role([...codes, 'Workflow.Execute'], `E2E ${label}`);
   const user = await seed.user([role.name], label);
   return user;
 }
@@ -139,7 +139,7 @@ test.describe('My Work links, filters and copy', () => {
     await expect(page.locator('tbody [data-empty="none"]')).toContainText(
       'Nothing is assigned to you right now. You are not in a Pod yet; ask an administrator.',
     );
-    await myWork.tab(/^Due soon and overdue/).click();
+    await myWork.tab(/^Due Soon and Overdue/).click();
     await expect(page.locator('tbody [data-empty="none"]')).not.toContainText(
       /Pod Work|Task Queue/,
     );
@@ -271,7 +271,7 @@ test.describe('My Work links, filters and copy', () => {
     expect(await statusChoices()).toEqual(['In Progress', 'On Hold']);
     await myWork.tab(/^Closed/).click();
     expect(await statusChoices()).toEqual(['Completed', 'Cancelled']);
-    await myWork.tab(/^Created by me/).click();
+    await myWork.tab(/^Created by Me/).click();
     await expect(fixed('creator')).toHaveText(/Me/);
     expect(await statusChoices()).toEqual([
       'New',
@@ -318,7 +318,7 @@ test.describe('My Work links, filters and copy', () => {
     expect(typed).toContain('dueFrom=');
     // The filter button reads the preset's name when the range equals a preset (also for the typed range), else the dates (#155).
     const dueButton = page.getByRole('button', { name: /^Filter by Due/ });
-    await expect(dueButton).toHaveAccessibleName('Filter by Due, Next 7 days');
+    await expect(dueButton).toHaveAccessibleName('Filter by Due, Next 7 Days');
     await myWork.open(
       `?view=active&dueFrom=${dateInZone(FIRM_ZONE, 0)}&dueTo=${dateInZone(FIRM_ZONE, 8)}`,
     );

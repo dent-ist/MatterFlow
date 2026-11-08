@@ -104,7 +104,7 @@ test.describe('FD1: the form designer is three fixed panes', () => {
     for (const size of SIZES.slice(0, 2)) {
       await page.setViewportSize({ width: size.w, height: size.h });
       await page.goto(world.url);
-      await expect(page.getByRole('heading', { level: 1 })).toContainText('Project custom fields');
+      await expect(page.getByRole('heading', { level: 1 })).toContainText('Project Custom Fields');
       await expect(page.locator('[data-page-actions]')).toBeVisible();
       await noPageScroll(page);
       await noSideScroll(page);

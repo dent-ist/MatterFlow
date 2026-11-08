@@ -176,7 +176,7 @@ describe('PodMemberTable', () => {
     expect(rowNames(f)).toEqual([
       'Not assigned to a person',
       'Test User 21',
-      'Test User 41 Out of Office until Oct 26',
+      'Test User 41 Out of Office until 10/26',
     ]);
     const fold = el(f).querySelector('[data-member-fold]')!;
     expect(fold.textContent).toContain('Show 3 members with no open work');
@@ -226,12 +226,12 @@ describe('PodMemberTable', () => {
     expect(rowNames(f)).toEqual([
       'Not assigned to a person',
       'Test User 21',
-      'Test User 41 Out of Office until Oct 26',
+      'Test User 41 Out of Office until 10/26',
     ]);
     open().click();
     f.detectChanges();
     expect(sortOf()).toBe('descending');
-    expect(rowNames(f)[1]).toBe('Test User 41 Out of Office until Oct 26');
+    expect(rowNames(f)[1]).toBe('Test User 41 Out of Office until 10/26');
     expect(el(f).querySelector('tbody tr:nth-child(1)')!.getAttribute('data-member-row')).toBe(
       'unassigned',
     );

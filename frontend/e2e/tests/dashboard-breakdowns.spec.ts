@@ -173,7 +173,7 @@ test.describe('Dashboard Breakdowns', () => {
     expect(await stroke('Low')).toBe('solid 2px');
     // Bars -> pie -> table.
     await priority.getByRole('button', { name: /View as pie/ }).click();
-    await priority.getByRole('button', { name: /View as table/ }).click();
+    await priority.getByRole('button', { name: /View as Table/ }).click();
     await expect(priority.locator('thead th')).toHaveText([
       'Priority',
       'Tasks',

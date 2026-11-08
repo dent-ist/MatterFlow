@@ -361,9 +361,9 @@ describe('DashUsersTab', () => {
       expect(ooo.getAttribute('data-availability')).toBe('OUT_OF_OFFICE');
       // No band (it added height): the return date is in the count row, the whole wording in the tooltip and the accessible name.
       expect(ooo.querySelector('[data-ooo-band]')).toBeNull();
-      expect(text(ooo.querySelector('[data-back-on]'))).toBe('Back Oct 21');
+      expect(text(ooo.querySelector('[data-back-on]'))).toBe('Back 10/21');
       expect(ooo.querySelector('[data-user-open]')!.getAttribute('title')).toContain(
-        'Out of Office until Oct 20',
+        'Out of Office until 10/20',
       );
       // The workload is still there.
       expect(text(ooo.querySelector('[data-open-total]'))).toBe('1');
@@ -371,7 +371,7 @@ describe('DashUsersTab', () => {
         'Dee Fox, 1 open task, ',
       );
       expect(ooo.querySelector('[data-user-open]')!.getAttribute('aria-label')).toContain(
-        'Out of Office until Oct 20',
+        'Out of Office until 10/20',
       );
       expect(OUT_UNTIL).toBeTruthy();
       const eve = card('Eve Kim');
@@ -677,7 +677,7 @@ describe('DashUsersTab', () => {
       expect(qa('tbody tr').length).toBe(6);
       const row = q('[data-user-row="4"]');
       expect(row.getAttribute('data-state')).toBe('ooo');
-      expect(text(row)).toContain('Out of Office until Oct 20');
+      expect(text(row)).toContain('Out of Office until 10/20');
       expect(text(q('[data-user-row="3"]'))).not.toMatch(/No open tasks|Not available/);
       // Highest priority only for a person with open tasks: nobody (Cy Tan) has no pill at all.
       expect(q('[data-user-row="3"] mf-priority-badge')).toBeNull();
@@ -805,7 +805,7 @@ describe('DashUsersTab', () => {
       card('Dee Fox').querySelector<HTMLButtonElement>('[data-user-open]')!.click();
       await settle();
       const drawer = document.querySelector('[data-users-drawer]')!;
-      expect(text(drawer.querySelector('[data-drawer-back]'))).toBe('Back on Oct 21');
+      expect(text(drawer.querySelector('[data-drawer-back]'))).toBe('Back on 10/21');
       expect(text(drawer)).toContain('Annual leave');
       getQueue.mockReturnValue(of(pageOf([])));
       document
@@ -898,7 +898,7 @@ describe('DashUsersTab', () => {
       await open();
       await openPicker('Dee Fox');
       expect(text(dialog().querySelector('[data-assign-hint]'))).toContain(
-        'Dee Fox is not available (out of office until Oct 20). You can still assign work.',
+        'Dee Fox is not available (out of office until 10/20). You can still assign work.',
       );
       expect(dialog().querySelector<HTMLButtonElement>('[data-assign-pick]')!.disabled).toBe(false);
     });

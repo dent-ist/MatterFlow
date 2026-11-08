@@ -223,7 +223,9 @@ test.describe('Pod Work first release', () => {
       const link = pw.assignToMe(task.taskNumber);
       await link.focus();
       await page.keyboard.press('Enter');
-      await expect(pw.row(task.taskNumber)).toContainText(fx.lead.displayName ?? fx.lead.username);
+      await expect(pw.row(task.taskNumber)).toContainText(
+        (fx.lead.displayName ?? fx.lead.username).replace(/^.*\\/, ''),
+      );
 
       const ro = await asUser(fx.readonly.username);
       await ro.setViewportSize({ width: 1366, height: 768 });
@@ -273,7 +275,7 @@ test.describe('Pod Work first release', () => {
       await pw.assignToMe(task.taskNumber).click();
       // The row leaves after its 4-second grace; the numbers follow at once and must equal a reload.
       await expect(pw.tab(/Unassigned/)).toContainText('(1)');
-      await expect(pw.tab(/By member/)).toContainText('(1)');
+      await expect(pw.tab(/By Member/)).toContainText('(1)');
       const after = await numbers(page);
       await page.reload();
       await expect(pw.tab(/Unassigned/)).toBeVisible();
@@ -328,12 +330,15 @@ test.describe('Pod Work first release', () => {
       await page
         .getByRole('button', { name: new RegExp(`change assignee of ${task.taskNumber}`) })
         .click();
-      await page.locator('.im-pop').getByRole('menuitemradio', { name: other.username }).click();
+      await page
+        .locator('.im-pop')
+        .getByRole('menuitemradio', { name: other.username.replace(/^.*\\/, '') })
+        .click();
       await expect(open(mine.username)).toHaveText('0');
       await expect(open(other.username)).toHaveText('1');
       const after = await numbers(page);
       await page.reload();
-      await expect(pw.tab(/By member/)).toContainText('(1)');
+      await expect(pw.tab(/By Member/)).toContainText('(1)');
       expect(after.tabs).toEqual((await numbers(page)).tabs);
     });
   });

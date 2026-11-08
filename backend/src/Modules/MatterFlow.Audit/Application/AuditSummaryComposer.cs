@@ -35,11 +35,21 @@ internal static class AuditSummaryComposer
         return Humanize(eventType);
     }
 
-    /// <summary>"form:billing_code" becomes "Billing code"; "ClientNumber" becomes "Client number".</summary>
+    /// <summary>Field keys whose label keeps capitals (acronyms) instead of the sentence-case rule; they match the labels on screen (#1311).</summary>
+    private static readonly Dictionary<string, string> AcronymLabels = new(StringComparer.Ordinal)
+    {
+        ["DmsPath"] = "DMS Path",
+        ["DfsPath"] = "DFS Path",
+        ["AiAllowed"] = "AI Allowed",
+    };
+
+    /// <summary>"form:billing_code" becomes "Billing code"; "ClientNumber" becomes "Client number"; "DmsPath" keeps its capitals ("DMS Path").</summary>
     public static string FieldLabel(string? key)
     {
         if (string.IsNullOrWhiteSpace(key))
             return "Field";
+        if (AcronymLabels.TryGetValue(key, out var known))
+            return known;
 
         var name = key.StartsWith("form:", StringComparison.Ordinal) ? key[5..] : key;
         var words = new System.Text.StringBuilder();

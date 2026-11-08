@@ -17,9 +17,12 @@ import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import {
   AssetDataMatterRow,
+  CurrentStatesClient,
+  MatterListItemView,
   MatterManagerItem,
   MatterManagersClient,
   MatterResponse,
+  MatterTypesClient,
   MattersClient,
   MyMattersClient,
 } from '../../../api/generated/api-client';
@@ -77,6 +80,22 @@ const EXTRA_KEYS: readonly string[] = ['onHold', 'atRisk', 'dataSize', 'pending'
 import { assetsParams, sizeText } from '../../my-matters/data-model';
 import { IntPipe } from '../../../shared/ui/number-format';
 
+/** The "Not Set" choice of the Matter Type and Current State filters: a flag option that travels as its own boolean parameter (`matterTypeNone`, `currentStateNone`), never mixed with ids. */
+const NOT_SET = 'none';
+const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
+
+/** The ids a Matter Type or Current State filter holds and whether "Not Set" is ticked, as the list API takes them. */
+function listFilterArgs(values: readonly string[]): {
+  ids: number[] | undefined;
+  none: boolean | undefined;
+} {
+  const ids = values.filter((v) => v !== NOT_SET).map(Number);
+  return {
+    ids: ids.length > 0 ? ids : undefined,
+    none: values.includes(NOT_SET) ? true : undefined,
+  };
+}
+
 /** The "None" choice of a project manager filter (the matters with nobody in that place); the API argument is `hasPrimaryManager=false`. */
 const NO_MANAGER = 'none';
 
@@ -88,6 +107,8 @@ const BONES: Record<string, string> = {
   client: '7rem',
   primaryManager: '5rem',
   secondaryManager: '5rem',
+  matterType: '6rem',
+  currentState: '6rem',
   openTasks: '3rem',
   overdue: '3rem',
   onHold: '3rem',
@@ -179,6 +200,11 @@ const BONES: Record<string, string> = {
       min-width: var(--mf-col-client-w);
       max-width: 0;
     }
+    /* Matter Type and Current State: one line with an ellipsis and a tooltip (D-45); empty is the muted "Not set". */
+    td.ml-list {
+      width: var(--mf-col-matter-type-w);
+      max-width: var(--mf-col-matter-type-w);
+    }
     .ml-fact {
       white-space: nowrap;
     }
@@ -222,6 +248,8 @@ const BONES: Record<string, string> = {
         searchLabel="Search matters"
         [clearAlso]="['q']"
         [bulkActive]="!phone() && selecting()"
+        [chipsFollowRow]="true"
+        (showColumn)="showColumn($event)"
       >
         @if (!phone()) {
           <mf-record-columns mfColumns [grid]="grid" />
@@ -504,6 +532,24 @@ const BONES: Record<string, string> = {
                 }}</span>
               </td>
             </ng-template>
+            <ng-template mfCell="matterType" let-m>
+              <td class="ml-list" data-cell="matterType">
+                @if (m.matterType; as t) {
+                  <span class="pg-clip" [attr.title]="t.name">{{ t.name }}</span>
+                } @else {
+                  <span class="ml-muted">Not set</span>
+                }
+              </td>
+            </ng-template>
+            <ng-template mfCell="currentState" let-m>
+              <td class="ml-list" data-cell="currentState">
+                @if (m.currentState; as t) {
+                  <span class="pg-clip" [attr.title]="t.name">{{ t.name }}</span>
+                } @else {
+                  <span class="ml-muted">Not set</span>
+                }
+              </td>
+            </ng-template>
             <ng-template mfCell="openTasks" let-m>
               <td class="pg-num">
                 <mf-task-count
@@ -654,6 +700,8 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
 
   private readonly auth = inject(AuthStore);
   private readonly managersApi = inject(MatterManagersClient);
+  private readonly typesApi = inject(MatterTypesClient);
+  private readonly statesApi = inject(CurrentStatesClient);
   /** The Data API client is asked for only when a Data size or Pending disposition column is shown, so it is looked up then, not at construction. */
   private readonly injector = inject(Injector);
   private readonly quiet = inject(QuietRequests);
@@ -722,13 +770,30 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
         width: '22%',
         minWidth: 'var(--mf-col-client-w)',
       },
-      { key: 'primaryManager', label: 'Primary PM', sort: 'primaryManager' },
+      // Off by default since the owner made Matter Type and Current State default (2026-11-08): the default set must fit the 1366 frame (D-43a); one click away in Columns.
+      { key: 'primaryManager', label: 'Primary PM', sort: 'primaryManager', defaultHidden: true },
       // Off by default so the default columns fit the 1366 frame with Matter Name at 200 px (D-43a); one click away in Columns.
       {
         key: 'secondaryManager',
         label: 'Secondary PM',
         sort: 'secondaryManager',
         defaultHidden: true,
+      },
+      // Matter Type and Current State (epic #1298): ON by default (owner, 2026-11-08), 160 px each; sortable by the administrator's list order, then name. Default set at 1366:
+      // 180 + 200 + 140 + 160 + 160 + 160 + 48 = 1048 of 1098 px (D-43a).
+      {
+        key: 'matterType',
+        label: 'Matter Type',
+        sort: 'matterType',
+        width: 'var(--mf-col-matter-type-w)',
+        minWidth: 'var(--mf-col-matter-type-w)',
+      },
+      {
+        key: 'currentState',
+        label: 'Current State',
+        sort: 'currentState',
+        width: 'var(--mf-col-current-state-w)',
+        minWidth: 'var(--mf-col-current-state-w)',
       },
       ...(this.counts()
         ? [
@@ -738,8 +803,16 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
               sort: 'openTasks',
               firstDesc: true,
               num: true,
+              defaultHidden: true,
             },
-            { key: 'overdue', label: 'Overdue', sort: 'overdue', firstDesc: true, num: true },
+            {
+              key: 'overdue',
+              label: 'Overdue',
+              sort: 'overdue',
+              firstDesc: true,
+              num: true,
+              defaultHidden: true,
+            },
           ]
         : []),
       ...EXTRA_KEYS.filter((k) => extra.has(k)).map((k) => ({
@@ -765,6 +838,9 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
 
   /** The people who can be named a project manager (the filter's choices); empty until loaded, and when the lookup fails. */
   private readonly managers = signal<readonly MatterManagerItem[]>([]);
+  /** The Matter Type and Current State lists (the filters' choices); empty until loaded, and when the lookup fails. */
+  private readonly types = signal<readonly MatterListItemView[]>([]);
+  private readonly states = signal<readonly MatterListItemView[]>([]);
   protected readonly emptySelection: ReadonlySet<number> = new Set<number>();
   /** The matters ticked for the bulk "Set project managers" (only offered with Matter.AssignManagers). */
   protected readonly selected = signal<ReadonlySet<number>>(this.emptySelection);
@@ -859,6 +935,8 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
     { value: 'name', label: 'Matter Name' },
     { value: 'clientNumber', label: 'Client' },
     { value: 'primaryManager', label: 'Primary PM' },
+    { value: 'matterType', label: 'Matter Type' },
+    { value: 'currentState', label: 'Current State' },
     ...(this.counts()
       ? [
           { value: 'openTasks', label: 'Open Tasks', descFirst: true },
@@ -898,6 +976,14 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
       { key: 'client', label: 'Client', column: 'client', type: 'text' },
       this.managerDef('primaryManager', 'Primary PM'),
       this.managerDef('secondaryManager', 'Secondary PM'),
+      this.pickListDef('matterType', 'Matter Type', 'matterTypeId', 'matterTypeNone', this.types),
+      this.pickListDef(
+        'currentState',
+        'Current State',
+        'currentStateId',
+        'currentStateNone',
+        this.states,
+      ),
       // Quick filter "Mine" (the header button): the matters the viewer manages, as Primary or Secondary. A removable chip, no column.
       {
         key: 'mine',
@@ -936,7 +1022,16 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
     defs: this.defs,
     openByDefault: true,
     sheetBelow: 640,
+    // A filter on a column that is not on screen moves to "Other filters" and its chip says "(hidden column)" with "Show column" (UI spec 6.2, #1308).
+    visibleColumns: computed(() => (this.phone() ? null : this.columns())),
   });
+
+  /** A chip on a hidden column asks for its column: it joins the shown ones (the person's choice is stored like any Columns choice). */
+  protected showColumn(column: string): void {
+    const shown = this.grid.shown();
+    if (!shown.includes(column))
+      this.grid.set({ ...this.grid.prefs(), visible: [...shown, column] });
+  }
 
   /** `?newMatter=1&newClient=5` (the old `/matters/new` link, Client pages): opens the New matter dialog at once, then leaves the URL clean. */
   readonly newMatter = input<string | undefined>(undefined);
@@ -960,6 +1055,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
   constructor() {
     super();
     void this.loadManagers();
+    void this.loadPickLists();
     effect(() => {
       if (!this.newMatter()) return;
       const client = Number(this.newClient());
@@ -1031,6 +1127,51 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
       normalize: (v: string) => (v === NO_MANAGER || /^[1-9]\d*$/.test(v) ? v : null),
       valueLabel: (v: string) => (v === NO_MANAGER ? 'None' : this.managerName(v)),
     };
+  }
+
+  /**
+   * A Matter Type or Current State filter (UI spec 6.2): a multi-select with "Not Set" (the matters with no value; its own boolean parameter) first, then every item in the
+   * administrator's order. An inactive item is listed only when matters still use it, with the muted suffix "(inactive)". The URL carries `<idParam>` (repeatable) and `<noneParam>`.
+   */
+  private pickListDef(
+    key: 'matterType' | 'currentState',
+    label: string,
+    idParam: string,
+    noneParam: string,
+    list: () => readonly MatterListItemView[],
+  ): FilterDef {
+    return {
+      key,
+      label,
+      column: key,
+      type: 'multiSelect',
+      param: idParam,
+      emptyLabel: 'All',
+      options: () =>
+        [...list()]
+          .filter((i) => i.isActive || i.inUseCount > 0)
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map((i) => ({
+            value: String(i.id),
+            label: i.name,
+            ...(i.isActive ? {} : { hint: '(inactive)' }),
+          })),
+      flagOptions: { [NOT_SET]: { param: noneParam, label: 'Not Set' } },
+      normalize: asId,
+      valueLabel: (v: string) =>
+        v === NOT_SET
+          ? 'Not Set'
+          : (list().find((i) => String(i.id) === v)?.name ?? `${label} ${v}`),
+    };
+  }
+
+  private async loadPickLists(): Promise<void> {
+    const [types, states] = await Promise.all([
+      firstValueFrom(this.quiet.run(() => this.typesApi.listMatterTypes())).catch(() => []),
+      firstValueFrom(this.quiet.run(() => this.statesApi.listCurrentStates())).catch(() => []),
+    ]);
+    this.types.set(types);
+    this.states.set(states);
   }
 
   private managerOptions(key: 'primaryManager' | 'secondaryManager'): FilterOption[] {
@@ -1149,6 +1290,8 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
     const sensitive = this.filters.text('isSensitive');
     const primary = this.filters.text('primaryManager');
     const secondary = this.filters.text('secondaryManager');
+    const type = listFilterArgs(this.filters.list('matterType'));
+    const state = listFilterArgs(this.filters.list('currentState'));
     return firstValueFrom(
       this.api.listMatters(
         // Search finds the name, the client or the number (the API's `q`, decision of 2026-11-02); the URL parameter stays `name`.
@@ -1164,6 +1307,10 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
         managerId(this.filters.text('managerId')),
         (scoped && this.scope.mine()) || this.mine() ? true : undefined,
         undefined,
+        type.ids,
+        type.none,
+        state.ids,
+        state.none,
         primary === NO_MANAGER ? false : undefined,
         secondary === NO_MANAGER ? false : undefined,
         page,

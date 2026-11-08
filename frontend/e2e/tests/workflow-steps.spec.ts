@@ -67,7 +67,7 @@ test.describe('Ordered workflow rules (SCN-010, SCN-011, SCN-012, SCN-013)', () 
     await step.expand();
     await step.skipButton.click();
     const dialog = detail.dialog;
-    await dialog.getByRole('button', { name: 'Skip Step' }).click();
+    await dialog.getByRole('button', { name: 'Skip Step', exact: true }).click();
     await expect(dialog.locator('[data-skip-error]')).toHaveText(
       'Add a comment to skip this step.',
     );
@@ -252,7 +252,7 @@ test.describe('Completing a task with open steps (addendum K)', () => {
       'You have 2 steps not completed',
     );
     await expect(detail.dialog.locator('[data-bulk-steps] li')).toHaveCount(2);
-    await detail.dialog.getByRole('button', { name: 'Complete all steps and finish' }).click();
+    await detail.dialog.getByRole('button', { name: 'Complete Task', exact: true }).click();
 
     await expect(detail.dialog).toBeHidden();
     await detail.expectStatus('Completed');
@@ -296,7 +296,7 @@ test.describe('Completing a task with open steps (addendum K)', () => {
     );
     await expect(detail.dialog.locator('[data-blocked-steps]')).toContainText(needs);
     await expect(
-      detail.dialog.getByRole('button', { name: 'Complete all steps and finish' }),
+      detail.dialog.getByRole('button', { name: 'Complete Task', exact: true }),
     ).toHaveCount(0);
     // M2 (#304): the dialog's primary button takes the person to the first blocked step.
     await expect(detail.dialog.getByRole('button', { name: 'Go to first step' })).toBeVisible();

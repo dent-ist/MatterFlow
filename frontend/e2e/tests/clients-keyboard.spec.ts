@@ -490,7 +490,7 @@ test.describe('#283: Skip to table, the page-specific first Tab stop', () => {
     await page.locator('h1').click(); // a place that is not an input
     await page.keyboard.press('?');
     const help = page.locator('[data-shortcut-help]');
-    await expect(help).toContainText('Skip to Table');
+    await expect(help).toContainText('Skip to table');
     await expect(help).toContainText('Copy button');
     await axeClean(page, 'shortcut help');
     await page.keyboard.press('Escape');
@@ -539,13 +539,13 @@ const RECORDS: RecordPage[] = [
     kind: 'client',
     url: () => `/clients/${data.big.clientId}`,
     tabs: ['details', 'matters'],
-    state: /Set inactive/,
+    state: /Set Inactive/,
   },
   {
     kind: 'matter',
     url: () => `/matters/${data.m28.matterId}`,
-    tabs: ['details', 'tasks', 'projects', 'assets'],
-    state: /Set inactive/,
+    tabs: ['summary', 'tasks', 'projects', 'assets', 'productions', 'notes', 'activities'],
+    state: /Set Inactive/,
   },
   {
     kind: 'project',

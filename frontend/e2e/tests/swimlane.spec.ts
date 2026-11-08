@@ -51,7 +51,14 @@ test.describe('Swimlane tab', () => {
   }) => {
     await page.goto('/dashboard');
     const tabs = page.getByRole('tab');
-    await expect(tabs).toHaveText(['Summary', 'Breakdowns', 'Trends', 'Swimlane', 'Users']);
+    await expect(tabs).toHaveText([
+      'Summary',
+      'Breakdowns',
+      'Trends',
+      'Swimlane',
+      'Users',
+      'Calendar',
+    ]);
     await page.getByRole('tab', { name: 'Swimlane' }).click();
     await expect(page).toHaveURL(/tab=swimlane/);
     await expect(page.getByRole('region', { name: 'Swimlane board' })).toBeVisible();
@@ -444,7 +451,7 @@ test.describe('Swimlane tab', () => {
         : route.continue(),
     );
     await page.goto(base);
-    await expect(page.locator('[data-dash-state="error"]')).toContainText('could not be loaded');
+    await expect(page.locator('[data-dash-state="error"]')).toContainText("Couldn't load");
     await expect(page.locator('[data-dash-state="error"]')).toContainText('Reference');
     fail = false;
     await page.getByRole('button', { name: 'Retry' }).click();

@@ -1,8 +1,7 @@
 import { Page } from '@playwright/test';
-import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { PERSONAS } from '../support/personas';
-import { SIZES, noHorizontalScroll, shot } from '../support/screens';
+import { shot } from '../support/screens';
 import { toasts } from '../support/toasts';
 
 /**
@@ -20,7 +19,7 @@ async function setOutFromMenu(page: Page): Promise<void> {
   const menu = await openMenu(page);
   await menu.getByRole('menuitem', { name: 'Set Out of Office' }).click();
   const dialog = page.getByRole('dialog', { name: 'Set out of office' });
-  await dialog.getByRole('button', { name: 'Set out of office' }).click();
+  await dialog.getByRole('button', { name: 'Set Out of Office', exact: true }).click();
   await expect(dialog).toHaveCount(0);
 }
 
@@ -44,74 +43,30 @@ test.describe('pf1-follow-menu: the open profile page follows the header menu (#
       const p = await personas.create({ ...who, label: `pf1${who.key}` });
       const me = await asUser(p.username);
       await me.goto('/profile');
-      await expect(me.locator('[data-status-available]')).toBeChecked();
+      await expect(me.locator('[data-profile-who] [data-availability-chip]')).toHaveText(
+        /Available|Off Hours/,
+      );
       await expect(me.getByRole('button', { name: 'Save Changes' })).toBeDisabled();
 
       await setOutFromMenu(me);
-      await expect(me.locator('[data-status-ooo]')).toBeChecked();
-      await expect(me.locator('h1 [data-availability-chip]')).toContainText('Out of Office');
-      await expect(me.locator('[data-updated-note]')).toHaveText(/Your availability was updated\./);
-      await expect(me.locator('[data-updated-note]')).toHaveAttribute('aria-live', 'polite');
+      await expect(me.locator('[data-profile-who] [data-availability-chip]')).toContainText(
+        'Out of Office',
+      );
+      await expect(me.locator('[data-profile-who] [data-availability-chip]')).toContainText(
+        'Out of Office',
+      );
       await expect(me.getByRole('button', { name: 'Save Changes' })).toBeDisabled();
       await expect(me.getByRole('button', { name: 'Cancel' })).toBeDisabled();
-      await expect(me.locator('[data-stale]')).toHaveCount(0);
 
       await imBackFromMenu(me);
-      await expect(me.locator('[data-status-available]')).toBeChecked();
-      await expect(me.locator('[data-ooo-fields]')).toHaveCount(0);
+      await expect(me.locator('[data-profile-who] [data-availability-chip]')).toHaveText(
+        /Available|Off Hours/,
+      );
       await expect(me.getByRole('button', { name: 'Save Changes' })).toBeDisabled();
       // Focus is back on the menu button, as before.
       await expect(me.getByRole('button', { name: /account menu/ })).toBeFocused();
     });
   }
-
-  test('a page with unsaved edits keeps them, offers Load latest, and Save still takes the conflict path', async ({
-    personas,
-    asUser,
-  }) => {
-    const p = await personas.create({ ...PERSONAS.technician, label: 'pf1dirty' });
-    const me = await asUser(p.username);
-    await me.goto('/profile');
-    await me.getByLabel('Start time', { exact: true }).fill('08:30');
-    await setOutFromMenu(me);
-
-    const stale = me.locator('[data-stale]');
-    await expect(stale).toContainText('changed somewhere else');
-    await expect(me.getByLabel('Start time', { exact: true })).toHaveValue('08:30');
-    await expect(me.locator('[data-status-available]')).toBeChecked();
-    await expect(me.getByRole('button', { name: 'Save Changes' })).toBeEnabled();
-
-    // Nothing is overwritten silently: Save raises the existing conflict message and shows the latest values.
-    await me.getByRole('button', { name: 'Save Changes' }).click();
-    await expect(me.locator('[data-conflict]')).toContainText('your edits were not saved');
-    await expect(me.locator('[data-status-ooo]')).toBeChecked();
-    await expect(me.getByLabel('Start time', { exact: true })).toHaveValue('09:00');
-    await expect(stale).toHaveCount(0);
-  });
-
-  test("Load latest discards the edits and says so politely; I'm back follows the same rules", async ({
-    personas,
-    asUser,
-  }) => {
-    const p = await personas.create({ ...PERSONAS.technician, label: 'pf1latest' });
-    const me = await asUser(p.username);
-    await me.goto('/profile');
-    await setOutFromMenu(me);
-    await expect(me.locator('[data-status-ooo]')).toBeChecked();
-
-    await me.getByLabel('End time', { exact: true }).fill('16:00');
-    await imBackFromMenu(me);
-    await expect(me.locator('[data-stale]')).toBeVisible();
-    await expect(me.locator('[data-status-ooo]')).toBeChecked();
-    await expect(me.getByLabel('End time', { exact: true })).toHaveValue('16:00');
-
-    await me.getByRole('button', { name: 'Load Latest' }).click();
-    await expect(me.locator('[data-status-available]')).toBeChecked();
-    await expect(me.getByLabel('End time', { exact: true })).toHaveValue('17:00');
-    await expect(me.locator('[data-updated-note]')).toContainText('latest availability');
-    await expect(me.locator('[data-status-available]')).toBeFocused();
-    await expect(me.locator('[data-stale]')).toHaveCount(0);
-  });
 
   test('a change made in another tab shows after the next load', async ({ personas, asUser }) => {
     const p = await personas.create({ ...PERSONAS.technician, label: 'pf1tab' });
@@ -121,33 +76,9 @@ test.describe('pf1-follow-menu: the open profile page follows the header menu (#
     await second.goto('/profile');
     await setOutFromMenu(second);
     await first.reload();
-    await expect(first.locator('[data-status-ooo]')).toBeChecked();
-  });
-
-  test('axe and no sideways scroll with the stale note shown, at both desktop sizes', async ({
-    personas,
-    asUser,
-  }) => {
-    expect(axeAvailable(), 'axe-core must be available (set E2E_AXE_PATH)').toBe(true);
-    const p = await personas.create({ ...PERSONAS.technician, label: 'pf1axe' });
-    const me = await asUser(p.username);
-    await me.goto('/profile');
-    await me.getByLabel('Start time', { exact: true }).fill('08:30');
-    await setOutFromMenu(me);
-    await expect(me.locator('[data-stale]')).toBeVisible();
-    for (const size of SIZES) {
-      await me.setViewportSize(size);
-      expect(await axeViolations(me), `stale note at ${size.width}`).toEqual([]);
-      await noHorizontalScroll(me);
-      await shot(me, 'pf1-follow-menu-dirty');
-    }
-    await me.getByRole('button', { name: 'Load Latest' }).click();
-    for (const size of SIZES) {
-      await me.setViewportSize(size);
-      expect(await axeViolations(me), `followed page at ${size.width}`).toEqual([]);
-      await noHorizontalScroll(me);
-      await shot(me, 'pf1-follow-menu-clean');
-    }
+    await expect(first.locator('[data-profile-who] [data-availability-chip]')).toContainText(
+      'Out of Office',
+    );
   });
 });
 

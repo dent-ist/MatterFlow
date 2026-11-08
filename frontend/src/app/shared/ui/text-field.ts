@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, model, output } from '@angular/core';
 import { CharCounter } from './char-counter';
 
 /**
@@ -35,7 +35,7 @@ import { CharCounter } from './char-counter';
       } @else {
         <input
           class="mf-field__input"
-          type="text"
+          [attr.type]="type()"
           autocomplete="off"
           [id]="inputId()"
           [name]="inputId()"
@@ -44,6 +44,7 @@ import { CharCounter } from './char-counter';
           [attr.aria-invalid]="error() ? 'true' : null"
           [attr.aria-describedby]="describedBy()"
           (input)="onInput($event)"
+          (blur)="blurred.emit()"
         />
       }
       @if (counter() && maxLength(); as max) {
@@ -72,8 +73,12 @@ export class TextField {
   readonly counter = input(false);
   /** Error message to show (the parent decides when: on submit or from the server). */
   readonly error = input<string | null>(null);
+  /** The input type: `email` for an address (no browser validation bubble: the forms are `novalidate` and say their own messages). */
+  readonly type = input<'text' | 'email'>('text');
 
   readonly value = model('');
+  /** The person left the field (a form that checks "when leaving the field" validates here). */
+  readonly blurred = output<void>();
 
   protected readonly describedBy = computed(() => {
     const id = this.inputId();

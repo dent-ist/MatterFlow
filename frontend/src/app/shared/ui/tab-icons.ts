@@ -25,6 +25,7 @@ export const ICONS: Readonly<Record<string, string>> = {
   'page-labels': 'pi-flag',
   'page-asset-types': 'pi-tags',
   'page-custom-fields': 'pi-sliders-h',
+  'page-matter-lists': 'pi-sort-alt',
   'page-reports': 'pi-chart-bar',
   // The Administration item of the same feature ("Report Setup"): a different glyph, so the two menu items differ in the icon rail too.
   'page-report-setup': 'pi-wrench',
@@ -56,6 +57,11 @@ export const ICONS: Readonly<Record<string, string>> = {
   asset: 'pi-database',
   productions: 'pi-send',
   notes: 'pi-file-edit',
+  // The Matter's Team tab and the three Matter Lists tabs (epic #1298).
+  team: 'pi-address-book',
+  'matter-types': 'pi-briefcase',
+  'current-states': 'pi-map-marker',
+  'team-titles': 'pi-address-book',
   activities: 'pi-history',
   activity: 'pi-history',
   history: 'pi-history',
@@ -95,6 +101,8 @@ export const ICONS: Readonly<Record<string, string>> = {
   'asset-types': 'pi-tags',
   'link-roles': 'pi-link',
   fields: 'pi-sliders-h',
+  // Asset type numbering (#1297).
+  numbering: 'pi-hashtag',
   form: 'pi-file',
   // Reports
   reports: 'pi-file',

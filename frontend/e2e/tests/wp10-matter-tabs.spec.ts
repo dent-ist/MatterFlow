@@ -206,7 +206,7 @@ test.describe('WP10 matter tabs', () => {
       await expect(row.locator('[data-count=overdue] a')).toHaveText(/1/);
       const open12 = table.locator('tbody tr[data-record-id]').nth(11);
       await expect(open12.locator('[data-count=open] a')).toHaveText('1');
-      await expect(open12.locator('[data-count=overdue]')).toContainText('–');
+      await expect(open12.locator('[data-count=overdue]')).toContainText('-');
       const summary = await page.request.get(
         `/api/v1/projects/${w.waves.get(3)!.projectId}/summary`,
       );

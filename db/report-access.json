@@ -25,6 +25,11 @@
       "reason": "Business data that reports may read."
     },
     {
+      "name": "AssetNumberCounter",
+      "access": "deny",
+      "reason": "Internal counter of the automatic asset numbering (next number per asset type and matter); not report data. The assigned numbers are readable on dbo.Asset."
+    },
+    {
       "name": "AssetReport",
       "access": "deny",
       "reason": "Personal saved asset report definitions of the report builder (per person), not report data."
@@ -46,6 +51,11 @@
     },
     {
       "name": "Client",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "CurrentState",
       "access": "allow",
       "reason": "Business data that reports may read."
     },
@@ -98,6 +108,16 @@
       "name": "MatterEvent",
       "access": "deny",
       "reason": "Calendar items of a matter (hearings, deadlines); shown through the application's visibility rule only, not report data."
+    },
+    {
+      "name": "MatterTeamMember",
+      "access": "deny",
+      "reason": "Typed-in contacts of a matter's team (outside people's names and e-mails); shown through the application's matter visibility rule only, not report data."
+    },
+    {
+      "name": "MatterType",
+      "access": "allow",
+      "reason": "Business data that reports may read."
     },
     {
       "name": "Note",
@@ -301,6 +321,11 @@
     },
     {
       "name": "TaskTypeWorkflowEligibility",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "TeamTitle",
       "access": "allow",
       "reason": "Business data that reports may read."
     },

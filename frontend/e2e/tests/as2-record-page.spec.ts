@@ -62,19 +62,19 @@ test.describe('Asset record page (WP-AS2)', () => {
   }) => {
     const { asset } = await assetWithTasks(seed, 3);
     await page.goto(`/assets/${asset.assetId}`);
-    await expect(page.getByRole('tab', { name: /^Linked tasks/ })).toContainText('(3)');
+    await expect(page.getByRole('tab', { name: /^Linked Tasks/ })).toContainText('(3)');
 
-    await page.getByRole('tab', { name: /^Linked tasks/ }).click();
+    await page.getByRole('tab', { name: /^Linked Tasks/ }).click();
     await expect(page).toHaveURL(/tab=tasks/);
     await expect(page.locator('[data-tasks-tab] tbody tr')).toHaveCount(3);
     await page.reload();
-    await expect(page.getByRole('tab', { name: /^Linked tasks/ })).toHaveAttribute(
+    await expect(page.getByRole('tab', { name: /^Linked Tasks/ })).toHaveAttribute(
       'aria-selected',
       'true',
     );
 
     // Arrow keys move between tabs, as on the other record pages.
-    await page.getByRole('tab', { name: /^Linked tasks/ }).focus();
+    await page.getByRole('tab', { name: /^Linked Tasks/ }).focus();
     await page.keyboard.press('ArrowRight');
     await expect(page.getByRole('tab', { name: 'History' })).toHaveAttribute(
       'aria-selected',
@@ -127,7 +127,7 @@ test.describe('Asset record page (WP-AS2)', () => {
     await expect(edit.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
     await expect(edit.getByRole('button', { name: 'Activity' })).toBeVisible();
     await expect(edit.getByRole('button', { name: 'More actions' })).toBeVisible();
-    await expect(edit.getByRole('tab', { name: /^Linked tasks/ })).toContainText('(2)');
+    await expect(edit.getByRole('tab', { name: /^Linked Tasks/ })).toContainText('(2)');
   });
 
   test('Set inactive from the overflow asks, then updates the page in place; an inactive asset has no Edit and offers Set active', async ({
@@ -139,7 +139,7 @@ test.describe('Asset record page (WP-AS2)', () => {
     await page.getByRole('button', { name: 'More actions' }).click();
     await page.getByRole('menuitem', { name: 'Set inactive' }).click();
     const dialog = page.getByRole('dialog');
-    await expect(dialog).toContainText(`Set ${asset.displayName} inactive?`);
+    await expect(dialog).toContainText(`${asset.displayName} becomes inactive`);
     await dialog.getByRole('button', { name: 'Set Asset Inactive' }).click();
     await expect(page.getByText('This asset is inactive')).toBeVisible();
     await expect(page.locator('[data-record-header] mf-active-badge')).toContainText('Inactive');
@@ -346,7 +346,7 @@ test.describe('Asset record page (WP-AS2)', () => {
       expect(await axeViolations(page), `details at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
 
-      await page.getByRole('tab', { name: /^Linked tasks/ }).click();
+      await page.getByRole('tab', { name: /^Linked Tasks/ }).click();
       await expect(
         size.width < 640
           ? page.locator('[data-tasks-tab] li.rc')

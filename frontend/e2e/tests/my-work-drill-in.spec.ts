@@ -80,7 +80,7 @@ test.describe('Drill-in keeps its place', () => {
     await expect(page).toHaveURL(new RegExp('/my-work\\?'));
     await expect(link).toBeFocused();
     expect(new URL(page.url()).search).toBe(exact);
-    await expect(myWork.tab(/^Due soon and overdue/)).toHaveAttribute('aria-selected', 'true');
+    await expect(myWork.tab(/^Due Soon and Overdue/)).toHaveAttribute('aria-selected', 'true');
     await shot(page, 'm7-back-focus-row-1366x768');
 
     // The first crumb does the same, and leaves a row that is gone to the heading.
@@ -126,7 +126,7 @@ test.describe('Drill-in keeps its place', () => {
     // so the entry Back returns to names the pod and the page does not rewrite its address while the focus is being put back.
     await page.goto(`/pods/work?podId=${pod.podId}`);
     await expect(podWork.podSelect).toContainText(pod.name);
-    await podWork.tab(/^All open/).click();
+    await podWork.tab(/^All Open/).click();
     await podWork.expectListed(task.title);
     await page.locator(`a.wt-title[data-task-id="${task.taskId}"]`).click();
     await expect(page).toHaveURL(new RegExp(`/tasks/${task.taskId}\\?from=pod-work`));
@@ -230,9 +230,9 @@ test.describe('Open in Task Queue', () => {
 
   const TABS = [
     ['Active', /^Active/, 'active'],
-    ['Due soon and overdue', /^Due soon and overdue/, 'dueSoon'],
+    ['Due soon and overdue', /^Due Soon and Overdue/, 'dueSoon'],
     ['Closed', /^Closed/, 'completed'],
-    ['Created by Me', /^Created by me/, 'createdByMe'],
+    ['Created by Me', /^Created by Me/, 'createdByMe'],
   ] as const;
 
   async function tabCount(page: Page, tab: RegExp): Promise<number> {

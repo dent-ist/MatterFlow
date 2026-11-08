@@ -69,7 +69,7 @@ function expectRow44(height: number, label: string): void {
 /** The row of a record in the table, or its card below 640 px (#374, #375: the phone lists are cards with the same menu). */
 const rowOf = (page: Page, name: string): Locator =>
   page.locator(
-    `tr[data-row="${name}"], li[data-record-card]:has(a[data-card-name][title="${name}"])`,
+    `tr[data-row="${name}"], tr:has([data-row="${name}"], a:has-text("${name}")), li[data-record-card]:has(a[data-card-name][title="${name}"])`,
   );
 const menuButton = (page: Page, name: string): Locator =>
   rowOf(page, name).getByRole('button', { name: `Actions for ${name}` });
@@ -241,7 +241,7 @@ test.describe('Row overflow menu on the three lists (#355)', () => {
     for (let i = 0; i < 3; i++) await seed.step({ title: `Bottom step ${token} ${i}` });
     await page.setViewportSize({ width: 1366, height: 600 });
     await page.goto(`/admin/steps?title=${token}&size=10`);
-    const rows = page.locator('tbody tr[data-row]');
+    const rows = page.locator('tbody tr:is([data-row], [data-record-id])');
     await expect(rows).toHaveCount(3);
     await rows.last().locator('button[data-overflow]').scrollIntoViewIfNeeded();
     await rows.last().locator('button[data-overflow]').click();

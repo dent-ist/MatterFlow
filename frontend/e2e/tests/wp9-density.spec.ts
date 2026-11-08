@@ -293,7 +293,7 @@ test.describe('Density and space', () => {
     await expect(page.locator('thead tr[data-filter-row]')).toBeVisible();
     await expect(myWork.tab(/^Active/).locator('.count')).toHaveText('(--)');
     const titleBefore = (await page.locator('thead th[data-col="title"]').boundingBox())!.width;
-    const tabBefore = (await myWork.tab(/^Due soon/).boundingBox())!;
+    const tabBefore = (await myWork.tab(/^Due Soon/).boundingBox())!;
     const rowH = (await body.locator('tr[data-skeleton]').first().boundingBox())!.height;
     expect(Math.abs(rowH - 44), 'a skeleton row is as high as a row (#210)').toBeLessThanOrEqual(1);
     await shot(page, 'g4-loading-first-1366x768');
@@ -308,7 +308,7 @@ test.describe('Density and space', () => {
       Math.abs(titleAfter - titleBefore),
       'Title width before and after the rows',
     ).toBeLessThanOrEqual(2);
-    const tabAfter = (await myWork.tab(/^Due soon/).boundingBox())!;
+    const tabAfter = (await myWork.tab(/^Due Soon/).boundingBox())!;
     expect(Math.abs(tabAfter.x - tabBefore.x), 'the next tab does not move').toBeLessThanOrEqual(1);
     const cls = await page.evaluate(() => (window as unknown as { __cls: number }).__cls);
     expect(cls, 'cumulative layout shift').toBeLessThan(0.02);
@@ -321,7 +321,7 @@ test.describe('Density and space', () => {
       if (hold) await gate2;
       await route.continue().catch(() => undefined);
     });
-    await myWork.tab(/^Created by me/).click();
+    await myWork.tab(/^Created by Me/).click();
     await expect(body.locator('tr[data-skeleton]')).toHaveCount(8);
     await expect(page.locator('[data-task]')).toHaveCount(0);
     await shot(page, 'g4-loading-tab-switch-1366x768');

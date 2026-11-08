@@ -48,6 +48,11 @@ export async function pvWorld(seed: Seeder, personas: Personas, label: string): 
     await admin.put(`/api/v1/matters/${matter.matterId}`, {
       name,
       isSensitive,
+      // Matter Type, Current State and the paths are full values on PUT (omitting them clears them): send the current ones.
+      matterTypeId: fresh.matterType?.id,
+      currentStateId: fresh.currentState?.id,
+      dmsPath: fresh.dmsPath ?? undefined,
+      dfsPath: fresh.dfsPath ?? undefined,
       rowVersion: fresh.rowVersion,
     });
   };

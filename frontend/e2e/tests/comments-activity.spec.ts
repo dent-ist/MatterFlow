@@ -37,7 +37,7 @@ test.describe('Comments and history (SCN-018)', () => {
 
     const comment = panel.locator('[data-comment-id]');
     await expect(comment).toHaveCount(1);
-    await expect(comment.locator('.tc__author')).toHaveText('ke\\kekim');
+    await expect(comment.locator('.tc__author')).toHaveText('kekim');
     await expect(comment.locator('time').first()).toHaveAttribute(
       'datetime',
       /^\d{4}-\d{2}-\d{2}T/,
@@ -140,7 +140,7 @@ test.describe('Comments and history (SCN-018)', () => {
     await detail.open(task.taskId);
     await detail.openActivity();
     const feed = activity(page);
-    await expect(feed.getByRole('listitem').first()).toContainText('ke\\kekim');
+    await expect(feed.getByRole('listitem').first()).toContainText('kekim');
     await expect(feed.getByText('Comment added')).toBeVisible();
     await expect(feed.getByText(/created/).first()).toBeVisible();
     await expect(feed.locator('time').first()).toHaveAttribute('datetime', /^\d{4}-/);

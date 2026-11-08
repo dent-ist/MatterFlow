@@ -21,8 +21,8 @@ test.describe('ASAP and overdue (SCN-015)', () => {
     await queue.open(`?matter=${world.matter.matterId}`);
     await queue.expectListed(asap.taskNumber, late.taskNumber);
     await expect(dueCell(queue, asap.taskNumber).locator('.dc-l1')).toHaveText('ASAP');
-    await expect(dueCell(queue, asap.taskNumber)).not.toContainText('Overdue');
-    await expect(dueCell(queue, late.taskNumber)).toContainText('Overdue');
+    await expect(dueCell(queue, asap.taskNumber)).not.toContainText(/overdue/i);
+    await expect(dueCell(queue, late.taskNumber)).toContainText(/overdue/i);
 
     await queue.open(`?matter=${world.matter.matterId}&overdue=true`);
     await queue.expectListed(late.taskNumber);
@@ -48,10 +48,10 @@ test.describe('ASAP and overdue (SCN-015)', () => {
 
     await detail.open(asap.taskId);
     await expect(detail.due).toContainText('ASAP');
-    await expect(detail.due).not.toContainText('Overdue');
+    await expect(detail.due).not.toContainText(/overdue/i);
 
     await detail.open(late.taskId);
-    await expect(detail.due).toContainText('Overdue');
+    await expect(detail.due).toContainText(/overdue/i);
   });
 
   test('SCN-015: the same date-only due date is overdue for a viewer far ahead and not for one far behind', async ({
@@ -71,9 +71,9 @@ test.describe('ASAP and overdue (SCN-015)', () => {
       await queue.open(`?matter=${world.matter.matterId}`);
       await queue.expectListed(task.taskNumber);
       if (overdue) {
-        await expect(dueCell(queue, task.taskNumber)).toContainText('Overdue');
+        await expect(dueCell(queue, task.taskNumber)).toContainText(/overdue/i);
       } else {
-        await expect(dueCell(queue, task.taskNumber)).not.toContainText('Overdue');
+        await expect(dueCell(queue, task.taskNumber)).not.toContainText(/overdue/i);
       }
 
       const viewer = await Api.as('ke\\kekim', { timeZone: zone });
@@ -119,6 +119,6 @@ test.describe('ASAP and overdue (SCN-015)', () => {
     const tokyoMinutes = (14 * 60 + 30 + (9 - nyOffsetHours) * 60) % (24 * 60);
     const tokyoTime = `${Math.floor(tokyoMinutes / 60) % 12 || 12}:30 ${tokyoMinutes < 720 ? 'AM' : 'PM'}`;
     await expect(tokyo.due.locator('.dc')).toHaveAttribute('title', new RegExp(tokyoTime));
-    await expect(tokyo.due).not.toContainText('Overdue');
+    await expect(tokyo.due).not.toContainText(/overdue/i);
   });
 });

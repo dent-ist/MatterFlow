@@ -196,7 +196,10 @@ test.describe('#757: assignee picker suggestions', () => {
     await option.click();
     await expect(page.locator('[data-chosen]')).toContainText(`e2e-as-eo-${token}`);
     await expect(page.locator('[data-pod-warning]')).toBeVisible(); // not in the Pod: warned, not blocked
-    await page.locator('[data-save]').click();
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Save Changes', exact: true })
+      .click();
     await expect(page.locator('#td-title')).toHaveCount(0);
     const saved = await admin.get<{
       assignedUser: { userId: number };
@@ -265,7 +268,7 @@ test.describe('#757: assignee picker suggestions', () => {
       await page.getByRole('combobox', { name: 'Assignee', exact: true }).focus();
       await expect(page.locator('[data-assignee-list]')).toBeVisible();
       await checkPage(page, `Edit task list at ${label}`);
-      await page.locator('[data-cancel]').click();
+      await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
     }
   });
 });

@@ -27,6 +27,16 @@ public static class ErrorCodes
     public const string SensitiveConfirmationRequired = "SENSITIVE_CONFIRMATION_REQUIRED";
 
     public const string ManagerDuplicate = "MANAGER_DUPLICATE";
+
+    /// <summary>A matter's DMS or DFS path is not a UNC path (<c>\\server\share\...</c>) or an http/https address (drive letters are refused), or is too long (epic #1298).</summary>
+    public const string InvalidPath = "INVALID_PATH";
+
+    /// <summary>A team member's e-mail address is not valid (epic #1298).</summary>
+    public const string InvalidEmail = "INVALID_EMAIL";
+
+    /// <summary>The e-mail address is already on the matter's team (compared without regard to case); edit that member instead.</summary>
+    public const string DuplicateTeamEmail = "DUPLICATE_TEAM_EMAIL";
+
     public const string ClientInactive = "CLIENT_INACTIVE";
     public const string ProjectInactive = "PROJECT_INACTIVE";
     public const string PodInactive = "POD_INACTIVE";

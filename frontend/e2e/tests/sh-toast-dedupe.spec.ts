@@ -50,7 +50,7 @@ test.describe('SH-B: toast de-duplication', () => {
       .click();
     await me
       .getByRole('dialog', { name: 'Set out of office' })
-      .getByRole('button', { name: 'Set out of office' })
+      .getByRole('button', { name: 'Set Out of Office', exact: true })
       .click();
     await expect(me.getByText('Out of office set')).toBeVisible();
     await me.getByRole('button', { name: /account menu/ }).click();

@@ -36,12 +36,8 @@ let longRoleName: string;
 
 test.beforeAll(async ({ personas, seed, admin }) => {
   pendingLong = await personas.create({ label: `${TAG}pend`, displayNameLength: 130 });
-  longRoleName = `${TAG} ${'Senior Document Review Coordinator '.repeat(3)}`.trim().slice(0, 90);
-  const role = await admin.post('/api/v1/roles', {
-    name: longRoleName,
-    description: null,
-    permissionCodes: ['Task.View'],
-  });
+  longRoleName = `${TAG} ${'Senior Document Review Coordinator '.repeat(3)}`.slice(0, 90).trim();
+  const role = await seed.roleOnce(longRoleName, null, ['Task.View']);
   busy = await personas.create({ label: `${TAG}busy`, roles: ['Data Technician'] });
   const detail = await admin.get(`/api/v1/users/${busy.userId}`);
   await admin.put(`/api/v1/users/${busy.userId}/roles`, {
@@ -101,9 +97,11 @@ async function axeClean(page: Page) {
 
 const headers = (page: Page) =>
   page.evaluate(() =>
-    Array.from(document.querySelectorAll<HTMLElement>('table.mf-grid thead tr:first-child th'))
+    Array.from(
+      document.querySelectorAll<HTMLElement>('mf-record-grid table thead tr:first-child th'),
+    )
       .filter((th) => getComputedStyle(th).display !== 'none')
-      .map((th) => th.textContent!.trim()),
+      .map((th) => th.textContent!.replace(/\s+/g, ' ').trim()),
   );
 
 const nameButton = (page: Page, id: number) =>
@@ -150,7 +148,7 @@ test.describe('#432 the grid', () => {
       return Math.round(el.getBoundingClientRect().height / line);
     });
     expect(lines).toBeLessThanOrEqual(2);
-    const role = page.locator(`tr[data-record-id="${busy.userId}"] td.mf-cell-muted`);
+    const role = page.locator(`tr[data-record-id="${busy.userId}"] td.us-roles`);
     await expect(role).toHaveAttribute('title', new RegExp(longRoleName.slice(0, 40)));
   });
 
@@ -268,10 +266,10 @@ test.describe('#432 the grid', () => {
       page.locator(`tr[data-record-id="${id}"] [data-availability-cell]`);
     // Out of office keeps its chip with the end date; an ordinary active person says a plain, muted "Available" (no badge).
     await expect(cell(away.userId).locator('[data-availability-chip]')).toContainText(
-      /Out of office until/,
+      'Out of Office until 10/25/2027',
     );
     // An ordinary person says "Available" in plain muted text; outside their work hours the server reports Off hours, which is a chip.
-    await expect(cell(busy.userId)).toHaveText(/^\s*(Available|Off hours)\s*$/);
+    await expect(cell(busy.userId)).toHaveText(/^\s*(Available|Off Hours)\s*$/);
     if ((await cell(busy.userId).textContent())?.includes('Available')) {
       await expect(cell(busy.userId).locator('[data-availability-chip]')).toHaveCount(0);
     }

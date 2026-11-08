@@ -98,16 +98,16 @@ test.describe('Trends by task type', () => {
     await expect(lines(page)).toHaveCount(4); // Created and Completed + Open and Overdue
     await expect(page.getByRole('checkbox', { name: 'All Task Types' })).toBeChecked();
     await expect(page.locator('input:disabled, select:disabled')).toHaveCount(0);
-    await expect(measureButton(page, 'flows')).toHaveText('Measure: Created and Completed');
+    await expect(measureButton(page, 'flows')).toHaveText('Measure:Created and Completed');
 
     // The first type is the seeded world's own; search by its name when the list is long.
     await search(page, types[0].name);
     await box(page, types[0].id).check();
     await expect(lines(page)).toHaveCount(2); // the type in each panel; All task types is hidden for scale
-    await expect(page.getByRole('checkbox', { name: /All task types/ })).not.toBeChecked();
+    await expect(page.getByRole('checkbox', { name: /All Task Types/ })).not.toBeChecked();
     await expect(page).toHaveURL(new RegExp(`types=${types[0].id}`));
     await expect(page.getByRole('heading', { name: 'Created and Completed' })).toHaveCount(1);
-    await expect(measureButton(page, 'flows')).toHaveText('Measure: Created');
+    await expect(measureButton(page, 'flows')).toHaveText('Measure:Created');
     await expect(page.locator('[data-trend-live]')).toHaveText(/Showing Created/);
 
     // The legend total is the number of tasks and opens the queue filtered by the task type.
@@ -125,7 +125,7 @@ test.describe('Trends by task type', () => {
     await page.goto(`${TREND}&types=${types[0].id},${types[1].id}&metric=completed`);
     await expect(box(page, types[0].id)).toBeChecked();
     await expect(box(page, types[1].id)).toBeChecked();
-    await expect(measureButton(page, 'flows')).toHaveText('Measure: Completed');
+    await expect(measureButton(page, 'flows')).toHaveText('Measure:Completed');
     await expect(lines(page)).toHaveCount(4); // two types in each of the two panels
 
     // Leave and come back by the plain tab link: the selection is remembered for this user in this browser.
@@ -176,7 +176,7 @@ test.describe('Trends by task type', () => {
     const mine = [types[1], types[2], ...more];
     for (const t of mine.slice(0, 8)) await box(page, t.id).check();
     // All task types is hidden for scale while types are compared; tick it for the tooltip and the table below.
-    await page.getByRole('checkbox', { name: /All task types/ }).check();
+    await page.getByRole('checkbox', { name: /All Task Types/ }).check();
     await expect(lines(page)).toHaveCount(18); // nine lines in each of the two panels
     await box(page, mine[8].id).click();
     await expect(box(page, mine[8].id)).not.toBeChecked();
@@ -195,7 +195,7 @@ test.describe('Trends by task type', () => {
     await expect(page.locator('[data-readout]')).toContainText(mine[1].name);
 
     // Table view: a column for every visible line.
-    await page.getByRole('button', { name: /View as table/ }).click();
+    await page.getByRole('button', { name: /View as Table/ }).click();
     await expect(page.locator('thead th[data-col]')).toHaveCount(18);
     await expect(page.locator('thead th[scope=colgroup]')).toHaveCount(2);
     await expect(page.getByRole('columnheader', { name: mine[0].name }).first()).toBeVisible();
@@ -210,14 +210,14 @@ test.describe('Trends by task type', () => {
     await page.goto(`${TREND}&types=${types[0].id},${types[1].id}`);
     await expect(lines(page)).toHaveCount(4);
     // Picking types turns the backlog panel's "Open and overdue" into Open; Overdue per task type is one click away.
-    await expect(measureButton(page, 'backlog')).toHaveText('Measure: Open');
+    await expect(measureButton(page, 'backlog')).toHaveText('Measure:Open');
     await dropdownByAttr(page, 'data-measure-select="backlog"').selectOption('overdue');
     await expect(page).toHaveURL(/bmetric=overdue/);
     await dropdownByAttr(page, 'data-measure-select="flows"').selectOption('onTime');
     await expect(page).toHaveURL(/metric=ontime/);
     // Overdue per task type is drawn in the backlog panel: today's value links to the queue's overdue filter for that type (the first task
     // of every type was due yesterday and is still open).
-    await page.getByRole('button', { name: /View as table/ }).click();
+    await page.getByRole('button', { name: /View as Table/ }).click();
     const cell = page.locator(`thead th[data-col="backlog-type-${types[0].id}"]`);
     await expect(cell).toBeVisible();
     const index = await page
@@ -235,14 +235,14 @@ test.describe('Trends by task type', () => {
     page,
   }) => {
     await page.goto(`${TREND}&due=overdue,ontime`);
-    await expect(measureButton(page, 'flows')).toHaveText('Measure: On Time');
+    await expect(measureButton(page, 'flows')).toHaveText('Measure:On Time');
     await expect(page.locator('[data-panel="backlog"]')).toBeVisible();
     await expect(lines(page)).toHaveCount(2); // On time (flows) and Overdue (backlog)
     await page.goto(`${TREND}&types=${types[0].id},${types[1].id}&metric=overdue`);
     await expect(page.locator('[data-panel="backlog"] polyline.series:not(.partial)')).toHaveCount(
       2,
     );
-    await expect(measureButton(page, 'flows')).toHaveText('Measure: Created');
+    await expect(measureButton(page, 'flows')).toHaveText('Measure:Created');
   });
 
   test('hides the backlog panel, remembered for the user but not in the address', async ({
@@ -303,7 +303,7 @@ test.describe('Trends by task type', () => {
       await page.goto(`${TREND}&types=${types[0].id},${types[1].id},${types[2].id}`);
       await expect(lines(page)).toHaveCount(6);
       expect(await axeViolations(page)).toEqual([]);
-      await page.getByRole('button', { name: /View as table/ }).click();
+      await page.getByRole('button', { name: /View as Table/ }).click();
       await expect(page.locator('tbody tr').first()).toBeVisible();
       expect(await axeViolations(page)).toEqual([]);
     }
@@ -373,7 +373,7 @@ test.describe('Trends backlog and labels', () => {
     await expect(page.locator('[data-panel="backlog"] polyline.series:not(.partial)')).toHaveCount(
       2,
     );
-    await expect(measureButton(page, 'backlog')).toHaveText('Measure: Open and Overdue');
+    await expect(measureButton(page, 'backlog')).toHaveText('Measure:Open and Overdue');
     const labels = page.locator('[data-end-label]');
     await expect(labels).toHaveCount(4);
     const texts = (await labels.allTextContents()).map((t) => t.trim());
@@ -411,8 +411,7 @@ test.describe('Trends backlog and labels', () => {
     expect(dates.length).toBeGreaterThanOrEqual(4);
     expect(dates[dates.length - 1]).toBe(dateInZone(FIRM_ZONE, 0));
     for (const d of dates.slice(1, -1)) expect(isMonday(d)).toBe(true);
-    for (const t of await ticks.allTextContents())
-      expect(t.trim()).toMatch(/^[A-Z][a-z]{2} \d{1,2}$/);
+    for (const t of await ticks.allTextContents()) expect(t.trim()).toMatch(/^\d{2}\/\d{2}$/);
     expect(await overlaps(page, 'text[data-xtick]')).toEqual([]);
   });
 
@@ -425,7 +424,7 @@ test.describe('Trends backlog and labels', () => {
     );
     // No end labels with more than 4 lines in a panel; with 3 types they are there (3 lines).
     await expect(page.locator('[data-panel="backlog"] [data-end-label]')).toHaveCount(3);
-    await page.getByRole('button', { name: /View as table/ }).click();
+    await page.getByRole('button', { name: /View as Table/ }).click();
     const col = await page
       .locator('thead th[data-col]')
       .evaluateAll(
@@ -462,16 +461,18 @@ test.describe('Trends backlog and labels', () => {
 
     // The keyboard reads weeks: the last one is the current week (so far).
     await page.locator('[data-plot]').focus();
-    await expect(page.locator('[data-tip-heading]')).toHaveText(/^Week of [A-Z][a-z]{2} \d+$/);
+    await expect(page.locator('[data-tip-heading]')).toHaveText(/^Week of [A-Z][a-z]+ \d+$/);
     await expect(trendTip(page)).toContainText('This week so far');
     await page.keyboard.press('ArrowLeft');
     await expect(page.locator('[data-readout]')).toContainText(/^Week of /);
     await page.keyboard.press('Home');
     await expect(page.locator('[data-readout]')).toContainText(/^Week of /);
 
-    await page.getByRole('button', { name: /View as table/ }).click();
+    await page.getByRole('button', { name: /View as Table/ }).click();
     await expect(page.locator('thead th').first()).toHaveText('Week');
-    await expect(page.locator('tbody tr').first().locator('th')).toHaveText(/^Week of /);
+    await expect(page.locator('tbody tr').first().locator('th')).toHaveText(
+      /^\d{2}\/\d{2} to \d{2}\/\d{2}/,
+    );
     const rows = await page.locator('tbody tr').count();
     expect(rows).toBeGreaterThanOrEqual(12);
     expect(rows).toBeLessThanOrEqual(15);
@@ -490,7 +491,7 @@ test.describe('Trends backlog and labels', () => {
     await page.goto(`${TREND}&period=custom&from=${from}&to=${to}`);
     await expect(page.locator('[data-per-week]')).toHaveCount(2);
     expect(await page.locator('text[data-xtick]').count()).toBeLessThanOrEqual(8);
-    await page.getByRole('button', { name: /View as table/ }).click();
+    await page.getByRole('button', { name: /View as Table/ }).click();
     expect(await page.locator('tbody tr').count()).toBeLessThanOrEqual(54);
   });
 

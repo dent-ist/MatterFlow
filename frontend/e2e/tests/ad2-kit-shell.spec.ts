@@ -100,7 +100,9 @@ test.describe('the shell on the Task Types administration (#544, #545)', () => {
     await page.setViewportSize(SIZES[1]);
     for (const tab of TABS) {
       await page.goto(tab.url);
-      await expect(page.locator(`${tab.table} tbody tr[data-row]`).first()).toBeVisible();
+      await expect(
+        page.locator(`${tab.table} tbody tr:is([data-row], [data-record-id])`).first(),
+      ).toBeVisible();
       await page.keyboard.press('Tab');
       await expect(skip(page)).toBeFocused();
       await expect(skip(page)).toHaveText('Skip to Table');
@@ -111,7 +113,9 @@ test.describe('the shell on the Task Types administration (#544, #545)', () => {
       await shot(page, `shell-skip-${tab.key}`);
       await page.keyboard.press('Enter');
       // The list's own skip target (#413) replaces the shell's: focus lands on the first row's name link.
-      await expect(page.locator(`${tab.table} tbody tr[data-row] a`).first()).toBeFocused();
+      await expect(
+        page.locator(`${tab.table} tbody tr:is([data-row], [data-record-id]) a`).first(),
+      ).toBeFocused();
     }
   });
 
@@ -207,7 +211,9 @@ test.describe('axe, reflow and the row overflow at five widths (#544, #545, #554
       await page.setViewportSize(size);
       for (const tab of TABS) {
         await page.goto(tab.url);
-        await expect(page.locator('tbody tr[data-row], li.rc').first()).toBeVisible();
+        await expect(
+          page.locator('tbody tr:is([data-row], [data-record-id]), li.rc').first(),
+        ).toBeVisible();
         await noSideScroll(page, `${tab.key} at ${size.width}`);
         expect(await axeViolations(page), `${tab.key} at ${size.width}`).toEqual([]);
         await shot(page, `shell-${tab.key}`);
@@ -216,7 +222,7 @@ test.describe('axe, reflow and the row overflow at five widths (#544, #545, #554
       // seeded above: on a long list the rows that scroll under the sticky header are part-covered links, which axe reports whatever the
       // list is (the data volume of the shared database must not decide this test).
       await page.goto(`/admin/task-types?name=${token}`);
-      await page.locator('tbody tr[data-row], li.rc').first().waitFor();
+      await page.locator('tbody tr:is([data-row], [data-record-id]), li.rc').first().waitFor();
       const menus = page.locator('[data-overflow]');
       const last = size.width >= 640 ? menus.last() : menus.first();
       await last.scrollIntoViewIfNeeded();

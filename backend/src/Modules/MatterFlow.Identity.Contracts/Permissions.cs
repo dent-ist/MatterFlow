@@ -239,6 +239,13 @@ public static class Permissions
         public const string Manage = "OnHoldReason.Manage";
     }
 
+    /// <summary>MatterList permissions (epic #1298).</summary>
+    public static class MatterList
+    {
+        /// <summary>Manage matter types, current states and team titles.</summary>
+        public const string Manage = "MatterList.Manage";
+    }
+
     /// <summary>StatusLabel permissions.</summary>
     public static class StatusLabel
     {
@@ -365,6 +372,7 @@ public static class Permissions
         CustomField.Manage,
         Priority.Manage,
         OnHoldReason.Manage,
+        MatterList.Manage,
         StatusLabel.Manage,
         Dashboard.View,
         Dashboard.ViewSummary,

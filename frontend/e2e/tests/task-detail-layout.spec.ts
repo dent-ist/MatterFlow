@@ -1,3 +1,4 @@
+import { dropdownByAttr } from '../support/dropdown';
 import { Page } from '@playwright/test';
 import { TaskDetailPage } from '../pages/task-detail.page';
 import { expect, test } from '../support/fixtures';
@@ -247,10 +248,10 @@ test.describe('Task detail: single page layout', () => {
     await expect(detail.commentItems.first()).toContainText('Vendor re-sent B-003');
 
     // The sort order only orders inside the window.
-    await page.getByLabel('Sort comments').selectOption('newest');
+    await dropdownByAttr(page, 'data-order-select').selectOption('newest');
     await expect(detail.commentItems).toHaveCount(3);
     await expect(detail.commentItems.first()).toContainText('load template agreed');
-    await page.getByLabel('Sort comments').selectOption('oldest');
+    await dropdownByAttr(page, 'data-order-select').selectOption('oldest');
 
     await detail.showAllComments.click();
     await expect(detail.commentItems).toHaveCount(12);

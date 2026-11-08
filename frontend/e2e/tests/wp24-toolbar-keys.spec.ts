@@ -62,7 +62,7 @@ test.describe('Quick views are one toolbar (#236)', () => {
     await expect(toolbar(page)).toHaveAttribute('aria-orientation', 'horizontal');
     expect(await stops(page)).toBe(1);
     // The pressed view is the stop.
-    await expect(toolbar(page).getByRole('button', { name: /^All open/ })).toHaveAttribute(
+    await expect(toolbar(page).getByRole('button', { name: /^All Open/ })).toHaveAttribute(
       'tabindex',
       '0',
     );
@@ -70,7 +70,7 @@ test.describe('Quick views are one toolbar (#236)', () => {
     const buttons = toolbar(page).locator('> button');
     const n = await buttons.count();
     await toolbar(page)
-      .getByRole('button', { name: /^All open/ })
+      .getByRole('button', { name: /^All Open/ })
       .focus();
     await page.keyboard.press('ArrowRight');
     await expect(buttons.nth(1)).toBeFocused();

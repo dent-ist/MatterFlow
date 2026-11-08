@@ -45,6 +45,7 @@ NSwag is a frontend dev dependency (`npm run api:generate` uses the local copy).
 | `permissions.json` | Permission catalog (70 codes) | A unit test keeps `Permissions.cs` and `frontend/src/app/core/auth/permissions.ts` equal to it |
 | `form-rules.schema.json`, `form-rules.md` | JSON Schema and semantics of conditional form rules | `node contracts/validate-contracts.mjs` |
 | `form-rules.vectors.json` | Conformance vectors run unchanged by the .NET and TypeScript test suites | same |
+| `asset-numbering/pattern-vectors.json` | Conformance vectors of the Asset Number pattern (the tail after the CM Number, one counter token such as `{###}`; issue #1297): cases `{tail, cmNumber, counter, expected \| expectedError}` with the stable error codes `PATTERN_NO_COUNTER`, `PATTERN_TWO_COUNTERS`, `PATTERN_UNKNOWN_TOKEN`, `PATTERN_FORBIDDEN_CHAR`, `PATTERN_EDGE_SPACE`, `PATTERN_TRAILING_DOT`, `PATTERN_TOO_LONG`, `PATTERN_COUNTER_WIDTH` | `node contracts/validate-contracts.mjs` (shape and a reference implementation); backend `AssetNumberingTests` run every vector; the frontend runs the same file |
 | `form-rules.messages.json` | Message keys and wording per rule error code | same (every code needs a key) |
 | `task-type-colours.json` | The palette of ten colour keys for task types and asset types | Lint and unit tests; never store a hex value in the database |
 | `task-type-icons.json` | The icon library for task types | `tools/icons` generates it; script 21 retired brand icons |

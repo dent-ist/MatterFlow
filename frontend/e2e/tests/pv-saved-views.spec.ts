@@ -26,6 +26,13 @@ async function noSidewaysScroll(page: Page, what: string): Promise<void> {
   expect(overflow, `no sideways scroll: ${what}`).toBe(false);
 }
 
+/** The saved views live in the Options menu of the toolbar (#894): open it when the Views entry is not on screen yet. */
+async function openViews(page: Page): Promise<void> {
+  const trigger = page.locator('[data-views-trigger]');
+  if (!(await trigger.isVisible())) await page.locator('[data-options-trigger]').click();
+  await trigger.click();
+}
+
 test.describe('Saved views (#880)', () => {
   for (const size of SIZES) {
     test(`the Export and Views menus are clean at ${size.name}`, async ({ page, seed }) => {
@@ -34,7 +41,7 @@ test.describe('Saved views (#880)', () => {
       await seed.task(world);
       await page.goto(`/tasks?matter=${world.matter.matterId}`);
       await expect(page.locator('[data-task]').first()).toBeVisible();
-      await page.locator('[data-views-trigger]').click();
+      await openViews(page);
       await expect(page.locator('[data-view-name-input]')).toBeVisible();
       await noSidewaysScroll(page, `Views open at ${size.name}`);
       await clean(page, `Views open at ${size.name}`);
@@ -53,7 +60,7 @@ test.describe('Saved views (#880)', () => {
     const world = await seed.world();
     await seed.task(world);
     await page.goto(`/tasks?matter=${world.matter.matterId}&status=NEW`);
-    await page.locator('[data-views-trigger]').click();
+    await openViews(page);
     await expect(page.locator('[data-views-empty]')).toBeVisible();
     await page.locator('[data-view-save]').click();
     await expect(page.locator('[data-view-form-error]')).toContainText('Enter a name');
@@ -69,13 +76,13 @@ test.describe('Saved views (#880)', () => {
 
     // Another list state, then the view brings the first one back.
     await page.goto(`/tasks?status=COMPLETED`);
-    await page.locator('[data-views-trigger]').click();
+    await openViews(page);
     await page.locator('[data-view-apply]').click();
     await expect(page).toHaveURL(new RegExp(`matter=${world.matter.matterId}`));
     await expect(page).toHaveURL(/status=NEW/);
 
     // Rename, then make it the default: a plain /tasks opens on it.
-    await page.locator('[data-views-trigger]').click();
+    await openViews(page);
     await page.locator('[data-view-rename]').click();
     await page.locator('[data-view-rename-input]').fill('Alpha new work');
     await page.locator('[data-view-rename-save]').click();
@@ -89,7 +96,7 @@ test.describe('Saved views (#880)', () => {
     await expect(page).toHaveURL(new RegExp(`matter=${world.matter.matterId}`));
 
     // Delete asks first; afterwards a plain /tasks is the plain list again.
-    await page.locator('[data-views-trigger]').click();
+    await openViews(page);
     await page.locator('[data-view-delete]').click();
     await page.locator('[data-view-delete-confirm]').click();
     await expect(page.locator('[data-views-empty]')).toBeVisible();

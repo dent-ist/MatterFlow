@@ -4,7 +4,7 @@ import {
   WorkloadThresholds,
   WorkloadUser,
 } from '../../../api/generated/api-client';
-import { availabilityDisplay, shortDay } from '../../../core/availability/availability';
+import { availabilityDisplay, chipDay } from '../../../core/availability/availability';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { calendarDayInZone } from '../../../core/time/time';
 import { UserStateIcon, UserStateKey } from '../../../shared/icons/user-state-icon';
@@ -30,17 +30,17 @@ export interface Band {
   fg: string;
 }
 
-/** "Back on Oct 20" for a person out of office until the given instant (the end of their last day away), in the viewer's zone. */
+/** "Back on 10/20" for a person out of office until the given instant (the end of their last day away), in the viewer's zone. */
 export function backOnText(outUntil: string | undefined, zone: string, now: Date): string | null {
   if (!outUntil) return null;
   const day = calendarDayInZone(outUntil, zone);
-  return `Back on ${shortDay(day, calendarDayInZone(now, zone))}`;
+  return `Back on ${chipDay(day, calendarDayInZone(now, zone))}`;
 }
 
 /**
  * One person on the Team workload board as a card (design B, US-09 #1100): the open-task count as a big number coloured by the load level with a small "OPEN" caption, the name,
  * three slot pips (the capacity rule of the Team capacity battery: filled up to the open tasks) and a red overdue badge only when above zero. There is NO "Available" chip (it is spoken in
- * the accessible name and tooltip); only the exceptions show: Off hours is the moon in the state icon (no extra row), Out of office tints the whole card amber and writes "Back Nov 7" in the count row. Every card has the same height. The name is the button
+ * the accessible name and tooltip); only the exceptions show: Off hours is the moon in the state icon (no extra row), Out of office tints the whole card amber and writes "Back 11/07" in the count row. Every card has the same height. The name is the button
  * that opens the person's drawer and it stretches over the whole card; the Assign icon sits above it and appears on hover or focus. Operational capacity only: no completion counts or ranking.
  */
 @Component({

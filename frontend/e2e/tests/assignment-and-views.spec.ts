@@ -27,7 +27,7 @@ test.describe('Assignment by a technician (SCN-006)', () => {
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
     await detail.expectStatus('In Progress');
-    await expect(detail.assignee).toContainText(tech.username);
+    await expect(detail.assignee).toContainText(tech.username.replace(/^.*\\/, ''));
 
     const stored = await admin.get(`/api/v1/tasks/${task.taskId}`);
     expect(stored.status).toBe('IN_PROGRESS');
@@ -54,10 +54,10 @@ test.describe('Assignment by a technician (SCN-006)', () => {
     await page.locator('[data-when-toggle]').click();
     await page.getByRole('button', { name: 'Change', exact: true }).click();
     await page.getByRole('combobox', { name: 'Assignee' }).fill(colleague.username);
-    await page.getByRole('option', { name: colleague.username }).click();
+    await page.getByRole('option', { name: colleague.username.replace(/^.*\\/, '') }).click();
     await page.getByRole('button', { name: 'Save Changes' }).click();
 
-    await expect(detail.assignee).toContainText(colleague.username);
+    await expect(detail.assignee).toContainText(colleague.username.replace(/^.*\\/, ''));
     await detail.expectStatus('In Progress');
     await detail.openActivity();
     await expect(page.getByRole('region', { name: 'Activity' })).toContainText(/assign/i);
@@ -83,9 +83,9 @@ test.describe('Known application defects (docs/qa/e2e-findings.md)', () => {
     await page.locator('[data-when-toggle]').click();
     await page.getByRole('button', { name: 'Change', exact: true }).click();
     await page.getByRole('combobox', { name: 'Assignee' }).fill(colleague.username);
-    await page.getByRole('option', { name: colleague.username }).click();
+    await page.getByRole('option', { name: colleague.username.replace(/^.*\\/, '') }).click();
     await page.getByRole('button', { name: 'Save Changes' }).click();
-    await expect(detail.assignee).toContainText(colleague.username);
+    await expect(detail.assignee).toContainText(colleague.username.replace(/^.*\\/, ''));
   });
 });
 
@@ -196,8 +196,8 @@ test.describe('My Work and Pod Work across Pods (SCN-007)', () => {
     await podWork.open();
 
     await podWork.choosePod(podA.name);
-    await podWork.tab(/^All open/).click();
-    await expect(podWork.tab(/^All open/)).toHaveAttribute('aria-selected', 'true');
+    await podWork.tab(/^All Open/).click();
+    await expect(podWork.tab(/^All Open/)).toHaveAttribute('aria-selected', 'true');
     await podWork.expectListed(inA.title, colleague.title);
     await podWork.expectNotListed(inB.title, noPod.title, pooled.title);
 

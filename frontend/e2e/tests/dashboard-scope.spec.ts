@@ -47,7 +47,7 @@ let s: Scenario;
 async function build(seed: Seeder): Promise<Scenario> {
   const tag = uid();
   const world = await seed.world();
-  const people = await seed.role(['Task.View'], 'E2E scope member');
+  const people = await seed.role(['Task.View', 'Workflow.Execute'], 'E2E scope member');
   const peer = await seed.user([people.name], 'scopepeer');
   const techB = await seed.user([people.name], 'scopetechb');
   const techC = await seed.user([people.name], 'scopetechc');
@@ -226,7 +226,7 @@ test.describe('Dashboard Scope', () => {
     const page = await asUser(s.lead.username);
     await page.goto(`/dashboard?tab=trends&pod=${s.podC.podId}`);
     await expect(page.locator('mf-dash-note')).toContainText(
-      'That pod is not available to you. Showing My pods.',
+      'That pod is not available to you. Showing My Pods.',
     );
     await expect(scopeSelect(page)).toHaveAttribute('data-value', 'mine');
     await expect(page).not.toHaveURL(/pod=/);

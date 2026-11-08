@@ -47,7 +47,8 @@ async function openList(page: Page, width = 1366, height = 768, extra = ''): Pro
   await page.setViewportSize({ width, height });
   await page.goto(listUrl(extra));
   // The table from 640 px, cards below (#445).
-  await expect(page.locator(width < 640 ? 'li.rc' : 'tr[data-record-id]')).toHaveCount(3);
+  // Other tests of this file add people with the same prefix while they run in parallel, so wait for the three of this file, not for a total.
+  for (const userId of ACCOUNT.keys()) await expect(rowOf(page, userId)).toBeVisible();
 }
 
 /** The name of the person: the one control of the Name cell (#432); it opens the panel. */
@@ -224,7 +225,9 @@ test.describe('BUG-3: the deactivation question', () => {
     const dialog = page.getByRole('dialog', { name: /^Deactivate / });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
-    await expect(dialog.getByRole('button', { name: 'Deactivate', exact: true })).toBeVisible();
+    await expect(
+      dialog.getByRole('button', { name: 'Deactivate User', exact: true }),
+    ).toBeVisible();
     // Fully inside the window.
     const inside = await dialog.evaluate((el) => {
       const r = el.getBoundingClientRect();
@@ -246,7 +249,7 @@ test.describe('BUG-3: the deactivation question', () => {
     await page.getByRole('button', { name: /^Deactivate / }).click();
     await page
       .getByRole('dialog', { name: /^Deactivate / })
-      .getByRole('button', { name: 'Deactivate', exact: true })
+      .getByRole('button', { name: 'Deactivate User', exact: true })
       .click();
     await expect(page.locator(`tr[data-record-id="${victim.userId}"] [data-status]`)).toContainText(
       'Inactive',
@@ -266,7 +269,9 @@ test.describe('BUG-3: the deactivation question', () => {
     const dialog = page.getByRole('dialog', { name: /^Deactivate / });
     await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(dialog.getByRole('button', { name: 'Deactivate', exact: true })).toBeFocused();
+    await expect(
+      dialog.getByRole('button', { name: 'Deactivate User', exact: true }),
+    ).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(dialog).toBeHidden();
     await expect(page.locator('[data-activate]')).toBeVisible();

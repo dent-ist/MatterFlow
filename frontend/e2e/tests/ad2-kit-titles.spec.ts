@@ -94,7 +94,7 @@ test.describe('titles and crumbs on the administration routes (#588)', () => {
 
     await customFieldWorld(admin, 'matter');
     await page.goto('/admin/custom-fields/matter/form');
-    await expect(page).toHaveTitle('Matter custom fields - MatterFlow');
+    await expect(page).toHaveTitle('Matter Custom Fields - MatterFlow');
     await expect(crumbs(page)).toHaveText([/Administration/, /Custom Fields/, /Matter/]);
     await expect(
       page

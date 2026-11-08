@@ -214,7 +214,7 @@ test.describe('Pod Work final verification', () => {
       await expect(page.locator('[data-task]').first()).toBeVisible();
       await goOffline(page);
       await expect(page.locator('[data-offline-banner]')).toBeVisible({ timeout: 5000 });
-      await new PodWorkPage(page).tab(/^All open/).click();
+      await new PodWorkPage(page).tab(/^All Open/).click();
       await expect(page.getByText(/Couldn.t load tasks|offline/i).first()).toBeVisible({
         timeout: 15_000,
       });

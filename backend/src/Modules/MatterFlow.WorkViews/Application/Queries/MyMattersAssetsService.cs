@@ -28,6 +28,8 @@ public sealed class MyMattersAssetsService(MyMattersScopeResolver scopes, DbCont
 
         public required string ExternalReference { get; init; }
 
+        public string? AssetNumber { get; init; }
+
         public required int ClientId { get; init; }
 
         public required string ClientName { get; init; }
@@ -86,9 +88,11 @@ public sealed class MyMattersAssetsService(MyMattersScopeResolver scopes, DbCont
 
         var rows = Rows(scope);
         if (query.Q?.Trim() is { Length: > 0 } q)
-            rows = rows.Where(r => r.Name.Contains(q) || r.ExternalReference.Contains(q) || r.AssetTypeName.Contains(q) || r.MatterName.Contains(q));
+            rows = rows.Where(r => r.Name.Contains(q) || r.ExternalReference.Contains(q) || (r.AssetNumber != null && r.AssetNumber.Contains(q)) || r.AssetTypeName.Contains(q) || r.MatterName.Contains(q));
         if (query.Name?.Trim() is { Length: > 0 } name)
             rows = rows.Where(r => r.Name.Contains(name));
+        if (query.AssetNumber?.Trim() is { Length: > 0 } assetNumber)
+            rows = rows.Where(r => r.AssetNumber != null && r.AssetNumber.Contains(assetNumber));
         if (query.AssetTypeId is { Length: > 0 } types)
             rows = rows.Where(r => types.Contains(r.AssetTypeId));
         if (statuses.Count > 0)
@@ -122,6 +126,7 @@ public sealed class MyMattersAssetsService(MyMattersScopeResolver scopes, DbCont
         var ordered = sort switch
         {
             "name" => Order(rows, r => r.Name, desc),
+            "assetNumber" => Order(rows, r => r.AssetNumber, desc),
             "client" => Order(rows, r => r.ClientName, desc),
             "matter" => Order(rows, r => r.MatterRef, desc),
             "assetType" => Order(rows, r => r.AssetTypeName, desc),
@@ -133,7 +138,7 @@ public sealed class MyMattersAssetsService(MyMattersScopeResolver scopes, DbCont
         var page = await ordered.ThenBy(r => r.AssetId).Skip((query.Page - 1) * query.PageSize).Take(query.PageSize).ToListAsync(ct);
         var items = page.Select(r => new MyMattersAssetRow(
             r.AssetId, r.Name, r.ClientId, r.ClientName, r.MatterId, r.MatterRef, r.MatterName, r.AssetTypeId, r.AssetTypeName,
-            DateTime.SpecifyKind(r.CreatedAtUtc, DateTimeKind.Utc), r.ModifiedAtUtc is { } m ? DateTime.SpecifyKind(m, DateTimeKind.Utc) : null, r.StatusCode, r.Linked, r.OpenLinked, r.IconKey, r.ColourKey)).ToList();
+            DateTime.SpecifyKind(r.CreatedAtUtc, DateTimeKind.Utc), r.ModifiedAtUtc is { } m ? DateTime.SpecifyKind(m, DateTimeKind.Utc) : null, r.StatusCode, r.Linked, r.OpenLinked, r.IconKey, r.ColourKey, r.AssetNumber)).ToList();
         return new PagedResult<MyMattersAssetRow>(items, total, query.Page, query.PageSize);
     }
 
@@ -204,7 +209,7 @@ public sealed class MyMattersAssetsService(MyMattersScopeResolver scopes, DbCont
         return new MyMattersAssetDetail(
             row.AssetId, row.Name, row.ClientId, row.ClientName, row.MatterId, row.MatterRef, row.MatterName, row.AssetTypeId, row.AssetTypeName,
             asset.Description, string.IsNullOrEmpty(row.ExternalReference) ? null : row.ExternalReference,
-            DateTime.SpecifyKind(row.CreatedAtUtc, DateTimeKind.Utc), createdBy, row.ModifiedAtUtc is { } m ? DateTime.SpecifyKind(m, DateTimeKind.Utc) : null, row.StatusCode, tasks, row.IconKey, row.ColourKey);
+            DateTime.SpecifyKind(row.CreatedAtUtc, DateTimeKind.Utc), createdBy, row.ModifiedAtUtc is { } m ? DateTime.SpecifyKind(m, DateTimeKind.Utc) : null, row.StatusCode, tasks, row.IconKey, row.ColourKey, row.AssetNumber);
     }
 
     private IQueryable<Row> Rows(MyMattersScope scope)
@@ -219,6 +224,7 @@ public sealed class MyMattersAssetsService(MyMattersScopeResolver scopes, DbCont
                    AssetId = a.Id,
                    Name = a.DisplayName,
                    ExternalReference = a.ExternalReference ?? string.Empty,
+                   AssetNumber = a.AssetNumber,
                    ClientId = c.Id,
                    ClientName = c.Name,
                    MatterId = m.Id,

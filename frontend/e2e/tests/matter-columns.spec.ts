@@ -31,7 +31,14 @@ const SIZES = [
   [1920, 1080],
 ] as const;
 
-const RIGHTS = ['Task.View', 'Task.Create', 'Task.Assign', 'Matter.View', 'Pod.View'];
+const RIGHTS = [
+  'Task.View',
+  'Task.Create',
+  'Task.Assign',
+  'Matter.View',
+  'Pod.View',
+  'Workflow.Execute',
+];
 
 const headers = (page: Page): Promise<string[]> =>
   page
@@ -169,10 +176,10 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
     await expect(page.locator('[data-task]').first()).toBeVisible();
     expect(await headers(page)).toEqual(active);
     await shot(page, 'my-work-active-1920x1080');
-    await mw.tab(/^Due soon and overdue/).click();
+    await mw.tab(/^Due Soon and Overdue/).click();
     await expect(page.locator('[data-task]').first()).toBeVisible();
     expect(await headers(page)).toEqual(active);
-    await mw.tab(/^Created by me/).click();
+    await mw.tab(/^Created by Me/).click();
     await expect(page.locator('[data-task]').first()).toBeVisible();
     expect(await headers(page)).toEqual([
       'Ref',
@@ -202,7 +209,7 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
     const pod = new PodWorkPage(page);
     await pod.open();
     await pod.choosePod(String(w.pod['name']));
-    await pod.tab(/^All open/).click();
+    await pod.tab(/^All Open/).click();
     await expect(page.locator('[data-task]').first()).toBeVisible();
     expect(await headers(page)).toEqual([
       'Ref',
@@ -228,7 +235,7 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
       await axeClean(page, `My Work ${wd}`);
       await pod.open();
       await pod.choosePod(String(w.pod['name']));
-      await pod.tab(/^All open/).click();
+      await pod.tab(/^All Open/).click();
       await expect(page.locator('[data-task]').first()).toBeVisible();
       expect(await noPageScroll(page), `Pod Work no page scroll at ${wd}`).toBe(true);
       await axeClean(page, `Pod Work ${wd}`);

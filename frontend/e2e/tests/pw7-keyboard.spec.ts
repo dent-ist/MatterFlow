@@ -129,8 +129,8 @@ test.describe('Pod Work keyboard', () => {
     await page.keyboard.press('Home');
     await expect(pw.tab(/^Unassigned/)).toHaveAttribute('aria-selected', 'true');
     await page.keyboard.press('ArrowRight');
-    await expect(pw.tab(/^By member/)).toHaveAttribute('aria-selected', 'true');
-    await expect(pw.tab(/^By member/)).toBeFocused();
+    await expect(pw.tab(/^By Member/)).toHaveAttribute('aria-selected', 'true');
+    await expect(pw.tab(/^By Member/)).toBeFocused();
 
     // By member: the fold, the sort and View tasks.
     const fold = page.locator('[data-member-fold] button');

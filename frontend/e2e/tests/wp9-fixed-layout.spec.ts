@@ -64,7 +64,13 @@ function measure(page: Page): Promise<Measure> {
             'tbody td[data-col="priority"] .im-value, tbody td[data-col="status"] .im-value',
           ),
         )
-          .filter((v) => v.scrollWidth > v.clientWidth + 1)
+          // D-43 and D-44s: a long admin-edited name clips with an ellipsis and carries the full text as its tooltip, on purpose.
+          .filter((v) => {
+            const ellipsis =
+              getComputedStyle(v).textOverflow === 'ellipsis' || !!v.closest('.pg-clip');
+            const tooltip = !!v.closest('[title], [data-tip]') || !!v.getAttribute('aria-label');
+            return v.scrollWidth > v.clientWidth + 1 && !(ellipsis && tooltip);
+          })
           .map((v) => `menu value ${v.textContent?.trim()} ${v.scrollWidth}>${v.clientWidth}`),
       );
     const w = document.querySelector('.wt-wrap') as HTMLElement;
@@ -146,11 +152,11 @@ test.describe('Fixed layout (#200)', () => {
           `no sideways scroll of the page at ${width} for ${url}`,
         ).toBeLessThanOrEqual(0);
       }
-      // The two most-quoted numbers of the review: Due is 136 px (not 403 at 1920) and the Title takes the rest.
+      // The two most-quoted numbers of the review: Due is 152 px (not 403 at 1920) and the Title takes the rest.
       await page.goto(urls[0]);
       await expect(page.locator('[data-task]').first()).toBeVisible();
       const m = await measure(page);
-      expect(Math.round(m.widths['due'])).toBe(136);
+      expect(Math.round(m.widths['due'])).toBe(152);
       expect(Math.round(m.widths['ref'])).toBe(112);
       expect(Math.round(m.widths['matter'])).toBe(142);
       // Matter Name is off by default (D-43a, #1230): it has no column here.

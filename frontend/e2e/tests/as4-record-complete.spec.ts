@@ -36,7 +36,10 @@ test.describe('Asset record page, complete (WP-AS4)', () => {
       externalReference: LONG_URL,
       description: LONG_TEXT,
     });
-    const person = await personas.create({ label: 'linkedassignee', permissions: ['Task.View'] });
+    const person = await personas.create({
+      label: 'linkedassignee',
+      permissions: ['Task.View', 'Workflow.Execute'],
+    });
     const make = (title: string, extra: Record<string, unknown>) =>
       seed.task(world, { title: `${title} ${token}`, ...extra });
     const late = await make('Late task', { dueDate: day(-3), assignedUserId: person.userId });
@@ -58,7 +61,7 @@ test.describe('Asset record page, complete (WP-AS4)', () => {
     await page.goto(`/assets/${asset.assetId}?tab=tasks`);
     const rows = page.locator('[data-tasks-tab] tbody tr');
     await expect(rows).toHaveCount(3);
-    await expect(page.getByRole('tab', { name: /^Linked tasks/ })).toContainText('(3)');
+    await expect(page.getByRole('tab', { name: /^Linked Tasks/ })).toContainText('(3)');
     await expect(rows.nth(0)).toContainText('Late task');
     await expect(rows.nth(1)).toContainText('Soon task');
     await expect(rows.nth(2)).toContainText('Undated task');
@@ -99,7 +102,7 @@ test.describe('Asset record page, complete (WP-AS4)', () => {
     await expect(plain.locator('[data-no-access="linked-tasks"]')).toContainText(
       "You don't have access to tasks.",
     );
-    await expect(plain.getByRole('tab', { name: /^Linked tasks/ })).not.toContainText('(');
+    await expect(plain.getByRole('tab', { name: /^Linked Tasks/ })).not.toContainText('(');
     const strip = plain.locator('[data-asset-strip]');
     await expect(strip).toContainText('Created');
     for (const word of ['Open', 'Overdue', 'Linked']) await expect(strip).not.toContainText(word);
@@ -222,7 +225,7 @@ test.describe('Asset record page, complete (WP-AS4)', () => {
       await noHorizontalScroll(page);
       await shot(page, 'as4-details');
 
-      await page.getByRole('tab', { name: /^Linked tasks/ }).click();
+      await page.getByRole('tab', { name: /^Linked Tasks/ }).click();
       await expect(page.locator('[data-tasks-tab] tbody tr')).toHaveCount(3);
       expect(await axeViolations(page), `tasks at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);

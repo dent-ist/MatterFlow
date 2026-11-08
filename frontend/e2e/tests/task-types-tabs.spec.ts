@@ -68,7 +68,7 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
     await expect(page).toHaveURL(/\/admin\/workflows$/);
     await expect(page.getByRole('tab', { name: 'Workflows' })).toBeFocused();
     await expect(page.getByRole('heading', { name: 'Task Types', level: 1 })).toBeVisible();
-    await expect(page.getByRole('button', { name: /New workflow$/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /New Workflow$/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /^Filters/ })).toBeVisible();
     await expect(page.getByRole('searchbox')).toHaveCount(0);
     await expect(page).toHaveTitle('Task Types: Workflows - MatterFlow');
@@ -77,7 +77,7 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
     await page.getByRole('tab', { name: 'Workflows' }).press('ArrowRight');
     await expect(page).toHaveURL(/\/admin\/steps$/);
     await expect(page.getByRole('tab', { name: 'Workflow Steps' })).toBeFocused();
-    await expect(page.getByRole('button', { name: /New step$/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /New Step$/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /^Filters/ })).toBeVisible();
     await expect(page.getByRole('searchbox')).toHaveCount(0);
     await expect(page).toHaveTitle('Task Types: Workflow Steps - MatterFlow');
@@ -110,7 +110,7 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
       `${type.name}${type.name}`,
     ]);
     await page.goto(`/admin/task-types/${type.id}/form`);
-    await expect(crumbs(page)).toHaveText(['Administration', 'Task Types', type.name, 'Form']);
+    await expect(crumbs(page)).toHaveText(['Administration', 'Task Types', type.name, 'FormForm']);
 
     await page.goto(`/admin/workflows/${workflow.workflowDefinitionId}`);
     // The record header's last step is the current page: shortened text for the eye plus the full name for screen readers (#387).
@@ -155,7 +155,7 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
       'Task Types',
       'Workflow Steps',
       step.title,
-      'Form',
+      'FormForm',
     ]);
   });
 
@@ -228,7 +228,7 @@ test.describe('Task type, workflow and step cross-links', () => {
     const w = await world(seed);
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/admin/task-types?name=${w.token}`);
-    const many = page.locator(`[data-row="${w.many.name}"]`);
+    const many = page.locator(`tr:has([data-row="${w.many.name}"], a:has-text("${w.many.name}"))`);
     await expect(many).toBeVisible();
     // The default (Bravo) is the one name; "+3" for the others and the whole list as the tooltip, default first.
     const def = many.locator('[data-default-workflow] .tt-clip');
@@ -240,13 +240,13 @@ test.describe('Task type, workflow and step cross-links', () => {
     await expect(many.locator('[data-assoc-chip]')).toHaveCount(0);
     await expect(many.locator('[data-workflows-link]')).toHaveText('4');
 
-    const bare = page.locator(`[data-row="${w.bare.name}"]`);
+    const bare = page.locator(`tr:has([data-row="${w.bare.name}"], a:has-text("${w.bare.name}"))`);
     await expect(bare.locator('[data-default-workflow]')).toHaveText('No workflow');
     await expect(bare.locator('[data-workflows]')).toHaveText('0');
     await expect(bare.locator('[data-workflows-link]')).toHaveCount(0);
     // The reason is a neutral badge, not a red box.
     await expect(bare.locator('[data-not-usable]')).toContainText('Not Usable');
-    await expect(page.locator('tbody .chip')).toHaveCount(0);
+    await expect(page.locator('tbody [data-assoc-chip]')).toHaveCount(0);
   });
 
   test('the number of workflows opens the Workflows tab filtered to the task type, with a removable chip', async ({
@@ -256,7 +256,11 @@ test.describe('Task type, workflow and step cross-links', () => {
     const w = await world(seed);
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/admin/task-types?name=${w.token}`);
-    await page.locator(`[data-row="${w.many.name}"] [data-workflows-link]`).click();
+    await page
+      .locator(
+        `tr:has([data-row="${w.many.name}"], a:has-text("${w.many.name}")) [data-workflows-link]`,
+      )
+      .click();
     await expect(page).toHaveURL(new RegExp(`/admin/workflows\\?taskType=${w.many.id}$`));
     await expect(page.getByRole('tab', { name: 'Workflows' })).toHaveAttribute(
       'aria-selected',
@@ -276,7 +280,11 @@ test.describe('Task type, workflow and step cross-links', () => {
     await expect(page.locator('[data-assoc-filter]')).toHaveCount(0);
 
     await page.goto(`/admin/task-types?name=${w.token}`);
-    await page.locator(`[data-row="${w.single.name}"] [data-workflows-link]`).click();
+    await page
+      .locator(
+        `tr:has([data-row="${w.single.name}"], a:has-text("${w.single.name}")) [data-workflows-link]`,
+      )
+      .click();
     await expect(page).toHaveURL(new RegExp(`/admin/workflows\\?taskType=${w.single.id}$`));
     await expect(page.locator('tbody tr')).toHaveCount(1);
     await expect(page.locator('tbody tr')).toContainText(w.w4.name);
@@ -294,11 +302,21 @@ test.describe('Task type, workflow and step cross-links', () => {
     const lonely = await seed.workflow({ name: `Lonely flow ${token}` });
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/admin/workflows?name=${token}`);
-    const row = page.locator(`[data-row="${workflow.name}"]`);
+    const row = page.locator(
+      `tr:has([data-row="${workflow.name}"], a:has-text("${workflow.name}"))`,
+    );
     await expect(row.locator('[data-assoc-chip]')).toHaveCount(0);
     await expect(row.locator('[data-task-types-link]')).toHaveText('5');
-    await expect(page.locator(`[data-row="${lonely.name}"] [data-task-types]`)).toHaveText('0');
-    await expect(page.locator(`[data-row="${lonely.name}"] [data-task-types-link]`)).toHaveCount(0);
+    await expect(
+      page.locator(
+        `tr:has([data-row="${lonely.name}"], a:has-text("${lonely.name}")) [data-task-types]`,
+      ),
+    ).toHaveText('0');
+    await expect(
+      page.locator(
+        `tr:has([data-row="${lonely.name}"], a:has-text("${lonely.name}")) [data-task-types-link]`,
+      ),
+    ).toHaveCount(0);
     // The Versions cell and the steps count.
     await expect(row.locator('[data-versions]')).toContainText('Published v1');
     await expect(row.locator('[data-steps]')).toHaveText('3');
@@ -338,9 +356,13 @@ test.describe('Task type, workflow and step cross-links', () => {
     await seed.workflow({ name: `Other ${token}` });
 
     await page.goto(`/admin/steps?title=${token}`);
-    const sharedRow = page.locator(`[data-row="${shared.title}"]`);
+    const sharedRow = page.locator(
+      `tr:has([data-row="${shared.title}"], a:has-text("${shared.title}"))`,
+    );
     await expect(sharedRow.locator('[data-used-in]')).toHaveText('2');
-    const spareRow = page.locator(`[data-row="${spare.title}"]`);
+    const spareRow = page.locator(
+      `tr:has([data-row="${spare.title}"], a:has-text("${spare.title}"))`,
+    );
     await expect(spareRow.locator('[data-used-in]')).toHaveText('Not Used');
     await expect(spareRow.locator('[data-used-in] a')).toHaveCount(0);
 

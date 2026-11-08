@@ -89,6 +89,7 @@ describe('MatterDetailPage', () => {
           unassigned: 2,
           projectCount: 1,
           assetCount: 0,
+          teamMemberCount: 3,
         }),
       ),
     };
@@ -277,7 +278,7 @@ describe('MatterDetailPage', () => {
     expect(navigateByUrl).not.toHaveBeenCalled();
   });
 
-  it('has seven tabs in order when everything is permitted, Summary first; the Calendar tab is gone', async () => {
+  it('has eight tabs in order when everything is permitted, Summary first; the Calendar tab is gone', async () => {
     await create([
       'Matter.View',
       'Task.View',
@@ -291,8 +292,17 @@ describe('MatterDetailPage', () => {
       Array.from(el().querySelectorAll('[role=tab]')).map((t) =>
         t.textContent!.trim().replace(/\s*\(.*\)$/, ''),
       ),
-    ).toEqual(['Summary', 'Tasks', 'Projects', 'Assets', 'Productions', 'Notes', 'Activities']);
-    expect(el().querySelectorAll('[role=tab] .pi').length).toBe(7);
+    ).toEqual([
+      'Summary',
+      'Tasks',
+      'Projects',
+      'Assets',
+      'Productions',
+      'Notes',
+      'Team',
+      'Activities',
+    ]);
+    expect(el().querySelectorAll('[role=tab] .pi').length).toBe(8);
     // Productions and Notes open their own tabs (MD-11, MD-13).
     await openTab('productions');
     expect(el().querySelector('[data-productions-tab]')).not.toBeNull();
@@ -305,7 +315,7 @@ describe('MatterDetailPage', () => {
 
     expect(
       Array.from(el().querySelectorAll('[role=tab]')).map((t) => t.textContent!.trim()),
-    ).toEqual(['Summary', 'Tasks', 'Projects (1)']); // Assets needs Asset.View
+    ).toEqual(['Summary', 'Tasks', 'Projects (1)', 'Team (3)']); // Assets needs Asset.View; Team is for every viewer (epic #1298)
     // The first tab (Overview) is selected on open and loads no task list.
     expect(tab('Summary').getAttribute('aria-selected')).toBe('true');
     // Without Task.View and Asset.View the Overview has no sections, so the details are open at once.
@@ -335,7 +345,7 @@ describe('MatterDetailPage', () => {
     await openTab('assets');
     expect(tab('Summary').getAttribute('aria-selected')).toBe('true');
     expect(assets.listAssets).not.toHaveBeenCalled();
-    expect(matters.getMatterSummary).not.toHaveBeenCalled();
+    expect(matters.getMatterSummary).toHaveBeenCalledTimes(1);
     // No parameter, ?tab=details and an unknown value all show the Overview.
     for (const key of [undefined, 'details', 'summary', 'nonsense']) {
       await openTab(key);
@@ -399,6 +409,10 @@ describe('MatterDetailPage', () => {
       'Client',
       'Matter Number',
       'Matter Name',
+      'Matter Type',
+      'Current State',
+      'DMS Path',
+      'DFS Path',
       'Status',
       'Sensitive',
       'Primary PM',
@@ -596,7 +610,8 @@ describe('MatterDetailPage', () => {
 
   it('has no strip and asks for no numbers without Task.View, and the tab is still complete', async () => {
     await create(['Matter.View']);
-    expect(matters.getMatterSummary).not.toHaveBeenCalled();
+    // The summary is asked for once: it carries the Team tab number (epic #1298); no task numbers are shown without Task.View.
+    expect(matters.getMatterSummary).toHaveBeenCalledTimes(1);
     expect(el().querySelector('[data-strip]')).toBeNull();
     expect(el().querySelector('[role=alert]')).toBeNull();
     await openDetails();
@@ -729,6 +744,7 @@ describe('MatterDetailPage', () => {
       undefined,
       undefined,
       undefined,
+      undefined,
       1,
       50,
       undefined,
@@ -757,9 +773,10 @@ describe('MatterDetailPage', () => {
       7,
       [4],
       undefined,
-      undefined,
       'contract',
+      undefined,
       'WS',
+      undefined,
       undefined,
       undefined,
       undefined,
@@ -1133,10 +1150,9 @@ describe('MatterDetailPage', () => {
       expect(tab('Assets').textContent!.replace(/\s+/g, ' ').trim()).toBe('Assets (0)');
     });
 
-    it('has no Assets tab and asks for no summary without Asset.View', async () => {
+    it('has no Assets tab without Asset.View', async () => {
       await create(['Matter.View']);
       expect(tab('Assets')).toBeUndefined();
-      expect(matters.getMatterSummary).not.toHaveBeenCalled();
     });
   });
   describe('project managers and the health strip (epic #667)', () => {

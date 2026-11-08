@@ -10,7 +10,7 @@ import { dateInZone, FIRM_ZONE } from '../support/time';
 /**
  * The shared two-line Due cell (TQ-WP14, #209, TQ15, TQ44): the eight states of describeDueCell on seeded tasks, exactly two lines at
  * Comfortable (18 px each, no gap) and one inline line at Compact, one spoken sentence per cell, the tooltip with the zone, a steady
- * 136 px column, tone contrast of 4.5:1 with a cue other than colour, axe at both desktop sizes. Own tagged tasks only. Screenshots go to
+ * 152 px column, tone contrast of 4.5:1 with a cue other than colour, axe at both desktop sizes. Own tagged tasks only. Screenshots go to
  * E2E_SCREENSHOTS when it is set (docs/ux/task-queue-review/fixes/wp-due).
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
@@ -59,7 +59,7 @@ const STATES: State[] = [
   { key: 'overdue6h', line2: 'Overdue 6h', icon: 'pi-exclamation-circle', tone: 'overdue' },
   { key: 'overdue3d', line2: 'Overdue 3d', icon: 'pi-exclamation-circle', tone: 'overdue' },
   { key: 'overdue120d', line2: 'Overdue 120d', icon: 'pi-exclamation-circle', tone: 'overdue' },
-  { key: 'today', line2: 'Due Today', icon: 'pi-clock', tone: 'today' },
+  { key: 'today', line2: 'Due today', icon: 'pi-clock', tone: 'today' },
   { key: 'tomorrow', line2: 'Tomorrow', icon: null, tone: 'soon' },
   { key: 'in2', line2: 'In 2 days', icon: null, tone: 'soon' },
   { key: 'later', line2: null, icon: null, tone: 'none' },
@@ -69,7 +69,7 @@ const STATES: State[] = [
 ];
 
 test.describe('Due cell (#209)', () => {
-  test('eight states on seeded tasks: two lines, one spoken sentence, tooltip, tone contrast, Due 136 px, axe at both desktop sizes', async ({
+  test('eight states on seeded tasks: two lines, one spoken sentence, tooltip, tone contrast, Due 152 px, axe at both desktop sizes', async ({
     seed,
     page,
   }) => {
@@ -184,12 +184,12 @@ test.describe('Due cell (#209)', () => {
         if (s.line2) {
           expect(f.l2, `${s.key} line 2`).toContain(s.line2);
           expect(f.l2Weight).toBe('700');
-          // Exactly two lines of 18 px with no gap, and the longest text fits 136 px.
+          // Exactly two lines of 18 px with no gap, and the longest text fits 152 px.
           expect(f.l2H).toBe(18);
           expect(f.l2Gap, `${s.key} no gap at ${width}`).toBe(18);
-          // The 136 px column is the grid's; a phone card (below 640 px) gives the line the room beside the status chip.
+          // The 152 px column is the grid's; a phone card (below 640 px) gives the line the room beside the status chip.
           if (width >= 640)
-            expect(f.l2W, `${s.key} line 2 fits 136 px at ${width}`).toBeLessThanOrEqual(136);
+            expect(f.l2W, `${s.key} line 2 fits 152 px at ${width}`).toBeLessThanOrEqual(152);
         } else {
           expect(f.l2, `${s.key} has no line 2`).toBeNull();
         }
@@ -203,14 +203,14 @@ test.describe('Due cell (#209)', () => {
         if (s.key === 'overdue120d') expect(f.sr).toContain('overdue 120 days');
         if (s.key === 'overdue6h') expect(f.sr).toContain('overdue 6 hours');
         if (s.key === 'today') expect(f.tip).toMatch(/ E[SD]T/);
-        if (s.key === 'nextYear') expect(f.l1).toMatch(/, \d{4}$/);
+        if (s.key === 'nextYear') expect(f.l1).toMatch(/\d{2}\/\d{2}\/\d{4}$/);
         if (s.key === 'later') expect(f.l1).not.toMatch(/\d{4}/);
         // Tone colours reach 4.5:1 against the row.
         expect(f.ratio, `${s.key} contrast at ${width}`).toBeGreaterThanOrEqual(4.5);
       }
-      // Due is 136 px at every size where the column shows (WP9).
+      // Due is 152 px at every size where the column shows (WP9).
       const th = page.locator('thead th[data-col="due"]');
-      if (await th.count()) expect(Math.round((await th.boundingBox())!.width)).toBe(136);
+      if (await th.count()) expect(Math.round((await th.boundingBox())!.width)).toBe(152);
       await shot(page, `due-cell-${width}x${height}`);
       await axeClean(page, `Due cell ${width}`);
     }
@@ -238,7 +238,7 @@ test.describe('Due cell (#209)', () => {
     await expect(cell.locator('.dc-l2')).toContainText('Overdue 4d');
     await expect(page.getByRole('cell', { name: /overdue 4 days/ })).toHaveCount(1);
     expect(await cell.locator('.dc-sr').textContent()).toMatch(
-      /^Due [A-Z][a-z]{2} \d+(, \d{4})?, overdue 4 days$/,
+      /^Due [A-Z][a-z]+ \d+(, \d{4})?, overdue 4 days$/,
     );
     // Sorting keeps announcing itself.
     await expect(page.locator('thead th[data-col="due"]')).toHaveAttribute('aria-sort', /.*/);
@@ -251,9 +251,9 @@ test.describe('Due cell (#209)', () => {
     const b1 = (await root.locator('.dc-l1').boundingBox())!;
     const b2 = (await root.locator('.dc-l2').boundingBox())!;
     expect(Math.abs(b2.y - b1.y), 'one line').toBeLessThan(4);
-    expect(b2.x + b2.width - b1.x, 'fits the 136 px column').toBeLessThanOrEqual(136);
+    expect(b2.x + b2.width - b1.x, 'fits the 152 px column').toBeLessThanOrEqual(152);
     expect((await row.boundingBox())!.height).toBeLessThanOrEqual(40);
-    // The longest relative text is never clipped at 136 px; only the date may give way.
+    // The longest relative text is never clipped at 152 px; only the date may give way.
     const longRoot = page.locator(`[data-task="${longest.taskNumber}"] td[data-col="due"] .dc`);
     await expect(longRoot.locator('.dc-l2')).toHaveText('Overdue 120d');
     const l2 = (await longRoot.locator('.dc-l2').boundingBox())!;

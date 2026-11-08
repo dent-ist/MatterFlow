@@ -95,3 +95,53 @@ public interface IAssetLinkRoleUsage
     Task<IReadOnlyDictionary<int, int>> CountLinksAsync(IReadOnlyCollection<int> assetLinkRoleIds, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyDictionary<int, int>>(new Dictionary<int, int>());
 }
+
+/// <summary>The three admin-managed pick lists of a matter (epic #1298).</summary>
+public enum MatterListKind
+{
+    /// <summary>Matter Type (Litigation, Investigation, ...).</summary>
+    MatterType,
+
+    /// <summary>Current State (Startup, Start of Discovery, ...), ordered by the admin.</summary>
+    CurrentState,
+
+    /// <summary>Team Title of a matter's team member (Attorney, Paralegal, ...).</summary>
+    TeamTitle,
+}
+
+/// <summary>An item of a matter pick list as other modules see it.</summary>
+/// <param name="Id">Item id (Matter.MatterTypeId, Matter.CurrentStateId or MatterTeamMember.TeamTitleId references it).</param>
+/// <param name="Name">Display name.</param>
+/// <param name="SortOrder">Position in pickers.</param>
+/// <param name="IsActive">Inactive items still display where they are used but are not offered for new choices.</param>
+public sealed record MatterListItemInfo(int Id, string Name, int SortOrder, bool IsActive);
+
+/// <summary>Read access to the matter pick lists for other modules (validation of a chosen item, names for display and the audit log).</summary>
+public interface IMatterListCatalog
+{
+    /// <summary>The items of a list in their order.</summary>
+    Task<IReadOnlyList<MatterListItemInfo>> ListAsync(MatterListKind kind, bool includeInactive, CancellationToken cancellationToken = default);
+
+    /// <summary>The items of a list as a query another module can join, to sort by name or order inside one statement (the Matters list). Empty by default.</summary>
+    IQueryable<MatterListItemKey> Keys(MatterListKind kind) => Enumerable.Empty<MatterListItemKey>().AsQueryable();
+}
+
+/// <summary>
+/// Implemented by the module that owns matters, so the Configuration module can show how many matters (Matter Type, Current State) or team members (Team Title)
+/// use each item and refuse to delete one that is in use (it can then only be deactivated). The foreign keys are the backstop.
+/// </summary>
+public interface IMatterListUsage
+{
+    /// <summary>Item id to the number of rows that use it; items nobody uses may be missing.</summary>
+    Task<IReadOnlyDictionary<int, int>> CountsAsync(MatterListKind kind, CancellationToken cancellationToken = default);
+}
+
+/// <summary>An item's id, name and position for joining inside a query. A class with initialisers, not a positional record, so a query can join it.</summary>
+public sealed class MatterListItemKey
+{
+    public int Id { get; init; }
+
+    public string Name { get; init; } = string.Empty;
+
+    public int SortOrder { get; init; }
+}

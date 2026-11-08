@@ -141,10 +141,11 @@ describe('AssetTypeRecordPage', () => {
       expect(el().textContent).toContain('17 / 500');
     });
 
-    it('has Overview, Fields (8) and Assets (12) tabs with live counts', () => {
+    it('has Overview, Fields (8), Numbering and Assets (12) tabs with live counts', () => {
       expect(all('[role=tab]').map((t) => t.textContent!.replace(/\s+/g, ' ').trim())).toEqual([
         'Overview',
         'Fields (8)',
+        'Numbering',
         'Assets (12)',
       ]);
       expect(q('[role=tab][aria-selected=true]').getAttribute('data-tab')).toBe('overview');
@@ -307,6 +308,7 @@ describe('AssetTypeRecordPage', () => {
       expect(all('[role=tab]').map((t) => t.textContent!.trim())).toEqual([
         'Overview',
         'Fields (8)',
+        'Numbering',
       ]);
       expect(el().querySelector('[data-assets-tab]')).toBeNull();
       expect(el().querySelector('[data-overview-tab]')).not.toBeNull();

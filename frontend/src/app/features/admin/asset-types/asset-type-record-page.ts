@@ -8,6 +8,7 @@ import {
   input,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -19,7 +20,7 @@ import {
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { NotificationService } from '../../../core/notify/notification.service';
-import { PageTitle, shortTitleText } from '../../../core/title/page-title';
+import { PageTitle, recordTitle, shortTitleText } from '../../../core/title/page-title';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { focusFirstInvalid } from '../../../shared/forms/focus-invalid';
 import {
@@ -39,6 +40,7 @@ import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { tabIcon } from '../../../shared/ui/tab-icons';
 import { focusStatusAfterAction } from '../after-action';
 import { FormsModule } from '@angular/forms';
+import { AssetNumberingTab } from './asset-numbering-tab';
 import { TaskTypeIconPicker } from '../../../shared/icons/task-type-icon-picker';
 import {
   TASK_TYPE_COLOURS,
@@ -54,11 +56,12 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 import { IntPipe } from '../../../shared/ui/number-format';
 
 /** The tabs of the record (`?tab=`); the Assets tab is for people who may see assets. */
-export type AssetTypeTab = 'overview' | 'fields' | 'assets';
+export type AssetTypeTab = 'overview' | 'fields' | 'numbering' | 'assets';
 
 export const ASSET_TYPE_TAB_LABEL: Record<AssetTypeTab, string> = {
   overview: 'Overview',
   fields: 'Fields',
+  numbering: 'Numbering',
   assets: 'Assets',
 };
 
@@ -70,6 +73,7 @@ export function assetTypeTabOf(
 ): AssetTypeTab {
   if (isNew) return 'overview';
   if (value === 'fields') return 'fields';
+  if (value === 'numbering') return 'numbering';
   if (value === 'assets' && canSeeAssets) return 'assets';
   return 'overview';
 }
@@ -112,6 +116,7 @@ const modelKey = (m: Model): string =>
   selector: 'mf-asset-type-record-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AssetNumberingTab,
     Dropdown,
     IntPipe,
     NumericDatePipe,
@@ -202,6 +207,12 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
     assetTypeTabOf(this.tab(), this.isNew(), this.canSeeAssets()),
   );
   protected readonly dirty = computed(() => modelKey(this.model()) !== modelKey(this.saved()));
+  /** The Numbering tab holds edits that are not saved (only while that tab is open: leaving it drops them). */
+  protected readonly numberingEdits = signal(false);
+  protected readonly numberingDirty = computed(
+    () => this.current() === 'numbering' && this.numberingEdits(),
+  );
+  private readonly numberingTab = viewChild(AssetNumberingTab);
   /** The footer (Save, Cancel) is there only while there is something to save: always on a new type, else when the Overview has edits. */
   protected readonly showFooter = computed(
     () => this.current() === 'overview' && (this.isNew() || this.dirty()),
@@ -238,6 +249,12 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
         icon: tabIcon('fields'),
         label: ASSET_TYPE_TAB_LABEL.fields,
         ...(this.fieldTotal() !== undefined ? { count: this.fieldTotal() } : {}),
+        ...(this.isNew() ? { disabledReason: 'Create the asset type first.' } : {}),
+      },
+      {
+        key: 'numbering',
+        icon: tabIcon('numbering'),
+        label: ASSET_TYPE_TAB_LABEL.numbering,
         ...(this.isNew() ? { disabledReason: 'Create the asset type first.' } : {}),
       },
     ];
@@ -300,19 +317,25 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
       if (state === 'notFound' || state === 'forbidden' || state === 'error') {
         this.pageTitle.set(recordStateTitle('assetType', state));
       } else if (this.isNew()) this.pageTitle.set('New Asset Type');
-      else if (name) this.pageTitle.set(shortTitleText(name));
+      else if (name)
+        this.pageTitle.set(
+          this.current() === 'numbering'
+            ? recordTitle(name, ASSET_TYPE_TAB_LABEL.numbering)
+            : shortTitleText(name),
+        );
     });
   }
 
   hasUnsavedChanges(): boolean {
-    return this.dirty();
+    return this.dirty() || this.numberingDirty();
   }
 
   readonly saveForLeaveLabel = 'Save and Leave';
 
   /** "Save and Leave" of the leave question: saves; false (the person stays) when it did not save. */
   async saveForLeave(): Promise<boolean> {
-    return this.save();
+    if (this.dirty() && !(await this.save())) return false;
+    return this.numberingDirty() ? ((await this.numberingTab()?.saveForLeave()) ?? false) : true;
   }
 
   protected async load(id: string | undefined): Promise<void> {
@@ -428,6 +451,12 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
     }
   }
 
+  /** Numbering was saved: the page takes the new row version; edits of the Overview stay as they are. */
+  protected onNumberingSaved(updated: AssetTypeResponse): void {
+    this.assetType.set(updated);
+    this.announcement.set('Numbering saved.');
+  }
+
   protected retry(): void {
     void this.load(this.id());
   }
@@ -481,7 +510,7 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
   protected async select(key: string): Promise<boolean> {
     const to = assetTypeTabOf(key, this.isNew(), this.canSeeAssets());
     if (to === this.current()) return true;
-    if (!this.isNew() && this.dirty()) {
+    if (!this.isNew() && (this.dirty() || this.numberingDirty())) {
       const leave = await this.leave.ask({
         label: this.saveForLeaveLabel,
         run: () => this.saveForLeave(),

@@ -63,7 +63,7 @@ test.describe('Asset forms (WP-AS5)', () => {
     const before = (await page.locator('[data-section="fields"]').boundingBox())!;
     await dropdownById(page, 'asset-type').selectOption(String(type.assetTypeId));
     await expect(page.locator('[data-fields-title]')).toContainText(
-      `Form type ${token} fields (2)`,
+      `Form type ${token} Fields (2)`,
     );
     const after = (await page.locator('[data-section="fields"]').boundingBox())!;
     expect(Math.abs(after.y - before.y)).toBeLessThan(2);
@@ -129,7 +129,7 @@ test.describe('Asset forms (WP-AS5)', () => {
     );
     await expect(page.locator('[data-type-reason]')).toContainText("can't be changed");
     await expect(page.locator('[data-chosen]')).toContainText(matter.matterRef);
-    await expect(page.locator('[data-fields-title]')).toContainText('fields (2)');
+    await expect(page.locator('[data-fields-title]')).toContainText('Fields (2)');
     const save = page.getByRole('button', { name: 'Save Changes' });
     await expect(save).toBeDisabled();
     await shot(page, 'as5-edit-asset');

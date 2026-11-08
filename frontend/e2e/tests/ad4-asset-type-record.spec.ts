@@ -36,11 +36,11 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/admin/asset-types');
-    await page.getByRole('button', { name: 'New asset type' }).click();
+    await page.getByRole('button', { name: 'New Asset Type' }).click();
     await expect(page).toHaveURL(/\/admin\/asset-types\/new$/);
-    await expect(heading(page)).toHaveText('New asset type');
+    await expect(heading(page)).toHaveText('New Asset Type');
     await expect(page).toHaveTitle('New Asset Type - MatterFlow');
-    await expect(crumbs(page)).toHaveText([/Administration/, /Asset Types/, /New asset type/]);
+    await expect(crumbs(page)).toHaveText([/Administration/, /Asset Types/, /New asset type/i]);
     // A new type has no tabs and no state badge; Create and Cancel are there from the start.
     await expect(page.getByRole('tab')).toHaveCount(0);
     await everyWidth(page, 'asset-type-new');
@@ -125,7 +125,7 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
 
     // The row menu goes straight to the designer, and Back returns to the same row.
     await page.getByRole('button', { name: `Actions for Deep ${token}` }).click();
-    await page.getByRole('menuitem', { name: /Edit fields/ }).click();
+    await page.getByRole('menuitem', { name: /Edit Fields/ }).click();
     await expect(page).toHaveURL(new RegExp(`/admin/asset-types/${t.assetTypeId}/form$`));
     await crumbs(page).filter({ hasText: 'Asset Types' }).getByRole('link').click();
     await expect(page.getByRole('link', { name: `Deep ${token}` })).toBeFocused();
@@ -328,14 +328,14 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
     const manager = await asUser((await seed.user([role.name], 'ad4-rec')).username);
     await manager.goto(`/admin/asset-types/${t.assetTypeId}?tab=assets`);
     await expect(heading(manager)).toContainText('Perm');
-    await expect(manager.getByRole('tab')).toHaveCount(2);
+    await expect(manager.getByRole('tab')).toHaveCount(3);
     await expect(manager.getByRole('tab', { name: /^Assets/ })).toHaveCount(0);
     await expect(manager.locator('[data-overview-tab]')).toBeVisible();
     await expect(manager.getByRole('button', { name: 'Activity' })).toHaveCount(0);
     await manager.goto(`/admin/asset-types/${t.assetTypeId}/form`);
     await expect(manager.getByRole('heading', { level: 1 })).toContainText('Perm');
     await manager.goto('/admin/asset-types/new');
-    await expect(heading(manager)).toHaveText('New asset type');
+    await expect(heading(manager)).toHaveText('New Asset Type');
 
     const viewerRole = await seed.role(['Task.View'], 'Viewer');
     const viewer = await asUser((await seed.user([viewerRole.name], 'ad4-view')).username);

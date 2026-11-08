@@ -245,7 +245,7 @@ test.describe('WP10 hold reason and colours', () => {
       await expect(card.locator('article')).toHaveClass(/card--overdue/);
       expect(await css(card.locator('article'), 'border-top-color')).toBe('rgb(180, 35, 24)');
       await expect(calm.locator('article')).not.toHaveClass(/card--overdue/);
-      await expect(card).toContainText('Overdue');
+      await expect(card).toContainText(/overdue/i);
       if (density === 'compact') {
         await expect(card.locator('[data-level-glyph] .lvl-bar')).not.toHaveCount(0);
       } else {

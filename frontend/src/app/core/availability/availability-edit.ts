@@ -5,6 +5,7 @@ import {
   NOTE_MAX,
   addDays,
   availabilityDisplay,
+  chipDay,
   shortDay,
 } from './availability';
 
@@ -254,7 +255,7 @@ export function previewDisplay(draft: AvailabilityDraft, now: Date): Availabilit
         state: 'OUT_OF_OFFICE',
         tone: 'warning',
         icon: 'pi-calendar-minus',
-        label: until ? `Out of Office until ${shortDay(until, today)}` : 'Out of Office',
+        label: until ? `Out of Office until ${chipDay(until, today)}` : 'Out of Office',
       };
     }
   }

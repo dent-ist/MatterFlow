@@ -28,11 +28,10 @@ import { dateInZone, FIRM_ZONE } from '../support/time';
 const OUT = process.env['E2E_SCREENSHOTS'];
 
 const SIZES = [
-  { width: 1024, height: 768 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
 ] as const;
-const FOUR = SIZES.filter((s) => s.width !== 1024);
+const FOUR = SIZES;
 
 const LONG_TITLE =
   'Process and load the supplemental custodian collections for the Meridian second-request response, including Q3 mobile device images, Slack exports, shared network drives and the legacy archive restore'

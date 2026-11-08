@@ -24,8 +24,7 @@ const SIZES = [
 const LONG_REASON =
   'The custodian has not returned the signed collection authorisation yet, and the vendor cannot start imaging until it arrives. ' +
   'Legal asked us to wait for the second request to be clarified before any further processing. We will check again on Friday and resume then if both are settled.';
-const STAMP =
-  /(Completed|Cancelled|On hold since) [A-Z][a-z]{2} \d{1,2}, \d{1,2}:\d{2} [AP]M by \S+/;
+const STAMP = /(Completed|Cancelled|On hold since) \d{2}\/\d{2} \d{2}:\d{2} [AP]M by \S+/;
 
 async function shot(page: Page, name: string): Promise<void> {
   if (!OUT) return;
@@ -89,12 +88,12 @@ test.describe('Task status note T3 (#301, #302)', () => {
     const note = page.locator('[data-status-note]');
     await expect(note).toHaveAttribute('data-status', 'CANCELLED');
     await expect(note).toContainText(STAMP);
-    await expect(note).toContainText('by ke\\kekim');
+    await expect(note).toContainText('by kekim');
     await expect(note).toContainText('Duplicate of an earlier request');
     // The tooltip has the full date with the zone and the whole reason.
     await expect(page.locator('[data-note-text]')).toHaveAttribute(
       'title',
-      /^Cancelled [A-Z][a-z]{2} \d{1,2}, \d{4}, .* by ke\\kekim\nDuplicate of an earlier request$/,
+      /^Cancelled [A-Z][a-z]+ \d{1,2}, \d{4}, .* by kekim\nDuplicate of an earlier request$/,
     );
     expect(await noteHeight(page), 'note height at 1366').toBeLessThanOrEqual(56);
     await noOldBanners(page);
@@ -116,7 +115,7 @@ test.describe('Task status note T3 (#301, #302)', () => {
       await page.setViewportSize(size);
       await detail.open(task.taskId);
       const note = page.locator('[data-status-note]');
-      await expect(note).toContainText(/On hold since [A-Z][a-z]{2} \d{1,2}, .* by ke\\kekim/);
+      await expect(note).toContainText(/On hold since \d{2}\/\d{2} \d{2}:\d{2} [AP]M by kekim/);
       const more = note.locator('[data-note-more]');
       // The reason is three sentences: it needs more than two lines at 375 and at 768, and may fit two at the wide sizes.
       if (size.width <= 768) {
@@ -166,8 +165,8 @@ test.describe('Task status note T3 (#301, #302)', () => {
     const note = page.locator('[data-status-note]');
     await expect(note).toHaveAttribute('data-status', 'COMPLETED');
     await expect(note).toContainText(STAMP);
-    await expect(note).toContainText('by ke\\kekim');
-    await expect(page.locator('[data-facts] [data-due]')).toContainText('Was due Oct 14');
+    await expect(note).toContainText('by kekim');
+    await expect(page.locator('[data-facts] [data-due]')).toContainText('Was due 10/14');
     await noOldBanners(page);
     await expect(page.locator('[data-action="reopen"]')).toBeVisible();
     await atEverySize(page, detail, task.taskId, 'completed');
@@ -204,7 +203,7 @@ test.describe('Task status note T3 (#301, #302)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await detail.open(overdue.task.taskId);
     await expect(page.locator('[data-status-note]')).toHaveCount(0);
-    await expect(page.locator('[data-facts] [data-due]')).toContainText(/Overdue/);
+    await expect(page.locator('[data-facts] [data-due]')).toContainText(/overdue/i);
 
     // ASAP (no due date) and open: no note; then On Hold: the note and the ASAP tile together.
     const world = await seed.world();
@@ -247,7 +246,7 @@ test.describe('Task status note T3 (#301, #302)', () => {
     const techPage = await asUser(tech.username);
     await techPage.setViewportSize({ width: 1366, height: 768 });
     await new TaskDetailPage(techPage).open(task.taskId);
-    await expect(techPage.locator('[data-status-note]')).toContainText('by ke\\kekim');
+    await expect(techPage.locator('[data-status-note]')).toContainText('by kekim');
     await expect(techPage.locator('[data-action="reopen"]')).toBeVisible();
     await expect(techPage.locator('[data-status-note] button')).toHaveCount(0);
 

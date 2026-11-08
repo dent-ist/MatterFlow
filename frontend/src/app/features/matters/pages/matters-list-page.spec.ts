@@ -3,7 +3,9 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import {
   ClientsClient,
+  CurrentStatesClient,
   MatterManagersClient,
+  MatterTypesClient,
   MatterResponse,
   MattersClient,
   MyMattersClient,
@@ -49,7 +51,7 @@ describe('MattersListPage', () => {
         isActive: false,
       }),
     ],
-    columns: string[] = [],
+    columns?: string[],
   ) {
     localStorage.clear();
     const counts = {
@@ -103,13 +105,63 @@ describe('MattersListPage', () => {
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: MattersClient, useValue: api },
         { provide: MatterManagersClient, useValue: managers },
+        {
+          provide: MatterTypesClient,
+          useValue: {
+            listMatterTypes: vi.fn().mockReturnValue(
+              ok([
+                {
+                  id: 2,
+                  name: 'Securities Litigation',
+                  sortOrder: 1,
+                  isActive: true,
+                  rowVersion: 'a',
+                  inUseCount: 3,
+                },
+                {
+                  id: 3,
+                  name: 'Old Type',
+                  sortOrder: 2,
+                  isActive: false,
+                  rowVersion: 'b',
+                  inUseCount: 1,
+                },
+                {
+                  id: 4,
+                  name: 'Unused Old',
+                  sortOrder: 3,
+                  isActive: false,
+                  rowVersion: 'c',
+                  inUseCount: 0,
+                },
+              ]),
+            ),
+          },
+        },
+        {
+          provide: CurrentStatesClient,
+          useValue: {
+            listCurrentStates: vi.fn().mockReturnValue(
+              ok([
+                {
+                  id: 5,
+                  name: 'Start of Discovery',
+                  sortOrder: 1,
+                  isActive: true,
+                  rowVersion: 'd',
+                  inUseCount: 2,
+                },
+              ]),
+            ),
+          },
+        },
         { provide: MyMattersClient, useValue: myMatters },
         { provide: ClientsClient, useValue: { listClients: vi.fn(), getClient: vi.fn() } },
       ],
     });
     navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true) as never;
     await TestBed.inject(AuthStore).ensureLoaded();
-    if (columns.length > 0) {
+    if (columns !== undefined) {
       // The Columns menu choice of this person (MD-28): the default columns plus the extras asked for.
       const user = TestBed.inject(AuthStore).profile()?.userId;
       const base = [
@@ -118,6 +170,8 @@ describe('MattersListPage', () => {
         'client',
         'primaryManager',
         'secondaryManager',
+        'matterType',
+        'currentState',
         'openTasks',
         'overdue',
         'status',
@@ -140,6 +194,48 @@ describe('MattersListPage', () => {
     )!;
     expect(status.getAttribute('data-rg-width')).toBe('160px');
     expect(fixture.nativeElement.querySelectorAll('.cfr-pair mf-filter-control')).toHaveLength(2);
+  });
+
+  it('shows Matter Type and Current State by default; Primary PM, Secondary PM, Open Tasks and Overdue are one click away (owner 2026-11-08, D-43a)', async () => {
+    const fixture = await create(['Matter.View', 'Task.View'], {}, [
+      aMatter({
+        matterType: { id: 2, name: 'Securities Litigation', isActive: true },
+        currentState: undefined,
+      }),
+    ]);
+    const heads = Array.from(
+      fixture.nativeElement.querySelectorAll('thead tr:first-child th[data-col]'),
+    ).map((h) => (h as HTMLElement).textContent!.trim());
+    expect(heads).toEqual([
+      'CM Number',
+      'Matter Name',
+      'Client',
+      'Matter Type',
+      'Current State',
+      'Status',
+    ]);
+    const row = fixture.nativeElement.querySelector('tbody tr')!;
+    expect(row.querySelector('[data-cell=matterType]')!.textContent!.trim()).toBe(
+      'Securities Litigation',
+    );
+    expect(row.querySelector('[data-cell=currentState]')!.textContent!.trim()).toBe('Not set');
+    // 180 + 200 + 140 + 160 + 160 + 160 + 48 = 1048 of the 1098 px of the 1366 frame.
+    const th = (key: string) => fixture.nativeElement.querySelector(`th[data-col="${key}"]`)!;
+    expect(th('matterType').getAttribute('data-rg-width')).toBe('var(--mf-col-matter-type-w)');
+    expect(th('currentState').getAttribute('data-rg-width')).toBe('var(--mf-col-current-state-w)');
+  });
+
+  it('filters by Matter Type and Not Set through their own parameters, listing an inactive type only while matters use it', async () => {
+    const fixture = await create(['Matter.View'], {
+      matterTypeId: '2',
+      matterTypeNone: 'true',
+      currentStateId: '5',
+    });
+    const call = api.listMatters.mock.calls.at(-1)!;
+    // matterTypeId, matterTypeNone, currentStateId, currentStateNone
+    expect(call.slice(12, 16)).toEqual([[2], true, [5], undefined]);
+    // Matter Type is a shown column, so its control is in the row and there is no chip while the row is open (D-44d).
+    expect(fixture.nativeElement.querySelector('[data-chip="matterType"]')).toBeNull();
   });
 
   it('shows the combined reference in monospace with a copy button, the client and the status', async () => {
@@ -253,7 +349,7 @@ describe('MattersListPage', () => {
   const search = (el: HTMLElement): HTMLInputElement =>
     el.querySelector<HTMLInputElement>('[data-list-search] input')!;
 
-  it('has column filters instead of a search box; Sensitive is a select after Status, no Other filters; Active is shown, not counted', async () => {
+  it('has column filters instead of a search box; Sensitive is a select after Status, Other filters holds only the hidden PM columns; Active is shown, not counted', async () => {
     const fixture = await create();
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector('#matter-search, #matter-status')).toBeNull();
@@ -279,7 +375,8 @@ describe('MattersListPage', () => {
     expect(
       status.button.compareDocumentPosition(sensitive.button) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(el.querySelector('[data-more-filters]')).toBeNull();
+    // Primary PM and Secondary PM are off by default: their filters are in Other filters (#1308); Matter Type and Current State are in the row.
+    expect(el.querySelector('[data-more-filters]')).not.toBeNull();
     expect(el.querySelector('[data-filter-count]')).toBeNull();
 
     sensitive.value = 'true';
@@ -318,6 +415,10 @@ describe('MattersListPage', () => {
       undefined,
       undefined,
       undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
       3,
       50,
       '-name',
@@ -327,14 +428,35 @@ describe('MattersListPage', () => {
       'Client: 00343 Acme Corp',
     );
     expect(control<HTMLInputElement>(el, 'Client').value).toBe('acme');
-    // The chips show with the row open too (LC-01); the Search text (merger) is in the box and makes no chip.
+    // D-44d (#1296): with the row open a chip shows only for a filter without a visible control (Sensitive sits in the Status cell); the Search text (merger) makes no chip.
     expect(ddSelect(el, 'Filter by Sensitive').value).toBe('true');
-    expect(el.querySelector('[data-chip="isSensitive"]')?.textContent).toContain('Sensitive: Yes');
+    expect(el.querySelector('[data-chip="isSensitive"]')).toBeNull();
     expect(el.querySelector('[data-chip="name"]')).toBeNull();
     el.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
     await settle(fixture);
     expect(el.querySelector('[data-chip="isSensitive"]')?.textContent).toContain('Sensitive: Yes');
     expect(el.querySelectorAll('[data-clear-filters]').length).toBe(1);
+  });
+
+  it('moves the filter of a hidden column to Other filters, with a chip that says "(hidden column)" and brings the column back (UI spec 6.2, #1308)', async () => {
+    const fixture = await create(['Matter.View'], { primaryManager: 'none' });
+    const el: HTMLElement = fixture.nativeElement;
+    // Primary PM is off by default: no control in the row, one "Other filters" button, one chip with Show column.
+    expect(el.querySelector('mf-more-filters')).not.toBeNull();
+    const chip = el.querySelector('[data-chip="primaryManager"]')!;
+    expect(chip.textContent).toContain('Primary PM: None');
+    expect(chip.textContent).toContain('(hidden column)');
+    const show = Array.from(chip.querySelectorAll('button')).find((b) =>
+      b.textContent!.includes('Show Column'),
+    )!;
+    show.click();
+    await settle(fixture);
+    expect(
+      Array.from(el.querySelectorAll('thead tr:first-child th[data-col]')).map((h) =>
+        h.getAttribute('data-col'),
+      ),
+    ).toContain('primaryManager');
+    expect(el.querySelector('[data-chip="primaryManager"]')).toBeNull();
   });
 
   it('keeps an old ?isSensitive=true link working and says how many inactive matters are hidden', async () => {
@@ -360,6 +482,10 @@ describe('MattersListPage', () => {
       undefined,
       undefined,
       undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
       1,
       50,
       'name',
@@ -369,6 +495,10 @@ describe('MattersListPage', () => {
       undefined,
       false,
       true,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
       undefined,
       undefined,
       undefined,
@@ -456,7 +586,7 @@ describe('MattersListPage', () => {
     );
     expect(labels).toContain('Resize CM Number column');
     expect(labels).toContain('Resize Matter Name column');
-    expect(labels).toContain('Resize Primary PM column');
+    expect(labels).toContain('Resize Matter Type column');
   });
 
   it('reorders and hides columns from the shared Columns menu, remembers it per person, and resets (MD-28, #1032)', async () => {
@@ -477,18 +607,18 @@ describe('MattersListPage', () => {
       'client',
       'name',
     ]);
-    // Hide Overdue; Name cannot be hidden.
+    // Hide Current State; Name cannot be hidden.
     const box = (k: string) =>
       el.querySelector<HTMLInputElement>(`[data-grid-columns-panel] [data-column="${k}"]`)!;
     expect(box('name').disabled).toBe(true);
-    box('overdue').checked = false;
-    box('overdue').dispatchEvent(new Event('change'));
+    box('currentState').checked = false;
+    box('currentState').dispatchEvent(new Event('change'));
     await settle(fixture);
-    expect(heads()).not.toContain('Overdue');
+    expect(heads()).not.toContain('Current State');
     el.querySelector<HTMLButtonElement>('[data-grid-columns-reset]')!.click();
     await settle(fixture);
     expect(heads().slice(0, 3)).toEqual(['CM Number', 'Matter Name', 'Client']);
-    expect(heads()).toContain('Overdue');
+    expect(heads()).toContain('Current State');
     expect(localStorage.getItem(key)).toBeNull();
   });
 
@@ -497,7 +627,7 @@ describe('MattersListPage', () => {
       Array.from(el.querySelectorAll('thead tr:first-child th')).map((h) => h.textContent!.trim());
 
     it('has Reference, Name, Client, Open tasks, Overdue and Status; the counts link to the Task Queue scoped to the matter', async () => {
-      const fixture = await create(['Matter.View', 'Client.View', 'Task.View']);
+      const fixture = await create(['Matter.View', 'Client.View', 'Task.View'], {}, undefined, []);
       api.listMatters.mockReturnValue(
         ok(pageOfMatters(aMatter({ matterId: 7, openTaskCount: 5, overdueTaskCount: 2 }))),
       );
@@ -510,6 +640,9 @@ describe('MattersListPage', () => {
         'Matter Name',
         'Client',
         'Primary PM',
+        'Secondary PM',
+        'Matter Type',
+        'Current State',
         'Open Tasks',
         'Overdue',
         'Status',
@@ -530,7 +663,14 @@ describe('MattersListPage', () => {
     it('leaves the count columns out without Task.View and no longer shows the Projects count', async () => {
       const fixture = await create(['Matter.View']);
       const el: HTMLElement = fixture.nativeElement;
-      expect(heads(el)).toEqual(['CM Number', 'Matter Name', 'Client', 'Primary PM', 'Status']);
+      expect(heads(el)).toEqual([
+        'CM Number',
+        'Matter Name',
+        'Client',
+        'Matter Type',
+        'Current State',
+        'Status',
+      ]);
       expect(el.querySelector('[data-count]')).toBeNull();
     });
 
@@ -553,7 +693,7 @@ describe('MattersListPage', () => {
     });
 
     it('sorts by Overdue descending first', async () => {
-      const fixture = await create(['Matter.View', 'Task.View']);
+      const fixture = await create(['Matter.View', 'Task.View'], {}, undefined, []);
       const el: HTMLElement = fixture.nativeElement;
       const overdue = Array.from(el.querySelectorAll('thead th')).find((h) =>
         h.textContent!.includes('Overdue'),
@@ -572,11 +712,16 @@ describe('MattersListPage', () => {
     };
 
     it('shows the Primary and the Secondary manager; an empty cell stays empty', async () => {
-      const fixture = await create(['Matter.View'], {}, [
-        aMatter({ matterId: 1, primaryManager: ANN, secondaryManager: BOB }),
-        aMatter({ matterId: 2, matterRef: '00343-00013', primaryManager: undefined }),
-        aMatter({ matterId: 3, matterRef: '00343-00014', secondaryManager: BOB }),
-      ]);
+      const fixture = await create(
+        ['Matter.View'],
+        {},
+        [
+          aMatter({ matterId: 1, primaryManager: ANN, secondaryManager: BOB }),
+          aMatter({ matterId: 2, matterRef: '00343-00013', primaryManager: undefined }),
+          aMatter({ matterId: 3, matterRef: '00343-00014', secondaryManager: BOB }),
+        ],
+        [],
+      );
       const el: HTMLElement = fixture.nativeElement;
       // Secondary PM is one click away in Columns (off by default so the default columns fit 1366, D-43a).
       el.querySelector<HTMLButtonElement>('[data-grid-columns]')!.click();
@@ -600,7 +745,7 @@ describe('MattersListPage', () => {
     });
 
     it('sorts by the manager columns and offers the eligible people plus None as filter choices', async () => {
-      const fixture = await create(['Matter.View']);
+      const fixture = await create(['Matter.View'], {}, undefined, []);
       const el: HTMLElement = fixture.nativeElement;
 
       const header = Array.from(el.querySelectorAll('thead tr:first-child th')).find(
@@ -635,12 +780,16 @@ describe('MattersListPage', () => {
       });
 
       const call = api.listMatters.mock.calls.at(-1)!;
-      // primaryManagerId, secondaryManagerId, managerId, managedByMe, hasNoManager, hasPrimaryManager, hasSecondaryManager
-      expect(call.slice(7, 14)).toEqual([
+      // primaryManagerId, secondaryManagerId, managerId, managedByMe, hasNoManager, (matterTypeId, matterTypeNone, currentStateId, currentStateNone), hasPrimaryManager, hasSecondaryManager
+      expect(call.slice(7, 18)).toEqual([
         11,
         undefined,
         undefined,
         true,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
         undefined,
         undefined,
         false,
@@ -666,7 +815,7 @@ describe('MattersListPage', () => {
         expect(el.querySelector('[data-scope="all"]')?.getAttribute('aria-pressed')).toBe('false');
         expect(el.querySelector('[data-scope-line]')?.textContent).toContain('Matters you manage');
         // The same list without the scope, one row, gives the "of".
-        expect(calls.some((c) => managedByMe(c) === undefined && c[15] === 1)).toBe(true);
+        expect(calls.some((c) => managedByMe(c) === undefined && c[19] === 1)).toBe(true);
         // The address names the scope in force.
         expect(navigate).toHaveBeenCalledWith(
           [],
@@ -702,7 +851,7 @@ describe('MattersListPage', () => {
       it('keeps a project manager without Matter.AssignManagers on mine: no switch, ?scope=all is ignored', async () => {
         const fixture = await create(['Matter.View', 'Matter.BeManager'], { scope: 'all' });
         expect(fixture.nativeElement.querySelector('[data-scope-switch]')).toBeNull();
-        expect(api.listMatters.mock.calls.filter((c) => c[15] !== 1).map(managedByMe)).toEqual([
+        expect(api.listMatters.mock.calls.filter((c) => c[19] !== 1).map(managedByMe)).toEqual([
           true,
         ]);
         expect(fixture.nativeElement.querySelector('[data-scope-line]')?.textContent).toContain(

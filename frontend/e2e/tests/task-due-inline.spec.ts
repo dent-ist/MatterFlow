@@ -190,7 +190,7 @@ test.describe('Task page: inline Due date (#664)', () => {
     await page.locator('[data-due-save]').click();
     await expect(page.locator(POPOVER)).toHaveCount(0);
     await expect(detail.due.locator('[data-due-tone]')).toHaveAttribute('data-due-tone', 'overdue');
-    await expect(detail.due).toContainText('Overdue');
+    await expect(detail.due).toContainText(/overdue/i);
     expect((await admin.get(`/api/v1/tasks/${task.taskId}`)).isOverdue).toBe(true);
 
     await openPopover(page);

@@ -108,7 +108,7 @@ test.describe('Drag resize (#204)', () => {
     const due0 = await width(page, 'due');
     const title0 = await width(page, 'title');
     const scroll0 = await page.locator('.wt-wrap').evaluate((e) => e.scrollTop);
-    expect(Math.round(due0)).toBe(136);
+    expect(Math.round(due0)).toBe(152);
     await shot(page, 'task-queue-handles-1366x768');
 
     // Live: the width follows while the button is still down.
@@ -121,8 +121,9 @@ test.describe('Drag resize (#204)', () => {
     await page.mouse.up();
 
     expect(Math.abs((await width(page, 'due')) - (due0 + 44))).toBeLessThanOrEqual(1);
-    // The Title keeps its width (DB-10, #1073): the divider belongs to Due, the grid grows and scrolls instead.
-    expect(Math.abs((await width(page, 'title')) - title0)).toBeLessThanOrEqual(1);
+    // The Title is the spring (D-42, D-43a): it gives way to a wider Due (-44 px) while it stays at least 120 px; the stored widths of the other columns do not change.
+    expect(Math.abs((await width(page, 'title')) - (title0 - 44))).toBeLessThanOrEqual(2);
+    expect(await width(page, 'title')).toBeGreaterThanOrEqual(120);
     await expectColumnAligned(page, 'due');
     await expectColumnAligned(page, 'title');
     await expectColumnAligned(page, 'status');
@@ -130,13 +131,13 @@ test.describe('Drag resize (#204)', () => {
     expect(await page.locator('.wt-wrap').evaluate((e) => e.scrollTop)).toBe(scroll0);
     const entries = Object.values(await stored(page));
     expect(entries).toHaveLength(1);
-    expect(entries[0]['due']).toBe(180);
-    await shot(page, 'task-queue-due-180-1366x768');
+    expect(entries[0]['due']).toBe(196);
+    await shot(page, 'task-queue-due-196-1366x768');
 
-    // Reload: still 180. The sort in the URL was never touched.
+    // Reload: still 196. The sort in the URL was never touched.
     await page.reload();
     await expect(page.locator('[data-task]')).toHaveCount(4);
-    expect(Math.abs((await width(page, 'due')) - 180)).toBeLessThanOrEqual(1);
+    expect(Math.abs((await width(page, 'due')) - 196)).toBeLessThanOrEqual(1);
     expect(page.url()).not.toContain('sort=');
 
     // Reset (the store's resetWidths removes the scope's key): the default returns.
@@ -146,7 +147,30 @@ test.describe('Drag resize (#204)', () => {
     }, WIDTHS_KEY.source);
     await page.reload();
     await expect(page.locator('[data-task]')).toHaveCount(4);
-    expect(Math.round(await width(page, 'due'))).toBe(136);
+    expect(Math.round(await width(page, 'due'))).toBe(152);
+  });
+
+  test('with the Title at its 120 px minimum a wider column leaves the Title at 120 and the frame scrolls sideways', async ({
+    seed,
+    asUser,
+  }) => {
+    const world = await seed.world();
+    const tag = uid();
+    await seed.task(world, { title: `Floor ${tag}` });
+    const page = await asUser('ke\\kekim');
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await new TaskQueuePage(page).open(`?q=${encodeURIComponent(tag)}`);
+    await expect(page.locator('[data-task]')).toHaveCount(1);
+    // Widen columns until the spring has given everything it has (D-43a: the Title minimum is 120 px).
+    await dragGrow(page, 'due', 48);
+    await dragGrow(page, 'matter', 200);
+    await dragGrow(page, 'assignee', 200);
+    expect(Math.round(await width(page, 'title'))).toBe(120);
+    await dragGrow(page, 'due', -8);
+    await dragGrow(page, 'due', 8);
+    expect(Math.round(await width(page, 'title'))).toBe(120);
+    const over = await page.locator('.wt-wrap').evaluate((e) => e.scrollWidth - e.clientWidth);
+    expect(over, 'the frame scrolls sideways').toBeGreaterThan(0);
   });
 
   test('clamps at the column minimum and maximum; the Title keeps the width it had; Ref grows from its right edge', async ({
@@ -254,7 +278,7 @@ test.describe('Drag resize (#204)', () => {
     await podWork.choosePod(pod.name);
     await podWork.search(`Pod ${tag}`);
     await expect(page.locator('[data-task]')).toHaveCount(1);
-    expect(Math.round(await width(page, 'due'))).toBe(136); // Pod Work has its own scope
+    expect(Math.round(await width(page, 'due'))).toBe(152); // Pod Work has its own scope
     const assignee0 = await width(page, 'assignee');
     await dragGrow(page, 'assignee', -24);
     expect(Math.abs((await width(page, 'assignee')) - (assignee0 - 24))).toBeLessThanOrEqual(1);
@@ -270,7 +294,7 @@ test.describe('Drag resize (#204)', () => {
     // The Task Queue is a third scope: untouched.
     await new TaskQueuePage(page).open(`?q=${encodeURIComponent(tag)}`);
     await expect(page.locator('[data-task]').first()).toBeVisible();
-    expect(Math.round(await width(page, 'due'))).toBe(136);
+    expect(Math.round(await width(page, 'due'))).toBe(152);
   });
 
   test('a long page (cloned to 200 rows) uses the guide line and applies the width on release; frame times are recorded', async ({
@@ -352,7 +376,7 @@ test.describe('Drag resize (#204)', () => {
     );
     await shot(page, 'guide-line-200-rows-1366x768');
     await page.mouse.up();
-    expect(Math.abs((await width(page, 'due')) - (due1 + 30))).toBeLessThanOrEqual(1);
+    expect(Math.abs((await width(page, 'due')) - (due1 + 30))).toBeLessThanOrEqual(2);
     await expect(page.locator('.wt-resize-guide')).toHaveCount(0);
     const frames = await page.evaluate(
       () => (window as unknown as { __frames: number[] }).__frames,

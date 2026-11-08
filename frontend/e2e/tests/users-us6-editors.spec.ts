@@ -16,7 +16,7 @@ import { expect, test } from '../support/fixtures';
  * Screenshots for docs/ux/users-review/fixes/us6-roles-pods/ are written when E2E_SCREENSHOTS is set to the output folder.
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
-const TAG = `us6e${Math.floor(Math.random() * 90000) + 10000}`;
+const TAG = `us6e${Math.floor(Math.random() * 90000) + 10000}${Date.now().toString(36).slice(-4)}`;
 const SIZES = [
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
@@ -27,13 +27,13 @@ let roleId: number;
 let podName: string;
 let podId: number;
 
-test.beforeAll(async ({ admin, seed, personas }) => {
+test.beforeAll(async ({ seed, personas }) => {
   roleName = `Reviewer ${TAG}`;
-  const role = await admin.post('/api/v1/roles', {
-    name: roleName,
-    description: 'Reads and comments.',
-    permissionCodes: ['Task.View', 'Matter.View', 'Client.View'],
-  });
+  const role = await seed.roleOnce(roleName, 'Reads and comments.', [
+    'Task.View',
+    'Matter.View',
+    'Client.View',
+  ]);
   roleId = role.roleId;
   const member = await personas.create({ label: `${TAG}m`, roles: ['Data Technician'] });
   podName = `Editors ${TAG}`;

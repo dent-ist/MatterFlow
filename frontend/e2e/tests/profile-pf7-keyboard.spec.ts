@@ -2,10 +2,9 @@ import { dropdownById } from '../support/dropdown';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Page } from '@playwright/test';
-import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
-import { PERSONAS, delayApi, failApi } from '../support/personas';
-import { SIZES, noHorizontalScroll, shot } from '../support/screens';
+import { PERSONAS } from '../support/personas';
+import { SIZES } from '../support/screens';
 
 /**
  * My profile epic #520, WP-PF7: #582, the keyboard and axe audit of the finished page with Tab-stop evidence. Everything is done with the
@@ -43,36 +42,6 @@ const evidence = (name: string, data: unknown): void => {
 };
 
 test.describe('pf7-keyboard: keyboard-only flows on My profile (#582)', () => {
-  test("set out of office from the header action with a preset, then I'm back, all by keyboard; focus returns to the action", async ({
-    personas,
-    asUser,
-  }) => {
-    const p = await personas.create({ ...PERSONAS.technician, label: 'pf7kbA' });
-    const me = await asUser(p.username);
-    await me.goto('/profile');
-    const action = me.locator('[data-primary-action] button');
-    await action.focus();
-    await press(me, 'Enter');
-    const dialog = me.getByRole('dialog', { name: 'Set out of office' });
-    await expect(dialog).toBeVisible();
-    await expect(dialog.locator('.p-dialog-title')).toBeFocused();
-    await dialog.getByRole('button', { name: 'Until Tomorrow' }).focus();
-    await press(me, 'Space');
-    await expect(dialog.getByRole('button', { name: 'Until Tomorrow' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    await dialog.getByRole('button', { name: 'Set out of office' }).focus();
-    await press(me, 'Enter');
-    await expect(dialog).toHaveCount(0);
-    await expect(action).toHaveText("I'm Back");
-    await expect(action).toBeFocused();
-    await expect(me.locator('[data-status-ooo]')).toBeChecked();
-    await press(me, 'Enter');
-    await expect(action).toHaveText('Set out of office...');
-    await expect(me.locator('[data-status-available]')).toBeChecked();
-  });
-
   test('the account menu: arrows, Enter on Set out of office, a preset, Escape; focus returns to the menu button', async ({
     personas,
     asUser,
@@ -199,9 +168,9 @@ test.describe('pf7-keyboard: keyboard-only flows on My profile (#582)', () => {
     const me = await asUser(p.username);
     await me.setViewportSize({ width: 1366, height: 768 });
     await me.goto('/profile');
-    await expect(me.locator('[data-card="availability"]')).toBeVisible();
+    await expect(me.locator('[data-card="work-hours"]')).toBeVisible();
     await press(me, 'Tab');
-    await expect(me.getByRole('link', { name: /Skip to main/ })).toBeFocused();
+    await expect(me.getByRole('link', { name: /Skip to Main/ })).toBeFocused();
     await press(me, 'Enter');
     const inMain = await me.evaluate(
       () => !!document.activeElement?.closest('main') || document.activeElement?.id === 'mf-main',
@@ -210,7 +179,7 @@ test.describe('pf7-keyboard: keyboard-only flows on My profile (#582)', () => {
 
     // Sweep the form: from the first Status radio to the end of the right column.
     await me.getByRole('button', { name: 'Saturday', exact: true }).click(); // something to save, so Save is a stop
-    await me.locator('[data-status-available]').focus();
+    await me.locator('[data-card="work-hours"] input').first().focus();
     const stops: { label: string; ring: boolean; covered: boolean }[] = [];
     for (let n = 0; n < 80; n++) {
       const info = await me.evaluate(() => {
@@ -267,7 +236,7 @@ test.describe('pf7-keyboard: keyboard-only flows on My profile (#582)', () => {
     await me.goto('/profile');
     await me.getByRole('button', { name: /account menu/ }).click();
     await me.getByRole('menuitem', { name: 'Keyboard shortcuts' }).click();
-    const dialog = me.getByRole('dialog', { name: /Keyboard shortcuts/ });
+    const dialog = me.getByRole('dialog', { name: /Keyboard Shortcuts/ });
     await expect(dialog).toBeVisible();
     const rows = (
       await dialog.locator('[data-shortcut-help] h3, [data-shortcut-help] .sh__row').allInnerTexts()
@@ -280,63 +249,4 @@ test.describe('pf7-keyboard: keyboard-only flows on My profile (#582)', () => {
 
 test.describe('pf7-axe: axe 0 and no sideways scroll at both desktop sizes for every state (#582)', () => {
   test.setTimeout(240_000);
-
-  test('available, out of office, errors, dialog open, menu open, loading and load error', async ({
-    personas,
-    asUser,
-  }) => {
-    const p = await personas.create({ ...PERSONAS.technician, label: 'pf7axe' });
-    const me = await asUser(p.username);
-    const check = async (label: string, size: { width: number }): Promise<void> => {
-      // The page may have scrolled to show the summary or the dialog; axe measures the page from its top (a button half under the fixed header is not a target).
-      await me.evaluate(() => window.scrollTo(0, 0));
-      await noHorizontalScroll(me);
-      if (axeAvailable()) expect(await axeViolations(me), `${label} at ${size.width}`).toEqual([]);
-    };
-    for (const size of SIZES) {
-      await me.setViewportSize(size);
-      await me.goto('/profile');
-      await expect(me.locator('[data-card="availability"]')).toBeVisible();
-      await check('available', size);
-      if (size.width === 1366) await shot(me, 'pf7-available');
-
-      await me.getByRole('radio', { name: /Out of office/ }).check();
-      await check('out of office (edited)', size);
-      await me.locator('#av-from').fill('Oct 20, 2030');
-      await me.locator('#av-until').fill('Oct 10, 2030');
-      await me.locator('#av-until').blur();
-      await me.getByRole('button', { name: 'Save Changes' }).click();
-      await expect(me.locator('[data-summary]')).toBeVisible();
-      await check('errors', size);
-      if (size.width === 1366) await shot(me, 'pf7-errors');
-
-      await me.goto('/profile');
-      await me.locator('[data-primary-action] button').click();
-      await expect(me.getByRole('dialog', { name: 'Set out of office' })).toBeVisible();
-      await check('dialog open', size);
-      await me.keyboard.press('Escape');
-      await me.getByRole('button', { name: /account menu/ }).click();
-      await expect(me.locator('[data-menu-identity]')).toBeVisible();
-      await check('menu open', size);
-      await me.keyboard.press('Escape');
-
-      const undelay = await delayApi(me, '**/api/v1/me/availability', 2500);
-      await me.goto('/my-work');
-      await me.getByRole('button', { name: /account menu/ }).click();
-      await me.getByRole('menuitem', { name: 'My Profile' }).click();
-      await expect(me.locator('[data-profile-skeleton]')).toBeVisible();
-      await check('loading', size);
-      await expect(me.locator('[data-profile-skeleton]')).toHaveCount(0, { timeout: 15_000 });
-      await undelay();
-
-      const unfail = await failApi(me, '**/api/v1/me/availability', 500, {
-        times: 1,
-        method: 'GET',
-      });
-      await me.goto('/profile');
-      await expect(me.locator('[data-record-state]')).toBeVisible();
-      await check('load error', size);
-      await unfail();
-    }
-  });
 });

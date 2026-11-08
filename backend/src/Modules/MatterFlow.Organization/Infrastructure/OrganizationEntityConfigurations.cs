@@ -27,6 +27,8 @@ internal sealed class MatterConfiguration : IEntityTypeConfiguration<Matter>
             .IsUnicode(false)
             .IsFixedLength()
             .HasComputedColumnSql("CONVERT(CHAR(11), [ClientNumber] + '-' + [MatterNumber])", stored: true);
+        b.Property(x => x.DmsPath).HasMaxLength(1000);
+        b.Property(x => x.DfsPath).HasMaxLength(1000);
         b.HasIndex(x => new { x.ClientId, x.MatterNumber }).IsUnique().HasDatabaseName("UQ_Matter_ClientMatterNumber");
         b.HasIndex(x => x.MatterRef).IsUnique().HasDatabaseName("UQ_Matter_Ref");
     }
@@ -55,5 +57,16 @@ internal sealed class MatterEventConfiguration : IEntityTypeConfiguration<Matter
         b.Property(x => x.EventTime).HasColumnType("time(0)");
         b.HasIndex(x => new { x.EventDate, x.MatterId }).HasDatabaseName("IX_MatterEvent_Date");
         b.HasIndex(x => new { x.MatterId, x.EventDate }).HasDatabaseName("IX_MatterEvent_Matter");
+    }
+}
+
+internal sealed class MatterTeamMemberConfiguration : IEntityTypeConfiguration<MatterTeamMember>
+{
+    public void Configure(EntityTypeBuilder<MatterTeamMember> b)
+    {
+        b.ToTable("MatterTeamMember");
+        b.Property(x => x.Name).HasMaxLength(200).IsRequired();
+        b.Property(x => x.Email).HasMaxLength(254).IsRequired(); // the column is case-insensitive (script 64), so the unique index below ignores case
+        b.HasIndex(x => new { x.MatterId, x.Email }).IsUnique().HasDatabaseName("UQ_MatterTeamMember_MatterEmail");
     }
 }

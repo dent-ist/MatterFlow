@@ -78,7 +78,7 @@ test.describe('One rule for dialogs and drawers (#619)', () => {
     await page.goto(`/clients/${client.clientId}`);
 
     await page.locator('[data-overflow]').click();
-    await page.getByRole('menuitem', { name: /Set inactive/i }).click();
+    await page.getByRole('menuitem', { name: /Set Inactive/i }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
     expect(await titleLook(page, '.p-dialog-title')).toEqual({ size: 16, weight: 600 });
@@ -100,7 +100,7 @@ test.describe('One rule for dialogs and drawers (#619)', () => {
       await page.setViewportSize(size);
       await page.goto(`/clients/${client.clientId}`);
       await page.locator('[data-overflow]').click();
-      await page.getByRole('menuitem', { name: /Set inactive/i }).click();
+      await page.getByRole('menuitem', { name: /Set Inactive/i }).click();
       await expect(dialog).toBeVisible();
       expect(await axeViolations(page), `confirm dialog at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);

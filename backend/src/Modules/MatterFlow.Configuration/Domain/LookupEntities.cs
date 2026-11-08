@@ -84,3 +84,25 @@ public class AssetLinkRole : AuditedEntity<int>
 
     public bool IsActive { get; set; } = true;
 }
+
+/// <summary>Common shape of the three matter pick lists (epic #1298). Rows are never deleted: a used item is deactivated.</summary>
+public abstract class MatterListEntity : AuditedEntity<int>
+{
+    public string Name { get; set; } = string.Empty;
+
+    public int SortOrder { get; set; }
+
+    public bool IsActive { get; set; } = true;
+}
+
+/// <summary>A Matter Type (the matter's MatterTypeId references it).</summary>
+[Audited(ObjectType = "MatterType")]
+public class MatterType : MatterListEntity;
+
+/// <summary>A Current State of a matter (the matter's CurrentStateId references it).</summary>
+[Audited(ObjectType = "CurrentState")]
+public class CurrentState : MatterListEntity;
+
+/// <summary>A Team Title of a matter's team member (MatterTeamMember.TeamTitleId references it).</summary>
+[Audited(ObjectType = "TeamTitle")]
+public class TeamTitle : MatterListEntity;

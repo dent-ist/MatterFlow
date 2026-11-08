@@ -50,7 +50,7 @@ test.describe('My Work page state', () => {
     await expect(page.locator('tbody').getByRole('button', { name: 'Retry' })).toBeVisible();
     await expect(page.getByText(title)).toHaveCount(0);
     await expect(page.locator('[data-sort-note]')).toContainText('Closed date');
-    await expect(myWork.tab(/^Due soon/)).toContainText('(1)'); // the counts stay
+    await expect(myWork.tab(/^Due Soon/)).toContainText('(1)'); // the counts stay
     await shot(page, 'bug2-error-no-stale-rows-1366x768');
     if (axeAvailable()) expect(await axeViolations(page), 'error state').toEqual([]);
 
@@ -83,7 +83,7 @@ test.describe('My Work page state', () => {
         await new Promise((r) => setTimeout(r, 1500));
       await route.continue().catch(() => undefined);
     });
-    await myWork.tab(/^Due soon/).click();
+    await myWork.tab(/^Due Soon/).click();
     await expect(page.getByText(title)).toHaveCount(0);
     await myWork.tab(/^Closed/).click();
     await page.waitForTimeout(2200);
@@ -151,7 +151,7 @@ test.describe('My Work page state', () => {
     await page.getByRole('link', { name: 'My Work', exact: true }).first().click();
     const notice = page.locator('[data-restored-notice]');
     await expect(notice).toBeVisible();
-    await expect(notice).toContainText('Restored your last view: Due soon and overdue, Priority');
+    await expect(notice).toContainText('Restored your last view: Due Soon and Overdue, Priority');
     await expect(page).toHaveURL(/view=dueSoon/);
     await shot(page, 'm6-restored-notice-1366x768');
     if (axeAvailable()) expect(await axeViolations(page), 'notice').toEqual([]);
@@ -239,9 +239,9 @@ test.describe('My Work page state', () => {
     await page.goto('/pods/work');
     await myWork.open();
     await expect(page).toHaveURL(/view=createdByMe/);
-    await expect(myWork.tab(/^Created by me/)).toHaveAttribute('aria-selected', 'true');
+    await expect(myWork.tab(/^Created by Me/)).toHaveAttribute('aria-selected', 'true');
     const notice = page.locator('[data-restored-notice]');
-    await expect(notice).toContainText('Nothing is assigned to you, so this opens Created by me.');
+    await expect(notice).toContainText('Nothing is assigned to you, so this opens Created by Me.');
     await expect(notice.getByRole('button', { name: 'Reset to Default' })).toHaveCount(0);
     await myWork.expectListed(title);
     await shot(page, 'm4-opens-created-by-me-1366x768');
@@ -254,7 +254,7 @@ test.describe('My Work page state', () => {
     // An explicit tab click and a deep link are never redirected.
     await myWork.open('?view=dueSoon');
     await expect(page).toHaveURL(/view=dueSoon/);
-    await expect(myWork.tab(/^Due soon/)).toHaveAttribute('aria-selected', 'true');
+    await expect(myWork.tab(/^Due Soon/)).toHaveAttribute('aria-selected', 'true');
     await myWork.open();
     await myWork.tab(/^Active/).click();
     await expect(myWork.tab(/^Active/)).toHaveAttribute('aria-selected', 'true');

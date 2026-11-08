@@ -11,7 +11,7 @@ import { uid } from '../support/seed';
  * the 4.5:1 contrast check, the duplicate-name message, the unsaved guard, focus back on the control that opened it, and a color that is
  * saved with the name only. Screenshots: E2E_SCREENSHOTS (fixes/ad3-labels).
  */
-const dialog = (page: Page, name: string | RegExp = /^(New|Edit) priority$/) =>
+const dialog = (page: Page, name: string | RegExp = /^(New|Edit) Priority$/) =>
   page.getByRole('dialog', { name });
 const label = (page: Page) => page.locator('#priority-label');
 const rowOf = priorityRow;
@@ -34,7 +34,7 @@ test.describe('New priority and Edit priority (#609)', () => {
     await page.setViewportSize(SIZES[1]);
     await page.goto('/admin/priorities');
     try {
-      const opener = page.getByRole('button', { name: 'New priority' });
+      const opener = page.getByRole('button', { name: 'New Priority' });
       await opener.click();
       await expect(dialog(page)).toBeVisible();
       await expect(page).toHaveURL(/edit=new$/);
@@ -44,7 +44,7 @@ test.describe('New priority and Edit priority (#609)', () => {
       );
       await label(page).fill(name);
       await expect(dialog(page).locator('[data-preview]')).toContainText(name);
-      await dialog(page).getByRole('button', { name: 'Add priority' }).click();
+      await dialog(page).getByRole('button', { name: 'Add Priority' }).click();
       await expect(dialog(page)).toBeHidden();
       await expect(page).not.toHaveURL(/edit=/);
       const last = page.locator('table.mf-grid tbody tr[data-row]').last();
@@ -87,7 +87,7 @@ test.describe('New priority and Edit priority (#609)', () => {
       expect(listed.color, 'nothing is saved by choosing a color').toBe('low');
 
       await label(page).fill(renamed);
-      await dialog(page).getByRole('button', { name: 'Save priority' }).click();
+      await dialog(page).getByRole('button', { name: 'Save Priority' }).click();
       await expect(dialog(page)).toBeHidden();
       await expect(rowOf(page, renamed)).toBeVisible();
       const saved = (await admin.get<Json[]>('/api/v1/priorities')).find((p) => p.id === made.id)!;
@@ -107,8 +107,8 @@ test.describe('New priority and Edit priority (#609)', () => {
     const unique = `ad3 inv ${uid().slice(0, 5)}`;
     await page.setViewportSize(SIZES[1]);
     await page.goto('/admin/priorities');
-    await page.getByRole('button', { name: 'New priority' }).click();
-    await dialog(page).getByRole('button', { name: 'Add priority' }).click();
+    await page.getByRole('button', { name: 'New Priority' }).click();
+    await dialog(page).getByRole('button', { name: 'Add Priority' }).click();
     await expect(dialog(page).locator('[data-summary]')).toContainText('Enter a name.');
     await expect(label(page)).toHaveAttribute('aria-invalid', 'true');
     await expect(label(page)).toBeFocused();
@@ -117,7 +117,7 @@ test.describe('New priority and Edit priority (#609)', () => {
     await label(page).fill(unique);
     await dropdownById(page, 'priority-color').selectOption('custom');
     await page.locator('#priority-custom').fill('#808080');
-    await dialog(page).getByRole('button', { name: 'Add priority' }).click();
+    await dialog(page).getByRole('button', { name: 'Add Priority' }).click();
     await expect(dialog(page).locator('[data-color-error]')).toContainText(
       'Text must be readable: 4.5:1 minimum',
     );
@@ -129,11 +129,11 @@ test.describe('New priority and Edit priority (#609)', () => {
     // A readable custom color saves; then the same name again is a duplicate with the server's message under the field.
     await page.locator('#priority-custom').fill('#7a1f3d');
     try {
-      await dialog(page).getByRole('button', { name: 'Add priority' }).click();
+      await dialog(page).getByRole('button', { name: 'Add Priority' }).click();
       await expect(dialog(page)).toBeHidden();
-      await page.getByRole('button', { name: 'New priority' }).click();
+      await page.getByRole('button', { name: 'New Priority' }).click();
       await label(page).fill(unique);
-      await dialog(page).getByRole('button', { name: 'Add priority' }).click();
+      await dialog(page).getByRole('button', { name: 'Add Priority' }).click();
       await expect(dialog(page).locator('#priority-label-error')).toContainText(
         `A priority named '${unique}' exists.`,
       );
@@ -162,7 +162,7 @@ test.describe('New priority and Edit priority (#609)', () => {
       expect(box.x + box.width).toBeLessThanOrEqual(SIZES[1].width);
       await noSideScroll(page, 'long name at 1366');
       await shot(page, 'priority-long-name');
-      await dialog(page).getByRole('button', { name: 'Add priority' }).click();
+      await dialog(page).getByRole('button', { name: 'Add Priority' }).click();
       await expect(dialog(page)).toBeHidden();
       expect((await admin.get<Json[]>('/api/v1/priorities')).some((p) => p.label === long)).toBe(
         true,
@@ -177,7 +177,7 @@ test.describe('New priority and Edit priority (#609)', () => {
   }) => {
     await page.setViewportSize(SIZES[1]);
     await page.goto('/admin/priorities');
-    const opener = page.getByRole('button', { name: 'New priority' });
+    const opener = page.getByRole('button', { name: 'New Priority' });
     await opener.click();
     await expect(label(page)).toBeFocused();
     await page.keyboard.press('Escape');
@@ -249,7 +249,7 @@ test.describe('New priority and Edit priority (#609)', () => {
       await dropdownById(page, 'priority-color').selectOption('custom');
       await page.locator('#priority-custom').fill('#808080');
       await label(page).fill('x');
-      await dialog(page).getByRole('button', { name: 'Add priority' }).click();
+      await dialog(page).getByRole('button', { name: 'Add Priority' }).click();
       await expect(dialog(page).locator('[data-color-error]')).toBeVisible();
       const box = (await dialog(page).boundingBox())!;
       expect(box.x).toBeGreaterThanOrEqual(0);
@@ -273,7 +273,7 @@ test.describe('New priority and Edit priority (#609)', () => {
       (await personas.create({ permissions: ['Priority.Manage'], label: 'ad3-m' })).username,
     );
     await manager.goto('/admin/priorities');
-    await manager.getByRole('button', { name: 'New priority' }).click();
+    await manager.getByRole('button', { name: 'New Priority' }).click();
     await expect(dialog(manager)).toBeVisible();
   });
 });

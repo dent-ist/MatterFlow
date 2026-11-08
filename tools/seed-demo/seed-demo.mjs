@@ -607,6 +607,26 @@ async function ensureOrganization(admin, ctx, opts, summary) {
     'Production',
   ];
   const types = wanted.map((name) => ctx.assetTypes.find((t) => t.name === name)).filter(Boolean);
+  // Issue #1297: Physical Media is numbered automatically (matter CM Number + _001, restarting per matter), so the demo shows the feature. Older servers have no numbering: ignored.
+  const media = types.find((t) => t.name === 'Physical Media');
+  if (media && !opts.dryRun && media.numbering && media.numbering.enabled === false) {
+    try {
+      const fresh = await admin.get(`/api/v1/asset-types/${media.assetTypeId}`);
+      const updated = await admin.put(`/api/v1/asset-types/${media.assetTypeId}`, {
+        name: fresh.name,
+        description: fresh.description,
+        sortOrder: fresh.sortOrder,
+        isActive: fresh.isActive,
+        iconKey: fresh.iconKey,
+        colourKey: fresh.colourKey,
+        numbering: { enabled: true },
+        rowVersion: fresh.rowVersion,
+      });
+      media.numbering = updated.numbering;
+    } catch (error) {
+      log(`  (numbering of "Physical Media" not switched on: ${error.message.slice(0, 160)})`);
+    }
+  }
   const filler = new FormFiller(admin, createRng(opts.seed ^ 0x5eed), {
     assetIdsFor: (matterId) => (ctx.assetPool.get(matterId) ?? []).map((a) => a.assetId),
     userIds: [],
@@ -862,6 +882,61 @@ async function ensureManagers(admin, ctx, opts, summary) {
     });
   }
   log(`Project managers: ${summary.managersSet} matters ${opts.dryRun ? 'to get' : 'got'} managers.`);
+}
+
+/**
+ * Matter fields (epic #1298): Matter Type, Current State, DMS/DFS paths and a Team on the Demo matters, with a spread of cases for the Matters list, its
+ * filters (including "Not Set") and the matter page: every fourth matter has no type and no state, some have only a web address, some no paths, and the
+ * team size runs from none to four (a person outside the firm among them). Only matters that carry none of the new fields yet are touched, so a re-run, or a
+ * change somebody made by hand, is never overwritten.
+ */
+async function ensureMatterFields(admin, ctx, opts, summary) {
+  summary.matterFieldsSet = 0;
+  summary.teamMembersAdded = 0;
+  if (opts.dryRun) {
+    log('Matter fields: skipped in a dry run.');
+    return;
+  }
+  const active = (list) => list.filter((x) => x.isActive);
+  const types = active(await admin.get('/api/v1/matter-types'));
+  const states = active(await admin.get('/api/v1/current-states'));
+  const titles = active(await admin.get('/api/v1/team-titles'));
+  const people = [
+    ['Ann Lee', 'ann.lee@demo.example'],
+    ['Ben Ortiz', 'ben.ortiz@demo.example'],
+    ['Carla Nguyen', 'carla.nguyen@demo.example'],
+    ['Dev Patel (outside counsel)', 'dev.patel@outside-counsel.example'],
+  ];
+  const matters = ctx.matters.filter((m) => m.matterId !== null);
+  for (let i = 0; i < matters.length; i++) {
+    const current = await admin.get(`/api/v1/matters/${matters[i].matterId}`);
+    const untouched = !current.matterType && !current.currentState && !current.dmsPath && !current.dfsPath;
+    if (untouched) {
+      const none = i % 4 === 3;
+      const ref = current.matterRef.replace('-', '/');
+      await admin.put(`/api/v1/matters/${current.matterId}`, {
+        name: current.name,
+        isSensitive: current.isSensitive,
+        rowVersion: current.rowVersion,
+        aiAllowed: current.aiAllowed,
+        matterTypeId: none || types.length === 0 ? undefined : types[i % types.length].id,
+        currentStateId: none || states.length === 0 ? undefined : states[i % states.length].id,
+        dmsPath: i % 3 === 2 ? undefined : i % 2 === 0 ? `\\\\fs01\\dms\\Matters\\${ref.replace('/', '\\')}` : `https://dms.demo.example/matters/${ref}`,
+        dfsPath: i % 3 === 1 ? undefined : i % 2 === 0 ? `https://dfs.demo.example/matters/${ref}` : `\\\\fs02\\dfs\\Matters\\${ref.replace('/', '\\')}`,
+      });
+      summary.matterFieldsSet++;
+    }
+    if (titles.length === 0) continue;
+    const team = await admin.get(`/api/v1/matters/${current.matterId}/team`);
+    if (team.total > 0) continue;
+    const size = i % 5; // 0 to 4 people
+    for (let k = 0; k < size; k++) {
+      const [name, email] = people[k];
+      await admin.post(`/api/v1/matters/${current.matterId}/team`, { name, email, teamTitleId: titles[(i + k) % titles.length].id });
+      summary.teamMembersAdded++;
+    }
+  }
+  log(`Matter fields: ${summary.matterFieldsSet} matters got type, state and paths; ${summary.teamMembersAdded} team members added.`);
 }
 
 /** The two review personas of issue #925 (positions in the Demo matter list): the Project Manager with ONE matter and the one with THREE. */
@@ -1592,6 +1667,7 @@ async function main() {
   await ensureOrganization(admin, ctx, opts, summary);
   step('Project managers');
   await ensureManagers(admin, ctx, opts, summary);
+  await ensureMatterFields(admin, ctx, opts, summary);
   step('Personas: a Project Manager with one matter and one with three');
   await ensurePersonas(admin, ctx, opts, summary);
   step('PM v2: task type colours and targets, asset sizes and dispositions');

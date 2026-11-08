@@ -6,7 +6,7 @@ import { expect, test } from '../support/fixtures';
 import { seedBoard } from '../support/board';
 import { dateInZone, FIRM_ZONE } from '../support/time';
 import { uid } from '../support/seed';
-import { labelledDropdown } from '../support/dropdown';
+import { dropdownByAttr } from '../support/dropdown';
 
 /**
  * One shareable period model (review 2, WP3, issue #91): the same label, list and address on Summary, Trends and Coverage; the address wins
@@ -54,7 +54,7 @@ async function shoot(page: Page, name: string): Promise<void> {
   await page.screenshot({ path: path.join(OUT, `${name}.png`) });
 }
 
-const period = (page: Page) => labelledDropdown(page, 'Period');
+const period = (page: Page) => dropdownByAttr(page, 'data-period');
 const options = (page: Page) => ({ texts: () => period(page).optionTexts() });
 /**
  * Dashboard v4 (epic #1063): the Overview and its Period control left Summary, so the period is opened where it lives, on Trends (the address keeps `period`, `from` and
@@ -154,7 +154,9 @@ test.describe('custom ranges', () => {
   }) => {
     await openSummary(page, '/dashboard?period=7d');
     await period(page).selectOption({ label: 'Custom' });
-    await expect(page).toHaveURL(/period=custom&from=\d{4}-\d{2}-\d{2}&to=\d{4}-\d{2}-\d{2}/);
+    await expect(page).toHaveURL(
+      /period=custom&(?:tab=trends&)?from=\d{4}-\d{2}-\d{2}&to=\d{4}-\d{2}-\d{2}/,
+    );
     const url = page.url();
     const from = page.getByLabel('From', { exact: true });
     await expect(from).toBeVisible();

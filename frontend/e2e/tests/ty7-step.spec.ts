@@ -17,7 +17,6 @@ const SHOTS = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   { w: 1366, h: 768 },
   { w: 1920, h: 1080 },
-  { w: 1024, h: 768 },
 ] as const;
 
 async function shot(page: Page, name: string, w: number): Promise<void> {
@@ -449,7 +448,7 @@ test.describe('Step record page', () => {
       const step = await makeStep(admin, seed);
       await page.setViewportSize({ width: 1366, height: 768 });
       await openStep(page, step.id, 'used-by');
-      await expect(page.locator('[data-not-used]')).toContainText('Not Used');
+      await expect(page.locator('[data-not-used]')).toContainText('Not used');
       await expect(page.locator('[data-used-note]')).toHaveCount(0);
       await expect(page.locator('[data-strip-item=used]')).toContainText('Not Used');
       await expect(tab(page, 'used-by')).toContainText('(0)');

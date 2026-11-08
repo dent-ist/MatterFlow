@@ -363,7 +363,9 @@ test.describe('Pods column accessibility and layout', () => {
         await expect(trigger(row)).toHaveCount(0);
         await page.goto('/admin/pods');
         await expect(
-          page.locator(size.width < 640 ? 'li.rc' : 'table[data-pods]').first(),
+          page
+            .locator(size.width < 640 ? 'li.rc' : 'table:has(a[data-row-list="admin-pods"])')
+            .first(),
         ).toBeVisible();
         expect(await axeViolations(page)).toEqual([]);
         return;
@@ -385,7 +387,7 @@ test.describe('Pods column accessibility and layout', () => {
         'aria-selected',
         'true',
       );
-      await expect(page.locator('table[data-pods]')).toBeVisible();
+      await expect(page.locator('table:has(a[data-row-list="admin-pods"])')).toBeVisible();
       expect(await axeViolations(page)).toEqual([]);
     });
   }

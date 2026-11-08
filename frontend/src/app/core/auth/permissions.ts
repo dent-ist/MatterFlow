@@ -57,6 +57,7 @@ export const PERMISSIONS = [
   'CustomField.Manage',
   'Priority.Manage',
   'OnHoldReason.Manage',
+  'MatterList.Manage',
   'StatusLabel.Manage',
   'Dashboard.View',
   'Dashboard.ViewSummary',

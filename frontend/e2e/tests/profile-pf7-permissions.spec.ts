@@ -57,7 +57,6 @@ test.describe('pf7-permissions: who gets My profile, the menu entries and the di
         await expect(me.locator('[data-ac-name]')).toHaveText(p.displayName ?? p.username);
         await expect(me.locator('[data-ac-pod]')).toContainText(pod.name);
         await expect(me.locator('[data-ac-pod]')).toHaveCount(1);
-        await expect(me.locator('[data-page-actions] button')).toHaveText('Set out of office...');
       } else {
         await expect(me.getByRole('heading', { name: FORBIDDEN, level: 1 })).toBeVisible();
         await expect(me.locator('[data-account-card]')).toHaveCount(0);
@@ -106,7 +105,7 @@ test.describe('pf7-permissions: who gets My profile, the menu entries and the di
     await expect(pb.locator('[data-ac-name]')).toHaveText('Bob Ownerson');
     await expect(pa.locator('[data-account-card]')).not.toContainText('Bob');
     await expect(pb.locator('[data-account-card]')).not.toContainText('Alice');
-    await expect(pa.locator('main h1')).toContainText('Alice Ownerson');
+    await expect(pa.locator('[data-profile-who]')).toContainText('Alice Ownerson');
   });
 
   test('a person in 5 pods: the context line names the primary one, the card lists all five', async ({

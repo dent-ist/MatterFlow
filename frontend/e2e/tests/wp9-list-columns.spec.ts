@@ -4,6 +4,7 @@ import { Page } from '@playwright/test';
 import { Api, Json } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { showMatterColumns } from '../support/matter-columns';
 import { Seeder, uid } from '../support/seed';
 import { TaskApi } from '../support/tasks';
 import { FIRM_ZONE, dateInZone } from '../support/time';
@@ -48,7 +49,7 @@ async function noSideways(page: Page, what: string): Promise<void> {
 /** The names of the data rows (the link in the `col`-th cell), in order. */
 async function names(page: Page, region: string, col = 2): Promise<string[]> {
   return grid(page, region)
-    .locator(`tbody tr:not([data-skeleton]):not(.gb-state) td:nth-child(${col}) a.pg-name`)
+    .locator(`tbody tr:not([data-skeleton]):not(.gb-state) td:nth-child(${col}) a[data-row-key]`)
     .evaluateAll((els) => els.map((e) => e.getAttribute('title') ?? e.textContent!.trim()));
 }
 
@@ -176,6 +177,8 @@ test.describe('WP9 list columns', () => {
     }) => {
       for (const url of [`/matters?name=${w.token}`, `/clients/${w.client.clientId}?tab=matters`]) {
         await page.goto(url);
+        // Open Tasks and Overdue are optional columns of the Matters list since epic #1298; the client's Matters tab keeps them.
+        if (url.startsWith('/matters')) await showMatterColumns(page, 'Open Tasks', 'Overdue');
         const region = grid(page, 'Matters list');
         const one = region.locator('tbody tr', { hasText: `Wp9 matter ${w.token} one` });
         const two = region.locator('tbody tr', { hasText: `Wp9 matter ${w.token} two` });
@@ -184,10 +187,11 @@ test.describe('WP9 list columns', () => {
         expect([await countOf(two, 'open'), await countOf(two, 'overdue')]).toEqual([1, 0]);
         // Zero work is not an error: no link, not red, an en dash that is spoken as "0 overdue tasks".
         await expect(two.locator('[data-count=overdue] a')).toHaveCount(0);
-        await expect(two.locator('[data-count=overdue]')).toContainText('–');
+        await expect(two.locator('[data-count=overdue]')).toContainText('-');
         await expect(two.locator('[data-count=overdue]')).toContainText('0 overdue tasks');
       }
       await page.goto(`/matters?name=${w.token}`);
+      await showMatterColumns(page, 'Open Tasks', 'Overdue');
       const one = grid(page, 'Matters list').locator('tbody tr', {
         hasText: `Wp9 matter ${w.token} one`,
       });
@@ -288,11 +292,11 @@ test.describe('WP9 list columns', () => {
         const first = rows.first();
         await expect(first.locator(`${list.number} a`)).toHaveCount(0);
         // Links besides the name: the Client link of Matters and the count links; none of them is the number.
-        await expect(first.locator('a.pg-name').first()).toHaveAttribute(
+        await expect(first.locator('a[data-row-key]').first()).toHaveAttribute(
           'href',
           /^\/(clients|matters)\/\d+$/,
         );
-        await first.locator('a.pg-name').first().focus();
+        await first.locator('a[data-row-key]').first().focus();
         await page.keyboard.press('Tab');
         const next = await page.evaluate(() => document.activeElement?.tagName);
         expect(['A', 'BUTTON']).toContain(next); // the copy button or the next link, never a second link to the same record
@@ -324,8 +328,8 @@ test.describe('WP9 list columns', () => {
       await expect(same.first().locator('mf-matter-cell [data-matter-name]')).toBeVisible();
       // Client column from 1100 px, with the client name and the number in the tooltip.
       await expect(region.getByRole('columnheader', { name: 'Client' })).toBeVisible();
-      await expect(same.first().locator('.pg-clip')).toHaveText(`Wp9 client ${w.token}`);
-      await expect(same.first().locator('.pg-clip')).toHaveAttribute(
+      await expect(same.first().locator('span.pg-clip')).toHaveText(`Wp9 client ${w.token}`);
+      await expect(same.first().locator('span.pg-clip')).toHaveAttribute(
         'title',
         new RegExp(w.client.clientNumber),
       );
@@ -335,7 +339,7 @@ test.describe('WP9 list columns', () => {
         /\/matters\/\d+/,
       );
       // A 130 character name clamps at two lines with a tooltip; the row is still 44 px.
-      const long = region.locator(`.pg-name[title="${w.longProject.name}"]`);
+      const long = region.locator(`a[data-row-key][title="${w.longProject.name}"]`);
       await expect(long).toBeVisible();
       // Archived keeps its grey badge with text and its matter cell (status All shows it).
       await page.goto(`/projects?name=${w.token}&status=all`);
@@ -432,10 +436,18 @@ test.describe('WP9 list columns', () => {
         [
           `/matters?name=${w.token}`,
           'Matters list',
-          ['CM Number', 'Matter Name', 'Client', 'Primary PM', 'Status'],
+          ['CM Number', 'Matter Name', 'Client', 'Matter Type', 'Current State', 'Status'],
         ],
-        [`/projects?name=${w.token}`, 'Projects list', ['Name', 'Matter', 'Client', 'Status']],
-        [`/clients/${w.client.clientId}?tab=matters`, 'Matters list', ['Matter', 'Name', 'Status']],
+        [
+          `/projects?name=${w.token}`,
+          'Projects list',
+          ['Project Name', 'Matter', 'Client', 'Status'],
+        ],
+        [
+          `/clients/${w.client.clientId}?tab=matters`,
+          'Matters list',
+          ['CM Number', 'Matter Name', 'Status'],
+        ],
       ] as const;
       for (const [url, region, heads] of lists) {
         await page.goto(url);

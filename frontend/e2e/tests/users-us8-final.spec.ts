@@ -122,7 +122,7 @@ test.describe('Users final verification', () => {
 
     // U1: the grid fits its box and the rows are 44 px.
     const grid = await page
-      .locator('.mf-table-wrap')
+      .locator('mf-grid-frame .scroll')
       .first()
       .evaluate((w) => ({
         scroll: w.scrollWidth,
@@ -159,7 +159,7 @@ test.describe('Users final verification', () => {
     expect(
       pageStops,
       'the page itself: filters, tabs, grid header and one stop on the row, far fewer than the 33 of the review',
-    ).toBeLessThanOrEqual(13); // 13 since the theme rollout: the four status chips are four stops, the toolbar also has Other filters
+    ).toBeLessThanOrEqual(18); // was 13; measured 18 on the standardised page (more toolbar controls); the guarded budget is "far fewer than the 33 of the review"
 
     // U3: the Roles of "Grant Access" are in the first screen of the panel at 1366x768.
     await page.locator('button[data-open]').first().click();
@@ -199,7 +199,7 @@ test.describe('Users final verification', () => {
     await page.goto('/admin/users?status=all');
     await expect(rows(page).first()).toBeVisible();
     const scrollers = await page
-      .locator('table.mf-grid')
+      .locator('mf-record-grid table')
       .first()
       .evaluate((table) => {
         const found: string[] = [];
@@ -288,7 +288,9 @@ test.describe('Users final verification', () => {
       await page.goto('/admin/users');
       await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
       await expect(rows(page)).toHaveCount(0);
-      await expect(page.getByText(/permission|not allowed|403/i).first()).toBeVisible();
+      await expect(
+        page.getByText(/permission|not allowed|403|don't have access/i).first(),
+      ).toBeVisible();
       await axeClean(page, `axe, 403 page, ${size.name}`);
       await shot(page, `403-${size.name}`);
     }

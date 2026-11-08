@@ -1,4 +1,5 @@
 import { Page } from '@playwright/test';
+import { asDropdown } from '../support/dropdown';
 import { Api, BASE_URL } from '../support/api';
 import { expect, requireRule, test } from '../support/sensitive-fixtures';
 import {
@@ -120,7 +121,7 @@ async function runReports(w: Walker): Promise<void> {
   await w.visit('/assets/reports', { allowErrors: true });
   if ((await w.page.locator('[data-run]').count()) === 0) return;
   for (const group of ['matter', 'client', 'disposition']) {
-    await w.page.locator('[data-group]').selectOption(group);
+    await asDropdown(w.page.locator('[data-group] button')).selectOption(group);
     await w.page.locator('[data-run]').click();
     await w.page
       .locator('[data-result-table], [data-result-empty], [data-result-error]')

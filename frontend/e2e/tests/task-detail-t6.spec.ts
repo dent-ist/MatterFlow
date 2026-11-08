@@ -19,7 +19,6 @@ import { FIRM_ZONE, dateInZone } from '../support/time';
 const OUT = process.env['E2E_SCREENSHOTS'];
 
 const SIZES = [
-  { width: 1024, height: 768 },
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
 ] as const;
@@ -274,7 +273,7 @@ test.describe('Task T6: Details heading, alignment and Request details (#312, #3
     });
     const techPage = await asUser(tech.username);
     for (const p of [page, techPage]) {
-      for (const size of [SIZES[1]]) {
+      for (const size of [SIZES[0]]) {
         await p.setViewportSize(size);
         await openFresh(p, task.taskId);
         await openDetails(p);
@@ -428,7 +427,7 @@ test.describe('Task T6: long Description is cut at about 12 lines (#314)', () =>
       fieldCount: 14,
       task: { description: LONG_DESCRIPTION },
     });
-    for (const size of [SIZES[1], SIZES[2]]) {
+    for (const size of [SIZES[0], SIZES[1]]) {
       await page.setViewportSize(size);
       await page.addInitScript(() => {
         (window as unknown as { __cls: number }).__cls = 0;

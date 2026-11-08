@@ -101,7 +101,7 @@ const GRIDS: Grid[] = [
       const podWork = new PodWorkPage(page);
       await podWork.open();
       await podWork.choosePod(s.pod.name);
-      await podWork.tab(/^All open/).click();
+      await podWork.tab(/^All Open/).click();
       await podWork.search(s.tag);
     },
   },
@@ -343,7 +343,7 @@ test.describe('Final verification (#240)', () => {
       // Task Queue is another scope: its Due column keeps the default width.
       await new TaskQueuePage(page).open(`?q=${s.tag}`);
       await expect(page.locator('[data-task]')).toHaveCount(3);
-      expect(Math.round(await widthOf('due')), 'Task Queue keeps its own width').toBe(136);
+      expect(Math.round(await widthOf('due')), 'Task Queue keeps its own width').toBe(152);
       await page.evaluate(() => {
         for (const k of Object.keys(localStorage))
           if (k.startsWith('mf.work-widths.v1.')) localStorage.removeItem(k);
@@ -516,7 +516,7 @@ test.describe('Final verification (#240)', () => {
           const podWork = new PodWorkPage(p);
           await podWork.open();
           await podWork.choosePod(s.pod.name);
-          await podWork.tab(/^All open/).click();
+          await podWork.tab(/^All Open/).click();
         },
         ready: '[data-task]',
       },

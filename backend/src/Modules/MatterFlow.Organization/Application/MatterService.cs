@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Linq.Expressions;
 using MatterFlow.Audit.Contracts;
+using MatterFlow.Configuration.Contracts;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.Notifications.Contracts;
 using MatterFlow.Organization.Contracts;
@@ -27,12 +28,15 @@ public sealed class MatterService(
     IMatterManagerEligibility eligibility,
     INotificationPublisher notifications,
     IManagedMatterScope managed,
-    IMatterVisibility visibility)
+    IMatterVisibility visibility,
+    IMatterListCatalog lists)
 {
     public const string SortPrimaryManager = "primaryManager";
     public const string SortSecondaryManager = "secondaryManager";
+    public const string SortMatterType = "matterType";
+    public const string SortCurrentState = "currentState";
 
-    public static readonly string[] SortFields = ["matterRef", "name", "clientNumber", "createdAt", OrganizationSupport.SortOpenTasks, OrganizationSupport.SortOverdue, SortPrimaryManager, SortSecondaryManager];
+    public static readonly string[] SortFields = ["matterRef", "name", "clientNumber", "createdAt", OrganizationSupport.SortOpenTasks, OrganizationSupport.SortOverdue, SortPrimaryManager, SortSecondaryManager, SortMatterType, SortCurrentState];
 
     private bool CanCountTasks => permissions.Has(Permissions.Task.View);
 
@@ -46,7 +50,21 @@ public sealed class MatterService(
         [OrganizationSupport.SortOverdue] = OrganizationSupport.By<MatterRow, int>(r => r.Overdue),
         [SortPrimaryManager] = ByName(r => r.PrimaryManagerName == null, r => r.PrimaryManagerName),
         [SortSecondaryManager] = ByName(r => r.SecondaryManagerName == null, r => r.SecondaryManagerName),
+        // Type and state sort in the admin's list order (then by name), the matters without one last (UI spec 6.1).
+        [SortMatterType] = ByOrder(r => r.MatterTypeOrder, r => r.MatterTypeName),
+        [SortCurrentState] = ByOrder(r => r.CurrentStateOrder, r => r.CurrentStateName),
     };
+
+    /// <summary>Orders by a pick list's position and then its name, with the matters that have none last, whichever way the list sorts.</summary>
+    private static Func<IQueryable<MatterRow>, bool, bool, IOrderedQueryable<MatterRow>> ByOrder(
+        Expression<Func<MatterRow, int?>> position,
+        Expression<Func<MatterRow, string?>> name) =>
+        (query, descending, then) =>
+        {
+            var none = Expression.Lambda<Func<MatterRow, bool>>(Expression.Equal(position.Body, Expression.Constant(null, typeof(int?))), position.Parameters);
+            var ordered = then ? ((IOrderedQueryable<MatterRow>)query).ThenBy(none) : query.OrderBy(none);
+            return descending ? ordered.ThenByDescending(position).ThenByDescending(name) : ordered.ThenBy(position).ThenBy(name);
+        };
 
     /// <summary>Orders by a manager's name with the matters that have none last, whichever way the name sorts.</summary>
     private static Func<IQueryable<MatterRow>, bool, bool, IOrderedQueryable<MatterRow>> ByName(
@@ -74,6 +92,7 @@ public sealed class MatterService(
             rows = rows.Where(r => r.Matter.IsSensitive == sensitive);
 
         rows = ApplyManagerFilters(rows, query);
+        rows = ApplyFieldFilters(rows, query);
 
         var q = query.Q?.Trim();
         if (!string.IsNullOrEmpty(q))
@@ -82,14 +101,24 @@ public sealed class MatterService(
             {
                 rows = ApplyMatterRef(rows, q);
             }
-            else if (BusinessNumber.TryParse(q, out var number))
-            {
-                rows = rows.Where(r => r.Matter.ClientNumber == number || r.Matter.MatterNumber == number
-                    || r.Matter.Name.Contains(q) || r.ClientName.Contains(q));
-            }
             else
             {
-                rows = rows.Where(r => r.Matter.Name.Contains(q) || r.ClientName.Contains(q));
+                // The Matter Type and Current State names are searchable too (epic #1298): the lists are short, so the ids whose name matches join the text test.
+                var typeIds = await IdsNamedAsync(MatterListKind.MatterType, q, ct);
+                var stateIds = await IdsNamedAsync(MatterListKind.CurrentState, q, ct);
+                if (BusinessNumber.TryParse(q, out var number))
+                {
+                    rows = rows.Where(r => r.Matter.ClientNumber == number || r.Matter.MatterNumber == number
+                        || r.Matter.Name.Contains(q) || r.ClientName.Contains(q)
+                        || (r.Matter.MatterTypeId != null && typeIds.Contains(r.Matter.MatterTypeId.Value))
+                        || (r.Matter.CurrentStateId != null && stateIds.Contains(r.Matter.CurrentStateId.Value)));
+                }
+                else
+                {
+                    rows = rows.Where(r => r.Matter.Name.Contains(q) || r.ClientName.Contains(q)
+                        || (r.Matter.MatterTypeId != null && typeIds.Contains(r.Matter.MatterTypeId.Value))
+                        || (r.Matter.CurrentStateId != null && stateIds.Contains(r.Matter.CurrentStateId.Value)));
+                }
             }
         }
 
@@ -126,6 +155,35 @@ public sealed class MatterService(
                        Overdue = r.Overdue,
                        PrimaryManagerName = p.DisplayName,
                        SecondaryManagerName = sc.DisplayName,
+                       MatterTypeName = r.MatterTypeName,
+                       MatterTypeOrder = r.MatterTypeOrder,
+                       CurrentStateName = r.CurrentStateName,
+                       CurrentStateOrder = r.CurrentStateOrder,
+                   };
+        }
+
+        // Sorting by type or state needs the names / positions inside the statement too (a left join on the list keys the Configuration module offers).
+        if (sort.Any(f => f.Field is SortMatterType or SortCurrentState))
+        {
+            rows = from r in rows
+                   join t in lists.Keys(MatterListKind.MatterType) on r.Matter.MatterTypeId equals (int?)t.Id into typeRows
+                   from t in typeRows.DefaultIfEmpty()
+                   join st in lists.Keys(MatterListKind.CurrentState) on r.Matter.CurrentStateId equals (int?)st.Id into stateRows
+                   from st in stateRows.DefaultIfEmpty()
+                   select new MatterRow
+                   {
+                       Matter = r.Matter,
+                       ClientName = r.ClientName,
+                       ClientIsActive = r.ClientIsActive,
+                       ProjectCount = r.ProjectCount,
+                       Open = r.Open,
+                       Overdue = r.Overdue,
+                       PrimaryManagerName = r.PrimaryManagerName,
+                       SecondaryManagerName = r.SecondaryManagerName,
+                       MatterTypeName = t.Name,
+                       MatterTypeOrder = (int?)t.SortOrder,
+                       CurrentStateName = st.Name,
+                       CurrentStateOrder = (int?)st.SortOrder,
                    };
         }
 
@@ -147,6 +205,10 @@ public sealed class MatterService(
                        Overdue = (int?)g.Overdue ?? 0,
                        PrimaryManagerName = r.PrimaryManagerName,
                        SecondaryManagerName = r.SecondaryManagerName,
+                       MatterTypeName = r.MatterTypeName,
+                       MatterTypeOrder = r.MatterTypeOrder,
+                       CurrentStateName = r.CurrentStateName,
+                       CurrentStateOrder = r.CurrentStateOrder,
                    };
         }
 
@@ -159,6 +221,7 @@ public sealed class MatterService(
             ? await taskCounts.ForKeysAsync(TaskCountScope.Matter, [.. items.Select(r => r.Matter.Id)], ct)
             : new Dictionary<int, TaskCountRow>();
         var people = await ManagersAsync(items.Select(r => r.Matter), ct);
+        var names = await LoadListsAsync(ct);
         IReadOnlyDictionary<int, MatterStateCounts> states = canCount
             ? await taskCounts.MatterStatesAsync([.. items.Select(r => r.Matter.Id)], ct)
             : new Dictionary<int, MatterStateCounts>();
@@ -168,6 +231,7 @@ public sealed class MatterService(
                 !canCount ? null : joinCounts ? r.Open : byMatter.GetValueOrDefault(r.Matter.Id)?.Open ?? 0,
                 !canCount ? null : joinCounts ? r.Overdue : byMatter.GetValueOrDefault(r.Matter.Id)?.Overdue ?? 0,
                 people,
+                names: names,
                 states: canCount ? (states.GetValueOrDefault(r.Matter.Id) ?? new MatterStateCounts(0, 0)) : null)).ToList(),
             total,
             page);
@@ -181,11 +245,12 @@ public sealed class MatterService(
 
         var projects = await db.Set<Project>().AsNoTracking().CountAsync(p => p.MatterId == id, ct);
         var assets = await assetCounts.CountAsync(id, ct);
+        var team = await db.Set<MatterTeamMember>().AsNoTracking().CountAsync(t => t.MatterId == id, ct);
         if (!CanCountTasks)
-            return new MatterSummaryResponse(id, null, null, null, null, null, null, projects, assets);
+            return new MatterSummaryResponse(id, null, null, null, null, null, null, projects, assets, team);
 
         var strip = await taskCounts.StripAsync(TaskCountScope.Matter, id, ct);
-        return new MatterSummaryResponse(id, strip.Open, strip.Overdue, strip.Asap, strip.OnHold, strip.DueSoon, strip.Unassigned, projects, assets);
+        return new MatterSummaryResponse(id, strip.Open, strip.Overdue, strip.Asap, strip.OnHold, strip.DueSoon, strip.Unassigned, projects, assets, team);
     }
 
     private async Task<(int? Open, int? Overdue)> CountsOfAsync(int matterId, CancellationToken ct)
@@ -210,7 +275,7 @@ public sealed class MatterService(
             return OrganizationSupport.NotFound("Matter");
 
         var (open, overdue) = await CountsOfAsync(id, ct);
-        return ToResponse(row, open, overdue, await ManagersAsync([row.Matter], ct), await custom.ReadAsync(CustomFieldTarget.Matter, id, ct), dropped);
+        return ToResponse(row, open, overdue, await ManagersAsync([row.Matter], ct), await custom.ReadAsync(CustomFieldTarget.Matter, id, ct), dropped, names: await LoadListsAsync(ct));
     }
 
     /// <summary>
@@ -250,7 +315,7 @@ public sealed class MatterService(
             return OrganizationSupport.NotFound("Matter");
 
         var (open, overdue) = await CountsOfAsync(row.Matter.Id, ct);
-        return ToResponse(row, open, overdue, await ManagersAsync([row.Matter], ct), await custom.ReadAsync(CustomFieldTarget.Matter, row.Matter.Id, ct), []);
+        return ToResponse(row, open, overdue, await ManagersAsync([row.Matter], ct), await custom.ReadAsync(CustomFieldTarget.Matter, row.Matter.Id, ct), [], names: await LoadListsAsync(ct));
     }
 
     public async Task<Result<MatterResponse>> CreateAsync(CreateMatterRequest request, CancellationToken ct)
@@ -287,6 +352,10 @@ public sealed class MatterService(
                 "A sensitive matter needs a project manager, or be created by someone who can see all sensitive matters.");
         }
 
+        var fields = await CheckFieldsAsync(request.MatterTypeId, request.CurrentStateId, request.DmsPath, request.DfsPath, null, ct);
+        if (fields.IsFailure)
+            return fields.Error!;
+
         var plan = await custom.PlanCreateAsync(CustomFieldTarget.Matter, request.FormValues, ct);
         if (plan.IsFailure)
             return plan.Error!;
@@ -311,6 +380,10 @@ public sealed class MatterService(
             Name = request.Name.Trim(),
             IsSensitive = request.IsSensitive,
             AiAllowed = request.AiAllowed,
+            MatterTypeId = request.MatterTypeId,
+            CurrentStateId = request.CurrentStateId,
+            DmsPath = fields.Value.Dms,
+            DfsPath = fields.Value.Dfs,
         };
         db.Set<Matter>().Add(matter);
         var newManagers = wantsManagers ? NewlySet(matter, request.PrimaryManagerId, request.SecondaryManagerId) : [];
@@ -347,6 +420,17 @@ public sealed class MatterService(
             {
                 // Event 7: the matter has its id now; the rows commit with the matter.
                 await NotifyManagersSetAsync(matter, newManagers, ct);
+                await db.SaveChangesAsync(ct);
+            }
+
+            if (request.MatterTypeId is not null || request.CurrentStateId is not null)
+            {
+                // Created with a type or state: the events carry the matter id (known only now).
+                var names = await LoadListsAsync(ct);
+                if (request.MatterTypeId is { } typeId)
+                    AuditListChange(matter, OrganizationAuditEvents.MatterTypeChanged, "MatterType", "Matter Type", null, names.Types.GetValueOrDefault(typeId)?.Name);
+                if (request.CurrentStateId is { } stateId)
+                    AuditListChange(matter, OrganizationAuditEvents.MatterStateChanged, "CurrentState", "Current State", null, names.States.GetValueOrDefault(stateId)?.Name);
                 await db.SaveChangesAsync(ct);
             }
 
@@ -397,6 +481,10 @@ public sealed class MatterService(
                 new Dictionary<string, object?> { ["willLoseAccess"] = true });
         }
 
+        var fields = await CheckFieldsAsync(request.MatterTypeId, request.CurrentStateId, request.DmsPath, request.DfsPath, matter, ct);
+        if (fields.IsFailure)
+            return fields.Error!;
+
         var plan = await custom.PlanUpdateAsync(CustomFieldTarget.Matter, id, request.FormValues, ct);
         if (plan.IsFailure)
             return plan.Error!;
@@ -424,6 +512,24 @@ public sealed class MatterService(
         matter.IsSensitive = request.IsSensitive;
         if (request.AiAllowed is { } aiAllowed)
             matter.AiAllowed = aiAllowed;
+        if (matter.MatterTypeId != request.MatterTypeId || matter.CurrentStateId != request.CurrentStateId)
+        {
+            var names = await LoadListsAsync(ct);
+            if (matter.MatterTypeId != request.MatterTypeId)
+            {
+                AuditListChange(matter, OrganizationAuditEvents.MatterTypeChanged, "MatterType", "Matter Type", NameOf(names.Types, matter.MatterTypeId), NameOf(names.Types, request.MatterTypeId));
+                matter.MatterTypeId = request.MatterTypeId;
+            }
+
+            if (matter.CurrentStateId != request.CurrentStateId)
+            {
+                AuditListChange(matter, OrganizationAuditEvents.MatterStateChanged, "CurrentState", "Current State", NameOf(names.States, matter.CurrentStateId), NameOf(names.States, request.CurrentStateId));
+                matter.CurrentStateId = request.CurrentStateId;
+            }
+        }
+
+        matter.DmsPath = fields.Value.Dms; // the paths are plain fields: the audit interceptor records a change as FIELD_CHANGED
+        matter.DfsPath = fields.Value.Dfs;
         if (updatedManagers.Count > 0)
             await NotifyManagersSetAsync(matter, updatedManagers, ct); // event 7, in the same save
         OrganizationSupport.TrackOriginalRowVersion(db, matter, request.RowVersion);
@@ -636,7 +742,8 @@ public sealed class MatterService(
         IReadOnlyDictionary<int, MatterManagerResponse> people,
         CustomFieldView? view = null,
         IReadOnlyList<string>? dropped = null,
-        MatterStateCounts? states = null) => new(
+        MatterStateCounts? states = null,
+        MatterLists? names = null) => new(
         r.Matter.Id,
         r.Matter.ClientId,
         r.Matter.ClientNumber.Value,
@@ -661,7 +768,17 @@ public sealed class MatterService(
         OrganizationSupport.Utc(r.Matter.ModifiedAtUtc),
         states?.OnHold,
         states?.AtRisk,
-        r.Matter.AiAllowed);
+        r.Matter.AiAllowed,
+        names is null ? null : MatterListNames.RefOf(names.Types, r.Matter.MatterTypeId),
+        names is null ? null : MatterListNames.RefOf(names.States, r.Matter.CurrentStateId),
+        r.Matter.DmsPath,
+        r.Matter.DfsPath);
+
+    /// <summary>The names of the Matter Type and Current State items (inactive ones too), for the answers.</summary>
+    private sealed record MatterLists(IReadOnlyDictionary<int, MatterListItemInfo> Types, IReadOnlyDictionary<int, MatterListItemInfo> States);
+
+    private async Task<MatterLists> LoadListsAsync(CancellationToken ct) =>
+        new(await MatterListNames.LoadAsync(lists, MatterListKind.MatterType, ct), await MatterListNames.LoadAsync(lists, MatterListKind.CurrentState, ct));
 
     private static MatterManagerResponse? PersonOf(IReadOnlyDictionary<int, MatterManagerResponse> people, int? userId) =>
         userId is { } id ? people.GetValueOrDefault(id) : null;
@@ -705,6 +822,95 @@ public sealed class MatterService(
             rows = hasSecondary ? rows.Where(r => r.Matter.SecondaryManagerId != null) : rows.Where(r => r.Matter.SecondaryManagerId == null);
         return rows;
     }
+
+    /// <summary>Matter Type and Current State filters: any of the chosen ids, and/or "Not Set" (no value). Without any of them the rows are untouched.</summary>
+    private static IQueryable<MatterRow> ApplyFieldFilters(IQueryable<MatterRow> rows, MatterListQuery query)
+    {
+        if (query.MatterTypeId is { Length: > 0 } || query.MatterTypeNone == true)
+        {
+            var ids = query.MatterTypeId ?? [];
+            var none = query.MatterTypeNone == true;
+            rows = rows.Where(r => (r.Matter.MatterTypeId != null && ids.Contains(r.Matter.MatterTypeId.Value)) || (none && r.Matter.MatterTypeId == null));
+        }
+
+        if (query.CurrentStateId is { Length: > 0 } || query.CurrentStateNone == true)
+        {
+            var ids = query.CurrentStateId ?? [];
+            var none = query.CurrentStateNone == true;
+            rows = rows.Where(r => (r.Matter.CurrentStateId != null && ids.Contains(r.Matter.CurrentStateId.Value)) || (none && r.Matter.CurrentStateId == null));
+        }
+
+        return rows;
+    }
+
+    private static string? NameOf(IReadOnlyDictionary<int, MatterListItemInfo> items, int? id) =>
+        id is { } v ? items.TryGetValue(v, out var item) ? item.Name : $"Item {v.ToString(CultureInfo.InvariantCulture)}" : null;
+
+    /// <summary>
+    /// Checks the new matter fields: the chosen type and state (see <see cref="CheckChoiceAsync"/>) and cleans both paths. An unchanged stored path is accepted as it is
+    /// (a value saved before the rules tightened does not block saving other changes).
+    /// </summary>
+    private async Task<Result<(string? Dms, string? Dfs)>> CheckFieldsAsync(int? typeId, int? stateId, string? dms, string? dfs, Matter? current, CancellationToken ct)
+    {
+        var type = await CheckChoiceAsync(MatterListKind.MatterType, typeId, current?.MatterTypeId, "matterTypeId", "matter type", ct);
+        if (type.IsFailure)
+            return type.Error!;
+
+        var state = await CheckChoiceAsync(MatterListKind.CurrentState, stateId, current?.CurrentStateId, "currentStateId", "current state", ct);
+        if (state.IsFailure)
+            return state.Error!;
+
+        var cleanDms = Unchanged(dms, current?.DmsPath) ? Result<string?>.Success(current?.DmsPath) : MatterFieldRules.CleanPath(dms, "dmsPath");
+        if (cleanDms.IsFailure)
+            return cleanDms.Error!;
+
+        var cleanDfs = Unchanged(dfs, current?.DfsPath) ? Result<string?>.Success(current?.DfsPath) : MatterFieldRules.CleanPath(dfs, "dfsPath");
+        if (cleanDfs.IsFailure)
+            return cleanDfs.Error!;
+
+        return (cleanDms.Value, cleanDfs.Value);
+    }
+
+    private static bool Unchanged(string? sent, string? stored) => stored is not null && string.Equals(sent?.Trim(), stored, StringComparison.Ordinal);
+
+    /// <summary>The ids of the items of a pick list (inactive ones too) whose name contains the text, for the list search.</summary>
+    private async Task<int[]> IdsNamedAsync(MatterListKind kind, string text, CancellationToken ct) =>
+        [.. (await lists.ListAsync(kind, true, ct)).Where(i => i.Name.Contains(text, StringComparison.OrdinalIgnoreCase)).Select(i => i.Id)];
+
+    /// <summary>
+    /// A chosen pick-list item must exist and, unless it is what the matter already has, be active. Null means "not set" and is always fine.
+    /// </summary>
+    private async Task<Result> CheckChoiceAsync(MatterListKind kind, int? id, int? current, string field, string label, CancellationToken ct)
+    {
+        if (id is not { } chosen || chosen == current)
+            return Result.Success();
+
+        var item = (await lists.ListAsync(kind, true, ct)).FirstOrDefault(i => i.Id == chosen);
+        if (item is null)
+            return Error.Validation(field, "NOT_FOUND", $"Choose a {label} from the list.");
+        if (!item.IsActive)
+            return Error.Validation(field, "INACTIVE", $"The {label} '{item.Name}' is no longer offered. Choose another.");
+        return Result.Success();
+    }
+
+    /// <summary>Queues the dedicated audit event of a Matter Type or Current State change (names as old and new value; the matter id is filled in after the insert on create).</summary>
+    private void AuditListChange(Matter matter, string eventType, string fieldKey, string label, string? oldName, string? newName) =>
+        audit.Write(new AuditEntry
+        {
+            EventType = eventType,
+            ObjectType = nameof(Matter),
+            ObjectIdFactory = () => matter.Id.ToString(CultureInfo.InvariantCulture),
+            MatterId = matter.Id == 0 ? null : matter.Id,
+            FieldKey = fieldKey,
+            OldValue = oldName,
+            NewValue = newName,
+            Summary = (oldName, newName) switch
+            {
+                (null, not null) => $"{label} set to {newName}.",
+                (not null, null) => $"{label} cleared (was {oldName}).",
+                _ => $"{label} changed from {oldName} to {newName}.",
+            },
+        });
 
     /// <summary>
     /// Checks a new pair of managers: not the same person twice, and every person who is not already on this matter must be an active user holding
@@ -851,5 +1057,14 @@ public sealed class MatterService(
         public string? PrimaryManagerName { get; init; }
 
         public string? SecondaryManagerName { get; init; }
+
+        /// <summary>Filled only while the list sorts by Matter Type or Current State.</summary>
+        public string? MatterTypeName { get; init; }
+
+        public int? MatterTypeOrder { get; init; }
+
+        public string? CurrentStateName { get; init; }
+
+        public int? CurrentStateOrder { get; init; }
     }
 }

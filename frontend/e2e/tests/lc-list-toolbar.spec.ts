@@ -48,9 +48,7 @@ test.describe('List toolbar on Clients (record list)', () => {
     await expect(page.locator('tr[data-filter-row] input[data-filter="name"]')).toHaveCount(0);
 
     // Row 3: the default sort is stated, and there is nothing to reset yet.
-    await expect(page.locator('[data-sorted-text]')).toHaveText(
-      'Sorted by Client number, lowest first',
-    );
+    await expect(page.locator('[data-sorted-text]')).toHaveText('Sorted by Client Number');
     await expect(page.locator('[data-reset-sort]')).toHaveCount(0);
 
     // Sort by Name from the header: the line names it; Reset sort brings the default back.
@@ -110,9 +108,7 @@ test.describe('List toolbar on the work lists and the Matter Tasks tab', () => {
     await page.keyboard.press('Escape');
 
     // The default sort is stated; a header click replaces it and Reset sort brings it back.
-    await expect(page.locator('[data-sort-note]')).toContainText(
-      'Sorted by Priority, most urgent first',
-    );
+    await expect(page.locator('[data-sort-note]')).toContainText('Sorted by Priority');
     await expect(labelledDropdown(page, 'Rows per page')).toHaveAttribute('data-value', '50');
     if (axeAvailable()) expect(await axeViolations(page)).toEqual([]);
 

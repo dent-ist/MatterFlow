@@ -11,7 +11,7 @@ import { expect, test } from '../support/fixtures';
  * Every scenario owns its users (tagged), so the shared database does not matter.
  */
 const SHOTS = process.env['E2E_SCREENSHOTS'];
-const TASK_USER = ['Task.View', 'Task.Create', 'Task.Assign', 'Matter.View'];
+const TASK_USER = ['Task.View', 'Task.Create', 'Task.Assign', 'Matter.View', 'Workflow.Execute'];
 
 test.describe('Default landing', () => {
   test('a technician with an open assigned task lands on My Work, and a deep link is untouched', async ({
@@ -87,7 +87,7 @@ test.describe('Default landing', () => {
   }) => {
     const world = await seed.world();
     const dashRole = await seed.role(
-      ['Dashboard.View', 'Dashboard.ViewSummary', 'Matter.View'],
+      ['Dashboard.View', 'Dashboard.ViewSummary', 'Matter.View', 'Workflow.Execute'],
       'E2E landing dash',
     );
     const dash = await seed.user([dashRole.name], 'landdash');

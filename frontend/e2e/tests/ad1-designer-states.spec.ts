@@ -158,7 +158,7 @@ test.describe('Designer not found, no access and failure states (#541)', () => {
     await expect(page.locator('[data-error-reference]')).toContainText(reference);
     status = 0;
     await page.getByRole('button', { name: 'Retry' }).click();
-    await expect(heading(page)).toContainText('Matter custom fields');
+    await expect(heading(page)).toContainText('Matter Custom Fields');
     // The Matter form is a singleton the whole suite shares: depending on what earlier specs left (published, or a draft in progress) the
     // bar offers Create new draft, Open draft or Publish. Any of them proves the designer drew its action bar after Retry.
     await expect(

@@ -11,6 +11,9 @@ import {
 } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
 import {
+  AssetListItem,
+  AssetResponse,
+  AssetTypeResponse,
   AssetTypesClient,
   AssetsClient,
   AuditEventsClient,
@@ -18,6 +21,7 @@ import {
   MattersClient,
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { NotificationService } from '../../../core/notify/notification.service';
 import { Permission } from '../../../core/auth/permissions';
 import {
   aFormVersion,
@@ -98,6 +102,13 @@ describe('Assets routes', () => {
   });
 });
 
+const NUMBERING = {
+  enabled: true,
+  pattern: '-M-{###}',
+  scope: 'MATTER',
+  example: { cmNumber: '90003-80008', nextCounter: 1, isSample: true, text: '90003-80008-M-001' },
+};
+
 describe('Assets pages', { timeout: 20_000 }, () => {
   let assets: Record<
     | 'listAssets'
@@ -115,6 +126,17 @@ describe('Assets pages', { timeout: 20_000 }, () => {
   let audit: Record<'listAuditEvents', Mock>;
   let navigate: Mock;
   let navigateByUrl: Mock;
+  /** Overrides of the first asset type the mock offers (a numbered type, #1297). */
+  let firstType: Partial<AssetTypeResponse> = {};
+  /** Overrides of the asset the mock returns (an asset with a number, #1297). */
+  let assetOver: Partial<AssetResponse> = {};
+  /** The rows the list mock returns instead of the two defaults. */
+  let listItems: AssetListItem[] | null = null;
+  beforeEach(() => {
+    listItems = null;
+    firstType = {};
+    assetOver = {};
+  });
   /** The query string the page reads its filters from (ListFilters reads the route; the router itself is mocked). */
   let query$: BehaviorSubject<ParamMap>;
   const FILTER_PARAMS = ['name', 'typeId', 'matter', 'extref', 'matterId', 'status'];
@@ -131,17 +153,19 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       listAssets: vi.fn().mockReturnValue(
         ok(
           pageOfAssets(
-            anAssetListItem(),
-            anAssetListItem({
-              assetId: 10,
-              displayName: 'Old room',
-              isActive: false,
-              dispositionCode: 'INACTIVE',
-            }),
+            ...(listItems ?? [
+              anAssetListItem(),
+              anAssetListItem({
+                assetId: 10,
+                displayName: 'Old room',
+                isActive: false,
+                dispositionCode: 'INACTIVE',
+              }),
+            ]),
           ),
         ),
       ),
-      getAsset: vi.fn().mockReturnValue(ok(anAsset())),
+      getAsset: vi.fn().mockReturnValue(ok(anAsset(assetOver))),
       createAsset: vi.fn().mockReturnValue(ok(anAsset({ assetId: 12 }))),
       updateAsset: vi.fn().mockReturnValue(ok(anAsset({ displayName: 'Renamed' }))),
       setAssetActive: vi.fn().mockReturnValue(ok(anAsset({ isActive: false }))),
@@ -166,7 +190,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       listAssetTypes: vi.fn().mockReturnValue(
         ok(
           pageOfAssetTypes(
-            anAssetType(),
+            anAssetType(firstType),
             anAssetType({
               assetTypeId: 5,
               name: 'Source System',
@@ -266,8 +290,8 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     it('My matters / All: scoped for a project manager, plain otherwise, the address wins (epic #758)', async () => {
       const calls = () =>
         (assets.listAssets as ReturnType<typeof vi.fn>).mock.calls
-          .filter((c) => c[12] !== 1)
-          .map((c) => c[7]);
+          .filter((c) => c[13] !== 1)
+          .map((c) => c[8]);
       await create(['Asset.View']);
       expect(el().querySelector('[data-scope-switch]')).toBeNull();
       expect(calls()).toEqual([undefined]);
@@ -280,6 +304,13 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       TestBed.resetTestingModule();
       await create(['Asset.View', 'Matter.BeManager', 'Matter.AssignManagers'], { matterId: '7' });
       expect(calls()).toEqual([undefined]);
+    });
+
+    it('sends the Search box text as q, so an Asset Number finds the asset too (N5, #1297)', async () => {
+      await create(['Asset.View'], { name: '00343-00012_004' });
+      const call = assets.listAssets.mock.calls.at(-1)!;
+      expect(call[3]).toBe('00343-00012_004'); // q
+      expect(call[4]).toBeUndefined(); // name
     });
 
     it('lists assets with type, matter reference, external reference and status; the name is a link', async () => {
@@ -314,12 +345,57 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         undefined,
         undefined,
         undefined,
+        undefined,
         1,
         50,
         undefined,
       );
       // The three standalone filter boxes are gone.
       expect(el().querySelector('#asset-search, #asset-type-filter, mf-status-filter')).toBeNull();
+    });
+
+    describe('the Asset Number column (#1297)', () => {
+      const headers = () =>
+        Array.from(el().querySelectorAll('thead tr:first-child th')).map((t) =>
+          t.textContent!.trim(),
+        );
+
+      it('is a default column after Name, with External Reference off by default, only while an active numbered type exists', async () => {
+        firstType = { numbering: NUMBERING };
+        await create(['Asset.View', 'Matter.View']);
+        expect(headers()).toEqual([
+          'Type',
+          'Name',
+          'Asset Number',
+          'CM Number',
+          'Size',
+          'Disposition',
+        ]);
+      });
+
+      it('has no Asset Number column when no type is numbered or the numbered type is retired', async () => {
+        firstType = { numbering: NUMBERING, isActive: false };
+        await create(['Asset.View', 'Matter.View']);
+        expect(headers()).not.toContain('Asset Number');
+        expect(headers()).toContain('External Reference');
+      });
+
+      it('shows the number in mono type with the whole number as tooltip, Not assigned for an old asset of a numbered type, and nothing for another type', async () => {
+        firstType = { numbering: NUMBERING };
+        listItems = [
+          anAssetListItem({ assetNumber: '00343-00012-M-001', assetTypeNumberingEnabled: true }),
+          anAssetListItem({ assetId: 11, displayName: 'Old one', assetTypeNumberingEnabled: true }),
+          anAssetListItem({ assetId: 12, displayName: 'Other', assetTypeId: 5 }),
+        ];
+        await create(['Asset.View', 'Matter.View']);
+        const cell = (id: number) =>
+          el().querySelector(`tbody tr[data-record-id="${id}"] td[data-asset-number]`)!;
+        const text = cell(9).querySelector<HTMLElement>('[data-asset-number-text]')!;
+        expect(text.textContent).toBe('00343-00012-M-001');
+        expect(text.getAttribute('title')).toBe('00343-00012-M-001');
+        expect(cell(11).textContent!.trim()).toBe('Not assigned');
+        expect(cell(12).textContent!.trim()).toBe('');
+      });
     });
 
     it('shows the external reference on one line with the full value as tooltip and a copy button that is not a Tab stop (BUG-5)', async () => {
@@ -446,20 +522,20 @@ describe('Assets pages', { timeout: 20_000 }, () => {
 
       it('asks the server for the chosen disposition: Pending disposition as a disposition filter, Not active as isActive=false', async () => {
         await create(['Asset.View'], { status: 'pending' });
-        let call = assets.listAssets.mock.calls.find((c) => c[12] !== 1)!;
+        let call = assets.listAssets.mock.calls.find((c) => c[13] !== 1)!;
         expect(call[2]).toBeUndefined(); // no isActive
-        expect(call[9]).toEqual(['PENDING_DISPOSITION']);
+        expect(call[10]).toEqual(['PENDING_DISPOSITION']);
 
         TestBed.resetTestingModule();
         await create(['Asset.View'], { status: 'notactive' });
-        call = assets.listAssets.mock.calls.find((c) => c[12] !== 1)!;
+        call = assets.listAssets.mock.calls.find((c) => c[13] !== 1)!;
         expect(call[2]).toBe(false);
-        expect(call[9]).toBeUndefined();
+        expect(call[10]).toBeUndefined();
 
         TestBed.resetTestingModule();
         await create(['Asset.View'], { status: 'disposed' });
-        call = assets.listAssets.mock.calls.find((c) => c[12] !== 1)!;
-        expect(call[9]).toEqual(['DISPOSED']);
+        call = assets.listAssets.mock.calls.find((c) => c[13] !== 1)!;
+        expect(call[10]).toEqual(['DISPOSED']);
       });
 
       it('has no selection column without Asset.Edit or Asset.Dispose', async () => {
@@ -571,7 +647,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         queryParamsHandling: 'merge',
       });
       expect(header('Type').querySelector('button')).not.toBeNull();
-      expect(assets.listAssets.mock.calls.some((c) => c[13] === 'matter')).toBe(true);
+      expect(assets.listAssets.mock.calls.some((c) => c[14] === 'matter')).toBe(true);
     });
 
     it('offers Skip to table as the first stop of the page and it lands on the first name link (A9, #503)', async () => {
@@ -793,9 +869,10 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         7,
         [4],
         undefined,
-        undefined,
         'dms',
+        undefined,
         'WS-1',
+        undefined,
         '00343',
         undefined,
         undefined,
@@ -1081,6 +1158,73 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         formValues: { workspace_id: 'WS-8841' },
       });
       expect(navigate).toHaveBeenCalledWith(['/assets', 12]);
+    });
+
+    describe('the Asset Number (#1297)', () => {
+      it('says Assigned on save and the format for a numbered type, and nothing for another', async () => {
+        firstType = { numbering: NUMBERING };
+        await create({ matterId: '7' }, ['Asset.View', 'Asset.Create', 'Task.View']);
+        expect(el().querySelector('[data-asset-number]')).toBeNull();
+        await chooseType('4');
+        expect(el().querySelector('[data-number-value]')?.textContent?.trim()).toBe(
+          'Assigned on save',
+        );
+        expect(
+          el().querySelector('[data-number-format]')?.textContent?.replace(/\s+/g, ' '),
+        ).toContain('Format: 00343-00012-M-###. Use it as the folder name on the share.');
+        await chooseType('5');
+        expect(el().querySelector('[data-asset-number]')).toBeNull();
+      });
+
+      it('names the number in the toast after a create', async () => {
+        firstType = { numbering: NUMBERING };
+        await create({ matterId: '7' }, ['Asset.View', 'Asset.Create', 'Task.View']);
+        assets.createAsset.mockReturnValue(
+          ok(anAsset({ assetId: 12, assetNumber: '00343-00012-M-001' })),
+        );
+        await chooseType('4');
+        type('#asset-name', 'Folder');
+        const workspace = el().querySelector<HTMLInputElement>(
+          '[data-type-fields] input[type=text]',
+        )!;
+        workspace.value = 'WS-8841';
+        workspace.dispatchEvent(new Event('input'));
+        await settle(fixture);
+        await submit();
+        const toast = TestBed.inject(NotificationService);
+        expect(toast.toasts().some((t) => t.detail === 'Asset Number 00343-00012-M-001')).toBe(
+          true,
+        );
+      });
+
+      it('says Not assigned on Edit for an old asset of a numbered type and assigns on request', async () => {
+        assetOver = { assetTypeNumberingEnabled: true };
+        await create({ assetId: '9' }, ['Asset.View', 'Asset.Edit', 'Task.View']);
+        expect(el().querySelector('[data-not-assigned]')?.textContent).toBe('Not assigned');
+        (assets as Record<string, Mock>)['assignAssetNumber'] = vi
+          .fn()
+          .mockReturnValue(ok(anAsset({ assetNumber: '00343-00012_005' })));
+        el().querySelector<HTMLButtonElement>('[data-assign-number]')!.click();
+        await settle(fixture);
+        expect(el().querySelector('[data-number-value]')?.textContent?.trim()).toBe(
+          '00343-00012_005',
+        );
+        expect(el().querySelector('[data-assign-number]')).toBeNull();
+      });
+
+      it('shows the number read only with Copy on Edit', async () => {
+        assetOver = { assetNumber: '00343-00012_004' };
+        await create({ assetId: '9' }, ['Asset.View', 'Asset.Edit', 'Task.View']);
+        const row = el().querySelector('[data-asset-number]')!;
+        expect(row.querySelector('[data-number-value]')?.textContent?.trim()).toBe(
+          '00343-00012_004',
+        );
+        expect(row.querySelector('button[aria-label="Copy asset number"]')).not.toBeNull();
+        expect(row.textContent).toContain(
+          "Assigned when the asset was created. It can't be changed.",
+        );
+        expect(row.querySelector('input')).toBeNull();
+      });
     });
 
     it('requires matter, type and name, and the required type-specific field, before calling the server', async () => {

@@ -27,6 +27,9 @@ const KNOWN_FIELDS: Readonly<Record<string, string>> = {
   requested_at: 'Request sent',
   requestor_name: 'Requestor name',
   requestor_email: 'Requestor email',
+  // Acronyms keep their capitals (UI spec 5).
+  dmspath: 'DMS Path',
+  dfspath: 'DFS Path',
 };
 
 /** Audit object types whose raw name means nothing to a reader. */
@@ -58,6 +61,13 @@ const EVENT_TYPES: Readonly<Record<string, string>> = {
   FORM_PUBLISHED: 'Form published',
   FORM_RETIRED: 'Form retired',
   MATTER_SENSITIVITY_CHANGED: 'Matter sensitivity changed',
+  MATTER_TYPE_CHANGED: 'Matter Type changed',
+  MATTER_STATE_CHANGED: 'Current State changed',
+  MATTER_TEAM_MEMBER_ADDED: 'Team member added',
+  MATTER_TEAM_MEMBER_CHANGED: 'Team member updated',
+  MATTER_TEAM_MEMBER_REMOVED: 'Team member removed',
+  ASSET_NEXT_NUMBER_SET: 'Asset next number set',
+  ASSET_NUMBER_ASSIGNED: 'Asset number assigned',
 };
 
 /** `COMMENT_ADDED` -> `Comment added`, `TASK_STATUS_CHANGED` -> `Task status changed` (the code stays the option's value, #650). */
@@ -76,15 +86,19 @@ export function objectTypeLabel(type: string): string {
 /** Replaces internal field keys (`received_datetime`) inside a sentence with their labels. */
 export function friendlyText(text: string | undefined | null): string {
   if (!text) return '';
-  return text
-    .replace(/\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b/g, (key) => fieldLabel(`form:${key}`))
-    .replace(
-      /\b(?:FormValueSet|StepInstance|TaskStepInstance|TaskAsset|AssetType|AssetLinkRole|StepDefinition|WorkflowDefinition|TaskType|StatusLabel|CustomField)\b/g,
-      (type, offset: number) => {
-        const label = objectTypeLabel(type);
-        return offset === 0 ? label : label.toLowerCase();
-      },
-    );
+  return (
+    text
+      // The server's generic field label lowercases an acronym ("Dms path set to ..."): the two path fields read DMS Path and DFS Path.
+      .replace(/^(Dms|Dfs) path\b/, (_m, a: string) => `${a.toUpperCase()} Path`)
+      .replace(/\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b/g, (key) => fieldLabel(`form:${key}`))
+      .replace(
+        /\b(?:FormValueSet|StepInstance|TaskStepInstance|TaskAsset|AssetType|AssetLinkRole|StepDefinition|WorkflowDefinition|TaskType|StatusLabel|CustomField)\b/g,
+        (type, offset: number) => {
+          const label = objectTypeLabel(type);
+          return offset === 0 ? label : label.toLowerCase();
+        },
+      )
+  );
 }
 
 /** `IsSensitive` -> `Sensitive`, `form:billing_code` -> `Billing code`, `ClientNumber` -> `Client number`. */
@@ -104,6 +118,19 @@ export function fieldLabel(key: string | undefined): string {
     .trim()
     .toLowerCase();
   return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/** The numbering scope is stored as a number (1 = per matter, #1297): the Activity drawer says the word. */
+const NUMBERING_SCOPES: Readonly<Record<string, string>> = { '1': 'Per matter' };
+
+/** The value of a field-change line: the numbering scope in words, everything else through `auditValue`. */
+export function fieldChangeValue(
+  fieldKey: string | undefined,
+  value: string | undefined | null,
+): string {
+  if (fieldKey?.toLowerCase() === 'numberingscope' && value && NUMBERING_SCOPES[value])
+    return NUMBERING_SCOPES[value];
+  return auditValue(value);
 }
 
 /** Booleans read Yes/No; a calendar date reads "10/15" ("10/15/2027" outside this year); empty reads "(empty)". */
@@ -177,8 +204,8 @@ export function describeAuditEvent(e: AuditEventDto, actor: string): string {
     const field = fieldLabel(e.fieldKey);
     const hasOld = e.oldValue !== undefined && e.oldValue !== null && e.oldValue !== '';
     return hasOld
-      ? `${field}: ${auditValue(e.oldValue)} -> ${auditValue(e.newValue)}`
-      : `${field} set to ${auditValue(e.newValue)}`;
+      ? `${field}: ${fieldChangeValue(e.fieldKey, e.oldValue)} -> ${fieldChangeValue(e.fieldKey, e.newValue)}`
+      : `${field} set to ${fieldChangeValue(e.fieldKey, e.newValue)}`;
   }
   return e.summary ?? e.eventType.toLowerCase().replace(/_/g, ' ');
 }

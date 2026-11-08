@@ -285,7 +285,7 @@ test.describe('Column filters on the administration lists', () => {
       // Closed row: the chip reads "Versions: Draft in progress".
       await page.goto(`/admin/workflows?name=${token}&hasDraft=true`);
       await toggle(page).click();
-      await expect(chips(page)).toContainText('Versions: Draft in progress');
+      await expect(chips(page)).toContainText('Versions: Draft in Progress');
     });
 
     test('Workflow Steps: Title, Description, Tags with Match all or any, and Used in', async ({

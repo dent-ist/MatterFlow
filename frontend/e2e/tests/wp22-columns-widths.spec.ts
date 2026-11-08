@@ -70,7 +70,7 @@ async function seedTasks(seed: Parameters<Parameters<typeof test>[2]>[0]['seed']
 }
 
 test.describe('Column widths in the Columns panel (#206)', () => {
-  test('keyboard only: Columns > Column widths > Widen Due three times > Esc gives 160 px and focus returns to the button; persists', async ({
+  test('keyboard only: Columns > Column widths > Widen Due three times > Esc gives 176 px and focus returns to the button; persists', async ({
     seed,
     asUser,
   }) => {
@@ -79,21 +79,22 @@ test.describe('Column widths in the Columns panel (#206)', () => {
     const page = await asUser('ke\\kekim');
     await page.setViewportSize({ width: 1366, height: 768 });
     await openQueue(page, tag, 3);
-    expect(await gridWidth(page, 'due')).toBe(136);
+    expect(await gridWidth(page, 'due')).toBe(152);
 
     await openPanel(page);
     await expect(page.locator('[data-widths-set] legend')).toHaveText('Column Widths');
-    await expect(row(page, 'title')).toContainText('Fills the space left');
-    await expect(row(page, 'title').locator('input')).toHaveCount(0);
+    // #1243: the Title width can be set and reset in the panel (one input and "Reset Width"); "Fills the space left" is now only the hint of the disabled header-menu items.
+    await expect(row(page, 'title')).toContainText('Reset Width');
+    await expect(row(page, 'title').locator('[data-width-input]')).toHaveCount(1);
 
     // Tab from the field reaches Widen, Fit and Reset width in order.
     await field(page, 'due').focus();
     await page.keyboard.press('Tab');
     await expect(row(page, 'due').getByRole('button', { name: 'Widen Due' })).toBeFocused();
     for (let i = 0; i < 3; i++) await page.keyboard.press('Enter');
-    await expect(field(page, 'due')).toHaveValue('160');
-    await expect(live(page)).toHaveText('Due column 160 pixels');
-    expect(await gridWidth(page, 'due')).toBe(160);
+    await expect(field(page, 'due')).toHaveValue('176');
+    await expect(live(page)).toHaveText('Due column 176 pixels');
+    expect(await gridWidth(page, 'due')).toBe(176);
     await page.keyboard.press('Tab');
     await expect(
       row(page, 'due').getByRole('button', { name: 'Fit Due to content' }),
@@ -106,10 +107,10 @@ test.describe('Column widths in the Columns panel (#206)', () => {
     await expect(panel(page)).toHaveCount(0);
     await expect(columnsButton(page)).toBeFocused();
 
-    expect(Object.values(await stored(page))).toEqual([{ due: 160 }]);
+    expect(Object.values(await stored(page))).toEqual([{ due: 176 }]);
     await page.reload();
     await expect(page.locator('[data-task]')).toHaveCount(3);
-    expect(await gridWidth(page, 'due')).toBe(160);
+    expect(await gridWidth(page, 'due')).toBe(176);
   });
 
   test('Shift steps 32 px, a typed number clamps and shows the clamped value, Up and Down step by 8', async ({
@@ -126,13 +127,13 @@ test.describe('Column widths in the Columns panel (#206)', () => {
     const widen = row(page, 'due').getByRole('button', { name: 'Widen Due' });
     await widen.focus();
     await page.keyboard.press('Shift+Enter');
-    await expect(field(page, 'due')).toHaveValue('168');
-    expect(await gridWidth(page, 'due')).toBe(168);
+    await expect(field(page, 'due')).toHaveValue('184');
+    expect(await gridWidth(page, 'due')).toBe(184);
     await row(page, 'due')
       .getByRole('button', { name: 'Narrow Due' })
       .click({ modifiers: ['Shift'] });
-    await expect(field(page, 'due')).toHaveValue('136');
-    await expect(live(page)).toHaveText('Due column 136 pixels');
+    await expect(field(page, 'due')).toHaveValue('152');
+    await expect(live(page)).toHaveText('Due column 152 pixels');
 
     await field(page, 'due').fill('999');
     await page.keyboard.press('Enter');
@@ -183,8 +184,8 @@ test.describe('Column widths in the Columns panel (#206)', () => {
     await row(page, 'due').getByRole('button', { name: 'Widen Due' }).click();
     await expect(resetDue).not.toHaveAttribute('aria-disabled', 'true');
     await resetDue.click();
-    await expect(field(page, 'due')).toHaveValue('136');
-    await expect(live(page)).toHaveText('Due column 136 pixels');
+    await expect(field(page, 'due')).toHaveValue('152');
+    await expect(live(page)).toHaveText('Due column 152 pixels');
     expect(Object.values(await stored(page))[0]).toEqual({ matterName: fitted });
 
     // Hiding and showing a column keeps its width; Reset columns does not touch widths.
@@ -217,14 +218,14 @@ test.describe('Column widths in the Columns panel (#206)', () => {
     await row(page, 'due')
       .getByRole('button', { name: 'Widen Due' })
       .click({ modifiers: ['Shift'] });
-    expect(await gridWidth(page, 'due')).toBe(168);
+    expect(await gridWidth(page, 'due')).toBe(184);
     await page.keyboard.press('Escape');
 
     await new MyWorkPage(page).open();
     await page.locator('table').first().waitFor();
-    expect(await gridWidth(page, 'due')).toBe(136);
+    expect(await gridWidth(page, 'due')).toBe(152);
     await openPanel(page);
-    await expect(field(page, 'due')).toHaveValue('136');
+    await expect(field(page, 'due')).toHaveValue('152');
     await expect(page.locator('[data-widths-reset]')).toHaveAttribute('aria-disabled', 'true');
     expect(Object.keys(await stored(page))).toHaveLength(1);
   });

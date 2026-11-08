@@ -81,7 +81,7 @@ test.describe('Dashboard actions and click-through', () => {
     const world = await seed.world();
     const task = await seed.task(world, { title: `No pod ${uid()}` });
     await page.goto('/tasks?noPod=true');
-    await expect(chips(page)).toContainText('Pod: No pod');
+    await expect(chips(page)).toContainText('Pod: No Pod');
     const queue = new TaskQueuePage(page);
     await queue.search(task.title);
     await queue.expectListed(task.title);
@@ -173,6 +173,7 @@ test.describe('Dashboard actions and click-through', () => {
       'Trends',
       'Swimlane',
       'Users',
+      'Calendar',
     ]);
     await expect(tabs.getByRole('tab', { name: 'Summary' })).toHaveAttribute(
       'aria-selected',
@@ -237,9 +238,12 @@ test.describe('Dashboard actions and click-through', () => {
     // Each key moves the selection through the address; wait for it before the next key (a tab that renders a lot, such as Users, would
     // otherwise still be the selected one when the next arrow is read).
     await page.keyboard.press('End');
-    await expect(tabs.getByRole('tab', { name: 'Users' })).toBeFocused();
-    await expect(page).toHaveURL(/tab=users/);
-    await expect(tabs.getByRole('tab', { name: 'Users' })).toHaveAttribute('aria-selected', 'true');
+    await expect(tabs.getByRole('tab', { name: 'Calendar' })).toBeFocused();
+    await expect(page).toHaveURL(/tab=calendar/);
+    await expect(tabs.getByRole('tab', { name: 'Calendar' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     await page.keyboard.press('ArrowRight');
     await expect(tabs.getByRole('tab', { name: 'Summary' })).toBeFocused();
     await expect(page).toHaveURL(/tab=summary/);
@@ -265,7 +269,7 @@ test.describe('Dashboard actions and click-through', () => {
     await page.goto('/dashboard?tab=trends');
     const trend = page.getByRole('region', { name: 'Tasks Over Time', exact: true });
     await expect(trend.getByRole('group', { name: /created and completed/i })).toBeVisible();
-    await trend.getByRole('button', { name: /View as table/ }).click();
+    await trend.getByRole('button', { name: /View as Table/ }).click();
     await expect(trend.getByRole('table')).toBeVisible();
     await expect(trend.getByRole('table').getByRole('link').first()).toBeVisible();
   });

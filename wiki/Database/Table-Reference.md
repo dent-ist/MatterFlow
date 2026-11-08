@@ -6,7 +6,7 @@
 
 **How this page was made.** The facts come from the demo SQL Server database `MatterFlow` (all 59 numbered scripts applied, plus the runner table `SchemaMigration`), read with read-only queries on `sys.tables`, `sys.columns`, `sys.foreign_keys`, `sys.indexes`, `sys.check_constraints` and `sys.triggers`, and were cross-checked against the scripts in `db/scripts`. Purposes and module ownership are written by hand from the scripts and the code. The "scripts" line is derived by pattern matching (`CREATE TABLE`, `ALTER TABLE`, `CREATE INDEX`, `CREATE TRIGGER`), so a change made through dynamic SQL would not be listed; [Schema Script History](Schema-Script-History.md) is the authoritative list.
 
-Totals: 71 tables, 183 foreign keys, 234 indexes (including primary keys), 139 check constraints, 20 triggers on tables, 711 columns.
+Totals: 72 tables, 184 foreign keys, 236 indexes (including primary keys), 144 check constraints, 20 triggers on tables, 728 columns (script 63 added the counter table and 5 columns; the totals were last counted from the live database at script 60).
 
 ## Index of tables
 
@@ -14,13 +14,15 @@ Totals: 71 tables, 183 foreign keys, 234 indexes (including primary keys), 139 c
 |---|---|---|---|---|
 | [AppSetting](#appsetting) | Audit, Notifications, Settings and platform | Configuration | 8 | 1 |
 | [AppUser](#appuser) | Identity and access | Identity | 12 | 3 |
-| [Asset](#asset) | Assets | Assets | 16 | 5 |
+| [Asset](#asset) | Assets | Assets | 18 | 6 |
 | [AssetLinkRole](#assetlinkrole) | Tasks and task configuration | Configuration | 9 | 2 |
+| [AssetNumberCounter](#assetnumbercounter) | Assets | Assets | 4 | 1 |
 | [AssetReport](#assetreport) | Assets | Assets | 9 | 3 |
-| [AssetType](#assettype) | Assets | Assets | 14 | 2 |
+| [AssetType](#assettype) | Assets | Assets | 17 | 2 |
 | [AuditEvent](#auditevent) | Audit, Notifications, Settings and platform | Audit | 14 | 0 |
 | [AuditEventGuard](#auditeventguard) | Audit, Notifications, Settings and platform | Audit (created by script 13) | 1 | 1 |
 | [Client](#client) | Clients, Matters and Projects | Organization | 10 | 2 |
+| [CurrentState](#currentstate) | Clients, Matters and Projects | Configuration | 9 | 2 |
 | [CustomFieldIndex](#customfieldindex) | Forms and custom fields | Configuration | 10 | 1 |
 | [FormDefinition](#formdefinition) | Forms and custom fields | Configuration | 11 | 4 |
 | [FormField](#formfield) | Forms and custom fields | Configuration | 14 | 1 |
@@ -29,8 +31,10 @@ Totals: 71 tables, 183 foreign keys, 234 indexes (including primary keys), 139 c
 | [FormVersion](#formversion) | Forms and custom fields | Configuration | 13 | 5 |
 | [Holiday](#holiday) | Availability and Calendar | Identity | 22 | 3 |
 | [HolidayCalendar](#holidaycalendar) | Availability and Calendar | Identity | 12 | 2 |
-| [Matter](#matter) | Clients, Matters and Projects | Organization | 17 | 5 |
+| [Matter](#matter) | Clients, Matters and Projects | Organization | 21 | 7 |
 | [MatterEvent](#matterevent) | Clients, Matters and Projects | Organization | 12 | 3 |
+| [MatterTeamMember](#matterteammember) | Clients, Matters and Projects | Organization | 11 | 4 |
+| [MatterType](#mattertype) | Clients, Matters and Projects | Configuration | 9 | 2 |
 | [Note](#note) | Notes | Notes | 16 | 5 |
 | [NoteLink](#notelink) | Notes | Notes | 3 | 1 |
 | [NoteTag](#notetag) | Notes | Notes | 9 | 2 |
@@ -72,6 +76,7 @@ Totals: 71 tables, 183 foreign keys, 234 indexes (including primary keys), 139 c
 | [TaskStatusLabel](#taskstatuslabel) | Tasks and task configuration | Configuration | 8 | 2 |
 | [TaskType](#tasktype) | Tasks and task configuration | Configuration | 13 | 2 |
 | [TaskTypeWorkflowEligibility](#tasktypeworkfloweligibility) | Workflows | Configuration | 4 | 2 |
+| [TeamTitle](#teamtitle) | Clients, Matters and Projects | Configuration | 9 | 2 |
 | [UserAbsence](#userabsence) | Availability and Calendar | Identity | 11 | 3 |
 | [UserAvailability](#useravailability) | Availability and Calendar | Identity | 10 | 2 |
 | [UserIdentity](#useridentity) | Identity and access | Identity | 14 | 3 |
@@ -237,19 +242,83 @@ A law-firm client with a zero-padded 5-digit client number.
 A client case. Business reference is client number plus matter number (CM Number). Has Sensitive flag, Primary and Secondary project manager, an AI allowed switch and custom fields.
 
 - **Module:** Organization. **Area:** Clients, Matters and Projects.
-- **Scripts:** created by script 5; changed by scripts 28, 35, 37, 51.
+- **Scripts:** created by script 5; changed by scripts 28, 35, 37, 51, 64.
 - **Report login (`mf_report_reader`):** allow.
 - **Primary key:** `PK_Matter` (MatterId), int identity.
-- **Columns (17; `?` = nullable):** `MatterId int`, `ClientId int`, `ClientNumber char(5)`, `MatterNumber char(5)`, `MatterRef char(11)`, `Name nvarchar(300)`, `IsActive bit`, `IsSensitive bit`, `CustomFieldsJson nvarchar(max)?`, `PrimaryManagerId int?`, `SecondaryManagerId int?`, `AiAllowed tinyint`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
-- **Foreign keys (5):**
+- **Columns (21; `?` = nullable):** `MatterId int`, `ClientId int`, `ClientNumber char(5)`, `MatterNumber char(5)`, `MatterRef char(11)`, `Name nvarchar(300)`, `IsActive bit`, `IsSensitive bit`, `CustomFieldsJson nvarchar(max)?`, `PrimaryManagerId int?`, `SecondaryManagerId int?`, `AiAllowed tinyint`, `MatterTypeId int?`, `CurrentStateId int?`, `DmsPath nvarchar(1000)?`, `DfsPath nvarchar(1000)?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Foreign keys (7):**
+  - `FK_Matter_CurrentState`: `CurrentStateId` to `CurrentState(CurrentStateId)`
+  - `FK_Matter_MatterType`: `MatterTypeId` to `MatterType(MatterTypeId)`
   - `FK_Matter_Client`: `ClientId, ClientNumber` to `Client(ClientId, ClientNumber)`
   - `FK_Matter_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
   - `FK_Matter_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
   - `FK_Matter_PrimaryManager`: `PrimaryManagerId` to `AppUser(UserId)`
   - `FK_Matter_SecondaryManager`: `SecondaryManagerId` to `AppUser(UserId)`
-- **Indexes and unique constraints (8):** `IX_Matter_Client` (ClientId,IsActive); `IX_Matter_Name` (Name); `IX_Matter_Number` (MatterNumber); `IX_Matter_PrimaryManager` (PrimaryManagerId) - filter [PrimaryManagerId] IS NOT NULL; includes IsActive; `IX_Matter_SecondaryManager` (SecondaryManagerId) - filter [SecondaryManagerId] IS NOT NULL; includes IsActive; `IX_Matter_Sensitive` (MatterId) - filter [IsSensitive]=(1; includes PrimaryManagerId,SecondaryManagerId; `UQ_Matter_ClientMatterNumber` (ClientId,MatterNumber) - unique; `UQ_Matter_Ref` (MatterRef) - unique.
+- **Indexes and unique constraints (10):** `IX_Matter_CurrentState` (CurrentStateId); `IX_Matter_MatterType` (MatterTypeId); `IX_Matter_Client` (ClientId,IsActive); `IX_Matter_Name` (Name); `IX_Matter_Number` (MatterNumber); `IX_Matter_PrimaryManager` (PrimaryManagerId) - filter [PrimaryManagerId] IS NOT NULL; includes IsActive; `IX_Matter_SecondaryManager` (SecondaryManagerId) - filter [SecondaryManagerId] IS NOT NULL; includes IsActive; `IX_Matter_Sensitive` (MatterId) - filter [IsSensitive]=(1; includes PrimaryManagerId,SecondaryManagerId; `UQ_Matter_ClientMatterNumber` (ClientId,MatterNumber) - unique; `UQ_Matter_Ref` (MatterRef) - unique.
 - **Check constraints (4):** `CK_Matter_AiAllowed`, `CK_Matter_CustomFieldsJson`, `CK_Matter_ManagersDiffer`, `CK_Matter_Number`.
 - **Triggers:** `TR_Matter_SensitivityToTask`.
+
+### MatterType
+
+Admin-managed list: the Matter Type a matter can carry (optional; `Matter.MatterTypeId`). Names are unique; a used item is deactivated, an unused one may be deleted.
+
+- **Module:** Configuration. **Area:** Clients, Matters and Projects.
+- **Scripts:** created by script 64.
+- **Report login (`mf_report_reader`):** allow.
+- **Primary key:** `PK_MatterType` (MatterTypeId), int identity.
+- **Columns (9; `?` = nullable):** `MatterTypeId int`, `Name nvarchar(100)`, `SortOrder int`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Foreign keys (2):**
+  - `FK_MatterType_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
+  - `FK_MatterType_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
+- **Indexes and unique constraints (2):** `IX_MatterType_Sort` (SortOrder); `UQ_MatterType_Name` (Name) - unique.
+- **Check constraints (1):** `CK_MatterType_Name`.
+
+### CurrentState
+
+Admin-managed list: the Current State of a matter (optional, current value only; `Matter.CurrentStateId`). Names are unique; a used item is deactivated, an unused one may be deleted.
+
+- **Module:** Configuration. **Area:** Clients, Matters and Projects.
+- **Scripts:** created by script 64.
+- **Report login (`mf_report_reader`):** allow.
+- **Primary key:** `PK_CurrentState` (CurrentStateId), int identity.
+- **Columns (9; `?` = nullable):** `CurrentStateId int`, `Name nvarchar(100)`, `SortOrder int`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Foreign keys (2):**
+  - `FK_CurrentState_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
+  - `FK_CurrentState_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
+- **Indexes and unique constraints (2):** `IX_CurrentState_Sort` (SortOrder); `UQ_CurrentState_Name` (Name) - unique.
+- **Check constraints (1):** `CK_CurrentState_Name`.
+
+### TeamTitle
+
+Admin-managed list: the title of a team member (`MatterTeamMember.TeamTitleId`). Names are unique; a used item is deactivated, an unused one may be deleted.
+
+- **Module:** Configuration. **Area:** Clients, Matters and Projects.
+- **Scripts:** created by script 64.
+- **Report login (`mf_report_reader`):** allow.
+- **Primary key:** `PK_TeamTitle` (TeamTitleId), int identity.
+- **Columns (9; `?` = nullable):** `TeamTitleId int`, `Name nvarchar(100)`, `SortOrder int`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Foreign keys (2):**
+  - `FK_TeamTitle_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
+  - `FK_TeamTitle_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
+- **Indexes and unique constraints (2):** `IX_TeamTitle_Sort` (SortOrder); `UQ_TeamTitle_Name` (Name) - unique.
+- **Check constraints (1):** `CK_TeamTitle_Name`.
+
+### MatterTeamMember
+
+A person on a matter's team: a typed-in contact (name, email, title), not a user account, so it never affects visibility or permissions. The email is unique within the matter without regard to case.
+
+- **Module:** Organization. **Area:** Clients, Matters and Projects.
+- **Scripts:** created by script 64.
+- **Report login (`mf_report_reader`):** deny.
+- **Primary key:** `PK_MatterTeamMember` (MatterTeamMemberId), int identity.
+- **Columns (11; `?` = nullable):** `MatterTeamMemberId int`, `MatterId int`, `Name nvarchar(200)`, `Email nvarchar(254)` (case-insensitive collation), `TeamTitleId int`, `SortOrder int`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Foreign keys (4):**
+  - `FK_MatterTeamMember_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
+  - `FK_MatterTeamMember_Matter`: `MatterId` to `Matter(MatterId)`
+  - `FK_MatterTeamMember_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
+  - `FK_MatterTeamMember_Title`: `TeamTitleId` to `TeamTitle(TeamTitleId)`
+- **Indexes and unique constraints (2):** `IX_MatterTeamMember_Title` (TeamTitleId); `UQ_MatterTeamMember_MatterEmail` (MatterId,Email) - unique.
+- **Check constraints (2):** `CK_MatterTeamMember_Email`, `CK_MatterTeamMember_Name`.
 
 ### Project
 
@@ -689,37 +758,51 @@ Typed copies of custom field values (text, number, date, date and time, bool) so
 
 ### AssetType
 
-Admin-defined kind of asset, with a custom field form (through `FormDefinition`), an icon, a colour and an optional size field and unit.
+Admin-defined kind of asset, with a custom field form (through `FormDefinition`), an icon, a colour, an optional size field and unit and the optional automatic numbering of its assets (issue #1297: on or off, the pattern after the matter's CM Number, the scope).
 
 - **Module:** Assets. **Area:** Assets.
-- **Scripts:** created by script 10; changed by scripts 44, 50.
+- **Scripts:** created by script 10; changed by scripts 44, 50, 63.
 - **Report login (`mf_report_reader`):** allow.
 - **Primary key:** `PK_AssetType` (AssetTypeId), int identity.
-- **Columns (14; `?` = nullable):** `AssetTypeId int`, `Name nvarchar(100)`, `Description nvarchar(500)?`, `SortOrder int`, `IsActive bit`, `SizeFieldKey varchar(64)?`, `SizeUnit varchar(10)?`, `IconKey varchar(50)?`, `ColourKey varchar(20)?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Columns (17; `?` = nullable):** `AssetTypeId int`, `Name nvarchar(100)`, `Description nvarchar(500)?`, `SortOrder int`, `IsActive bit`, `SizeFieldKey varchar(64)?`, `SizeUnit varchar(10)?`, `IconKey varchar(50)?`, `ColourKey varchar(20)?`, `NumberingEnabled bit` (default 0), `NumberingPattern nvarchar(150)` (the tail after the CM Number, default `_{###}`), `NumberingScope int` (1 = per matter). Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (2):**
   - `FK_AssetType_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
   - `FK_AssetType_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
 - **Indexes and unique constraints (2):** `IX_AssetType_Sort` (SortOrder,Name); `UQ_AssetType_Name` (Name) - unique.
-- **Check constraints (5):** `CK_AssetType_ColourKey`, `CK_AssetType_IconKey`, `CK_AssetType_Name`, `CK_AssetType_SizeField_Unit`, `CK_AssetType_SizeUnit`.
+- **Check constraints (7):** `CK_AssetType_ColourKey`, `CK_AssetType_IconKey`, `CK_AssetType_Name`, `CK_AssetType_NumberingPattern` (length 1 to 50), `CK_AssetType_NumberingScope` (1), `CK_AssetType_SizeField_Unit`, `CK_AssetType_SizeUnit`.
 
 ### Asset
 
 A data source or deliverable that belongs to one matter (for example a workspace, vault, media or data set). Has an asset type, a disposition (Active, Inactive, Pending disposition, Disposed) and custom field values in `FormValueSet`.
 
 - **Module:** Assets. **Area:** Assets.
-- **Scripts:** created by script 10; changed by script 43.
+- **Scripts:** created by script 10; changed by scripts 43, 63.
 - **Report login (`mf_report_reader`):** allow.
 - **Primary key:** `PK_Asset` (AssetId), int identity.
-- **Columns (16; `?` = nullable):** `AssetId int`, `MatterId int`, `AssetTypeId int`, `DisplayName nvarchar(300)`, `ExternalReference nvarchar(1000)?`, `Description nvarchar(2000)?`, `IsActive bit`, `DispositionCode varchar(20)`, `DispositionChangedAt datetime2(7)?`, `DispositionChangedByUserId int?`, `DispositionNote nvarchar(500)?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Columns (18; `?` = nullable):** `AssetId int`, `AssetNumber nvarchar(100)?` (the generated Asset Number, a snapshot, never changed; null for assets of types without numbering and for every asset that existed before script 63), `AssetNumberSeq int?` (the counter value it was built from), `MatterId int`, `AssetTypeId int`, `DisplayName nvarchar(300)`, `ExternalReference nvarchar(1000)?`, `Description nvarchar(2000)?`, `IsActive bit`, `DispositionCode varchar(20)`, `DispositionChangedAt datetime2(7)?`, `DispositionChangedByUserId int?`, `DispositionNote nvarchar(500)?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (5):**
   - `FK_Asset_AssetType`: `AssetTypeId` to `AssetType(AssetTypeId)`
   - `FK_Asset_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
   - `FK_Asset_DispositionChangedBy`: `DispositionChangedByUserId` to `AppUser(UserId)`
   - `FK_Asset_Matter`: `MatterId` to `Matter(MatterId)`
   - `FK_Asset_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
-- **Indexes and unique constraints (5):** `IX_Asset_Matter` (MatterId,AssetTypeId) - includes DisplayName,IsActive; `IX_Asset_Matter_Disposition` (MatterId,AssetTypeId,DispositionCode); `IX_Asset_Name` (DisplayName); `IX_Asset_Type` (AssetTypeId); `UQ_Asset_IdMatter` (AssetId,MatterId) - unique.
-- **Check constraints (3):** `CK_Asset_DisplayName`, `CK_Asset_DispositionCode`, `CK_Asset_IsActive_Disposition`.
-- **Triggers:** `TR_Asset_Guard`.
+- **Indexes and unique constraints (6):** `IX_Asset_Matter` (MatterId,AssetTypeId) - includes DisplayName,IsActive; `IX_Asset_Matter_Disposition` (MatterId,AssetTypeId,DispositionCode); `IX_Asset_Name` (DisplayName); `IX_Asset_Type` (AssetTypeId); `UQ_Asset_AssetNumber` (AssetTypeId,MatterId,AssetNumber) - unique; filter [AssetNumber] IS NOT NULL; `UQ_Asset_IdMatter` (AssetId,MatterId) - unique.
+- **Check constraints (4):** `CK_Asset_AssetNumber` (number and sequence are both null or both set), `CK_Asset_DisplayName`, `CK_Asset_DispositionCode`, `CK_Asset_IsActive_Disposition`.
+- **Triggers:** `TR_Asset_Guard` (no delete, no move to another matter, an assigned Asset Number can never change or be removed; re-created by script 63).
+
+### AssetNumberCounter
+
+The atomic counter of the automatic asset numbering (issue #1297): one row per asset type and scope key (the matter id while the scope is per matter). `NextNumber` is the counter value the next asset gets. It is read and advanced by one `UPDATE ... OUTPUT` under an update lock inside the transaction that inserts the asset, so concurrent creates never share a number; it only goes up (an administrator may raise it with the "set next number" control; the application never lowers it: the control refuses a value below the current next number), and deleting or deactivating an asset never touches it.
+
+- **Module:** Assets. **Area:** Assets.
+- **Scripts:** created by script 63.
+- **Report login (`mf_report_reader`):** deny.
+- **Primary key:** `PK_AssetNumberCounter` (AssetTypeId,ScopeKey).
+- **Columns (4; `?` = nullable):** `AssetTypeId int`, `ScopeKey int`, `NextNumber int` (default 1), `ModifiedAt datetime2(7)`.
+- **Foreign keys (1):**
+  - `FK_AssetNumberCounter_AssetType`: `AssetTypeId` to `AssetType(AssetTypeId)`
+- **Indexes and unique constraints (1):** the primary key only.
+- **Check constraints (1):** `CK_AssetNumberCounter_Next` (NextNumber at least 1).
 
 ### AssetReport
 

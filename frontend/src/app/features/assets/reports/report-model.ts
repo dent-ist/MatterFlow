@@ -109,6 +109,7 @@ export const GROUP_BY_LABELS: Readonly<Record<string, string>> = {
   matter: 'Matter',
   client: 'Client',
   assetType: 'Asset Type',
+  assetNumber: 'Asset Number',
 };
 
 /** The label of a grouping choice: our Title Case word for a built-in one, the API's own text for a field. */

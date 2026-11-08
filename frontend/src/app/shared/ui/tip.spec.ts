@@ -32,6 +32,14 @@ describe('Tip', () => {
     expect(el.getAttribute('aria-hidden')).toBe('true');
   });
 
+  it('wraps a long unbroken text inside its box instead of running out of it (#1309)', () => {
+    const { owner } = setup();
+    owner.dispatchEvent(new Event('mouseenter'));
+    const el = tip()!;
+    expect(el.style.overflowWrap).toBe('anywhere');
+    expect(el.style.maxWidth).toBe('300px');
+  });
+
   it('the owner still points at the tip with aria-describedby while it is shown, and the pointer is removed with it', () => {
     const { owner } = setup();
     expect(owner.hasAttribute('aria-describedby')).toBe(false);

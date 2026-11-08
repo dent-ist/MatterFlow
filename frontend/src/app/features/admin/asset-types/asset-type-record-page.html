@@ -276,6 +276,17 @@
             </mf-details-card>
           }
         }
+        @case ('numbering') {
+          @if (assetType(); as t) {
+            <mf-asset-numbering-tab
+              [assetType]="t"
+              (updated)="onNumberingSaved($event)"
+              (conflicted)="conflict.set(true)"
+              (dirtyChange)="numberingEdits.set($event)"
+              data-numbering-tab
+            />
+          }
+        }
         @case ('assets') {
           @if (assetType(); as t) {
             <mf-details-card class="at__card" title="Assets" data-assets-tab>

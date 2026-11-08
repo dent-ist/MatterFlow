@@ -1,4 +1,4 @@
-import { calendarDayInZone, CalendarDay } from '../time/time';
+import { calendarDayInZone, CalendarDay, numericDay } from '../time/time';
 
 /** What the API reports for a person right now (`availability` on `/users`, `/users/lookup`; `current` on the profile). */
 export type AvailabilityStateCode = 'AVAILABLE' | 'OUT_OF_OFFICE' | 'OFF_HOURS';
@@ -17,7 +17,7 @@ export interface AvailabilityDisplay {
   tone: AvailabilityTone;
   /** PrimeIcons class; the text always says the same thing (colour and icon are never the only cue). */
   icon: string;
-  /** Chip text: `Available`, `Off Hours`, `Out of Office until Oct 20`. */
+  /** Chip text: `Available`, `Off Hours`, `Out of Office until 10/20` (D-60, numeric). */
   label: string;
 }
 
@@ -30,6 +30,11 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 export function shortDay(day: CalendarDay, today?: CalendarDay | null): string {
   const text = `${MONTHS[day.month - 1]} ${day.day}`;
   return !today || today.year === day.year ? text : `${text}, ${day.year}`;
+}
+
+/** A day in a cell or chip (D-60): `10/16`, with the year when it is not the year of `today` (`01/02/2027`). THE one way chips write a day. */
+export function chipDay(day: CalendarDay, today: CalendarDay): string {
+  return numericDay(day, today.year);
 }
 
 export function addDays(day: CalendarDay, days: number): CalendarDay {
@@ -47,7 +52,7 @@ export function lastOutDay(outUntil: string | Date, zone: string): CalendarDay |
   return calendarDayInZone(new Date(end.getTime() - 60_000), zone);
 }
 
-/** `Out of Office until Oct 20` (or just `Out of Office` when it has no end), or null when the person is not out of office. */
+/** `Out of Office until 10/20` (or just `Out of Office` when it has no end), or null when the person is not out of office. */
 export function outOfOfficeText(
   a: AvailabilityLike | null | undefined,
   zone: string,
@@ -56,7 +61,7 @@ export function outOfOfficeText(
   if (a?.state !== 'OUT_OF_OFFICE') return null;
   const last = a.outUntil ? lastOutDay(a.outUntil, zone) : null;
   return last
-    ? `Out of Office until ${shortDay(last, calendarDayInZone(now, zone))}`
+    ? `Out of Office until ${chipDay(last, calendarDayInZone(now, zone))}`
     : 'Out of Office';
 }
 

@@ -52,6 +52,7 @@ import {
   RecordGridState,
 } from './record-grid';
 import { RowActionSpec, rowActions } from './row-actions';
+import { ASSET_NUMBER_COLUMN_WIDTH, AssetNumberCell, hasNumberedType } from './asset-number-cell';
 import { CopyButton } from './copy-button';
 import { ServerListPage } from './list-query';
 import { Pager } from './pager';
@@ -60,6 +61,7 @@ import { Pager } from './pager';
 const BONES: Record<string, string> = {
   type: '7rem',
   name: '14rem',
+  assetNumber: '9rem',
   size: '4rem',
   externalReference: '9rem',
   status: '6rem',
@@ -88,6 +90,7 @@ const BONES: Record<string, string> = {
     RecordColumns,
     ActionMenu,
     CopyButton,
+    AssetNumberCell,
     RowLink,
     AssetDispositionDialog,
   ],
@@ -96,6 +99,9 @@ const BONES: Record<string, string> = {
   styleUrl: './page.scss',
   styles: `
     /* Name is the spring of the table: one line with an ellipsis (D-45); the floor is on the heading (the column definition). */
+    td.ma-number {
+      max-width: 0;
+    }
     td.ma-name {
       width: 100%;
       max-width: 0;
@@ -211,6 +217,11 @@ const BONES: Record<string, string> = {
           >
         </td>
       </ng-template>
+      <ng-template mfCell="assetNumber" let-a>
+        <td class="ma-number" data-asset-number>
+          <mf-asset-number-cell [number]="a.assetNumber" [numbered]="a.assetTypeNumberingEnabled" />
+        </td>
+      </ng-template>
       <ng-template mfCell="size" let-a>
         <td class="pg-num pg-nowrap" data-size>
           @if (sizeText(a); as size) {
@@ -304,6 +315,17 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
     },
     // The spring: no width, so it takes the free room in every state.
     { key: 'name', label: 'Name', locked: true, sort: 'displayName', minWidth: '200px' },
+    ...(this.numbered()
+      ? [
+          {
+            key: 'assetNumber',
+            label: 'Asset Number',
+            sort: 'assetNumber',
+            width: ASSET_NUMBER_COLUMN_WIDTH,
+            minWidth: ASSET_NUMBER_COLUMN_WIDTH,
+          },
+        ]
+      : []),
     {
       key: 'size',
       label: 'Size',
@@ -314,7 +336,14 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
       minWidth: '7.5rem',
     },
     // 168 px: the heading "External Reference" is 143 px of text plus 24 px of padding, so it stays on one line (#1249).
-    { key: 'externalReference', label: 'External Reference', width: '168px', minWidth: '168px' },
+    // With an active numbered type the Asset Number column is a default column and this one is off by default (#1297).
+    {
+      key: 'externalReference',
+      label: 'External Reference',
+      width: '168px',
+      minWidth: '168px',
+      defaultHidden: this.numbered(),
+    },
     // 162 px: the whole chip ("Pending Disposition" is 154 px) with 4 px each side (D-44k).
     {
       key: 'status',
@@ -367,6 +396,8 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
     return { ...menu, label: `More actions for ${a.displayName}` };
   }
   protected readonly types = signal<AssetTypeResponse[]>([]);
+  /** An active asset type numbers its assets: the Asset Number column exists (#1297). */
+  protected readonly numbered = computed(() => hasNumberedType(this.types()));
 
   /** How many assets of each type the matter holds (the Type dropdown shows them); empty until the counts arrive. */
   protected readonly typeCounts = signal<ReadonlyMap<number, number>>(new Map());
@@ -396,6 +427,16 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
       options: this.typeOptions(),
     },
     { key: 'name', label: 'Name', column: 'name', type: 'text', search: true },
+    ...(this.numbered()
+      ? [
+          {
+            key: 'assetNumber',
+            label: 'Asset Number',
+            column: 'assetNumber',
+            type: 'text' as const,
+          },
+        ]
+      : []),
     { key: 'extref', label: 'External Reference', column: 'externalReference', type: 'text' },
     {
       key: 'status',
@@ -497,9 +538,11 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
         this.matterId(),
         typeIds.length > 0 ? typeIds : undefined,
         isActive,
-        undefined,
+        // The Search box (and the Name filter) is `q`: it matches the name, the type, the external reference and the Asset Number (#1297, N5).
         this.filters.text('name') || undefined,
+        undefined,
         this.filters.text('extref') || undefined,
+        this.filters.text('assetNumber') || undefined,
         undefined,
         undefined,
         undefined,

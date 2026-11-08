@@ -29,7 +29,7 @@ test.describe('pf5-menu-identity: the account menu starts with who and how (#580
     await expect(row).toBeVisible();
     await expect(row.locator('.um-id__name')).toHaveText('Pat Example');
     await expect(row.locator('.um-id__account')).toHaveText(p.username);
-    await expect(row.locator('[data-availability-chip]')).toHaveText(/Available|Off hours/);
+    await expect(row.locator('[data-availability-chip]')).toHaveText(/Available|Off Hours/);
     await expect(row.locator('button, a, [tabindex]')).toHaveCount(0);
     const menu = me.getByRole('menu', { name: 'Your account' });
     await expect(menu.getByRole('menuitem')).toHaveText([
@@ -58,11 +58,11 @@ test.describe('pf5-menu-identity: the account menu starts with who and how (#580
     await me.getByRole('menuitem', { name: 'Set Out of Office' }).click();
     const dialog = me.getByRole('dialog', { name: 'Set out of office' });
     await dialog.getByRole('button', { name: 'Until Monday' }).click();
-    await dialog.getByRole('button', { name: 'Set out of office' }).click();
+    await dialog.getByRole('button', { name: 'Set Out of Office', exact: true }).click();
     await expect(dialog).toHaveCount(0);
     await menuButton(me).click();
     await expect(me.locator('[data-menu-identity] [data-availability-chip]')).toContainText(
-      'Out of office until',
+      'Out of Office until',
     );
     await expect(me.getByRole('menuitem')).toHaveText([
       /My Profile/,

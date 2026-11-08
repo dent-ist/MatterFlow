@@ -241,7 +241,7 @@ public sealed class AssetReportService(
         {
             var fieldKey = groupBy.StartsWith(AssetReportGroupBy.FieldPrefix, StringComparison.Ordinal) ? groupBy[AssetReportGroupBy.FieldPrefix.Length..] : null;
             if (fieldKey is null || type is null || !published.Any(f => f.IsSelect && f.Key == fieldKey))
-                return Error.Validation("definition.groupBy", "INVALID", "Group by disposition, matter, client, asset type or a select field of the chosen asset type.");
+                return Error.Validation("definition.groupBy", "INVALID", "Group by disposition, matter, client, asset type, asset number or a select field of the chosen asset type.");
         }
 
         if (measure == AssetReportMeasures.Count)

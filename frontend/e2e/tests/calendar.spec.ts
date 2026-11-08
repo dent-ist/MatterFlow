@@ -120,7 +120,7 @@ test.describe('Dashboard > Calendar', () => {
     const row = panel.locator(`[data-list="available"] .person`, { hasText: nameB });
     await expect(row).toHaveAttribute(
       'aria-label',
-      new RegExp(`^${nameB}, \\d+ open tasks?, \\w+, Available$`),
+      new RegExp(`^${nameB.replace(/\\/g, '\\\\')}, \\d+ open tasks?, \\w+, Available$`),
     );
     expect(Math.round((await row.boundingBox())!.height)).toBe(44);
     await expect(row.locator('mf-user-state-icon')).toHaveCount(1);

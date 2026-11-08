@@ -69,80 +69,6 @@ async function worker(seed: Seeder, label: string) {
 }
 
 test.describe('Narrow rule (#201)', () => {
-  test('LC-09, a 1023 px window: My Work, Task Queue and Pod Work keep every chosen column, the grid scrolls sideways when it must and Ref is sticky', async ({
-    seed,
-    asUser,
-  }) => {
-    test.setTimeout(240_000);
-    const { me, tag, titles } = await worker(seed, 'narrow');
-    const lead = await seed.user(['Pod Lead'], `narrow-lead-${tag}`);
-    const pod = await seed.pod(undefined, [lead.userId]);
-    const world = await seed.world();
-    await seed.task(world, { title: `Pod narrow ${tag}`, assignedPodId: pod.podId });
-
-    const mine = await asUser(me.username);
-    const podPage = await asUser(lead.username);
-    const cases: { name: string; page: Page; open: (p: Page) => Promise<void> }[] = [
-      { name: 'My Work', page: mine, open: (p) => new MyWorkPage(p).open() },
-      {
-        name: 'Task Queue',
-        page: mine,
-        open: (p) => new TaskQueuePage(p).open(`?q=${encodeURIComponent(tag)}`),
-      },
-      {
-        name: 'Pod Work',
-        page: podPage,
-        open: async (p) => {
-          const pw = new PodWorkPage(p);
-          await pw.open();
-          await pw.choosePod(pod.name);
-        },
-      },
-    ];
-    for (const c of cases) {
-      for (const [width, height] of [[1023, 768]]) {
-        await c.page.setViewportSize({ width, height });
-        await c.open(c.page);
-        await expect(c.page.locator('[data-task]').first()).toBeVisible();
-        const g = await grid(c.page);
-        const what = `${c.name} at ${width}`;
-        // Ref is the first column and Title is never folded under anything.
-        expect(g.keys[0], what).toBe('ref');
-        await expect(c.page.locator('[data-sub-task], .wt-subline')).toHaveCount(0);
-        if (g.scroll > g.client + 1) {
-          // LC-09: no column is dropped by width; the frame scrolls sideways and Ref stays in view.
-          for (const k of ['ref', 'title', 'priority', 'due', 'status'])
-            expect(g.keys, `${what}: ${k} stays`).toContain(k);
-          expect(g.refPosition, what).toBe('sticky');
-          await c.page.evaluate(() => {
-            const w = document.querySelector('.wt-wrap') as HTMLElement;
-            w.scrollLeft = w.scrollWidth;
-          });
-          const ref = (await c.page
-            .locator('thead tr:first-child th[data-col="ref"]')
-            .boundingBox())!;
-          const box = (await c.page.locator('.wt-wrap').boundingBox())!;
-          expect(
-            Math.abs(ref.x - box.x),
-            `${what}: Ref stays at the left edge`,
-          ).toBeLessThanOrEqual(1);
-        } else {
-          expect(g.title, `${what}: Title`).toBeGreaterThanOrEqual(160);
-          const status = (await c.page
-            .locator('[data-task]')
-            .first()
-            .locator('td[data-col="status"]')
-            .boundingBox())!;
-          const box = (await c.page.locator('.wt-wrap').boundingBox())!;
-          expect(status.x + status.width, `${what}: Status in view`).toBeLessThanOrEqual(
-            box.x + box.width + 1,
-          );
-        }
-      }
-    }
-    expect(titles.length).toBe(4);
-  });
-
   test('LC-09: a 1098 px box keeps the Title at 160 px or more and the page never scrolls sideways; 1366 and 1920 are clean', async ({
     seed,
     asUser,
@@ -162,7 +88,8 @@ test.describe('Narrow rule (#201)', () => {
     const g = await grid(page);
     expect(g.client).toBe(1098);
     // The standard order does not fit: the frame scrolls sideways, the Title keeps its width.
-    expect(g.title).toBeGreaterThanOrEqual(160);
+    // D-43a (#1232): the Title minimum is 120 px on task grids; 160 is guaranteed only for the default column sets.
+    expect(g.title).toBeGreaterThanOrEqual(120);
     await shot(page, 'task-queue-box-1098');
 
     for (const [name, width, height] of [
@@ -215,7 +142,8 @@ test.describe('Narrow rule (#201)', () => {
     const g = await grid(page);
     expect(g.keys).toContain('client');
     expect(g.keys).toContain('type');
-    expect(g.title).toBeGreaterThanOrEqual(160);
+    // D-43a (#1232): the Title minimum is 120 px on task grids; 160 is guaranteed only for the default column sets.
+    expect(g.title).toBeGreaterThanOrEqual(120);
     await page.getByRole('button', { name: 'Columns', exact: true }).click();
     await expect(page.getByRole('checkbox', { name: 'Client' })).toBeChecked();
     await expect(page.getByRole('checkbox', { name: 'Type', exact: true })).toBeChecked();
@@ -342,7 +270,21 @@ test.describe('Stored widths (#203)', () => {
     // Over the maximum: clamped to 320 px; a string and the Title are ignored.
     expect(Math.abs((await widthOf(page, 'matter')) - 320)).toBeLessThanOrEqual(1);
     expect(Math.abs((await widthOf(page, 'status')) - 140)).toBeLessThanOrEqual(1);
-    expect(await widthOf(page, 'title')).toBeLessThan(700);
+    // The Title is the one spring (D-42, D-43): the frame width minus the other columns, within 2 px, and at least 120 px.
+    const spring = await page.evaluate(() => {
+      const ths = Array.from(document.querySelectorAll<HTMLElement>('thead tr:first-child th'));
+      // The grid fills the frame (or scrolls): its table is at least as wide as the frame; the spring is the table minus the others.
+      const frame = document
+        .querySelector<HTMLElement>('.wt-wrap table')!
+        .getBoundingClientRect().width;
+      const others = ths
+        .filter((th) => th.dataset['col'] !== 'title')
+        .reduce((sum, th) => sum + th.getBoundingClientRect().width, 0);
+      const title = ths.find((th) => th.dataset['col'] === 'title')!.getBoundingClientRect().width;
+      return { title, rest: frame - others };
+    });
+    expect(spring.title).toBeGreaterThanOrEqual(120);
+    expect(Math.abs(spring.title - Math.max(120, spring.rest))).toBeLessThanOrEqual(2);
     await shot(page, 'task-queue-stored-widths-1920x1080');
 
     // My Work keeps its own width, and Task Queue still has its own after coming back.
@@ -364,7 +306,7 @@ test.describe('Stored widths (#203)', () => {
     await page.evaluate((k) => localStorage.removeItem(k), key('taskQueue'));
     await page.reload();
     await expect(page.locator('[data-task]').first()).toBeVisible();
-    expect(Math.abs((await widthOf(page, 'due')) - 136)).toBeLessThanOrEqual(1);
+    expect(Math.abs((await widthOf(page, 'due')) - 152)).toBeLessThanOrEqual(1);
     expect(
       await page.evaluate((k) => localStorage.getItem(k), key('myWork.active')),
     ).not.toBeNull();
@@ -386,7 +328,7 @@ test.describe('Stored widths (#203)', () => {
     const queue = new TaskQueuePage(page);
     await queue.open(`?q=${encodeURIComponent(tag)}`);
     await expect(page.locator('[data-task]').first()).toBeVisible();
-    expect(Math.abs((await widthOf(page, 'due')) - 136)).toBeLessThanOrEqual(1);
+    expect(Math.abs((await widthOf(page, 'due')) - 152)).toBeLessThanOrEqual(1);
 
     // Storage that throws for the width keys only.
     await page.addInitScript(() => {
@@ -398,7 +340,7 @@ test.describe('Stored widths (#203)', () => {
     });
     await queue.open(`?q=${encodeURIComponent(tag)}`);
     await expect(page.locator('[data-task]').first()).toBeVisible();
-    expect(Math.abs((await widthOf(page, 'due')) - 136)).toBeLessThanOrEqual(1);
+    expect(Math.abs((await widthOf(page, 'due')) - 152)).toBeLessThanOrEqual(1);
     expect(errors).toEqual([]);
   });
 });

@@ -128,7 +128,7 @@ test.describe('Audit grid, cards, dividers and counter (#647, #651, #653, #655)'
     await expect(page.locator('tr.au-day th').first()).toHaveText('Today');
     await expect(page.locator('tr.au-day th').first()).toHaveAttribute('scope', 'row');
     const time = page.locator('tr[data-event] time').first();
-    await expect(time).toHaveText(/^\d{1,2}:\d{2} [AP]M$/);
+    await expect(time).toHaveText(/^\d{2}\/\d{2} \d{2}:\d{2} [AP]M$/);
     // The whole stamp and the zone are the tooltip.
     await expect(time).toHaveAttribute('title', /\d{4}, \d{1,2}:\d{2} [AP]M [A-Z]{2,4}/);
     // The object is two lines at most.

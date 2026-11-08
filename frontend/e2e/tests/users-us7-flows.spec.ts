@@ -16,7 +16,7 @@ import { userName, userRow } from '../support/users-grid';
  * docs/ux/users-review/fixes/us7-keyboard). axe is required here: a missing axe-core fails the file. No shortcut is involved (Phase 2, #420).
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
-const TAG = `us7k${Math.floor(Math.random() * 90000) + 10000}`;
+const TAG = `us7k${Math.floor(Math.random() * 90000) + 10000}${Date.now().toString(36).slice(-4)}`;
 const SIZES = [
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
@@ -30,14 +30,12 @@ let podId: number;
 let podName: string;
 let otherPodName: string;
 
-test.beforeAll(async ({ personas, seed, admin }) => {
+test.beforeAll(async ({ personas, seed }) => {
   pending = await personas.create({ label: `${TAG}pend` });
   worker = await personas.create({ label: `${TAG}work`, roles: ['Data Technician'] });
-  const role = await admin.post('/api/v1/roles', {
-    name: `Keyboard role ${TAG}`,
-    description: 'For the keyboard flows.',
-    permissionCodes: ['Task.View'],
-  });
+  const role = await seed.roleOnce(`Keyboard role ${TAG}`, 'For the keyboard flows.', [
+    'Task.View',
+  ]);
   roleId = role.roleId;
   podName = `Keyboard pod ${TAG}`;
   const pod = await seed.pod(podName, [worker.userId]);
@@ -176,7 +174,9 @@ test.describe('#454 the six keyboard flows', () => {
     const dialog = page.getByRole('dialog', { name: /^Deactivate / });
     await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(dialog.getByRole('button', { name: 'Deactivate', exact: true })).toBeFocused();
+    await expect(
+      dialog.getByRole('button', { name: 'Deactivate User', exact: true }),
+    ).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(dialog).toBeHidden();
     await expect(page.locator('[data-drawer-status]')).toContainText('Inactive');
@@ -306,7 +306,7 @@ test.describe('#454 axe with every overlay open, and no nested scroller', () => 
       const nested = await page.evaluate(() => {
         const body = document.querySelector('.ud-body');
         return Array.from(document.querySelectorAll<HTMLElement>('.mf-user-drawer *'))
-          .filter((el) => el !== body)
+          .filter((el) => el !== body && !el.matches('.sp__body'))
           .filter((el) => {
             const s = getComputedStyle(el);
             return /(auto|scroll)/.test(s.overflowY) && el.scrollHeight > el.clientHeight + 1;
@@ -362,7 +362,7 @@ test.describe('evidence', () => {
     for (const [key, url, selector] of [
       ['users', listUrl, 'tr[data-record-id] button[data-open]'],
       ['roles', '/admin/roles', '[data-role]'],
-      ['pods', `/admin/pods?status=all&name=${encodeURIComponent(TAG)}`, 'tr[data-pod] a'],
+      ['pods', `/admin/pods?status=all&name=${encodeURIComponent(TAG)}`, 'tr[data-record-id] a'],
     ] as const) {
       await page.goto(url);
       await expect(page.locator(selector).first()).toBeVisible();

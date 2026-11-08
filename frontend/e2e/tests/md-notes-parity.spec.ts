@@ -92,7 +92,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await open(page, w.matter.matterId);
     await page.locator('[data-note-item]').first().click();
     await expect(page.locator('[data-note-title]')).toContainText(title);
-    await expect(page.locator('[data-note-byline]')).toContainText('Last updated by');
+    await expect(page.locator('[data-note-byline]')).toContainText('Last Updated by');
     await expect(page.locator('[data-editor-toolbar]')).toHaveCount(0);
     await page.locator('[data-note-edit]').click();
     await expect(page.locator('[data-editor-toolbar]')).toBeVisible();
@@ -110,7 +110,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await page.locator('.ProseMirror').click();
     await page.keyboard.press('Control+End');
     await page.keyboard.type(' More words.');
-    await expect(page.locator('[data-note-state]')).toContainText('Unsaved Changes');
+    await expect(page.locator('[data-note-state]')).toContainText('Unsaved changes');
     await expect(page.locator('[data-note-save]')).toBeEnabled();
     await page.locator('[data-note-save]').click();
     await expect(page.locator('[data-editor-toolbar]')).toHaveCount(0);
@@ -388,7 +388,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await name.press('ArrowLeft');
     await name.pressSequentially('-');
     await expect(name).toHaveValue(`${tplName}x-y`);
-    await expect(page.locator('[data-note-state]')).toContainText('Unsaved Changes');
+    await expect(page.locator('[data-note-state]')).toContainText('Unsaved changes');
   });
 
   test('tags: a side panel picks up to five, chips show in the editor, Add tag opens the panel', async ({
@@ -530,7 +530,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     expect(save!.x - (cancel!.x + cancel!.width)).toBeLessThan(16);
     await expect(page.locator('[data-template-save]')).toBeDisabled();
     await page.getByLabel('Name').fill(`${name} v2`);
-    await expect(page.locator('[data-note-state]')).toContainText('Unsaved Changes');
+    await expect(page.locator('[data-note-state]')).toContainText('Unsaved changes');
     await page.locator('[data-template-save]').click();
     await expect(page.locator('[data-note-pane]')).toContainText(`${name} v2`);
     // delete with the same confirmation as a note

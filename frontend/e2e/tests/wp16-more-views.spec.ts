@@ -261,6 +261,7 @@ test.describe('More views (WP16)', () => {
       // Every view is reachable: in the strip or in More, none is lost.
       const inMore: string[] = [];
       await moreButton(page).click();
+      await expect(page.locator('mf-filter-popover [data-view]').first()).toBeVisible();
       const items = await page
         .locator('mf-filter-popover [data-view]')
         .evaluateAll((b) => b.map((x) => x.getAttribute('data-view') ?? ''));
@@ -308,7 +309,7 @@ test.describe('More views (WP16)', () => {
     await page.waitForLoadState('networkidle');
     await page.goto('/tasks');
     await expect(page.locator('[data-restored-text]')).toHaveText(
-      'Restored your last view: Due soon.',
+      'Restored your last view: Due Soon.',
     );
     expect(await isPressed(page, 'dueSoon')).toBe(true);
     await expect(page.locator('[data-filters-toggle]')).not.toContainText('(');
@@ -670,6 +671,7 @@ test.describe('Views by person (WP16, #223)', () => {
         (await inStrip(page, key)) ||
         (await (async () => {
           await moreButton(page).click();
+          await expect(page.locator('mf-filter-popover [data-view]').first()).toBeVisible();
           const there = (await page.locator(`mf-filter-popover [data-view="${key}"]`).count()) > 0;
           await page.keyboard.press('Escape');
           return there;

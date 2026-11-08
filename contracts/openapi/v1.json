@@ -291,6 +291,173 @@
         }
       }
     },
+    "/api/v1/asset-types/{assetTypeId}/numbering/counters": {
+      "get": {
+        "tags": [
+          "AssetTypes"
+        ],
+        "operationId": "ListAssetNumberCounters",
+        "parameters": [
+          {
+            "name": "assetTypeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Q",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Sort",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfAssetNumberCounterItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/asset-types/{assetTypeId}/numbering/counters/{matterId}": {
+      "get": {
+        "tags": [
+          "AssetTypes"
+        ],
+        "operationId": "GetAssetNumberCounter",
+        "parameters": [
+          {
+            "name": "assetTypeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "matterId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetNumberCounterItem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "AssetTypes"
+        ],
+        "operationId": "SetAssetNextNumber",
+        "parameters": [
+          {
+            "name": "assetTypeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "matterId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetNextNumberChange"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetNextNumberChange"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetNextNumberChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetNumberCounterItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/asset-types/{assetTypeId}/reindex": {
       "post": {
         "tags": [
@@ -406,6 +573,15 @@
           },
           {
             "name": "ExternalReference",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "AssetNumber",
             "in": "query",
             "schema": {
               "maxLength": 200,
@@ -745,6 +921,57 @@
             "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/ChangeAssetDispositionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/assets/{assetId}/assign-number": {
+      "post": {
+        "tags": [
+          "Assets"
+        ],
+        "operationId": "AssignAssetNumber",
+        "parameters": [
+          {
+            "name": "assetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignAssetNumberRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignAssetNumberRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignAssetNumberRequest"
               }
             }
           },
@@ -2564,6 +2791,546 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ValidateFormValuesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/matter-types": {
+      "get": {
+        "tags": [
+          "MatterTypes"
+        ],
+        "operationId": "ListMatterTypes",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatterListItemView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "MatterTypes"
+        ],
+        "operationId": "CreateMatterType",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMatterListItemRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMatterListItemRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMatterListItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatterListItemView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/matter-types/{id}": {
+      "put": {
+        "tags": [
+          "MatterTypes"
+        ],
+        "operationId": "UpdateMatterType",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMatterListItemRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMatterListItemRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMatterListItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatterListItemView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "MatterTypes"
+        ],
+        "operationId": "DeleteMatterType",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": { }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/matter-types/order": {
+      "put": {
+        "tags": [
+          "MatterTypes"
+        ],
+        "operationId": "ReorderMatterTypes",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatterListItemView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/current-states": {
+      "get": {
+        "tags": [
+          "CurrentStates"
+        ],
+        "operationId": "ListCurrentStates",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatterListItemView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "CurrentStates"
+        ],
+        "operationId": "CreateCurrentState",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMatterListItemRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMatterListItemRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMatterListItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatterListItemView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/current-states/{id}": {
+      "put": {
+        "tags": [
+          "CurrentStates"
+        ],
+        "operationId": "UpdateCurrentState",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMatterListItemRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMatterListItemRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMatterListItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatterListItemView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "CurrentStates"
+        ],
+        "operationId": "DeleteCurrentState",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": { }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/current-states/order": {
+      "put": {
+        "tags": [
+          "CurrentStates"
+        ],
+        "operationId": "ReorderCurrentStates",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatterListItemView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team-titles": {
+      "get": {
+        "tags": [
+          "TeamTitles"
+        ],
+        "operationId": "ListTeamTitles",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatterListItemView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "TeamTitles"
+        ],
+        "operationId": "CreateTeamTitle",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMatterListItemRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMatterListItemRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMatterListItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatterListItemView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team-titles/{id}": {
+      "put": {
+        "tags": [
+          "TeamTitles"
+        ],
+        "operationId": "UpdateTeamTitle",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMatterListItemRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMatterListItemRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMatterListItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatterListItemView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "TeamTitles"
+        ],
+        "operationId": "DeleteTeamTitle",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": { }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team-titles/order": {
+      "put": {
+        "tags": [
+          "TeamTitles"
+        ],
+        "operationId": "ReorderTeamTitles",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatterListItemView"
+                  }
                 }
               }
             }
@@ -7300,6 +8067,42 @@
             }
           },
           {
+            "name": "MatterTypeId",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          },
+          {
+            "name": "MatterTypeNone",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "CurrentStateId",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          },
+          {
+            "name": "CurrentStateNone",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "HasPrimaryManager",
             "in": "query",
             "schema": {
@@ -7703,6 +8506,209 @@
                   "$ref": "#/components/schemas/MatterResponse"
                 }
               }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/matters/{matterId}/team": {
+      "get": {
+        "tags": [
+          "MatterTeam"
+        ],
+        "operationId": "ListMatterTeam",
+        "parameters": [
+          {
+            "name": "matterId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Sort",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfMatterTeamMemberResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "MatterTeam"
+        ],
+        "operationId": "AddMatterTeamMember",
+        "parameters": [
+          {
+            "name": "matterId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddTeamMemberRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddTeamMemberRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddTeamMemberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatterTeamMemberResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/matters/{matterId}/team/{memberId}": {
+      "put": {
+        "tags": [
+          "MatterTeam"
+        ],
+        "operationId": "UpdateMatterTeamMember",
+        "parameters": [
+          {
+            "name": "matterId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTeamMemberRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTeamMemberRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTeamMemberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatterTeamMemberResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "MatterTeam"
+        ],
+        "operationId": "RemoveMatterTeamMember",
+        "parameters": [
+          {
+            "name": "matterId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": { }
             }
           }
         }
@@ -15030,6 +16036,15 @@
             }
           },
           {
+            "name": "assetNumber",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
             "name": "assetTypeId",
             "in": "query",
             "schema": {
@@ -18094,6 +19109,31 @@
           }
         }
       },
+      "AddTeamMemberRequest": {
+        "required": [
+          "name",
+          "email"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          },
+          "email": {
+            "maxLength": 254,
+            "minLength": 0,
+            "type": "string"
+          },
+          "teamTitleId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "AdvancedSearchPage": {
         "required": [
           "type",
@@ -18274,6 +19314,9 @@
               "MANAGER_NOT_ELIGIBLE",
               "SENSITIVE_CONFIRMATION_REQUIRED",
               "MANAGER_DUPLICATE",
+              "INVALID_PATH",
+              "INVALID_EMAIL",
+              "DUPLICATE_TEAM_EMAIL",
               "CLIENT_INACTIVE",
               "PROJECT_INACTIVE",
               "POD_INACTIVE",
@@ -18757,7 +19800,8 @@
           "rowVersion",
           "createdAtUtc",
           "modifiedAtUtc",
-          "dispositionCode"
+          "dispositionCode",
+          "assetTypeNumberingEnabled"
         ],
         "type": "object",
         "properties": {
@@ -18876,6 +19920,16 @@
               "null",
               "string"
             ]
+          },
+          "assetNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "assetTypeNumberingEnabled": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -18912,6 +19966,110 @@
           },
           "isActive": {
             "type": "boolean"
+          },
+          "assetNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "AssetNextNumberChange": {
+        "type": "object",
+        "properties": {
+          "nextNumber": {
+            "maximum": 999999999,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AssetNumberCounterItem": {
+        "required": [
+          "assetTypeId",
+          "matterId",
+          "matterRef",
+          "matterName",
+          "highestAssigned",
+          "nextNumber",
+          "nextAssetNumber",
+          "hasCounter",
+          "modifiedAtUtc",
+          "numberedAssetCount"
+        ],
+        "type": "object",
+        "properties": {
+          "assetTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "matterId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "matterRef": {
+            "type": "string"
+          },
+          "matterName": {
+            "type": "string"
+          },
+          "highestAssigned": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nextNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nextAssetNumber": {
+            "type": "string"
+          },
+          "hasCounter": {
+            "type": "boolean"
+          },
+          "modifiedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "numberedAssetCount": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
+          }
+        }
+      },
+      "AssetNumberExample": {
+        "required": [
+          "cmNumber",
+          "nextCounter",
+          "isSample",
+          "text"
+        ],
+        "type": "object",
+        "properties": {
+          "cmNumber": {
+            "type": "string"
+          },
+          "nextCounter": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isSample": {
+            "type": "boolean"
+          },
+          "text": {
+            "type": "string"
+          },
+          "longestCmNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -19259,7 +20417,8 @@
           "createdAtUtc",
           "modifiedAtUtc",
           "matterCanOpen",
-          "dispositionCode"
+          "dispositionCode",
+          "assetTypeNumberingEnabled"
         ],
         "type": "object",
         "properties": {
@@ -19420,6 +20579,16 @@
               "null",
               "string"
             ]
+          },
+          "assetNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "assetTypeNumberingEnabled": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -19577,6 +20746,70 @@
           }
         }
       },
+      "AssetTypeNumbering": {
+        "required": [
+          "enabled",
+          "pattern",
+          "scope",
+          "example"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "pattern": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "example": {
+            "$ref": "#/components/schemas/AssetNumberExample"
+          },
+          "numberedAssetCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "unnumberedAssetCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "AssetTypeNumberingRequest": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "pattern": {
+            "maxLength": 150,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "scope": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "AssetTypeReindexResponse": {
         "required": [
           "assetsProcessed"
@@ -19704,6 +20937,16 @@
               "null",
               "string"
             ]
+          },
+          "numbering": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AssetTypeNumbering"
+              }
+            ]
           }
         }
       },
@@ -19798,6 +21041,17 @@
             ]
           },
           "limitation": {
+            "type": "string"
+          }
+        }
+      },
+      "AssignAssetNumberRequest": {
+        "required": [
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "rowVersion": {
             "type": "string"
           }
         }
@@ -22370,6 +23624,16 @@
               "null",
               "string"
             ]
+          },
+          "numbering": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AssetTypeNumberingRequest"
+              }
+            ]
           }
         }
       },
@@ -22581,6 +23845,21 @@
           }
         }
       },
+      "CreateMatterListItemRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
       "CreateMatterRequest": {
         "required": [
           "matterNumber",
@@ -22627,6 +23906,40 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "matterTypeId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "currentStateId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "dmsPath": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dfsPath": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "formValues": {
             "type": [
@@ -25635,6 +26948,60 @@
           }
         }
       },
+      "MatterListItemView": {
+        "required": [
+          "id",
+          "name",
+          "sortOrder",
+          "isActive",
+          "rowVersion",
+          "inUseCount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string"
+          },
+          "inUseCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "MatterListRef": {
+        "required": [
+          "id",
+          "name",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
       "MatterManagerItem": {
         "required": [
           "userId",
@@ -25798,6 +27165,12 @@
             "type": "string"
           },
           "externalReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "assetNumber": {
             "type": [
               "null",
               "string"
@@ -26378,6 +27751,38 @@
           },
           "aiAllowed": {
             "$ref": "#/components/schemas/MatterAiAllowed"
+          },
+          "matterType": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MatterListRef"
+              }
+            ]
+          },
+          "currentState": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MatterListRef"
+              }
+            ]
+          },
+          "dmsPath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dfsPath": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -26391,7 +27796,8 @@
           "dueSoon",
           "unassigned",
           "projectCount",
-          "assetCount"
+          "assetCount",
+          "teamMemberCount"
         ],
         "type": "object",
         "properties": {
@@ -26448,6 +27854,49 @@
           "assetCount": {
             "type": "integer",
             "format": "int32"
+          },
+          "teamMemberCount": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
+          }
+        }
+      },
+      "MatterTeamMemberResponse": {
+        "required": [
+          "id",
+          "matterId",
+          "name",
+          "email",
+          "title",
+          "sortOrder",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "matterId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "title": {
+            "$ref": "#/components/schemas/MatterListRef"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string"
           }
         }
       },
@@ -26800,6 +28249,12 @@
               "null",
               "string"
             ]
+          },
+          "assetNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -26882,6 +28337,12 @@
             ]
           },
           "assetTypeColourKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "assetNumber": {
             "type": [
               "null",
               "string"
@@ -29301,6 +30762,35 @@
           }
         }
       },
+      "PagedResultOfAssetNumberCounterItem": {
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssetNumberCounterItem"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "PagedResultOfAssetTypeResponse": {
         "required": [
           "items",
@@ -29372,6 +30862,35 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/MatterResponse"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PagedResultOfMatterTeamMemberResponse": {
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MatterTeamMemberResponse"
             }
           },
           "total": {
@@ -33136,6 +34655,12 @@
               "null",
               "string"
             ]
+          },
+          "assetNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -34701,6 +36226,12 @@
           },
           "rowVersion": {
             "type": "string"
+          },
+          "assetNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -36494,6 +38025,14 @@
             ],
             "format": "int32"
           },
+          "assetNumber": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "displayName": {
             "maxLength": 300,
             "minLength": 1,
@@ -36567,6 +38106,16 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "numbering": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AssetTypeNumberingRequest"
+              }
             ]
           },
           "rowVersion": {
@@ -36795,6 +38344,25 @@
           }
         }
       },
+      "UpdateMatterListItemRequest": {
+        "required": [
+          "name",
+          "isActive",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
       "UpdateMatterRequest": {
         "required": [
           "name",
@@ -36825,6 +38393,40 @@
           },
           "rowVersion": {
             "type": "string"
+          },
+          "matterTypeId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "currentStateId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "dmsPath": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dfsPath": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "formValues": {
             "type": [
@@ -37740,6 +39342,35 @@
               "integer"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "UpdateTeamMemberRequest": {
+        "required": [
+          "name",
+          "email",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          },
+          "email": {
+            "maxLength": 254,
+            "minLength": 0,
+            "type": "string"
+          },
+          "teamTitleId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string"
           }
         }
       },
@@ -39528,6 +41159,15 @@
       "name": "Forms"
     },
     {
+      "name": "MatterTypes"
+    },
+    {
+      "name": "CurrentStates"
+    },
+    {
+      "name": "TeamTitles"
+    },
+    {
       "name": "OnHoldReasons"
     },
     {
@@ -39610,6 +41250,9 @@
     },
     {
       "name": "Matters"
+    },
+    {
+      "name": "MatterTeam"
     },
     {
       "name": "Projects"

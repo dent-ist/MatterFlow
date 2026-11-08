@@ -51,6 +51,8 @@ export class Tip {
       pointerEvents: 'none',
       boxShadow: 'var(--mf-shadow-pop)',
       whiteSpace: 'pre-line',
+      // A long unbroken text (a path, an address) wraps inside the 300 px instead of running out of the box (#1309).
+      overflowWrap: 'anywhere',
       visibility: 'hidden',
     });
     this.doc.body.appendChild(tip);

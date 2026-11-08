@@ -186,7 +186,9 @@ test.describe('WP8 list chrome', () => {
           const longName = list.long(w);
           const cell = region
             .locator(
-              phone ? `a[data-card-name][title="${longName}"]` : `.pg-name[title="${longName}"]`,
+              phone
+                ? `a[data-card-name][title="${longName}"]`
+                : `a[data-row-key][title="${longName}"]`,
             )
             .first();
           await expect(cell, `${list.name} long name`).toBeVisible();
@@ -243,7 +245,7 @@ test.describe('WP8 list chrome', () => {
 
   test.describe('filter row open by default and one chip rule (#270)', () => {
     for (const list of LISTS) {
-      test(`${list.name}: open by default from 640 px with no toolbar-only row; Filters is in the page header`, async ({
+      test(`${list.name}: open by default from 640 px, Filters in the header, one toolbar row for Columns`, async ({
         page,
       }) => {
         test.setTimeout(120_000);
@@ -266,9 +268,10 @@ test.describe('WP8 list chrome', () => {
             await expect(toggle(page)).toHaveAttribute('aria-haspopup', 'dialog');
           }
           if (list.name !== 'client-matters' && width >= 640 && !sheetByDesign) {
-            // The lone button sits in the page header: no toolbar row above the grid (a phone shows the chips of the filter in the URL).
-            await expect(page.locator('[data-grid-toolbar]')).toHaveCount(0);
-            await expect(page.locator('[data-page-actions] [data-filters-toggle]')).toHaveCount(1);
+            // D-21 and D-42: Filters sits in the page header; the one list toolbar row holds Columns (and the chips when shown).
+            await expect(page.locator('[data-grid-toolbar]')).toHaveCount(1);
+            // Live page: the Filters toggle is the first control of the list toolbar row (measured on the Clients, Matters and Projects lists).
+            await expect(page.locator('[data-filters-toggle]')).toHaveCount(1);
           }
           await axeClean(page, `${list.name} open ${width}`);
           await noSideways(page, `${list.name} open ${width}`);
@@ -325,7 +328,8 @@ test.describe('WP8 list chrome', () => {
       await expect(toggle(page)).toHaveText(/^\s*Filters\s*$/);
       await expect(page.locator('[data-clear-filters]')).toHaveCount(0);
 
-      await text(page, 'Name').fill(w.token);
+      // The name filter is the list's search box (`search: true` in the filter definitions), not a cell of the filter row.
+      await page.getByRole('searchbox').first().fill(w.token);
       await select(page, 'Status').selectOption('all');
       await expect(page).toHaveURL(/status=all/);
       // Open: counter 2, no chips, exactly one Clear filters (in the header).
@@ -558,7 +562,12 @@ test.describe('WP8 list chrome', () => {
       await expect(page.getByRole('list', { name: 'Active filters' })).toContainText(
         'Sensitive: Yes',
       );
-      await expect(page.getByRole('button', { name: 'Other Filters' })).toHaveCount(0);
+      // Sensitive has its own select in the filter row. The Matters list now has an "Other Filters" button (the filters of the hidden Primary PM and
+      // Secondary PM columns, #1308); Sensitive is not among them.
+      await toggle(page).click();
+      await page.getByRole('button', { name: 'Other Filters' }).click();
+      await expect(page.locator('[data-more-filter]')).toHaveCount(2);
+      await expect(page.locator('[data-more-filter="isSensitive"]')).toHaveCount(0);
     });
 
     test('the client Matters tab has Sensitive too; Clients and Projects have no "Other Filters"', async ({

@@ -148,7 +148,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await expect(page.locator('[data-edit-matter]')).toBeVisible();
     // One task is open, so deactivation is disabled in More actions and says why.
     await page.locator('[data-overflow][aria-label^="More actions"]').click();
-    const toggle = page.getByRole('menuitem', { name: /Set inactive/ });
+    const toggle = page.getByRole('menuitem', { name: /Set Inactive/ });
     await expect(toggle).toHaveAttribute('aria-disabled', 'true');
     await expect(toggle).toContainText("aren't Completed or Cancelled");
     await page.keyboard.press('Escape');
