@@ -35,7 +35,8 @@ internal sealed class ReportCatalog(ReportAppConnection app) : IReportCatalog
 
     internal const string DetailSql =
         $"""
-        SELECT d.ReportId, d.Name, d.Description, d.HelpText, c.ReportCategoryId, c.Name, v.VersionNo, v.SqlText, v.ParametersJson, d.TimeoutSeconds, d.MaxRows
+        SELECT d.ReportId, d.Name, d.Description, d.HelpText, c.ReportCategoryId, c.Name, v.VersionNo, v.SqlText, v.ParametersJson, d.TimeoutSeconds, d.MaxRows,
+               CASE WHEN EXISTS (SELECT 1 FROM dbo.ReportFavourite f WHERE f.ReportId = d.ReportId AND f.UserId = @userId) THEN 1 ELSE 0 END AS IsFavourite
         FROM dbo.ReportDefinition d
         JOIN dbo.ReportVersion v ON v.ReportVersionId = d.CurrentVersionId
         JOIN dbo.ReportCategory c ON c.ReportCategoryId = d.ReportCategoryId
@@ -101,7 +102,8 @@ internal sealed class ReportCatalog(ReportAppConnection app) : IReportCatalog
             reader.GetString(7),
             reader.GetString(8),
             reader.IsDBNull(9) ? null : reader.GetInt32(9),
-            reader.IsDBNull(10) ? null : reader.GetInt32(10));
+            reader.IsDBNull(10) ? null : reader.GetInt32(10),
+            reader.GetInt32(11) == 1);
     }
 
     public async Task<IReadOnlyList<RunnableListItem>> ListRunnableAsync(int userId, CancellationToken cancellationToken)

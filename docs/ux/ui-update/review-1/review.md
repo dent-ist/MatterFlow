@@ -207,7 +207,7 @@ Evidence on `design-evidence` (`evidence/2026-11-06-review-12-dashboard/`: 9 JPE
 | Issue | Result | Evidence |
 | --- | --- | --- |
 | #1157 Summary | PASS | legend tiles are figure tiles, semantic tokens, no stripes |
-| #1158 stripes | PASS | solid red overdue segments with "N overdue" links in Priority, Status, Age and Task Type; Pie views without patterns; guard `no-stripes.spec.ts` covers `features/dashboard` (the shared pie keeps report patterns only for Administration > Reports) |
+| #1158 stripes | PASS | solid red overdue segments with "N overdue" links in Priority, Status, Age and Task Type; Pie views without patterns; guard `no-stripes.spec.ts` covers `features/dashboard` (the shared pie keeps report patterns only for Administration > Report Setup) |
 | #1159 Breakdowns and Trends | PASS | card titles 16/600, switches whole at 1366, "Measure:" dropdowns, axis `10/08` |
 | #1160 Swimlane | PASS WITH NOTES | "Group:" and "Sort:" prefixes, icon options button, shared chips; hidden skip links report as clipped (#1247) |
 | #1161 Users | PASS | popovers on the menu standard, shared Unassigned button, search box 200 px |

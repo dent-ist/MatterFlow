@@ -117,6 +117,7 @@ public sealed record RunnableParameterResponse(
 /// <param name="TimeoutSeconds">The time limit that applies to a run of this report.</param>
 /// <param name="MaxRows">The row limit that applies to a run of this report.</param>
 /// <param name="Parameters">The inputs of the form, in order; empty when the report runs without a form.</param>
+/// <param name="IsFavourite">True when this person marked the report as a favourite (<c>PUT /reports/{id}/favourite</c>); other people's marks never show.</param>
 public sealed record RunnableReportResponse(
     int ReportId,
     string Name,
@@ -127,7 +128,8 @@ public sealed record RunnableReportResponse(
     int VersionNo,
     int TimeoutSeconds,
     int MaxRows,
-    IReadOnlyList<RunnableParameterResponse> Parameters);
+    IReadOnlyList<RunnableParameterResponse> Parameters,
+    bool IsFavourite = false);
 
 /// <summary>Running reports (<c>Report.Run</c> plus an assignment of the report to one of the caller's roles).</summary>
 [ApiController]
@@ -199,7 +201,8 @@ public class ReportsController(ReportRunService runs, ReportResultStore results,
                 p.Max,
                 p.IntegerOnly,
                 p.MaxLength,
-                p.MaxSelected)).ToList()));
+                p.MaxSelected)).ToList(),
+            r.IsFavourite));
     }
 
     /// <summary>

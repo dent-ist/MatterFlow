@@ -34120,6 +34120,10 @@
             "items": {
               "$ref": "#/components/schemas/RunnableParameterResponse"
             }
+          },
+          "isFavourite": {
+            "type": "boolean",
+            "default": false
           }
         }
       },

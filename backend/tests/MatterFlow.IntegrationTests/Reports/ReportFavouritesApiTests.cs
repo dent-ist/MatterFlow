@@ -320,4 +320,37 @@ public sealed class ReportFavouritesApiTests(SqlServerFixture sql)
         (await RecentIdsAsync(ann)).ShouldBe([mine]);
         list.ShouldNotContain($"\"reportId\":{foreign},");
     }
+
+    [Fact]
+    public async Task The_definition_of_a_report_carries_the_callers_own_favourite_mark_and_a_hidden_report_stays_404()
+    {
+        await using var h = await ReportTestHarness.StartAsync(sql);
+        var (ann, role) = await h.PersonAsync(@"KEnn", "Report.Run");
+        var (bo, boRole) = await h.PersonAsync(@"KEo", "Report.Run");
+        var (cy, _) = await h.PersonAsync(@"KE\cy", "Report.Run");
+        var report = await h.AddReportAsync(Query, roleIds: [role, boRole]);
+        var url = $"/api/v1/reports/{report}";
+
+        async Task<bool> MarkAsync(HttpClient client)
+        {
+            var response = await client.GetAsync(url);
+            response.StatusCode.ShouldBe(HttpStatusCode.OK);
+            return (await ReadAsync(response)).GetProperty("isFavourite").GetBoolean();
+        }
+
+        (await MarkAsync(ann)).ShouldBeFalse();
+        (await ann.PutAsync(Fav(report), null)).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        (await MarkAsync(ann)).ShouldBeTrue();
+        (await MarkAsync(bo)).ShouldBeFalse(); // another person's mark never shows
+        (await ann.DeleteAsync(Fav(report))).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        (await MarkAsync(ann)).ShouldBeFalse();
+
+        // A report the caller may not run answers the same 404 as before, even where a mark row exists.
+        (await ann.PutAsync(Fav(report), null)).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        var refused = await cy.GetAsync(url);
+        refused.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await ReadAsync(refused)).GetProperty("detail").GetString().ShouldBe(NotAvailable);
+        await SqlServerFixture.ExecuteAsync(h.AppConnection, $"UPDATE dbo.ReportDefinition SET IsActive = 0 WHERE ReportId = {report}");
+        (await ann.GetAsync(url)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
 }

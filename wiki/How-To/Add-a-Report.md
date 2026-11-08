@@ -6,12 +6,12 @@
 
 ## Prerequisites
 
-- The report login exists and passes the startup check (Administration > Reports > Settings shows the login name, "writes denied", "audit tables denied" and the number of readable tables). Locally `npm start` provisions it (`db:report-login`). Without it, reports are off.
+- The report login exists and passes the startup check (Administration > Report Setup > Settings shows the login name, "writes denied", "audit tables denied" and the number of readable tables). Locally `npm start` provisions it (`db:report-login`). Without it, reports are off.
 - You hold `Report.Manage` (author), and someone with `Report.Assign` gives the report to roles; people run it with `Report.Run`. The System Admin holds all three.
 
 ## Steps in the app (no code)
 
-1. Administration > Reports > New Report. Pick a category (create categories on the Categories tab).
+1. Administration > Report Setup > New Report. Pick a category (create categories on the Categories tab).
 2. Write one `SELECT` statement. Use `:NAME` tokens for parameters (uppercase letters, digits, underscore; not starting with a digit). The engine turns them into real SQL parameters (`@p_NAME`); never build SQL text from a value.
 3. Define each parameter: type (text, number, date, date range, yes or no, single, multi, lookup), label, default, required, options (fixed list or a query), and a lookup kind (user, pod, client, task type, role, ...).
 4. Use the schema browser to see the tables and columns the report login may read. Preview the report, check the row cap (`MaxRows`, up to 200,000) and timeout (`TimeoutSeconds`, up to 300).

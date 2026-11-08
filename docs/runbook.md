@@ -301,7 +301,7 @@ Not exercised yet outside Linux. Tick each on the production-like server and rep
 - [ ] **Uploads:** an email upload near 12 MB succeeds; a larger one is refused cleanly.
 - [ ] **Rich text description (decision R):** after the upgrade, an old task still shows its description as it was (plain text with line breaks); paste a table from Outlook into a new task's Description, save, reload: the table is there; paste a table of more than 200 cells: it arrives as text with a notice; no CSP violation in the console. Support note: the database column `Task.DescriptionFormat` is `TEXT` for tasks created before the upgrade and `HTML` after; a description error `HTML_TOO_LARGE`, `TABLE_TOO_LARGE` or `TOO_COMPLEX` means the pasted content is over a limit (100,000 characters of HTML, 200 table cells, nesting 20), not a server fault.
 - [ ] **Upgrade drill:** do section 7.2 once on a copy of production data, including `--migrate-only` run by the DBA account, and the rollback restore of section 7.3.
-- [ ] **Report login (section 11):** with `ConnectionStrings__ReportsReadOnly` set, Administration > Reports shows "Ready" with writes, audit tables and the server file and registry procedures (11.2 step 3) denied; temporarily adding the login to `db_datareader` turns it to `TooPrivileged` (then restore).
+- [ ] **Report login (section 11):** with `ConnectionStrings__ReportsReadOnly` set, Administration > Report Setup shows "Ready" with writes, audit tables and the server file and registry procedures (11.2 step 3) denied; temporarily adding the login to `db_datareader` turns it to `TooPrivileged` (then restore).
 - [ ] **Backups:** the nightly and log backups run, and one restore drill succeeded (section 8).
 
 ## 10. Troubleshooting
@@ -362,7 +362,7 @@ The baseline (`00-baseline.sql`, run by the app at startup like every script; fo
    It must name a **different login** than the application's (`ConnectionStrings:MatterFlow`/`Default`/`Migrations`); the same login is refused. The app forces a small pool (8), a 10 s connect timeout and read intent.
 6. Database compatibility level must be **130 or higher** (reports use `OPENJSON`). `SELECT compatibility_level FROM sys.databases WHERE name = 'MatterFlow'`.
 7. Optional: a Resource Governor workload group for the login (`MAX_DOP 2`, `REQUEST_MAX_MEMORY_GRANT_PERCENT 10`).
-8. Restart the site (or press "Check again" on Administration > Reports > Settings). The health panel must show the login name, **writes denied**, **audit tables denied**, **Server File and Registry Procedures: Denied** (step 3) and "can read N tables".
+8. Restart the site (or press "Check again" on Administration > Report Setup > Settings). The health panel must show the login name, **writes denied**, **audit tables denied**, **Server File and Registry Procedures: Denied** (step 3) and "can read N tables".
 9. Review the list of readable tables quarterly (schema browser) and rotate the password like any service account.
 
 ### 11.3 The startup check and its states

@@ -40,7 +40,8 @@ public sealed record RunnableDetail(
     string SqlText,
     string ParametersJson,
     int? TimeoutSeconds,
-    int? MaxRows);
+    int? MaxRows,
+    bool IsFavourite = false);
 
 /// <summary>A fixed choice of a single or multi choice parameter.</summary>
 public sealed record RunnableOption(string Value, string Label);
@@ -77,6 +78,7 @@ public sealed record RunnableParameter(
 /// <summary>The definition of a report for the person who may run it (the run page).</summary>
 /// <param name="TimeoutSeconds">The time limit that applies to a run of this report.</param>
 /// <param name="MaxRows">The row limit that applies to a run of this report.</param>
+/// <param name="IsFavourite">True when this person marked the report as a favourite.</param>
 public sealed record RunnableReportDefinition(
     int ReportId,
     string Name,
@@ -87,7 +89,8 @@ public sealed record RunnableReportDefinition(
     int VersionNo,
     int TimeoutSeconds,
     int MaxRows,
-    IReadOnlyList<RunnableParameter> Parameters);
+    IReadOnlyList<RunnableParameter> Parameters,
+    bool IsFavourite = false);
 
 /// <summary>A report in the list of a person who may run it. Carries no SQL.</summary>
 /// <param name="ParameterLabels">The labels of the parameters the person is asked for, in order.</param>
@@ -139,7 +142,8 @@ public sealed class ReportBrowseService(IReportCatalog catalog, ICurrentUser use
             report.VersionNo,
             _options.EffectiveTimeout(report.TimeoutSeconds),
             _options.EffectiveMaxRows(report.MaxRows),
-            asked.Select(d => ToParameter(d, context)).ToList()));
+            asked.Select(d => ToParameter(d, context)).ToList(),
+            report.IsFavourite));
     }
 
     /// <summary>The form's view of a definition. Only the fixed options of a choice list are copied; the choice SELECT stays on the server.</summary>

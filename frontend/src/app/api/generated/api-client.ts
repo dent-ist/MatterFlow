@@ -30808,6 +30808,7 @@ export interface RunnableReportResponse {
     timeoutSeconds: number;
     maxRows: number;
     parameters: RunnableParameterResponse[];
+    isFavourite?: boolean;
 
     [key: string]: any;
 }
