@@ -64,6 +64,12 @@ public class Role : AuditedEntity<int>
 
     public bool IsActive { get; set; } = true;
 
+    /// <summary>
+    /// The stable key (<c>contracts/landing-pages.json</c>) of the page a person with this role lands on after sign-in; null = no role default, the
+    /// application's own landing rule applies (script 67). Never a URL.
+    /// </summary>
+    public string? LandingPage { get; set; }
+
     public List<RolePermission> Permissions { get; set; } = [];
 }
 

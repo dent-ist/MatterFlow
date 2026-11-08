@@ -1,4 +1,5 @@
 using MatterFlow.Identity.Access;
+using MatterFlow.Identity.Contracts;
 using MatterFlow.SharedKernel.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
@@ -130,3 +131,11 @@ public sealed class RequirePermissionAttribute(string code) : AuthorizeAttribute
 /// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public sealed class AllowAuthenticatedAttribute() : AuthorizeAttribute(AccessPolicies.Authenticated);
+
+/// <summary>
+/// Protects an endpoint any person with at least one effective permission may call (every signed-in person who is not Access Pending: Access Pending is
+/// "no permission at all", baseline 6.4), for the person's own settings that do not belong to one permission (the landing page). It is the same
+/// <c>Perm:</c> policy as <see cref="RequirePermissionAttribute"/> with every catalog code as an alternative, so the architecture rules still hold.
+/// </summary>
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+public sealed class RequireAnyPermissionAttribute() : AuthorizeAttribute(AccessPolicies.ForPermission(string.Join(AccessPolicies.AnyOfSeparator, Permissions.All)));

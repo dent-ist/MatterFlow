@@ -72,6 +72,7 @@ public static class IdentityModule
         services.AddScoped<IUserAvailabilityReader>(sp => sp.GetRequiredService<Application.UserAvailabilityService>());
         services.AddScoped<Application.RoleAdministration>();
         services.AddScoped<Views.UserViewService>();
+        services.AddScoped<LandingPages.LandingPageService>();
 
         services.Configure<MatterFlow.SharedKernel.Visibility.SensitiveMatterAccessOptions>(configuration.GetSection(MatterFlow.SharedKernel.Visibility.SensitiveMatterAccessOptions.Section));
         services.AddScoped<MatterVisibility>();

@@ -59,7 +59,7 @@ Totals (counted by `tools/db/schema-fingerprint.sql` on a database built from th
 | [ReportRecent](#reportrecent) | Reports | Reports | 3 | 2 |
 | [ReportRun](#reportrun) | Reports | Reports | 15 | 3 |
 | [ReportVersion](#reportversion) | Reports | Reports | 9 | 2 |
-| [Role](#role) | Identity and access | Identity | 10 | 2 |
+| [Role](#role) | Identity and access | Identity | 11 | 2 |
 | [RolePermission](#rolepermission) | Identity and access | Identity | 2 | 2 |
 | [RoleReport](#rolereport) | Reports | Reports | 4 | 3 |
 | [SavedReportView](#savedreportview) | Reports | Reports | 10 | 2 |
@@ -127,14 +127,15 @@ How a person signs in: provider (Windows, Dev, Entra), tenant, subject, username
 A named set of permissions. The built-in System Admin role has the `IsSystemAdmin` flag and holds every permission implicitly.
 
 - **Module:** Identity. **Area:** Identity and access.
-- **Scripts:** created by script 2.
+- **Scripts:** created by script 2; `LandingPage` added by script 67.
 - **Report login (`mf_report_reader`):** allow.
 - **Primary key:** `PK_Role` (RoleId), int identity.
-- **Columns (10; `?` = nullable):** `RoleId int`, `Name nvarchar(100)`, `Description nvarchar(500)?`, `IsSystemAdmin bit`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Columns (11; `?` = nullable):** `RoleId int`, `Name nvarchar(100)`, `Description nvarchar(500)?`, `IsSystemAdmin bit`, `IsActive bit`, `LandingPage varchar(40)?` (the stable page key from `contracts/landing-pages.json` a person with this role lands on; null = Automatic, the application's own landing rule; epic #1330). Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (2):**
   - `FK_Role_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
   - `FK_Role_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
 - **Indexes and unique constraints (2):** `UQ_Role_Name` (Name) - unique; `UQ_Role_SystemAdmin` (IsSystemAdmin) - unique; filter [IsSystemAdmin]=(1.
+- **Check constraints (1):** `CK_Role_LandingPage` (null, or 1 to 40 lower-case letters, digits and hyphens; which keys are valid is checked by the application).
 
 ### Permission
 
@@ -219,6 +220,7 @@ A person's remembered screen state per surface, and named saved views.
   - `FK_UserView_User`: `UserId` to `AppUser(UserId)`
 - **Indexes and unique constraints (2):** `UQ_UserView_Name` (UserId,Surface,Name) - unique; `UX_UserView_Default` (UserId,Surface) - unique; filter [IsDefault]=(1.
 - **Check constraints (4):** `CK_UserView_Name`, `CK_UserView_RememberedNotDefault`, `CK_UserView_State`, `CK_UserView_Surface`.
+- **Landing page (script 67 era):** the surface `landing-page` holds a person's own landing page choice as `{"page":"<key>"}` (one remembered row, `Name` null). It is not in the surface list of the generic views API; `GET/PUT /api/v1/me/landing-page` own it.
 
 ## Area: Clients, Matters and Projects
 

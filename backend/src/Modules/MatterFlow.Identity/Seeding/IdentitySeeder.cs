@@ -91,7 +91,7 @@ public sealed class IdentitySeeder(
         var permissionIds = await db.Set<Permission>().Where(p => p.IsActive).ToDictionaryAsync(p => p.Code, p => p.Id, StringComparer.Ordinal, ct);
         foreach (var starter in StarterRoles.All)
         {
-            var role = new Role { Name = starter.Name, Description = starter.Description, IsActive = true };
+            var role = new Role { Name = starter.Name, Description = starter.Description, IsActive = true, LandingPage = starter.LandingPage };
             foreach (var code in starter.Permissions.Distinct())
             {
                 if (permissionIds.TryGetValue(code, out var permissionId))

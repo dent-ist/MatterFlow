@@ -103,7 +103,7 @@ How to read it:
 
 | Code | Meaning | Default roles | Backend | Frontend |
 |---|---|---|---|---|
-| `Role.Manage` | Create and edit roles and their permissions | none (System Admin only) | `RolesController` | `admin.routes`, `audit-links`, `nav-items` and 2 more |
+| `Role.Manage` | Create and edit roles and their permissions | none (System Admin only) | `RolesController`, `LandingPagesController` | `admin.routes`, `audit-links`, `nav-items` and 2 more |
 | `TaskType.Manage` | Manage task types and their workflows | none (System Admin only) | `FormDefinitionResolver`, `FormsController`, `PrioritiesController`, `WorkflowControllers` | `admin-counts`, `admin.routes`, `audit-links` and 6 more |
 | `Workflow.Manage` | Manage step definitions and workflows | none (System Admin only) | `FormDefinitionResolver`, `FormsController`, `WorkflowAdminService`, `WorkflowControllers` | `admin-counts`, `admin.routes`, `audit-links` and 6 more |
 | `AssetType.Manage` | Manage asset types and asset link roles | none (System Admin only) | `AssetControllers`, `FormDefinitionResolver`, `FormsController`, `PrioritiesController` | `admin.routes`, `asset-link-roles-page`, `asset-tabs` and 5 more |

@@ -7800,6 +7800,307 @@ export class UserHolidayCalendarClient implements IUserHolidayCalendarClient {
     }
 }
 
+export interface ILandingPagesClient {
+    /**
+     * @return OK
+     */
+    listMyLandingPages(): Observable<LandingPageListResponse>;
+    /**
+     * @return OK
+     */
+    getMyLandingPage(): Observable<MyLandingPageDto>;
+    /**
+     * @return OK
+     */
+    setMyLandingPage(body: SetMyLandingPageRequest): Observable<MyLandingPageDto>;
+    /**
+     * @return OK
+     */
+    getRoleLandingPage(roleId: number): Observable<RoleLandingPageDto>;
+    /**
+     * @return OK
+     */
+    setRoleLandingPage(roleId: number, body: SetRoleLandingPageRequest): Observable<RoleLandingPageDto>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class LandingPagesClient implements ILandingPagesClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    listMyLandingPages(): Observable<LandingPageListResponse> {
+        let url_ = this.baseUrl + "/api/v1/me/landing-pages";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListMyLandingPages(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListMyLandingPages(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<LandingPageListResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<LandingPageListResponse>;
+        }));
+    }
+
+    protected processListMyLandingPages(response: HttpResponseBase): Observable<LandingPageListResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as LandingPageListResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getMyLandingPage(): Observable<MyLandingPageDto> {
+        let url_ = this.baseUrl + "/api/v1/me/landing-page";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetMyLandingPage(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetMyLandingPage(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MyLandingPageDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MyLandingPageDto>;
+        }));
+    }
+
+    protected processGetMyLandingPage(response: HttpResponseBase): Observable<MyLandingPageDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MyLandingPageDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    setMyLandingPage(body: SetMyLandingPageRequest): Observable<MyLandingPageDto> {
+        let url_ = this.baseUrl + "/api/v1/me/landing-page";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSetMyLandingPage(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSetMyLandingPage(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MyLandingPageDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MyLandingPageDto>;
+        }));
+    }
+
+    protected processSetMyLandingPage(response: HttpResponseBase): Observable<MyLandingPageDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MyLandingPageDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getRoleLandingPage(roleId: number): Observable<RoleLandingPageDto> {
+        let url_ = this.baseUrl + "/api/v1/roles/{roleId}/landing-page";
+        if (roleId === undefined || roleId === null)
+            throw new globalThis.Error("The parameter 'roleId' must be defined.");
+        url_ = url_.replace("{roleId}", encodeURIComponent("" + roleId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetRoleLandingPage(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetRoleLandingPage(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<RoleLandingPageDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<RoleLandingPageDto>;
+        }));
+    }
+
+    protected processGetRoleLandingPage(response: HttpResponseBase): Observable<RoleLandingPageDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RoleLandingPageDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    setRoleLandingPage(roleId: number, body: SetRoleLandingPageRequest): Observable<RoleLandingPageDto> {
+        let url_ = this.baseUrl + "/api/v1/roles/{roleId}/landing-page";
+        if (roleId === undefined || roleId === null)
+            throw new globalThis.Error("The parameter 'roleId' must be defined.");
+        url_ = url_.replace("{roleId}", encodeURIComponent("" + roleId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSetRoleLandingPage(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSetRoleLandingPage(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<RoleLandingPageDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<RoleLandingPageDto>;
+        }));
+    }
+
+    protected processSetRoleLandingPage(response: HttpResponseBase): Observable<RoleLandingPageDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RoleLandingPageDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface IMatterManagersClient {
     /**
      * @param q (optional) 
@@ -28819,6 +29120,20 @@ export interface JsonElement {
     [key: string]: any;
 }
 
+export interface LandingPageDto {
+    key: string;
+    label: string;
+    path: string;
+
+    [key: string]: any;
+}
+
+export interface LandingPageListResponse {
+    pages: LandingPageDto[];
+
+    [key: string]: any;
+}
+
 export interface LinkTaskAssetRequest {
     assetId: number;
     assetLinkRoleId?: number | undefined;
@@ -29164,6 +29479,19 @@ export interface MeResponse {
     isSystemAdmin: boolean;
     hasWork: boolean;
     pods: UserPodDto[];
+
+    [key: string]: any;
+}
+
+export interface MyLandingPageDto {
+    choice: string | undefined;
+    choiceAllowed: boolean;
+    roleName: string | undefined;
+    roleDefault: string | undefined;
+    roleDefaultAllowed: boolean;
+    resolved: string | undefined;
+    resolvedPath: string | undefined;
+    source: string | undefined;
 
     [key: string]: any;
 }
@@ -30724,6 +31052,16 @@ export interface RoleDetailDto {
     memberCount: number;
     permissionCodes: string[];
     rowVersion: string;
+    landingPage?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface RoleLandingPageDto {
+    roleId: number;
+    landingPage: string | undefined;
+    pages: LandingPageDto[];
+    rowVersion: string;
 
     [key: string]: any;
 }
@@ -30735,6 +31073,7 @@ export interface RoleSummaryDto {
     isSystemAdmin: boolean;
     memberCount: number;
     permissionCount: number;
+    landingPage?: string | undefined;
 
     [key: string]: any;
 }
@@ -31039,6 +31378,12 @@ export interface SetMatterManagersRequest {
     [key: string]: any;
 }
 
+export interface SetMyLandingPageRequest {
+    landingPage: string | undefined;
+
+    [key: string]: any;
+}
+
 export interface SetNotePinnedRequest {
     pinned?: boolean;
     rowVersion: string;
@@ -31054,6 +31399,13 @@ export interface SetPrimaryPodRequest {
 
 export interface SetReportRolesRequest {
     roleIds: number[] | undefined;
+
+    [key: string]: any;
+}
+
+export interface SetRoleLandingPageRequest {
+    landingPage: string | undefined;
+    rowVersion: string;
 
     [key: string]: any;
 }

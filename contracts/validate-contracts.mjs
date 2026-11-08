@@ -487,6 +487,49 @@ function checkAssetNumberVectors(fail) {
   console.log(`asset-numbering vectors: ${file.vectors.length}`);
 }
 
+// ---------------------------------------------------------------- landing pages (epic #1330)
+// contracts/landing-pages.json: stable page keys + the rule that says who can open each page. Checked against permissions.json and the navigation.
+const LANDING_KEYS = ['dashboard', 'my-matters', 'my-work', 'clients', 'matters', 'projects', 'assets', 'pod-work', 'task-queue', 'reports', 'administration'];
+
+function checkLandingPages(fail) {
+  const file = load('landing-pages.json');
+  const codes = new Set(load('permissions.json').permissions.map((p) => p.code));
+  const known = (code, where) => { if (!codes.has(code)) fail(`landing-pages ${where}: unknown permission ${code}`); };
+  if (!Array.isArray(file.dashboardTabPermissions) || file.dashboardTabPermissions.length === 0) fail('landing-pages: dashboardTabPermissions must be a non-empty array');
+  (file.dashboardTabPermissions ?? []).forEach((c) => known(c, 'dashboardTabPermissions'));
+  if (!Array.isArray(file.pages) || file.pages.length === 0) { fail('landing-pages: pages must be a non-empty array'); return; }
+  const keys = new Set(), paths = new Set();
+  for (const p of file.pages) {
+    const where = `page "${p.key}"`;
+    if (typeof p.key !== 'string' || !/^[a-z][a-z0-9-]{0,39}$/.test(p.key)) { fail(`landing-pages: key "${p.key}" must be 1-40 lower-case letters, digits or hyphens`); continue; }
+    if (keys.has(p.key)) fail(`landing-pages ${where}: duplicate key`);
+    keys.add(p.key);
+    if (typeof p.label !== 'string' || !p.label.trim()) fail(`landing-pages ${where}: label required`);
+    if (typeof p.path !== 'string' || !p.path.startsWith('/')) fail(`landing-pages ${where}: path must start with /`);
+    if (paths.has(p.path)) fail(`landing-pages ${where}: duplicate path ${p.path}`);
+    paths.add(p.path);
+    if (!Array.isArray(p.allOf) || !Array.isArray(p.anyOf) || typeof p.dashboardTab !== 'boolean') { fail(`landing-pages ${where}: allOf (array), anyOf (array) and dashboardTab (boolean) are required`); continue; }
+    if (p.allOf.length === 0 && p.anyOf.length === 0) fail(`landing-pages ${where}: a page with no permission rule would be open to everybody`);
+    [...p.allOf, ...p.anyOf].forEach((c) => known(c, where));
+    if (p.dashboardTab && !p.allOf.includes('Dashboard.View')) fail(`landing-pages ${where}: dashboardTab needs Dashboard.View in allOf`);
+    const extra = Object.keys(p).filter((k) => !['key', 'label', 'path', 'allOf', 'anyOf', 'dashboardTab'].includes(k));
+    if (extra.length) fail(`landing-pages ${where}: unknown keys ${extra.join(', ')}`);
+  }
+  if (JSON.stringify([...keys]) !== JSON.stringify(LANDING_KEYS)) fail(`landing-pages: the keys must be exactly ${LANDING_KEYS.join(', ')} in this order (changing the catalogue is a design decision: update this list with it)`);
+  // The navigation and the catalogue must agree: every page's path is a main-menu address (or the Administration section) and its label is the menu label.
+  const nav = readFileSync(join(here, '..', 'frontend', 'src', 'app', 'shared', 'layout', 'nav-items.ts'), 'utf8');
+  for (const p of file.pages) {
+    if (p.key === 'administration') continue;
+    if (!nav.includes(`path: '${p.path}'`) || !nav.includes(`label: '${p.label}'`)) fail(`landing-pages page "${p.key}": nav-items.ts has no item with path ${p.path} and label ${p.label}`);
+  }
+  const adminPart = nav.slice(nav.indexOf('export const ADMIN_NAV_ITEMS'));
+  const adminCodes = new Set([...adminPart.matchAll(/permissions:\s*\[([^\]]*)\]/g)].flatMap((m) => [...m[1].matchAll(/'([A-Za-z.]+)'/g)].map((x) => x[1])));
+  const adminPage = file.pages.find((p) => p.key === 'administration');
+  if (adminCodes.size === 0) fail('landing-pages: could not read the Administration permissions from nav-items.ts');
+  else if ([...adminCodes].sort().join() !== [...(adminPage?.anyOf ?? [])].sort().join()) fail(`landing-pages: administration anyOf must equal the permissions of ADMIN_NAV_ITEMS (${[...adminCodes].sort().join(', ')})`);
+  console.log(`landing pages: ${file.pages.length}`);
+}
+
 // ---------------------------------------------------------------- main
 function main() {
   const schema = load('form-rules.schema.json');
@@ -553,6 +596,7 @@ function main() {
   }
 
   checkAssetNumberVectors(fail);
+  checkLandingPages(fail);
 
   // 4. message keys: every field error code and definition error code has at least one message
   const msgFile = load('form-rules.messages.json');

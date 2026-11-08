@@ -62,7 +62,8 @@ public sealed record RoleSummaryDto(
     string? Description,
     [property: Required] bool IsSystemAdmin,
     [property: Required] int MemberCount,
-    [property: Required] int PermissionCount);
+    [property: Required] int PermissionCount,
+    string? LandingPage = null);
 
 public sealed record RoleDetailDto(
     [property: Required] int RoleId,
@@ -71,7 +72,8 @@ public sealed record RoleDetailDto(
     [property: Required] bool IsSystemAdmin,
     [property: Required] int MemberCount,
     [property: Required] string[] PermissionCodes,
-    [property: Required] string RowVersion);
+    [property: Required] string RowVersion,
+    string? LandingPage = null);
 
 /// <summary>Creates a role (a new record has no row version yet).</summary>
 public sealed record CreateRoleRequest(

@@ -47,7 +47,7 @@ public sealed class UserViewService(DbContext db, ICurrentUser currentUser, IClo
         if (surface is not null && !Surfaces.Contains(surface))
             return UnknownSurface();
         var userId = UserId;
-        var query = db.Set<UserView>().AsNoTracking().Where(v => v.UserId == userId);
+        var query = db.Set<UserView>().AsNoTracking().Where(v => v.UserId == userId && v.Surface != LandingPages.LandingPageService.Surface);
         if (surface is not null)
             query = query.Where(v => v.Surface == surface);
         var rows = await query.OrderBy(v => v.Surface).ThenBy(v => v.Name != null).ThenBy(v => v.Name).ToListAsync(ct);

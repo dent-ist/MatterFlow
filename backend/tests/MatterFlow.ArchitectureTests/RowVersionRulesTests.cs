@@ -17,6 +17,7 @@ public class RowVersionRulesTests
         "SetPrimaryPodRequest", // sets a flag on a pod membership row; last write wins by design
         "SetUserPodsRequest", // replaces membership rows (no row of its own to version); concurrency is the optional expectedPodIds check
         "ReorderRequest", // reorders a list; the order is the whole payload
+        "SetMyLandingPageRequest", // the person's own landing page choice (one row per person); last write wins by design
         "SaveRememberedViewRequest", // the automatic remembered state of a screen (one row per person and surface); last write wins by design
         "SetTasksProjectRequest", // bulk link/unlink of up to 100 tasks (MD-05): like the bulk re-assign, each task is read and changed in its own transaction and the answer lists every task
     ];

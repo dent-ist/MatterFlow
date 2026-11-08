@@ -4882,6 +4882,164 @@
         }
       }
     },
+    "/api/v1/me/landing-pages": {
+      "get": {
+        "tags": [
+          "LandingPages"
+        ],
+        "operationId": "ListMyLandingPages",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LandingPageListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/landing-page": {
+      "get": {
+        "tags": [
+          "LandingPages"
+        ],
+        "operationId": "GetMyLandingPage",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyLandingPageDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "LandingPages"
+        ],
+        "operationId": "SetMyLandingPage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetMyLandingPageRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetMyLandingPageRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetMyLandingPageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyLandingPageDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/roles/{roleId}/landing-page": {
+      "get": {
+        "tags": [
+          "LandingPages"
+        ],
+        "operationId": "GetRoleLandingPage",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleLandingPageDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "LandingPages"
+        ],
+        "operationId": "SetRoleLandingPage",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetRoleLandingPageRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetRoleLandingPageRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetRoleLandingPageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleLandingPageDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users/matter-managers": {
       "get": {
         "tags": [
@@ -26670,6 +26828,39 @@
         }
       },
       "JsonElement": { },
+      "LandingPageDto": {
+        "required": [
+          "key",
+          "label",
+          "path"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        }
+      },
+      "LandingPageListResponse": {
+        "required": [
+          "pages"
+        ],
+        "type": "object",
+        "properties": {
+          "pages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LandingPageDto"
+            }
+          }
+        }
+      },
       "LinkTaskAssetRequest": {
         "required": [
           "assetId"
@@ -27969,6 +28160,63 @@
             "items": {
               "$ref": "#/components/schemas/UserPodDto"
             }
+          }
+        }
+      },
+      "MyLandingPageDto": {
+        "required": [
+          "choice",
+          "choiceAllowed",
+          "roleName",
+          "roleDefault",
+          "roleDefaultAllowed",
+          "resolved",
+          "resolvedPath",
+          "source"
+        ],
+        "type": "object",
+        "properties": {
+          "choice": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "choiceAllowed": {
+            "type": "boolean"
+          },
+          "roleName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "roleDefault": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "roleDefaultAllowed": {
+            "type": "boolean"
+          },
+          "resolved": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "resolvedPath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "source": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -33795,6 +34043,42 @@
           },
           "rowVersion": {
             "type": "string"
+          },
+          "landingPage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RoleLandingPageDto": {
+        "required": [
+          "roleId",
+          "landingPage",
+          "pages",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "roleId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "landingPage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LandingPageDto"
+            }
+          },
+          "rowVersion": {
+            "type": "string"
           }
         }
       },
@@ -33832,6 +34116,12 @@
           "permissionCount": {
             "type": "integer",
             "format": "int32"
+          },
+          "landingPage": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -34857,6 +35147,20 @@
           }
         }
       },
+      "SetMyLandingPageRequest": {
+        "required": [
+          "landingPage"
+        ],
+        "type": "object",
+        "properties": {
+          "landingPage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "SetNotePinnedRequest": {
         "required": [
           "rowVersion"
@@ -34900,6 +35204,24 @@
               "type": "integer",
               "format": "int32"
             }
+          }
+        }
+      },
+      "SetRoleLandingPageRequest": {
+        "required": [
+          "landingPage",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "landingPage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rowVersion": {
+            "type": "string"
           }
         }
       },
@@ -41200,6 +41522,9 @@
     },
     {
       "name": "UserHolidayCalendar"
+    },
+    {
+      "name": "LandingPages"
     },
     {
       "name": "MatterManagers"

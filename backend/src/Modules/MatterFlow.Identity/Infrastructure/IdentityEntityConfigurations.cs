@@ -38,6 +38,7 @@ internal sealed class RoleConfiguration : IEntityTypeConfiguration<Role>
         b.ToTable("Role");
         b.Property(x => x.Name).HasMaxLength(100).IsRequired();
         b.Property(x => x.Description).HasMaxLength(500);
+        b.Property(x => x.LandingPage).HasMaxLength(40).IsUnicode(false);
         b.HasIndex(x => x.Name).IsUnique().HasDatabaseName("UQ_Role_Name");
         b.HasMany(x => x.Permissions).WithOne(x => x.Role).HasForeignKey(x => x.RoleId).HasConstraintName("FK_RolePermission_Role");
     }

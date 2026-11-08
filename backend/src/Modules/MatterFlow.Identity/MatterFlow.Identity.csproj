@@ -13,5 +13,7 @@
   <ItemGroup>
     <!-- Permission catalog source of truth (docs/architecture.md 6.3), synced into dbo.Permission at startup. -->
     <EmbeddedResource Include="..\..\..\..\contracts\permissions.json" LogicalName="contracts.permissions.json" />
+    <!-- Landing page keys and who can open each page (epic #1330), shared with the frontend through the API. -->
+    <EmbeddedResource Include="..\..\..\..\contracts\landing-pages.json" LogicalName="contracts.landing-pages.json" />
   </ItemGroup>
 </Project>

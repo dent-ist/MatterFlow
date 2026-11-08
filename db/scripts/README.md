@@ -61,4 +61,4 @@ EF Core maps entities for data access only; there are no EF migrations. The star
 
 ## Scripts after the baseline
 
-None yet. The first one is `67-...`; list each here with one line (purpose, issue).
+- `67-role-landing-page.sql`: `dbo.Role.LandingPage` (nullable stable page key; `contracts/landing-pages.json`) with a check on its shape, and the starter defaults Director = `dashboard`, Project Manager = `my-matters` for databases that already hold the starter roles (a fresh database gets them from `StarterRoles.cs`). A person's own choice lives in `dbo.UserView` (surface `landing-page`), so no new table (epic #1330, issue #1332).

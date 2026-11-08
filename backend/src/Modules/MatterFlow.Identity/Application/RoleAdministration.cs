@@ -26,13 +26,14 @@ public sealed class RoleAdministration(DbContext db, IUserAccessInvalidator inva
                 r.Name,
                 r.Description,
                 r.IsSystemAdmin,
+                r.LandingPage,
                 Members = db.Set<UserRole>().Count(ur => ur.RoleId == r.Id),
                 Permissions = r.Permissions.Count(rp => rp.Permission.IsActive),
             })
             .ToListAsync(ct);
 
         var total = await db.Set<Permission>().CountAsync(p => p.IsActive, ct);
-        return rows.Select(r => new RoleSummaryDto(r.Id, r.Name, r.Description, r.IsSystemAdmin, r.Members, r.IsSystemAdmin ? total : r.Permissions)).ToList();
+        return rows.Select(r => new RoleSummaryDto(r.Id, r.Name, r.Description, r.IsSystemAdmin, r.Members, r.IsSystemAdmin ? total : r.Permissions, r.LandingPage)).ToList();
     }
 
     public async Task<Result<RoleDetailDto>> GetAsync(int roleId, CancellationToken ct)
@@ -176,7 +177,8 @@ public sealed class RoleAdministration(DbContext db, IUserAccessInvalidator inva
             role.IsSystemAdmin,
             members,
             codes.Order(StringComparer.Ordinal).ToArray(),
-            Convert.ToBase64String(role.RowVersion));
+            Convert.ToBase64String(role.RowVersion),
+            role.LandingPage);
     }
 
     private async Task<Result<List<Permission>>> ResolvePermissionsAsync(IEnumerable<string> codes, CancellationToken ct)

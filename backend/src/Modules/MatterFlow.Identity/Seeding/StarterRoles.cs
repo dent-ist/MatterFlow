@@ -1,13 +1,15 @@
 using MatterFlow.Identity.Contracts;
+using MatterFlow.Identity.LandingPages;
 
 namespace MatterFlow.Identity.Seeding;
 
 /// <summary>A starter role and its default grants.</summary>
-public sealed record StarterRole(string Name, string Description, IReadOnlyList<string> Permissions);
+public sealed record StarterRole(string Name, string Description, IReadOnlyList<string> Permissions, string? LandingPage = null);
 
 /// <summary>
 /// The starter role matrix of docs/architecture.md 6.3. Seeded once (only when no non-system role exists) and editable afterwards;
-/// configuration and user management are System Admin only by default.
+/// configuration and user management are System Admin only by default. Landing pages (epic #1330): the Director starts on the Dashboard, the Project Manager on My Matters
+/// (what the landing rule gave a project manager); Pod Lead, Data Technician and Data Scientist have none ("Automatic"): the old rule depends on whether the person has work.
 /// </summary>
 public static class StarterRoles
 {
@@ -66,10 +68,12 @@ public static class StarterRoles
                 Permissions.User.View, Permissions.Audit.View,
                 Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewBreakdowns, Permissions.Dashboard.ViewTrends,
                 Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers, Permissions.Dashboard.ViewCoverage,
-                ..CalendarAccess]),
+                ..CalendarAccess],
+            LandingPageKeys.Dashboard),
         // Report.Run (owner decision 8, 2026-11-07; script 65 for existing databases): the only starter role that may run reports. It shows only the reports an administrator assigns to the role.
         new("Project Manager", "Manages clients, matters and projects, can be named as a matter's project manager; works from My Matters.",
-            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, Permissions.Matter.BeManager, ..AssignManagers, ..MatterContentManage, Permissions.Asset.Dispose, Permissions.Report.Run]),
+            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, Permissions.Matter.BeManager, ..AssignManagers, ..MatterContentManage, Permissions.Asset.Dispose, Permissions.Report.Run],
+            LandingPageKeys.MyMatters),
         new("Pod Lead", "Leads a pod: manages pod members; sees the Dashboard summary, swimlane and team workload.",
             [..Everyone, ..ClientMatterEdit, ..ProjectManage, ..MatterContentManage, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
                 Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers,

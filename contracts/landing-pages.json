@@ -1,0 +1,38 @@
+{
+  "$comment": "The catalogue of landing pages (epic #1330): the stable page keys a role default (dbo.Role.LandingPage) and a person's own choice may hold, with the rule that says who can open each page. Stored values are keys, never URLs, so a renamed route does not break a saved choice. The rule is the one the left navigation and the route guards use (frontend/src/app/shared/layout/nav-items.ts, app.routes.ts): a person can open a page when they hold ALL of allOf, and (when anyOf is not empty) at least ONE of anyOf, and (when dashboardTab is true) Dashboard.View together with one of dashboardTabPermissions. The System Admin holds every permission, so every page is open to them. The backend embeds this file (LandingPageCatalog) and evaluates the rule on the server; the Angular app takes the labels and paths from the API. node contracts/validate-contracts.mjs checks this file against permissions.json and the navigation. Order is the order of the navigation.",
+  "dashboardTabPermissions": [
+    "Dashboard.ViewSummary",
+    "Dashboard.ViewUnassigned",
+    "Dashboard.ViewBreakdowns",
+    "Dashboard.ViewTrends",
+    "Dashboard.ViewSwimlane",
+    "Dashboard.ViewUsers",
+    "Dashboard.ViewCalendar"
+  ],
+  "pages": [
+    { "key": "dashboard", "label": "Dashboard", "path": "/dashboard", "allOf": ["Dashboard.View"], "anyOf": [], "dashboardTab": true },
+    { "key": "my-matters", "label": "My Matters", "path": "/my-matters", "allOf": ["Matter.BeManager", "Matter.View", "Task.View"], "anyOf": [], "dashboardTab": false },
+    { "key": "my-work", "label": "My Work", "path": "/my-work", "allOf": ["Task.View"], "anyOf": [], "dashboardTab": false },
+    { "key": "clients", "label": "Clients", "path": "/clients", "allOf": ["Client.View"], "anyOf": [], "dashboardTab": false },
+    { "key": "matters", "label": "Matters", "path": "/matters", "allOf": ["Matter.View"], "anyOf": [], "dashboardTab": false },
+    { "key": "projects", "label": "Projects", "path": "/projects", "allOf": ["Project.View"], "anyOf": [], "dashboardTab": false },
+    { "key": "assets", "label": "Assets", "path": "/assets", "allOf": ["Asset.View"], "anyOf": [], "dashboardTab": false },
+    { "key": "pod-work", "label": "Pod Work", "path": "/pods/work", "allOf": ["Pod.View", "Task.View"], "anyOf": [], "dashboardTab": false },
+    { "key": "task-queue", "label": "Task Queue", "path": "/tasks", "allOf": ["Task.View"], "anyOf": [], "dashboardTab": false },
+    { "key": "reports", "label": "Reports", "path": "/reports", "allOf": ["Report.Run"], "anyOf": [], "dashboardTab": false },
+    {
+      "key": "administration",
+      "label": "Administration",
+      "path": "/admin",
+      "allOf": [],
+      "anyOf": [
+        "User.View", "User.Manage", "Role.Manage", "Pod.Manage", "Pod.ManageMembers",
+        "TaskType.Manage", "Workflow.Manage",
+        "Priority.Manage", "StatusLabel.Manage", "OnHoldReason.Manage",
+        "AssetType.Manage", "CustomField.Manage", "MatterList.Manage",
+        "Report.Manage", "Audit.View", "Settings.Manage"
+      ],
+      "dashboardTab": false
+    }
+  ]
+}
